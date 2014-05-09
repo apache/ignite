@@ -104,9 +104,9 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     @GridDirectVersion(1)
     private List<GridCacheValueBytes> nearValBytes;
 
-    /** Skip version check flag. */
+    /** Force transform backups flag. */
     @GridDirectVersion(2)
-    private boolean skipVerCheck;
+    private boolean forceTransformBackups;
 
     /** Transform closures. */
     @GridDirectTransient
@@ -142,7 +142,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param syncMode Cache write synchronization mode.
      * @param topVer Topology version.
      * @param ttl Time to live.
-     * @param skipVerCheck Skip version check flag.
+     * @param forceTransformBackups Force transform backups flag.
      */
     public GridDhtAtomicUpdateRequest(
         UUID nodeId,
@@ -151,7 +151,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         GridCacheWriteSynchronizationMode syncMode,
         long topVer,
         long ttl,
-        boolean skipVerCheck
+        boolean forceTransformBackups
     ) {
         this.nodeId = nodeId;
         this.futVer = futVer;
@@ -159,12 +159,12 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         this.syncMode = syncMode;
         this.ttl = ttl;
         this.topVer = topVer;
-        this.skipVerCheck = skipVerCheck;
+        this.forceTransformBackups = forceTransformBackups;
 
         keys = new ArrayList<>();
         keyBytes = new ArrayList<>();
 
-        if (skipVerCheck) {
+        if (forceTransformBackups) {
             transformClos = new ArrayList<>();
             transformClosBytes = new ArrayList<>();
         }
@@ -175,10 +175,10 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     }
 
     /**
-     * @return Skip version check flag.
+     * @return Force transform backups flag.
      */
-    public boolean skipVersionCheck() {
-        return skipVerCheck;
+    public boolean forceTransformBackups() {
+        return forceTransformBackups;
     }
 
     /**
@@ -195,7 +195,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         keys.add(key);
         this.keyBytes.add(keyBytes);
 
-        if (skipVerCheck && transformC != null)
+        if (forceTransformBackups && transformC != null)
             transformClos.add(transformC);
         else {
             vals.add(val);
@@ -250,20 +250,25 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         if (nearKeys == null) {
             nearKeys = new ArrayList<>();
             nearKeyBytes = new ArrayList<>();
-            nearVals = new ArrayList<>();
-            nearValBytes = new ArrayList<>();
 
-            if (skipVerCheck) {
+            if (forceTransformBackups) {
                 nearTransformClos = new ArrayList<>();
                 nearTransformClosBytes = new ArrayList<>();
+            }
+            else {
+                nearVals = new ArrayList<>();
+                nearValBytes = new ArrayList<>();
             }
         }
 
         nearKeys.add(key);
         nearKeyBytes.add(keyBytes);
 
-        if (skipVerCheck && transformC != null)
-            transformClos.add(transformC);
+        if (forceTransformBackups) {
+            assert transformC != null;
+
+            nearTransformClos.add(transformC);
+        }
         else {
             nearVals.add(val);
             nearValBytes.add(valBytes != null ? GridCacheValueBytes.marshaled(valBytes) : null);
@@ -530,13 +535,13 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         keyBytes = marshalCollection(keys, ctx);
         valBytes = marshalValuesCollection(vals, ctx);
 
-        if (skipVerCheck)
+        if (forceTransformBackups)
             transformClosBytes = marshalCollection(transformClos, ctx);
 
         nearKeyBytes = marshalCollection(nearKeys, ctx);
         nearValBytes = marshalValuesCollection(nearVals, ctx);
 
-        if (skipVerCheck)
+        if (forceTransformBackups)
             nearTransformClosBytes = marshalCollection(nearTransformClos, ctx);
     }
 
@@ -547,13 +552,13 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         keys = unmarshalCollection(keyBytes, ctx, ldr);
         vals = unmarshalValueBytesCollection(valBytes, ctx, ldr);
 
-        if (skipVerCheck)
+        if (forceTransformBackups)
             transformClos = unmarshalCollection(transformClosBytes, ctx, ldr);
 
         nearKeys = unmarshalCollection(nearKeyBytes, ctx, ldr);
         nearVals = unmarshalValueBytesCollection(nearValBytes, ctx, ldr);
 
-        if (skipVerCheck)
+        if (forceTransformBackups)
             nearTransformClos = unmarshalCollection(nearTransformClosBytes, ctx, ldr);
     }
 
@@ -590,7 +595,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         _clone.nearKeyBytes = nearKeyBytes;
         _clone.nearVals = nearVals;
         _clone.nearValBytes = nearValBytes;
-        _clone.skipVerCheck = skipVerCheck;
+        _clone.forceTransformBackups = forceTransformBackups;
         _clone.transformClos = transformClos;
         _clone.transformClosBytes = transformClosBytes;
         _clone.nearTransformClos = nearTransformClos;
@@ -824,7 +829,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 16:
-                if (!commState.putBoolean(skipVerCheck))
+                if (!commState.putBoolean(forceTransformBackups))
                     return false;
 
                 commState.idx++;
@@ -1124,7 +1129,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 if (buf.remaining() < 1)
                     return false;
 
-                skipVerCheck = commState.getBoolean();
+                forceTransformBackups = commState.getBoolean();
 
                 commState.idx++;
 

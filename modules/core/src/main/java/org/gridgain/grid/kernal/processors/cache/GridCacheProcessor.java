@@ -560,11 +560,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.versionConverter().registerLocal(GridNearAtomicUpdateRequest.class,
             GridDhtAtomicCache.GridNearAtomicUpdateRequestConverter612.class,
-            GridDhtAtomicCache.SKIP_VERSION_CHECK_SINCE);
+            GridDhtAtomicCache.FORCE_TRANSFORM_BACKUP_SINCE);
 
         ctx.versionConverter().registerLocal(GridDhtAtomicUpdateRequest.class,
             GridDhtAtomicCache.GridDhtAtomicUpdateRequestConverter612.class,
-            GridDhtAtomicCache.SKIP_VERSION_CHECK_SINCE);
+            GridDhtAtomicCache.FORCE_TRANSFORM_BACKUP_SINCE);
 
         GridDeploymentMode depMode = ctx.config().getDeploymentMode();
 

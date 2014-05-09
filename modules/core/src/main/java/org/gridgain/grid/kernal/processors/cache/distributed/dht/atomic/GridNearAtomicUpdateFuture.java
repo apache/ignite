@@ -520,7 +520,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 syncMode,
                 op,
                 retval,
-                op == TRANSFORM && cctx.hasFlag(SKIP_ATOMIC_VERSION_CHECK),
+                op == TRANSFORM && cctx.hasFlag(FORCE_TRANSFORM_BACKUP),
                 ttl,
                 filter);
 
@@ -616,7 +616,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                             syncMode,
                             op,
                             retval,
-                            op == TRANSFORM && cctx.hasFlag(SKIP_ATOMIC_VERSION_CHECK),
+                            op == TRANSFORM && cctx.hasFlag(FORCE_TRANSFORM_BACKUP),
                             ttl,
                             filter);
 

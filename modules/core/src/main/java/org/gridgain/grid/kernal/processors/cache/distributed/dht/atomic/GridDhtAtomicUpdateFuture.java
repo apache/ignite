@@ -28,7 +28,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
-import static org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache.SKIP_VERSION_CHECK_SINCE;
+import static org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache.FORCE_TRANSFORM_BACKUP_SINCE;
 
 /**
  * DHT atomic cache backup update future.
@@ -53,8 +53,8 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
     /** Write version. */
     private GridCacheVersion writeVer;
 
-    /** Skip version check flag. */
-    private boolean skipVerCheck;
+    /** Force transform backup flag. */
+    private boolean forceTransformBackups;
 
     /** Completion callback. */
     @GridToStringExclude
@@ -107,7 +107,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
         this.completionCb = completionCb;
         this.updateRes = updateRes;
 
-        skipVerCheck = updateReq.skipVersionCheck();
+        forceTransformBackups = updateReq.forceTransformBackups();
 
         log = U.logger(ctx, logRef, GridDhtAtomicUpdateFuture.class);
 
@@ -203,13 +203,13 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
             UUID nodeId = node.id();
 
             if (!nodeId.equals(ctx.localNodeId())) {
-                boolean supportsSkipVerCheck = node.version().compareTo(SKIP_VERSION_CHECK_SINCE) >= 0;
+                boolean supportsForceTransformBackup = node.version().compareTo(FORCE_TRANSFORM_BACKUP_SINCE) >= 0;
 
                 GridDhtAtomicUpdateRequest<K, V> updateReq = mappings.get(nodeId);
 
                 if (updateReq == null) {
                     updateReq = new GridDhtAtomicUpdateRequest<>(nodeId, futVer, writeVer, syncMode, topVer, ttl,
-                        skipVerCheck && supportsSkipVerCheck);
+                        forceTransformBackups && supportsForceTransformBackup);
 
                     mappings.put(nodeId, updateReq);
                 }
@@ -245,10 +245,10 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
                 if (node == null)
                     continue;
 
-                boolean supportsSkipVerCheck = node.version().compareTo(SKIP_VERSION_CHECK_SINCE) >= 0;
+                boolean supportsForceTransformBackup = node.version().compareTo(FORCE_TRANSFORM_BACKUP_SINCE) >= 0;
 
                 updateReq = new GridDhtAtomicUpdateRequest<>(nodeId, futVer, writeVer, syncMode, topVer, ttl,
-                    skipVerCheck && supportsSkipVerCheck);
+                    forceTransformBackups && supportsForceTransformBackup);
 
                 mappings.put(nodeId, updateReq);
             }

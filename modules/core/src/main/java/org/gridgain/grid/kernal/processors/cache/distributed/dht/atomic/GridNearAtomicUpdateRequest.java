@@ -101,9 +101,9 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     /** Flag indicating whether request contains primary keys. */
     private boolean hasPrimary;
 
-    /** Skip version check flag. */
+    /** Force transform backups flag. */
     @GridDirectVersion(2)
-    private boolean skipVerCheck;
+    private boolean forceTransformBackups;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -135,7 +135,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         GridCacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
         boolean retval,
-        boolean skipVerCheck,
+        boolean forceTransformBackups,
         long ttl,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
@@ -148,7 +148,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         this.syncMode = syncMode;
         this.op = op;
         this.retval = retval;
-        this.skipVerCheck = skipVerCheck;
+        this.forceTransformBackups = forceTransformBackups;
         this.ttl = ttl;
         this.filter = filter;
 
@@ -435,10 +435,17 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     }
 
     /**
-     * @return Skip version check flag.
+     * @return Force transform backups flag.
      */
-    public boolean skipVersionCheck() {
-        return skipVerCheck;
+    public boolean forceTransformBackups() {
+        return forceTransformBackups;
+    }
+
+    /**
+     * @param forceTransformBackups Force transform backups flag.
+     */
+    public void forceTransformBackups(boolean forceTransformBackups) {
+        this.forceTransformBackups = forceTransformBackups;
     }
 
     /** {@inheritDoc} */
@@ -494,7 +501,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         _clone.filter = filter;
         _clone.filterBytes = filterBytes;
         _clone.hasPrimary = hasPrimary;
-        _clone.skipVerCheck = skipVerCheck;
+        _clone.forceTransformBackups = forceTransformBackups;
     }
 
     /** {@inheritDoc} */
@@ -688,7 +695,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 commState.idx++;
 
             case 17:
-                if (!commState.putBoolean(skipVerCheck))
+                if (!commState.putBoolean(forceTransformBackups))
                     return false;
 
                 commState.idx++;
@@ -927,7 +934,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 if (buf.remaining() < 1)
                     return false;
 
-                skipVerCheck = commState.getBoolean();
+                forceTransformBackups = commState.getBoolean();
 
                 commState.idx++;
 

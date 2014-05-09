@@ -52,8 +52,8 @@ import static org.gridgain.grid.util.direct.GridTcpCommunicationMessageAdapter.*
  */
 @GridToStringExclude
 public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
-    /** Version where SKIP_ATOMIC_VERSION_CHECK flag was introduced. */
-    public static final GridProductVersion SKIP_VERSION_CHECK_SINCE = GridProductVersion.fromString("6.1.2");
+    /** Version where FORCE_TRANSFORM_BACKUP flag was introduced. */
+    public static final GridProductVersion FORCE_TRANSFORM_BACKUP_SINCE = GridProductVersion.fromString("6.1.2");
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -835,6 +835,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             return;
                         }
 
+                        checkClearForceTransformBackups(req);
+
                         boolean hasNear = U.hasNearCache(node, name());
 
                         GridCacheVersion ver = req.updateVersion();
@@ -1252,7 +1254,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         GridClosure<V, V> transformC = null;
 
-                        if (req.skipVersionCheck() && op == TRANSFORM)
+                        if (req.forceTransformBackups() && op == TRANSFORM)
                             transformC = (GridClosure<V, V>)writeVal;
 
                         if (!readersOnly)
@@ -1882,7 +1884,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             /*event*/true,
                             /*metrics*/true,
                             /*primary*/false,
-                            /*check version*/!req.skipVersionCheck(),
+                            /*check version*/!req.forceTransformBackups(),
                             CU.<K, V>empty(),
                             replicate ? DR_BACKUP : DR_NONE,
                             req.drTtl(i),
@@ -1935,6 +1937,29 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         catch (GridException e) {
             U.error(log, "Failed to send DHT atomic update response (did node leave grid?) [nodeId=" + nodeId +
                 ", req=" + req + ']', e);
+        }
+    }
+
+    /**
+     * Checks if entries being transformed are empty. Clears forceTransformBackup flag enforcing
+     * sending transformed value to backups if at least one empty entry is found.
+     *
+     * @param req Near atomic update request.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    private void checkClearForceTransformBackups(GridNearAtomicUpdateRequest<K, V> req) {
+        if (ctx.isStoreEnabled() && req.operation() == TRANSFORM) {
+            List<K> keys = req.keys();
+
+            for (int i = 0; i < keys.size(); i++) {
+                GridDhtCacheEntry<K, V> entry = entryExx(keys.get(i), req.topologyVersion());
+
+                if (!entry.hasValue()) {
+                    req.forceTransformBackups(false);
+
+                    return;
+                }
+            }
         }
     }
 

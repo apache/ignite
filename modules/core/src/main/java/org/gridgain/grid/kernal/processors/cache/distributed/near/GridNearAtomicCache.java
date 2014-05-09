@@ -287,7 +287,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             /*event*/true,
                             /*metrics*/true,
                             /*primary*/false,
-                            /*check version*/!req.skipVersionCheck(),
+                            /*check version*/!req.forceTransformBackups(),
                             CU.<K, V>empty(),
                             DR_NONE,
                             -1,
