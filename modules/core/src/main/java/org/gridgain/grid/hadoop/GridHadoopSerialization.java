@@ -17,7 +17,7 @@ import java.io.*;
 /**
  * Hadoop serialization. Not thread safe object, must be created for each thread or correctly synchronized.
  */
-public interface GridHadoopSerialization {
+public interface GridHadoopSerialization extends AutoCloseable {
     /**
      * Writes the given object to output.
      *
@@ -36,4 +36,11 @@ public interface GridHadoopSerialization {
      * @throws GridException If failed.
      */
     public Object read(DataInput in, @Nullable Object obj) throws GridException;
+
+    /**
+     * Finalise the internal objects.
+     * 
+     * @throws GridException If failed.
+     */
+    @Override public void close() throws GridException;
 }

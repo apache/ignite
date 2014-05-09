@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.planner.GridHadoopDefaultMapReducePlan;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -20,7 +21,7 @@ import java.util.*;
  */
 public class GridHadoopTestRoundRobinMrPlanner implements GridHadoopMapReducePlanner {
     /** {@inheritDoc} */
-    @Override public GridHadoopMapReducePlan preparePlan(Collection<GridHadoopFileBlock> blocks,
+    @Override public GridHadoopMapReducePlan preparePlan(Collection<GridHadoopInputSplit> blocks,
         Collection<GridNode> top, GridHadoopJob job, @Nullable GridHadoopMapReducePlan oldPlan) {
         if (top.isEmpty())
             throw new IllegalArgumentException("Topology is empty");
@@ -28,12 +29,12 @@ public class GridHadoopTestRoundRobinMrPlanner implements GridHadoopMapReducePla
         // Has at least one element.
         Iterator<GridNode> it = top.iterator();
 
-        Map<UUID, Collection<GridHadoopFileBlock>> mappers = new HashMap<>();
+        Map<UUID, Collection<GridHadoopInputSplit>> mappers = new HashMap<>();
 
-        for (GridHadoopFileBlock block : blocks) {
+        for (GridHadoopInputSplit block : blocks) {
             GridNode node = it.next();
 
-            Collection<GridHadoopFileBlock> nodeBlocks = mappers.get(node.id());
+            Collection<GridHadoopInputSplit> nodeBlocks = mappers.get(node.id());
 
             if (nodeBlocks == null) {
                 nodeBlocks = new ArrayList<>();

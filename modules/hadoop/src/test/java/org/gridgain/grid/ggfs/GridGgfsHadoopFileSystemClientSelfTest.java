@@ -155,7 +155,7 @@ public class GridGgfsHadoopFileSystemClientSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     private void switchHandlerErrorFlag(boolean flag) throws Exception {
-        GridGgfsProcessor ggfsProc = ((GridKernal)grid(0)).context().ggfs();
+        GridGgfsProcessorAdapter ggfsProc = ((GridKernal)grid(0)).context().ggfs();
 
         Map<String, GridGgfsContext> ggfsMap = getField(ggfsProc, "ggfsCache");
 

@@ -16,10 +16,12 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+import org.jetbrains.annotations.*;
+
 /**
  * Hadoop file block.
  */
-public class GridHadoopFileBlock implements Externalizable {
+public class GridHadoopFileBlock implements GridHadoopInputSplit {
     /** */
     protected String[] hosts;
 
@@ -51,6 +53,8 @@ public class GridHadoopFileBlock implements Externalizable {
      * @param len Length of the block.
      */
     public GridHadoopFileBlock(String[] hosts, URI file, long start, long len) {
+        A.notNull(hosts, "hosts", file, "file");
+
         this.hosts = hosts;
         this.file = file;
         this.start = start;
@@ -59,7 +63,6 @@ public class GridHadoopFileBlock implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(hosts());
         out.writeObject(file());
         out.writeLong(start());
         out.writeLong(length());
@@ -67,7 +70,6 @@ public class GridHadoopFileBlock implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        hosts = (String[])in.readObject();
         file = (URI)in.readObject();
         start = in.readLong();
         len = in.readLong();
@@ -115,17 +117,24 @@ public class GridHadoopFileBlock implements Externalizable {
         this.file = file;
     }
 
-    /**
-     * @return Hosts.
-     */
-    public String[] hosts() {
+    /** {@inheritDoc} */
+    @Override public String[] hosts() {
+        assert hosts != null;
+
         return hosts;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Object innerSplit() {
+        return null;
     }
 
     /**
      * @param hosts New hosts.
      */
     public void hosts(String[] hosts) {
+        A.notNull(hosts, "hosts");
+
         this.hosts = hosts;
     }
 
@@ -144,12 +153,12 @@ public class GridHadoopFileBlock implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = file.hashCode();
+        int res = file.hashCode();
 
-        result = 31 * result + (int)(start ^ (start >>> 32));
-        result = 31 * result + (int)(len ^ (len >>> 32));
+        res = 31 * res + (int)(start ^ (start >>> 32));
+        res = 31 * res + (int)(len ^ (len >>> 32));
 
-        return result;
+        return res;
     }
 
     /** {@inheritDoc} */

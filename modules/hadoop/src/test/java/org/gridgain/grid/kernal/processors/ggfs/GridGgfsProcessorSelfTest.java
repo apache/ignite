@@ -14,7 +14,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -35,7 +34,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 import static io.netty.util.CharsetUtil.*;
 
 /**
- * Tests for {@link GridGgfsOpProcessor}.
+ * Tests for {@link GridGgfsProcessor}.
  */
 public class GridGgfsProcessorSelfTest extends GridCommonAbstractTest {
     /** Test IP finder. */

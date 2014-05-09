@@ -16,7 +16,7 @@ import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.hadoop.hadoop2impl.*;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.kernal.processors.hadoop.planner.*;
 import org.gridgain.grid.util.typedef.*;
 
@@ -84,20 +84,20 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         Collection<GridGgfsBlockLocation> aff = ggfs.affinity(new GridGgfsPath(fileName), 0, fileSize);
 
         // Prepare hadoop file blocks.
-        Collection<GridHadoopFileBlock> blocks = new ArrayList<>(aff.size());
+        Collection<GridHadoopInputSplit> blocks = new ArrayList<>(aff.size());
 
         String[] hosts = new String[] {F.first(grid.localNode().hostNames())};
 
         for (GridGgfsBlockLocation loc : aff) {
-            GridHadoopFileBlock block = new GridHadoopFileBlock(hosts, new URI("ggfs://ipc" + fileName), loc.start(),
+            GridHadoopInputSplit split = new GridHadoopFileBlock(hosts, new URI("ggfs://ipc" + fileName), loc.start(),
                 loc.length());
 
-            blocks.add(block);
+            blocks.add(split);
         }
 
         GridKernal kernal = (GridKernal)grid;
 
-        GridHadoopOpProcessor hadoopProc = (GridHadoopOpProcessor)kernal.context().hadoop();
+        GridHadoopProcessor hadoopProc = (GridHadoopProcessor)kernal.context().hadoop();
 
         GridHadoopMapReducePlanner planner = hadoopProc.context().planner();
 
@@ -107,7 +107,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
             GridHadoopDefaultJobInfo info = new GridHadoopDefaultJobInfo(cfg);
 
-            GridHadoopJob job = new GridHadoopV2JobImpl(new GridHadoopJobId(UUID.randomUUID(), 1), info);
+            GridHadoopJob job = new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 1), info);
 
             Collection<GridNode> nodes = grid.nodes();
 
@@ -116,7 +116,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
             int totalBlocks = 0;
 
             for (GridNode n : nodes) {
-                Collection<GridHadoopFileBlock> mappers = plan.mappers(n.id());
+                Collection<GridHadoopInputSplit> mappers = plan.mappers(n.id());
 
                 if (mappers != null)
                     totalBlocks += mappers.size();
@@ -128,7 +128,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
             for (GridGgfsBlockLocation loc : aff) {
                 UUID primary = F.first(loc.nodeIds());
 
-                Collection<GridHadoopFileBlock> mappers = plan.mappers(primary);
+                Collection<GridHadoopInputSplit> mappers = plan.mappers(primary);
 
                 assertNotNull("Mappers is null for affinity [primary=" + primary + ", loc=" + loc + ']', mappers);
 
@@ -168,8 +168,11 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
      * @param mappers Mappers to search.
      * @return {@code True} if location was found.
      */
-    private boolean hasLocation(GridGgfsBlockLocation loc, String name, Iterable<GridHadoopFileBlock> mappers) {
-        for (GridHadoopFileBlock block : mappers) {
+    private boolean hasLocation(GridGgfsBlockLocation loc, String name, Iterable<GridHadoopInputSplit> mappers) {
+        for (GridHadoopInputSplit split : mappers) {
+
+            GridHadoopFileBlock block = (GridHadoopFileBlock) split;
+
             if (block.file().getPath().equals(name) && loc.start() == block.start() && loc.length() == block.length())
                 return true;
         }

@@ -191,7 +191,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringInclude
-    private GridGgfsProcessor ggfsProc;
+    private GridGgfsProcessorAdapter ggfsProc;
 
     /** */
     @GridToStringInclude
@@ -219,7 +219,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringExclude
-    private GridHadoopProcessor hadoopProc;
+    private GridHadoopProcessorAdapter hadoopProc;
 
     /** */
     @GridToStringExclude
@@ -368,8 +368,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             restProc = (GridRestProcessor)comp;
         else if (comp instanceof GridDataLoaderProcessor)
             dataLdrProc = (GridDataLoaderProcessor)comp;
-        else if (comp instanceof GridGgfsProcessor)
-            ggfsProc = (GridGgfsProcessor)comp;
+        else if (comp instanceof GridGgfsProcessorAdapter)
+            ggfsProc = (GridGgfsProcessorAdapter)comp;
         else if (comp instanceof GridOffHeapProcessor)
             offheapProc = (GridOffHeapProcessor)comp;
         else if (comp instanceof GridLicenseProcessor)
@@ -382,8 +382,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             drProc = (GridDrProcessor)comp;
         else if (comp instanceof GridVersionProcessor)
             verProc = (GridVersionProcessor)comp;
-        else if (comp instanceof GridHadoopProcessor)
-            hadoopProc = (GridHadoopProcessor)comp;
+        else if (comp instanceof GridHadoopProcessorAdapter)
+            hadoopProc = (GridHadoopProcessorAdapter)comp;
 
         else
             assert false : "Unknown manager class: " + comp.getClass();
@@ -613,7 +613,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsProcessor ggfs() {
+    @Override public GridGgfsProcessorAdapter ggfs() {
         return ggfsProc;
     }
 
@@ -628,7 +628,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopProcessor hadoop() {
+    @Override public GridHadoopProcessorAdapter hadoop() {
         return hadoopProc;
     }
 

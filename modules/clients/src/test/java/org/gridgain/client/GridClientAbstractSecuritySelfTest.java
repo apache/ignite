@@ -11,7 +11,6 @@ package org.gridgain.client;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.authentication.passcode.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -286,11 +285,6 @@ public abstract class GridClientAbstractSecuritySelfTest extends GridCommonAbstr
     /**
      * Test secure session spi used to emulate session expiration.
      */
-    @GridSpiInfo(
-        author = /*@java.spi.author*/"GridGain Systems",
-        url = /*@java.spi.url*/"www.gridgain.com",
-        email = /*@java.spi.email*/"support@gridgain.com",
-        version = /*@java.spi.version*/"x.x")
     @GridSpiMultipleInstancesSupport(true)
     private static class TestSecureSessionSpi extends GridSpiAdapter implements GridSecureSessionSpi {
         /** Session token. */

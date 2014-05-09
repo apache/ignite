@@ -14,7 +14,6 @@ import org.apache.commons.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -28,12 +27,12 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 
 /**
- * Tests for node validation logic in {@link GridGgfsOpProcessor}.
+ * Tests for node validation logic in {@link GridGgfsProcessor}.
  * <p>
  * Tests starting with "testLocal" are checking
- * {@link GridGgfsOpProcessor#validateLocalGgfsConfigurations(GridGgfsConfiguration[])}.
+ * {@link GridGgfsProcessor#validateLocalGgfsConfigurations(GridGgfsConfiguration[])}.
  * <p>
- * Tests starting with "testRemote" are checking {@link GridGgfsOpProcessor#checkGgfsOnRemoteNode(GridNode)}.
+ * Tests starting with "testRemote" are checking {@link GridGgfsProcessor#checkGgfsOnRemoteNode(GridNode)}.
  */
 public class GridGgfsProcessorValidationSelfTest extends GridCommonAbstractTest {
     /** IP finder. */

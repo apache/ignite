@@ -14,7 +14,7 @@ import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.hadoop.hadoop2impl.*;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.net.*;
@@ -98,7 +98,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
         try {
             GridKernal kernal = (GridKernal)grid(0);
 
-            GridHadoopProcessor hadoop = kernal.context().hadoop();
+            GridHadoopProcessorAdapter hadoop = kernal.context().hadoop();
 
             UUID globalId = UUID.randomUUID();
 
@@ -159,7 +159,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
         try {
             GridKernal kernal = (GridKernal)grid(0);
 
-            GridHadoopProcessor hadoop = kernal.context().hadoop();
+            GridHadoopProcessorAdapter hadoop = kernal.context().hadoop();
 
             UUID globalId = UUID.randomUUID();
 
@@ -245,7 +245,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
         for (int i = 0; i < gridCount(); i++) {
             GridKernal kernal = (GridKernal)grid(i);
 
-            GridHadoopProcessor hadoop = kernal.context().hadoop();
+            GridHadoopProcessorAdapter hadoop = kernal.context().hadoop();
 
             GridHadoopJobStatus stat = hadoop.status(jobId);
 
@@ -277,7 +277,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
     /**
      * Test job.
      */
-    private static class HadoopTestJob extends GridHadoopV2JobImpl {
+    private static class HadoopTestJob extends GridHadoopV2Job {
         /**
          * @param jobId Job ID.
          * @param jobInfoImpl Job info.
@@ -287,10 +287,10 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<GridHadoopFileBlock> input() throws GridException {
+        @Override public Collection<GridHadoopInputSplit> input() throws GridException {
             int blocks = jobInfo.configuration().getInt(BLOCK_CNT, 0);
 
-            Collection<GridHadoopFileBlock> res = new ArrayList<>(blocks);
+            Collection<GridHadoopInputSplit> res = new ArrayList<>(blocks);
 
             try {
                 for (int i = 0; i < blocks; i++)
