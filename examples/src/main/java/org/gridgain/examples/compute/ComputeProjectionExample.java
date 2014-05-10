@@ -65,16 +65,16 @@ public class ComputeProjectionExample {
     /**
      * Print 'Hello' message on remote grid nodes.
      *
-     * @param g Grid instance.
+     * @param prj Grid projection.
      * @throws GridException If failed.
      */
-    private static void sayHello(final GridProjection g) throws GridException {
+    private static void sayHello(final GridProjection prj) throws GridException {
         // Print out hello message on all remote projection nodes.
-        g.forRemotes().compute().broadcast(
+        prj.compute().broadcast(
             new GridRunnable() {
                 @Override public void run() {
                     // Print ID of remote node on remote node.
-                    System.out.println(">>> Hello Node: " + g.grid().localNode().id());
+                    System.out.println(">>> Hello Node: " + prj.grid().localNode().id());
                 }
             }
         ).get();
