@@ -25,7 +25,7 @@ import static org.gridgain.grid.kernal.processors.hadoop.taskexecutor.GridHadoop
 /**
  * TODO write doc
  */
-public class GridHadoopTaskExecutor extends GridHadoopComponent {
+public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapter {
     /** Job tracker. */
     private GridHadoopJobTracker jobTracker;
 
@@ -35,27 +35,22 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
         jobTracker = ctx.jobTracker();
     }
 
-    /**
-     * Runs tasks.
-     *
-     * @param job Job.
-     * @param tasks Tasks.
-     */
-    public void run(final GridHadoopJob job, Collection<GridHadoopTask> tasks) {
+    /** {@inheritDoc} */
+    @Override public void run(final GridHadoopJob job, Collection<GridHadoopTaskInfo> tasks) {
         if (log.isDebugEnabled())
             log.debug("Submitting tasks for local execution [locNodeId=" + ctx.localNodeId() +
                 ", tasksCnt=" + tasks.size() + ']');
 
-        for (final GridHadoopTask task : tasks) {
-            assert task != null;
+        for (final GridHadoopTaskInfo info : tasks) {
+            assert info != null;
 
             ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<GridFuture<?>>() {
                 @Override public GridFuture<?> call() throws Exception {
-                    GridHadoopTaskInfo info = task.info();
-
                     try (GridHadoopTaskOutput out = createOutput(info);
                          GridHadoopTaskInput in = createInput(info)) {
                         GridHadoopTaskContext taskCtx = new GridHadoopTaskContext(ctx.kernalContext(), job, in, out);
+
+                        GridHadoopTask task = job.createTask(info);
 
                         if (log.isDebugEnabled())
                             log.debug("Running task: " + task);
@@ -63,7 +58,7 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
                         task.run(taskCtx);
                     }
                     catch (Exception e) {
-                        U.error(log, "Failed to execute task: " + task.info(), e);
+                        U.error(log, "Failed to execute task: " + info, e);
 
                         throw e;
                     }
@@ -83,24 +78,20 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
                         err = e;
                     }
 
-                    jobTracker.onTaskFinished(task.info(), new GridHadoopTaskStatus(state, err));
+                    jobTracker.onTaskFinished(info, new GridHadoopTaskStatus(state, err));
                 }
             });
         }
     }
 
-    /**
-     * Cancels all currently running tasks for given job ID and cancels scheduled execution of tasks
-     * for this job ID.
-     * <p>
-     * It is guaranteed that this method will not be called concurrently with
-     * {@link #run(GridHadoopJob, Collection)} method. No more job submissions will be performed via
-     * {@link #run(GridHadoopJob, Collection)} method for given job ID after this method is called.
-     *
-     * @param jobId Job ID to cancel.
-     */
-    public void cancelTasks(GridHadoopJobId jobId) {
+    /** {@inheritDoc} */
+    @Override public void cancelTasks(GridHadoopJobId jobId) {
         // TODO.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onJobStateChanged(GridHadoopJobId jobId, GridHadoopJobMetadata meta) {
+        // No-op.
     }
 
     /**

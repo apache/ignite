@@ -42,6 +42,9 @@ public class GridHadoopJobMetadata implements Externalizable {
     /** Next task number. */
     private int nextTaskNum;
 
+    /** External execution flag. */
+    private boolean externalExec;
+
     /** Job phase. */
     private GridHadoopJobPhase phase = PHASE_MAP;
 
@@ -71,6 +74,7 @@ public class GridHadoopJobMetadata implements Externalizable {
      */
     public GridHadoopJobMetadata(GridHadoopJobMetadata src) {
         // Make sure to preserve alphabetic order.
+        externalExec = src.externalExec;
         failCause = src.failCause;
         jobId = src.jobId;
         jobInfo = src.jobInfo;
@@ -93,6 +97,20 @@ public class GridHadoopJobMetadata implements Externalizable {
      */
     public GridHadoopJobPhase phase() {
         return phase;
+    }
+
+    /**
+     * @return External execution flag.
+     */
+    public boolean externalExecution() {
+        return externalExec;
+    }
+
+    /**
+     * @param externalExec External execution flag.
+     */
+    public void externalExecution(boolean externalExec) {
+        this.externalExec = externalExec;
     }
 
     /**
@@ -223,6 +241,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         out.writeObject(taskNumMap);
         out.writeInt(nextTaskNum);
         out.writeObject(phase);
+        out.writeBoolean(externalExec);
         out.writeObject(failCause);
     }
 
@@ -236,6 +255,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         taskNumMap = (Map<Object, Integer>)in.readObject();
         nextTaskNum = in.readInt();
         phase = (GridHadoopJobPhase)in.readObject();
+        externalExec = in.readBoolean();
         failCause = (Throwable)in.readObject();
     }
 

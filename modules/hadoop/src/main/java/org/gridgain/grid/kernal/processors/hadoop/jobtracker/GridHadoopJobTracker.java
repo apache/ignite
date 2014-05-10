@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
-import org.apache.hadoop.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
@@ -26,7 +25,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -435,38 +433,22 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             GridHadoopMapReducePlan plan = meta.mapReducePlan();
 
+            boolean ext = meta.externalExecution();
+
+            if (ext)
+                ctx.taskExecutor(ext).onJobStateChanged(jobId, meta);
+
             switch (meta.phase()) {
                 case PHASE_MAP: {
                     // Check if we should initiate new task on local node.
-                    Collection<GridHadoopInputSplit> mappers = plan.mappers(locNodeId);
+                    Collection<GridHadoopTaskInfo> tasks = mapperTasks(plan.mappers(locNodeId), job, meta);
 
-                    if (mappers != null) {
-                        if (state == null)
-                            state = initState(job, meta);
+                    if (ext)
+                        // Must send reducers in one pass when execution is external.
+                        tasks = reducerTasks(plan.reducers(locNodeId), job, meta, tasks);
 
-                        Collection<GridHadoopTask> tasks = null;
-
-                        for (GridHadoopInputSplit split : mappers) {
-                            if (state.addMapper(split)) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Submitting MAP task for execution [locNodeId=" + locNodeId +
-                                        ", split=" + split + ']');
-
-                                GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(locNodeId,
-                                    GridHadoopTaskType.MAP, jobId, meta.taskNumber(split), 0, split);
-
-                                GridHadoopTask task = job.createTask(taskInfo);
-
-                                if (tasks == null)
-                                    tasks = new ArrayList<>();
-
-                                tasks.add(task);
-                            }
-                        }
-
-                        if (tasks != null)
-                            ctx.taskExecutor().run(job, tasks);
-                    }
+                    if (tasks != null)
+                        ctx.taskExecutor(ext).run(job, tasks);
 
                     break;
                 }
@@ -476,47 +458,20 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(), GridHadoopTaskType.COMMIT,
                             jobId, 0, 0, null);
 
-                        GridHadoopTask cleanupTask = job.createTask(info);
-
                         if (log.isDebugEnabled())
                             log.debug("Submitting COMMIT task for execution [locNodeId=" + locNodeId +
                                 ", jobId=" + jobId + ']');
 
-                        ctx.taskExecutor().run(job, Collections.singletonList(cleanupTask));
+                        ctx.taskExecutor(ext).run(job, Collections.singletonList(info));
 
                         return;
                     }
 
-                    int[] reducers = plan.reducers(locNodeId);
-
-                    if (reducers != null) {
-                        if (state == null)
-                            state = initState(job, meta);
-
-                        Collection<GridHadoopTask> tasks = null;
-
-                        for (int rdc : reducers) {
-                            if (state.addReducer(rdc)) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Submitting REDUCE task for execution [locNodeId=" + locNodeId +
-                                        ", rdc=" + rdc + ']');
-
-                                GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(locNodeId,
-                                    GridHadoopTaskType.REDUCE, jobId, rdc, 0, null);
-
-                                GridHadoopTask task = job.createTask(taskInfo);
-
-                                assert task != null : "Job created null task: " + job;
-
-                                if (tasks == null)
-                                    tasks = new ArrayList<>();
-
-                                tasks.add(task);
-                            }
-                        }
+                    if (!ext) {
+                        Collection<GridHadoopTaskInfo> tasks = reducerTasks(plan.reducers(locNodeId), job, meta, null);
 
                         if (tasks != null)
-                            ctx.taskExecutor().run(job, tasks);
+                            ctx.taskExecutor(ext).run(job, tasks);
                     }
 
                     break;
@@ -528,20 +483,20 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         if (log.isDebugEnabled())
                             log.debug("Cancelling local task execution for job: " + meta);
 
-                        ctx.taskExecutor().cancelTasks(jobId);
+                        ctx.taskExecutor(ext).cancelTasks(jobId);
                     }
 
                     if (meta.pendingSplits().isEmpty() && meta.pendingReducers().isEmpty()) {
-                        GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(), GridHadoopTaskType.ABORT,
-                            jobId, 0, 0, null);
+                        if (ctx.jobUpdateLeader()) {
+                            GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(),
+                                GridHadoopTaskType.ABORT, jobId, 0, 0, null);
 
-                        GridHadoopTask cleanupTask = job.createTask(info);
+                            if (log.isDebugEnabled())
+                                log.debug("Submitting ABORT task for execution [locNodeId=" + locNodeId +
+                                    ", jobId=" + jobId + ']');
 
-                        if (log.isDebugEnabled())
-                            log.debug("Submitting ABORT task for execution [locNodeId=" + locNodeId +
-                                ", jobId=" + jobId + ']');
-
-                        ctx.taskExecutor().run(job, Collections.singletonList(cleanupTask));
+                            ctx.taskExecutor(ext).run(job, Collections.singletonList(info));
+                        }
 
                         return;
                     }
@@ -600,6 +555,87 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     assert false;
             }
         }
+    }
+
+    /**
+     * Creates mapper tasks based on job information.
+     *
+     * @param mappers Mapper blocks.
+     * @param job Job instance.
+     * @param meta Job metadata.
+     * @return Collection of created task infos or {@code null} if no mapper tasks scheduled for local node.
+     */
+    private Collection<GridHadoopTaskInfo> mapperTasks(Iterable<GridHadoopInputSplit> mappers,
+        GridHadoopJob job, GridHadoopJobMetadata meta) {
+        UUID locNodeId = ctx.localNodeId();
+        GridHadoopJobId jobId = job.id();
+
+        JobLocalState state = activeJobs.get(jobId);
+
+        Collection<GridHadoopTaskInfo> tasks = null;
+
+        if (mappers != null) {
+            if (state == null)
+                state = initState(job, meta);
+
+            for (GridHadoopInputSplit split : mappers) {
+                if (state.addMapper(split)) {
+                    if (log.isDebugEnabled())
+                        log.debug("Submitting MAP task for execution [locNodeId=" + locNodeId +
+                            ", split=" + split + ']');
+
+                    GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(locNodeId,
+                        GridHadoopTaskType.MAP, jobId, meta.taskNumber(split), 0, split);
+
+                    if (tasks == null)
+                        tasks = new ArrayList<>();
+
+                    tasks.add(taskInfo);
+                }
+            }
+        }
+
+        return tasks;
+    }
+
+    /**
+     * Creates reducer tasks based on job information.
+     *
+     * @param reducers Reducers (may be {@code null}).
+     * @param job Job instance.
+     * @param meta Job metadata.
+     * @param tasks Optional collection of tasks to add new tasks to.
+     * @return Collection of task infos.
+     */
+    private Collection<GridHadoopTaskInfo> reducerTasks(int[] reducers, GridHadoopJob job, GridHadoopJobMetadata meta,
+        Collection<GridHadoopTaskInfo> tasks) {
+        UUID locNodeId = ctx.localNodeId();
+        GridHadoopJobId jobId = job.id();
+
+        JobLocalState state = activeJobs.get(jobId);
+
+        if (reducers != null) {
+            if (state == null)
+                state = initState(job, meta);
+
+            for (int rdc : reducers) {
+                if (state.addReducer(rdc)) {
+                    if (log.isDebugEnabled())
+                        log.debug("Submitting REDUCE task for execution [locNodeId=" + locNodeId +
+                            ", rdc=" + rdc + ']');
+
+                    GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(locNodeId,
+                        GridHadoopTaskType.REDUCE, jobId, rdc, 0, null);
+
+                    if (tasks == null)
+                        tasks = new ArrayList<>();
+
+                    tasks.add(taskInfo);
+                }
+            }
+        }
+
+        return tasks;
     }
 
     /**
@@ -743,13 +779,11 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             if (job.hasCombiner()) {
                 // Create combiner.
-                if (lastMapperFinished) {
+                if (lastMapperFinished && !meta.externalExecution()) {
                     GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(), COMBINE, jobId,
                         meta.taskNumber(ctx.localNodeId()), taskInfo.attempt(), null);
 
-                    GridHadoopTask task = job.createTask(info);
-
-                    ctx.taskExecutor().run(job, Collections.singletonList(task));
+                    ctx.taskExecutor(meta.externalExecution()).run(job, Collections.singletonList(info));
                 }
             }
             else {

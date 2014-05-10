@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Hadoop process base.
  */
+@SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
 public class GridHadoopChildProcessRunner {
     /** Node process descriptor. */
     private GridHadoopProcessDescriptor nodeDesc;
@@ -47,18 +48,32 @@ public class GridHadoopChildProcessRunner {
     /** Init guard. */
     private AtomicBoolean initGuard = new AtomicBoolean();
 
-    /** Job factory. TODO configure? */
+    /** Number of pending tasks. */
+    private AtomicInteger pendingMappers = new AtomicInteger();
+
+    /** Number of pending reducers. */
+    private AtomicInteger pendingReducers = new AtomicInteger();
+
+    /** Local phase. */
+    private GridHadoopJobPhase locPhase;
+
+    /** Mappers. */
+    private Collection<GridHadoopTask> mappers;
+
+    /** Reducers. */
+    private Collection<GridHadoopTask> reducers;
+
+    /** Job instance. */
+    private GridHadoopJob job;
+
+    /** Job factory. */
     private GridHadoopJobFactory jobFactory = new GridHadoopDefaultJobFactory();
 
     /**
      * Starts child process runner.
      */
-    public void start(
-        GridHadoopExternalCommunication comm,
-        GridHadoopProcessDescriptor nodeDesc,
-        ExecutorService msgExecSvc,
-        GridLogger parentLog
-    )
+    public void start(GridHadoopExternalCommunication comm, GridHadoopProcessDescriptor nodeDesc,
+        ExecutorService msgExecSvc, GridLogger parentLog)
         throws GridException {
         this.comm = comm;
         this.nodeDesc = nodeDesc;
@@ -66,8 +81,6 @@ public class GridHadoopChildProcessRunner {
 
         comm.setListener(new MessageListener());
         log = parentLog.getLogger(GridHadoopChildProcessRunner.class);
-
-        // TODO other initialization here.
 
         // At this point node knows that this process has started.
         comm.sendMessage(this.nodeDesc, new GridHadoopProcessStartedReply());
@@ -81,10 +94,7 @@ public class GridHadoopChildProcessRunner {
             if (initGuard.compareAndSet(false, true)) {
                 log.info("Initializing external hadoop task: " + req);
 
-                GridHadoopJob job = jobFactory.createJob(req.jobId(), req.jobInfo());
-
-                Collection<GridHadoopTask> mappers = null;
-                Collection<GridHadoopTask> reducers = null;
+                job = jobFactory.createJob(req.jobId(), req.jobInfo());
 
                 for (GridHadoopTaskInfo taskInfo : req.tasks()) {
                     GridHadoopTask task = job.createTask(taskInfo);
@@ -115,39 +125,70 @@ public class GridHadoopChildProcessRunner {
 
                 initializeExecutors(req, job, mappers, reducers);
 
-                if (mappers != null) {
-                    for (GridHadoopTask m : mappers)
-                        // TODO input and output.
-                        mapperExecSvc.submit(new TaskRunnable(new GridHadoopTaskContext(null, job, null, null), m));
-
-                    if (job.hasCombiner()) {
-                        GridHadoopTask c = job.createTask(new GridHadoopTaskInfo(
-                            comm.localProcessDescriptor().parentNodeId(),
-                            GridHadoopTaskType.COMBINE,
-                            job.id(),
-                            0,
-                            0,
-                            null));
-
-                        reducerExecSvc.submit(new TaskRunnable(new GridHadoopTaskContext(null, job, null, null), c));
-                    }
-                }
-
-                if (reducers != null) {
-                    for (GridHadoopTask r : reducers)
-                        reducerExecSvc.submit(new TaskRunnable(new GridHadoopTaskContext(null, job, null, null), r));
-                }
+                phase(GridHadoopJobPhase.PHASE_MAP);
             }
             else
                 log.warning("Received duplicate task execution request for the same process (will ignore): " + req);
         }
         catch (GridException e) {
-            log.warning("Unexpected exception caught during task initialization. Will shutdown process runner.", e);
+            log.warning("Unexpected exception caught during task initialization (will abort process execution).", e);
 
-            abortExecution();
+            shutdown();
 
-            // TODO Send reply.
-            e.printStackTrace();
+            terminate();
+        }
+    }
+
+    /**
+     * Updates local process state.
+     *
+     * @param phase Global job state.
+     */
+    private void phase(GridHadoopJobPhase phase) {
+        boolean change = false;
+
+        synchronized (this) {
+            if (locPhase != phase) {
+                log.info("Changing process state [old=" + locPhase + ", new=" + phase + ']');
+
+                change = true;
+
+                locPhase = phase;
+            }
+        }
+
+        if (change) {
+            if (phase == GridHadoopJobPhase.PHASE_MAP) {
+                if (mappers != null) {
+                    for (GridHadoopTask m : mappers)
+                        // TODO shuffle input and output.
+                        mapperExecSvc.submit(new TaskRunnable(new GridHadoopTaskContext(null, job, null, null), m));
+                }
+            }
+            else if (phase == GridHadoopJobPhase.PHASE_REDUCE) {
+                assert reducers != null;
+
+                for (GridHadoopTask r : reducers)
+                    reducerExecSvc.submit(new TaskRunnable(new GridHadoopTaskContext(null, job, null, null), r));
+            }
+
+            checkFinished();
+        }
+    }
+
+    /**
+     *
+     */
+    private void checkFinished() {
+        if (locPhase == GridHadoopJobPhase.PHASE_REDUCE) {
+            if (reducers == null || pendingReducers.get() == 0) {
+                if (log.isDebugEnabled())
+                    log.debug("Finished running all local tasks, shutting down the process.");
+
+                shutdown();
+
+                terminate();
+            }
         }
     }
 
@@ -185,15 +226,26 @@ public class GridHadoopChildProcessRunner {
      * @param req Update request.
      */
     private void updateTasks(GridHadoopJobInfoUpdateRequest req) {
+        // TODO update shuffle addresses.
+        assert initGuard.get();
 
+        assert req.jobId().equals(job.id());
+
+        phase(req.jobPhase());
     }
 
-    private void abortExecution() {
+    /**
+     * Stops all executors and running tasks.
+     */
+    private void shutdown() {
         if (mapperExecSvc != null)
             mapperExecSvc.shutdownNow();
 
         if (reducerExecSvc != null)
             reducerExecSvc.shutdownNow();
+
+        if (msgExecSvc != null)
+            msgExecSvc.shutdownNow();
     }
 
     /**
@@ -204,7 +256,55 @@ public class GridHadoopChildProcessRunner {
      * @param err Error, if any.
      */
     private void notifyTaskFinished(GridHadoopTaskInfo taskInfo, GridHadoopTaskState state, Throwable err) {
+        try {
+            comm.sendMessage(nodeDesc, new GridHadoopTaskFinishedMessage(taskInfo, state, err));
 
+            if (taskInfo.type() == GridHadoopTaskType.MAP) {
+                int mappers = pendingMappers.decrementAndGet();
+
+                // Check if we should start combiner.
+                if (mappers == 0) {
+                    if (job.hasCombiner()) {
+                        GridHadoopTask c = job.createTask(new GridHadoopTaskInfo(
+                            comm.localProcessDescriptor().parentNodeId(),
+                            GridHadoopTaskType.COMBINE,
+                            job.id(),
+                            0,
+                            0,
+                            null));
+
+                        reducerExecSvc.submit(new TaskRunnable(new GridHadoopTaskContext(null, job, null, null), c));
+                    }
+                }
+            }
+
+            checkFinished();
+        }
+        catch (GridException e) {
+            log.warning("Failed to send task finish notification to parent node (will abort process execution).", e);
+
+            shutdown();
+
+            terminate();
+        }
+    }
+
+    /**
+     * Checks if message was received from parent node and prints warning if not.
+     *
+     * @param desc Sender process ID.
+     * @param msg Received message.
+     * @return {@code True} if received from parent node.
+     */
+    private boolean validateNodeMessage(GridHadoopProcessDescriptor desc, GridHadoopMessage msg) {
+        if (!nodeDesc.processId().equals(desc.processId())) {
+            log.warning("Received process control request from unknown process (will ignore) [desc=" + desc +
+                ", msg=" + msg + ']');
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -245,17 +345,26 @@ public class GridHadoopChildProcessRunner {
     }
 
     /**
+     * Stops execution of this process.
+     */
+    private void terminate() {
+        // TODO do we need graceful shutdown here?
+        System.exit(1);
+    }
+
+    /**
      * Message listener.
      */
     private class MessageListener implements GridHadoopMessageListener {
         /** {@inheritDoc} */
         @Override public void onMessageReceived(GridHadoopProcessDescriptor desc, GridHadoopMessage msg) {
-            // TODO validate control requests are coming from node.
             if (msg instanceof GridHadoopTaskExecutionRequest) {
-                initializeTasks((GridHadoopTaskExecutionRequest)msg);
+                if (validateNodeMessage(desc, msg))
+                    initializeTasks((GridHadoopTaskExecutionRequest)msg);
             }
             else if (msg instanceof GridHadoopJobInfoUpdateRequest) {
-                updateTasks((GridHadoopJobInfoUpdateRequest)msg);
+                if (validateNodeMessage(desc, msg))
+                    updateTasks((GridHadoopJobInfoUpdateRequest)msg);
             }
         }
 
@@ -263,10 +372,6 @@ public class GridHadoopChildProcessRunner {
         @Override public void onConnectionLost(GridHadoopProcessDescriptor desc) {
             if (desc.processId().equals(nodeDesc.processId())) {
                 log.warning("Child process lost connection with parent node (will terminate child process).");
-
-                // TODO do we need graceful shutdown here?
-
-                System.exit(1);
             }
         }
     }
