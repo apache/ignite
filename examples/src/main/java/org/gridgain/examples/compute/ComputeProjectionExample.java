@@ -69,7 +69,7 @@ public class ComputeProjectionExample {
      * @throws GridException If failed.
      */
     private static void sayHello(final GridProjection prj) throws GridException {
-        // Print out hello message on all remote projection nodes.
+        // Print out hello message on all projection nodes.
         prj.compute().broadcast(
             new GridRunnable() {
                 @Override public void run() {
