@@ -97,6 +97,8 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
             ctx.kernalContext().config().getSystemExecutorService(),
             ctx.kernalContext().gridName());
 
+        comm.setSharedMemoryPort(-1); // TODO.
+
         comm.setListener(new MessageListener());
 
         comm.start();
@@ -147,6 +149,10 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
                     try {
                         HadoopProcess proc = procFut.get();
+
+                        if (log.isDebugEnabled())
+                            log.debug("Child process was initialized, sending execution request [jobId=" + job.id() +
+                                ", tasksSize=" + tasks.size() + ']');
 
                         sendExecutionRequest(proc, job, tasks);
                     }
@@ -273,6 +279,9 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                 }
 
                 try {
+                    if (log.isDebugEnabled())
+                        log.debug("Starting process based on task metadata: " + meta);
+
                     Process proc = initializeProcess(childProcId, meta);
 
                     BufferedReader rdr = new BufferedReader(new InputStreamReader(proc.getInputStream()));
@@ -281,6 +290,9 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
                     // Read up all the process output.
                     while ((line = rdr.readLine()) != null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Tracing process output: " + line);
+
                         if ("Started".equals(line)) {
                             // Process started successfully, it should not write anything more to the output stream.
                             if (log.isDebugEnabled())
@@ -288,6 +300,8 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                                     ", meta=" + meta + ']');
 
                             fut.onProcessStarted(proc);
+
+                            break;
                         }
                         else if ("Failed".equals(line)) {
                             StringBuilder sb = new StringBuilder("Failed to start child process: " + meta + "\n");
@@ -452,6 +466,12 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                     // Safety.
                     else
                         log.warning("Failed to find process start future (will ignore): " + desc);
+                }
+                else if (msg instanceof GridHadoopTaskFinishedMessage) {
+                    GridHadoopTaskFinishedMessage taskMsg = (GridHadoopTaskFinishedMessage)msg;
+
+                    jobTracker.onTaskFinished(taskMsg.taskInfo(),
+                        new GridHadoopTaskStatus(taskMsg.state(), taskMsg.error()));
                 }
             }
             finally {

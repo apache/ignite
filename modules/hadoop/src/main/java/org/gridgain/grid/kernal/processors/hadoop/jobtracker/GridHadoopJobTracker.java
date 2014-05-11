@@ -164,6 +164,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             meta.mapReducePlan(mrPlan);
 
+            meta.externalExecution(((GridHadoopDefaultJobInfo)info).configuration().getBoolean(
+                "gridgain.hadoop.external_execution", false)); // TODO where constants should be?
+
             meta.pendingSplits(allSplits(mrPlan));
             meta.pendingReducers(allReducers(job));
 
@@ -462,7 +465,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                             log.debug("Submitting COMMIT task for execution [locNodeId=" + locNodeId +
                                 ", jobId=" + jobId + ']');
 
-                        ctx.taskExecutor(ext).run(job, Collections.singletonList(info));
+                        // Always use internal executor to abort or commit.
+                        ctx.taskExecutor(false).run(job, Collections.singletonList(info));
 
                         return;
                     }
@@ -495,7 +499,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                                 log.debug("Submitting ABORT task for execution [locNodeId=" + locNodeId +
                                     ", jobId=" + jobId + ']');
 
-                            ctx.taskExecutor(ext).run(job, Collections.singletonList(info));
+                            // Always use internal executor to abort or commit.
+                            ctx.taskExecutor(false).run(job, Collections.singletonList(info));
                         }
 
                         return;
@@ -683,6 +688,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             try {
                 body();
+            }
+            catch (Throwable e) {
+                log.error("Unhandled exception while processing event.", e);
             }
             finally {
                 busyLock.readUnlock();

@@ -131,7 +131,7 @@ public class GridHadoopChildProcessRunner {
                 log.warning("Received duplicate task execution request for the same process (will ignore): " + req);
         }
         catch (GridException e) {
-            log.warning("Unexpected exception caught during task initialization (will abort process execution).", e);
+            log.error("Unexpected exception caught during task initialization (will abort process execution).", e);
 
             shutdown();
 

@@ -16,6 +16,7 @@ import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.kernal.processors.hadoop.planner.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
+import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
 
 import java.util.*;
 
@@ -53,6 +54,7 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
             cfg,
             new GridHadoopJobTracker(),
             new GridHadoopEmbeddedTaskExecutor(),
+            new GridHadoopExternalTaskExecutor(),
             new GridHadoopShuffle());
 
         for (GridHadoopComponent c : hctx.components())

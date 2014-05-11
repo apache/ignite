@@ -20,6 +20,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
+import java.util.logging.Formatter;
 
 /**
  * Hadoop external process base class.
@@ -79,6 +80,8 @@ public class GridHadoopExternalProcessStarter {
             "test"
         );
 
+        comm.setSharedMemoryPort(-1); // TODO
+
         comm.start();
 
         GridHadoopProcessDescriptor nodeDesc = new GridHadoopProcessDescriptor(args.nodeId, args.parentProcId);
@@ -123,20 +126,40 @@ public class GridHadoopExternalProcessStarter {
     private GridLogger logger() throws IOException {
         Logger log = Logger.getLogger("");
 
-        log.setLevel(Level.FINEST);
+        log.setLevel(Level.FINE);
 
         for (Handler h : log.getHandlers())
             log.removeHandler(h);
 
         FileHandler h = new FileHandler(args.out + File.separator + args.childProcId + ".log", true);
 
-        SimpleFormatter f = new SimpleFormatter();
+        h.setFormatter(new Formatter() {
+            @Override public String format(LogRecord record) {
+                StringBuilder sb = new StringBuilder();
 
-        h.setFormatter(f);
+                sb.append("[").append(record.getMillis()).append("][").append(record.getLevel()).append("][")
+                    .append(record.getLoggerName()).append("] ").append(record.getMessage()).append("\n");
+
+                if (record.getThrown() != null) {
+                    StringWriter sw = new StringWriter();
+
+                    PrintWriter pw = new PrintWriter(sw);
+
+                    record.getThrown().printStackTrace(pw);
+
+                    pw.flush();
+
+                    sb.append(sw.toString());
+                }
+
+                return sb.toString();
+            }
+        });
 
         log.addHandler(h);
 
         Logger.getLogger(GridIpcSharedMemorySpace.class.toString()).setLevel(Level.WARNING);
+        Logger.getLogger(GridIpcSharedMemorySpace.class.getName()).setLevel(Level.WARNING);
 
         return new GridJavaLogger(log);
     }
