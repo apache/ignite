@@ -18,7 +18,8 @@ import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.spi.swapspace.file.*;
+import org.gridgain.grid.spi.swapspace.*;
+import org.gridgain.grid.spi.swapspace.noop.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -53,7 +54,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
     private final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
-    private boolean evictEnabled;
+    private boolean swapEnabled;
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
@@ -67,22 +68,19 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
 
         cfg.setNetworkTimeout(2000);
 
-        cfg.setSwapSpaceSpi(new GridFileSwapSpaceSpi());
-
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setSwapEnabled(true);
         cacheCfg.setCacheMode(REPLICATED);
+
+        if (swapEnabled)
+            cacheCfg.setSwapEnabled(true);
 
         cfg.setCacheConfiguration(cacheCfg);
 
         cfg.setDeploymentMode(SHARED);
         cfg.setPeerClassLoadingLocalClassPathExclude(GridCacheSwapSelfTest.class.getName(),
             CacheValue.class.getName());
-
-        if (evictEnabled)
-            cfg.setSwapSpaceSpi(new GridFileSwapSpaceSpi());
 
         cfg.setMarshaller(new GridOptimizedMarshaller(false));
 
@@ -99,8 +97,50 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testDisabledSwap() throws Exception {
+        swapEnabled = false;
+
+        try {
+            Grid grid = startGrids(1);
+
+            GridSwapSpaceSpi swapSpi = grid.configuration().getSwapSpaceSpi();
+
+            assertNotNull(swapSpi);
+
+            assertTrue(swapSpi instanceof GridNoopSwapSpaceSpi);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testEnabledSwap() throws Exception {
+        swapEnabled = true;
+
+        try {
+            Grid grid = startGrids(1);
+
+            GridSwapSpaceSpi swapSpi = grid.configuration().getSwapSpaceSpi();
+
+            assertNotNull(swapSpi);
+
+            assertFalse(swapSpi instanceof GridNoopSwapSpaceSpi);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     @SuppressWarnings("BusyWait")
     public void testSwapDeployment() throws Exception {
+        swapEnabled = true;
+
         try {
             Grid grid1 = startGrid(1);
             Grid grid2 = startGrid(2);
@@ -198,9 +238,9 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
      */
     // TODO: enable when GG-7341 is fixed.
     public void _testSwapEviction() throws Exception {
-        try {
-            evictEnabled = true;
+        swapEnabled = true;
 
+        try {
             final CountDownLatch evicted = new CountDownLatch(10);
 
             startGrids(1);
@@ -256,11 +296,12 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
         }
     }
 
-
     /**
      * @throws Exception If failed.
      */
     public void testSwap() throws Exception {
+        swapEnabled = true;
+
         try {
             startGrids(1);
 
@@ -326,6 +367,8 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSwapIterator() throws Exception {
+        swapEnabled = true;
+
         try {
             startGrids(1);
 
