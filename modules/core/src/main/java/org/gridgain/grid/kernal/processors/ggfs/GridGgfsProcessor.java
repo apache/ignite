@@ -312,16 +312,18 @@ public class GridGgfsProcessor extends GridProcessorAdapter {
                     if (F.eq(rmtAttr.metaCacheName(), locAttr.metaCacheName()))
                         throw new GridException("Meta cache names should be different for different GGFS instances " +
                             "configuration [rmtNodeId=" + rmtNode.id() +
-                            ", rmtMetaCacheName=" + rmtAttr.metaCacheName() +
-                            ", locMetaCacheName=" + locAttr.metaCacheName() +
-                            ", ggfsName=" + rmtAttr.ggfsName() + ']');
+                            ", locNodeId=" + ctx.localNodeId() +
+                            ", metaCacheName=" + rmtAttr.metaCacheName() +
+                            ", locGgfsName=" + locAttr.ggfsName() +
+                            ", rmtGgfsName=" + rmtAttr.ggfsName() + ']');
 
                     if (F.eq(rmtAttr.dataCacheName(), locAttr.dataCacheName()))
                         throw new GridException("Data cache names should be different for different GGFS instances " +
                             "configuration [rmtNodeId=" + rmtNode.id() +
-                            ", rmtDataCacheName=" + rmtAttr.dataCacheName() +
-                            ", locDataCacheName=" + locAttr.dataCacheName() +
-                            ", ggfsName=" + rmtAttr.ggfsName() + ']');
+                            ", locNodeId=" + ctx.localNodeId() +
+                            ", dataCacheName=" + rmtAttr.dataCacheName() +
+                            ", locGgfsName=" + locAttr.ggfsName() +
+                            ", rmtGgfsName=" + rmtAttr.ggfsName() + ']');
 
                     continue;
                 }
