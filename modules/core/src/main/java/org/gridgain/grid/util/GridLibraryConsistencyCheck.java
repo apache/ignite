@@ -35,7 +35,6 @@ public class GridLibraryConsistencyCheck {
         "org.apache.commons.cli.CommandLineParser",                       // commons-cli-XXX.jar
         "org.apache.commons.codec.digest.DigestUtils",                    // commons-codec-XXX.jar
         "org.apache.commons.collections.CollectionUtils",                 // commons-collections-XXX.jar
-        "org.apache.commons.configuration.HierarchicalINIConfiguration",  // commons-configuration-XXX.jar
         "org.apache.commons.lang.ArrayUtils",                             // commons-lang-XXX.jar
         "org.apache.commons.logging.LogFactory",                          // commons-logging-XXX.jar
         "org.apache.commons.net.util.Base64",                             // commons-net-XXX.jar
