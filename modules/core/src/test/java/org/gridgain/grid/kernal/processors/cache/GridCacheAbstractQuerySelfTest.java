@@ -1490,7 +1490,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     /**
      *
      */
-    private static class BadHashKeyObject {
+    private static class BadHashKeyObject implements Serializable {
         /** */
         @GridCacheQuerySqlField(index = false)
         private final String str;
