@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -19,6 +20,9 @@ import org.jetbrains.annotations.*;
 public class GridHadoopImpl implements GridHadoop {
     /** Hadoop processor. */
     private final GridHadoopProcessor proc;
+
+    /** Busy lock. */
+    private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /**
      * Constructor.
@@ -30,17 +34,63 @@ public class GridHadoopImpl implements GridHadoop {
     }
 
     /** {@inheritDoc} */
+    @Override public GridHadoopConfiguration configuration() {
+        return proc.config();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridHadoopJobId nextJobId() {
+        if (busyLock.enterBusy()) {
+            try {
+                return proc.nextJobId();
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to get next job ID (grid is stopping).");
+    }
+
+    /** {@inheritDoc} */
     @Override public GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo) {
-        return proc.submit(jobId, jobInfo);
+        if (busyLock.enterBusy()) {
+            try {
+                return proc.submit(jobId, jobInfo);
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to submit job (grid is stopping).");
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public GridHadoopJobStatus status(GridHadoopJobId jobId) throws GridException {
-        return proc.status(jobId);
+        if (busyLock.enterBusy()) {
+            try {
+                return proc.status(jobId);
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to get job status (grid is stopping).");
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public GridFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException {
-        return proc.finishFuture(jobId);
+        if (busyLock.enterBusy()) {
+            try {
+                return proc.finishFuture(jobId);
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to get job finish future (grid is stopping).");
     }
 }

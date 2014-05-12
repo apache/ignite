@@ -10,8 +10,9 @@
 package org.gridgain.grid.kernal.processors.hadoop.proto;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.lang.*;
 
 import java.util.*;
 
@@ -20,8 +21,8 @@ import java.util.*;
  */
 public class GridHadoopProtocolJobStatusTask extends GridHadoopProtocolTaskAdapter<GridHadoopJobStatus> {
     /** {@inheritDoc} */
-    @Override public GridHadoopJobStatus run(GridHadoopProcessorAdapter proc, GridHadoopProtocolTaskArguments args)
-        throws GridException {
+    @Override public GridHadoopJobStatus run(final GridComputeJobContext jobCtx, GridHadoop hadoop,
+        GridHadoopProtocolTaskArguments args) throws GridException {
         UUID nodeId = UUID.fromString(args.<String>get(0));
         int id = args.get(1);
         Long pollDelay = args.get(2);
@@ -29,23 +30,28 @@ public class GridHadoopProtocolJobStatusTask extends GridHadoopProtocolTaskAdapt
         GridHadoopJobId jobId = new GridHadoopJobId(nodeId, id);
 
         if (pollDelay == null)
-            pollDelay = proc.config().getJobStatusPollDelay();
+            pollDelay = hadoop.configuration().getJobStatusPollDelay();
 
         if (pollDelay > 0) {
-            GridFuture<?> fut = proc.finishFuture(jobId);
+            GridFuture<?> fut = hadoop.finishFuture(jobId);
 
-            if (fut == null)
-                return null;
-            else {
-                try {
-                    fut.get(pollDelay);
-                }
-                catch (GridException ignore) {
-                    // No-op.
+            if (fut != null) {
+                if (fut.isDone() || jobCtx.heldcc() )
+                    return hadoop.status(jobId);
+                else {
+                    fut.listenAsync(new GridInClosure<GridFuture<?>>() {
+                        @Override public void apply(GridFuture<?> fut0) {
+                            jobCtx.callcc();
+                        }
+                    });
+
+                    return jobCtx.holdcc(pollDelay);
                 }
             }
+            else
+                return null;
         }
-
-        return proc.status(jobId);
+        else
+            return hadoop.status(jobId);
     }
 }

@@ -11,8 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.proto;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
@@ -23,6 +22,7 @@ import java.util.*;
  * Hadoop protocol task adapter.
  */
 public abstract class GridHadoopProtocolTaskAdapter<R> implements GridComputeTask<GridHadoopProtocolTaskArguments, R> {
+    /** {@inheritDoc} */
     @Nullable @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
         @Nullable GridHadoopProtocolTaskArguments arg) throws GridException {
         return Collections.singletonMap(new Job(arg), subgrid.get(0));
@@ -46,11 +46,14 @@ public abstract class GridHadoopProtocolTaskAdapter<R> implements GridComputeTas
     }
 
     /**
-     *
+     * Job wrapper.
      */
     private class Job implements GridComputeJob {
         @GridInstanceResource
         private Grid grid;
+
+        @GridJobContextResource
+        private GridComputeJobContext jobCtx;
 
         /** Argument. */
         private final GridHadoopProtocolTaskArguments args;
@@ -71,17 +74,19 @@ public abstract class GridHadoopProtocolTaskAdapter<R> implements GridComputeTas
 
         /** {@inheritDoc} */
         @Nullable @Override public Object execute() throws GridException {
-            return run(((GridKernal)grid).context().hadoop(), args);
+            return run(jobCtx, grid.hadoop(), args);
         }
     }
 
     /**
      * Run the task.
      *
-     * @param proc Hadoop processor.
+     * @param jobCtx Job context.
+     * @param hadoop Hadoop facade.
      * @param args Arguments.
      * @return Job result.
      * @throws GridException If failed.
      */
-    public abstract R run(GridHadoopProcessorAdapter proc, GridHadoopProtocolTaskArguments args) throws GridException;
+    public abstract R run(GridComputeJobContext jobCtx, GridHadoop hadoop, GridHadoopProtocolTaskArguments args)
+        throws GridException;
 }

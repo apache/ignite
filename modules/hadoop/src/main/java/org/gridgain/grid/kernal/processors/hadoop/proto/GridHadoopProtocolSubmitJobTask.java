@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.proto;
 
 import org.apache.hadoop.conf.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 
@@ -21,16 +22,17 @@ import java.util.*;
  */
 public class GridHadoopProtocolSubmitJobTask extends GridHadoopProtocolTaskAdapter<GridHadoopJobStatus> {
     /** {@inheritDoc} */
-    @Override public GridHadoopJobStatus run(GridHadoopProcessorAdapter proc, GridHadoopProtocolTaskArguments args)
-        throws GridException {
+    @Override public GridHadoopJobStatus run(GridComputeJobContext jobCtx, GridHadoop hadoop,
+        GridHadoopProtocolTaskArguments args) throws GridException {
         UUID nodeId = UUID.fromString(args.<String>get(0));
         int id = args.get(1);
         GridHadoopProtocolConfigurationWrapper conf = args.get(2);
 
         GridHadoopJobId jobId = new GridHadoopJobId(nodeId, id);
 
-        proc.submit(new GridHadoopJobId(nodeId, id), new GridHadoopDefaultJobInfo(conf.get()));
+        hadoop.submit(new GridHadoopJobId(nodeId, id), new GridHadoopDefaultJobInfo(conf.get()));
 
-        return proc.status(jobId);
+        // TODO: Poll delay here as well.
+        return hadoop.status(jobId);
     }
 }

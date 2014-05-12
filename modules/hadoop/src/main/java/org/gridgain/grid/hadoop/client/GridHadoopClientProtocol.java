@@ -35,13 +35,13 @@ import java.io.*;
  */
 public class GridHadoopClientProtocol implements ClientProtocol {
     /** GridGain framework name property. */
-    public static final String PROP_FRAMEWORK_NAME = "gg.framework.name";
+    public static final String FRAMEWORK_NAME = "gridgain";
 
     /** GridGain server host property. */
-    public static final String PROP_SRV_ADDR = "gg.server.address";
+    public static final String PROP_SRV_ADDR = "gridgain.server.address";
 
     /** GridGain status poll delay property. */
-    public static final String PROP_STATUS_POLL_DELAY = "gg.status.poll_delay";
+    public static final String PROP_STATUS_POLL_DELAY = "gridgain.status.poll_delay";
 
     /** Protocol version. */
     public static final long PROTO_VER = 1L;

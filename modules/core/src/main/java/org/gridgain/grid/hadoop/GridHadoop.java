@@ -17,6 +17,20 @@ import org.jetbrains.annotations.*;
  */
 public interface GridHadoop {
     /**
+     * Gets Hadoop module configuration.
+     *
+     * @return Hadoop module configuration.
+     */
+    public GridHadoopConfiguration configuration();
+
+    /**
+     * Generate next job ID.
+     *
+     * @return Next job ID.
+     */
+    public GridHadoopJobId nextJobId();
+
+    /**
      * Submits job to job tracker.
      *
      * @param jobId Job ID to submit.

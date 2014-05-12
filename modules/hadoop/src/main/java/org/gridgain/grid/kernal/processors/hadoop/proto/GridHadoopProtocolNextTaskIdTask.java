@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.proto;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 
@@ -18,8 +19,8 @@ import org.gridgain.grid.kernal.processors.hadoop.*;
  */
 public class GridHadoopProtocolNextTaskIdTask extends GridHadoopProtocolTaskAdapter<GridHadoopJobId> {
     /** {@inheritDoc} */
-    @Override public GridHadoopJobId run(GridHadoopProcessorAdapter proc, GridHadoopProtocolTaskArguments args)
-        throws GridException {
-        return proc.nextJobId();
+    @Override public GridHadoopJobId run(GridComputeJobContext jobCtx, GridHadoop hadoop,
+        GridHadoopProtocolTaskArguments args) throws GridException {
+        return hadoop.nextJobId();
     }
 }
