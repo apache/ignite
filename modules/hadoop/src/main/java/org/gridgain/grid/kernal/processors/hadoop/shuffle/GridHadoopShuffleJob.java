@@ -17,7 +17,6 @@ import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.worker.*;
 
 import java.util.*;
@@ -30,7 +29,7 @@ import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
 /**
  * Shuffle job.
  */
-public class GridHadoopShuffleJob implements AutoCloseable {
+public class GridHadoopShuffleJob<T> implements AutoCloseable {
     /** */
     private final GridHadoopJob job;
 
@@ -43,8 +42,11 @@ public class GridHadoopShuffleJob implements AutoCloseable {
     /** */
     private GridHadoopMultimap combinerMap;
 
-    /** */
-    private UUID[] reduceNodes;
+    /** Reducers addresses. */
+    private T[] reduceAddrs;
+
+    /** Local reducers address. */
+    private T locReduceAddr;
 
     /** */
     private GridHadoopShuffleMessage[] msgs;
@@ -53,67 +55,74 @@ public class GridHadoopShuffleJob implements AutoCloseable {
     private final AtomicReferenceArray<GridHadoopMultimap> maps;
 
     /** */
-    private GridBiClosure<UUID, GridHadoopShuffleMessage, GridFuture<?>> io;
+    private GridBiClosure<T, GridHadoopShuffleMessage, GridFuture<?>> io;
 
     /** */
-    private ConcurrentLinkedQueue<GridFuture<?>> ioFuts = new ConcurrentLinkedQueue<>();
+    private Collection<GridFuture<?>> ioFuts = new ConcurrentLinkedQueue<>();
 
     /** */
     private GridWorker sender;
 
     /** */
-    private final UUID localNodeId;
-
-    /** */
     private final GridLogger log;
 
     /**
+     * @param locReduceAddr Local reducer address.
+     * @param log Logger.
      * @param job Job.
      * @param mem Memory.
-     * @param plan Plan.
+     * @param reducers Number of reducers for job.
+     * @param hasLocMappers {@code True} if
      */
-    public GridHadoopShuffleJob(UUID localNodeId, GridLogger log, GridHadoopJob job, GridUnsafeMemory mem,
-        GridHadoopMapReducePlan plan)
-        throws GridException {
-        assert localNodeId != null;
-
-        this.localNodeId = localNodeId;
+    public GridHadoopShuffleJob(T locReduceAddr, GridLogger log, GridHadoopJob job, GridUnsafeMemory mem,
+        int reducers, boolean hasLocMappers) throws GridException {
+        this.locReduceAddr = locReduceAddr;
         this.job = job;
         this.mem = mem;
         this.log = log;
 
         partitioner = job.partitioner();
 
-        int reducers = plan.reducers();
-
         maps = new AtomicReferenceArray<>(reducers);
         msgs = new GridHadoopShuffleMessage[reducers];
-        reduceNodes = new UUID[reducers];
 
-        for (int i = 0; i < reducers; i++) {
-            UUID nodeId = plan.nodeForReducer(i);
+        if (job.hasCombiner() && hasLocMappers) // We have combiner and local mappers.
+            combinerMap = new GridHadoopMultimap(job, mem, get(job, COMBINER_HASHMAP_SIZE, 8 * 1024));
+    }
 
-            assert nodeId != null;
+    /**
+     * @param reduceAddresses Addresses of reducers.
+     * @return {@code True} if addresses were initialized by this call.
+     */
+    public boolean initializeReduceAddresses(T[] reduceAddresses) {
+        if (reduceAddrs == null) {
+            reduceAddrs = reduceAddresses;
 
-            reduceNodes[i] = nodeId;
+            return true;
         }
 
-        if (job.hasCombiner() && !F.isEmpty(plan.mappers(localNodeId))) // We have combiner and local mappers.
-            combinerMap = new GridHadoopMultimap(job, mem, get(job, COMBINER_HASHMAP_SIZE, 8 * 1024));
+        return false;
+    }
+
+    /**
+     * @return {@code True} if reducers addresses were initialized.
+     */
+    public boolean reducersInitialized() {
+        return reduceAddrs != null;
     }
 
     /**
      * @param gridName Grid name.
      * @param io IO Closure for sending messages.
      */
-    public void startSending(String gridName, GridBiClosure<UUID, GridHadoopShuffleMessage, GridFuture<?>> io) {
+    public void startSending(String gridName, GridBiClosure<T, GridHadoopShuffleMessage, GridFuture<?>> io) {
         assert sender == null;
         assert io != null;
 
         this.io = io;
 
         sender = new GridWorker(gridName, "hadoop-shuffle-" + job.id(), log) {
-            @Override protected void body() throws InterruptedException, GridInterruptedException {
+            @Override protected void body() throws InterruptedException {
                 while (!isCancelled()) {
                     Thread.sleep(10);
 
@@ -168,7 +177,7 @@ public class GridHadoopShuffleJob implements AutoCloseable {
 
             msg.visit(new GridHadoopShuffleMessage.Visitor() {
                 /** */
-                GridHadoopMultimap.Key key;
+                private GridHadoopMultimap.Key key;
 
                 @Override public void onKey(byte[] buf, int off, int len) throws GridException {
                     dataInput.bytes(buf, off, off + len);
@@ -189,15 +198,15 @@ public class GridHadoopShuffleJob implements AutoCloseable {
     /**
      * Unsafe value.
      */
-    private class UnsafeValue implements GridHadoopMultimap.Value {
+    private static class UnsafeValue implements GridHadoopMultimap.Value {
         /** */
-        final byte[] buf;
+        private final byte[] buf;
 
         /** */
-        int off;
+        private int off;
 
         /** */
-        int size;
+        private int size;
 
         /**
          * @param buf Buffer.
@@ -226,7 +235,7 @@ public class GridHadoopShuffleJob implements AutoCloseable {
         for (int i = 0; i < maps.length(); i++) {
             GridHadoopMultimap map = maps.get(i);
 
-            if (map == null || localNodeId.equals(reduceNodes[i]))
+            if (map == null || locReduceAddr.equals(reduceAddrs[i]))
                 continue; // Skip empty map and local node.
 
             if (msgs[i] == null)
@@ -236,13 +245,13 @@ public class GridHadoopShuffleJob implements AutoCloseable {
 
             map.visit(false, new GridHadoopMultimap.Visitor() {
                 /** */
-                long keyPtr;
+                private long keyPtr;
 
                 /** */
-                int keySize;
+                private int keySize;
 
                 /** */
-                boolean keyAdded;
+                private boolean keyAdded;
 
                 /** {@inheritDoc} */
                 @Override public void onKey(long keyPtr, int keySize) {
@@ -278,7 +287,7 @@ public class GridHadoopShuffleJob implements AutoCloseable {
                 }
 
                 /** {@inheritDoc} */
-                @Override public void onValue(long valPtr, int valSize) throws GridException {
+                @Override public void onValue(long valPtr, int valSize) {
                     if (tryAdd(valPtr, valSize))
                         return;
 
@@ -300,8 +309,8 @@ public class GridHadoopShuffleJob implements AutoCloseable {
      * @param idx Index of message.
      * @param newBufMinSize Min new buffer size.
      */
-    private void send(int idx, int newBufMinSize) throws GridException {
-        GridFuture<?> fut = io.apply(reduceNodes[idx], msgs[idx]);
+    private void send(int idx, int newBufMinSize) {
+        GridFuture<?> fut = io.apply(reduceAddrs[idx], msgs[idx]);
 
         fut.listenAsync(new GridInClosure<GridFuture<?>>() {
             @Override public void apply(GridFuture<?> f) {

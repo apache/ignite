@@ -53,7 +53,7 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
             cfg,
             new GridHadoopJobTracker(),
             new GridHadoopTaskExecutor(),
-            new GridHadoopShuffle());
+            new GridHadoopShuffler());
 
         for (GridHadoopComponent c : hctx.components())
             c.start(hctx);
