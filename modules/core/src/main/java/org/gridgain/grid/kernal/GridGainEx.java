@@ -132,7 +132,7 @@ public class GridGainEx {
                 "is not supported: " + U.jdkVersion());
 
         // Turn off default logging for Spring Framework.
-        // TODO
+        // TODO 8242.
         //LogFactory.getFactory().setAttribute("org.apache.commons.logging.Log", null);
 
         // To avoid nasty race condition in UUID.randomUUID() in JDK prior to 6u34.

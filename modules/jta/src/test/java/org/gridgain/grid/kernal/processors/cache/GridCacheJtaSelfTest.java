@@ -80,7 +80,8 @@ public class GridCacheJtaSelfTest extends GridCacheAbstractSelfTest {
     /**
      *
      */
-    private static class TestTmLookup implements GridCacheTmLookup {
+    @SuppressWarnings("PublicInnerClass")
+    public static class TestTmLookup implements GridCacheTmLookup {
         /** {@inheritDoc} */
         @Override public TransactionManager getTm() throws GridException {
             return jotm.getTransactionManager();

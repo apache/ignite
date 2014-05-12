@@ -394,8 +394,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             drProc = (GridDrProcessor)comp;
         else if (comp instanceof GridVersionProcessor)
             verProc = (GridVersionProcessor)comp;
-        else if (comp instanceof GridSpringProcessor)
-            spring = (GridSpringProcessor)comp;
         else
             assert false : "Unknown manager class: " + comp.getClass();
 

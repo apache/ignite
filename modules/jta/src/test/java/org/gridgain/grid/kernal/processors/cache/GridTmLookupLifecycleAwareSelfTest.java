@@ -32,16 +32,14 @@ public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
     /** */
     private GridCacheDistributionMode distroMode;
 
-    /** */
-    private boolean writeBehind;
-
     /**
      */
-    private static class TestTxLookup extends GridAbstractLifecycleAwareSelfTest.TestLifecycleAware
+    @SuppressWarnings("PublicInnerClass")
+    public static class TestTxLookup extends GridAbstractLifecycleAwareSelfTest.TestLifecycleAware
         implements GridCacheTmLookup {
         /**
          */
-        TestTxLookup() {
+        public TestTxLookup() {
             super(CACHE_NAME);
         }
 
@@ -63,8 +61,6 @@ public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
 
         ccfg.setDistributionMode(distroMode);
 
-        ccfg.setWriteBehindEnabled(writeBehind);
-
         ccfg.setCacheMode(GridCacheMode.PARTITIONED);
 
         ccfg.setName(CACHE_NAME);
@@ -79,7 +75,7 @@ public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
     /** {@inheritDoc} */
     @Override protected void afterGridStart(Grid grid) {
         TestTxLookup tmLookup =
-            (TestTxLookup)((GridKernal)grid).context().cache().internalCache(null).context().jta().tmLookup();
+            (TestTxLookup)((GridKernal)grid).context().cache().internalCache(CACHE_NAME).context().jta().tmLookup();
 
         assertNotNull(tmLookup);
 
@@ -87,30 +83,11 @@ public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ErrorNotRethrown")
     @Override public void testLifecycleAware() throws Exception {
         for (GridCacheDistributionMode mode : new GridCacheDistributionMode[] {PARTITIONED_ONLY, NEAR_PARTITIONED}) {
             distroMode = mode;
 
-            writeBehind = false;
-
-            try {
-                super.testLifecycleAware();
-            }
-            catch (AssertionError e) {
-                throw new AssertionError("Failed for [distroMode=" + distroMode + ", writeBehind=" + writeBehind + ']',
-                    e);
-            }
-
-            writeBehind = true;
-
-            try {
-                super.testLifecycleAware();
-            }
-            catch (AssertionError e) {
-                throw new AssertionError("Failed for [distroMode=" + distroMode + ", writeBehind=" + writeBehind + ']',
-                    e);
-            }
+            super.testLifecycleAware();
         }
     }
 }

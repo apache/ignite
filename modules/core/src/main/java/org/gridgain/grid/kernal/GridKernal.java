@@ -43,7 +43,6 @@ import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
 import org.gridgain.grid.kernal.processors.port.*;
 import org.gridgain.grid.kernal.processors.resource.*;
-import org.gridgain.grid.kernal.processors.schedule.*;
 import org.gridgain.grid.kernal.processors.segmentation.*;
 import org.gridgain.grid.kernal.processors.session.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
@@ -198,7 +197,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /**
-     * @param rsrcCtx Optional resoruce context.
+     * @param springCtx Optional Spring application context.
      */
     public GridKernal(@Nullable GridSpringResourceContext rsrcCtx) {
         super(null, null, (GridPredicate<GridNode>)null);

@@ -34,10 +34,10 @@ public class GridCacheJtaManager<K, V> extends GridCacheJtaManagerAdapter<K, V> 
 
     /** {@inheritDoc} */
     @Override public void createTmLookup(GridCacheConfiguration ccfg) throws GridException {
-        assert cctx.config().getTransactionManagerLookupClassName() != null;
+        assert ccfg.getTransactionManagerLookupClassName() != null;
 
         try {
-            Class<?> cls = Class.forName(cctx.config().getTransactionManagerLookupClassName());
+            Class<?> cls = Class.forName(ccfg.getTransactionManagerLookupClassName());
 
             tmLookup = (GridCacheTmLookup)cls.newInstance();
         }
@@ -48,9 +48,8 @@ public class GridCacheJtaManager<K, V> extends GridCacheJtaManagerAdapter<K, V> 
 
     /** {@inheritDoc} */
     @Override public void checkJta() throws GridException {
-        if (jtaTm == null) {
+        if (jtaTm == null)
             jtaTm = tmLookup.getTm();
-        }
 
         if (jtaTm != null) {
             GridCacheXAResource rsrc = xaRsrc.get();

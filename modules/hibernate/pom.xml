@@ -70,6 +70,13 @@
         </dependency>
 
         <dependency>
+            <groupId>javax.resource</groupId>
+            <artifactId>connector-api</artifactId>
+            <version>1.5</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-core</artifactId>
             <version>${gridgain.version}</version>

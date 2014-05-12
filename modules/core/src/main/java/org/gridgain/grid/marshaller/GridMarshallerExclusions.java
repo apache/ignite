@@ -68,6 +68,7 @@ public final class GridMarshallerExclusions {
         excl.add(ExecutorService.class);
         excl.add(ClassLoader.class);
         excl.add(Thread.class);
+
         if (springCtxCls != null)
             excl.add(springCtxCls);
 

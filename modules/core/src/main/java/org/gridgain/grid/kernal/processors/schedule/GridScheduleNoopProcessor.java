@@ -40,7 +40,7 @@ public class GridScheduleNoopProcessor extends GridScheduleProcessorAdapter {
      * @return No-op processor usage exception;
      */
     private GridRuntimeException processorException() {
-        // TODO
+        // TODO 8242.
         throw new GridRuntimeException("No-op processor does not support scheduling.");
     }
 }
