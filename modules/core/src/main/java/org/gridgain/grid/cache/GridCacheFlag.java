@@ -78,9 +78,9 @@ public enum GridCacheFlag {
      * {@code transform(...)} is called, cache values (and not the {@code transform} closure) are sent from primary
      * node to backup nodes to ensure proper update ordering.
      * <p>
-     * By setting this flag, version check is skipped, and {@code transform} closure is applied on both, primary
+     * By setting this flag, version check is skipped, and the {@code transform} closure is applied on both, primary
      * and backup nodes. Use this flag for better performance if you are sure that there are no
-     * concurrent updates happening for the same key.
+     * concurrent updates happening for the same key when {@code transform(...)} method is called.
      */
     FORCE_TRANSFORM_BACKUP;
 
