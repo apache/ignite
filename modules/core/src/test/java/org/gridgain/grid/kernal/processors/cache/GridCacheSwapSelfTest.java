@@ -54,7 +54,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
     private final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
-    private boolean swapEnabled;
+    private boolean swapEnabled = true;
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
@@ -72,9 +72,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setCacheMode(REPLICATED);
-
-        if (swapEnabled)
-            cacheCfg.setSwapEnabled(true);
+        cacheCfg.setSwapEnabled(swapEnabled);
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -118,8 +116,6 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testEnabledSwap() throws Exception {
-        swapEnabled = true;
-
         try {
             Grid grid = startGrids(1);
 
@@ -139,8 +135,6 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("BusyWait")
     public void testSwapDeployment() throws Exception {
-        swapEnabled = true;
-
         try {
             Grid grid1 = startGrid(1);
             Grid grid2 = startGrid(2);
@@ -238,8 +232,6 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
      */
     // TODO: enable when GG-7341 is fixed.
     public void _testSwapEviction() throws Exception {
-        swapEnabled = true;
-
         try {
             final CountDownLatch evicted = new CountDownLatch(10);
 
@@ -300,8 +292,6 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSwap() throws Exception {
-        swapEnabled = true;
-
         try {
             startGrids(1);
 
@@ -367,8 +357,6 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSwapIterator() throws Exception {
-        swapEnabled = true;
-
         try {
             startGrids(1);
 
