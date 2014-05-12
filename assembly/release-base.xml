@@ -138,7 +138,7 @@
         </fileSet>
 
         <fileSet>
-            <directory>modules/core/target/site/apidocs</directory>
+            <directory>target/javadoc/core</directory>
             <outputDirectory>/docs/javadoc</outputDirectory>
         </fileSet>
 
@@ -148,7 +148,7 @@
         </fileSet>
 
         <fileSet>
-            <directory>modules/clients/target/site/apidocs</directory>
+            <directory>target/javadoc/client</directory>
             <outputDirectory>/clients/java/javadoc</outputDirectory>
         </fileSet>
 
@@ -167,27 +167,4 @@
             <outputDirectory>/libs</outputDirectory>
         </fileSet>
     </fileSets>
-
-    <dependencySets>
-        <dependencySet>
-            <outputDirectory>/libs</outputDirectory>
-            <useTransitiveDependencies>false</useTransitiveDependencies>
-            <excludes>
-                <exclude>org.apache.ant:ant</exclude>
-                <exclude>org.apache.tomcat:catalina</exclude>
-                <exclude>jboss:*</exclude>
-                <exclude>org.apache.hadoop:*</exclude>
-                <exclude>org.apache.avro:avro</exclude>
-            </excludes>
-        </dependencySet>
-
-        <dependencySet>
-            <outputDirectory>/libs/hadoop2</outputDirectory>
-            <useTransitiveDependencies>false</useTransitiveDependencies>
-            <includes>
-                <include>org.apache.hadoop:*</include>
-                <include>org.apache.avro:avro</include>
-            </includes>
-        </dependencySet>
-    </dependencySets>
 </component>

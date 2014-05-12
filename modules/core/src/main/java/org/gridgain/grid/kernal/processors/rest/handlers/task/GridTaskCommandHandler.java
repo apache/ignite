@@ -18,6 +18,7 @@ import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
+import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
@@ -38,11 +39,15 @@ import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
+import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 
 /**
  * Command handler for API requests.
  */
 public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
+    /** Supported commands. */
+    private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(EXE, RESULT, NOOP);
+
     /** Default maximum number of task results. */
     private static final int DFLT_MAX_TASK_RESULTS = 10240;
 
@@ -108,17 +113,8 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("fallthrough")
-    @Override public boolean supported(GridRestCommand cmd) {
-        switch (cmd) {
-            case EXE:
-            case RESULT:
-            case NOOP:
-                return true;
-
-            default:
-                return false;
-        }
+    @Override public Collection<GridRestCommand> supportedCommands() {
+        return SUPPORTED_COMMANDS;
     }
 
     /** {@inheritDoc} */
@@ -143,10 +139,14 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
      * @throws GridException On any handling exception.
      */
     private GridFuture<GridRestResponse> handleAsyncUnsafe(final GridRestRequest req) throws GridException {
-        assert req != null;
+        assert req instanceof GridRestTaskRequest : "Invalid command for topology handler: " + req;
+
+        assert SUPPORTED_COMMANDS.contains(req.command());
 
         if (log.isDebugEnabled())
             log.debug("Handling task REST request: " + req);
+
+        GridRestTaskRequest req0 = (GridRestTaskRequest) req;
 
         final GridFutureAdapter<GridRestResponse> fut = new GridFutureAdapter<>(ctx);
 
@@ -157,44 +157,31 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         // Set ID placeholder for the case it wouldn't be available due to remote execution.
         taskRestRes.setId('~' + ctx.localNodeId().toString());
 
-        final boolean locExec = req.getDestId() == null || req.getDestId().equals(ctx.localNodeId());
+        final boolean locExec = req0.destinationId() == null || req0.destinationId().equals(ctx.localNodeId());
 
-        switch (req.getCommand()) {
+        switch (req.command()) {
             case EXE: {
-                final boolean async = Boolean.parseBoolean((String)value("async", req));
+                final boolean async = req0.async();
 
-                final String name = value("name", req);
+                final String name = req0.taskName();
 
                 if (F.isEmpty(name))
                     throw new GridException(missingParameter("name"));
 
-                final List<Object> params = values("p", req);
+                final List<Object> params = req0.params();
 
-                String s = value("timeout", req);
-
-                long timeout = 0;
-
-                if (s != null) {
-                    try {
-                        timeout = Long.parseLong(s);
-                    }
-                    catch (NumberFormatException ignore) {
-                        throw new GridException(invalidNumericParameter("timeout"));
-                    }
-                }
-
-                final long timeout0 = timeout;
+                long timeout = req0.timeout();
 
                 final GridFuture<Object> taskFut =
                     locExec ?
                         ctx.grid().compute().withTimeout(timeout).execute(
                             name,
-                            !params.isEmpty() ? params.size() == 1 ? params.get(0) : params.toArray() : null)
+                            !F.isEmpty(params) ? params.size() == 1 ? params.get(0) : params.toArray() : null)
                         :
                         // Using predicate instead of node intentionally
                         // in order to provide user well-structured EmptyProjectionException.
-                        ctx.grid().forPredicate(F.nodeForNodeId(req.getDestId())).
-                            compute().withNoFailover().call(new ExeCallable(name, params, timeout0));
+                        ctx.grid().forPredicate(F.nodeForNodeId(req.destinationId())).
+                            compute().withNoFailover().call(new ExeCallable(name, params, timeout));
 
                 if (async) {
                     if (locExec) {
@@ -225,11 +212,11 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                             catch (GridException e) {
                                 if (e.hasCause(GridTopologyException.class, GridEmptyProjectionException.class))
                                     U.warn(log, "Failed to execute task due to topology issues (are all mapped " +
-                                        "nodes alive?) [name=" + name + ", clientId=" + req.getClientId() +
+                                        "nodes alive?) [name=" + name + ", clientId=" + req.clientId() +
                                         ", err=" + e + ']');
                                 else
                                     U.error(log, "Failed to execute task [name=" + name + ", clientId=" +
-                                        req.getClientId() + ']', e);
+                                            req.clientId() + ']', e);
 
                                 desc = new TaskDescriptor(true, null, e);
                             }
@@ -264,8 +251,8 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                 break;
             }
 
-            case RESULT:
-                String id = value("id", req);
+            case RESULT: {
+                String id = req0.taskId();
 
                 if (F.isEmpty(id))
                     throw new GridException(missingParameter("id"));
@@ -341,11 +328,13 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                 fut.onDone(res);
 
                 break;
+            }
 
-            case NOOP:
+            case NOOP: {
                 fut.onDone(new GridRestResponse());
 
                 break;
+            }
 
             default:
                 assert false : "Invalid command for task handler: " + req;
