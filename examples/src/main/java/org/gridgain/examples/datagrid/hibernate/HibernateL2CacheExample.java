@@ -9,15 +9,14 @@
 
 package org.gridgain.examples.datagrid.hibernate;
 
+import org.gridgain.examples.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.*;
 import org.hibernate.*;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cfg.*;
 import org.hibernate.service.*;
 import org.hibernate.stat.*;
 
-import java.io.*;
 import java.net.*;
 import java.util.*;
 
@@ -69,9 +68,8 @@ public class HibernateL2CacheExample {
      * Executes example.
      *
      * @param args Command line arguments. First argument is optional and may contain absolute path to
-     *             hibernate configuration file. If this argument is not defined than
-     *             {@code hibernate/example-hibernate-L2-cache.xml} from application {@code CLASSPATH} will be used.
-     *
+     *      hibernate configuration file. If this argument is not defined than
+     *      {@code hibernate/example-hibernate-L2-cache.xml} from application {@code CLASSPATH} will be used.
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
@@ -83,7 +81,7 @@ public class HibernateL2CacheExample {
             System.out.println();
             System.out.println(">>> Hibernate L2 cache example started.");
 
-            URL hibernateCfg = resolveHibernateConfig(args);
+            URL hibernateCfg = resolveHibernateConfig();
 
             SessionFactory sesFactory = createHibernateSessionFactory(hibernateCfg);
 
@@ -156,40 +154,16 @@ public class HibernateL2CacheExample {
     /**
      * Resolves location of hibernate configuration file.
      *
-     * @param args Command line arguments. First argument is optional and may contain absolute path to
-     *             hibernate configuration file. If this argument is not defined than
-     *             {@code hibernate/example-hibernate-L2-cache.xml} from application {@code CLASSPATH} will be used.
      * @return InputStream for resolved hibernate configuration file.
      */
-    private static URL resolveHibernateConfig(String[] args) {
-        if (F.isEmpty(args)) {
-            ClassLoader clsLdr = Thread.currentThread().getContextClassLoader();
+    private static URL resolveHibernateConfig() {
+        URL hibernateCfg = ExamplesUtils.classLoader().getResource(HIBERNATE_DFLT_CFG);
 
-            URL hibernateCfg = clsLdr.getResource(HIBERNATE_DFLT_CFG);
+        if (hibernateCfg == null)
+            throw new RuntimeException("Cannot find hibernate configuration file in CLASSPATH: " +
+                HIBERNATE_DFLT_CFG);
 
-            if (hibernateCfg == null)
-                throw new RuntimeException("Cannot find hibernate configuration file in CLASSPATH: " +
-                    HIBERNATE_DFLT_CFG);
-
-            return hibernateCfg;
-        }
-
-        File cfgFile = new File(args[0]);
-
-        if (!cfgFile.isAbsolute())
-            throw new IllegalArgumentException("Specified hibernate configuration file should have absolute path: " +
-                cfgFile.getPath());
-
-        if (!cfgFile.exists())
-            throw new RuntimeException("Specified path to hibernate configuration file does not exist: " +
-                cfgFile.getAbsolutePath());
-
-        try {
-            return cfgFile.toURI().toURL();
-        }
-        catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        }
+        return hibernateCfg;
     }
 
     /** Entity names for stats output. */

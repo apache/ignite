@@ -20,6 +20,9 @@ import java.sql.*;
  *
  */
 public class ExamplesUtils {
+    /** */
+    private static final ClassLoader CLS_LDR = ExamplesUtils.class.getClassLoader();
+
     /**
      * Exits with code {@code -1} if maximum memory is below 90% of minimally allowed threshold.
      *
@@ -34,6 +37,15 @@ public class ExamplesUtils {
 
             System.exit(-1);
         }
+    }
+
+    /**
+     * Returns class loader for classes in examples project.
+     *
+     * @return Class loader.
+     */
+    public static ClassLoader classLoader() {
+        return CLS_LDR;
     }
 
     /**

@@ -12,6 +12,7 @@ package org.gridgain.examples.ggfs.filesystem;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.*;
+import org.gridgain.examples.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
 import org.gridgain.grid.product.*;
 import org.jetbrains.annotations.*;
@@ -53,9 +54,7 @@ public class GgfsFileSystemExample {
             System.out.println();
             System.out.println(">>> GGFS file system example started.");
 
-            ClassLoader clsLdr = Thread.currentThread().getContextClassLoader();
-
-            String path = args.length > 0 ? args[0] : clsLdr.getResource(DFLT_PATH).getFile();
+            String path = args.length > 0 ? args[0] : ExamplesUtils.classLoader().getResource(DFLT_PATH).getFile();
 
             /** Local FS home path. */
             Path locHome = new Path("file:///" + path + '/');
@@ -68,7 +67,7 @@ public class GgfsFileSystemExample {
 
             Configuration cfg = new Configuration(true);
 
-            cfg.addResource(clsLdr.getResourceAsStream(HADOOP_FS_CFG));
+            cfg.addResource(ExamplesUtils.classLoader().getResourceAsStream(HADOOP_FS_CFG));
             cfg.setInt("io.file.buffer.size", 65536);
 
             FileSystem loc = FileSystem.get(locHome.toUri(), cfg);
