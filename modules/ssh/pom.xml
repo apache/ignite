@@ -55,6 +55,13 @@
 
         <dependency>
             <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-log4j</artifactId>
+            <version>${gridgain.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.gridgain</groupId>
             <artifactId>gridgain-core</artifactId>
             <version>${gridgain.version}</version>
             <type>test-jar</type>
