@@ -28,11 +28,12 @@ public class GridCacheQuerySelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Gridgain Cache Queries Test Suite");
 
-        // Tests moved to this suite since they use GridH2IndexingSpi.
+        // Tests moved to this suite since they require GridH2IndexingSpi.
         suite.addTestSuite(GridCacheOffHeapAndSwapSelfTest.class);
         suite.addTestSuite(GridIndexingWithNoopSwapSelfTest.class);
         suite.addTestSuite(GridCachePartitionedHitsAndMissesSelfTest.class);
         suite.addTestSuite(GridCacheSwapSelfTest.class);
+        suite.addTestSuite(GridCacheOffHeapSelfTest.class);
 
         // Queries tests.
         suite.addTestSuite(GridCacheQueryLoadSelfTest.class);

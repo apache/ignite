@@ -42,7 +42,6 @@ public class GridDataGridTestSuite extends TestSuite {
 
         // Swap tests.
         suite.addTestSuite(GridCacheSwapPreloadSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapSelfTest.class);
         suite.addTestSuite(GridCacheSwapReloadSelfTest.class);
 
         // Common tests.
