@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.mapreduce.*;
 import org.jetbrains.annotations.*;
 
+import java.net.*;
 import java.util.*;
 
 /**
@@ -47,6 +48,9 @@ import java.util.*;
  * <b>NOTE:</b> integration with Hadoop is available only in {@code In-Memory Accelerator For Hadoop} edition.
  */
 public interface GridGgfs {
+    /** GGFS scheme name. */
+    public static final String GGFS_SCHEME = "ggfs";
+
     /** Property: user name. */
     public static final String PROP_USER_NAME = "usrName";
 
@@ -410,4 +414,12 @@ public interface GridGgfs {
     public <T, R> GridFuture<R> execute(Class<? extends GridGgfsTask<T, R>> taskCls,
         @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) throws GridException;
+
+    /**
+     * Check whether the given path is proxy path.
+     *
+     * @param path Path.
+     * @return {@code True} if proxy.
+     */
+    public boolean isProxy(URI path);
 }

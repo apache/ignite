@@ -2031,4 +2031,12 @@ public final class GridGgfsImpl implements GridGgfsEx {
             }
         }
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean isProxy(URI path) {
+        GridGgfsMode mode = F.isEmpty(cfg.getPathModes()) ? cfg.getDefaultMode() :
+            modeRslvr.resolveMode(new GridGgfsPath(path));
+
+        return mode == PROXY;
+    }
 }
