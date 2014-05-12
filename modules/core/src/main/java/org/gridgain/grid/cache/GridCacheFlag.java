@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.cache;
 
+import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -72,10 +73,14 @@ public enum GridCacheFlag {
     INVALIDATE,
 
     /**
-     * Skips version check during transform writes in {@link GridCacheAtomicityMode#ATOMIC} mode. By default
-     * in ATOMIC cache values are sent from primary to backup nodes to ensure update ordering.
-     * If this flag is set, version check is skipped, and transform closure is applied both on primary
-     * and backup nodes. Use this flag if you are sure that there is no concurrent key updates happening.
+     * Skips version check during {@link GridCacheProjection#transform(Object, GridClosure)} writes in
+     * {@link GridCacheAtomicityMode#ATOMIC} mode. By default, in {@code ATOMIC} mode, whenever
+     * {@code transform(...)} is called, cache values (and not the {@code transform} closure) are sent from primary
+     * node to backup nodes to ensure proper update ordering.
+     * <p>
+     * By setting this flag, version check is skipped, and {@code transform} closure is applied on both, primary
+     * and backup nodes. Use this flag for better performance if you are sure that there are no
+     * concurrent updates happening for the same key.
      */
     FORCE_TRANSFORM_BACKUP;
 
