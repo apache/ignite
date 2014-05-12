@@ -35,6 +35,15 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
     /** Line count. */
     private static final AtomicInteger totalLineCnt = new AtomicInteger();
 
+    /** Executed tasks. */
+    private static final AtomicInteger executedTasks = new AtomicInteger();
+
+    /** Cancelled tasks. */
+    private static final AtomicInteger cancelledTasks = new AtomicInteger();
+
+    /** Mapper id to fail. */
+    private static volatile int failMapperId;
+
     /** Test param. */
     private static final String MAP_WRITE = "test.map.write";
 
@@ -205,6 +214,89 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
                 w.println("Hello, Hadoop map-reduce!");
 
             w.flush();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTaskCancelling() throws Exception {
+        int lineCnt = 10000;
+        String fileName = "/testFile";
+
+        prepareFile(fileName, lineCnt);
+
+        executedTasks.set(0);
+        cancelledTasks.set(0);
+        failMapperId = 0;
+
+        Configuration cfg = new Configuration();
+
+        cfg.setStrings("fs.ggfs.impl", GridGgfsHadoopFileSystem.class.getName());
+
+        Job job = Job.getInstance(cfg);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(IntWritable.class);
+
+        job.setMapperClass(CancellingTestMapper.class);
+
+        job.setNumReduceTasks(0);
+
+        job.setInputFormatClass(TextInputFormat.class);
+
+        FileInputFormat.setInputPaths(job, new Path("ggfs://ipc/"));
+
+        job.setJarByClass(getClass());
+
+        GridHadoopProcessorAdapter hadoop = ((GridKernal) grid(0)).context().hadoop();
+
+        GridHadoopJobId jobId = new GridHadoopJobId(UUID.randomUUID(), 1);
+
+        final GridFuture<?> fut = hadoop.submit(jobId, new GridHadoopDefaultJobInfo(job.getConfiguration()));
+
+        while (executedTasks.get() != 32) {
+            Thread.sleep(100);
+        }
+
+        // Fail mapper with id "1", cancels others
+        failMapperId = 1;
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                fut.get();
+
+                return null;
+            }
+        }, GridException.class, null);
+
+
+        assertEquals(executedTasks.get(), cancelledTasks.get() + 1);
+    }
+
+    private static class CancellingTestMapper extends Mapper<Object, Text, Text, IntWritable> {
+        private int mapperId;
+
+        /** {@inheritDoc} */
+        @Override protected void setup(Context context) throws IOException, InterruptedException {
+            mapperId = executedTasks.incrementAndGet();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+            try {
+                while (true) {
+                    if (mapperId == failMapperId)
+                        throw new IOException();
+
+                    Thread.sleep(100);
+                }
+            }
+            catch (InterruptedException e) {
+                cancelledTasks.incrementAndGet();
+
+                Thread.currentThread().interrupt();
+                throw e;
+            }
         }
     }
 

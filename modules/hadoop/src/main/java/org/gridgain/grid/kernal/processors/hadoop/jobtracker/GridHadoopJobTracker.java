@@ -741,7 +741,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 return;
             }
 
-            if (job.hasCombiner()) {
+            if (job.hasCombiner() && status.state() != CANCELED) {
                 // Create combiner.
                 if (lastMapperFinished) {
                     GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(), COMBINE, jobId,
@@ -910,7 +910,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             cp.pendingSplits(splitsCp);
 
-            cp.failCause(err);
+            if (cp.phase() != PHASE_CANCELLING)
+                cp.failCause(err);
 
             if (err != null)
                 cp.phase(PHASE_CANCELLING);
