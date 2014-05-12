@@ -39,6 +39,7 @@
         <dependencySet>
             <outputDirectory>/</outputDirectory>
             <useTransitiveDependencies>false</useTransitiveDependencies>
+            <useProjectArtifact>false</useProjectArtifact>
             <excludes>
                 <exclude>org.apache.ant:ant</exclude>
                 <exclude>org.apache.tomcat:catalina</exclude>
@@ -51,6 +52,7 @@
         <dependencySet>
             <outputDirectory>/hadoop2</outputDirectory>
             <useTransitiveDependencies>false</useTransitiveDependencies>
+            <useProjectArtifact>false</useProjectArtifact>
             <includes>
                 <include>org.apache.hadoop:*</include>
                 <include>org.apache.avro:avro</include>
