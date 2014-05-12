@@ -10,6 +10,7 @@
 package org.gridgain.grid.util.nio.impl;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.testframework.junits.common.*;
@@ -265,8 +266,7 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
          * Creates empty mock session.
          */
         public MockNioSession() {
-            // TODO: 8242.
-            addMeta(MARSHALLER.ordinal(), null/*new GridClientProtobufMarshaller()*/);
+            addMeta(MARSHALLER.ordinal(), new GridOptimizedMarshaller());
         }
 
         /**

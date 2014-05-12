@@ -26,8 +26,6 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
  * Tests that transaction is invalidated in case of {@link GridCacheTxHeuristicException}.
- *
- * TODO 8242.
  */
 public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** Index SPI throwing exception. */
@@ -53,9 +51,6 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
-
-        // TODO 8242.
-        //idxSpi.setDefaultIndexPrimitiveKey(true);
 
         cfg.setIndexingSpi(idxSpi);
 
@@ -612,32 +607,32 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
 
         /** {@inheritDoc} */
         @Override public boolean registerType(@Nullable String spaceName, GridIndexingTypeDescriptor desc) {
-            return false;
+            return true;
         }
 
         /** {@inheritDoc} */
         @Override public void unregisterType(@Nullable String spaceName, GridIndexingTypeDescriptor type) {
-
+            // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public <K> void onSwap(@Nullable String spaceName, String swapSpaceName, K key) {
-
+            // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public <K, V> void onUnswap(@Nullable String spaceName, K key, V val, byte[] valBytes) {
-
+            // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void registerMarshaller(GridIndexingMarshaller marshaller) {
-
+            // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void rebuildIndexes(@Nullable String spaceName, GridIndexingTypeDescriptor type) {
-
+            // No-op.
         }
 
         /** {@inheritDoc} */
