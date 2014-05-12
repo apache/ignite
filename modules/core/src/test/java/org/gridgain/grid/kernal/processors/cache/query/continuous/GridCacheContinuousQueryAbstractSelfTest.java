@@ -118,21 +118,22 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             assertEquals(gridCount(), grid(i).nodes().size());
 
         for (int i = 0; i < gridCount(); i++) {
-            int j;
-
-            for (j = 0; j < 3; j++) {
+            for (int j = 0; j < 5; j++) {
                 try {
                     grid(i).cache(null).removeAll();
 
                     break;
                 }
-                catch (GridCachePartialUpdateException ignored) {
+                catch (GridCachePartialUpdateException e) {
+                    if (j == 4)
+                        throw new Exception("Failed to clear cache for grid: " + i, e);
+
+                    U.warn(log, "Failed to clear cache for grid (will retry in 500 ms) [gridIdx=" + i +
+                        ", err=" + e.getMessage() + ']');
+
                     U.sleep(500);
                 }
             }
-
-            if (j == 3)
-                fail("Failed to clear cache on grid " + i);
         }
 
         for (int i = 0; i < gridCount(); i++)
