@@ -77,8 +77,7 @@ public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
 
         assert folder1.getAbsoluteFile().equals(folder2.getAbsoluteFile()) : "folder1 should be equal folder2.";
 
-        // Remove directory.
-        deleteFolder(folder2);
+        U.delete(folder2);
 
         getSpi().saveCheckpoint(CHECK_POINT_KEY_PREFIX, GridTestIoUtils.serializeJdk(state), 0, true);
 
@@ -92,8 +91,7 @@ public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
 
         assert !folder2.getAbsolutePath().equals(changedFolder.getAbsolutePath()) : "Directories should not be equal.";
 
-        // Remove directory.
-        deleteFolder(changedFolder);
+        U.delete(changedFolder);
 
         boolean error = false;
 
@@ -106,18 +104,5 @@ public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
         }
 
         assert error : "Check point should not be saved.";
-    }
-
-    /**
-     * @param f Folder to delete.
-     */
-    void deleteFolder(File f) {
-        for (File file : f.listFiles())
-            if (file.isDirectory())
-                deleteFolder(file);
-            else
-                file.delete();
-
-        f.delete();
     }
 }

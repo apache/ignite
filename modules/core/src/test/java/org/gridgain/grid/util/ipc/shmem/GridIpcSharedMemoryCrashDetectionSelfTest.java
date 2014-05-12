@@ -41,6 +41,8 @@ public class GridIpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testGgfsServerClientInteractionsUponClientKilling() throws Exception {
+        U.setWorkDirectory(U.getGridGainHome(), null);
+
         // Run server endpoint.
         GridIpcSharedMemoryServerEndpoint srv = new GridIpcSharedMemoryServerEndpoint();
 

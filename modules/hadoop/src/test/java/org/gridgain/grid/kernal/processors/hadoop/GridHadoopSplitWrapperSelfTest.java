@@ -56,4 +56,6 @@ public class GridHadoopSplitWrapperSelfTest extends GridHadoopAbstractSelfTest {
             }
         }, AssertionError.class, null);
     }
+
+
 }

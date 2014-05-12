@@ -103,11 +103,11 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
                 fut.get();
 
                 assertEquals("Use new mapper = " + useNewMapper + ", combiner = " + useNewCombiner + "reducer = " + useNewReducer,
-                    "green\t150000\n" +
                     "blue\t200000\n" +
+                    "green\t150000\n" +
                     "red\t100000\n" +
                     "yellow\t70000\n",
-                    readFile(testOutputDir.getAbsolutePath() + "/" + (useNewReducer ? "part-r-" : "part-") + "00000")
+                    readAndSortFile(testOutputDir.getAbsolutePath() + "/" + (useNewReducer ? "part-r-" : "part-") + "00000")
                 );
             }
             finally {

@@ -42,7 +42,7 @@ public class GridHadoopContext {
     private GridHadoopExternalTaskExecutor extTaskExecutor;
 
     /** */
-    private GridHadoopShuffle shuffle;
+    private GridHadoopShuffler shuffle;
 
     /** Managers list. */
     private List<GridHadoopComponent> components = new ArrayList<>();
@@ -56,7 +56,7 @@ public class GridHadoopContext {
         GridHadoopJobTracker jobTracker,
         GridHadoopEmbeddedTaskExecutor embeddedTaskExecutor,
         GridHadoopExternalTaskExecutor extTaskExecutor,
-        GridHadoopShuffle shuffle
+        GridHadoopShuffler shuffle
     ) {
         this.ctx = ctx;
         this.cfg = cfg;
@@ -158,7 +158,7 @@ public class GridHadoopContext {
     /**
      * @return Shuffle.
      */
-    public GridHadoopShuffle shuffle() {
+    public GridHadoopShuffler shuffle() {
         return shuffle;
     }
 
