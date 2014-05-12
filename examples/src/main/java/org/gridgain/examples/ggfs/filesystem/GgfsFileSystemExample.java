@@ -29,7 +29,7 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  */
 @GridOnlyAvailableIn(HADOOP)
 public class GgfsFileSystemExample {
-    /** Path to the default hadoop configuration. */
+    /** Path to hadoop configuration file (will be resolved from application {@code CLASSPATH}). */
     private static final String HADOOP_FS_CFG = "hadoop/core-site.xml";
 
     /** Flag to mark HDFS installation is configured, started and available for this example. */
