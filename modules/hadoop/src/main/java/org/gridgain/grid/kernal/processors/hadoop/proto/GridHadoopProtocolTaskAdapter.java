@@ -52,6 +52,7 @@ public abstract class GridHadoopProtocolTaskAdapter<R> implements GridComputeTas
         @GridInstanceResource
         private Grid grid;
 
+        @SuppressWarnings("UnusedDeclaration")
         @GridJobContextResource
         private GridComputeJobContext jobCtx;
 
