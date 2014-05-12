@@ -41,6 +41,34 @@
         </dependency>
 
         <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-servlet-startup</artifactId>
+            <version>${gridgain.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-spring</artifactId>
+            <version>${gridgain.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-indexing</artifactId>
+            <version>${gridgain.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-rest</artifactId>
+            <version>${gridgain.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-servlets</artifactId>
             <version>9.0.5.v20130815</version>
@@ -51,6 +79,13 @@
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-webapp</artifactId>
             <version>9.0.5.v20130815</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>1.6.4</version>
             <scope>test</scope>
         </dependency>
 

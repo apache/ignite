@@ -10,6 +10,9 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.lang.*;
+import org.gridgain.grid.logger.*;
+import org.gridgain.grid.resources.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.lang.*;
@@ -24,11 +27,53 @@ import static java.util.concurrent.TimeUnit.*;
  */
 @SuppressWarnings({"ProhibitedExceptionDeclared", "TooBroadScope"})
 public class GridScheduleSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final int NODES_CNT = 2;
+
+    /** */
+    private static AtomicInteger execCntr = new AtomicInteger(0);
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        startGrids(NODES_CNT);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        super.afterTestsStopped();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        execCntr.set(0);
+    }
+
     /**
-     * Create test.
+     * @throws Exception If failed.
      */
-    public GridScheduleSelfTest() {
-        super(/* Start grid. */true);
+    public void testRunLocal() throws Exception {
+        for (int i = 0; i < NODES_CNT; i++) {
+            GridFuture<?> fut = grid(i).scheduler().runLocal(new TestRunnable());
+
+            assert fut.get() == null;
+
+            assertEquals(1, execCntr.getAndSet(0));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCallLocal() throws Exception {
+        for (int i = 0; i < NODES_CNT; i++) {
+            GridFuture<?> fut = grid(i).scheduler().callLocal(new TestCallable());
+
+            assertEquals(1, fut.get());
+
+            assertEquals(1, execCntr.getAndSet(0));
+        }
     }
 
     /**
@@ -44,7 +89,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
         try {
             // Execute 2 times after 2 seconds delay every minute.
-            fut = grid().scheduler().scheduleLocal(
+            fut = grid(0).scheduler().scheduleLocal(
                 new Runnable() {
                     @Override public void run() {
                         latch.countDown();
@@ -106,7 +151,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
         long delay = 2; // 2 seconds delay.
 
         try {
-            fut = grid().scheduler().scheduleLocal(new Callable<Integer>() {
+            fut = grid(0).scheduler().scheduleLocal(new Callable<Integer>() {
                 private int cnt;
 
                 @Override public Integer call() {
@@ -162,7 +207,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
         final GridTuple<Integer> tpl = new GridTuple<>(0);
 
         try {
-            fut = grid().scheduler().scheduleLocal(new Runnable() {
+            fut = grid(0).scheduler().scheduleLocal(new Runnable() {
                 @Override public void run() {
                     tpl.set(tpl.get() + 1);
                 }
@@ -216,7 +261,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
         try {
             // Invalid delay.
-            grid().scheduler().scheduleLocal(run, "{sdf, *} * * * * *").get();
+            grid(0).scheduler().scheduleLocal(run, "{sdf, *} * * * * *").get();
 
             fail("GridException must have been thrown");
         }
@@ -226,7 +271,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
         try {
             // Invalid delay.
-            grid().scheduler().scheduleLocal(run, "{**, *} * * * * *").get();
+            grid(0).scheduler().scheduleLocal(run, "{**, *} * * * * *").get();
 
             fail("GridException must have been thrown");
         }
@@ -236,7 +281,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
         try {
             // Invalid number of executions.
-            grid().scheduler().scheduleLocal(run, "{1, ghd} * * * * *").get();
+            grid(0).scheduler().scheduleLocal(run, "{1, ghd} * * * * *").get();
 
             fail("GridException must have been thrown");
         }
@@ -246,7 +291,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
         try {
             // Number of executions in pattern must be greater than zero or equal to "*".
-            grid().scheduler().scheduleLocal(run, "{*, 0} * * * * *").get();
+            grid(0).scheduler().scheduleLocal(run, "{*, 0} * * * * *").get();
 
             fail("GridException must have been thrown");
         }
@@ -256,7 +301,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
         try {
             // Invalid cron expression.
-            grid().scheduler().scheduleLocal(run, "{2, 6} * * * * * * * * * *").get();
+            grid(0).scheduler().scheduleLocal(run, "{2, 6} * * * * * * * * * *").get();
 
             fail("GridException must have been thrown");
         }
@@ -266,7 +311,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
         try {
             // Invalid both delay and number of calls.
-            grid().scheduler().scheduleLocal(run, "{-2, -6} * * * * *").get();
+            grid(0).scheduler().scheduleLocal(run, "{-2, -6} * * * * *").get();
 
             fail("GridException must have been thrown");
         }
@@ -303,5 +348,48 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
         }
 
         return success;
+    }
+
+    /**
+     * Test runnable job.
+     */
+    private static class TestRunnable implements GridRunnable {
+        /** */
+        @GridInstanceResource
+        private Grid grid;
+
+        /** */
+        @GridLoggerResource
+        private GridLogger log;
+
+        /** @{inheritDoc} */
+        @Override public void run() {
+            log.info("Runnable job executed on node: " + grid.localNode().id());
+
+            assert grid != null;
+
+            execCntr.incrementAndGet();
+        }
+    }
+    /**
+     * Test callable job.
+     */
+    private static class TestCallable implements GridCallable<Integer> {
+        /** */
+        @GridInstanceResource
+        private Grid grid;
+
+        /** */
+        @GridLoggerResource
+        private GridLogger log;
+
+        /** {@inheritDoc} */
+        @Override public Integer call() {
+            log.info("Callable job executed on node: " + grid.localNode().id());
+
+            assert grid != null;
+
+            return execCntr.incrementAndGet();
+        }
     }
 }
