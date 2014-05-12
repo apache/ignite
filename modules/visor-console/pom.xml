@@ -54,6 +54,13 @@
 
         <dependency>
             <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-spring</artifactId>
+            <version>${gridgain.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.gridgain</groupId>
             <artifactId>gridgain-rest</artifactId>
             <version>${gridgain.version}</version>
             <scope>test</scope>
@@ -61,7 +68,7 @@
 
         <dependency>
             <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-spring</artifactId>
+            <artifactId>gridgain-indexing</artifactId>
             <version>${gridgain.version}</version>
             <scope>test</scope>
         </dependency>
