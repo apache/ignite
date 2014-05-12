@@ -27,6 +27,10 @@ import static org.gridgain.grid.util.offheap.GridOffHeapEvent.*;
  * Off-heap map based on {@code Unsafe} implementation.
  */
 public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
+    /** Header size. */
+    private static final int HEADER = 4 /*hash*/ + 4 /*key-size*/  + 4 /*value-size*/ + 8 /*queue-address*/ +
+        8 /*next-address*/;
+
     /** Debug flag. */
     private static final boolean DEBUG = false;
 
@@ -667,7 +671,16 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
 
                         while (entryAddr != 0) {
                             // Read key and value bytes.
-                            bin.add(F.t(Entry.keyBytes(entryAddr, mem), Entry.valueBytes(entryAddr, mem)));
+                            // TODO: GG-8123: Inlined as a workaround. Revert when 7u60 is released.
+//                            bin.add(F.t(Entry.readKeyBytes(entryAddr, mem), Entry.readValueBytes(entryAddr, mem)));
+                            {
+                                int keyLen = Entry.readKeyLength(entryAddr, mem);
+                                int valLen = Entry.readValueLength(entryAddr, mem);
+
+                                byte[] valBytes =  mem.readBytes(entryAddr + HEADER + keyLen, valLen);
+
+                                bin.add(F.t(Entry.readKeyBytes(entryAddr, mem), valBytes));
+                            }
 
                             entryAddr = Entry.nextAddress(entryAddr, mem);
                         }
@@ -833,8 +846,16 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                             }
 
                             if (evictLsnr != null) {
-                                keyBytes = Entry.keyBytes(cur, mem);
-                                valBytes = Entry.valueBytes(cur, mem);
+                                keyBytes = Entry.readKeyBytes(cur, mem);
+
+                                // TODO: GG-8123: Inlined as a workaround. Revert when 7u60 is released.
+//                                valBytes = Entry.readValueBytes(cur, mem);
+                                {
+                                    int keyLen = Entry.readKeyLength(cur, mem);
+                                    int valLen = Entry.readValueLength(cur, mem);
+
+                                    valBytes = mem.readBytes(cur + HEADER + keyLen, valLen);
+                                }
                             }
 
                             long a;
@@ -882,7 +903,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
             if (cnt + 1 > threshold)
                 rehash();
 
-            int size = Entry.HEADER + keyBytes.length + valBytes.length;
+            int size = HEADER + keyBytes.length + valBytes.length;
 
             boolean poll = !mem.reserve(size);
 
@@ -960,8 +981,8 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                         // If found match.
                         if (Entry.keyEquals(cur, keyBytes, mem)) {
                             // If value bytes have the same length, just update the value.
-                            if (Entry.valueLength(cur, mem) == valBytes.length) {
-                                Entry.valueBytes(cur, valBytes, mem);
+                            if (Entry.readValueLength(cur, mem) == valBytes.length) {
+                                Entry.writeValueBytes(cur, valBytes, mem);
 
                                 isNew = false;
 
@@ -996,7 +1017,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                     }
                 }
 
-                size = Entry.HEADER + keyBytes.length + valBytes.length;
+                size = HEADER + keyBytes.length + valBytes.length;
 
                 poll = !mem.reserve(size);
 
@@ -1089,7 +1110,18 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                                     Bin.first(binAddr, next, mem);
                             }
 
-                            valBytes = retval ? Entry.valueBytes(cur, mem) : EMPTY_BYTES;
+                            // TODO: GG-8123: Inlined as a workaround. Revert when 7u60 is released.
+//                            valBytes = retval ? Entry.readValueBytes(cur, mem) : EMPTY_BYTES;
+                            {
+                                if (retval) {
+                                    int keyLen = Entry.readKeyLength(cur, mem);
+                                    int valLen = Entry.readValueLength(cur, mem);
+
+                                    valBytes = mem.readBytes(cur + HEADER + keyLen, valLen);
+                                }
+                                else
+                                    valBytes = EMPTY_BYTES;
+                            }
 
                             // Prepare release of memory.
                             qAddr = Entry.queueAddress(cur, mem);
@@ -1168,8 +1200,16 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                 long addr = Bin.first(binAddr, mem);
 
                 while (addr != 0) {
-                    if (Entry.keyEquals(addr, keyBytes, mem))
-                        return Entry.valueBytes(addr, mem);
+                    if (Entry.keyEquals(addr, keyBytes, mem)) {
+                        // TODO: GG-8123: Inlined as a workaround. Revert when 7u60 is released.
+//                        return Entry.readValueBytes(addr, mem);
+                        {
+                            int keyLen = Entry.readKeyLength(addr, mem);
+                            int valLen = Entry.readValueLength(addr, mem);
+
+                            return mem.readBytes(addr + HEADER + keyLen, valLen);
+                        }
+                    }
 
                     addr = Entry.nextAddress(addr, mem);
                 }
@@ -1221,10 +1261,6 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
      * Entry structure.
      */
     private static class Entry {
-        /** Header size. */
-        static final int HEADER = 4 /*hash*/ + 4 /*key-size*/  + 4 /*value-size*/ + 8 /*queue-address*/ +
-            8 /*next-address*/;
-
         /**
          * @param keyBytes Key bytes.
          * @param valBytes Value bytes.
@@ -1240,7 +1276,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
          * @return Entry size.
          */
         static int size(long addr, GridUnsafeMemory mem) {
-            return HEADER + keyLength(addr, mem) + valueLength(addr, mem);
+            return HEADER + readKeyLength(addr, mem) + readValueLength(addr, mem);
         }
 
         /**
@@ -1266,7 +1302,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
          * @param mem Memory.
          * @return Key length.
          */
-        static int keyLength(long ptr, GridUnsafeMemory mem) {
+        static int readKeyLength(long ptr, GridUnsafeMemory mem) {
             int len = mem.readInt(ptr + 4);
 
             assert len >= 0 : "Invalid key length [addr=" + String.format("0x%08x", ptr) +
@@ -1282,7 +1318,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
          * @param len Length.
          * @param mem Memory.
          */
-        static void keyLength(long ptr, int len, GridUnsafeMemory mem) {
+        static void writeKeyLength(long ptr, int len, GridUnsafeMemory mem) {
             mem.writeInt(ptr + 4, len);
         }
 
@@ -1291,7 +1327,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
          * @param mem Memory.
          * @return Value length.
          */
-        static int valueLength(long ptr, GridUnsafeMemory mem) {
+        static int readValueLength(long ptr, GridUnsafeMemory mem) {
             int len = mem.readInt(ptr + 8);
 
             assert len >= 0 : "Invalid value length [addr=" + String.format("0x%08x", ptr) +
@@ -1307,7 +1343,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
          * @param len Length.
          * @param mem Memory.
          */
-        static void valueLength(long ptr, int len, GridUnsafeMemory mem) {
+        static void writeValueLength(long ptr, int len, GridUnsafeMemory mem) {
             mem.writeInt(ptr + 8, len);
         }
 
@@ -1356,8 +1392,8 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
          * @param mem Memory.
          * @return Key bytes.
          */
-        static byte[] keyBytes(long ptr, GridUnsafeMemory mem) {
-            int keyLen = keyLength(ptr, mem);
+        static byte[] readKeyBytes(long ptr, GridUnsafeMemory mem) {
+            int keyLen = readKeyLength(ptr, mem);
 
             return mem.readBytes(ptr + HEADER, keyLen);
         }
@@ -1367,7 +1403,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
          * @param keyBytes Key bytes.
          * @param mem Memory.
          */
-        static void keyBytes(long ptr, byte[] keyBytes, GridUnsafeMemory mem) {
+        static void writeKeyBytes(long ptr, byte[] keyBytes, GridUnsafeMemory mem) {
             mem.writeBytes(ptr + HEADER, keyBytes);
         }
 
@@ -1376,9 +1412,9 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
          * @param mem Memory.
          * @return Value bytes.
          */
-        static byte[] valueBytes(long ptr, GridUnsafeMemory mem) {
-            int keyLen = keyLength(ptr, mem);
-            int valLen = valueLength(ptr, mem);
+        static byte[] readValueBytes(long ptr, GridUnsafeMemory mem) {
+            int keyLen = readKeyLength(ptr, mem);
+            int valLen = readValueLength(ptr, mem);
 
             return mem.readBytes(ptr + HEADER + keyLen, valLen);
         }
@@ -1388,8 +1424,8 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
          * @param valBytes Value bytes.
          * @param mem Memory.
          */
-        static void valueBytes(long ptr, byte[] valBytes, GridUnsafeMemory mem) {
-            valueBytes(ptr, keyLength(ptr, mem), valBytes, mem);
+        static void writeValueBytes(long ptr, byte[] valBytes, GridUnsafeMemory mem) {
+            writeValueBytes(ptr, readKeyLength(ptr, mem), valBytes, mem);
         }
 
         /**
@@ -1398,7 +1434,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
          * @param valBytes Value bytes.
          * @param mem Memory.
          */
-        static void valueBytes(long ptr, int keyLen, byte[] valBytes, GridUnsafeMemory mem) {
+        static void writeValueBytes(long ptr, int keyLen, byte[] valBytes, GridUnsafeMemory mem) {
             mem.writeBytes(ptr + HEADER + keyLen, valBytes);
         }
 
@@ -1413,10 +1449,10 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
          */
         static void write(long ptr, int hash, byte[] keyBytes, byte[] valBytes, GridUnsafeMemory mem) {
             hash(ptr, hash, mem);
-            keyLength(ptr, keyBytes.length, mem);
-            valueLength(ptr, valBytes.length, mem);
-            keyBytes(ptr, keyBytes, mem);
-            valueBytes(ptr, keyBytes.length, valBytes, mem);
+            writeKeyLength(ptr, keyBytes.length, mem);
+            writeValueLength(ptr, valBytes.length, mem);
+            writeKeyBytes(ptr, keyBytes, mem);
+            writeValueBytes(ptr, keyBytes.length, valBytes, mem);
         }
 
         /**
@@ -1433,12 +1469,12 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
         static void write(long ptr, int hash, byte[] keyBytes, byte[] valBytes, long queueAddr, long next,
             GridUnsafeMemory mem) {
             hash(ptr, hash, mem);
-            keyLength(ptr, keyBytes.length, mem);
-            valueLength(ptr, valBytes.length, mem);
+            writeKeyLength(ptr, keyBytes.length, mem);
+            writeValueLength(ptr, valBytes.length, mem);
             queueAddress(ptr, queueAddr, mem);
             nextAddress(ptr, next, mem);
-            keyBytes(ptr, keyBytes, mem);
-            valueBytes(ptr, keyBytes.length, valBytes, mem);
+            writeKeyBytes(ptr, keyBytes, mem);
+            writeValueBytes(ptr, keyBytes.length, valBytes, mem);
         }
 
         /**
@@ -1450,7 +1486,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
          * @return {@code True} if equal.
          */
         static boolean keyEquals(long ptr, byte[] keyBytes, GridUnsafeMemory mem) {
-            long len = keyLength(ptr, mem);
+            long len = readKeyLength(ptr, mem);
 
             return len == keyBytes.length && mem.compare(ptr + HEADER, keyBytes);
         }

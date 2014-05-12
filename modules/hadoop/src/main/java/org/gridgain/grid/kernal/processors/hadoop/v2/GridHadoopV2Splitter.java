@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
+import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.*;
 import org.gridgain.grid.*;
@@ -24,10 +25,10 @@ import java.util.*;
 public class GridHadoopV2Splitter {
     /**
      * @param ctx Job context.
-     * @return Collection of mapped blocks.
+     * @return Collection of mapped splits.
      * @throws GridException If mapping failed.
      */
-    public static Collection<GridHadoopFileBlock> splitJob(JobContext ctx) throws GridException {
+    public static Collection<GridHadoopInputSplit> splitJob(JobContext ctx) throws GridException {
         try {
             InputFormat<?, ?> format = U.newInstance(ctx.getInputFormatClass());
 
@@ -35,15 +36,16 @@ public class GridHadoopV2Splitter {
 
             List<InputSplit> splits = format.getSplits(ctx);
 
-            Collection<GridHadoopFileBlock> res = new ArrayList<>(splits.size());
+            Collection<GridHadoopInputSplit> res = new ArrayList<>(splits.size());
 
-            for (InputSplit s0 : splits) {
-                FileSplit s = (FileSplit)s0;
+            for (InputSplit nativeSplit : splits) {
+                if (nativeSplit instanceof FileSplit) {
+                    FileSplit s = (FileSplit)nativeSplit;
 
-                GridHadoopFileBlock block = new GridHadoopFileBlock(s.getLocations(), s.getPath().toUri(),
-                    s.getStart(), s.getLength());
-
-                res.add(block);
+                    res.add(new GridHadoopFileBlock(s.getLocations(), s.getPath().toUri(), s.getStart(), s.getLength()));
+                }
+                else
+                    res.add(new GridHadoopSplitWrapper((Writable)nativeSplit, nativeSplit.getLocations()));
             }
 
             return res;

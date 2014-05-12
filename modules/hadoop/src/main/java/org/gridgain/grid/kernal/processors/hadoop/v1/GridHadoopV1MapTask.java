@@ -13,7 +13,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Job;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -22,6 +22,9 @@ import java.io.*;
  * Hadoop map task implementation for v1 API.
  */
 public class GridHadoopV1MapTask extends GridHadoopTask {
+    /** */
+    private static final String[] EMPTY_HOSTS = new String[0];
+
     /** {@inheritDoc} */
     public GridHadoopV1MapTask(GridHadoopTaskInfo taskInfo) {
         super(taskInfo);
@@ -37,9 +40,19 @@ public class GridHadoopV1MapTask extends GridHadoopTask {
 
         InputFormat inFormat = jobConf.getInputFormat();
 
-        GridHadoopFileBlock block = info().fileBlock();
+        GridHadoopInputSplit split = info().inputSplit();
 
-        InputSplit split = new FileSplit(new Path(block.file().toString()), block.start(), block.length(), block.hosts());
+        InputSplit nativeSplit;
+
+        if (split instanceof GridHadoopFileBlock) {
+            GridHadoopFileBlock block = (GridHadoopFileBlock)split;
+
+            nativeSplit = new FileSplit(new Path(block.file().toString()), block.start(), block.length(), EMPTY_HOSTS);
+        }
+        else
+            nativeSplit = (InputSplit)split.innerSplit();
+
+        assert nativeSplit != null;
 
         OutputCollector collector = new OutputCollector() {
             @Override public void collect(Object key, Object val) throws IOException {
@@ -55,7 +68,7 @@ public class GridHadoopV1MapTask extends GridHadoopTask {
         Reporter reporter = Reporter.NULL;
 
         try {
-            RecordReader reader = inFormat.getRecordReader(split, jobConf, reporter);
+            RecordReader reader = inFormat.getRecordReader(nativeSplit, jobConf, reporter);
 
             Object key = reader.createKey();
             Object val = reader.createValue();

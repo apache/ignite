@@ -30,8 +30,8 @@ public class GridHadoopJobMetadata implements Externalizable {
     /** Map-reduce plan. */
     private GridHadoopMapReducePlan mrPlan;
 
-    /** Pending blocks for which mapper should be executed. */
-    private Collection<GridHadoopFileBlock> pendingBlocks;
+    /** Pending splits for which mapper should be executed. */
+    private Collection<GridHadoopInputSplit> pendingSplits;
 
     /** Pending reducers. */
     private Collection<Integer> pendingReducers;
@@ -75,7 +75,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         jobId = src.jobId;
         jobInfo = src.jobInfo;
         mrPlan = src.mrPlan;
-        pendingBlocks = src.pendingBlocks;
+        pendingSplits = src.pendingSplits;
         pendingReducers = src.pendingReducers;
         phase = src.phase;
         taskNumMap = src.taskNumMap;
@@ -96,21 +96,21 @@ public class GridHadoopJobMetadata implements Externalizable {
     }
 
     /**
-     * Sets collection of pending blocks.
+     * Sets collection of pending splits.
      *
-     * @param pendingBlocks Collection of pending blocks.
+     * @param pendingSplits Collection of pending splits.
      */
-    public void pendingBlocks(Collection<GridHadoopFileBlock> pendingBlocks) {
-        this.pendingBlocks = pendingBlocks;
+    public void pendingSplits(Collection<GridHadoopInputSplit> pendingSplits) {
+        this.pendingSplits = pendingSplits;
     }
 
     /**
-     * Gets collection of pending blocks.
+     * Gets collection of pending splits.
      *
-     * @return Collection of pending blocks.
+     * @return Collection of pending splits.
      */
-    public Collection<GridHadoopFileBlock> pendingBlocks() {
-        return pendingBlocks;
+    public Collection<GridHadoopInputSplit> pendingSplits() {
+        return pendingSplits;
     }
 
     /**
@@ -146,8 +146,8 @@ public class GridHadoopJobMetadata implements Externalizable {
 
         // Initialize task numbers.
         for (UUID nodeId : mrPlan.mapperNodeIds()) {
-            for (GridHadoopFileBlock block : mrPlan.mappers(nodeId))
-                assignTaskNumber(block);
+            for (GridHadoopInputSplit split : mrPlan.mappers(nodeId))
+                assignTaskNumber(split);
 
             // Combiner task.
             assignTaskNumber(nodeId);
@@ -218,7 +218,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         out.writeObject(jobId);
         out.writeObject(jobInfo);
         out.writeObject(mrPlan);
-        out.writeObject(pendingBlocks);
+        out.writeObject(pendingSplits);
         out.writeObject(pendingReducers);
         out.writeObject(taskNumMap);
         out.writeInt(nextTaskNum);
@@ -231,7 +231,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         jobId = (GridHadoopJobId)in.readObject();
         jobInfo = (GridHadoopJobInfo)in.readObject();
         mrPlan = (GridHadoopMapReducePlan)in.readObject();
-        pendingBlocks = (Collection<GridHadoopFileBlock>)in.readObject();
+        pendingSplits = (Collection<GridHadoopInputSplit>)in.readObject();
         pendingReducers = (Collection<Integer>)in.readObject();
         taskNumMap = (Map<Object, Integer>)in.readObject();
         nextTaskNum = in.readInt();
@@ -241,7 +241,7 @@ public class GridHadoopJobMetadata implements Externalizable {
 
     /** {@inheritDoc} */
     public String toString() {
-        return S.toString(GridHadoopJobMetadata.class, this, "pendingMaps", pendingBlocks.size(),
-            "pendingReduces", pendingReducers.size());
+        return S.toString(GridHadoopJobMetadata.class, this, "pendingMaps", pendingSplits.size(),
+                "pendingReduces", pendingReducers.size());
     }
 }

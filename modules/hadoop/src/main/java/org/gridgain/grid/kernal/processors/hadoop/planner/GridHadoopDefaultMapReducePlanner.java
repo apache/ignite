@@ -37,10 +37,10 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
     private GridLogger log;
 
     /** {@inheritDoc} */
-    @Override public GridHadoopMapReducePlan preparePlan(Collection<GridHadoopFileBlock> blocks,
+    @Override public GridHadoopMapReducePlan preparePlan(Collection<GridHadoopInputSplit> splits,
         Collection<GridNode> top, GridHadoopJob job, @Nullable GridHadoopMapReducePlan oldPlan) throws GridException {
 
-        Map<UUID, Collection<GridHadoopFileBlock>> mappersMap = mappersMap(job, blocks, top);
+        Map<UUID, Collection<GridHadoopInputSplit>> mappersMap = mappersMap(job, splits, top);
 
         return new GridHadoopDefaultMapReducePlan(mappersMap, reducersMap(top, job));
     }
@@ -49,31 +49,31 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
      * Gets mappers to nodes assignment.
      *
      * @param job Job.
-     * @param blocks Blocks to assign to nodes.
+     * @param splits Splits to assign to nodes.
      * @param top Topology.
      * @return Block to node assignment.
      */
-    private Map<UUID, Collection<GridHadoopFileBlock>> mappersMap(GridHadoopJob job,
-        Iterable<GridHadoopFileBlock> blocks, Collection<GridNode> top) throws GridException {
-        Map<UUID, Collection<GridHadoopFileBlock>> mappersMap = new HashMap<>();
+    private Map<UUID, Collection<GridHadoopInputSplit>> mappersMap(GridHadoopJob job,
+        Iterable<GridHadoopInputSplit> splits, Collection<GridNode> top) throws GridException {
+        Map<UUID, Collection<GridHadoopInputSplit>> mappersMap = new HashMap<>();
 
         Map<String, Collection<GridNode>> nodes = groupByHost(top);
 
-        for (GridHadoopFileBlock block : blocks) {
-            UUID nodeId = nodeId(job, block, top, nodes);
+        for (GridHadoopInputSplit split : splits) {
+            UUID nodeId = nodeId(job, split, top, nodes);
 
             if (log.isDebugEnabled())
-                log.debug("Mapped block to node [block=" + block + ", nodeId=" + nodeId + ']');
+                log.debug("Mapped split to node [split=" + split + ", nodeId=" + nodeId + ']');
 
-            Collection<GridHadoopFileBlock> nodeBlocks = mappersMap.get(nodeId);
+            Collection<GridHadoopInputSplit> nodeSplits = mappersMap.get(nodeId);
 
-            if (nodeBlocks == null) {
-                nodeBlocks = new ArrayList<>();
+            if (nodeSplits == null) {
+                nodeSplits = new ArrayList<>();
 
-                mappersMap.put(nodeId, nodeBlocks);
+                mappersMap.put(nodeId, nodeSplits);
             }
 
-            nodeBlocks.add(block);
+            nodeSplits.add(split);
         }
         return mappersMap;
     }
@@ -106,18 +106,21 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
     }
 
     /**
-     * Gets node ID for given file block.
+     * Gets node ID for given file split.
      *
      * @param job Job.
-     * @param block Block.
+     * @param split Block.
      * @param top Topology.
-     * @throws GridException If failed to assign blocks to nodes.
+     * @throws GridException If failed to assign splits to nodes.
      * @return Node ID.
      */
-    private UUID nodeId(GridHadoopJob job, GridHadoopFileBlock block, Collection<GridNode> top,
+    private UUID nodeId(GridHadoopJob job, GridHadoopInputSplit split, Collection<GridNode> top,
         Map<String, Collection<GridNode>> hostNodeMap) throws GridException {
+
+        GridHadoopFileBlock block = (GridHadoopFileBlock) split;
+
         if (log.isDebugEnabled())
-            log.debug("Mapping block to node: " + block);
+            log.debug("Mapping split to node: " + split);
 
         // TODO-gg-8170 change to getFileBlockLocations.
         GridGgfs ggfs = ggfsForBlock(job, block);
@@ -144,7 +147,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
         }
         else {
             // Try to select node according to hostname.
-            for (String host : block.hosts()) {
+            for (String host : split.hosts()) {
                 GridNode node = F.first(hostNodeMap.get(host));
 
                 if (node != null)
@@ -152,7 +155,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
             }
 
             if (log.isDebugEnabled())
-                log.debug("Could not find node by hostname, returning random node: " + block);
+                log.debug("Could not find node by hostname, returning random node: " + split);
 
             // No nodes were selected based on host, return random node.
             int idx = ThreadLocalRandom8.current().nextInt(top.size());

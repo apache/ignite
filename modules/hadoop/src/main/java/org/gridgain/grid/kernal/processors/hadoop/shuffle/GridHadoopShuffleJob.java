@@ -11,8 +11,6 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.thread.*;
@@ -55,26 +53,34 @@ public class GridHadoopShuffleJob implements AutoCloseable {
     private final AtomicReferenceArray<GridHadoopMultimap> maps;
 
     /** */
-    private final GridHadoopContext ctx;
+    private GridBiClosure<UUID, GridHadoopShuffleMessage, GridFuture<?>> io;
+
+    /** */
+    private ConcurrentLinkedQueue<GridFuture<?>> ioFuts = new ConcurrentLinkedQueue<>();
 
     /** */
     private GridWorker sender;
 
     /** */
-    private ConcurrentMap<Long, GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapter<Object>>> sentMsgs =
-        new ConcurrentHashMap<>();
+    private final UUID localNodeId;
+
+    /** */
+    private final GridLogger log;
 
     /**
      * @param job Job.
      * @param mem Memory.
      * @param plan Plan.
      */
-    public GridHadoopShuffleJob(GridHadoopContext ctx, GridLogger log, GridHadoopJob job, GridUnsafeMemory mem,
+    public GridHadoopShuffleJob(UUID localNodeId, GridLogger log, GridHadoopJob job, GridUnsafeMemory mem,
         GridHadoopMapReducePlan plan)
         throws GridException {
-        this.ctx = ctx;
+        assert localNodeId != null;
+
+        this.localNodeId = localNodeId;
         this.job = job;
         this.mem = mem;
+        this.log = log;
 
         partitioner = job.partitioner();
 
@@ -92,10 +98,21 @@ public class GridHadoopShuffleJob implements AutoCloseable {
             reduceNodes[i] = nodeId;
         }
 
-        if (job.hasCombiner())
-            combinerMap = new GridHadoopMultimap(job, mem, get(job, COMBINER_HASHMAP_SIZE, 1024));
+        if (job.hasCombiner() && !F.isEmpty(plan.mappers(localNodeId))) // We have combiner and local mappers.
+            combinerMap = new GridHadoopMultimap(job, mem, get(job, COMBINER_HASHMAP_SIZE, 8 * 1024));
+    }
 
-        sender = new GridWorker(ctx.kernalContext().gridName(), "hadoop-shuffle-" + job.id(), log) {
+    /**
+     * @param gridName Grid name.
+     * @param io IO Closure for sending messages.
+     */
+    public void startSending(String gridName, GridBiClosure<UUID, GridHadoopShuffleMessage, GridFuture<?>> io) {
+        assert sender == null;
+        assert io != null;
+
+        this.io = io;
+
+        sender = new GridWorker(gridName, "hadoop-shuffle-" + job.id(), log) {
             @Override protected void body() throws InterruptedException, GridInterruptedException {
                 while (!isCancelled()) {
                     Thread.sleep(10);
@@ -122,7 +139,7 @@ public class GridHadoopShuffleJob implements AutoCloseable {
         GridHadoopMultimap map = maps.get(idx);
 
         if (map == null) { // Create new map.
-            map = new GridHadoopMultimap(job, mem, get(job, PARTITION_HASHMAP_SIZE, 1024));
+            map = new GridHadoopMultimap(job, mem, get(job, PARTITION_HASHMAP_SIZE, 8 * 1024));
 
             if (!maps.compareAndSet(idx, null, map)) {
                 map.close();
@@ -135,19 +152,10 @@ public class GridHadoopShuffleJob implements AutoCloseable {
     }
 
     /**
-     * @param ack Acknowledge.
-     */
-    public void onAckMessage(GridHadoopShuffleAck ack) {
-        GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapter<Object>> t = sentMsgs.remove(ack.id());
-
-        t.get2().onDone();
-    }
-
-    /**
      * @param msg Message.
      * @throws GridException Exception.
      */
-    public void onShuffleMessage(UUID nodeId, GridHadoopShuffleMessage msg) throws GridException {
+    public void onShuffleMessage(GridHadoopShuffleMessage msg) throws GridException {
         assert msg.buffer() != null;
         assert msg.offset() > 0;
 
@@ -176,20 +184,6 @@ public class GridHadoopShuffleJob implements AutoCloseable {
                 }
             });
         }
-
-        // TODO respond earlier
-        doSend(nodeId, new GridHadoopShuffleAck(msg.id(), msg.jobId()));
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param msg Message.
-     * @throws GridException If failed.
-     */
-    private void doSend(UUID nodeId, Object msg) throws GridException {
-        GridNode node = ctx.kernalContext().discovery().node(nodeId);
-
-        ctx.kernalContext().io().sendUserMessage(F.asList(node), msg, GridTopic.TOPIC_HADOOP, false, 0);
     }
 
     /**
@@ -232,7 +226,7 @@ public class GridHadoopShuffleJob implements AutoCloseable {
         for (int i = 0; i < maps.length(); i++) {
             GridHadoopMultimap map = maps.get(i);
 
-            if (map == null || ctx.localNodeId().equals(reduceNodes[i]))
+            if (map == null || localNodeId.equals(reduceNodes[i]))
                 continue; // Skip empty map and local node.
 
             if (msgs[i] == null)
@@ -307,11 +301,20 @@ public class GridHadoopShuffleJob implements AutoCloseable {
      * @param newBufMinSize Min new buffer size.
      */
     private void send(int idx, int newBufMinSize) throws GridException {
-        GridHadoopShuffleMessage msg = msgs[idx];
+        GridFuture<?> fut = io.apply(reduceNodes[idx], msgs[idx]);
 
-        sentMsgs.putIfAbsent(msg.id(), F.t(msg, new GridFutureAdapter<>(ctx.kernalContext())));
+        fut.listenAsync(new GridInClosure<GridFuture<?>>() {
+            @Override public void apply(GridFuture<?> f) {
+                try {
+                    f.get();
+                }
+                catch (GridException e) {
+                    log.error("Failed to send message.", e);
+                }
+            }
+        });
 
-        doSend(reduceNodes[idx], msg);
+        ioFuts.add(fut);
 
         msgs[idx] = newBufMinSize == 0 ? null : new GridHadoopShuffleMessage(job.id(), idx,
             Math.max(4 * 1024, newBufMinSize));
@@ -319,13 +322,15 @@ public class GridHadoopShuffleJob implements AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void close() throws GridException {
-        sender.cancel();
+        if (sender != null) {
+            sender.cancel();
 
-        try {
-            sender.join();
-        }
-        catch (InterruptedException e) {
-            throw new GridInterruptedException(e);
+            try {
+                sender.join();
+            }
+            catch (InterruptedException e) {
+                throw new GridInterruptedException(e);
+            }
         }
 
         close(maps);
@@ -346,6 +351,7 @@ public class GridHadoopShuffleJob implements AutoCloseable {
     /**
      * @return Future.
      */
+    @SuppressWarnings("unchecked")
     public GridFuture<?> flush() throws GridException {
         sender.cancel();
 
@@ -358,23 +364,12 @@ public class GridHadoopShuffleJob implements AutoCloseable {
 
         collectUpdatesAndSend(true); // With flush.
 
-        GridCompoundFuture fut = new GridCompoundFuture<>(ctx.kernalContext());
+        GridCompoundFuture fut = new GridCompoundFuture<>();
 
-        for (GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapter<Object>> t : sentMsgs.values())
-            fut.add(t.get2());
+        for (GridFuture<?> f : ioFuts)
+            fut.add(f);
 
         fut.markInitialized();
-
-        fut.listenAsync(new CI1<GridFuture>() {
-            @Override public void apply(GridFuture f) {
-                try {
-                    f.get();
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        });
 
         return fut;
     }
@@ -387,7 +382,7 @@ public class GridHadoopShuffleJob implements AutoCloseable {
     public GridHadoopTaskOutput output(GridHadoopTaskInfo taskInfo) throws GridException {
         switch (taskInfo.type()) {
             case MAP:
-                if (job.hasCombiner())
+                if (combinerMap != null)
                     return new MapOutput(combinerMap.startAdding());
 
             case COMBINE:
@@ -487,7 +482,7 @@ public class GridHadoopShuffleJob implements AutoCloseable {
         }
 
         /** {@inheritDoc} */
-        @Override public void close() {
+        @Override public void close() throws GridException {
             for (GridHadoopMultimap.Adder adder : adders) {
                 if (adder != null)
                     adder.close();

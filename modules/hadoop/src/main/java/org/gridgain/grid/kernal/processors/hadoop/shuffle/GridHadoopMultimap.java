@@ -801,11 +801,14 @@ public class GridHadoopMultimap implements AutoCloseable {
         }
 
         /** {@inheritDoc} */
-        @Override public void close()  {
+        @Override public void close() throws GridException {
             if (!adders.remove(this))
                 throw new IllegalStateException();
 
             keys.addAndGet(keysCnt); // Here we have race and #keys() method can return wrong result but it is ok.
+
+            keySer.close();
+            valSer.close();
         }
     }
 
