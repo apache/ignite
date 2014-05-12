@@ -101,6 +101,10 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     /** Flag indicating whether request contains primary keys. */
     private boolean hasPrimary;
 
+    /** Force transform backups flag. */
+    @GridDirectVersion(2)
+    private boolean forceTransformBackups;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -131,6 +135,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         GridCacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
         boolean retval,
+        boolean forceTransformBackups,
         long ttl,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
@@ -143,6 +148,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         this.syncMode = syncMode;
         this.op = op;
         this.retval = retval;
+        this.forceTransformBackups = forceTransformBackups;
         this.ttl = ttl;
         this.filter = filter;
 
@@ -428,6 +434,20 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         return hasPrimary;
     }
 
+    /**
+     * @return Force transform backups flag.
+     */
+    public boolean forceTransformBackups() {
+        return forceTransformBackups;
+    }
+
+    /**
+     * @param forceTransformBackups Force transform backups flag.
+     */
+    public void forceTransformBackups(boolean forceTransformBackups) {
+        this.forceTransformBackups = forceTransformBackups;
+    }
+
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
@@ -481,6 +501,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         _clone.filter = filter;
         _clone.filterBytes = filterBytes;
         _clone.hasPrimary = hasPrimary;
+        _clone.forceTransformBackups = forceTransformBackups;
     }
 
     /** {@inheritDoc} */
@@ -670,6 +691,12 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                     if (!commState.putInt(-1))
                         return false;
                 }
+
+                commState.idx++;
+
+            case 17:
+                if (!commState.putBoolean(forceTransformBackups))
+                    return false;
 
                 commState.idx++;
 
@@ -900,6 +927,14 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 commState.readSize = -1;
                 commState.readItems = 0;
+
+                commState.idx++;
+
+            case 17:
+                if (buf.remaining() < 1)
+                    return false;
+
+                forceTransformBackups = commState.getBoolean();
 
                 commState.idx++;
 

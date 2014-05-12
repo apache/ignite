@@ -69,7 +69,15 @@ public enum GridCacheFlag {
      * @see GridCacheTx#isInvalidate()
      * @see GridCacheConfiguration#isInvalidate()
      */
-    INVALIDATE;
+    INVALIDATE,
+
+    /**
+     * Skips version check during transform writes in {@link GridCacheAtomicityMode#ATOMIC} mode. By default
+     * in ATOMIC cache values are sent from primary to backup nodes to ensure update ordering.
+     * If this flag is set, version check is skipped, and transform closure is applied both on primary
+     * and backup nodes. Use this flag if you are sure that there is no concurrent key updates happening.
+     */
+    FORCE_TRANSFORM_BACKUP;
 
     /** */
     private static final GridCacheFlag[] VALS = values();
