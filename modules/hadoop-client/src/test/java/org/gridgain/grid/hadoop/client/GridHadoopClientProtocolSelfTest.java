@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop;
+package org.gridgain.grid.hadoop.client;
 
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
@@ -17,12 +17,12 @@ import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.mapreduce.lib.output.*;
 import org.apache.hadoop.mapreduce.protocol.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.hadoop.client.*;
-import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.testframework.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -100,8 +100,8 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
         checkProviderCacheSize(provider, 0);
 
-        Configuration conf1 = config(REST_PORT);
-        Configuration conf2 = config(REST_PORT + 1);
+        Configuration conf1 = config(GridHadoopAbstractSelfTest.REST_PORT);
+        Configuration conf2 = config(GridHadoopAbstractSelfTest.REST_PORT + 1);
 
         ClientProtocol proto1_1 = provider.create(conf1);
 
@@ -137,7 +137,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     public void testNextJobId() throws Exception {
         GridHadoopClientProtocolProvider provider = provider();
 
-        ClientProtocol proto = provider.create(config(REST_PORT));
+        ClientProtocol proto = provider.create(config(GridHadoopAbstractSelfTest.REST_PORT));
 
         JobID jobId = proto.getNewJobID();
 
@@ -158,7 +158,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
      * @throws Exception If failed.
      */
     public void testJobSubmit() throws Exception {
-        GridGgfs ggfs = grid(0).ggfs(ggfsName);
+        GridGgfs ggfs = grid(0).ggfs(GridHadoopAbstractSelfTest.ggfsName);
 
         ggfs.mkdirs(new GridGgfsPath(PATH_INPUT));
 
@@ -168,7 +168,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
             bw.write("word");
         }
 
-        Configuration conf = config(REST_PORT);
+        Configuration conf = config(GridHadoopAbstractSelfTest.REST_PORT);
 
         final Job job = Job.getInstance(conf);
 
@@ -195,16 +195,14 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
         mapLatch.countDown();
 
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override
-            public boolean apply() {
-                try {
-                    return F.eq(1.0f, job.getStatus().getMapProgress());
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }, 5000);
+        long endTime = U.currentTimeMillis() + 5000L;
+
+        while (U.currentTimeMillis() < endTime) {
+            if (F.eq(1.0f, job.getStatus().getMapProgress()))
+                break;
+        }
+
+        assert F.eq(1.0f, job.getStatus().getMapProgress());
 
         checkJobStatus(job.getStatus(), jobId, JOB_NAME, USR, JobStatus.State.RUNNING, 1.0f, 1.0f, 0.0f, 0.0f);
 
@@ -253,7 +251,11 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     @SuppressWarnings("ConstantConditions")
     private static void checkProviderCacheSize(GridHadoopClientProtocolProvider provider, int expSize)
         throws Exception {
-        int res = GridTestUtils.invoke(provider, "activeClients");
+        Method mthd = provider.getClass().getDeclaredMethod("activeClients");
+
+        mthd.setAccessible(true);
+
+        int res = (int)mthd.invoke(provider);
 
         assert res == expSize;
     }

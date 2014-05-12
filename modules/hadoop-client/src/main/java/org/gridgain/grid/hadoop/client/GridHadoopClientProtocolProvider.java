@@ -42,7 +42,7 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
 
     /** {@inheritDoc} */
     @Override public ClientProtocol create(Configuration conf) throws IOException {
-        if (GridHadoopClientProtocol.FRAMEWORK_NAME.equals(conf.get(MRConfig.FRAMEWORK_NAME))) {
+        if (FRAMEWORK_NAME.equals(conf.get(MRConfig.FRAMEWORK_NAME))) {
             String addr = conf.get(PROP_SRV_ADDR);
 
             return createProtocol(addr, conf);
@@ -53,7 +53,7 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
 
     /** {@inheritDoc} */
     @Override public ClientProtocol create(InetSocketAddress addr, Configuration conf) throws IOException {
-        if (GridHadoopClientProtocol.FRAMEWORK_NAME.equals(conf.get(MRConfig.FRAMEWORK_NAME)))
+        if (FRAMEWORK_NAME.equals(conf.get(MRConfig.FRAMEWORK_NAME)))
             return createProtocol(addr.getHostString() + ":" + addr.getPort(), conf);
 
         return null;
