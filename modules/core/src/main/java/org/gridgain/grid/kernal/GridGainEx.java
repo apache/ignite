@@ -1896,7 +1896,7 @@ public class GridGainEx {
                         }
 
                         if (url != null) {
-                            Constructor<?> ctor = log4jCls.getConstructor(String.class);
+                            Constructor<?> ctor = log4jCls.getConstructor(URL.class);
 
                             cfgLog = (GridLogger)ctor.newInstance(url);
                         }
