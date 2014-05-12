@@ -174,9 +174,9 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
 
         hndField.setAccessible(true);
 
-        Collection handlers = (Collection)hndField.get(proc);
+        Map handlers = (Map)hndField.get(proc);
 
-        Collection cp = new ArrayList(handlers);
+        Map cp = new HashMap(handlers);
 
         handlers.clear();
 
@@ -192,7 +192,7 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
                 "Failed to process client request: Failed to find registered handler for command: CACHE_GET");
         }
         finally {
-            handlers.addAll(cp);
+            handlers.putAll(cp);
         }
     }
 

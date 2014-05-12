@@ -169,8 +169,8 @@ public class OptimizedClassNamesGenerator {
             if (isAccepted(cls))
                 clsNames.add(name);
         }
-        catch (SecurityException | LinkageError e) {
-            System.out.println(String.format("Cannot process class [class=%s, err=%s]", name, e));
+        catch (SecurityException | LinkageError ignored) {
+            // No-op.
         }
         catch (ClassNotFoundException e) {
             throw new AssertionError(e);
