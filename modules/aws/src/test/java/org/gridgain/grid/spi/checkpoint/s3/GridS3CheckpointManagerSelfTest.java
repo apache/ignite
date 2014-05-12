@@ -17,10 +17,10 @@ import org.gridgain.testframework.config.*;
 /**
  * Checkpoint manager test using {@link GridS3CheckpointSpi}.
  */
-public class GridS3CheckpointManagerSelfTest extends GridCheckpointManagerSelfTest {
+public class GridS3CheckpointManagerSelfTest extends GridCheckpointManagerAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        assertEquals("s3", gridName);
+        assertTrue("Unexpected grid name: " + gridName, gridName.contains("s3"));
 
         GridConfiguration cfg = super.getConfiguration(gridName);
 

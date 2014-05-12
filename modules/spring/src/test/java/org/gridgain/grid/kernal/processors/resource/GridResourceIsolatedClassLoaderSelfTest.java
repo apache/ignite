@@ -15,6 +15,7 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
+import org.springframework.context.support.*;
 
 import java.io.*;
 import java.util.*;
@@ -85,7 +86,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testSameTask() throws Exception {
-        Grid grid = startGrid();
+        Grid grid = startGrid(0, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
         try {
             // Execute the same task twice.
@@ -116,8 +117,8 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
         Grid grid2 = null;
 
         try {
-            grid1 = startGrid(1);
-            grid2 = startGrid(2);
+            grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             // Execute different tasks.
             grid1.compute().execute(SharedResourceTask1.class, null).get();
@@ -156,8 +157,8 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
         Grid grid2 = null;
 
         try {
-            grid1 = startGrid(1);
-            grid2 = startGrid(2);
+            grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             // Execute tasks.
             grid1.compute().execute(SharedResourceTask1.class, null).get();
@@ -215,7 +216,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
      */
     @SuppressWarnings("unchecked")
     public void testRedeployedTask() throws Exception {
-        Grid grid = startGrid();
+        Grid grid = startGrid(0, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
         try {
             // Execute the same task twice.
@@ -262,7 +263,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testDuplicateTaskName() throws Exception {
-        Grid grid = startGrid();
+        Grid grid = startGrid(0, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
         // Execute different tasks but with the same name and version.
         // 2 resource created locally

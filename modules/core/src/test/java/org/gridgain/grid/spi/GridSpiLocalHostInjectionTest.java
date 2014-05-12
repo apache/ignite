@@ -16,7 +16,6 @@ import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
-import org.springframework.context.support.*;
 
 /**
  * This class tests injection of {@code localHost} property to various SPIs.
