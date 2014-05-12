@@ -17,6 +17,7 @@ import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.worker.*;
 
 import java.util.*;
@@ -97,8 +98,8 @@ public class GridHadoopShuffleJob implements AutoCloseable {
             reduceNodes[i] = nodeId;
         }
 
-        if (job.hasCombiner())
-            combinerMap = new GridHadoopMultimap(job, mem, get(job, COMBINER_HASHMAP_SIZE, 1024));
+        if (job.hasCombiner() && !F.isEmpty(plan.mappers(localNodeId))) // We have combiner and local mappers.
+            combinerMap = new GridHadoopMultimap(job, mem, get(job, COMBINER_HASHMAP_SIZE, 8 * 1024));
     }
 
     /**
@@ -138,7 +139,7 @@ public class GridHadoopShuffleJob implements AutoCloseable {
         GridHadoopMultimap map = maps.get(idx);
 
         if (map == null) { // Create new map.
-            map = new GridHadoopMultimap(job, mem, get(job, PARTITION_HASHMAP_SIZE, 1024));
+            map = new GridHadoopMultimap(job, mem, get(job, PARTITION_HASHMAP_SIZE, 8 * 1024));
 
             if (!maps.compareAndSet(idx, null, map)) {
                 map.close();
@@ -381,7 +382,7 @@ public class GridHadoopShuffleJob implements AutoCloseable {
     public GridHadoopTaskOutput output(GridHadoopTaskInfo taskInfo) throws GridException {
         switch (taskInfo.type()) {
             case MAP:
-                if (job.hasCombiner())
+                if (combinerMap != null)
                     return new MapOutput(combinerMap.startAdding());
 
             case COMBINE:
