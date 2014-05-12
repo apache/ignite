@@ -14,6 +14,7 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.external.resource.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
+import org.springframework.context.support.*;
 
 /**
  *
@@ -52,8 +53,8 @@ public class GridResourceUserExternalTest extends GridCommonAbstractTest {
         Grid grid2 = null;
 
         try {
-            grid1 = startGrid(1);
-            grid2 = startGrid(2);
+            grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             GridTestClassLoader tstClsLdr = new GridTestClassLoader(null, getClass().getClassLoader(),
                 GridUserExternalResourceTask1.class.getName(),

@@ -17,6 +17,7 @@ import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
+import org.springframework.context.support.*;
 
 import java.io.*;
 import java.util.*;
@@ -99,9 +100,9 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
         depMode = GridDeploymentMode.SHARED;
 
         try {
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
-            Grid grid3 = startGrid(3);
+            Grid grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Grid grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Grid grid3 = startGrid(3, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             nodeToExec = grid2.localNode().id();
 
@@ -148,7 +149,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
         depMode = mode;
 
         try {
-            Grid grid = startGrid(1);
+            Grid grid = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             nodeToExec = grid.localNode().id();
 
@@ -185,8 +186,8 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
         depMode = mode;
 
         try {
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
+            Grid grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Grid grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             nodeToExec = grid2.localNode().id();
 
@@ -227,8 +228,8 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
         depMode = mode;
 
         try {
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
+            Grid grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Grid grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             ClassLoader ldr = getExternalClassLoader();
 

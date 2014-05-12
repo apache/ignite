@@ -17,6 +17,7 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
+import org.springframework.context.support.*;
 
 import java.io.*;
 import java.util.*;
@@ -37,8 +38,8 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
         resetResourceCounters();
 
         try {
-            Grid grid1 = startGrid(1);
-            startGrid(2);
+            Grid grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             // Executes task and creates events
             grid1.compute().execute(TestTask.class, null).get();
@@ -65,8 +66,8 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
         resetResourceCounters();
 
         try {
-            Grid grid1 = startGrid(1);
-            startGrid(2);
+            Grid grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             // Executes task and creates events.
             grid1.compute().execute(TestTask.class, null).get();

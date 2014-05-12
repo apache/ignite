@@ -21,6 +21,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
+import org.springframework.context.support.*;
 
 import java.io.*;
 import java.util.*;
@@ -91,7 +92,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
      */
     private void processTestWithUndeploy() throws Exception {
         try {
-            Grid grid = startGrid(1);
+            Grid grid = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             GridResourceIoc ioc = ((GridKernal)grid).context().resource().getResourceIoc();
 
@@ -121,8 +122,8 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
      */
     private void processTestWithNodeStop() throws Exception {
         try {
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
+            Grid grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Grid grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             final CountDownLatch latch = new CountDownLatch(2);
 
@@ -191,7 +192,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
                 garFile = "file:///" + tmpPath.getAbsolutePath();
 
                 try {
-                    Grid grid = startGrid(1);
+                    Grid grid = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
                     int[] res = (int[])grid.compute().execute(TEST_EXT_TASK,
                         grid.localNode().id()).get();

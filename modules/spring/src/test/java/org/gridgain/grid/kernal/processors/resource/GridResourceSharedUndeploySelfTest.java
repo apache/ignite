@@ -15,6 +15,7 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
+import org.springframework.context.support.*;
 
 import java.io.*;
 import java.util.*;
@@ -85,7 +86,7 @@ public class GridResourceSharedUndeploySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSameTaskLocally() throws Exception {
-        Grid grid = startGrid();
+        Grid grid = startGrid(0, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
         try {
             // Execute the same task twice.
@@ -111,7 +112,7 @@ public class GridResourceSharedUndeploySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDifferentTaskLocally() throws Exception {
-        Grid grid = startGrid();
+        Grid grid = startGrid(0, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
         try {
             // Execute the tasks with the same class loaders.
@@ -137,7 +138,7 @@ public class GridResourceSharedUndeploySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDifferentTaskNameLocally() throws Exception {
-        Grid grid = startGrid();
+        Grid grid = startGrid(0, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
         // Versions are different - should not share
         // 2 resource created locally
@@ -167,8 +168,8 @@ public class GridResourceSharedUndeploySelfTest extends GridCommonAbstractTest {
         Grid grid2 = null;
 
         try {
-            grid1 = startGrid(1);
-            grid2 = startGrid(2);
+            grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             // Execute different tasks.
             grid1.compute().execute(SharedResourceTask1.class, null).get();
@@ -207,8 +208,8 @@ public class GridResourceSharedUndeploySelfTest extends GridCommonAbstractTest {
         Grid grid2 = null;
 
         try {
-            grid1 = startGrid(1);
-            grid2 = startGrid(2);
+            grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             // Execute tasks.
             grid1.compute().execute(SharedResourceTask1.class, null).get();
@@ -263,7 +264,7 @@ public class GridResourceSharedUndeploySelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     public void testRedeployedTask() throws Exception {
-        Grid grid = startGrid();
+        Grid grid = startGrid(0, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
         try {
             // Execute same task with different class loaders. Second execution should redeploy first one.
@@ -315,9 +316,9 @@ public class GridResourceSharedUndeploySelfTest extends GridCommonAbstractTest {
         Grid grid3 = null;
 
         try {
-            grid1 = startGrid(1);
-            grid2 = startGrid(2);
-            grid3 = startGrid(3);
+            grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            grid3 = startGrid(3, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             grid1.compute().execute(SharedResourceTask1.class, null).get();
             grid2.compute().execute(SharedResourceTask1.class, null).get();
@@ -365,9 +366,9 @@ public class GridResourceSharedUndeploySelfTest extends GridCommonAbstractTest {
         Grid grid3 = null;
 
         try {
-            grid1 = startGrid(1);
-            grid2 = startGrid(2);
-            grid3 = startGrid(3);
+            grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            grid3 = startGrid(3, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             grid1.compute().execute(SharedResourceTask1.class, null).get();
             grid2.compute().execute(SharedResourceTask1.class, null).get();

@@ -12,6 +12,7 @@ package org.gridgain.grid.ggfs;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.events.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -90,7 +91,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = loadConfiguration("config/hadoop/default-config.xml");
+        GridConfiguration cfg = GridGainEx.loadConfiguration("config/hadoop/default-config.xml").get1();
 
         assert cfg != null;
 

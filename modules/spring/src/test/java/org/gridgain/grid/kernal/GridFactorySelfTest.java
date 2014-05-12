@@ -145,7 +145,9 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         cfg.setLifecycleBeans(bean1, bean2);
         cfg.setGridName(gridName);
 
-        try (Grid g = G.start(cfg)) {
+        cfg.setRestEnabled(false);
+
+        try (Grid g = GridGainSpring.start(cfg, new GenericApplicationContext())) {
             bean1.checkState(gridName, true);
             bean2.checkState(gridName, true);
         }
@@ -259,7 +261,11 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
                 new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
                         try {
-                            G.start();
+                            GridConfiguration cfg = new GridConfiguration();
+
+                            cfg.setRestEnabled(false);
+
+                            G.start(cfg);
                         }
                         catch (Throwable t) {
                             error("Caught exception while starting grid.", t);
@@ -295,6 +301,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
                             GridConfiguration cfg = new GridConfiguration();
 
                             cfg.setGridName("TEST_NAME");
+                            cfg.setRestEnabled(false);
 
                             G.start(cfg);
                         }
@@ -339,7 +346,6 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkConcurrentStartStop(@Nullable final String gridName) throws Exception {
-
         final AtomicInteger startedCnt = new AtomicInteger();
         final AtomicInteger stoppedCnt = new AtomicInteger();
 
@@ -419,6 +425,8 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     GridConfiguration cfg = new GridConfiguration();
+
+                    cfg.setRestEnabled(false);
 
                     cfg.setDiscoverySpi(new GridTcpDiscoverySpi() {
                         @Override public void spiStart(String gridName) throws GridSpiException {
@@ -765,7 +773,11 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStopCancel() throws Exception {
-        Grid grid = G.start();
+        GridConfiguration cfg = new GridConfiguration();
+
+        cfg.setRestEnabled(false);
+
+        Grid grid = G.start(cfg);
 
         grid.compute().execute(TestTask.class, null);
 

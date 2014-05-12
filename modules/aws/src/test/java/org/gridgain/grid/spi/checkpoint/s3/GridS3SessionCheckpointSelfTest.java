@@ -17,7 +17,7 @@ import org.gridgain.testframework.config.*;
 /**
  * Grid session checkpoint self test using {@link GridS3CheckpointSpi}.
  */
-public class GridS3SessionCheckpointSelfTest extends GridSessionCheckpointSelfTest {
+public class GridS3SessionCheckpointSelfTest extends GridSessionCheckpointAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
