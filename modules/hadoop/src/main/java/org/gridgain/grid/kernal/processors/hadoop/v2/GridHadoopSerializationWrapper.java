@@ -87,7 +87,7 @@ public class GridHadoopSerializationWrapper<T> implements GridHadoopSerializatio
 
             serializer.serialize((T)obj);
 
-            //currOut = null;
+            currOut = null;
         }
         catch (IOException e) {
             throw new GridException(e);
@@ -103,7 +103,7 @@ public class GridHadoopSerializationWrapper<T> implements GridHadoopSerializatio
 
             T res = deserializer.deserialize((T) obj);
 
-            //currIn = null;
+            currIn = null;
 
             return res;
         }

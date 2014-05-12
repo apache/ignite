@@ -45,7 +45,10 @@ public class GridHadoopSerializationWrapperSelfTest extends GridCommonAbstractTe
         assertEquals(-5, ((IntWritable)ser.read(in, null)).get());
     }
 
-
+    /**
+     * Tests read/write of Integer via native JavaleSerialization.
+     * @throws Exception If fails.
+     */
     public void testIntJavaSerialization() throws Exception {
         GridHadoopSerialization ser = new GridHadoopSerializationWrapper(new JavaSerialization(), Integer.class);
 
@@ -62,24 +65,4 @@ public class GridHadoopSerializationWrapperSelfTest extends GridCommonAbstractTe
         assertEquals(3, ((Integer)ser.read(in, null)).intValue());
         assertEquals(-5, ((Integer)ser.read(in, null)).intValue());
     }
-
-    public void testAvroReflectSerialization() throws Exception {
-        GridHadoopSerialization ser = new GridHadoopSerializationWrapper(new AvroReflectSerialization(), Integer.class);
-
-        ByteArrayOutputStream buf = new ByteArrayOutputStream();
-
-        DataOutput out = new DataOutputStream(buf);
-
-        ser.write(out, 3);
-        ser.write(out, -5);
-        ser.close();
-
-        assertEquals("[6, 9]", Arrays.toString(buf.toByteArray()));
-
-        DataInput in = new DataInputStream(new ByteArrayInputStream(buf.toByteArray()));
-
-        assertEquals(3, ((Integer)ser.read(in, null)).intValue());
-        assertEquals(-5, ((Integer)ser.read(in, null)).intValue());
-    }
-
 }
