@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.hadoop.client;
+package org.gridgain.client.hadoop;
 
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
@@ -16,6 +16,7 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.mapreduce.lib.output.*;
 import org.apache.hadoop.mapreduce.protocol.*;
+import org.gridgain.client.hadoop.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.util.typedef.*;
