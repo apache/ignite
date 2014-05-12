@@ -18,13 +18,15 @@ import java.nio.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
+import static org.gridgain.grid.GridSystemProperties.*;
+
 /**
  *
  */
 @SuppressWarnings({"PointlessBooleanExpression", "ConstantConditions"})
 public class GridIpcSharedMemorySpace implements Closeable {
     /** Debug flag (enable for testing). */
-    private static final boolean DEBUG = false;
+    private static final boolean DEBUG = Boolean.getBoolean(GG_IPC_SHMEM_SPACE_DEBUG);
 
     /** Shared memory segment size (operable). */
     private final int opSize;
