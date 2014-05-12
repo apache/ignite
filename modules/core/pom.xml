@@ -189,11 +189,6 @@
                                 </replaceregexp>
 
                                 <replaceregexp file="target/classes/gridgain.properties" byline="true">
-                                    <regexp pattern="gridgain.compatible.vers=.*"/>
-                                    <substitution expression="gridgain.compatible.vers=${gridgain.compatible.vers}"/>
-                                </replaceregexp>
-
-                                <replaceregexp file="target/classes/gridgain.properties" byline="true">
                                     <regexp pattern="gridgain.update.status.url=.*"/>
                                     <substitution expression="gridgain.update.status.url=?v=${gridgain.version}"/>
                                 </replaceregexp>
