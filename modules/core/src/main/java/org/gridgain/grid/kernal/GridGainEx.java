@@ -1909,7 +1909,7 @@ public class GridGainEx {
 
                 // Set node IDs for all file appenders.
                 if (cfgLog.getClass().getName().equals(log4jClsName))
-                    cfgLog.getClass().getMethod("setNodeId").invoke(null, nodeId);
+                    cfgLog.getClass().getMethod("setNodeId", UUID.class).invoke(null, nodeId);
 
                 return cfgLog;
             }
