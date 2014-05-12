@@ -139,14 +139,14 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
             assertEquals(
                 "word1\t5\n" +
                 "word2\t10\n",
-                readFile(outputDir + "/_temporary/0/task_00000000-0000-0000-0000-000000000000_0000_r_000000/" +
+                readAndSortFile(outputDir + "/_temporary/0/task_00000000-0000-0000-0000-000000000000_0000_r_000000/" +
                         getOutputFileNamePrefix() + "00000")
             );
 
             assertEquals(
                 "word3\t7\n" +
                 "word4\t15\n",
-                readFile(outputDir + "/_temporary/0/task_00000000-0000-0000-0000-000000000000_0000_r_000001/" +
+                readAndSortFile(outputDir + "/_temporary/0/task_00000000-0000-0000-0000-000000000000_0000_r_000001/" +
                         getOutputFileNamePrefix() + "00001")
             );
         }
@@ -251,7 +251,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
                 "green\t150\n" +
                 "red\t100\n" +
                 "yellow\t70\n",
-                readFile(outputDir + "/" + getOutputFileNamePrefix() + "00000")
+                readAndSortFile(outputDir + "/" + getOutputFileNamePrefix() + "00000")
             );
         }
         finally {

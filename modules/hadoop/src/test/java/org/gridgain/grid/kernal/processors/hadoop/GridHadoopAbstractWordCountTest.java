@@ -67,14 +67,18 @@ public abstract class GridHadoopAbstractWordCountTest extends GridHadoopAbstract
      * @return Content of the file as String value.
      * @throws java.io.IOException If could not read the file.
      */
-    protected String readFile(String fileName) throws IOException {
-        StringBuilder sb = new StringBuilder();
+    protected String readAndSortFile(String fileName) throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader(fileName));
 
-        String line;
-        while ((line = reader.readLine()) != null)
-            sb.append(line).append("\n");
+        List<String> list = new ArrayList<>();
 
-        return sb.toString();
+        String line;
+
+        while ((line = reader.readLine()) != null)
+            list.add(line);
+
+        Collections.sort(list);
+
+        return Joiner.on('\n').join(list) + "\n";
     }
 }
