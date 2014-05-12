@@ -22,9 +22,6 @@ public class GridClientHandshakeResponse extends GridClientAbstractMessage {
     /** Response, indicating successful handshake. */
     public static final GridClientHandshakeResponse OK = new GridClientHandshakeResponse((byte)0);
 
-    /** Response, indicating that client version check has failed. */
-    public static final GridClientHandshakeResponse ERR_VERSION_CHECK_FAILED = new GridClientHandshakeResponse((byte)1);
-
     /** Response, indicating that protocol ID, specified by the client, is invalid. */
     public static final GridClientHandshakeResponse ERR_UNKNOWN_PROTO_ID = new GridClientHandshakeResponse((byte)2);
 
