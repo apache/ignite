@@ -64,6 +64,10 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
         job.setMapperClass(TestMapper.class);
         job.setCombinerClass(TestReducer.class);
         job.setReducerClass(TestReducer.class);
+        job.setMapOutputKeyClass(Text.class);
+        job.setMapOutputValueClass(IntWritable.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(IntWritable.class);
 
         job.setNumReduceTasks(1);
 

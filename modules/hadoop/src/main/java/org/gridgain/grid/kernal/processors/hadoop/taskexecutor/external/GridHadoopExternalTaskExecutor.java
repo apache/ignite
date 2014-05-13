@@ -260,7 +260,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
         // TODO how to build classpath? Deploy task jar here.
         meta.classpath(Arrays.asList(System.getProperty("java.class.path").split(":")));
-        meta.jvmOptions(Arrays.asList("-Xmx1g", "-DGRIDGAIN_HOME=" + U.getGridGainHome()));
+        meta.jvmOptions(Arrays.asList("-Xmx1g", "-ea" ,"-DGRIDGAIN_HOME=" + U.getGridGainHome()));
 
         return meta;
     }
