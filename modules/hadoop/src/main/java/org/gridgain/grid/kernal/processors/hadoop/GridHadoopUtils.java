@@ -10,8 +10,8 @@
 package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.hadoop.conf.*;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapreduce.*;
-import org.apache.hadoop.mapreduce.v2.util.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 
@@ -22,6 +22,9 @@ import static org.gridgain.grid.hadoop.GridHadoopJobState.*;
  * Hadoop utility methods.
  */
 public class GridHadoopUtils {
+    /** Staging constant. */
+    private static final String STAGING_CONSTANT = ".staging";
+
     /**
      * Convert Hadoop job metadata to job status.
      *
@@ -115,8 +118,32 @@ public class GridHadoopUtils {
                 cleanupProgress = 1.0f;
         }
 
-        return new JobStatus(jobId, 1.0f, mapProgress, reduceProgress, cleanupProgress, state,
-            JobPriority.NORMAL, status.user(), status.jobName(), MRApps.getJobFile(conf, status.user(), jobId), "N/A");
+        return new JobStatus(jobId, 1.0f, mapProgress, reduceProgress, cleanupProgress, state, JobPriority.NORMAL,
+            status.user(), status.jobName(), jobFile(conf, status.user(), jobId).toString(), "N/A");
+    }
+
+    /**
+     * Gets staging area directory.
+     *
+     * @param conf Configuration.
+     * @param usr User.
+     * @return Staging area directory.
+     */
+    public static Path stagingAreaDir(Configuration conf, String usr) {
+        return new Path(conf.get(MRJobConfig.MR_AM_STAGING_DIR, MRJobConfig.DEFAULT_MR_AM_STAGING_DIR)
+            + Path.SEPARATOR + usr + Path.SEPARATOR + STAGING_CONSTANT);
+    }
+
+    /**
+     * Gets job file.
+     *
+     * @param conf Configuration.
+     * @param usr User.
+     * @param jobId Job ID.
+     * @return Job file.
+     */
+    public static Path jobFile(Configuration conf, String usr, JobID jobId) {
+        return new Path(stagingAreaDir(conf, usr), jobId.toString() + Path.SEPARATOR + MRJobConfig.JOB_CONF_FILE);
     }
 
     /**

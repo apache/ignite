@@ -226,8 +226,7 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     @Override public String getStagingAreaDir() throws IOException, InterruptedException {
         String usr = UserGroupInformation.getCurrentUser().getShortUserName();
 
-        return new Path(conf.get(MRJobConfig.MR_AM_STAGING_DIR, MRJobConfig.DEFAULT_MR_AM_STAGING_DIR)
-            + Path.SEPARATOR + usr + Path.SEPARATOR + ".staging").toString();
+        return GridHadoopUtils.stagingAreaDir(conf, usr).toString();
     }
 
     /** {@inheritDoc} */
