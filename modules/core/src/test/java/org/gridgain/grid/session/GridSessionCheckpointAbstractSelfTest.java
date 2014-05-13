@@ -137,6 +137,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
 
     /** */
     @GridComputeTaskName("GridCheckpointTestTask")
+    @GridComputeTaskSessionFullSupport
     private static class GridCheckpointTestTask extends GridComputeTaskSplitAdapter<Object, Object> {
         /** */
         @GridTaskSessionResource private GridComputeTaskSession ses;

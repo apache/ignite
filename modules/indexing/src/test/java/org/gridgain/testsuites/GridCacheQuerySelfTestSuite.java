@@ -16,6 +16,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.cache.query.reducefields.*;
+import org.gridgain.testsuites.bamboo.*;
 
 /**
  * Test suite for cache queries.
@@ -27,6 +28,8 @@ public class GridCacheQuerySelfTestSuite extends TestSuite {
      */
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Gridgain Cache Queries Test Suite");
+
+        suite.addTest(GridH2IndexingSpiTestSuite.suite());
 
         // Tests moved to this suite since they require GridH2IndexingSpi.
         suite.addTestSuite(GridCacheOffHeapAndSwapSelfTest.class);
