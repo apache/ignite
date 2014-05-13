@@ -267,15 +267,19 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
                         V val = req.nearValue(i);
                         byte[] valBytes = req.nearValueBytes(i);
+                        GridClosure<V, V> transform = req.nearTransformClosure(i);
 
-                        GridCacheOperation op = (val != null || valBytes != null) ? UPDATE : DELETE;
+                        GridCacheOperation op = transform != null ? TRANSFORM :
+                            (val != null || valBytes != null) ?
+                                UPDATE :
+                                DELETE;
 
                         GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                             ver,
                             nodeId,
                             nodeId,
                             op,
-                            val,
+                            op == TRANSFORM ? transform : val,
                             valBytes,
                             /*write-through*/false,
                             /*retval*/false,
@@ -283,7 +287,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             /*event*/true,
                             /*metrics*/true,
                             /*primary*/false,
-                            /*check version*/true,
+                            /*check version*/!req.forceTransformBackups(),
                             CU.<K, V>empty(),
                             DR_NONE,
                             -1,
