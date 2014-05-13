@@ -10,6 +10,8 @@
 package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
+import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.spi.indexing.h2.*;
 import org.gridgain.grid.spi.indexing.h2.opt.*;
 
@@ -43,6 +45,13 @@ public class GridH2IndexingSpiTestSuite extends TestSuite {
 
         // Geo.
         suite.addTestSuite(GridH2IndexingSpiGeoSelfTest.class);
+
+        // Tests moved to this suite since they require GridH2IndexingSpi.
+        suite.addTestSuite(GridCacheOffHeapAndSwapSelfTest.class);
+        suite.addTestSuite(GridIndexingWithNoopSwapSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedHitsAndMissesSelfTest.class);
+        suite.addTestSuite(GridCacheSwapSelfTest.class);
+        suite.addTestSuite(GridCacheOffHeapSelfTest.class);
 
         return suite;
     }
