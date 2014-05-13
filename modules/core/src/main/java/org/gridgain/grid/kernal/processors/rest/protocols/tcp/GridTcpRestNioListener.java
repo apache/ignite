@@ -129,19 +129,14 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             if (msg == GridClientPingPacket.PING_MESSAGE)
                 ses.send(GridClientPingPacket.PING_MESSAGE);
             else if (msg instanceof GridClientHandshakeRequest) {
-                GridClientHandshakeResponse res = null;
-
                 GridClientHandshakeRequest hs = (GridClientHandshakeRequest)msg;
 
                 byte[] verBytes = hs.versionBytes();
 
-                if (!Arrays.equals(VER_BYTES, verBytes)) {
-                    log.warning("Client version check failed [ses=" + ses +
+                if (!Arrays.equals(VER_BYTES, verBytes))
+                    U.warn(log, "Client version check failed [ses=" + ses +
                         ", expected=" + Arrays.toString(VER_BYTES)
                         + ", actual=" + Arrays.toString(verBytes) + ']');
-
-                    res = GridClientHandshakeResponse.ERR_VERSION_CHECK_FAILED;
-                }
 
                 GridClientMarshaller marsh = suppMarshMap.get(hs.protocolId());
 
@@ -160,7 +155,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
                 ses.addMeta(GridNioSessionMetaKey.MARSHALLER.ordinal(), marsh);
 
-                ses.send(res == null ? GridClientHandshakeResponse.OK : res);
+                ses.send(GridClientHandshakeResponse.OK);
             }
             else {
                 final GridRestRequest req = createRestRequest(msg);
