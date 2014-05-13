@@ -966,6 +966,10 @@
                                          token="%ANT_AUGMENTED_GGJAR%"
                                          value="gridgain-${gridgain.edition}-${gridgain.version}.jar"/>
 
+                                <replace file="target/release-package/examples/pom-java8.xml"
+                                         token="%ANT_AUGMENTED_GGJAR%"
+                                         value="gridgain-${gridgain.edition}-${gridgain.version}.jar"/>
+
                                 <replaceregexp byline="true">
                                     <regexp pattern="ANT_AUGMENTED_GGJAR=.*"/>
                                     <substitution expression="ANT_AUGMENTED_GGJAR=gridgain-${gridgain.edition}-${gridgain.version}.jar"/>
