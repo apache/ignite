@@ -154,6 +154,10 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                             log.debug("Child process was initialized, sending execution request [jobId=" + job.id() +
                                 ", tasksSize=" + tasks.size() + ']');
 
+                        proc.jobId(job.id());
+
+                        runningProcsByJobId.put(job.id(), proc);
+
                         sendExecutionRequest(proc, job, tasks);
                     }
                     catch (GridException e) {
@@ -187,7 +191,25 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                 log.debug("Updating job information for remote task process [proc=" + proc + ", meta=" + meta + ']');
 
             try {
-                comm.sendMessage(proc.descriptor(), new GridHadoopJobInfoUpdateRequest(jobId, meta.phase()));
+                Map<Integer, GridHadoopProcessDescriptor> rdcAddrs = meta.reducersAddresses();
+
+                int rdcNum = meta.mapReducePlan().reducers();
+
+                GridHadoopProcessDescriptor[] addrs = null;
+
+                if (rdcAddrs != null && rdcAddrs.size() == rdcNum) {
+                    addrs = new GridHadoopProcessDescriptor[rdcNum];
+
+                    for (int i = 0; i < rdcNum; i++) {
+                        GridHadoopProcessDescriptor desc = rdcAddrs.get(i);
+
+                        assert desc != null : "Missing reducing address [meta=" + meta + ", rdc=" + i + ']';
+
+                        addrs[i] = desc;
+                    }
+                }
+
+                comm.sendMessage(proc.descriptor(), new GridHadoopJobInfoUpdateRequest(jobId, meta.phase(), addrs));
             }
             catch (GridException e) {
                 // TODO fail the whole thing?
@@ -458,7 +480,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                 return;
 
             try {
-                if (msg instanceof GridHadoopProcessStartedReply) {
+                if (msg instanceof GridHadoopProcessStartedAck) {
                     GridHadoopProcessFuture fut = startingProcs.get(desc.processId());
 
                     if (fut != null)
@@ -473,6 +495,14 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                     jobTracker.onTaskFinished(taskMsg.taskInfo(),
                         new GridHadoopTaskStatus(taskMsg.state(), taskMsg.error()));
                 }
+                else if (msg instanceof GridHadoopTaskExecutionResponse) {
+                    GridHadoopTaskExecutionResponse res = (GridHadoopTaskExecutionResponse)msg;
+
+                    if (!F.isEmpty(res.reducers()))
+                        jobTracker.onExternalMappersInitialized(res.jobId(), res.reducers(), desc);
+                }
+                else
+                    log.warning("Unexpected message received by node [desc=" + desc + ", msg=" + msg + ']');
             }
             finally {
                 busyLock.readUnlock();
@@ -490,6 +520,10 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
                 if (proc != null) {
                     log.warning("Lost connection with alive process (will terminate): " + desc);
+
+                    // TODO notify job tracker.
+
+                    runningProcsByJobId.remove(proc.jobId());
 
                     proc.terminate();
                 }
@@ -537,6 +571,20 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
          */
         private GridHadoopProcessDescriptor descriptor() {
             return procDesc;
+        }
+
+        /**
+         * @return Job ID.
+         */
+        public GridHadoopJobId jobId() {
+            return jobId;
+        }
+
+        /**
+         * @param jobId Job ID.
+         */
+        public void jobId(GridHadoopJobId jobId) {
+            this.jobId = jobId;
         }
 
         /**
@@ -635,6 +683,8 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                 startingProcs.remove(childProcId, this);
 
                 HadoopProcess old = runningProcsByProcId.put(childProcId, res);
+
+                runningProcsByJobId.put(res.jobId, res);
 
                 assert old == null;
 

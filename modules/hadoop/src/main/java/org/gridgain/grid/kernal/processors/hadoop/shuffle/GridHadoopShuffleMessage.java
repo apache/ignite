@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.message.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -21,7 +22,7 @@ import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
 /**
  * Shuffle message.
  */
-public class GridHadoopShuffleMessage implements Externalizable {
+public class GridHadoopShuffleMessage extends GridHadoopMessage implements Externalizable {
     /** */
     private static final AtomicLong ids = new AtomicLong();
 

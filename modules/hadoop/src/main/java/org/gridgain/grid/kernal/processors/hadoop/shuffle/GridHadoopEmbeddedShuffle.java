@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.message.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -40,7 +41,7 @@ public class GridHadoopEmbeddedShuffle extends GridHadoopShuffleAdapter<UUID> {
         ctx.kernalContext().io().addUserMessageListener(GridTopic.TOPIC_HADOOP,
             new GridBiPredicate<UUID, Object>() {
                 @Override public boolean apply(UUID nodeId, Object msg) {
-                    return onMessageReceived(nodeId, msg);
+                    return onMessageReceived(nodeId, (GridHadoopMessage)msg);
                 }
             });
     }

@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.message.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.future.*;
@@ -72,7 +73,7 @@ public abstract class GridHadoopShuffleAdapter<T>  {
      * @param jobId Task info.
      * @return Shuffle job.
      */
-    private GridHadoopShuffleJob job(GridHadoopJobId jobId) throws GridException {
+    protected GridHadoopShuffleJob<T> job(GridHadoopJobId jobId) throws GridException {
         GridHadoopShuffleJob<T> res = jobs.get(jobId);
 
         if (res == null) {
@@ -86,29 +87,37 @@ public abstract class GridHadoopShuffleAdapter<T>  {
                 res = old;
             }
             else {
-                if (res.reducersInitialized()) {
-                    res.startSending(gridName(),
-                        new GridBiClosure<T, GridHadoopShuffleMessage, GridFuture<?>>() {
-                            @Override public GridFuture<?> apply(T dest, GridHadoopShuffleMessage msg) {
-                                GridFutureAdapterEx<?> f = new GridFutureAdapterEx<>();
-
-                                sentMsgs.putIfAbsent(msg.id(),
-                                    new GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapterEx<?>>(msg, f));
-
-                                send0(dest, msg);
-
-                                return f;
-                            }
-                        }
-                    );
-                }
+                if (res.reducersInitialized())
+                    startSending(res);
             }
         }
 
         return res;
     }
 
-    protected boolean onMessageReceived(T src, Object msg) {
+    /**
+     * Starts message sending thread.
+     *
+     * @param shuffleJob Job to start sending for.
+     */
+    protected void startSending(GridHadoopShuffleJob<T> shuffleJob) {
+        shuffleJob.startSending(gridName(),
+            new GridBiClosure<T, GridHadoopShuffleMessage, GridFuture<?>>() {
+                @Override public GridFuture<?> apply(T dest, GridHadoopShuffleMessage msg) {
+                    GridFutureAdapterEx<?> f = new GridFutureAdapterEx<>();
+
+                    sentMsgs.putIfAbsent(msg.id(),
+                        new GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapterEx<?>>(msg, f));
+
+                    send0(dest, msg);
+
+                    return f;
+                }
+            }
+        );
+    }
+
+    public boolean onMessageReceived(T src, GridHadoopMessage msg) {
         if (msg instanceof GridHadoopShuffleMessage) {
             GridHadoopShuffleMessage m = (GridHadoopShuffleMessage)msg;
 

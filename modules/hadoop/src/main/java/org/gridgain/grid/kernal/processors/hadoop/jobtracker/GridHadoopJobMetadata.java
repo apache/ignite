@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -44,6 +45,9 @@ public class GridHadoopJobMetadata implements Externalizable {
 
     /** External execution flag. */
     private boolean externalExec;
+
+    /** Reducers addresses. */
+    private Map<Integer, GridHadoopProcessDescriptor> reducersAddrs;
 
     /** Job phase. */
     private GridHadoopJobPhase phase = PHASE_MAP;
@@ -82,6 +86,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         pendingSplits = src.pendingSplits;
         pendingReducers = src.pendingReducers;
         phase = src.phase;
+        reducersAddrs = src.reducersAddrs;
         taskNumMap = src.taskNumMap;
     }
 
@@ -111,6 +116,24 @@ public class GridHadoopJobMetadata implements Externalizable {
      */
     public void externalExecution(boolean externalExec) {
         this.externalExec = externalExec;
+    }
+
+    /**
+     * Gets reducers addresses for external execution.
+     *
+     * @return Reducers addresses.
+     */
+    public Map<Integer, GridHadoopProcessDescriptor> reducersAddresses() {
+        return reducersAddrs;
+    }
+
+    /**
+     * Sets reducers addresses for external execution.
+     *
+     * @param reducersAddrs Map of addresses.
+     */
+    public void reducersAddresses(Map<Integer, GridHadoopProcessDescriptor> reducersAddrs) {
+        this.reducersAddrs = reducersAddrs;
     }
 
     /**

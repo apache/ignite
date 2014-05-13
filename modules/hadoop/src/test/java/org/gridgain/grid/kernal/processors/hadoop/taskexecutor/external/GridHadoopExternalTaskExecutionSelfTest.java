@@ -62,7 +62,10 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
         Job job = Job.getInstance(cfg);
 
         job.setMapperClass(TestMapper.class);
-        job.setNumReduceTasks(0);
+        job.setCombinerClass(TestReducer.class);
+        job.setReducerClass(TestReducer.class);
+
+        job.setNumReduceTasks(1);
 
         FileInputFormat.setInputPaths(job, new Path("ggfs://ipc/" + testInputFile));
 
@@ -97,8 +100,37 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
      *
      */
     private static class TestMapper extends Mapper<Object, Text, Text, IntWritable> {
-        @Override protected void map(Object key, Text value, Context context) throws IOException, InterruptedException {
-            System.out.println(">>> Mapper read value: " + value);
+        /** One constant. */
+        private IntWritable one = new IntWritable(1);
+
+        /** Line constant. */
+        private Text line = new Text("line");
+
+        @Override protected void map(Object key, Text val, Context ctx) throws IOException, InterruptedException {
+            ctx.write(line, one);
+
+            System.out.println(">>>> Mapped: " + val);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
+        /** Line constant. */
+        private Text line = new Text("line");
+
+        /** {@inheritDoc} */
+        @Override protected void reduce(Text key, Iterable<IntWritable> values, Context ctx)
+            throws IOException, InterruptedException {
+            int s = 0;
+
+            for (IntWritable val : values)
+                s += val.get();
+
+            System.out.println(">>>> Reduced: " + s);
+
+            ctx.write(line, new IntWritable(s));
         }
     }
 }

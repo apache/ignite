@@ -17,6 +17,7 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
+import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
@@ -322,6 +323,18 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         finally {
             busyLock.readUnlock();
         }
+    }
+
+    /**
+     * Callback from task executor called when process is ready to received shuffle messages.
+     *
+     * @param jobId Job ID.
+     * @param reducers Reducers.
+     * @param desc Process descriptor.
+     */
+    public void onExternalMappersInitialized(GridHadoopJobId jobId, Collection<Integer> reducers,
+        GridHadoopProcessDescriptor desc) {
+        jobMetaPrj.transformAsync(jobId, new InitializeReducersClosure(reducers, desc));
     }
 
     /**
@@ -1003,6 +1016,44 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             if (err != null)
                 cp.phase(PHASE_CANCELLING);
+
+            return cp;
+        }
+    }
+
+    private static class InitializeReducersClosure
+        implements GridClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> {
+        /** Reducers. */
+        private Collection<Integer> rdc;
+
+        /** Process descriptor for reducers. */
+        private GridHadoopProcessDescriptor desc;
+
+        /**
+         * @param rdc Reducers to initialize.
+         * @param desc External process descriptor.
+         */
+        private InitializeReducersClosure(Collection<Integer> rdc, GridHadoopProcessDescriptor desc) {
+            assert !F.isEmpty(rdc);
+            assert desc != null;
+
+            this.rdc = rdc;
+            this.desc = desc;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridHadoopJobMetadata apply(GridHadoopJobMetadata meta) {
+            GridHadoopJobMetadata cp = new GridHadoopJobMetadata(meta);
+
+            Map<Integer, GridHadoopProcessDescriptor> oldMap = meta.reducersAddresses();
+
+            Map<Integer, GridHadoopProcessDescriptor> rdcMap = oldMap == null ?
+                new HashMap<Integer, GridHadoopProcessDescriptor>() : new HashMap<>(oldMap);
+
+            for (Integer r : rdc)
+                rdcMap.put(r, desc);
+
+            cp.reducersAddresses(rdcMap);
 
             return cp;
         }

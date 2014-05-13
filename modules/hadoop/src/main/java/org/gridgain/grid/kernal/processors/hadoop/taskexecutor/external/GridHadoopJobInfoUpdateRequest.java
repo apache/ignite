@@ -23,13 +23,19 @@ public class GridHadoopJobInfoUpdateRequest extends GridHadoopMessage {
     /** Job phase. */
     private GridHadoopJobPhase jobPhase;
 
+    /** Reducers addresses. */
+    private GridHadoopProcessDescriptor[] reducersAddrs;
+
     /**
      * @param jobId Job ID.
      * @param jobPhase Job phase.
+     * @param reducersAddrs Reducers addresses.
      */
-    public GridHadoopJobInfoUpdateRequest(GridHadoopJobId jobId, GridHadoopJobPhase jobPhase) {
+    public GridHadoopJobInfoUpdateRequest(GridHadoopJobId jobId, GridHadoopJobPhase jobPhase,
+        GridHadoopProcessDescriptor[] reducersAddrs) {
         this.jobId = jobId;
         this.jobPhase = jobPhase;
+        this.reducersAddrs = reducersAddrs;
     }
 
     /**
@@ -44,5 +50,12 @@ public class GridHadoopJobInfoUpdateRequest extends GridHadoopMessage {
      */
     public GridHadoopJobPhase jobPhase() {
         return jobPhase;
+    }
+
+    /**
+     * @return Reducers addresses.
+     */
+    public GridHadoopProcessDescriptor[] reducersAddresses() {
+        return reducersAddrs;
     }
 }

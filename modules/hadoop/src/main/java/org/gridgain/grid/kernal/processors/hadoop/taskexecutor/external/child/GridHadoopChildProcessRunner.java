@@ -13,10 +13,12 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
+import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -69,6 +71,9 @@ public class GridHadoopChildProcessRunner {
     /** Job factory. */
     private GridHadoopJobFactory jobFactory = new GridHadoopDefaultJobFactory();
 
+    /** Embedded shuffle. */
+    private GridHadoopExternalShuffle shuffle;
+
     /**
      * Starts child process runner.
      */
@@ -79,11 +84,13 @@ public class GridHadoopChildProcessRunner {
         this.nodeDesc = nodeDesc;
         this.msgExecSvc = msgExecSvc;
 
+        shuffle = new GridHadoopExternalShuffle(parentLog.getLogger(GridHadoopExternalShuffle.class), comm);
+
         comm.setListener(new MessageListener());
         log = parentLog.getLogger(GridHadoopChildProcessRunner.class);
 
         // At this point node knows that this process has started.
-        comm.sendMessage(this.nodeDesc, new GridHadoopProcessStartedReply());
+        comm.sendMessage(this.nodeDesc, new GridHadoopProcessStartedAck());
     }
 
     /**
@@ -123,9 +130,14 @@ public class GridHadoopChildProcessRunner {
                     }
                 }
 
+                shuffle.prepareFor(job, mappers != null);
+
                 initializeExecutors(req, job, mappers, reducers);
 
                 phase(GridHadoopJobPhase.PHASE_MAP);
+
+                // Can send reply after shuffle has been initialized.
+                comm.sendMessage(nodeDesc, new GridHadoopTaskExecutionResponse(job.id(), reducerIds(reducers)));
             }
             else
                 log.warning("Received duplicate task execution request for the same process (will ignore): " + req);
@@ -146,9 +158,12 @@ public class GridHadoopChildProcessRunner {
      */
     private void phase(GridHadoopJobPhase phase) {
         boolean change = false;
+        GridHadoopJobPhase oldPhase = null;
 
         synchronized (this) {
             if (locPhase != phase) {
+                oldPhase = locPhase;
+
                 log.info("Changing process state [old=" + locPhase + ", new=" + phase + ']');
 
                 change = true;
@@ -157,22 +172,57 @@ public class GridHadoopChildProcessRunner {
             }
         }
 
-        if (change) {
-            if (phase == GridHadoopJobPhase.PHASE_MAP) {
-                if (mappers != null) {
-                    for (GridHadoopTask m : mappers)
-                        // TODO shuffle input and output.
-                        mapperExecSvc.submit(new TaskRunnable(new GridHadoopTaskContext(null, job, null, null), m));
+        try {
+            if (change) {
+                if (phase == GridHadoopJobPhase.PHASE_MAP) {
+                    if (mappers != null) {
+                        for (GridHadoopTask m : mappers)
+                            mapperExecSvc.submit(new TaskRunnable(taskContext(m.info()), m));
+
+                        log.debug("Submitted tasks to map executor service: " + mappers.size());
+                    }
                 }
-            }
-            else if (phase == GridHadoopJobPhase.PHASE_REDUCE) {
-                assert reducers != null;
+                else if (phase == GridHadoopJobPhase.PHASE_REDUCE) {
+                    assert reducers != null;
 
-                for (GridHadoopTask r : reducers)
-                    reducerExecSvc.submit(new TaskRunnable(new GridHadoopTaskContext(null, job, null, null), r));
-            }
+                    for (GridHadoopTask r : reducers)
+                        reducerExecSvc.submit(new TaskRunnable(taskContext(r.info()), r));
 
-            checkFinished();
+                    log.debug("Submitted tasks to reduce executor service: " + reducers.size());
+                }
+                else if (phase == GridHadoopJobPhase.PHASE_CANCELLING) {
+                    if (log.isDebugEnabled())
+                        log.debug("Received cancellation request (will terminate all ongoing tasks).");
+
+                    if (mapperExecSvc != null) {
+                        List<Runnable> incomplete = mapperExecSvc.shutdownNow();
+
+                        // TODO.
+                    }
+
+                    if (reducerExecSvc != null) {
+                        List<Runnable> incomplete = reducerExecSvc.shutdownNow();
+
+                        // TODO.
+                    }
+
+                    if (oldPhase == GridHadoopJobPhase.PHASE_MAP && reducers != null) {
+                        for (GridHadoopTask reduceTask : reducers) {
+                            notifyTaskFinished(reduceTask.info(), GridHadoopTaskState.CANCELED, null);
+
+                        }
+                    }
+                }
+
+                checkFinished();
+            }
+        }
+        catch (GridException e) {
+            log.error("Failed to change job phase (will terminate).", e);
+
+            shutdown();
+
+            terminate();
         }
     }
 
@@ -221,23 +271,50 @@ public class GridHadoopChildProcessRunner {
     }
 
     /**
+     * Creates task context.
+     *
+     * @param info Task info.
+     * @return Task context.
+     * @throws GridException If shuffle initialization failed.
+     */
+    private GridHadoopTaskContext taskContext(GridHadoopTaskInfo info) throws GridException {
+        GridHadoopTaskInput input = info.type() == GridHadoopTaskType.MAP ? null : shuffle.input(info);
+        GridHadoopTaskOutput output = info.type() == GridHadoopTaskType.REDUCE ? null : shuffle.output(info);
+
+        return new GridHadoopTaskContext(null, job, input, output);
+    }
+
+    /**
      * Updates external process map so that shuffle can proceed with sending messages to reducers.
      *
      * @param req Update request.
      */
     private void updateTasks(GridHadoopJobInfoUpdateRequest req) {
-        // TODO update shuffle addresses.
         assert initGuard.get();
 
         assert req.jobId().equals(job.id());
 
-        phase(req.jobPhase());
+        try {
+            phase(req.jobPhase());
+
+            if (req.reducersAddresses() != null)
+                shuffle.onAddressesReceived(req.jobId(), req.reducersAddresses());
+        }
+        catch (GridException e) {
+            log.error("Failed to update tasks state (will terminate process).", e);
+
+            shutdown();
+
+            terminate();
+        }
     }
 
     /**
      * Stops all executors and running tasks.
      */
     private void shutdown() {
+        U.dumpStack("Shutting down external process.");
+
         if (mapperExecSvc != null)
             mapperExecSvc.shutdownNow();
 
@@ -257,6 +334,10 @@ public class GridHadoopChildProcessRunner {
      */
     private void notifyTaskFinished(GridHadoopTaskInfo taskInfo, GridHadoopTaskState state, Throwable err) {
         try {
+            if (log.isDebugEnabled())
+                log.debug("Hadoop task execution finished, sending notification to parent node [taskInfo=" + taskInfo
+                    + ", state=" + state + ", err=" + err + ']');
+
             comm.sendMessage(nodeDesc, new GridHadoopTaskFinishedMessage(taskInfo, state, err));
 
             if (taskInfo.type() == GridHadoopTaskType.MAP) {
@@ -264,7 +345,13 @@ public class GridHadoopChildProcessRunner {
 
                 // Check if we should start combiner.
                 if (mappers == 0) {
+                    if (log.isDebugEnabled())
+                        log.debug("All local mappers have finished execution.");
+
                     if (job.hasCombiner()) {
+                        if (log.isDebugEnabled())
+                            log.debug("Starting combiner task.");
+
                         GridHadoopTask c = job.createTask(new GridHadoopTaskInfo(
                             comm.localProcessDescriptor().parentNodeId(),
                             GridHadoopTaskType.COMBINE,
@@ -273,7 +360,7 @@ public class GridHadoopChildProcessRunner {
                             0,
                             null));
 
-                        reducerExecSvc.submit(new TaskRunnable(new GridHadoopTaskContext(null, job, null, null), c));
+                        reducerExecSvc.submit(new TaskRunnable(taskContext(c.info()), c));
                     }
                 }
             }
@@ -305,6 +392,25 @@ public class GridHadoopChildProcessRunner {
         }
 
         return true;
+    }
+
+    /**
+     * @param reduceTasks Reduce tasks.
+     * @return Reducer IDs.
+     */
+    private Collection<Integer> reducerIds(Collection<GridHadoopTask> reduceTasks) {
+        if (reduceTasks == null)
+            return null;
+
+        Collection<Integer> rdc = new ArrayList<>(reduceTasks.size());
+
+        for (GridHadoopTask task : reduceTasks) {
+            assert task.info().type() == GridHadoopTaskType.REDUCE;
+
+            rdc.add(task.info().taskNumber());
+        }
+
+        return rdc;
     }
 
     /**
@@ -348,6 +454,8 @@ public class GridHadoopChildProcessRunner {
      * Stops execution of this process.
      */
     private void terminate() {
+        U.dumpStack("Terminating external process.");
+
         // TODO do we need graceful shutdown here?
         System.exit(1);
     }
@@ -365,6 +473,9 @@ public class GridHadoopChildProcessRunner {
             else if (msg instanceof GridHadoopJobInfoUpdateRequest) {
                 if (validateNodeMessage(desc, msg))
                     updateTasks((GridHadoopJobInfoUpdateRequest)msg);
+            }
+            else if (msg instanceof GridHadoopShuffleMessage || msg instanceof GridHadoopShuffleAck) {
+                shuffle.onMessageReceived(desc, msg);
             }
         }
 
