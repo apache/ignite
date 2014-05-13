@@ -16,10 +16,11 @@ import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
+
+import static org.gridgain.grid.ggfs.GridGgfs.*;
 
 /**
  * Default map-reduce planner implementation.
@@ -37,7 +38,13 @@ public class GridHadoopNewMapReducePlanner implements GridHadoopMapReducePlanner
     /** {@inheritDoc} */
     @Override public GridHadoopMapReducePlan preparePlan(Collection<GridHadoopInputSplit> splits,
         Collection<GridNode> top, GridHadoopJob job, @Nullable GridHadoopMapReducePlan oldPlan) throws GridException {
-        Map<UUID, Collection<GridHadoopInputSplit>> mappers = mappers(top, splits);
+        // Convert collection of topology nodes to collection of topology node IDs.
+        Collection<UUID> topIds = new HashSet<>(top.size(), 1.0f);
+
+        for (GridNode topNode : top)
+            topIds.add(topNode.id());
+
+        Map<UUID, Collection<GridHadoopInputSplit>> mappers = mappers(top, topIds, splits);
 
         Map<UUID, int[]> reducers = reducers(top, mappers, job.reducers());
 
@@ -47,19 +54,25 @@ public class GridHadoopNewMapReducePlanner implements GridHadoopMapReducePlanner
     /**
      * Create plan for mappers.
      *
-     * @param top Topology.
+     * @param top Topology nodes.
+     * @param topIds Topology node IDs.
      * @param splits Splits.
      * @return Mappers map.
      * @throws GridException If failed.
      */
-    private Map<UUID, Collection<GridHadoopInputSplit>> mappers(Collection<GridNode> top,
+    private Map<UUID, Collection<GridHadoopInputSplit>> mappers(Collection<GridNode> top, Collection<UUID> topIds,
         Iterable<GridHadoopInputSplit> splits) throws GridException {
         Map<UUID, Collection<GridHadoopInputSplit>> mappers = new HashMap<>();
 
-        Map<String, Collection<GridNode>> nodes = hosts(top);
+        Map<String, Collection<UUID>> nodes = hosts(top);
+
+        Map<UUID, Integer> nodeLoads = new HashMap<>(top.size(), 1.0f); // Track node load.
+
+        for (UUID nodeId : topIds)
+            nodeLoads.put(nodeId, 0);
 
         for (GridHadoopInputSplit split : splits) {
-            UUID nodeId = nodeForSplit(split, top, nodes);
+            UUID nodeId = nodeForSplit(split, topIds, nodes, nodeLoads);
 
             if (log.isDebugEnabled())
                 log.debug("Mapped split to node [split=" + split + ", nodeId=" + nodeId + ']');
@@ -73,9 +86,205 @@ public class GridHadoopNewMapReducePlanner implements GridHadoopMapReducePlanner
             }
 
             nodeSplits.add(split);
+
+            // Updated node load.
+            nodeLoads.put(nodeId, nodeLoads.get(nodeId) + 1);
         }
 
         return mappers;
+    }
+
+    /**
+     * Groups nodes by host names.
+     *
+     * @param top Topology to group.
+     * @return Map.
+     */
+    private static Map<String, Collection<UUID>> hosts(Collection<GridNode> top) {
+        Map<String, Collection<UUID>> grouped = new HashMap<>(top.size());
+
+        for (GridNode node : top) {
+            for (String host : node.hostNames()) {
+                Collection<UUID> nodeIds = grouped.get(host);
+
+                if (nodeIds == null) {
+                    // Expecting 1-2 nodes per host.
+                    nodeIds = new ArrayList<>(2);
+
+                    grouped.put(host, nodeIds);
+                }
+
+                nodeIds.add(node.id());
+            }
+        }
+
+        return grouped;
+    }
+
+    /**
+     * Determine the best node for this split.
+     *
+     * @param split Split.
+     * @param topIds Topology node IDs.
+     * @param nodes Nodes.
+     * @param nodeLoads Node load tracker.
+     * @return Node ID.
+     */
+    @SuppressWarnings("unchecked")
+    private UUID nodeForSplit(GridHadoopInputSplit split, Collection<UUID> topIds, Map<String, Collection<UUID>> nodes,
+        Map<UUID, Integer> nodeLoads) throws GridException {
+        if (split instanceof GridHadoopFileBlock) {
+            GridHadoopFileBlock split0 = (GridHadoopFileBlock)split;
+
+            if (GGFS_SCHEME.equalsIgnoreCase(split0.file().getScheme())) {
+                // TODO GG-8300: Get GGFS by name based on URI.
+                GridGgfsEx ggfs = (GridGgfsEx)grid.ggfs("ggfs");
+
+                if (ggfs != null && !ggfs.isProxy(split0.file())) {
+                    Collection<GridGgfsBlockLocation> blocks = ggfs.affinity(new GridGgfsPath(split0.file()),
+                        split0.start(), split0.length());
+
+                    assert blocks != null;
+
+                    if (blocks.size() == 1)
+                        // Fast-path, split consists of one GGFS block (as in most cases).
+                        return bestNode(blocks.iterator().next().nodeIds(), topIds, nodeLoads);
+                    else {
+                        // Slow-path, file consists of multiple GGFS blocks. First, find the most co-located nodes.
+                        Map<UUID, Long> nodeMap = new HashMap<>();
+
+                        UUID bestNodeId = null;
+                        Collection<UUID> bestNodeIds = null;
+                        long bestLen = -1L;
+                        boolean single = true;
+
+                        for (GridGgfsBlockLocation block : blocks) {
+                            for (UUID blockNodeId : block.nodeIds()) {
+                                if (topIds.contains(blockNodeId)) {
+                                    Long oldLen = nodeMap.get(blockNodeId);
+                                    long newLen = oldLen == null ? block.length() : oldLen + block.length();
+
+                                    nodeMap.put(blockNodeId, newLen);
+
+                                    if (bestNodeId == null) {
+                                        bestNodeId = blockNodeId;
+                                        bestLen = newLen;
+                                    }
+                                    else if (bestLen == newLen) {
+                                        if (single) {
+                                            // Switch from single mode.
+                                            assert bestNodeIds == null;
+
+                                            bestNodeIds = new ArrayList<>(2);
+
+                                            bestNodeIds.add(bestNodeId);
+                                            bestNodeIds.add(blockNodeId);
+
+                                            single = false;
+                                        }
+                                        else {
+                                            assert bestNodeIds != null && bestNodeIds.size() > 1;
+
+                                            bestNodeIds.add(blockNodeId);
+                                        }
+                                    }
+                                    else if (bestLen < newLen) {
+                                        bestNodeId = blockNodeId;
+                                        bestLen = newLen;
+
+                                        if (!single) {
+                                            assert bestNodeIds != null;
+
+                                            bestNodeIds = null;
+
+                                            single = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (bestNodeId != null && single)
+                            // Optimization: if there is only one node with maximum length, return it.
+                            return bestNodeId;
+                        else {
+                            // Several nodes have maximum length, decide which one to use.
+                            assert bestNodeIds != null;
+
+                            return bestNode(bestNodeIds, topIds, nodeLoads);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Cannot use local GGFS for some reason, try selecting the node by host.
+        Collection<UUID> blockNodes = null;
+
+        for (String host : split.hosts()) {
+            Collection<UUID> hostNodes = nodes.get(host);
+
+            if (!F.isEmpty(hostNodes)) {
+                if (blockNodes == null)
+                    blockNodes = new ArrayList<>(hostNodes);
+                else
+                    blockNodes.addAll(hostNodes);
+            }
+        }
+
+        if (!F.isAll(blockNodes))
+            return bestNode(blockNodes, topIds, nodeLoads);
+
+        // Failed to select node by host, select the least loaded one.
+        return bestNode(topIds, topIds, nodeLoads);
+    }
+
+    /**
+     * Finds the best (the least loaded) node among the candidates.
+     *
+     * @param candidates Candidates.
+     * @param topIds Topology node IDs.
+     * @param nodeLoads Known node loads.
+     * @return The best node.
+     */
+    private UUID bestNode(Collection<UUID> candidates, Collection<UUID> topIds, Map<UUID, Integer> nodeLoads) {
+        UUID bestNode = null;
+        int bestLoad = 0;
+
+        for (UUID candidate : candidates) {
+            if (topIds.contains(candidate)) {
+                int load = nodeLoads.get(candidate);
+
+                if (bestNode == null || bestLoad > load) {
+                    bestNode = candidate;
+                    bestLoad = load;
+
+                    if (bestLoad == 0)
+                        break; // Minimum load possible, no need for further iterations.
+                }
+            }
+        }
+
+        if (bestNode == null) {
+            // Blocks are located on nodes which are not Hadoop-enabled, assign to the least loaded one.
+            bestLoad = Integer.MAX_VALUE;
+
+            for (UUID nodeId : topIds) {
+                int load = nodeLoads.get(nodeId);
+
+                if (bestLoad > load) {
+                    bestNode = nodeId;
+                    bestLoad = load;
+
+                    if (bestLoad == 0)
+                        break; // Minimum load possible, no need for further iterations.
+                }
+            }
+        }
+
+        assert bestNode != null;
+
+        return bestNode;
     }
 
     /**
@@ -178,117 +387,10 @@ public class GridHadoopNewMapReducePlanner implements GridHadoopMapReducePlanner
      * @param splitCnt Splits mapped to this node.
      * @return Node weight.
      */
-    private int reducerNodeWeight(GridNode node, int splitCnt) {
+    @SuppressWarnings("UnusedParameters")
+    protected int reducerNodeWeight(GridNode node, int splitCnt) {
         // TODO: Use more intelligent approach taking in count node load, hardware, etc.
         return splitCnt;
-    }
-
-    /**
-     * Determine the best node for this split.
-     *
-     * @param split Split.
-     * @param top Topology.
-     * @param nodes Nodes.
-     * @return Node ID.
-     */
-    private UUID nodeForSplit(GridHadoopInputSplit split, Collection<GridNode> top,
-        Map<String, Collection<GridNode>> nodes) throws GridException {
-        if (split instanceof GridHadoopFileBlock) {
-            GridHadoopFileBlock split0 = (GridHadoopFileBlock)split;
-
-            if (GridGgfs.GGFS_SCHEME.equalsIgnoreCase(split0.file().getScheme())) {
-                // TODO GG-8300: Get GGFS by name based on URI.
-                GridGgfsEx ggfs = (GridGgfsEx)grid.ggfs("ggfs");
-
-                if (ggfs != null && !ggfs.isProxy(split0.file())) {
-                    Collection<GridGgfsBlockLocation> blocks = ggfs.affinity(new GridGgfsPath(split0.file()),
-                        split0.start(), split0.length());
-
-                    // Find the node hosting most of the split.
-                    UUID bestNodeId = null;
-                    long bestNodeLen = 0L;
-
-                    Map<UUID, Long> nodeMap = new HashMap<>();
-
-                    for (GridGgfsBlockLocation block : blocks) {
-                        for (UUID nodeId : block.nodeIds()) {
-                            Long len = nodeMap.get(nodeId);
-
-                            long newLen;
-
-                            if (len == null)
-                                newLen = block.length();
-                            else
-                                newLen = len + block.length();
-
-                            nodeMap.put(nodeId, newLen);
-
-                            if (bestNodeId == null || bestNodeLen < newLen) {
-                                bestNodeId = nodeId;
-                                bestNodeLen = newLen;
-                            }
-                        }
-                    }
-
-                    assert bestNodeId != null;
-
-                    return bestNodeId;
-                }
-            }
-        }
-
-        // Cannot use local GGFS for some reason, so fallback to straightforward approach.
-        for (String host : split.hosts()) {
-            GridNode node = F.first(nodes.get(host));
-
-            if (node != null)
-                return node.id();
-        }
-
-        // No nodes were selected based on host, return random node.
-        int idx = ThreadLocalRandom8.current().nextInt(top.size());
-
-        Iterator<GridNode> it = top.iterator();
-
-        int i = 0;
-
-        while (it.hasNext()) {
-            GridNode node = it.next();
-
-            if (i == idx)
-                return node.id();
-
-            i++;
-        }
-
-        return null;
-    }
-
-    /**
-     * Groups nodes by host names.
-     *
-     * @param top Topology to group.
-     * @return Map.
-     */
-    private static Map<String, Collection<GridNode>> hosts(Collection<GridNode> top) {
-        Map<String, Collection<GridNode>> grouped = new HashMap<>(top.size());
-
-        for (GridNode node : top) {
-            for (String host : node.hostNames()) {
-                Collection<GridNode> nodes = grouped.get(host);
-
-                if (nodes == null) {
-                    // Expecting 1-2 nodes per host.
-                    nodes = new ArrayList<>(2);
-
-                    grouped.put(host, nodes);
-                }
-
-                nodes.add(node);
-            }
-        }
-
-        return grouped;
     }
 
     /**
