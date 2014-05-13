@@ -10,12 +10,9 @@
 package org.gridgain.grid.kernal.processors.spring;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.spring.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -42,6 +39,33 @@ public class GridSpringProcessorImpl implements GridSpringProcessor {
 
     /** System class loader user version. */
     private static final AtomicReference<String> SYS_LDR_VER = new AtomicReference<>(null);
+
+    /**
+     * Try to execute LogFactory.getFactory().setAttribute("org.apache.commons.logging.Log", null)
+     * to turn off default logging for Spring Framework.
+     */
+    static {
+        Class<?> logFactoryCls = null;
+
+        try {
+            logFactoryCls = Class.forName("org.apache.commons.logging.LogFactory");
+        }
+        catch (ClassNotFoundException ignored) {
+            // No-op.
+        }
+
+        if (logFactoryCls != null) {
+            try {
+                Object factory = logFactoryCls.getMethod("getFactory").invoke(null);
+
+                factory.getClass().getMethod("setAttribute", String.class, Object.class).
+                    invoke(factory, "org.apache.commons.logging.Log", null);
+            }
+            catch (Exception ignored) {
+                // No-op.
+            }
+        }
+    }
 
     /** {@inheritDoc} */
     @Override public GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(

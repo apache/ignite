@@ -11,10 +11,12 @@ package org.gridgain.grid.p2p;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
+import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
+import org.springframework.context.support.*;
 
 import java.io.*;
 import java.util.*;
@@ -74,9 +76,9 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
      */
     public void testContinuousMode() throws Exception {
         try {
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
-            Grid grid3 = startGrid(3);
+            Grid grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Grid grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Grid grid3 = startGrid(3, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             node2Id = grid2.localNode().id();
 
@@ -114,9 +116,9 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
      */
     public void testContinuousModeNodeRestart() throws Exception {
         try {
-            Grid grid1 = startGrid(1);
-            Grid grid2 = startGrid(2);
-            Grid grid3 = startGrid(3);
+            Grid grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Grid grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            Grid grid3 = startGrid(3, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             node2Id = grid2.localNode().id();
 
