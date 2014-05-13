@@ -13,7 +13,6 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.*;
 import org.gridgain.examples.*;
-import org.gridgain.grid.ggfs.hadoop.v1.*;
 import org.gridgain.grid.product.*;
 import org.jetbrains.annotations.*;
 
