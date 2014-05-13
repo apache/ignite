@@ -169,12 +169,88 @@ public class GridHadoopMultimapSelftest extends GridCommonAbstractTest {
     public void testMultiThreaded() throws Exception {
         GridUnsafeMemory mem = new GridUnsafeMemory(0);
 
-        multithreadedAsync(new Callable<Object>() {
+        X.println("___ Started");
+
+        Job job = Job.getInstance();
+
+        job.setMapOutputKeyClass(IntWritable.class);
+        job.setMapOutputValueClass(IntWritable.class);
+
+        final GridHadoopMultimap m = new GridHadoopMultimap(new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 10),
+            new GridHadoopDefaultJobInfo(job.getConfiguration())), mem, 16);
+
+        final ConcurrentMap<Integer, Collection<Integer>> mm = new ConcurrentHashMap<>();
+
+        X.println("___ MT");
+
+        multithreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
+                X.println("___ TH");
+
+                Random rnd = ThreadLocalRandom.current();
+
+                IntWritable key = new IntWritable();
+                IntWritable val = new IntWritable();
+
+                GridHadoopMultimap.Adder a = m.startAdding();
+
+                for (int i = 0; i < 10000; i++) {
+                    int k = rnd.nextInt(32000);
+                    int v = rnd.nextInt();
+
+                    key.set(k);
+                    val.set(v);
+
+                    a.add(key, val);
+
+                    Collection<Integer> list = mm.get(k);
+
+                    if (list == null) {
+                        list = new ConcurrentLinkedQueue<>();
+
+                        Collection<Integer> old = mm.putIfAbsent(k, list);
+
+                        if (old != null)
+                            list = old;
+                    }
+
+                    list.add(v);
+                }
+
+                a.close();
+
                 return null;
             }
-        }, 17);
+        }, 2);
 
+        X.println("___ Check");
 
+        assertEquals(mm.size(), m.keys());
+
+        assertTrue(m.capacity() > 8000);
+
+        GridHadoopTaskInput in = m.input();
+
+        while (in.next()) {
+            IntWritable key = (IntWritable)in.key();
+
+            Iterator<?> valsIter = in.values();
+
+            Collection<Integer> vals = mm.remove(key.get());
+
+            assertNotNull(vals);
+
+            while (valsIter.hasNext()) {
+                IntWritable val = (IntWritable)valsIter.next();
+
+                assertTrue(vals.remove(val.get()));
+            }
+
+            assertTrue(vals.isEmpty());
+        }
+
+        m.close();
+
+        assertEquals(0, mem.allocatedSize());
     }
 }
