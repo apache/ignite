@@ -46,7 +46,7 @@ public class ExamplesUtils {
         URL url = CLS_LDR.getResource(path);
 
         if (url == null)
-            throw new RuntimeException("Failed to resolve resource path: " + path);
+            throw new RuntimeException("Failed to resolve resource URL by path: " + path);
 
         return url;
     }

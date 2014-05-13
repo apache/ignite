@@ -94,8 +94,10 @@ public class GgfsMapReduceExample {
         System.out.println();
         System.out.println("Copying file to GGFS: " + file);
 
-        try (GridGgfsOutputStream os = fs.create(fsPath, true);
-             FileInputStream fis = new FileInputStream(file)) {
+        try (
+            GridGgfsOutputStream os = fs.create(fsPath, true);
+            FileInputStream fis = new FileInputStream(file)
+        ) {
             byte[] buf = new byte[2048];
 
             int read = fis.read(buf);
