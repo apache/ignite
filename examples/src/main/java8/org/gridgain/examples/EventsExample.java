@@ -7,14 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.events;
+package org.gridgain.examples;
 
-import org.gridgain.examples.compute.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.resources.*;
 
 import java.util.*;
 
@@ -25,7 +23,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  * <p>
  * Remote nodes should always be started with configuration: {@code 'ggstart.sh examples/config/example-compute.xml'}.
  */
-public class EventsApiExample {
+public class EventsExample {
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned";
 
