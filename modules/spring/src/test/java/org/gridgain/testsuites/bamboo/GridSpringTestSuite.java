@@ -11,6 +11,7 @@ package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.p2p.*;
 import org.gridgain.testsuites.*;
 
 /**
@@ -28,6 +29,10 @@ public class GridSpringTestSuite extends TestSuite {
         suite.addTestSuite(GridFactorySelfTest.class);
 
         suite.addTest(GridResourceSelfTestSuite.suite());
+
+        // Tests moved to this suite since they require Spring functionality.
+        suite.addTest(new TestSuite(GridP2PUserVersionChangeSelfTest.class));
+        suite.addTest(new TestSuite(GridP2PContinuousLocalDeploySelfTest.class));
 
         return suite;
     }
