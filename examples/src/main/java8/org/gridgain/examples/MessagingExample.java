@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.messaging;
+package org.gridgain.examples;
 
 import org.gridgain.examples.compute.*;
 import org.gridgain.grid.*;
@@ -24,9 +24,6 @@ import java.util.*;
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
- * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
- * with {@code examples/config/example-compute.xml} configuration.
  */
 public final class MessagingExample {
     /** Message topics. */
@@ -80,14 +77,14 @@ public final class MessagingExample {
      */
     private static void startListening(GridProjection prj) throws GridException {
         // Add ordered message listener.
-        prj.message().remoteListen(TOPIC.ORDERED, (GridBiPredicate<UUID, String>) (nodeId, msg) -> {
+        prj.message().remoteListen(TOPIC.ORDERED, (nodeId, msg) -> {
             System.out.println("Received ordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
 
             return true; // Return true to continue listening.
         }).get();
 
         // Add unordered message listener.
-        prj.message().remoteListen(TOPIC.UNORDERED, (GridBiPredicate<UUID, String>) (nodeId, msg) -> {
+        prj.message().remoteListen(TOPIC.UNORDERED, (nodeId, msg) -> {
             System.out.println("Received unordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
 
             return true; // Return true to continue listening.
