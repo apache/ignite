@@ -49,6 +49,7 @@ import org.gridgain.grid.spi.securesession.*;
 import org.gridgain.grid.spi.securesession.noop.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.spi.swapspace.file.*;
+import org.gridgain.grid.spi.swapspace.noop.*;
 import org.gridgain.grid.startup.cmdline.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.thread.*;
@@ -1566,8 +1567,23 @@ public class GridGainEx {
             if (loadBalancingSpi == null)
                 loadBalancingSpi = new GridLoadBalancingSpi[] {new GridRoundRobinLoadBalancingSpi()};
 
-            if (swapspaceSpi == null)
-                swapspaceSpi = new GridFileSwapSpaceSpi();
+            if (swapspaceSpi == null) {
+                boolean needSwap = false;
+
+                GridCacheConfiguration[] caches = cfg.getCacheConfiguration();
+
+                if (caches != null) {
+                    for (GridCacheConfiguration c : caches) {
+                        if (c.isSwapEnabled()) {
+                            needSwap = true;
+
+                            break;
+                        }
+                    }
+                }
+
+                swapspaceSpi = needSwap ? new GridFileSwapSpaceSpi() : new GridNoopSwapSpaceSpi();
+            }
 
             if (indexingSpi == null)
                 indexingSpi = new GridIndexingSpi[] {(GridIndexingSpi)H2_INDEXING.createOptional()};

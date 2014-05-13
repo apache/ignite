@@ -990,7 +990,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             cache.putx(10, 10);
             cache.putx(11, 11);
 
-            assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
+            assert latch.await(LATCH_TIMEOUT, MILLISECONDS) : latch.getCount();
 
             assertEquals(12, map.size());
 

@@ -173,6 +173,8 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheNearExpiredEntriesPreloadSelfTest.class));
         suite.addTest(new TestSuite(GridCacheAtomicExpiredEntriesPreloadSelfTest.class));
 
+        suite.addTest(new TestSuite(GridCacheReturnValueTransferSelfTest.class));
+
         // TODO: GG-7242, GG-7243: Enabled when fixed.
 //        suite.addTest(new TestSuite(GridCacheDhtRemoveFailureTest.class));
 //        suite.addTest(new TestSuite(GridCacheNearRemoveFailureTest.class));
