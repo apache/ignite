@@ -12,7 +12,6 @@ package org.gridgain.grid.p2p;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
-import org.springframework.context.*;
 import javax.management.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -48,9 +47,6 @@ abstract class GridP2PAbstractUserResource {
 
     /** */
     @GridHomeResource private String ggHome;
-
-    /** */
-    @GridSpringApplicationContextResource private ApplicationContext springCtx;
 
     /** */
     GridP2PAbstractUserResource() {
@@ -129,7 +125,6 @@ abstract class GridP2PAbstractUserResource {
         assert mbeanSrv != null;
         assert exec != null;
         assert ggHome != null;
-        assert springCtx != null;
 
         log.info("Deploying resource: " + this);
     }
@@ -145,7 +140,6 @@ abstract class GridP2PAbstractUserResource {
         assert mbeanSrv != null;
         assert exec != null;
         assert ggHome != null;
-        assert springCtx != null;
 
         log.info("Undeploying resource: " + this);
     }

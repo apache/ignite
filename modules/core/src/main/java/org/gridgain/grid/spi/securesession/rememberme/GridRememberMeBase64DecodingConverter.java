@@ -27,6 +27,9 @@ public class GridRememberMeBase64DecodingConverter implements GridRememberMeConv
         catch (UnsupportedEncodingException e) {
             throw new GridRuntimeException(e);
         }
+        catch (Exception ignored) {
+            return null; // Invalid Base64 data.
+        }
     }
 
     /** {@inheritDoc} */
