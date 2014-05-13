@@ -30,7 +30,7 @@ if [ "${GRIDGAIN_HOME}" = "" ]; then
 fi
 
 # USER_LIBS variable can optionally contain user's JARs/libs.
-# USER_LIBS=
+USER_LIBS=.
 
 #
 # OS specific support.
@@ -49,7 +49,11 @@ case "`uname`" in
 esac
 
 # The following libraries are required for GridGain.
-GRIDGAIN_LIBS=${USER_LIBS}${SEP}${GRIDGAIN_LIBS}${SEP}${GRIDGAIN_HOME}/config/userversion${SEP}${GRIDGAIN_HOME}/libs/*${SEP}${GRIDGAIN_HOME}/libs/${HADOOP_LIB_DIR}/*
+GRIDGAIN_LIBS=${GRIDGAIN_HOME}/config/userversion${SEP}${GRIDGAIN_HOME}/libs/*${SEP}${GRIDGAIN_HOME}/libs/${HADOOP_LIB_DIR}/*
+
+if [ "${USER_LIBS}" != "" ]; then
+    GRIDGAIN_LIBS=${USER_LIBS}${SEP}${GRIDGAIN_LIBS}
+fi
 
 #
 # Set property JAR name during the Ant build.
