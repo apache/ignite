@@ -14,6 +14,9 @@ import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.text.*;
+import java.util.*;
+
 import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
@@ -46,6 +49,9 @@ public class GridProductImpl implements GridProduct {
 
     /** Compound version. */
     public static final String COMPOUND_VERSION;
+
+    /** Compound version. */
+    public static final String ACK_VERSION;
 
     /** */
     private final GridKernalContext ctx;
@@ -83,6 +89,11 @@ public class GridProductImpl implements GridProduct {
         VER_BYTES = U.intToBytes(VER.hashCode());
 
         COMPOUND_VERSION = EDITION + "-" + (ENT ? "ent" : "os") + "-" + VER;
+
+        String build = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD * 1000));
+        String rev = REV_HASH.length() > 8 ? REV_HASH.substring(0, 8) : REV_HASH;
+
+        ACK_VERSION = COMPOUND_VERSION + '#' + build + "-sha1:" + rev;
     }
 
     /**

@@ -530,10 +530,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
 
-        String build = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD * 1000));
-
         // Ack various information.
-        ackAsciiLogo(build);
+        ackAsciiLogo();
         ackConfigUrl();
         ackDaemon();
         ackOsInfo();
@@ -579,6 +577,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         // Ack configuration.
         ackSpis();
+
+        String build = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD * 1000));
 
         Map<String, Object> attrs = createNodeAttributes(cfg, build);
 
@@ -1585,17 +1585,14 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /**
      * Acks ASCII-logo. Thanks to http://patorjk.com/software/taag
-     *
-     * @param build Build.
      */
-    private void ackAsciiLogo(String build) {
+    private void ackAsciiLogo() {
         assert log != null;
 
         String fileName = log.fileName();
 
         if (System.getProperty(GG_NO_ASCII) == null) {
-            String rev = REV_HASH.length() > 8 ? REV_HASH.substring(0, 8) : REV_HASH;
-            String ver = "ver. " + COMPOUND_VERSION + '#' + build + "-sha1:" + rev;
+            String ver = "ver. " + ACK_VERSION;
 
             // Big thanks to: http://patorjk.com/software/taag
             // Font name "Small Slant"
