@@ -155,6 +155,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                                 ", tasksSize=" + tasks.size() + ']');
 
                         proc.jobId(job.id());
+                        proc.tasks(tasks);
 
                         runningProcsByJobId.put(job.id(), proc);
 
@@ -471,6 +472,21 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
     }
 
     /**
+     * Processes task finished message.
+     *
+     * @param desc Remote process descriptor.
+     * @param taskMsg Task finished message.
+     */
+    private void processTaskFinishedMessage(GridHadoopProcessDescriptor desc, GridHadoopTaskFinishedMessage taskMsg) {
+        HadoopProcess proc = runningProcsByProcId.get(desc.processId());
+
+        if (proc != null)
+            proc.removeTask(taskMsg.taskInfo());
+
+        jobTracker.onTaskFinished(taskMsg.taskInfo(), new GridHadoopTaskStatus(taskMsg.state(), taskMsg.error()));
+    }
+
+    /**
      *
      */
     private class MessageListener implements GridHadoopMessageListener {
@@ -492,8 +508,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                 else if (msg instanceof GridHadoopTaskFinishedMessage) {
                     GridHadoopTaskFinishedMessage taskMsg = (GridHadoopTaskFinishedMessage)msg;
 
-                    jobTracker.onTaskFinished(taskMsg.taskInfo(),
-                        new GridHadoopTaskStatus(taskMsg.state(), taskMsg.error()));
+                    processTaskFinishedMessage(desc, taskMsg);
                 }
                 else if (msg instanceof GridHadoopTaskExecutionResponse) {
                     GridHadoopTaskExecutionResponse res = (GridHadoopTaskExecutionResponse)msg;
@@ -521,7 +536,15 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                 if (proc != null) {
                     log.warning("Lost connection with alive process (will terminate): " + desc);
 
-                    // TODO notify job tracker.
+                    Collection<GridHadoopTaskInfo> tasks = proc.tasks();
+
+                    if (!F.isEmpty(tasks)) {
+                        GridHadoopTaskStatus status = new GridHadoopTaskStatus(CRASHED,
+                            new GridException("Failed to run tasks (external process finished unexpectedly): " + desc));
+
+                        for (GridHadoopTaskInfo info : tasks)
+                            jobTracker.onTaskFinished(info, status);
+                    }
 
                     runningProcsByJobId.remove(proc.jobId());
 
@@ -546,6 +569,9 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
         /** Process descriptor. */
         private GridHadoopProcessDescriptor procDesc;
+
+        /** Tasks. */
+        private Collection<GridHadoopTaskInfo> tasks;
 
         /** Terminated flag. */
         private boolean terminated;
@@ -608,6 +634,32 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
          */
         private boolean terminated() {
             return terminated;
+        }
+
+        /**
+         * Sets process tasks.
+         *
+         * @param tasks Tasks to set.
+         */
+        private void tasks(Collection<GridHadoopTaskInfo> tasks) {
+            this.tasks = new ConcurrentLinkedDeque<>(tasks);
+        }
+
+        /**
+         * Removes task when it was completed.
+         *
+         * @param task Task to remove.
+         */
+        private void removeTask(GridHadoopTaskInfo task) {
+            if (tasks != null)
+                tasks.remove(task);
+        }
+
+        /**
+         * @return Collection of tasks.
+         */
+        private Collection<GridHadoopTaskInfo> tasks() {
+            return tasks;
         }
 
         /** {@inheritDoc} */
