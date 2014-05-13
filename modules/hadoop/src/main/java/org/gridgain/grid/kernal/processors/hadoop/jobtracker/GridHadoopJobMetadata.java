@@ -100,7 +100,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         taskNumMap = src.taskNumMap;
         totalSplitCnt = src.totalSplitCnt;
         totalReducerCnt = src.totalReducerCnt;
-        ver = src.ver;
+        ver = ++src.ver;
     }
 
     /**
@@ -228,13 +228,6 @@ public class GridHadoopJobMetadata implements Externalizable {
      */
     public long version() {
         return ver;
-    }
-
-    /**
-     * Increment version.
-     */
-    public void incrementVersion() {
-        ver++;
     }
 
     /**

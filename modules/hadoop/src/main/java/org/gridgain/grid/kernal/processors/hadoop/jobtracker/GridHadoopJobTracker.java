@@ -880,8 +880,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             cp.phase(phase);
 
-            cp.incrementVersion();
-
             return cp;
         }
     }
@@ -946,8 +944,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     cp.phase(PHASE_REDUCE);
             }
 
-            cp.incrementVersion();
-
             return cp;
         }
     }
@@ -989,8 +985,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             if (err != null)
                 cp.phase(PHASE_CANCELLING);
-
-            cp.incrementVersion();
 
             return cp;
         }
@@ -1051,8 +1045,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             if (splitsCp.isEmpty() && rdcCp.isEmpty())
                 cp.phase(PHASE_COMPLETE);
-
-            cp.incrementVersion();
 
             return cp;
         }
