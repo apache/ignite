@@ -207,7 +207,7 @@ public class GridNodeCallableImpl implements GridNodeCallable {
      * @param ses SSH session.
      * @param cmd Command.
      * @throws JSchException In case of SSH error.
-     * @throws java.io.IOException If IO error occurs.
+     * @throws IOException If IO error occurs.
      * @throws GridInterruptedException If thread was interrupted while waiting.
      */
     private void shell(Session ses, String cmd) throws JSchException, IOException, GridInterruptedException {
