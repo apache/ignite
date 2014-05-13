@@ -284,7 +284,7 @@ public class GridHadoopMultimap implements AutoCloseable {
         }
 
         if (fromTbl != newTbl) { // Double check.
-            state(State.REHASHING, State.READING_WRITING);
+            state(State.REHASHING, State.READING_WRITING); // Switch back.
 
             return;
         }
@@ -297,45 +297,44 @@ public class GridHadoopMultimap implements AutoCloseable {
         }
         while (newLen < keys0);
 
-        if (keys0 >= 3 * (newLen >>> 2))
+        if (keys0 >= 3 * (newLen >>> 2)) // Still more than 3/4.
             newLen <<= 1;
 
+        // This is our target table for rehashing.
         AtomicLongArray toTbl = new AtomicLongArray(newLen);
 
+        // Make the new table visible before rehashing.
         newTbl = toTbl;
 
         // Rehash.
-
-        X.println("Rehash start");
-
         int newMask = newLen - 1;
 
         long failedMeta = 0;
 
         GridLongList collisions = new GridLongList(16);
 
-        for (int i = 0; i < fromTbl.length(); i++) { // Scan table.
+        for (int i = 0; i < fromTbl.length(); i++) { // Scan source table.
             long meta = fromTbl.get(i);
 
             assert meta != -1;
 
             if (meta == 0) { // No entry.
+                failedMeta = 0;
+
                 if (!fromTbl.compareAndSet(i, 0, -1)) // Mark as moved.
                     i--; // Retry.
 
                 continue;
             }
 
-            do { // Collect all the collisions before the last failed to nullify.
+            do { // Collect all the collisions before the last one failed to nullify or 0.
                 collisions.add(meta);
-
-                assert collisions.distinct() : collisions;
 
                 meta = collision(meta);
             }
             while (meta != failedMeta);
 
-            do { // Go from the last to the first.
+            do { // Go from the last to the first to avoid 'in-flight' state for meta entries.
                 meta = collisions.remove();
 
                 int addr = keyHash(meta) & newMask;
@@ -361,9 +360,8 @@ public class GridHadoopMultimap implements AutoCloseable {
                 failedMeta = 0;
         }
 
+        // Now old and new tables will be the same again.
         oldTbl = toTbl;
-
-        X.println("Rehash end");
 
         state(State.REHASHING, State.READING_WRITING);
     }
@@ -715,7 +713,7 @@ public class GridHadoopMultimap implements AutoCloseable {
         /**
          * @param key Key.
          * @param val Value.
-         * @return Meta page pointer.
+         * @return Updated or created meta page pointer.
          * @throws GridException If failed.
          */
         private long doAdd(Object key, @Nullable Object val) throws GridException {
@@ -737,7 +735,7 @@ public class GridHadoopMultimap implements AutoCloseable {
                 valueSize(valPtr, valSize);
             }
 
-            for (;;) {
+            for (AtomicLongArray old = null;;) {
                 int addr = keyHash & (tbl.length() - 1);
 
                 long metaPtrRoot = tbl.get(addr); // Read root meta pointer at this address.
@@ -747,6 +745,8 @@ public class GridHadoopMultimap implements AutoCloseable {
                     AtomicLongArray o = oldTbl;
 
                     tbl = tbl == o ? n : o; // Trying to get the oldest table but newer than ours.
+
+                    old = null;
 
                     continue;
                 }
@@ -783,7 +783,25 @@ public class GridHadoopMultimap implements AutoCloseable {
                     }
                     while (metaPtr != 0);
 
-                    // TODO here we did not find key moved by rehashing to the new table
+                    // Here we did not find our key, need to check if it was moved by rehashing to the new table.
+                    if (old == null) { // If the old table already set, then we will just try to update it.
+                        AtomicLongArray n = newTbl;
+
+                        if (n != tbl) { // Rehashing happens, try to find the key in new table but preserve the old one.
+                            old = tbl;
+                            tbl = n;
+
+                            continue;
+                        }
+                    }
+                }
+
+                if (old != null) { // We just checked new table but did not find our key as well as in the old one.
+                    tbl = old; // Try to add new key to the old table.
+
+                    addr = keyHash & (tbl.length() - 1);
+
+                    old = null;
                 }
 
                 if (newMetaPtr == 0) { // Allocate new meta page.
