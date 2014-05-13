@@ -19,7 +19,6 @@ import org.apache.hadoop.mapreduce.protocol.*;
 import org.apache.hadoop.mapreduce.security.token.delegation.*;
 import org.apache.hadoop.mapreduce.v2.*;
 import org.apache.hadoop.mapreduce.v2.jobhistory.*;
-import org.apache.hadoop.mapreduce.v2.util.*;
 import org.apache.hadoop.security.*;
 import org.apache.hadoop.security.authorize.*;
 import org.apache.hadoop.security.token.*;
@@ -227,9 +226,8 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     @Override public String getStagingAreaDir() throws IOException, InterruptedException {
         String usr = UserGroupInformation.getCurrentUser().getShortUserName();
 
-        Path path = MRApps.getStagingAreaDir(conf, usr);
-
-        return path.toString();
+        return new Path(conf.get(MRJobConfig.MR_AM_STAGING_DIR, MRJobConfig.DEFAULT_MR_AM_STAGING_DIR)
+            + Path.SEPARATOR + usr + Path.SEPARATOR + ".staging").toString();
     }
 
     /** {@inheritDoc} */
