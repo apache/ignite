@@ -15,6 +15,7 @@ import org.apache.log4j.xml.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
@@ -54,10 +55,10 @@ import static org.gridgain.grid.GridSystemProperties.*;
  * for additional information.
  * <p>
  * It's recommended to use GridGain logger injection instead of using/instantiating
- * logger in your task/job code. See {@link org.gridgain.grid.resources.GridLoggerResource} annotation about logger
+ * logger in your task/job code. See {@link GridLoggerResource} annotation about logger
  * injection.
  */
-public class GridTestLog4jLogger extends GridMetadataAwareAdapter implements GridLogger {
+public class GridTestLog4jLogger extends GridMetadataAwareAdapter implements GridLogger, GridLoggerNodeIdSupported {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -83,6 +84,9 @@ public class GridTestLog4jLogger extends GridMetadataAwareAdapter implements Gri
 
     /** Quiet flag. */
     private final boolean quiet;
+
+    /** Node ID. */
+    private UUID nodeId;
 
     /**
      * Creates new logger and automatically detects if root logger already
@@ -146,7 +150,7 @@ public class GridTestLog4jLogger extends GridMetadataAwareAdapter implements Gri
      * Creates new logger with given configuration {@code path}.
      *
      * @param path Path to log4j configuration XML file.
-     * @throws org.gridgain.grid.GridException Thrown in case logger can't be created.
+     * @throws GridException Thrown in case logger can't be created.
      */
     public GridTestLog4jLogger(String path) throws GridException {
         if (path == null)
@@ -175,7 +179,7 @@ public class GridTestLog4jLogger extends GridMetadataAwareAdapter implements Gri
      * Creates new logger with given configuration {@code cfgFile}.
      *
      * @param cfgFile Log4j configuration XML file.
-     * @throws org.gridgain.grid.GridException Thrown in case logger can't be created.
+     * @throws GridException Thrown in case logger can't be created.
      */
     public GridTestLog4jLogger(File cfgFile) throws GridException {
         if (cfgFile == null)
@@ -202,7 +206,7 @@ public class GridTestLog4jLogger extends GridMetadataAwareAdapter implements Gri
      * Creates new logger with given configuration {@code cfgUrl}.
      *
      * @param cfgUrl URL for Log4j configuration XML file.
-     * @throws org.gridgain.grid.GridException Thrown in case logger can't be created.
+     * @throws GridException Thrown in case logger can't be created.
      */
     public GridTestLog4jLogger(final URL cfgUrl) throws GridException {
         if (cfgUrl == null)
@@ -384,6 +388,26 @@ public class GridTestLog4jLogger extends GridMetadataAwareAdapter implements Gri
         fileAppenders.remove(a);
     }
 
+    /** {@inheritDoc} */
+    @Override public void setNodeId(UUID nodeId) {
+        A.notNull(nodeId, "nodeId");
+
+        this.nodeId = nodeId;
+
+        for (FileAppender a : fileAppenders) {
+            if (a instanceof GridLoggerNodeIdSupported) {
+                ((GridLoggerNodeIdSupported)a).setNodeId(nodeId);
+
+                a.activateOptions();
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID getNodeId() {
+        return nodeId;
+    }
+
     /**
      * Gets files for all registered file appenders.
      *
@@ -399,13 +423,13 @@ public class GridTestLog4jLogger extends GridMetadataAwareAdapter implements Gri
     }
 
     /**
-     * Gets {@link org.gridgain.grid.logger.GridLogger} wrapper around log4j logger for the given
+     * Gets {@link GridLogger} wrapper around log4j logger for the given
      * category. If category is {@code null}, then root logger is returned. If
      * category is an instance of {@link Class} then {@code (Class)ctgr).getName()}
      * is used as category name.
      *
      * @param ctgr {@inheritDoc}
-     * @return {@link org.gridgain.grid.logger.GridLogger} wrapper around log4j logger.
+     * @return {@link GridLogger} wrapper around log4j logger.
      */
     @Override public GridTestLog4jLogger getLogger(Object ctgr) {
         return new GridTestLog4jLogger(ctgr == null ? Logger.getRootLogger() :

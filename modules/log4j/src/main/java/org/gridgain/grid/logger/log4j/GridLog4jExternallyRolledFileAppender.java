@@ -10,6 +10,7 @@
 package org.gridgain.grid.logger.log4j;
 
 import org.apache.log4j.varia.*;
+import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -19,7 +20,7 @@ import java.util.*;
  * Log4J {@link ExternallyRolledFileAppender} with added support for grid node IDs.
  */
 public class GridLog4jExternallyRolledFileAppender extends ExternallyRolledFileAppender
-    implements GridLog4jNodeIdSupported {
+    implements GridLoggerNodeIdSupported {
     /** Node ID. */
     private UUID nodeId;
 

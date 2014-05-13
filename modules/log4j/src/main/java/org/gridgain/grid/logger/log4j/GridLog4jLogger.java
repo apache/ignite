@@ -58,7 +58,7 @@ import static org.gridgain.grid.GridSystemProperties.*;
  * logger in your task/job code. See {@link GridLoggerResource} annotation about logger
  * injection.
  */
-public class GridLog4jLogger extends GridMetadataAwareAdapter implements GridLogger {
+public class GridLog4jLogger extends GridMetadataAwareAdapter implements GridLogger, GridLoggerNodeIdSupported {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -84,6 +84,9 @@ public class GridLog4jLogger extends GridMetadataAwareAdapter implements GridLog
 
     /** Quiet flag. */
     private final boolean quiet;
+
+    /** Node ID. */
+    private UUID nodeId;
 
     /**
      * Creates new logger and automatically detects if root logger already
@@ -385,21 +388,24 @@ public class GridLog4jLogger extends GridMetadataAwareAdapter implements GridLog
         fileAppenders.remove(a);
     }
 
-    /**
-     * Sets node ID on all file appenders.
-     *
-     * @param nodeId Node ID.
-     */
-    public static void setNodeId(UUID nodeId) {
+    /** {@inheritDoc} */
+    @Override public void setNodeId(UUID nodeId) {
         A.notNull(nodeId, "nodeId");
 
+        this.nodeId = nodeId;
+
         for (FileAppender a : fileAppenders) {
-            if (a instanceof GridLog4jNodeIdSupported) {
-                ((GridLog4jNodeIdSupported)a).setNodeId(nodeId);
+            if (a instanceof GridLoggerNodeIdSupported) {
+                ((GridLoggerNodeIdSupported)a).setNodeId(nodeId);
 
                 a.activateOptions();
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID getNodeId() {
+        return nodeId;
     }
 
     /**

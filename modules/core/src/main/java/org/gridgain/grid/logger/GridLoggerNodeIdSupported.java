@@ -7,14 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.logger.log4j;
+package org.gridgain.grid.logger;
 
 import java.util.*;
 
 /**
  * Interface for GridGain file appenders to attach node ID to log file names.
  */
-public interface GridLog4jNodeIdSupported {
+public interface GridLoggerNodeIdSupported {
     /**
      * Sets node ID.
      *

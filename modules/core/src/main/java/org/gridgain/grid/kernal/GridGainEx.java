@@ -131,10 +131,6 @@ public class GridGainEx {
             throw new IllegalStateException("GridGain requires Java 7 or above. Current Java version " +
                 "is not supported: " + U.jdkVersion());
 
-        // Turn off default logging for Spring Framework.
-        // TODO 8242.
-        //LogFactory.getFactory().setAttribute("org.apache.commons.logging.Log", null);
-
         // To avoid nasty race condition in UUID.randomUUID() in JDK prior to 6u34.
         // For details please see:
         // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7071826
@@ -1873,13 +1869,12 @@ public class GridGainEx {
          */
         private GridLogger initLogger(@Nullable GridLogger cfgLog, UUID nodeId) throws GridException {
             try {
-                final String log4jClsName = "org.gridgain.grid.logger.log4j.GridLog4jLogger";
 
                 if (cfgLog == null) {
                     Class<?> log4jCls;
 
                     try {
-                        log4jCls = Class.forName(log4jClsName);
+                        log4jCls = Class.forName("org.gridgain.grid.logger.log4j.GridLog4jLogger");
                     }
                     catch (ClassNotFoundException ignored) {
                         log4jCls = null;
@@ -1908,8 +1903,8 @@ public class GridGainEx {
                 }
 
                 // Set node IDs for all file appenders.
-                if (cfgLog.getClass().getName().equals(log4jClsName))
-                    cfgLog.getClass().getMethod("setNodeId", UUID.class).invoke(null, nodeId);
+                if (cfgLog instanceof GridLoggerNodeIdSupported)
+                    ((GridLoggerNodeIdSupported)cfgLog).setNodeId(nodeId);
 
                 return cfgLog;
             }
