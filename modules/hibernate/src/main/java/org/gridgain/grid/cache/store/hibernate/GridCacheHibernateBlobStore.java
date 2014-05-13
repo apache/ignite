@@ -468,7 +468,7 @@ public class GridCacheHibernateBlobStore<K, V> extends GridCacheStoreAdapter<K, 
 
                     cfg.setProperties(hibernateProps);
 
-                    assert resourceAvailable(MAPPING_RESOURCE);
+                    assert resourceAvailable(MAPPING_RESOURCE) : MAPPING_RESOURCE;
 
                     cfg.addResource(MAPPING_RESOURCE);
 

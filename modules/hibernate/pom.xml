@@ -84,4 +84,15 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <testResources>
+            <testResource>
+                <directory>src/main/java</directory>
+            </testResource>
+            <testResource>
+                <directory>src/test/java</directory>
+            </testResource>
+        </testResources>
+    </build>
 </project>
