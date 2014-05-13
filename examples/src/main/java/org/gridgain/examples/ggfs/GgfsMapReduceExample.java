@@ -45,12 +45,10 @@ public class GgfsMapReduceExample {
         else if (args.length == 1)
             System.out.println("Please provide regular expression.");
         else {
-            Grid g = GridGain.start("examples/config/example-ggfs.xml");
+            try (Grid g = GridGain.start("examples/config/example-ggfs.xml")) {
+                System.out.println();
+                System.out.println(">>> GGFS map reduce example started.");
 
-            System.out.println();
-            System.out.println(">>> GGFS map reduce example started.");
-
-            try {
                 // Prepare arguments.
                 String fileName = args[0];
 
@@ -80,10 +78,6 @@ public class GgfsMapReduceExample {
                     for (Line line : lines)
                         print(line.fileLine());
                 }
-
-            }
-            finally {
-                GridGain.stop(false);
             }
         }
     }
