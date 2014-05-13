@@ -212,7 +212,7 @@ public class GridHadoopClientProtocol implements ClientProtocol {
 
     /** {@inheritDoc} */
     @Override public String getSystemDir() throws IOException, InterruptedException {
-        Path sysDir = new Path(MRJobConfig.JOB_SUBMIT_DIR);
+        Path sysDir = new Path(GridHadoop.SYS_DIR);
 
         return sysDir.toString();
     }

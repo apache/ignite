@@ -16,6 +16,9 @@ import org.jetbrains.annotations.*;
  * Hadoop facade providing access to GridGain Hadoop features.
  */
 public interface GridHadoop {
+    /** Default GridGain system directory. */
+    public static final String SYS_DIR = ".gridgain/system";
+
     /**
      * Gets Hadoop module configuration.
      *
