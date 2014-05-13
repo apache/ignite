@@ -41,7 +41,8 @@ public class GridHadoopUtils {
             meta.pendingReducers() != null ? meta.pendingReducers().size() : 0,
             meta.totalSplitCount(),
             meta.totalReducerCount(),
-            meta.phase()
+            meta.phase(),
+            meta.version()
         );
     }
 

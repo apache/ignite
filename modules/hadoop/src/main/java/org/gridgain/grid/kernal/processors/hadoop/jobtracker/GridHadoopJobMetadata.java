@@ -54,6 +54,9 @@ public class GridHadoopJobMetadata implements Externalizable {
     /** Total reducer count. */
     private int totalReducerCnt;
 
+    /** Version. */
+    private long ver;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -97,6 +100,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         taskNumMap = src.taskNumMap;
         totalSplitCnt = src.totalSplitCnt;
         totalReducerCnt = src.totalReducerCnt;
+        ver = src.ver;
     }
 
     /**
@@ -220,6 +224,20 @@ public class GridHadoopJobMetadata implements Externalizable {
     }
 
     /**
+     * @return Version.
+     */
+    public long version() {
+        return ver;
+    }
+
+    /**
+     * Increment version.
+     */
+    public void incrementVersion() {
+        ver++;
+    }
+
+    /**
      * @param src Task source.
      * @return Task number.
      */
@@ -258,6 +276,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         out.writeObject(failCause);
         out.writeInt(totalSplitCnt);
         out.writeInt(totalReducerCnt);
+        out.writeLong(ver);
     }
 
     /** {@inheritDoc} */
@@ -273,11 +292,12 @@ public class GridHadoopJobMetadata implements Externalizable {
         failCause = (Throwable)in.readObject();
         totalSplitCnt = in.readInt();
         totalReducerCnt = in.readInt();
+        ver = in.readLong();
     }
 
     /** {@inheritDoc} */
     public String toString() {
         return S.toString(GridHadoopJobMetadata.class, this, "pendingMaps", pendingSplits.size(),
-                "pendingReduces", pendingReducers.size());
+            "pendingReduces", pendingReducers.size());
     }
 }

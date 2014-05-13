@@ -55,6 +55,12 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     /** GG client. */
     private volatile GridClient cli;
 
+    /** Last received version. */
+    private long lastVer = -1;
+
+    /** Last received status. */
+    private JobStatus lastStatus;
+
     /**
      * Constructor.
      *
@@ -92,7 +98,7 @@ public class GridHadoopClientProtocol implements ClientProtocol {
 
             assert status != null;
 
-            return GridHadoopUtils.status(status, conf);
+            return processStatus(status);
         }
         catch (GridClientException e) {
             throw new IOException("Failed to submit job.", e);
@@ -150,7 +156,7 @@ public class GridHadoopClientProtocol implements ClientProtocol {
             if (status == null)
                 throw new IOException("Job tracker doesn't have any information about the job: " + jobId);
 
-            return GridHadoopUtils.status(status, conf);
+            return processStatus(status);
         }
         catch (GridClientException e) {
             throw new IOException("Failed to get job status: " + jobId, e);
@@ -312,5 +318,29 @@ public class GridHadoopClientProtocol implements ClientProtocol {
      */
     void close() {
         GridHadoopClientProtocolProvider.release(cliAddr);
+    }
+
+    /**
+     * Process received status update.
+     *
+     * @param status GG status.
+     * @return Hadoop status.
+     */
+    private JobStatus processStatus(GridHadoopJobStatus status) {
+        // IMPORTANT! This method will only work in single-threaded environment. It is valid at the moment because
+        // GridHadoopClientProtocolProvider creates new instance of this class for every new job and Job class
+        // serializes invocations of submitJob() and getJobStatus() methods. However, if any of these conditions will
+        // change in future and either protocol will server statuses for several jobs or status update will not be
+        // serialized anymore, then we have to fallback to concurrent approach (e.g. using ConcurrentHashMap).
+        // (vozerov)
+        if (lastVer < status.version()) {
+            lastVer = status.version();
+
+            lastStatus = GridHadoopUtils.status(status, conf);
+        }
+        else
+            assert lastStatus != null;
+
+        return lastStatus;
     }
 }

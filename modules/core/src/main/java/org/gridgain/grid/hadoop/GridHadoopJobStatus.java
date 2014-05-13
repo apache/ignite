@@ -44,6 +44,9 @@ public class GridHadoopJobStatus implements Externalizable {
     /** Phase. */
     private GridHadoopJobPhase jobPhase;
 
+    /** Version. */
+    private long ver;
+
     /**
      * {@link Externalizable}  support.
      */
@@ -63,10 +66,11 @@ public class GridHadoopJobStatus implements Externalizable {
      * @param totalSplitCnt Total split count.
      * @param totalReducerCnt Total reducer count.
      * @param jobPhase Job phase.
+     * @param ver Version.
      */
     public GridHadoopJobStatus(GridHadoopJobId jobId, GridHadoopJobState jobState, String jobName, String usr,
         int pendingSplitCnt, int pendingReducerCnt, int totalSplitCnt, int totalReducerCnt,
-        GridHadoopJobPhase jobPhase) {
+        GridHadoopJobPhase jobPhase, long ver) {
         this.jobId = jobId;
         this.jobState = jobState;
         this.jobName = jobName;
@@ -76,6 +80,7 @@ public class GridHadoopJobStatus implements Externalizable {
         this.totalSplitCnt = totalSplitCnt;
         this.totalReducerCnt = totalReducerCnt;
         this.jobPhase = jobPhase;
+        this.ver = ver;
     }
 
     /**
@@ -135,6 +140,13 @@ public class GridHadoopJobStatus implements Externalizable {
     }
 
     /**
+     * @return Version.
+     */
+    public long version() {
+        return ver;
+    }
+
+    /**
      * @return Split progress.
      */
     public float splitProgress() {
@@ -171,6 +183,7 @@ public class GridHadoopJobStatus implements Externalizable {
         out.writeInt(totalSplitCnt);
         out.writeInt(totalReducerCnt);
         out.writeObject(jobPhase);
+        out.writeLong(ver);
     }
 
     /** {@inheritDoc} */
@@ -184,5 +197,6 @@ public class GridHadoopJobStatus implements Externalizable {
         totalSplitCnt = in.readInt();
         totalReducerCnt = in.readInt();
         jobPhase = (GridHadoopJobPhase)in.readObject();
+        ver = in.readLong();
     }
 }
