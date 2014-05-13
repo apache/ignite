@@ -1487,7 +1487,7 @@ public class GridGainEx {
                     procCnt,
                     procCnt,
                     0,
-                    new ArrayBlockingQueue<Runnable>(DFLT_GGFS_THREADPOOL_QUEUE_CAP));
+                    new LinkedBlockingQueue<Runnable>());
             }
 
             execSvcShutdown = cfg.getExecutorServiceShutdown();

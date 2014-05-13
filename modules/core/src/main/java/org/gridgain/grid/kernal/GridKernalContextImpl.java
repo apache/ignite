@@ -190,7 +190,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringInclude
-    private GridGgfsProcessor ggfsProc;
+    private GridGgfsProcessorAdapter ggfsProc;
 
     /** */
     @GridToStringInclude
@@ -363,8 +363,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             restProc = (GridRestProcessor)comp;
         else if (comp instanceof GridDataLoaderProcessor)
             dataLdrProc = (GridDataLoaderProcessor)comp;
-        else if (comp instanceof GridGgfsProcessor)
-            ggfsProc = (GridGgfsProcessor)comp;
+        else if (comp instanceof GridGgfsProcessorAdapter)
+            ggfsProc = (GridGgfsProcessorAdapter)comp;
         else if (comp instanceof GridOffHeapProcessor)
             offheapProc = (GridOffHeapProcessor)comp;
         else if (comp instanceof GridLicenseProcessor)
@@ -600,12 +600,13 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <K, V> GridDataLoaderProcessor<K, V> dataLoad() {
         return (GridDataLoaderProcessor<K, V>)dataLdrProc;
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsProcessor ggfs() {
+    @Override public GridGgfsProcessorAdapter ggfs() {
         return ggfsProc;
     }
 
