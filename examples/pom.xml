@@ -106,6 +106,9 @@
             <resource>
                 <directory>src/main/java</directory>
             </resource>
+            <resource>
+                <directory>config</directory>
+            </resource>
         </resources>
 
         <pluginManagement>
