@@ -329,9 +329,9 @@ public class GridHadoopNewMapReducePlanner implements GridHadoopMapReducePlanner
 
         /** {@inheritDoc} */
         @Override public int compareTo(@NotNull WeightedNode other) {
-            int res = other.weight - weight;
+            float res = other.floatWeight - floatWeight;
 
-            return res != 0 ? res : other.nodeId.compareTo(nodeId);
+            return res > 0.0f ? 1 : res < 0.0f ? -1 : other.nodeId.compareTo(nodeId);
         }
     }
 }
