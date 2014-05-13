@@ -17,7 +17,7 @@ import org.gridgain.grid.resources.*;
 import java.util.*;
 
 /**
- * Demonstrates broadcasting computations within grid projection.
+ * Demonstrates broadcasting and unicasting computations within grid projection.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
