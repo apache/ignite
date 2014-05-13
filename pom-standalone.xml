@@ -407,7 +407,7 @@
                             </links>
                             <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
                             <subpackages>org.gridgain.client</subpackages>
-                            <additionalparam>-exclude org.gridgain.client.impl:org.gridgain.client.util:org.gridgain.client.marshaller:org.gridgain.client.router.impl</additionalparam>
+                            <additionalparam>-exclude org.gridgain.client.impl:org.gridgain.client.util:org.gridgain.client.router.impl</additionalparam>
                             <groups>
                                 <group>
                                     <title>Client APIs</title>
@@ -416,6 +416,10 @@
                                 <group>
                                     <title>Router APIs</title>
                                     <packages>org.gridgain.client.router</packages>
+                                </group>
+                                <group>
+                                    <title>Marshallers</title>
+                                    <packages>org.gridgain.client.marshaller:org.gridgain.client.marshaller.jdk:org.gridgain.client.marshaller.optimized:org.gridgain.client.marshaller.protobuf</packages>
                                 </group>
                             </groups>
                             <header>

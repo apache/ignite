@@ -36,7 +36,7 @@ import java.util.*;
  * <p>
  * GridGain comes with following built-in indexing SPI implementations:
  * <ul>
- *      <li>{@link GridH2IndexingSpi}</li>
+ *      <li>{@code GridH2IndexingSpi}</li>
  * </ul>
  * <p>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
