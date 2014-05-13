@@ -1216,7 +1216,7 @@ public class GridCacheConfiguration {
     }
 
     /**
-     * Sets look up mechanism for available {@link TransactionManager} implementation, if any.
+     * Sets look up mechanism for available {@code TransactionManager} implementation, if any.
      *
      * @param tmLookupClsName Name of class implementing GridCacheTmLookup interface that is used to
      *      receive JTA transaction manager.

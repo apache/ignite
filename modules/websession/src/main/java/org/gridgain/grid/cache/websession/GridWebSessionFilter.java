@@ -31,7 +31,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  * Filter for web sessions caching.
  * <p>
  * This is a request filter, that you need to specify in your {@code web.xml} along
- * with {@link GridServletContextListenerStartup} to enable web sessions caching:
+ * with {@code GridServletContextListenerStartup} to enable web sessions caching:
  * <pre name="code" class="xml">
  * &lt;listener&gt;
  *     &lt;listener-class&gt;org.gridgain.grid.loaders.servlet.GridServletContextListenerLoader&lt;/listener-class&gt;

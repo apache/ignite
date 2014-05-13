@@ -71,7 +71,7 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatu
  * See the following IP finder implementations for details on configuration:
  * <ul>
  * <li>{@link GridTcpDiscoverySharedFsIpFinder}</li>
- * <li>{@link GridTcpDiscoveryS3IpFinder}</li>
+ * <li>{@code GridTcpDiscoveryS3IpFinder}</li>
  * <li>{@link GridTcpDiscoveryJdbcIpFinder}</li>
  * <li>{@link GridTcpDiscoveryVmIpFinder}</li>
  * <li>{@link GridTcpDiscoveryMulticastIpFinder} - default</li>
@@ -83,7 +83,7 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatu
  * See the following metrics store implementations for details on configuration:
  * <ul>
  * <li>{@link GridTcpDiscoverySharedFsMetricsStore}</li>
- * <li>{@link GridTcpDiscoveryS3MetricsStore}</li>
+ * <li>{@code GridTcpDiscoveryS3MetricsStore}</li>
  * <li>{@link GridTcpDiscoveryJdbcMetricsStore}</li>
  * <li>{@link GridTcpDiscoveryVmMetricsStore}</li>
  * </ul>

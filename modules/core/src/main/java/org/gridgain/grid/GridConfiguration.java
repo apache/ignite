@@ -1020,7 +1020,7 @@ public class GridConfiguration {
     }
 
     /**
-     * Should return an instance of logger to use in grid. If not provided, {@link GridLog4jLogger}
+     * Should return an instance of logger to use in grid. If not provided, {@code GridLog4jLogger}
      * will be used.
      *
      * @return Logger to use in grid.
@@ -2117,7 +2117,7 @@ public class GridConfiguration {
 
     /**
      * Should return fully configured indexing SPI implementations. If not provided,
-     * {@link GridH2IndexingSpi} will be used.
+     * {@code GridH2IndexingSpi} will be used.
      * <p>
      * Note that user can provide one or multiple instances of this SPI (and select later which one
      * is used in a particular context).

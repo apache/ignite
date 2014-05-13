@@ -30,7 +30,7 @@ import java.util.*;
  *      <li>{@link GridCacheQueries#createFullTextQuery(Class, String)}</li>
  * </ul>
  * <p>
- * The default indexing SPI implementation is {@link GridH2IndexingSpi} which uses H2 database engine
+ * The default indexing SPI implementation is {@code GridH2IndexingSpi} which uses H2 database engine
  * for data indexing and querying. User can implement his own indexing SPI and use his own data structures
  * and query language instead of SQL. SPI can be configured for grid using {@link GridConfiguration#getIndexingSpi()}.
  * <p>

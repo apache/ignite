@@ -26,7 +26,7 @@ import java.util.*;
  * {@link org.gridgain.grid.startup} package, for example:
  * <ul>
  * <li>{@link GridCommandLineStartup}</li>
- * <li>{@link GridServletStartup}</li>
+ * <li>{@code GridServletStartup}</li>
  * </ul>
  * <h1 class="header">Examples</h1>
  * Use {@link #start()} method to start grid with default configuration. You can also use
@@ -68,7 +68,7 @@ import java.util.*;
  * ...
  * </pre>
  * You can also instantiate grid directly from Spring without using {@code GridGain}.
- * For more information refer to {@link GridSpringBean} documentation.
+ * For more information refer to {@code GridSpringBean} documentation.
  */
 public class GridGain {
     /**
