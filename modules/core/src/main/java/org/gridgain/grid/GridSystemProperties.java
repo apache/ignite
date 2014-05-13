@@ -423,6 +423,11 @@ public final class GridSystemProperties {
     public static final String GG_H2_DEBUG_CONSOLE = "GRIDGAIN_H2_DEBUG_CONSOLE";
 
     /**
+     * If this property is set to {@code true} then shared memory space native debug will be enabled.
+     */
+    public static final String GG_IPC_SHMEM_SPACE_DEBUG = "GRIDGAIN_IPC_SHMEM_SPACE_DEBUG";
+
+    /**
      * Enforces singleton.
      */
     private GridSystemProperties() {
