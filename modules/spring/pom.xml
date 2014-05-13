@@ -79,6 +79,13 @@
 
         <dependency>
             <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-rest</artifactId>
+            <version>${gridgain.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.gridgain</groupId>
             <artifactId>gridgain-log4j</artifactId>
             <version>${gridgain.version}</version>
             <scope>test</scope>
