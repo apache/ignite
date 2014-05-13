@@ -24,9 +24,6 @@ import static org.gridgain.grid.events.GridEventType.*;
  * Demonstrates event consume API that allows to register event listeners on remote nodes.
  * <p>
  * Remote nodes should always be started with configuration: {@code 'ggstart.sh examples/config/example-compute.xml'}.
- * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start
- * GridGain node with {@code examples/config/example-compute.xml} configuration.
  */
 public class EventsApiExample {
     /** Cache name. */
