@@ -14,12 +14,13 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.protocol.*;
 import org.gridgain.client.*;
 import org.gridgain.client.marshaller.optimized.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+import org.gridgain.grid.*;
+import org.gridgain.grid.util.future.*;
 
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.gridgain.client.GridClientProtocol.*;
 import static org.gridgain.client.hadoop.GridHadoopClientProtocol.*;
@@ -28,17 +29,8 @@ import static org.gridgain.client.hadoop.GridHadoopClientProtocol.*;
  * Grid Hadoop client protocol provider.
  */
 public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
-    /** Just heuristic to allow biasing on striped monitors. */
-    private static final int CONCURRENCY_LVL = 64;
-
-    /** Client protocol map. */
-    private static final Map<Integer, ClientMap> cliMap = new HashMap<>(CONCURRENCY_LVL, 1.0f);
-
-    static {
-        // Fill protocol map with values on class load.
-        for (int i = 0; i < CONCURRENCY_LVL; i++)
-            cliMap.put(i, new ClientMap());
-    }
+    /** Clients. */
+    private static final ConcurrentHashMap<String, GridFuture<GridClient>> cliMap = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public ClientProtocol create(Configuration conf) throws IOException {
@@ -61,92 +53,24 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
 
     /** {@inheritDoc} */
     @Override public void close(ClientProtocol cliProto) throws IOException {
-        assert cliProto instanceof GridHadoopClientProtocol;
-
-        ((GridHadoopClientProtocol)cliProto).close();
+        // No-op.
     }
 
     /**
      * Close all currently existent clients.
      */
-    @SuppressWarnings("StatementWithEmptyBody")
+    @SuppressWarnings("UnusedDeclaration")
     public static void closeAll() {
-        for (ClientMap map : cliMap.values()) {
-            Set<String> keys = new HashSet<>(map.map.keySet());
-
-            for (String key : keys) {
-                Client cli = map.map.get(key);
-
-                while (!cli.release()) {
-                    // Spin.
-                }
-
-                map.map.remove(key);
+        for (GridFuture<GridClient> fut : cliMap.values()) {
+            try {
+                fut.get().close();
+            }
+            catch (GridException ignore) {
+                // No-op.
             }
         }
-    }
 
-    /**
-     * Acquire client protocol.
-     *
-     * @param addr Address.
-     * @return Client protocol.
-     * @throws IOException If failed.
-     */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    static GridClient acquire(String addr) throws IOException {
-        ClientMap map = clientMap(addr);
-
-        synchronized (map) {
-            Client cli = map.get(addr);
-
-            if (cli == null) {
-                cli = new Client(createClient(addr));
-
-                map.put(addr, cli);
-            }
-            else
-                cli.acquire();
-
-            return cli.client();
-        }
-    }
-
-    /**
-     * Release client protocol.
-     *
-     * @param addr Address.
-     */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    static void release(String addr) {
-        ClientMap map = clientMap(addr);
-
-        synchronized (map) {
-            Client cli = map.get(addr);
-
-            assert cli != null;
-
-            if (cli.release())
-                map.remove(addr);
-        }
-    }
-
-    /**
-     * Get client map for the given address.
-     *
-     * @param addr Address.
-     * @return Client map.
-     */
-    private static ClientMap clientMap(String addr) {
-        assert addr != null;
-
-        int idx = U.safeAbs(addr.hashCode() % CONCURRENCY_LVL);
-
-        ClientMap map = cliMap.get(idx);
-
-        assert map != null;
-
-        return map;
+        cliMap.clear();
     }
 
     /**
@@ -162,7 +86,7 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
             throw new IOException("Failed to create client protocol because server address is not specified (is " +
                 PROP_SRV_ADDR + " property set?).");
 
-        return new GridHadoopClientProtocol(conf, addr, acquire(addr));
+        return new GridHadoopClientProtocol(conf, addr, client(addr));
     }
 
     /**
@@ -172,139 +96,43 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
      * @return Client.
      * @throws IOException If failed.
      */
-    private static GridClient createClient(String addr) throws IOException {
-        GridClientConfiguration cliCfg = new GridClientConfiguration();
-
-        cliCfg.setProtocol(TCP);
-        cliCfg.setServers(Collections.singletonList(addr));
-        cliCfg.setMarshaller(new GridClientOptimizedMarshaller());
-
+    private static GridClient client(String addr) throws IOException {
         try {
-            return GridClientFactory.start(cliCfg);
-        }
-        catch (GridClientException e) {
-            throw new IOException("Failed to establish connection with GridGain node: " + addr, e);
-        }
-    }
+            GridFuture<GridClient> fut = cliMap.get(addr);
 
-    /**
-     * Get active clients count (for testing purposes only).
-     *
-     * @return Active clients count.
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    private static int activeClients() {
-        int cnt = 0;
+            if (fut == null) {
+                GridFutureAdapter<GridClient> fut0 = new GridFutureAdapter<>();
 
-        for (ClientMap map : cliMap.values())
-            cnt += map.map.size();
+                GridFuture<GridClient> oldFut = cliMap.putIfAbsent(addr, fut0);
 
-        return cnt;
-    }
+                if (oldFut != null)
+                    return oldFut.get();
+                else {
+                    GridClientConfiguration cliCfg = new GridClientConfiguration();
 
-    /**
-     * Client map.
-     */
-    private static class ClientMap {
-        /** Map. */
-        private final Map<String, Client> map = new HashMap<>();
+                    cliCfg.setProtocol(TCP);
+                    cliCfg.setServers(Collections.singletonList(addr));
+                    cliCfg.setMarshaller(new GridClientOptimizedMarshaller());
 
-        /**
-         * Get client.
-         *
-         * @param addr Address.
-         * @return Client.
-         */
-        @Nullable private Client get(String addr) {
-            assert addr != null;
+                    try {
+                        GridClient cli = GridClientFactory.start(cliCfg);
 
-            Client cli = map.get(addr);
+                        fut0.onDone(cli);
 
-            if (cli == null)
-                assert !map.containsKey(addr);
+                        return cli;
+                    } catch (GridClientException e) {
+                        fut0.onDone(e);
 
-            return cli;
-        }
-
-        /**
-         * Put client.
-         *
-         * @param addr Address.
-         * @param cli Client.
-         */
-        private void put(String addr, Client cli) {
-            assert addr != null;
-            assert cli != null;
-            assert !map.containsKey(addr);
-
-            map.put(addr, cli);
-        }
-
-        /**
-         * Remove client.
-         *
-         * @param addr Address.
-         */
-        private void remove(String addr) {
-            assert addr != null;
-            assert map.containsKey(addr);
-
-            map.remove(addr);
-        }
-    }
-
-    /**
-     * Client wrapper.
-     */
-    private static class Client {
-        /** Client instance. */
-        private final GridClient cli;
-
-        /** Usage count. Initially set to 1. */
-        private int cnt = 1;
-
-        /**
-         * Constructor.
-         *
-         * @param cli Client.
-         */
-        private Client(GridClient cli) {
-            this.cli = cli;
-        }
-
-        /**
-         * Acquire protocol usage.
-         */
-        private void acquire() {
-            assert cnt > 0;
-
-            cnt++;
-        }
-
-        /**
-         * Release protocol usage.
-         *
-         * @return {@code True} if GG client was closed by this call.
-         */
-        private boolean release() {
-            assert cnt > 0;
-
-            if (--cnt == 0) {
-                cli.close();
-
-                return true;
+                        throw new IOException("Failed to establish connection with GridGain node: " + addr, e);
+                    }
+                }
             }
-            else
-                return false;
+            else {
+                return fut.get();
+            }
         }
-
-        /**
-         * Get GG client.
-         *
-         * @return GG client.
-         */
-        private GridClient client() {
-            return cli;
+        catch (GridException e) {
+            throw new IOException("Failed to establish connection with GridGain node: " + addr, e);
         }
     }
 }

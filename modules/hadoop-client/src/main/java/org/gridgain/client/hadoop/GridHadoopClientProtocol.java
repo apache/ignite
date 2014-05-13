@@ -311,13 +311,6 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     }
 
     /**
-     * Closes protocol.
-     */
-    void close() {
-        GridHadoopClientProtocolProvider.release(cliAddr);
-    }
-
-    /**
      * Process received status update.
      *
      * @param status GG status.

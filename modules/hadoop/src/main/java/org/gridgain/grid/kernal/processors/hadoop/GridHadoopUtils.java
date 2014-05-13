@@ -88,7 +88,7 @@ public class GridHadoopUtils {
 
         switch (status.jobPhase()) {
             case PHASE_MAP:
-                mapProgress = status.splitProgress();
+                mapProgress = status.mapProgress();
                 reduceProgress = 0.0f;
                 cleanupProgress = 0.0f;
 
@@ -103,7 +103,7 @@ public class GridHadoopUtils {
 
             case PHASE_CANCELLING:
                 // Do not know where cancel occurred, hence calculate map/reduce progress.
-                mapProgress = status.splitProgress();
+                mapProgress = status.mapProgress();
                 reduceProgress = status.reducerProgress();
                 cleanupProgress = 0.0f;
 
@@ -113,7 +113,7 @@ public class GridHadoopUtils {
                 assert status.jobPhase() == PHASE_COMPLETE;
 
                 // Do not know whether this is complete on success or failure, hence calculate map/reduce progress.
-                mapProgress = status.splitProgress();
+                mapProgress = status.mapProgress();
                 reduceProgress = status.reducerProgress();
                 cleanupProgress = 1.0f;
         }

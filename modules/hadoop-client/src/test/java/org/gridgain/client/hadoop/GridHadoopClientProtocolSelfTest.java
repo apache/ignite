@@ -85,47 +85,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        GridHadoopClientProtocolProvider.closeAll();
-
         super.afterTest();
-    }
-
-    /**
-     * Test client caching,
-     *
-     * @throws Exception If failed.
-     */
-    public void testClientCache() throws Exception {
-        GridHadoopClientProtocolProvider provider = provider();
-
-        checkProviderCacheSize(provider, 0);
-
-        Configuration conf1 = config(GridHadoopAbstractSelfTest.REST_PORT);
-        Configuration conf2 = config(GridHadoopAbstractSelfTest.REST_PORT + 1);
-
-        ClientProtocol proto1_1 = provider.create(conf1);
-
-        checkProviderCacheSize(provider, 1);
-
-        ClientProtocol proto2_1 = provider.create(conf2);
-
-        checkProviderCacheSize(provider, 2);
-
-        ClientProtocol proto1_2 = provider.create(conf1);
-
-        checkProviderCacheSize(provider, 2);
-
-        provider.close(proto1_2);
-
-        checkProviderCacheSize(provider, 2);
-
-        provider.close(proto2_1);
-
-        checkProviderCacheSize(provider, 1);
-
-        provider.close(proto1_1);
-
-        checkProviderCacheSize(provider, 0);
     }
 
     /**

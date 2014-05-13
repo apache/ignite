@@ -147,9 +147,9 @@ public class GridHadoopJobStatus implements Externalizable {
     }
 
     /**
-     * @return Split progress.
+     * @return Map progress.
      */
-    public float splitProgress() {
+    public float mapProgress() {
         return totalSplitCnt == 0 ? 1.0f : (float)(totalSplitCnt - pendingSplitCnt) / totalSplitCnt;
     }
 
