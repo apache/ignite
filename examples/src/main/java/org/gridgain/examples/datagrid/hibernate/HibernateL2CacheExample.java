@@ -64,6 +64,10 @@ public class HibernateL2CacheExample {
     /** Path to hibernate configuration file (will be resolved from application {@code CLASSPATH}). */
     private static final String HIBERNATE_CFG = "hibernate/example-hibernate-L2-cache.xml";
 
+    /** Entity names for stats output. */
+    private static final List<String> ENTITY_NAMES =
+        Arrays.asList(User.class.getName(), Post.class.getName(), User.class.getName() + ".posts");
+
     /**
      * Executes example.
      *
@@ -79,7 +83,7 @@ public class HibernateL2CacheExample {
             System.out.println();
             System.out.println(">>> Hibernate L2 cache example started.");
 
-            URL hibernateCfg = resolveHibernateConfig();
+            URL hibernateCfg = ExamplesUtils.url(HIBERNATE_CFG);
 
             SessionFactory sesFactory = createHibernateSessionFactory(hibernateCfg);
 
@@ -148,24 +152,6 @@ public class HibernateL2CacheExample {
             printStats(sesFactory);
         }
     }
-
-    /**
-     * Resolves location of hibernate configuration file.
-     *
-     * @return InputStream for resolved hibernate configuration file.
-     */
-    private static URL resolveHibernateConfig() {
-        URL hibernateCfg = ExamplesUtils.classLoader().getResource(HIBERNATE_CFG);
-
-        if (hibernateCfg == null)
-            throw new RuntimeException("Cannot find hibernate configuration file in CLASSPATH: " + HIBERNATE_CFG);
-
-        return hibernateCfg;
-    }
-
-    /** Entity names for stats output. */
-    private static final List<String> ENTITY_NAMES =
-        Arrays.asList(User.class.getName(), Post.class.getName(), User.class.getName() + ".posts");
 
     /**
      * Creates a new Hibernate {@link SessionFactory} using a programmatic

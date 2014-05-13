@@ -11,10 +11,8 @@ package org.gridgain.examples;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.streamer.*;
-import org.jetbrains.annotations.*;
 
-import java.io.*;
-import java.sql.*;
+import java.net.*;
 
 /**
  *
@@ -40,12 +38,17 @@ public class ExamplesUtils {
     }
 
     /**
-     * Returns class loader for classes in examples project.
+     * Returns URL resolved by class loader for classes in examples project.
      *
-     * @return Class loader.
+     * @return Resolved URL.
      */
-    public static ClassLoader classLoader() {
-        return CLS_LDR;
+    public static URL url(String path) {
+        URL url = CLS_LDR.getResource(path);
+
+        if (url == null)
+            throw new RuntimeException("Failed to resolve resource path: " + path);
+
+        return url;
     }
 
     /**
@@ -83,35 +86,5 @@ public class ExamplesUtils {
         }
 
         return false;
-    }
-
-    /**
-     * Quietly closes given resource ignoring possible checked exception.
-     *
-     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
-     */
-    public static void closeQuiet(@Nullable Closeable rsrc) {
-        if (rsrc != null)
-            try {
-                rsrc.close();
-            }
-            catch (IOException ignored) {
-                // No-op.
-            }
-    }
-
-    /**
-     * Quietly closes JDBC connection ignoring possible checked exception.
-     *
-     * @param rsrc JDBC connection to close. If connection is {@code null}, it's no-op.
-     */
-    public static void closeQuiet(@Nullable Connection rsrc) {
-        if (rsrc != null)
-            try {
-                rsrc.close();
-            }
-            catch (SQLException ignored) {
-                // No-op.
-            }
     }
 }

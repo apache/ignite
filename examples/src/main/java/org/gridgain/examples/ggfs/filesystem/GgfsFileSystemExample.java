@@ -54,7 +54,7 @@ public class GgfsFileSystemExample {
             System.out.println();
             System.out.println(">>> GGFS file system example started.");
 
-            String path = args.length > 0 ? args[0] : ExamplesUtils.classLoader().getResource(DFLT_PATH).getFile();
+            String path = args.length > 0 ? args[0] : ExamplesUtils.url(DFLT_PATH).getFile();
 
             /** Local FS home path. */
             Path locHome = new Path("file:///" + path + '/');
@@ -67,7 +67,7 @@ public class GgfsFileSystemExample {
 
             Configuration cfg = new Configuration(true);
 
-            cfg.addResource(ExamplesUtils.classLoader().getResourceAsStream(HADOOP_FS_CFG));
+            cfg.addResource(ExamplesUtils.url(HADOOP_FS_CFG));
             cfg.setInt("io.file.buffer.size", 65536);
 
             FileSystem loc = FileSystem.get(locHome.toUri(), cfg);

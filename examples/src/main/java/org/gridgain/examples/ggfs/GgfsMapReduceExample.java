@@ -9,7 +9,6 @@
 
 package org.gridgain.examples.ggfs;
 
-import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.ggfs.*;
@@ -101,14 +100,8 @@ public class GgfsMapReduceExample {
         System.out.println();
         System.out.println("Copying file to GGFS: " + file);
 
-        GridGgfsOutputStream os = null;
-        FileInputStream fis = null;
-
-        try {
-            os = fs.create(fsPath, true);
-
-            fis = new FileInputStream(file);
-
+        try (GridGgfsOutputStream os = fs.create(fsPath, true);
+             FileInputStream fis = new FileInputStream(file)) {
             byte[] buf = new byte[2048];
 
             int read = fis.read(buf);
@@ -118,10 +111,6 @@ public class GgfsMapReduceExample {
 
                 read = fis.read(buf);
             }
-        }
-        finally {
-            ExamplesUtils.closeQuiet(os);
-            ExamplesUtils.closeQuiet(fis);
         }
     }
 

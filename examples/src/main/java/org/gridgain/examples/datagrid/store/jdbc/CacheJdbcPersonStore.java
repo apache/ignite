@@ -9,7 +9,6 @@
 
 package org.gridgain.examples.datagrid.store.jdbc;
 
-import org.gridgain.examples.*;
 import org.gridgain.examples.datagrid.store.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -236,9 +235,15 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
      * @param conn Allocated connection.
      */
     private void end(@Nullable GridCacheTx tx, @Nullable Connection conn) {
-        if (tx == null)
+        if (tx == null && conn != null) {
             // Close connection right away if there is no transaction.
-            ExamplesUtils.closeQuiet(conn);
+            try {
+                conn.close();
+            }
+            catch (SQLException ignored) {
+                // No-op.
+            }
+        }
     }
 
     /**
