@@ -84,7 +84,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         pendingReducers = src.pendingReducers;
         phase = src.phase;
         taskNumMap = src.taskNumMap;
-        ver = ++src.ver;
+        ver = src.ver + 1;
     }
 
     /**

@@ -22,7 +22,6 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
-import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -199,25 +198,6 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         assert F.eq(status.getMapProgress(), expMapProgress);
         assert F.eq(status.getReduceProgress(), expReduceProgress);
         assert F.eq(status.getCleanupProgress(), expCleanupProgress);
-    }
-
-    /**
-     * Check provider cache size.
-     *
-     * @param provider Provider.
-     * @param expSize Epxected size.
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("ConstantConditions")
-    private static void checkProviderCacheSize(GridHadoopClientProtocolProvider provider, int expSize)
-        throws Exception {
-        Method mthd = provider.getClass().getDeclaredMethod("activeClients");
-
-        mthd.setAccessible(true);
-
-        int res = (int)mthd.invoke(provider);
-
-        assert res == expSize;
     }
 
     /**
