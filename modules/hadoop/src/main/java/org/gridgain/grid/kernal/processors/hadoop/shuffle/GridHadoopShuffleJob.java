@@ -17,6 +17,7 @@ import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
 
 import java.util.*;
@@ -55,13 +56,19 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
     private final AtomicReferenceArray<GridHadoopMultimap> maps;
 
     /** */
-    private GridBiClosure<T, GridHadoopShuffleMessage, GridFuture<?>> io;
+    private volatile GridBiClosure<T, GridHadoopShuffleMessage, GridFuture<?>> io;
 
     /** */
     private Collection<GridFuture<?>> ioFuts = new ConcurrentLinkedQueue<>();
 
     /** */
-    private GridWorker sender;
+    private volatile GridWorker sender;
+
+    /** Latch for remote addresses waiting. */
+    private final CountDownLatch ioInitLatch = new CountDownLatch(1);
+
+    /** Finished flag. Set on flush or close. */
+    private boolean flushed;
 
     /** */
     private final GridLogger log;
@@ -116,27 +123,33 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
      * @param io IO Closure for sending messages.
      */
     public void startSending(String gridName, GridBiClosure<T, GridHadoopShuffleMessage, GridFuture<?>> io) {
-        assert sender == null;
-        assert io != null;
+        synchronized (this) {
+            assert sender == null;
+            assert io != null;
 
-        this.io = io;
+            this.io = io;
 
-        sender = new GridWorker(gridName, "hadoop-shuffle-" + job.id(), log) {
-            @Override protected void body() throws InterruptedException {
-                while (!isCancelled()) {
-                    Thread.sleep(10);
+            ioInitLatch.countDown();
 
-                    try {
-                        collectUpdatesAndSend(false);
+            if (!flushed) {
+                sender = new GridWorker(gridName, "hadoop-shuffle-" + job.id(), log) {
+                    @Override protected void body() throws InterruptedException {
+                        while (!isCancelled()) {
+                            Thread.sleep(10);
+
+                            try {
+                                collectUpdatesAndSend(false);
+                            }
+                            catch (GridException e) {
+                                throw new IllegalStateException(e);
+                            }
+                        }
                     }
-                    catch (GridException e) {
-                        throw new IllegalStateException(e);
-                    }
-                }
+                };
+
+                new GridThread(sender).start();
             }
-        };
-
-        new GridThread(sender).start();
+        }
     }
 
     /**
@@ -362,13 +375,32 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
      */
     @SuppressWarnings("unchecked")
     public GridFuture<?> flush() throws GridException {
-        sender.cancel();
+        if (log.isDebugEnabled())
+            log.debug("Waiting for remote addresses initialization.");
 
-        try {
-            sender.join();
+        U.await(ioInitLatch);
+
+        synchronized (this) {
+            flushed = true;
         }
-        catch (InterruptedException e) {
-            throw new GridInterruptedException(e);
+
+        GridWorker sender0 = sender;
+
+        if (sender0 != null) {
+            if (log.isDebugEnabled())
+                log.debug("Cancelling sender thread.");
+
+            sender0.cancel();
+
+            try {
+                sender0.join();
+
+                if (log.isDebugEnabled())
+                    log.debug("Finished waiting for sending thread to complete on shuffle job flush: " + job.id());
+            }
+            catch (InterruptedException e) {
+                throw new GridInterruptedException(e);
+            }
         }
 
         collectUpdatesAndSend(true); // With flush.
@@ -379,6 +411,9 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
             fut.add(f);
 
         fut.markInitialized();
+
+        if (log.isDebugEnabled())
+            log.debug("Collected futures to compound futures for flush: " + ioFuts.size());
 
         return fut;
     }

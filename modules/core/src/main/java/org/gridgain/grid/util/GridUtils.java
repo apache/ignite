@@ -684,7 +684,7 @@ public abstract class GridUtils {
      */
     @Deprecated
     public static void dumpStack(String msg) {
-        new Exception(debugPrefix() + msg).printStackTrace(System.err);
+        new Exception(debugPrefix() + msg).printStackTrace(System.out);
     }
 
     /**

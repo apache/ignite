@@ -111,6 +111,28 @@ public class GridHadoopProcessDescriptor implements Serializable {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (!(o instanceof GridHadoopProcessDescriptor))
+            return false;
+
+        GridHadoopProcessDescriptor that = (GridHadoopProcessDescriptor)o;
+
+        return parentNodeId.equals(that.parentNodeId) && procId.equals(that.procId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int result = parentNodeId.hashCode();
+
+        result = 31 * result + procId.hashCode();
+
+        return result;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridHadoopProcessDescriptor.class, this);
     }

@@ -15,6 +15,7 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.logger.java.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.util.ipc.shmem.*;
+import org.gridgain.grid.util.worker.*;
 
 import java.io.*;
 import java.util.*;
@@ -160,6 +161,7 @@ public class GridHadoopExternalProcessStarter {
 
         Logger.getLogger(GridIpcSharedMemorySpace.class.toString()).setLevel(Level.WARNING);
         Logger.getLogger(GridIpcSharedMemorySpace.class.getName()).setLevel(Level.WARNING);
+        Logger.getLogger(GridWorker.class.toString()).setLevel(Level.WARNING);
 
         return new GridJavaLogger(log);
     }

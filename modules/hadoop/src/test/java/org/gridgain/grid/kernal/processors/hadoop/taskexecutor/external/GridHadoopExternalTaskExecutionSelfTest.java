@@ -14,6 +14,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
@@ -73,6 +74,7 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
         job.setNumReduceTasks(1);
 
         FileInputFormat.setInputPaths(job, new Path("ggfs://ipc/" + testInputFile));
+        FileOutputFormat.setOutputPath(job, new Path("ggfs://ipc/output"));
 
         job.setJarByClass(getClass());
 
@@ -125,13 +127,22 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
         /** Line constant. */
         private Text line = new Text("line");
 
+        @Override protected void setup(Context context) throws IOException, InterruptedException {
+            super.setup(context);
+
+            System.out.println(">>> Reducer setup.");
+        }
+
         /** {@inheritDoc} */
         @Override protected void reduce(Text key, Iterable<IntWritable> values, Context ctx)
             throws IOException, InterruptedException {
             int s = 0;
 
-            for (IntWritable val : values)
+            for (IntWritable val : values) {
+                System.out.println("Reducing [key=" + key + ", val=" + val.get() + ']');
+
                 s += val.get();
+            }
 
             System.out.println(">>>> Reduced: " + s);
 

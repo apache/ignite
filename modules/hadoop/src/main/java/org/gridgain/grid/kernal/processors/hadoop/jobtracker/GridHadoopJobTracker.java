@@ -1014,8 +1014,10 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             cp.pendingReducers(rdcCp);
 
-            if (err != null)
+            if (err != null) {
                 cp.phase(PHASE_CANCELLING);
+                cp.failCause(err);
+            }
 
             return cp;
         }

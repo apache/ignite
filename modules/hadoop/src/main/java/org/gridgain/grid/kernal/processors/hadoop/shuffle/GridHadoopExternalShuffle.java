@@ -52,11 +52,13 @@ public class GridHadoopExternalShuffle extends GridHadoopShuffleAdapter<GridHado
     /** {@inheritDoc} */
     @Override protected void send0(GridHadoopProcessDescriptor dest, Object msg) {
         try {
+            if (log.isDebugEnabled())
+                log.debug("Sending shuffle message [dest=" + dest + ", msg=" + msg + ']');
+
             comm.sendMessage(dest, (GridHadoopMessage)msg);
         }
         catch (GridException e) {
-            // TODO implement.
-            e.printStackTrace();
+            log.error("Failed to send shuffle message to remote process [dest=" + dest + ", msg=" + msg + ']', e);
         }
     }
 

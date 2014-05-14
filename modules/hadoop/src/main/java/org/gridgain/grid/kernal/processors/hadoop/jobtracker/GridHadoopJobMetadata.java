@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -47,6 +48,7 @@ public class GridHadoopJobMetadata implements Externalizable {
     private boolean externalExec;
 
     /** Reducers addresses. */
+    @GridToStringInclude
     private Map<Integer, GridHadoopProcessDescriptor> reducersAddrs;
 
     /** Job phase. */
@@ -266,6 +268,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         out.writeObject(phase);
         out.writeBoolean(externalExec);
         out.writeObject(failCause);
+        out.writeObject(reducersAddrs);
     }
 
     /** {@inheritDoc} */
@@ -280,6 +283,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         phase = (GridHadoopJobPhase)in.readObject();
         externalExec = in.readBoolean();
         failCause = (Throwable)in.readObject();
+        reducersAddrs = (Map<Integer, GridHadoopProcessDescriptor>)in.readObject();
     }
 
     /** {@inheritDoc} */
