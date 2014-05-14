@@ -35,7 +35,9 @@ public class GridBasicTestSuite extends TestSuite {
         suite.addTest(GridUtilSelfTestSuite.suite());
         suite.addTest(GridMarshallerSelfTestSuite.suite());
         suite.addTest(GridKernalSelfTestSuite.suite());
-        suite.addTest(GridToolsSelfTestSuite.suite());
+
+        // TODO: GG-8331
+        //suite.addTest(GridToolsSelfTestSuite.suite());
         suite.addTest(GridLoadersSelfTestSuite.suite());
         suite.addTest(GridRichSelfTestSuite.suite());
         suite.addTest(GridExternalizableSelfTestSuite.suite());
