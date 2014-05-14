@@ -36,12 +36,6 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     /** GridGain framework name property. */
     public static final String FRAMEWORK_NAME = "gridgain";
 
-    /** GridGain server host property. */
-    public static final String PROP_SRV_ADDR = "gridgain.server.address";
-
-    /** GridGain status poll delay property. */
-    public static final String PROP_STATUS_POLL_DELAY = "gridgain.status.poll_delay";
-
     /** Protocol version. */
     private static final long PROTO_VER = 1L;
 
@@ -50,9 +44,6 @@ public class GridHadoopClientProtocol implements ClientProtocol {
 
     /** Configuration. */
     private final Configuration conf;
-
-    /** GG client address. */
-    private final String cliAddr;
 
     /** GG client. */
     private volatile GridClient cli;
@@ -69,12 +60,10 @@ public class GridHadoopClientProtocol implements ClientProtocol {
      * @param conf Configuration.
      * @param cli GG client.
      */
-    GridHadoopClientProtocol(Configuration conf, String cliAddr, GridClient cli) {
-        assert cliAddr != null;
+    GridHadoopClientProtocol(Configuration conf, GridClient cli) {
         assert cli != null;
 
         this.conf = conf;
-        this.cliAddr = cliAddr;
         this.cli = cli;
     }
 
@@ -156,7 +145,7 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     /** {@inheritDoc} */
     @Override public JobStatus getJobStatus(JobID jobId) throws IOException, InterruptedException {
         try {
-            Long delay = conf.getLong(PROP_STATUS_POLL_DELAY, -1);
+            Long delay = conf.getLong(GridHadoopJobProperty.POLL_DELAY.propertyName(), -1);
 
             GridHadoopProtocolTaskArguments args = delay >= 0 ?
                 new GridHadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId(), delay) :

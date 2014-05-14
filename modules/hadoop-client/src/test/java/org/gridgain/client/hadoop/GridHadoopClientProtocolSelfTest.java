@@ -227,7 +227,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         Configuration conf = new Configuration();
 
         conf.set(MRConfig.FRAMEWORK_NAME, GridHadoopClientProtocol.FRAMEWORK_NAME);
-        conf.set(GridHadoopClientProtocol.PROP_SRV_ADDR, "127.0.0.1:" + port);
+        conf.set(MRConfig.MASTER_ADDRESS, "127.0.0.1:" + port);
 
         conf.set("fs.default.name", "ggfs://ipc");
         conf.set("fs.ggfs.impl", "org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem");

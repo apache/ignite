@@ -16,6 +16,7 @@ import org.gridgain.client.*;
 import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.typedef.*;
 
 import java.io.*;
 import java.net.*;
@@ -24,6 +25,7 @@ import java.util.concurrent.*;
 
 import static org.gridgain.client.GridClientProtocol.*;
 import static org.gridgain.client.hadoop.GridHadoopClientProtocol.*;
+
 
 /**
  * Grid Hadoop client protocol provider.
@@ -35,7 +37,15 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
     /** {@inheritDoc} */
     @Override public ClientProtocol create(Configuration conf) throws IOException {
         if (FRAMEWORK_NAME.equals(conf.get(MRConfig.FRAMEWORK_NAME))) {
-            String addr = conf.get(PROP_SRV_ADDR);
+            String addr = conf.get(MRConfig.MASTER_ADDRESS);
+
+            if (F.isEmpty(addr))
+                throw new IOException("Failed to create client protocol because server address is not specified (is " +
+                    MRConfig.MASTER_ADDRESS + " property set?).");
+
+            if (F.eq(addr, "local"))
+                throw new IOException("Local execution mode is not supported, please point " +
+                    MRConfig.MASTER_ADDRESS + " to real GridGain node.");
 
             return createProtocol(addr, conf);
         }
@@ -82,11 +92,7 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
      * @throws IOException If failed.
      */
     private static ClientProtocol createProtocol(String addr, Configuration conf) throws IOException {
-        if (addr == null || addr.isEmpty())
-            throw new IOException("Failed to create client protocol because server address is not specified (is " +
-                PROP_SRV_ADDR + " property set?).");
-
-        return new GridHadoopClientProtocol(conf, addr, client(addr));
+        return new GridHadoopClientProtocol(conf, client(addr));
     }
 
     /**
