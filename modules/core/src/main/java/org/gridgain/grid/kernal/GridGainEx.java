@@ -1884,7 +1884,6 @@ public class GridGainEx {
          */
         private GridLogger initLogger(@Nullable GridLogger cfgLog, UUID nodeId) throws GridException {
             try {
-
                 if (cfgLog == null) {
                     Class<?> log4jCls;
 

@@ -32,22 +32,7 @@ import java.util.concurrent.*;
  */
 public class GridTestResources {
     /** */
-    private static GridLogger rootLog;
-
-    static {
-        GridLogger rootLog0;
-
-        try {
-            rootLog0 = new GridTestLog4jLogger(U.resolveGridGainUrl("modules/core/src/test/config/gridgain-log4j.xml"));
-        }
-        catch (GridException e) {
-            System.err.println("Failed to load log4j configuration: " + e);
-
-            rootLog0 = new GridTestLog4jLogger();
-        }
-
-        rootLog = rootLog0;
-    }
+    private static final GridLogger rootLog = new GridTestLog4jLogger(false);
 
     /** */
     private final GridLogger log;
