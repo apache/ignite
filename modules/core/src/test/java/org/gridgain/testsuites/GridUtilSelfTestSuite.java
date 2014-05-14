@@ -42,7 +42,6 @@ public class GridUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridMBeanSelfTest.class);
         suite.addTestSuite(GridLongListSelfTest.class);
         suite.addTestSuite(GridCacheUtilsSelfTest.class);
-        suite.addTestSuite(GridLibraryConsistencyCheckSelfTest.class);
 
         // Metrics.
         suite.addTestSuite(GridDiscoveryMetricsHelperSelfTest.class);

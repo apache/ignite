@@ -1202,7 +1202,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         add(attrs, ATTR_BUILD_DATE, build);
         add(attrs, ATTR_COMPATIBLE_VERS, (Serializable)compatibleVersions());
         add(attrs, ATTR_MARSHALLER, cfg.getMarshaller().getClass().getName());
-        add(attrs, ATTR_LIBRARIES, GridLibraryConsistencyCheck.libraries());
         add(attrs, ATTR_USER_NAME, System.getProperty("user.name"));
         add(attrs, ATTR_GRID_NAME, gridName);
 
