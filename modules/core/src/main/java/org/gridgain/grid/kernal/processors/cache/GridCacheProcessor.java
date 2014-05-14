@@ -176,9 +176,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             assert cfg.getCacheMode() == LOCAL;
 
         if (cfg.getWriteSynchronizationMode() == null)
-            cfg.setWriteSynchronizationMode(cfg.getCacheMode() == PARTITIONED ? PRIMARY_SYNC : FULL_ASYNC);
+            cfg.setWriteSynchronizationMode(PRIMARY_SYNC);
 
         assert cfg.getWriteSynchronizationMode() != null;
+
+        if (cfg.getAtomicityMode() == ATOMIC) {
+            if (cfg.getAtomicWriteOrderMode() == null) {
+                cfg.setAtomicWriteOrderMode(cfg.getWriteSynchronizationMode() == FULL_SYNC ?
+                    GridCacheAtomicWriteOrderMode.CLOCK :
+                    GridCacheAtomicWriteOrderMode.PRIMARY);
+            }
+            else if (cfg.getWriteSynchronizationMode() != FULL_SYNC &&
+                cfg.getAtomicWriteOrderMode() == GridCacheAtomicWriteOrderMode.CLOCK) {
+                cfg.setAtomicWriteOrderMode(GridCacheAtomicWriteOrderMode.PRIMARY);
+
+                U.warn(log, "Automatically set write order mode to PRIMARY for better performance " +
+                    "[writeSynchronizationMode=" + cfg.getWriteSynchronizationMode() + ", " +
+                    "cacheName=" + cfg.getName() + ']');
+            }
+        }
     }
 
     /**
@@ -257,10 +273,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 throw new GridException("For REPLICATED cache flag 'excludeNeighbors' in GridCacheConsistentHashAffinityFunction " +
                     "cannot be set [cacheName=" + cc.getName() + ']');
 
-            if (cc.getWriteSynchronizationMode() == PRIMARY_SYNC)
-                throw new GridException("Cannot start REPLICATED cache with PRIMARY_SYNC write synchronization mode " +
-                    "(switch to FULL_SYNC or FULL_ASYNC mode instead) [cacheName=" + cc.getName() + ']');
-
             if (cc.getDistributionMode() == NEAR_PARTITIONED) {
                 U.warn(log, "NEAR_PARTITIONED distribution mode cannot be used with REPLICATED cache, " +
                     "will be changed to PARTITIONED_ONLY [cacheName=" + cc.getName() + ']');
@@ -282,16 +294,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (cc.getAtomicityMode() == ATOMIC && cc.getWriteSynchronizationMode() == FULL_ASYNC)
                 U.warn(log, "Cache write synchronization mode is set to FULL_ASYNC. All single-key 'put' and " +
                     "'remove' operations will return 'null', all 'putx' and 'removex' operations will return" +
-                    " 'true'.");
-
-            if (cc.getAtomicityMode() == ATOMIC && cc.getWriteSynchronizationMode() != FULL_SYNC &&
-                cc.getAtomicWriteOrderMode() == GridCacheAtomicWriteOrderMode.CLOCK) {
-                cc.setAtomicWriteOrderMode(GridCacheAtomicWriteOrderMode.PRIMARY);
-
-                U.warn(log, "Automatically set write order mode to PRIMARY for write synchronization mode " +
-                    "[writeSynchronizationMode=" + cc.getWriteSynchronizationMode() + ", " +
-                    "cacheName=" + cc.getName() + ']');
-            }
+                    " 'true' [cacheName=" + cc.getName() + ']');
         }
 
         if (ctx.config().getDeploymentMode() == PRIVATE || ctx.config().getDeploymentMode() == ISOLATED)
