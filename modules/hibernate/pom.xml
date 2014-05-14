@@ -35,10 +35,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-hibernate-deps</artifactId>
-            <version>1.2</version>
-            <type>pom</type>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-core</artifactId>
+            <version>4.2.6.Final</version>
         </dependency>
 
         <dependency>
