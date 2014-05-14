@@ -20,7 +20,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <gridgain.version>6.1.8</gridgain.version>
+        <gridgain.version>6.1.5</gridgain.version>
         <gridgain.jar>%ANT_AUGMENTED_GGJAR%</gridgain.jar>
     </properties>
 
@@ -31,7 +31,7 @@
     <dependencies>
         <dependency>
             <groupId>org.gridgain</groupId>
-            <artifactId>gridgain</artifactId>
+            <artifactId>gridgain-core</artifactId>
             <version>${gridgain.version}</version>
             <scope>system</scope>
             <systemPath>${basedir}/../${gridgain.jar}</systemPath>
@@ -149,24 +149,12 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-annotations</artifactId>
             <version>2.0.3-alpha</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-auth</artifactId>
             <version>2.0.3-alpha</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
@@ -596,14 +584,7 @@
     </dependencies>
 
     <build>
-        <resources>
-            <resource>
-                <directory>src/main/java</directory>
-            </resource>
-            <resource>
-                <directory>config</directory>
-            </resource>
-        </resources>
+        <sourceDirectory>src/main/java8</sourceDirectory>
 
         <pluginManagement>
             <plugins>
@@ -620,8 +601,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.1</version>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                 </configuration>
             </plugin>
 

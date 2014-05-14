@@ -11,13 +11,16 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
@@ -27,7 +30,26 @@ import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
  */
 public class GridHadoopMultimap implements AutoCloseable {
     /** */
-    private volatile AtomicLongArray tbl;
+    private static AtomicIntegerFieldUpdater<Adder> keysCntUpdater =
+        AtomicIntegerFieldUpdater.newUpdater(Adder.class, "keysCnt");
+
+    /** */
+    private final AtomicReference<State> state = new AtomicReference<>(State.READING_WRITING);
+
+    /** */
+    private volatile AtomicLongArray oldTbl;
+
+    /** */
+    private volatile AtomicLongArray newTbl;
+
+    /** */
+    private final AtomicInteger keys = new AtomicInteger();
+
+    /** */
+    private final CopyOnWriteArrayList<Adder> adders = new CopyOnWriteArrayList<>();
+
+    /** */
+    private final AtomicInteger inputs = new AtomicInteger();
 
     /** */
     private final GridHadoopJob job;
@@ -45,19 +67,50 @@ public class GridHadoopMultimap implements AutoCloseable {
         this.job = job;
         this.mem = mem;
 
-        tbl = new AtomicLongArray(tblCap);
+        newTbl = oldTbl = new AtomicLongArray(tblCap);
+    }
+
+    /**
+     * @return Number of keys.
+     */
+    public long keys() {
+        int res = keys.get();
+
+        for (Adder adder : adders)
+            res += adder.keysCnt;
+
+        return res;
+    }
+
+    /**
+     * @return Current table capacity.
+     */
+    public int capacity() {
+        return oldTbl.length();
     }
 
     /**
      * @return Adder object.
      */
     public Adder startAdding() throws GridException {
+        if (inputs.get() != 0)
+            throw new IllegalStateException("Active inputs.");
+
+        State s = state.get();
+
+        if (s == State.CLOSING)
+            throw new IllegalStateException();
+
         return new Adder();
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
-        AtomicLongArray tbl0 = tbl;
+        assert state.get() == State.READING_WRITING;
+
+        state(State.READING_WRITING, State.CLOSING);
+
+        AtomicLongArray tbl0 = oldTbl;
 
         for (int i = 0; i < tbl0.length(); i++)  {
             long meta = tbl0.get(i);
@@ -93,7 +146,13 @@ public class GridHadoopMultimap implements AutoCloseable {
      * @param v Visitor.
      */
     public void visit(boolean ignoreLastVisited, Visitor v) throws GridException {
-        AtomicLongArray tbl0 = tbl;
+        if (!state.compareAndSet(State.READING_WRITING, State.VISITING)) {
+            assert state.get() != State.CLOSING;
+
+            return; // Can not visit while rehashing happens.
+        }
+
+        AtomicLongArray tbl0 = oldTbl;
 
         for (int i = 0; i < tbl0.length(); i++) {
             long meta = tbl0.get(i);
@@ -119,14 +178,30 @@ public class GridHadoopMultimap implements AutoCloseable {
                 meta = collision(meta);
             }
         }
+
+        state(State.VISITING, State.READING_WRITING);
     }
 
     /**
      * @return New input for task.
      */
     public GridHadoopTaskInput input() throws GridException {
+        inputs.incrementAndGet();
+
+        if (!adders.isEmpty())
+            throw new IllegalStateException("Active adders.");
+
+        State s = state.get();
+
+        if (s == State.CLOSING)
+            throw new IllegalStateException("Closed.");
+
+        assert s != State.REHASHING;
+
         final Reader keyReader = new Reader(job.keySerialization());
         final Reader valReader = new Reader(job.valueSerialization());
+
+        final AtomicLongArray tbl = oldTbl;
 
         return new GridHadoopTaskInput() {
             /** */
@@ -181,9 +256,125 @@ public class GridHadoopMultimap implements AutoCloseable {
             }
 
             @Override public void close() throws Exception {
-                // No-op.
+                if (inputs.decrementAndGet() < 0)
+                    throw new IllegalStateException();
             }
         };
+    }
+
+    /**
+     * @param fromTbl Table.
+     */
+    private void rehashIfNeeded(AtomicLongArray fromTbl) {
+        if (fromTbl.length() == Integer.MAX_VALUE)
+            return;
+
+        long keys0 = keys();
+
+        if (keys0 < 3 * (fromTbl.length() >>> 2)) // New size has to be >= than 3/4 of capacity to rehash.
+            return;
+
+        if (fromTbl != newTbl) // Check if someone else have done the job.
+            return;
+
+        if (!state.compareAndSet(State.READING_WRITING, State.REHASHING)) {
+            assert state.get() != State.CLOSING; // Visiting is allowed, but we will not rehash.
+
+            return;
+        }
+
+        if (fromTbl != newTbl) { // Double check.
+            state(State.REHASHING, State.READING_WRITING); // Switch back.
+
+            return;
+        }
+
+        // Calculate new table capacity.
+        int newLen = fromTbl.length();
+
+        do {
+            newLen <<= 1;
+        }
+        while (newLen < keys0);
+
+        if (keys0 >= 3 * (newLen >>> 2)) // Still more than 3/4.
+            newLen <<= 1;
+
+        // This is our target table for rehashing.
+        AtomicLongArray toTbl = new AtomicLongArray(newLen);
+
+        // Make the new table visible before rehashing.
+        newTbl = toTbl;
+
+        // Rehash.
+        int newMask = newLen - 1;
+
+        long failedMeta = 0;
+
+        GridLongList collisions = new GridLongList(16);
+
+        for (int i = 0; i < fromTbl.length(); i++) { // Scan source table.
+            long meta = fromTbl.get(i);
+
+            assert meta != -1;
+
+            if (meta == 0) { // No entry.
+                failedMeta = 0;
+
+                if (!fromTbl.compareAndSet(i, 0, -1)) // Mark as moved.
+                    i--; // Retry.
+
+                continue;
+            }
+
+            do { // Collect all the collisions before the last one failed to nullify or 0.
+                collisions.add(meta);
+
+                meta = collision(meta);
+            }
+            while (meta != failedMeta);
+
+            do { // Go from the last to the first to avoid 'in-flight' state for meta entries.
+                meta = collisions.remove();
+
+                int addr = keyHash(meta) & newMask;
+
+                for (;;) { // Move meta entry to the new table.
+                    long toCollision = toTbl.get(addr);
+
+                    collision(meta, toCollision);
+
+                    if (toTbl.compareAndSet(addr, toCollision, meta))
+                        break;
+                }
+            }
+            while (!collisions.isEmpty());
+
+            // Here 'meta' will be a root pointer in old table.
+            if (!fromTbl.compareAndSet(i, meta, -1)) { // Try to mark as moved.
+                failedMeta = meta;
+
+                i--; // Retry the same address in table because new keys were added.
+            }
+            else
+                failedMeta = 0;
+        }
+
+        // Now old and new tables will be the same again.
+        oldTbl = toTbl;
+
+        state(State.REHASHING, State.READING_WRITING);
+    }
+
+    /**
+     * Switch state.
+     *
+     * @param oldState Expected state.
+     * @param newState New state.
+     */
+    private void state(State oldState, State newState) {
+        if (!state.compareAndSet(oldState, newState))
+            throw new IllegalStateException();
     }
 
     /**
@@ -255,7 +446,7 @@ public class GridHadoopMultimap implements AutoCloseable {
      * @return Collision pointer.
      */
     private long collision(long meta) {
-        return mem.readLong(meta + 24);
+        return mem.readLongVolatile(meta + 24);
     }
 
     /**
@@ -263,7 +454,9 @@ public class GridHadoopMultimap implements AutoCloseable {
      * @param collision Collision pointer.
      */
     private void collision(long meta, long collision) {
-        mem.writeLong(meta + 24, collision);
+        assert meta != collision : meta;
+
+        mem.writeLongVolatile(meta + 24, collision);
     }
 
     /**
@@ -385,6 +578,13 @@ public class GridHadoopMultimap implements AutoCloseable {
         private Object tmpKey;
 
         /**
+         * @return Meta pointer for the key.
+         */
+        public long address() {
+            return meta;
+        }
+
+        /**
          * @param val Value.
          */
         public void add(Value val) {
@@ -423,7 +623,7 @@ public class GridHadoopMultimap implements AutoCloseable {
     }
 
     /**
-     * Adder.
+     * Adder. Must not be shared between threads.
      */
     public class Adder implements AutoCloseable {
         /** */
@@ -438,11 +638,34 @@ public class GridHadoopMultimap implements AutoCloseable {
         /** */
         private final Reader keyReader;
 
+        /** */
+        volatile int keysCnt;
+
+        /** */
+        private final Random rnd = ThreadLocalRandom.current();
+
+        /** */
+        private boolean newKey;
+
+        /**
+         * @throws GridException If failed.
+         */
         public Adder() throws GridException {
             valSer = job.valueSerialization();
             keySer = job.keySerialization();
 
             keyReader = new Reader(keySer);
+
+            rehashIfNeeded(oldTbl);
+
+            adders.add(this);
+        }
+
+        /**
+         * @return {@code true} If new key was added by the last operation.
+         */
+        public boolean isNewKey() {
+            return newKey;
         }
 
         /**
@@ -467,25 +690,36 @@ public class GridHadoopMultimap implements AutoCloseable {
          *
          * @param key Key.
          * @param val Value.
+         * @return Meta pointer for the key.
          */
-        public void add(Object key, Object val) throws GridException {
+        public long add(Object key, Object val) throws GridException {
             A.notNull(val, "val");
 
-            doAdd(key, val);
+            return doAdd(key, val);
+        }
+
+        /**
+         * @param tbl Table.
+         */
+        private void incrementKeys(AtomicLongArray tbl) {
+            newKey = true;
+
+            keysCntUpdater.lazySet(this, keysCnt + 1);
+
+            if (rnd.nextInt(tbl.length()) < 512)
+                rehashIfNeeded(tbl);
         }
 
         /**
          * @param key Key.
          * @param val Value.
-         * @return Meta page pointer.
+         * @return Updated or created meta page pointer.
          * @throws GridException If failed.
          */
         private long doAdd(Object key, @Nullable Object val) throws GridException {
+            AtomicLongArray tbl = oldTbl;
+
             int keyHash = U.hash(key.hashCode());
-
-            AtomicLongArray tbl0 = tbl;
-
-            int addr = keyHash & (tbl0.length() - 1);
 
             long newMetaPtr = 0;
 
@@ -501,10 +735,23 @@ public class GridHadoopMultimap implements AutoCloseable {
                 valueSize(valPtr, valSize);
             }
 
-            for (;;) {
-                long metaPtrRoot = tbl0.get(addr); // Read root meta pointer at this address.
+            for (AtomicLongArray old = null;;) {
+                int addr = keyHash & (tbl.length() - 1);
 
-                if (metaPtrRoot != 0) {
+                long metaPtrRoot = tbl.get(addr); // Read root meta pointer at this address.
+
+                if (metaPtrRoot == -1) { // The cell was already moved by rehashing.
+                    AtomicLongArray n = newTbl; // Need to read newTbl first here.
+                    AtomicLongArray o = oldTbl;
+
+                    tbl = tbl == o ? n : o; // Trying to get the oldest table but newer than ours.
+
+                    old = null;
+
+                    continue;
+                }
+
+                if (metaPtrRoot != 0) { // Not empty slot.
                     long metaPtr = metaPtrRoot;
 
                     do { // Scan all the collisions.
@@ -527,15 +774,37 @@ public class GridHadoopMultimap implements AutoCloseable {
                                 while (!casValue(metaPtr, nextValPtr, valPtr));
                             }
 
+                            newKey = false;
+
                             return metaPtr;
                         }
 
                         metaPtr = collision(metaPtr);
                     }
                     while (metaPtr != 0);
+
+                    // Here we did not find our key, need to check if it was moved by rehashing to the new table.
+                    if (old == null) { // If the old table already set, then we will just try to update it.
+                        AtomicLongArray n = newTbl;
+
+                        if (n != tbl) { // Rehashing happens, try to find the key in new table but preserve the old one.
+                            old = tbl;
+                            tbl = n;
+
+                            continue;
+                        }
+                    }
                 }
 
-                if (newMetaPtr == 0) {
+                if (old != null) { // We just checked new table but did not find our key as well as in the old one.
+                    tbl = old; // Try to add new key to the old table.
+
+                    addr = keyHash & (tbl.length() - 1);
+
+                    old = null;
+                }
+
+                if (newMetaPtr == 0) { // Allocate new meta page.
                     write(key, keySer);
 
                     int keySize = out.offset();
@@ -547,11 +816,14 @@ public class GridHadoopMultimap implements AutoCloseable {
 
                     newMetaPtr = createMeta(keyHash, keySize, keyPtr, valPtr, metaPtrRoot, 0);
                 }
-                else
+                else // Update new meta with root pointer collision.
                     collision(newMetaPtr, metaPtrRoot);
 
-                if (tbl0.compareAndSet(addr, metaPtrRoot, newMetaPtr)) // Try to replace root meta pointer with new one.
+                if (tbl.compareAndSet(addr, metaPtrRoot, newMetaPtr)) { // Try to replace root pointer with new one.
+                    incrementKeys(tbl);
+
                     return newMetaPtr;
+                }
             }
         }
 
@@ -580,6 +852,11 @@ public class GridHadoopMultimap implements AutoCloseable {
 
         /** {@inheritDoc} */
         @Override public void close() throws GridException {
+            if (!adders.remove(this))
+                throw new IllegalStateException();
+
+            keys.addAndGet(keysCnt); // Here we have race and #keys() method can return wrong result but it is ok.
+
             keySer.close();
             valSer.close();
         }
@@ -600,5 +877,12 @@ public class GridHadoopMultimap implements AutoCloseable {
          * @param valSize Value size.
          */
         public void onValue(long valPtr, int valSize) throws GridException;
+    }
+
+    /**
+     * Current map state.
+     */
+    private static enum State {
+        REHASHING, VISITING, READING_WRITING, CLOSING
     }
 }

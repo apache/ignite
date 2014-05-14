@@ -20,6 +20,7 @@ import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.kernal.processors.version.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -51,6 +52,9 @@ import static org.gridgain.grid.util.direct.GridTcpCommunicationMessageAdapter.*
  */
 @GridToStringExclude
 public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
+    /** Version where FORCE_TRANSFORM_BACKUP flag was introduced. */
+    public static final GridProductVersion FORCE_TRANSFORM_BACKUP_SINCE = GridProductVersion.fromString("6.1.2");
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -834,6 +838,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             return;
                         }
 
+                        checkClearForceTransformBackups(req);
+
                         boolean hasNear = U.hasNearCache(node, name());
 
                         GridCacheVersion ver = req.updateVersion();
@@ -964,6 +970,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         int size = req.keys().size();
 
         Map<K, V> putMap = null;
+        Map<K, GridClosure<V, V>> transformMap = null;
         Collection<K> rmvKeys = null;
         UpdateBatchResult<K, V> updRes = new UpdateBatchResult<>();
         List<GridDhtCacheEntry<K, V>> filtered = new ArrayList<>(size);
@@ -1006,6 +1013,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     GridClosure<V, V> transform = req.transformClosure(i);
 
+                    if (transformMap == null)
+                        transformMap = new HashMap<>();
+
+                    transformMap.put(entry.key(), transform);
+
                     V updated = transform.apply(old);
 
                     if (updated == null) {
@@ -1019,6 +1031,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 nodeId,
                                 putMap,
                                 null,
+                                transformMap,
                                 dhtFut,
                                 completionCb,
                                 req,
@@ -1029,6 +1042,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             firstEntryIdx = i + 1;
 
                             putMap = null;
+                            transformMap = null;
 
                             filtered = new ArrayList<>();
                         }
@@ -1050,6 +1064,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 nodeId,
                                 null,
                                 rmvKeys,
+                                transformMap,
                                 dhtFut,
                                 completionCb,
                                 req,
@@ -1060,6 +1075,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             firstEntryIdx = i + 1;
 
                             rmvKeys = null;
+                            transformMap = null;
 
                             filtered = new ArrayList<>();
                         }
@@ -1107,6 +1123,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 nodeId,
                 putMap,
                 rmvKeys,
+                transformMap,
                 dhtFut,
                 completionCb,
                 req,
@@ -1238,13 +1255,18 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             newValBytes = null; // Value has been changed.
                         }
 
+                        GridClosure<V, V> transformC = null;
+
+                        if (req.forceTransformBackups() && op == TRANSFORM)
+                            transformC = (GridClosure<V, V>)writeVal;
+
                         if (!readersOnly)
-                            dhtFut.addWriteEntry(entry, updRes.newValue(), newValBytes, drExpireTime >= 0L ? ttl : -1L,
-                                drExpireTime, newDrVer, drExpireTime < 0L ? ttl : 0L);
+                            dhtFut.addWriteEntry(entry, updRes.newValue(), newValBytes, transformC,
+                                drExpireTime >= 0L ? ttl : -1L, drExpireTime, newDrVer, drExpireTime < 0L ? ttl : 0L);
 
                         if (!F.isEmpty(filteredReaders))
                             dhtFut.addNearWriteEntries(filteredReaders, entry, updRes.newValue(), newValBytes,
-                                drExpireTime < 0L ? ttl : 0L);
+                                transformC, drExpireTime < 0L ? ttl : 0L);
                     }
                     else {
                         if (log.isDebugEnabled())
@@ -1299,7 +1321,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         ret = ((GridCacheTransformComputeClosure<V, ?>)writeVal).returnValue();
                     }
 
-                    retVal = new GridCacheReturn<>(ret, updRes.success());
+                    retVal = new GridCacheReturn<>(req.returnValue() ? ret : null, updRes.success());
                 }
             }
             catch (GridException e) {
@@ -1335,6 +1357,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         UUID nodeId,
         @Nullable Map<K, V> putMap,
         @Nullable Collection<K> rmvKeys,
+        @Nullable Map<K, GridClosure<V, V>> transformMap,
         @Nullable GridDhtAtomicUpdateFuture<K, V> dhtFut,
         CI2<GridNearAtomicUpdateRequest<K, V>, GridNearAtomicUpdateResponse<K, V>> completionCb,
         final GridNearAtomicUpdateRequest<K, V> req,
@@ -1450,11 +1473,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         byte[] valBytes = valBytesTuple.getIfMarshaled();
 
+                        GridClosure<V, V> transformC = transformMap == null ? null : transformMap.get(entry.key());
+
                         if (!batchRes.readersOnly())
-                            dhtFut.addWriteEntry(entry, writeVal, valBytes, -1, -1, null, req.ttl());
+                            dhtFut.addWriteEntry(entry, writeVal, valBytes, transformC, -1, -1, null, req.ttl());
 
                         if (!F.isEmpty(filteredReaders))
-                            dhtFut.addNearWriteEntries(filteredReaders, entry, writeVal, valBytes, req.ttl());
+                            dhtFut.addNearWriteEntries(filteredReaders, entry, writeVal, valBytes, transformC,
+                                req.ttl());
                     }
 
                     if (hasNear) {
@@ -1841,15 +1867,19 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         V val = req.value(i);
                         byte[] valBytes = req.valueBytes(i);
+                        GridClosure<V, V> transform = req.transformClosure(i);
 
-                        GridCacheOperation op = (val != null || valBytes != null) ? UPDATE : DELETE;
+                        GridCacheOperation op = transform != null ? TRANSFORM :
+                            (val != null || valBytes != null) ?
+                                UPDATE :
+                                DELETE;
 
                         GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                             ver,
                             nodeId,
                             nodeId,
                             op,
-                            val,
+                            op == TRANSFORM ? transform : val,
                             valBytes,
                             /*write-through*/false,
                             /*retval*/false,
@@ -1857,7 +1887,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             /*event*/true,
                             /*metrics*/true,
                             /*primary*/false,
-                            /*check version*/true,
+                            /*check version*/!req.forceTransformBackups(),
                             CU.<K, V>empty(),
                             replicate ? DR_BACKUP : DR_NONE,
                             req.drTtl(i),
@@ -1910,6 +1940,29 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         catch (GridException e) {
             U.error(log, "Failed to send DHT atomic update response (did node leave grid?) [nodeId=" + nodeId +
                 ", req=" + req + ']', e);
+        }
+    }
+
+    /**
+     * Checks if entries being transformed are empty. Clears forceTransformBackup flag enforcing
+     * sending transformed value to backups if at least one empty entry is found.
+     *
+     * @param req Near atomic update request.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    private void checkClearForceTransformBackups(GridNearAtomicUpdateRequest<K, V> req) {
+        if (ctx.isStoreEnabled() && req.operation() == TRANSFORM) {
+            List<K> keys = req.keys();
+
+            for (int i = 0; i < keys.size(); i++) {
+                GridDhtCacheEntry<K, V> entry = entryExx(keys.get(i), req.topologyVersion());
+
+                if (!entry.hasValue()) {
+                    req.forceTransformBackups(false);
+
+                    return;
+                }
+            }
         }
     }
 
@@ -2481,6 +2534,146 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         return false;
 
                     assert nearVer0 == null : nearVer0;
+
+                    commState.idx++;
+            }
+
+            return true;
+        }
+    }
+
+    /**
+     * GridNearAtomicUpdateRequest converter for version 6.1.2
+     */
+    @SuppressWarnings("PublicInnerClass")
+    public static class GridNearAtomicUpdateRequestConverter612 extends GridVersionConverter {
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
+            switch (commState.idx) {
+                case 0:
+                    if (!commState.putBoolean(false))
+                        return false;
+
+                    commState.idx++;
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
+            switch (commState.idx) {
+                case 0: {
+                    if (buf.remaining() < 1)
+                        return false;
+
+                    commState.getBoolean();
+
+                    commState.idx++;
+                }
+            }
+
+            return true;
+        }
+    }
+
+    /**
+     * GridDhtAtomicUpdateRequest converter for version 6.1.2
+     */
+    @SuppressWarnings("PublicInnerClass")
+    public static class GridDhtAtomicUpdateRequestConverter612 extends GridVersionConverter {
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
+            switch (commState.idx) {
+                case 0: {
+                    if (!commState.putInt(-1))
+                        return false;
+
+                    commState.idx++;
+                }
+
+                case 1: {
+                    if (!commState.putBoolean(false))
+                        return false;
+
+                    commState.idx++;
+                }
+
+                case 2: {
+                    if (!commState.putInt(-1))
+                        return false;
+
+                    commState.idx++;
+                }
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
+            switch (commState.idx) {
+                case 0:
+                    if (commState.readSize == -1) {
+                        if (buf.remaining() < 4)
+                            return false;
+
+                        commState.readSize = commState.getInt();
+                    }
+
+                    if (commState.readSize >= 0) {
+                        for (int i = commState.readItems; i < commState.readSize; i++) {
+                            byte[] _val = commState.getByteArray();
+
+                            if (_val == BYTE_ARR_NOT_READ)
+                                return false;
+
+                            commState.readItems++;
+                        }
+                    }
+
+                    commState.readSize = -1;
+                    commState.readItems = 0;
+
+                    commState.idx++;
+
+                case 1:
+                    if (buf.remaining() < 1)
+                        return false;
+
+                    commState.getBoolean();
+
+                    commState.idx++;
+
+                case 2:
+                    if (commState.readSize == -1) {
+                        if (buf.remaining() < 4)
+                            return false;
+
+                        commState.readSize = commState.getInt();
+                    }
+
+                    if (commState.readSize >= 0) {
+                        for (int i = commState.readItems; i < commState.readSize; i++) {
+                            byte[] _val = commState.getByteArray();
+
+                            if (_val == BYTE_ARR_NOT_READ)
+                                return false;
+
+                            commState.readItems++;
+                        }
+                    }
+
+                    commState.readSize = -1;
+                    commState.readItems = 0;
 
                     commState.idx++;
             }

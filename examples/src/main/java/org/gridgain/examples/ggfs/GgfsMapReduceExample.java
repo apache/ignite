@@ -15,7 +15,6 @@ import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.mapreduce.*;
 import org.gridgain.grid.ggfs.mapreduce.records.*;
 import org.gridgain.grid.product.*;
-import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
@@ -46,12 +45,10 @@ public class GgfsMapReduceExample {
         else if (args.length == 1)
             System.out.println("Please provide regular expression.");
         else {
-            Grid g = GridGain.start("examples/config/example-ggfs.xml");
+            try (Grid g = GridGain.start("examples/config/example-ggfs.xml")) {
+                System.out.println();
+                System.out.println(">>> GGFS map reduce example started.");
 
-            System.out.println();
-            System.out.println(">>> GGFS map reduce example started.");
-
-            try {
                 // Prepare arguments.
                 String fileName = args[0];
 
@@ -81,10 +78,6 @@ public class GgfsMapReduceExample {
                     for (Line line : lines)
                         print(line.fileLine());
                 }
-
-            }
-            finally {
-                GridGain.stop(false);
             }
         }
     }
@@ -101,14 +94,10 @@ public class GgfsMapReduceExample {
         System.out.println();
         System.out.println("Copying file to GGFS: " + file);
 
-        GridGgfsOutputStream os = null;
-        FileInputStream fis = null;
-
-        try {
-            os = fs.create(fsPath, true);
-
-            fis = new FileInputStream(file);
-
+        try (
+            GridGgfsOutputStream os = fs.create(fsPath, true);
+            FileInputStream fis = new FileInputStream(file)
+        ) {
             byte[] buf = new byte[2048];
 
             int read = fis.read(buf);
@@ -118,10 +107,6 @@ public class GgfsMapReduceExample {
 
                 read = fis.read(buf);
             }
-        }
-        finally {
-            U.closeQuiet(os);
-            U.closeQuiet(fis);
         }
     }
 
