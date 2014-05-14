@@ -84,7 +84,7 @@ public class GridGgfsBlockLocationImpl implements GridGgfsBlockLocation, Externa
      * @param len Length.
      * @param nodes Affinity nodes.
      */
-    GridGgfsBlockLocationImpl(long start, long len, Collection<GridNode> nodes) {
+    public GridGgfsBlockLocationImpl(long start, long len, Collection<GridNode> nodes) {
         assert start >= 0;
         assert len > 0;
         assert nodes != null && !nodes.isEmpty();

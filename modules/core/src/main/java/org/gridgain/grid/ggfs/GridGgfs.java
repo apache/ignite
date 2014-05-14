@@ -414,12 +414,4 @@ public interface GridGgfs {
     public <T, R> GridFuture<R> execute(Class<? extends GridGgfsTask<T, R>> taskCls,
         @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) throws GridException;
-
-    /**
-     * Check whether the given path is proxy path.
-     *
-     * @param path Path.
-     * @return {@code True} if proxy.
-     */
-    public boolean isProxy(URI path);
 }

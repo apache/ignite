@@ -9,188 +9,963 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.ggfs.hadoop.v1.*;
+import org.gridgain.grid.ggfs.mapreduce.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.hadoop.v2.*;
+import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.hadoop.planner.*;
+import org.gridgain.grid.logger.log4j.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.testframework.*;
+import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.net.*;
 import java.util.*;
 
 /**
- * Tests default map-reduce planner implementation.
+ *
  */
 public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected boolean ggfsEnabled() {
-        return true;
+    /** */
+    private static final UUID ID_1 = new UUID(0, 1);
+
+    /** */
+    private static final UUID ID_2 = new UUID(0, 2);
+
+    /** */
+    private static final UUID ID_3 = new UUID(0, 3);
+
+    /** */
+    private static final String HOST_1 = "host1";
+
+    /** */
+    private static final String HOST_2 = "host2";
+
+    /** */
+    private static final String HOST_3 = "host3";
+
+    /** */
+    private static final String INVALID_HOST_1 = "invalid_host1";
+
+    /** */
+    private static final String INVALID_HOST_2 = "invalid_host2";
+
+    /** */
+    private static final String INVALID_HOST_3 = "invalid_host3";
+
+    /** Mocked Grid. */
+    private static final MockGrid GRID = new MockGrid();
+
+    /** Mocked GGFS. */
+    private static final MockGgfs GGFS = new MockGgfs();
+
+    /** Planner. */
+    private static final GridHadoopDefaultMapReducePlanner PLANNER = new GridHadoopDefaultMapReducePlanner();
+
+    /** Block locations. */
+    private static final Map<Block, Collection<GridGgfsBlockLocation>> BLOCK_MAP = new HashMap<>();
+
+    /** Proxy map. */
+    private static final Map<URI, Boolean> PROXY_MAP = new HashMap<>();
+
+    /** Last created plan. */
+    private static final ThreadLocal<GridHadoopMapReducePlan> PLAN = new ThreadLocal<>();
+
+    static {
+        GridTestUtils.setFieldValue(PLANNER, "grid", GRID);
+        GridTestUtils.setFieldValue(PLANNER, "log", new GridLog4jLogger());
     }
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 5;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridHadoopConfiguration hadoopConfiguration(String gridName) {
-        GridHadoopConfiguration cfg = super.hadoopConfiguration(gridName);
-
-        cfg.setMapReducePlanner(new GridHadoopDefaultMapReducePlanner());
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridGgfsConfiguration ggfsConfiguration() {
-        GridGgfsConfiguration cfg = super.ggfsConfiguration();
-
-        // Disable fragmentizer for this test.
-        cfg.setFragmentizerEnabled(false);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(gridCount());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
+    @Override protected void beforeTest() throws Exception {
+        BLOCK_MAP.clear();
+        PROXY_MAP.clear();
     }
 
     /**
-     * @throws Exception If failed.
+     * @throws GridException If failed.
      */
-    public void testMapReducePlanSingleFile() throws Exception {
-        GridEx grid = grid(0);
+    public void testGgfsOneBlockPerNode() throws GridException {
+        GridHadoopFileBlock split1 = split(true, "/file1", 0, 100, HOST_1);
+        GridHadoopFileBlock split2 = split(true, "/file2", 0, 100, HOST_2);
+        GridHadoopFileBlock split3 = split(true, "/file3", 0, 100, HOST_3);
 
-        GridGgfs ggfs = grid.ggfs(ggfsName);
+        mapGgfsBlock(split1.file(), 0, 100, location(0, 100, ID_1));
+        mapGgfsBlock(split2.file(), 0, 100, location(0, 100, ID_2));
+        mapGgfsBlock(split3.file(), 0, 100, location(0, 100, ID_3));
 
-        String fileName = "/testFile";
+        plan(1, split1);
+        assert ensureMappers(ID_1, split1);
+        assert ensureReducers(ID_1, 1);
+        assert ensureEmpty0(ID_2);
+        assert ensureEmpty0(ID_3);
 
-        long fileSize = 256 * 1024;
+        plan(2, split1);
+        assert ensureMappers(ID_1, split1);
+        assert ensureReducers(ID_1, 2);
+        assert ensureEmpty0(ID_2);
+        assert ensureEmpty0(ID_3);
 
-        prepareFile(ggfs, fileName, fileSize);
+        plan(1, split1, split2);
+        assert ensureMappers(ID_1, split1);
+        assert ensureMappers(ID_2, split2);
+        assert ensureReducers(ID_1, 1) && ensureReducers(ID_2, 0) || ensureReducers(ID_1, 0) && ensureReducers(ID_2, 1);
+        assert ensureEmpty0(ID_3);
 
-        Collection<GridGgfsBlockLocation> aff = ggfs.affinity(new GridGgfsPath(fileName), 0, fileSize);
+        plan(2, split1, split2);
+        assert ensureMappers(ID_1, split1);
+        assert ensureMappers(ID_2, split2);
+        assert ensureReducers(ID_1, 1);
+        assert ensureReducers(ID_2, 1);
+        assert ensureEmpty0(ID_3);
 
-        // Prepare hadoop file blocks.
-        Collection<GridHadoopInputSplit> blocks = new ArrayList<>(aff.size());
+        plan(3, split1, split2);
+        assert ensureMappers(ID_1, split1);
+        assert ensureMappers(ID_2, split2);
+        assert ensureReducers(ID_1, 1) && ensureReducers(ID_2, 2) || ensureReducers(ID_1, 2) && ensureReducers(ID_2, 1);
+        assert ensureEmpty0(ID_3);
 
-        String[] hosts = new String[] {F.first(grid.localNode().hostNames())};
+        plan(3, split1, split2, split3);
+        assert ensureMappers(ID_1, split1);
+        assert ensureMappers(ID_2, split2);
+        assert ensureMappers(ID_3, split3);
+        assert ensureReducers(ID_1, 1);
+        assert ensureReducers(ID_2, 1);
+        assert ensureReducers(ID_3, 1);
 
-        for (GridGgfsBlockLocation loc : aff) {
-            GridHadoopInputSplit split = new GridHadoopFileBlock(hosts, new URI("ggfs://ipc" + fileName), loc.start(),
-                loc.length());
+        plan(5, split1, split2, split3);
+        assert ensureMappers(ID_1, split1);
+        assert ensureMappers(ID_2, split2);
+        assert ensureMappers(ID_3, split3);
+        assert ensureReducers(ID_1, 1) && ensureReducers(ID_2, 2) && ensureReducers(ID_3, 2) ||
+            ensureReducers(ID_1, 2) && ensureReducers(ID_2, 1) && ensureReducers(ID_3, 2) ||
+            ensureReducers(ID_1, 2) && ensureReducers(ID_2, 2) && ensureReducers(ID_3, 1);
+    }
 
-            blocks.add(split);
-        }
+    /**
+     * @throws GridException If failed.
+     */
+    public void testNonGgfsOneBlockPerNode() throws GridException {
+        GridHadoopFileBlock split1 = split(false, "/file1", 0, 100, HOST_1);
+        GridHadoopFileBlock split2 = split(false, "/file2", 0, 100, HOST_2);
+        GridHadoopFileBlock split3 = split(false, "/file3", 0, 100, HOST_3);
 
-        GridKernal kernal = (GridKernal)grid;
+        plan(1, split1);
+        assert ensureMappers(ID_1, split1);
+        assert ensureReducers(ID_1, 1);
+        assert ensureEmpty0(ID_2);
+        assert ensureEmpty0(ID_3);
 
-        GridHadoopProcessor hadoopProc = (GridHadoopProcessor)kernal.context().hadoop();
+        plan(2, split1);
+        assert ensureMappers(ID_1, split1);
+        assert ensureReducers(ID_1, 2);
+        assert ensureEmpty0(ID_2);
+        assert ensureEmpty0(ID_3);
 
-        GridHadoopMapReducePlanner planner = hadoopProc.context().planner();
+        plan(1, split1, split2);
+        assert ensureMappers(ID_1, split1);
+        assert ensureMappers(ID_2, split2);
+        assert ensureReducers(ID_1, 1) && ensureReducers(ID_2, 0) || ensureReducers(ID_1, 0) && ensureReducers(ID_2, 1);
+        assert ensureEmpty0(ID_3);
 
-        for (int reducers = 1; reducers < 12; reducers++) {
+        plan(2, split1, split2);
+        assert ensureMappers(ID_1, split1);
+        assert ensureMappers(ID_2, split2);
+        assert ensureReducers(ID_1, 1);
+        assert ensureReducers(ID_2, 1);
+        assert ensureEmpty0(ID_3);
 
-            Configuration cfg = jobConfiguration(reducers);
+        plan(3, split1, split2);
+        assert ensureMappers(ID_1, split1);
+        assert ensureMappers(ID_2, split2);
+        assert ensureReducers(ID_1, 1) && ensureReducers(ID_2, 2) || ensureReducers(ID_1, 2) && ensureReducers(ID_2, 1);
+        assert ensureEmpty0(ID_3);
 
-            GridHadoopDefaultJobInfo info = new GridHadoopDefaultJobInfo(cfg);
+        plan(3, split1, split2, split3);
+        assert ensureMappers(ID_1, split1);
+        assert ensureMappers(ID_2, split2);
+        assert ensureMappers(ID_3, split3);
+        assert ensureReducers(ID_1, 1);
+        assert ensureReducers(ID_2, 1);
+        assert ensureReducers(ID_3, 1);
 
-            GridHadoopJob job = new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 1), info);
+        plan(5, split1, split2, split3);
+        assert ensureMappers(ID_1, split1);
+        assert ensureMappers(ID_2, split2);
+        assert ensureMappers(ID_3, split3);
+        assert ensureReducers(ID_1, 1) && ensureReducers(ID_2, 2) && ensureReducers(ID_3, 2) ||
+            ensureReducers(ID_1, 2) && ensureReducers(ID_2, 1) && ensureReducers(ID_3, 2) ||
+            ensureReducers(ID_1, 2) && ensureReducers(ID_2, 2) && ensureReducers(ID_3, 1);
+    }
 
-            Collection<GridNode> nodes = grid.nodes();
+    /**
+     * @throws GridException If failed.
+     */
+    public void testGgfsSeveralBlocksPerNode() throws GridException {
+        GridHadoopFileBlock split1 = split(true, "/file1", 0, 100, HOST_1, HOST_2);
+        GridHadoopFileBlock split2 = split(true, "/file2", 0, 100, HOST_1, HOST_2);
+        GridHadoopFileBlock split3 = split(true, "/file3", 0, 100, HOST_1, HOST_3);
 
-            GridHadoopMapReducePlan plan = planner.preparePlan(blocks, nodes, job, null);
+        mapGgfsBlock(split1.file(), 0, 100, location(0, 100, ID_1, ID_2));
+        mapGgfsBlock(split2.file(), 0, 100, location(0, 100, ID_1, ID_2));
+        mapGgfsBlock(split3.file(), 0, 100, location(0, 100, ID_1, ID_3));
 
-            int totalBlocks = 0;
+        plan(1, split1);
+        assert ensureMappers(ID_1, split1) && ensureReducers(ID_1, 1) && ensureEmpty0(ID_2) ||
+            ensureEmpty0(ID_1) && ensureMappers(ID_2, split1) && ensureReducers(ID_2, 1);
+        assert ensureEmpty0(ID_3);
 
-            for (GridNode n : nodes) {
-                Collection<GridHadoopInputSplit> mappers = plan.mappers(n.id());
+        plan(2, split1);
+        assert ensureMappers(ID_1, split1) && ensureReducers(ID_1, 2) && ensureEmpty0(ID_2) ||
+            ensureEmpty0(ID_1) && ensureMappers(ID_2, split1) && ensureReducers(ID_2, 2);
+        assert ensureEmpty0(ID_3);
 
-                if (mappers != null)
-                    totalBlocks += mappers.size();
+        plan(1, split1, split2);
+        assert ensureMappers(ID_1, split1) && ensureMappers(ID_2, split2) ||
+            ensureMappers(ID_1, split2) && ensureMappers(ID_2, split1);
+        assert ensureReducers(ID_1, 1) && ensureReducers(ID_2, 0) || ensureReducers(ID_1, 0) && ensureReducers(ID_2, 1);
+        assert ensureEmpty0(ID_3);
+
+        plan(2, split1, split2);
+        assert ensureMappers(ID_1, split1) && ensureMappers(ID_2, split2) ||
+            ensureMappers(ID_1, split2) && ensureMappers(ID_2, split1);
+        assert ensureReducers(ID_1, 1);
+        assert ensureReducers(ID_2, 1);
+        assert ensureEmpty0(ID_3);
+
+        plan(3, split1, split2, split3);
+        assert ensureReducers(ID_1, 1);
+        assert ensureReducers(ID_2, 1);
+        assert ensureReducers(ID_3, 1);
+
+        plan(5, split1, split2, split3);
+        assert ensureReducers(ID_1, 1) && ensureReducers(ID_2, 2) && ensureReducers(ID_3, 2) ||
+            ensureReducers(ID_1, 2) && ensureReducers(ID_2, 1) && ensureReducers(ID_3, 2) ||
+            ensureReducers(ID_1, 2) && ensureReducers(ID_2, 2) && ensureReducers(ID_3, 1);
+    }
+
+    /**
+     * @throws GridException If failed.
+     */
+    public void testNonGgfsSeveralBlocksPerNode() throws GridException {
+        GridHadoopFileBlock split1 = split(false, "/file1", 0, 100, HOST_1, HOST_2);
+        GridHadoopFileBlock split2 = split(false, "/file2", 0, 100, HOST_1, HOST_2);
+        GridHadoopFileBlock split3 = split(false, "/file3", 0, 100, HOST_1, HOST_3);
+
+        plan(1, split1);
+        assert ensureMappers(ID_1, split1) && ensureReducers(ID_1, 1) && ensureEmpty0(ID_2) ||
+            ensureEmpty0(ID_1) && ensureMappers(ID_2, split1) && ensureReducers(ID_2, 1);
+        assert ensureEmpty0(ID_3);
+
+        plan(2, split1);
+        assert ensureMappers(ID_1, split1) && ensureReducers(ID_1, 2) && ensureEmpty0(ID_2) ||
+            ensureEmpty0(ID_1) && ensureMappers(ID_2, split1) && ensureReducers(ID_2, 2);
+        assert ensureEmpty0(ID_3);
+
+        plan(1, split1, split2);
+        assert ensureMappers(ID_1, split1) && ensureMappers(ID_2, split2) ||
+            ensureMappers(ID_1, split2) && ensureMappers(ID_2, split1);
+        assert ensureReducers(ID_1, 1) && ensureReducers(ID_2, 0) || ensureReducers(ID_1, 0) && ensureReducers(ID_2, 1);
+        assert ensureEmpty0(ID_3);
+
+        plan(2, split1, split2);
+        assert ensureMappers(ID_1, split1) && ensureMappers(ID_2, split2) ||
+            ensureMappers(ID_1, split2) && ensureMappers(ID_2, split1);
+        assert ensureReducers(ID_1, 1);
+        assert ensureReducers(ID_2, 1);
+        assert ensureEmpty0(ID_3);
+
+        plan(3, split1, split2, split3);
+        assert ensureReducers(ID_1, 1);
+        assert ensureReducers(ID_2, 1);
+        assert ensureReducers(ID_3, 1);
+
+        plan(5, split1, split2, split3);
+        assert ensureReducers(ID_1, 1) && ensureReducers(ID_2, 2) && ensureReducers(ID_3, 2) ||
+            ensureReducers(ID_1, 2) && ensureReducers(ID_2, 1) && ensureReducers(ID_3, 2) ||
+            ensureReducers(ID_1, 2) && ensureReducers(ID_2, 2) && ensureReducers(ID_3, 1);
+    }
+
+    /**
+     * @throws GridException If failed.
+     */
+    public void testGgfsSeveralComplexBlocksPerNode() throws GridException {
+        GridHadoopFileBlock split1 = split(true, "/file1", 0, 100, HOST_1, HOST_2, HOST_3);
+        GridHadoopFileBlock split2 = split(true, "/file2", 0, 100, HOST_1, HOST_2, HOST_3);
+
+        mapGgfsBlock(split1.file(), 0, 100, location(0, 50, ID_1, ID_2), location(51, 100, ID_1, ID_3));
+        mapGgfsBlock(split2.file(), 0, 100, location(0, 50, ID_1, ID_2), location(51, 100, ID_2, ID_3));
+
+        plan(1, split1);
+        assert ensureMappers(ID_1, split1);
+        assert ensureReducers(ID_1, 1);
+        assert ensureEmpty0(ID_2);
+        assert ensureEmpty0(ID_3);
+
+        plan(1, split2);
+        assert ensureMappers(ID_2, split2);
+        assert ensureReducers(ID_2, 1);
+        assert ensureEmpty0(ID_1);
+        assert ensureEmpty0(ID_3);
+
+        plan(1, split1, split2);
+        assert ensureMappers(ID_1, split1);
+        assert ensureMappers(ID_2, split2);
+        assert ensureReducers(ID_1, 0) && ensureReducers(ID_2, 1) || ensureReducers(ID_1, 1) && ensureReducers(ID_2, 0);
+        assert ensureEmpty0(ID_3);
+
+        plan(2, split1, split2);
+        assert ensureMappers(ID_1, split1);
+        assert ensureMappers(ID_2, split2);
+        assert ensureReducers(ID_1, 1);
+        assert ensureReducers(ID_2, 1);
+        assert ensureEmpty0(ID_3);
+    }
+
+    /**
+     * @throws GridException If failed.
+     */
+    public void testNonGgfsOrphans() throws GridException {
+        GridHadoopFileBlock split1 = split(false, "/file1", 0, 100, INVALID_HOST_1, INVALID_HOST_2);
+        GridHadoopFileBlock split2 = split(false, "/file2", 0, 100, INVALID_HOST_1, INVALID_HOST_3);
+        GridHadoopFileBlock split3 = split(false, "/file3", 0, 100, INVALID_HOST_2, INVALID_HOST_3);
+
+        plan(1, split1);
+        assert ensureMappers(ID_1, split1) && ensureReducers(ID_1, 1) && ensureEmpty0(ID_2) && ensureEmpty0(ID_3) ||
+            ensureEmpty0(ID_1) && ensureMappers(ID_2, split1) && ensureReducers(ID_2, 1) && ensureEmpty0(ID_3) ||
+            ensureEmpty0(ID_1) && ensureEmpty0(ID_2) && ensureMappers(ID_3, split1) && ensureReducers(ID_3, 1);
+
+        plan(2, split1);
+        assert ensureMappers(ID_1, split1) && ensureReducers(ID_1, 2) && ensureEmpty0(ID_2) && ensureEmpty0(ID_3) ||
+            ensureEmpty0(ID_1) && ensureMappers(ID_2, split1) && ensureReducers(ID_2, 2) && ensureEmpty0(ID_3) ||
+            ensureEmpty0(ID_1) && ensureEmpty0(ID_2) && ensureMappers(ID_3, split1) && ensureReducers(ID_3, 2);
+
+        plan(1, split1, split2, split3);
+        assert ensureMappers(ID_1, split1) && ensureMappers(ID_2, split2) && ensureMappers(ID_3, split3) ||
+            ensureMappers(ID_1, split1) && ensureMappers(ID_2, split3) && ensureMappers(ID_3, split2) ||
+            ensureMappers(ID_1, split2) && ensureMappers(ID_2, split1) && ensureMappers(ID_3, split3) ||
+            ensureMappers(ID_1, split2) && ensureMappers(ID_2, split3) && ensureMappers(ID_3, split1) ||
+            ensureMappers(ID_1, split3) && ensureMappers(ID_2, split1) && ensureMappers(ID_3, split2) ||
+            ensureMappers(ID_1, split3) && ensureMappers(ID_2, split2) && ensureMappers(ID_3, split1);
+        assert ensureReducers(ID_1, 1) && ensureReducers(ID_2, 0) && ensureReducers(ID_3, 0) ||
+            ensureReducers(ID_1, 0) && ensureReducers(ID_2, 1) && ensureReducers(ID_3, 0) ||
+            ensureReducers(ID_1, 0) && ensureReducers(ID_2, 0) && ensureReducers(ID_3, 1);
+
+        plan(3, split1, split2, split3);
+        assert ensureMappers(ID_1, split1) && ensureMappers(ID_2, split2) && ensureMappers(ID_3, split3) ||
+            ensureMappers(ID_1, split1) && ensureMappers(ID_2, split3) && ensureMappers(ID_3, split2) ||
+            ensureMappers(ID_1, split2) && ensureMappers(ID_2, split1) && ensureMappers(ID_3, split3) ||
+            ensureMappers(ID_1, split2) && ensureMappers(ID_2, split3) && ensureMappers(ID_3, split1) ||
+            ensureMappers(ID_1, split3) && ensureMappers(ID_2, split1) && ensureMappers(ID_3, split2) ||
+            ensureMappers(ID_1, split3) && ensureMappers(ID_2, split2) && ensureMappers(ID_3, split1);
+        assert ensureReducers(ID_1, 1);
+        assert ensureReducers(ID_2, 1);
+        assert ensureReducers(ID_3, 1);
+
+        plan(5, split1, split2, split3);
+        assert ensureMappers(ID_1, split1) && ensureMappers(ID_2, split2) && ensureMappers(ID_3, split3) ||
+            ensureMappers(ID_1, split1) && ensureMappers(ID_2, split3) && ensureMappers(ID_3, split2) ||
+            ensureMappers(ID_1, split2) && ensureMappers(ID_2, split1) && ensureMappers(ID_3, split3) ||
+            ensureMappers(ID_1, split2) && ensureMappers(ID_2, split3) && ensureMappers(ID_3, split1) ||
+            ensureMappers(ID_1, split3) && ensureMappers(ID_2, split1) && ensureMappers(ID_3, split2) ||
+            ensureMappers(ID_1, split3) && ensureMappers(ID_2, split2) && ensureMappers(ID_3, split1);
+        assert ensureReducers(ID_1, 1) && ensureReducers(ID_2, 2) && ensureReducers(ID_3, 2) ||
+            ensureReducers(ID_1, 2) && ensureReducers(ID_2, 1) && ensureReducers(ID_3, 2) ||
+            ensureReducers(ID_1, 2) && ensureReducers(ID_2, 2) && ensureReducers(ID_3, 1);
+    }
+
+    /**
+     * Create plan.
+     *
+     * @param reducers Reducers count.
+     * @param splits Splits.
+     * @return Plan.
+     * @throws GridException If failed.
+     */
+    private static GridHadoopMapReducePlan plan(int reducers, GridHadoopInputSplit... splits) throws GridException {
+        assert reducers > 0;
+        assert splits != null && splits.length > 0;
+
+        Collection<GridHadoopInputSplit> splitList = new ArrayList<>(splits.length);
+
+        Collections.addAll(splitList, splits);
+
+        Collection<GridNode> top = new ArrayList<>();
+
+        GridTestNode node1 = new GridTestNode(ID_1);
+        GridTestNode node2 = new GridTestNode(ID_2);
+        GridTestNode node3 = new GridTestNode(ID_3);
+
+        node1.setHostName(HOST_1);
+        node2.setHostName(HOST_2);
+        node3.setHostName(HOST_3);
+
+        top.add(node1);
+        top.add(node2);
+        top.add(node3);
+
+        GridHadoopMapReducePlan plan = PLANNER.preparePlan(splitList, top, new MockJob(reducers), null);
+
+        PLAN.set(plan);
+
+        return plan;
+    }
+
+    /**
+     * Ensure that node contains the given mappers.
+     *
+     * @param nodeId Node ID.
+     * @param expSplits Expected splits.
+     * @return {@code True} if this assumption is valid.
+     */
+    private static boolean ensureMappers(UUID nodeId, GridHadoopInputSplit... expSplits) {
+        Collection<GridHadoopInputSplit> expSplitsCol = new ArrayList<>();
+
+        Collections.addAll(expSplitsCol, expSplits);
+
+        Collection<GridHadoopInputSplit> splits = PLAN.get().mappers(nodeId);
+
+        return F.eq(expSplitsCol, splits);
+    }
+
+    /**
+     * Ensure that node contains the given amount of reducers.
+     *
+     * @param nodeId Node ID.
+     * @param reducers Reducers.
+     * @return {@code True} if this assumption is valid.
+     */
+    private static boolean ensureReducers(UUID nodeId, int reducers) {
+        int[] reducersArr = PLAN.get().reducers(nodeId);
+
+        return reducers == 0 ? F.isEmpty(reducersArr) : (reducersArr != null && reducersArr.length == reducers);
+    }
+
+    /**
+     * Ensure that no mappers and reducers is located on this node.
+     *
+     * @param nodeId Node ID.
+     * @return {@code True} if this assumption is valid.
+     */
+    private static boolean ensureEmpty0(UUID nodeId) {
+        return F.isEmpty(PLAN.get().mappers(nodeId)) && F.isEmpty(PLAN.get().reducers(nodeId));
+    }
+
+    /**
+     * Check plan.
+     * @param plan Plan.
+     * @param ensures Ensures.
+     */
+    private static void checkPlan(GridHadoopMapReducePlan plan, Ensure... ensures) {
+        if (ensures != null) {
+            for (Ensure ensure : ensures) {
+                Collection<GridHadoopInputSplit> splits = plan.mappers(ensure.id);
+
+                if (F.isEmpty(ensure.splits))
+                    assert F.isEmpty(splits) : "Invalid mappers [nodeId=" + ensure.id + ", expected=N/A, actual=" +
+                        splits + ']';
+                else
+                    assert F.eq(ensure.splits, splits) : "Invalid mappers [nodeId=" + ensure.id + ", expected=" +
+                        ensure.splits + ", actual=" + splits + ']';
+
+                int[] reducers = plan.reducers(ensure.id);
+
+                int reducersCnt = reducers == null ? 0 : reducers.length;
+
+                assert ensure.reducers == reducersCnt : "Invalid reducers [nodeId=" + ensure.id + ", expected=" +
+                    ensure.reducers + ", actual=" + reducersCnt + ']';
             }
-
-            assertEquals(aff.size(), totalBlocks);
-
-            // Verify plan.
-            for (GridGgfsBlockLocation loc : aff) {
-                UUID primary = F.first(loc.nodeIds());
-
-                Collection<GridHadoopInputSplit> mappers = plan.mappers(primary);
-
-                assertNotNull("Mappers is null for affinity [primary=" + primary + ", loc=" + loc + ']', mappers);
-
-                assertTrue("Failed to find affinity block location in plan [loc=" + loc + ", mappers=" + mappers + ']',
-                    hasLocation(loc, fileName, mappers));
-            }
-
-            Collection<Integer> allRdc = new HashSet<>();
-
-            for (GridNode n : nodes) {
-                int[] rdc = plan.reducers(n.id());
-
-                for (int r : rdc)
-                    assertTrue("Duplicate reducer found [r=" + r + ", total=" + reducers + ']', allRdc.add(r));
-            }
-
-            for (int r = 0; r < job.reducers(); r++)
-                assertTrue("Missing reducer [r=" + r + ", total=" + reducers + ']', allRdc.contains(r));
         }
     }
 
     /**
-     * @param ggfs GGFS instance.
-     * @param fileName File name.
-     * @param fileSize File size.
-     * @throws Exception
+     * Create ensure.
+     *
+     * @param id Node ID.
+     * @param reducers Expected reducers count.
+     * @param splits Expected splits.
+     * @return Ensure.
      */
-    private void prepareFile(GridGgfs ggfs, String fileName, long fileSize) throws Exception {
-        try (OutputStream os = ggfs.create(new GridGgfsPath(fileName), true)) {
-            os.write(new byte[(int)fileSize]);
+    private static Ensure ensure(UUID id, int reducers, GridHadoopInputSplit... splits) {
+        Collection<GridHadoopInputSplit> splitList = new ArrayList<>();
+
+        if (splits != null)
+            Collections.addAll(splitList, splits);
+
+        return new Ensure(id, reducers, splitList);
+    }
+
+    /**
+     * Create empty ensure.
+     *
+     * @param id Node ID.
+     * @return Ensure.
+     */
+    private static Ensure ensureEmpty(UUID id) {
+        return ensure(id, 0);
+    }
+
+    /**
+     * Create split.
+     *
+     * @param ggfs GGFS flag.
+     * @param file File.
+     * @param start Start.
+     * @param len Length.
+     * @param hosts Hosts.
+     * @return Split.
+     */
+    private static GridHadoopFileBlock split(boolean ggfs, String file, long start, long len, String... hosts) {
+        URI uri = URI.create((ggfs ? "ggfs://" : "hdfs://") + file);
+
+        return new GridHadoopFileBlock(hosts, uri, start, len);
+    }
+
+    /**
+     * Create block location.
+     *
+     * @param start Start.
+     * @param len Length.
+     * @param nodeIds Node IDs.
+     * @return Block location.
+     */
+    private static GridGgfsBlockLocation location(long start, long len, UUID... nodeIds) {
+        assert nodeIds != null && nodeIds.length > 0;
+
+        Collection<GridNode> nodes = new ArrayList<>(nodeIds.length);
+
+        for (UUID id : nodeIds)
+            nodes.add(new GridTestNode(id));
+
+        return new GridGgfsBlockLocationImpl(start, len, nodes);
+    }
+
+    /**
+     * Map GGFS block to nodes.
+     *
+     * @param file File.
+     * @param start Start.
+     * @param len Length.
+     * @param locations Locations.
+     */
+    private static void mapGgfsBlock(URI file, long start, long len, GridGgfsBlockLocation... locations) {
+        assert locations != null && locations.length > 0;
+
+        GridGgfsPath path = new GridGgfsPath(file);
+
+        Block block = new Block(path, start, len);
+
+        Collection<GridGgfsBlockLocation> locationsList = new ArrayList<>();
+
+        Collections.addAll(locationsList, locations);
+
+        BLOCK_MAP.put(block, locationsList);
+    }
+
+    /**
+     * Mark URI as proxy.
+     *
+     * @param uri URI.
+     */
+    private static void proxy(URI uri) {
+        PROXY_MAP.put(uri, true);
+    }
+
+    /**
+     * Block.
+     */
+    private static class Block {
+        /** */
+        private final GridGgfsPath path;
+
+        /** */
+        private final long start;
+
+        /** */
+        private final long len;
+
+        /**
+         * Constructor.
+         *
+         * @param path Path.
+         * @param start Start.
+         * @param len Length.
+         */
+        private Block(GridGgfsPath path, long start, long len) {
+            this.path = path;
+            this.start = start;
+            this.len = len;
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("RedundantIfStatement")
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Block)) return false;
+
+            Block block = (Block) o;
+
+            if (len != block.len)
+                return false;
+
+            if (start != block.start)
+                return false;
+
+            if (!path.equals(block.path))
+                return false;
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int result = path.hashCode();
+
+            result = 31 * result + (int) (start ^ (start >>> 32));
+            result = 31 * result + (int) (len ^ (len >>> 32));
+
+            return result;
         }
     }
 
     /**
-     * @param loc Location to find.
-     * @param name File name.
-     * @param mappers Mappers to search.
-     * @return {@code True} if location was found.
+     * Ensure class.
      */
-    private boolean hasLocation(GridGgfsBlockLocation loc, String name, Iterable<GridHadoopInputSplit> mappers) {
-        for (GridHadoopInputSplit split : mappers) {
+    private static class Ensure {
+        /** Node ID. */
+        private final UUID id;
 
-            GridHadoopFileBlock block = (GridHadoopFileBlock) split;
+        /** Reducers count. */
+        private final int reducers;
 
-            if (block.file().getPath().equals(name) && loc.start() == block.start() && loc.length() == block.length())
-                return true;
+        /** Splits. */
+        private final Collection<GridHadoopInputSplit> splits;
+
+        /**
+         *
+         * @param id Node ID.
+         * @param reducers Reducers count.
+         * @param splits Splits.
+         */
+        private Ensure(UUID id, int reducers, Collection<GridHadoopInputSplit> splits) {
+            this.id = id;
+            this.reducers = reducers;
+            this.splits = splits;
         }
-
-        return false;
     }
 
     /**
-     * @param reducers Number of reducers to set.
-     * @return Map-reduce job configuration.
+     * Mocked job.
      */
-    private Configuration jobConfiguration(int reducers) {
-        Configuration cfg = new Configuration();
+    private static class MockJob implements GridHadoopJob {
+        /** Reducers count. */
+        private final int reducers;
 
-        cfg.setStrings("fs.ggfs.impl", GridGgfsHadoopFileSystem.class.getName());
+        /**
+         * Constructor.
+         *
+         * @param reducers Reducers count.
+         */
+        private MockJob(int reducers) {
+            this.reducers = reducers;
+        }
 
-        cfg.setInt(JobContext.NUM_REDUCES, reducers);
+        /** {@inheritDoc} */
+        @Override public int reducers() {
+            return reducers;
+        }
 
-        return cfg;
+        /** {@inheritDoc} */
+        @Override public GridHadoopJobId id() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridHadoopJobInfo info() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<GridHadoopInputSplit> input() throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasCombiner() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridHadoopPartitioner partitioner() throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridHadoopSerialization keySerialization() throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridHadoopSerialization valueSerialization() throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public String property(String name) {
+            return null;
+        }
+    }
+
+    /**
+     * Mocked GGFS.
+     */
+    private static class MockGgfs implements GridGgfsEx {
+        /** {@inheritDoc} */
+        @Override public boolean isProxy(URI path) {
+            return PROXY_MAP.containsKey(path) && PROXY_MAP.get(path);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<GridGgfsBlockLocation> affinity(GridGgfsPath path, long start, long len)
+            throws GridException {
+            return BLOCK_MAP.get(new Block(path, start, len));
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<GridGgfsBlockLocation> affinity(GridGgfsPath path, long start, long len,
+            long maxLen) throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void stop() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridGgfsContext context() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridGgfsPaths proxyPaths() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridGgfsInputStreamAdapter open(GridGgfsPath path, int bufSize, int seqReadsBeforePrefetch)
+            throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridGgfsInputStreamAdapter open(GridGgfsPath path) throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridGgfsInputStreamAdapter open(GridGgfsPath path, int bufSize) throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridGgfsStatus globalSpace() throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void globalSampling(@Nullable Boolean val) throws GridException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Boolean globalSampling() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridGgfsLocalMetrics localMetrics() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long groupBlockSize() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<?> awaitDeletesAsync() throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public String clientLogDirectory() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void clientLogDirectory(String logDir) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean evictExclude(GridGgfsPath path, boolean primary) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public String name() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridGgfsConfiguration configuration() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean exists(GridGgfsPath path) throws GridException {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public GridGgfsFile info(GridGgfsPath path) throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridGgfsPathSummary summary(GridGgfsPath path) throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public GridGgfsFile update(GridGgfsPath path, Map<String, String> props)
+            throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void rename(GridGgfsPath src, GridGgfsPath dest) throws GridException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean delete(GridGgfsPath path, boolean recursive) throws GridException {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void mkdirs(GridGgfsPath path) throws GridException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void mkdirs(GridGgfsPath path, @Nullable Map<String, String> props) throws GridException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<GridGgfsPath> listPaths(GridGgfsPath path) throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<GridGgfsFile> listFiles(GridGgfsPath path) throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridGgfsOutputStream create(GridGgfsPath path, boolean overwrite) throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridGgfsOutputStream create(GridGgfsPath path, int bufSize, boolean overwrite,
+            @Nullable GridUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
+            throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridGgfsOutputStream append(GridGgfsPath path, boolean create) throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridGgfsOutputStream append(GridGgfsPath path, int bufSize, boolean create,
+            @Nullable Map<String, String> props) throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setTimes(GridGgfsPath path, long accessTime, long modificationTime) throws GridException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridGgfsMetrics metrics() throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void resetMetrics() throws GridException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public long size(GridGgfsPath path) throws GridException {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<?> format() throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T, R> GridFuture<R> execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
+            Collection<GridGgfsPath> paths, @Nullable T arg) throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T, R> GridFuture<R> execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
+            Collection<GridGgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
+            throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T, R> GridFuture<R> execute(Class<? extends GridGgfsTask<T, R>> taskCls,
+            @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, @Nullable T arg)
+            throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T, R> GridFuture<R> execute(Class<? extends GridGgfsTask<T, R>> taskCls,
+            @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, boolean skipNonExistentFiles,
+            long maxRangeLen, @Nullable T arg) throws GridException {
+            return null;
+        }
+    }
+
+    /**
+     * Mocked Grid.
+     */
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
+    private static class MockGrid extends GridSpringBean {
+        /** {@inheritDoc} */
+        @Override public GridGgfs ggfs(String name) {
+            assert F.eq("ggfs", name);
+
+            return GGFS;
+        }
     }
 }
