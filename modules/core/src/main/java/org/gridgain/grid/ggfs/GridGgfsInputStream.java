@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.ggfs;
 
-import org.gridgain.grid.kernal.processors.ggfs.*;
-
 import java.io.*;
 
 /**
@@ -19,11 +17,11 @@ import java.io.*;
  */
 public abstract class GridGgfsInputStream extends InputStream {
     /**
-     * Gets file info for opened file.
+     * Gets file length during file open.
      *
-     * @return File info.
+     * @return File length.
      */
-    public abstract GridGgfsFileInfo fileInfo();
+    public abstract long length();
 
     /**
      * Seek to the specified position.
@@ -50,16 +48,6 @@ public abstract class GridGgfsInputStream extends InputStream {
      * @throws IOException In case of IO exception.
      */
     public abstract void readFully(long pos, byte[] buf) throws IOException;
-
-    /**
-     * Reads bytes from given position.
-     *
-     * @param pos Position to read from.
-     * @param len Number of bytes to read.
-     * @return Array of chunks with respect to chunk file representation.
-     * @throws IOException If read failed.
-     */
-    public abstract byte[][] readChunks(long pos, int len) throws IOException;
 
     /**
      *

@@ -22,7 +22,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <gridgain.version>6.1.5</gridgain.version>
+        <gridgain.version>6.1.8</gridgain.version>
         <gridgain.edition>platform</gridgain.edition>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.7</maven.compiler.source>
@@ -39,6 +39,7 @@
 
     <modules>
         <module>modules/core</module>
+        <module>modules/hadoop</module>
         <module>modules/extdata/p2p</module>
         <module>modules/extdata/uri</module>
         <module>modules/clients</module>
@@ -963,6 +964,10 @@
                                 <mkdir dir="target/release-package/libs/ext"/>
 
                                 <replace file="target/release-package/examples/pom.xml"
+                                         token="%ANT_AUGMENTED_GGJAR%"
+                                         value="gridgain-${gridgain.edition}-${gridgain.version}.jar"/>
+
+                                <replace file="target/release-package/examples/pom-java8.xml"
                                          token="%ANT_AUGMENTED_GGJAR%"
                                          value="gridgain-${gridgain.edition}-${gridgain.version}.jar"/>
 

@@ -95,10 +95,19 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
     /** {@inheritDoc} */
     @Override public void bytes(byte[] bytes, int len) {
+        bytes(bytes, 0, len);
+    }
+
+    /**
+     * @param bytes Bytes.
+     * @param off Offset.
+     * @param len Length.
+     */
+    public void bytes(byte[] bytes, int off, int len) {
         buf = bytes;
 
         max = len;
-        off = 0;
+        this.off = off;
     }
 
     /** {@inheritDoc} */

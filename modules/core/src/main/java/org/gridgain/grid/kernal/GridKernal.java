@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.dr.*;
 import org.gridgain.grid.ggfs.*;
@@ -81,6 +80,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.GridLifecycleEventType.*;
 import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.kernal.GridKernalState.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.GridProductImpl.*;
@@ -478,7 +478,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      * @param errHnd Error handler to use for notification about startup problems.
      * @throws GridException Thrown in case of any errors.
      */
-    @SuppressWarnings("CatchGenericClass")
+    @SuppressWarnings({"CatchGenericClass", "unchecked"})
     public void start(final GridConfiguration cfg, @Nullable ExecutorService drPool, GridAbsClosure errHnd)
         throws GridException {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getGridName()));
@@ -663,6 +663,10 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
+            GridGgfsProcessorAdapter ggfsProc =  COMP_GGFS.create(ctx, F.isEmpty(cfg.getGgfsConfiguration()));
+
+            ctx.add(ggfsProc);
+
             startProcessor(ctx, new GridClockSyncProcessor(ctx), attrs);
             startProcessor(ctx, createComponent(GridLicenseProcessor.class, ctx), attrs);
             startProcessor(ctx, new GridAffinityProcessor(ctx), attrs);
@@ -675,7 +679,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startProcessor(ctx, new GridRestProcessor(ctx), attrs);
             startProcessor(ctx, new GridDataLoaderProcessor(ctx), attrs);
             startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
-            startProcessor(ctx, new GridGgfsProcessor(ctx), attrs);
+            startProcessor(ctx, ggfsProc, attrs, false);
             startProcessor(ctx, new GridContinuousProcessor(ctx), attrs);
             startProcessor(ctx, createComponent(GridDrProcessor.class, ctx), attrs);
 
@@ -755,6 +759,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             verChecker.reportStatus(log);
 
         if (notifyEnabled) {
+            assert verChecker != null;
+
             verChecker.reportOnlyNew(true);
             verChecker.licenseProcessor(ctx.license());
 
@@ -1056,6 +1062,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     /**
      * Checks whether physical RAM is not exceeded.
      */
+    @SuppressWarnings("ConstantConditions")
     private void checkPhysicalRam() {
         long ram = ctx.discovery().localNode().attribute(ATTR_PHY_RAM);
 
@@ -1256,8 +1263,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         addAttributes(attrs, cfg.getSecureSessionSpi());
         addAttributes(attrs, cfg.getDeploymentSpi());
 
-        addGgfsAttributes(cfg, attrs);
-
         // Set user attributes for this node.
         if (cfg.getUserAttributes() != null) {
             for (Map.Entry<String, ?> e : cfg.getUserAttributes().entrySet()) {
@@ -1270,58 +1275,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         }
 
         return attrs;
-    }
-
-    /**
-     * Adds GGFS-related attributes.
-     *
-     * @param gridCfg Grid configuration.
-     * @param attrs Node attributes map.
-     */
-    private void addGgfsAttributes(GridConfiguration gridCfg, Map<String, Object> attrs) {
-        // Node doesn't have GGFS if it:
-        // is daemon;
-        // doesn't have configured GGFS;
-        // doesn't have configured caches.
-        if (gridCfg.isDaemon() || F.isEmpty(gridCfg.getGgfsConfiguration()) ||
-            F.isEmpty(gridCfg.getCacheConfiguration()))
-            return;
-
-        final Map<String, GridCacheConfiguration> cacheCfgs = new HashMap<>();
-
-        F.forEach(gridCfg.getCacheConfiguration(), new CI1<GridCacheConfiguration>() {
-            @Override public void apply(GridCacheConfiguration c) {
-                cacheCfgs.put(c.getName(), c);
-            }
-        });
-
-        Collection<GridGgfsAttributes> attrVals = new ArrayList<>();
-
-        for (GridGgfsConfiguration ggfsCfg : gridCfg.getGgfsConfiguration()) {
-            GridCacheConfiguration cacheCfg = cacheCfgs.get(ggfsCfg.getDataCacheName());
-
-            if (cacheCfg == null)
-                continue; // No cache for the given GGFS configuration.
-
-            GridCacheAffinityKeyMapper affMapper = cacheCfg.getAffinityMapper();
-
-            if (!(affMapper instanceof GridGgfsGroupDataBlocksKeyMapper))
-                // Do not create GGFS attributes for such a node nor throw error about invalid configuration.
-                // Configuration will be validated later, while starting GridGgfsProcessor.
-                continue;
-
-            attrVals.add(new GridGgfsAttributes(
-                ggfsCfg.getName(),
-                ggfsCfg.getBlockSize(),
-                ((GridGgfsGroupDataBlocksKeyMapper)affMapper).groupSize(),
-                ggfsCfg.getMetaCacheName(),
-                ggfsCfg.getDataCacheName(),
-                ggfsCfg.getDefaultMode(),
-                ggfsCfg.getPathModes(),
-                ggfsCfg.isFragmentizerEnabled()));
-        }
-
-        attrs.put(ATTR_GGFS, attrVals.toArray(new GridGgfsAttributes[attrVals.size()]));
     }
 
     /**
@@ -1479,7 +1432,20 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      */
     private void startProcessor(GridKernalContextImpl ctx, GridProcessor proc, Map<String, Object> attrs)
         throws GridException {
-        ctx.add(proc);
+        startProcessor(ctx, proc, attrs, true);
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @param proc Processor to start.
+     * @param attrs Attributes.
+     * @param add Whether to add processro to context ({@code false} if already added).
+     * @throws GridException Thrown in case of any error.
+     */
+    private void startProcessor(GridKernalContextImpl ctx, GridProcessor proc, Map<String, Object> attrs, boolean add)
+        throws GridException {
+        if (add)
+            ctx.add(proc);
 
         try {
             proc.start();
