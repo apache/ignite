@@ -30,7 +30,7 @@ if [ "${GRIDGAIN_HOME}" = "" ]; then
 fi
 
 # USER_LIBS variable can optionally contain user's JARs/libs.
-USER_LIBS=.
+# USER_LIBS=
 
 #
 # OS specific support.
