@@ -123,21 +123,10 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
 
             byte[] verBytes = hs.versionBytes();
 
-            if (!Arrays.equals(VER_BYTES, verBytes)) {
-                U.error(log, "Client version check failed [ses=" + ses +
+            if (!Arrays.equals(VER_BYTES, verBytes))
+                U.warn(log, "Client version check failed [ses=" + ses +
                     ", expected=" + Arrays.toString(VER_BYTES)
                     + ", actual=" + Arrays.toString(verBytes) + ']');
-
-                ses.send(GridClientHandshakeResponse.ERR_VERSION_CHECK_FAILED).listenAsync(
-                    new CI1<GridNioFuture<?>>() {
-                        @Override public void apply(GridNioFuture<?> fut) {
-                            ses.close();
-                        }
-                    }
-                );
-
-                return;
-            }
 
             final byte protoId = hs.protocolId();
 

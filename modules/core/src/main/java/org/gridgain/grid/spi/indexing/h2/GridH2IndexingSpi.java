@@ -134,11 +134,6 @@ import static org.h2.result.SortOrder.*;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see GridIndexingSpi
  */
-@GridSpiInfo(
-    author = /*@java.spi.author*/"GridGain Systems",
-    url = /*@java.spi.url*/"www.gridgain.com",
-    email = /*@java.spi.email*/"support@gridgain.com",
-    version = /*@java.spi.version*/"x.x")
 @GridSpiMultipleInstancesSupport(true)
 @SuppressWarnings({"UnnecessaryFullyQualifiedName", "NonFinalStaticVariableUsedInClassInitialization"})
 public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi, GridH2IndexingSpiMBean {
@@ -195,17 +190,6 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     }
 
     /** */
-    private static final JavaObjectSerializer SERIALIZER = new JavaObjectSerializer() {
-        @Override public byte[] serialize(Object o) throws Exception {
-            return localSpi.get().marshaller.marshal(new GridIndexingEntityAdapter<>(o, null));
-        }
-
-        @Override public Object deserialize(byte[] bytes) throws Exception {
-            return localSpi.get().marshaller.unmarshal(bytes).value();
-        }
-    };
-
-    /** */
     private static final ThreadLocal<GridH2IndexingSpi> localSpi = new ThreadLocal<>();
 
     /** */
@@ -242,7 +226,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     private boolean longQryExplain;
 
     /** Cache for deserialized offheap rows. */
-    private CacheLongKeyLIRS<GridH2KeyValueRowOffheap> rowCache = new CacheLongKeyLIRS(32 * 1024, 1, 128, 256);
+    private CacheLongKeyLIRS<GridH2KeyValueRowOffheap> rowCache = new CacheLongKeyLIRS<>(32 * 1024, 1, 128, 256);
 
     /** */
     private Map<String, GridH2IndexingSpaceConfiguration> spaceCfgs =
@@ -388,6 +372,17 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
      * @throws GridSpiException If failed to create db schema.
      */
     private void createSchemaIfAbsent(String schema) throws GridSpiException {
+        executeStatement("CREATE SCHEMA IF NOT EXISTS \"" + schema + '"');
+
+        if (log.isDebugEnabled())
+            log.debug("Created H2 schema for index database: " + schema);
+    }
+
+    /**
+     * @param sql SQL statement.
+     * @throws GridSpiException If failed.
+     */
+    private void executeStatement(String sql) throws GridSpiException {
         Statement stmt = null;
 
         try {
@@ -395,15 +390,12 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
             stmt = c.createStatement();
 
-            stmt.executeUpdate("CREATE SCHEMA IF NOT EXISTS \"" + schema + '"');
-
-            if (log.isDebugEnabled())
-                log.debug("Created H2 schema for index database: " + schema);
+            stmt.executeUpdate(sql);
         }
         catch (SQLException e) {
             onSqlException();
 
-            throw new GridSpiException("Failed to create H2 schema for index database for space: " + schema, e);
+            throw new GridSpiException("Failed to execute statement: " + sql, e);
         }
         finally {
             U.close(stmt, log);
@@ -1282,9 +1274,6 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
             SysProperties.serializeJavaObject = false;
         }
 
-        if (Utils.serializer == null)
-            Utils.serializer = SERIALIZER;
-
         if (maxOffHeapMemory != -1) {
             assert maxOffHeapMemory >= 0 : maxOffHeapMemory;
 
@@ -1305,6 +1294,8 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
         catch (ClassNotFoundException e) {
             throw new GridSpiException("Failed to find org.h2.Driver class", e);
         }
+
+        setH2Serializer();
 
         for (String schema : schemaNames)
             createSchemaIfAbsent(schema);
@@ -1354,6 +1345,13 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
             p.execute();
         }
+    }
+
+    /**
+     * @throws GridSpiException If failed.
+     */
+    private void setH2Serializer() throws GridSpiException {
+        executeStatement("SET JAVA_OBJECT_SERIALIZER '" + H2Serializer.class.getName() + "'");
     }
 
     /**
@@ -1651,7 +1649,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     public void setMaxOffheapRowsCacheSize(int size) {
         A.ensure(size >= 128, "Offheap rows cache size must be not less than 128.");
 
-        rowCache = new CacheLongKeyLIRS(size, 1, 128, 256);
+        rowCache = new CacheLongKeyLIRS<>(size, 1, 128, 256);
     }
 
     /**
@@ -2388,6 +2386,21 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
             }
 
             return new GridH2KeyValueRowOffheap(this, ptr);
+        }
+    }
+
+    /**
+     * Object serializer.
+     */
+    private static class H2Serializer implements JavaObjectSerializer {
+        /** {@inheritDoc} */
+        @Override public byte[] serialize(Object o) throws Exception {
+            return localSpi.get().marshaller.marshal(new GridIndexingEntityAdapter<>(o, null));
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object deserialize(byte[] bytes) throws Exception {
+            return localSpi.get().marshaller.unmarshal(bytes).value();
         }
     }
 }

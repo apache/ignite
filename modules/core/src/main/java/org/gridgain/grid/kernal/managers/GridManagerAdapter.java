@@ -191,11 +191,6 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
             if (log.isDebugEnabled())
                 log.debug("Starting SPI: " + spi);
 
-            GridSpiInfo info = spi.getClass().getAnnotation(GridSpiInfo.class);
-
-            if (info == null)
-                throw new GridException("SPI implementation does not have @GridSpiInfo annotation: " + spi.getClass());
-
             if (names.contains(spi.getName()))
                 throw new GridException("Duplicate SPI name (need to explicitly configure 'setName()' property): " +
                     spi.getName());
@@ -213,8 +208,7 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
             }
 
             if (log.isDebugEnabled())
-                log.debug("SPI module started ok [spi=" + spi.getClass().getName() + ", author=" + info.author() +
-                    ", version=" + info.version() + ", email=" + info.email() + ", url=" + info.url() + ']');
+                log.debug("SPI module started OK: " + spi.getClass().getName());
         }
     }
 
@@ -231,14 +225,8 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
             try {
                 spi.spiStop();
 
-                GridSpiInfo info = spi.getClass().getAnnotation(GridSpiInfo.class);
-
-                assert info != null;
-
                 if (log.isDebugEnabled())
-                    log.debug("SPI module stopped ok [spi=" + spi.getClass().getName() +
-                        ", author=" + info.author() + ", version=" + info.version() +
-                        ", email=" + info.email() + ", url=" + info.url() + ']');
+                    log.debug("SPI module stopped OK: " + spi.getClass().getName());
             }
             catch (GridSpiException e) {
                 throw new GridException("Failed to stop SPI: " + spi, e);
@@ -406,6 +394,8 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
 
                     @Override public void writeToSwap(String spaceName, Object key, @Nullable Object val,
                         @Nullable ClassLoader ldr) throws GridException {
+                        assert ctx.swap().enabled();
+
                         ctx.swap().write(spaceName, key, val, ldr);
                     }
 
@@ -429,6 +419,8 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                     @SuppressWarnings({"unchecked"})
                     @Nullable @Override public <T> T readFromSwap(String spaceName, GridSwapKey key,
                         @Nullable ClassLoader ldr) throws GridException {
+                        assert ctx.swap().enabled();
+
                         return ctx.swap().readValue(spaceName, key, ldr);
                     }
 
@@ -438,6 +430,8 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
 
                     @Override public void removeFromSwap(String spaceName, Object key,
                         @Nullable ClassLoader ldr) throws GridException {
+                        assert ctx.swap().enabled();
+
                         ctx.swap().remove(spaceName, key, null, ldr);
                     }
 

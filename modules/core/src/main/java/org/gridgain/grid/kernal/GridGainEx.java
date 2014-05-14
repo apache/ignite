@@ -49,6 +49,7 @@ import org.gridgain.grid.spi.securesession.*;
 import org.gridgain.grid.spi.securesession.noop.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.spi.swapspace.file.*;
+import org.gridgain.grid.spi.swapspace.noop.*;
 import org.gridgain.grid.startup.cmdline.*;
 import org.gridgain.grid.startup.servlet.*;
 import org.gridgain.grid.startup.tomcat.*;
@@ -1264,11 +1265,17 @@ public class GridGainEx {
             String ggHome = cfg.getGridGainHome();
 
             // Set GridGain home.
-            if (ggHome == null)
+            if (ggHome == null) {
                 ggHome = U.getGridGainHome();
-            else
+
+                U.setWorkDirectory(cfg.getWorkDirectory(), null);
+            }
+            else {
                 // If user provided GRIDGAIN_HOME - set it as a system property.
                 U.setGridGainHome(ggHome);
+
+                U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
+            }
 
             /*
              * Set up all defaults and perform all checks.
@@ -1604,8 +1611,23 @@ public class GridGainEx {
             if (loadBalancingSpi == null)
                 loadBalancingSpi = new GridLoadBalancingSpi[] {new GridRoundRobinLoadBalancingSpi()};
 
-            if (swapspaceSpi == null)
-                swapspaceSpi = new GridFileSwapSpaceSpi();
+            if (swapspaceSpi == null) {
+                boolean needSwap = false;
+
+                GridCacheConfiguration[] caches = cfg.getCacheConfiguration();
+
+                if (caches != null) {
+                    for (GridCacheConfiguration c : caches) {
+                        if (c.isSwapEnabled()) {
+                            needSwap = true;
+
+                            break;
+                        }
+                    }
+                }
+
+                swapspaceSpi = needSwap ? new GridFileSwapSpaceSpi() : new GridNoopSwapSpaceSpi();
+            }
 
             if (indexingSpi == null)
                 indexingSpi = new GridIndexingSpi[] {new GridH2IndexingSpi()};

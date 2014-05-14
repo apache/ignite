@@ -21,13 +21,6 @@ import javax.net.ssl.*;
  */
 public final class GridSystemProperties {
     /**
-     * Property identifying whether GridGain debug is enabled or not. If enabled,
-     * the standard logger configuration will be used, otherwise logger settings
-     * will be bypassed and debug won't be printed.
-     */
-    public static final String GG_DEBUG_ENABLED = "GRIDGAIN_DEBUG_ENABLED";
-
-    /**
      * If this system property is present the GridGain will include grid name into verbose log.
      */
     public static final String GG_LOG_GRID_NAME = "GRIDGAIN_LOG_GRID_NAME";
@@ -428,6 +421,11 @@ public final class GridSystemProperties {
      * If this property set then debug console will be opened for H2 indexing SPI.
      */
     public static final String GG_H2_DEBUG_CONSOLE = "GRIDGAIN_H2_DEBUG_CONSOLE";
+
+    /**
+     * If this property is set to {@code true} then shared memory space native debug will be enabled.
+     */
+    public static final String GG_IPC_SHMEM_SPACE_DEBUG = "GRIDGAIN_IPC_SHMEM_SPACE_DEBUG";
 
     /**
      * Enforces singleton.

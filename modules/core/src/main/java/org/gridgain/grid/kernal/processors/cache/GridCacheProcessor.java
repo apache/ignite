@@ -350,11 +350,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (!cc.isQueryIndexEnabled())
-            U.warn(log, "Query indexing is disabled (queries will not work) for cache: '" + cc.getName() + "'. " +
-                "To enable change GridCacheConfiguration.isQueryIndexEnabled() property.",
-                "Query indexing is disabled (queries will not work) for cache: " + cc.getName());
-
         GridCacheEvictionPolicy evictPlc =  cc.getEvictionPolicy();
 
         if (evictPlc != null && evictPlc instanceof GridCacheGgfsPerBlockLruEvictionPolicy) {
@@ -393,10 +388,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     cc.getName());
         }
 
-        // Validate DR send configuration.
         boolean ggfsCache = CU.isGgfsCache(c, cc.getName());
+
+        if (!ggfsCache && !cc.isQueryIndexEnabled())
+            U.warn(log, "Query indexing is disabled (queries will not work) for cache: '" + cc.getName() + "'. " +
+                "To enable change GridCacheConfiguration.isQueryIndexEnabled() property.",
+                "Query indexing is disabled (queries will not work) for cache: " + cc.getName());
+
         boolean mongoCache = false; // CU.isMongoCache(c, cc.getName());
 
+        // Validate DR send configuration.
         GridDrSenderCacheConfiguration drSndCfg = cc.getDrSenderConfiguration();
 
         if (drSndCfg != null) {
@@ -560,6 +561,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.versionConverter().registerLocal(GridNearAtomicUpdateResponse.class,
             GridDhtAtomicCache.NearAtomicUpdateResponseConverter603.class, GridNearAtomicCache.SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridNearAtomicUpdateRequest.class,
+            GridDhtAtomicCache.GridNearAtomicUpdateRequestConverter612.class,
+            GridDhtAtomicCache.FORCE_TRANSFORM_BACKUP_SINCE);
+
+        ctx.versionConverter().registerLocal(GridDhtAtomicUpdateRequest.class,
+            GridDhtAtomicCache.GridDhtAtomicUpdateRequestConverter612.class,
+            GridDhtAtomicCache.FORCE_TRANSFORM_BACKUP_SINCE);
 
         GridDeploymentMode depMode = ctx.config().getDeploymentMode();
 

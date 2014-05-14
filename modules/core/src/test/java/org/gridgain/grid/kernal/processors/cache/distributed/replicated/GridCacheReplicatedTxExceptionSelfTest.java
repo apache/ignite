@@ -12,19 +12,20 @@ package org.gridgain.grid.kernal.processors.cache.distributed.replicated;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Exception test for local cache.
+ * Tests replicated cache.
  */
 public class GridCacheReplicatedTxExceptionSelfTest extends GridCacheTxExceptionAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 2;
+    @Override protected GridCacheMode cacheMode() {
+        return REPLICATED;
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
-        return REPLICATED;
+    @Override protected GridCacheDistributionMode distributionMode() {
+        return PARTITIONED_ONLY;
     }
 }

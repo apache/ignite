@@ -9,11 +9,8 @@
 
 package org.gridgain.grid.cache.affinity.rendezvous;
 
-import java.io.*;
-import java.security.*;
-import java.util.*;
-
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.lang.*;
@@ -22,6 +19,10 @@ import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
+
+import java.io.*;
+import java.security.*;
+import java.util.*;
 
 /**
  * Affinity function for partitioned cache based on Highest Random Weight algorithm.
@@ -42,6 +43,7 @@ import org.jetbrains.annotations.*;
  * </li>
  * </ul>
  * <p>
+ * Cache affinity can be configured for individual caches via {@link GridCacheConfiguration#getAffinity()} method.
  */
 public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFunction, Externalizable {
     /** */
@@ -318,24 +320,26 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
         res.add(primary);
 
         // Select backups.
-        for (int i = 1; i < lst.size(); i++) {
-            GridBiTuple<Long, GridNode> next = lst.get(i);
+        if (backups > 0) {
+            for (int i = 1; i < lst.size(); i++) {
+                GridBiTuple<Long, GridNode> next = lst.get(i);
 
-            GridNode node = next.get2();
+                GridNode node = next.get2();
 
-            if (exclNeighbors) {
-                Collection<GridNode> allNeighbors = allNeighbors(neighborhoodCache, res);
+                if (exclNeighbors) {
+                    Collection<GridNode> allNeighbors = allNeighbors(neighborhoodCache, res);
 
-                if (!allNeighbors.contains(node))
-                    res.add(node);
+                    if (!allNeighbors.contains(node))
+                        res.add(node);
+                }
+                else {
+                    if (!res.contains(node) && (backupFilter == null || backupFilter.apply(primary, node)))
+                        res.add(next.get2());
+                }
+
+                if (res.size() == primaryAndBackups)
+                    break;
             }
-            else {
-                if (!res.contains(node) && (backupFilter == null || backupFilter.apply(primary, node)))
-                    res.add(next.get2());
-            }
-
-            if (res.size() == primaryAndBackups)
-                break;
         }
 
         if (res.size() < primaryAndBackups && nodes.size() >= primaryAndBackups && exclNeighbors) {
@@ -352,6 +356,8 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
                     break;
             }
         }
+
+        assert res.size() <= primaryAndBackups;
 
         return res;
     }

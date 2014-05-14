@@ -60,7 +60,8 @@ final class GridUriDeploymentSpringParser {
         }
         catch (BeansException | IOException e) {
             throw new GridSpiException("Failed to parse spring XML file.", e);
-        } finally{
+        }
+        finally{
             U.close(out, log);
         }
     }

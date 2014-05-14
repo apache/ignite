@@ -23,6 +23,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -325,7 +326,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
         assertTrue(queue.isEmpty());
 
-        grid(0).compute().call(new PutTakeJob(queueName, RETRIES)).get();
+        grid(0).compute().broadcast(new PutTakeJob(queueName, RETRIES)).get();
 
         assertEquals(0, queue.size());
 
@@ -553,6 +554,33 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testSerialization() throws Exception {
+        // Random queue name.
+        String queueName = UUID.randomUUID().toString();
+
+        final GridCacheQueue<Integer> queue = grid(0).cache(null).dataStructures().queue(queueName, 0, false, true);
+
+        assertNotNull(queue);
+
+        try {
+            for (int i = 0; i < 10; i++)
+                queue.add(i);
+
+            Collection<Integer> c = grid(0).compute().broadcast(new QueueJob(queue)).get();
+
+            assertEquals(GRID_CNT, c.size());
+
+            for (Integer size : c)
+                assertEquals((Integer)10, size);
+        }
+        finally {
+            grid(0).cache(null).dataStructures().removeQueue(queueName);
+        }
+    }
+
+    /**
      * @param q Queue.
      * @param v Value.
      */
@@ -562,6 +590,28 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
         q.put(v);
 
         X.println("Done putting value: " + v);
+    }
+
+    /**
+     * Tests queue serialization.
+     */
+    private static class QueueJob implements Callable<Integer>, Serializable {
+        /** */
+        private GridCacheQueue<Integer> queue;
+
+        /**
+         * @param queue Queue.
+         */
+        private QueueJob(GridCacheQueue<Integer> queue) {
+            this.queue = queue;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer call() throws Exception {
+            assertNotNull(queue);
+
+            return queue.size();
+        }
     }
 
     /**
@@ -756,10 +806,6 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
             for (int i = 0; i < retries; i++) {
                 queue.put(i);
-
-                assertNotNull(queue.peek());
-
-                assertNotNull(queue.element());
 
                 assertNotNull(queue.take());
             }

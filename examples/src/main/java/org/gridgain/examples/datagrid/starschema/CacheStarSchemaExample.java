@@ -13,7 +13,6 @@ import org.gridgain.examples.datagrid.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -193,7 +192,8 @@ public class CacheStarSchemaExample {
      */
     @SuppressWarnings("UnusedDeclaration")
     private static <T> T rand(Collection<? extends T> c) {
-        A.notNull(c, "c");
+        if (c == null)
+            throw new IllegalArgumentException();
 
         int n = ThreadLocalRandom.current().nextInt(c.size());
 

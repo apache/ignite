@@ -20,7 +20,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <gridgain.version>1.0-SNAPSHOT</gridgain.version>
+        <gridgain.version>6.1.5</gridgain.version>
         <gridgain.jar>%ANT_AUGMENTED_GGJAR%</gridgain.jar>
     </properties>
 
@@ -586,10 +586,10 @@
     <build>
         <resources>
             <resource>
-                <directory>config</directory>
+                <directory>src/main/java</directory>
             </resource>
             <resource>
-                <directory>src/main/java</directory>
+                <directory>config</directory>
             </resource>
         </resources>
 

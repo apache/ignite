@@ -1644,7 +1644,7 @@ public class GridCacheConfiguration {
     }
 
     /**
-     * Gets preload timeout (ms).
+     * Sets preload timeout (ms).
      *
      * @param preloadTimeout Preload timeout (ms).
      */

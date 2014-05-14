@@ -84,11 +84,6 @@ import javax.security.auth.login.*;
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-@GridSpiInfo(
-    author = /*@java.spi.author*/"GridGain Systems",
-    url = /*@java.spi.url*/"www.gridgain.com",
-    email = /*@java.spi.email*/"support@gridgain.com",
-    version = /*@java.spi.version*/"x.x")
 @GridSpiMultipleInstancesSupport(true)
 public class GridJaasAuthenticationSpi extends GridSpiAdapter
     implements GridAuthenticationSpi, GridJaasAuthenticationSpiMBean {

@@ -87,7 +87,8 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
             Integer mainKey = 0;
 
             GridNode priNode = grid.mapKeyToNode(null, mainKey);
-            GridNode backupNode = F.first(F.view(grid.cache(null).affinity().mapKeyToPrimaryAndBackups(mainKey), F.notIn(F.asList(priNode))));
+            GridNode backupNode = F.first(F.view(grid.cache(null).affinity().mapKeyToPrimaryAndBackups(mainKey),
+                F.notIn(F.asList(priNode))));
             GridNode otherNode = F.first(grid.forPredicate(F.notIn(F.asList(priNode, backupNode))).nodes());
 
             assert priNode != backupNode;
@@ -159,6 +160,60 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
         }
         finally {
             stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTxReadersUpdate() throws Exception {
+        startGridsMultiThreaded(GRID_CNT);
+
+        try {
+            testReadersUpdate(OPTIMISTIC, REPEATABLE_READ);
+
+            testReadersUpdate(PESSIMISTIC, REPEATABLE_READ);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @param concurrency Transaction concurrency.
+     * @param isolation Transaction isolation.
+     * @throws Exception If failed.
+     */
+    private void testReadersUpdate(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
+        GridCache<Integer, Integer> cache = grid(0).cache(null);
+
+        try (GridCacheTx tx = cache.txStart(concurrency, isolation)) {
+            for (int i = 0; i < 100; i++)
+                cache.put(i, 1);
+
+            tx.commit();
+        }
+
+        // Create readers.
+        for (int g = 0; g < GRID_CNT; g++) {
+            GridCache<Integer, Integer> c = grid(g).cache(null);
+
+            for (int i = 0; i < 100; i++)
+                assertEquals((Integer)1, c.get(i));
+        }
+
+        try (GridCacheTx tx = cache.txStart(concurrency, isolation)) {
+            for (int i = 0; i < 100; i++)
+                cache.put(i, 2);
+
+            tx.commit();
+        }
+
+        for (int g = 0; g < GRID_CNT; g++) {
+            GridCache<Integer, Integer> c = grid(g).cache(null);
+
+            for (int i = 0; i < 100; i++)
+                assertEquals((Integer)2, c.get(i));
         }
     }
 

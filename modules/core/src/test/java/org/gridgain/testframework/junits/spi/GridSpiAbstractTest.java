@@ -144,9 +144,6 @@ public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstrac
 
         T spi = (T)spiTest.spi().newInstance();
 
-        assert spi.getClass().getAnnotation(GridSpiInfo.class) != null : "SPI implementation must have " +
-            "@GridSpi annotation [spi=" + spi.getClass() + ']';
-
         // Set spi into test data.
         getTestData().setSpi(spi);
 
@@ -279,12 +276,6 @@ public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstrac
 
         attrs.put(U.spiAttribute(spi, GridNodeAttributes.ATTR_SPI_CLASS), spi.getClass().getName());
 
-        GridSpiInfo ann = U.getAnnotation(spi.getClass(), GridSpiInfo.class);
-
-        assert ann != null;
-
-        attrs.put(U.spiAttribute(spi, GridNodeAttributes.ATTR_SPI_VER), ann.version());
-
         return attrs;
     }
 
@@ -400,6 +391,8 @@ public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstrac
      * @throws Exception If failed.
      */
     protected void spiStart(GridSpi spi) throws Exception {
+        U.setWorkDirectory(U.getGridGainHome(), null);
+
         // Start SPI with unique grid name.
         spi.spiStart(getTestGridName());
 
@@ -662,15 +655,10 @@ public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstrac
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            StringBuilder buf = new StringBuilder();
-
-            buf.append(getClass().getSimpleName());
-            buf.append(" [spi=").append(spi);
-            buf.append(", discoSpi=").append(discoSpi);
-            buf.append(", allAttrs=").append(allAttrs);
-            buf.append(']');
-
-            return buf.toString();
+            return getClass().getSimpleName() +
+                " [spi=" + spi +
+                ", discoSpi=" + discoSpi +
+                ", allAttrs=" + allAttrs + ']';
         }
     }
 }

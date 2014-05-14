@@ -20,7 +20,7 @@
 
 #include "resource.h"
 
-#define VER_STR /*@cpp.version*/GG_VERSION_STR_WIN
+#define VER_STR GG_VERSION_STR_WIN
 
 #else
 
@@ -28,7 +28,7 @@
 
 #include "config.h"
 
-#define VER_STR /*@cpp.version*/PACKAGE_VERSION
+#define VER_STR PACKAGE_VERSION
 
 #endif
 

@@ -298,20 +298,18 @@ import java.util.Map.*;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see GridDeploymentSpi
  */
-@GridSpiInfo(
-    author = /*@java.spi.author*/"GridGain Systems",
-    url = /*@java.spi.url*/"www.gridgain.com",
-    email = /*@java.spi.email*/"support@gridgain.com",
-    version = /*@java.spi.version*/"x.x")
 @GridSpiMultipleInstancesSupport(true)
 @GridSpiConsistencyChecked(optional = false)
 @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
 public class GridUriDeploymentSpi extends GridSpiAdapter implements GridDeploymentSpi, GridUriDeploymentSpiMBean {
     /**
-     * Default deployment directory where SPI will pick up GAR files (value is {@code work/deployment/file}).
-     * Note that this path relative to {@code GRIDGAIN_HOME} folder.
+     * Default deployment directory where SPI will pick up GAR files. Note that this path is relative to
+     * {@code GRIDGAIN_HOME/work} folder if {@code GRIDGAIN_HOME} system or environment variable specified,
+     * otherwise it is relative to {@code work} folder under system {@code java.io.tmpdir} folder.
+     *
+     * @see GridConfiguration#getWorkDirectory()
      */
-    public static final String DFLT_DEPLOY_DIR = "work/deployment/file";
+    public static final String DFLT_DEPLOY_DIR = "deployment/file";
 
     /** Default scan frequency for {@code file://} and {@code classes://} protocols (value is {@code 5000}). */
     public static final int DFLT_DISK_SCAN_FREQUENCY = 5000;
@@ -1046,7 +1044,7 @@ public class GridUriDeploymentSpi extends GridSpiAdapter implements GridDeployme
         URI uri;
 
         try {
-            uri = U.resolveWorkDirectory(DFLT_DEPLOY_DIR, null, true, false).toURI();
+            uri = U.resolveWorkDirectory(DFLT_DEPLOY_DIR, false).toURI();
         }
         catch (GridException e) {
             throw new GridSpiException("Failed to initialize default file scanner", e);

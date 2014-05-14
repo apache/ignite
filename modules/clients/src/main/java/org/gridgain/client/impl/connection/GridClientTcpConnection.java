@@ -419,9 +419,7 @@ public class GridClientTcpConnection extends GridClientConnection {
         byte rc = msg.resultCode();
 
         if (rc != GridClientHandshakeResponse.OK.resultCode()) {
-            if (rc == GridClientHandshakeResponse.ERR_VERSION_CHECK_FAILED.resultCode())
-                throw new GridClientHandshakeException(rc, "Illegal client version (see server log for more details).");
-            else if (rc == GridClientHandshakeResponse.ERR_UNKNOWN_PROTO_ID.resultCode())
+            if (rc == GridClientHandshakeResponse.ERR_UNKNOWN_PROTO_ID.resultCode())
                 throw new GridClientHandshakeException(rc, "Unknown/unsupported protocol ID.");
             else
                 throw new GridClientHandshakeException(rc,

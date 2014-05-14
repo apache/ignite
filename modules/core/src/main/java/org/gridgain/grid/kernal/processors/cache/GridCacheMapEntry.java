@@ -1044,6 +1044,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (mode == GridCacheMode.LOCAL || mode == GridCacheMode.REPLICATED ||
                 (tx != null && (tx.dht() || tx.colocated()) && tx.local()))
                 cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), false);
+
+            cctx.dataStructures().onEntryUpdated(key, false);
         }
 
         if (log.isDebugEnabled())
@@ -1165,6 +1167,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 if (mode == GridCacheMode.LOCAL || mode == GridCacheMode.REPLICATED ||
                     (tx != null && (tx.dht() || tx.colocated()) && tx.local()))
                     cctx.continuousQueries().onEntryUpdate(this, key, null, null, false);
+
+                cctx.dataStructures().onEntryUpdated(key, true);
             }
         }
         finally {
@@ -1316,6 +1320,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 cctx.cache().metrics0().onWrite();
 
             cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), false);
+
+            cctx.dataStructures().onEntryUpdated(key, op == DELETE);
         }
 
         return new GridBiTuple<>(res, old);
@@ -1618,6 +1624,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             if (primary || cctx.isReplicated())
                 cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), false);
+
+            cctx.dataStructures().onEntryUpdated(key, op == DELETE);
         }
 
         if (log.isDebugEnabled())
@@ -1907,9 +1915,18 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             releaseSwap();
 
             clearIndex(val);
+
+            onInvalidate();
         }
 
         return obsoleteVersionExtras() != null;
+    }
+
+    /**
+     * Called when entry invalidated.
+     */
+    protected void onInvalidate() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -2528,8 +2545,12 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 drReplicate(drType, val, valBytes, ver);
 
-                if (!skipQryNtf && (cctx.affinity().primary(cctx.localNode(), key, topVer) || cctx.isReplicated()))
-                    cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), true);
+                if (!skipQryNtf) {
+                    if (cctx.affinity().primary(cctx.localNode(), key, topVer) || cctx.isReplicated())
+                        cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), true);
+
+                    cctx.dataStructures().onEntryUpdated(key, false);
+                }
 
                 return true;
             }
