@@ -24,35 +24,42 @@ public enum GridComponentType {
         "org.gridgain.grid.kernal.processors.ggfs.GridGgfsNoopProcessor",
         "org.gridgain.grid.kernal.processors.ggfs.GridGgfsProcessor"
     ),
+
     /** Spring XML parsing. */
     SPRING(
         null,
         "org.gridgain.grid.kernal.processors.spring.GridSpringProcessorImpl"
     ),
+
     /** H2 indexing SPI. */
     H2_INDEXING(
         "org.gridgain.grid.spi.indexing.GridIndexingNoopSpi",
         "org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi"
     ),
+
     /** Nodes starting using SSH. */
     SSH(
         null,
         "org.gridgain.grid.util.nodestart.GridSshProcessorImpl"
     ),
+
     /** REST access. */
     REST(
         "org.gridgain.grid.kernal.processors.rest.GridRestNoopProcessor",
         "org.gridgain.grid.kernal.processors.rest.GridRestProcessor"
     ),
+
     /** Email sending. */
     EMAIL(
         "org.gridgain.grid.kernal.processors.email.GridEmailNoopProcessor",
         "org.gridgain.grid.kernal.processors.email.GridEmailProcessor"
     ),
+
     /** Integration of cache transactions with JTA. */
     JTA(
         "org.gridgain.grid.kernal.processors.cache.jta.GridCacheJtaNoopManager",
         "org.gridgain.grid.kernal.processors.cache.jta.GridCacheJtaManager"),
+
     /** Cron-based scheduling, see {@link GridScheduler}. */
     SCHEDULE(
         "org.gridgain.grid.kernal.processors.schedule.GridScheduleNoopProcessor",
@@ -189,18 +196,9 @@ public enum GridComponentType {
                 return (T)ctor.newInstance(ctx);
             }
         }
-        catch (ClassNotFoundException e) {
-            throw new GridException("Failed to create GridGain component because it's class is not found " +
-                "(is it in classpath?) [component=" + this + ", class=" + clsName + ']', e);
-        }
-        catch (NoSuchMethodException e) {
-            throw new GridException("Failed to create GridGain component because it's class doesn't have " +
-                "required constructor (is class version correct?) [component=" + this + ", class=" +
-                clsName + ']', e);
-        }
         catch (ReflectiveOperationException e) {
-            throw new GridException("Failed to instantiate GridGain component [component=" + this + ", class=" +
-                clsName + ']', e);
+            throw new GridException("Failed to create GridGain component " +
+                "[component=" + this + ", cls=" + clsName + ']', e);
         }
     }
 }

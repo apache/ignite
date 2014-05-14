@@ -20,6 +20,7 @@ import java.util.*;
 /**
  * No-op implementation of {@link GridIndexingSpi}, throws exception on query attempt.
  */
+@GridSpiNoop
 public class GridNoopIndexingSpi extends GridSpiAdapter implements GridIndexingSpi {
     /** */
     @GridLoggerResource
@@ -113,7 +114,7 @@ public class GridNoopIndexingSpi extends GridSpiAdapter implements GridIndexingS
      * @return No-op SPI usage exception.
      */
     private GridSpiException spiException() {
-        // TODO 8242.
-        return new GridSpiException("No-op SPI does not support queries, please use GridH2IndexingSpi.");
+        return new GridSpiException("Current grid configuration does not support queries " +
+            "(please configure GridH2IndexingSpi).");
     }
 }
