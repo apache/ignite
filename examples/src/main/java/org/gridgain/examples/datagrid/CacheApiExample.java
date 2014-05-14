@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.product.*;
-import org.gridgain.grid.util.lang.*;
 
 import java.util.concurrent.*;
 
@@ -82,7 +81,7 @@ public class CacheApiExample {
                     System.out.println("Put operation completed [previous-value=" + fut.get() + ']');
                 }
                 catch (GridException e) {
-                    throw new GridClosureException(e);
+                    e.printStackTrace();
                 }
             }
         });
