@@ -102,7 +102,7 @@ public class GridNoopIndexingSpi extends GridSpiAdapter implements GridIndexingS
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String gridName) throws GridSpiException {
-        U.warn(log, "GridGain uses no-op indexing SPI.");
+        // No-op.
     }
 
     /** {@inheritDoc} */

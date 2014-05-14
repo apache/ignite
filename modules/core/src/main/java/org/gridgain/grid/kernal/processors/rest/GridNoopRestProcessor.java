@@ -14,11 +14,11 @@ import org.gridgain.grid.kernal.*;
 /**
  * No-op implementation of {@link GridRestProcessorAdapter}.
  */
-public class GridRestNoopProcessor extends GridRestProcessorAdapter {
+public class GridNoopRestProcessor extends GridRestProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    public GridRestNoopProcessor(GridKernalContext ctx) {
+    public GridNoopRestProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 }

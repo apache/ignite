@@ -76,6 +76,9 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         if (ctx.config().isDaemon())
             return;
 
+        if (!enabled())
+            U.warn(log, "Indexing is disabled (to enable please configure GridH2IndexingSpi).");
+
         GridIndexingMarshaller m = new IdxMarshaller();
 
         for (GridIndexingSpi spi : getSpis()) {

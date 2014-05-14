@@ -18,11 +18,11 @@ import java.util.concurrent.*;
 /**
  * No-op implementation of {@link GridScheduleProcessorAdapter}, throws exception on usage attempt.
  */
-public class GridScheduleNoopProcessor extends GridScheduleProcessorAdapter {
+public class GridNoopScheduleProcessor extends GridScheduleProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    public GridScheduleNoopProcessor(GridKernalContext ctx) {
+    public GridNoopScheduleProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 

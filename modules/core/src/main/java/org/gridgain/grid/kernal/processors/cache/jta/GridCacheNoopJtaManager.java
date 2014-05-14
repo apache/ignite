@@ -16,7 +16,7 @@ import org.jetbrains.annotations.*;
 /**
  * No-op implementation of {@link GridCacheJtaManagerAdapter}.
  */
-public class GridCacheJtaNoopManager<K, V> extends GridCacheJtaManagerAdapter<K, V> {
+public class GridCacheNoopJtaManager<K, V> extends GridCacheJtaManagerAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public void checkJta() throws GridException {
         // No-op.

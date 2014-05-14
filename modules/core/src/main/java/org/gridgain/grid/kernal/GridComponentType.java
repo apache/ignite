@@ -20,50 +20,60 @@ import java.lang.reflect.*;
  */
 public enum GridComponentType {
     /** GGFS component. */
-    COMP_GGFS(
-        "org.gridgain.grid.kernal.processors.ggfs.GridGgfsNoopProcessor",
-        "org.gridgain.grid.kernal.processors.ggfs.GridGgfsProcessor"
+    GGFS(
+        "org.gridgain.grid.kernal.processors.ggfs.GridNoopGgfsProcessor",
+        "org.gridgain.grid.kernal.processors.ggfs.GridGgfsProcessor",
+        "gridgain-hadoop"
     ),
 
     /** Spring XML parsing. */
     SPRING(
         null,
-        "org.gridgain.grid.kernal.processors.spring.GridSpringProcessorImpl"
+        "org.gridgain.grid.kernal.processors.spring.GridSpringProcessorImpl",
+        "gridgain-spring"
     ),
 
     /** H2 indexing SPI. */
     H2_INDEXING(
-        "org.gridgain.grid.spi.indexing.GridIndexingNoopSpi",
-        "org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi"
+        "org.gridgain.grid.spi.indexing.GridNoopIndexingSpi",
+        "org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi",
+        "gridgain-indexing"
     ),
 
     /** Nodes starting using SSH. */
     SSH(
         null,
-        "org.gridgain.grid.util.nodestart.GridSshProcessorImpl"
+        "org.gridgain.grid.util.nodestart.GridSshProcessorImpl",
+        "gridgain-ssh"
     ),
 
     /** REST access. */
     REST(
-        "org.gridgain.grid.kernal.processors.rest.GridRestNoopProcessor",
-        "org.gridgain.grid.kernal.processors.rest.GridRestProcessor"
+        "org.gridgain.grid.kernal.processors.rest.GridNoopRestProcessor",
+        "org.gridgain.grid.kernal.processors.rest.GridRestProcessor",
+        "gridgain-rest"
     ),
 
     /** Email sending. */
     EMAIL(
-        "org.gridgain.grid.kernal.processors.email.GridEmailNoopProcessor",
-        "org.gridgain.grid.kernal.processors.email.GridEmailProcessor"
+        "org.gridgain.grid.kernal.processors.email.GridNoopEmailProcessor",
+        "org.gridgain.grid.kernal.processors.email.GridEmailProcessor",
+        "gridgain-email"
     ),
 
     /** Integration of cache transactions with JTA. */
     JTA(
-        "org.gridgain.grid.kernal.processors.cache.jta.GridCacheJtaNoopManager",
-        "org.gridgain.grid.kernal.processors.cache.jta.GridCacheJtaManager"),
+        "org.gridgain.grid.kernal.processors.cache.jta.GridCacheNoopJtaManager",
+        "org.gridgain.grid.kernal.processors.cache.jta.GridCacheJtaManager",
+        "gridgain-jta"
+    ),
 
     /** Cron-based scheduling, see {@link GridScheduler}. */
     SCHEDULE(
-        "org.gridgain.grid.kernal.processors.schedule.GridScheduleNoopProcessor",
-        "org.gridgain.grid.kernal.processors.schedule.GridScheduleProcessor");
+        "org.gridgain.grid.kernal.processors.schedule.GridNoopScheduleProcessor",
+        "org.gridgain.grid.kernal.processors.schedule.GridScheduleProcessor",
+        "gridgain-schedule"
+    );
 
     /** No-op class name. */
     private final String noOpClsName;
@@ -71,15 +81,20 @@ public enum GridComponentType {
     /** Class name. */
     private final String clsName;
 
+    /** Module name. */
+    private final String module;
+
     /**
      * Constructor.
      *
      * @param noOpClsName Class name for no-op implementation.
      * @param clsName Class name.
+     * @param module Module name.
      */
-    GridComponentType(String noOpClsName, String clsName) {
+    GridComponentType(String noOpClsName, String clsName, String module) {
         this.noOpClsName = noOpClsName;
         this.clsName = clsName;
+        this.module = module;
     }
 
     /**
@@ -168,7 +183,7 @@ public enum GridComponentType {
             }
         }
         catch (Exception e) {
-            throw new GridException("Failed to create component.", e);
+            throw componentException(e);
         }
     }
 
@@ -196,9 +211,17 @@ public enum GridComponentType {
                 return (T)ctor.newInstance(ctx);
             }
         }
-        catch (ReflectiveOperationException e) {
-            throw new GridException("Failed to create GridGain component " +
-                "[component=" + this + ", cls=" + clsName + ']', e);
+        catch (Exception e) {
+            throw componentException(e);
         }
+    }
+
+    /**
+     * @param err Creation error.
+     * @return Component creation exception.
+     */
+    private GridException componentException(Exception err) {
+        return new GridException("Failed to create GridGain component (consider adding " + module +
+            " module to classpath) [component=" + this + ", cls=" + clsName + ']', err);
     }
 }

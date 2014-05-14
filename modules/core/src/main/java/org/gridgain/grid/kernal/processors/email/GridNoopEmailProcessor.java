@@ -18,11 +18,11 @@ import java.util.*;
 /**
  * No-op implementation of {@code GridEmailProcessorAdapter}.
  */
-public class GridEmailNoopProcessor extends GridEmailProcessorAdapter {
+public class GridNoopEmailProcessor extends GridEmailProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    public GridEmailNoopProcessor(GridKernalContext ctx) {
+    public GridNoopEmailProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 
