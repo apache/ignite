@@ -43,7 +43,6 @@ public class GridHadoopProtocolConfigurationWrapper implements Externalizable {
         return conf;
     }
 
-
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         conf.write(out);
