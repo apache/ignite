@@ -20,7 +20,7 @@ import java.util.*;
 /**
  * No-op implementation of {@link GridIndexingSpi}, throws exception on query attempt.
  */
-public class GridIndexingNoopSpi extends GridSpiAdapter implements GridIndexingSpi {
+public class GridNoopIndexingSpi extends GridSpiAdapter implements GridIndexingSpi {
     /** */
     @GridLoggerResource
     private GridLogger log;

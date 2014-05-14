@@ -1919,8 +1919,8 @@ public class GridGainEx {
                 }
 
                 // Set node IDs for all file appenders.
-                if (cfgLog instanceof GridLoggerNodeIdSupported)
-                    ((GridLoggerNodeIdSupported)cfgLog).setNodeId(nodeId);
+                if (cfgLog instanceof GridLoggerNodeIdAware)
+                    ((GridLoggerNodeIdAware)cfgLog).setNodeId(nodeId);
 
                 return cfgLog;
             }

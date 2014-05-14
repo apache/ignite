@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * Log4J {@link DailyRollingFileAppender} with added support for grid node IDs.
  */
-public class GridLog4jDailyRollingFileAppender extends DailyRollingFileAppender implements GridLoggerNodeIdSupported {
+public class GridLog4jDailyRollingFileAppender extends DailyRollingFileAppender implements GridLoggerNodeIdAware {
     /** Node ID. */
     private UUID nodeId;
 

@@ -20,7 +20,7 @@ import java.util.*;
  * Log4J {@link ExternallyRolledFileAppender} with added support for grid node IDs.
  */
 public class GridLog4jExternallyRolledFileAppender extends ExternallyRolledFileAppender
-    implements GridLoggerNodeIdSupported {
+    implements GridLoggerNodeIdAware {
     /** Node ID. */
     private UUID nodeId;
 

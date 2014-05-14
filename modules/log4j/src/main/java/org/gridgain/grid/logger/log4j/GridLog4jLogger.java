@@ -58,7 +58,7 @@ import static org.gridgain.grid.GridSystemProperties.*;
  * logger in your task/job code. See {@link GridLoggerResource} annotation about logger
  * injection.
  */
-public class GridLog4jLogger extends GridMetadataAwareAdapter implements GridLogger, GridLoggerNodeIdSupported {
+public class GridLog4jLogger extends GridMetadataAwareAdapter implements GridLogger, GridLoggerNodeIdAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -395,8 +395,8 @@ public class GridLog4jLogger extends GridMetadataAwareAdapter implements GridLog
         this.nodeId = nodeId;
 
         for (FileAppender a : fileAppenders) {
-            if (a instanceof GridLoggerNodeIdSupported) {
-                ((GridLoggerNodeIdSupported)a).setNodeId(nodeId);
+            if (a instanceof GridLoggerNodeIdAware) {
+                ((GridLoggerNodeIdAware)a).setNodeId(nodeId);
 
                 a.activateOptions();
             }
