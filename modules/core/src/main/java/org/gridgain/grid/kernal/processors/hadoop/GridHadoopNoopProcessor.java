@@ -14,8 +14,6 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.future.*;
 
-import java.util.*;
-
 /**
  * Hadoop processor.
  */
@@ -27,32 +25,38 @@ public class GridHadoopNoopProcessor extends GridHadoopProcessorAdapter {
         super(ctx);
     }
 
-    /**
-     * @param cnt Number of IDs to generate.
-     * @return Collection of generated IDs.
-     */
-    @Override public Collection<GridHadoopJobId> getNextJobIds(int cnt) {
+    /** {@inheritDoc} */
+    @Override public GridHadoop hadoop() {
         return null;
     }
 
-    /**
-     * Submits job to job tracker.
-     *
-     * @param jobId Job ID to submit.
-     * @param jobInfo Job info to submit.
-     * @return Execution future.
-     */
+    /** {@inheritDoc} */
+    @Override public GridHadoopConfiguration config() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridHadoopJobId nextJobId() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo) {
         return new GridFinishedFutureEx<>(new GridException("Hadoop is not available."));
     }
 
-    /**
-     * Gets hadoop job execution status.
-     *
-     * @param jobId Job ID to get status for.
-     * @return Job execution status.
-     */
+    /** {@inheritDoc} */
     @Override public GridHadoopJobStatus status(GridHadoopJobId jobId) throws GridException {
-        return new GridHadoopJobStatus(new GridFinishedFutureEx<>(new GridException("Hadoop is not available")), null);
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean kill(GridHadoopJobId jobId) throws GridException {
+        return false;
     }
 }

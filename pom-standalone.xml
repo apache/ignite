@@ -158,12 +158,24 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-annotations</artifactId>
             <version>2.0.3-alpha</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-auth</artifactId>
             <version>2.0.3-alpha</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -964,6 +976,10 @@
                                 <mkdir dir="target/release-package/libs/ext"/>
 
                                 <replace file="target/release-package/examples/pom.xml"
+                                         token="%ANT_AUGMENTED_GGJAR%"
+                                         value="gridgain-${gridgain.edition}-${gridgain.version}.jar"/>
+
+                                <replace file="target/release-package/examples/pom-java8.xml"
                                          token="%ANT_AUGMENTED_GGJAR%"
                                          value="gridgain-${gridgain.edition}-${gridgain.version}.jar"/>
 

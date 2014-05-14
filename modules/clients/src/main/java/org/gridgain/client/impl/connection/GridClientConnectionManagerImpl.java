@@ -108,7 +108,8 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
 
         int workerCnt = Runtime.getRuntime().availableProcessors();
 
-        evtLoop = cfg.getProtocol() == GridClientProtocol.TCP ? new NioEventLoopGroup(workerCnt) : null;
+        evtLoop = cfg.getProtocol() == GridClientProtocol.TCP ?
+            new NioEventLoopGroup(workerCnt, cfg.getNioThreadFactory()) : null;
     }
 
     /** {@inheritDoc} */

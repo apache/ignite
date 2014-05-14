@@ -14,8 +14,6 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 
-import java.util.*;
-
 /**
  * Hadoop processor.
  */
@@ -28,10 +26,19 @@ public abstract class GridHadoopProcessorAdapter extends GridProcessorAdapter {
     }
 
     /**
-     * @param cnt Number of IDs to generate.
+     * @return Hadoop facade.
+     */
+    public abstract GridHadoop hadoop();
+
+    /**
+     * @return Hadoop configuration.
+     */
+    public abstract GridHadoopConfiguration config();
+
+    /**
      * @return Collection of generated IDs.
      */
-    public abstract Collection<GridHadoopJobId> getNextJobIds(int cnt);
+    public abstract GridHadoopJobId nextJobId();
 
     /**
      * Submits job to job tracker.
@@ -43,10 +50,28 @@ public abstract class GridHadoopProcessorAdapter extends GridProcessorAdapter {
     public abstract GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo);
 
     /**
-     * Gets hadoop job execution status.
+     * Gets Hadoop job execution status.
      *
      * @param jobId Job ID to get status for.
      * @return Job execution status.
+     * @throws GridException If failed.
      */
     public abstract GridHadoopJobStatus status(GridHadoopJobId jobId) throws GridException;
+
+    /**
+     * Gets Hadoop job finish future.
+     *
+     * @param jobId Job ID.
+     * @return Job finish future or {@code null}.
+     * @throws GridException If failed.
+     */
+    public abstract GridFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException;
+
+    /**
+     * Kills job.
+     *
+     * @param jobId Job ID.
+     * @return {@code True} if job kill was triggered by this call.
+     */
+    public abstract boolean kill(GridHadoopJobId jobId) throws GridException;
 }

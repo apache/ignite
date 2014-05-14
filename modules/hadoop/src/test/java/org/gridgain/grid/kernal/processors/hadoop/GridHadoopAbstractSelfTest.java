@@ -25,6 +25,9 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  * Abstract class for Hadoop tests.
  */
 public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest {
+    /** REST port. */
+    protected static final int REST_PORT = 11212;
+
     /** Hadoop system cache name. */
     protected static final String hadoopSysCacheName = "hadoop-system-cache";
 
@@ -43,6 +46,10 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
     /** GGFS block group size. */
     protected static final int ggfsBlockGroupSize = 8;
 
+    /** Initial REST port. */
+    private int restPort = REST_PORT;
+
+    /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
@@ -68,6 +75,11 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
         }
         else
             cfg.setCacheConfiguration(cacheCfg);
+
+        if (restEnabled()) {
+            cfg.setRestEnabled(true);
+            cfg.setRestTcpPort(restPort++);
+        }
 
         return cfg;
     }
@@ -132,6 +144,13 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
      * @return {@code True} if GGFS is enabled on Hadoop nodes.
      */
     protected boolean ggfsEnabled() {
+        return false;
+    }
+
+    /**
+     * @return {@code True} if REST is enabled on Hadoop nodes.
+     */
+    protected boolean restEnabled() {
         return false;
     }
 

@@ -146,7 +146,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         assertEquals(lineCnt, totalLineCnt.get());
 
         for (int g = 0; g < gridCount(); g++)
-            ((GridKernal)grid(g)).context().hadoop().status(jobId).finishFuture().get();
+            ((GridKernal)grid(g)).context().hadoop().finishFuture(jobId).get();
     }
 
     /**

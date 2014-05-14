@@ -10,9 +10,10 @@
 package org.gridgain.grid.hadoop;
 
 import org.apache.hadoop.conf.*;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapreduce.MRJobConfig;
+import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.*;
+
 import java.io.*;
 
 /**
