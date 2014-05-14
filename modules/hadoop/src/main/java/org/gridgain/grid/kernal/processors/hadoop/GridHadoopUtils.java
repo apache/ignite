@@ -42,8 +42,8 @@ public class GridHadoopUtils {
             jobInfo.configuration().getUser(),
             meta.pendingSplits() != null ? meta.pendingSplits().size() : 0,
             meta.pendingReducers() != null ? meta.pendingReducers().size() : 0,
-            meta.totalSplitCount(),
-            meta.totalReducerCount(),
+            meta.mapReducePlan().mappers(),
+            meta.mapReducePlan().reducers(),
             meta.phase(),
             meta.version()
         );
