@@ -5,7 +5,6 @@ import org.gridgain.scalar.scalar._
 import scala.collection.JavaConversions._
 import org.gridgain.grid.cache.GridCacheProjection
 import scala.StringBuilder
-import org.gridgain.grid.util.typedef.internal.A
 import java.util.ConcurrentModificationException
 import java.util
 import org.jdk8.backport.ThreadLocalRandom8
@@ -80,7 +79,7 @@ object ScalarSnowflakeSchemaExample {
         for (i <- 1 to 100) {
             val store: DimStore = rand(stores.values)
             val prod: DimProduct = rand(prods.values)
-            val purchase: FactPurchase = new FactPurchase(idGen.next(), prod.id, store.id, (i + 1))
+            val purchase: FactPurchase = new FactPurchase(idGen.next(), prod.id, store.id, i + 1)
 
             factCache.put(purchase.id, purchase)
         }

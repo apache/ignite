@@ -70,9 +70,6 @@ public class GridCacheConfiguration {
     /** Default atomicity mode. */
     public static final GridCacheAtomicityMode DFLT_CACHE_ATOMICITY_MODE = GridCacheAtomicityMode.ATOMIC;
 
-    /** Default value for write ordering mode. */
-    public static final GridCacheAtomicWriteOrderMode DFLT_ATOMIC_WRITE_ORDER_MODE = GridCacheAtomicWriteOrderMode.CLOCK;
-
     /** Default value for cache distribution mode. */
     public static final GridCacheDistributionMode DFLT_DISTRIBUTION_MODE = GridCacheDistributionMode.PARTITIONED_ONLY;
 
@@ -285,7 +282,7 @@ public class GridCacheConfiguration {
     private GridCacheAtomicityMode atomicityMode;
 
     /** Write ordering mode. */
-    private GridCacheAtomicWriteOrderMode atomicWriteOrderMode = DFLT_ATOMIC_WRITE_ORDER_MODE;
+    private GridCacheAtomicWriteOrderMode atomicWriteOrderMode;
 
     /** Number of backups for cache. */
     private int backups = DFLT_BACKUPS;
