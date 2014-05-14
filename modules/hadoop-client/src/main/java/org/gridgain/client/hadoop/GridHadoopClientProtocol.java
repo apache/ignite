@@ -98,8 +98,6 @@ public class GridHadoopClientProtocol implements ClientProtocol {
 
     /** {@inheritDoc} */
     @Override public ClusterMetrics getClusterMetrics() throws IOException, InterruptedException {
-        // TODO
-
         return null;
     }
 
@@ -137,8 +135,6 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     /** {@inheritDoc} */
     @Override public boolean killTask(TaskAttemptID taskId, boolean shouldFail) throws IOException,
         InterruptedException {
-        // TODO
-
         return false;
     }
 
@@ -165,15 +161,11 @@ public class GridHadoopClientProtocol implements ClientProtocol {
 
     /** {@inheritDoc} */
     @Override public Counters getJobCounters(JobID jobid) throws IOException, InterruptedException {
-        // TODO
-
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public TaskReport[] getTaskReports(JobID jobid, TaskType type) throws IOException, InterruptedException {
-        // TODO
-
         return new TaskReport[0];
     }
 
@@ -184,30 +176,22 @@ public class GridHadoopClientProtocol implements ClientProtocol {
 
     /** {@inheritDoc} */
     @Override public JobStatus[] getAllJobs() throws IOException, InterruptedException {
-        // TODO
-
         return new JobStatus[0];
     }
 
     /** {@inheritDoc} */
     @Override public TaskCompletionEvent[] getTaskCompletionEvents(JobID jobid, int fromEventId, int maxEvents)
         throws IOException, InterruptedException {
-        // TODO
-
         return new TaskCompletionEvent[0];
     }
 
     /** {@inheritDoc} */
     @Override public String[] getTaskDiagnostics(TaskAttemptID taskId) throws IOException, InterruptedException {
-        // TODO
-
         return new String[0];
     }
 
     /** {@inheritDoc} */
     @Override public TaskTrackerInfo[] getActiveTrackers() throws IOException, InterruptedException {
-        // TODO
-
         return new TaskTrackerInfo[0];
     }
 
@@ -237,66 +221,50 @@ public class GridHadoopClientProtocol implements ClientProtocol {
 
     /** {@inheritDoc} */
     @Override public QueueInfo[] getQueues() throws IOException, InterruptedException {
-        // TODO
-
         return new QueueInfo[0];
     }
 
     /** {@inheritDoc} */
     @Override public QueueInfo getQueue(String queueName) throws IOException, InterruptedException {
-        // TODO
-
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public QueueAclsInfo[] getQueueAclsForCurrentUser() throws IOException, InterruptedException {
-        // TODO
-
         return new QueueAclsInfo[0];
     }
 
     /** {@inheritDoc} */
     @Override public QueueInfo[] getRootQueues() throws IOException, InterruptedException {
-        // TODO
-
         return new QueueInfo[0];
     }
 
     /** {@inheritDoc} */
     @Override public QueueInfo[] getChildQueues(String queueName) throws IOException, InterruptedException {
-        // TODO
-
         return new QueueInfo[0];
     }
 
     /** {@inheritDoc} */
     @Override public Token<DelegationTokenIdentifier> getDelegationToken(Text renewer) throws IOException,
         InterruptedException {
-        // TODO
-
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public long renewDelegationToken(Token<DelegationTokenIdentifier> token) throws IOException,
         InterruptedException {
-        // TODO
-
         return 0;
     }
 
     /** {@inheritDoc} */
     @Override public void cancelDelegationToken(Token<DelegationTokenIdentifier> token) throws IOException,
         InterruptedException {
-        // TODO
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public LogParams getLogFileParams(JobID jobID, TaskAttemptID taskAttemptID) throws IOException,
         InterruptedException {
-        //TODO
-
         return null;
     }
 
