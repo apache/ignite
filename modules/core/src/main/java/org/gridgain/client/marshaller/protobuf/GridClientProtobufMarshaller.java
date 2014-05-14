@@ -42,7 +42,7 @@ public class GridClientProtobufMarshaller implements GridClientMarshaller {
 
         GeneratedMessage wrapped;
 
-        if ((GridClientMessage)obj instanceof GridClientResponse) {
+        if (obj instanceof GridClientResponse) {
             GridClientResponse bean = (GridClientResponse)obj;
 
             ProtoResponse.Builder builder = ProtoResponse.newBuilder();
@@ -68,7 +68,7 @@ public class GridClientProtobufMarshaller implements GridClientMarshaller {
             if (((GridClientMessage)obj).sessionToken() != null)
                 reqBuilder.setSessionToken(ByteString.copyFrom(((GridClientMessage)obj).sessionToken()));
 
-            if ((GridClientMessage)obj instanceof GridClientAuthenticationRequest) {
+            if (obj instanceof GridClientAuthenticationRequest) {
                 GridClientAuthenticationRequest req = (GridClientAuthenticationRequest)obj;
 
                 ProtoAuthenticationRequest.Builder builder = ProtoAuthenticationRequest.newBuilder();
@@ -79,7 +79,7 @@ public class GridClientProtobufMarshaller implements GridClientMarshaller {
 
                 type = AUTH_REQUEST;
             }
-            else if ((GridClientMessage)obj instanceof GridClientCacheRequest) {
+            else if (obj instanceof GridClientCacheRequest) {
                 GridClientCacheRequest req = (GridClientCacheRequest)obj;
 
                 ProtoCacheRequest.Builder builder = ProtoCacheRequest.newBuilder();
@@ -108,7 +108,7 @@ public class GridClientProtobufMarshaller implements GridClientMarshaller {
 
                 type = CACHE_REQUEST;
             }
-            else if ((GridClientMessage)obj instanceof GridClientLogRequest) {
+            else if (obj instanceof GridClientLogRequest) {
                 GridClientLogRequest req = (GridClientLogRequest)obj;
 
                 ProtoLogRequest.Builder builder = ProtoLogRequest.newBuilder();
@@ -123,7 +123,7 @@ public class GridClientProtobufMarshaller implements GridClientMarshaller {
 
                 type = LOG_REQUEST;
             }
-            else if ((GridClientMessage)obj instanceof GridClientTaskRequest) {
+            else if (obj instanceof GridClientTaskRequest) {
                 GridClientTaskRequest req = (GridClientTaskRequest)obj;
 
                 ProtoTaskRequest.Builder builder = ProtoTaskRequest.newBuilder();
@@ -136,7 +136,7 @@ public class GridClientProtobufMarshaller implements GridClientMarshaller {
 
                 type = TASK_REQUEST;
             }
-            else if ((GridClientMessage)obj instanceof GridClientTopologyRequest) {
+            else if (obj instanceof GridClientTopologyRequest) {
                 GridClientTopologyRequest req = (GridClientTopologyRequest)obj;
 
                 ProtoTopologyRequest.Builder builder = ProtoTopologyRequest.newBuilder();
