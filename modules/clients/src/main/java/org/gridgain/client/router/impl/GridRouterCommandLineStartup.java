@@ -110,7 +110,7 @@ public class GridRouterCommandLineStartup {
      * @throws GridException If failed.
      */
     public static void main(String[] args) throws GridException {
-        String buildDate = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD * 1000));
+        String buildDate = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD_TSTAMP * 1000));
 
         String rev = REV_HASH.length() > 8 ? REV_HASH.substring(0, 8) : REV_HASH;
         String ver = "ver. " + VER + '#' + buildDate + "-sha1:" + rev;

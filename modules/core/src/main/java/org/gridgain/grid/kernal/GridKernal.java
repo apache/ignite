@@ -254,7 +254,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** {@inheritDoc} */
     @Override public String getFullVersion() {
-        return COMPOUND_VERSION + '-' + ctx.build();
+        return COMPOUND_VERSION + '-' + BUILD_TSTAMP_STR;
     }
 
     /** {@inheritDoc} */
@@ -578,9 +578,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         // Ack configuration.
         ackSpis();
 
-        String build = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD * 1000));
-
-        Map<String, Object> attrs = createNodeAttributes(cfg, build);
+        Map<String, Object> attrs = createNodeAttributes(cfg, BUILD_TSTAMP_STR);
 
         // Spin out SPIs & managers.
         try {
@@ -596,11 +594,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             GridResourceProcessor rsrcProc = new GridResourceProcessor(ctx);
 
             rsrcProc.setSpringContext(springCtx);
-
-            // Set node version.
-            ctx.version(COMPOUND_VERSION);
-
-            ctx.build(build);
 
             ctx.product(new GridProductImpl(ctx, verChecker));
 
@@ -979,7 +972,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                 "GridGain node started with the following parameters:" + NL +
                     NL +
                     "----" + NL +
-                    "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH + NL +
+                    "GridGain ver. " + COMPOUND_VERSION + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH + NL +
                     "Grid name: " + gridName + NL +
                     "Node ID: " + nid + NL +
                     "Node order: " + localNode().order() + NL +
@@ -1611,7 +1604,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         if (log.isInfoEnabled()) {
             log.info("");
 
-            String ack = "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH;
+            String ack = "GridGain ver. " + COMPOUND_VERSION + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH;
 
             String dash = U.dash(ack.length());
 
@@ -1871,7 +1864,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             if (log.isInfoEnabled())
                 if (!errOnStop) {
-                    String ack = "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH +
+                    String ack = "GridGain ver. " + COMPOUND_VERSION + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH +
                         " stopped OK";
 
                     String dash = U.dash(ack.length());
@@ -1886,7 +1879,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                         NL);
                 }
                 else {
-                    String ack = "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH +
+                    String ack = "GridGain ver. " + COMPOUND_VERSION + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH +
                         " stopped with ERRORS";
 
                     String dash = U.dash(ack.length());
@@ -1908,7 +1901,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             if (isSmtpEnabled() && isAdminEmailsSet() && cfg.isLifeCycleEmailNotification()) {
                 String errOk = errOnStop ? "with ERRORS" : "OK";
 
-                String headline = "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + " stopped " + errOk + ":";
+                String headline = "GridGain ver. " + COMPOUND_VERSION + '#' + BUILD_TSTAMP_STR +
+                    " stopped " + errOk + ":";
                 String subj = "GridGain node stopped " + errOk + ": " + nid8;
 
                 GridProductLicense lic = ctx.license().license();
@@ -1917,7 +1911,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                     headline + NL +
                         NL +
                         "----" + NL +
-                        "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH + NL +
+                        "GridGain ver. " + COMPOUND_VERSION + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH + NL +
                         "Grid name: " + gridName + NL +
                         "Node ID: " + nid + NL +
                         "Node uptime: " + X.timeSpan2HMSM(U.currentTimeMillis() - startTime) + NL +

@@ -231,9 +231,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     private GridProduct product;
 
     /** */
-    private String buildDate;
-
-    /** */
     private String ver;
 
     /** */
@@ -382,34 +379,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             assert false : "Unknown manager class: " + comp.getClass();
 
         comps.add(comp);
-    }
-
-    /** {@inheritDoc} */
-    @Override public String version() {
-        return ver;
-    }
-
-    /**
-     * Sets version.
-     *
-     * @param ver Version.
-     */
-    public void version(String ver) {
-        this.ver = ver;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String build() {
-        return buildDate;
-    }
-
-    /**
-     * Sets build date.
-     *
-     * @param buildDate Build date.
-     */
-    public void build(String buildDate) {
-        this.buildDate = buildDate;
     }
 
     /** {@inheritDoc} */

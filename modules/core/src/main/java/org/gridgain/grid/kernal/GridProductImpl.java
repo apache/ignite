@@ -35,8 +35,11 @@ public class GridProductImpl implements GridProduct {
     /** GridGain version. */
     public static final String VER;
 
-    /** Build number. */
-    public static final long BUILD;
+    /** Build timestamp in seconds. */
+    public static final long BUILD_TSTAMP;
+
+    /** Formatted build date. */
+    public static final String BUILD_TSTAMP_STR;
 
     /** Revision hash. */
     public static final String REV_HASH;
@@ -82,7 +85,7 @@ public class GridProductImpl implements GridProduct {
 
         EDITION = GridProperties.get("gridgain.edition");
         VER = GridProperties.get("gridgain.version");
-        BUILD = Long.valueOf(GridProperties.get("gridgain.build"));
+        BUILD_TSTAMP = Long.valueOf(GridProperties.get("gridgain.build"));
         REV_HASH = GridProperties.get("gridgain.revision");
         RELEASE_DATE = GridProperties.get("gridgain.rel.date");
 
@@ -90,10 +93,11 @@ public class GridProductImpl implements GridProduct {
 
         COMPOUND_VERSION = EDITION + "-" + (ENT ? "ent" : "os") + "-" + VER;
 
-        String build = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD * 1000));
+        BUILD_TSTAMP_STR = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD_TSTAMP * 1000));
+
         String rev = REV_HASH.length() > 8 ? REV_HASH.substring(0, 8) : REV_HASH;
 
-        ACK_VERSION = COMPOUND_VERSION + '#' + build + "-sha1:" + rev;
+        ACK_VERSION = COMPOUND_VERSION + '#' + BUILD_TSTAMP_STR + "-sha1:" + rev;
     }
 
     /**
@@ -106,7 +110,7 @@ public class GridProductImpl implements GridProduct {
 
         String releaseType = ctx.isEnterprise() ? "ent" : "os";
 
-        ver = GridProductVersion.fromString(EDITION + "-" + releaseType + "-" + VER + '-' + BUILD + '-' + REV_HASH);
+        ver = GridProductVersion.fromString(EDITION + "-" + releaseType + "-" + VER + '-' + BUILD_TSTAMP + '-' + REV_HASH);
 
         edition = editionFromString(EDITION);
     }

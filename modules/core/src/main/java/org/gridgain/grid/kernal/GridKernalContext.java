@@ -86,24 +86,6 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
     public GridProduct product();
 
     /**
-     * Ges version string of the GridGain instance. This method is for information
-     * purpose only.
-     *
-     * @return GridGain version string (excluding the build number).
-     * @see #build()
-     */
-    public String version();
-
-    /**
-     * Gets build number of this GridGain instance. This method is for information
-     * purpose only.
-     *
-     * @return GridGain instance build number.
-     * @see #version()
-     */
-    public String build();
-
-    /**
      * Gets list of compatible versions.
      *
      * @return Compatible versions.
