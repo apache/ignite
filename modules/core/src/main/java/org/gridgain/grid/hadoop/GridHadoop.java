@@ -16,9 +16,6 @@ import org.jetbrains.annotations.*;
  * Hadoop facade providing access to GridGain Hadoop features.
  */
 public interface GridHadoop {
-    /** Default GridGain system directory. */
-    public static final String SYS_DIR = ".gridgain/system";
-
     /**
      * Gets Hadoop module configuration.
      *
@@ -59,4 +56,13 @@ public interface GridHadoop {
      * @throws GridException If failed.
      */
     @Nullable public GridFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException;
+
+    /**
+     * Kills job.
+     *
+     * @param jobId Job ID.
+     * @return {@code True} if job kill was triggered by this call.
+     * @throws GridException If failed.
+     */
+    public boolean kill(GridHadoopJobId jobId) throws GridException;
 }

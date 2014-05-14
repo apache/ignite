@@ -93,4 +93,18 @@ public class GridHadoopImpl implements GridHadoop {
         else
             throw new IllegalStateException("Failed to get job finish future (grid is stopping).");
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean kill(GridHadoopJobId jobId) throws GridException {
+        if (busyLock.enterBusy()) {
+            try {
+                return proc.kill(jobId);
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to kill job (grid is stopping).");
+    }
 }

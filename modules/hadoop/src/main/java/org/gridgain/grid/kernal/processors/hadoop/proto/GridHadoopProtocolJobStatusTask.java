@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
 
@@ -20,23 +21,32 @@ import java.util.*;
  * Job status task.
  */
 public class GridHadoopProtocolJobStatusTask extends GridHadoopProtocolTaskAdapter<GridHadoopJobStatus> {
+    /** Default poll delay */
+    private static final long DFLT_POLL_DELAY = 100L;
+
+    /** Attribute for held status. */
+    private static final String ATTR_HELD = "held";
+
     /** {@inheritDoc} */
     @Override public GridHadoopJobStatus run(final GridComputeJobContext jobCtx, GridHadoop hadoop,
         GridHadoopProtocolTaskArguments args) throws GridException {
         UUID nodeId = UUID.fromString(args.<String>get(0));
-        int id = args.get(1);
+        Integer id = args.get(1);
         Long pollDelay = args.get(2);
+
+        assert nodeId != null;
+        assert id != null;
 
         GridHadoopJobId jobId = new GridHadoopJobId(nodeId, id);
 
         if (pollDelay == null)
-            pollDelay = hadoop.configuration().getJobStatusPollDelay();
+            pollDelay = DFLT_POLL_DELAY;
 
         if (pollDelay > 0) {
             GridFuture<?> fut = hadoop.finishFuture(jobId);
 
             if (fut != null) {
-                if (fut.isDone() || jobCtx.heldcc() )
+                if (fut.isDone() || F.eq(jobCtx.getAttribute(ATTR_HELD), true))
                     return hadoop.status(jobId);
                 else {
                     fut.listenAsync(new GridInClosure<GridFuture<?>>() {
@@ -44,6 +54,8 @@ public class GridHadoopProtocolJobStatusTask extends GridHadoopProtocolTaskAdapt
                             jobCtx.callcc();
                         }
                     });
+
+                    jobCtx.setAttribute(ATTR_HELD, true);
 
                     return jobCtx.holdcc(pollDelay);
                 }

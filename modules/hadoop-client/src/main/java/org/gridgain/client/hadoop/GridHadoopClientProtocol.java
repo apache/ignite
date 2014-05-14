@@ -43,7 +43,10 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     public static final String PROP_STATUS_POLL_DELAY = "gridgain.status.poll_delay";
 
     /** Protocol version. */
-    public static final long PROTO_VER = 1L;
+    private static final long PROTO_VER = 1L;
+
+    /** Default GridGain system directory. */
+    private static final String SYS_DIR = ".gridgain/system";
 
     /** Configuration. */
     private final Configuration conf;
@@ -127,8 +130,14 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     }
 
     /** {@inheritDoc} */
-    @Override public void killJob(JobID jobid) throws IOException, InterruptedException {
-        // TODO
+    @Override public void killJob(JobID jobId) throws IOException, InterruptedException {
+        try {
+            cli.compute().execute(GridHadoopProtocolKillJobTask.class.getName(),
+                new GridHadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId()));
+        }
+        catch (GridClientException e) {
+            throw new IOException("Failed to kill job: " + jobId, e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -147,10 +156,13 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     /** {@inheritDoc} */
     @Override public JobStatus getJobStatus(JobID jobId) throws IOException, InterruptedException {
         try {
-            Long delay = conf.getLong(PROP_STATUS_POLL_DELAY, 0);
+            Long delay = conf.getLong(PROP_STATUS_POLL_DELAY, -1);
 
-            GridHadoopJobStatus status = cli.compute().execute(GridHadoopProtocolJobStatusTask.class.getName(),
-                new GridHadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId(), delay));
+            GridHadoopProtocolTaskArguments args = delay >= 0 ?
+                new GridHadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId(), delay) :
+                new GridHadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId());
+
+            GridHadoopJobStatus status = cli.compute().execute(GridHadoopProtocolJobStatusTask.class.getName(), args);
 
             if (status == null)
                 throw new IOException("Job tracker doesn't have any information about the job: " + jobId);
@@ -217,7 +229,7 @@ public class GridHadoopClientProtocol implements ClientProtocol {
 
     /** {@inheritDoc} */
     @Override public String getSystemDir() throws IOException, InterruptedException {
-        Path sysDir = new Path(GridHadoop.SYS_DIR);
+        Path sysDir = new Path(SYS_DIR);
 
         return sysDir.toString();
     }

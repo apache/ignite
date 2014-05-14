@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.proto;
 
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
@@ -19,7 +20,7 @@ import java.util.*;
  */
 public class GridHadoopProtocolTaskArguments implements Externalizable {
     /** Arguments. */
-    private List<Object> args;
+    private Object[] args;
 
     /**
      * {@link Externalizable} support.
@@ -34,14 +35,7 @@ public class GridHadoopProtocolTaskArguments implements Externalizable {
      * @param args Arguments.
      */
     public GridHadoopProtocolTaskArguments(Object... args) {
-        if (args == null) {
-            this.args = Collections.emptyList();
-        }
-        else {
-            this.args = new ArrayList<>(args.length);
-
-            Collections.addAll(this.args, args);
-        }
+        this.args = args;
     }
 
     /**
@@ -49,25 +43,25 @@ public class GridHadoopProtocolTaskArguments implements Externalizable {
      * @return Argument.
      */
     @SuppressWarnings("unchecked")
-    public <T> T get(int idx) {
-        return (T)args.get(idx);
+    @Nullable public <T> T get(int idx) {
+        return (args != null && args.length > idx) ? (T)args[idx] : null;
     }
 
     /**
      * @return Size.
      */
     public int size() {
-        return args.size();
+        return args != null ? args.length : 0;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeCollection(out, args);
+        U.writeArray(out, args);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        args = U.readList(in);
+        args = U.readArray(in);
     }
 
     /** {@inheritDoc} */

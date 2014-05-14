@@ -16,24 +16,20 @@ import org.gridgain.grid.hadoop.*;
 import java.util.*;
 
 /**
- * Submit job task.
+ * Kill job task.
  */
-public class GridHadoopProtocolSubmitJobTask extends GridHadoopProtocolTaskAdapter<GridHadoopJobStatus> {
+public class GridHadoopProtocolKillJobTask extends GridHadoopProtocolTaskAdapter<Boolean> {
     /** {@inheritDoc} */
-    @Override public GridHadoopJobStatus run(GridComputeJobContext jobCtx, GridHadoop hadoop,
+    @Override public Boolean run(GridComputeJobContext jobCtx, GridHadoop hadoop,
         GridHadoopProtocolTaskArguments args) throws GridException {
         UUID nodeId = UUID.fromString(args.<String>get(0));
         Integer id = args.get(1);
-        GridHadoopProtocolConfigurationWrapper conf = args.get(2);
 
         assert nodeId != null;
         assert id != null;
-        assert conf != null;
 
         GridHadoopJobId jobId = new GridHadoopJobId(nodeId, id);
 
-        hadoop.submit(new GridHadoopJobId(nodeId, id), new GridHadoopDefaultJobInfo(conf.get()));
-
-        return hadoop.status(jobId);
+        return hadoop.kill(jobId);
     }
 }

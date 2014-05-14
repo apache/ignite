@@ -28,9 +28,6 @@ public class GridHadoopConfiguration {
     /** Finished job info TTL. */
     private long finishedJobInfoTtl = DFLT_FINISHED_JOB_INFO_TTL;
 
-    /** Job status poll delay. */
-    private long jobStatusPollDelay;
-
     /**
      * Default constructor.
      */
@@ -47,7 +44,6 @@ public class GridHadoopConfiguration {
         // Preserve alphabetic order.
         finishedJobInfoTtl = cfg.getFinishedJobInfoTtl();
         jobFactory = cfg.getJobFactory();
-        jobStatusPollDelay = cfg.getJobStatusPollDelay();
         planner = cfg.getMapReducePlanner();
         sysCacheName = cfg.getSystemCacheName();
     }
@@ -120,23 +116,5 @@ public class GridHadoopConfiguration {
      */
     public void setJobFactory(GridHadoopJobFactory jobFactory) {
         this.jobFactory = jobFactory;
-    }
-
-    /**
-     * Gets job status poll delay.
-     *
-     * @return Job status poll delay.
-     */
-    public long getJobStatusPollDelay() {
-        return jobStatusPollDelay;
-    }
-
-    /**
-     * Sets job status poll delay.
-     *
-     * @param jobStatusPollDelay Job status poll delay.
-     */
-    public void setJobStatusPollDelay(int jobStatusPollDelay) {
-        this.jobStatusPollDelay = jobStatusPollDelay;
     }
 }

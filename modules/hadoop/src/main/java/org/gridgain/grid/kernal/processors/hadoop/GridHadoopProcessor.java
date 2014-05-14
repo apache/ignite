@@ -24,11 +24,11 @@ import java.util.concurrent.atomic.*;
  * Hadoop processor.
  */
 public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
-    /** Unique ID of this processor. */
-    private final UUID id = UUID.randomUUID();
-
     /** Job ID counter. */
     private final AtomicInteger idCtr = new AtomicInteger();
+
+    /** Unique ID of this processor. */
+    private UUID id;
 
     /** Hadoop context. */
     private GridHadoopContext hctx;
@@ -69,6 +69,8 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
             c.start(hctx);
 
         hadoop = new GridHadoopImpl(this);
+
+        id = ctx.localNodeId();
     }
 
     /** {@inheritDoc} */
@@ -151,6 +153,19 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
     /** {@inheritDoc} */
     @Override public GridFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException {
         return hctx.jobTracker().finishFuture(jobId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean kill(GridHadoopJobId jobId) throws GridException {
+        GridFuture<?> fut = finishFuture(jobId);
+
+        if (fut != null) {
+            fut.cancel();
+
+            return true;
+        }
+        else
+            return false;
     }
 
     /**

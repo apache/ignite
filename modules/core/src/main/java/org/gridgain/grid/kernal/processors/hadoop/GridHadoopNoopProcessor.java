@@ -54,4 +54,9 @@ public class GridHadoopNoopProcessor extends GridHadoopProcessorAdapter {
     @Override public GridFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException {
         return null;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean kill(GridHadoopJobId jobId) throws GridException {
+        return false;
+    }
 }
