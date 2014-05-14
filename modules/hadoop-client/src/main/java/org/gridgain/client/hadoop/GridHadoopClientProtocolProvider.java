@@ -71,23 +71,6 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
     }
 
     /**
-     * Close all currently existent clients.
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    public static void closeAll() {
-        for (GridFuture<GridClient> fut : cliMap.values()) {
-            try {
-                fut.get().close();
-            }
-            catch (GridException ignore) {
-                // No-op.
-            }
-        }
-
-        cliMap.clear();
-    }
-
-    /**
      * Internal protocol creation routine.
      *
      * @param addr Address.
@@ -138,9 +121,8 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
                     }
                 }
             }
-            else {
+            else
                 return fut.get();
-            }
         }
         catch (GridException e) {
             throw new IOException("Failed to establish connection with GridGain node: " + addr, e);
