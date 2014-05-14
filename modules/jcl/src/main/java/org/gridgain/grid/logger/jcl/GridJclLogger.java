@@ -93,7 +93,8 @@ public class GridJclLogger extends GridMetadataAwareAdapter implements GridLogge
 
     /** {@inheritDoc} */
     @Override public GridLogger getLogger(Object ctgr) {
-        return new GridJclLogger(LogFactory.getLog(ctgr.toString()));
+        return new GridJclLogger(LogFactory.getLog(
+            ctgr instanceof Class ? ((Class)ctgr).getName() : String.valueOf(ctgr)));
     }
 
     /** {@inheritDoc} */

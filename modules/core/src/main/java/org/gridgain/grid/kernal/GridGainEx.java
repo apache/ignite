@@ -14,8 +14,8 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.kernal.processors.spring.*;
 import org.gridgain.grid.kernal.processors.resource.*;
+import org.gridgain.grid.kernal.processors.spring.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.logger.java.*;
@@ -50,7 +50,6 @@ import org.gridgain.grid.spi.securesession.noop.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.spi.swapspace.file.*;
 import org.gridgain.grid.spi.swapspace.noop.*;
-import org.gridgain.grid.startup.cmdline.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
@@ -86,8 +85,8 @@ import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
  * often started and stopped by grid loaders. Grid loaders can be found in
  * {@link org.gridgain.grid.startup} package, for example:
  * <ul>
- * <li>{@link GridCommandLineStartup}</li>
- * <li>{@link GridServletStartup}</li>
+ * <li>{@code GridCommandLineStartup}</li>
+ * <li>{@code GridServletStartup}</li>
  * </ul>
  * <h1 class="header">Examples</h1>
  * Use {@link #start()} method to start grid with default configuration. You can also use
