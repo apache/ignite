@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.hadoop.proto;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
@@ -21,6 +22,7 @@ import java.util.*;
 /**
  * Hadoop protocol task adapter.
  */
+@GridInternal
 public abstract class GridHadoopProtocolTaskAdapter<R> implements GridComputeTask<GridHadoopProtocolTaskArguments, R> {
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
