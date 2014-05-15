@@ -11,14 +11,12 @@ package org.gridgain.client.impl.connection;
 import org.gridgain.client.*;
 import org.gridgain.client.impl.*;
 import org.gridgain.client.util.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 import java.util.logging.*;
 
