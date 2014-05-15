@@ -9,6 +9,7 @@
 
 package org.gridgain.examples.datagrid.datastructures;
 
+import org.gridgain.examples.datagrid.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.lang.*;
@@ -22,7 +23,7 @@ import java.util.*;
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
- * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will
+ * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
  * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  */
 public class CacheSetExample {
@@ -100,16 +101,21 @@ public class CacheSetExample {
                 System.out.println("Set item: " + iter.next());
         }
 
-        // Use Set API.
-        assert set.contains("0");
+        // Set API usage examples.
+        if (!set.contains("0"))
+            throw new RuntimeException("Set should contain '0' among its elements.");
 
-        assert !set.add("0");
+        if (set.add("0"))
+            throw new RuntimeException("Set should not allow duplicates.");
 
-        assert set.remove("0");
+        if (!set.remove("0"))
+            throw new RuntimeException("Set should correctly remove elements.");
 
-        assert !set.contains("0");
+        if (set.contains("0"))
+            throw new RuntimeException("Set should not contain '0' among its elements.");
 
-        assert set.add("0");
+        if (!set.add("0"))
+            throw new RuntimeException("Set should correctly add new elements.");
     }
 
     /**
