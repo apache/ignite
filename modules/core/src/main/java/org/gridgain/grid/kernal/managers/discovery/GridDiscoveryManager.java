@@ -598,8 +598,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
         boolean locP2pEnabled = locNode.attribute(ATTR_PEER_CLASSLOADING);
 
-        List<String> locLibs = locNode.attribute(ATTR_LIBRARIES);
-
         Byte locDataCenterId = locNode.attribute(ATTR_DATA_CENTER_ID);
 
         boolean warned = false;
@@ -644,31 +642,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                         "[locId8=" + U.id8(locNode.id()) + ", locPeerClassLoading=" + locP2pEnabled +
                         ", rmtId8=" + U.id8(n.id()) + ", rmtPeerClassLoading=" + rmtP2pEnabled +
                         ", rmtAddrs=" + U.addressesAsString(n) + ']');
-            }
-
-            List<String> rmtLibs = n.attribute(ATTR_LIBRARIES);
-
-            List<GridBiTuple<String, String>> diffs = GridLibraryConsistencyCheck.check(log, locLibs, rmtLibs);
-
-            if (!F.isEmpty(diffs)) {
-                if (log.isQuiet()) {
-                    U.quiet(true, "Local node's library list differs from remote node's");
-
-                    for (GridBiTuple<String, String> diff : diffs)
-                        U.quiet(true, "<" + diff.get1() + "> vs. <" + diff.get2() + '>');
-
-                    U.quiet(true, "");
-                }
-
-                StringBuilder sb = new StringBuilder("\n" +
-                    ">>> Local node's library list differs from remote node's\n" +
-                    ">>> (this may cause class incompatibilities, ignore if on purpose)\n" +
-                    ">>> locId8=" + U.id8(locNode.id()) + " vs. rmtId8=" + U.id8(n.id()) + "\n");
-
-                for (GridBiTuple<String, String> diff : diffs)
-                    sb.append(">>> <").append(diff.get1()).append("> vs. <").append(diff.get2()).append(">\n");
-
-                log.warning(sb.toString());
             }
         }
 

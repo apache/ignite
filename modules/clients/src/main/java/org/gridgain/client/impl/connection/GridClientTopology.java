@@ -11,7 +11,6 @@ package org.gridgain.client.impl.connection;
 import org.gridgain.client.*;
 import org.gridgain.client.impl.*;
 import org.gridgain.client.util.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -59,7 +58,8 @@ public class GridClientTopology {
     private final Collection<GridClientTopologyListener> topLsnrs = new ConcurrentLinkedQueue<>();
 
     /** Executor for listener notification. */
-    private final ExecutorService exec = Executors.newSingleThreadExecutor();
+    private final ExecutorService exec =
+        Executors.newSingleThreadExecutor(new GridClientThreadFactory("top-lsnr", true));
 
     /**
      * Creates topology instance.

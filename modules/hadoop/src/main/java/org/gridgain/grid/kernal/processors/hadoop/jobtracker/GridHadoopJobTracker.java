@@ -31,7 +31,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
-import static org.gridgain.grid.kernal.processors.hadoop.jobtracker.GridHadoopJobPhase.*;
+import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;
 import static org.gridgain.grid.kernal.processors.hadoop.taskexecutor.GridHadoopTaskState.*;
 
 /**
@@ -205,19 +205,38 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         try {
             GridHadoopJobMetadata meta = jobMetaPrj.get(jobId);
 
+            return meta != null ? GridHadoopUtils.status(meta) : null;
+        }
+        finally {
+            busyLock.readUnlock();
+        }
+    }
+
+    /**
+     * Gets job finish future.
+     *
+     * @param jobId Job ID.
+     * @return Finish future or {@code null}.
+     * @throws GridException If failed.
+     */
+    @Nullable public GridFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException {
+        if (!busyLock.tryReadLock())
+            return null; // Grid is stopping.
+
+        try {
+            GridHadoopJobMetadata meta = jobMetaPrj.get(jobId);
+
             if (meta == null)
                 return null;
 
             if (log.isDebugEnabled())
                 log.debug("Got job metadata for status check [locNodeId=" + ctx.localNodeId() + ", meta=" + meta + ']');
 
-            GridHadoopJobInfo info = meta.jobInfo();
-
             if (meta.phase() == PHASE_COMPLETE) {
                 if (log.isDebugEnabled())
                     log.debug("Job is complete, returning finished future: " + jobId);
 
-                return new GridHadoopJobStatus(new GridFinishedFutureEx<>(jobId), info);
+                return new GridFinishedFutureEx<>(jobId);
             }
 
             GridFutureAdapter<GridHadoopJobId> fut = F.addIfAbsent(activeFinishFuts, jobId,
@@ -229,13 +248,18 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             if (log.isDebugEnabled())
                 log.debug("Re-checking job metadata [locNodeId=" + ctx.localNodeId() + ", meta=" + meta + ']');
 
-            if (meta == null || meta.phase() == PHASE_COMPLETE) {
+            if (meta == null) {
+                fut.onDone();
+
+                activeFinishFuts.remove(jobId , fut);
+            }
+            else if (meta.phase() == PHASE_COMPLETE) {
                 fut.onDone(jobId, meta.failCause());
 
                 activeFinishFuts.remove(jobId , fut);
             }
 
-            return new GridHadoopJobStatus(fut, info);
+            return fut;
         }
         finally {
             busyLock.readUnlock();
@@ -798,7 +822,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 return;
             }
 
-            if (job.hasCombiner()) {
+            if (job.hasCombiner() && status.state() != CANCELED) {
                 // Create combiner.
                 if (lastMapperFinished && !meta.externalExecution()) {
                     GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(), COMBINE, jobId,
@@ -965,7 +989,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             cp.pendingSplits(splitsCp);
 
-            cp.failCause(err);
+            if (cp.phase() != PHASE_CANCELLING)
+                cp.failCause(err);
 
             if (err != null)
                 cp.phase(PHASE_CANCELLING);

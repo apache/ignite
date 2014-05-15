@@ -36,10 +36,89 @@
 
         <dependency>
             <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-rest</artifactId>
+            <version>${gridgain.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-log4j</artifactId>
+            <version>${gridgain.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.gridgain</groupId>
             <artifactId>gridgain-core</artifactId>
             <version>${gridgain.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.2.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpcore</artifactId>
+            <version>4.2.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpmime</artifactId>
+            <version>4.2.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>4.0.9.Final</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-continuation</artifactId>
+            <version>9.0.5.v20130815</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-http</artifactId>
+            <version>9.0.5.v20130815</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-io</artifactId>
+            <version>9.0.5.v20130815</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <version>9.0.5.v20130815</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-util</artifactId>
+            <version>9.0.5.v20130815</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-xml</artifactId>
+            <version>9.0.5.v20130815</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>2.6</version>
         </dependency>
 
         <dependency>
@@ -60,50 +139,6 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.7</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.gridgain</groupId>
-                        <artifactId>gridgain-tools</artifactId>
-                        <version>${gridgain.version}</version>
-                    </dependency>
-                </dependencies>
-                <executions>
-                    <execution>
-                        <id>dotnetdoc</id>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <phase>prepare-package</phase>
-                        <configuration>
-                            <target>
-                                <exec executable="${doxygen.exec}" searchpath="true">
-                                    <arg value="dotnet/dotnet.dxg"/>
-                                </exec>
-                            </target>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>cppdoc</id>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <phase>prepare-package</phase>
-                        <configuration>
-                            <target>
-                                <exec executable="${doxygen.exec}" searchpath="true">
-                                    <arg value="cpp/cpp.dxg"/>
-                                </exec>
-                            </target>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>2.2</version>
                 <executions>
@@ -116,4 +151,62 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>docs</id>
+            <activation>
+                <property>
+                    <name>!skipClientDocs</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.gridgain</groupId>
+                                <artifactId>gridgain-tools</artifactId>
+                                <version>${gridgain.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <id>dotnetdoc</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>prepare-package</phase>
+                                <configuration>
+                                    <target>
+                                        <exec executable="${doxygen.exec}" searchpath="true">
+                                            <arg value="dotnet/dotnet.dxg"/>
+                                        </exec>
+                                    </target>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>cppdoc</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>prepare-package</phase>
+                                <configuration>
+                                    <target>
+                                        <exec executable="${doxygen.exec}" searchpath="true">
+                                            <arg value="cpp/cpp.dxg"/>
+                                        </exec>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

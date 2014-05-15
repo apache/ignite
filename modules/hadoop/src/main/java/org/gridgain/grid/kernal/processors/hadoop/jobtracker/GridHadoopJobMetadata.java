@@ -17,7 +17,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.processors.hadoop.jobtracker.GridHadoopJobPhase.*;
+import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;
 
 /**
  * Hadoop job metadata. Internal object used for distributed job state tracking.
@@ -57,6 +57,9 @@ public class GridHadoopJobMetadata implements Externalizable {
     /** Fail cause. */
     private Throwable failCause;
 
+    /** Version. */
+    private long ver;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -65,6 +68,8 @@ public class GridHadoopJobMetadata implements Externalizable {
     }
 
     /**
+     * Constructor.
+     *
      * @param jobId Job ID.
      * @param jobInfo Job info.
      */
@@ -90,6 +95,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         phase = src.phase;
         reducersAddrs = src.reducersAddrs;
         taskNumMap = src.taskNumMap;
+        ver = src.ver + 1;
     }
 
     /**
@@ -231,6 +237,13 @@ public class GridHadoopJobMetadata implements Externalizable {
     }
 
     /**
+     * @return Version.
+     */
+    public long version() {
+        return ver;
+    }
+
+    /**
      * @param src Task source.
      * @return Task number.
      */
@@ -268,6 +281,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         out.writeObject(phase);
         out.writeBoolean(externalExec);
         out.writeObject(failCause);
+        out.writeLong(ver);
         out.writeObject(reducersAddrs);
     }
 
@@ -283,12 +297,13 @@ public class GridHadoopJobMetadata implements Externalizable {
         phase = (GridHadoopJobPhase)in.readObject();
         externalExec = in.readBoolean();
         failCause = (Throwable)in.readObject();
+        ver = in.readLong();
         reducersAddrs = (Map<Integer, GridHadoopProcessDescriptor>)in.readObject();
     }
 
     /** {@inheritDoc} */
     public String toString() {
         return S.toString(GridHadoopJobMetadata.class, this, "pendingMaps", pendingSplits.size(),
-                "pendingReduces", pendingReducers.size());
+            "pendingReduces", pendingReducers.size());
     }
 }

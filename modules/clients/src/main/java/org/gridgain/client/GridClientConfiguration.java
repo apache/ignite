@@ -126,6 +126,7 @@ public class GridClientConfiguration {
         enableAttrsCache = cfg.isEnableAttributesCache();
         enableMetricsCache = cfg.isEnableMetricsCache();
         executor = cfg.getExecutorService();
+        marshaller = cfg.getMarshaller();
         maxConnIdleTime = cfg.getMaxConnectionIdleTime();
         pingInterval = cfg.getPingInterval();
         pingTimeout = cfg.getPingTimeout();
@@ -135,7 +136,6 @@ public class GridClientConfiguration {
         sslCtxFactory = cfg.getSslContextFactory();
         tcpNoDelay = cfg.isTcpNoDelay();
         topRefreshFreq = cfg.getTopologyRefreshFrequency();
-        marshaller = cfg.getMarshaller();
 
         setDataConfigurations(cfg.getDataConfigurations());
     }

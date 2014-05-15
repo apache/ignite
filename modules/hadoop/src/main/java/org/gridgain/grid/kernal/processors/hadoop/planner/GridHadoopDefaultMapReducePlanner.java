@@ -9,23 +9,21 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.planner;
 
-import org.apache.hadoop.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.ggfs.hadoop.v1.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
+import static org.gridgain.grid.ggfs.GridGgfs.*;
+
 /**
- * TODO-gg-8170 Change implementation.
- * Simple GGFS-aware map-reduce planner.
+ * Default map-reduce planner implementation.
  */
 public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePlanner {
     /** Injected grid. */
@@ -33,49 +31,67 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
     private Grid grid;
 
     /** Logger. */
+    @SuppressWarnings("UnusedDeclaration")
     @GridLoggerResource
     private GridLogger log;
 
     /** {@inheritDoc} */
     @Override public GridHadoopMapReducePlan preparePlan(Collection<GridHadoopInputSplit> splits,
         Collection<GridNode> top, GridHadoopJob job, @Nullable GridHadoopMapReducePlan oldPlan) throws GridException {
+        // Convert collection of topology nodes to collection of topology node IDs.
+        Collection<UUID> topIds = new HashSet<>(top.size(), 1.0f);
 
-        Map<UUID, Collection<GridHadoopInputSplit>> mappersMap = mappersMap(job, splits, top);
+        for (GridNode topNode : top)
+            topIds.add(topNode.id());
 
-        return new GridHadoopDefaultMapReducePlan(mappersMap, reducersMap(top, job));
+        Map<UUID, Collection<GridHadoopInputSplit>> mappers = mappers(top, topIds, splits);
+
+        Map<UUID, int[]> reducers = reducers(top, mappers, job.reducers());
+
+        return new GridHadoopDefaultMapReducePlan(mappers, reducers);
     }
 
     /**
-     * Gets mappers to nodes assignment.
+     * Create plan for mappers.
      *
-     * @param job Job.
-     * @param splits Splits to assign to nodes.
-     * @param top Topology.
-     * @return Block to node assignment.
+     * @param top Topology nodes.
+     * @param topIds Topology node IDs.
+     * @param splits Splits.
+     * @return Mappers map.
+     * @throws GridException If failed.
      */
-    private Map<UUID, Collection<GridHadoopInputSplit>> mappersMap(GridHadoopJob job,
-        Iterable<GridHadoopInputSplit> splits, Collection<GridNode> top) throws GridException {
-        Map<UUID, Collection<GridHadoopInputSplit>> mappersMap = new HashMap<>();
+    private Map<UUID, Collection<GridHadoopInputSplit>> mappers(Collection<GridNode> top, Collection<UUID> topIds,
+        Iterable<GridHadoopInputSplit> splits) throws GridException {
+        Map<UUID, Collection<GridHadoopInputSplit>> mappers = new HashMap<>();
 
-        Map<String, Collection<GridNode>> nodes = groupByHost(top);
+        Map<String, Collection<UUID>> nodes = hosts(top);
+
+        Map<UUID, Integer> nodeLoads = new HashMap<>(top.size(), 1.0f); // Track node load.
+
+        for (UUID nodeId : topIds)
+            nodeLoads.put(nodeId, 0);
 
         for (GridHadoopInputSplit split : splits) {
-            UUID nodeId = nodeId(job, split, top, nodes);
+            UUID nodeId = nodeForSplit(split, topIds, nodes, nodeLoads);
 
             if (log.isDebugEnabled())
                 log.debug("Mapped split to node [split=" + split + ", nodeId=" + nodeId + ']');
 
-            Collection<GridHadoopInputSplit> nodeSplits = mappersMap.get(nodeId);
+            Collection<GridHadoopInputSplit> nodeSplits = mappers.get(nodeId);
 
             if (nodeSplits == null) {
                 nodeSplits = new ArrayList<>();
 
-                mappersMap.put(nodeId, nodeSplits);
+                mappers.put(nodeId, nodeSplits);
             }
 
             nodeSplits.add(split);
+
+            // Updated node load.
+            nodeLoads.put(nodeId, nodeLoads.get(nodeId) + 1);
         }
-        return mappersMap;
+
+        return mappers;
     }
 
     /**
@@ -84,21 +100,21 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
      * @param top Topology to group.
      * @return Map.
      */
-    private Map<String, Collection<GridNode>> groupByHost(Collection<GridNode> top) {
-        Map<String, Collection<GridNode>> grouped = new HashMap<>(top.size());
+    private static Map<String, Collection<UUID>> hosts(Collection<GridNode> top) {
+        Map<String, Collection<UUID>> grouped = new HashMap<>(top.size());
 
         for (GridNode node : top) {
             for (String host : node.hostNames()) {
-                Collection<GridNode> nodes = grouped.get(host);
+                Collection<UUID> nodeIds = grouped.get(host);
 
-                if (nodes == null) {
+                if (nodeIds == null) {
                     // Expecting 1-2 nodes per host.
-                    nodes = new ArrayList<>(2);
+                    nodeIds = new ArrayList<>(2);
 
-                    grouped.put(host, nodes);
+                    grouped.put(host, nodeIds);
                 }
 
-                nodes.add(node);
+                nodeIds.add(node.id());
             }
         }
 
@@ -106,133 +122,293 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
     }
 
     /**
-     * Gets node ID for given file split.
+     * Determine the best node for this split.
      *
-     * @param job Job.
-     * @param split Block.
-     * @param top Topology.
-     * @throws GridException If failed to assign splits to nodes.
+     * @param split Split.
+     * @param topIds Topology node IDs.
+     * @param nodes Nodes.
+     * @param nodeLoads Node load tracker.
      * @return Node ID.
      */
-    private UUID nodeId(GridHadoopJob job, GridHadoopInputSplit split, Collection<GridNode> top,
-        Map<String, Collection<GridNode>> hostNodeMap) throws GridException {
+    @SuppressWarnings("unchecked")
+    private UUID nodeForSplit(GridHadoopInputSplit split, Collection<UUID> topIds, Map<String, Collection<UUID>> nodes,
+        Map<UUID, Integer> nodeLoads) throws GridException {
+        if (split instanceof GridHadoopFileBlock) {
+            GridHadoopFileBlock split0 = (GridHadoopFileBlock)split;
 
-        GridHadoopFileBlock block = (GridHadoopFileBlock) split;
+            if (GGFS_SCHEME.equalsIgnoreCase(split0.file().getScheme())) {
+                // TODO GG-8300: Get GGFS by name based on URI.
+                GridGgfsEx ggfs = (GridGgfsEx)grid.ggfs("ggfs");
 
-        if (log.isDebugEnabled())
-            log.debug("Mapping split to node: " + split);
+                if (ggfs != null && !ggfs.isProxy(split0.file())) {
+                    Collection<GridGgfsBlockLocation> blocks = ggfs.affinity(new GridGgfsPath(split0.file()),
+                        split0.start(), split0.length());
 
-        // TODO-gg-8170 change to getFileBlockLocations.
-        GridGgfs ggfs = ggfsForBlock(job, block);
+                    assert blocks != null;
 
-        if (ggfs != null) {
-            if (log.isDebugEnabled())
-                log.debug("Mapping file block according to ggfs affinity: " + block);
+                    if (blocks.size() == 1)
+                        // Fast-path, split consists of one GGFS block (as in most cases).
+                        return bestNode(blocks.iterator().next().nodeIds(), topIds, nodeLoads, false);
+                    else {
+                        // Slow-path, file consists of multiple GGFS blocks. First, find the most co-located nodes.
+                        Map<UUID, Long> nodeMap = new HashMap<>();
 
-            Collection<GridGgfsBlockLocation> aff = ggfs.affinity(new GridGgfsPath(block.file()), block.start(),
-                block.length());
+                        List<UUID> bestNodeIds = null;
+                        long bestLen = -1L;
 
-            // TODO-gg-8170 do we need to handle collection or we can assert aff.size() == 1?
-            long maxLen = Long.MIN_VALUE;
-            UUID max = null;
+                        for (GridGgfsBlockLocation block : blocks) {
+                            for (UUID blockNodeId : block.nodeIds()) {
+                                if (topIds.contains(blockNodeId)) {
+                                    Long oldLen = nodeMap.get(blockNodeId);
+                                    long newLen = oldLen == null ? block.length() : oldLen + block.length();
 
-            for (GridGgfsBlockLocation loc : aff) {
-                if (maxLen < loc.length()) {
-                    maxLen = loc.length();
-                    max = F.first(loc.nodeIds());
+                                    nodeMap.put(blockNodeId, newLen);
+
+                                    if (bestNodeIds == null || bestLen < newLen) {
+                                        bestNodeIds = new ArrayList<>(1);
+
+                                        bestNodeIds.add(blockNodeId);
+
+                                        bestLen = newLen;
+                                    }
+                                    else if (bestLen == newLen) {
+                                        assert !F.isEmpty(bestNodeIds);
+
+                                        bestNodeIds.add(blockNodeId);
+                                    }
+                                }
+                            }
+                        }
+
+                        if (bestNodeIds != null && bestNodeIds.size() == 1)
+                            // Optimization: if there is only one node with maximum length, return it.
+                            return bestNodeIds.get(0);
+                        else {
+                            // Several nodes have maximum length, decide which one to use.
+                            assert bestNodeIds != null;
+
+                            return bestNode(bestNodeIds, topIds, nodeLoads, true);
+                        }
+                    }
                 }
             }
-
-            return max;
         }
-        else {
-            // Try to select node according to hostname.
-            for (String host : split.hosts()) {
-                GridNode node = F.first(hostNodeMap.get(host));
 
-                if (node != null)
-                    return node.id();
+        // Cannot use local GGFS for some reason, try selecting the node by host.
+        Collection<UUID> blockNodes = null;
+
+        for (String host : split.hosts()) {
+            Collection<UUID> hostNodes = nodes.get(host);
+
+            if (!F.isEmpty(hostNodes)) {
+                if (blockNodes == null)
+                    blockNodes = new ArrayList<>(hostNodes);
+                else
+                    blockNodes.addAll(hostNodes);
             }
-
-            if (log.isDebugEnabled())
-                log.debug("Could not find node by hostname, returning random node: " + split);
-
-            // No nodes were selected based on host, return random node.
-            int idx = ThreadLocalRandom8.current().nextInt(top.size());
-
-            Iterator<GridNode> it = top.iterator();
-
-            int i = 0;
-
-            while (it.hasNext()) {
-                GridNode node = it.next();
-
-                if (i == idx)
-                    return node.id();
-
-                i++;
-            }
-
-            return null;
         }
+
+        return bestNode(blockNodes, topIds, nodeLoads, false);
     }
 
     /**
-     * Gets GGFS instance for given block, if such instance exists.
+     * Finds the best (the least loaded) node among the candidates.
      *
-     * @param job Job.
-     * @param block Block.
-     * @return GGFS instance, if available.
+     * @param candidates Candidates.
+     * @param topIds Topology node IDs.
+     * @param nodeLoads Known node loads.
+     * @param skipTopCheck Whether to skip topology check.
+     * @return The best node.
      */
-    @Nullable private GridGgfs ggfsForBlock(GridHadoopJob job, GridHadoopFileBlock block) {
-        try {
-            Path path = new Path(block.file());
+    private UUID bestNode(@Nullable Collection<UUID> candidates, Collection<UUID> topIds, Map<UUID, Integer> nodeLoads,
+        boolean skipTopCheck) {
+        UUID bestNode = null;
+        int bestLoad = Integer.MAX_VALUE;
 
-            FileSystem fs = path.getFileSystem(((GridHadoopDefaultJobInfo)job.info()).configuration());
+        if (candidates != null) {
+            for (UUID candidate : candidates) {
+                if (skipTopCheck || topIds.contains(candidate)) {
+                    int load = nodeLoads.get(candidate);
 
-            if (log.isDebugEnabled())
-                log.debug("Got file system for path [fs=" + fs + ", path=" + path + ']');
+                    if (bestNode == null || bestLoad > load) {
+                        bestNode = candidate;
+                        bestLoad = load;
 
-            if (fs instanceof GridGgfsHadoopFileSystem)
-                return grid.ggfs("ggfs"); // TODO-gg-8170 change to getFileBlockLocations.
-
-            return null;
+                        if (bestLoad == 0)
+                            break; // Minimum load possible, no need for further iterations.
+                    }
+                }
+            }
         }
-        catch (IOException ignored) {
-            return null;
+
+        if (bestNode == null) {
+            // Blocks are located on nodes which are not Hadoop-enabled, assign to the least loaded one.
+            bestLoad = Integer.MAX_VALUE;
+
+            for (UUID nodeId : topIds) {
+                int load = nodeLoads.get(nodeId);
+
+                if (bestNode == null || bestLoad > load) {
+                    bestNode = nodeId;
+                    bestLoad = load;
+
+                    if (bestLoad == 0)
+                        break; // Minimum load possible, no need for further iterations.
+                }
+            }
         }
+
+        assert bestNode != null;
+
+        return bestNode;
     }
 
     /**
-     * Evenly distributes reducers to topology nodes.
+     * Create plan for reducers.
      *
      * @param top Topology.
-     * @param job Job.
+     * @param mappers Mappers map.
+     * @param reducerCnt Reducers count.
      * @return Reducers map.
+     * @throws GridException If failed.
      */
-    private Map<UUID, int[]> reducersMap(Collection<GridNode> top, GridHadoopJob job) {
-        Map<UUID, int[]> rdcMap = new HashMap<>(top.size());
+    private Map<UUID, int[]> reducers(Collection<GridNode> top,
+        Map<UUID, Collection<GridHadoopInputSplit>> mappers, int reducerCnt) throws GridException {
+        // Determine initial node weights.
+        int totalWeight = 0;
 
-        int avgCnt = job.reducers() / top.size();
-        int lastCnt = job.reducers() - avgCnt * (top.size() - 1);
+        List<WeightedNode> nodes = new ArrayList<>(top.size());
 
-        assert lastCnt >= 0 : lastCnt;
+        for (GridNode node : top) {
+            Collection<GridHadoopInputSplit> split = mappers.get(node.id());
 
-        int i = 0;
+            int weight = reducerNodeWeight(node, split != null ? split.size() : 0);
 
-        for (GridNode n : top) {
-            int cnt = i == (top.size() - 1) ? lastCnt : avgCnt;
+            nodes.add(new WeightedNode(node.id(), weight, weight));
 
-            int[] rdc = new int[cnt];
-
-            for (int r = 0; r < cnt; r++)
-                rdc[r] = i * avgCnt + r;
-
-            rdcMap.put(n.id(), rdc);
-
-            i++;
+            totalWeight += weight;
         }
 
-        return rdcMap;
+        // Adjust weights.
+        int totalAdjustedWeight = 0;
+
+        for (WeightedNode node : nodes) {
+            node.floatWeight = ((float)node.weight * reducerCnt) / totalWeight;
+
+            node.weight = Math.round(node.floatWeight);
+
+            totalAdjustedWeight += node.weight;
+        }
+
+        // Apply redundant/lost reducers.
+        Collections.sort(nodes);
+
+        if (totalAdjustedWeight > reducerCnt) {
+            // Too much reducers set.
+            ListIterator<WeightedNode> iter = nodes.listIterator(nodes.size() - 1);
+
+            while (totalAdjustedWeight != reducerCnt) {
+                if (!iter.hasPrevious())
+                    iter = nodes.listIterator(nodes.size() - 1);
+
+                WeightedNode node = iter.previous();
+
+                if (node.weight > 0) {
+                    node.weight -= 1;
+
+                    totalAdjustedWeight--;
+                }
+            }
+        }
+        else if (totalAdjustedWeight < reducerCnt) {
+            // Not enough reducers set.
+            ListIterator<WeightedNode> iter = nodes.listIterator(0);
+
+            while (totalAdjustedWeight != reducerCnt) {
+                if (!iter.hasNext())
+                    iter = nodes.listIterator(0);
+
+                WeightedNode node = iter.next();
+
+                if (node.floatWeight > 0.0f) {
+                    node.weight += 1;
+
+                    totalAdjustedWeight++;
+                }
+            }
+        }
+
+        int idx = 0;
+
+        Map<UUID, int[]> reducers = new HashMap<>(nodes.size(), 1.0f);
+
+        for (WeightedNode node : nodes) {
+            if (node.weight > 0) {
+                int[] arr = new int[node.weight];
+
+                for (int i = 0; i < arr.length; i++)
+                    arr[i] = idx++;
+
+                reducers.put(node.nodeId, arr);
+            }
+        }
+
+        return reducers;
+    }
+
+    /**
+     * Calculate node weight based on node metrics and data co-location.
+     *
+     * @param node Node.
+     * @param splitCnt Splits mapped to this node.
+     * @return Node weight.
+     */
+    @SuppressWarnings("UnusedParameters")
+    protected int reducerNodeWeight(GridNode node, int splitCnt) {
+        return splitCnt;
+    }
+
+    /**
+     * Weighted node.
+     */
+    private static class WeightedNode implements Comparable<WeightedNode> {
+        /** Node ID. */
+        private final UUID nodeId;
+
+        /** Weight. */
+        private int weight;
+
+        /** Floating point weight. */
+        private float floatWeight;
+
+        /**
+         * Constructor.
+         *
+         * @param nodeId Node ID.
+         * @param weight Weight.
+         * @param floatWeight Floating point weight.
+         */
+        private WeightedNode(UUID nodeId, int weight, float floatWeight) {
+            this.nodeId = nodeId;
+            this.weight = weight;
+            this.floatWeight = floatWeight;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            return obj != null && obj instanceof WeightedNode && F.eq(nodeId, ((WeightedNode)obj).nodeId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return nodeId.hashCode();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int compareTo(@NotNull WeightedNode other) {
+            float res = other.floatWeight - floatWeight;
+
+            return res > 0.0f ? 1 : res < 0.0f ? -1 : nodeId.compareTo(other.nodeId);
+        }
     }
 }

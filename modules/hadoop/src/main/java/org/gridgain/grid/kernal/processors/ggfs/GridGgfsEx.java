@@ -13,6 +13,8 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.jetbrains.annotations.*;
 
+import java.net.*;
+
 /**
  * Internal API extension for {@link GridGgfs}.
  */
@@ -113,4 +115,12 @@ public interface GridGgfsEx extends GridGgfs {
      * @return {@code True} if path is excluded from evictions.
      */
     public boolean evictExclude(GridGgfsPath path, boolean primary);
+
+    /**
+     * Check whether the given path is proxy path.
+     *
+     * @param path Path.
+     * @return {@code True} if proxy.
+     */
+    public boolean isProxy(URI path);
 }

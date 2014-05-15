@@ -38,7 +38,10 @@ public enum GridHadoopJobProperty {
      * <p>
      * If not specified, defaults to {@code Runtime.getRuntime().availableProcessors()}.
      */
-    EXTERNAL_CONCURRENT_REDUCERS;
+    EXTERNAL_CONCURRENT_REDUCERS,
+
+    /** */
+    JOB_STATUS_POLL_DELAY;
 
     /** */
     private final String ptyName;

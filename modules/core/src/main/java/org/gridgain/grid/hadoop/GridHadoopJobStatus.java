@@ -9,42 +9,194 @@
 
 package org.gridgain.grid.hadoop;
 
-import org.gridgain.grid.*;
+import org.gridgain.grid.util.typedef.internal.*;
+
+import java.io.*;
 
 /**
- * Hadoop jop status.
+ * Hadoop job status.
  */
-public class GridHadoopJobStatus {
-    /** Finish future. */
-    private GridFuture<?> finishFut;
+public class GridHadoopJobStatus implements Externalizable {
+    /** Job ID. */
+    private GridHadoopJobId jobId;
 
-    /** Job info. */
-    private GridHadoopJobInfo jobInfo;
+    /** Job state. */
+    private GridHadoopJobState jobState;
+
+    /** Job name. */
+    private String jobName;
+
+    /** User. */
+    private String usr;
+
+    /** Pending split count. */
+    private int pendingSplitCnt;
+
+    /** Pending reducer count. */
+    private int pendingReducerCnt;
+
+    /** Total split count. */
+    private int totalSplitCnt;
+
+    /** Total reducer count. */
+    private int totalReducerCnt;
+
+    /** Phase. */
+    private GridHadoopJobPhase jobPhase;
+
+    /** Version. */
+    private long ver;
 
     /**
-     * @param finishFut Finish future.
-     * @param jobInfo Job info.
+     * {@link Externalizable}  support.
      */
-    public GridHadoopJobStatus(GridFuture<?> finishFut, GridHadoopJobInfo jobInfo) {
-        this.finishFut = finishFut;
-        this.jobInfo = jobInfo;
+    public GridHadoopJobStatus() {
+        // No-op.
     }
 
     /**
-     * Gets job execution finish future.
+     * Constructor.
      *
-     * @return Finish future.
+     * @param jobId Job ID.
+     * @param jobState Job state.
+     * @param jobName Job name.
+     * @param usr User.
+     * @param pendingSplitCnt Pending split count.
+     * @param pendingReducerCnt Pending reducer count.
+     * @param totalSplitCnt Total split count.
+     * @param totalReducerCnt Total reducer count.
+     * @param jobPhase Job phase.
+     * @param ver Version.
      */
-    public GridFuture<?> finishFuture() {
-        return finishFut;
+    public GridHadoopJobStatus(GridHadoopJobId jobId, GridHadoopJobState jobState, String jobName, String usr,
+        int pendingSplitCnt, int pendingReducerCnt, int totalSplitCnt, int totalReducerCnt,
+        GridHadoopJobPhase jobPhase, long ver) {
+        this.jobId = jobId;
+        this.jobState = jobState;
+        this.jobName = jobName;
+        this.usr = usr;
+        this.pendingSplitCnt = pendingSplitCnt;
+        this.pendingReducerCnt = pendingReducerCnt;
+        this.totalSplitCnt = totalSplitCnt;
+        this.totalReducerCnt = totalReducerCnt;
+        this.jobPhase = jobPhase;
+        this.ver = ver;
     }
 
     /**
-     * Gets job info.
-     *
-     * @return Job info.
+     * @return Job ID.
      */
-    public GridHadoopJobInfo jobInfo() {
-        return jobInfo;
+    public GridHadoopJobId jobId() {
+        return jobId;
+    }
+
+    /**
+     * @return Job state.
+     */
+    public GridHadoopJobState jobState() {
+        return jobState;
+    }
+
+    /**
+     * @return Job name.
+     */
+    public String jobName() {
+        return jobName;
+    }
+
+    /**
+     * @return User.
+     */
+    public String user() {
+        return usr;
+    }
+
+    /**
+     * @return Pending split count.
+     */
+    public int pendingSplitCnt() {
+        return pendingSplitCnt;
+    }
+
+    /**
+     * @return Pending reducer count.
+     */
+    public int pendingReducerCnt() {
+        return pendingReducerCnt;
+    }
+
+    /**
+     * @return Total split count.
+     */
+    public int totalSplitCnt() {
+        return totalSplitCnt;
+    }
+
+    /**
+     * @return Total reducer count.
+     */
+    public int totalReducerCnt() {
+        return totalReducerCnt;
+    }
+
+    /**
+     * @return Version.
+     */
+    public long version() {
+        return ver;
+    }
+
+    /**
+     * @return Map progress.
+     */
+    public float mapProgress() {
+        return totalSplitCnt == 0 ? 1.0f : (float)(totalSplitCnt - pendingSplitCnt) / totalSplitCnt;
+    }
+
+    /**
+     * @return Reducer progress.
+     */
+    public float reducerProgress() {
+        return totalReducerCnt == 0 ? 1.0f : (float)(totalReducerCnt - pendingReducerCnt) / totalReducerCnt;
+    }
+
+    /**
+     * @return Job phase.
+     */
+    public GridHadoopJobPhase jobPhase() {
+        return jobPhase;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridHadoopJobStatus.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(jobId);
+        out.writeObject(jobState);
+        U.writeString(out, jobName);
+        U.writeString(out, usr);
+        out.writeInt(pendingSplitCnt);
+        out.writeInt(pendingReducerCnt);
+        out.writeInt(totalSplitCnt);
+        out.writeInt(totalReducerCnt);
+        out.writeObject(jobPhase);
+        out.writeLong(ver);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        jobId = (GridHadoopJobId)in.readObject();
+        jobState = (GridHadoopJobState)in.readObject();
+        jobName = U.readString(in);
+        usr = U.readString(in);
+        pendingSplitCnt = in.readInt();
+        pendingReducerCnt = in.readInt();
+        totalSplitCnt = in.readInt();
+        totalReducerCnt = in.readInt();
+        jobPhase = (GridHadoopJobPhase)in.readObject();
+        ver = in.readLong();
     }
 }

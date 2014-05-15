@@ -12,9 +12,7 @@ package org.gridgain.testsuites.bamboo;
 import junit.framework.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.fair.*;
-import org.gridgain.grid.cache.hibernate.*;
 import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.cache.store.hibernate.*;
 import org.gridgain.grid.cache.store.jdbc.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
@@ -25,7 +23,6 @@ import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.replicated.preloader.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
-import org.gridgain.grid.kernal.websession.*;
 import org.gridgain.testsuites.*;
 
 /**
@@ -45,23 +42,17 @@ public class GridDataGridTestSuite extends TestSuite {
 
         // Swap tests.
         suite.addTestSuite(GridCacheSwapPreloadSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapAndSwapSelfTest.class);
-        suite.addTestSuite(GridCacheSwapSelfTest.class);
         suite.addTestSuite(GridCacheSwapReloadSelfTest.class);
 
         // Common tests.
         suite.addTestSuite(GridCacheAffinityMapperSelfTest.class);
         suite.addTestSuite(GridCacheAffinityRoutingSelfTest.class);
-        suite.addTestSuite(GridCacheJtaSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedJtaSelfTest.class);
         suite.addTestSuite(GridCacheMvccSelfTest.class);
         suite.addTestSuite(GridCacheMvccPartitionedSelfTest.class);
         suite.addTestSuite(GridCacheMvccManagerSelfTest.class);
 //        suite.addTestSuite(GridCacheP2PUndeploySelfTest.class); TODO uncomment in DR branch.
         suite.addTestSuite(GridCacheConfigurationValidationSelfTest.class);
         suite.addTestSuite(GridCacheConfigurationConsistencySelfTest.class);
-        suite.addTestSuite(GridCacheHibernateBlobStoreSelfTest.class);
         suite.addTestSuite(GridCacheJdbcBlobStoreSelfTest.class);
         suite.addTestSuite(GridCacheJdbcBlobStoreMultithreadedSelfTest.class);
         suite.addTestSuite(GridCacheAffinityApiSelfTest.class);
@@ -182,6 +173,8 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheNearExpiredEntriesPreloadSelfTest.class));
         suite.addTest(new TestSuite(GridCacheAtomicExpiredEntriesPreloadSelfTest.class));
 
+        suite.addTest(new TestSuite(GridCacheReturnValueTransferSelfTest.class));
+
         // TODO: GG-7242, GG-7243: Enabled when fixed.
 //        suite.addTest(new TestSuite(GridCacheDhtRemoveFailureTest.class));
 //        suite.addTest(new TestSuite(GridCacheNearRemoveFailureTest.class));
@@ -292,14 +285,6 @@ public class GridDataGridTestSuite extends TestSuite {
 
         // Iterators.
         suite.addTest(GridCacheIteratorsSelfTestSuite.suite());
-
-        // Web sessions.
-        suite.addTest(GridWebSessionSelfTestSuite.suite());
-
-        // Hibernate L2 cache.
-        suite.addTestSuite(GridHibernateL2CacheSelfTest.class);
-        suite.addTestSuite(GridHibernateL2CacheTransactionalSelfTest.class);
-        suite.addTestSuite(GridHibernateL2CacheConfigurationSelfTest.class);
 
         // Add tx recovery test suite.
         suite.addTest(GridCacheTxRecoverySelfTestSuite.suite());

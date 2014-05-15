@@ -12,15 +12,13 @@ package org.gridgain.grid.resources;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.spi.*;
-import org.springframework.context.*;
 
 import java.lang.annotation.*;
 
 /**
- * Annotates a field or a setter method for injection of Spring {@link ApplicationContext} resource.
+ * Annotates a field or a setter method for injection of Spring ApplicationContext resource.
  * When GridGain starts using Spring configuration, the Application Context for Spring
- * Configuration is injected as this resource. Spring application context can also be explicitly
- * passed into the grid via {@link GridGain#start(GridConfiguration, ApplicationContext)}
+ * Configuration is injected as this resource.
  * method.
  * <p>
  * Spring Application Context can be injected into instances of following classes:

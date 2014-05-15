@@ -49,6 +49,13 @@ public interface GridHadoopMapReducePlan extends Serializable {
     public Collection<UUID> reducerNodeIds();
 
     /**
+     * Gets overall number of mappers for the job.
+     *
+     * @return Number of mappers.
+     */
+    public int mappers();
+
+    /**
      * Gets overall number of reducers for the job.
      *
      * @return Number of reducers.

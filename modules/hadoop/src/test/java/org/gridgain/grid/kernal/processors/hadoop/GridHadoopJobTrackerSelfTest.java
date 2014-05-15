@@ -249,9 +249,9 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
 
             GridHadoopJobStatus stat = hadoop.status(jobId);
 
-            assert stat.jobInfo() != null;
+            assert stat != null;
 
-            GridFuture<?> fut = stat.finishFuture();
+            GridFuture<?> fut = hadoop.finishFuture(jobId);
 
             if (!complete)
                 assertFalse(fut.isDone());
