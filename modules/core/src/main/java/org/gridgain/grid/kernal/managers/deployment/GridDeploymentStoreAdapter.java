@@ -91,7 +91,7 @@ abstract class GridDeploymentStoreAdapter implements GridDeploymentStore {
      * @return User version.
      */
     protected final String userVersion(ClassLoader ldr) {
-        return U.getUserVersion(ldr, log);
+        return ctx.userVersion(ldr);
     }
 
     /**

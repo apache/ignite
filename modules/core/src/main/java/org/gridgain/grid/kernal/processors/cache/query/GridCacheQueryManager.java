@@ -24,7 +24,6 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.*;
-import org.gridgain.grid.spi.indexing.h2.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -32,9 +31,9 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
-import org.springframework.util.*;
 
 import java.io.*;
+import java.lang.reflect.*;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -1219,13 +1218,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         if (cls == null)
             return;
 
-        if (ClassUtils.isPrimitiveOrWrapper(cls)) {
+        if (GridUtils.isPrimitiveOrWrapper(cls)) {
             for (GridIndexingSpi indexingSpi : cctx.gridConfig().getIndexingSpi()) {
-                if (indexingSpi instanceof GridH2IndexingSpi)
-                    if (!((GridH2IndexingSpiMBean)indexingSpi).isDefaultIndexPrimitiveKey())
-                        throw new IllegalStateException("Invalid use of primitive class type in queries when " +
-                            "GridH2IndexingSpi.isDefaultIndexPrimitiveKey() is disabled " +
-                            "(consider enabling indexing for primitive types).");
+                if (!isDefaultIndexPrimitiveKey(indexingSpi))
+                    throw new IllegalStateException("Invalid use of primitive class type in queries when " +
+                        "GridH2IndexingSpi.isDefaultIndexPrimitiveKey() is disabled " +
+                        "(consider enabling indexing for primitive types).");
             }
         }
     }
@@ -1347,6 +1345,26 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
             }
         };
+    }
+
+    /**
+     * @param indexingSpi Indexing SPI.
+     * @return {@code True} if given SPI is GridH2IndexingSpi with enabled property {@code isDefaultIndexPrimitiveKey}.
+     */
+    private static boolean isDefaultIndexPrimitiveKey(GridIndexingSpi indexingSpi) {
+        if (indexingSpi.getClass().getName().equals(GridComponentType.H2_INDEXING.className())) {
+            try {
+                Method method = indexingSpi.getClass().getMethod("isDefaultIndexPrimitiveKey");
+
+                return (Boolean)method.invoke(indexingSpi);
+            }
+            catch (Exception e) {
+                throw new GridRuntimeException("Failed to invoke 'isDefaultIndexPrimitiveKey' method " +
+                    "on GridH2IndexingSpi.", e);
+            }
+        }
+
+        return false;
     }
 
     /**

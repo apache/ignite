@@ -35,9 +35,6 @@ public class GridBasicTestSuite extends TestSuite {
         suite.addTest(GridUtilSelfTestSuite.suite());
         suite.addTest(GridMarshallerSelfTestSuite.suite());
         suite.addTest(GridKernalSelfTestSuite.suite());
-
-        // TODO: GG-8331
-        //suite.addTest(GridToolsSelfTestSuite.suite());
         suite.addTest(GridLoadersSelfTestSuite.suite());
         suite.addTest(GridRichSelfTestSuite.suite());
         suite.addTest(GridExternalizableSelfTestSuite.suite());
@@ -52,10 +49,8 @@ public class GridBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridAffinityProcessorRendezvousSelfTest.class);
         suite.addTestSuite(GridClosureProcessorSelfTest.class);
         suite.addTestSuite(GridStartStopSelfTest.class);
-        suite.addTestSuite(GridFactorySelfTest.class);
         suite.addTestSuite(GridProjectionForCachesSelfTest.class);
         suite.addTestSuite(GridSpiLocalHostInjectionTest.class);
-        suite.addTestSuite(GridSpringBeanSerializationSelfTest.class);
         suite.addTestSuite(GridLifecycleBeanSelfTest.class);
         suite.addTestSuite(GridStopWithCancelSelfTest.class);
         suite.addTestSuite(GridReduceSelfTest.class);

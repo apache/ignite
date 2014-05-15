@@ -14,7 +14,7 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.executor.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.*;
-import org.springframework.context.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import javax.management.*;
 import java.util.*;
@@ -46,23 +46,43 @@ public final class GridMarshallerExclusions {
      * <p>
      * Note that {@link #INCL_CLASSES} supercedes this list.
      */
-    private static final Class<?>[] EXCL_CLASSES = new Class[] {
+    private static final Class<?>[] EXCL_CLASSES;
+
+    /**
+     *
+     */
+    static {
+        Class springCtxCls = null;
+
+        try {
+            springCtxCls = Class.forName("org.springframework.context.ApplicationContext");
+        }
+        catch (Exception ignored) {
+            // No-op.
+        }
+
+        List<Class<?>> excl = new ArrayList<>();
+
         // Non-GridGain classes.
-        MBeanServer.class,
-        ExecutorService.class,
-        ApplicationContext.class,
-        ClassLoader.class,
-        Thread.class,
+        excl.add(MBeanServer.class);
+        excl.add(ExecutorService.class);
+        excl.add(ClassLoader.class);
+        excl.add(Thread.class);
+
+        if (springCtxCls != null)
+            excl.add(springCtxCls);
 
         // GridGain classes.
-        GridLogger.class,
-        GridComputeTaskSession.class,
-        GridComputeLoadBalancer.class,
-        GridComputeJobContext.class,
-        GridMarshaller.class,
-        GridComponent.class,
-        GridComputeTaskContinuousMapper.class
-    };
+        excl.add(GridLogger.class);
+        excl.add(GridComputeTaskSession.class);
+        excl.add(GridComputeLoadBalancer.class);
+        excl.add(GridComputeJobContext.class);
+        excl.add(GridMarshaller.class);
+        excl.add(GridComponent.class);
+        excl.add(GridComputeTaskContinuousMapper.class);
+
+        EXCL_CLASSES = U.toArray(excl, new Class[excl.size()]);
+    }
 
     /**
      * Ensures singleton.

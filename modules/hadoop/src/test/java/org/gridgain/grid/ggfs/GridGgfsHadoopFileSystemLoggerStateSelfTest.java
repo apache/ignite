@@ -9,9 +9,8 @@
 
 package org.gridgain.grid.ggfs;
 
-import org.apache.commons.io.*;
 import org.apache.hadoop.conf.*;
-import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.FileSystem;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
@@ -25,6 +24,7 @@ import org.gridgain.testframework.junits.common.*;
 
 import java.lang.reflect.*;
 import java.net.*;
+import java.nio.file.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -266,7 +266,7 @@ public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridCommonAbstr
     public void testLogDirectory() throws Exception {
         startUp();
 
-        assertEquals(FilenameUtils.normalize(U.getGridGainHome()), ggfs.clientLogDirectory());
+        assertEquals(Paths.get(U.getGridGainHome()).normalize().toString(), ggfs.clientLogDirectory());
     }
 
     /**

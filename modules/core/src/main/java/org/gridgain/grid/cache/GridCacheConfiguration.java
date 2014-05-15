@@ -15,7 +15,6 @@ import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.cloner.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.eviction.*;
-import org.gridgain.grid.cache.jta.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.dr.cache.receiver.*;
 import org.gridgain.grid.dr.cache.sender.*;
@@ -23,7 +22,6 @@ import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import javax.transaction.*;
 import java.util.*;
 
 /**
@@ -305,8 +303,8 @@ public class GridCacheConfiguration {
     /** Pessimistic tx log linger. */
     private int pessimisticTxLogLinger = DFLT_PESSIMISTIC_TX_LOG_LINGER;
 
-    /** */
-    private GridCacheTmLookup tmLookup;
+    /** Name of class implementing GridCacheTmLookup. */
+    private String tmLookupClsName;
 
     /** Distributed cache preload mode. */
     private GridCachePreloadMode preloadMode = DFLT_PRELOAD_MODE;
@@ -448,7 +446,7 @@ public class GridCacheConfiguration {
         store = cc.getStore();
         storeValBytes = cc.isStoreValueBytes();
         swapEnabled = cc.isSwapEnabled();
-        tmLookup = cc.getTransactionManagerLookup();
+        tmLookupClsName = cc.getTransactionManagerLookupClassName();
         ttl = cc.getDefaultTimeToLive();
         txBatchUpdate = cc.isBatchUpdateOnCommit();
         txSerEnabled = cc.isTxSerializableEnabled();
@@ -1206,21 +1204,22 @@ public class GridCacheConfiguration {
     }
 
     /**
-     * Gets transaction manager finder for integration for JEE app servers.
+     * Gets class name of transaction manager finder for integration for JEE app servers.
      *
      * @return Transaction manager finder.
      */
-    public GridCacheTmLookup getTransactionManagerLookup() {
-        return tmLookup;
+    public String getTransactionManagerLookupClassName() {
+        return tmLookupClsName;
     }
 
     /**
-     * Sets look up mechanism for available {@link TransactionManager} implementation, if any.
+     * Sets look up mechanism for available {@code TransactionManager} implementation, if any.
      *
-     * @param tmLookup Lookup implementation that is used to receive JTA transaction manager.
+     * @param tmLookupClsName Name of class implementing GridCacheTmLookup interface that is used to
+     *      receive JTA transaction manager.
      */
-    public void setTransactionManagerLookup(GridCacheTmLookup tmLookup) {
-        this.tmLookup = tmLookup;
+    public void setTransactionManagerLookupClassName(String tmLookupClsName) {
+        this.tmLookupClsName = tmLookupClsName;
     }
 
     /**

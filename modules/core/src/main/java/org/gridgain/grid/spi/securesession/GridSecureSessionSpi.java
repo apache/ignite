@@ -47,7 +47,7 @@ import org.jetbrains.annotations.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-public interface GridSecureSessionSpi extends GridSpi, GridSpiJsonConfigurable {
+public interface GridSecureSessionSpi extends GridSpi {
     /**
      * Checks if given subject is supported by this SPI. If not, then next secure session SPI
      * in the list will be checked.
