@@ -148,15 +148,13 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
 
                     if (blocks.size() == 1)
                         // Fast-path, split consists of one GGFS block (as in most cases).
-                        return bestNode(blocks.iterator().next().nodeIds(), topIds, nodeLoads);
+                        return bestNode(blocks.iterator().next().nodeIds(), topIds, nodeLoads, false);
                     else {
                         // Slow-path, file consists of multiple GGFS blocks. First, find the most co-located nodes.
                         Map<UUID, Long> nodeMap = new HashMap<>();
 
-                        UUID bestNodeId = null;
-                        Collection<UUID> bestNodeIds = null;
+                        List<UUID> bestNodeIds = null;
                         long bestLen = -1L;
-                        boolean single = true;
 
                         for (GridGgfsBlockLocation block : blocks) {
                             for (UUID blockNodeId : block.nodeIds()) {
@@ -166,52 +164,30 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
 
                                     nodeMap.put(blockNodeId, newLen);
 
-                                    if (bestNodeId == null) {
-                                        bestNodeId = blockNodeId;
+                                    if (bestNodeIds == null || bestLen < newLen) {
+                                        bestNodeIds = new ArrayList<>(1);
+
+                                        bestNodeIds.add(blockNodeId);
+
                                         bestLen = newLen;
                                     }
                                     else if (bestLen == newLen) {
-                                        if (single) {
-                                            // Switch from single mode.
-                                            assert bestNodeIds == null;
+                                        assert !F.isEmpty(bestNodeIds);
 
-                                            bestNodeIds = new ArrayList<>(2);
-
-                                            bestNodeIds.add(bestNodeId);
-                                            bestNodeIds.add(blockNodeId);
-
-                                            single = false;
-                                        }
-                                        else {
-                                            assert bestNodeIds != null && bestNodeIds.size() > 1;
-
-                                            bestNodeIds.add(blockNodeId);
-                                        }
-                                    }
-                                    else if (bestLen < newLen) {
-                                        bestNodeId = blockNodeId;
-                                        bestLen = newLen;
-
-                                        if (!single) {
-                                            assert bestNodeIds != null;
-
-                                            bestNodeIds = null;
-
-                                            single = true;
-                                        }
+                                        bestNodeIds.add(blockNodeId);
                                     }
                                 }
                             }
                         }
 
-                        if (bestNodeId != null && single)
+                        if (bestNodeIds != null && bestNodeIds.size() == 1)
                             // Optimization: if there is only one node with maximum length, return it.
-                            return bestNodeId;
+                            return bestNodeIds.get(0);
                         else {
                             // Several nodes have maximum length, decide which one to use.
                             assert bestNodeIds != null;
 
-                            return bestNode(bestNodeIds, topIds, nodeLoads);
+                            return bestNode(bestNodeIds, topIds, nodeLoads, true);
                         }
                     }
                 }
@@ -232,11 +208,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
             }
         }
 
-        if (!F.isAll(blockNodes))
-            return bestNode(blockNodes, topIds, nodeLoads);
-
-        // Failed to select node by host, select the least loaded one.
-        return bestNode(topIds, topIds, nodeLoads);
+        return bestNode(blockNodes, topIds, nodeLoads, false);
     }
 
     /**
@@ -245,22 +217,26 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
      * @param candidates Candidates.
      * @param topIds Topology node IDs.
      * @param nodeLoads Known node loads.
+     * @param skipTopCheck Whether to skip topology check.
      * @return The best node.
      */
-    private UUID bestNode(Collection<UUID> candidates, Collection<UUID> topIds, Map<UUID, Integer> nodeLoads) {
+    private UUID bestNode(@Nullable Collection<UUID> candidates, Collection<UUID> topIds, Map<UUID, Integer> nodeLoads,
+        boolean skipTopCheck) {
         UUID bestNode = null;
-        int bestLoad = 0;
+        int bestLoad = Integer.MAX_VALUE;
 
-        for (UUID candidate : candidates) {
-            if (topIds.contains(candidate)) {
-                int load = nodeLoads.get(candidate);
+        if (candidates != null) {
+            for (UUID candidate : candidates) {
+                if (skipTopCheck || topIds.contains(candidate)) {
+                    int load = nodeLoads.get(candidate);
 
-                if (bestNode == null || bestLoad > load) {
-                    bestNode = candidate;
-                    bestLoad = load;
+                    if (bestNode == null || bestLoad > load) {
+                        bestNode = candidate;
+                        bestLoad = load;
 
-                    if (bestLoad == 0)
-                        break; // Minimum load possible, no need for further iterations.
+                        if (bestLoad == 0)
+                            break; // Minimum load possible, no need for further iterations.
+                    }
                 }
             }
         }
@@ -272,7 +248,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
             for (UUID nodeId : topIds) {
                 int load = nodeLoads.get(nodeId);
 
-                if (bestLoad > load) {
+                if (bestNode == null || bestLoad > load) {
                     bestNode = nodeId;
                     bestLoad = load;
 
