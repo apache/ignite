@@ -6454,22 +6454,6 @@ public abstract class GridUtils {
     }
 
     /**
-     * @param cls Class.
-     * @return All declared methods on the given class and all superclasses.
-     */
-    public static Method[] allDeclaredMethods(Class<?> cls) {
-        Collection<Method> methods = new ArrayList<>();
-
-        while (cls != null) {
-            Collections.addAll(methods, cls.getDeclaredMethods());
-
-            cls = cls.getSuperclass();
-        }
-
-        return toArray(methods, new Method[methods.size()]);
-    }
-
-    /**
      * Awaits for condition.
      *
      * @param cond Condition to await for.
