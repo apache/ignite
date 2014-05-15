@@ -163,10 +163,9 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
             final CountDownLatch latch = new CountDownLatch(1);
 
-            GridFuture<Object> fut1 = startGrid(GRID_CNT + 1).scheduler().callLocal(new Callable<Object>() {
-                @GridInstanceResource
-                private Grid g;
+            final Grid g = startGrid(GRID_CNT + 1);
 
+            GridFuture<Object> fut1 = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     info(">>> Executing put callable [node=" + g.localNode().id() +
                         ", thread=" + Thread.currentThread().getName() + ", aff=" +
@@ -195,19 +194,18 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
             latch.await();
 
-            GridFuture<Object> fut2 = startGrid(GRID_CNT + 2).scheduler().callLocal(new Callable<Object>() {
-                @GridInstanceResource
-                private Grid g;
+            final Grid g1 = startGrid(GRID_CNT + 2);
 
+            GridFuture<Object> fut2 = GridTestUtils.runAsync(new Callable<Object>() {
                 @SuppressWarnings("BusyWait")
                 @Override public Object call() throws Exception {
                     try {
-                        info(">>> Executing poll callable [node=" + g.localNode().id() +
+                        info(">>> Executing poll callable [node=" + g1.localNode().id() +
                             ", thread=" + Thread.currentThread().getName() + ", aff=" +
-                            F.nodeId8s(g.cache(null).affinity().mapKeyToPrimaryAndBackups(
+                            F.nodeId8s(g1.cache(null).affinity().mapKeyToPrimaryAndBackups(
                                 new GridCacheInternalKeyImpl(queueName))) + ']');
 
-                        GridCacheQueue<Integer> q = g.cache(null).dataStructures().queue(queueName, 5, true, true);
+                        GridCacheQueue<Integer> q = g1.cache(null).dataStructures().queue(queueName, 5, true, true);
 
                         int cnt = 0;
                         int nullCnt = 0;
@@ -233,7 +231,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
                         }
                         while (cnt < ITEMS_CNT);
 
-                        info("Finished poll callable on node: " + g.localNode().id());
+                        info("Finished poll callable on node: " + g1.localNode().id());
 
                         return null;
                     }

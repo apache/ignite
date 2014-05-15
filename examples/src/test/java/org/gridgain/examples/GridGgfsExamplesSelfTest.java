@@ -12,7 +12,7 @@ package org.gridgain.examples;
 import org.gridgain.examples.ggfs.*;
 import org.gridgain.examples.ggfs.filesystem.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -40,7 +40,7 @@ public class GridGgfsExamplesSelfTest extends GridAbstractExamplesTest {
             (U.isWindows() ? GGFS_LOOPBACK_CFG : GGFS_SHMEM_CFG) :
             GGFS_NO_ENDPOINT_CFG;
 
-        GridConfiguration cfg = G.loadConfiguration(cfgPath).get1();
+        GridConfiguration cfg = GridGainEx.loadConfiguration(cfgPath).get1();
 
         cfg.setGridName(gridName);
 

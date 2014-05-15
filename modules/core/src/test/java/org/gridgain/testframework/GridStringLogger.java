@@ -140,6 +140,11 @@ public class GridStringLogger implements GridLogger {
         return false;
     }
 
+    /** {@inheritDoc} */
+    @Nullable @Override public String fileName() {
+        return null;
+    }
+
     /**
      * Resets logger.
      */

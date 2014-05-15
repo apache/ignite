@@ -27,7 +27,6 @@ import java.io.*;
 public class GridClientTestSuite extends TestSuite {
     /**
      * @return Suite that contains all tests for REST.
-     * @throws IOException If failed.
      */
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Gridgain Clients Test Suite");

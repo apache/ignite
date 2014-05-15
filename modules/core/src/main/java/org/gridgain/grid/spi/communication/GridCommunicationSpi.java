@@ -43,7 +43,7 @@ import java.util.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-public interface GridCommunicationSpi<T extends Serializable> extends GridSpi, GridSpiJsonConfigurable {
+public interface GridCommunicationSpi<T extends Serializable> extends GridSpi {
     /**
      * Sends given message to destination node. Note that characteristics of the
      * exchange such as durability, guaranteed delivery or error notification is

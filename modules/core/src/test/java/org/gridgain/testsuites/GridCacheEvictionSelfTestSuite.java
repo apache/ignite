@@ -40,7 +40,6 @@ public class GridCacheEvictionSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheDistributedEvictionsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheEvictionLockUnlockSelfTest.class));
         suite.addTest(new TestSuite(GridCacheBatchEvictUnswapSelfTest.class));
-        suite.addTest(new TestSuite(GridIndexingWithNoopSwapSelfTest.class));
         suite.addTest(new TestSuite(GridCachePreloadingEvictionsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheEmptyEntriesPartitionedSelfTest.class));
         suite.addTest(new TestSuite(GridCacheEmptyEntriesLocalSelfTest.class));

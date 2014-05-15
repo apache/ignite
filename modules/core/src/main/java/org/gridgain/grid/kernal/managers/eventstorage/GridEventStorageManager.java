@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.managers.eventstorage;
 
-import org.apache.commons.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
@@ -351,7 +350,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
         int len = 0;
 
         for (int val : arr) {
-            if (!ArrayUtils.contains(excludes, val))
+            if (!F.contains(excludes, val))
                 tmp[len++] = val;
         }
 
@@ -381,7 +380,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
      * @return {@code true} if this is an internal event.
      */
     private boolean isInternalEvent(int type) {
-        return ArrayUtils.contains(EVTS_DISCOVERY_ALL, type);
+        return F.contains(EVTS_DISCOVERY_ALL, type);
     }
 
     /**
@@ -454,7 +453,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
             return false;
 
         // If length is relatively small, full iteration is faster.
-        return arr.length <= 128 ? ArrayUtils.contains(arr, val) : Arrays.binarySearch(arr, val) >= 0;
+        return arr.length <= 128 ? F.contains(arr, val) : Arrays.binarySearch(arr, val) >= 0;
     }
 
     /**
