@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.mapreduce.*;
 import org.jetbrains.annotations.*;
 
-import java.net.*;
 import java.util.*;
 
 /**

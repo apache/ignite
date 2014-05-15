@@ -15,7 +15,7 @@ import org.gridgain.grid.ggfs.mapreduce.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.hadoop.planner.*;
-import org.gridgain.grid.logger.log4j.*;
+import org.gridgain.grid.logger.java.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
@@ -74,7 +74,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
     static {
         GridTestUtils.setFieldValue(PLANNER, "grid", GRID);
-        GridTestUtils.setFieldValue(PLANNER, "log", new GridLog4jLogger());
+        GridTestUtils.setFieldValue(PLANNER, "log", new GridJavaLogger());
     }
 
     /** {@inheritDoc} */
@@ -98,33 +98,33 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         plan(1, split1);
         assert ensureMappers(ID_1, split1);
         assert ensureReducers(ID_1, 1);
-        assert ensureEmpty0(ID_2);
-        assert ensureEmpty0(ID_3);
+        assert ensureEmpty(ID_2);
+        assert ensureEmpty(ID_3);
 
         plan(2, split1);
         assert ensureMappers(ID_1, split1);
         assert ensureReducers(ID_1, 2);
-        assert ensureEmpty0(ID_2);
-        assert ensureEmpty0(ID_3);
+        assert ensureEmpty(ID_2);
+        assert ensureEmpty(ID_3);
 
         plan(1, split1, split2);
         assert ensureMappers(ID_1, split1);
         assert ensureMappers(ID_2, split2);
         assert ensureReducers(ID_1, 1) && ensureReducers(ID_2, 0) || ensureReducers(ID_1, 0) && ensureReducers(ID_2, 1);
-        assert ensureEmpty0(ID_3);
+        assert ensureEmpty(ID_3);
 
         plan(2, split1, split2);
         assert ensureMappers(ID_1, split1);
         assert ensureMappers(ID_2, split2);
         assert ensureReducers(ID_1, 1);
         assert ensureReducers(ID_2, 1);
-        assert ensureEmpty0(ID_3);
+        assert ensureEmpty(ID_3);
 
         plan(3, split1, split2);
         assert ensureMappers(ID_1, split1);
         assert ensureMappers(ID_2, split2);
         assert ensureReducers(ID_1, 1) && ensureReducers(ID_2, 2) || ensureReducers(ID_1, 2) && ensureReducers(ID_2, 1);
-        assert ensureEmpty0(ID_3);
+        assert ensureEmpty(ID_3);
 
         plan(3, split1, split2, split3);
         assert ensureMappers(ID_1, split1);
@@ -154,33 +154,33 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         plan(1, split1);
         assert ensureMappers(ID_1, split1);
         assert ensureReducers(ID_1, 1);
-        assert ensureEmpty0(ID_2);
-        assert ensureEmpty0(ID_3);
+        assert ensureEmpty(ID_2);
+        assert ensureEmpty(ID_3);
 
         plan(2, split1);
         assert ensureMappers(ID_1, split1);
         assert ensureReducers(ID_1, 2);
-        assert ensureEmpty0(ID_2);
-        assert ensureEmpty0(ID_3);
+        assert ensureEmpty(ID_2);
+        assert ensureEmpty(ID_3);
 
         plan(1, split1, split2);
         assert ensureMappers(ID_1, split1);
         assert ensureMappers(ID_2, split2);
         assert ensureReducers(ID_1, 1) && ensureReducers(ID_2, 0) || ensureReducers(ID_1, 0) && ensureReducers(ID_2, 1);
-        assert ensureEmpty0(ID_3);
+        assert ensureEmpty(ID_3);
 
         plan(2, split1, split2);
         assert ensureMappers(ID_1, split1);
         assert ensureMappers(ID_2, split2);
         assert ensureReducers(ID_1, 1);
         assert ensureReducers(ID_2, 1);
-        assert ensureEmpty0(ID_3);
+        assert ensureEmpty(ID_3);
 
         plan(3, split1, split2);
         assert ensureMappers(ID_1, split1);
         assert ensureMappers(ID_2, split2);
         assert ensureReducers(ID_1, 1) && ensureReducers(ID_2, 2) || ensureReducers(ID_1, 2) && ensureReducers(ID_2, 1);
-        assert ensureEmpty0(ID_3);
+        assert ensureEmpty(ID_3);
 
         plan(3, split1, split2, split3);
         assert ensureMappers(ID_1, split1);
@@ -212,27 +212,27 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         mapGgfsBlock(split3.file(), 0, 100, location(0, 100, ID_1, ID_3));
 
         plan(1, split1);
-        assert ensureMappers(ID_1, split1) && ensureReducers(ID_1, 1) && ensureEmpty0(ID_2) ||
-            ensureEmpty0(ID_1) && ensureMappers(ID_2, split1) && ensureReducers(ID_2, 1);
-        assert ensureEmpty0(ID_3);
+        assert ensureMappers(ID_1, split1) && ensureReducers(ID_1, 1) && ensureEmpty(ID_2) ||
+            ensureEmpty(ID_1) && ensureMappers(ID_2, split1) && ensureReducers(ID_2, 1);
+        assert ensureEmpty(ID_3);
 
         plan(2, split1);
-        assert ensureMappers(ID_1, split1) && ensureReducers(ID_1, 2) && ensureEmpty0(ID_2) ||
-            ensureEmpty0(ID_1) && ensureMappers(ID_2, split1) && ensureReducers(ID_2, 2);
-        assert ensureEmpty0(ID_3);
+        assert ensureMappers(ID_1, split1) && ensureReducers(ID_1, 2) && ensureEmpty(ID_2) ||
+            ensureEmpty(ID_1) && ensureMappers(ID_2, split1) && ensureReducers(ID_2, 2);
+        assert ensureEmpty(ID_3);
 
         plan(1, split1, split2);
         assert ensureMappers(ID_1, split1) && ensureMappers(ID_2, split2) ||
             ensureMappers(ID_1, split2) && ensureMappers(ID_2, split1);
         assert ensureReducers(ID_1, 1) && ensureReducers(ID_2, 0) || ensureReducers(ID_1, 0) && ensureReducers(ID_2, 1);
-        assert ensureEmpty0(ID_3);
+        assert ensureEmpty(ID_3);
 
         plan(2, split1, split2);
         assert ensureMappers(ID_1, split1) && ensureMappers(ID_2, split2) ||
             ensureMappers(ID_1, split2) && ensureMappers(ID_2, split1);
         assert ensureReducers(ID_1, 1);
         assert ensureReducers(ID_2, 1);
-        assert ensureEmpty0(ID_3);
+        assert ensureEmpty(ID_3);
 
         plan(3, split1, split2, split3);
         assert ensureReducers(ID_1, 1);
@@ -254,27 +254,27 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         GridHadoopFileBlock split3 = split(false, "/file3", 0, 100, HOST_1, HOST_3);
 
         plan(1, split1);
-        assert ensureMappers(ID_1, split1) && ensureReducers(ID_1, 1) && ensureEmpty0(ID_2) ||
-            ensureEmpty0(ID_1) && ensureMappers(ID_2, split1) && ensureReducers(ID_2, 1);
-        assert ensureEmpty0(ID_3);
+        assert ensureMappers(ID_1, split1) && ensureReducers(ID_1, 1) && ensureEmpty(ID_2) ||
+            ensureEmpty(ID_1) && ensureMappers(ID_2, split1) && ensureReducers(ID_2, 1);
+        assert ensureEmpty(ID_3);
 
         plan(2, split1);
-        assert ensureMappers(ID_1, split1) && ensureReducers(ID_1, 2) && ensureEmpty0(ID_2) ||
-            ensureEmpty0(ID_1) && ensureMappers(ID_2, split1) && ensureReducers(ID_2, 2);
-        assert ensureEmpty0(ID_3);
+        assert ensureMappers(ID_1, split1) && ensureReducers(ID_1, 2) && ensureEmpty(ID_2) ||
+            ensureEmpty(ID_1) && ensureMappers(ID_2, split1) && ensureReducers(ID_2, 2);
+        assert ensureEmpty(ID_3);
 
         plan(1, split1, split2);
         assert ensureMappers(ID_1, split1) && ensureMappers(ID_2, split2) ||
             ensureMappers(ID_1, split2) && ensureMappers(ID_2, split1);
         assert ensureReducers(ID_1, 1) && ensureReducers(ID_2, 0) || ensureReducers(ID_1, 0) && ensureReducers(ID_2, 1);
-        assert ensureEmpty0(ID_3);
+        assert ensureEmpty(ID_3);
 
         plan(2, split1, split2);
         assert ensureMappers(ID_1, split1) && ensureMappers(ID_2, split2) ||
             ensureMappers(ID_1, split2) && ensureMappers(ID_2, split1);
         assert ensureReducers(ID_1, 1);
         assert ensureReducers(ID_2, 1);
-        assert ensureEmpty0(ID_3);
+        assert ensureEmpty(ID_3);
 
         plan(3, split1, split2, split3);
         assert ensureReducers(ID_1, 1);
@@ -300,27 +300,27 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         plan(1, split1);
         assert ensureMappers(ID_1, split1);
         assert ensureReducers(ID_1, 1);
-        assert ensureEmpty0(ID_2);
-        assert ensureEmpty0(ID_3);
+        assert ensureEmpty(ID_2);
+        assert ensureEmpty(ID_3);
 
         plan(1, split2);
         assert ensureMappers(ID_2, split2);
         assert ensureReducers(ID_2, 1);
-        assert ensureEmpty0(ID_1);
-        assert ensureEmpty0(ID_3);
+        assert ensureEmpty(ID_1);
+        assert ensureEmpty(ID_3);
 
         plan(1, split1, split2);
         assert ensureMappers(ID_1, split1);
         assert ensureMappers(ID_2, split2);
         assert ensureReducers(ID_1, 0) && ensureReducers(ID_2, 1) || ensureReducers(ID_1, 1) && ensureReducers(ID_2, 0);
-        assert ensureEmpty0(ID_3);
+        assert ensureEmpty(ID_3);
 
         plan(2, split1, split2);
         assert ensureMappers(ID_1, split1);
         assert ensureMappers(ID_2, split2);
         assert ensureReducers(ID_1, 1);
         assert ensureReducers(ID_2, 1);
-        assert ensureEmpty0(ID_3);
+        assert ensureEmpty(ID_3);
     }
 
     /**
@@ -332,14 +332,14 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         GridHadoopFileBlock split3 = split(false, "/file3", 0, 100, INVALID_HOST_2, INVALID_HOST_3);
 
         plan(1, split1);
-        assert ensureMappers(ID_1, split1) && ensureReducers(ID_1, 1) && ensureEmpty0(ID_2) && ensureEmpty0(ID_3) ||
-            ensureEmpty0(ID_1) && ensureMappers(ID_2, split1) && ensureReducers(ID_2, 1) && ensureEmpty0(ID_3) ||
-            ensureEmpty0(ID_1) && ensureEmpty0(ID_2) && ensureMappers(ID_3, split1) && ensureReducers(ID_3, 1);
+        assert ensureMappers(ID_1, split1) && ensureReducers(ID_1, 1) && ensureEmpty(ID_2) && ensureEmpty(ID_3) ||
+            ensureEmpty(ID_1) && ensureMappers(ID_2, split1) && ensureReducers(ID_2, 1) && ensureEmpty(ID_3) ||
+            ensureEmpty(ID_1) && ensureEmpty(ID_2) && ensureMappers(ID_3, split1) && ensureReducers(ID_3, 1);
 
         plan(2, split1);
-        assert ensureMappers(ID_1, split1) && ensureReducers(ID_1, 2) && ensureEmpty0(ID_2) && ensureEmpty0(ID_3) ||
-            ensureEmpty0(ID_1) && ensureMappers(ID_2, split1) && ensureReducers(ID_2, 2) && ensureEmpty0(ID_3) ||
-            ensureEmpty0(ID_1) && ensureEmpty0(ID_2) && ensureMappers(ID_3, split1) && ensureReducers(ID_3, 2);
+        assert ensureMappers(ID_1, split1) && ensureReducers(ID_1, 2) && ensureEmpty(ID_2) && ensureEmpty(ID_3) ||
+            ensureEmpty(ID_1) && ensureMappers(ID_2, split1) && ensureReducers(ID_2, 2) && ensureEmpty(ID_3) ||
+            ensureEmpty(ID_1) && ensureEmpty(ID_2) && ensureMappers(ID_3, split1) && ensureReducers(ID_3, 2);
 
         plan(1, split1, split2, split3);
         assert ensureMappers(ID_1, split1) && ensureMappers(ID_2, split2) && ensureMappers(ID_3, split3) ||
@@ -448,62 +448,8 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
      * @param nodeId Node ID.
      * @return {@code True} if this assumption is valid.
      */
-    private static boolean ensureEmpty0(UUID nodeId) {
+    private static boolean ensureEmpty(UUID nodeId) {
         return F.isEmpty(PLAN.get().mappers(nodeId)) && F.isEmpty(PLAN.get().reducers(nodeId));
-    }
-
-    /**
-     * Check plan.
-     * @param plan Plan.
-     * @param ensures Ensures.
-     */
-    private static void checkPlan(GridHadoopMapReducePlan plan, Ensure... ensures) {
-        if (ensures != null) {
-            for (Ensure ensure : ensures) {
-                Collection<GridHadoopInputSplit> splits = plan.mappers(ensure.id);
-
-                if (F.isEmpty(ensure.splits))
-                    assert F.isEmpty(splits) : "Invalid mappers [nodeId=" + ensure.id + ", expected=N/A, actual=" +
-                        splits + ']';
-                else
-                    assert F.eq(ensure.splits, splits) : "Invalid mappers [nodeId=" + ensure.id + ", expected=" +
-                        ensure.splits + ", actual=" + splits + ']';
-
-                int[] reducers = plan.reducers(ensure.id);
-
-                int reducersCnt = reducers == null ? 0 : reducers.length;
-
-                assert ensure.reducers == reducersCnt : "Invalid reducers [nodeId=" + ensure.id + ", expected=" +
-                    ensure.reducers + ", actual=" + reducersCnt + ']';
-            }
-        }
-    }
-
-    /**
-     * Create ensure.
-     *
-     * @param id Node ID.
-     * @param reducers Expected reducers count.
-     * @param splits Expected splits.
-     * @return Ensure.
-     */
-    private static Ensure ensure(UUID id, int reducers, GridHadoopInputSplit... splits) {
-        Collection<GridHadoopInputSplit> splitList = new ArrayList<>();
-
-        if (splits != null)
-            Collections.addAll(splitList, splits);
-
-        return new Ensure(id, reducers, splitList);
-    }
-
-    /**
-     * Create empty ensure.
-     *
-     * @param id Node ID.
-     * @return Ensure.
-     */
-    private static Ensure ensureEmpty(UUID id) {
-        return ensure(id, 0);
     }
 
     /**
@@ -626,32 +572,6 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
             result = 31 * result + (int) (len ^ (len >>> 32));
 
             return result;
-        }
-    }
-
-    /**
-     * Ensure class.
-     */
-    private static class Ensure {
-        /** Node ID. */
-        private final UUID id;
-
-        /** Reducers count. */
-        private final int reducers;
-
-        /** Splits. */
-        private final Collection<GridHadoopInputSplit> splits;
-
-        /**
-         *
-         * @param id Node ID.
-         * @param reducers Reducers count.
-         * @param splits Splits.
-         */
-        private Ensure(UUID id, int reducers, Collection<GridHadoopInputSplit> splits) {
-            this.id = id;
-            this.reducers = reducers;
-            this.splits = splits;
         }
     }
 

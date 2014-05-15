@@ -54,7 +54,7 @@ public class GridGgfsBlockLocationImpl implements GridGgfsBlockLocation, Externa
      * @param location HDFS block location.
      * @throws IOException In case of any IO exception.
      */
-    GridGgfsBlockLocationImpl(BlockLocation location) throws IOException {
+    public GridGgfsBlockLocationImpl(BlockLocation location) throws IOException {
         assert location != null;
 
         start = location.getOffset();
@@ -68,7 +68,7 @@ public class GridGgfsBlockLocationImpl implements GridGgfsBlockLocation, Externa
      * @param location HDFS block location.
      * @param len New length.
      */
-    GridGgfsBlockLocationImpl(GridGgfsBlockLocation location, long len) {
+    public GridGgfsBlockLocationImpl(GridGgfsBlockLocation location, long len) {
         assert location != null;
 
         start = location.start();
