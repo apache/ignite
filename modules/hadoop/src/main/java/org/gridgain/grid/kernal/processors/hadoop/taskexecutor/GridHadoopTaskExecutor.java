@@ -13,22 +13,27 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-
+import java.util.concurrent.*;
 import java.util.*;
 
 import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
 import static org.gridgain.grid.kernal.processors.hadoop.taskexecutor.GridHadoopTaskState.*;
 
 /**
- * TODO write doc
+ * Task executor.
  */
 public class GridHadoopTaskExecutor extends GridHadoopComponent {
     /** Job tracker. */
     private GridHadoopJobTracker jobTracker;
 
+    /** */
+    private final ConcurrentMap<GridHadoopJobId, Collection<GridFuture<?>>> jobs = new ConcurrentHashMap<>();
+
+    /** {@inheritDoc} */
     @Override public void onKernalStart() throws GridException {
         super.onKernalStart();
 
@@ -46,10 +51,20 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
             log.debug("Submitting tasks for local execution [locNodeId=" + ctx.localNodeId() +
                 ", tasksCnt=" + tasks.size() + ']');
 
+        Collection<GridFuture<?>> futures = jobs.get(job.id());
+
+        if (futures == null) {
+            futures = new GridConcurrentHashSet<>();
+
+            Collection<GridFuture<?>> extractedCol = jobs.put(job.id(), futures);
+
+            assert extractedCol == null;
+        }
+
         for (final GridHadoopTask task : tasks) {
             assert task != null;
 
-            ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<GridFuture<?>>() {
+            GridFuture<GridFuture<?>> fut = ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<GridFuture<?>>() {
                 @Override public GridFuture<?> call() throws Exception {
                     GridHadoopTaskInfo info = task.info();
 
@@ -70,13 +85,27 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
 
                     return null;
                 }
-            }, false).listenAsync(new CIX1<GridFuture<?>>() {
+            }, false);
+
+            futures.add(fut);
+
+            fut.listenAsync(new CIX1<GridFuture<?>>() {
                 @Override public void applyx(GridFuture<?> f) throws GridException {
+                    Collection<GridFuture<?>> futs = jobs.get(task.info().jobId());
+
+                    futs.remove(f);
+
+                    if (futs.isEmpty())
+                        jobs.remove(task.info().jobId());
+
                     GridHadoopTaskState state = COMPLETED;
                     Throwable err = null;
 
                     try {
                         f.get();
+                    }
+                    catch (GridFutureCancelledException e) {
+                        state = CANCELED;
                     }
                     catch (Throwable e) {
                         state = FAILED;
@@ -100,7 +129,18 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
      * @param jobId Job ID to cancel.
      */
     public void cancelTasks(GridHadoopJobId jobId) {
-        // TODO.
+        Collection<GridFuture<?>> futures = jobs.get(jobId);
+
+        if (futures != null) {
+            for (GridFuture<?> f : futures) {
+                try {
+                    f.cancel();
+                }
+                catch (GridException e) {
+                    log.error("Future cancelling failed", e);
+                }
+            }
+        }
     }
 
     /**

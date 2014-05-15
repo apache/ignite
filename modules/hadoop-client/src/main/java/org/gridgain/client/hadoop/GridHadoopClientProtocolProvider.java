@@ -9,7 +9,6 @@
 
 package org.gridgain.client.hadoop;
 
-import io.netty.util.concurrent.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.protocol.*;
@@ -34,9 +33,6 @@ import static org.gridgain.client.hadoop.GridHadoopClientProtocol.*;
 public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
     /** Clients. */
     private static final ConcurrentHashMap<String, GridFuture<GridClient>> cliMap = new ConcurrentHashMap<>();
-
-    /** NIO thread factory for clients. */
-    private static final ThreadFactory THREAD_FACTORY = new DefaultThreadFactory("gridgain-hadoop-client-tcp", true);
 
     /** {@inheritDoc} */
     @Override public ClientProtocol create(Configuration conf) throws IOException {
@@ -106,7 +102,6 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
                     cliCfg.setProtocol(TCP);
                     cliCfg.setServers(Collections.singletonList(addr));
                     cliCfg.setMarshaller(new GridClientOptimizedMarshaller());
-                    cliCfg.setNioThreadFactory(THREAD_FACTORY);
 
                     try {
                         GridClient cli = GridClientFactory.start(cliCfg);
