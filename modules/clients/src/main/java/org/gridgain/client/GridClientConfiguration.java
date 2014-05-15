@@ -104,9 +104,6 @@ public class GridClientConfiguration {
     /** Marshaller. */
     private GridClientMarshaller marshaller = new GridClientOptimizedMarshaller();
 
-    /** NIO thread factory. */
-    private ThreadFactory nioThreadFactory;
-
     /**
      * Creates default configuration.
      */
@@ -131,7 +128,6 @@ public class GridClientConfiguration {
         executor = cfg.getExecutorService();
         marshaller = cfg.getMarshaller();
         maxConnIdleTime = cfg.getMaxConnectionIdleTime();
-        nioThreadFactory = cfg.getNioThreadFactory();
         pingInterval = cfg.getPingInterval();
         pingTimeout = cfg.getPingTimeout();
         proto = cfg.getProtocol();
@@ -589,25 +585,6 @@ public class GridClientConfiguration {
      */
     public void setExecutorService(ExecutorService executor) {
         this.executor = executor;
-    }
-
-    /**
-     * Gets NIO thread factory which will be used by Netty client. If not set, Netty will use it's default
-     * thread factory.
-     *
-     * @return NIO thread factory.
-     */
-    @Nullable public ThreadFactory getNioThreadFactory() {
-        return nioThreadFactory;
-    }
-
-    /**
-     * Sets NIO thread factory.
-     *
-     * @param nioThreadFactory NIO thread factory.
-     */
-    public void setNioThreadFactory(@Nullable ThreadFactory nioThreadFactory) {
-        this.nioThreadFactory = nioThreadFactory;
     }
 
     /**
