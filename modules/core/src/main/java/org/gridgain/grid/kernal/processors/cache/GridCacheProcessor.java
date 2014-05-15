@@ -154,7 +154,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cfg.getAffinityMapper() == null)
             cfg.setAffinityMapper(new GridCacheDefaultAffinityKeyMapper());
 
-        ctx.ggfs().preProcessCacheConfiguration(cfg);
+        ctx.ggfsUtils().preProcessCacheConfiguration(cfg);
 
         if (cfg.getPreloadMode() == null)
             cfg.setPreloadMode(ASYNC);
@@ -347,7 +347,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        ctx.ggfs().validateCacheConfiguration(cc);
+        ctx.ggfsUtils().validateCacheConfiguration(cc);
 
         switch (cc.getMemoryMode()) {
             case OFFHEAP_VALUES: {

@@ -196,6 +196,10 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringInclude
+    private GridGgfsUtilsProcessorAdapter ggfsUtilsProc;
+
+    /** */
+    @GridToStringInclude
     private GridSegmentationProcessor segProc;
 
     /** */
@@ -308,17 +312,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /**
-     * Component start callback.
-     *
-     * @param comp Component.
-     */
-    public void onComponentStart(GridComponent comp) {
-        assert comp != null;
-
-        comps.add(comp);
-    }
-
-    /**
      * @param comp Manager to add.
      */
     public void add(GridComponent comp) {
@@ -393,6 +386,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             dataLdrProc = (GridDataLoaderProcessor)comp;
         else if (comp instanceof GridGgfsProcessorAdapter)
             ggfsProc = (GridGgfsProcessorAdapter)comp;
+        else if (comp instanceof GridGgfsUtilsProcessorAdapter)
+            ggfsUtilsProc = (GridGgfsUtilsProcessorAdapter)comp;
         else if (comp instanceof GridOffHeapProcessor)
             offheapProc = (GridOffHeapProcessor)comp;
         else if (comp instanceof GridLicenseProcessor)
@@ -407,6 +402,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             verProc = (GridVersionProcessor)comp;
         else
             assert false : "Unknown manager class: " + comp.getClass();
+
+        comps.add(comp);
     }
 
     /** {@inheritDoc} */
@@ -633,6 +630,11 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** {@inheritDoc} */
     @Override public GridGgfsProcessorAdapter ggfs() {
         return ggfsProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridGgfsUtilsProcessorAdapter ggfsUtils() {
+        return ggfsUtilsProc;
     }
 
     /** {@inheritDoc} */

@@ -26,6 +26,13 @@ public enum GridComponentType {
         "gridgain-hadoop"
     ),
 
+    /** GGFS utils component. */
+    GGFS_UTILS(
+        "org.gridgain.grid.kernal.processors.ggfs.GridNoopGgfsUtilsProcessor",
+        "org.gridgain.grid.kernal.processors.ggfs.GridGgfsUtilsProcessor",
+        "gridgain-hadoop"
+    ),
+
     /** Spring XML parsing. */
     SPRING(
         null,
