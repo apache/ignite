@@ -9,8 +9,11 @@
 
 package org.gridgain.grid.spi.securesession.rememberme;
 
-import org.apache.commons.codec.binary.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
+
+import javax.xml.bind.*;
+import java.io.*;
 
 /**
  * Base64 decoder.
@@ -18,7 +21,15 @@ import org.gridgain.grid.util.typedef.internal.*;
 public class GridRememberMeBase64DecodingConverter implements GridRememberMeConverter {
     /** {@inheritDoc} */
     @Override public byte[] convert(byte[] data) {
-        return Base64.isBase64(data) ? Base64.decodeBase64(data) : null;
+        try {
+            return DatatypeConverter.parseBase64Binary(new String(data, "UTF-8"));
+        }
+        catch (UnsupportedEncodingException e) {
+            throw new GridRuntimeException(e);
+        }
+        catch (Exception ignored) {
+            return null; // Invalid Base64 data.
+        }
     }
 
     /** {@inheritDoc} */

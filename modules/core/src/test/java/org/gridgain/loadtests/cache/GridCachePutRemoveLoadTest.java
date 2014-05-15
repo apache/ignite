@@ -14,6 +14,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.eviction.lru.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
@@ -87,7 +88,7 @@ public class GridCachePutRemoveLoadTest {
     protected void startNodes() throws Exception {
         for (int i = 0; i < args.nodes(); i++) {
             GridConfiguration cfg =
-                G.loadConfiguration("modules/core/src/test/config/spring-cache-put-remove-load.xml").get1();
+                GridGainEx.loadConfiguration("modules/core/src/test/config/spring-cache-put-remove-load.xml").get1();
 
             assert cfg != null;
 

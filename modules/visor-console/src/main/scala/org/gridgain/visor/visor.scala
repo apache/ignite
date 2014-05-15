@@ -17,7 +17,6 @@ import java.io._
 import java.util._
 import java.util.concurrent._
 import org.jetbrains.annotations.Nullable
-import org.springframework.beans.BeansException
 import scala.collection.immutable
 import collection.JavaConversions._
 import org.gridgain.grid._
@@ -39,6 +38,8 @@ import org.gridgain.visor.commands.{VisorTextTable, VisorConsoleCommand}
 import org.gridgain.grid.resources.GridInstanceResource
 import org.gridgain.grid.kernal.processors.task.GridInternal
 import org.gridgain.grid.util.scala.impl
+import org.gridgain.grid.kernal.processors.spring.GridSpringProcessor
+import org.gridgain.grid.kernal.GridComponentType._
 
 /**
  * Holder for command help information.
@@ -1432,39 +1433,24 @@ object visor extends VisorTag {
 
             var log4jTup: GridBiTuple[AnyRef, AnyRef] = null
 
-            val springCtx =
-                try {
-                    // Add no-op logger to remove no-appender warning.
-                    if (isLog4jUsed)
-                        log4jTup = U.addLog4jNoOpLogger()
+            val spring: GridSpringProcessor = SPRING.create(false)
 
-                    // Streamer and cache configurations should be excluded from config.
-                    U.applicationContext(url, "streamerConfiguration", "cacheConfiguration")
-                }
-                catch {
-                    case e: BeansException => throw new GE("Failed to instantiate Spring " +
-                        "XML application context: " + url, e)
-                }
-
-            val cfgMap =
+            val cfgs =
                 try {
-                    springCtx.getBeansOfType(classOf[GridConfiguration]).toMap
-                }
-                catch {
-                    case e: BeansException => throw new GE("Failed to instantiate Spring bean.", e)
+                    spring.loadConfigurations(url).get1()
                 }
                 finally {
                     if (isLog4jUsed && log4jTup != null)
                         U.removeLog4jNoOpLogger(log4jTup)
                 }
 
-            if (cfgMap == null || cfgMap.isEmpty)
+            if (cfgs == null || cfgs.isEmpty)
                 throw new GE("Can't find grid configuration in: " + url)
 
-            if (cfgMap.size > 1)
+            if (cfgs.size > 1)
                 throw new GE("More than one grid configuration found in: " + url)
 
-            val cfg = cfgMap.head._2
+            val cfg = cfgs.iterator().next()
 
             // Setting up 'Config URL' for properly print in console.
             System.setProperty(GridSystemProperties.GG_CONFIG_URL, url.getPath)

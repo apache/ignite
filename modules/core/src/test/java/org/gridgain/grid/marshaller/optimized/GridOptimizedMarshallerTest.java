@@ -1,6 +1,5 @@
 package org.gridgain.grid.marshaller.optimized;
 
-import org.apache.commons.io.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.marshaller.*;
@@ -260,7 +259,7 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
 
         File namesFile = File.createTempFile("gg-", null);
 
-        FileUtils.writeStringToFile(namesFile, SomeSerializable.class.getName(), "UTF-8");
+        U.writeStringToFile(namesFile, SomeSerializable.class.getName(), "UTF-8");
 
         marshPreregistered.setClassNamesPath(namesFile.getAbsolutePath());
 

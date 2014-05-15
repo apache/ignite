@@ -35,40 +35,32 @@
 
     <includeBaseDirectory>false</includeBaseDirectory>
 
-    <dependencySets>
-        <dependencySet>
-            <outputDirectory>/</outputDirectory>
-            <useTransitiveDependencies>false</useTransitiveDependencies>
-            <excludes>
-                <exclude>org.apache.ant:ant</exclude>
-                <exclude>org.apache.tomcat:catalina</exclude>
-                <exclude>jboss:*</exclude>
-                <exclude>org.apache.hadoop:*</exclude>
-                <exclude>org.apache.avro:avro</exclude>
-            </excludes>
-        </dependencySet>
-
-        <dependencySet>
-            <outputDirectory>/hadoop2</outputDirectory>
-            <useTransitiveDependencies>false</useTransitiveDependencies>
+    <moduleSets>
+        <moduleSet>
             <includes>
-                <include>org.apache.hadoop:*</include>
-                <include>org.apache.avro:avro</include>
+                <include>org.gridgain:*</include>
             </includes>
-        </dependencySet>
-    </dependencySets>
+            <sources>
+                <includeModuleDirectory>false</includeModuleDirectory>
+                <fileSets>
+                    <fileSet>
+                        <directory>target/libs</directory>
+                        <outputDirectory>/</outputDirectory>
+                    </fileSet>
+                </fileSets>
+            </sources>
+        </moduleSet>
+    </moduleSets>
 
     <fileSets>
+        <fileSet>
+            <directory>target/libs</directory>
+            <outputDirectory>/</outputDirectory>
+        </fileSet>
+
         <fileSet>
             <directory>assembly/libs</directory>
             <outputDirectory>/</outputDirectory>
         </fileSet>
     </fileSets>
-
-    <files>
-        <file>
-            <source>${settings.localRepository}/org/apache/hadoop/hadoop-core/1.0.4/hadoop-core-1.0.4.jar</source>
-            <outputDirectory>/hadoop1</outputDirectory>
-        </file>
-    </files>
 </assembly>

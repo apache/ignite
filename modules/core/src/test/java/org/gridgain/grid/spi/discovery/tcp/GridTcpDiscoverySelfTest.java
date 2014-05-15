@@ -26,7 +26,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
-import org.springframework.context.support.*;
 
 import java.io.*;
 import java.net.*;
@@ -1115,7 +1114,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private Grid startGridNoOptimize(String gridName) throws Exception {
-        return G.start(getConfiguration(gridName), new GenericApplicationContext());
+        return G.start(getConfiguration(gridName));
     }
 
     /**

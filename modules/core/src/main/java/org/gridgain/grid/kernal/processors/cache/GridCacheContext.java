@@ -25,6 +25,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
+import org.gridgain.grid.kernal.processors.cache.jta.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
@@ -132,6 +133,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Replication manager. */
     private GridCacheDrManager<K, V> drMgr;
 
+    /** JTA manager. */
+    private GridCacheJtaManagerAdapter<K, V> jtaMgr;
+
     /** Managers. */
     private List<GridCacheManager<K, V>> mgrs = new LinkedList<>();
 
@@ -209,6 +213,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param dataStructuresMgr Cache dataStructures manager.
      * @param ttlMgr TTL manager.
      * @param drMgr Data center replication manager.
+     * @param jtaMgr JTA manager.
      */
     @SuppressWarnings({"unchecked"})
     public GridCacheContext(
@@ -235,7 +240,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheTxManager<K, V> txMgr,
         GridCacheDataStructuresManager<K, V> dataStructuresMgr,
         GridCacheTtlManager<K, V> ttlMgr,
-        GridCacheDrManager<K, V> drMgr) {
+        GridCacheDrManager<K, V> drMgr,
+        GridCacheJtaManagerAdapter<K, V> jtaMgr) {
         assert ctx != null;
         assert cacheCfg != null;
 
@@ -278,6 +284,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.dataStructuresMgr = add(dataStructuresMgr);
         this.ttlMgr = add(ttlMgr);
         this.drMgr = add(drMgr);
+        this.jtaMgr = add(jtaMgr);
 
         log = ctx.log(getClass());
 
@@ -850,6 +857,12 @@ public class GridCacheContext<K, V> implements Externalizable {
         return ttlMgr;
     }
 
+    /**
+     * @return JTA manager.
+     */
+    public GridCacheJtaManagerAdapter<K, V> jta() {
+        return jtaMgr;
+    }
     /**
      * @return No get-value filter.
      */

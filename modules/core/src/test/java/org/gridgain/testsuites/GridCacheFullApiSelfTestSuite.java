@@ -15,7 +15,6 @@ import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.dr.cache.*;
-import org.gridgain.grid.kernal.processors.rest.handlers.cache.*;
 
 /**
  * Test suite for cache API.
@@ -103,9 +102,6 @@ public class GridCacheFullApiSelfTestSuite extends TestSuite {
 //        suite.addTestSuite(GridCacheLocalFullApiMultithreadedSelfTest.class);
 //        suite.addTestSuite(GridCacheReplicatedFullApiMultithreadedSelfTest.class);
 //        suite.addTestSuite(GridCachePartitionedFullApiMultithreadedSelfTest.class);
-
-        // The rest cache stuff.
-        suite.addTestSuite(GridCacheCommandHandlerSelfTest.class);
 
         // Cache API tests for cache configured as DR target.
         // Multi node.
