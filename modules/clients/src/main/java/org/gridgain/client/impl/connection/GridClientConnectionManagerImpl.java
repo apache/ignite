@@ -11,7 +11,6 @@ package org.gridgain.client.impl.connection;
 
 import io.netty.channel.*;
 import io.netty.channel.nio.*;
-import io.netty.util.concurrent.*;
 import org.gridgain.client.*;
 import org.gridgain.client.impl.*;
 import org.gridgain.client.util.*;
