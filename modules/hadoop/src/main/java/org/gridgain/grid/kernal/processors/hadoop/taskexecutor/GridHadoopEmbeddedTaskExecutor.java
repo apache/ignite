@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
@@ -56,8 +55,8 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
             assert extractedCol == null;
         }
 
-        for (final GridHadoopTask task : tasks) {
-            assert task != null;
+        for (final GridHadoopTaskInfo info : tasks) {
+            assert info != null;
 
             GridFuture<GridFuture<?>> fut = ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<GridFuture<?>>() {
                 @Override public GridFuture<?> call() throws Exception {
@@ -85,13 +84,13 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
             futures.add(fut);
 
             fut.listenAsync(new CIX1<GridFuture<?>>() {
-                @Override public void applyx(GridFuture<?> f) throws GridException {
-                    Collection<GridFuture<?>> futs = jobs.get(task.info().jobId());
+                @Override public void applyx(GridFuture<?> f) {
+                    Collection<GridFuture<?>> futs = jobs.get(info.jobId());
 
                     futs.remove(f);
 
                     if (futs.isEmpty())
-                        jobs.remove(task.info().jobId());
+                        jobs.remove(info.jobId());
 
                     GridHadoopTaskState state = COMPLETED;
                     Throwable err = null;
@@ -99,7 +98,7 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
                     try {
                         f.get();
                     }
-                    catch (GridFutureCancelledException e) {
+                    catch (GridFutureCancelledException ignored) {
                         state = CANCELED;
                     }
                     catch (Throwable e) {
@@ -123,7 +122,7 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
      *
      * @param jobId Job ID to cancel.
      */
-    public void cancelTasks(GridHadoopJobId jobId) {
+    @Override public void cancelTasks(GridHadoopJobId jobId) {
         Collection<GridFuture<?>> futures = jobs.get(jobId);
 
         if (futures != null) {
