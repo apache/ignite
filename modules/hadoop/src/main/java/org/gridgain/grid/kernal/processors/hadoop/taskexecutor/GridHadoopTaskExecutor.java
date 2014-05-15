@@ -24,14 +24,16 @@ import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
 import static org.gridgain.grid.kernal.processors.hadoop.taskexecutor.GridHadoopTaskState.*;
 
 /**
- * TODO write doc
+ * Task executor.
  */
 public class GridHadoopTaskExecutor extends GridHadoopComponent {
     /** Job tracker. */
     private GridHadoopJobTracker jobTracker;
 
+    /** */
     private final ConcurrentMap<GridHadoopJobId, Collection<GridFuture<?>>> jobs = new ConcurrentHashMap<>();
 
+    /** {@inheritDoc} */
     @Override public void onKernalStart() throws GridException {
         super.onKernalStart();
 
@@ -129,7 +131,7 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
     public void cancelTasks(GridHadoopJobId jobId) {
         Collection<GridFuture<?>> futures = jobs.get(jobId);
 
-        if (futures != null)
+        if (futures != null) {
             for (GridFuture<?> f : futures) {
                 try {
                     f.cancel();
@@ -138,6 +140,7 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
                     log.error("Future cancelling failed", e);
                 }
             }
+        }
     }
 
     /**
