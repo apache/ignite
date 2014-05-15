@@ -64,6 +64,9 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
 
     /** {@inheritDoc} */
     @Override public boolean nextKeyValue() throws IOException, InterruptedException {
+        if (Thread.currentThread().isInterrupted())
+            throw new InterruptedException();
+
         return reader.nextKeyValue();
     }
 
@@ -326,6 +329,9 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
 
     /** {@inheritDoc} */
     @Override public boolean nextKey() throws IOException, InterruptedException {
+        if (Thread.currentThread().isInterrupted())
+            throw new InterruptedException();
+
         return input.next();
     }
 
