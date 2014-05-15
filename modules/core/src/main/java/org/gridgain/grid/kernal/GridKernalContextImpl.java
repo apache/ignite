@@ -308,6 +308,17 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /**
+     * Component start callback.
+     *
+     * @param comp Component.
+     */
+    public void onComponentStart(GridComponent comp) {
+        assert comp != null;
+
+        comps.add(comp);
+    }
+
+    /**
      * @param comp Manager to add.
      */
     public void add(GridComponent comp) {
@@ -396,8 +407,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             verProc = (GridVersionProcessor)comp;
         else
             assert false : "Unknown manager class: " + comp.getClass();
-
-        comps.add(comp);
     }
 
     /** {@inheritDoc} */

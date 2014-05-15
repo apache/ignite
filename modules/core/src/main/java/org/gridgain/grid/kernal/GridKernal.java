@@ -197,7 +197,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /**
-     * @param springCtx Optional Spring application context.
+     * @param rsrcCtx Optional Spring application context.
      */
     public GridKernal(@Nullable GridSpringResourceContext rsrcCtx) {
         super(null, null, (GridPredicate<GridNode>)null);
@@ -1419,6 +1419,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         ctx.add(mgr);
 
         try {
+            ctx.onComponentStart(mgr);
+
             mgr.start();
         }
         catch (GridException e) {
@@ -1450,6 +1452,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             ctx.add(proc);
 
         try {
+            ctx.onComponentStart(proc);
+
             proc.start();
 
             proc.addAttributes(attrs);
