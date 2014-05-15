@@ -42,16 +42,22 @@
 
         <dependency>
             <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-core</artifactId>
+            <artifactId>gridgain-schedule</artifactId>
             <version>${gridgain.version}</version>
-            <type>test-jar</type>
+        </dependency>
+
+        <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-indexing</artifactId>
+            <version>${gridgain.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.11</version>
+            <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-core</artifactId>
+            <version>${gridgain.version}</version>
+            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -393,11 +393,6 @@ public final class GridSystemProperties {
     public static final String GG_TCP_DISCOVERY_ADDRESSES = "GRIDGAIN_TCP_DISCOVERY_ADDRESSES";
 
     /**
-     * Flag indicating whether library consistency check is on or off (by default the check is on).
-     */
-    public static final String GG_LIBRARY_CONSISTENCY_CHECK = "GRIDGAIN_LIBRARY_CONSISTENCY_CHECK";
-
-    /**
      * Flag indicating whether performance suggestions output on start should be disabled.
      */
     public static final String GG_PERFORMANCE_SUGGESTIONS_DISABLED = "GRIDGAIN_PERFORMANCE_SUGGESTIONS_DISABLED";

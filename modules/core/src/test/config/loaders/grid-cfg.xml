@@ -20,6 +20,9 @@
     -->
     <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true">
         <!-- Grid with default name. -->
+
+        <property name="restEnabled" value="false" />
+
         <property name="discoverySpi">
             <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
                 <property name="ipFinder">
@@ -34,6 +37,8 @@
 
     <bean id="grid.cfg.2" class="org.gridgain.grid.GridConfiguration" singleton="true">
         <property name="gridName" value="gridName2"/>
+
+        <property name="restEnabled" value="false" />
 
         <property name="discoverySpi">
             <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">

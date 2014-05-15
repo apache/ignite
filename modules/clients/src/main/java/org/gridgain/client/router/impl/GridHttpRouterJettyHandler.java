@@ -10,7 +10,6 @@
 package org.gridgain.client.router.impl;
 
 import net.sf.json.*;
-import org.apache.commons.io.*;
 import org.apache.http.*;
 import org.apache.http.client.CookieStore;
 import org.apache.http.client.*;
@@ -229,7 +228,9 @@ class GridHttpRouterJettyHandler extends AbstractHandler {
         from.setCharacterEncoding("UTF-8");
         from.setStatus(res.getStatusLine().getStatusCode());
 
-        IOUtils.copy(entity.getContent(), from.getWriter(), CharsetUtil.UTF_8);
+        InputStreamReader reader = new InputStreamReader(entity.getContent(), CharsetUtil.UTF_8);
+
+        U.copy(reader, from.getWriter());
 
         from.flushBuffer();
     }

@@ -16,7 +16,6 @@ import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
-import org.springframework.context.support.*;
 
 /**
  * This class tests injection of {@code localHost} property to various SPIs.
@@ -145,7 +144,7 @@ public class GridSpiLocalHostInjectionTest extends GridCommonAbstractTest {
 
         GridResourceProcessor proc = new GridResourceProcessor(ctx);
 
-        proc.setSpringContext(new GenericApplicationContext());
+        proc.setSpringContext(null);
 
         return proc;
     }

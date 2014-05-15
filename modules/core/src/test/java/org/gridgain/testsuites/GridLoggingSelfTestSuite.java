@@ -11,9 +11,6 @@ package org.gridgain.testsuites;
 
 import junit.framework.*;
 import org.gridgain.grid.logger.java.*;
-import org.gridgain.grid.logger.jboss.*;
-import org.gridgain.grid.logger.jcl.*;
-import org.gridgain.grid.logger.log4j.*;
 
 /**
  * Logging self-test suite.
@@ -26,11 +23,6 @@ public class GridLoggingSelfTestSuite extends TestSuite {
        TestSuite suite = new TestSuite("Gridgain Logging Test Suite");
 
        suite.addTest(new TestSuite(GridJavaLoggerTest.class));
-       suite.addTest(new TestSuite(GridJBossLoggerTest.class));
-       suite.addTest(new TestSuite(GridJclLoggerTest.class));
-       suite.addTest(new TestSuite(GridLog4jInitializedTest.class));
-       suite.addTest(new TestSuite(GridLog4jNotInitializedTest.class));
-       suite.addTest(new TestSuite(GridLog4jCorrectFileNameTest.class));
 
        return suite;
    }

@@ -160,4 +160,9 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
     @Override public boolean isInfoEnabled() {
         return impl.isLoggable(Level.INFO);
     }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String fileName() {
+        return null;
+    }
 }
