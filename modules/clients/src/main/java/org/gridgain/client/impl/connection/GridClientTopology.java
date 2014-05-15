@@ -18,6 +18,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 import java.util.logging.*;
 
@@ -59,7 +60,8 @@ public class GridClientTopology {
     private final Collection<GridClientTopologyListener> topLsnrs = new ConcurrentLinkedQueue<>();
 
     /** Executor for listener notification. */
-    private final ExecutorService exec = Executors.newSingleThreadExecutor();
+    private final ExecutorService exec =
+        Executors.newSingleThreadExecutor(new GridClientThreadFactory("top-lsnr", true));
 
     /**
      * Creates topology instance.
