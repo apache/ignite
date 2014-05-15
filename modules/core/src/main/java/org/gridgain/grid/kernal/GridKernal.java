@@ -1426,7 +1426,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      * @param ctx Kernal context.
      * @param proc Processor to start.
      * @param attrs Attributes.
-     * @param add Whether to add processro to context ({@code false} if already added).
      * @throws GridException Thrown in case of any error.
      */
     private void startProcessor(GridKernalContextImpl ctx, GridProcessor proc, Map<String, Object> attrs)
