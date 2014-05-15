@@ -199,7 +199,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /**
-     * @param springCtx Optional Spring application context.
+     * @param rsrcCtx Optional Spring application context.
      */
     public GridKernal(@Nullable GridSpringResourceContext rsrcCtx) {
         super(null, null, (GridPredicate<GridNode>)null);
@@ -671,7 +671,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             // be able to start receiving messages once discovery completes.
             GridGgfsProcessorAdapter ggfsProc =  GGFS.create(ctx, F.isEmpty(cfg.getGgfsConfiguration()));
 
-            GridHadoopProcessorAdapter hadoopProc = COMP_HADOOP.create(ctx, cfg.getHadoopConfiguration() == null);
+            GridHadoopProcessorAdapter hadoopProc =
+                GridComponentType.HADOOP.create(ctx, cfg.getHadoopConfiguration() == null);
 
             ctx.add(ggfsProc);
 
