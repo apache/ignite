@@ -37,15 +37,29 @@
 
     <moduleSets>
         <moduleSet>
-            <includes>
-                <include>org.gridgain:*</include>
-            </includes>
+            <excludes>
+                <exclude>org.gridgain:gridgain-examples</exclude>
+                <exclude>org.gridgain:gridgain-tools</exclude>
+                <exclude>org.gridgain:gridgain-extdata-p2p</exclude>
+                <exclude>org.gridgain:gridgain-extdata-uri</exclude>
+                <exclude>org.gridgain:jdk8-backport</exclude>
+            </excludes>
             <sources>
-                <includeModuleDirectory>false</includeModuleDirectory>
+                <includeModuleDirectory>true</includeModuleDirectory>
                 <fileSets>
                     <fileSet>
                         <directory>target/libs</directory>
                         <outputDirectory>/</outputDirectory>
+                    </fileSet>
+                    <fileSet>
+                        <directory>target</directory>
+                        <outputDirectory>/</outputDirectory>
+                        <includes>
+                            <include>*.jar</include>
+                        </includes>
+                        <excludes>
+                            <exclude>*-tests.jar</exclude>
+                        </excludes>
                     </fileSet>
                 </fileSets>
             </sources>
@@ -53,11 +67,6 @@
     </moduleSets>
 
     <fileSets>
-        <fileSet>
-            <directory>target/libs</directory>
-            <outputDirectory>/</outputDirectory>
-        </fileSet>
-
         <fileSet>
             <directory>assembly/libs</directory>
             <outputDirectory>/</outputDirectory>

@@ -51,14 +51,13 @@
         <module>modules/tools</module>
         <module>modules/spring</module>
         <module>modules/hibernate</module>
-        <module>modules/websession</module>
+        <module>modules/web</module>
         <module>modules/aop</module>
         <module>modules/urideploy</module>
         <module>modules/indexing</module>
         <module>modules/ssh</module>
-        <module>modules/servlet-startup</module>
         <module>modules/rest</module>
-        <module>modules/mail</module>
+        <module>modules/email</module>
         <module>modules/jta</module>
         <module>modules/aws</module>
         <module>modules/schedule</module>
@@ -633,41 +632,10 @@
                             <goal>copy-dependencies</goal>
                         </goals>
                         <configuration>
+                            <excludeGroupIds>org.gridgain</excludeGroupIds>
                             <outputDirectory>target/libs</outputDirectory>
                             <includeScope>runtime</includeScope>
-                            <excludeGroupIds>org.gridgain,org.apache.ant,org.apache.tomcat,jboss,org.apache.hadoop,org.apache.avro</excludeGroupIds>
                             <excludeTransitive>true</excludeTransitive>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-hadoop2-libs</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>target/libs/hadoop2</outputDirectory>
-                            <includeScope>runtime</includeScope>
-                            <includeGroupIds>org.apache.hadoop,org.apache.avro</includeGroupIds>
-                            <excludeTransitive>true</excludeTransitive>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-hadoop1-libs</id>
-                        <phase>prepare-package</phase>
-                        <inherited>false</inherited>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>target/libs/hadoop1</outputDirectory>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>org.apache.hadoop</groupId>
-                                    <artifactId>hadoop-core</artifactId>
-                                    <version>1.0.4</version>
-                                </artifactItem>
-                            </artifactItems>
                         </configuration>
                     </execution>
                 </executions>
@@ -691,22 +659,6 @@
                             </descriptors>
                             <outputDirectory>${basedir}</outputDirectory>
                             <finalName>libs</finalName>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>jar</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>assembly/jar.xml</descriptor>
-                            </descriptors>
-                            <finalName>gridgain</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                             <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                         </configuration>
