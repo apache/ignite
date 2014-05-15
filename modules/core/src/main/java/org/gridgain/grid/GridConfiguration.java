@@ -18,7 +18,6 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.logger.log4j.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.marshaller.optimized.*;
@@ -40,7 +39,6 @@ import org.gridgain.grid.spi.eventstorage.memory.*;
 import org.gridgain.grid.spi.failover.*;
 import org.gridgain.grid.spi.failover.always.*;
 import org.gridgain.grid.spi.indexing.*;
-import org.gridgain.grid.spi.indexing.h2.*;
 import org.gridgain.grid.spi.loadbalancing.*;
 import org.gridgain.grid.spi.loadbalancing.roundrobin.*;
 import org.gridgain.grid.spi.securesession.*;
@@ -252,6 +250,9 @@ public class GridConfiguration {
 
     /** Gridgain installation folder. */
     private String ggHome;
+
+    /** Gridgain work folder. */
+    private String ggWork;
 
     /** MBean server. */
     private MBeanServer mbeanSrv;
@@ -535,6 +536,7 @@ public class GridConfiguration {
         execSvc = cfg.getExecutorService();
         execSvcShutdown = cfg.getExecutorServiceShutdown();
         ggHome = cfg.getGridGainHome();
+        ggWork = cfg.getWorkDirectory();
         gridName = cfg.getGridName();
         ggfsCfg = cfg.getGgfsConfiguration();
         ggfsSvc = cfg.getGgfsExecutorService();
@@ -1018,7 +1020,7 @@ public class GridConfiguration {
     }
 
     /**
-     * Should return an instance of logger to use in grid. If not provided, {@link GridLog4jLogger}
+     * Should return an instance of logger to use in grid. If not provided, {@code GridLog4jLogger}
      * will be used.
      *
      * @return Logger to use in grid.
@@ -1315,6 +1317,31 @@ public class GridConfiguration {
      */
     public void setGridGainHome(String ggHome) {
         this.ggHome = ggHome;
+    }
+
+    /**
+     * Gets GridGain work folder. If not provided, the method will use work folder under
+     * {@code GRIDGAIN_HOME} specified by {@link GridConfiguration#setGridGainHome(String)} or
+     * {@code GRIDGAIN_HOME} environment variable or system property.
+     * <p>
+     * If {@code GRIDGAIN_HOME} is not provided, then system temp folder is used.
+     *
+     * @return GridGain work folder or {@code null} to make the system attempt to infer it automatically.
+     * @see GridConfiguration#getGridGainHome()
+     * @see GridSystemProperties#GG_HOME
+     */
+    @Nullable public String getWorkDirectory() {
+        return ggWork;
+    }
+
+    /**
+     * Sets GridGain work folder.
+     *
+     * @param ggWork {@code GridGain} work folder.
+     * @see GridConfiguration#getWorkDirectory()
+     */
+    public void setWorkDirectory(String ggWork) {
+        this.ggWork = ggWork;
     }
 
     /**
@@ -2090,7 +2117,7 @@ public class GridConfiguration {
 
     /**
      * Should return fully configured indexing SPI implementations. If not provided,
-     * {@link GridH2IndexingSpi} will be used.
+     * {@code GridH2IndexingSpi} will be used.
      * <p>
      * Note that user can provide one or multiple instances of this SPI (and select later which one
      * is used in a particular context).

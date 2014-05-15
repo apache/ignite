@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.util;
 
-import org.apache.commons.codec.binary.*;
-import org.apache.commons.codec.digest.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
@@ -31,19 +29,8 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
-import org.springframework.beans.*;
-import org.springframework.beans.factory.*;
-import org.springframework.beans.factory.config.*;
-import org.springframework.beans.factory.support.*;
-import org.springframework.beans.factory.xml.*;
-import org.springframework.context.*;
-import org.springframework.context.support.*;
-import org.springframework.core.io.*;
 import sun.misc.*;
 
-import javax.mail.*;
-import javax.mail.Authenticator;
-import javax.mail.internet.*;
 import javax.management.*;
 import javax.naming.*;
 import javax.net.ssl.*;
@@ -57,6 +44,7 @@ import java.net.*;
 import java.nio.*;
 import java.nio.channels.*;
 import java.nio.channels.spi.*;
+import java.nio.charset.*;
 import java.security.*;
 import java.security.cert.*;
 import java.sql.*;
@@ -112,14 +100,8 @@ public abstract class GridUtils {
     /** System line separator. */
     private static final String NL = System.getProperty("line.separator");
 
-    /** Path to {@code gridgain.xml} file. */
-    public static final String GRIDGAIN_XML_PATH = "META-INF/gridgain.xml";
-
     /** Default user version. */
     public static final String DFLT_USER_VERSION = "0";
-
-    /** System class loader user version. */
-    private static final AtomicReference<String> SYS_LDR_VER = new AtomicReference<>(null);
 
     /** Cache for {@link GridPeerDeployAware} fields to speed up reflection. */
     private static final ConcurrentMap<String, GridBiTuple<Class<?>, Collection<Field>>> p2pFields =
@@ -130,6 +112,9 @@ public abstract class GridUtils {
 
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
+
+    /** Project work directory. */
+    private static volatile String ggWork;
 
     /** OS JDK string. */
     private static String osJdkStr;
@@ -876,87 +861,6 @@ public abstract class GridUtils {
     }
 
     /**
-     *
-     * @param smtpHost SMTP host.
-     * @param smtpPort SMTP port.
-     * @param ssl SMTP SSL.
-     * @param startTls Start TLS flag.
-     * @param username Email authentication user name.
-     * @param pwd Email authentication password.
-     * @param from From email.
-     * @param subj Email subject.
-     * @param body Email body.
-     * @param html HTML format flag.
-     * @param addrs Addresses to send email to.
-     * @throws GridException Thrown in case when sending email failed.
-     */
-    public static void sendEmail(String smtpHost, int smtpPort, boolean ssl, boolean startTls,
-        final String username, final String pwd, String from, String subj, String body,
-        boolean html, Collection<String> addrs) throws GridException {
-        assert smtpHost != null;
-        assert smtpPort > 0;
-        assert from != null;
-        assert subj != null;
-        assert body != null;
-        assert addrs != null;
-        assert !addrs.isEmpty();
-
-        Properties props = new Properties();
-
-        props.setProperty("mail.transport.protocol", "smtp");
-        props.setProperty("mail.smtp.host", smtpHost);
-        props.setProperty("mail.smtp.port", Integer.toString(smtpPort));
-
-        if (ssl)
-            props.setProperty("mail.smtp.ssl", "true");
-
-        if (startTls)
-            props.setProperty("mail.smtp.starttls.enable", "true");
-
-        Authenticator auth = null;
-
-        // Add property for authentication by username.
-        if (username != null && !username.isEmpty()) {
-            props.setProperty("mail.smtp.auth", "true");
-
-            auth = new Authenticator() {
-                @Override public javax.mail.PasswordAuthentication getPasswordAuthentication() {
-                    return new javax.mail.PasswordAuthentication(username, pwd);
-                }
-            };
-        }
-
-        Session ses = Session.getInstance(props, auth);
-
-        MimeMessage email = new MimeMessage(ses);
-
-        try {
-            email.setFrom(new InternetAddress(from));
-            email.setSubject(subj);
-            email.setSentDate(new Date());
-
-            if (html)
-                email.setText(body, "UTF-8", "html");
-            else
-                email.setText(body);
-
-            Address[] rcpts = new Address[addrs.size()];
-
-            int i = 0;
-
-            for (String addr : addrs)
-                rcpts[i++] = new InternetAddress(addr);
-
-            email.setRecipients(MimeMessage.RecipientType.TO, rcpts);
-
-            Transport.send(email);
-        }
-        catch (MessagingException e) {
-            throw new GridException("Failed to send email.", e);
-        }
-    }
-
-    /**
      * Gets empty constructor for class even if the class does not have empty constructor
      * declared. This method is guaranteed to work with SUN JDK and other JDKs still need
      * to be tested.
@@ -1655,78 +1559,6 @@ public abstract class GridUtils {
     }
 
     /**
-     * Gets user version for given class loader by checking
-     * {@code META-INF/gridgain.xml} file for {@code userVersion} attribute. If
-     * {@code gridgain.xml} file is not found, or user version is not specified there,
-     * then default version (empty string) is returned.
-     *
-     * @param ldr Class loader.
-     * @param log Logger.
-     * @return User version for given class loader or empty string if no version
-     *      was explicitly specified.
-     */
-    public static String getUserVersion(ClassLoader ldr, GridLogger log) {
-        assert ldr != null;
-        assert log != null;
-
-        // For system class loader return cached version.
-        if (ldr == gridClassLoader() && SYS_LDR_VER.get() != null)
-            return SYS_LDR_VER.get();
-
-        String usrVer = DFLT_USER_VERSION;
-
-        InputStream in = ldr.getResourceAsStream(GRIDGAIN_XML_PATH);
-
-        if (in != null) {
-            // Note: use ByteArrayResource instead of InputStreamResource because
-            // InputStreamResource doesn't work.
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-
-            try {
-                copy(in, out);
-
-                DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
-
-                XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(factory);
-
-                reader.loadBeanDefinitions(new ByteArrayResource(out.toByteArray()));
-
-                usrVer = (String)factory.getBean("userVersion");
-
-                usrVer = usrVer == null ? DFLT_USER_VERSION : usrVer.trim();
-            }
-            catch (NoSuchBeanDefinitionException ignored) {
-                if (log.isInfoEnabled())
-                    log.info("User version is not explicitly defined (will use default version) [file=" +
-                        GRIDGAIN_XML_PATH + ", clsLdr=" + ldr + ']');
-
-                usrVer = DFLT_USER_VERSION;
-            }
-            catch (BeansException e) {
-                U.error(log, "Failed to parse Spring XML file (will use default user version) [file=" +
-                    GRIDGAIN_XML_PATH + ", clsLdr=" + ldr + ']', e);
-
-                usrVer = DFLT_USER_VERSION;
-            }
-            catch (IOException e) {
-                U.error(log, "Failed to read Spring XML file (will use default user version) [file=" +
-                    GRIDGAIN_XML_PATH + ", clsLdr=" + ldr + ']', e);
-
-                usrVer = DFLT_USER_VERSION;
-            }
-            finally {
-                close(out, log);
-            }
-        }
-
-        // For system class loader return cached version.
-        if (ldr == gridClassLoader())
-            SYS_LDR_VER.compareAndSet(null, usrVer);
-
-        return usrVer;
-    }
-
-    /**
      * Downloads resource by URL.
      *
      * @param url URL to download.
@@ -2139,6 +1971,77 @@ public abstract class GridUtils {
     }
 
     /**
+     * Writes string to file.
+     *
+     * @param file File.
+     * @param s String to write.
+     * @throws IOException Thrown if an I/O error occurs.
+     */
+    public static void writeStringToFile(File file, String s) throws IOException {
+        writeStringToFile(file, s, Charset.defaultCharset().toString(), false);
+    }
+
+    /**
+     * Writes string to file.
+     *
+     * @param file File.
+     * @param s String to write.
+     * @param charset Encoding.
+     * @throws IOException Thrown if an I/O error occurs.
+     */
+    public static void writeStringToFile(File file, String s, String charset) throws IOException {
+        writeStringToFile(file, s, charset, false);
+    }
+
+    /**
+     * Reads file to string using specified charset.
+     *
+     * @param fileName File name.
+     * @param charset File charset.
+     * @return File content.
+     * @throws IOException If error occurred.
+     */
+    public static String readFileToString(String fileName, String charset) throws IOException {
+        Reader input = new InputStreamReader(new FileInputStream(fileName), charset);
+
+        StringWriter output = new StringWriter();
+
+        char[] buf = new char[4096];
+
+        int n;
+
+        while ((n = input.read(buf)) != -1)
+            output.write(buf, 0, n);
+
+        return output.toString();
+    }
+
+    /**
+     * Writes string to file.
+     *
+     * @param file File.
+     * @param s String to write.
+     * @param charset Encoding.
+     * @param append If {@code true}, then specified string will be added to the end of the file.
+     * @throws IOException Thrown if an I/O error occurs.
+     */
+    public static void writeStringToFile(File file, String s, String charset, boolean append) throws IOException {
+        if (s == null)
+            return;
+
+        OutputStream out = null;
+
+        try {
+            out = new FileOutputStream(file, append);
+
+            if (s != null)
+                out.write(s.getBytes(charset));
+        } finally {
+            closeQuiet(out);
+        }
+    }
+
+    /**
      * Utility method that sets cause into exception and returns it.
      *
      * @param e Exception to set cause to and return.
@@ -2232,8 +2135,20 @@ public abstract class GridUtils {
         if (!F.isEmpty(ggHome0))
             return ggHome0;
 
+        Class<?> libsCls;
+
+        try {
+            libsCls = Class.forName("org.springframework.context.ApplicationContext");
+        }
+        catch (ClassNotFoundException ignored) {
+            libsCls = null;
+        }
+
+        Collection<Class<?>> clsList = libsCls != null ? Arrays.asList(GridUtils.class, libsCls) :
+            Collections.<Class<?>>singleton(GridUtils.class);
+
         // Order: gridgain.jar, 'libs'.
-        for (Class<?> cls : Arrays.asList(GridUtils.class, Hex.class)) {
+        for (Class<?> cls : clsList) {
             URI uri;
 
             try {
@@ -2391,8 +2306,6 @@ public abstract class GridUtils {
         File file = new File(path);
 
         if (file.exists())
-            // Note: we use that method's chain instead of File.getURL() with due
-            // Sun bug http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6179468
             return file;
 
         return null;
@@ -5123,8 +5036,10 @@ public abstract class GridUtils {
         if (ldr == null)
             ldr = gridClassLoader;
 
+        String lambdaParent = U.lambdaEnclosingClassName(clsName);
+
         try {
-            ldr.loadClass(clsName);
+            ldr.loadClass(lambdaParent == null ? clsName : lambdaParent);
 
             return true;
         }
@@ -5545,156 +5460,6 @@ public abstract class GridUtils {
             if (zip != null)
                 zip.close();
         }
-    }
-
-    /**
-     * Calculates md5 checksum for the given file o directory.
-     * For directories tries to walk all nested files accumulating the result.
-     *
-     * @param file file to calculate sum or root directory for accumulating calculation.
-     * @param log logger to log all failures.
-     * @return string representation of the calculated checksum or {@code null} if calculation failed.
-     */
-    @Nullable public static String md5(@Nullable File file, @Nullable GridLogger log) {
-        if (file != null)
-            return file.isFile() ? fileMd5(file, log) : directoryMd5(file, log);
-
-        return null;
-    }
-
-    /**
-     * Calculates md5 checksum for the given file
-     *
-     * @param file file to calculate md5.
-     * @param log logger to log all failures.
-     * @return string representation of the calculated checksum or {@code null} if calculation failed.
-     */
-    @Nullable public static String fileMd5(@Nullable File file, @Nullable GridLogger log) {
-        String md5 = null;
-
-        if (file != null) {
-            if (!file.isFile()) {
-                warn(log, "Failed to find file for md5 calculation: " + file);
-
-                return null;
-            }
-
-            InputStream in = null;
-
-            try {
-                in = new BufferedInputStream(new FileInputStream(file));
-
-                md5 = DigestUtils.md5Hex(in);
-            }
-            catch (IOException e) {
-                warn(log, "Failed to open input stream for md5 calculation: " + e.getMessage());
-            }
-            finally {
-                closeQuiet(in);
-            }
-        }
-
-        return md5;
-    }
-
-    /**
-     * For directories tries to walk all nested files accumulating them into single md5 checksum.
-     *
-     * @param dir directory to calculate md5.
-     * @param log logger to log all failures.
-     * @return string representation of the calculated checksum or {@code null} if calculation failed.
-     */
-    @Nullable public static String directoryMd5(@Nullable File dir, @Nullable GridLogger log) {
-        if (dir != null) {
-            if (!dir.isDirectory()) {
-                warn(log, "Failed to find directory for md5 calculation: " + dir);
-
-                return null;
-            }
-
-            try {
-                MessageDigest digest = MessageDigest.getInstance("MD5");
-
-                return addDirectoryDigest(dir, digest, log) ? Hex.encodeHexString(digest.digest()) : null;
-            }
-            catch (NoSuchAlgorithmException e) {
-                throw new GridRuntimeException("MD5 digest algorithm not found.", e);
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Repulsively adds all files in the given directory to the given Digest object.
-     *
-     * @param file directory to start calculation from.
-     * @param digest digest object where all available files should be applied.
-     * @param log logger to report errors.
-     * @return {@code true} if digest was added successfully, {@code false} otherwise.
-     */
-    private static boolean addDirectoryDigest(File file, MessageDigest digest, @Nullable GridLogger log) {
-        assert file.isDirectory();
-
-        File[] files = file.listFiles();
-
-        if (files == null)
-            return true;
-
-        for (File visited : files) {
-            if (visited.isFile()) {
-                if (!addFileDigest(visited, digest, log))
-                    return false;
-            }
-            else if (visited.isDirectory()) {
-                if (!addDirectoryDigest(visited, digest, log))
-                    return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Adds given file to the given Digest object.
-     *
-     * @param file file for digest calculations.
-     * @param digest digest object to add file.
-     * @param log logger to report errors.
-     * @return {@code true} if digest was added successfully, {@code false} otherwise.
-     */
-    private static boolean addFileDigest(File file, MessageDigest digest, @Nullable GridLogger log) {
-        if (!file.isFile()) {
-            error(log, "Failed to add file to directory digest (will not check MD5 hash): " + file);
-
-            return false;
-        }
-
-        InputStream in = null;
-
-        try {
-            in = new BufferedInputStream(new FileInputStream(file));
-
-            byte[] buf = new byte[1024];
-
-            int read = in.read(buf, 0, 1024);
-
-            while (read > -1) {
-                digest.update(buf, 0, read);
-
-                read = in.read(buf, 0, 1024);
-            }
-        }
-        catch (IOException e) {
-            error(log, "Failed to add file to directory digest (will not check MD5 hash): " + file, e);
-
-            return false;
-        }
-        finally {
-            closeQuiet(in);
-        }
-
-        return true;
     }
 
     /**
@@ -6668,6 +6433,40 @@ public abstract class GridUtils {
                 cls.equals(float[].class) ||
                 cls.equals(double[].class) ||
                 cls.equals(boolean[].class));
+    }
+
+    /**
+     * @param cls Class.
+     * @return {@code True} if given class represents a primitive or a primitive wrapper class.
+     *
+     */
+    public static boolean isPrimitiveOrWrapper(Class<?> cls) {
+        return cls.isPrimitive() ||
+            Boolean.class.equals(cls) ||
+            Byte.class.equals(cls) ||
+            Character.class.equals(cls) ||
+            Short.class.equals(cls) ||
+            Integer.class.equals(cls) ||
+            Long.class.equals(cls) ||
+            Float.class.equals(cls) ||
+            Double.class.equals(cls) ||
+            Void.class.equals(cls);
+    }
+
+    /**
+     * @param cls Class.
+     * @return All declared methods on the given class and all superclasses.
+     */
+    public static Method[] allDeclaredMethods(Class<?> cls) {
+        Collection<Method> methods = new ArrayList<>();
+
+        while (cls != null) {
+            Collections.addAll(methods, cls.getDeclaredMethods());
+
+            cls = cls.getSuperclass();
+        }
+
+        return toArray(methods, new Method[methods.size()]);
     }
 
     /**
@@ -7856,57 +7655,6 @@ public abstract class GridUtils {
     }
 
     /**
-     * Creates Spring application context. Optionally excluded properties can be specified,
-     * it means that if such a property is found in {@link GridConfiguration}
-     * then it is removed before the bean is instantiated.
-     * For example, {@code streamerConfiguration} can be excluded from the configs that Visor uses.
-     *
-     * @param cfgUrl Resource where config file is located.
-     * @param excludedProps Properties to be excluded.
-     * @return Spring application context.
-     */
-    public static ApplicationContext applicationContext(URL cfgUrl, final String... excludedProps) {
-        GenericApplicationContext springCtx = new GenericApplicationContext();
-
-        BeanFactoryPostProcessor postProc = new BeanFactoryPostProcessor() {
-            @Override public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory)
-                throws BeansException {
-                for (String beanName : beanFactory.getBeanDefinitionNames()) {
-                    BeanDefinition def = beanFactory.getBeanDefinition(beanName);
-
-                    if (def.getBeanClassName() != null) {
-                        try {
-                            Class.forName(def.getBeanClassName());
-                        }
-                        catch (ClassNotFoundException ignored) {
-                            ((BeanDefinitionRegistry)beanFactory).removeBeanDefinition(beanName);
-
-                            continue;
-                        }
-                    }
-
-                    MutablePropertyValues vals = def.getPropertyValues();
-
-                    for (PropertyValue val : new ArrayList<>(vals.getPropertyValueList())) {
-                        for (String excludedProp : excludedProps) {
-                            if (val.getName().equals(excludedProp))
-                                vals.removePropertyValue(val);
-                        }
-                    }
-                }
-            }
-        };
-
-        springCtx.addBeanFactoryPostProcessor(postProc);
-
-        new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(cfgUrl));
-
-        springCtx.refresh();
-
-        return springCtx;
-    }
-
-    /**
      * Checks if exception has help URLs.
      *
      * @param msg Error message.
@@ -8204,39 +7952,89 @@ public abstract class GridUtils {
     }
 
     /**
+     * @param userWorkDir GridGain work folder provided by user.
+     * @param userGgHome GridGain home folder provided by user.
+     */
+    public static void setWorkDirectory(@Nullable String userWorkDir, @Nullable String userGgHome)
+        throws GridException {
+        String ggWork0 = ggWork;
+
+        if (ggWork0 == null) {
+            synchronized (GridUtils.class) {
+                // Double check.
+                ggWork0 = ggWork;
+
+                if (ggWork0 != null)
+                    return;
+
+                File workDir;
+
+                if (!F.isEmpty(userWorkDir))
+                    workDir = new File(userWorkDir);
+                else if (!F.isEmpty(userGgHome))
+                    workDir = new File(userGgHome, "work");
+                else {
+                    String tmpDirPath = System.getProperty("java.io.tmpdir");
+
+                    if (tmpDirPath == null)
+                        throw new GridException("Failed to create work directory in OS temp " +
+                            "(property 'java.io.tmpdir' is null).");
+
+                    workDir = new File(tmpDirPath, "gridgain" + File.separator + "work");
+                }
+
+                if (!workDir.isAbsolute())
+                    throw new GridException("Work directory path must be absolute: " + workDir);
+
+                if (!mkdirs(workDir))
+                    throw new GridException("Work directory does not exist and cannot be created: " + workDir);
+
+                if (!workDir.canRead())
+                    throw new GridException("Cannot read from work directory: " + workDir);
+
+                if (!workDir.canWrite())
+                    throw new GridException("Cannot write to work directory: " + workDir);
+
+                ggWork = workDir.getAbsolutePath();
+            }
+        }
+    }
+
+    /**
+     * Nullifies GridGain home directory. For test purposes only.
+     */
+    static void nullifyHomeDirectory() {
+        ggHome = null;
+    }
+
+    /**
+     * Nullifies work directory. For test purposes only.
+     */
+    static void nullifyWorkDirectory() {
+        ggWork = null;
+    }
+
+    /**
      * Resolves work directory.
      *
      * @param path Path to resolve.
-     * @param tmpSubDir Subdirectory in temporary folder. It's used when GridGain home is null.
-     * @param failOnEmptyGridGainHome {@code True} if exception should be thrown on empty GridGain home,
-     * {@code false} otherwise.
-     * @param deleteIfExist Flag indicating whether to delete the specify directory or not.
+     * @param delIfExist Flag indicating whether to delete the specify directory or not.
      * @return Resolved work directory.
      * @throws GridException If failed.
      */
-    public static File resolveWorkDirectory(String path, String tmpSubDir, boolean failOnEmptyGridGainHome,
-        boolean deleteIfExist) throws GridException {
-        String ggHome = getGridGainHome();
-
+    public static File resolveWorkDirectory(String path, boolean delIfExist) throws GridException {
         File dir = new File(path);
 
         if (!dir.isAbsolute()) {
-            if (F.isEmpty(ggHome)) {
-                if (failOnEmptyGridGainHome)
-                    throw new GridException("Failed to create directory, property " + GG_HOME + " is null.");
+            String ggWork0 = ggWork;
 
-                String tmpDirPath = System.getProperty("java.io.tmpdir");
+            if (F.isEmpty(ggWork0))
+                throw new GridException("Failed to resolve path (work directory has not been set): " + path);
 
-                if (tmpDirPath == null)
-                    throw new GridException("System property 'java.io.tmpdir' is null.");
-
-                dir = tmpSubDir == null ? new File(tmpDirPath) : new File(tmpDirPath, tmpSubDir);
-            }
-            else
-                dir = new File(ggHome, dir.getPath());
+            dir = new File(ggWork0, dir.getPath());
         }
 
-        if (deleteIfExist && dir.exists()) {
+        if (delIfExist && dir.exists()) {
             if (!U.delete(dir))
                 throw new GridException("Failed to delete directory: " + dir);
         }
@@ -8282,5 +8080,59 @@ public abstract class GridUtils {
         int idx = clsName.indexOf("$$Lambda$");
 
         return idx != -1 ? clsName.substring(0, idx) : null;
+    }
+
+    /**
+     * Converts an array of characters representing hexidecimal values into an
+     * array of bytes of those same values. The returned array will be half the
+     * length of the passed array, as it takes two characters to represent any
+     * given byte. An exception is thrown if the passed char array has an odd
+     * number of elements.
+     *
+     * @param data An array of characters containing hexidecimal digits
+     * @return A byte array containing binary data decoded from
+     *         the supplied char array.
+     * @throws GridException Thrown if an odd number or illegal of characters is supplied.
+     */
+    public static byte[] decodeHex(char[] data) throws GridException {
+
+        int len = data.length;
+
+        if ((len & 0x01) != 0)
+            throw new GridException("Odd number of characters.");
+
+        byte[] out = new byte[len >> 1];
+
+        // two characters form the hex value.
+        for (int i = 0, j = 0; j < len; i++) {
+            int f = toDigit(data[j], j) << 4;
+
+            j++;
+
+            f |= toDigit(data[j], j);
+
+            j++;
+
+            out[i] = (byte)(f & 0xFF);
+        }
+
+        return out;
+    }
+
+    /**
+     * Converts a hexadecimal character to an integer.
+     *
+     * @param ch A character to convert to an integer digit
+     * @param index The index of the character in the source
+     * @return An integer
+     * @throws GridException Thrown if ch is an illegal hex character
+     */
+    protected static int toDigit(char ch, int index) throws GridException {
+        int digit = Character.digit(ch, 16);
+
+        if (digit == -1)
+            throw new GridException("Illegal hexadecimal character " + ch + " at index " + index);
+
+        return digit;
     }
 }

@@ -157,6 +157,9 @@ public class GridProductImpl implements GridProduct {
      */
     private static GridProductEdition editionFromString(String edition) {
         switch (edition) {
+            case "hpc":
+                return HPC;
+
             case "datagrid":
                 return DATA_GRID;
 

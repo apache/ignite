@@ -22,7 +22,7 @@
 # Check GRIDGAIN_HOME.
 #
 if [ "${GRIDGAIN_HOME}" = "" ]; then
-    echo $0", ERROR: GRIDGAIN_HOME environment variable is not found."
+    echo $0", ERROR: GridGain installation folder is not found."
     echo "Please create GRIDGAIN_HOME variable pointing to location of"
     echo "GridGain installation folder."
 
@@ -49,7 +49,11 @@ case "`uname`" in
 esac
 
 # The following libraries are required for GridGain.
-GRIDGAIN_LIBS=${USER_LIBS}${SEP}${GRIDGAIN_LIBS}${SEP}${GRIDGAIN_HOME}/config/userversion${SEP}${GRIDGAIN_HOME}/libs/*${SEP}${GRIDGAIN_HOME}/libs/${HADOOP_LIB_DIR}/*
+GRIDGAIN_LIBS=${GRIDGAIN_HOME}/config/userversion${SEP}${GRIDGAIN_HOME}/libs/*${SEP}${GRIDGAIN_HOME}/libs/${HADOOP_LIB_DIR}/*
+
+if [ "${USER_LIBS}" != "" ]; then
+    GRIDGAIN_LIBS=${USER_LIBS}${SEP}${GRIDGAIN_LIBS}
+fi
 
 #
 # Set property JAR name during the Ant build.

@@ -26,6 +26,7 @@ import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.closure.*;
+import org.gridgain.grid.kernal.processors.spring.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.kernal.processors.dr.*;
@@ -57,6 +58,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.kernal.GridKernalState.*;
 
 /**
@@ -174,15 +176,15 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringInclude
-    private GridEmailProcessor emailProc;
+    private GridEmailProcessorAdapter emailProc;
 
     /** */
     @GridToStringInclude
-    private GridScheduleProcessor scheduleProc;
+    private GridScheduleProcessorAdapter scheduleProc;
 
     /** */
     @GridToStringInclude
-    private GridRestProcessor restProc;
+    private GridRestProcessorAdapter restProc;
 
     /** */
     @GridToStringInclude
@@ -190,7 +192,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringInclude
-    private GridGgfsProcessor ggfsProc;
+    private GridGgfsProcessorAdapter ggfsProc;
 
     /** */
     @GridToStringInclude
@@ -219,6 +221,10 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** */
     @GridToStringExclude
     private GridVersionProcessor verProc;
+
+    /** */
+    @GridToStringExclude
+    private GridSpringProcessor spring;
 
     /** */
     @GridToStringExclude
@@ -264,12 +270,14 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /**
      * Creates new kernal context.
      *
+     * @param log Logger.
      * @param grid Grid instance managed by kernal.
      * @param cfg Grid configuration.
      * @param gw Kernal gateway.
      * @param ent Release enterprise flag.
      */
-    protected GridKernalContextImpl(GridEx grid, GridConfiguration cfg, GridKernalGateway gw, boolean ent) {
+    protected GridKernalContextImpl(GridLoggerProxy log, GridEx grid, GridConfiguration cfg, GridKernalGateway gw,
+        boolean ent) {
         assert grid != null;
         assert cfg != null;
         assert gw != null;
@@ -278,6 +286,15 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
         this.cfg = cfg;
         this.gw = gw;
         this.ent = ent;
+
+        try {
+            spring = SPRING.create(false);
+        }
+        catch (GridException ignored) {
+            if (log != null && log.isDebugEnabled())
+                log.debug("Failed to load spring component, will not be able to extract userVersion from " +
+                    "META-INF/gridgain.xml.");
+        }
     }
 
     /** {@inheritDoc} */
@@ -349,22 +366,22 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             sesProc = (GridTaskSessionProcessor)comp;
         else if (comp instanceof GridPortProcessor)
             portProc = (GridPortProcessor)comp;
-        else if (comp instanceof GridEmailProcessor)
-            emailProc = (GridEmailProcessor)comp;
+        else if (comp instanceof GridEmailProcessorAdapter)
+            emailProc = (GridEmailProcessorAdapter)comp;
         else if (comp instanceof GridClosureProcessor)
             closProc = (GridClosureProcessor)comp;
-        else if (comp instanceof GridScheduleProcessor)
-            scheduleProc = (GridScheduleProcessor)comp;
+        else if (comp instanceof GridScheduleProcessorAdapter)
+            scheduleProc = (GridScheduleProcessorAdapter)comp;
         else if (comp instanceof GridSegmentationProcessor)
             segProc = (GridSegmentationProcessor)comp;
         else if (comp instanceof GridAffinityProcessor)
             affProc = (GridAffinityProcessor)comp;
-        else if (comp instanceof GridRestProcessor)
-            restProc = (GridRestProcessor)comp;
+        else if (comp instanceof GridRestProcessorAdapter)
+            restProc = (GridRestProcessorAdapter)comp;
         else if (comp instanceof GridDataLoaderProcessor)
             dataLdrProc = (GridDataLoaderProcessor)comp;
-        else if (comp instanceof GridGgfsProcessor)
-            ggfsProc = (GridGgfsProcessor)comp;
+        else if (comp instanceof GridGgfsProcessorAdapter)
+            ggfsProc = (GridGgfsProcessorAdapter)comp;
         else if (comp instanceof GridOffHeapProcessor)
             offheapProc = (GridOffHeapProcessor)comp;
         else if (comp instanceof GridLicenseProcessor)
@@ -377,7 +394,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             drProc = (GridDrProcessor)comp;
         else if (comp instanceof GridVersionProcessor)
             verProc = (GridVersionProcessor)comp;
-
         else
             assert false : "Unknown manager class: " + comp.getClass();
 
@@ -500,7 +516,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridEmailProcessor email() {
+    @Override public GridEmailProcessorAdapter email() {
         return emailProc;
     }
 
@@ -510,7 +526,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridScheduleProcessor schedule() {
+    @Override public GridScheduleProcessorAdapter schedule() {
         return scheduleProc;
     }
 
@@ -590,7 +606,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridRestProcessor rest() {
+    @Override public GridRestProcessorAdapter rest() {
         return restProc;
     }
 
@@ -600,12 +616,13 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <K, V> GridDataLoaderProcessor<K, V> dataLoad() {
         return (GridDataLoaderProcessor<K, V>)dataLdrProc;
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsProcessor ggfs() {
+    @Override public GridGgfsProcessorAdapter ggfs() {
         return ggfsProc;
     }
 
@@ -697,6 +714,11 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** {@inheritDoc} */
     @Override public boolean isDaemon() {
         return config().isDaemon() || "true".equalsIgnoreCase(System.getProperty(GG_DAEMON));
+    }
+
+    /** {@inheritDoc} */
+    @Override public String userVersion(ClassLoader ldr) {
+        return spring != null ? spring.userVersion(ldr, log()) : U.DFLT_USER_VERSION;
     }
 
     /** {@inheritDoc} */

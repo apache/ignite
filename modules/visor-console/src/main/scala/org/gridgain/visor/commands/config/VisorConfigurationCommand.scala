@@ -674,7 +674,7 @@ private class GridConfigurationCallable extends GridCallable[Config] {
                     invalidate = bool2Str(cacheCfg.isInvalidate),
                     startSize = safe(cacheCfg.getStartSize, DFLT),
                     cloner = compactObject(cacheCfg.getCloner),
-                    txMgrLookup = compactObject(cacheCfg.getTransactionManagerLookup),
+                    txMgrLookup = cacheCfg.getTransactionManagerLookupClassName,
 
                     affinity = AffinityConfig(
                         affinity = compactObject(cacheCfg.getAffinity),

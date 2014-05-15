@@ -194,7 +194,7 @@ public class GridRestProcessorTest extends GridCommonAbstractTest {
      * Simple bean.
      */
     @SuppressWarnings( {"ReturnOfDateField", "AssignmentToDateFieldFromParameter", "PublicInnerClass"})
-    public class SimpleBean implements Serializable {
+    public static class SimpleBean implements Serializable {
         /** */
         private int intField = 12345;
 
@@ -283,7 +283,7 @@ public class GridRestProcessorTest extends GridCommonAbstractTest {
      * Simple bean.
      */
     @SuppressWarnings( {"ReturnOfDateField", "PublicInnerClass"})
-    public class ComplexBean extends SimpleBean {
+    public static class ComplexBean extends SimpleBean {
         /** */
         private SimpleBean simpleBean = new SimpleBean(67890, "nestedTestString", new Date());
 

@@ -45,6 +45,8 @@
             <excludes>
                 <exclude>org.gridgain:gridgain-examples</exclude>
                 <exclude>org.gridgain:gridgain-tools</exclude>
+                <exclude>org.gridgain:gridgain-extdata-p2p</exclude>
+                <exclude>org.gridgain:gridgain-extdata-uri</exclude>
             </excludes>
         </moduleSet>
     </moduleSets>

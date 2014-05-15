@@ -387,36 +387,4 @@ public class GridClientPartitionAffinitySelfTest extends GridCommonAbstractTest 
             return super.attribute(name);
         }
     }
-
-    /**
-     * The grid stub over emulated server topology.
-     */
-    private static class TestGrid extends GridSpringBean {
-        /**
-         * Server emulated topology.
-         */
-        private final List<GridNode> nodes;
-
-        /**
-         * Externalizable class requires public no-arg constructor.
-         */
-        @SuppressWarnings("UnusedDeclaration")
-        public TestGrid() {
-            this(new ArrayList<GridNode>());
-        }
-
-        /**
-         * Constructs the grid stub over emulated server topology.
-         *
-         * @param nodes Emulated server topology.
-         */
-        private TestGrid(List<GridNode> nodes) {
-            this.nodes = nodes;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridNode node(UUID nodeId) {
-            return F.find(nodes, null, F.<GridNode>nodeForNodeId(nodeId));
-        }
-    }
 }

@@ -9,11 +9,9 @@
 
 package org.gridgain.loadtests.direct.multisplit;
 
-import org.apache.log4j.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.loadtest.*;
-import org.gridgain.grid.logger.log4j.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.config.*;
@@ -38,10 +36,6 @@ public class GridMultiSplitsRedeployLoadTest extends GridCommonAbstractTest {
     @SuppressWarnings("ConstantConditions")
     @Override protected GridConfiguration getConfiguration() throws Exception {
         GridConfiguration cfg = super.getConfiguration();
-
-        GridLog4jLogger log = (GridLog4jLogger)cfg.getGridLogger().getLogger(null);
-
-        log.setLevel(Level.INFO);
 
         ((ThreadPoolExecutor)cfg.getExecutorService()).prestartAllCoreThreads();
 

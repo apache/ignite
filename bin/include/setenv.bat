@@ -26,12 +26,16 @@
 :: Check GRIDGAIN_HOME.
 ::
 if defined GRIDGAIN_HOME goto run
-    echo %0, ERROR: GRIDGAIN_HOME environment variable is not found.
+    echo %0, ERROR: GridGain installation folder is not found.
+    echo Please create GRIDGAIN_HOME environment variable pointing to location of
+    echo GridGain installation folder.
 goto :eof
 
 :run
 :: The following libraries are required for GridGain.
-set GRIDGAIN_LIBS=%USER_LIBS%;%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\config\userversion;%GRIDGAIN_HOME%\libs\*
+set GRIDGAIN_LIBS=%GRIDGAIN_HOME%\config\userversion;%GRIDGAIN_HOME%\libs\*
+
+if defined USER_LIBS set GRIDGAIN_LIBS=%USER_LIBS%;%GRIDGAIN_LIBS%
 
 :: Uncomment if using JBoss.
 :: JBOSS_HOME must point to JBoss installation folder.

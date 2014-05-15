@@ -106,9 +106,6 @@ public final class GridNodeAttributes {
     /** Internal attribute name constant. */
     public static final String ATTR_STREAMER = ATTR_PREFIX + ".streamer";
 
-    /** Libraries list attribute name constant. */
-    public static final String ATTR_LIBRARIES = ATTR_PREFIX + ".libs";
-
     /** Time server host attribute name. */
     public static final String ATTR_TIME_SERVER_HOST = ATTR_PREFIX + ".time.host";
 

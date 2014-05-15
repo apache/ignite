@@ -139,6 +139,11 @@ class GridCacheLogger extends GridMetadataAwareAdapter implements GridLogger, Ex
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public String fileName() {
+        return log.fileName();
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, ctgr);
         out.writeObject(cctx);

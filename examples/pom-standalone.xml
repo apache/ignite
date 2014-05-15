@@ -31,7 +31,7 @@
     <dependencies>
         <dependency>
             <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-core</artifactId>
+            <artifactId>gridgain</artifactId>
             <version>${gridgain.version}</version>
             <scope>system</scope>
             <systemPath>${basedir}/../${gridgain.jar}</systemPath>
@@ -83,12 +83,6 @@
             <groupId>commons-collections</groupId>
             <artifactId>commons-collections</artifactId>
             <version>3.2.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-configuration</groupId>
-            <artifactId>commons-configuration</artifactId>
-            <version>1.8</version>
         </dependency>
 
         <dependency>
@@ -587,6 +581,9 @@
         <resources>
             <resource>
                 <directory>src/main/java</directory>
+            </resource>
+            <resource>
+                <directory>config</directory>
             </resource>
         </resources>
 
