@@ -19,7 +19,10 @@ public enum GridHadoopJobProperty {
     COMBINER_HASHMAP_SIZE,
 
     /** */
-    PARTITION_HASHMAP_SIZE;
+    PARTITION_HASHMAP_SIZE,
+
+    /** */
+    JOB_STATUS_POLL_DELAY;
 
     /** */
     private final String ptyName;

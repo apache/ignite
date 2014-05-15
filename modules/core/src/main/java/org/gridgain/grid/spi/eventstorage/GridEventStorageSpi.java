@@ -38,7 +38,7 @@ import java.util.*;
  * to undefined behavior and explicitly not supported.
  * @see GridEvent
  */
-public interface GridEventStorageSpi extends GridSpi, GridSpiJsonConfigurable {
+public interface GridEventStorageSpi extends GridSpi {
     /**
      * Queries locally-stored events only. Events could be filtered out
      * by given predicate filter.

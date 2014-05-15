@@ -24,7 +24,10 @@ public class GridHadoopDefaultMapReducePlan implements GridHadoopMapReducePlan {
     /** Reducers map. */
     private Map<UUID, int[]> reducers;
 
-    /** */
+    /** Mappers count. */
+    private int mappersCnt;
+
+    /** Reducers count. */
     private int reducersCnt;
 
     /**
@@ -36,10 +39,20 @@ public class GridHadoopDefaultMapReducePlan implements GridHadoopMapReducePlan {
         this.mappers = mappers;
         this.reducers = reducers;
 
+        if (mappers != null) {
+            for (Collection<GridHadoopInputSplit> splits : mappers.values())
+                mappersCnt += splits.size();
+        }
+
         if (reducers != null) {
             for (int[] rdcrs : reducers.values())
                 reducersCnt += rdcrs.length;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public int mappers() {
+        return mappersCnt;
     }
 
     /** {@inheritDoc} */

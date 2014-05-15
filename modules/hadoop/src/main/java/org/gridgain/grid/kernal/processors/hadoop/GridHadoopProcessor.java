@@ -18,13 +18,23 @@ import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
 
 import java.util.*;
+import java.util.concurrent.atomic.*;
 
 /**
  * Hadoop processor.
  */
 public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
+    /** Job ID counter. */
+    private final AtomicInteger idCtr = new AtomicInteger();
+
+    /** Unique ID of this processor. */
+    private UUID id;
+
     /** Hadoop context. */
     private GridHadoopContext hctx;
+
+    /** Hadoop facade for public API. */
+    private GridHadoop hadoop;
 
     /**
      * @param ctx Kernal context.
@@ -57,6 +67,10 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
 
         for (GridHadoopComponent c : hctx.components())
             c.start(hctx);
+
+        hadoop = new GridHadoopImpl(this);
+
+        id = ctx.localNodeId();
     }
 
     /** {@inheritDoc} */
@@ -111,33 +125,47 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
         return hctx;
     }
 
-    /**
-     * @param cnt Number of IDs to generate.
-     * @return Collection of generated IDs.
-     */
-    @Override public Collection<GridHadoopJobId> getNextJobIds(int cnt) {
-        return null;
+    /** {@inheritDoc} */
+    @Override public GridHadoop hadoop() {
+        return hadoop;
     }
 
-    /**
-     * Submits job to job tracker.
-     *
-     * @param jobId Job ID to submit.
-     * @param jobInfo Job info to submit.
-     * @return Execution future.
-     */
+    /** {@inheritDoc} */
+    @Override public GridHadoopConfiguration config() {
+        return hctx.configuration();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridHadoopJobId nextJobId() {
+        return new GridHadoopJobId(id, idCtr.incrementAndGet());
+    }
+
+    /** {@inheritDoc} */
     @Override public GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo) {
         return hctx.jobTracker().submit(jobId, jobInfo);
     }
 
-    /**
-     * Gets hadoop job execution status.
-     *
-     * @param jobId Job ID to get status for.
-     * @return Job execution status.
-     */
+    /** {@inheritDoc} */
     @Override public GridHadoopJobStatus status(GridHadoopJobId jobId) throws GridException {
         return hctx.jobTracker().status(jobId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException {
+        return hctx.jobTracker().finishFuture(jobId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean kill(GridHadoopJobId jobId) throws GridException {
+        GridFuture<?> fut = finishFuture(jobId);
+
+        if (fut != null) {
+            fut.cancel();
+
+            return true;
+        }
+        else
+            return false;
     }
 
     /**

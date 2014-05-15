@@ -394,6 +394,8 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
 
                     @Override public void writeToSwap(String spaceName, Object key, @Nullable Object val,
                         @Nullable ClassLoader ldr) throws GridException {
+                        assert ctx.swap().enabled();
+
                         ctx.swap().write(spaceName, key, val, ldr);
                     }
 
@@ -417,6 +419,8 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                     @SuppressWarnings({"unchecked"})
                     @Nullable @Override public <T> T readFromSwap(String spaceName, GridSwapKey key,
                         @Nullable ClassLoader ldr) throws GridException {
+                        assert ctx.swap().enabled();
+
                         return ctx.swap().readValue(spaceName, key, ldr);
                     }
 
@@ -426,6 +430,8 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
 
                     @Override public void removeFromSwap(String spaceName, Object key,
                         @Nullable ClassLoader ldr) throws GridException {
+                        assert ctx.swap().enabled();
+
                         ctx.swap().remove(spaceName, key, null, ldr);
                     }
 

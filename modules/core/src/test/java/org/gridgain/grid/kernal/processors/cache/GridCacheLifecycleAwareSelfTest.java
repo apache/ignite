@@ -14,14 +14,12 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.cloner.*;
 import org.gridgain.grid.cache.eviction.*;
-import org.gridgain.grid.cache.jta.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
-import javax.transaction.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -139,21 +137,6 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /**
      */
-    private static class TestTxLookup extends TestLifecycleAware implements GridCacheTmLookup {
-        /**
-         */
-        TestTxLookup() {
-            super(CACHE_NAME);
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public TransactionManager getTm() throws GridException {
-            return null;
-        }
-    }
-
-    /**
-     */
     private static class TestEvictionPolicy extends TestLifecycleAware implements GridCacheEvictionPolicy {
         /**
          */
@@ -246,12 +229,6 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         ccfg.setAffinity(affinity);
 
         lifecycleAwares.add(affinity);
-
-        TestTxLookup txLookup = new TestTxLookup();
-
-        ccfg.setTransactionManagerLookup(txLookup);
-
-        lifecycleAwares.add(txLookup);
 
         TestEvictionPolicy evictionPlc = new TestEvictionPolicy();
 

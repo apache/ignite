@@ -16,6 +16,7 @@ import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.dr.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.messaging.*;
 import org.gridgain.grid.product.*;
@@ -203,6 +204,13 @@ public interface Grid extends GridProjection, AutoCloseable {
      */
     @GridOnlyAvailableIn(HADOOP)
     public Collection<GridGgfs> ggfss();
+
+    /**
+     * Gets an instance of Hadoop.
+     *
+     * @return Hadoop instance.
+     */
+    public GridHadoop hadoop();
 
     /**
      * Gets an instance of streamer by name, if one does not exist then

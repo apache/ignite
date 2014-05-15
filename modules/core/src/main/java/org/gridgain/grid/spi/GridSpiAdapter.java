@@ -17,7 +17,6 @@ import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.swapspace.*;
-import org.gridgain.grid.util.json.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -33,7 +32,7 @@ import static org.gridgain.grid.events.GridEventType.*;
 /**
  * This class provides convenient adapter for SPI implementations.
  */
-public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean, GridSpiJsonConfigurable {
+public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean {
     /** */
     private ObjectName spiMBean;
 
@@ -512,19 +511,6 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
      */
     protected String createSpiAttributeName(String attrName) {
         return U.spiAttribute(this, attrName);
-    }
-
-    /** {@inheritDoc} */
-    @GridSpiConfiguration(optional = true)
-    @Override public void setJson(String json) {
-        assert json != null;
-
-        try {
-            GridJsonDeserializer.inject(this, json);
-        }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
-        }
     }
 
     /**

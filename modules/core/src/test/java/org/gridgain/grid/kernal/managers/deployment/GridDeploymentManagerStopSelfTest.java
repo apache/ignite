@@ -62,9 +62,6 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void setJson(String json) {  /* No-op. */ }
-
-        /** {@inheritDoc} */
         @Override public Map<String, Object> getNodeAttributes() throws GridSpiException { return null; }
 
         /** {@inheritDoc} */

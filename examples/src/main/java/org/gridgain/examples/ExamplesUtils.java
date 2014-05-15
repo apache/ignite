@@ -12,10 +12,15 @@ package org.gridgain.examples;
 import org.gridgain.grid.*;
 import org.gridgain.grid.streamer.*;
 
+import java.net.*;
+
 /**
  *
  */
 public class ExamplesUtils {
+    /** */
+    private static final ClassLoader CLS_LDR = ExamplesUtils.class.getClassLoader();
+
     /**
      * Exits with code {@code -1} if maximum memory is below 90% of minimally allowed threshold.
      *
@@ -30,6 +35,20 @@ public class ExamplesUtils {
 
             System.exit(-1);
         }
+    }
+
+    /**
+     * Returns URL resolved by class loader for classes in examples project.
+     *
+     * @return Resolved URL.
+     */
+    public static URL url(String path) {
+        URL url = CLS_LDR.getResource(path);
+
+        if (url == null)
+            throw new RuntimeException("Failed to resolve resource URL by path: " + path);
+
+        return url;
     }
 
     /**
@@ -51,23 +70,6 @@ public class ExamplesUtils {
         }
 
         return true;
-    }
-
-    /**
-     * @return Resolved GridGain home via system or environment properties.
-     * @throws RuntimeException If failed to resolve.
-     */
-    public static String resolveGridGainHome() throws RuntimeException {
-        String var = System.getProperty("GRIDGAIN_HOME");
-
-        if (var == null)
-            var = System.getenv("GRIDGAIN_HOME");
-
-        if (var == null)
-            throw new RuntimeException("Failed to resolve GridGain home folder " +
-                "(please set 'GRIDGAIN_HOME' environment or system variable)");
-
-        return var;
     }
 
     /**
