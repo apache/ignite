@@ -9,9 +9,34 @@
 
 package org.gridgain.grid.kernal.ggfs.hadoop.impl;
 
+import org.gridgain.grid.kernal.processors.ggfs.*;
+import org.gridgain.grid.util.lang.*;
+
 /**
  * Communication with grid in the same process.
  */
 public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoop {
+    /** Target GGFS. */
+    private GridGgfsEx ggfs;
 
+    /**
+     * COnstructor.
+     *
+     * @param ggfs Target GGFS.
+     */
+    public NewGridGgfsHadoopInProc(GridGgfsEx ggfs) {
+        this.ggfs = ggfs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridPlainFuture<GridGgfsHandshakeResponse> handshake(String logDir) {
+        // TODO
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        // TODO.
+    }
 }

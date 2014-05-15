@@ -90,6 +90,14 @@ public interface NewGridGgfsHadoop {
     public GridPlainFuture<Collection<GridGgfsBlockLocation>> affinity(GridGgfsPath path, long start, long len);
 
     /**
+     * Gets path summary.
+     *
+     * @param path Path to get summary for.
+     * @return Future that will be completed when summary is received.
+     */
+    public GridPlainFuture<GridGgfsPathSummary> contentSummary(GridGgfsPath path);
+
+    /**
      * Command to create directories.
      *
      * @param path Path to create.
@@ -106,6 +114,14 @@ public interface NewGridGgfsHadoop {
     public GridPlainFuture<Collection<GridGgfsFile>> listFiles(GridGgfsPath path);
 
     /**
+     * Command to get directory listing.
+     *
+     * @param path Path to list.
+     * @return Future for listPaths operation.
+     */
+    public GridPlainFuture<Collection<GridGgfsPath>> listPaths(GridGgfsPath path);
+
+    /**
      * Performs status request.
      *
      * @return Status response.
@@ -118,7 +134,28 @@ public interface NewGridGgfsHadoop {
      * @param path File path to open.
      * @return Future for open operation.
      */
+    public GridPlainFuture<GridGgfsInputStreamDescriptor> open(GridGgfsPath path);
+
+    /**
+     * Command to open file for reading.
+     *
+     * @param path File path to open.
+     * @return Future for open operation.
+     */
     public GridPlainFuture<GridGgfsInputStreamDescriptor> open(GridGgfsPath path, int seqReadsBeforePrefetch);
+
+    /**
+     * Command to create file and open it for output.
+     *
+     * @param path Path to file.
+     * @param overwrite If {@code true} then old file contents will be lost.
+     * @param colocate If {@code true} and called on data node, file will be written on that node.
+     * @param replication Replication factor.
+     * @param props File properties for creation.
+     * @return Future for create operation.
+     */
+    public GridPlainFuture<Long> create(GridGgfsPath path, boolean overwrite, boolean colocate, int replication,
+        long blockSize, @Nullable Map<String, String> props);
 
     /**
      * Open file for output appending data to the end of a file.
@@ -133,26 +170,31 @@ public interface NewGridGgfsHadoop {
     /**
      * Asynchronously reads specified amount of bytes from opened input stream.
      *
+     * @param desc Stream descriptor.
      * @param pos Position to read from.
      * @param len Data length to read.
      * @param outBuf Optional output buffer. If buffer length is less then {@code len}, all remaining
-     * bytes will be read into new allocated buffer of length {len - outBuf.length} and this buffer will
-     * be the result of read future.
+     *     bytes will be read into new allocated buffer of length {len - outBuf.length} and this buffer will
+     *     be the result of read future.
+     * @param outOff Output offset.
+     * @param outLen Output length.
      *
      * @return Read future.
      */
-    public GridPlainFuture<byte[]> readData(long streamId, long pos, int len, @Nullable final byte[] outBuf,
-        final int outOff, final int outLen);
+    public GridPlainFuture<byte[]> readData(NewGridGgfsHadoopStreamDescriptor desc, long pos, int len,
+        @Nullable final byte[] outBuf, final int outOff, final int outLen);
 
     /**
      * Writes data to the stream with given streamId. This method does not return any future since
      * no response to write request is sent.
      *
-     * @param streamId Stream ID to write to.
+     * @param desc Stream descriptor.
      * @param data Data to write.
-     * @throws org.gridgain.grid.GridException If write failed.
+     * @param off Offset.
+     * @param len Length.
+     * @throws GridException If write failed.
      */
-    public void writeData(long streamId, byte[] data, int off, int len) throws GridException;
+    public void writeData(NewGridGgfsHadoopStreamDescriptor desc, byte[] data, int off, int len) throws GridException;
 
     /**
      * Close server stream.
