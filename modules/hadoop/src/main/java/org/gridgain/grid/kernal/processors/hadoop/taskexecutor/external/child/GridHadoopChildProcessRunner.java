@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.child;
 
+import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
@@ -24,6 +25,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.hadoop.GridHadoopJobProperty.*;
 import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
 
 /**
@@ -204,13 +206,25 @@ public class GridHadoopChildProcessRunner {
                 if (mapperExecSvc != null) {
                     List<Runnable> incomplete = mapperExecSvc.shutdownNow();
 
-                    // TODO.
+                    for (Runnable task : incomplete) {
+                        if (task instanceof TaskRunnable) {
+                            TaskRunnable r = (TaskRunnable)task;
+
+                            notifyTaskFinished(r.task.info(), GridHadoopTaskState.CANCELED, null, false);
+                        }
+                    }
                 }
 
                 if (reducerExecSvc != null) {
                     List<Runnable> incomplete = reducerExecSvc.shutdownNow();
 
-                    // TODO.
+                    for (Runnable task : incomplete) {
+                        if (task instanceof TaskRunnable) {
+                            TaskRunnable r = (TaskRunnable)task;
+
+                            notifyTaskFinished(r.task.info(), GridHadoopTaskState.CANCELED, null, false);
+                        }
+                    }
                 }
 
                 if (oldPhase == GridHadoopJobPhase.PHASE_MAP && reducers != null) {
@@ -255,9 +269,23 @@ public class GridHadoopChildProcessRunner {
         Collection<GridHadoopTask> reducers) {
         assert mappers != null || reducers != null : "Cannot have both mappers and reducers as null";
 
-        int mapPoolSize = Math.min(req.concurrentMappers(), mappers != null ? mappers.size() : 0);
+        int concMappers = Runtime.getRuntime().availableProcessors();
+        int concReducers = Runtime.getRuntime().availableProcessors();
+
+        GridHadoopJobInfo info = req.jobInfo();
+
+        if (info instanceof GridHadoopDefaultJobInfo) {
+            GridHadoopDefaultJobInfo dfltInfo = (GridHadoopDefaultJobInfo)info;
+
+            JobConf cfg = dfltInfo.configuration();
+
+            concMappers = cfg.getInt(EXTERNAL_CONCURRENT_MAPPERS.propertyName(), concMappers);
+            concReducers = cfg.getInt(EXTERNAL_CONCURRENT_REDUCERS.propertyName(), concReducers);
+        }
+
+        int mapPoolSize = Math.min(concMappers, mappers != null ? mappers.size() : 0);
         // If reducers is null, we will have at least one mapper, so will need one slot for combiner.
-        int reducePoolSize = Math.min(req.concurrentReducers(), reducers != null ? reducers.size() :
+        int reducePoolSize = Math.min(concReducers, reducers != null ? reducers.size() :
             job.hasCombiner() ? 1 : 0);
 
         log.info("Initializing pools [mapPoolSize=" + mapPoolSize + ", reducePoolSize=" + reducePoolSize + ']');
@@ -518,7 +546,6 @@ public class GridHadoopChildProcessRunner {
      * Stops execution of this process.
      */
     private void terminate() {
-        // TODO do we need graceful shutdown here?
         System.exit(1);
     }
 

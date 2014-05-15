@@ -16,7 +16,7 @@ import org.gridgain.grid.kernal.processors.hadoop.message.*;
 /**
  * Job info update request.
  */
-public class GridHadoopJobInfoUpdateRequest extends GridHadoopMessage {
+public class GridHadoopJobInfoUpdateRequest implements GridHadoopMessage {
     /** Job ID. */
     private GridHadoopJobId jobId;
 

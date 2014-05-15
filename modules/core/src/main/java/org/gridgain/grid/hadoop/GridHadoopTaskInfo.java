@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.hadoop;
 
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -137,8 +136,8 @@ public class GridHadoopTaskInfo implements Externalizable {
 
         GridHadoopTaskInfo that = (GridHadoopTaskInfo)o;
 
-        return attempt == that.attempt && taskNum == that.taskNum && F.eq(inputSplit, that.inputSplit) &&
-            jobId.equals(that.jobId) && nodeId.equals(that.nodeId) && type == that.type;
+        return attempt == that.attempt && taskNum == that.taskNum && jobId.equals(that.jobId) &&
+            nodeId.equals(that.nodeId) && type == that.type;
     }
 
     /** {@inheritDoc} */
@@ -149,7 +148,6 @@ public class GridHadoopTaskInfo implements Externalizable {
         result = 31 * result + jobId.hashCode();
         result = 31 * result + taskNum;
         result = 31 * result + attempt;
-        result = 31 * result + (inputSplit != null ? inputSplit.hashCode() : 0);
 
         return result;
     }

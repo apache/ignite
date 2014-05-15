@@ -16,7 +16,7 @@ import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import java.util.*;
 
 /**
- * TODO write doc
+ * Common superclass for task executor.
  */
 public abstract class GridHadoopTaskExecutorAdapter extends GridHadoopComponent {
     /**

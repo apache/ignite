@@ -148,7 +148,7 @@ public class GridHadoopExternalCommunicationSelfTest extends GridCommonAbstractT
     /**
      *
      */
-    private static class TestMessage extends GridHadoopMessage {
+    private static class TestMessage implements GridHadoopMessage {
         /** From index. */
         private int from;
 

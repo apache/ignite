@@ -12,8 +12,7 @@ package org.gridgain.grid.kernal.processors.hadoop.message;
 import java.io.*;
 
 /**
- * TODO: Add class description.
+ * Marker interface for all hadoop messages.
  */
-public class GridHadoopMessage implements Serializable {
-
+public interface GridHadoopMessage extends Serializable {
 }

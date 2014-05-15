@@ -16,7 +16,7 @@ import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
 /**
  * Task finished message. Sent when local task finishes execution.
  */
-public class GridHadoopTaskFinishedMessage extends GridHadoopMessage {
+public class GridHadoopTaskFinishedMessage implements GridHadoopMessage {
     /** Finished task info. */
     private GridHadoopTaskInfo taskInfo;
 

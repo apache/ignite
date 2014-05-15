@@ -9,14 +9,13 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external;
 
-import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 
 /**
- * TODO: Add class description.
+ * External task metadata (classpath, JVM options) needed to start external process execution.
  */
 public class GridHadoopExternalTaskMetadata {
     /** Process classpath. */
@@ -26,9 +25,6 @@ public class GridHadoopExternalTaskMetadata {
     /** JVM options. */
     @GridToStringInclude
     private Collection<String> jvmOpts;
-
-    /** Hadoop task type. */
-    private GridHadoopTaskType taskType;
 
     /**
      * @return JVM Options.

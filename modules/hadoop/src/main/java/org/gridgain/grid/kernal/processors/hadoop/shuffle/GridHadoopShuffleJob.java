@@ -68,7 +68,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
     private final CountDownLatch ioInitLatch = new CountDownLatch(1);
 
     /** Finished flag. Set on flush or close. */
-    private boolean flushed;
+    private volatile boolean flushed;
 
     /** */
     private final GridLogger log;
@@ -123,33 +123,31 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
      * @param io IO Closure for sending messages.
      */
     public void startSending(String gridName, GridBiClosure<T, GridHadoopShuffleMessage, GridFuture<?>> io) {
-        synchronized (this) {
-            assert sender == null;
-            assert io != null;
+        assert sender == null;
+        assert io != null;
 
-            this.io = io;
+        this.io = io;
 
-            ioInitLatch.countDown();
+        if (!flushed) {
+            sender = new GridWorker(gridName, "hadoop-shuffle-" + job.id(), log) {
+                @Override protected void body() throws InterruptedException {
+                    while (!isCancelled()) {
+                        Thread.sleep(10);
 
-            if (!flushed) {
-                sender = new GridWorker(gridName, "hadoop-shuffle-" + job.id(), log) {
-                    @Override protected void body() throws InterruptedException {
-                        while (!isCancelled()) {
-                            Thread.sleep(10);
-
-                            try {
-                                collectUpdatesAndSend(false);
-                            }
-                            catch (GridException e) {
-                                throw new IllegalStateException(e);
-                            }
+                        try {
+                            collectUpdatesAndSend(false);
+                        }
+                        catch (GridException e) {
+                            throw new IllegalStateException(e);
                         }
                     }
-                };
+                }
+            };
 
-                new GridThread(sender).start();
-            }
+            new GridThread(sender).start();
         }
+
+        ioInitLatch.countDown();
     }
 
     /**
@@ -378,11 +376,9 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
         if (log.isDebugEnabled())
             log.debug("Waiting for remote addresses initialization.");
 
-        U.await(ioInitLatch);
+        flushed = true;
 
-        synchronized (this) {
-            flushed = true;
-        }
+        U.await(ioInitLatch);
 
         GridWorker sender0 = sender;
 

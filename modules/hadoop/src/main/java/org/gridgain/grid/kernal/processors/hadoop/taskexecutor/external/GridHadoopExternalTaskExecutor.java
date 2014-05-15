@@ -97,8 +97,6 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
             ctx.kernalContext().config().getSystemExecutorService(),
             ctx.kernalContext().gridName());
 
-        comm.setSharedMemoryPort(-1); // TODO.
-
         comm.setListener(new MessageListener());
 
         comm.start();
@@ -213,7 +211,10 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                 comm.sendMessage(proc.descriptor(), new GridHadoopJobInfoUpdateRequest(jobId, meta.phase(), addrs));
             }
             catch (GridException e) {
-                // TODO fail the whole thing?
+                log.error("Failed to send job state update message to remote child process (will kill the process) " +
+                    "[jobId=" + jobId + ", meta=" + meta + ']', e);
+
+                proc.terminate();
             }
         }
     }
@@ -242,8 +243,6 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
             req.jobId(job.id());
             req.jobInfo(job.info());
             req.tasks(tasks);
-            req.concurrentMappers(8);  // TODO
-            req.concurrentReducers(8); // TODO
 
             comm.sendMessage(proc.descriptor(), req);
         }

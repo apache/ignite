@@ -14,6 +14,6 @@ import org.gridgain.grid.kernal.processors.hadoop.message.*;
 /**
  * Process started message.
  */
-public class GridHadoopProcessStartedAck extends GridHadoopMessage {
+public class GridHadoopProcessStartedAck implements GridHadoopMessage {
 
 }

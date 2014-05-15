@@ -19,7 +19,26 @@ public enum GridHadoopJobProperty {
     COMBINER_HASHMAP_SIZE,
 
     /** */
-    PARTITION_HASHMAP_SIZE;
+    PARTITION_HASHMAP_SIZE,
+
+    /**
+     * When set, enables mapper and reducer tasks execution in external process.
+     */
+    EXTERNAL_EXECUTION,
+
+    /**
+     * Specifies number of concurrently running mappers for external execution mode.
+     * <p>
+     * If not specified, defaults to {@code Runtime.getRuntime().availableProcessors()}.
+     */
+    EXTERNAL_CONCURRENT_MAPPERS,
+
+    /**
+     * Specifies number of concurrently running reducers for external execution mode.
+     * <p>
+     * If not specified, defaults to {@code Runtime.getRuntime().availableProcessors()}.
+     */
+    EXTERNAL_CONCURRENT_REDUCERS;
 
     /** */
     private final String ptyName;

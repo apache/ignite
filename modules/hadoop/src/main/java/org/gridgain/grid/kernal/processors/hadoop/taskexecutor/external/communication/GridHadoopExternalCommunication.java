@@ -34,6 +34,9 @@ import java.util.concurrent.*;
 
 import static org.gridgain.grid.GridSystemProperties.*;
 
+/**
+ * TODO fix javadocs.
+ */
 public class GridHadoopExternalCommunication {
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
@@ -41,10 +44,7 @@ public class GridHadoopExternalCommunication {
         GridIpcSharedMemoryServerEndpoint.TROUBLESHOOTING_URL;
 
     /** Default port which node sets listener to (value is <tt>47100</tt>). */
-    public static final int DFLT_PORT = 47100;
-
-    /** Default port which node sets listener for shared memory connections (value is <tt>48100</tt>). */
-    public static final int DFLT_SHMEM_PORT = 48100;
+    public static final int DFLT_PORT = 27100;
 
     /** Default connection timeout (value is <tt>1000</tt>ms). */
     public static final long DFLT_CONN_TIMEOUT = 1000;
@@ -154,7 +154,7 @@ public class GridHadoopExternalCommunication {
     private int locPortRange = DFLT_PORT_RANGE;
 
     /** Local port which node uses to accept shared memory connections. */
-    private int shmemPort = DFLT_SHMEM_PORT;
+    private int shmemPort = -1;
 
     /** Allocate direct buffer or heap buffer. */
     private boolean directBuf = true;
@@ -310,7 +310,7 @@ public class GridHadoopExternalCommunication {
      * <p>
      * If set to {@code -1} shared memory communication will be disabled.
      * <p>
-     * If not provided, default value is {@link #DFLT_SHMEM_PORT}.
+     * If not provided, shared memory is disabled.
      *
      * @param shmemPort Port number.
      */
@@ -1412,7 +1412,7 @@ public class GridHadoopExternalCommunication {
      * Process ID message.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class ProcessHandshakeMessage extends GridHadoopMessage implements Externalizable {
+    public static class ProcessHandshakeMessage implements GridHadoopMessage, Externalizable {
         /** Node ID. */
         private GridHadoopProcessDescriptor procDesc;
 

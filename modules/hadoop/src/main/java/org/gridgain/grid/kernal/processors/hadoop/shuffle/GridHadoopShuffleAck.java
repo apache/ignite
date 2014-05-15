@@ -18,7 +18,7 @@ import java.io.*;
 /**
  * Acknowledgement message.
  */
-public class GridHadoopShuffleAck extends GridHadoopMessage implements Externalizable {
+public class GridHadoopShuffleAck implements GridHadoopMessage, Externalizable {
     /** */
     private long msgId;
 

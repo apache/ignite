@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Message sent from node to child process to start task(s) execution.
  */
-public class GridHadoopTaskExecutionRequest extends GridHadoopMessage {
+public class GridHadoopTaskExecutionRequest implements GridHadoopMessage {
     /** Job ID. */
     private GridHadoopJobId jobId;
 
@@ -27,12 +27,6 @@ public class GridHadoopTaskExecutionRequest extends GridHadoopMessage {
 
     /** Mappers. */
     private Collection<GridHadoopTaskInfo> tasks;
-
-    /** Number of concurrently running mappers. */
-    private int concurrentMappers;
-
-    /** Number of concurrently running reducers. */
-    private int concurrentReducers;
 
     /**
      * @return Job ID.
@@ -74,34 +68,6 @@ public class GridHadoopTaskExecutionRequest extends GridHadoopMessage {
      */
     public void tasks(Collection<GridHadoopTaskInfo> tasks) {
         this.tasks = tasks;
-    }
-
-    /**
-     * @return Number of concurrently running mappers.
-     */
-    public int concurrentMappers() {
-        return concurrentMappers;
-    }
-
-    /**
-     * @param concurrentMappers Number of concurrently running mappers.
-     */
-    public void concurrentMappers(int concurrentMappers) {
-        this.concurrentMappers = concurrentMappers;
-    }
-
-    /**
-     * @return Number of concurrently running reducers.
-     */
-    public int concurrentReducers() {
-        return concurrentReducers;
-    }
-
-    /**
-     * @param concurrentReducers Number of concurrently running reducers.
-     */
-    public void concurrentReducers(int concurrentReducers) {
-        this.concurrentReducers = concurrentReducers;
     }
 
     /** {@inheritDoc} */

@@ -166,7 +166,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             meta.mapReducePlan(mrPlan);
 
             meta.externalExecution(((GridHadoopDefaultJobInfo)info).configuration().getBoolean(
-                "gridgain.hadoop.external_execution", false)); // TODO where constants should be?
+                GridHadoopJobProperty.EXTERNAL_EXECUTION.propertyName(), false));
 
             meta.pendingSplits(allSplits(mrPlan));
             meta.pendingReducers(allReducers(job));

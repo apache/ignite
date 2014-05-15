@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Job execution response.
  */
-public class GridHadoopTaskExecutionResponse extends GridHadoopMessage {
+public class GridHadoopTaskExecutionResponse implements GridHadoopMessage {
     /** Job ID for which tasks has started. */
     private GridHadoopJobId jobId;
 
