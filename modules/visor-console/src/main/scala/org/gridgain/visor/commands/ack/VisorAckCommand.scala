@@ -20,6 +20,8 @@ import org.gridgain.visor.commands.VisorConsoleCommand
 import collection._
 import scalar._
 import visor._
+import org.gridgain.grid.kernal.visor.cmd.VisorAckTask
+import org.gridgain.grid.kernal.visor.cmd.VisorAckTask.VisorAckArg
 
 /**
  * ==Overview==
@@ -135,10 +137,10 @@ class VisorAckCommand {
      * <ex>ack("Howdy!", _.id8.startsWith("123"))"</ex>
      * Prints 'Howdy!' on all nodes satisfying this predicate.
      *
-     * @param arg Command argument. If `null` - it's no-op.
+     * @param msg Command argument. If `null` - it's no-op.
      * @param f Optional predicate for filtering out nodes.
      */
-    def ack(arg: String, f: NodeFilter) {
+    def ack(msg: String, f: NodeFilter) {
         assert(f != null)
 
         if (!isConnected)
@@ -149,7 +151,7 @@ class VisorAckCommand {
                     .compute()
                     .withName("visor-ack")
                     .withNoFailover()
-                    .broadcast(new VisorAckTask(_ => arg))
+                    .broadcast(new VisorAckTask(), new VisorAckArg(null, msg))
             catch {
                 case _: GridEmptyProjectionException => scold("Topology is empty.")
                 case e: Exception => scold("System error: " + e.getMessage)
@@ -198,25 +200,25 @@ object VisorAckCommand {
     implicit def fromAck2Visor(vs: VisorTag) = cmd
 }
 
-/**
- * Ack task to run on node.
- *
- * @param f - generating message function.
- */
-private class VisorAckTask(f: Grid => String) extends GridRunnable with Serializable {
-    @GridInstanceResource
-    private val gg: Grid = null
-
-    def run() {
-        doAck(f(gg))
-    }
-
-    /**
-     * Ack-ing implementation.
-     *
-     * @param s String to ack.
-     */
-    private def doAck(s: Any) {
-        println("<visor>: ack: " + s.toString)
-    }
-}
+///**
+// * Ack task to run on node.
+// *
+// * @param f - generating message function.
+// */
+//private class VisorAckTask(f: Grid => String) extends GridRunnable with Serializable {
+//    @GridInstanceResource
+//    private val gg: Grid = null
+//
+//    def run() {
+//        doAck(f(gg))
+//    }
+//
+//    /**
+//     * Ack-ing implementation.
+//     *
+//     * @param s String to ack.
+//     */
+//    private def doAck(s: Any) {
+//        println("<visor>: ack: " + s.toString)
+//    }
+//}

@@ -32,13 +32,16 @@ public class VisorAckTask extends VisorOneNodeTask<VisorAckTask.VisorAckArg, Voi
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final String msg;
+        private String msg;
+
+        public VisorAckArg() { }
 
         /**
          * @param msg - generating message function.
          */
         public VisorAckArg(UUID nodeId, String msg) {
             super(nodeId);
+
             this.msg = msg;
         }
 
@@ -62,7 +65,7 @@ public class VisorAckTask extends VisorOneNodeTask<VisorAckTask.VisorAckArg, Voi
             super(arg);
         }
 
-        @Override protected Void run() {
+        @Override protected Void run(VisorAckArg arg) {
             System.out.println("<visor>: ack: " + arg.msg); // TODO
 
             return null;

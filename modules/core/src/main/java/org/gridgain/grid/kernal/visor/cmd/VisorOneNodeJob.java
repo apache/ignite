@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.visor.cmd;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.jetbrains.annotations.*;
 
@@ -26,14 +27,17 @@ public abstract class VisorOneNodeJob<T extends VisorOneNodeArg, R> extends Grid
     protected GridKernal g;
 
     /** */
-    protected final T arg;
+    @GridLoggerResource
+    protected GridLogger log;
 
     protected VisorOneNodeJob(T arg) {
-        this.arg = arg;
+        super(arg);
     }
 
     @Nullable @Override public Object execute() throws GridException {
-        return run();
+        T arg = argument(0);
+
+        return run(arg);
     }
 
     /**
@@ -41,5 +45,5 @@ public abstract class VisorOneNodeJob<T extends VisorOneNodeArg, R> extends Grid
      *
      * @return Result.
      */
-    protected abstract R run();
+    protected abstract R run(T arg);
 }
