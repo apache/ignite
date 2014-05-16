@@ -12,6 +12,7 @@ package org.gridgain.client.impl.connection;
 import io.netty.channel.*;
 import io.netty.channel.nio.*;
 import org.gridgain.client.*;
+import org.gridgain.client.impl.*;
 import org.gridgain.client.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -104,11 +105,13 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
         this.top = top;
         this.protoId = protoId;
 
-        executor = cfg.getExecutorService() != null ? cfg.getExecutorService() : Executors.newCachedThreadPool();
+        executor = cfg.getExecutorService() != null ? cfg.getExecutorService() :
+            Executors.newCachedThreadPool(new GridClientThreadFactory("exec", true));
 
         int workerCnt = Runtime.getRuntime().availableProcessors();
 
-        evtLoop = cfg.getProtocol() == GridClientProtocol.TCP ? new NioEventLoopGroup(workerCnt) : null;
+        evtLoop = cfg.getProtocol() == GridClientProtocol.TCP ?
+            new NioEventLoopGroup(workerCnt, new GridClientThreadFactory("nio", true)) : null;
     }
 
     /** {@inheritDoc} */
