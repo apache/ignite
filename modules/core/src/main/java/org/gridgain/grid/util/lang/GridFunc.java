@@ -7382,6 +7382,36 @@ public class GridFunc {
     }
 
     /**
+     * @param arr Array.
+     * @param val Value to find.
+     * @return {@code True} if array contains given value.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    public static boolean contains(int[] arr, int val) {
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i] == val)
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param arr Array.
+     * @param val Value to find.
+     * @return {@code True} if array contains given value.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    public static boolean contains(Integer[] arr, Integer val) {
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i].equals(val))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Gets utility predicate that accepts {@link Entry} value and compares
      * its value to the given value.
      *

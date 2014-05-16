@@ -12,7 +12,6 @@ package org.gridgain.testsuites;
 import junit.framework.*;
 import org.gridgain.grid.spi.checkpoint.cache.*;
 import org.gridgain.grid.spi.checkpoint.jdbc.*;
-import org.gridgain.grid.spi.checkpoint.s3.*;
 import org.gridgain.grid.spi.checkpoint.sharedfs.*;
 
 /**
@@ -37,11 +36,6 @@ public class GridSpiCheckpointSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridJdbcCheckpointSpiCustomConfigSelfTest.class));
         suite.addTest(new TestSuite(GridJdbcCheckpointSpiDefaultConfigSelfTest.class));
         suite.addTest(new TestSuite(GridJdbcCheckpointSpiStartStopSelfTest.class));
-
-        // S3.
-        suite.addTest(new TestSuite(GridS3CheckpointSpiConfigSelfTest.class));
-        suite.addTest(new TestSuite(GridS3CheckpointSpiSelfTest.class));
-        suite.addTest(new TestSuite(GridS3CheckpointSpiStartStopSelfTest.class));
 
         // Shared FS.
         suite.addTest(new TestSuite(GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest.class));

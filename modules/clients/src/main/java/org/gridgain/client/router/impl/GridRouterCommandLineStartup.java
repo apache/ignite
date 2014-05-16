@@ -11,22 +11,17 @@ package org.gridgain.client.router.impl;
 
 import org.gridgain.client.router.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.processors.spring.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-import org.springframework.beans.*;
-import org.springframework.beans.factory.*;
-import org.springframework.beans.factory.xml.*;
-import org.springframework.context.*;
-import org.springframework.context.support.*;
-import org.springframework.core.io.*;
 
 import java.net.*;
 import java.text.*;
 import java.util.*;
 
+import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.kernal.GridProductImpl.*;
 
 /**
@@ -46,10 +41,10 @@ public class GridRouterCommandLineStartup {
     /**
      * Search given context for required configuration and starts router.
      *
-     * @param ctx Context to extract configuration from.
+     * @param beans Beans loaded from spring configuration file.
      */
-    public void start(ListableBeanFactory ctx) {
-        log = getBean(ctx, GridLogger.class);
+    public void start(Map<Class<?>, Object> beans) {
+        log = (GridLogger)beans.get(GridLogger.class);
 
         if (log == null) {
             U.error(log, "Failed to find logger definition in application context. Stopping the router.");
@@ -57,7 +52,7 @@ public class GridRouterCommandLineStartup {
             return;
         }
 
-        GridTcpRouterConfiguration tcpCfg = getBean(ctx, GridTcpRouterConfiguration.class);
+        GridTcpRouterConfiguration tcpCfg = (GridTcpRouterConfiguration)beans.get(GridTcpRouterConfiguration.class);
 
         if (tcpCfg == null)
             U.warn(log, "TCP router startup skipped (configuration not found).");
@@ -74,7 +69,7 @@ public class GridRouterCommandLineStartup {
             }
         }
 
-        GridHttpRouterConfiguration httpCfg = getBean(ctx, GridHttpRouterConfiguration.class);
+        GridHttpRouterConfiguration httpCfg = (GridHttpRouterConfiguration)beans.get(GridHttpRouterConfiguration.class);
 
         if (httpCfg == null)
             U.warn(log, "HTTP router startup skipped (configuration not found).");
@@ -127,6 +122,8 @@ public class GridRouterCommandLineStartup {
             " "
         );
 
+        GridSpringProcessor spring = SPRING.create(false);
+
         if (args.length < 1) {
             X.error("Missing XML configuration path.");
 
@@ -150,68 +147,25 @@ public class GridRouterCommandLineStartup {
         if (isLog4jUsed)
             t = U.addLog4jNoOpLogger();
 
-        ApplicationContext ctx = null;
+        Map<Class<?>, Object> beans;
 
         try {
-            ctx = loadCfg(cfgUrl);
+            beans = spring.loadBeans(cfgUrl, GridLogger.class, GridTcpRouterConfiguration.class,
+                GridHttpRouterConfiguration.class);
         }
         finally {
             if (isLog4jUsed && t != null)
                 U.removeLog4jNoOpLogger(t);
         }
 
-        final GridRouterCommandLineStartup routerLdr = new GridRouterCommandLineStartup();
+        final GridRouterCommandLineStartup routerStartup = new GridRouterCommandLineStartup();
 
-        if (ctx != null) {
-            routerLdr.start(ctx);
+        routerStartup.start(beans);
 
-            Runtime.getRuntime().addShutdownHook(new Thread() {
-                @Override public void run() {
-                    routerLdr.stop();
-                }
-            });
-        }
-        else {
-            X.error("Failed to start router with given configuration. Url: ", cfgUrl);
-
-            System.exit(1);
-        }
-    }
-
-    /**
-     * Reads spring context from the given location.
-     * @param springCfgUrl Context descriptor loxcation.
-     * @return Spring context.
-     * @throws GridException If context can't be loaded.
-     */
-    public static ApplicationContext loadCfg(URL springCfgUrl) throws GridException {
-        GenericApplicationContext springCtx;
-
-        try {
-            springCtx = new GenericApplicationContext();
-
-            new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(springCfgUrl));
-
-            springCtx.refresh();
-        }
-        catch (BeansException e) {
-            throw new GridException("Failed to instantiate Spring XML application context [springUrl=" +
-                springCfgUrl + ", err=" + e.getMessage() + ']', e);
-        }
-
-        return springCtx;
-    }
-
-    /**
-     * Get bean configuration.
-     *
-     * @param ctx Spring context.
-     * @param beanCls Bean class.
-     * @return Spring bean.
-     */
-    @Nullable private static <T> T getBean(ListableBeanFactory ctx, Class<T> beanCls) {
-        Map.Entry<String, T> entry = F.firstEntry(ctx.getBeansOfType(beanCls));
-
-        return entry == null ? null : entry.getValue();
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override public void run() {
+                routerStartup.stop();
+            }
+        });
     }
 }

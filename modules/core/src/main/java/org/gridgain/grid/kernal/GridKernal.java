@@ -43,8 +43,6 @@ import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
 import org.gridgain.grid.kernal.processors.port.*;
 import org.gridgain.grid.kernal.processors.resource.*;
-import org.gridgain.grid.kernal.processors.rest.*;
-import org.gridgain.grid.kernal.processors.schedule.*;
 import org.gridgain.grid.kernal.processors.segmentation.*;
 import org.gridgain.grid.kernal.processors.session.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
@@ -66,7 +64,6 @@ import org.gridgain.grid.util.nodestart.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
-import org.springframework.context.*;
 
 import javax.management.*;
 import java.io.*;
@@ -154,7 +151,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     private long startTime = U.currentTimeMillis();
 
     /** Spring context, potentially {@code null}. */
-    private ApplicationContext springCtx;
+    private GridSpringResourceContext rsrcCtx;
 
     /** */
     private Timer updateNtfTimer;
@@ -202,10 +199,10 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     /**
      * @param springCtx Optional Spring application context.
      */
-    public GridKernal(@Nullable ApplicationContext springCtx) {
+    public GridKernal(@Nullable GridSpringResourceContext rsrcCtx) {
         super(null, null, (GridPredicate<GridNode>)null);
 
-        this.springCtx = springCtx;
+        this.rsrcCtx = rsrcCtx;
 
         String[] compatibleVers = COMPATIBLE_VERS.split(",");
 
@@ -552,15 +549,21 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         boolean notifyEnabled = !"false".equalsIgnoreCase(X.getSystemOrEnv(GG_UPDATE_NOTIFIER));
 
-        final GridUpdateNotifier verChecker;
+        GridUpdateNotifier verChecker0 = null;
 
         if (notifyEnabled) {
-            verChecker = new GridUpdateNotifier(gridName, EDITION, VER, SITE, false);
+            try {
+                verChecker0 = new GridUpdateNotifier(gridName, EDITION, VER, SITE, false);
 
-            verChecker.checkForNewVersion(cfg.getExecutorService(), log);
+                verChecker0.checkForNewVersion(cfg.getExecutorService(), log);
+            }
+            catch (GridException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to create GridUpdateNotifier: " + e);
+            }
         }
-        else
-            verChecker = null;
+
+        final GridUpdateNotifier verChecker = verChecker0;
 
         // Ack 3-rd party licenses location.
         if (log.isInfoEnabled() && cfg.getGridGainHome() != null)
@@ -584,7 +587,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         // Spin out SPIs & managers.
         try {
-            GridKernalContextImpl ctx = new GridKernalContextImpl(this, cfg, gw, ENT);
+            GridKernalContextImpl ctx = new GridKernalContextImpl(log, this, cfg, gw, ENT);
 
             nodeLoc = new GridNodeLocalMapImpl(ctx);
 
@@ -595,7 +598,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             // by all other managers and processors.
             GridResourceProcessor rsrcProc = new GridResourceProcessor(ctx);
 
-            rsrcProc.setSpringContext(springCtx);
+            rsrcProc.setSpringContext(rsrcCtx);
 
             // Set node version.
             ctx.version(COMPOUND_VERSION);
@@ -636,7 +639,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startProcessor(ctx, new GridClosureProcessor(ctx), attrs);
 
             // Start some other processors (order & place is important).
-            startProcessor(ctx, new GridEmailProcessor(ctx), attrs);
+            startProcessor(ctx, (GridProcessor)EMAIL.create(ctx, cfg.getSmtpHost() == null), attrs);
             startProcessor(ctx, new GridPortProcessor(ctx), attrs);
             startProcessor(ctx, new GridJobMetricsProcessor(ctx), attrs);
 
@@ -663,7 +666,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
-            GridGgfsProcessorAdapter ggfsProc =  COMP_GGFS.create(ctx, F.isEmpty(cfg.getGgfsConfiguration()));
+            GridGgfsProcessorAdapter ggfsProc =  GGFS.create(ctx, F.isEmpty(cfg.getGgfsConfiguration()));
 
             ctx.add(ggfsProc);
 
@@ -675,8 +678,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startProcessor(ctx, new GridTaskSessionProcessor(ctx), attrs);
             startProcessor(ctx, new GridJobProcessor(ctx), attrs);
             startProcessor(ctx, new GridTaskProcessor(ctx), attrs);
-            startProcessor(ctx, new GridScheduleProcessor(ctx), attrs);
-            startProcessor(ctx, new GridRestProcessor(ctx), attrs);
+            startProcessor(ctx, (GridProcessor)SCHEDULE.createOptional(ctx), attrs);
+            startProcessor(ctx, (GridProcessor)REST.create(ctx, !cfg.isRestEnabled()), attrs);
             startProcessor(ctx, new GridDataLoaderProcessor(ctx), attrs);
             startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
             startProcessor(ctx, ggfsProc, attrs, false);
@@ -1198,7 +1201,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         add(attrs, ATTR_BUILD_DATE, build);
         add(attrs, ATTR_COMPATIBLE_VERS, (Serializable)compatibleVersions());
         add(attrs, ATTR_MARSHALLER, cfg.getMarshaller().getClass().getName());
-        add(attrs, ATTR_LIBRARIES, GridLibraryConsistencyCheck.libraries());
         add(attrs, ATTR_USER_NAME, System.getProperty("user.name"));
         add(attrs, ATTR_GRID_NAME, gridName);
 
@@ -1765,6 +1767,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                 notifyLifecycleBeansEx(GridLifecycleEventType.BEFORE_GRID_STOP);
             }
 
+            GridEmailProcessorAdapter email = ctx.email();
+
             List<GridComponent> comps = ctx.components();
 
             // Callback component in reverse order while kernal is still functional
@@ -1945,25 +1949,11 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                         "| " + SITE + NL +
                         "| support@gridgain.com" + NL;
 
-                // We can't use email processor at this point.
-                // So we use "raw" method of sending.
                 try {
-                    U.sendEmail(
-                        // Static SMTP configuration data.
-                        cfg.getSmtpHost(),
-                        cfg.getSmtpPort(),
-                        cfg.isSmtpSsl(),
-                        cfg.isSmtpStartTls(),
-                        cfg.getSmtpUsername(),
-                        cfg.getSmtpPassword(),
-                        cfg.getSmtpFromEmail(),
-
-                        // Per-email data.
-                        subj,
+                    email.sendNow(subj,
                         body,
                         false,
-                        Arrays.asList(cfg.getAdminEmails())
-                    );
+                        Arrays.asList(cfg.getAdminEmails()));
                 }
                 catch (GridException e) {
                     U.error(log, "Failed to send lifecycle email notification.", e);
@@ -2494,6 +2484,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         guard();
 
         try {
+            GridSshProcessor sshProcessor = GridComponentType.SSH.create(false);
+
             Map<String, Collection<GridRemoteStartSpecification>> specsMap = specifications(hosts, dflts);
 
             Map<String, ConcurrentLinkedQueue<GridNodeCallable>> runMap = new HashMap<>();
@@ -2549,7 +2541,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                     assert spec.host().equals(host);
 
                     for (int i = startIdx; i <= spec.nodes(); i++) {
-                        nodeRuns.add(new GridNodeCallable(spec, timeout));
+                        nodeRuns.add(sshProcessor.nodeStartCallable(spec, timeout));
 
                         nodeCallCnt++;
                     }
