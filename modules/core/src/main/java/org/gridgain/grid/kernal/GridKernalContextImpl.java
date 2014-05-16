@@ -196,7 +196,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringInclude
-    private GridGgfsHelperAdapter ggfsUtilsHelper;
+    private GridGgfsHelperAdapter ggfsHelper;
 
     /** */
     @GridToStringInclude
@@ -411,7 +411,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
         assert helper != null;
 
         if (helper instanceof GridGgfsHelperAdapter)
-            ggfsUtilsHelper = (GridGgfsHelperAdapter)helper;
+            ggfsHelper = (GridGgfsHelperAdapter)helper;
         else
             assert false : "Unknown helper class: " + helper.getClass();
     }
@@ -643,8 +643,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsHelperAdapter ggfsUtils() {
-        return ggfsUtilsHelper;
+    @Override public GridGgfsHelperAdapter ggfsHelper() {
+        return ggfsHelper;
     }
 
     /** {@inheritDoc} */
