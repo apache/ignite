@@ -28,7 +28,7 @@ public interface NewGridGgfsHadoop {
      * @param logDir Log directory.
      * @return Future with handshake result.
      */
-    public GridPlainFuture<GridGgfsHandshakeResponse> handshake(String logDir);
+    public GridGgfsHandshakeResponse handshake(String logDir);
 
     /**
      * Close connection.
@@ -41,7 +41,7 @@ public interface NewGridGgfsHadoop {
      * @param path Path to get file info for.
      * @return Future for info operation.
      */
-    public GridPlainFuture<GridGgfsFile> info(GridGgfsPath path);
+    public GridGgfsFile info(GridGgfsPath path);
 
     /**
      * Command to update file properties.
@@ -50,7 +50,7 @@ public interface NewGridGgfsHadoop {
      * @param props Properties to update.
      * @return Future for update operation.
      */
-    public GridPlainFuture<GridGgfsFile> update(GridGgfsPath path, Map<String, String> props);
+    public GridGgfsFile update(GridGgfsPath path, Map<String, String> props);
 
     /**
      * Sets last access time and last modification time for a file.
@@ -59,7 +59,7 @@ public interface NewGridGgfsHadoop {
      * @param accessTime Last access time to set.
      * @param modificationTime Last modification time to set.
      */
-    public GridPlainFuture<Boolean> setTimes(GridGgfsPath path, long accessTime, long modificationTime);
+    public Boolean setTimes(GridGgfsPath path, long accessTime, long modificationTime);
 
     /**
      * Command to rename given path.
@@ -68,7 +68,7 @@ public interface NewGridGgfsHadoop {
      * @param dest Destination path.
      * @return Future for rename operation.
      */
-    public GridPlainFuture<Boolean> rename(GridGgfsPath src, GridGgfsPath dest);
+    public Boolean rename(GridGgfsPath src, GridGgfsPath dest);
 
     /**
      * Command to delete given path.
@@ -77,7 +77,7 @@ public interface NewGridGgfsHadoop {
      * @param recursive {@code True} if deletion is recursive.
      * @return Future for delete operation.
      */
-    public GridPlainFuture<Boolean> delete(GridGgfsPath path, boolean recursive);
+    public Boolean delete(GridGgfsPath path, boolean recursive);
 
     /**
      * Command to get affinity for given path, offset and length.
@@ -87,7 +87,7 @@ public interface NewGridGgfsHadoop {
      * @param len Data length.
      * @return Future for affinity command.
      */
-    public GridPlainFuture<Collection<GridGgfsBlockLocation>> affinity(GridGgfsPath path, long start, long len);
+    public Collection<GridGgfsBlockLocation> affinity(GridGgfsPath path, long start, long len);
 
     /**
      * Gets path summary.
@@ -95,7 +95,7 @@ public interface NewGridGgfsHadoop {
      * @param path Path to get summary for.
      * @return Future that will be completed when summary is received.
      */
-    public GridPlainFuture<GridGgfsPathSummary> contentSummary(GridGgfsPath path);
+    public GridGgfsPathSummary contentSummary(GridGgfsPath path);
 
     /**
      * Command to create directories.
@@ -103,7 +103,7 @@ public interface NewGridGgfsHadoop {
      * @param path Path to create.
      * @return Future for mkdirs operation.
      */
-    public GridPlainFuture<Boolean> mkdirs(GridGgfsPath path, Map<String, String> props);
+    public Boolean mkdirs(GridGgfsPath path, Map<String, String> props);
 
     /**
      * Command to get list of files in directory.
@@ -111,7 +111,7 @@ public interface NewGridGgfsHadoop {
      * @param path Path to list.
      * @return Future for listFiles operation.
      */
-    public GridPlainFuture<Collection<GridGgfsFile>> listFiles(GridGgfsPath path);
+    public Collection<GridGgfsFile> listFiles(GridGgfsPath path);
 
     /**
      * Command to get directory listing.
@@ -119,14 +119,14 @@ public interface NewGridGgfsHadoop {
      * @param path Path to list.
      * @return Future for listPaths operation.
      */
-    public GridPlainFuture<Collection<GridGgfsPath>> listPaths(GridGgfsPath path);
+    public Collection<GridGgfsPath> listPaths(GridGgfsPath path);
 
     /**
      * Performs status request.
      *
      * @return Status response.
      */
-    public GridPlainFuture<GridGgfsStatus> fsStatus();
+    public GridGgfsStatus fsStatus();
 
     /**
      * Command to open file for reading.
@@ -134,7 +134,7 @@ public interface NewGridGgfsHadoop {
      * @param path File path to open.
      * @return Future for open operation.
      */
-    public GridPlainFuture<GridGgfsInputStreamDescriptor> open(GridGgfsPath path);
+    public GridGgfsInputStreamDescriptor open(GridGgfsPath path);
 
     /**
      * Command to open file for reading.
@@ -142,7 +142,7 @@ public interface NewGridGgfsHadoop {
      * @param path File path to open.
      * @return Future for open operation.
      */
-    public GridPlainFuture<GridGgfsInputStreamDescriptor> open(GridGgfsPath path, int seqReadsBeforePrefetch);
+    public GridGgfsInputStreamDescriptor open(GridGgfsPath path, int seqReadsBeforePrefetch);
 
     /**
      * Command to create file and open it for output.
@@ -154,7 +154,7 @@ public interface NewGridGgfsHadoop {
      * @param props File properties for creation.
      * @return Future for create operation.
      */
-    public GridPlainFuture<Long> create(GridGgfsPath path, boolean overwrite, boolean colocate, int replication,
+    public Long create(GridGgfsPath path, boolean overwrite, boolean colocate, int replication,
         long blockSize, @Nullable Map<String, String> props);
 
     /**
@@ -165,7 +165,7 @@ public interface NewGridGgfsHadoop {
      * @param props File properties.
      * @return Future for append operation.
      */
-    public GridPlainFuture<Long> append(GridGgfsPath path, boolean create, @Nullable Map<String, String> props);
+    public Long append(GridGgfsPath path, boolean create, @Nullable Map<String, String> props);
 
     /**
      * Asynchronously reads specified amount of bytes from opened input stream.
@@ -181,7 +181,7 @@ public interface NewGridGgfsHadoop {
      *
      * @return Read future.
      */
-    public GridPlainFuture<byte[]> readData(NewGridGgfsHadoopStreamDescriptor desc, long pos, int len,
+    public byte[] readData(NewGridGgfsHadoopStreamDescriptor desc, long pos, int len,
         @Nullable final byte[] outBuf, final int outOff, final int outLen);
 
     /**
@@ -202,7 +202,7 @@ public interface NewGridGgfsHadoop {
      * @param desc Stream descriptor.
      * @return Close future.
      */
-    public GridPlainFuture<Boolean> closeStream(NewGridGgfsHadoopStreamDescriptor desc);
+    public Boolean closeStream(NewGridGgfsHadoopStreamDescriptor desc);
 
     /**
      * Adds event listener that will be invoked when connection with server is lost or remote error has occurred.
