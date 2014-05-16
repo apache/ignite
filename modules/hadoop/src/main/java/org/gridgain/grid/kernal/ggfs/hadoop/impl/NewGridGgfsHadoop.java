@@ -36,6 +36,11 @@ public interface NewGridGgfsHadoop {
     public void close();
 
     /**
+     * @return {@code True} if this is in-proc implementation.
+     */
+    public boolean inProcess();
+
+    /**
      * Command to retrieve file info for some GGFS path.
      *
      * @param path Path to get file info for.

@@ -50,6 +50,7 @@ import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsFileInfo.*;
 /**
  * Cache-based GGFS implementation.
  */
+// TODO: Busy locking.
 public final class GridGgfsImpl implements GridGgfsEx {
     /** Default permissions for file system entry. */
     private static final String PERMISSION_DFLT_VAL = "0777";
