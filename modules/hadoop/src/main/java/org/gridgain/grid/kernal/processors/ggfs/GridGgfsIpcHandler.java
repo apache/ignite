@@ -508,7 +508,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
             return null;
         }
 
-        GridUuid key = ggfs.context().data().nextAffinityKey(null);
+        GridUuid key = ggfs.nextAffinityKey();
 
         if (log.isDebugEnabled())
             log.debug("Generated affinity key for path control request [ggfsName=" + ggfs.name() +

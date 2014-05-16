@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.ggfs.hadoop.impl;
 
+import org.apache.commons.logging.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
@@ -26,44 +27,35 @@ import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
 /**
  * Wrapper for GGFS server.
  */
-public class NewGridGgfsHadoopWrapper {
+public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     /** Delegate. */
-    private final AtomicReference<NewGridGgfsHadoop> delegate = new AtomicReference<>();
+    private final AtomicReference<NewGridGgfsHadoopEx> delegate = new AtomicReference<>();
 
     /** Connection string. */
     private final NewGridGgfsHadoopEndpoint endpoint;
 
-    /** Whether to force switch to in-proc mode. */
-    private volatile GridGgfsEx forceInner;
+    /** Logger. */
+    private final Log log;
 
     /**
      * Constructor.
      *
+     * @param log Logger.
      * @param connStr Connection string.
      */
-    NewGridGgfsHadoopWrapper(String connStr) throws IOException {
+    NewGridGgfsHadoopWrapper(Log log, String connStr) throws IOException {
         this.endpoint = new NewGridGgfsHadoopEndpoint(connStr);
+        this.log = log;
+    }
 
-        final NewGridGgfsHadoopEndpoint endpoint0 = endpoint;
-
-        Thread thread = new Thread(new Runnable() {
-            @Override public void run() {
-                while (true) {
-                    try {
-                        Thread.sleep(1000);
-
-
-                    }
-                    catch (InterruptedException e) {
-                        break;
-                    }
-                }
+    /** {@inheritDoc} */
+    @Override public GridGgfsHandshakeResponse handshake(final String logDir) throws GridException, IOException {
+        return withReconnectHandling(new GridClosureX<NewGridGgfsHadoop, GridGgfsHandshakeResponse>() {
+            @Override public GridGgfsHandshakeResponse applyx(NewGridGgfsHadoop delegate)
+                throws GridException {
+                return null; // TODO.
             }
-        }, "gridgain-hadoop-ggfs-inproc-checker");
-
-        thread.setDaemon(true);
-
-        thread.start();
+        });
     }
 
     /**
@@ -77,7 +69,7 @@ public class NewGridGgfsHadoopWrapper {
         Exception err = null;
 
         for (int i = 0; i < 2; i++) {
-            NewGridGgfsHadoop curDelegate = null;
+            NewGridGgfsHadoopEx curDelegate = null;
 
             try {
                 curDelegate = delegate();
@@ -90,10 +82,8 @@ public class NewGridGgfsHadoopWrapper {
 
                 delegate.compareAndSet(curDelegate, null);
 
-                // TODO: Set logger.
-//                // Always output in debug.
-//                if (log.isDebugEnabled())
-//                    log.debug("Failed to send message to a server: " + e);
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send message to a server: " + e);
 
                 err = e;
             }
@@ -106,47 +96,13 @@ public class NewGridGgfsHadoopWrapper {
     }
 
     /**
-     * Try getting in
-     * @param endpoint
-     * @return
-     */
-    @Nullable private static GridGgfsEx inProcGffs(NewGridGgfsHadoopEndpoint endpoint) {
-        GridGgfsEx ggfs = null;
-
-        if (endpoint.grid() == null) {
-            try {
-                Grid grid = G.grid();
-
-                ggfs = (GridGgfsEx)grid.ggfs(endpoint.ggfs());
-            }
-            catch (Exception ignore) {
-                // No-op.
-            }
-        }
-        else {
-            for (Grid grid : G.allGrids()) {
-                try {
-                    ggfs = (GridGgfsEx)grid.ggfs(endpoint.ggfs());
-
-                    break;
-                }
-                catch (Exception ignore) {
-                    // No-op.
-                }
-            }
-        }
-
-        return ggfs;
-    }
-
-    /**
      * Get delegate creating it if needed.
      *
      * @return Delegate.
      */
-    private NewGridGgfsHadoop delegate() throws IOException {
+    private NewGridGgfsHadoopEx delegate() throws IOException {
         // 1. If delegate is set, return it immediately.
-        NewGridGgfsHadoop curDelegate = delegate.get();
+        NewGridGgfsHadoopEx curDelegate = delegate.get();
 
         if (curDelegate != null)
             return curDelegate;
@@ -178,8 +134,19 @@ public class NewGridGgfsHadoopWrapper {
         }
 
         if (ggfs != null)
-            return new NewGridGgfsHadoopInProc(ggfs);
-        else
-            return new NewGridGgfsHadoopOutProc(null, null); // TODO: Proper arguments here.
+            return new NewGridGgfsHadoopInProc(ggfs, log);
+
+        // 3. Try connecting using shmem.
+        if (!U.isWindows()) {
+            // TODO.
+        }
+
+        // 4. Try loopback TCP connection.
+        // TODO.
+
+        // 5. Try remote TCP connection.
+        new NewGridGgfsHadoopOutProc(log, ""); // TODO: Proper arguments here.
+
+        throw new IOException("Failed to connect: " + endpoint);
     }
 }

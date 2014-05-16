@@ -113,4 +113,11 @@ public interface GridGgfsEx extends GridGgfs {
      * @return {@code True} if path is excluded from evictions.
      */
     public boolean evictExclude(GridGgfsPath path, boolean primary);
+
+    /**
+     * Get next affinity key.
+     *
+     * @return Next affinity key.
+     */
+    public GridUuid nextAffinityKey();
 }

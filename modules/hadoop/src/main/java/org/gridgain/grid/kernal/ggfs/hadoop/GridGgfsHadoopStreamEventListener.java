@@ -14,7 +14,7 @@ import org.gridgain.grid.*;
 /**
  * GGFS input stream event listener.
  */
-public interface GridGgfsStreamEventListener {
+public interface GridGgfsHadoopStreamEventListener {
     /**
      * Callback invoked when the stream is being closed.
      *

@@ -25,11 +25,12 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.kernal.ggfs.common.GridGgfsIpcCommand.*;
+import static org.gridgain.grid.kernal.ggfs.hadoop.impl.NewGridGgfsHadoopMode.*;
 
 /**
  * Communication with external process (TCP or shmem).
  */
-public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoop, GridGgfsHadoopIpcIoListener {
+public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoopEx, GridGgfsHadoopIpcIoListener {
     /** Expected result is boolean. */
     private static final GridPlainClosure<GridPlainFuture<GridGgfsMessage>, Boolean> BOOL_RES = createClosure();
 
@@ -77,7 +78,7 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoop, GridGgfsHado
     private final AtomicReference<GridGgfsHadoopIpcIo> clientIo = new AtomicReference<>();
 
     /** Event listeners. */
-    private final Map<Long, GridGgfsStreamEventListener> lsnrs = new ConcurrentHashMap8<>();
+    private final Map<Long, GridGgfsHadoopStreamEventListener> lsnrs = new ConcurrentHashMap8<>();
 
     /**
      * @param log Client logger.
@@ -92,7 +93,7 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoop, GridGgfsHado
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<GridGgfsHandshakeResponse> handshake(String logDir) {
+    @Override public GridGgfsHandshakeResponse handshake(String logDir) throws GridException {
         final GridGgfsHandshakeRequest req = new GridGgfsHandshakeRequest();
 
         req.logDirectory(logDir);
@@ -102,7 +103,7 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoop, GridGgfsHado
                 throws GridException {
                 return io.send(req).chain(HANDSHAKE_RES);
             }
-        });
+        }).get();
     }
 
     /** {@inheritDoc} */
@@ -117,7 +118,7 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoop, GridGgfsHado
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<GridGgfsFile> info(GridGgfsPath path) {
+    @Override public GridGgfsFile info(GridGgfsPath path) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
         msg.command(INFO);
@@ -127,11 +128,11 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoop, GridGgfsHado
             @Override public GridPlainFuture<GridGgfsFile> applyx(GridGgfsHadoopIpcIo io) throws GridException {
                 return io.send(msg).chain(FILE_RES);
             }
-        });
+        }).get();
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<GridGgfsFile> update(GridGgfsPath path, Map<String, String> props) {
+    @Override public GridGgfsFile update(GridGgfsPath path, Map<String, String> props) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
         msg.command(UPDATE);
@@ -142,11 +143,11 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoop, GridGgfsHado
             @Override public GridPlainFuture<GridGgfsFile> applyx(GridGgfsHadoopIpcIo io) throws GridException {
                 return io.send(msg).chain(FILE_RES);
             }
-        });
+        }).get();
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<Boolean> setTimes(GridGgfsPath path, long accessTime, long modificationTime) {
+    @Override public Boolean setTimes(GridGgfsPath path, long accessTime, long modificationTime) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
         msg.command(SET_TIMES);
@@ -159,11 +160,11 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoop, GridGgfsHado
                 throws GridException {
                 return io.send(msg).chain(BOOL_RES);
             }
-        });
+        }).get();
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<Boolean> rename(GridGgfsPath src, GridGgfsPath dest) {
+    @Override public Boolean rename(GridGgfsPath src, GridGgfsPath dest) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
         msg.command(RENAME);
@@ -174,11 +175,11 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoop, GridGgfsHado
             @Override public GridPlainFuture<Boolean> applyx(GridGgfsHadoopIpcIo io) throws GridException {
                 return io.send(msg).chain(BOOL_RES);
             }
-        });
+        }).get();
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<Boolean> delete(GridGgfsPath path, boolean recursive) {
+    @Override public Boolean delete(GridGgfsPath path, boolean recursive) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
         msg.command(DELETE);
@@ -189,12 +190,12 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoop, GridGgfsHado
             @Override public GridPlainFuture<Boolean> applyx(GridGgfsHadoopIpcIo io) throws GridException {
                 return io.send(msg).chain(BOOL_RES);
             }
-        });
+        }).get();
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<Collection<GridGgfsBlockLocation>> affinity(GridGgfsPath path, long start,
-        long len) {
+    @Override public Collection<GridGgfsBlockLocation> affinity(GridGgfsPath path, long start,
+        long len) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
         msg.command(AFFINITY);
@@ -208,11 +209,11 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoop, GridGgfsHado
                     throws GridException {
                     return io.send(msg).chain(BLOCK_LOCATION_COL_RES);
                 }
-            });
+            }).get();
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<GridGgfsPathSummary> contentSummary(GridGgfsPath path) {
+    @Override public GridGgfsPathSummary contentSummary(GridGgfsPath path) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
         msg.command(PATH_SUMMARY);
@@ -223,11 +224,11 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoop, GridGgfsHado
                 throws GridException {
                 return io.send(msg).chain(SUMMARY_RES);
             }
-        });
+        }).get();
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<Boolean> mkdirs(GridGgfsPath path, Map<String, String> props) {
+    @Override public Boolean mkdirs(GridGgfsPath path, Map<String, String> props) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
         msg.command(MAKE_DIRECTORIES);
@@ -238,11 +239,11 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoop, GridGgfsHado
             @Override public GridPlainFuture<Boolean> applyx(GridGgfsHadoopIpcIo io) throws GridException {
                 return io.send(msg).chain(BOOL_RES);
             }
-        });
+        }).get();
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<Collection<GridGgfsFile>> listFiles(GridGgfsPath path) {
+    @Override public Collection<GridGgfsFile> listFiles(GridGgfsPath path) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
         msg.command(LIST_FILES);
@@ -253,11 +254,11 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoop, GridGgfsHado
                 throws GridException {
                 return io.send(msg).chain(FILE_COL_RES);
             }
-        });
+        }).get();
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<Collection<GridGgfsPath>> listPaths(GridGgfsPath path) {
+    @Override public Collection<GridGgfsPath> listPaths(GridGgfsPath path) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
         msg.command(LIST_PATHS);
@@ -268,38 +269,41 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoop, GridGgfsHado
                 throws GridException {
                 return io.send(msg).chain(PATH_COL_RES);
             }
-        });
+        }).get();
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<GridGgfsStatus> fsStatus() {
+    @Override public GridGgfsStatus fsStatus() throws GridException {
         return withReconnectHandling(new CX1<GridGgfsHadoopIpcIo, GridPlainFuture<GridGgfsStatus>>() {
             @Override public GridPlainFuture<GridGgfsStatus> applyx(GridGgfsHadoopIpcIo io)
                 throws GridException {
                 return io.send(new GridGgfsStatusRequest()).chain(STATUS_RES);
             }
-        });
+        }).get();
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<GridGgfsInputStreamDescriptor> open(GridGgfsPath path) {
+    @Override public NewGridGgfsHadoopStreamDelegate open(GridGgfsPath path) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
         msg.command(OPEN_READ);
         msg.path(path);
         msg.flag(false);
 
-        return withReconnectHandling(new CX1<GridGgfsHadoopIpcIo, GridPlainFuture<GridGgfsInputStreamDescriptor>>() {
+        GridGgfsInputStreamDescriptor rmtDesc = withReconnectHandling(new CX1<GridGgfsHadoopIpcIo,
+            GridPlainFuture<GridGgfsInputStreamDescriptor>>() {
             @Override public GridPlainFuture<GridGgfsInputStreamDescriptor> applyx(GridGgfsHadoopIpcIo io)
                 throws GridException {
                 return io.send(msg).chain(STREAM_DESCRIPTOR_RES);
             }
-        });
+        }).get();
+
+        return new NewGridGgfsHadoopStreamDelegate(rmtDesc.streamId(), rmtDesc.length());
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<GridGgfsInputStreamDescriptor> open(GridGgfsPath path,
-        int seqReadsBeforePrefetch) {
+    @Override public NewGridGgfsHadoopStreamDelegate open(GridGgfsPath path,
+        int seqReadsBeforePrefetch) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
         msg.command(OPEN_READ);
@@ -307,17 +311,19 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoop, GridGgfsHado
         msg.flag(true);
         msg.sequentialReadsBeforePrefetch(seqReadsBeforePrefetch);
 
-        return withReconnectHandling(new CX1<GridGgfsHadoopIpcIo, GridPlainFuture<GridGgfsInputStreamDescriptor>>() {
+        GridGgfsInputStreamDescriptor rmtDesc = withReconnectHandling(new CX1<GridGgfsHadoopIpcIo, GridPlainFuture<GridGgfsInputStreamDescriptor>>() {
             @Override public GridPlainFuture<GridGgfsInputStreamDescriptor> applyx(GridGgfsHadoopIpcIo io)
                 throws GridException {
                 return io.send(msg).chain(STREAM_DESCRIPTOR_RES);
             }
-        });
+        }).get();
+
+        return new NewGridGgfsHadoopStreamDelegate(rmtDesc.streamId(), rmtDesc.length());
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<Long> create(GridGgfsPath path, boolean overwrite, boolean colocate,
-        int replication, long blockSize, @Nullable Map<String, String> props) {
+    @Override public NewGridGgfsHadoopStreamDelegate create(GridGgfsPath path, boolean overwrite, boolean colocate,
+        int replication, long blockSize, @Nullable Map<String, String> props) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
         msg.command(OPEN_CREATE);
@@ -328,16 +334,18 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoop, GridGgfsHado
         msg.replication(replication);
         msg.blockSize(blockSize);
 
-        return withReconnectHandling(new CX1<GridGgfsHadoopIpcIo, GridPlainFuture<Long>>() {
+        Long streamId = withReconnectHandling(new CX1<GridGgfsHadoopIpcIo, GridPlainFuture<Long>>() {
             @Override public GridPlainFuture<Long> applyx(GridGgfsHadoopIpcIo io) throws GridException {
                 return io.send(msg).chain(LONG_RES);
             }
-        });
+        }).get();
+
+        return new NewGridGgfsHadoopStreamDelegate(streamId);
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<Long> append(GridGgfsPath path, boolean create,
-        @Nullable Map<String, String> props) {
+    @Override public NewGridGgfsHadoopStreamDelegate append(GridGgfsPath path, boolean create,
+        @Nullable Map<String, String> props) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
         msg.command(OPEN_APPEND);
@@ -345,22 +353,24 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoop, GridGgfsHado
         msg.flag(create);
         msg.properties(props);
 
-        return withReconnectHandling(new CX1<GridGgfsHadoopIpcIo, GridPlainFuture<Long>>() {
+        Long streamId = withReconnectHandling(new CX1<GridGgfsHadoopIpcIo, GridPlainFuture<Long>>() {
             @Override public GridPlainFuture<Long> applyx(GridGgfsHadoopIpcIo io) throws GridException {
                 return io.send(msg).chain(LONG_RES);
             }
-        });
+        }).get();
+
+        return new NewGridGgfsHadoopStreamDelegate(streamId);
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<byte[]> readData(NewGridGgfsHadoopStreamDescriptor desc, long pos, int len,
-        final @Nullable byte[] outBuf, final int outOff, final int outLen) {
+    @Override public byte[] readData(NewGridGgfsHadoopStreamDelegate desc, long pos, int len,
+        final @Nullable byte[] outBuf, final int outOff, final int outLen) throws GridException {
         assert len > 0;
 
         final GridGgfsStreamControlRequest msg = new GridGgfsStreamControlRequest();
 
         msg.command(READ_BLOCK);
-        msg.streamId((long)desc.get());
+        msg.streamId((long) desc.target());
         msg.position(pos);
         msg.length(len);
 
@@ -368,16 +378,16 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoop, GridGgfsHado
             @Override public GridPlainFuture<byte[]> applyx(GridGgfsHadoopIpcIo io) throws GridException {
                 return io.send(msg, outBuf, outOff, outLen);
             }
-        });
+        }).get();
     }
 
     /** {@inheritDoc} */
-    @Override public void writeData(NewGridGgfsHadoopStreamDescriptor desc, byte[] data, int off, int len)
+    @Override public void writeData(NewGridGgfsHadoopStreamDelegate desc, byte[] data, int off, int len)
         throws GridException {
         final GridGgfsStreamControlRequest msg = new GridGgfsStreamControlRequest();
 
         msg.command(WRITE_BLOCK);
-        msg.streamId((long)desc.get());
+        msg.streamId((long) desc.target());
         msg.data(data);
         msg.position(off);
         msg.length(len);
@@ -392,24 +402,24 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoop, GridGgfsHado
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<Boolean> closeStream(NewGridGgfsHadoopStreamDescriptor desc) {
+    @Override public Boolean closeStream(NewGridGgfsHadoopStreamDelegate desc) throws GridException {
         final GridGgfsStreamControlRequest msg = new GridGgfsStreamControlRequest();
 
         msg.command(CLOSE);
-        msg.streamId((long)desc.get());
+        msg.streamId((long)desc.target());
 
         return withReconnectHandling(new CX1<GridGgfsHadoopIpcIo, GridPlainFuture<Boolean>>() {
             @Override public GridPlainFuture<Boolean> applyx(GridGgfsHadoopIpcIo io) throws GridException {
                 return io.send(msg).chain(BOOL_RES);
             }
-        });
+        }).get();
     }
 
     /** {@inheritDoc} */
-    @Override public void addEventListener(NewGridGgfsHadoopStreamDescriptor desc, GridGgfsStreamEventListener lsnr) {
-        long streamId = desc.get();
+    @Override public void addEventListener(NewGridGgfsHadoopStreamDelegate desc, GridGgfsHadoopStreamEventListener lsnr) {
+        long streamId = desc.target();
 
-        GridGgfsStreamEventListener lsnr0 = lsnrs.put(streamId, lsnr);
+        GridGgfsHadoopStreamEventListener lsnr0 = lsnrs.put(streamId, lsnr);
 
         assert lsnr0 == null || lsnr0 == lsnr;
 
@@ -418,10 +428,10 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoop, GridGgfsHado
     }
 
     /** {@inheritDoc} */
-    @Override public void removeEventListener(NewGridGgfsHadoopStreamDescriptor desc) {
-        long streamId = desc.get();
+    @Override public void removeEventListener(NewGridGgfsHadoopStreamDelegate desc) {
+        long streamId = desc.target();
 
-        GridGgfsStreamEventListener lsnr0 = lsnrs.remove(streamId);
+        GridGgfsHadoopStreamEventListener lsnr0 = lsnrs.remove(streamId);
 
         if (lsnr0 != null && log.isDebugEnabled())
             log.debug("Removed stream event listener [streamId=" + streamId + ']');
@@ -429,7 +439,7 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoop, GridGgfsHado
 
     /** {@inheritDoc} */
     @Override public void onClose() {
-        for (GridGgfsStreamEventListener lsnr : lsnrs.values()) {
+        for (GridGgfsHadoopStreamEventListener lsnr : lsnrs.values()) {
             try {
                 lsnr.onClose();
             }
@@ -441,7 +451,7 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoop, GridGgfsHado
 
     /** {@inheritDoc} */
     @Override public void onError(long streamId, String errMsg) {
-        GridGgfsStreamEventListener lsnr = lsnrs.get(streamId);
+        GridGgfsHadoopStreamEventListener lsnr = lsnrs.get(streamId);
 
         if (lsnr != null) {
             try {
@@ -454,6 +464,11 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoop, GridGgfsHado
         else
             log.warn("Received write error response for not registered output stream (will ignore) " +
                 "[streamId= " + streamId + ']');
+    }
+
+    /** {@inheritDoc} */
+    @Override public NewGridGgfsHadoopMode mode() {
+        return OUT_PROC;
     }
 
     /**

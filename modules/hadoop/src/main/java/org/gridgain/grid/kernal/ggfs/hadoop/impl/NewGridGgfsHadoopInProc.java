@@ -9,28 +9,48 @@
 
 package org.gridgain.grid.kernal.ggfs.hadoop.impl;
 
+import org.apache.commons.logging.*;
+import org.gridgain.grid.*;
+import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
-import org.gridgain.grid.util.lang.*;
+import org.jetbrains.annotations.*;
+
+import java.io.*;
+import java.util.*;
+
+import static org.gridgain.grid.kernal.ggfs.hadoop.impl.NewGridGgfsHadoopMode.*;
 
 /**
  * Communication with grid in the same process.
  */
-public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoop {
+public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: Remove abstract.
     /** Target GGFS. */
-    private GridGgfsEx ggfs;
+    private final GridGgfsEx ggfs;
+
+    /** Buffer size. */
+    private final int bufSize;
+
+    /** Logger. */
+    private final Log log;
 
     /**
      * COnstructor.
      *
      * @param ggfs Target GGFS.
      */
-    public NewGridGgfsHadoopInProc(GridGgfsEx ggfs) {
+    public NewGridGgfsHadoopInProc(GridGgfsEx ggfs, Log log) {
         this.ggfs = ggfs;
+        this.log = log;
+
+        bufSize = ggfs.configuration().getBlockSize() * 2;
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<GridGgfsHandshakeResponse> handshake(String logDir) {
-        // TODO
+    @Override public GridGgfsHandshakeResponse handshake(String logDir) {
+
+
+        // TODO.
 
         return null;
     }
@@ -38,5 +58,216 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoop {
     /** {@inheritDoc} */
     @Override public void close() {
         // TODO.
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridGgfsFile info(GridGgfsPath path) throws GridException {
+        try {
+            return ggfs.info(path);
+        }
+        catch (IllegalStateException e) {
+            throw new GridGgfsIoException("Failed to get file info because Grid is stopping: " + path);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridGgfsFile update(GridGgfsPath path, Map<String, String> props) throws GridException {
+        try {
+            return ggfs.update(path, props);
+        }
+        catch (IllegalStateException e) {
+            throw new GridGgfsIoException("Failed to update file because Grid is stopping: " + path);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Boolean setTimes(GridGgfsPath path, long accessTime, long modificationTime) throws GridException {
+        try {
+            ggfs.setTimes(path, accessTime, modificationTime);
+
+            return true;
+        }
+        catch (IllegalStateException e) {
+            throw new GridGgfsIoException("Failed to set path times because Grid is stopping: " + path);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Boolean rename(GridGgfsPath src, GridGgfsPath dest) throws GridException {
+        try {
+            ggfs.rename(src, dest);
+
+            return true;
+        }
+        catch (IllegalStateException e) {
+            throw new GridGgfsIoException("Failed to rename path because Grid is stopping: " + src);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Boolean delete(GridGgfsPath path, boolean recursive) throws GridException {
+        try {
+            return ggfs.delete(path, recursive);
+        }
+        catch (IllegalStateException e) {
+            throw new GridGgfsIoException("Failed to delete path because Grid is stopping: " + path);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridGgfsStatus fsStatus() throws GridException {
+        try {
+            return ggfs.globalSpace();
+        }
+        catch (IllegalStateException e) {
+            throw new GridGgfsIoException("Failed to get file system status because Grid is stopping.");
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<GridGgfsPath> listPaths(GridGgfsPath path) throws GridException {
+        try {
+            return ggfs.listPaths(path);
+        }
+        catch (IllegalStateException e) {
+            throw new GridGgfsIoException("Failed to list paths because Grid is stopping: " + path);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<GridGgfsFile> listFiles(GridGgfsPath path) throws GridException {
+        try {
+            return ggfs.listFiles(path);
+        }
+        catch (IllegalStateException e) {
+            throw new GridGgfsIoException("Failed to list files because Grid is stopping: " + path);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Boolean mkdirs(GridGgfsPath path, Map<String, String> props) throws GridException {
+        try {
+            ggfs.mkdirs(path, props);
+
+            return true; // TODO: How to handle exceptions? Compare to out-proc implementation.
+        }
+        catch (IllegalStateException e) {
+            throw new GridGgfsIoException("Failed to create directory because Grid is stopping: " + path);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridGgfsPathSummary contentSummary(GridGgfsPath path) throws GridException {
+        try {
+            return ggfs.summary(path);
+        }
+        catch (IllegalStateException e) {
+            throw new GridGgfsIoException("Failed to get content summary because Grid is stopping: " + path);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<GridGgfsBlockLocation> affinity(GridGgfsPath path, long start, long len)
+        throws GridException {
+        try {
+            return ggfs.affinity(path, start, len);
+        }
+        catch (IllegalStateException e) {
+            throw new GridGgfsIoException("Failed to get affinity because Grid is stopping: " + path);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public NewGridGgfsHadoopStreamDelegate open(GridGgfsPath path) throws GridException {
+        try {
+            GridGgfsInputStreamAdapter stream = ggfs.open(path, bufSize);
+
+            return new NewGridGgfsHadoopStreamDelegate(stream, stream.fileInfo().length());
+        }
+        catch (IllegalStateException e) {
+            throw new GridGgfsIoException("Failed to open file because Grid is stopping: " + path);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public NewGridGgfsHadoopStreamDelegate open(GridGgfsPath path, int seqReadsBeforePrefetch)
+        throws GridException {
+        try {
+            GridGgfsInputStreamAdapter stream = ggfs.open(path, bufSize, seqReadsBeforePrefetch);
+
+            return new NewGridGgfsHadoopStreamDelegate(stream, stream.fileInfo().length());
+        }
+        catch (IllegalStateException e) {
+            throw new GridGgfsIoException("Failed to open file because Grid is stopping: " + path);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public NewGridGgfsHadoopStreamDelegate create(GridGgfsPath path, boolean overwrite, boolean colocate,
+        int replication, long blockSize, @Nullable Map<String, String> props) throws GridException {
+        try {
+            GridGgfsOutputStream stream = ggfs.create(path, bufSize, overwrite,
+                colocate ? ggfs.nextAffinityKey() : null, replication, blockSize, props);
+
+            return new NewGridGgfsHadoopStreamDelegate(stream);
+        }
+        catch (IllegalStateException e) {
+            throw new GridGgfsIoException("Failed to create file because Grid is stopping: " + path);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public NewGridGgfsHadoopStreamDelegate append(GridGgfsPath path, boolean create,
+        @Nullable Map<String, String> props) throws GridException {
+        try {
+            GridGgfsOutputStream stream = ggfs.append(path, bufSize, create, props);
+
+            return new NewGridGgfsHadoopStreamDelegate(stream);
+        }
+        catch (IllegalStateException e) {
+            throw new GridGgfsIoException("Failed to append file because Grid is stopping: " + path);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] readData(NewGridGgfsHadoopStreamDelegate desc, long pos, int len, @Nullable byte[] outBuf,
+        int outOff, int outLen) throws GridException, IOException {
+        GridGgfsInputStreamAdapter stream = desc.target();
+
+        // TODO
+
+        return new byte[0];
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeData(NewGridGgfsHadoopStreamDelegate desc, byte[] data, int off, int len)
+        throws GridException, IOException {
+        GridGgfsOutputStream stream = desc.target();
+
+        stream.write(data, off, len);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Boolean closeStream(NewGridGgfsHadoopStreamDelegate desc) throws GridException, IOException {
+        Closeable closeable = desc.target();
+
+        closeable.close();
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addEventListener(NewGridGgfsHadoopStreamDelegate desc, GridGgfsHadoopStreamEventListener lsnr) {
+        // TODO
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeEventListener(NewGridGgfsHadoopStreamDelegate desc) {
+        // TODO
+    }
+
+    /** {@inheritDoc} */
+    @Override public NewGridGgfsHadoopMode mode() {
+        return IN_PROC;
     }
 }

@@ -78,7 +78,7 @@ public class GridGgfsHadoop implements GridGgfsHadoopIpcIoListener {
     private final AtomicReference<GridGgfsHadoopIpcIo> clientIo = new AtomicReference<>();
 
     /** Event listeners. */
-    private final Map<Long, GridGgfsStreamEventListener> lsnrs = new ConcurrentHashMap8<>();
+    private final Map<Long, GridGgfsHadoopStreamEventListener> lsnrs = new ConcurrentHashMap8<>();
 
     /**
      * @param log Client logger.
@@ -531,8 +531,8 @@ public class GridGgfsHadoop implements GridGgfsHadoopIpcIoListener {
      * @param streamId Stream ID.
      * @param lsnr Event listener.
      */
-    public void addEventListener(long streamId, GridGgfsStreamEventListener lsnr) {
-        GridGgfsStreamEventListener lsnr0 = lsnrs.put(streamId, lsnr);
+    public void addEventListener(long streamId, GridGgfsHadoopStreamEventListener lsnr) {
+        GridGgfsHadoopStreamEventListener lsnr0 = lsnrs.put(streamId, lsnr);
 
         assert lsnr0 == null || lsnr0 == lsnr;
 
@@ -546,7 +546,7 @@ public class GridGgfsHadoop implements GridGgfsHadoopIpcIoListener {
      * @param streamId Stream ID.
      */
     public void removeEventListener(Long streamId) {
-        GridGgfsStreamEventListener lsnr0 = lsnrs.remove(streamId);
+        GridGgfsHadoopStreamEventListener lsnr0 = lsnrs.remove(streamId);
 
         if (lsnr0 != null && log.isDebugEnabled())
             log.debug("Removed stream event listener [streamId=" + streamId + ']');
@@ -567,7 +567,7 @@ public class GridGgfsHadoop implements GridGgfsHadoopIpcIoListener {
 
     /** {@inheritDoc} */
     @Override public void onClose() {
-        for (GridGgfsStreamEventListener lsnr : lsnrs.values()) {
+        for (GridGgfsHadoopStreamEventListener lsnr : lsnrs.values()) {
             try {
                 lsnr.onClose();
             }
@@ -579,7 +579,7 @@ public class GridGgfsHadoop implements GridGgfsHadoopIpcIoListener {
 
     /** {@inheritDoc} */
     @Override public void onError(long streamId, String errMsg) {
-        GridGgfsStreamEventListener lsnr = lsnrs.get(streamId);
+        GridGgfsHadoopStreamEventListener lsnr = lsnrs.get(streamId);
 
         if (lsnr != null) {
             try {

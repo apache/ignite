@@ -22,7 +22,7 @@ import java.io.*;
  */
 @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
 public final class GridGgfsHadoopInputStream extends InputStream implements Seekable, PositionedReadable,
-    GridGgfsStreamEventListener {
+    GridGgfsHadoopStreamEventListener {
     /** Minimum buffer size. */
     private static final int MIN_BUF_SIZE = 4 * 1024;
 
