@@ -26,14 +26,17 @@ public class GridNoopGgfsUtilsProcessorAdapter extends GridGgfsUtilsProcessorAda
         super(ctx);
     }
 
+    /** {@inheritDoc} */
     @Override public void preProcessCacheConfiguration(GridCacheConfiguration cfg) {
         // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override public void validateCacheConfiguration(GridCacheConfiguration cfg) throws GridException {
         // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isGgfsBlockKey(Object key) {
         return false;
     }
