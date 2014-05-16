@@ -25,12 +25,20 @@ public abstract class VisorOneNodeJob<T extends VisorOneNodeArg, R> extends Grid
     @GridInstanceResource
     protected GridKernal g;
 
+    /** */
+    protected final T arg;
+
+    protected VisorOneNodeJob(T arg) {
+        this.arg = arg;
+    }
+
     @Nullable @Override public Object execute() throws GridException {
         return run();
     }
+
     /**
      * Execution logic of concrete task.
-
+     *
      * @return Result.
      */
     protected abstract R run();
