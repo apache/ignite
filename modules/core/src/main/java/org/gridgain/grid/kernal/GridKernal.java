@@ -36,7 +36,6 @@ import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.email.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.job.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.kernal.processors.license.*;
@@ -197,7 +196,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /**
-     * @param springCtx Optional Spring application context.
+     * @param rsrcCtx Optional Spring application context.
      */
     public GridKernal(@Nullable GridSpringResourceContext rsrcCtx) {
         super(null, null, (GridPredicate<GridNode>)null);
@@ -627,6 +626,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             GridVersionProcessor verProc = createComponent(GridVersionProcessor.class, ctx);
 
+            addHelper(ctx, GGFS_HELPER.create(F.isEmpty(cfg.getGgfsConfiguration())));
+
             // Start version converter processor before all other
             // components so they can register converters.
             startProcessor(ctx, verProc, attrs);
@@ -666,10 +667,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
-            GridGgfsProcessorAdapter ggfsProc =  GGFS.create(ctx, F.isEmpty(cfg.getGgfsConfiguration()));
-
-            ctx.add(ggfsProc);
-
             startProcessor(ctx, new GridClockSyncProcessor(ctx), attrs);
             startProcessor(ctx, createComponent(GridLicenseProcessor.class, ctx), attrs);
             startProcessor(ctx, new GridAffinityProcessor(ctx), attrs);
@@ -682,7 +679,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startProcessor(ctx, (GridProcessor)REST.create(ctx, !cfg.isRestEnabled()), attrs);
             startProcessor(ctx, new GridDataLoaderProcessor(ctx), attrs);
             startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
-            startProcessor(ctx, ggfsProc, attrs, false);
+            startProcessor(ctx, (GridProcessor)GGFS.create(ctx, F.isEmpty(cfg.getGgfsConfiguration())), attrs);
             startProcessor(ctx, new GridContinuousProcessor(ctx), attrs);
             startProcessor(ctx, createComponent(GridDrProcessor.class, ctx), attrs);
 
@@ -937,8 +934,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                         }
 
                         String msg = NL +
-                            "Metrics for local node (to disable printout set configuration " +
-                            "property 'metricsLogFrequency' to 0) [locNodeId=" + ctx.localNodeId() + ']' + NL +
+                            "Metrics for local node (to disable set 'metricsLogFrequency' to 0)" + NL +
                             "    ^-- H/N/C [hosts=" + hosts + ", nodes=" + nodes + ", CPUs=" + cpus + "]" + NL +
                             "    ^-- CPU [cur=" + dblFmt.format(cpuLoadPct) + "%, avg=" +
                                 dblFmt.format(avgCpuLoadPct) + "%, GC=" + dblFmt.format(gcPct) + "%]" + NL +
@@ -1434,20 +1430,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      */
     private void startProcessor(GridKernalContextImpl ctx, GridProcessor proc, Map<String, Object> attrs)
         throws GridException {
-        startProcessor(ctx, proc, attrs, true);
-    }
-
-    /**
-     * @param ctx Kernal context.
-     * @param proc Processor to start.
-     * @param attrs Attributes.
-     * @param add Whether to add processro to context ({@code false} if already added).
-     * @throws GridException Thrown in case of any error.
-     */
-    private void startProcessor(GridKernalContextImpl ctx, GridProcessor proc, Map<String, Object> attrs, boolean add)
-        throws GridException {
-        if (add)
-            ctx.add(proc);
+        ctx.add(proc);
 
         try {
             proc.start();
@@ -1457,6 +1440,16 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         catch (GridException e) {
             throw new GridException("Failed to start processor: " + proc, e);
         }
+    }
+
+    /**
+     * Add helper.
+     *
+     * @param ctx Context.
+     * @param helper Helper.
+     */
+    private void addHelper(GridKernalContextImpl ctx, Object helper) {
+        ctx.addHelper(helper);
     }
 
     /**
