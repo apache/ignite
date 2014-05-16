@@ -239,7 +239,7 @@ public final class GridCommandLineStartup {
      */
     public static void main(String[] args) {
         if (!QUITE) {
-            X.println("GridGain Command Line Startup, ver. " + ACK_VERSION);
+            X.println("GridGain Command Line Startup, ver. " + ACK_VER);
             X.println(COPYRIGHT);
             X.println();
         }

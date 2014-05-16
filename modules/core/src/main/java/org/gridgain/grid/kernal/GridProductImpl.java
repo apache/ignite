@@ -51,10 +51,10 @@ public class GridProductImpl implements GridProduct {
     public static final byte[] VER_BYTES;
 
     /** Compound version. */
-    public static final String COMPOUND_VERSION;
+    public static final String COMPOUND_VER;
 
     /** Compound version. */
-    public static final String ACK_VERSION;
+    public static final String ACK_VER;
 
     /** */
     private final GridKernalContext ctx;
@@ -91,13 +91,13 @@ public class GridProductImpl implements GridProduct {
 
         VER_BYTES = U.intToBytes(VER.hashCode());
 
-        COMPOUND_VERSION = EDITION + "-" + (ENT ? "ent" : "os") + "-" + VER;
+        COMPOUND_VER = EDITION + "-" + (ENT ? "ent" : "os") + "-" + VER;
 
         BUILD_TSTAMP_STR = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD_TSTAMP * 1000));
 
         String rev = REV_HASH.length() > 8 ? REV_HASH.substring(0, 8) : REV_HASH;
 
-        ACK_VERSION = COMPOUND_VERSION + '#' + BUILD_TSTAMP_STR + "-sha1:" + rev;
+        ACK_VER = COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + rev;
     }
 
     /**
