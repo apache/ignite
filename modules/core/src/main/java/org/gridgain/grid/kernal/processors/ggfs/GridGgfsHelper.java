@@ -15,7 +15,7 @@ import org.gridgain.grid.cache.*;
 /**
  * GGFS utility processor adapter.
  */
-public abstract class GridGgfsHelperAdapter {
+public interface GridGgfsHelper {
     /**
      * Pre-process cache configuration.
      *

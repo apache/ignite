@@ -17,7 +17,7 @@ import org.gridgain.grid.cache.eviction.ggfs.*;
 /**
  * GGFS utils processor.
  */
-public class GridGgfsHelper extends GridGgfsHelperAdapter {
+public class GridGgfsHelperImpl implements GridGgfsHelper {
     /** {@inheritDoc} */
     @Override public void preProcessCacheConfiguration(GridCacheConfiguration cfg) {
         GridCacheEvictionPolicy evictPlc = cfg.getEvictionPolicy();

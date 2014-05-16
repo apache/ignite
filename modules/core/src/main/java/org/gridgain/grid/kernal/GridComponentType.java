@@ -29,7 +29,7 @@ public enum GridComponentType {
     /** GGFS helper component. */
     GGFS_HELPER(
         "org.gridgain.grid.kernal.processors.ggfs.GridNoopGgfsHelper",
-        "org.gridgain.grid.kernal.processors.ggfs.GridGgfsHelper",
+        "org.gridgain.grid.kernal.processors.ggfs.GridGgfsHelperImpl",
         "gridgain-hadoop"
     ),
 
@@ -162,6 +162,7 @@ public enum GridComponentType {
      * @return Created component or no-op implementation.
      * @throws GridException If failed.
      */
+    @SuppressWarnings("unchecked")
     private <T> T createOptional0(@Nullable GridKernalContext ctx) throws GridException {
         Class<?> cls;
 

@@ -15,7 +15,7 @@ import org.gridgain.grid.cache.*;
 /**
  * No-op utils processor adapter.
  */
-public class GridNoopGgfsHelper extends GridGgfsHelperAdapter {
+public class GridNoopGgfsHelper implements GridGgfsHelper {
 
     /** {@inheritDoc} */
     @Override public void preProcessCacheConfiguration(GridCacheConfiguration cfg) {
