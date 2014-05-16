@@ -12,16 +12,25 @@ package org.gridgain.grid.kernal.visor.cmd;
 import java.util.*;
 
 /**
- * Simplest {@link VisorOneNodeArg}  implementation for cases where task doesn't need any data on input.
+ * TODO: Add class description.
  */
-public class VisorNodeIdArg extends VisorOneNodeArg {
-    /** */
-    private static final long serialVersionUID = 0L;
+public class VisorMultiNodeArg {
+    private final Set<UUID> nodeIds;
 
     /**
-     * @param nodeId Node Id.
+     * Create task argument with specified nodes Ids.
+     *
+     * @param ids Nodes Ids.
      */
-    public VisorNodeIdArg(UUID nodeId) {
-        super(nodeId);
+    public VisorMultiNodeArg(Set<UUID> ids) {
+        nodeIds = ids;
+    }
+
+    /**
+     * @return Node ids.
+     */
+    public Set<UUID> nodeIds() {
+        return nodeIds;
     }
 }
+

@@ -17,18 +17,36 @@ import org.gridgain.grid.resources.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Base class for Visor job intended to query data from a single node.
- *
- * @param <A> Task argument type.
- * @param <R> Task result type.
+ * TODO: Add class description.
  */
-public abstract class VisorOneNodeJob<A extends VisorOneNodeArg, R> extends VisorJob<A, R> {
+public abstract class VisorJob<A, R> extends GridComputeJobAdapter {
     /**
      * Create job with specified argument.
      *
      * @param arg Job argument.
      */
-    protected VisorOneNodeJob(A arg) {
+    protected VisorJob(A arg) {
         super(arg);
     }
+
+    @GridInstanceResource
+    protected GridKernal g;
+
+    /** */
+    @GridLoggerResource
+    protected GridLogger log;
+
+
+    @Nullable @Override public Object execute() throws GridException {
+        A arg = argument(0);
+
+        return run(arg);
+    }
+
+    /**
+     * Execution logic of concrete task.
+     *
+     * @return Result.
+     */
+    protected abstract R run(A arg);
 }

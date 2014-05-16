@@ -27,7 +27,7 @@ public class VisorAckTask extends VisorOneNodeTask<VisorAckTask.VisorAckArg, Voi
      * Ack task argument to run on node.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorAckArg extends VisorNodeIdArg {
+    public static class VisorAckArg extends VisorOneNodeArg {
         /** */
         private static final long serialVersionUID = 0L;
 
