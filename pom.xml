@@ -34,7 +34,6 @@
         <module>modules/core</module>
         <module>modules/hadoop</module>
         <module>modules/clients</module>
-        <module>modules/jdbc-driver</module>
         <module>modules/jdk8-backport</module>
         <module>modules/tools</module>
         <module>modules/spring</module>

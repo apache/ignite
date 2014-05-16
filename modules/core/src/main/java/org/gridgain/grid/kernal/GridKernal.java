@@ -680,7 +680,15 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startProcessor(ctx, new GridTaskProcessor(ctx), attrs);
             startProcessor(ctx, (GridProcessor)SCHEDULE.createOptional(ctx), attrs);
             startProcessor(ctx, (GridProcessor)REST_TCP.create(ctx, !cfg.isRestEnabled()), attrs);
-            startProcessor(ctx, (GridProcessor)REST_HTTP.create(ctx, !cfg.isRestEnabled()), attrs);
+
+            try {
+                startProcessor(ctx, (GridProcessor)REST_HTTP.create(ctx, !cfg.isRestEnabled()), attrs);
+            }
+            catch (GridException e) {
+                // Optional, just write warning.
+                U.warn(log, e.getMessage());
+            }
+
             startProcessor(ctx, new GridDataLoaderProcessor(ctx), attrs);
             startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
             startProcessor(ctx, ggfsProc, attrs, false);
