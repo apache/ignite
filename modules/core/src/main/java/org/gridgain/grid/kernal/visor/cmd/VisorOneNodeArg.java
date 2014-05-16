@@ -16,16 +16,18 @@ import java.util.*;
  * Base class for Visor task arguments intended to query data from a single node.
  */
 public abstract class VisorOneNodeArg implements Serializable {
-    private UUID nodeId;
+    /** */
+    private final UUID nodeId;
 
-    protected VisorOneNodeArg() { }
-
+    /**
+     * @param nodeId Node Id.
+     */
     protected VisorOneNodeArg(UUID nodeId) {
         this.nodeId = nodeId;
     }
 
     /**
-     * @return Node id.
+     * @return Node Id.
      */
     public UUID nodeId() {
         return nodeId;

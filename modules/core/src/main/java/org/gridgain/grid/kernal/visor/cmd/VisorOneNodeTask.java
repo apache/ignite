@@ -35,7 +35,7 @@ public abstract class VisorOneNodeTask<T extends VisorOneNodeArg, R> implements 
         @Nullable T arg) throws GridException {
 
         for (GridNode node : subgrid)
-            if (node.id() == arg.nodeId())
+            if (node.id().equals(arg.nodeId()))
                 return Collections.singletonMap(job(arg), node);
 
         throw new GridEmptyProjectionException(

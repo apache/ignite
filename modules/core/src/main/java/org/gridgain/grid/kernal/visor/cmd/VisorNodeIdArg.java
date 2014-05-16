@@ -18,8 +18,6 @@ public class VisorNodeIdArg extends VisorOneNodeArg {
     /** */
     private static final long serialVersionUID = 0L;
 
-    public VisorNodeIdArg() { }
-
     /**
      * @param nodeId Node Id.
      */

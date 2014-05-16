@@ -30,6 +30,11 @@ public abstract class VisorOneNodeJob<T extends VisorOneNodeArg, R> extends Grid
     @GridLoggerResource
     protected GridLogger log;
 
+    /**
+     * Create job with specified argument.
+     *
+     * @param arg Job argument.
+     */
     protected VisorOneNodeJob(T arg) {
         super(arg);
     }

@@ -32,9 +32,7 @@ public class VisorAckTask extends VisorOneNodeTask<VisorAckTask.VisorAckArg, Voi
         private static final long serialVersionUID = 0L;
 
         /** */
-        private String msg;
-
-        public VisorAckArg() { }
+        private final String msg;
 
         /**
          * @param msg - generating message function.
