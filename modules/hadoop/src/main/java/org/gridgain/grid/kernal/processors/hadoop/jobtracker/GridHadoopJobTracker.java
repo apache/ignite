@@ -311,7 +311,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             assert (status.state() != FAILED && status.state() != CRASHED) || status.failCause() != null :
                 "Invalid task status [info=" + info + ", status=" + status + ']';
 
-            assert state != null : "Missing local state for finished task [info=" + info + ", status=" + status + ']';
+            assert state != null || (ctx.jobUpdateLeader() && (info.type() == COMMIT || info.type() == ABORT)):
+                "Missing local state for finished task [info=" + info + ", status=" + status + ']';
 
             switch (info.type()) {
                 case MAP: {
@@ -567,6 +568,10 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 }
 
                 case PHASE_COMPLETE: {
+                    if (log.isDebugEnabled())
+                        log.debug("Job execution is complete, will remove local state from active jobs " +
+                            "[jobId=" + jobId + ", meta=" + meta + ']');
+
                     if (state != null) {
                         state = activeJobs.remove(jobId);
 

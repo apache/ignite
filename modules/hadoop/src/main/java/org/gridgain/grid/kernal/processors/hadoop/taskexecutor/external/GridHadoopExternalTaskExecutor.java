@@ -131,6 +131,18 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
             if (log.isDebugEnabled())
                 log.debug("Updating job information for remote task process [proc=" + proc + ", meta=" + meta + ']');
 
+            if (meta.phase() == GridHadoopJobPhase.PHASE_COMPLETE) {
+                if (log.isDebugEnabled())
+                    log.debug("Completed job execution, will terminate child process: " + job.id());
+
+                runningProcsByJobId.remove(job.id());
+                runningProcsByProcId.remove(proc.descriptor().processId());
+
+                proc.terminate();
+
+                return;
+            }
+
             if (proc.initFut.isDone())
                 sendJobInfoUpdate(proc, meta);
             else {
