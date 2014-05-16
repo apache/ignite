@@ -11,16 +11,8 @@ package org.gridgain.grid.kernal.processors.rest;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
-import org.gridgain.grid.kernal.processors.rest.handlers.cache.*;
-import org.gridgain.grid.kernal.processors.rest.handlers.log.*;
-import org.gridgain.grid.kernal.processors.rest.handlers.task.*;
-import org.gridgain.grid.kernal.processors.rest.handlers.top.*;
-import org.gridgain.grid.kernal.processors.rest.handlers.version.*;
-import org.gridgain.grid.kernal.processors.rest.protocols.http.jetty.*;
-import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.future.*;
@@ -36,7 +28,7 @@ import static org.gridgain.grid.spi.GridSecuritySubjectType.*;
 /**
  * Rest processor implementation.
  */
-public class GridRestProcessor extends GridRestProcessorAdapter {
+public abstract class GridRestProcessor extends GridRestProcessorAdapter {
     /** */
     private static final byte[] EMPTY_ID = new byte[0];
 
@@ -44,7 +36,7 @@ public class GridRestProcessor extends GridRestProcessorAdapter {
     private final Collection<GridRestProtocol> protos = new ArrayList<>();
 
     /** Command handlers. */
-    private final Map<GridRestCommand, GridRestCommandHandler> handlers = new EnumMap<>(GridRestCommand.class);
+    protected final Map<GridRestCommand, GridRestCommandHandler> handlers = new EnumMap<>(GridRestCommand.class);
 
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
@@ -248,7 +240,7 @@ public class GridRestProcessor extends GridRestProcessorAdapter {
     /**
      * @param ctx Context.
      */
-    public GridRestProcessor(GridKernalContext ctx) {
+    protected GridRestProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 
@@ -309,24 +301,8 @@ public class GridRestProcessor extends GridRestProcessorAdapter {
      *
      * @return Whether or not REST is enabled.
      */
-    private boolean isRestEnabled() {
+    protected boolean isRestEnabled() {
         return !ctx.config().isDaemon() && ctx.config().isRestEnabled();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void start() throws GridException {
-        if (isRestEnabled()) {
-            // Register handlers.
-            addHandler(new GridCacheCommandHandler(ctx));
-            addHandler(new GridTaskCommandHandler(ctx));
-            addHandler(new GridTopologyCommandHandler(ctx));
-            addHandler(new GridVersionCommandHandler(ctx));
-            addHandler(new GridLogCommandHandler(ctx));
-
-            // Start protocol.
-            startProtocol(new GridJettyRestProtocol(ctx));
-            startProtocol(new GridTcpRestProtocol(ctx));
-        }
     }
 
     /** {@inheritDoc} */
@@ -356,7 +332,7 @@ public class GridRestProcessor extends GridRestProcessorAdapter {
     /**
      * @param hnd Command handler.
      */
-    private void addHandler(GridRestCommandHandler hnd) {
+    protected void addHandler(GridRestCommandHandler hnd) {
         assert !handlers.containsValue(hnd);
 
         if (log.isDebugEnabled())
@@ -373,7 +349,7 @@ public class GridRestProcessor extends GridRestProcessorAdapter {
      * @param proto Protocol.
      * @throws GridException If protocol initialization failed.
      */
-    private void startProtocol(GridRestProtocol proto) throws GridException {
+    protected void startProtocol(GridRestProtocol proto) throws GridException {
         assert !protos.contains(proto);
 
         protos.add(proto);

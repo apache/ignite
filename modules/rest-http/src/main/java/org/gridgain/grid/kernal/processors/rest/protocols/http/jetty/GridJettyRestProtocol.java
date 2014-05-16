@@ -38,12 +38,12 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      */
     static {
         if (!Boolean.getBoolean(GridSystemProperties.GG_JETTY_LOG_NO_OVERRIDE)) {
-            String ctgrJetty = "org.eclipse.jetty";                         // WARN for this category.
-            String ctgrJettyUtil = "org.eclipse.jetty.util.log";            // ERROR for this...
-            String ctgrJettyUtilComp = "org.eclipse.jetty.util.component";  // ...and this.
-
             try {
                 Class<?> logCls = Class.forName("org.apache.log4j.Logger");
+
+                String ctgrJetty = "org.eclipse.jetty";                         // WARN for this category.
+                String ctgrJettyUtil = "org.eclipse.jetty.util.log";            // ERROR for this...
+                String ctgrJettyUtilComp = "org.eclipse.jetty.util.component";  // ...and this.
 
                 Object logJetty = logCls.getMethod("getLogger", String.class).invoke(logCls, ctgrJetty);
                 Object logJettyUtil = logCls.getMethod("getLogger", String.class).invoke(logCls, ctgrJettyUtil);
