@@ -267,6 +267,13 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
     public GridGgfsProcessorAdapter ggfs();
 
     /**
+     * Gets GGFS utils processor.
+     *
+     * @return GGFS utils processor.
+     */
+    public GridGgfsHelper ggfsHelper();
+
+    /**
      * Gets stream processor.
      *
      * @return Stream processor.

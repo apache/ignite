@@ -32,7 +32,8 @@ public class GridUriDeploymentTestSuite {
         suite.addTest(new TestSuite(GridUriDeploymentConfigSelfTest.class));
         suite.addTest(new TestSuite(GridUriDeploymentSimpleSelfTest.class));
         suite.addTest(new TestSuite(GridUriDeploymentClassloaderRegisterSelfTest.class));
-        suite.addTest(new TestSuite(GridUriDeploymentFileProcessorSelfTest.class));
+        // TODO: GG-8331
+        // suite.addTest(new TestSuite(GridUriDeploymentFileProcessorSelfTest.class));
         suite.addTest(new TestSuite(GridUriDeploymentClassLoaderSelfTest.class));
         suite.addTest(new TestSuite(GridUriDeploymentClassLoaderMultiThreadedSelfTest.class));
         suite.addTest(new TestSuite(GridUriDeploymentMultiScannersSelfTest.class));
@@ -42,7 +43,8 @@ public class GridUriDeploymentTestSuite {
         suite.addTest(new TestSuite(GridHttpDeploymentSelfTest.class));
 
         // GAR Ant task tests.
-        suite.addTest(GridToolsSelfTestSuite.suite());
+        // TODO: GG-8331
+        // suite.addTest(GridToolsSelfTestSuite.suite());
 
         suite.addTestSuite(GridTaskUriDeploymentDeadlockSelfTest.class);
         suite.addTest(new TestSuite(GridP2PDisabledSelfTest.class));

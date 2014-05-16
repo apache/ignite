@@ -175,6 +175,8 @@ public class GridClientImpl implements GridClient {
 
             topUpdateThread = new TopologyUpdaterThread();
 
+            topUpdateThread.setDaemon(true);
+
             topUpdateThread.start();
 
             compute = new GridClientComputeImpl(this, null, null, cfg.getBalancer());
