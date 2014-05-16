@@ -11,20 +11,11 @@ package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.*;
 
 /**
  * No-op utils processor adapter.
  */
-public class GridNoopGgfsUtilsProcessorAdapter extends GridGgfsUtilsProcessorAdapter {
-    /**
-     * Constructor.
-     *
-     * @param ctx Kernal context.
-     */
-    public GridNoopGgfsUtilsProcessorAdapter(GridKernalContext ctx) {
-        super(ctx);
-    }
+public class GridNoopGgfsHelper extends GridGgfsHelperAdapter {
 
     /** {@inheritDoc} */
     @Override public void preProcessCacheConfiguration(GridCacheConfiguration cfg) {

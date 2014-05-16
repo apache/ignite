@@ -11,22 +11,11 @@ package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.*;
 
 /**
  * GGFS utility processor adapter.
  */
-public abstract class GridGgfsUtilsProcessorAdapter extends GridProcessorAdapter {
-    /**
-     * Constructor.
-     *
-     * @param ctx Kernal context.
-     */
-    protected GridGgfsUtilsProcessorAdapter(GridKernalContext ctx) {
-        super(ctx);
-    }
-
+public abstract class GridGgfsHelperAdapter {
     /**
      * Pre-process cache configuration.
      *

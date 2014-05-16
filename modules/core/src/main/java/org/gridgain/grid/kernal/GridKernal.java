@@ -626,6 +626,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             GridVersionProcessor verProc = createComponent(GridVersionProcessor.class, ctx);
 
+            addHelper(ctx, GGFS_HELPER.create(F.isEmpty(cfg.getGgfsConfiguration())));
+
             // Start version converter processor before all other
             // components so they can register converters.
             startProcessor(ctx, verProc, attrs);
@@ -669,7 +671,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startProcessor(ctx, createComponent(GridLicenseProcessor.class, ctx), attrs);
             startProcessor(ctx, new GridAffinityProcessor(ctx), attrs);
             startProcessor(ctx, createComponent(GridSegmentationProcessor.class, ctx), attrs);
-            startProcessor(ctx, (GridProcessor)GGFS_UTILS.create(ctx, F.isEmpty(cfg.getGgfsConfiguration())), attrs);
             startProcessor(ctx, new GridCacheProcessor(ctx), attrs);
             startProcessor(ctx, new GridTaskSessionProcessor(ctx), attrs);
             startProcessor(ctx, new GridJobProcessor(ctx), attrs);
@@ -1440,6 +1441,16 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         catch (GridException e) {
             throw new GridException("Failed to start processor: " + proc, e);
         }
+    }
+
+    /**
+     * Add helper.
+     *
+     * @param ctx Context.
+     * @param helper Helper.
+     */
+    private void addHelper(GridKernalContextImpl ctx, Object helper) {
+        ctx.addHelper(helper);
     }
 
     /**

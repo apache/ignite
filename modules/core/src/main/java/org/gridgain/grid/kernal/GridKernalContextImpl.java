@@ -196,7 +196,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringInclude
-    private GridGgfsUtilsProcessorAdapter ggfsUtilsProc;
+    private GridGgfsHelperAdapter ggfsUtilsHelper;
 
     /** */
     @GridToStringInclude
@@ -386,8 +386,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             dataLdrProc = (GridDataLoaderProcessor)comp;
         else if (comp instanceof GridGgfsProcessorAdapter)
             ggfsProc = (GridGgfsProcessorAdapter)comp;
-        else if (comp instanceof GridGgfsUtilsProcessorAdapter)
-            ggfsUtilsProc = (GridGgfsUtilsProcessorAdapter)comp;
         else if (comp instanceof GridOffHeapProcessor)
             offheapProc = (GridOffHeapProcessor)comp;
         else if (comp instanceof GridLicenseProcessor)
@@ -404,6 +402,18 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             assert false : "Unknown manager class: " + comp.getClass();
 
         comps.add(comp);
+    }
+
+    /**
+     * @param helper Helper to add.
+     */
+    public void addHelper(Object helper) {
+        assert helper != null;
+
+        if (helper instanceof GridGgfsHelperAdapter)
+            ggfsUtilsHelper = (GridGgfsHelperAdapter)helper;
+        else
+            assert false : "Unknown helper class: " + helper.getClass();
     }
 
     /** {@inheritDoc} */
@@ -633,8 +643,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsUtilsProcessorAdapter ggfsUtils() {
-        return ggfsUtilsProc;
+    @Override public GridGgfsHelperAdapter ggfsUtils() {
+        return ggfsUtilsHelper;
     }
 
     /** {@inheritDoc} */

@@ -13,19 +13,11 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.cache.eviction.ggfs.*;
-import org.gridgain.grid.kernal.*;
 
 /**
  * GGFS utils processor.
  */
-public class GridGgfsUtilsProcessor extends GridGgfsUtilsProcessorAdapter {
-    /**
-     * @param ctx Kernal context.
-     */
-    public GridGgfsUtilsProcessor(GridKernalContext ctx) {
-        super(ctx);
-    }
-
+public class GridGgfsHelper extends GridGgfsHelperAdapter {
     /** {@inheritDoc} */
     @Override public void preProcessCacheConfiguration(GridCacheConfiguration cfg) {
         GridCacheEvictionPolicy evictPlc = cfg.getEvictionPolicy();
