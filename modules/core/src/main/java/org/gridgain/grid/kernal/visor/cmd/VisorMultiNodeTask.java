@@ -30,6 +30,8 @@ public abstract class VisorMultiNodeTask<A extends VisorMultiNodeArg, R> impleme
 
     @Nullable @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
         @Nullable A arg) throws GridException {
+        assert arg != null;
+
         Map<GridComputeJob, GridNode> map = new HashMap<>();
 
         for (GridNode node : subgrid)

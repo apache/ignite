@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.visor.cmd;
 
+import org.gridgain.grid.GridException;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.processors.task.*;
 
@@ -19,10 +20,6 @@ import java.util.*;
  */
 @GridInternal
 public class VisorAckTask extends VisorOneNodeTask<VisorAckTask.VisorAckArg, Void> {
-    @Override protected GridComputeJob job(VisorAckArg arg) {
-        return new VisorAckJob(arg);
-    }
-
     /**
      * Ack task argument to run on node.
      */
@@ -63,10 +60,15 @@ public class VisorAckTask extends VisorOneNodeTask<VisorAckTask.VisorAckArg, Voi
             super(arg);
         }
 
-        @Override protected Void run(VisorAckArg arg) {
+        @Override protected Void run(VisorAckArg arg) throws GridException {
             System.out.println("<visor>: ack: " + arg.msg); // TODO
 
             return null;
         }
     }
+
+    @Override protected VisorAckJob job(VisorAckArg arg) {
+        return new VisorAckJob(arg);
+    }
+
 }

@@ -19,20 +19,21 @@ import java.util.*;
 /**
  * Base class for Visor tasks intended to query data from a single node.
  *
- * @param <T> Task argument type.
+ * @param <A> Task argument type.
  * @param <R> Task result type.
  */
-public abstract class VisorOneNodeTask<T extends VisorOneNodeArg, R> implements GridComputeTask<T, R> {
+public abstract class VisorOneNodeTask<A extends VisorOneNodeArg, R> implements GridComputeTask<A, R> {
     /**
      * Create task job.
      *
      * @param arg Task arg.
      * @return New job.
      */
-    protected abstract GridComputeJob job(T arg);
+    protected abstract VisorJob<A, R> job(A arg);
 
     @Nullable @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
-        @Nullable T arg) throws GridException {
+        @Nullable A arg) throws GridException {
+        assert arg != null;
 
         for (GridNode node : subgrid)
             if (node.id().equals(arg.nodeId()))
