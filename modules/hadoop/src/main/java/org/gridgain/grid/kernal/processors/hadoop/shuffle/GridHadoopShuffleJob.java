@@ -16,6 +16,7 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.io.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
@@ -56,10 +57,11 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
     private final AtomicReferenceArray<GridHadoopMultimap> maps;
 
     /** */
-    private volatile GridBiClosure<T, GridHadoopShuffleMessage, GridFuture<?>> io;
+    private volatile GridInClosure2X<T, GridHadoopShuffleMessage> io;
 
     /** */
-    private Collection<GridFuture<?>> ioFuts = new ConcurrentLinkedQueue<>();
+    protected ConcurrentMap<Long, GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapterEx<?>>> sentMsgs =
+        new ConcurrentHashMap<>();
 
     /** */
     private volatile GridWorker sender;
@@ -122,7 +124,8 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
      * @param gridName Grid name.
      * @param io IO Closure for sending messages.
      */
-    public void startSending(String gridName, GridBiClosure<T, GridHadoopShuffleMessage, GridFuture<?>> io) {
+    @SuppressWarnings("BusyWait")
+    public void startSending(String gridName, GridInClosure2X<T, GridHadoopShuffleMessage> io) {
         assert sender == null;
         assert io != null;
 
@@ -204,6 +207,18 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
                 }
             });
         }
+    }
+
+    /**
+     * @param ack Shuffle ack.
+     */
+    public void onShuffleAck(GridHadoopShuffleAck ack) {
+        GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapterEx<?>> tup = sentMsgs.get(ack.id());
+
+        if (tup != null)
+            tup.get2().onDone();
+        else
+            log.warning("Received shuffle ack for not registered shuffle id: " + ack);
     }
 
     /**
@@ -321,20 +336,35 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
      * @param newBufMinSize Min new buffer size.
      */
     private void send(int idx, int newBufMinSize) {
-        GridFuture<?> fut = io.apply(reduceAddrs[idx], msgs[idx]);
+        final GridFutureAdapterEx<?> fut = new GridFutureAdapterEx<>();
+
+        GridHadoopShuffleMessage msg = msgs[idx];
+
+        final long msgId = msg.id();
+
+        sentMsgs.putIfAbsent(msgId, new GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapterEx<?>>(msg, fut));
+
+        try {
+            io.apply(reduceAddrs[idx], msg);
+        }
+        catch (GridClosureException e) {
+            fut.onDone(U.unwrap(e));
+        }
 
         fut.listenAsync(new GridInClosure<GridFuture<?>>() {
             @Override public void apply(GridFuture<?> f) {
                 try {
                     f.get();
+
+                    // Clean up the future from map only if there was no exception.
+                    // Otherwise flush() should fail.
+                    sentMsgs.remove(msgId);
                 }
                 catch (GridException e) {
                     log.error("Failed to send message.", e);
                 }
             }
         });
-
-        ioFuts.add(fut);
 
         msgs[idx] = newBufMinSize == 0 ? null : new GridHadoopShuffleMessage(job.id(), idx,
             Math.max(4 * 1024, newBufMinSize));
@@ -403,13 +433,13 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
 
         GridCompoundFuture fut = new GridCompoundFuture<>();
 
-        for (GridFuture<?> f : ioFuts)
-            fut.add(f);
+        for (GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapterEx<?>> tup : sentMsgs.values())
+            fut.add(tup.get2());
 
         fut.markInitialized();
 
         if (log.isDebugEnabled())
-            log.debug("Collected futures to compound futures for flush: " + ioFuts.size());
+            log.debug("Collected futures to compound futures for flush: " + sentMsgs.size());
 
         return fut;
     }

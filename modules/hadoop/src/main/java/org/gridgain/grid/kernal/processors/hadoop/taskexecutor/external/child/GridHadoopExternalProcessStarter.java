@@ -78,10 +78,8 @@ public class GridHadoopExternalProcessStarter {
             new GridOptimizedMarshaller(),
             log,
             msgExecSvc,
-            "test"
+            "external"
         );
-
-        comm.setSharedMemoryPort(-1); // TODO
 
         comm.start();
 
@@ -138,7 +136,7 @@ public class GridHadoopExternalProcessStarter {
             @Override public String format(LogRecord record) {
                 StringBuilder sb = new StringBuilder();
 
-                sb.append("[").append(record.getMillis()).append("][").append(record.getLevel()).append("][")
+                sb.append("[").append(new Date(record.getMillis())).append("][").append(record.getLevel()).append("][")
                     .append(record.getLoggerName()).append("] ").append(record.getMessage()).append("\n");
 
                 if (record.getThrown() != null) {
@@ -162,6 +160,7 @@ public class GridHadoopExternalProcessStarter {
         Logger.getLogger(GridIpcSharedMemorySpace.class.toString()).setLevel(Level.WARNING);
         Logger.getLogger(GridIpcSharedMemorySpace.class.getName()).setLevel(Level.WARNING);
         Logger.getLogger(GridWorker.class.toString()).setLevel(Level.WARNING);
+        Logger.getLogger(GridWorker.class.getName()).setLevel(Level.WARNING);
 
         return new GridJavaLogger(log);
     }

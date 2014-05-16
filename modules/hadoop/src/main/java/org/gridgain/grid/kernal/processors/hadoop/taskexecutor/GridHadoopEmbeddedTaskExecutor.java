@@ -138,7 +138,7 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public void onJobStateChanged(GridHadoopJobId jobId, GridHadoopJobMetadata meta) {
+    @Override public void onJobStateChanged(GridHadoopJob job, GridHadoopJobMetadata meta) {
         // No-op.
     }
 

@@ -293,10 +293,10 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     /**
      * Callback from task executor invoked when a task has been finished.
      *
-     * @param taskInfo Task info.
+     * @param info Task info.
      * @param status Task status.
      */
-    public void onTaskFinished(GridHadoopTaskInfo taskInfo, GridHadoopTaskStatus status) {
+    public void onTaskFinished(GridHadoopTaskInfo info, GridHadoopTaskStatus status) {
         if (!busyLock.tryReadLock())
             return;
 
@@ -304,37 +304,37 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             assert status.state() != RUNNING;
 
             if (log.isDebugEnabled())
-                log.debug("Received task finished callback [taskInfo=" + taskInfo + ", status=" + status + ']');
+                log.debug("Received task finished callback [info=" + info + ", status=" + status + ']');
 
-            JobLocalState state = activeJobs.get(taskInfo.jobId());
+            JobLocalState state = activeJobs.get(info.jobId());
 
             assert (status.state() != FAILED && status.state() != CRASHED) || status.failCause() != null :
-                "Invalid task status [taskInfo=" + taskInfo + ", status=" + status + ']';
+                "Invalid task status [info=" + info + ", status=" + status + ']';
 
-            assert state != null;
+            assert state != null : "Missing local state for finished task [info=" + info + ", status=" + status + ']';
 
-            switch (taskInfo.type()) {
+            switch (info.type()) {
                 case MAP: {
-                    state.onMapFinished(taskInfo, status);
+                    state.onMapFinished(info, status);
 
                     break;
                 }
 
                 case REDUCE: {
-                    state.onReduceFinished(taskInfo, status);
+                    state.onReduceFinished(info, status);
 
                     break;
                 }
 
                 case COMBINE: {
-                    state.onCombineFinished(taskInfo, status);
+                    state.onCombineFinished(info, status);
 
                     break;
                 }
 
                 case COMMIT:
                 case ABORT: {
-                    GridCacheEntry<GridHadoopJobId, GridHadoopJobMetadata> entry = jobMetaPrj.entry(taskInfo.jobId());
+                    GridCacheEntry<GridHadoopJobId, GridHadoopJobMetadata> entry = jobMetaPrj.entry(info.jobId());
 
                     entry.timeToLive(ctx.configuration().getFinishedJobInfoTtl());
 
@@ -476,16 +476,12 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             boolean ext = meta.externalExecution();
 
             if (ext)
-                ctx.taskExecutor(ext).onJobStateChanged(jobId, meta);
+                ctx.taskExecutor(ext).onJobStateChanged(job, meta);
 
             switch (meta.phase()) {
                 case PHASE_MAP: {
                     // Check if we should initiate new task on local node.
                     Collection<GridHadoopTaskInfo> tasks = mapperTasks(plan.mappers(locNodeId), job, meta);
-
-                    if (ext)
-                        // Must send reducers in one pass when execution is external.
-                        tasks = reducerTasks(plan.reducers(locNodeId), job, meta, tasks);
 
                     if (tasks != null)
                         ctx.taskExecutor(ext).run(job, tasks);
@@ -508,12 +504,10 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         return;
                     }
 
-                    if (!ext) {
-                        Collection<GridHadoopTaskInfo> tasks = reducerTasks(plan.reducers(locNodeId), job, meta, null);
+                    Collection<GridHadoopTaskInfo> tasks = reducerTasks(plan.reducers(locNodeId), job, meta, null);
 
-                        if (tasks != null)
-                            ctx.taskExecutor(ext).run(job, tasks);
-                    }
+                    if (tasks != null)
+                        ctx.taskExecutor(ext).run(job, tasks);
 
                     break;
                 }
@@ -824,7 +818,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             if (job.hasCombiner() && status.state() != CANCELED) {
                 // Create combiner.
-                if (lastMapperFinished && !meta.externalExecution()) {
+                if (lastMapperFinished) {
                     GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(), COMBINE, jobId,
                         meta.taskNumber(ctx.localNodeId()), taskInfo.attempt(), null);
 

@@ -79,7 +79,7 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
 
             //For v1
             jobConf.setInt("fs.local.block.size", 65000);
-            jobConf.setBoolean("gridgain.hadoop.external_execution", true);
+//            jobConf.setBoolean("gridgain.hadoop.external_execution", true);
 
             GridHadoopWordCount1.setTasksClasses(jobConf, !useNewMapper, !useNewCombiner, !useNewReducer);
 

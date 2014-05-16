@@ -25,6 +25,8 @@ import org.gridgain.grid.kernal.processors.hadoop.*;
 import java.io.*;
 import java.util.*;
 
+import static org.gridgain.grid.hadoop.GridHadoopJobProperty.*;
+
 /**
  * Job tracker self test.
  */
@@ -58,7 +60,7 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
 
         cfg.set("fs.ggfs.impl", GridGgfsHadoopFileSystem.class.getName());
 
-        cfg.setBoolean("gridgain.hadoop.external_execution", true);
+        cfg.setBoolean(EXTERNAL_EXECUTION.propertyName(), true);
 
         Job job = Job.getInstance(cfg);
 

@@ -12,25 +12,35 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
 
-import java.util.*;
-
 /**
- * Job execution response.
+ * Child process initialization request.
  */
-public class GridHadoopTaskExecutionResponse implements GridHadoopMessage {
-    /** Job ID for which tasks has started. */
+public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
+    /** Job ID. */
     private GridHadoopJobId jobId;
 
-    /** Reducers assigned for external process. */
-    private Collection<Integer> reducers;
+    /** Job info. */
+    private GridHadoopJobInfo jobInfo;
+
+    /** Has mappers flag. */
+    private boolean hasMappers;
 
     /**
      * @param jobId Job ID.
-     * @param reducers Reducers for process.
+     * @param jobInfo Job info.
+     * @param hasMappers Has mappers flag.
      */
-    public GridHadoopTaskExecutionResponse(GridHadoopJobId jobId, Collection<Integer> reducers) {
+    public GridHadoopPrepareForJobRequest(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo, boolean hasMappers) {
         this.jobId = jobId;
-        this.reducers = reducers;
+        this.jobInfo = jobInfo;
+        this.hasMappers = hasMappers;
+    }
+
+    /**
+     * @return Job info.
+     */
+    public GridHadoopJobInfo jobInfo() {
+        return jobInfo;
     }
 
     /**
@@ -41,9 +51,9 @@ public class GridHadoopTaskExecutionResponse implements GridHadoopMessage {
     }
 
     /**
-     * @return Reducers.
+     * @return Has mappers flag.
      */
-    public Collection<Integer> reducers() {
-        return reducers;
+    public boolean hasMappers() {
+        return hasMappers;
     }
 }
