@@ -27,47 +27,19 @@
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2
           http://maven.apache.org/xsd/assembly-1.1.2.xsd">
-    <id>platform</id>
+    <id>jar-with-dependencies</id>
+
+    <formats>
+        <format>jar</format>
+    </formats>
 
     <includeBaseDirectory>false</includeBaseDirectory>
 
-    <formats>
-        <format>dir</format>
-    </formats>
-
-    <componentDescriptors>
-        <componentDescriptor>release-base.xml</componentDescriptor>
-    </componentDescriptors>
-
-    <fileSets>
-        <fileSet>
-            <directory>config</directory>
-            <outputDirectory>/config</outputDirectory>
-            <includes>
-                <include>hadoop/*</include>
-            </includes>
-        </fileSet>
-
-        <fileSet>
-            <directory>docs</directory>
-            <outputDirectory>/docs</outputDirectory>
-            <includes>
-                <include>*.pdf</include>
-            </includes>
-        </fileSet>
-
-        <fileSet>
-            <directory>examples</directory>
-            <outputDirectory>/examples</outputDirectory>
-            <includes>
-                <include>config/**</include>
-                <include>src/**</include>
-            </includes>
-            <excludes>
-                <exclude>**/package.html</exclude>
-                <exclude>pom-standalone.xml</exclude>
-                <exclude>src/test/**</exclude>
-            </excludes>
-        </fileSet>
-    </fileSets>
+    <dependencySets>
+        <dependencySet>
+            <useProjectArtifact>true</useProjectArtifact>
+            <useTransitiveDependencies>false</useTransitiveDependencies>
+            <unpack>true</unpack>
+        </dependencySet>
+    </dependencySets>
 </assembly>

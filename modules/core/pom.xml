@@ -226,9 +226,9 @@
                             <goal>single</goal>
                         </goals>
                         <configuration>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
+                            <descriptors>
+                                <descriptor>../../assembly/jar-with-dependencies.xml</descriptor>
+                            </descriptors>
                             <appendAssemblyId>false</appendAssemblyId>
                         </configuration>
                     </execution>
