@@ -14,7 +14,6 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -96,10 +95,8 @@ public class GridHadoopMultimap implements AutoCloseable {
         if (inputs.get() != 0)
             throw new IllegalStateException("Active inputs.");
 
-        State s = state.get();
-
-        if (s == State.CLOSING)
-            throw new IllegalStateException();
+        if (state.get() == State.CLOSING)
+            throw new IllegalStateException("Closed.");
 
         return new Adder();
     }
@@ -107,8 +104,13 @@ public class GridHadoopMultimap implements AutoCloseable {
     /** {@inheritDoc} */
     @Override public void close() {
         assert state.get() == State.READING_WRITING;
+        assert inputs.get() == 0 : inputs.get();
+        assert adders.isEmpty() : adders.size();
 
         state(State.READING_WRITING, State.CLOSING);
+
+        if (keys() == 0)
+            return;
 
         AtomicLongArray tbl0 = oldTbl;
 

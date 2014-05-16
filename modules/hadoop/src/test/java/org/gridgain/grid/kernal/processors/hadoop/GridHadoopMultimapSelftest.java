@@ -171,7 +171,7 @@ public class GridHadoopMultimapSelftest extends GridCommonAbstractTest {
 
         X.println("___ Started");
 
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 20; i++) {
             Job job = Job.getInstance();
 
             job.setMapOutputKeyClass(IntWritable.class);
@@ -252,6 +252,7 @@ public class GridHadoopMultimapSelftest extends GridCommonAbstractTest {
                 assertTrue(vals.isEmpty());
             }
 
+            in.close();
             m.close();
 
             assertEquals(0, mem.allocatedSize());
