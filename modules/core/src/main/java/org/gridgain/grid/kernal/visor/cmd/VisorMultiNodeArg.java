@@ -9,12 +9,13 @@
 
 package org.gridgain.grid.kernal.visor.cmd;
 
+import java.io.Serializable;
 import java.util.*;
 
 /**
  * TODO: Add class description.
  */
-public class VisorMultiNodeArg {
+public class VisorMultiNodeArg implements Serializable {
     private final Set<UUID> nodeIds;
 
     /**

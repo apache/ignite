@@ -16,9 +16,13 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * TODO: Add class description.
+ * Base class for multi nodes tasks.
+ *
+ * @param <A> Task argument type.
+ * @param <T> Task result type.
+ * @param <J> Job result type.
  */
-public abstract class VisorMultiNodeTask<A extends VisorMultiNodeArg, R> implements GridComputeTask<A, R> {
+public abstract class VisorMultiNodeTask<A extends VisorMultiNodeArg, T, J> implements GridComputeTask<A, T> {
     /**
      * Create job that will be mapped to node.
      *
@@ -26,7 +30,7 @@ public abstract class VisorMultiNodeTask<A extends VisorMultiNodeArg, R> impleme
      * @param arg Job arguments.
      * @return New job instance that will be mapped to node.
      */
-    protected abstract VisorJob<A, R> job(UUID nid, A arg);
+    protected abstract VisorJob<A, J> job(UUID nid, A arg);
 
     @Nullable @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
         @Nullable A arg) throws GridException {
