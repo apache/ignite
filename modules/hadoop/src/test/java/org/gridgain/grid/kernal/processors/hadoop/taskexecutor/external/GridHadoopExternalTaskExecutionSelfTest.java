@@ -117,8 +117,6 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
 
         @Override protected void map(Object key, Text val, Context ctx) throws IOException, InterruptedException {
             ctx.write(line, one);
-
-            System.out.println(">>>> Mapped: " + val);
         }
     }
 
@@ -131,8 +129,6 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
 
         @Override protected void setup(Context context) throws IOException, InterruptedException {
             super.setup(context);
-
-            System.out.println(">>> Reducer setup.");
         }
 
         /** {@inheritDoc} */
@@ -140,11 +136,8 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
             throws IOException, InterruptedException {
             int s = 0;
 
-            for (IntWritable val : values) {
-                System.out.println("Reducing [key=" + key + ", val=" + val.get() + ']');
-
+            for (IntWritable val : values)
                 s += val.get();
-            }
 
             System.out.println(">>>> Reduced: " + s);
 

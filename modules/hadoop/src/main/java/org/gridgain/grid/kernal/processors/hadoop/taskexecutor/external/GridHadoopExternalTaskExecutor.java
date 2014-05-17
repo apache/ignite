@@ -807,6 +807,9 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
         /** Reply received flag. */
         private volatile boolean replyReceived;
 
+        /** Logger. */
+        private GridLogger log = GridHadoopExternalTaskExecutor.this.log;
+
         /**
          * Empty constructor.
          */
@@ -875,7 +878,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                 if (err == null) {
                     if (log.isDebugEnabled())
                         log.debug("Initialized child process for external task execution [jobId=" + jobId +
-                            ", desc=" + desc + ']');
+                            ", desc=" + desc + ", initTime=" + duration() + ']');
                 }
                 else
                     log.error("Failed to initialize child process for external task execution [jobId=" + jobId +

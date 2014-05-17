@@ -570,7 +570,10 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 case PHASE_COMPLETE: {
                     if (log.isDebugEnabled())
                         log.debug("Job execution is complete, will remove local state from active jobs " +
-                            "[jobId=" + jobId + ", meta=" + meta + ']');
+                            "[jobId=" + jobId + ", meta=" + meta +
+                            ", mapTime=" + meta.mapTime() +
+                            ", reduceTime=" + meta.reduceTime() +
+                            ", totalTime=" + meta.totalTime() + ']');
 
                     if (state != null) {
                         state = activeJobs.remove(jobId);
@@ -934,6 +937,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             cp.phase(phase);
 
+            if (phase == PHASE_COMPLETE)
+                cp.completeTimestamp(System.currentTimeMillis());
+
             return cp;
         }
     }
@@ -995,8 +1001,11 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 cp.phase(PHASE_CANCELLING);
 
             if (splitsCp.isEmpty()) {
-                if (cp.phase() != PHASE_CANCELLING)
+                if (cp.phase() != PHASE_CANCELLING) {
                     cp.phase(PHASE_REDUCE);
+
+                    cp.mapCompleteTimestamp(System.currentTimeMillis());
+                }
             }
 
             return cp;

@@ -18,6 +18,7 @@ import org.gridgain.grid.util.ipc.shmem.*;
 import org.gridgain.grid.util.worker.*;
 
 import java.io.*;
+import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
@@ -119,6 +120,8 @@ public class GridHadoopExternalProcessStarter {
     }
 
     /**
+     * TODO configure logger.
+     *
      * @return Logger.
      * @throws IOException If failed.
      */
@@ -134,9 +137,15 @@ public class GridHadoopExternalProcessStarter {
 
         h.setFormatter(new Formatter() {
             @Override public String format(LogRecord record) {
-                StringBuilder sb = new StringBuilder();
+                StringBuffer sb = new StringBuffer();
 
-                sb.append("[").append(new Date(record.getMillis())).append("][").append(record.getLevel()).append("][")
+                DateFormat df = new SimpleDateFormat("yy-MM-dd HH:mm:ss.SSS");
+
+                sb.append("[");
+
+                df.format(new Date(record.getMillis()), sb, new FieldPosition(0));
+
+                sb.append("][").append(record.getLevel()).append("][")
                     .append(record.getLoggerName()).append("] ").append(record.getMessage()).append("\n");
 
                 if (record.getThrown() != null) {
@@ -247,7 +256,6 @@ public class GridHadoopExternalProcessStarter {
             }
         }
 
-        // TODO validate.
         return args;
     }
 

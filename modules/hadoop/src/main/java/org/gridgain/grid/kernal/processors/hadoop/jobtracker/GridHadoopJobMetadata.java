@@ -60,11 +60,21 @@ public class GridHadoopJobMetadata implements Externalizable {
     /** Version. */
     private long ver;
 
+    /** Start time. */
+    private long startTs;
+
+    /** Map phase complete time. */
+    private long mapCompleteTs;
+
+    /** Job complete time. */
+    private long completeTs;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
     public GridHadoopJobMetadata() {
         // No-op.
+        startTs = System.currentTimeMillis();
     }
 
     /**
@@ -76,6 +86,8 @@ public class GridHadoopJobMetadata implements Externalizable {
     public GridHadoopJobMetadata(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo) {
         this.jobId = jobId;
         this.jobInfo = jobInfo;
+
+        startTs = System.currentTimeMillis();
     }
 
     /**
@@ -85,15 +97,18 @@ public class GridHadoopJobMetadata implements Externalizable {
      */
     public GridHadoopJobMetadata(GridHadoopJobMetadata src) {
         // Make sure to preserve alphabetic order.
+        completeTs = src.completeTs;
         externalExec = src.externalExec;
         failCause = src.failCause;
         jobId = src.jobId;
         jobInfo = src.jobInfo;
+        mapCompleteTs = src.mapCompleteTs;
         mrPlan = src.mrPlan;
         pendingSplits = src.pendingSplits;
         pendingReducers = src.pendingReducers;
         phase = src.phase;
         reducersAddrs = src.reducersAddrs;
+        startTs = src.startTs;
         taskNumMap = src.taskNumMap;
         ver = src.ver + 1;
     }
@@ -185,6 +200,62 @@ public class GridHadoopJobMetadata implements Externalizable {
      */
     public GridHadoopJobId jobId() {
         return jobId;
+    }
+
+    /**
+     * @return Job start time.
+     */
+    public long startTimestamp() {
+        return startTs;
+    }
+
+    /**
+     * @return Map complete time.
+     */
+    public long mapCompleteTimestamp() {
+        return mapCompleteTs;
+    }
+
+    /**
+     * @return Complete time.
+     */
+    public long completeTimestamp() {
+        return completeTs;
+    }
+
+    /**
+     * @param mapCompleteTs Map complete time.
+     */
+    public void mapCompleteTimestamp(long mapCompleteTs) {
+        this.mapCompleteTs = mapCompleteTs;
+    }
+
+    /**
+     * @param completeTs Complete time.
+     */
+    public void completeTimestamp(long completeTs) {
+        this.completeTs = completeTs;
+    }
+
+    /**
+     * @return Map time in milliseconds.
+     */
+    public long mapTime() {
+        return mapCompleteTs - startTs;
+    }
+
+    /**
+     * @return Reduce time in milliseconds.
+     */
+    public long reduceTime() {
+        return completeTs - mapCompleteTs;
+    }
+
+    /**
+     * @return Total execution time in milliseconds.
+     */
+    public long totalTime() {
+        return completeTs - startTs;
     }
 
     /**
@@ -282,6 +353,9 @@ public class GridHadoopJobMetadata implements Externalizable {
         out.writeBoolean(externalExec);
         out.writeObject(failCause);
         out.writeLong(ver);
+        out.writeLong(startTs);
+        out.writeLong(mapCompleteTs);
+        out.writeLong(completeTs);
         out.writeObject(reducersAddrs);
     }
 
@@ -298,6 +372,9 @@ public class GridHadoopJobMetadata implements Externalizable {
         externalExec = in.readBoolean();
         failCause = (Throwable)in.readObject();
         ver = in.readLong();
+        startTs = in.readLong();
+        mapCompleteTs = in.readLong();
+        completeTs = in.readLong();
         reducersAddrs = (Map<Integer, GridHadoopProcessDescriptor>)in.readObject();
     }
 

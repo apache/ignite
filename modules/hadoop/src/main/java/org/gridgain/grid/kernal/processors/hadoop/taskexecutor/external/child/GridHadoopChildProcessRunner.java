@@ -58,6 +58,9 @@ public class GridHadoopChildProcessRunner {
     /** Init guard. */
     private AtomicBoolean initGuard = new AtomicBoolean();
 
+    /** Start time. */
+    private long startTime;
+
     /** Init future. */
     private GridFutureAdapterEx<?> initFut = new GridFutureAdapterEx<>();
 
@@ -86,6 +89,8 @@ public class GridHadoopChildProcessRunner {
         comm.setListener(new MessageListener());
         log = parentLog.getLogger(GridHadoopChildProcessRunner.class);
 
+        startTime = System.currentTimeMillis();
+
         // At this point node knows that this process has started.
         comm.sendMessage(this.nodeDesc, new GridHadoopProcessStartedAck());
     }
@@ -98,7 +103,8 @@ public class GridHadoopChildProcessRunner {
     private void prepareProcess(GridHadoopPrepareForJobRequest req) {
         if (initGuard.compareAndSet(false, true)) {
             try {
-                log.info("Initializing external hadoop task: " + req);
+                if (log.isDebugEnabled())
+                    log.debug("Initializing external hadoop task: " + req);
 
                 job = jobFactory.createJob(req.jobId(), req.jobInfo());
 
@@ -108,7 +114,8 @@ public class GridHadoopChildProcessRunner {
                 initializeExecutors(req);
 
                 if (log.isDebugEnabled())
-                    log.debug("Completing initialization future.");
+                    log.debug("External process initialized [initWaitTime=" +
+                        (System.currentTimeMillis() - startTime) + ']');
 
                 initFut.onDone(null, null);
             }
@@ -258,7 +265,8 @@ public class GridHadoopChildProcessRunner {
 
         if (log.isDebugEnabled())
             log.debug("Hadoop task execution finished [info=" + info
-                + ", state=" + state + ", err=" + err + ']');
+                + ", state=" + state + ", waitTime=" + run.waitTime() + ", execTime=" + run.executionTime() +
+                ", err=" + err + ']');
 
         boolean flush = false;
 
@@ -298,11 +306,16 @@ public class GridHadoopChildProcessRunner {
                 log.debug("Flushing shuffle messages before sending last task completion notification [taskInfo=" +
                     taskInfo + ", state=" + state + ", err=" + err + ']');
 
+            final long start = System.currentTimeMillis();
+
             try {
                 shuffleJob.flush().listenAsync(new CI1<GridFuture<?>>() {
                     @Override public void apply(GridFuture<?> f) {
+                        long end = System.currentTimeMillis();
+
                         if (log.isDebugEnabled())
-                            log.debug("Finished flushing shuffle messages [taskInfo=" + taskInfo + "]");
+                            log.debug("Finished flushing shuffle messages [taskInfo=" + taskInfo +
+                                ", flushTime=" + (end - start) + ']');
 
                         try {
                             // Check for errors on shuffle.
@@ -372,6 +385,15 @@ public class GridHadoopChildProcessRunner {
         /** Task to run. */
         private GridHadoopTask task;
 
+        /** Submit time. */
+        private long submitTs = System.currentTimeMillis();
+
+        /** Execution start timestamp. */
+        private long execStartTs;
+
+        /** Execution end timestamp. */
+        private long execEndTs;
+
         /**
          * @param task Tsak.
          */
@@ -379,8 +401,24 @@ public class GridHadoopChildProcessRunner {
             this.task = task;
         }
 
+        /**
+         * @return Wait time.
+         */
+        private long waitTime() {
+            return execStartTs - submitTs;
+        }
+
+        /**
+         * @return Execution time.
+         */
+        private long executionTime() {
+            return execEndTs - execStartTs;
+        }
+
         /** {@inheritDoc} */
         @Override public void run() {
+            execStartTs = System.currentTimeMillis();
+
             GridHadoopTaskState state = GridHadoopTaskState.COMPLETED;
             Throwable err = null;
 
@@ -396,6 +434,8 @@ public class GridHadoopChildProcessRunner {
                 err = e;
             }
             finally {
+                execEndTs = System.currentTimeMillis();
+
                 onTaskFinished(this, state, err);
             }
         }
