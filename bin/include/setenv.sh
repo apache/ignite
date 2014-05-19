@@ -56,3 +56,7 @@ do
         GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${file}/*
     fi
 done
+
+if [ "${USER_LIBS}" != "" ]; then
+    GRIDGAIN_LIBS=${USER_LIBS}${SEP}${GRIDGAIN_LIBS}
+fi
