@@ -230,6 +230,7 @@
                                 <descriptor>../../assembly/jar-with-dependencies.xml</descriptor>
                             </descriptors>
                             <appendAssemblyId>false</appendAssemblyId>
+                            <finalName>gridgain-${gridgain.version}</finalName>
                         </configuration>
                     </execution>
                 </executions>

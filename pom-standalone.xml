@@ -536,7 +536,7 @@
                                         <path location="${project.basedir}/modules/jdbc-driver/target/classes"/>
                                         <path refid="maven.plugin.classpath"/>
                                     </classpath>
-                                    <arg value="${project.basedir}/os/modules/core/target/classes"/>
+                                    <arg value="${project.basedir}/modules/core/target/classes"/>
                                     <jvmarg value="-XX:MaxPermSize=1g"/>
                                 </java>
                             </target>
@@ -560,15 +560,6 @@
                                 <replace file="target/release-package/examples/pom-java8.xml"
                                          token="%ANT_AUGMENTED_GGJAR%"
                                          value="gridgain-${gridgain.edition}-${gridgain.version}.jar"/>
-
-                                <replaceregexp byline="true">
-                                    <regexp pattern="ANT_AUGMENTED_GGJAR=.*"/>
-                                    <substitution expression="ANT_AUGMENTED_GGJAR=gridgain-${gridgain.edition}-${gridgain.version}.jar"/>
-                                    <fileset dir="target/release-package/bin">
-                                        <include name="**/*.sh"/>
-                                        <include name="**/*.bat"/>
-                                    </fileset>
-                                </replaceregexp>
 
                                 <replace token="@sh.file.version" value="${gridgain.version}">
                                     <fileset dir="target/release-package/bin">
@@ -661,6 +652,40 @@
                     </execution>
 
                     <execution>
+                        <id>dependencies-optional</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>assembly/dependencies-optional.xml</descriptor>
+                            </descriptors>
+                            <outputDirectory>${basedir}/libs</outputDirectory>
+                            <finalName>optional</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>dependencies-visor-console</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>assembly/dependencies-visor-console.xml</descriptor>
+                            </descriptors>
+                            <outputDirectory>${basedir}/bin/include</outputDirectory>
+                            <finalName>gridgain-visor-console</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                        </configuration>
+                    </execution>
+
+                    <execution>
                         <id>release</id>
                         <phase>prepare-package</phase>
                         <goals>
@@ -714,6 +739,10 @@
                             <filesets>
                                 <fileset>
                                     <directory>libs</directory>
+                                </fileset>
+
+                                <fileset>
+                                    <directory>bin/include/gridgain-visor-console</directory>
                                 </fileset>
                             </filesets>
                         </configuration>

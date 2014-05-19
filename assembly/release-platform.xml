@@ -49,14 +49,6 @@
         </fileSet>
 
         <fileSet>
-            <directory>docs</directory>
-            <outputDirectory>/docs</outputDirectory>
-            <includes>
-                <include>*.pdf</include>
-            </includes>
-        </fileSet>
-
-        <fileSet>
             <directory>examples</directory>
             <outputDirectory>/examples</outputDirectory>
             <includes>

@@ -27,7 +27,7 @@
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2
           http://maven.apache.org/xsd/assembly-1.1.2.xsd">
-    <id>dependencies</id>
+    <id>dependencies-optional</id>
 
     <formats>
         <format>dir</format>
@@ -37,9 +37,14 @@
 
     <moduleSets>
         <moduleSet>
-            <includes>
-                <include>org.gridgain:gridgain-spring</include>
-            </includes>
+            <includeSubModules>true</includeSubModules>
+            <excludes>
+                <exclude>org.gridgain:jdk8-backport</exclude>
+                <exclude>org.gridgain:gridgain-core</exclude>
+                <exclude>org.gridgain:gridgain-spring</exclude>
+                <exclude>org.gridgain:gridgain-tools</exclude>
+                <exclude>org.gridgain:gridgain-visor-console</exclude>
+            </excludes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
                 <fileSets>
@@ -60,30 +65,5 @@
                 </fileSets>
             </sources>
         </moduleSet>
-
-        <moduleSet>
-            <includes>
-                <include>org.gridgain:gridgain-core</include>
-            </includes>
-            <sources>
-                <includeModuleDirectory>false</includeModuleDirectory>
-                <fileSets>
-                    <fileSet>
-                        <directory>target</directory>
-                        <outputDirectory>/</outputDirectory>
-                        <includes>
-                            <include>gridgain-${gridgain.version}.jar</include>
-                        </includes>
-                    </fileSet>
-                </fileSets>
-            </sources>
-        </moduleSet>
     </moduleSets>
-
-    <fileSets>
-        <fileSet>
-            <directory>assembly/libs</directory>
-            <outputDirectory>/</outputDirectory>
-        </fileSet>
-    </fileSets>
 </assembly>
