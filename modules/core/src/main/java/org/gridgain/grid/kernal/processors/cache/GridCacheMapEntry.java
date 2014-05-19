@@ -261,7 +261,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         assert Thread.holdsLock(this);
 
         if (!isOffHeapValuesOnly()) {
-            if (valBytes != null)
+            if (val != null && val instanceof byte[])
+                return GridCacheValueBytes.plain(val);
+            else if (valBytes != null)
                 return GridCacheValueBytes.marshaled(valBytes);
         }
         else {
@@ -619,7 +621,12 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         GridCacheFilterFailedException {
         cctx.denyOnFlag(LOCAL);
 
-        return innerGet0(tx, readSwap, readThrough, evt, failFast, unmarshal, updateMetrics, filter);
+        V val = innerGet0(tx, readSwap, readThrough, evt, failFast, unmarshal, updateMetrics, filter);
+
+        if (key.getClass().getName().contains("GridGgfsBlock") && val == null)
+            U.dumpStack("INNER GET: " + key + ", val=" + Arrays.toString((byte[])val));
+
+        return val;
     }
 
     /** {@inheritDoc} */
