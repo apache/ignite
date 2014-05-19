@@ -24,7 +24,7 @@ import java.util.concurrent._
 /**
  * Host data.
  */
-private case class Host(
+private case class VisorHost(
     name: String,
     port: Int,
     uname: String,
@@ -38,10 +38,10 @@ private case class Host(
     override def equals(r: Any) =
         if (this eq r.asInstanceOf[AnyRef])
             true
-        else if (r == null || !r.isInstanceOf[Host])
+        else if (r == null || !r.isInstanceOf[VisorHost])
             false
         else
-            r.asInstanceOf[Host].name == name
+            r.asInstanceOf[VisorHost].name == name
 
     override def hashCode() =
         name.hashCode()
@@ -50,8 +50,8 @@ private case class Host(
 /**
  * Runnable that copies file or directory.
  */
-private case class Copier(
-    host: Host,
+private case class VisorCopier(
+    host: VisorHost,
     key: Option[String],
     src: String,
     dest: String
@@ -303,7 +303,7 @@ class VisorDeployCommand {
             if (!src.isDefined)
                 scold("Source is not defined.") ^^
 
-            var hosts = Set.empty[Host]
+            var hosts = Set.empty[VisorHost]
 
             argLst.filter(_._1 == "h").map(_._2).foreach(h => {
                 try
@@ -313,7 +313,7 @@ class VisorDeployCommand {
                 }
             })
 
-            val copiers = hosts.map(Copier(_, key, src.get, dest getOrElse ""))
+            val copiers = hosts.map(VisorCopier(_, key, src.get, dest getOrElse ""))
 
             try
                 copiers.map(pool.submit(_)).foreach(_.get)
@@ -336,7 +336,7 @@ class VisorDeployCommand {
         host: String,
         dfltUname: Option[String],
         dfltPasswd: Option[String],
-        hasKey: Boolean): Set[Host] = {
+        hasKey: Boolean): Set[VisorHost] = {
         assert(host != null)
         assert(dfltUname != null)
         assert(dfltPasswd != null)
@@ -375,7 +375,7 @@ class VisorDeployCommand {
             val uname = dfltUname getOrElse System.getProperty("user.name")
             val passwd = if (!hasKey) Some(dfltPasswd getOrElse askPassword(uname)) else None
 
-            hosts.map(Host(_, port, uname, passwd))
+            hosts.map(VisorHost(_, port, uname, passwd))
         }
         else if (arr.size == 2) {
             val (hosts, port) = extractHostsPort(arr(1))
@@ -392,7 +392,7 @@ class VisorDeployCommand {
                 else
                     None
 
-            hosts.map(Host(_, port, uname, passwd))
+            hosts.map(VisorHost(_, port, uname, passwd))
         }
         else {
             scold("Invalid host string: " + host) ^^

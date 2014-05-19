@@ -12,8 +12,6 @@
 package org.gridgain.visor.commands.gc
 
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.GridEx
-import resources.GridInstanceResource
 import org.gridgain.scalar._
 import scalar._
 import org.gridgain.visor._
@@ -21,8 +19,8 @@ import org.gridgain.visor.commands.VisorConsoleCommand
 import visor._
 import collection.JavaConversions._
 import scala.util.control.Breaks._
-import scala.util.control.Exception._
-import org.gridgain.grid.util.lang.GridAbsClosure
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorRunGcTask
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorRunGcTask.VisorRunGcArg
 
 /**
  * ==Overview==
@@ -129,33 +127,18 @@ class VisorGcCommand {
                     case e: IllegalArgumentException => scold("Invalid node 'id': " + id.get) ^^
                 }
 
-            val f = new GridAbsClosure {
-                @GridInstanceResource
-                val g: Grid = null
+            val nodesIds = if (node != null) Set(node.id()) else grid.nodes().map(_.id()).toSet
 
-                override def apply() {
-                    System.gc()
-
-                    if (dgc)
-                        g.asInstanceOf[GridEx].cachesx().foreach(_.dgc())
-                }
+            try {
+                grid.forNodeIds(nodesIds)
+                    .compute()
+                    .withNoFailover()
+                    .execute(classOf[VisorRunGcTask], new VisorRunGcArg(nodesIds, dgc))
+                    .get
             }
-
-            val hnd: Catcher[Unit] = {
+            catch {
                 case e: GridEmptyProjectionException => scold("Topology is empty.")
                 case e: GridException => scold(e.getMessage)
-            }
-
-            catching(hnd) {
-                if (node != null)
-                    grid.forNode(node)
-                        .compute()
-                        .withNoFailover()
-                        .run(f)
-                else
-                    grid.compute()
-                        .withNoFailover()
-                        .broadcast(f)
             }
         }
     }

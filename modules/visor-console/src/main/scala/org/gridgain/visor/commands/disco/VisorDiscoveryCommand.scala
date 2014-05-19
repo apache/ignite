@@ -146,7 +146,7 @@ class VisorDiscoveryCommand {
 
                 println("Querying oldest node in grid: " + nodeId8Addr(oldest.id))
 
-                var evts: List[DiscoEvent] = null
+                var evts: List[VisorDiscoEvent] = null
 
                 try
                     evts = events(oldest, f.get, hasArgFlag("r", argLst))
@@ -247,7 +247,7 @@ class VisorDiscoveryCommand {
      * @param reverse Reverse order.
      * @return Events.
      */
-    private def events(node: GridNode, f: TimeFilter, reverse: Boolean): List[DiscoEvent] = {
+    private def events(node: GridNode, f: TimeFilter, reverse: Boolean): List[VisorDiscoEvent] = {
         assert(node != null)
         assert(f != null)
         assert(!node.isDaemon)
@@ -270,7 +270,7 @@ class VisorDiscoveryCommand {
                 else
                     de.eventNode().metrics().getUpTime
 
-            DiscoEvent(
+            VisorDiscoEvent(
                 ts = de.timestamp(),
                 nodeId = de.eventNode().id(),
                 ip = de.eventNode().addresses.head,
@@ -281,7 +281,7 @@ class VisorDiscoveryCommand {
 
         // Add made up event for the oldest node since it doesn't
         // have an event about itself.
-        evts = evts :+ DiscoEvent(
+        evts = evts :+ VisorDiscoEvent(
             ts = node.metrics().getStartTime,
             nodeId = node.id(),
             ip = node.addresses.headOption getOrElse "<n/a>",
@@ -299,7 +299,7 @@ class VisorDiscoveryCommand {
      * @param evt Discovery event for which status is requested.
      * @return Status of the node.
      */
-    private def status(evts: List[DiscoEvent], evt: DiscoEvent): String = {
+    private def status(evts: List[VisorDiscoEvent], evt: VisorDiscoEvent): String = {
         assert(evts != null)
         assert(!evts.isEmpty)
         assert(evt != null)
@@ -325,7 +325,7 @@ class VisorDiscoveryCommand {
 
 /**
  */
-private case class DiscoEvent(
+private case class VisorDiscoEvent(
     evtName: String,
     nodeId: UUID,
     ip: String,
