@@ -51,6 +51,11 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
             log.debug("Submitting tasks for local execution [locNodeId=" + ctx.localNodeId() +
                 ", tasksCnt=" + tasks.size() + ']');
 
+        for (Map.Entry<GridHadoopJobId, Collection<GridFuture<?>>> entry : jobs.entrySet()) {
+            if (entry.getValue().isEmpty())
+                jobs.remove(entry.getKey());
+        }
+
         Collection<GridFuture<?>> futures = jobs.get(job.id());
 
         if (futures == null) {
@@ -97,9 +102,6 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
                     assert futs != null;
 
                     futs.remove(f);
-
-                    if (futs.isEmpty())
-                        jobs.remove(task.info().jobId());
 
                     GridHadoopTaskState state = COMPLETED;
                     Throwable err = null;
