@@ -392,8 +392,8 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoopEx, GridGgfsHa
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] readData(NewGridGgfsHadoopStreamDelegate desc, long pos, int len,
-        final @Nullable byte[] outBuf, final int outOff, final int outLen) throws GridException {
+    @Override public GridPlainFuture<byte[]> readData(NewGridGgfsHadoopStreamDelegate desc, long pos, int len,
+        final @Nullable byte[] outBuf, final int outOff, final int outLen) {
         assert len > 0;
 
         final GridGgfsStreamControlRequest msg = new GridGgfsStreamControlRequest();
@@ -407,7 +407,7 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoopEx, GridGgfsHa
             @Override public GridPlainFuture<byte[]> applyx(GridGgfsHadoopIpcIo io) throws GridException {
                 return io.send(msg, outBuf, outOff, outLen);
             }
-        }).get();
+        });
     }
 
     /** {@inheritDoc} */

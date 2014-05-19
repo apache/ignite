@@ -14,6 +14,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
+import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -232,13 +233,13 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: R
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] readData(NewGridGgfsHadoopStreamDelegate desc, long pos, int len, @Nullable byte[] outBuf,
-        int outOff, int outLen) throws GridException, IOException {
+    @Override public GridPlainFuture<byte[]> readData(NewGridGgfsHadoopStreamDelegate desc, long pos, int len,
+        @Nullable byte[] outBuf, int outOff, int outLen) {
         GridGgfsInputStreamAdapter stream = desc.target();
 
-        // TODO
+        // TODO.
 
-        return new byte[0];
+        return null;
     }
 
     /** {@inheritDoc} */

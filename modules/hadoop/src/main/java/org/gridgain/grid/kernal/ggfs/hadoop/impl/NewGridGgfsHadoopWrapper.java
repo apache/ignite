@@ -14,6 +14,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -29,7 +30,7 @@ import static org.gridgain.grid.kernal.ggfs.hadoop.impl.NewGridGgfsHadoopEndpoin
  */
 public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     /** Delegate. */
-    private final AtomicReference<NewGridGgfsHadoopEx> delegateRef = new AtomicReference<>();
+    private final AtomicReference<Delegate> delegateRef = new AtomicReference<>();
 
     /** Connection string. */
     private final NewGridGgfsHadoopEndpoint endpoint;
@@ -47,27 +48,36 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
      * @param logDir Log directory for server.
      * @param log Current logger.
      */
-    NewGridGgfsHadoopWrapper(String connStr, String logDir, Log log) throws IOException {
+    public NewGridGgfsHadoopWrapper(String connStr, String logDir, Log log) throws IOException {
         this.endpoint = new NewGridGgfsHadoopEndpoint(connStr);
         this.logDir = logDir;
         this.log = log;
     }
 
     /** {@inheritDoc} */
+    @Override public GridGgfsHandshakeResponse handshake(String logDir) throws GridException, IOException {
+        return withReconnectHandling(new FileSystemClosure<GridGgfsHandshakeResponse>() {
+            @Override public GridGgfsHandshakeResponse apply(NewGridGgfsHadoopEx hadoop,
+                GridGgfsHandshakeResponse hndResp) throws GridException, IOException {
+                return hndResp;
+            }
+        });
+    }
+
+    /** {@inheritDoc} */
     @Override public void close() {
-        NewGridGgfsHadoopEx delegate = delegateRef.get();
+        Delegate delegate = delegateRef.get();
 
         if (delegate != null && delegateRef.compareAndSet(delegate, null))
-            delegate.close();
+            delegate.hadoop.close();
     }
 
     /** {@inheritDoc} */
     @Override public GridGgfsFile info(final GridGgfsPath path) throws GridException, IOException {
         return withReconnectHandling(new FileSystemClosure<GridGgfsFile>() {
-            @Override
-            public GridGgfsFile apply(NewGridGgfsHadoopEx delegate) throws GridException,
-                IOException {
-                return delegate.info(path);
+            @Override public GridGgfsFile apply(NewGridGgfsHadoopEx hadoop, GridGgfsHandshakeResponse hndResp)
+                throws GridException, IOException {
+                return hadoop.info(path);
             }
         });
     }
@@ -76,10 +86,9 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     @Override public GridGgfsFile update(final GridGgfsPath path, final Map<String, String> props) throws GridException,
         IOException {
         return withReconnectHandling(new FileSystemClosure<GridGgfsFile>() {
-            @Override
-            public GridGgfsFile apply(NewGridGgfsHadoopEx delegate) throws GridException,
-                IOException {
-                return delegate.update(path, props);
+            @Override public GridGgfsFile apply(NewGridGgfsHadoopEx hadoop, GridGgfsHandshakeResponse hndResp)
+                throws GridException, IOException {
+                return hadoop.update(path, props);
             }
         });
     }
@@ -88,9 +97,9 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     @Override public Boolean setTimes(final GridGgfsPath path, final long accessTime, final long modificationTime)
         throws GridException, IOException {
         return withReconnectHandling(new FileSystemClosure<Boolean>() {
-            @Override public Boolean apply(NewGridGgfsHadoopEx delegate) throws GridException,
-                IOException {
-                return delegate.setTimes(path, accessTime, modificationTime);
+            @Override public Boolean apply(NewGridGgfsHadoopEx hadoop, GridGgfsHandshakeResponse hndResp)
+                throws GridException, IOException {
+                return hadoop.setTimes(path, accessTime, modificationTime);
             }
         });
     }
@@ -98,9 +107,9 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     /** {@inheritDoc} */
     @Override public Boolean rename(final GridGgfsPath src, final GridGgfsPath dest) throws GridException, IOException {
         return withReconnectHandling(new FileSystemClosure<Boolean>() {
-            @Override public Boolean apply(NewGridGgfsHadoopEx delegate) throws GridException,
-                IOException {
-                return delegate.rename(src, dest);
+            @Override public Boolean apply(NewGridGgfsHadoopEx hadoop, GridGgfsHandshakeResponse hndResp)
+                throws GridException, IOException {
+                return hadoop.rename(src, dest);
             }
         });
     }
@@ -109,9 +118,9 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     @Override public Boolean delete(final GridGgfsPath path, final boolean recursive) throws GridException,
         IOException {
         return withReconnectHandling(new FileSystemClosure<Boolean>() {
-            @Override public Boolean apply(NewGridGgfsHadoopEx delegate) throws GridException,
-                IOException {
-                return delegate.delete(path, recursive);
+            @Override public Boolean apply(NewGridGgfsHadoopEx hadoop, GridGgfsHandshakeResponse hndResp)
+                throws GridException, IOException {
+                return hadoop.delete(path, recursive);
             }
         });
     }
@@ -120,9 +129,9 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     @Override public Collection<GridGgfsBlockLocation> affinity(final GridGgfsPath path, final long start,
         final long len) throws GridException, IOException {
         return withReconnectHandling(new FileSystemClosure<Collection<GridGgfsBlockLocation>>() {
-            @Override public Collection<GridGgfsBlockLocation> apply(NewGridGgfsHadoopEx delegate)
-                throws GridException, IOException {
-                return delegate.affinity(path, start, len);
+            @Override public Collection<GridGgfsBlockLocation> apply(NewGridGgfsHadoopEx hadoop,
+                GridGgfsHandshakeResponse hndResp) throws GridException, IOException {
+                return hadoop.affinity(path, start, len);
             }
         });
     }
@@ -130,9 +139,9 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     /** {@inheritDoc} */
     @Override public GridGgfsPathSummary contentSummary(final GridGgfsPath path) throws GridException, IOException {
         return withReconnectHandling(new FileSystemClosure<GridGgfsPathSummary>() {
-            @Override public GridGgfsPathSummary apply(NewGridGgfsHadoopEx delegate) throws GridException,
-                IOException {
-                return delegate.contentSummary(path);
+            @Override public GridGgfsPathSummary apply(NewGridGgfsHadoopEx hadoop, GridGgfsHandshakeResponse hndResp)
+                throws GridException, IOException {
+                return hadoop.contentSummary(path);
             }
         });
     }
@@ -141,9 +150,9 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     @Override public Boolean mkdirs(final GridGgfsPath path, final Map<String, String> props) throws GridException,
         IOException {
         return withReconnectHandling(new FileSystemClosure<Boolean>() {
-            @Override public Boolean apply(NewGridGgfsHadoopEx delegate) throws GridException,
-                IOException {
-                return delegate.mkdirs(path, props);
+            @Override public Boolean apply(NewGridGgfsHadoopEx hadoop, GridGgfsHandshakeResponse hndResp)
+                throws GridException, IOException {
+                return hadoop.mkdirs(path, props);
             }
         });
     }
@@ -151,9 +160,9 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     /** {@inheritDoc} */
     @Override public Collection<GridGgfsFile> listFiles(final GridGgfsPath path) throws GridException, IOException {
         return withReconnectHandling(new FileSystemClosure<Collection<GridGgfsFile>>() {
-            @Override public Collection<GridGgfsFile> apply(NewGridGgfsHadoopEx delegate) throws GridException,
-                IOException {
-                return delegate.listFiles(path);
+            @Override public Collection<GridGgfsFile> apply(NewGridGgfsHadoopEx hadoop,
+                GridGgfsHandshakeResponse hndResp) throws GridException, IOException {
+                return hadoop.listFiles(path);
             }
         });
     }
@@ -161,9 +170,9 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     /** {@inheritDoc} */
     @Override public Collection<GridGgfsPath> listPaths(final GridGgfsPath path) throws GridException, IOException {
         return withReconnectHandling(new FileSystemClosure<Collection<GridGgfsPath>>() {
-            @Override public Collection<GridGgfsPath> apply(NewGridGgfsHadoopEx delegate) throws GridException,
-                IOException {
-                return delegate.listPaths(path);
+            @Override public Collection<GridGgfsPath> apply(NewGridGgfsHadoopEx hadoop,
+                GridGgfsHandshakeResponse hndResp) throws GridException, IOException {
+                return hadoop.listPaths(path);
             }
         });
     }
@@ -171,8 +180,9 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     /** {@inheritDoc} */
     @Override public GridGgfsStatus fsStatus() throws GridException, IOException {
         return withReconnectHandling(new FileSystemClosure<GridGgfsStatus>() {
-            @Override public GridGgfsStatus apply(NewGridGgfsHadoopEx delegate) throws GridException, IOException {
-                return delegate.fsStatus();
+            @Override public GridGgfsStatus apply(NewGridGgfsHadoopEx hadoop, GridGgfsHandshakeResponse hndResp)
+                throws GridException, IOException {
+                return hadoop.fsStatus();
             }
         });
     }
@@ -180,9 +190,9 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     /** {@inheritDoc} */
     @Override public NewGridGgfsHadoopStreamDelegate open(final GridGgfsPath path) throws GridException, IOException {
         return withReconnectHandling(new FileSystemClosure<NewGridGgfsHadoopStreamDelegate>() {
-            @Override public NewGridGgfsHadoopStreamDelegate apply(NewGridGgfsHadoopEx delegate) throws GridException,
-                IOException {
-                return delegate.open(path);
+            @Override public NewGridGgfsHadoopStreamDelegate apply(NewGridGgfsHadoopEx hadoop,
+                GridGgfsHandshakeResponse hndResp) throws GridException, IOException {
+                return hadoop.open(path);
             }
         });
     }
@@ -191,9 +201,9 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     @Override public NewGridGgfsHadoopStreamDelegate open(final GridGgfsPath path, final int seqReadsBeforePrefetch)
         throws GridException, IOException {
         return withReconnectHandling(new FileSystemClosure<NewGridGgfsHadoopStreamDelegate>() {
-            @Override public NewGridGgfsHadoopStreamDelegate apply(NewGridGgfsHadoopEx delegate) throws GridException,
-                IOException {
-                return delegate.open(path, seqReadsBeforePrefetch);
+            @Override public NewGridGgfsHadoopStreamDelegate apply(NewGridGgfsHadoopEx hadoop,
+                GridGgfsHandshakeResponse hndResp) throws GridException, IOException {
+                return hadoop.open(path, seqReadsBeforePrefetch);
             }
         });
     }
@@ -203,9 +213,9 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
         final boolean colocate, final int replication, final long blockSize, final @Nullable Map<String, String> props)
         throws GridException, IOException {
         return withReconnectHandling(new FileSystemClosure<NewGridGgfsHadoopStreamDelegate>() {
-            @Override public NewGridGgfsHadoopStreamDelegate apply(NewGridGgfsHadoopEx delegate) throws GridException,
-                IOException {
-                return delegate.create(path, overwrite, colocate, replication, blockSize, props);
+            @Override public NewGridGgfsHadoopStreamDelegate apply(NewGridGgfsHadoopEx hadoop,
+                GridGgfsHandshakeResponse hndResp) throws GridException, IOException {
+                return hadoop.create(path, overwrite, colocate, replication, blockSize, props);
             }
         });
     }
@@ -214,16 +224,16 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     @Override public NewGridGgfsHadoopStreamDelegate append(final GridGgfsPath path, final boolean create,
         final @Nullable Map<String, String> props) throws GridException, IOException {
         return withReconnectHandling(new FileSystemClosure<NewGridGgfsHadoopStreamDelegate>() {
-            @Override public NewGridGgfsHadoopStreamDelegate apply(NewGridGgfsHadoopEx delegate) throws GridException,
-                IOException {
-                return delegate.append(path, create, props);
+            @Override public NewGridGgfsHadoopStreamDelegate apply(NewGridGgfsHadoopEx hadoop,
+                GridGgfsHandshakeResponse hndResp) throws GridException, IOException {
+                return hadoop.append(path, create, props);
             }
         });
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] readData(NewGridGgfsHadoopStreamDelegate delegate, long pos, int len,
-        @Nullable byte[] outBuf, int outOff, int outLen) throws GridException, IOException {
+    @Override public GridPlainFuture<byte[]> readData(NewGridGgfsHadoopStreamDelegate delegate, long pos, int len,
+        @Nullable byte[] outBuf, int outOff, int outLen) {
         return delegate.hadoop().readData(delegate, pos, len, outBuf, outOff, outLen);
     }
 
@@ -250,19 +260,19 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
         Exception err = null;
 
         for (int i = 0; i < 2; i++) {
-            NewGridGgfsHadoopEx curDelegate = null;
+            Delegate curDelegate = null;
 
             try {
                 curDelegate = delegate();
 
-                return clo.apply(curDelegate);
+                return clo.apply(curDelegate.hadoop, curDelegate.hndResp);
             }
             catch (GridGgfsHadoopCommunicationException e) {
-                curDelegate.close();
+                curDelegate.hadoop.close();
 
                 if (!delegateRef.compareAndSet(curDelegate, null))
                     // Close if was overwritten concurrently.
-                    curDelegate.close();
+                    curDelegate.hadoop.close();
 
                 if (log.isDebugEnabled())
                     log.debug("Failed to send message to a server: " + e);
@@ -282,11 +292,11 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
      *
      * @return Delegate.
      */
-    private NewGridGgfsHadoopEx delegate() throws IOException {
+    private Delegate delegate() throws IOException {
         GridException err = null;
 
         // 1. If delegate is set, return it immediately.
-        NewGridGgfsHadoopEx curDelegate = delegateRef.get();
+        Delegate curDelegate = delegateRef.get();
 
         if (curDelegate != null)
             return curDelegate;
@@ -319,11 +329,9 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
 
         if (ggfs != null) {
             try {
-                NewGridGgfsHadoopEx res = new NewGridGgfsHadoopInProc(ggfs, log);
+                NewGridGgfsHadoopEx hadoop = new NewGridGgfsHadoopInProc(ggfs, log);
 
-                res.handshake(logDir);
-
-                curDelegate = res;
+                curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
             }
             catch (GridException e) {
                 log.debug("Failed to connect to in-proc GGFS, fallback to IPC mode.", e);
@@ -335,11 +343,9 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
         // 3. Try connecting using shmem.
         if (curDelegate == null && !U.isWindows()) {
             try {
-                NewGridGgfsHadoopEx res = new NewGridGgfsHadoopOutProc(log);
+                NewGridGgfsHadoopEx hadoop = new NewGridGgfsHadoopOutProc(log);
 
-                res.handshake(logDir);
-
-                curDelegate = res;
+                curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
             }
             catch (GridException e) {
                 log.debug("Failed to connect to out-proc local GGFS using shmem.", e);
@@ -351,11 +357,9 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
         // 4. Try local TCP connection.
         if (curDelegate == null) {
             try {
-                NewGridGgfsHadoopEx res = new NewGridGgfsHadoopOutProc(LOCALHOST, endpoint.port(), log);
+                NewGridGgfsHadoopEx hadoop = new NewGridGgfsHadoopOutProc(LOCALHOST, endpoint.port(), log);
 
-                res.handshake(logDir);
-
-                curDelegate = res;
+                curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
             }
             catch (GridException e) {
                 log.debug("Failed to connect to out-proc local GGFS using TCP.", e);
@@ -367,11 +371,9 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
         // 5. Try remote TCP connection.
         if (curDelegate == null && !F.eq(LOCALHOST, endpoint.host())) {
             try {
-                NewGridGgfsHadoopEx res = new NewGridGgfsHadoopOutProc(LOCALHOST, endpoint.port(), log);
+                NewGridGgfsHadoopEx hadoop = new NewGridGgfsHadoopOutProc(LOCALHOST, endpoint.port(), log);
 
-                res.handshake(logDir);
-
-                curDelegate = res;
+                curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
             }
             catch (GridException e) {
                 log.debug("Failed to connect to out-proc remote GGFS using TCP.", e);
@@ -393,12 +395,35 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
         /**
          * Call closure body.
          *
-         * @param delegate GGFS delegate.
+         * @param hadoop RPC handler.
+         * @param hndResp Handshake response.
          * @return Result.
          * @throws GridException If failed.
          * @throws IOException If failed.
          */
-        public T apply(NewGridGgfsHadoopEx delegate) throws GridException, IOException;
+        public T apply(NewGridGgfsHadoopEx hadoop, GridGgfsHandshakeResponse hndResp) throws GridException, IOException;
+    }
+
+    /**
+     * Delegate.
+     */
+    private static class Delegate {
+        /** RPC handler. */
+        private final NewGridGgfsHadoopEx hadoop;
+
+        /** Handshake request. */
+        private final GridGgfsHandshakeResponse hndResp;
+
+        /**
+         * Constructor.
+         *
+         * @param hadoop Hadoop.
+         * @param hndResp Handshake response.
+         */
+        private Delegate(NewGridGgfsHadoopEx hadoop, GridGgfsHandshakeResponse hndResp) {
+            this.hadoop = hadoop;
+            this.hndResp = hndResp;
+        }
     }
 
 }

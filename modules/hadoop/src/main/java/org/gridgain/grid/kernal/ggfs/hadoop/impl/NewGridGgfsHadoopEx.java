@@ -20,15 +20,6 @@ import java.io.*;
  */
 public interface NewGridGgfsHadoopEx extends NewGridGgfsHadoop {
     /**
-     * Perform handshake.
-     *
-     * @param logDir Log directory.
-     * @return Future with handshake result.
-     * @throws org.gridgain.grid.GridException If failed.
-     */
-    public GridGgfsHandshakeResponse handshake(String logDir) throws GridException, IOException;
-
-    /**
      * @return Mode.
      */
     public NewGridGgfsHadoopMode mode();

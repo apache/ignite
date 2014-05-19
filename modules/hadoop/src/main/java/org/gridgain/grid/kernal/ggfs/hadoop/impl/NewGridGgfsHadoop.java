@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.ggfs.hadoop.impl;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
+import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -21,6 +22,15 @@ import java.util.*;
  * Facade for communication with grid.
  */
 public interface NewGridGgfsHadoop {
+    /**
+     * Perform handshake.
+     *
+     * @param logDir Log directory.
+     * @return Future with handshake result.
+     * @throws org.gridgain.grid.GridException If failed.
+     */
+    public GridGgfsHandshakeResponse handshake(String logDir) throws GridException, IOException;
+
     /**
      * Close connection.
      */
@@ -189,11 +199,9 @@ public interface NewGridGgfsHadoop {
      * @param outOff Output offset.
      * @param outLen Output length.
      * @return Read data.
-     * @throws GridException If write failed.
-     * @throws IOException If failed.
      */
-    public byte[] readData(NewGridGgfsHadoopStreamDelegate desc, long pos, int len,
-        @Nullable final byte[] outBuf, final int outOff, final int outLen) throws GridException, IOException;
+    public GridPlainFuture<byte[]> readData(NewGridGgfsHadoopStreamDelegate desc, long pos, int len,
+        @Nullable final byte[] outBuf, final int outOff, final int outLen);
 
     /**
      * Writes data to the stream with given streamId. This method does not return any future since
