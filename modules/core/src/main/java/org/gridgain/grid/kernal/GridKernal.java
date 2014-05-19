@@ -36,7 +36,6 @@ import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.email.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.job.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.kernal.processors.license.*;
@@ -251,7 +250,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** {@inheritDoc} */
     @Override public String getFullVersion() {
-        return COMPOUND_VERSION + '-' + ctx.build();
+        return COMPOUND_VER + '-' + BUILD_TSTAMP_STR;
     }
 
     /** {@inheritDoc} */
@@ -527,10 +526,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
 
-        String build = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD * 1000));
-
         // Ack various information.
-        ackAsciiLogo(build);
+        ackAsciiLogo();
         ackConfigUrl();
         ackDaemon();
         ackOsInfo();
@@ -583,7 +580,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         // Ack configuration.
         ackSpis();
 
-        Map<String, Object> attrs = createNodeAttributes(cfg, build);
+        Map<String, Object> attrs = createNodeAttributes(cfg, BUILD_TSTAMP_STR);
 
         // Spin out SPIs & managers.
         try {
@@ -599,11 +596,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             GridResourceProcessor rsrcProc = new GridResourceProcessor(ctx);
 
             rsrcProc.setSpringContext(rsrcCtx);
-
-            // Set node version.
-            ctx.version(COMPOUND_VERSION);
-
-            ctx.build(build);
 
             ctx.product(new GridProductImpl(ctx, verChecker));
 
@@ -626,6 +618,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             U.startLifecycleAware(lifecycleAwares(cfg));
 
             GridVersionProcessor verProc = createComponent(GridVersionProcessor.class, ctx);
+
+            addHelper(ctx, GGFS_HELPER.create(F.isEmpty(cfg.getGgfsConfiguration())));
 
             // Start version converter processor before all other
             // components so they can register converters.
@@ -666,10 +660,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
-            GridGgfsProcessorAdapter ggfsProc =  GGFS.create(ctx, F.isEmpty(cfg.getGgfsConfiguration()));
-
-            ctx.add(ggfsProc);
-
             startProcessor(ctx, new GridClockSyncProcessor(ctx), attrs);
             startProcessor(ctx, createComponent(GridLicenseProcessor.class, ctx), attrs);
             startProcessor(ctx, new GridAffinityProcessor(ctx), attrs);
@@ -691,7 +681,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             startProcessor(ctx, new GridDataLoaderProcessor(ctx), attrs);
             startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
-            startProcessor(ctx, ggfsProc, attrs, false);
+            startProcessor(ctx, (GridProcessor)GGFS.create(ctx, F.isEmpty(cfg.getGgfsConfiguration())), attrs);
             startProcessor(ctx, new GridContinuousProcessor(ctx), attrs);
             startProcessor(ctx, createComponent(GridDrProcessor.class, ctx), attrs);
 
@@ -946,8 +936,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                         }
 
                         String msg = NL +
-                            "Metrics for local node (to disable printout set configuration " +
-                            "property 'metricsLogFrequency' to 0) [locNodeId=" + ctx.localNodeId() + ']' + NL +
+                            "Metrics for local node (to disable set 'metricsLogFrequency' to 0)" + NL +
                             "    ^-- H/N/C [hosts=" + hosts + ", nodes=" + nodes + ", CPUs=" + cpus + "]" + NL +
                             "    ^-- CPU [cur=" + dblFmt.format(cpuLoadPct) + "%, avg=" +
                                 dblFmt.format(avgCpuLoadPct) + "%, GC=" + dblFmt.format(gcPct) + "%]" + NL +
@@ -991,7 +980,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                 "GridGain node started with the following parameters:" + NL +
                     NL +
                     "----" + NL +
-                    "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH + NL +
+                    "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH + NL +
                     "Grid name: " + gridName + NL +
                     "Node ID: " + nid + NL +
                     "Node order: " + localNode().order() + NL +
@@ -1207,7 +1196,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         // Stick in some system level attributes
         add(attrs, ATTR_JIT_NAME, U.getCompilerMx() == null ? "" : U.getCompilerMx().getName());
-        add(attrs, ATTR_BUILD_VER, COMPOUND_VERSION);
+        add(attrs, ATTR_BUILD_VER, COMPOUND_VER);
         add(attrs, ATTR_BUILD_DATE, build);
         add(attrs, ATTR_COMPATIBLE_VERS, (Serializable)compatibleVersions());
         add(attrs, ATTR_MARSHALLER, cfg.getMarshaller().getClass().getName());
@@ -1443,20 +1432,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      */
     private void startProcessor(GridKernalContextImpl ctx, GridProcessor proc, Map<String, Object> attrs)
         throws GridException {
-        startProcessor(ctx, proc, attrs, true);
-    }
-
-    /**
-     * @param ctx Kernal context.
-     * @param proc Processor to start.
-     * @param attrs Attributes.
-     * @param add Whether to add processro to context ({@code false} if already added).
-     * @throws GridException Thrown in case of any error.
-     */
-    private void startProcessor(GridKernalContextImpl ctx, GridProcessor proc, Map<String, Object> attrs, boolean add)
-        throws GridException {
-        if (add)
-            ctx.add(proc);
+        ctx.add(proc);
 
         try {
             proc.start();
@@ -1466,6 +1442,16 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         catch (GridException e) {
             throw new GridException("Failed to start processor: " + proc, e);
         }
+    }
+
+    /**
+     * Add helper.
+     *
+     * @param ctx Context.
+     * @param helper Helper.
+     */
+    private void addHelper(GridKernalContextImpl ctx, Object helper) {
+        ctx.addHelper(helper);
     }
 
     /**
@@ -1562,17 +1548,14 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /**
      * Acks ASCII-logo. Thanks to http://patorjk.com/software/taag
-     *
-     * @param build Build.
      */
-    private void ackAsciiLogo(String build) {
+    private void ackAsciiLogo() {
         assert log != null;
 
         String fileName = log.fileName();
 
         if (System.getProperty(GG_NO_ASCII) == null) {
-            String rev = REV_HASH.length() > 8 ? REV_HASH.substring(0, 8) : REV_HASH;
-            String ver = "ver. " + COMPOUND_VERSION + '#' + build + "-sha1:" + rev;
+            String ver = "ver. " + ACK_VER;
 
             // Big thanks to: http://patorjk.com/software/taag
             // Font name "Small Slant"
@@ -1625,7 +1608,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         if (log.isInfoEnabled()) {
             log.info("");
 
-            String ack = "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH;
+            String ack = "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH;
 
             String dash = U.dash(ack.length());
 
@@ -1887,7 +1870,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             if (log.isInfoEnabled())
                 if (!errOnStop) {
-                    String ack = "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH +
+                    String ack = "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH +
                         " stopped OK";
 
                     String dash = U.dash(ack.length());
@@ -1902,7 +1885,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                         NL);
                 }
                 else {
-                    String ack = "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH +
+                    String ack = "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH +
                         " stopped with ERRORS";
 
                     String dash = U.dash(ack.length());
@@ -1924,7 +1907,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             if (isSmtpEnabled() && isAdminEmailsSet() && cfg.isLifeCycleEmailNotification()) {
                 String errOk = errOnStop ? "with ERRORS" : "OK";
 
-                String headline = "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + " stopped " + errOk + ":";
+                String headline = "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR +
+                    " stopped " + errOk + ":";
                 String subj = "GridGain node stopped " + errOk + ": " + nid8;
 
                 GridProductLicense lic = ctx.license().license();
@@ -1933,7 +1917,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                     headline + NL +
                         NL +
                         "----" + NL +
-                        "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH + NL +
+                        "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH + NL +
                         "Grid name: " + gridName + NL +
                         "Node ID: " + nid + NL +
                         "Node uptime: " + X.timeSpan2HMSM(U.currentTimeMillis() - startTime) + NL +
