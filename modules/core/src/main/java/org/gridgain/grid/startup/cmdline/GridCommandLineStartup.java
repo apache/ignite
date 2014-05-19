@@ -47,9 +47,6 @@ public final class GridCommandLineStartup {
     private static final boolean QUITE;
 
     /** Build date. */
-    private static String buildDate;
-
-    /** Build date. */
     private static Date releaseDate;
 
     /**
@@ -79,8 +76,6 @@ public final class GridCommandLineStartup {
 
         // Mac OS specific customizations: app icon and about dialog.
         try {
-            buildDate = new SimpleDateFormat("yyyy/MM/dd", Locale.US).format(new Date(BUILD * 1000));
-
             releaseDate = new SimpleDateFormat("ddMMyyyy", Locale.US).parse(RELEASE_DATE);
 
             Class<?> appCls = Class.forName("com.apple.eawt.Application");
@@ -244,7 +239,7 @@ public final class GridCommandLineStartup {
      */
     public static void main(String[] args) {
         if (!QUITE) {
-            X.println("GridGain Command Line Startup, ver. " + EDITION + "-" + VER + "#" + buildDate);
+            X.println("GridGain Command Line Startup, ver. " + ACK_VER);
             X.println(COPYRIGHT);
             X.println();
         }

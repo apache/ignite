@@ -250,7 +250,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** {@inheritDoc} */
     @Override public String getFullVersion() {
-        return COMPOUND_VERSION + '-' + ctx.build();
+        return COMPOUND_VER + '-' + BUILD_TSTAMP_STR;
     }
 
     /** {@inheritDoc} */
@@ -526,10 +526,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
 
-        String build = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD * 1000));
-
         // Ack various information.
-        ackAsciiLogo(build);
+        ackAsciiLogo();
         ackConfigUrl();
         ackDaemon();
         ackOsInfo();
@@ -582,7 +580,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         // Ack configuration.
         ackSpis();
 
-        Map<String, Object> attrs = createNodeAttributes(cfg, build);
+        Map<String, Object> attrs = createNodeAttributes(cfg, BUILD_TSTAMP_STR);
 
         // Spin out SPIs & managers.
         try {
@@ -598,11 +596,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             GridResourceProcessor rsrcProc = new GridResourceProcessor(ctx);
 
             rsrcProc.setSpringContext(rsrcCtx);
-
-            // Set node version.
-            ctx.version(COMPOUND_VERSION);
-
-            ctx.build(build);
 
             ctx.product(new GridProductImpl(ctx, verChecker));
 
@@ -978,7 +971,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                 "GridGain node started with the following parameters:" + NL +
                     NL +
                     "----" + NL +
-                    "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH + NL +
+                    "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH + NL +
                     "Grid name: " + gridName + NL +
                     "Node ID: " + nid + NL +
                     "Node order: " + localNode().order() + NL +
@@ -1194,7 +1187,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         // Stick in some system level attributes
         add(attrs, ATTR_JIT_NAME, U.getCompilerMx() == null ? "" : U.getCompilerMx().getName());
-        add(attrs, ATTR_BUILD_VER, COMPOUND_VERSION);
+        add(attrs, ATTR_BUILD_VER, COMPOUND_VER);
         add(attrs, ATTR_BUILD_DATE, build);
         add(attrs, ATTR_COMPATIBLE_VERS, (Serializable)compatibleVersions());
         add(attrs, ATTR_MARSHALLER, cfg.getMarshaller().getClass().getName());
@@ -1546,17 +1539,14 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /**
      * Acks ASCII-logo. Thanks to http://patorjk.com/software/taag
-     *
-     * @param build Build.
      */
-    private void ackAsciiLogo(String build) {
+    private void ackAsciiLogo() {
         assert log != null;
 
         String fileName = log.fileName();
 
         if (System.getProperty(GG_NO_ASCII) == null) {
-            String rev = REV_HASH.length() > 8 ? REV_HASH.substring(0, 8) : REV_HASH;
-            String ver = "ver. " + COMPOUND_VERSION + '#' + build + "-sha1:" + rev;
+            String ver = "ver. " + ACK_VER;
 
             // Big thanks to: http://patorjk.com/software/taag
             // Font name "Small Slant"
@@ -1609,7 +1599,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         if (log.isInfoEnabled()) {
             log.info("");
 
-            String ack = "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH;
+            String ack = "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH;
 
             String dash = U.dash(ack.length());
 
@@ -1871,7 +1861,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             if (log.isInfoEnabled())
                 if (!errOnStop) {
-                    String ack = "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH +
+                    String ack = "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH +
                         " stopped OK";
 
                     String dash = U.dash(ack.length());
@@ -1886,7 +1876,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                         NL);
                 }
                 else {
-                    String ack = "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH +
+                    String ack = "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH +
                         " stopped with ERRORS";
 
                     String dash = U.dash(ack.length());
@@ -1908,7 +1898,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             if (isSmtpEnabled() && isAdminEmailsSet() && cfg.isLifeCycleEmailNotification()) {
                 String errOk = errOnStop ? "with ERRORS" : "OK";
 
-                String headline = "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + " stopped " + errOk + ":";
+                String headline = "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR +
+                    " stopped " + errOk + ":";
                 String subj = "GridGain node stopped " + errOk + ": " + nid8;
 
                 GridProductLicense lic = ctx.license().license();
@@ -1917,7 +1908,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                     headline + NL +
                         NL +
                         "----" + NL +
-                        "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH + NL +
+                        "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH + NL +
                         "Grid name: " + gridName + NL +
                         "Node ID: " + nid + NL +
                         "Node uptime: " + X.timeSpan2HMSM(U.currentTimeMillis() - startTime) + NL +
