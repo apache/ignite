@@ -62,9 +62,6 @@ public class GridClientNodeImpl implements GridClientNode {
     /** Cache for REST TCP socket addresses. */
     private final AtomicReference<Collection<InetSocketAddress>> tcpSockAddrs = new AtomicReference<>();
 
-    /** Cache for REST HTTP socket addresses. */
-    private final AtomicReference<Collection<InetSocketAddress>> jettySockAddrs = new AtomicReference<>();
-
     /**
      * Default constructor (private).
      */
@@ -185,26 +182,14 @@ public class GridClientNodeImpl implements GridClientNode {
         AtomicReference<Collection<InetSocketAddress>> addrsCache;
         final int port;
 
-        switch (proto) {
-            case TCP:
-                addrsCache = tcpSockAddrs;
-                addrs = tcpAddrs;
-                hostNames = tcpHostNames;
-                port = tcpPort;
-
-                break;
-
-            case HTTP:
-                addrsCache = jettySockAddrs;
-                addrs = jettyAddrs;
-                hostNames = jettyHostNames;
-                port = httpPort;
-
-                break;
-
-            default:
-                throw new AssertionError("Unknown protocol: " + proto);
+        if (proto == GridClientProtocol.TCP) {
+            addrsCache = tcpSockAddrs;
+            addrs = tcpAddrs;
+            hostNames = tcpHostNames;
+            port = tcpPort;
         }
+        else
+            throw new AssertionError("Unknown protocol: " + proto);
 
         Collection<InetSocketAddress> addrs0 = addrsCache.get();
 

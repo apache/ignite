@@ -79,15 +79,6 @@ public class GridRouterExamplesSelfTest extends GridAbstractExamplesTest {
             throw new GridException("GridTcpRouterConfiguration is not found");
 
         GridRouterFactory.startTcpRouter(tcpCfg);
-
-        GridHttpRouterConfiguration httpCfg = getBean(ctx, GridHttpRouterConfiguration.class);
-
-        if (httpCfg == null)
-            throw new GridException("GridHttpRouterConfiguration is not found");
-
-        httpCfg.setJettyConfigurationPath("modules/clients/src/main/java/config/router/router-jetty.xml");
-
-        GridRouterFactory.startHttpRouter(httpCfg);
     }
 
     /**

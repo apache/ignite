@@ -34,7 +34,6 @@
         <module>modules/core</module>
         <module>modules/hadoop</module>
         <module>modules/clients</module>
-        <module>modules/jdbc-driver</module>
         <module>modules/jdk8-backport</module>
         <module>modules/tools</module>
         <module>modules/spring</module>
@@ -44,7 +43,8 @@
         <module>modules/urideploy</module>
         <module>modules/indexing</module>
         <module>modules/ssh</module>
-        <module>modules/rest</module>
+        <module>modules/rest-tcp</module>
+        <module>modules/rest-http</module>
         <module>modules/email</module>
         <module>modules/jta</module>
         <module>modules/aws</module>

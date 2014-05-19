@@ -11,9 +11,6 @@
 -->
 <!--
     POM file.
-
-    Note that GridGain also provides repository for its Maven artifacts.
-    Contact GridGain team at info@gridgain.com to obtain login credentials.
 -->
 <project
     xmlns="http://maven.apache.org/POM/4.0.0"
@@ -46,7 +43,6 @@
         <module>examples</module>
         <module>modules/scalar</module>
         <module>modules/visor-console</module>
-        <module>modules/jdbc-driver</module>
         <module>modules/jdk8-backport</module>
         <module>modules/tools</module>
         <module>modules/spring</module>
@@ -56,7 +52,8 @@
         <module>modules/urideploy</module>
         <module>modules/indexing</module>
         <module>modules/ssh</module>
-        <module>modules/rest</module>
+        <module>modules/rest-tcp</module>
+        <module>modules/rest-http</module>
         <module>modules/email</module>
         <module>modules/jta</module>
         <module>modules/aws</module>
