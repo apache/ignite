@@ -10,8 +10,8 @@
 package org.gridgain.grid.startup.cmdline;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -198,7 +198,7 @@ public final class GridCommandLineStartup {
      * @throws IOException In case of error.
      */
     @Nullable private static String askConfigFile() throws IOException {
-        List<GridBiTuple<String, Long>> files = GridConfigurationFinder.getConfigFiles();
+        List<GridTuple3<String, Long, File>> files = GridConfigurationFinder.getConfigFiles();
 
         String title = "Available configuration files:";
 
@@ -224,11 +224,11 @@ public final class GridCommandLineStartup {
             line = "0";
 
         try {
-            String file = files.get(Integer.valueOf(line)).get1();
+            GridTuple3<String, Long, File> file = files.get(Integer.valueOf(line));
 
-            X.println("\nUsing configuration: " + file + "\n");
+            X.println("\nUsing configuration: " + file.get1() + "\n");
 
-            return file;
+            return file.get3().getAbsolutePath();
         }
         catch (Exception ignored) {
             X.error("\nInvalid selection: " + line);
