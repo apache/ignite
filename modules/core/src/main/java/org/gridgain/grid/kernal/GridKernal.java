@@ -37,8 +37,6 @@ import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.email.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
-import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.job.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.kernal.processors.license.*;
@@ -678,7 +676,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
             startProcessor(ctx, (GridProcessor)GGFS.create(ctx, F.isEmpty(cfg.getGgfsConfiguration())), attrs);
             startProcessor(ctx, new GridContinuousProcessor(ctx), attrs);
-            startProcessor(ctx, HADOOP.create(ctx, cfg.getHadoopConfiguration() == null), attrs);
+            startProcessor(ctx, (GridProcessor)GridComponentType.HADOOP.create(ctx, cfg.getHadoopConfiguration() == null), attrs);
             startProcessor(ctx, createComponent(GridDrProcessor.class, ctx), attrs);
 
             // Put version converters to attributes after
