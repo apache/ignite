@@ -13,7 +13,10 @@ package org.gridgain.grid.kernal.ggfs.hadoop.impl;
  * GGFS Hadoop stream descriptor.
  */
 public class NewGridGgfsHadoopStreamDelegate {
-    /** Descriptor. */
+    /** RPC handler. */
+    private final NewGridGgfsHadoopEx hadoop;
+
+    /** Target. */
     private final Object target;
 
     /** Optional stream length. */
@@ -24,8 +27,8 @@ public class NewGridGgfsHadoopStreamDelegate {
      *
      * @param target Target.
      */
-    public NewGridGgfsHadoopStreamDelegate(Object target) {
-        this(target, -1);
+    public NewGridGgfsHadoopStreamDelegate(NewGridGgfsHadoopEx hadoop, Object target) {
+        this(hadoop, target, -1);
     }
 
     /**
@@ -34,9 +37,20 @@ public class NewGridGgfsHadoopStreamDelegate {
      * @param target Target.
      * @param len Optional length.
      */
-    public NewGridGgfsHadoopStreamDelegate(Object target, long len) {
+    public NewGridGgfsHadoopStreamDelegate(NewGridGgfsHadoopEx hadoop, Object target, long len) {
+        assert hadoop != null;
+        assert target != null;
+
+        this.hadoop = hadoop;
         this.target = target;
         this.len = len;
+    }
+
+    /**
+     * @return RPC handler.
+     */
+    public NewGridGgfsHadoopEx hadoop() {
+        return hadoop;
     }
 
     /**

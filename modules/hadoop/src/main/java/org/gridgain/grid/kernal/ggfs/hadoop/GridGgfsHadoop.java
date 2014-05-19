@@ -613,7 +613,7 @@ public class GridGgfsHadoop implements GridGgfsHadoopIpcIoListener {
 
                 return c.applyx(locIo);
             }
-            catch (GridGgfsIoException e) {
+            catch (GridGgfsHadoopCommunicationException e) {
                 // Always force close to remove from cache.
                 locIo.forceClose();
 

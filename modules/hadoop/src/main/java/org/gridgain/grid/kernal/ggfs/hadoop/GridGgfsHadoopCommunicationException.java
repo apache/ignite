@@ -7,16 +7,16 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.ggfs;
+package org.gridgain.grid.kernal.ggfs.hadoop;
 
 import org.gridgain.grid.*;
 
 import java.io.*;
 
 /**
- * This exception is used to wrap standard {@link IOException} into {@link GridException}.
+ * Communication exception indicating a problem between file system and GGFS instance.
  */
-public class GridGgfsIoException extends GridException {
+public class GridGgfsHadoopCommunicationException extends GridException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -26,7 +26,7 @@ public class GridGgfsIoException extends GridException {
      *
      * @param cause Non-null throwable cause.
      */
-    public GridGgfsIoException(IOException cause) {
+    public GridGgfsHadoopCommunicationException(IOException cause) {
         super(cause);
     }
 
@@ -35,7 +35,7 @@ public class GridGgfsIoException extends GridException {
      *
      * @param msg Error message.
      */
-    public GridGgfsIoException(String msg) {
+    public GridGgfsHadoopCommunicationException(String msg) {
         super(msg);
     }
 }

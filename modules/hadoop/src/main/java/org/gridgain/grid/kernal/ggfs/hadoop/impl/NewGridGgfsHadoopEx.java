@@ -9,14 +9,43 @@
 
 package org.gridgain.grid.kernal.ggfs.hadoop.impl;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
+import org.gridgain.grid.kernal.processors.ggfs.*;
+
+import java.io.*;
 
 /**
  * Extended GGFS server interface.
  */
 public interface NewGridGgfsHadoopEx extends NewGridGgfsHadoop {
     /**
+     * Perform handshake.
+     *
+     * @param logDir Log directory.
+     * @return Future with handshake result.
+     * @throws org.gridgain.grid.GridException If failed.
+     */
+    public GridGgfsHandshakeResponse handshake(String logDir) throws GridException, IOException;
+
+    /**
      * @return Mode.
      */
     public NewGridGgfsHadoopMode mode();
+
+    /**
+     * Adds event listener that will be invoked when connection with server is lost or remote error has occurred.
+     * If connection is closed already, callback will be invoked synchronously inside this method.
+     *
+     * @param desc Stream descriptor.
+     * @param lsnr Event listener.
+     */
+    public void addEventListener(NewGridGgfsHadoopStreamDelegate desc, GridGgfsHadoopStreamEventListener lsnr);
+
+    /**
+     * Removes event listener that will be invoked when connection with server is lost or remote error has occurred.
+     *
+     * @param desc Stream descriptor.
+     */
+    public void removeEventListener(NewGridGgfsHadoopStreamDelegate desc);
 }

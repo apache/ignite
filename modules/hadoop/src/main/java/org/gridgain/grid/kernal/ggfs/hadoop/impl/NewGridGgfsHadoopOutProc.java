@@ -81,13 +81,42 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoopEx, GridGgfsHa
     private final Map<Long, GridGgfsHadoopStreamEventListener> lsnrs = new ConcurrentHashMap8<>();
 
     /**
+     * Constructor for TCP endpoint.
+     *
+     * @param host Host.
+     * @param port Port.
      * @param log Client logger.
-     * @param endpoint Endpoint string.
-     * @throws java.io.IOException If failed to start IPC IO.
+     * @throws IOException If failed.
      */
-    public NewGridGgfsHadoopOutProc(Log log, String endpoint) throws IOException {
+    public NewGridGgfsHadoopOutProc(String host, int port, Log log) throws IOException {
+        this(host, port, false, log);
+    }
+
+    /**
+     * Constructor for shmem endpoint.
+     *
+     * @param log Client logger.
+     * @throws IOException If failed.
+     */
+    public NewGridGgfsHadoopOutProc(Log log) throws IOException {
+        this(null, -1, true, log);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param host Host.
+     * @param port Port.
+     * @param shmem Shared memory flag.
+     * @param log Client logger.
+     * @throws IOException If failed.
+     */
+    private NewGridGgfsHadoopOutProc(String host, int port, boolean shmem, Log log) throws IOException {
+        assert host != null && port >= 0 && !shmem || host == null && port == -1 && shmem;
+
+        endpoint = host != null ? host + ":" + port : "shmem";
+
         this.log = log;
-        this.endpoint = endpoint;
 
         ipcIo(); // Initializes the clientIo reference.
     }
@@ -298,7 +327,7 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoopEx, GridGgfsHa
             }
         }).get();
 
-        return new NewGridGgfsHadoopStreamDelegate(rmtDesc.streamId(), rmtDesc.length());
+        return new NewGridGgfsHadoopStreamDelegate(this, rmtDesc.streamId(), rmtDesc.length());
     }
 
     /** {@inheritDoc} */
@@ -318,7 +347,7 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoopEx, GridGgfsHa
             }
         }).get();
 
-        return new NewGridGgfsHadoopStreamDelegate(rmtDesc.streamId(), rmtDesc.length());
+        return new NewGridGgfsHadoopStreamDelegate(this, rmtDesc.streamId(), rmtDesc.length());
     }
 
     /** {@inheritDoc} */
@@ -340,7 +369,7 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoopEx, GridGgfsHa
             }
         }).get();
 
-        return new NewGridGgfsHadoopStreamDelegate(streamId);
+        return new NewGridGgfsHadoopStreamDelegate(this, streamId);
     }
 
     /** {@inheritDoc} */
@@ -359,7 +388,7 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoopEx, GridGgfsHa
             }
         }).get();
 
-        return new NewGridGgfsHadoopStreamDelegate(streamId);
+        return new NewGridGgfsHadoopStreamDelegate(this, streamId);
     }
 
     /** {@inheritDoc} */
@@ -532,7 +561,7 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoopEx, GridGgfsHa
 
                 return c.applyx(locIo);
             }
-            catch (GridGgfsIoException e) {
+            catch (GridGgfsHadoopCommunicationException e) {
                 // Always force close to remove from cache.
                 locIo.forceClose();
 

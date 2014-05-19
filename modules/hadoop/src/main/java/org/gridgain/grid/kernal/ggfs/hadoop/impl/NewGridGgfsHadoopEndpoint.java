@@ -23,7 +23,7 @@ import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
  */
 public class NewGridGgfsHadoopEndpoint {
     /** Localhost. */
-    private static final String LOCALHOST = "127.0.0.1";
+    public static final String LOCALHOST = "127.0.0.1";
 
     /** GGFS name. */
     private final String ggfsName;

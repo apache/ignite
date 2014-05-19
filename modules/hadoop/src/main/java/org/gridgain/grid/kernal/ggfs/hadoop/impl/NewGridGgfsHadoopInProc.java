@@ -48,8 +48,6 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: R
 
     /** {@inheritDoc} */
     @Override public GridGgfsHandshakeResponse handshake(String logDir) {
-
-
         // TODO.
 
         return null;
@@ -66,7 +64,7 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: R
             return ggfs.info(path);
         }
         catch (IllegalStateException e) {
-            throw new GridGgfsIoException("Failed to get file info because Grid is stopping: " + path);
+            throw new GridGgfsHadoopCommunicationException("Failed to get file info because Grid is stopping: " + path);
         }
     }
 
@@ -76,7 +74,7 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: R
             return ggfs.update(path, props);
         }
         catch (IllegalStateException e) {
-            throw new GridGgfsIoException("Failed to update file because Grid is stopping: " + path);
+            throw new GridGgfsHadoopCommunicationException("Failed to update file because Grid is stopping: " + path);
         }
     }
 
@@ -88,7 +86,7 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: R
             return true;
         }
         catch (IllegalStateException e) {
-            throw new GridGgfsIoException("Failed to set path times because Grid is stopping: " + path);
+            throw new GridGgfsHadoopCommunicationException("Failed to set path times because Grid is stopping: " + path);
         }
     }
 
@@ -100,7 +98,7 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: R
             return true;
         }
         catch (IllegalStateException e) {
-            throw new GridGgfsIoException("Failed to rename path because Grid is stopping: " + src);
+            throw new GridGgfsHadoopCommunicationException("Failed to rename path because Grid is stopping: " + src);
         }
     }
 
@@ -110,7 +108,7 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: R
             return ggfs.delete(path, recursive);
         }
         catch (IllegalStateException e) {
-            throw new GridGgfsIoException("Failed to delete path because Grid is stopping: " + path);
+            throw new GridGgfsHadoopCommunicationException("Failed to delete path because Grid is stopping: " + path);
         }
     }
 
@@ -120,7 +118,7 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: R
             return ggfs.globalSpace();
         }
         catch (IllegalStateException e) {
-            throw new GridGgfsIoException("Failed to get file system status because Grid is stopping.");
+            throw new GridGgfsHadoopCommunicationException("Failed to get file system status because Grid is stopping.");
         }
     }
 
@@ -130,7 +128,7 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: R
             return ggfs.listPaths(path);
         }
         catch (IllegalStateException e) {
-            throw new GridGgfsIoException("Failed to list paths because Grid is stopping: " + path);
+            throw new GridGgfsHadoopCommunicationException("Failed to list paths because Grid is stopping: " + path);
         }
     }
 
@@ -140,7 +138,7 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: R
             return ggfs.listFiles(path);
         }
         catch (IllegalStateException e) {
-            throw new GridGgfsIoException("Failed to list files because Grid is stopping: " + path);
+            throw new GridGgfsHadoopCommunicationException("Failed to list files because Grid is stopping: " + path);
         }
     }
 
@@ -152,7 +150,7 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: R
             return true; // TODO: How to handle exceptions? Compare to out-proc implementation.
         }
         catch (IllegalStateException e) {
-            throw new GridGgfsIoException("Failed to create directory because Grid is stopping: " + path);
+            throw new GridGgfsHadoopCommunicationException("Failed to create directory because Grid is stopping: " + path);
         }
     }
 
@@ -162,7 +160,7 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: R
             return ggfs.summary(path);
         }
         catch (IllegalStateException e) {
-            throw new GridGgfsIoException("Failed to get content summary because Grid is stopping: " + path);
+            throw new GridGgfsHadoopCommunicationException("Failed to get content summary because Grid is stopping: " + path);
         }
     }
 
@@ -173,7 +171,7 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: R
             return ggfs.affinity(path, start, len);
         }
         catch (IllegalStateException e) {
-            throw new GridGgfsIoException("Failed to get affinity because Grid is stopping: " + path);
+            throw new GridGgfsHadoopCommunicationException("Failed to get affinity because Grid is stopping: " + path);
         }
     }
 
@@ -182,10 +180,10 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: R
         try {
             GridGgfsInputStreamAdapter stream = ggfs.open(path, bufSize);
 
-            return new NewGridGgfsHadoopStreamDelegate(stream, stream.fileInfo().length());
+            return new NewGridGgfsHadoopStreamDelegate(this, stream, stream.fileInfo().length());
         }
         catch (IllegalStateException e) {
-            throw new GridGgfsIoException("Failed to open file because Grid is stopping: " + path);
+            throw new GridGgfsHadoopCommunicationException("Failed to open file because Grid is stopping: " + path);
         }
     }
 
@@ -195,10 +193,10 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: R
         try {
             GridGgfsInputStreamAdapter stream = ggfs.open(path, bufSize, seqReadsBeforePrefetch);
 
-            return new NewGridGgfsHadoopStreamDelegate(stream, stream.fileInfo().length());
+            return new NewGridGgfsHadoopStreamDelegate(this, stream, stream.fileInfo().length());
         }
         catch (IllegalStateException e) {
-            throw new GridGgfsIoException("Failed to open file because Grid is stopping: " + path);
+            throw new GridGgfsHadoopCommunicationException("Failed to open file because Grid is stopping: " + path);
         }
     }
 
@@ -209,10 +207,10 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: R
             GridGgfsOutputStream stream = ggfs.create(path, bufSize, overwrite,
                 colocate ? ggfs.nextAffinityKey() : null, replication, blockSize, props);
 
-            return new NewGridGgfsHadoopStreamDelegate(stream);
+            return new NewGridGgfsHadoopStreamDelegate(this, stream);
         }
         catch (IllegalStateException e) {
-            throw new GridGgfsIoException("Failed to create file because Grid is stopping: " + path);
+            throw new GridGgfsHadoopCommunicationException("Failed to create file because Grid is stopping: " + path);
         }
     }
 
@@ -222,10 +220,10 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: R
         try {
             GridGgfsOutputStream stream = ggfs.append(path, bufSize, create, props);
 
-            return new NewGridGgfsHadoopStreamDelegate(stream);
+            return new NewGridGgfsHadoopStreamDelegate(this, stream);
         }
         catch (IllegalStateException e) {
-            throw new GridGgfsIoException("Failed to append file because Grid is stopping: " + path);
+            throw new GridGgfsHadoopCommunicationException("Failed to append file because Grid is stopping: " + path);
         }
     }
 
