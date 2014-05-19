@@ -86,7 +86,8 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: R
             return true;
         }
         catch (IllegalStateException e) {
-            throw new GridGgfsHadoopCommunicationException("Failed to set path times because Grid is stopping: " + path);
+            throw new GridGgfsHadoopCommunicationException("Failed to set path times because Grid is stopping: " +
+                path);
         }
     }
 
@@ -118,7 +119,8 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: R
             return ggfs.globalSpace();
         }
         catch (IllegalStateException e) {
-            throw new GridGgfsHadoopCommunicationException("Failed to get file system status because Grid is stopping.");
+            throw new GridGgfsHadoopCommunicationException("Failed to get file system status because Grid is " +
+                "stopping.");
         }
     }
 
@@ -147,10 +149,11 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: R
         try {
             ggfs.mkdirs(path, props);
 
-            return true; // TODO: How to handle exceptions? Compare to out-proc implementation.
+            return true;
         }
         catch (IllegalStateException e) {
-            throw new GridGgfsHadoopCommunicationException("Failed to create directory because Grid is stopping: " + path);
+            throw new GridGgfsHadoopCommunicationException("Failed to create directory because Grid is stopping: " +
+                path);
         }
     }
 
@@ -160,7 +163,8 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: R
             return ggfs.summary(path);
         }
         catch (IllegalStateException e) {
-            throw new GridGgfsHadoopCommunicationException("Failed to get content summary because Grid is stopping: " + path);
+            throw new GridGgfsHadoopCommunicationException("Failed to get content summary because Grid is stopping: " +
+                path);
         }
     }
 
