@@ -22,7 +22,7 @@ public class VisorOneNodeArg implements Serializable {
     /**
      * @param nodeId Node Id.
      */
-    protected VisorOneNodeArg(UUID nodeId) {
+    public VisorOneNodeArg(UUID nodeId) {
         this.nodeId = nodeId;
     }
 

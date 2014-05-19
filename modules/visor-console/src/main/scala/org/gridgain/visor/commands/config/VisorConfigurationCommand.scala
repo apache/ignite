@@ -29,7 +29,8 @@ import java.text._
 import scala.reflect.ClassTag
 import org.gridgain.grid.lang.GridCallable
 import org.gridgain.grid.kernal.GridEx
-
+import org.gridgain.grid.kernal.visor.cmd.VisorConfigurationTask._
+import org.gridgain.grid.kernal.visor.cmd.{VisorOneNodeArg, VisorConfigurationTask}
 
 /**
  * ==Overview==
@@ -80,6 +81,9 @@ class VisorConfigurationCommand {
     /** Split tag. */
     private val CS = ", "
 
+    /** Default value */
+    private val DFLT = "<n/a>"
+
     /**
      * Prints error message and advise.
      *
@@ -90,6 +94,26 @@ class VisorConfigurationCommand {
 
         warn(errMsgs: _*)
         warn("Type 'help config' to see how to use this command.")
+    }
+
+    /**
+     * Joins array elements to string.
+     *
+     * @param arr Array.
+     * @return String.
+     */
+    private def arr2Str[T: ClassTag](arr: Array[T]): String = {
+        if (arr != null && arr.length > 0) U.compact(arr.mkString(", ")) else DFLT
+    }
+
+    /**
+     * Converts `Boolean` to 'Yes'/'No' string.
+     *
+     * @param bool Boolean value.
+     * @return String.
+     */
+    private def bool2Str(bool: Boolean): String = {
+        if (bool) "on" else "off"
     }
 
     /**
@@ -182,13 +206,13 @@ class VisorConfigurationCommand {
 
             assert(node != null)
 
-            var cfg: Config = null
+            var cfg: VisorConfiguration = null
 
             try
                 cfg = grid.forNode(node)
                     .compute()
                     .withNoFailover()
-                    .call(new GridConfigurationCallable)
+                    .execute(classOf[VisorConfigurationTask], new VisorOneNodeArg(node.id()))
                     .get
             catch {
                 case e: GridException =>
@@ -201,28 +225,28 @@ class VisorConfigurationCommand {
 
             val cmnT = VisorTextTable()
 
-            cmnT += ("Grid name", cfg.basic1.gridName)
-            cmnT += ("GridGain home", cfg.basic1.ggHome)
-            cmnT += ("Localhost", cfg.basic1.locHost)
-            cmnT += ("Node ID", cfg.basic1.nodeId)
-            cmnT += ("Marshaller", cfg.basic1.marsh)
-            cmnT += ("Deployment mode", cfg.basic1.deployMode)
-            cmnT += ("Daemon", cfg.basic1.daemon)
-            cmnT += ("Remote JMX", cfg.basic1.jmxRemote)
-            cmnT += ("Restart", cfg.basic1.restart)
-            cmnT += ("Network timeout", cfg.basic1.netTimeout)
-            cmnT += ("License URL", cfg.basic1.licenseUrl)
-            cmnT += ("Grid logger", cfg.basic1.log)
-            cmnT += ("Discovery startup delay", cfg.basic2.discoStartupDelay)
-            cmnT += ("MBean server", cfg.basic2.mBeanSrv)
-            cmnT += ("ASCII logo disabled", cfg.basic2.noAscii)
-            cmnT += ("Discovery order not required", cfg.basic2.noDiscoOrder)
-            cmnT += ("Shutdown hook disabled", cfg.basic2.noShutdownHook)
-            cmnT += ("Program name", cfg.basic2. progName)
-            cmnT += ("Quiet mode", cfg.basic2.quiet)
-            cmnT += ("Success filename", cfg.basic2.successFile)
-            cmnT += ("Update notification", cfg.basic2.updateNtf)
-            cmnT += ("Include properties", cfg.inclProps)
+            cmnT += ("Grid name", safe(cfg.basic().gridName(), "<default>"))
+            cmnT += ("GridGain home", safe(cfg.basic().ggHome(), DFLT))
+            cmnT += ("Localhost", safe(cfg.basic().localeHost(), DFLT))
+            cmnT += ("Node ID", safe(cfg.basic().nodeId(), DFLT))
+            cmnT += ("Marshaller", cfg.basic().marsh())
+            cmnT += ("Deployment mode", safe(cfg.basic().deployMode(), DFLT))
+            cmnT += ("Daemon", bool2Str(cfg.basic().daemon()))
+            cmnT += ("Remote JMX", bool2Str(cfg.basic().jmxRemote()))
+            cmnT += ("Restart", bool2Str(cfg.basic().restart()))
+            cmnT += ("Network timeout", cfg.basic().networkTimeout() + "ms")
+            cmnT += ("License URL", safe(cfg.basic().licenseUrl(), DFLT))
+            cmnT += ("Grid logger", safe(cfg.basic().logger(), DFLT))
+            cmnT += ("Discovery startup delay", cfg.basic().discoStartupDelay() + "ms")
+            cmnT += ("MBean server", safe(cfg.basic().mBeanServer(), DFLT))
+            cmnT += ("ASCII logo disabled", bool2Str(cfg.basic().noAscii()))
+            cmnT += ("Discovery order not required", bool2Str(cfg.basic().noDiscoOrder()))
+            cmnT += ("Shutdown hook disabled", bool2Str(cfg.basic().noShutdownHook()))
+            cmnT += ("Program name", safe(cfg.basic(). progName(), DFLT))
+            cmnT += ("Quiet mode", bool2Str(cfg.basic().quiet()))
+            cmnT += ("Success filename", safe(cfg.basic().successFile(), DFLT))
+            cmnT += ("Update notification", bool2Str(cfg.basic().updateNotifier()))
+            cmnT += ("Include properties", safe(cfg.inclProperties(), DFLT))
 
             cmnT.render()
 
@@ -230,26 +254,30 @@ class VisorConfigurationCommand {
 
             val licT = VisorTextTable()
 
-            licT += ("Type", cfg.license.`type`)
-
-            if (cfg.license.`type` == "Enterprise") {
-                licT += ("ID", cfg.license.id)
-                licT += ("Version", cfg.license.ver)
-                licT += ("Version regular expression", cfg.license.verRegexp)
-                licT += ("Issue date", cfg.license.issueDate)
-                licT += ("Issue organization", cfg.license.issueOrg)
-                licT += ("User name", cfg.license.userName)
-                licT += ("User organization", cfg.license.userOrg)
-                licT += ("User organization URL", cfg.license.userWww)
-                licT += ("User organization e-mail", cfg.license.userEmail)
-                licT += ("License note", cfg.license.note)
-                licT += ("Expire date", cfg.license.expDate)
-                licT += ("Maximum number of nodes", cfg.license.maxNodes)
-                licT += ("Maximum number of computers", cfg.license.maxComp)
-                licT += ("Maximum number of CPUs", cfg.license.maxCpus)
-                licT += ("Maximum up time", cfg.license.maxUpTime)
-                licT += ("Grace/burst period", cfg.license.gracePeriod)
-                licT += ("Disabled subsystems", cfg.license.disSubs.split(',').toList)
+            if (cfg.license() != null) {
+                licT += ("Type", "Enterprise")
+                licT += ("ID", safe(cfg.license().id(), DFLT))
+                licT += ("Version", safe(cfg.license().version(), DFLT))
+                licT += ("Version regular expression", safe(cfg.license().versionRegexp(), DFLT))
+                val issueDate = cfg.license().issueDate()
+                licT += ("Issue date", if (issueDate != null) formatDate(issueDate) else DFLT)
+                licT += ("Issue organization", safe(cfg.license().issueOrganization(), DFLT))
+                licT += ("User name", safe(cfg.license().userName(), DFLT))
+                licT += ("User organization", safe(cfg.license().userOrganization(), DFLT))
+                licT += ("User organization URL", safe(cfg.license().userWww(), DFLT))
+                licT += ("User organization e-mail", safe(cfg.license().userEmail(), DFLT))
+                licT += ("License note", safe(cfg.license().licenseNote(), DFLT))
+                val expireDate = cfg.license().expireDate()
+                licT += ("Expire date", if (expireDate != null) formatDate(expireDate) else "No restriction")
+                licT += ("Maximum number of nodes", cfg.license().maxNodes())
+                licT += ("Maximum number of computers", cfg.license().maxComputers())
+                licT += ("Maximum number of CPUs", cfg.license().maxCpus())
+                licT += ("Maximum up time", cfg.license().maxUpTime() + " min.")
+                licT += ("Grace/burst period", cfg.license().gracePeriod() + " min.")
+                licT += ("Disabled subsystems", safe(cfg.license().disabledSubsystems(), "No disabled subsystems"))
+            }
+            else {
+                licT += ("Type", "Open source")
             }
 
             licT.render()
@@ -258,9 +286,12 @@ class VisorConfigurationCommand {
 
             val metricsT = VisorTextTable()
 
-            metricsT += ("Metrics expire time", cfg.metrics.expTime)
-            metricsT += ("Metrics history size", cfg.metrics.historySize)
-            metricsT += ("Metrics log frequency", cfg.metrics.logFreq)
+            val expTime = cfg.metrics().expectedTime()
+
+            metricsT += ("Metrics expire time", if (expTime != Long.MaxValue) expTime + "ms" else "<never>")
+            metricsT += ("Metrics history size", cfg.metrics().historySize())
+            metricsT += ("Metrics log frequency", cfg.metrics().loggerFrequency())
+
 
             metricsT.render()
 
@@ -268,17 +299,17 @@ class VisorConfigurationCommand {
 
             val spisT = VisorTextTable()
 
-            spisT += ("Discovery", cfg.spis.discoSpi)
-            spisT += ("Communication", cfg.spis.commSpi)
-            spisT += ("Event storage", cfg.spis.evtSpi)
-            spisT += ("Collision", cfg.spis.colSpi)
-            spisT += ("Authentication", cfg.spis.authSpi)
-            spisT += ("Secure session", cfg.spis.sesSpi)
-            spisT += ("Deployment", cfg.spis.deploySpi)
-            spisT += ("Checkpoints", cfg.spis.cpSpis.split(CS).toList)
-            spisT += ("Failovers", cfg.spis.failSpis.split(CS).toList)
-            spisT += ("Load balancings", cfg.spis.loadBalancingSpis.split(CS).toList)
-            spisT += ("Swap spaces", cfg.spis.swapSpaceSpis.split(CS).toList)
+            spisT += ("Discovery", safe(cfg.spis().discoSpi(), DFLT))
+            spisT += ("Communication", safe(cfg.spis().communicationSpi()))
+            spisT += ("Event storage", safe(cfg.spis().eventSpi(), DFLT))
+            spisT += ("Collision", safe(cfg.spis().columnSpi(), DFLT))
+            spisT += ("Authentication", safe(cfg.spis().authSpi(), DFLT))
+            spisT += ("Secure session", safe(cfg.spis().sessionSpi(), DFLT))
+            spisT += ("Deployment", safe(cfg.spis().deploySpi(), DFLT))
+            spisT += ("Checkpoints", safe(cfg.spis().cpSpis(), DFLT))
+            spisT += ("Failovers", safe(cfg.spis().failSpis(), DFLT))
+            spisT += ("Load balancings", safe(cfg.spis().loadBalancingSpis(), DFLT))
+            spisT += ("Swap spaces", safe(cfg.spis().swapSpaceSpis(), DFLT))
 
             spisT.render()
 
@@ -286,9 +317,9 @@ class VisorConfigurationCommand {
 
             val p2pT = VisorTextTable()
 
-            p2pT += ("Peer class loading enabled", cfg.p2p.p2pEnabled)
-            p2pT += ("Missed resources cache size", cfg.p2p.p2pMissedResCacheSize)
-            p2pT += ("Peer-to-Peer loaded packages", cfg.p2p.p2pLocClsPathExcl.split(CS).toList)
+            p2pT += ("Peer class loading enabled", bool2Str(cfg.p2p().p2PEnabled()))
+            p2pT += ("Missed resources cache size", cfg.p2p().p2PMissedResponseCacheSize())
+            p2pT += ("Peer-to-Peer loaded packages", safe(cfg.p2p().p2PLocaleClassPathExcl(), DFLT))
 
             p2pT.render()
 
@@ -296,13 +327,13 @@ class VisorConfigurationCommand {
 
             val emailT = VisorTextTable()
 
-            emailT += ("SMTP host", cfg.email.smtpHost)
-            emailT += ("SMTP port", cfg.email.smtpPort)
-            emailT += ("SMTP username", cfg.email.smtpUsername)
-            emailT += ("Admin emails", cfg.email.adminEmails.split(CS).toList)
-            emailT += ("From email", cfg.email.smtpFromEmail)
-            emailT += ("SMTP SSL enabled", cfg.email.smtpSsl)
-            emailT += ("SMTP STARTTLS enabled", cfg.email.smtpStartTls)
+            emailT += ("SMTP host", safe(cfg.email().smtpHost(), DFLT))
+            emailT += ("SMTP port", safe(cfg.email().smtpPort(), DFLT))
+            emailT += ("SMTP username", safe(cfg.email().smtpUsername(), DFLT))
+            emailT += ("Admin emails", safe(cfg.email().administrationEmails(), DFLT))
+            emailT += ("From email", safe(cfg.email().smtpFromEmail(), DFLT))
+            emailT += ("SMTP SSL enabled", bool2Str(cfg.email().smtpSsl()))
+            emailT += ("SMTP STARTTLS enabled", bool2Str(cfg.email().smtpStartTls()))
 
             emailT.render()
 
@@ -310,8 +341,8 @@ class VisorConfigurationCommand {
 
             val lifecycleT = VisorTextTable()
 
-            lifecycleT += ("Beans", cfg.lifecycle.beans.split(CS).toList)
-            lifecycleT += ("Notifications", cfg.lifecycle.ntf)
+            lifecycleT += ("Beans", safe(cfg.lifecycle().beans(), DFLT))
+            lifecycleT += ("Notifications", bool2Str(cfg.lifecycle().notifier()))
 
             lifecycleT.render()
 
@@ -319,12 +350,12 @@ class VisorConfigurationCommand {
 
             val execSvcT = VisorTextTable()
 
-            execSvcT += ("Executor service", cfg.execSvc.execSvc)
-            execSvcT += ("Executor service shutdown", cfg.execSvc.execSvcShutdown)
-            execSvcT += ("System executor service", cfg.execSvc.sysExecSvc)
-            execSvcT += ("System executor service shutdown", cfg.execSvc.sysExecSvcShutdown)
-            execSvcT += ("Peer-to-Peer executor service", cfg.execSvc.p2pExecSvc)
-            execSvcT += ("Peer-to-Peer executor service shutdown", cfg.execSvc.p2pExecSvcShutdown)
+            execSvcT += ("Executor service", safe(cfg.executeSvc().executeSvc(), DFLT))
+            execSvcT += ("Executor service shutdown", safe(cfg.executeSvc().executeSvcShutdown(), DFLT))
+            execSvcT += ("System executor service", safe(cfg.executeSvc().systemExecuteSvc(), DFLT))
+            execSvcT += ("System executor service shutdown", safe(cfg.executeSvc().systemExecuteSvcShutdown(), DFLT))
+            execSvcT += ("Peer-to-Peer executor service", safe(cfg.executeSvc().p2pExecuteSvc(), DFLT))
+            execSvcT += ("Peer-to-Peer executor service shutdown", safe(cfg.executeSvc().p2pExecuteSvcShutdown(), DFLT))
 
             execSvcT.render()
 
@@ -332,11 +363,11 @@ class VisorConfigurationCommand {
 
             val segT = VisorTextTable()
 
-            segT += ("Segmentation policy", cfg.seg.plc)
-            segT += ("Segmentation resolvers", cfg.seg.resolvers)
-            segT += ("Segmentation check frequency", cfg.seg.checkFreq)
-            segT += ("Wait for segmentation on start", cfg.seg.waitOnStart)
-            segT += ("All resolvers pass required", cfg.seg.passRequired)
+            segT += ("Segmentation policy", safe(cfg.seg().policy(), DFLT))
+            segT += ("Segmentation resolvers", cfg.seg().resolvers())
+            segT += ("Segmentation check frequency", cfg.seg().checkFrequency())
+            segT += ("Wait for segmentation on start", bool2Str(cfg.seg().waitOnStart()))
+            segT += ("All resolvers pass required", bool2Str(cfg.seg().passRequired()))
 
             segT.render()
 
@@ -344,7 +375,9 @@ class VisorConfigurationCommand {
 
             val evtsT = VisorTextTable()
 
-            evtsT += ("Included event types", cfg.inclEvtTypes.split(CS).toList)
+            val inclEvtTypes = Option(cfg.inclEventTypes()).fold(DFLT)(et => arr2Str(et.map(U.gridEventName)))
+
+            evtsT += ("Included event types", inclEvtTypes)
 
             evtsT.render()
 
@@ -352,27 +385,27 @@ class VisorConfigurationCommand {
 
             val restT = VisorTextTable()
 
-            restT += ("REST enabled", cfg.restEnabled)
-            restT += ("Jetty path", cfg.jettyPath)
-            restT += ("Jetty host", cfg.jettyHost)
-            restT += ("Jetty port", cfg.jettyPort)
+            restT += ("REST enabled", bool2Str(cfg.restEnabled()))
+            restT += ("Jetty path", safe(cfg.jettyPath(), DFLT))
+            restT += ("Jetty host", safe(cfg.jettyHost(), DFLT))
+            restT += ("Jetty port", safe(cfg.jettyPort(), DFLT))
 
             restT.render()
 
-            if (!cfg.userAttrs.isEmpty) {
+            if (cfg.userAttributes().nonEmpty) {
                 println("\nUser attributes:")
 
                 val uaT = VisorTextTable()
 
                 uaT #= ("Name", "Value")
 
-                cfg.userAttrs.foreach(a => uaT += (a._1, a._2))
+                cfg.userAttributes().foreach(a => uaT += (a._1, a._2))
 
                 uaT.render()
             } else
                 println("\nNo user attributes defined.")
 
-            if (!cfg.env.isEmpty) {
+            if (cfg.env().nonEmpty) {
                 println("\nEnvironment variables:")
 
                 val envT = VisorTextTable()
@@ -381,13 +414,15 @@ class VisorConfigurationCommand {
 
                 envT #= ("Name", "Value")
 
-                cfg.env.foreach(v => envT += (v._1, compactProperty(v._1, v._2)))
+                cfg.env().foreach(v => envT += (v._1, compactProperty(v._1, v._2)))
 
                 envT.render()
             } else
                 println("\nNo environment variables defined.")
 
-            if (!cfg.sysProps.isEmpty) {
+            val sysProps = cfg.systemProperties().toMap
+
+            if (sysProps.nonEmpty) {
                 println("\nSystem properties:")
 
                 val spT = VisorTextTable()
@@ -396,50 +431,50 @@ class VisorConfigurationCommand {
 
                 spT #= ("Name", "Value")
 
-                cfg.sysProps.foreach(p => spT += (p._1, compactProperty(p._1, p._2)))
+                sysProps.foreach(p => spT += (p._1, compactProperty(p._1, p._2)))
 
                 spT.render()
             } else
                 println("\nNo system properties defined.")
 
-            cfg.caches.foreach(cacheCfg => {
-                println("\nCache '" + cacheCfg.name + "':")
+            cfg.caches().foreach(cacheCfg => {
+                println("\nCache '" + safe(cacheCfg.name(), DFLT) + "':")
 
                 val cacheT = VisorTextTable()
 
-                cacheT += ("Mode", cacheCfg.mode)
-                cacheT += ("Atomic sequence reserve size", cacheCfg.seqReserveSize)
-                cacheT += ("Time to live", cacheCfg.ttl)
-                cacheT += ("Refresh ahead ratio", cacheCfg.refreshAheadRatio)
-                cacheT += ("Swap enabled", cacheCfg.swapEnabled)
-                cacheT += ("Batch update", cacheCfg.txBatchUpdate)
-                cacheT += ("Invalidate", cacheCfg.invalidate)
-                cacheT += ("Start size", cacheCfg.startSize)
-                cacheT += ("Cloner", cacheCfg.cloner)
-                cacheT += ("Transaction manager lookup", cacheCfg.txMgrLookup)
-                cacheT += ("Affinity", cacheCfg.affinity.affinity)
-                cacheT += ("Affinity mapper", cacheCfg.affinity.affinityMapper)
-                cacheT += ("Preload mode", cacheCfg.preload.mode)
-                cacheT += ("Preload batch size", cacheCfg.preload.batchSize)
-                cacheT += ("Preload thread pool size", cacheCfg.preload.poolSize)
-                cacheT += ("Eviction policy", cacheCfg.evict.plc)
-                cacheT += ("Eviction key buffer size", cacheCfg.evict.keyBufSize)
-                cacheT += ("Eviction synchronized", cacheCfg.evict.synchronized)
-                cacheT += ("Eviction near synchronized", cacheCfg.evict.nearSynchronized)
-                cacheT += ("Eviction overflow ratio", cacheCfg.evict.maxOverflowRatio)
-                cacheT += ("Near enabled", cacheCfg.near.nearEnabled)
-                cacheT += ("Near start size", cacheCfg.near.nearStartSize)
-                cacheT += ("Near eviction policy", cacheCfg.near.nearEvictPlc)
-                cacheT += ("Default isolation", cacheCfg.dflt.dfltIsolation)
-                cacheT += ("Default concurrency", cacheCfg.dflt.dfltConcurrency)
-                cacheT += ("Default transaction timeout", cacheCfg.dflt.dfltTxTimeout)
-                cacheT += ("Default lock timeout", cacheCfg.dflt.dfltLockTimeout)
-                cacheT += ("DGC frequency", cacheCfg.dgc.freq)
-                cacheT += ("DGC remove locks flag", cacheCfg.dgc.rmvLocks)
-                cacheT += ("DGC suspect lock timeout", cacheCfg.dgc.suspectLockTimeout)
-                cacheT += ("Store enabled", cacheCfg.store.enabled)
-                cacheT += ("Store", cacheCfg.store.store)
-                cacheT += ("Store values in bytes", cacheCfg.store.valueBytes)
+                cacheT += ("Mode", cacheCfg.mode())
+                cacheT += ("Time to live", safe(cacheCfg.ttl(), DFLT))
+                cacheT += ("Refresh ahead ratio", formatDouble(cacheCfg.refreshAheadRatio()))
+                cacheT += ("Atomic sequence reserve size", cacheCfg.sequenceReserveSize())
+                cacheT += ("Swap enabled", bool2Str(cacheCfg.swapEnabled()))
+                cacheT += ("Batch update", bool2Str(cacheCfg.txBatchUpdate()))
+                cacheT += ("Invalidate", bool2Str(cacheCfg.invalidate()))
+                cacheT += ("Start size", safe(cacheCfg.startSize(), DFLT))
+                cacheT += ("Cloner", cacheCfg.cloner())
+                cacheT += ("Transaction manager lookup", cacheCfg.txManagerLookup())
+                cacheT += ("Affinity", cacheCfg.affinity().affinity())
+                cacheT += ("Affinity mapper", cacheCfg.affinity.affinityMapper())
+                cacheT += ("Preload mode", safe(cacheCfg.preload().mode(), DFLT))
+                cacheT += ("Preload batch size", cacheCfg.preload().batchSize())
+                cacheT += ("Preload thread pool size", cacheCfg.preload().poolSize())
+                cacheT += ("Eviction policy", cacheCfg.evict().policy())
+                cacheT += ("Eviction key buffer size", cacheCfg.evict().keyBufferSize())
+                cacheT += ("Eviction synchronized", bool2Str(cacheCfg.evict().evictSynchronized()))
+                cacheT += ("Eviction near synchronized", bool2Str(cacheCfg.evict().nearSynchronized()))
+                cacheT += ("Eviction overflow ratio", formatDouble(cacheCfg.evict().maxOverflowRatio()))
+                cacheT += ("Near enabled", bool2Str(cacheCfg.near().nearEnabled()))
+                cacheT += ("Near start size", cacheCfg.near().nearStartSize())
+                cacheT += ("Near eviction policy", cacheCfg.near().nearEvictPolicy())
+                cacheT += ("Default isolation", safe(cacheCfg.defaultConfig().defaultIsolation(), DFLT))
+                cacheT += ("Default concurrency", safe(cacheCfg.defaultConfig().defaultConcurrency(), DFLT))
+                cacheT += ("Default transaction timeout", cacheCfg.defaultConfig().defaultTxTimeout())
+                cacheT += ("Default lock timeout", cacheCfg.defaultConfig().defaultLockTimeout())
+                cacheT += ("DGC frequency", cacheCfg.dgc().frequency())
+                cacheT += ("DGC remove locks flag", bool2Str(cacheCfg.dgc().removedLocks()))
+                cacheT += ("DGC suspect lock timeout", cacheCfg.dgc().suspectLockTimeout())
+                cacheT += ("Store enabled", bool2Str(cacheCfg.store().enabled()))
+                cacheT += ("Store", cacheCfg.store().store())
+                cacheT += ("Store values in bytes", bool2Str(cacheCfg.store().valueBytes()))
 
                 cacheT.render()
             })
@@ -470,6 +505,9 @@ class VisorConfigurationCommand {
         }
     }
 }
+
+
+
 
 /**
  * Closure that returns configuration object.

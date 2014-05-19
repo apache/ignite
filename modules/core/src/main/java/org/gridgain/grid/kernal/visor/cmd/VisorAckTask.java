@@ -9,9 +9,10 @@
 
 package org.gridgain.grid.kernal.visor.cmd;
 
-import org.gridgain.grid.GridException;
+import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.processors.task.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -19,12 +20,12 @@ import java.util.*;
  * Ack task to run on node.
  */
 @GridInternal
-public class VisorAckTask extends VisorOneNodeTask<VisorAckTask.VisorAckArg, Void> {
+public class VisorAckTask extends VisorMultiNodeTask<VisorAckTask.VisorAckArg, Void, Void> {
     /**
      * Ack task argument to run on node.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorAckArg extends VisorOneNodeArg {
+    public static class VisorAckArg extends VisorMultiNodeArg {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -34,8 +35,8 @@ public class VisorAckTask extends VisorOneNodeTask<VisorAckTask.VisorAckArg, Voi
         /**
          * @param msg - generating message function.
          */
-        public VisorAckArg(UUID nodeId, String msg) {
-            super(nodeId);
+        public VisorAckArg(Set<UUID> nodeIds, String msg) {
+            super(nodeIds);
 
             this.msg = msg;
         }
@@ -52,7 +53,7 @@ public class VisorAckTask extends VisorOneNodeTask<VisorAckTask.VisorAckArg, Voi
      *
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorAckJob extends VisorOneNodeJob<VisorAckArg, Void> {
+    public static class VisorAckJob extends VisorJob<VisorAckArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -61,14 +62,17 @@ public class VisorAckTask extends VisorOneNodeTask<VisorAckTask.VisorAckArg, Voi
         }
 
         @Override protected Void run(VisorAckArg arg) throws GridException {
-            System.out.println("<visor>: ack: " + arg.msg); // TODO
+            System.out.println("<visor>: ack: " + arg.msg == null ? g.localNode().id() : arg.msg); // TODO
 
             return null;
         }
     }
 
-    @Override protected VisorAckJob job(VisorAckArg arg) {
+    @Override protected VisorJob<VisorAckArg, Void> job(UUID nid, VisorAckArg arg) {
         return new VisorAckJob(arg);
     }
 
+    @Nullable @Override public Void reduce(List<GridComputeJobResult> results) throws GridException {
+        return null;
+    }
 }
