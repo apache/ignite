@@ -133,6 +133,31 @@ public enum GridComponentType {
     /**
      * Creates component.
      *
+     * @param ctx Kernal context.
+     * @param mandatory If the component is mandatory.
+     * @return Created component.
+     * @throws GridException If failed.
+     */
+    public <T extends GridComponent> T createIfInClassPath(GridKernalContext ctx, boolean mandatory)
+        throws GridException {
+        String cls = clsName;
+
+        try {
+            Class.forName(cls);
+        }
+        catch (ClassNotFoundException e) {
+            if (mandatory)
+                throw componentException(e);
+
+            cls = noOpClsName;
+        }
+
+        return create0(ctx, cls);
+    }
+
+    /**
+     * Creates component.
+     *
      * @param noOp No-op flag.
      * @return Created component.
      * @throws GridException If failed.
