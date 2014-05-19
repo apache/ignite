@@ -17,14 +17,11 @@ import org.gridgain.visor._
 import org.gridgain.visor.commands.VisorTextTable
 import visor._
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.GridEx
-import resources._
 import collection.JavaConversions._
-import java.util.UUID
 import scala.util.control.Breaks._
-import util.scala.impl
-import org.gridgain.grid.kernal.processors.task.GridInternal
-import org.gridgain.grid.lang.GridCallable
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCompactCachesTask
+import org.gridgain.grid.kernal.visor.cmd.dto.VisorOneNodeCachesArg
+import org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils._
 
 /**
  * ==Overview==
@@ -109,39 +106,26 @@ class VisorCacheCompactCommand {
             scold(msg).^^
         }
 
-        val res = prj.compute()
-            .withName("visor-ccompact-task")
-            .withNoFailover()
-            .broadcast(new CompactClosure(cacheName)).get
-
-        println("Compacts entries in cache: " + (if (cacheName == null) "<default>" else cacheName))
-
         val t = VisorTextTable()
 
         t #= ("Node ID8(@)", "Entries Compacted", "Cache Size Before", "Cache Size After")
 
-        res.foreach(r => t += (nodeId8(r._1), r._2, r._3, r._4))
+        val cacheSet = Set(cacheName)
+
+        prj.nodes().foreach(node => {
+            val r = grid.forNode(node)
+                .compute()
+                .withName("visor-ccompact-task")
+                .withNoFailover()
+                .execute(classOf[VisorCompactCachesTask], new VisorOneNodeCachesArg(node.id(), cacheSet))
+                .get.get(cacheName)
+
+            t += (nodeId8(node.id()), r.compacted(), r.compacted() + r.after(), r.after())
+        })
+
+        println("Compacts entries in cache: " + escapeName(cacheName))
 
         t.render()
-    }
-}
-
-/**
- * Compact cache entries task.
- */
-@GridInternal
-class CompactClosure(val cacheName: String) extends GridCallable[(UUID, Int, Int, Int)] {
-    @GridInstanceResource
-    private val g: Grid = null
-
-    @impl def call(): (UUID, Int, Int, Int) = {
-        val c = g.asInstanceOf[GridEx].cachex[AnyRef, AnyRef](cacheName)
-
-        val oldSize = c.size
-
-        val cnt = (c.keySet :\ 0)((k, cnt) => if (c.compact(k)) cnt + 1 else cnt)
-
-        (g.localNode.id, cnt, oldSize, c.size)
     }
 }
 

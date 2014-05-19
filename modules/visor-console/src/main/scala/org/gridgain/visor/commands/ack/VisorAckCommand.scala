@@ -12,14 +12,15 @@
 package org.gridgain.visor.commands.ack
 
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.visor.cmd.VisorAckTask
-import org.gridgain.grid.kernal.visor.cmd.VisorAckTask.VisorAckArg
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorAckTask
+import VisorAckTask.VisorAckArg
 import org.gridgain.visor._
 import visor._
 import org.gridgain.visor.commands.VisorConsoleCommand
 import collection._
 import JavaConversions._
 import java.util.UUID
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorAckTask
 
 /**
  * ==Overview==

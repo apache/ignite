@@ -10,12 +10,6 @@
  */
 package org.gridgain.visor.commands.cache
 
-import java.util.UUID
-import org.gridgain.grid.kernal.GridEx
-import org.gridgain.grid.kernal.processors.task.GridInternal
-import org.gridgain.grid.lang.GridCallable
-import org.gridgain.grid.resources._
-import org.gridgain.grid.util.scala.impl
 import org.gridgain.scalar._
 import scalar._
 import org.gridgain.visor._
@@ -24,6 +18,9 @@ import org.gridgain.visor.commands.VisorTextTable
 import scala.collection.JavaConversions._
 import scala.util.control.Breaks._
 import org.gridgain.grid.GridNode
+import org.gridgain.grid.kernal.visor.cmd.dto.VisorOneNodeCachesArg
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorClearCachesTask
+import org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils._
 
 /**
  * ==Overview==
@@ -108,41 +105,26 @@ class VisorCacheClearCommand {
             scold(msg).^^
         }
 
-        val res = prj
-            .compute()
-            .withName("visor-cclear-task")
-            .withNoFailover()
-            .broadcast(new ClearClosure(cacheName))
-            .get
-
-        println("Cleared cache with name: " + (if (cacheName == null) "<default>" else cacheName))
-
         val t = VisorTextTable()
 
-        t #= ("Node ID8(@)", "Cache Size Before", "Cache Size After")
+        t #= ("Node ID8(@)", "Entries Cleared", "Cache Size Before", "Cache Size After")
 
-        res.foreach(r => t += (nodeId8(r._1), r._2, r._3))
+        val cacheSet = Set(cacheName)
+
+        prj.nodes().foreach(node => {
+            val res = grid.forNode(node)
+                .compute()
+                .withName("visor-cclear-task")
+                .withNoFailover()
+                .execute(classOf[VisorClearCachesTask], new VisorOneNodeCachesArg(node.id(), cacheSet))
+                .get.get(cacheName)
+
+            t += (nodeId8(node.id()), res.cleared(), res.cleared() + res.after(), res.after())
+        })
+
+        println("Cleared cache with name: " + escapeName(cacheName))
 
         t.render()
-    }
-}
-
-/**
- * Clear cache task.
- */
-@GridInternal
-class ClearClosure(val cacheName: String) extends GridCallable[(UUID, Int, Int)] {
-    @GridInstanceResource
-    private val g: GridEx = null
-
-    @impl def call(): (UUID, Int, Int) = {
-        val c = g.cachex[AnyRef, AnyRef](cacheName)
-
-        val oldSize = c.size
-
-        c.clearAll()
-
-        (g.localNode.id, oldSize, c.size)
     }
 }
 

@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.cmd;
+package org.gridgain.grid.kernal.visor.cmd.tasks;
 
 import static java.lang.System.*;
 import static org.gridgain.grid.GridSystemProperties.*;
@@ -19,12 +19,13 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.task.*;
+import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.segmentation.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 /**
- * TODO: Add class description.
+ * Grid configuration data collect task.
  */
 @GridInternal
 public class VisorConfigurationTask extends VisorOneNodeTask<VisorOneNodeArg, VisorConfigurationTask.VisorConfiguration> {
@@ -177,7 +178,7 @@ public class VisorConfigurationTask extends VisorOneNodeTask<VisorOneNodeArg, Vi
         }
 
         /**
-         * @return M bean server.
+         * @return Mbean server.
          */
         public String mBeanServer() {
             return mBeanSrv;
@@ -205,9 +206,9 @@ public class VisorConfigurationTask extends VisorOneNodeTask<VisorOneNodeArg, Vi
         }
 
         /**
-         * @return Prog name.
+         * @return Program name.
          */
-        public String progName() {
+        public String program() {
             return progName;
         }
 
@@ -957,6 +958,9 @@ public class VisorConfigurationTask extends VisorOneNodeTask<VisorOneNodeArg, Vi
         }
     }
 
+    /**
+     * Cache configuration data.
+     */
     @SuppressWarnings("PublicInnerClass")
     public static class VisorCacheConfig implements Serializable {
         /** */
@@ -1135,47 +1139,69 @@ public class VisorConfigurationTask extends VisorOneNodeTask<VisorOneNodeArg, Vi
         }
     }
 
+    /**
+     * Grid configuration data.
+     */
     @SuppressWarnings("PublicInnerClass")
     public static class VisorConfiguration implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** License. */
         private final GridProductLicense license;
 
+        /** Basic. */
         private final VisorBasicConfig basic;
 
+        /** Metrics. */
         private final VisorMetricsConfig metrics;
 
+        /** SPIs. */
         private final VisorSpisConfig spis;
 
+        /** P2P. */
         private final VisorPeerToPeerConfig p2p;
 
+        /** Email. */
         private final VisorEmailConfig email;
 
+        /** Lifecycle. */
         private final VisorLifecycleConfig lifecycle;
 
+        /** Executors. */
         private final VisorExecServiceConfig execSvc;
 
+        /** Segmentation. */
         private final VisorSegmentationConfig seg;
 
+        /** Include properties. */
         private final String inclProps;
 
+        /** Include events types. */
         private final int[] inclEvtTypes;
 
+        /** REST enabled. */
         private final boolean restEnabled;
 
+        /** Jetty path. */
         private final String jettyPath;
 
+        /** Jetty host. */
         private final String jettyHost;
 
+        /** Jetty port. */
         private final Integer jettyPort;
 
+        /** User attributes. */
         private final Map<String, ?> userAttrs;
 
+        /** Caches. */
         private final Iterable<VisorCacheConfig> caches;
 
+        /** Environment. */
         private final Map<String, String> env;
 
+        /** System properties. */
         private final Properties sysProps;
 
         public VisorConfiguration(GridProductLicense license,
@@ -1237,7 +1263,7 @@ public class VisorConfigurationTask extends VisorOneNodeTask<VisorOneNodeArg, Vi
         }
 
         /**
-         * @return P 2 p.
+         * @return P2P.
          */
         public VisorPeerToPeerConfig p2p() {
             return p2p;
@@ -1258,28 +1284,28 @@ public class VisorConfigurationTask extends VisorOneNodeTask<VisorOneNodeArg, Vi
         }
 
         /**
-         * @return Execute svc.
+         * @return Executors.
          */
         public VisorExecServiceConfig executeSvc() {
             return execSvc;
         }
 
         /**
-         * @return Seg.
+         * @return Segmentation.
          */
         public VisorSegmentationConfig seg() {
             return seg;
         }
 
         /**
-         * @return Incl properties.
+         * @return Include properties.
          */
         public String inclProperties() {
             return inclProps;
         }
 
         /**
-         * @return Incl event types.
+         * @return Include events types.
          */
         public int[] inclEventTypes() {
             return inclEvtTypes;
@@ -1328,7 +1354,7 @@ public class VisorConfigurationTask extends VisorOneNodeTask<VisorOneNodeArg, Vi
         }
 
         /**
-         * @return Env.
+         * @return Environment.
          */
         public Map<String, String> env() {
             return env;
@@ -1401,6 +1427,9 @@ public class VisorConfigurationTask extends VisorOneNodeTask<VisorOneNodeArg, Vi
         return U.compact(sb.toString());
     }
 
+    /**
+     * Grid configuration data collect job.
+     */
     @SuppressWarnings("PublicInnerClass")
     public static class VisorConfigurationJob extends VisorOneNodeJob<VisorOneNodeArg, VisorConfiguration> {
         /** */
