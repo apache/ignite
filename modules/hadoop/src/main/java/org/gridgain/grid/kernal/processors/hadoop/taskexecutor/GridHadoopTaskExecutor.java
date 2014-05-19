@@ -93,6 +93,9 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
                 @Override public void applyx(GridFuture<?> f) throws GridException {
                     Collection<GridFuture<?>> futs = jobs.get(task.info().jobId());
 
+                    assert f != null;
+                    assert futs != null;
+
                     futs.remove(f);
 
                     if (futs.isEmpty())
