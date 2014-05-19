@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
-import org.apache.hadoop.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
@@ -26,7 +25,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -183,6 +181,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             return completeFut;
         }
         catch (GridException e) {
+            U.error(log, "Failed to submit job: " + jobId, e);
+
             return new GridFinishedFutureEx<>(e);
         }
         finally {
