@@ -557,14 +557,6 @@
                             <target>
                                 <mkdir dir="target/release-package/libs/ext"/>
 
-                                <replace file="target/release-package/examples/pom.xml"
-                                         token="%ANT_AUGMENTED_GGJAR%"
-                                         value="gridgain-${gridgain.edition}-${gridgain.version}.jar"/>
-
-                                <replace file="target/release-package/examples/pom-java8.xml"
-                                         token="%ANT_AUGMENTED_GGJAR%"
-                                         value="gridgain-${gridgain.edition}-${gridgain.version}.jar"/>
-
                                 <replace token="@sh.file.version" value="${gridgain.version}">
                                     <fileset dir="target/release-package/bin">
                                         <include name="**/*.sh"/>
