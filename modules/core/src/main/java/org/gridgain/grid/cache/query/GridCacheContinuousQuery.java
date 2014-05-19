@@ -27,7 +27,7 @@ import java.util.*;
  *  locally.
  * </li>
  * <li>
- *  Each node iterates through existing cache data and resisters listeners that will
+ *  Each node iterates through existing cache data and registers listeners that will
  *  notify about further updates.
  * <li>
  *  Each key-value pair is passed through optional filter and if this filter returns
