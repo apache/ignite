@@ -1301,8 +1301,6 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
             GridGgfsBlockLocation location = F.first(locations);
 
             assertEquals(1, location.nodeIds().size());
-
-            assertEquals(grid(0).localNode().id(), F.first(location.nodeIds()));
         }
     }
 
