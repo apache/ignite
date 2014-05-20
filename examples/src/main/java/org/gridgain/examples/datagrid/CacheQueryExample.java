@@ -335,20 +335,20 @@ public class CacheQueryExample {
      * Person class.
      */
     private static class Person implements Serializable {
-        /** Person ID (create unique SQL index for this field). */
+        /** Person ID (indexed). */
         @GridCacheQuerySqlField(index = true)
         private UUID id;
 
-        /** Organization ID (create non-unique SQL index for this field). */
-        @GridCacheQuerySqlField
+        /** Organization ID (indexed). */
+        @GridCacheQuerySqlField(index = true)
         private UUID orgId;
 
         /** First name (not-indexed). */
-        @GridCacheQuerySqlField(index = false)
+        @GridCacheQuerySqlField
         private String firstName;
 
         /** Last name (not indexed). */
-        @GridCacheQuerySqlField(index = false)
+        @GridCacheQuerySqlField
         private String lastName;
 
         /** Resume text (create LUCENE-based TEXT index for this field). */
@@ -417,12 +417,12 @@ public class CacheQueryExample {
      * Organization class.
      */
     private static class Organization implements Serializable {
-        /** Organization ID (create unique SQL-based index for this field). */
+        /** Organization ID (indexed). */
         @GridCacheQuerySqlField(index = true)
         private UUID id;
 
-        /** Organization name (create non-unique SQL-based index for this field. */
-        @GridCacheQuerySqlField
+        /** Organization name (indexed). */
+        @GridCacheQuerySqlField(index = true)
         private String name;
 
         /**

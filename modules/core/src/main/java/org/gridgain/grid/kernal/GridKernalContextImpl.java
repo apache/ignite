@@ -241,12 +241,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     private GridProduct product;
 
     /** */
-    private String buildDate;
-
-    /** */
-    private String ver;
-
-    /** */
     private GridConfiguration cfg;
 
     /** */
@@ -414,34 +408,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             ggfsHelper = (GridGgfsHelper)helper;
         else
             assert false : "Unknown helper class: " + helper.getClass();
-    }
-
-    /** {@inheritDoc} */
-    @Override public String version() {
-        return ver;
-    }
-
-    /**
-     * Sets version.
-     *
-     * @param ver Version.
-     */
-    public void version(String ver) {
-        this.ver = ver;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String build() {
-        return buildDate;
-    }
-
-    /**
-     * Sets build date.
-     *
-     * @param buildDate Build date.
-     */
-    public void build(String buildDate) {
-        this.buildDate = buildDate;
     }
 
     /** {@inheritDoc} */
