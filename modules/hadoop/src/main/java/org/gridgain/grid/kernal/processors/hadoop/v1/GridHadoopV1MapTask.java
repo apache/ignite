@@ -49,8 +49,10 @@ public class GridHadoopV1MapTask extends GridHadoopTask {
 
             nativeSplit = new FileSplit(new Path(block.file().toString()), block.start(), block.length(), EMPTY_HOSTS);
         }
+        else if (split instanceof GridHadoopExternalSplit)
+            nativeSplit = jobImpl.readExternalSplit((GridHadoopExternalSplit)split);
         else
-            nativeSplit = (InputSplit)split.innerSplit();
+            nativeSplit = split.innerSplit();
 
         assert nativeSplit != null;
 

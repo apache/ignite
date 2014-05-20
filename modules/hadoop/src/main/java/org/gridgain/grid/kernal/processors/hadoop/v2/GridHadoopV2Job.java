@@ -9,15 +9,23 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.io.serializer.*;
 import org.apache.hadoop.mapred.*;
-import org.apache.hadoop.mapreduce.TaskType;
+import org.apache.hadoop.mapred.JobContext;
+import org.apache.hadoop.mapred.JobID;
+import org.apache.hadoop.mapred.TaskAttemptID;
+import org.apache.hadoop.mapred.TaskID;
+import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.mapreduce.split.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v1.*;
+import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -42,11 +50,8 @@ public class GridHadoopV2Job implements GridHadoopJob {
     /** Hadoop native job context. */
     protected JobContextImpl ctx;
 
-    /** Key class. */
-    private Class<?> keyCls;
-
-    /** Value class. */
-    private Class<?> valCls;
+    /** */
+    private JobID hadoopJobID;
 
     /**
      * @param jobId Job ID.
@@ -56,7 +61,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
         this.jobId = jobId;
         this.jobInfo = jobInfo;
 
-        JobID hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
+        hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
 
         JobConf cfg = jobInfo.configuration();
 
@@ -65,9 +70,6 @@ public class GridHadoopV2Job implements GridHadoopJob {
         useNewMapper = cfg.getUseNewMapper();
         useNewReducer = cfg.getUseNewReducer();
         useNewCombiner = cfg.getCombinerClass() == null;
-
-        keyCls = ctx.getMapOutputKeyClass();
-        valCls = ctx.getMapOutputValueClass();
     }
 
     /** {@inheritDoc} */
@@ -82,10 +84,113 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public Collection<GridHadoopInputSplit> input() throws GridException {
-        if (useNewMapper)
-            return GridHadoopV2Splitter.splitJob(ctx);
-        else
-            return GridHadoopV1Splitter.splitJob(ctx.getJobConf());
+        String jobDirPath = ctx.getConfiguration().get(MRJobConfig.MAPREDUCE_JOB_DIR);
+
+        if (jobDirPath == null) { // Probably job was submitted not by hadoop client.
+            // Assume that we have needed classes and try to generate input splits ourself.
+            if (useNewMapper)
+                return GridHadoopV2Splitter.splitJob(ctx);
+            else
+                return GridHadoopV1Splitter.splitJob(ctx.getJobConf());
+        }
+
+        Path jobDir = new Path(jobDirPath);
+
+        try (FileSystem fs = FileSystem.get(jobDir.toUri(), ctx.getConfiguration())) {
+            JobSplit.TaskSplitMetaInfo[] metaInfos = SplitMetaInfoReader.readSplitMetaInfo(hadoopJobID, fs,
+                ctx.getConfiguration(), jobDir);
+
+            if (F.isEmpty(metaInfos))
+                throw new GridException("No input splits found.");
+
+            Path splitsFile = JobSubmissionFiles.getJobSplitFile(jobDir);
+
+            try (FSDataInputStream in = fs.open(splitsFile)) {
+                Collection<GridHadoopInputSplit> res = new ArrayList<>(metaInfos.length);
+
+                for (JobSplit.TaskSplitMetaInfo metaInfo : metaInfos) {
+                    long off = metaInfo.getStartOffset();
+
+                    String[] hosts = metaInfo.getLocations();
+
+                    Class<?> cls = readSplitClass(in, off);
+
+                    GridHadoopFileBlock block = null;
+
+                    if (cls != null) {
+                        block = GridHadoopV1Splitter.readFileBlock(cls, in, hosts);
+
+                        if (block == null)
+                            block = GridHadoopV2Splitter.readFileBlock(cls, in, hosts);
+                    }
+
+                    res.add(block != null ? block : new GridHadoopExternalSplit(hosts, off));
+                }
+
+                return res;
+            }
+        }
+        catch (IOException e) {
+            throw new GridException(e);
+        }
+    }
+
+    /**
+     * @param in Input stream.
+     * @param off Offset in stream.
+     * @return Class or {@code null} if not found.
+     * @throws IOException If failed.
+     */
+    @Nullable private Class<?> readSplitClass(FSDataInputStream in, long off)
+        throws IOException {
+        in.seek(off);
+
+        String clsName = Text.readString(in);
+
+        try {
+            return ctx.getConfiguration().getClassByName(clsName);
+        }
+        catch (ClassNotFoundException e) {
+            // No-op.
+        }
+
+        return null;
+    }
+
+    /**
+     * @param split External split.
+     * @return Native input split.
+     * @throws GridException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T readExternalSplit(GridHadoopExternalSplit split) throws GridException {
+        Path jobDir = new Path(ctx.getConfiguration().get(MRJobConfig.MAPREDUCE_JOB_DIR));
+
+        Class<?> cls;
+
+        try (FileSystem fs = FileSystem.get(jobDir.toUri(), ctx.getConfiguration());
+            FSDataInputStream in = fs.open(JobSubmissionFiles.getJobSplitFile(jobDir))) {
+            cls = readSplitClass(in, split.offset());
+
+            assert cls != null;
+
+            Serialization serialization = new SerializationFactory(ctx.getJobConf()).getSerialization(cls);
+
+            Deserializer deserializer = serialization.getDeserializer(cls);
+
+            deserializer.open(in);
+
+            Object res = deserializer.deserialize(null);
+
+            deserializer.close();
+
+            assert res != null;
+
+            return (T)res;
+        }
+        catch (IOException e) {
+            throw new GridException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -133,27 +238,8 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public boolean hasCombiner() {
-        return combinerClass() != null;
-    }
-
-    /**
-     * Gets combiner class.
-     *
-     * @return Combiner class or {@code null} if combiner is not specified.
-     */
-    private Class<?> combinerClass() {
-        Class<?> res = ctx.getJobConf().getCombinerClass();
-
-        try {
-            if (res == null)
-                res = ctx.getCombinerClass();
-
-            return res;
-        }
-        catch (ClassNotFoundException e) {
-            // TODO check combiner class at initialization and throw meaningful exception.
-            throw new GridRuntimeException(e);
-        }
+        return ctx.getJobConf().get("mapred.combiner.class") != null ||
+            ctx.getJobConf().get(MRJobConfig.COMBINE_CLASS_ATTR) != null;
     }
 
     /**
@@ -175,12 +261,12 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public GridHadoopSerialization keySerialization() throws GridException {
-        return getSerialization(keyCls);
+        return getSerialization(ctx.getMapOutputKeyClass());
     }
 
     /** {@inheritDoc} */
     @Override public GridHadoopSerialization valueSerialization() throws GridException {
-        return getSerialization(valCls);
+        return getSerialization(ctx.getMapOutputValueClass());
     }
 
     /** {@inheritDoc} */
