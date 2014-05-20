@@ -1068,7 +1068,6 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         assertFalse(node.attributes().isEmpty());
         assertTrue(node.metrics() == null);
         assertNotNull(node.tcpAddresses());
-        assertNotNull(node.jettyAddresses());
         assertEquals(grid().localNode().id(), node.nodeId());
         assertEquals(4, node.caches().size());
 
@@ -1098,7 +1097,6 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         assertTrue(node.attributes().isEmpty());
         assertTrue(node.metrics() == null);
         assertNotNull(node.tcpAddresses());
-        assertNotNull(node.jettyAddresses());
         assertEquals(grid().localNode().id(), node.nodeId());
         assertEquals(4, node.caches().size());
 
@@ -1124,7 +1122,6 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         assertTrue(node.metrics().getCurrentIdleTime() != -1);
         assertTrue(node.metrics().getLastUpdateTime() != -1);
         assertNotNull(node.tcpAddresses());
-        assertNotNull(node.jettyAddresses());
         assertEquals(grid().localNode().id(), node.nodeId());
         assertEquals(4, node.caches().size());
 
@@ -1150,7 +1147,6 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         assertFalse(node.attributes().isEmpty());
         assertTrue(node.metrics() == null);
         assertNotNull(node.tcpAddresses());
-        assertNotNull(node.jettyAddresses());
         assertEquals(grid().localNode().id(), node.nodeId());
         assertEquals(4, node.caches().size());
 
@@ -1173,7 +1169,6 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         assertTrue(node.attributes().isEmpty());
         assertTrue(node.metrics() == null);
         assertNotNull(node.tcpAddresses());
-        assertNotNull(node.jettyAddresses());
         assertEquals(grid().localNode().id(), node.nodeId());
         assertEquals(4, node.caches().size());
 
@@ -1196,7 +1191,6 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         assertTrue(node.attributes().isEmpty());
         assertFalse(node.metrics() == null);
         assertNotNull(node.tcpAddresses());
-        assertNotNull(node.jettyAddresses());
         assertEquals(grid().localNode().id(), node.nodeId());
         assertEquals(4, node.caches().size());
 
@@ -1230,7 +1224,6 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         assertNotNull(node);
         assertFalse(node.attributes().isEmpty());
         assertNotNull(node.tcpAddresses());
-        assertNotNull(node.jettyAddresses());
         assertEquals(grid().localNode().id(), node.nodeId());
         assertNotNull(node.metrics());
 
@@ -1249,7 +1242,6 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         assertTrue(node.attributes().isEmpty());
         assertNull(node.metrics());
         assertNotNull(node.tcpAddresses());
-        assertNotNull(node.jettyAddresses());
         assertEquals(grid().localNode().id(), node.nodeId());
 
         top = compute.refreshTopologyAsync(true, true).get();
@@ -1263,7 +1255,6 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         assertFalse(node.attributes().isEmpty());
         assertNotNull(node.metrics());
         assertNotNull(node.tcpAddresses());
-        assertNotNull(node.jettyAddresses());
         assertEquals(grid().localNode().id(), node.nodeId());
 
         top = compute.refreshTopologyAsync(false, false).get();
@@ -1277,7 +1268,6 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         assertTrue(node.attributes().isEmpty());
         assertNull(node.metrics());
         assertNotNull(node.tcpAddresses());
-        assertNotNull(node.jettyAddresses());
         assertEquals(grid().localNode().id(), node.nodeId());
     }
 
