@@ -32,8 +32,6 @@ import java.nio.channels.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.GridSystemProperties.*;
-
 /**
  * Hadoop external communication class.
  */
@@ -159,9 +157,6 @@ public class GridHadoopExternalCommunication {
     /** Allocate direct buffer or heap buffer. */
     private boolean directBuf = true;
 
-    /** Allocate direct buffer or heap buffer. */
-    private boolean directSndBuf;
-
     /** Connect timeout. */
     private long connTimeout = DFLT_CONN_TIMEOUT;
 
@@ -180,9 +175,6 @@ public class GridHadoopExternalCommunication {
 
     /** Message queue limit. */
     private int msgQueueLimit = DFLT_MSG_QUEUE_LIMIT;
-
-    /** Buffer size ratio. */
-    private double bufSizeRatio = X.parseDouble(X.getSystemOrEnv(GG_COMMUNICATION_BUF_RESIZE_RATIO), 0.8);
 
     /** NIO server. */
     private GridNioServer<GridHadoopMessage> nioSrvr;
@@ -420,24 +412,6 @@ public class GridHadoopExternalCommunication {
     }
 
     /**
-     * @return Direct send buffer flag.
-     */
-    public boolean isDirectSendBuffer() {
-        return directSndBuf;
-    }
-
-    /**
-     * Sets whether to use direct buffer for sending.
-     * <p>
-     * If not provided default is {@code false}.
-     *
-     * @param directSndBuf {@code True} to use direct buffers for send.
-     */
-    public void setDirectSendBuffer(boolean directSndBuf) {
-        this.directSndBuf = directSndBuf;
-    }
-
-    /**
      * Sets the count of selectors te be used in TCP server.
      * <p/>
      * If not provided, default value is {@link #DFLT_SELECTORS_CNT}.
@@ -537,26 +511,6 @@ public class GridHadoopExternalCommunication {
      */
     public int getMessageQueueLimit() {
         return msgQueueLimit;
-    }
-
-    /**
-     * Sets the buffer size ratio for this SPI. As messages are sent,
-     * the buffer size is adjusted using this ratio.
-     * <p>
-     * Defaults to either {@code 0.8} or {@link GridSystemProperties#GG_COMMUNICATION_BUF_RESIZE_RATIO}
-     * system property (if specified).
-     *
-     * @param bufSizeRatio Buffer size ratio.
-     */
-    public void setBufferSizeRatio(double bufSizeRatio) {
-        this.bufSizeRatio = bufSizeRatio;
-    }
-
-    /**
-     * @return Buffer size ratio.
-     */
-    public double getBufferSizeRatio() {
-        return bufSizeRatio;
     }
 
     /**
