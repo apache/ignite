@@ -51,14 +51,13 @@
         <module>modules/tools</module>
         <module>modules/spring</module>
         <module>modules/hibernate</module>
-        <module>modules/websession</module>
+        <module>modules/web</module>
         <module>modules/aop</module>
         <module>modules/urideploy</module>
         <module>modules/indexing</module>
         <module>modules/ssh</module>
-        <module>modules/servlet-startup</module>
         <module>modules/rest</module>
-        <module>modules/mail</module>
+        <module>modules/email</module>
         <module>modules/jta</module>
         <module>modules/aws</module>
         <module>modules/schedule</module>
@@ -103,6 +102,13 @@
             <groupId>commons-collections</groupId>
             <artifactId>commons-collections</artifactId>
             <version>3.2.1</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.4</version>
             <scope>test</scope>
         </dependency>
 

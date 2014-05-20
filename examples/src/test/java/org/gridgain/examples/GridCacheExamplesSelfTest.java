@@ -71,6 +71,13 @@ public class GridCacheExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    public void testGridCacheSetExample() throws Exception {
+        CacheSetExample.main(EMPTY_ARGS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testGridCacheStoreExample() throws Exception {
         CacheStoreExample.main(EMPTY_ARGS);
     }
