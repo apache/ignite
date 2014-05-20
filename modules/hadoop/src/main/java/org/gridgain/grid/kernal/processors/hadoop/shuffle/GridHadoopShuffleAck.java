@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.message.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -17,7 +18,7 @@ import java.io.*;
 /**
  * Acknowledgement message.
  */
-public class GridHadoopShuffleAck implements Externalizable {
+public class GridHadoopShuffleAck implements GridHadoopMessage, Externalizable {
     /** */
     private long msgId;
 
