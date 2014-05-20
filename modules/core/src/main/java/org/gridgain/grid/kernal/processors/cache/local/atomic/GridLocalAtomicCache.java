@@ -1107,7 +1107,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         boolean invalidate,
         boolean syncCommit,
         boolean syncRollback,
-        boolean swapEnabled,
+        boolean swapOrOffheapEnabled,
         boolean storeEnabled,
         int txSize,
         @Nullable Object grpLockKey,

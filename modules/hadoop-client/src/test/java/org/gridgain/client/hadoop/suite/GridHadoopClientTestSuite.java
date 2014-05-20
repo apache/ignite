@@ -11,6 +11,7 @@ package org.gridgain.client.hadoop.suite;
 
 import junit.framework.*;
 import org.gridgain.client.hadoop.*;
+import org.gridgain.testsuites.bamboo.*;
 
 /**
  * Test suite for Hadoop client.
@@ -22,7 +23,9 @@ public class GridHadoopClientTestSuite extends TestSuite {
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Gridgain Hadoop Client Test Suite");
 
-        suite.addTest(new TestSuite(GridHadoopClientProtocolSelfTest.class));
+        suite.addTestSuite(GridHadoopClientProtocolSelfTest.class);
+
+        suite.addTest(new TestSuite(GridHadoopTestSuite.class));
 
         return suite;
     }

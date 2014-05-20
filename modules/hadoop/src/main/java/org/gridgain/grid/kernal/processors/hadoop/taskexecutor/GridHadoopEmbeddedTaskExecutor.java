@@ -89,9 +89,6 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
 
                     futs.remove(f);
 
-                    if (futs.isEmpty())
-                        jobs.remove(info.jobId());
-
                     GridHadoopTaskState state = COMPLETED;
                     Throwable err = null;
 
@@ -139,7 +136,11 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
 
     /** {@inheritDoc} */
     @Override public void onJobStateChanged(GridHadoopJob job, GridHadoopJobMetadata meta) {
-        // No-op.
+        if (meta.phase() == GridHadoopJobPhase.PHASE_COMPLETE) {
+            Collection<GridFuture<?>> futures = jobs.remove(job.id());
+
+            assert futures == null || futures.isEmpty();
+        }
     }
 
     /**
