@@ -7,11 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.util.ipc;
+package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.util.direct.*;
+import org.gridgain.grid.util.ipc.*;
 import org.gridgain.grid.util.nio.*;
 
 import java.io.*;
@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.*;
  * Note that this class consumes an entire thread inside {@link #serve()} method
  * in order to serve one {@link GridIpcEndpoint}.
  */
-public class GridIpcToNioAdapter<T> {
+public class GridHadoopIpcToNioAdapter<T> {
     /** */
     private final GridIpcEndpoint endp;
 
@@ -42,31 +42,18 @@ public class GridIpcToNioAdapter<T> {
     /** */
     private final ByteBuffer writeBuf;
 
-    /** */
-    private final GridNioMetricsListener metricsLsnr;
-
-    /** */
-    private final GridNioMessageWriter msgWriter;
-
     /**
-     * @param metricsLsnr Metrics listener.
      * @param log Log.
      * @param endp Endpoint.
-     * @param msgWriter Message writer.
      * @param lsnr Listener.
      * @param filters Filters.
      */
-    public GridIpcToNioAdapter(GridNioMetricsListener metricsLsnr, GridLogger log, GridIpcEndpoint endp,
-        GridNioMessageWriter msgWriter, GridNioServerListener<T> lsnr, GridNioFilter... filters) {
-        assert metricsLsnr != null;
-        assert msgWriter != null;
-
-        this.metricsLsnr = metricsLsnr;
+    public GridHadoopIpcToNioAdapter(GridLogger log, GridIpcEndpoint endp, boolean accepted,
+        GridNioServerListener<T> lsnr, GridNioFilter... filters) {
         this.endp = endp;
-        this.msgWriter = msgWriter;
 
         chain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
-        ses = new GridNioSessionImpl(chain, null, null, true);
+        ses = new GridNioSessionImpl(chain, null, null, accepted);
 
         writeBuf = ByteBuffer.allocate(8 << 10);
 
@@ -96,8 +83,6 @@ public class GridIpcToNioAdapter<T> {
                 int read = in.read(readBuf.array(), pos, readBuf.remaining());
 
                 if (read > 0) {
-                    metricsLsnr.onBytesReceived(read);
-
                     readBuf.position(0);
                     readBuf.limit(pos + read);
 
@@ -129,21 +114,31 @@ public class GridIpcToNioAdapter<T> {
     }
 
     /**
+     * Gets dummy session for this adapter.
+     *
+     * @return Session.
+     */
+    public GridNioSession session() {
+        return ses;
+    }
+
+    /**
      * Handles write events on chain.
      *
      * @param msg Buffer to send.
      * @return Send result.
      */
-    private GridNioFuture<?> send(GridTcpCommunicationMessageAdapter msg) {
+    private GridNioFuture<?> send(ByteBuffer msg) {
         assert writeBuf.hasArray();
 
         try {
-            // This method is called only on handshake,
-            // so we don't need to provide node ID for
-            // rolling updates support.
-            int cnt = msgWriter.writeFully(null, msg, endp.outputStream(), writeBuf);
+            while (msg.hasRemaining()) {
+                writeBuf.clear();
 
-            metricsLsnr.onBytesSent(cnt);
+                writeBuf.put(msg);
+
+                endp.outputStream().write(writeBuf.array(), 0, writeBuf.position());
+            }
         }
         catch (IOException | GridException e) {
             return new GridNioFinishedFuture<Object>(e);
@@ -180,9 +175,10 @@ public class GridIpcToNioAdapter<T> {
 
         /** {@inheritDoc} */
         @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) {
-            assert ses == GridIpcToNioAdapter.this.ses;
+            assert ses == GridHadoopIpcToNioAdapter.this.ses : "ses=" + ses +
+                ", this.ses=" + GridHadoopIpcToNioAdapter.this.ses;
 
-            return send((GridTcpCommunicationMessageAdapter)msg);
+            return send((ByteBuffer)msg);
         }
 
         /** {@inheritDoc} */
@@ -213,9 +209,9 @@ public class GridIpcToNioAdapter<T> {
 
         /** {@inheritDoc} */
         @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) {
-            assert ses == GridIpcToNioAdapter.this.ses;
+            assert ses == GridHadoopIpcToNioAdapter.this.ses;
 
-            boolean closed = GridIpcToNioAdapter.this.ses.setClosed();
+            boolean closed = GridHadoopIpcToNioAdapter.this.ses.setClosed();
 
             if (closed)
                 endp.close();
