@@ -25,7 +25,7 @@ import static org.gridgain.grid.kernal.ggfs.hadoop.impl.NewGridGgfsHadoopMode.*;
 /**
  * Communication with grid in the same process.
  */
-public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: Remove abstract.
+public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx {
     /** Target GGFS. */
     private final GridGgfsEx ggfs;
 
@@ -49,9 +49,10 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: R
 
     /** {@inheritDoc} */
     @Override public GridGgfsHandshakeResponse handshake(String logDir) {
-        // TODO.
+        ggfs.clientLogDirectory(logDir);
 
-        return null;
+        return new GridGgfsHandshakeResponse(ggfs.name(), ggfs.proxyPaths(), ggfs.groupBlockSize(),
+            ggfs.globalSampling());
     }
 
     /** {@inheritDoc} */
@@ -237,9 +238,36 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx { // TODO: R
         @Nullable byte[] outBuf, int outOff, int outLen) {
         GridGgfsInputStreamAdapter stream = desc.target();
 
-        // TODO.
+        assert (outBuf != null && len == outLen) || outBuf == null;
 
-        return null;
+        try {
+            byte[] res = null;
+
+            if (outBuf != null) {
+                int outTailLen = outBuf.length - outOff;
+
+                if (len <= outTailLen) {
+                    stream.readFully(pos, outBuf, outOff, len);
+                } else {
+                    stream.readFully(pos, outBuf, outOff, outTailLen);
+
+                    int remainderLen = len - outTailLen;
+
+                    res = new byte[remainderLen];
+
+                    stream.readFully(pos, res, 0, remainderLen);
+                }
+            } else {
+                res = new byte[len];
+
+                stream.readFully(pos, res, 0, len);
+            }
+
+            return new GridPlainFutureAdapter<>(res);
+        }
+        catch (IOException e) {
+            return new GridPlainFutureAdapter<>(e);
+        }
     }
 
     /** {@inheritDoc} */

@@ -183,6 +183,11 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
     }
 
     /** {@inheritDoc} */
+    @Override public String getTestGridName() {
+        return "grid";
+    }
+
+    /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
