@@ -256,7 +256,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean invalidate,
         boolean syncCommit,
         boolean syncRollback,
-        boolean swapEnabled,
+        boolean swapOrOffheapEnabled,
         boolean storeEnabled,
         int txSize,
         @Nullable Object grpLockKey,
