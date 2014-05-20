@@ -80,19 +80,10 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If test failed.
+     * @param edition Edition.
+     * @param ent Enterprise flag.
+     * @throws Exception If failed.
      */
-    public void testMongoEnt() throws Exception {
-        testNotifier("mongo", true);
-    }
-
-    /**
-     * @throws Exception If test failed.
-     */
-    public void testMongoOs() throws Exception {
-        testNotifier("mongo", false);
-    }
-
     private void testNotifier(String edition, boolean ent) throws Exception {
         String site = "www.gridgain." + (ent ? "com" : "org");
 
