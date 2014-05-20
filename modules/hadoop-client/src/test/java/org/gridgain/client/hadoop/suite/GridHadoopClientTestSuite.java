@@ -11,7 +11,6 @@ package org.gridgain.client.hadoop.suite;
 
 import junit.framework.*;
 import org.gridgain.client.hadoop.*;
-import org.gridgain.grid.cache.affinity.fair.*;
 import org.gridgain.testsuites.bamboo.*;
 
 /**
@@ -24,9 +23,9 @@ public class GridHadoopClientTestSuite extends TestSuite {
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Gridgain Hadoop Client Test Suite");
 
-        suite.addTest(new TestSuite(GridHadoopClientProtocolSelfTest.class));
+        suite.addTestSuite(GridHadoopClientProtocolSelfTest.class);
 
-        suite.addTestSuite(GridCachePartitionFairAffinityNodesSelfTest.class);
+        suite.addTest(new TestSuite(GridHadoopTestSuite.class));
 
         return suite;
     }
