@@ -1366,7 +1366,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                                 try {
                                     V val = cached.innerGet(GridCacheTxLocalAdapter.this,
-                                        swapEnabled,
+                                        swapOrOffheapEnabled,
                                         /*read-through*/false,
                                         /*fail-fast*/true,
                                         /*unmarshal*/true,
