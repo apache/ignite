@@ -50,5 +50,5 @@ public abstract class VisorJob<A, R> extends GridComputeJobAdapter {
      *
      * @return Result.
      */
-    protected abstract R run(A arg) throws GridException, IOException;
+    protected abstract R run(A arg) throws GridException;
 }

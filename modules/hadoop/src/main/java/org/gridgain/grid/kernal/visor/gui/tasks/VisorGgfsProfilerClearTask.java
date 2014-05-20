@@ -78,7 +78,7 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<VisorGgfsProfil
         }
 
         @Override
-        protected VisorGgfsProfilerClearTaskResult run(VisorGgfsProfilerClearArg arg) throws GridException, IOException {
+        protected VisorGgfsProfilerClearTaskResult run(VisorGgfsProfilerClearArg arg) throws GridException {
             int deleted = 0;
             int failed = 0;
 
@@ -121,8 +121,8 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<VisorGgfsProfil
                     }
                 }
             }
-            catch (IllegalArgumentException iae) {
-                throw new GridException("Failed to clear profiler logs for GGFS: " + arg.ggfsName, iae);
+            catch (IOException | IllegalArgumentException ioe) {
+                throw new GridException("Failed to clear profiler logs for GGFS: " + arg.ggfsName, ioe);
             }
 
             return new VisorGgfsProfilerClearTaskResult(deleted, failed);
