@@ -674,7 +674,7 @@
                             <descriptors>
                                 <descriptor>assembly/dependencies-visor-console.xml</descriptor>
                             </descriptors>
-                            <outputDirectory>${basedir}/bin/include</outputDirectory>
+                            <outputDirectory>${basedir}/libs</outputDirectory>
                             <finalName>gridgain-visor-console</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                             <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
