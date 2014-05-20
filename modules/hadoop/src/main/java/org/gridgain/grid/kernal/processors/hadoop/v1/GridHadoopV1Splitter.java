@@ -9,10 +9,13 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.v1;
 
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
+import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
@@ -21,6 +24,9 @@ import java.util.*;
  * Hadoop API v1 splitter.
  */
 public class GridHadoopV1Splitter {
+    /** */
+    private static final String[] EMPTY_HOSTS = {};
+
     /**
      * @param jobConf Job configuration.
      * @return Collection of mapped splits.
@@ -51,5 +57,32 @@ public class GridHadoopV1Splitter {
         catch (IOException e) {
             throw new GridException(e);
         }
+    }
+
+    /**
+     * @param cls Input split class.
+     * @param in Input stream.
+     * @param hosts Optional hosts.
+     * @return File block or {@code null} if it is not a {@link FileSplit} instance.
+     * @throws GridException If failed.
+     */
+    @Nullable public static GridHadoopFileBlock readFileBlock(Class<?> cls, FSDataInputStream in,
+        @Nullable String[] hosts) throws GridException {
+        if (FileSplit.class != cls)
+            return null;
+
+        FileSplit split = U.newInstance(FileSplit.class);
+
+        try {
+            split.readFields(in);
+        }
+        catch (IOException e) {
+            throw new GridException(e);
+        }
+
+        if (hosts == null)
+            hosts = EMPTY_HOSTS;
+
+        return new GridHadoopFileBlock(hosts, split.getPath().toUri(), split.getStart(), split.getLength());
     }
 }

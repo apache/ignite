@@ -127,6 +127,32 @@ public class GridHadoopTaskInfo implements Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (!(o instanceof GridHadoopTaskInfo))
+            return false;
+
+        GridHadoopTaskInfo that = (GridHadoopTaskInfo)o;
+
+        return attempt == that.attempt && taskNum == that.taskNum && jobId.equals(that.jobId) &&
+            nodeId.equals(that.nodeId) && type == that.type;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int result = nodeId.hashCode();
+
+        result = 31 * result + type.hashCode();
+        result = 31 * result + jobId.hashCode();
+        result = 31 * result + taskNum;
+        result = 31 * result + attempt;
+
+        return result;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridHadoopTaskInfo.class, this);
     }

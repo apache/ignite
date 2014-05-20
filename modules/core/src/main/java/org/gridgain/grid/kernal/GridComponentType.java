@@ -26,17 +26,17 @@ public enum GridComponentType {
         "gridgain-hadoop"
     ),
 
-    /** GGFS helper component. */
-    GGFS_HELPER(
-        "org.gridgain.grid.kernal.processors.ggfs.GridNoopGgfsHelper",
-        "org.gridgain.grid.kernal.processors.ggfs.GridGgfsHelperImpl",
-        "gridgain-hadoop"
-    ),
-
     /** Hadoop. */
     HADOOP(
         "org.gridgain.grid.kernal.processors.hadoop.GridHadoopNoopProcessor",
         "org.gridgain.grid.kernal.processors.hadoop.GridHadoopProcessor",
+        "gridgain-hadoop"
+    ),
+
+    /** GGFS helper component. */
+    GGFS_HELPER(
+        "org.gridgain.grid.kernal.processors.ggfs.GridNoopGgfsHelper",
+        "org.gridgain.grid.kernal.processors.ggfs.GridGgfsHelperImpl",
         "gridgain-hadoop"
     ),
 
@@ -128,6 +128,31 @@ public enum GridComponentType {
      */
     public <T extends GridComponent> T create(GridKernalContext ctx, boolean noOp) throws GridException {
         return create0(ctx, noOp ? noOpClsName : clsName);
+    }
+
+    /**
+     * Creates component.
+     *
+     * @param ctx Kernal context.
+     * @param mandatory If the component is mandatory.
+     * @return Created component.
+     * @throws GridException If failed.
+     */
+    public <T extends GridComponent> T createIfInClassPath(GridKernalContext ctx, boolean mandatory)
+        throws GridException {
+        String cls = clsName;
+
+        try {
+            Class.forName(cls);
+        }
+        catch (ClassNotFoundException e) {
+            if (mandatory)
+                throw componentException(e);
+
+            cls = noOpClsName;
+        }
+
+        return create0(ctx, cls);
     }
 
     /**
