@@ -2281,19 +2281,13 @@ public abstract class GridUtils {
         assert path != null;
 
         /*
-         * 1. Check relative to GRIDGAIN_HOME specified in
-         *    configuration, if any.
+         * 1. Check relative to GRIDGAIN_HOME specified in configuration, if any.
          */
 
         String home = getGridGainHome();
 
         if (home != null) {
             File file = new File(home, path);
-
-            if (file.exists())
-                return file;
-
-            file = new File(home, "os/" + path);
 
             if (file.exists())
                 return file;
@@ -2308,7 +2302,14 @@ public abstract class GridUtils {
         if (file.exists())
             return file;
 
-        return null;
+        /*
+         * 3. Check development path.
+         */
+
+        if (home != null)
+            file = new File(home, "os/" + path);
+
+        return file.exists() ? file : null;
     }
 
     /**
