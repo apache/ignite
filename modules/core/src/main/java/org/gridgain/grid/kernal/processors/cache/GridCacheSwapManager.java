@@ -359,7 +359,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
         checkIteratorQueue();
 
         if (e.valueIsByteArray())
-            e.value((V) e.valueBytes());
+            e.value((V)e.valueBytes());
         else {
             ClassLoader ldr = e.valueClassLoaderId() != null ? cctx.deploy().getClassLoader(e.valueClassLoaderId()) :
                 cctx.deploy().localLoader();

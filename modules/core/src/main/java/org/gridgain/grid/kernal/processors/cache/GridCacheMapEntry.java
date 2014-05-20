@@ -618,12 +618,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException, GridCacheEntryRemovedException,
         GridCacheFilterFailedException {
         cctx.denyOnFlag(LOCAL);
-        V val = innerGet0(tx, readSwap, readThrough, evt, failFast, unmarshal, updateMetrics, filter);
 
-//        if (key.getClass().getName().contains("GridGgfsBlock") && val == null)
-//            U.dumpStack("INNER GET: " + key + ", val=" + Arrays.toString((byte[])val));
-
-        return val;
+        return innerGet0(tx, readSwap, readThrough, evt, failFast, unmarshal, updateMetrics, filter);
     }
 
     /** {@inheritDoc} */

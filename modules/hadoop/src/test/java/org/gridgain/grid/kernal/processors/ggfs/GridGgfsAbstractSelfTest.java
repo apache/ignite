@@ -133,7 +133,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        chunk = new byte[8];
+        chunk = new byte[128];
 
         for (int i = 0; i < chunk.length; i++)
             chunk[i] = (byte)i;
@@ -599,8 +599,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
         create(ggfs, paths(DIR, DIR_NEW), null);
 
         GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 ggfs.rename(SUBDIR, SUBDIR_NEW);
 
                 return null;
@@ -798,13 +797,13 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
         ggfsSecondary.delete(FILE, false);
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 GridGgfsInputStream is = null;
 
                 try {
                     is = ggfs.open(FILE);
-                } finally {
+                }
+                finally {
                     U.closeQuiet(is);
                 }
 
@@ -949,8 +948,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
         create(ggfs, paths(DIR, SUBDIR), null);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 GridGgfsOutputStream os = null;
 
                 try {
@@ -964,7 +962,8 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
                         U.sleep(100);
 
                     os.close();
-                } finally {
+                }
+                finally {
                     U.closeQuiet(os);
                 }
 
@@ -1009,8 +1008,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
         int threadCnt = 10;
 
         multithreaded(new Runnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 int idx = ctr.incrementAndGet();
 
                 GridGgfsPath path = new GridGgfsPath("/file" + idx);
@@ -1029,7 +1027,8 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
                     awaitFileClose(ggfs, path);
 
                     checkFileContent(ggfs, path, chunk);
-                } catch (IOException | GridException e) {
+                }
+                catch (IOException | GridException e) {
                     err.compareAndSet(null, e); // Log the very first error.
                 }
             }
@@ -1257,8 +1256,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
         createFile(ggfs, FILE, false);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 GridGgfsOutputStream os = null;
 
                 try {
@@ -1274,7 +1272,8 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
                     os.write(chunk);
 
                     os.close();
-                } finally {
+                }
+                finally {
                     U.closeQuiet(os);
                 }
 
@@ -1356,11 +1355,6 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
 
         if (err.get() != null)
             throw err.get();
-    }
-
-    // TODO: Remove.
-    @Override protected long getTestTimeout() {
-        return Long.MAX_VALUE;
     }
 
     /**

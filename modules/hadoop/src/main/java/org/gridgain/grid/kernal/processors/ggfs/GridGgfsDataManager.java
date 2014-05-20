@@ -1058,8 +1058,6 @@ public class GridGgfsDataManager extends GridGgfsManager {
      */
     private void processPartialBlockWrite(GridUuid fileId, GridGgfsBlockKey colocatedKey, int startOff,
         byte[] data) throws GridException {
-//        U.debug("Start partial write [colKey=" + colocatedKey + ", startOff=" + startOff + ']');
-
         if (dataCachePrj.ggfsDataSpaceUsed() >= dataCachePrj.ggfsDataSpaceMax()) {
             try {
                 ggfs.awaitDeletesAsync().get(trashPurgeTimeout);
@@ -1097,13 +1095,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
         // If writing from block beginning, just put and return.
         if (startOff == 0) {
-//            U.debug("Begginig [colKey=" + colocatedKey + ", startOff=" + startOff + ']');
-
             dataCachePrj.putx(colocatedKey, data);
-
-//            byte[] reRead = dataCachePrj.get(colocatedKey);
-//
-//            U.debug("REREAD: " + Arrays.toString(reRead));
 
             return;
         }
@@ -1117,8 +1109,6 @@ public class GridGgfsDataManager extends GridGgfsManager {
         try {
             // Lock keys.
             Map<GridGgfsBlockKey, byte[]> vals = dataCachePrj.getAll(F.asList(colocatedKey, key));
-
-//            U.debug("VALS: " + vals);
 
             boolean hasVal = false;
 
