@@ -182,6 +182,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             return completeFut;
         }
         catch (GridException e) {
+            U.error(log, "Failed to submit job: " + jobId, e);
+
             return new GridFinishedFutureEx<>(e);
         }
         finally {

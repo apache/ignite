@@ -25,5 +25,5 @@ public interface GridHadoopInputSplit extends Externalizable {
     /**
      * @return Either {@code null} or native input split if it's not FileSplit.
      */
-    @Nullable public Object innerSplit();
+    @Nullable public <T> T innerSplit();
 }

@@ -33,6 +33,13 @@ public enum GridComponentType {
         "gridgain-hadoop"
     ),
 
+    /** GGFS helper component. */
+    GGFS_HELPER(
+        "org.gridgain.grid.kernal.processors.ggfs.GridNoopGgfsHelper",
+        "org.gridgain.grid.kernal.processors.ggfs.GridGgfsHelperImpl",
+        "gridgain-hadoop"
+    ),
+
     /** Spring XML parsing. */
     SPRING(
         null,
@@ -126,6 +133,31 @@ public enum GridComponentType {
     /**
      * Creates component.
      *
+     * @param ctx Kernal context.
+     * @param mandatory If the component is mandatory.
+     * @return Created component.
+     * @throws GridException If failed.
+     */
+    public <T extends GridComponent> T createIfInClassPath(GridKernalContext ctx, boolean mandatory)
+        throws GridException {
+        String cls = clsName;
+
+        try {
+            Class.forName(cls);
+        }
+        catch (ClassNotFoundException e) {
+            if (mandatory)
+                throw componentException(e);
+
+            cls = noOpClsName;
+        }
+
+        return create0(ctx, cls);
+    }
+
+    /**
+     * Creates component.
+     *
      * @param noOp No-op flag.
      * @return Created component.
      * @throws GridException If failed.
@@ -162,6 +194,7 @@ public enum GridComponentType {
      * @return Created component or no-op implementation.
      * @throws GridException If failed.
      */
+    @SuppressWarnings("unchecked")
     private <T> T createOptional0(@Nullable GridKernalContext ctx) throws GridException {
         Class<?> cls;
 

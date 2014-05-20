@@ -51,7 +51,7 @@ public interface GridCacheSet<T> extends Set<T> {
 
     /**
      * Gets closeable iterator over GridCacheSet. Note, if iteration is stopped before last element is received
-     * itertor should be closed using {@link GridCloseableIterator#close} to avoid resource leaks.
+     * iterator should be closed using {@link GridCloseableIterator#close} to avoid resource leaks.
      *
      * @return Closeable iterator.
      */
