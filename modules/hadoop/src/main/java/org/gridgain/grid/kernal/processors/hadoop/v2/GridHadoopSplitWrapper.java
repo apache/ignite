@@ -27,7 +27,7 @@ public class GridHadoopSplitWrapper implements GridHadoopInputSplit {
     private String[] hosts;
 
     /** Native hadoop input split. */
-    private Writable innerSplit;
+    private Object innerSplit;
 
     /**
      * Creates new split wrapper.
@@ -39,11 +39,10 @@ public class GridHadoopSplitWrapper implements GridHadoopInputSplit {
     /**
      * Creates new split wrapper.
      *
-     * @param innerSplit Native hadoop input split to wrap.
+     * @param innerSplit Native hadoop input split to wrap or {@code null} if it is serialized in external file.
      * @param hosts Hosts where split is located.
      */
-    public GridHadoopSplitWrapper(Writable innerSplit, String[] hosts) {
-        assert innerSplit != null;
+    public GridHadoopSplitWrapper(@Nullable Object innerSplit, String[] hosts) {
         assert hosts != null;
 
         this.innerSplit = innerSplit;
@@ -58,28 +57,40 @@ public class GridHadoopSplitWrapper implements GridHadoopInputSplit {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object innerSplit() {
-        return innerSplit;
+    @SuppressWarnings("unchecked")
+    @Nullable @Override public <T> T innerSplit() {
+        return (T)innerSplit;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(innerSplit.getClass());
+        boolean writable = innerSplit instanceof Writable;
 
-        innerSplit.write(out);
+        out.writeUTF(writable ? innerSplit.getClass().getName() : null);
+
+        if (writable)
+            ((Writable)innerSplit).write(out);
+        else
+            out.writeObject(innerSplit);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        Class<Writable> cls = (Class<Writable>)in.readObject();
+        String clsName = in.readUTF();
 
-        try {
-            innerSplit = U.newInstance(cls);
+        if (clsName == null)
+            innerSplit = in.readObject();
+        else {
+            Class<Writable> cls = (Class<Writable>)Class.forName(clsName);
 
-            innerSplit.readFields(in);
-        }
-        catch (GridException e) {
-            throw new IOException(e);
+            try {
+                innerSplit = U.newInstance(cls);
+            }
+            catch (GridException e) {
+                throw new IOException(e);
+            }
+
+            ((Writable)innerSplit).readFields(in);
         }
     }
 }

@@ -14,6 +14,9 @@ import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.text.*;
+import java.util.*;
+
 import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
@@ -32,8 +35,11 @@ public class GridProductImpl implements GridProduct {
     /** GridGain version. */
     public static final String VER;
 
-    /** Build number. */
-    public static final long BUILD;
+    /** Build timestamp in seconds. */
+    public static final long BUILD_TSTAMP;
+
+    /** Formatted build date. */
+    public static final String BUILD_TSTAMP_STR;
 
     /** Revision hash. */
     public static final String REV_HASH;
@@ -45,7 +51,10 @@ public class GridProductImpl implements GridProduct {
     public static final byte[] VER_BYTES;
 
     /** Compound version. */
-    public static final String COMPOUND_VERSION;
+    public static final String COMPOUND_VER;
+
+    /** Compound version. */
+    public static final String ACK_VER;
 
     /** */
     private final GridKernalContext ctx;
@@ -76,13 +85,19 @@ public class GridProductImpl implements GridProduct {
 
         EDITION = GridProperties.get("gridgain.edition");
         VER = GridProperties.get("gridgain.version");
-        BUILD = Long.valueOf(GridProperties.get("gridgain.build"));
+        BUILD_TSTAMP = Long.valueOf(GridProperties.get("gridgain.build"));
         REV_HASH = GridProperties.get("gridgain.revision");
         RELEASE_DATE = GridProperties.get("gridgain.rel.date");
 
         VER_BYTES = U.intToBytes(VER.hashCode());
 
-        COMPOUND_VERSION = EDITION + "-" + (ENT ? "ent" : "os") + "-" + VER;
+        COMPOUND_VER = EDITION + "-" + (ENT ? "ent" : "os") + "-" + VER;
+
+        BUILD_TSTAMP_STR = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD_TSTAMP * 1000));
+
+        String rev = REV_HASH.length() > 8 ? REV_HASH.substring(0, 8) : REV_HASH;
+
+        ACK_VER = COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + rev;
     }
 
     /**
@@ -95,7 +110,7 @@ public class GridProductImpl implements GridProduct {
 
         String releaseType = ctx.isEnterprise() ? "ent" : "os";
 
-        ver = GridProductVersion.fromString(EDITION + "-" + releaseType + "-" + VER + '-' + BUILD + '-' + REV_HASH);
+        ver = GridProductVersion.fromString(EDITION + "-" + releaseType + "-" + VER + '-' + BUILD_TSTAMP + '-' + REV_HASH);
 
         edition = editionFromString(EDITION);
     }

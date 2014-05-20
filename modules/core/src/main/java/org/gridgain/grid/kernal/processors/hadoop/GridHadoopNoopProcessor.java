@@ -27,7 +27,7 @@ public class GridHadoopNoopProcessor extends GridHadoopProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public GridHadoop hadoop() {
-        return null;
+        throw new IllegalStateException("Hadoop module is not found in class path.");
     }
 
     /** {@inheritDoc} */
