@@ -83,26 +83,29 @@ import org.jetbrains.annotations.*;
  * classes defined as follows:
  * <pre name="code" class="java">
  * public class Organization {
- *     &#64;GridCacheQuerySqlField
+ *     // Indexed field.
+ *     &#64;GridCacheQuerySqlField(index = true)
  *     private long id;
  *
- *     &#64;GridCacheQuerySqlField
+ *     // Indexed field.
+ *     &#64;GridCacheQuerySqlField(index = true)
  *     private String name;
  *     ...
  * }
  *
  * public class Person {
- *     // Unique index.
- *     &#64;GridCacheQuerySqlField
+ *     // Indexed field.
+ *     &#64;GridCacheQuerySqlField(index = true)
  *     private long id;
  *
- *     &#64;GridCacheQuerySqlField
- *     private long orgId; // Organization ID.
+ *     // Indexed field (Organization ID, used as a foreign key).
+ *     &#64;GridCacheQuerySqlField(index = true)
+ *     private long orgId;
  *
- *     // Not indexed.
+ *     // Without SQL field annotation, this field cannot be used in queries.
  *     private String name;
  *
- *     // Non-unique index.
+ *     // Not indexed field.
  *     &#64;GridCacheQuerySqlField
  *     private double salary;
  *
@@ -144,9 +147,11 @@ import org.jetbrains.annotations.*;
  * (supported by {@code GridH2IndexingSpi}):
  * <pre name="code" class="java">
  * private class MapPoint implements Serializable {
+ *     // Geospatial index.
  *     &#64;GridCacheQuerySqlField(index = true)
  *     private com.vividsolutions.jts.geom.Point location;
-
+ *
+ *     // Not indexed field.
  *     &#64;GridCacheQuerySqlField
  *     private String name;
  *
