@@ -80,11 +80,4 @@
             </sources>
         </moduleSet>
     </moduleSets>
-
-    <fileSets>
-        <fileSet>
-            <directory>assembly/libs</directory>
-            <outputDirectory>/</outputDirectory>
-        </fileSet>
-    </fileSets>
 </assembly>
