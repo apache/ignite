@@ -504,7 +504,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @param invalidate Invalidation flag.
      * @param syncCommit Synchronous commit flag.
      * @param syncRollback Synchronous rollback flag.
-     * @param swapEnabled If {@code true} then swap storage will be used.
+     * @param swapOrOffheapEnabled If {@code true} then swap storage will be used.
      * @param storeEnabled if {@code true} then read/write through will be used.
      * @param txSize Expected transaction size.
      * @param grpLockKey Group lock key if this is a group-lock transaction.
@@ -520,7 +520,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         boolean invalidate,
         boolean syncCommit,
         boolean syncRollback,
-        boolean swapEnabled,
+        boolean swapOrOffheapEnabled,
         boolean storeEnabled,
         int txSize,
         @Nullable Object grpLockKey,
@@ -3066,7 +3066,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 ctx.hasFlag(INVALIDATE),
                 ctx.syncCommit(),
                 ctx.syncRollback(),
-                ctx.isSwapEnabled(),
+                ctx.isSwapOrOffheapEnabled(),
                 ctx.isStoreEnabled(),
                 txSize,
                 /** group lock keys */null,

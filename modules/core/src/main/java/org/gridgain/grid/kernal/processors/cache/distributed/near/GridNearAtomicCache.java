@@ -591,13 +591,13 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         boolean invalidate,
         boolean syncCommit,
         boolean syncRollback,
-        boolean swapEnabled,
+        boolean swapOrOffheapEnabled,
         boolean storeEnabled,
         int txSize,
         @Nullable Object grpLockKey,
         boolean partLock) {
         return dht.newTx(implicit, implicitSingle, concurrency, isolation, timeout, invalidate, syncCommit,
-            syncRollback, swapEnabled, storeEnabled, txSize, grpLockKey, partLock);
+            syncRollback, swapOrOffheapEnabled, storeEnabled, txSize, grpLockKey, partLock);
     }
 
     /** {@inheritDoc} */
