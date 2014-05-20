@@ -140,7 +140,8 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
             if (meta.phase() == GridHadoopJobPhase.PHASE_COMPLETE) {
                 if (log.isDebugEnabled())
-                    log.debug("Completed job execution, will terminate child process: " + job.id());
+                    log.debug("Completed job execution, will terminate child process [jobId=" + job.id() +
+                        ", proc=" + proc + ']');
 
                 runningProcsByJobId.remove(job.id());
                 runningProcsByProcId.remove(proc.descriptor().processId());
@@ -174,7 +175,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
             GridHadoopMapReducePlan plan = meta.mapReducePlan();
 
             if (plan.mapperNodeIds().contains(ctx.localNodeId()) || plan.reducerNodeIds().contains(ctx.localNodeId()))
-                startProcess(job, meta);
+                startProcess(job, meta.mapReducePlan());
         }
     }
 
@@ -188,9 +189,26 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
         }
 
         try {
-            final HadoopProcess proc = runningProcsByJobId.get(job.id());
+            HadoopProcess proc = runningProcsByJobId.get(job.id());
 
-            assert proc != null : "Missing started process for task execution request: " + job.id();
+            GridHadoopTaskType taskType = F.first(tasks).type();
+
+            if (taskType == GridHadoopTaskType.ABORT || taskType == GridHadoopTaskType.COMMIT) {
+                if (proc == null || proc.terminated()) {
+                    runningProcsByJobId.remove(job.id(), proc);
+
+                    // Start new process for ABORT task since previous processes were killed.
+                    proc = startProcess(job, null);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Starting new process for finalizing task [jobId=" + job.id() +
+                            ", proc=" + proc + ", taskType=" + taskType + ']');
+                }
+            }
+            else
+                assert proc != null : "Missing started process for task execution request: " + job.id();
+
+            final HadoopProcess proc0 = proc;
 
             proc.initFut.listenAsync(new CI1<GridFuture<GridBiTuple<Process, GridHadoopProcessDescriptor>>>() {
                 @Override public void apply(
@@ -201,13 +219,13 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                     try {
                         f.get();
 
-                        proc.addTasks(tasks);
+                        proc0.addTasks(tasks);
 
                         if (log.isDebugEnabled())
                             log.debug("Sending task execution request to child process [jobId=" + job.id() +
-                                ", tasks=" + tasks + ']');
+                                ", proc=" + proc0 + ", tasks=" + tasks + ']');
 
-                        sendExecutionRequest(proc, job, tasks);
+                        sendExecutionRequest(proc0, job, tasks);
                     }
                     catch (GridException e) {
                         notifyTasksFailed(tasks, FAILED, e);
@@ -356,16 +374,18 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
     /**
      * Starts process template that will be ready to execute Hadoop tasks.
      *
-     * @param meta Process metadata.
+     * @param job Job instance.
+     * @param plan Map reduce plan.
      */
-    private void startProcess(final GridHadoopJob job, final GridHadoopJobMetadata meta) {
+    private HadoopProcess startProcess(final GridHadoopJob job, final GridHadoopMapReducePlan plan) {
         final UUID childProcId = UUID.randomUUID();
 
         GridHadoopJobId jobId = job.id();
 
         final GridHadoopProcessFuture fut = new GridHadoopProcessFuture(childProcId, jobId, ctx.kernalContext());
 
-        final HadoopProcess proc = new HadoopProcess(jobId, fut, meta.mapReducePlan().reducers(ctx.localNodeId()));
+        final HadoopProcess proc = new HadoopProcess(jobId, fut,
+            plan == null ? null : plan.reducers(ctx.localNodeId()));
 
         HadoopProcess old = runningProcsByJobId.put(jobId, proc);
 
@@ -388,9 +408,9 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
                     if (log.isDebugEnabled())
                         log.debug("Created hadoop child process metadata for job [job=" + job +
-                            ", taskMeta=" + startMeta + ']');
+                            ", childProcId=" + childProcId + ", taskMeta=" + startMeta + ']');
 
-                    Process proc = startJavaProcess(childProcId, startMeta, meta);
+                    Process proc = startJavaProcess(childProcId, startMeta, job);
 
                     BufferedReader rdr = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 
@@ -405,14 +425,14 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                             // Process started successfully, it should not write anything more to the output stream.
                             if (log.isDebugEnabled())
                                 log.debug("Successfully started child process [childProcId=" + childProcId +
-                                    ", meta=" + meta + ']');
+                                    ", meta=" + job + ']');
 
                             fut.onProcessStarted(proc);
 
                             break;
                         }
                         else if ("Failed".equals(line)) {
-                            StringBuilder sb = new StringBuilder("Failed to start child process: " + meta + "\n");
+                            StringBuilder sb = new StringBuilder("Failed to start child process: " + job + "\n");
 
                             while ((line = rdr.readLine()) != null)
                                 sb.append("    ").append(line).append("\n");
@@ -429,7 +449,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                     }
                 }
                 catch (Throwable e) {
-                    fut.onDone(new GridException("Failed to initialize child process: " + meta, e));
+                    fut.onDone(new GridException("Failed to initialize child process: " + job, e));
                 }
                 finally {
                     busyLock.readUnlock();
@@ -443,13 +463,15 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                     // Make sure there were no exceptions.
                     f.get();
 
-                    prepareForJob(proc, meta);
+                    prepareForJob(proc, job, plan);
                 }
                 catch (GridException ignore) {
                     // Exception is printed in future's onDone() method.
                 }
             }
         });
+
+        return proc;
     }
 
     /**
@@ -521,11 +543,11 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
      *
      * @param childProcId Child process ID.
      * @param startMeta Metadata.
-     * @param jobMeta Job metadata.
+     * @param job Job.
      * @return Started process.
      */
     private Process startJavaProcess(UUID childProcId, GridHadoopExternalTaskMetadata startMeta,
-        GridHadoopJobMetadata jobMeta) throws Exception {
+        GridHadoopJob job) throws Exception {
         List<String> cmd = new ArrayList<>();
 
         cmd.add(javaCmd);
@@ -546,7 +568,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
         cmd.add("-sport");
         cmd.add(String.valueOf(nodeDesc.sharedMemoryPort()));
         cmd.add("-out");
-        cmd.add(jobWorkFolder(jobMeta.jobId()) + File.separator + childProcId);
+        cmd.add(jobWorkFolder(job.id()) + File.separator + childProcId);
 
         return new ProcessBuilder(cmd)
             .redirectErrorStream(true)
@@ -609,10 +631,12 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
             comm.sendMessage(proc.descriptor(), new GridHadoopJobInfoUpdateRequest(proc.jobId, meta.phase(), addrs));
         }
         catch (GridException e) {
-            log.error("Failed to send job state update message to remote child process (will kill the process) " +
-                "[jobId=" + proc.jobId + ", meta=" + meta + ']', e);
+            if (!proc.terminated()) {
+                log.error("Failed to send job state update message to remote child process (will kill the process) " +
+                    "[jobId=" + proc.jobId + ", meta=" + meta + ']', e);
 
-            proc.terminate();
+                proc.terminate();
+            }
         }
     }
 
@@ -620,18 +644,19 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
      * Sends prepare request to remote process.
      *
      * @param proc Process to send request to.
-     * @param meta Job metadata.
+     * @param job Job.
+     * @param plan Map reduce plan.
      */
-    private void prepareForJob(HadoopProcess proc, GridHadoopJobMetadata meta) {
+    private void prepareForJob(HadoopProcess proc, GridHadoopJob job, @Nullable GridHadoopMapReducePlan plan) {
         try {
-            Collection<GridHadoopInputSplit> mappers = meta.mapReducePlan().mappers(ctx.localNodeId());
+            Collection<GridHadoopInputSplit> mappers = plan == null ? null : plan.mappers(ctx.localNodeId());
 
             comm.sendMessage(proc.descriptor(),
-                new GridHadoopPrepareForJobRequest(meta.jobId(), meta.jobInfo(), !F.isEmpty(mappers)));
+                new GridHadoopPrepareForJobRequest(job.id(), job.info(), !F.isEmpty(mappers)));
         }
         catch (GridException e) {
-            U.error(log, "Failed to send job prepare request to remote process [proc=" + proc + ", meta=" + meta +
-                ']', e);
+            U.error(log, "Failed to send job prepare request to remote process [proc=" + proc + ", job=" + job +
+                ", plan=" + plan + ']', e);
 
             proc.terminate();
         }
@@ -708,6 +733,8 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
                         for (GridHadoopTaskInfo info : tasks)
                             jobTracker.onTaskFinished(info, status);
+
+                        runningProcsByJobId.remove(proc.jobId(), proc);
                     }
 
                     // Safety.
@@ -731,7 +758,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
         private Process proc;
 
         /** Init future. Completes when process is ready to receive messages. */
-        private GridHadoopProcessFuture initFut;
+        private final GridHadoopProcessFuture initFut;
 
         /** Process descriptor. */
         private GridHadoopProcessDescriptor procDesc;
@@ -743,13 +770,14 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
         private Collection<GridHadoopTaskInfo> tasks = new ConcurrentLinkedDeque8<>();
 
         /** Terminated flag. */
-        private boolean terminated;
+        private volatile boolean terminated;
 
         /**
          * @param jobId Job ID.
          * @param initFut Init future.
          */
-        private HadoopProcess(GridHadoopJobId jobId, GridHadoopProcessFuture initFut, int[] reducers) {
+        private HadoopProcess(GridHadoopJobId jobId, GridHadoopProcessFuture initFut,
+            int[] reducers) {
             this.jobId = jobId;
             this.initFut = initFut;
 
@@ -797,12 +825,22 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
          * Terminates process (kills it).
          */
         private void terminate() {
+            // Guard against concurrent message sending.
             lock();
 
             try {
                 terminated = true;
 
-                proc.destroy();
+                if (!initFut.isDone())
+                    initFut.listenAsync(new CI1<GridFuture<GridBiTuple<Process, GridHadoopProcessDescriptor>>>() {
+                        @Override public void apply(
+                            GridFuture<GridBiTuple<Process, GridHadoopProcessDescriptor>> f) {
+                            proc.destroy();
+                        }
+                    });
+                else {
+                    proc.destroy();
+                }
             }
             finally {
                 unlock();

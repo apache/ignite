@@ -139,7 +139,7 @@ public class GridHadoopChildProcessRunner {
      */
     private void runTasks(final GridHadoopTaskExecutionRequest req) {
         if (!initFut.isDone() && log.isDebugEnabled())
-            log.debug("Will wait for process initialization future completion.");
+            log.debug("Will wait for process initialization future completion: " + req);
 
         initFut.listenAsync(new CI1<GridFuture<?>>() {
             @Override public void apply(GridFuture<?> f) {

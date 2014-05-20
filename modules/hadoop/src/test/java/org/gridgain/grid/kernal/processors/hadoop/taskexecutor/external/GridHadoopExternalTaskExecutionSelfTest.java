@@ -21,6 +21,7 @@ import org.gridgain.grid.ggfs.hadoop.v1.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.util.typedef.*;
 
 import java.io.*;
 import java.util.*;
@@ -94,6 +95,52 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testMapperException() throws Exception {
+        String testInputFile = "/test";
+
+        prepareTestFile(testInputFile);
+
+        Configuration cfg = new Configuration();
+
+        cfg.set("fs.ggfs.impl", GridGgfsHadoopFileSystem.class.getName());
+
+        Job job = Job.getInstance(cfg);
+
+        job.setMapperClass(TestFailingMapper.class);
+        job.setCombinerClass(TestReducer.class);
+        job.setReducerClass(TestReducer.class);
+
+        job.setMapOutputKeyClass(Text.class);
+        job.setMapOutputValueClass(IntWritable.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(IntWritable.class);
+
+        job.setNumReduceTasks(1);
+
+        FileInputFormat.setInputPaths(job, new Path("ggfs://ipc/" + testInputFile));
+        FileOutputFormat.setOutputPath(job, new Path("ggfs://ipc/output"));
+
+        job.setJarByClass(getClass());
+
+        GridHadoopProcessorAdapter hadoop = ((GridKernal)grid(0)).context().hadoop();
+
+        GridFuture<?> fut = hadoop.submit(new GridHadoopJobId(UUID.randomUUID(), 1),
+            new GridHadoopDefaultJobInfo(job.getConfiguration()));
+
+        try {
+            fut.get();
+        }
+        catch (GridException e) {
+            IOException exp = X.cause(e, IOException.class);
+
+            assertNotNull(exp);
+            assertEquals("Test failure", exp.getMessage());
+        }
+    }
+
+    /**
      * @param filePath File path to prepare.
      * @throws Exception If failed.
      */
@@ -122,6 +169,15 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
 
         @Override protected void map(Object key, Text val, Context ctx) throws IOException, InterruptedException {
             ctx.write(line, one);
+        }
+    }
+
+    /**
+     * Failing mapper.
+     */
+    private static class TestFailingMapper extends Mapper<Object, Text, Text, IntWritable> {
+        @Override protected void map(Object key, Text val, Context c) throws IOException, InterruptedException {
+            throw new IOException("Test failure");
         }
     }
 
