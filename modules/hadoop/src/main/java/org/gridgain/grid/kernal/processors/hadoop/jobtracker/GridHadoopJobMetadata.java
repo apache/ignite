@@ -44,9 +44,6 @@ public class GridHadoopJobMetadata implements Externalizable {
     /** Next task number. */
     private int nextTaskNum;
 
-    /** External execution flag. */
-    private boolean externalExec;
-
     /** Reducers addresses. */
     @GridToStringInclude
     private Map<Integer, GridHadoopProcessDescriptor> reducersAddrs;
@@ -74,7 +71,6 @@ public class GridHadoopJobMetadata implements Externalizable {
      */
     public GridHadoopJobMetadata() {
         // No-op.
-        startTs = System.currentTimeMillis();
     }
 
     /**
@@ -98,7 +94,6 @@ public class GridHadoopJobMetadata implements Externalizable {
     public GridHadoopJobMetadata(GridHadoopJobMetadata src) {
         // Make sure to preserve alphabetic order.
         completeTs = src.completeTs;
-        externalExec = src.externalExec;
         failCause = src.failCause;
         jobId = src.jobId;
         jobInfo = src.jobInfo;
@@ -125,20 +120,6 @@ public class GridHadoopJobMetadata implements Externalizable {
      */
     public GridHadoopJobPhase phase() {
         return phase;
-    }
-
-    /**
-     * @return External execution flag.
-     */
-    public boolean externalExecution() {
-        return externalExec;
-    }
-
-    /**
-     * @param externalExec External execution flag.
-     */
-    public void externalExecution(boolean externalExec) {
-        this.externalExec = externalExec;
     }
 
     /**
@@ -262,6 +243,8 @@ public class GridHadoopJobMetadata implements Externalizable {
      * @param mrPlan Map-reduce plan.
      */
     public void mapReducePlan(GridHadoopMapReducePlan mrPlan) {
+        assert this.mrPlan == null : "Map-reduce plan can only be initialized once.";
+
         this.mrPlan = mrPlan;
 
         // Initialize task numbers.
@@ -350,7 +333,6 @@ public class GridHadoopJobMetadata implements Externalizable {
         out.writeObject(taskNumMap);
         out.writeInt(nextTaskNum);
         out.writeObject(phase);
-        out.writeBoolean(externalExec);
         out.writeObject(failCause);
         out.writeLong(ver);
         out.writeLong(startTs);
@@ -369,7 +351,6 @@ public class GridHadoopJobMetadata implements Externalizable {
         taskNumMap = (Map<Object, Integer>)in.readObject();
         nextTaskNum = in.readInt();
         phase = (GridHadoopJobPhase)in.readObject();
-        externalExec = in.readBoolean();
         failCause = (Throwable)in.readObject();
         ver = in.readLong();
         startTs = in.readLong();

@@ -69,7 +69,8 @@ public class GridHadoopExternalProcessStarter {
     public void run() throws Exception {
         initializeStreams();
 
-        ExecutorService msgExecSvc = Executors.newFixedThreadPool(1);
+        ExecutorService msgExecSvc = Executors.newFixedThreadPool(
+            Integer.getInteger("MSG_THREAD_POOL_SIZE", Runtime.getRuntime().availableProcessors() * 2));
 
         GridLogger log = logger();
 

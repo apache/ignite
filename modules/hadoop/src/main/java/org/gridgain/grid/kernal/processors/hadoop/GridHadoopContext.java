@@ -15,7 +15,6 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
-import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
 
 import java.util.*;
 
@@ -35,11 +34,8 @@ public class GridHadoopContext {
     /** Job tracker. */
     private GridHadoopJobTracker jobTracker;
 
-    /** Embedded task executor. */
-    private GridHadoopEmbeddedTaskExecutor embeddedTaskExecutor;
-
     /** External task executor. */
-    private GridHadoopExternalTaskExecutor extTaskExecutor;
+    private GridHadoopTaskExecutorAdapter taskExecutor;
 
     /** */
     private GridHadoopShuffle shuffle;
@@ -54,16 +50,14 @@ public class GridHadoopContext {
         GridKernalContext ctx,
         GridHadoopConfiguration cfg,
         GridHadoopJobTracker jobTracker,
-        GridHadoopEmbeddedTaskExecutor embeddedTaskExecutor,
-        GridHadoopExternalTaskExecutor extTaskExecutor,
+        GridHadoopTaskExecutorAdapter taskExecutor,
         GridHadoopShuffle shuffle
     ) {
         this.ctx = ctx;
         this.cfg = cfg;
 
         this.jobTracker = add(jobTracker);
-        this.embeddedTaskExecutor = add(embeddedTaskExecutor);
-        this.extTaskExecutor = add(extTaskExecutor);
+        this.taskExecutor = add(taskExecutor);
         this.shuffle = add(shuffle);
 
         sysCacheName = cfg.getSystemCacheName();
@@ -148,11 +142,10 @@ public class GridHadoopContext {
     }
 
     /**
-     * @param external External or embedded execution.
      * @return Task executor.
      */
-    public GridHadoopTaskExecutorAdapter taskExecutor(boolean external) {
-        return external ? extTaskExecutor : embeddedTaskExecutor;
+    public GridHadoopTaskExecutorAdapter taskExecutor() {
+        return taskExecutor;
     }
 
     /**

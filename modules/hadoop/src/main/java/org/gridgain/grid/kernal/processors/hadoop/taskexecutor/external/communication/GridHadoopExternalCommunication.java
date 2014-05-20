@@ -35,7 +35,7 @@ import java.util.concurrent.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 
 /**
- * TODO fix javadocs.
+ * Hadoop external communication class.
  */
 public class GridHadoopExternalCommunication {
     /** IPC error message. */
@@ -181,9 +181,6 @@ public class GridHadoopExternalCommunication {
     /** Message queue limit. */
     private int msgQueueLimit = DFLT_MSG_QUEUE_LIMIT;
 
-    /** Min buffered message count. */
-    private int minBufferedMsgCnt = Integer.getInteger(GG_MIN_BUFFERED_COMMUNICATION_MSG_CNT, 512);
-
     /** Buffer size ratio. */
     private double bufSizeRatio = X.parseDouble(X.getSystemOrEnv(GG_COMMUNICATION_BUF_RESIZE_RATIO), 0.8);
 
@@ -259,7 +256,11 @@ public class GridHadoopExternalCommunication {
         this.locAddr = locAddr;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets local address for socket binding.
+     *
+     * @return Local address.
+     */
     public String getLocalAddress() {
         return locAddr;
     }
@@ -275,7 +276,11 @@ public class GridHadoopExternalCommunication {
         this.locPort = locPort;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets local port for socket binding.
+     *
+     * @return Local port.
+     */
     public int getLocalPort() {
         return locPort;
     }
@@ -300,7 +305,9 @@ public class GridHadoopExternalCommunication {
         this.locPortRange = locPortRange;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Local port range.
+     */
     public int getLocalPortRange() {
         return locPortRange;
     }
@@ -318,7 +325,11 @@ public class GridHadoopExternalCommunication {
         this.shmemPort = shmemPort;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets shared memory port to accept incoming connections.
+     *
+     * @return Shared memory port.
+     */
     public int getSharedMemoryPort() {
         return shmemPort;
     }
@@ -337,7 +348,9 @@ public class GridHadoopExternalCommunication {
         this.connTimeout = connTimeout;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Connection timeout.
+     */
     public long getConnectTimeout() {
         return connTimeout;
     }
@@ -358,7 +371,11 @@ public class GridHadoopExternalCommunication {
         this.maxConnTimeout = maxConnTimeout;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets maximum connection timeout.
+     *
+     * @return Maximum connection timeout.
+     */
     public long getMaxConnectTimeout() {
         return maxConnTimeout;
     }
@@ -375,7 +392,9 @@ public class GridHadoopExternalCommunication {
         this.reconCnt = reconCnt;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Reconnect count.
+     */
     public int getReconnectCount() {
         return reconCnt;
     }
@@ -393,12 +412,16 @@ public class GridHadoopExternalCommunication {
         this.directBuf = directBuf;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Direct buffer flag.
+     */
     public boolean isDirectBuffer() {
         return directBuf;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Direct send buffer flag.
+     */
     public boolean isDirectSendBuffer() {
         return directSndBuf;
     }
@@ -425,7 +448,9 @@ public class GridHadoopExternalCommunication {
         this.selectorsCnt = selectorsCnt;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Number of selectors to use.
+     */
     public int getSelectorsCount() {
         return selectorsCnt;
     }
@@ -448,7 +473,9 @@ public class GridHadoopExternalCommunication {
         this.tcpNoDelay = tcpNoDelay;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return {@code TCP_NO_DELAY} flag.
+     */
     public boolean isTcpNoDelay() {
         return tcpNoDelay;
     }
@@ -465,7 +492,9 @@ public class GridHadoopExternalCommunication {
         this.sockRcvBuf = sockRcvBuf;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Socket receive buffer size.
+     */
     public int getSocketReceiveBuffer() {
         return sockRcvBuf;
     }
@@ -482,7 +511,9 @@ public class GridHadoopExternalCommunication {
         this.sockSndBuf = sockSndBuf;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Socket send buffer size.
+     */
     public int getSocketSendBuffer() {
         return sockSndBuf;
     }
@@ -501,27 +532,11 @@ public class GridHadoopExternalCommunication {
         this.msgQueueLimit = msgQueueLimit;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Message queue size limit.
+     */
     public int getMessageQueueLimit() {
         return msgQueueLimit;
-    }
-
-    /**
-     * Sets the minimum number of messages for this SPI, that are buffered
-     * prior to sending.
-     * <p>
-     * Defaults to either {@code 512} or {@link GridSystemProperties#GG_MIN_BUFFERED_COMMUNICATION_MSG_CNT}
-     * system property (if specified).
-     *
-     * @param minBufferedMsgCnt Minimum buffered message count.
-     */
-    public void setMinimumBufferedMessageCount(int minBufferedMsgCnt) {
-        this.minBufferedMsgCnt = minBufferedMsgCnt;
-    }
-
-    /** {@inheritDoc} */
-    public int getMinimumBufferedMessageCount() {
-        return minBufferedMsgCnt;
     }
 
     /**
@@ -537,7 +552,9 @@ public class GridHadoopExternalCommunication {
         this.bufSizeRatio = bufSizeRatio;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Buffer size ratio.
+     */
     public double getBufferSizeRatio() {
         return bufSizeRatio;
     }
@@ -551,11 +568,18 @@ public class GridHadoopExternalCommunication {
         this.lsnr = lsnr;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Outbound message queue size.
+     */
     public int getOutboundMessagesQueueSize() {
         return nioSrvr.outboundMessagesQueueSize();
     }
 
+    /**
+     * Starts communication.
+     *
+     * @throws GridException If failed.
+     */
     public void start() throws GridException {
         try {
             locHost = locAddr == null ? U.getLocalHost() : U.resolveLocalHost(locAddr);

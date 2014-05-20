@@ -342,7 +342,10 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
 
         final long msgId = msg.id();
 
-        sentMsgs.putIfAbsent(msgId, new GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapterEx<?>>(msg, fut));
+        GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapterEx<?>> old = sentMsgs.putIfAbsent(msgId,
+            new GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapterEx<?>>(msg, fut));
+
+        assert old == null;
 
         try {
             io.apply(reduceAddrs[idx], msg);

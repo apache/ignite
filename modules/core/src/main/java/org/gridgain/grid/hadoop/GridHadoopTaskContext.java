@@ -9,16 +9,10 @@
 
 package org.gridgain.grid.hadoop;
 
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.*;
-
 /**
  * Task context.
  */
 public class GridHadoopTaskContext {
-    /** Kernal context. */
-    private final GridKernalContext ctx;
-
     /** */
     private final GridHadoopJob job;
 
@@ -29,13 +23,11 @@ public class GridHadoopTaskContext {
     private final GridHadoopTaskOutput output;
 
     /**
-     * @param ctx Kernal context if running task in embedded mode..
      * @param job Job.
      * @param input Input.
      * @param output Output.
      */
-    public GridHadoopTaskContext(GridKernalContext ctx, GridHadoopJob job, GridHadoopTaskInput input, GridHadoopTaskOutput output) {
-        this.ctx = ctx;
+    public GridHadoopTaskContext(GridHadoopJob job, GridHadoopTaskInput input, GridHadoopTaskOutput output) {
         this.job = job;
         this.input = input;
         this.output = output;
@@ -57,18 +49,6 @@ public class GridHadoopTaskContext {
      */
     public GridHadoopTaskInput input() {
         return input;
-    }
-
-    /**
-     * Gets local grid instance if running task in embedded mode.
-     *
-     * @return Grid instance.
-     */
-    public Grid grid() {
-        if (ctx == null)
-            return null;
-
-        return ctx.grid();
     }
 
     /**

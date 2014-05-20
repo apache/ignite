@@ -62,7 +62,7 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
                 @Override public GridFuture<?> call() throws Exception {
                     try (GridHadoopTaskOutput out = createOutput(info);
                          GridHadoopTaskInput in = createInput(info)) {
-                        GridHadoopTaskContext taskCtx = new GridHadoopTaskContext(ctx.kernalContext(), job, in, out);
+                        GridHadoopTaskContext taskCtx = new GridHadoopTaskContext(job, in, out);
 
                         GridHadoopTask task = job.createTask(info);
 

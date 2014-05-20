@@ -9,6 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external;
 
+import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
@@ -29,6 +33,9 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.net.*;
+import java.nio.file.*;
+import java.nio.file.attribute.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
@@ -52,7 +59,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
     private GridHadoopProcessDescriptor nodeDesc;
 
     /** Output base. */
-    private String outputBase;
+    private File outputBase;
 
     /** Path separator. */
     private String pathSep;
@@ -80,7 +87,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
         log = ctx.kernalContext().log(GridHadoopExternalTaskExecutor.class);
 
-        outputBase = U.getGridGainHome() + File.separator + "work" + File.separator + "hadoop";
+        outputBase = U.resolveWorkDirectory("hadoop", false);
 
         pathSep = System.getProperty("path.separator", U.isWindows() ? ";" : ":");
 
@@ -276,8 +283,59 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
     private GridHadoopExternalTaskMetadata buildTaskMeta(GridHadoopJob job) {
         GridHadoopExternalTaskMetadata meta = new GridHadoopExternalTaskMetadata();
 
-        // TODO how to build classpath? Deploy task jar here.
-        meta.classpath(Arrays.asList(System.getProperty("java.class.path").split(":")));
+        // TODO create GridHadoopTaskType.PREPARE and do all the implementation specific preparations there.
+        try {
+            String mrDir = job.property("mapreduce.job.dir");
+
+            final Collection<String> jars = new ArrayList<>();
+
+            if (mrDir != null) {
+                URI uri = new URI(mrDir);
+                Path path = new Path(uri);
+
+                JobConf cfg = ((GridHadoopDefaultJobInfo)job.info()).configuration();
+
+                FileSystem fs = FileSystem.get(path.toUri(), cfg);
+
+                File dir = new File(jobWorkFolder(job.id()) + File.separator + "jars");
+
+                if (log.isDebugEnabled())
+                    log.debug("Copying job submission directory " + path + " to local " + dir.getAbsolutePath());
+
+                if (dir.exists() && !dir.delete())
+                    throw new IllegalStateException("Failed to delete job jars folder: " + dir);
+
+                if (!fs.exists(path))
+                    throw new IllegalStateException();
+
+                if (!FileUtil.copy(fs, path, dir, false, cfg))
+                    throw new IllegalStateException();
+
+                Files.walkFileTree(dir.toPath(), new SimpleFileVisitor<java.nio.file.Path>() {
+                    @Override public FileVisitResult visitFile(java.nio.file.Path file, BasicFileAttributes attrs)
+                        throws IOException {
+                        if (file.getFileName().toString().endsWith(".jar")) {
+                            String jar = file.normalize().toAbsolutePath().toString();
+
+                            if (log.isDebugEnabled())
+                                log.debug("Adding to classpath: " + jar);
+
+                            jars.add(jar);
+                        }
+
+                        return super.visitFile(file, attrs);
+                    }
+                });
+            }
+
+            jars.addAll(Arrays.asList(System.getProperty("java.class.path").split(":")));
+
+            meta.classpath(jars);
+        }
+        catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+
         meta.jvmOptions(Arrays.asList("-Xmx1g", "-ea" ,"-DGRIDGAIN_HOME=" + U.getGridGainHome()));
 
         return meta;
@@ -332,7 +390,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                         log.debug("Created hadoop child process metadata for job [job=" + job +
                             ", taskMeta=" + startMeta + ']');
 
-                    Process proc = startJavaProcess(childProcId, startMeta);
+                    Process proc = startJavaProcess(childProcId, startMeta, meta);
 
                     BufferedReader rdr = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 
@@ -462,16 +520,18 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
      * Builds process from metadata.
      *
      * @param childProcId Child process ID.
-     * @param meta Metadata.
+     * @param startMeta Metadata.
+     * @param jobMeta Job metadata.
      * @return Started process.
      */
-    private Process startJavaProcess(UUID childProcId, GridHadoopExternalTaskMetadata meta) throws Exception {
+    private Process startJavaProcess(UUID childProcId, GridHadoopExternalTaskMetadata startMeta,
+        GridHadoopJobMetadata jobMeta) throws Exception {
         List<String> cmd = new ArrayList<>();
 
         cmd.add(javaCmd);
-        cmd.addAll(meta.jvmOptions());
+        cmd.addAll(startMeta.jvmOptions());
         cmd.add("-cp");
-        cmd.add(buildClasspath(meta.classpath()));
+        cmd.add(buildClasspath(startMeta.classpath()));
         cmd.add(GridHadoopExternalProcessStarter.class.getName());
         cmd.add("-cpid");
         cmd.add(String.valueOf(childProcId));
@@ -486,11 +546,21 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
         cmd.add("-sport");
         cmd.add(String.valueOf(nodeDesc.sharedMemoryPort()));
         cmd.add("-out");
-        cmd.add(outputBase + File.separator + childProcId);
+        cmd.add(jobWorkFolder(jobMeta.jobId()) + File.separator + childProcId);
 
         return new ProcessBuilder(cmd)
             .redirectErrorStream(true)
             .start();
+    }
+
+    /**
+     * Gets job work folder.
+     *
+     * @param jobId Job ID.
+     * @return Job work folder.
+     */
+    private String jobWorkFolder(GridHadoopJobId jobId) {
+        return outputBase + File.separator + "Job_" + jobId;
     }
 
     /**
@@ -881,7 +951,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                             ", desc=" + desc + ", initTime=" + duration() + ']');
                 }
                 else
-                    log.error("Failed to initialize child process for external task execution [jobId=" + jobId +
+                    U.error(log, "Failed to initialize child process for external task execution [jobId=" + jobId +
                         ", desc=" + desc + ']', err);
 
                 return true;

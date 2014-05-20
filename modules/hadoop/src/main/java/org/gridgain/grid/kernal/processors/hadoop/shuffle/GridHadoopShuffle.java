@@ -71,7 +71,7 @@ public class GridHadoopShuffle extends GridHadoopComponent {
      * @return Created shuffle job.
      * @throws GridException If job creation failed.
      */
-    protected GridHadoopShuffleJob<UUID> newJob(GridHadoopJobId jobId) throws GridException {
+    private GridHadoopShuffleJob<UUID> newJob(GridHadoopJobId jobId) throws GridException {
         GridHadoopMapReducePlan plan = ctx.jobTracker().plan(jobId);
 
         GridHadoopShuffleJob<UUID> job = new GridHadoopShuffleJob<>(ctx.localNodeId(), log,
@@ -99,7 +99,7 @@ public class GridHadoopShuffle extends GridHadoopComponent {
      * @param msg Message to send.
      * @throws GridException If send failed.
      */
-    protected void send0(UUID nodeId, Object msg) throws GridException {
+    private void send0(UUID nodeId, Object msg) throws GridException {
         GridNode node = ctx.kernalContext().discovery().node(nodeId);
 
         ctx.kernalContext().io().sendUserMessage(F.asList(node), msg, GridTopic.TOPIC_HADOOP, false, 0);
@@ -109,7 +109,7 @@ public class GridHadoopShuffle extends GridHadoopComponent {
      * @param jobId Task info.
      * @return Shuffle job.
      */
-    protected GridHadoopShuffleJob<UUID> job(GridHadoopJobId jobId) throws GridException {
+    private GridHadoopShuffleJob<UUID> job(GridHadoopJobId jobId) throws GridException {
         GridHadoopShuffleJob<UUID> res = jobs.get(jobId);
 
         if (res == null) {
@@ -122,10 +122,8 @@ public class GridHadoopShuffle extends GridHadoopComponent {
 
                 res = old;
             }
-            else {
-                if (res.reducersInitialized())
-                    startSending(res);
-            }
+            else if (res.reducersInitialized())
+                startSending(res);
         }
 
         return res;
@@ -136,7 +134,7 @@ public class GridHadoopShuffle extends GridHadoopComponent {
      *
      * @param shuffleJob Job to start sending for.
      */
-    protected void startSending(GridHadoopShuffleJob<UUID> shuffleJob) {
+    private void startSending(GridHadoopShuffleJob<UUID> shuffleJob) {
         shuffleJob.startSending(ctx.kernalContext().gridName(),
             new GridInClosure2X<UUID, GridHadoopShuffleMessage>() {
                 @Override public void applyx(UUID dest, GridHadoopShuffleMessage msg) throws GridException {

@@ -25,7 +25,6 @@ import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -44,7 +43,7 @@ public class GridHadoopChildProcessRunner {
     private ExecutorService msgExecSvc;
 
     /** Task executor service. */
-    private ExecutorService execSvc;
+    private ThreadPoolExecutor execSvc;
 
     /** */
     protected GridUnsafeMemory mem = new GridUnsafeMemory(0);
@@ -75,6 +74,12 @@ public class GridHadoopChildProcessRunner {
 
     /** Shuffle job. */
     private GridHadoopShuffleJob<GridHadoopProcessDescriptor> shuffleJob;
+
+    /** Concurrent mappers. */
+    private int concMappers;
+
+    /** Concurrent reducers. */
+    private int concReducers;
 
     /**
      * Starts child process runner.
@@ -146,6 +151,13 @@ public class GridHadoopChildProcessRunner {
 
                     assert set;
 
+                    GridHadoopTaskInfo info = F.first(req.tasks());
+
+                    int size = info.type() == MAP ? concMappers : concReducers;
+
+                    execSvc.setCorePoolSize(size);
+                    execSvc.setMaximumPoolSize(size);
+
                     for (GridHadoopTaskInfo taskInfo : req.tasks()) {
                         GridHadoopTask task = job.createTask(taskInfo);
 
@@ -169,7 +181,8 @@ public class GridHadoopChildProcessRunner {
      * @param req Init child process request.
      */
     private void initializeExecutors(GridHadoopPrepareForJobRequest req) {
-        int poolSize = Runtime.getRuntime().availableProcessors();
+        concMappers = Runtime.getRuntime().availableProcessors();
+        concReducers = Runtime.getRuntime().availableProcessors();
 
         GridHadoopJobInfo info = req.jobInfo();
 
@@ -178,15 +191,13 @@ public class GridHadoopChildProcessRunner {
 
             JobConf cfg = dfltInfo.configuration();
 
-            int concMappers = cfg.getInt(EXTERNAL_CONCURRENT_MAPPERS.propertyName(), poolSize);
-            int concReducers = cfg.getInt(EXTERNAL_CONCURRENT_REDUCERS.propertyName(), poolSize);
+            concMappers = cfg.getInt(EXTERNAL_CONCURRENT_MAPPERS.propertyName(), concMappers);
 
-            poolSize = Math.max(poolSize, Math.max(concMappers, concReducers));
+            concReducers = cfg.getInt(EXTERNAL_CONCURRENT_REDUCERS.propertyName(), concReducers);
         }
 
-        log.info("Initializing executor pool [poolSize=" + poolSize + ']');
-
-        execSvc = Executors.newFixedThreadPool(poolSize);
+        execSvc = new ThreadPoolExecutor(concMappers, concMappers,
+            1, TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
     }
 
     /**
@@ -360,25 +371,6 @@ public class GridHadoopChildProcessRunner {
     }
 
     /**
-     * @param reduceTasks Reduce tasks.
-     * @return Reducer IDs.
-     */
-    private Collection<Integer> reducerIds(Collection<GridHadoopTask> reduceTasks) {
-        if (reduceTasks == null)
-            return null;
-
-        Collection<Integer> rdc = new ArrayList<>(reduceTasks.size());
-
-        for (GridHadoopTask task : reduceTasks) {
-            assert task.info().type() == GridHadoopTaskType.REDUCE;
-
-            rdc.add(task.info().taskNumber());
-        }
-
-        return rdc;
-    }
-
-    /**
      * Task runnable.
      */
     private class TaskRunnable implements Runnable {
@@ -425,7 +417,7 @@ public class GridHadoopChildProcessRunner {
             try (GridHadoopTaskOutput out = createOutput(task.info());
                 GridHadoopTaskInput in = createInput(task.info())) {
 
-                GridHadoopTaskContext ctx = new GridHadoopTaskContext(null, job, in, out);
+                GridHadoopTaskContext ctx = new GridHadoopTaskContext(job, in, out);
 
                 task.run(ctx);
             }

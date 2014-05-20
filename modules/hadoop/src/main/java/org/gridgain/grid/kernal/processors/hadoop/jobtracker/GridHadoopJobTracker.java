@@ -165,9 +165,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             meta.mapReducePlan(mrPlan);
 
-            meta.externalExecution(((GridHadoopDefaultJobInfo)info).configuration().getBoolean(
-                GridHadoopJobProperty.EXTERNAL_EXECUTION.propertyName(), false));
-
             meta.pendingSplits(allSplits(mrPlan));
             meta.pendingReducers(allReducers(job));
 
@@ -474,10 +471,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             GridHadoopMapReducePlan plan = meta.mapReducePlan();
 
-            boolean ext = meta.externalExecution();
-
-            if (ext)
-                ctx.taskExecutor(ext).onJobStateChanged(job, meta);
+            ctx.taskExecutor().onJobStateChanged(job, meta);
 
             switch (meta.phase()) {
                 case PHASE_MAP: {
@@ -485,7 +479,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     Collection<GridHadoopTaskInfo> tasks = mapperTasks(plan.mappers(locNodeId), job, meta);
 
                     if (tasks != null)
-                        ctx.taskExecutor(ext).run(job, tasks);
+                        ctx.taskExecutor().run(job, tasks);
 
                     break;
                 }
@@ -499,8 +493,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                             log.debug("Submitting COMMIT task for execution [locNodeId=" + locNodeId +
                                 ", jobId=" + jobId + ']');
 
-                        // Always use internal executor to abort or commit.
-                        ctx.taskExecutor(false).run(job, Collections.singletonList(info));
+                        ctx.taskExecutor().run(job, Collections.singletonList(info));
 
                         return;
                     }
@@ -508,7 +501,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     Collection<GridHadoopTaskInfo> tasks = reducerTasks(plan.reducers(locNodeId), job, meta, null);
 
                     if (tasks != null)
-                        ctx.taskExecutor(ext).run(job, tasks);
+                        ctx.taskExecutor().run(job, tasks);
 
                     break;
                 }
@@ -519,7 +512,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         if (log.isDebugEnabled())
                             log.debug("Cancelling local task execution for job: " + meta);
 
-                        ctx.taskExecutor(ext).cancelTasks(jobId);
+                        ctx.taskExecutor().cancelTasks(jobId);
                     }
 
                     if (meta.pendingSplits().isEmpty() && meta.pendingReducers().isEmpty()) {
@@ -532,7 +525,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                                     ", jobId=" + jobId + ']');
 
                             // Always use internal executor to abort or commit.
-                            ctx.taskExecutor(false).run(job, Collections.singletonList(info));
+                            ctx.taskExecutor().run(job, Collections.singletonList(info));
                         }
 
                         return;
@@ -729,7 +722,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 body();
             }
             catch (Throwable e) {
-                log.error("Unhandled exception while processing event.", e);
+                U.error(log, "Unhandled exception while processing event.", e);
             }
             finally {
                 busyLock.readUnlock();
@@ -830,7 +823,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(), COMBINE, jobId,
                         meta.taskNumber(ctx.localNodeId()), taskInfo.attempt(), null);
 
-                    ctx.taskExecutor(meta.externalExecution()).run(job, Collections.singletonList(info));
+                    ctx.taskExecutor().run(job, Collections.singletonList(info));
                 }
             }
             else {
