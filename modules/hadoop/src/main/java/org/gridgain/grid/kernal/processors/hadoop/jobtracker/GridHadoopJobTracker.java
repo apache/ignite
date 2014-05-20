@@ -952,13 +952,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         /**
          * @param split Mapper split to remove.
          */
-        private RemoveMappersClosure(GridHadoopInputSplit split) {
-            splits = Collections.singletonList(split);
-        }
-
-        /**
-         * @param split Mapper split to remove.
-         */
         private RemoveMappersClosure(GridHadoopInputSplit split, Throwable err) {
             splits = Collections.singletonList(split);
             this.err = err;
