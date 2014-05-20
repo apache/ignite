@@ -16,6 +16,8 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.jetbrains.annotations.*;
 
+import java.io.IOException;
+
 /**
  * TODO: Add class description.
  */
@@ -48,5 +50,5 @@ public abstract class VisorJob<A, R> extends GridComputeJobAdapter {
      *
      * @return Result.
      */
-    protected abstract R run(A arg) throws GridException;
+    protected abstract R run(A arg) throws GridException, IOException;
 }
