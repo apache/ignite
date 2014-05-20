@@ -247,58 +247,57 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
         if (log.isDebugEnabled())
             log.debug("Moving file ranges for fragmentizer request [req=" + req + ", fileInfo=" + fileInfo + ']');
 
-        // TODO: Enable
         for (GridGgfsFileAffinityRange range : ranges) {
-//            try {
-//                GridGgfsFileInfo updated;
-//
-//                switch (range.status()) {
-//                    case RANGE_STATUS_INITIAL: {
-//                        // Mark range as moving.
-//                        updated = ggfsCtx.meta().updateInfo(fileId, updateRange(range, RANGE_STATUS_MOVING));
-//
-//                        if (updated == null) {
-//                            ggfsCtx.data().cleanBlocks(fileInfo, range, true);
-//
-//                            continue;
-//                        }
-//
-//                        // Fall-through.
-//                    }
-//
-//                    case RANGE_STATUS_MOVING: {
-//                        // Move colocated blocks.
-//                        ggfsCtx.data().spreadBlocks(fileInfo, range);
-//
-//                        // Mark range as moved.
-//                        updated = ggfsCtx.meta().updateInfo(fileId, updateRange(range, RANGE_STATUS_MOVED));
-//
-//                        if (updated == null) {
-//                            ggfsCtx.data().cleanBlocks(fileInfo, range, true);
-//
-//                            continue;
-//                        }
-//
-//                        // Fall-through.
-//                    }
-//
-//                    case RANGE_STATUS_MOVED: {
-//                        // Remove old blocks.
-//                        ggfsCtx.data().cleanBlocks(fileInfo, range, false);
-//
-//                        // Remove range from map.
-//                        updated = ggfsCtx.meta().updateInfo(fileId, deleteRange(range));
-//
-//                        if (updated == null)
-//                            ggfsCtx.data().cleanBlocks(fileInfo, range, true);
-//                    }
-//                }
-//            }
-//            catch (GridGgfsInvalidRangeException e) {
-//                if (log.isDebugEnabled())
-//                    log.debug("Failed to update file range " +
-//                        "[range=" + range + "fileId=" + fileId + ", err=" + e.getMessage() + ']');
-//            }
+            try {
+                GridGgfsFileInfo updated;
+
+                switch (range.status()) {
+                    case RANGE_STATUS_INITIAL: {
+                        // Mark range as moving.
+                        updated = ggfsCtx.meta().updateInfo(fileId, updateRange(range, RANGE_STATUS_MOVING));
+
+                        if (updated == null) {
+                            ggfsCtx.data().cleanBlocks(fileInfo, range, true);
+
+                            continue;
+                        }
+
+                        // Fall-through.
+                    }
+
+                    case RANGE_STATUS_MOVING: {
+                        // Move colocated blocks.
+                        ggfsCtx.data().spreadBlocks(fileInfo, range);
+
+                        // Mark range as moved.
+                        updated = ggfsCtx.meta().updateInfo(fileId, updateRange(range, RANGE_STATUS_MOVED));
+
+                        if (updated == null) {
+                            ggfsCtx.data().cleanBlocks(fileInfo, range, true);
+
+                            continue;
+                        }
+
+                        // Fall-through.
+                    }
+
+                    case RANGE_STATUS_MOVED: {
+                        // Remove old blocks.
+                        ggfsCtx.data().cleanBlocks(fileInfo, range, false);
+
+                        // Remove range from map.
+                        updated = ggfsCtx.meta().updateInfo(fileId, deleteRange(range));
+
+                        if (updated == null)
+                            ggfsCtx.data().cleanBlocks(fileInfo, range, true);
+                    }
+                }
+            }
+            catch (GridGgfsInvalidRangeException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to update file range " +
+                        "[range=" + range + "fileId=" + fileId + ", err=" + e.getMessage() + ']');
+            }
         }
     }
 
