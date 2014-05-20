@@ -81,6 +81,16 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         });
     }
 
+    /** {@inheritDoc} */
+    @Override public void dgc() {
+        ctx.dgc().dgc();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void dgc(long suspectLockTimeout, boolean global, boolean rmvLocks) {
+        ctx.dgc().dgc(suspectLockTimeout, global, rmvLocks);
+    }
+
     /**
      * @param dht DHT cache.
      */

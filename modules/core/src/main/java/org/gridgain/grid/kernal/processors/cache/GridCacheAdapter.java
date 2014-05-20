@@ -3743,12 +3743,12 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public void dgc() {
-        ctx.dgc().dgc();
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void dgc(long suspectLockTimeout, boolean global, boolean rmvLocks) {
-        ctx.dgc().dgc(suspectLockTimeout, global, rmvLocks);
+        // No-op.
     }
 
     /** {@inheritDoc} */
