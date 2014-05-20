@@ -96,10 +96,8 @@ public class CacheSetExample {
         System.out.println("Iterate over set.");
 
         // Iterate over set.
-        try (GridCloseableIterator<String> iter = set.iteratorEx()) {
-            while (iter.hasNext())
-                System.out.println("Set item: " + iter.next());
-        }
+        for (String item : set)
+            System.out.println("Set item: " + item);
 
         // Set API usage examples.
         if (!set.contains("0"))

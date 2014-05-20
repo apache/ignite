@@ -118,7 +118,7 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
                 }
 
                 try {
-                    GridCloseableIterator<Integer> iter = set.iteratorEx();
+                    Iterator<Integer> iter = set.iterator();
 
                     int cnt = 0;
 
