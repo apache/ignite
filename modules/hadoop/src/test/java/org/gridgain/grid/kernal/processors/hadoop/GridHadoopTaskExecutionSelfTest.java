@@ -71,6 +71,15 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         stopAllGrids();
     }
 
+    /** {@inheritDoc} */
+    @Override public GridHadoopConfiguration hadoopConfiguration(String gridName) {
+        GridHadoopConfiguration cfg = super.hadoopConfiguration(gridName);
+
+        cfg.setExternalExecution(false);
+
+        return cfg;
+    }
+
     /**
      * @throws Exception If failed.
      */

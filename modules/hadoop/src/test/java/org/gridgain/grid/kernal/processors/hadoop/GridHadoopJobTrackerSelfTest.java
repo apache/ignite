@@ -87,6 +87,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
 
         cfg.setJobFactory(new HadoopTestJobFactory());
         cfg.setMapReducePlanner(new GridHadoopTestRoundRobinMrPlanner());
+        cfg.setExternalExecution(false);
 
         return cfg;
     }
