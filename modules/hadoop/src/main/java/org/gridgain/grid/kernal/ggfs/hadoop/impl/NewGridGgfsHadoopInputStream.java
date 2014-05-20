@@ -15,6 +15,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 
@@ -150,7 +151,7 @@ public final class NewGridGgfsHadoopInputStream extends InputStream implements S
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized int read(byte[] b, int off, int len) throws IOException {
+    @Override public synchronized int read(@NotNull byte[] b, int off, int len) throws IOException {
         checkClosed();
 
         if (eof())
@@ -221,29 +222,24 @@ public final class NewGridGgfsHadoopInputStream extends InputStream implements S
 
     /** {@inheritDoc} */
     @Override public synchronized void close() throws IOException {
-        try {
-            if (!closed) {
-                readStart();
+        if (!closed) {
+            readStart();
 
-                if (log.isDebugEnabled())
-                    log.debug("Closing input stream: " + delegate);
+            if (log.isDebugEnabled())
+                log.debug("Closing input stream: " + delegate);
 
-                delegate.hadoop().closeStream(delegate);
+            delegate.hadoop().closeStream(delegate);
 
-                readEnd();
+            readEnd();
 
-                if (clientLog.isLogEnabled())
-                    clientLog.logCloseIn(logStreamId, userTime, readTime, total);
+            if (clientLog.isLogEnabled())
+                clientLog.logCloseIn(logStreamId, userTime, readTime, total);
 
-                markClosed(false);
+            markClosed(false);
 
-                if (log.isDebugEnabled())
-                    log.debug("Closed stream [delegate=" + delegate + ", readTime=" + readTime +
-                        ", userTime=" + userTime + ']');
-            }
-        }
-        catch (GridException e) {
-            throw new IOException(e);
+            if (log.isDebugEnabled())
+                log.debug("Closed stream [delegate=" + delegate + ", readTime=" + readTime +
+                    ", userTime=" + userTime + ']');
         }
     }
 

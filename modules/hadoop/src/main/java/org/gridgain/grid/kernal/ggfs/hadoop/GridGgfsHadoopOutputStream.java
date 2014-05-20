@@ -193,7 +193,7 @@ public class GridGgfsHadoopOutputStream extends OutputStream implements GridGgfs
     }
 
     /** {@inheritDoc} */
-    @Override public void onError(String errMsg) throws GridException {
+    @Override public void onError(String errMsg) {
         this.errMsg = errMsg;
     }
 }

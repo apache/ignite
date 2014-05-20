@@ -205,19 +205,6 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
             uriAuthority = name.getAuthority();
 
-//            // Resolve type and port from configuration.
-//            String type = parameter(cfg, PARAM_GGFS_ENDPOINT_TYPE, uriAuthority, U.isWindows() ?
-//                IPC_TCP : IPC_SHMEM);
-//
-//            String host = IPC_SHMEM.equals(type) ? IPC_SHMEM : parameter(cfg, PARAM_GGFS_ENDPOINT_HOST, uriAuthority,
-//                "127.0.0.1");
-//
-//            int port = parameter(cfg, PARAM_GGFS_ENDPOINT_PORT, uriAuthority, DFLT_IPC_PORT);
-//
-//            String endpoint = host + ':' + port;
-
-//            rmtClient =  new GridGgfsHadoop(LOG, endpoint)
-
             // Override sequential reads before prefetch if needed.
             seqReadsBeforePrefetch = parameter(cfg, PARAM_GGFS_SEQ_READS_BEFORE_PREFETCH, uriAuthority, 0);
 
@@ -259,8 +246,6 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
                 Integer batchSize = parameter(cfg, PARAM_GGFS_LOG_BATCH_SIZE, uriAuthority, DFLT_GGFS_LOG_BATCH_SIZE);
 
-                // TODO: Careful here.
-//                clientLog = GridGgfsHadoopLogger.logger(endpoint, handshake.ggfsName(), logDir, batchSize);
                 clientLog = GridGgfsHadoopLogger.logger(uriAuthority, handshake.ggfsName(), logDir, batchSize);
             }
             else

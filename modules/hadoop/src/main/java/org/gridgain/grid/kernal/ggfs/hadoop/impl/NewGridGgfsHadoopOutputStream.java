@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.ggfs.hadoop.impl;
 import org.apache.commons.logging.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 
@@ -94,7 +95,7 @@ public class NewGridGgfsHadoopOutputStream extends OutputStream implements GridG
     }
 
     /** {@inheritDoc} */
-    @Override public void write(byte[] b, int off, int len) throws IOException {
+    @Override public void write(@NotNull byte[] b, int off, int len) throws IOException {
         check();
 
         writeStart();
@@ -103,9 +104,6 @@ public class NewGridGgfsHadoopOutputStream extends OutputStream implements GridG
             delegate.hadoop().writeData(delegate, b, off, len);
 
             total += len;
-        }
-        catch (GridException e) {
-            throw new IOException(e);
         }
         finally {
             writeEnd();
@@ -120,34 +118,34 @@ public class NewGridGgfsHadoopOutputStream extends OutputStream implements GridG
     }
 
     /** {@inheritDoc} */
+    @Override public void flush() throws IOException {
+        delegate.hadoop().flush(delegate);
+    }
+
+    /** {@inheritDoc} */
     @Override public void close() throws IOException {
-        try {
-            if (!closed) {
-                if (log.isDebugEnabled())
-                    log.debug("Closing output stream: " + delegate);
+        if (!closed) {
+            if (log.isDebugEnabled())
+                log.debug("Closing output stream: " + delegate);
 
-                writeStart();
+            writeStart();
 
-                delegate.hadoop().closeStream(delegate);
+            delegate.hadoop().closeStream(delegate);
 
-                markClosed(false);
+            markClosed(false);
 
-                writeEnd();
+            writeEnd();
 
-                if (clientLog.isLogEnabled())
-                    clientLog.logCloseOut(logStreamId, userTime, writeTime, total);
+            if (clientLog.isLogEnabled())
+                clientLog.logCloseOut(logStreamId, userTime, writeTime, total);
 
-                if (log.isDebugEnabled())
-                    log.debug("Closed output stream [delegate=" + delegate + ", writeTime=" + writeTime / 1000 +
-                        ", userTime=" + userTime / 1000 + ']');
-            }
-            else if(connBroken)
-                throw new IOException(
-                    "Failed to close stream, because connection was broken (data could have been lost).");
+            if (log.isDebugEnabled())
+                log.debug("Closed output stream [delegate=" + delegate + ", writeTime=" + writeTime / 1000 +
+                    ", userTime=" + userTime / 1000 + ']');
         }
-        catch (GridException e) {
-            throw new IOException(e);
-        }
+        else if(connBroken)
+            throw new IOException(
+                "Failed to close stream, because connection was broken (data could have been lost).");
     }
 
     /**
@@ -189,7 +187,7 @@ public class NewGridGgfsHadoopOutputStream extends OutputStream implements GridG
     }
 
     /** {@inheritDoc} */
-    @Override public void onError(String errMsg) throws GridException {
+    @Override public void onError(String errMsg) {
         this.errMsg = errMsg;
     }
 }

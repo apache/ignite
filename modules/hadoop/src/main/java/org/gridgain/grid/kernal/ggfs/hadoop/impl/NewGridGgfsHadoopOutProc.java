@@ -412,7 +412,7 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoopEx, GridGgfsHa
 
     /** {@inheritDoc} */
     @Override public void writeData(NewGridGgfsHadoopStreamDelegate desc, byte[] data, int off, int len)
-        throws GridException {
+        throws IOException {
         final GridGgfsStreamControlRequest msg = new GridGgfsStreamControlRequest();
 
         msg.command(WRITE_BLOCK);
@@ -421,27 +421,44 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoopEx, GridGgfsHa
         msg.position(off);
         msg.length(len);
 
-        withReconnectHandling(new CX1<GridGgfsHadoopIpcIo, GridPlainFuture<Void>>() {
-            @Override public GridPlainFuture<Void> applyx(GridGgfsHadoopIpcIo io) throws GridException {
-                io.sendPlain(msg);
+        try {
+            withReconnectHandling(new CX1<GridGgfsHadoopIpcIo, GridPlainFuture<Void>>() {
+                @Override public GridPlainFuture<Void> applyx(GridGgfsHadoopIpcIo io) throws GridException {
+                    io.sendPlain(msg);
 
-                return new GridPlainFutureAdapter<>();
-            }
-        });
+                    return new GridPlainFutureAdapter<>();
+                }
+            }).get();
+        }
+        catch (GridException e) {
+            throw NewGridGgfsHadoopWrapper.cast(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean closeStream(NewGridGgfsHadoopStreamDelegate desc) throws GridException {
+    @Override public void flush(NewGridGgfsHadoopStreamDelegate delegate) throws IOException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void closeStream(NewGridGgfsHadoopStreamDelegate desc) throws IOException {
         final GridGgfsStreamControlRequest msg = new GridGgfsStreamControlRequest();
 
         msg.command(CLOSE);
         msg.streamId((long)desc.target());
 
-        return withReconnectHandling(new CX1<GridGgfsHadoopIpcIo, GridPlainFuture<Boolean>>() {
-            @Override public GridPlainFuture<Boolean> applyx(GridGgfsHadoopIpcIo io) throws GridException {
-                return io.send(msg).chain(BOOL_RES);
-            }
-        }).get();
+        try {
+            withReconnectHandling(new CX1<GridGgfsHadoopIpcIo, GridPlainFuture<Void>>() {
+                @Override public GridPlainFuture<Void> applyx(GridGgfsHadoopIpcIo io) throws GridException {
+                    io.send(msg).chain(BOOL_RES);
+
+                    return null;
+                }
+            }).get();
+        }
+        catch (GridException e) {
+            throw NewGridGgfsHadoopWrapper.cast(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -482,14 +499,8 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoopEx, GridGgfsHa
     @Override public void onError(long streamId, String errMsg) {
         GridGgfsHadoopStreamEventListener lsnr = lsnrs.get(streamId);
 
-        if (lsnr != null) {
-            try {
-                lsnr.onError(errMsg);
-            }
-            catch (GridException e) {
-                log.warn("Got exception from stream event listener (will ignore): " + lsnr, e);
-            }
-        }
+        if (lsnr != null)
+            lsnr.onError(errMsg);
         else
             log.warn("Received write error response for not registered output stream (will ignore) " +
                 "[streamId= " + streamId + ']');

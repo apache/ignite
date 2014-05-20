@@ -581,14 +581,8 @@ public class GridGgfsHadoop implements GridGgfsHadoopIpcIoListener {
     @Override public void onError(long streamId, String errMsg) {
         GridGgfsHadoopStreamEventListener lsnr = lsnrs.get(streamId);
 
-        if (lsnr != null) {
-            try {
-                lsnr.onError(errMsg);
-            }
-            catch (GridException e) {
-                log.warn("Got exception from stream event listener (will ignore): " + lsnr, e);
-            }
-        }
+        if (lsnr != null)
+            lsnr.onError(errMsg);
         else
             log.warn("Received write error response for not registered output stream (will ignore) " +
                 "[streamId= " + streamId + ']');

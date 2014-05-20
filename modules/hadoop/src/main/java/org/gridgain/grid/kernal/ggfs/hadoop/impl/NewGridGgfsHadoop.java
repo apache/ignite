@@ -186,44 +186,4 @@ public interface NewGridGgfsHadoop {
      */
     public NewGridGgfsHadoopStreamDelegate append(GridGgfsPath path, boolean create,
         @Nullable Map<String, String> props) throws GridException, IOException;
-
-    /**
-     * Asynchronously reads specified amount of bytes from opened input stream.
-     *
-     * @param desc Stream descriptor.
-     * @param pos Position to read from.
-     * @param len Data length to read.
-     * @param outBuf Optional output buffer. If buffer length is less then {@code len}, all remaining
-     *     bytes will be read into new allocated buffer of length {len - outBuf.length} and this buffer will
-     *     be the result of read future.
-     * @param outOff Output offset.
-     * @param outLen Output length.
-     * @return Read data.
-     */
-    public GridPlainFuture<byte[]> readData(NewGridGgfsHadoopStreamDelegate desc, long pos, int len,
-        @Nullable final byte[] outBuf, final int outOff, final int outLen);
-
-    /**
-     * Writes data to the stream with given streamId. This method does not return any future since
-     * no response to write request is sent.
-     *
-     * @param desc Stream descriptor.
-     * @param data Data to write.
-     * @param off Offset.
-     * @param len Length.
-     * @throws GridException If write failed.
-     * @throws IOException If failed.
-     */
-    public void writeData(NewGridGgfsHadoopStreamDelegate desc, byte[] data, int off, int len) throws GridException,
-        IOException;
-
-    /**
-     * Close server stream.
-     *
-     * @param desc Stream descriptor.
-     * @return Close future.
-     * @throws GridException If write failed.
-     * @throws IOException If failed.
-     */
-    public Boolean closeStream(NewGridGgfsHadoopStreamDelegate desc) throws GridException, IOException;
 }

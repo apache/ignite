@@ -19,6 +19,7 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.gridgain.grid.kernal.ggfs.hadoop.impl.NewGridGgfsHadoopMode.*;
 
@@ -32,11 +33,15 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx {
     /** Buffer size. */
     private final int bufSize;
 
+    /** Event listeners. */
+    private final Map<NewGridGgfsHadoopStreamDelegate, GridGgfsHadoopStreamEventListener> lsnrs =
+        new ConcurrentHashMap<>();
+
     /** Logger. */
     private final Log log;
 
     /**
-     * COnstructor.
+     * Constructor.
      *
      * @param ggfs Target GGFS.
      */
@@ -57,7 +62,16 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        // TODO.
+        // Perform cleanup.
+        for (GridGgfsHadoopStreamEventListener lsnr : lsnrs.values()) {
+            try {
+                lsnr.onClose();
+            }
+            catch (GridException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to notify stream event listener", e);
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -234,9 +248,9 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<byte[]> readData(NewGridGgfsHadoopStreamDelegate desc, long pos, int len,
+    @Override public GridPlainFuture<byte[]> readData(NewGridGgfsHadoopStreamDelegate delegate, long pos, int len,
         @Nullable byte[] outBuf, int outOff, int outLen) {
-        GridGgfsInputStreamAdapter stream = desc.target();
+        GridGgfsInputStreamAdapter stream = delegate.target();
 
         assert (outBuf != null && len == outLen) || outBuf == null;
 
@@ -246,9 +260,9 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx {
             if (outBuf != null) {
                 int outTailLen = outBuf.length - outOff;
 
-                if (len <= outTailLen) {
+                if (len <= outTailLen)
                     stream.readFully(pos, outBuf, outOff, len);
-                } else {
+                else {
                     stream.readFully(pos, outBuf, outOff, outTailLen);
 
                     int remainderLen = len - outTailLen;
@@ -265,36 +279,86 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx {
 
             return new GridPlainFutureAdapter<>(res);
         }
-        catch (IOException e) {
+        catch (IllegalStateException | IOException e) {
+            GridGgfsHadoopStreamEventListener lsnr = lsnrs.get(delegate);
+
+            if (lsnr != null)
+                lsnr.onError(e.getMessage());
+
             return new GridPlainFutureAdapter<>(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void writeData(NewGridGgfsHadoopStreamDelegate desc, byte[] data, int off, int len)
-        throws GridException, IOException {
-        GridGgfsOutputStream stream = desc.target();
+    @Override public void writeData(NewGridGgfsHadoopStreamDelegate delegate, byte[] data, int off, int len)
+        throws IOException {
+        try {
+            GridGgfsOutputStream stream = delegate.target();
 
-        stream.write(data, off, len);
+            stream.write(data, off, len);
+        }
+        catch (IllegalStateException | IOException e) {
+            GridGgfsHadoopStreamEventListener lsnr = lsnrs.get(delegate);
+
+            if (lsnr != null)
+                lsnr.onError(e.getMessage());
+
+            if (e instanceof IllegalStateException)
+                throw new IOException("Failed to write data to GGFS stream because Grid is stopping.", e);
+            else
+                throw e;
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean closeStream(NewGridGgfsHadoopStreamDelegate desc) throws GridException, IOException {
+    @Override public void flush(NewGridGgfsHadoopStreamDelegate delegate) throws IOException {
+        try {
+            GridGgfsOutputStream stream = delegate.target();
+
+            stream.flush();
+        }
+        catch (IllegalStateException | IOException e) {
+            GridGgfsHadoopStreamEventListener lsnr = lsnrs.get(delegate);
+
+            if (lsnr != null)
+                lsnr.onError(e.getMessage());
+
+            if (e instanceof IllegalStateException)
+                throw new IOException("Failed to flush data to GGFS stream because Grid is stopping.", e);
+            else
+                throw e;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void closeStream(NewGridGgfsHadoopStreamDelegate desc) throws IOException {
         Closeable closeable = desc.target();
 
-        closeable.close();
-
-        return true;
+        try {
+            closeable.close();
+        }
+        catch (IllegalStateException e) {
+            throw new IOException("Failed to close GGFS stream because Grid is stopping.", e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void addEventListener(NewGridGgfsHadoopStreamDelegate desc, GridGgfsHadoopStreamEventListener lsnr) {
-        // TODO
+    @Override public void addEventListener(NewGridGgfsHadoopStreamDelegate delegate,
+        GridGgfsHadoopStreamEventListener lsnr) {
+        GridGgfsHadoopStreamEventListener lsnr0 = lsnrs.put(delegate, lsnr);
+
+        assert lsnr0 == null || lsnr0 == lsnr;
+
+        if (log.isDebugEnabled())
+            log.debug("Added stream event listener [delegate=" + delegate + ']');
     }
 
     /** {@inheritDoc} */
-    @Override public void removeEventListener(NewGridGgfsHadoopStreamDelegate desc) {
-        // TODO
+    @Override public void removeEventListener(NewGridGgfsHadoopStreamDelegate delegate) {
+        GridGgfsHadoopStreamEventListener lsnr0 = lsnrs.remove(delegate);
+
+        if (lsnr0 != null && log.isDebugEnabled())
+            log.debug("Removed stream event listener [delegate=" + delegate + ']');
     }
 
     /** {@inheritDoc} */

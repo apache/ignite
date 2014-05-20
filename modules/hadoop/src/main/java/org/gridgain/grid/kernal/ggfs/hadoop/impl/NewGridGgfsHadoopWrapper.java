@@ -15,7 +15,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -234,31 +233,13 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
         });
     }
 
-    /** {@inheritDoc} */
-    @Override public GridPlainFuture<byte[]> readData(NewGridGgfsHadoopStreamDelegate delegate, long pos, int len,
-        @Nullable byte[] outBuf, int outOff, int outLen) {
-        return delegate.hadoop().readData(delegate, pos, len, outBuf, outOff, outLen);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeData(NewGridGgfsHadoopStreamDelegate delegate, byte[] data, int off, int len)
-        throws GridException, IOException {
-        delegate.hadoop().writeData(delegate, data, off, len);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Boolean closeStream(NewGridGgfsHadoopStreamDelegate delegate) throws GridException,
-        IOException {
-        return delegate.hadoop().closeStream(delegate);
-    }
-
     /**
      * Cast GG exception to appropriate IO exception.
      *
      * @param e Exception to cast.
      * @return Casted exception.
      */
-    private static IOException cast(GridException e) {
+    static IOException cast(GridException e) {
         assert e != null;
 
         if (e instanceof GridGgfsFileNotFoundException)

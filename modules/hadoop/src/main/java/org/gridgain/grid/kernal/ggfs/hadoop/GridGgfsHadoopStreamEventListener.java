@@ -26,7 +26,6 @@ public interface GridGgfsHadoopStreamEventListener {
      * Callback invoked when remote error occurs.
      *
      * @param errMsg Error message.
-     * @throws GridException If failed.
      */
-    public void onError(String errMsg) throws GridException;
+    public void onError(String errMsg);
 }

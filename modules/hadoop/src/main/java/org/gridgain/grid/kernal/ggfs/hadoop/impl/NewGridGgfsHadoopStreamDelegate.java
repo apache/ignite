@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.kernal.ggfs.hadoop.impl;
 
+import org.gridgain.grid.util.typedef.internal.*;
+
 /**
  * GGFS Hadoop stream descriptor.
  */
@@ -66,5 +68,21 @@ public class NewGridGgfsHadoopStreamDelegate {
      */
     public long length() {
         return len;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return System.identityHashCode(target);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        return obj != null && obj instanceof NewGridGgfsHadoopStreamDelegate &&
+            target == ((NewGridGgfsHadoopStreamDelegate)obj).target;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(NewGridGgfsHadoopStreamDelegate.class, this);
     }
 }
