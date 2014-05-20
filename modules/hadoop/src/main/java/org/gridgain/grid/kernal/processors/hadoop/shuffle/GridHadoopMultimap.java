@@ -14,7 +14,6 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -96,24 +95,26 @@ public class GridHadoopMultimap implements AutoCloseable {
         if (inputs.get() != 0)
             throw new IllegalStateException("Active inputs.");
 
-        State s = state.get();
-
-        if (s == State.CLOSING)
-            throw new IllegalStateException();
+        if (state.get() == State.CLOSING)
+            throw new IllegalStateException("Closed.");
 
         return new Adder();
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
-        assert state.get() == State.READING_WRITING;
+        assert inputs.get() == 0 : inputs.get();
+        assert adders.isEmpty() : adders.size();
 
         state(State.READING_WRITING, State.CLOSING);
 
-        AtomicLongArray tbl0 = oldTbl;
+        if (keys() == 0)
+            return;
 
-        for (int i = 0; i < tbl0.length(); i++)  {
-            long meta = tbl0.get(i);
+        AtomicLongArray tbl = oldTbl;
+
+        for (int i = 0; i < tbl.length(); i++) {
+            long meta = tbl.get(i);
 
             while (meta != 0) {
                 mem.release(key(meta), keySize(meta));
@@ -144,12 +145,13 @@ public class GridHadoopMultimap implements AutoCloseable {
      *
      * @param ignoreLastVisited Flag indicating that visiting must be started from the beginning.
      * @param v Visitor.
+     * @return {@code false} If visiting was impossible due to rehashing.
      */
-    public void visit(boolean ignoreLastVisited, Visitor v) throws GridException {
+    public boolean visit(boolean ignoreLastVisited, Visitor v) throws GridException {
         if (!state.compareAndSet(State.READING_WRITING, State.VISITING)) {
             assert state.get() != State.CLOSING;
 
-            return; // Can not visit while rehashing happens.
+            return false; // Can not visit while rehashing happens.
         }
 
         AtomicLongArray tbl0 = oldTbl;
@@ -180,6 +182,8 @@ public class GridHadoopMultimap implements AutoCloseable {
         }
 
         state(State.VISITING, State.READING_WRITING);
+
+        return true;
     }
 
     /**

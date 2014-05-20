@@ -19,6 +19,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 
+import static org.gridgain.grid.kernal.GridProductImpl.*;
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 
 /**
@@ -46,6 +47,6 @@ public class GridVersionCommandHandler extends GridRestCommandHandlerAdapter {
 
         assert SUPPORTED_COMMANDS.contains(req.command());
 
-        return new GridFinishedFuture<>(ctx, new GridRestResponse(ctx.version()));
+        return new GridFinishedFuture<>(ctx, new GridRestResponse(COMPOUND_VER));
     }
 }

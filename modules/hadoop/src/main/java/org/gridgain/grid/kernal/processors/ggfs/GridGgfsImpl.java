@@ -2214,4 +2214,12 @@ public final class GridGgfsImpl implements GridGgfsEx {
         else
             throw new IllegalStateException("Failed to get next affinity key because Grid is stopping.");
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean isProxy(URI path) {
+        GridGgfsMode mode = F.isEmpty(cfg.getPathModes()) ? cfg.getDefaultMode() :
+            modeRslvr.resolveMode(new GridGgfsPath(path));
+
+        return mode == PROXY;
+    }
 }

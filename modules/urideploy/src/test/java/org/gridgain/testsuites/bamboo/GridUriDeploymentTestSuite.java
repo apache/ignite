@@ -11,7 +11,6 @@ package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.p2p.*;
 import org.gridgain.grid.spi.deployment.uri.*;
 import org.gridgain.grid.spi.deployment.uri.scanners.file.*;

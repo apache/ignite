@@ -34,8 +34,8 @@ public class GridHadoopContext {
     /** Job tracker. */
     private GridHadoopJobTracker jobTracker;
 
-    /** */
-    private GridHadoopTaskExecutor taskExecutor;
+    /** External task executor. */
+    private GridHadoopTaskExecutorAdapter taskExecutor;
 
     /** */
     private GridHadoopShuffle shuffle;
@@ -50,7 +50,7 @@ public class GridHadoopContext {
         GridKernalContext ctx,
         GridHadoopConfiguration cfg,
         GridHadoopJobTracker jobTracker,
-        GridHadoopTaskExecutor taskExecutor,
+        GridHadoopTaskExecutorAdapter taskExecutor,
         GridHadoopShuffle shuffle
     ) {
         this.ctx = ctx;
@@ -144,7 +144,7 @@ public class GridHadoopContext {
     /**
      * @return Task executor.
      */
-    public GridHadoopTaskExecutor taskExecutor() {
+    public GridHadoopTaskExecutorAdapter taskExecutor() {
         return taskExecutor;
     }
 

@@ -125,7 +125,7 @@ public class GridHadoopFileBlock implements GridHadoopInputSplit {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object innerSplit() {
+    @Nullable @Override public <T> T innerSplit() {
         return null;
     }
 

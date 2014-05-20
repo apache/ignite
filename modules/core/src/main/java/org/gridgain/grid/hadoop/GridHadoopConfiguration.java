@@ -16,6 +16,9 @@ public class GridHadoopConfiguration {
     /** Default finished jbo info time-to-live. */
     public static final long DFLT_FINISHED_JOB_INFO_TTL = 10_000;
 
+    /** */
+    public static final boolean DFLT_EXTERNAL_EXECUTION = true;
+
     /** System cache name. TODO get rid of it. */
     private String sysCacheName;
 
@@ -24,6 +27,9 @@ public class GridHadoopConfiguration {
 
     /** Map reduce planner. */
     private GridHadoopMapReducePlanner planner;
+
+    /** */
+    private boolean extExecution = DFLT_EXTERNAL_EXECUTION;
 
     /** Finished job info TTL. */
     private long finishedJobInfoTtl = DFLT_FINISHED_JOB_INFO_TTL;
@@ -42,6 +48,7 @@ public class GridHadoopConfiguration {
      */
     public GridHadoopConfiguration(GridHadoopConfiguration cfg) {
         // Preserve alphabetic order.
+        extExecution = cfg.isExternalExecution();
         finishedJobInfoTtl = cfg.getFinishedJobInfoTtl();
         jobFactory = cfg.getJobFactory();
         planner = cfg.getMapReducePlanner();
@@ -64,6 +71,26 @@ public class GridHadoopConfiguration {
      */
     public void setFinishedJobInfoTtl(long finishedJobInfoTtl) {
         this.finishedJobInfoTtl = finishedJobInfoTtl;
+    }
+
+    /**
+     * Gets external task execution flag. If {@code true}, hadoop job tasks will be executed in an external
+     * (relative to node) process.
+     *
+     * @return {@code True} if external execution.
+     */
+    public boolean isExternalExecution() {
+        return extExecution;
+    }
+
+    /**
+     * Sets external task execution flag.
+     *
+     * @param extExecution {@code True} if tasks should be executed in an external process.
+     * @see #isExternalExecution()
+     */
+    public void setExternalExecution(boolean extExecution) {
+        this.extExecution = extExecution;
     }
 
     /**

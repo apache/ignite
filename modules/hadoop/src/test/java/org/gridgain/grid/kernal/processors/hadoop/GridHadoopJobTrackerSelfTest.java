@@ -320,10 +320,17 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
             super(taskInfo);
         }
 
+        /**
+         *
+         */
+        public HadoopTestTask() {
+            // No-op.
+        }
+
         /** {@inheritDoc} */
         @Override public void run(GridHadoopTaskContext ctx) {
             try {
-                UUID nodeId = ctx.grid().localNode().id();
+                UUID nodeId = info().nodeId();
 
                 System.out.println("Running task: " + nodeId);
 
@@ -349,6 +356,11 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
 
                         combineExecCnt.get(nodeId).incrementAndGet();
 
+                        break;
+                    }
+
+                    default: {
+                        // No-op.
                         break;
                     }
                 }

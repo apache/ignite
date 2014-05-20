@@ -21,6 +21,20 @@ public enum GridHadoopJobProperty {
     /** */
     PARTITION_HASHMAP_SIZE,
 
+    /**
+     * Specifies number of concurrently running mappers for external execution mode.
+     * <p>
+     * If not specified, defaults to {@code Runtime.getRuntime().availableProcessors()}.
+     */
+    EXTERNAL_CONCURRENT_MAPPERS,
+
+    /**
+     * Specifies number of concurrently running reducers for external execution mode.
+     * <p>
+     * If not specified, defaults to {@code Runtime.getRuntime().availableProcessors()}.
+     */
+    EXTERNAL_CONCURRENT_REDUCERS,
+
     /** */
     JOB_STATUS_POLL_DELAY;
 

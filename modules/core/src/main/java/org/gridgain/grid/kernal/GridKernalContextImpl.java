@@ -197,6 +197,10 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringInclude
+    private GridGgfsHelper ggfsHelper;
+
+    /** */
+    @GridToStringInclude
     private GridSegmentationProcessor segProc;
 
     /** */
@@ -240,12 +244,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     private GridProduct product;
-
-    /** */
-    private String buildDate;
-
-    /** */
-    private String ver;
 
     /** */
     private GridConfiguration cfg;
@@ -408,32 +406,16 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
         comps.add(comp);
     }
 
-    /** {@inheritDoc} */
-    @Override public String version() {
-        return ver;
-    }
-
     /**
-     * Sets version.
-     *
-     * @param ver Version.
+     * @param helper Helper to add.
      */
-    public void version(String ver) {
-        this.ver = ver;
-    }
+    public void addHelper(Object helper) {
+        assert helper != null;
 
-    /** {@inheritDoc} */
-    @Override public String build() {
-        return buildDate;
-    }
-
-    /**
-     * Sets build date.
-     *
-     * @param buildDate Build date.
-     */
-    public void build(String buildDate) {
-        this.buildDate = buildDate;
+        if (helper instanceof GridGgfsHelper)
+            ggfsHelper = (GridGgfsHelper)helper;
+        else
+            assert false : "Unknown helper class: " + helper.getClass();
     }
 
     /** {@inheritDoc} */
@@ -632,6 +614,11 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** {@inheritDoc} */
     @Override public GridGgfsProcessorAdapter ggfs() {
         return ggfsProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridGgfsHelper ggfsHelper() {
+        return ggfsHelper;
     }
 
     /** {@inheritDoc} */
