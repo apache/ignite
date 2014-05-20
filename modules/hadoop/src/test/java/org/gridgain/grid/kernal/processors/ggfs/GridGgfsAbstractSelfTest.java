@@ -196,6 +196,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
         dataCacheCfg.setQueryIndexEnabled(false);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
+
         dataCacheCfg.setMemoryMode(GridCacheMemoryMode.OFFHEAP_TIERED);
         dataCacheCfg.setOffHeapMaxMemory(0);
 

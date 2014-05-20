@@ -1101,6 +1101,10 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
             dataCachePrj.putx(colocatedKey, data);
 
+            byte[] reRead = dataCachePrj.get(colocatedKey);
+
+            U.debug("REREAD: " + Arrays.toString(reRead));
+
             return;
         }
 

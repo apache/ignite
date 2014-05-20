@@ -621,6 +621,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         GridCacheFilterFailedException {
         cctx.denyOnFlag(LOCAL);
 
+        // TODO: With this fix all works fine.
+//        if (key.getClass().getName().contains("GridGgfsBlock") && val == null)
+//            readSwap = true;
+
         V val = innerGet0(tx, readSwap, readThrough, evt, failFast, unmarshal, updateMetrics, filter);
 
         if (key.getClass().getName().contains("GridGgfsBlock") && val == null)

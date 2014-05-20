@@ -238,6 +238,9 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         threadId = Thread.currentThread().getId();
 
         log = U.logger(cctx.kernalContext(), logRef, this);
+
+        if (!swapEnabled)
+            U.dumpStack("TX without swap");
     }
 
     /**

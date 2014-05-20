@@ -678,6 +678,8 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      */
     private boolean evict0(GridCacheAdapter<K, V> cache, GridCacheEntryEx<K, V> entry, GridCacheVersion obsoleteVer,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter, boolean explicit) throws GridException {
+        U.debug("EVICT0 [key=" + entry.key() + ", val=" + Arrays.toString((byte[])entry.rawGet()));
+
         assert cache != null;
         assert entry != null;
         assert obsoleteVer != null;
