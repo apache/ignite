@@ -11,6 +11,8 @@ package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
+import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication.*;
 
 /**
  * Test suite for Hadoop Map Reduce engine.
@@ -37,6 +39,11 @@ public class GridHadoopTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridHadoopTasksV2Test.class));
 
         suite.addTest(new TestSuite(GridHadoopMapReduceTest.class));
+        suite.addTest(new TestSuite(GridHadoopMapReduceEmbeddedSelfTest.class));
+
+        suite.addTest(new TestSuite(GridHadoopExternalTaskExecutionSelfTest.class));
+        suite.addTest(new TestSuite(GridHadoopExternalCommunicationSelfTest.class));
+
 
         return suite;
     }
