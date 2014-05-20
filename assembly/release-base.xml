@@ -114,7 +114,6 @@
             <outputDirectory>/examples</outputDirectory>
             <includes>
                 <include>clients/**</include>
-                <include>libs/**</include>
             </includes>
             <excludes>
                 <exclude>**/*.md</exclude>
