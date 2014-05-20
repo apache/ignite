@@ -85,6 +85,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
     @Override public GridHadoopConfiguration hadoopConfiguration(String gridName) {
         GridHadoopConfiguration cfg = super.hadoopConfiguration(gridName);
 
+        cfg.setExternalExecution(false);
         cfg.setJobFactory(new HadoopTestJobFactory());
         cfg.setMapReducePlanner(new GridHadoopTestRoundRobinMrPlanner());
 
