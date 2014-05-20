@@ -638,7 +638,7 @@
                         </goals>
                         <configuration>
                             <descriptors>
-                                <descriptor>assembly/dependencies.xml</descriptor>
+                                <descriptor>assembly/dependencies-${gridgain.edition}.xml</descriptor>
                             </descriptors>
                             <outputDirectory>${basedir}</outputDirectory>
                             <finalName>libs</finalName>
@@ -655,7 +655,7 @@
                         </goals>
                         <configuration>
                             <descriptors>
-                                <descriptor>assembly/dependencies-optional.xml</descriptor>
+                                <descriptor>assembly/dependencies-optional-${gridgain.edition}.xml</descriptor>
                             </descriptors>
                             <outputDirectory>${basedir}/libs</outputDirectory>
                             <finalName>optional</finalName>

@@ -44,7 +44,7 @@
         </file>
 
         <file>
-            <source>examples/pom-standalone.xml</source>
+            <source>examples/pom-standalone-${gridgain.edition}.xml</source>
             <outputDirectory>/examples</outputDirectory>
             <destName>pom.xml</destName>
         </file>
