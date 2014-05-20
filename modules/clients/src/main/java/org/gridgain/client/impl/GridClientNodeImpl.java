@@ -32,17 +32,8 @@ public class GridClientNodeImpl implements GridClientNode {
     /** REST TCP server host names. */
     private List<String> tcpHostNames = Collections.emptyList();
 
-    /** REST HTTP server addresses. */
-    private List<String> jettyAddrs = Collections.emptyList();
-
-    /** REST HTTP server host names. */
-    private List<String> jettyHostNames = Collections.emptyList();
-
     /** Port for TCP rest binary protocol. */
     private int tcpPort;
-
-    /** Port for HTTP(S) rest binary protocol. */
-    private int httpPort;
 
     /** Node attributes. */
     private Map<String, Object> attrs = Collections.emptyMap();
@@ -93,9 +84,7 @@ public class GridClientNodeImpl implements GridClientNode {
             .nodeId(from.nodeId())
             .consistentId(from.consistentId())
             .tcpAddresses(from.tcpAddresses())
-            .jettyAddresses(from.jettyAddresses())
             .tcpPort(from.tcpPort())
-            .httpPort(from.httpPort())
             .caches(from.caches())
             .replicaCount(from.replicaCount())
             .connectable(from.connectable());
@@ -131,12 +120,12 @@ public class GridClientNodeImpl implements GridClientNode {
 
     /** {@inheritDoc} */
     @Override public List<String> jettyAddresses() {
-        return jettyAddrs;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public List<String> jettyHostNames() {
-        return jettyHostNames;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -146,7 +135,7 @@ public class GridClientNodeImpl implements GridClientNode {
 
     /** {@inheritDoc} */
     @Override public int httpPort() {
-        return httpPort;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -231,10 +220,7 @@ public class GridClientNodeImpl implements GridClientNode {
             ", consistentId=" + consistentId +
             ", tcpAddrs=" + tcpAddrs +
             ", tcpHostNames=" + tcpHostNames +
-            ", jettyAddrs=" + jettyAddrs +
-            ", jettyHostNames=" + jettyHostNames +
             ", binaryPort=" + tcpPort +
-            ", httpPort=" + httpPort +
             ']';
     }
 
@@ -320,30 +306,6 @@ public class GridClientNodeImpl implements GridClientNode {
         }
 
         /**
-         * Sets list of REST HTTP server addresses.
-         *
-         * @param jettyAddrs List of address strings.
-         * @return This for chaining.
-         */
-        public Builder jettyAddresses(Collection<String> jettyAddrs) {
-            impl.jettyAddrs = U.sealList(jettyAddrs);
-
-            return this;
-        }
-
-        /**
-         * Sets list of REST HTTP server host names.
-         *
-         * @param jettyHostNames List of host names.
-         * @return This for chaining.
-         */
-        public Builder jettyHostNames(Collection<String> jettyHostNames) {
-            impl.jettyHostNames = U.sealList(jettyHostNames);
-
-            return this;
-        }
-
-        /**
          * Sets remote TCP port value.
          *
          * @param tcpPort Sets remote port value.
@@ -351,18 +313,6 @@ public class GridClientNodeImpl implements GridClientNode {
          */
         public Builder tcpPort(int tcpPort) {
             impl.tcpPort = tcpPort;
-
-            return this;
-        }
-
-        /**
-         * Sets remote http port value.
-         *
-         * @param httpPort Http(s) port value.
-         * @return This for chaining.
-         */
-        public Builder httpPort(int httpPort) {
-            impl.httpPort = httpPort;
 
             return this;
         }
