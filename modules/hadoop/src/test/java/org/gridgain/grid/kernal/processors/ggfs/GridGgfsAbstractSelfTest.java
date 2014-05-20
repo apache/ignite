@@ -29,6 +29,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.ggfs.GridGgfs.*;
 import static org.gridgain.grid.ggfs.GridGgfsMode.*;
@@ -118,15 +119,23 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
     /** Dual mode flag. */
     protected final boolean dual;
 
+    /** Memory mode. */
+    protected final GridCacheMemoryMode memoryMode;
+
     /**
      * Constructor.
      *
      * @param mode GGFS mode.
      */
     protected GridGgfsAbstractSelfTest(GridGgfsMode mode) {
+        this(mode, ONHEAP_TIERED);
+    }
+
+    protected GridGgfsAbstractSelfTest(GridGgfsMode mode, GridCacheMemoryMode memoryMode) {
         assert mode != null && mode != PROXY;
 
         this.mode = mode;
+        this.memoryMode = memoryMode;
 
         dual = mode != PRIMARY;
     }
@@ -183,8 +192,6 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
         ggfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);
         ggfsCfg.setSequentialReadsBeforePrefetch(SEQ_READS_BEFORE_PREFETCH);
 
-        ggfsCfg.setFragmentizerEnabled(true);
-
         GridCacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
         dataCacheCfg.setName("dataCache");
@@ -195,9 +202,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setQueryIndexEnabled(false);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
-
-
-        dataCacheCfg.setMemoryMode(GridCacheMemoryMode.OFFHEAP_TIERED);
+        dataCacheCfg.setMemoryMode(memoryMode);
         dataCacheCfg.setOffHeapMaxMemory(0);
 
         GridCacheConfiguration metaCacheCfg = defaultCacheConfiguration();
