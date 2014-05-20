@@ -874,6 +874,11 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
             long maxRangeLen, @Nullable T arg) throws GridException {
             return null;
         }
+
+        /** {@inheritDoc} */
+        @Override public GridUuid nextAffinityKey() {
+            return null;
+        }
     }
 
     /**

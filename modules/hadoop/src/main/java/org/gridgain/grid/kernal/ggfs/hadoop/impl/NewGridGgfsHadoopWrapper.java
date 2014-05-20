@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.ggfs.hadoop.impl;
 
 import org.apache.commons.logging.*;
+import org.apache.hadoop.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
@@ -49,13 +50,18 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
      * @param log Current logger.
      */
     public NewGridGgfsHadoopWrapper(String connStr, String logDir, Log log) throws IOException {
-        this.endpoint = new NewGridGgfsHadoopEndpoint(connStr);
-        this.logDir = logDir;
-        this.log = log;
+        try {
+            this.endpoint = new NewGridGgfsHadoopEndpoint(connStr);
+            this.logDir = logDir;
+            this.log = log;
+        }
+        catch (IllegalArgumentException e) {
+            throw new IOException("Failed to parse endpoint: " + connStr);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsHandshakeResponse handshake(String logDir) throws GridException, IOException {
+    @Override public GridGgfsHandshakeResponse handshake(String logDir) throws IOException {
         return withReconnectHandling(new FileSystemClosure<GridGgfsHandshakeResponse>() {
             @Override public GridGgfsHandshakeResponse apply(NewGridGgfsHadoopEx hadoop,
                 GridGgfsHandshakeResponse hndResp) throws GridException, IOException {
@@ -73,7 +79,7 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsFile info(final GridGgfsPath path) throws GridException, IOException {
+    @Override public GridGgfsFile info(final GridGgfsPath path) throws IOException {
         return withReconnectHandling(new FileSystemClosure<GridGgfsFile>() {
             @Override public GridGgfsFile apply(NewGridGgfsHadoopEx hadoop, GridGgfsHandshakeResponse hndResp)
                 throws GridException, IOException {
@@ -83,8 +89,7 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsFile update(final GridGgfsPath path, final Map<String, String> props) throws GridException,
-        IOException {
+    @Override public GridGgfsFile update(final GridGgfsPath path, final Map<String, String> props) throws IOException {
         return withReconnectHandling(new FileSystemClosure<GridGgfsFile>() {
             @Override public GridGgfsFile apply(NewGridGgfsHadoopEx hadoop, GridGgfsHandshakeResponse hndResp)
                 throws GridException, IOException {
@@ -95,7 +100,7 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
 
     /** {@inheritDoc} */
     @Override public Boolean setTimes(final GridGgfsPath path, final long accessTime, final long modificationTime)
-        throws GridException, IOException {
+        throws IOException {
         return withReconnectHandling(new FileSystemClosure<Boolean>() {
             @Override public Boolean apply(NewGridGgfsHadoopEx hadoop, GridGgfsHandshakeResponse hndResp)
                 throws GridException, IOException {
@@ -105,7 +110,7 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean rename(final GridGgfsPath src, final GridGgfsPath dest) throws GridException, IOException {
+    @Override public Boolean rename(final GridGgfsPath src, final GridGgfsPath dest) throws IOException {
         return withReconnectHandling(new FileSystemClosure<Boolean>() {
             @Override public Boolean apply(NewGridGgfsHadoopEx hadoop, GridGgfsHandshakeResponse hndResp)
                 throws GridException, IOException {
@@ -115,8 +120,7 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean delete(final GridGgfsPath path, final boolean recursive) throws GridException,
-        IOException {
+    @Override public Boolean delete(final GridGgfsPath path, final boolean recursive) throws IOException {
         return withReconnectHandling(new FileSystemClosure<Boolean>() {
             @Override public Boolean apply(NewGridGgfsHadoopEx hadoop, GridGgfsHandshakeResponse hndResp)
                 throws GridException, IOException {
@@ -127,7 +131,7 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
 
     /** {@inheritDoc} */
     @Override public Collection<GridGgfsBlockLocation> affinity(final GridGgfsPath path, final long start,
-        final long len) throws GridException, IOException {
+        final long len) throws IOException {
         return withReconnectHandling(new FileSystemClosure<Collection<GridGgfsBlockLocation>>() {
             @Override public Collection<GridGgfsBlockLocation> apply(NewGridGgfsHadoopEx hadoop,
                 GridGgfsHandshakeResponse hndResp) throws GridException, IOException {
@@ -137,7 +141,7 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsPathSummary contentSummary(final GridGgfsPath path) throws GridException, IOException {
+    @Override public GridGgfsPathSummary contentSummary(final GridGgfsPath path) throws IOException {
         return withReconnectHandling(new FileSystemClosure<GridGgfsPathSummary>() {
             @Override public GridGgfsPathSummary apply(NewGridGgfsHadoopEx hadoop, GridGgfsHandshakeResponse hndResp)
                 throws GridException, IOException {
@@ -147,8 +151,7 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean mkdirs(final GridGgfsPath path, final Map<String, String> props) throws GridException,
-        IOException {
+    @Override public Boolean mkdirs(final GridGgfsPath path, final Map<String, String> props) throws IOException {
         return withReconnectHandling(new FileSystemClosure<Boolean>() {
             @Override public Boolean apply(NewGridGgfsHadoopEx hadoop, GridGgfsHandshakeResponse hndResp)
                 throws GridException, IOException {
@@ -158,7 +161,7 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridGgfsFile> listFiles(final GridGgfsPath path) throws GridException, IOException {
+    @Override public Collection<GridGgfsFile> listFiles(final GridGgfsPath path) throws IOException {
         return withReconnectHandling(new FileSystemClosure<Collection<GridGgfsFile>>() {
             @Override public Collection<GridGgfsFile> apply(NewGridGgfsHadoopEx hadoop,
                 GridGgfsHandshakeResponse hndResp) throws GridException, IOException {
@@ -168,7 +171,7 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridGgfsPath> listPaths(final GridGgfsPath path) throws GridException, IOException {
+    @Override public Collection<GridGgfsPath> listPaths(final GridGgfsPath path) throws IOException {
         return withReconnectHandling(new FileSystemClosure<Collection<GridGgfsPath>>() {
             @Override public Collection<GridGgfsPath> apply(NewGridGgfsHadoopEx hadoop,
                 GridGgfsHandshakeResponse hndResp) throws GridException, IOException {
@@ -178,7 +181,7 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsStatus fsStatus() throws GridException, IOException {
+    @Override public GridGgfsStatus fsStatus() throws IOException {
         return withReconnectHandling(new FileSystemClosure<GridGgfsStatus>() {
             @Override public GridGgfsStatus apply(NewGridGgfsHadoopEx hadoop, GridGgfsHandshakeResponse hndResp)
                 throws GridException, IOException {
@@ -188,7 +191,7 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public NewGridGgfsHadoopStreamDelegate open(final GridGgfsPath path) throws GridException, IOException {
+    @Override public NewGridGgfsHadoopStreamDelegate open(final GridGgfsPath path) throws IOException {
         return withReconnectHandling(new FileSystemClosure<NewGridGgfsHadoopStreamDelegate>() {
             @Override public NewGridGgfsHadoopStreamDelegate apply(NewGridGgfsHadoopEx hadoop,
                 GridGgfsHandshakeResponse hndResp) throws GridException, IOException {
@@ -199,7 +202,7 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
 
     /** {@inheritDoc} */
     @Override public NewGridGgfsHadoopStreamDelegate open(final GridGgfsPath path, final int seqReadsBeforePrefetch)
-        throws GridException, IOException {
+        throws IOException {
         return withReconnectHandling(new FileSystemClosure<NewGridGgfsHadoopStreamDelegate>() {
             @Override public NewGridGgfsHadoopStreamDelegate apply(NewGridGgfsHadoopEx hadoop,
                 GridGgfsHandshakeResponse hndResp) throws GridException, IOException {
@@ -211,7 +214,7 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     /** {@inheritDoc} */
     @Override public NewGridGgfsHadoopStreamDelegate create(final GridGgfsPath path, final boolean overwrite,
         final boolean colocate, final int replication, final long blockSize, final @Nullable Map<String, String> props)
-        throws GridException, IOException {
+        throws IOException {
         return withReconnectHandling(new FileSystemClosure<NewGridGgfsHadoopStreamDelegate>() {
             @Override public NewGridGgfsHadoopStreamDelegate apply(NewGridGgfsHadoopEx hadoop,
                 GridGgfsHandshakeResponse hndResp) throws GridException, IOException {
@@ -222,7 +225,7 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
 
     /** {@inheritDoc} */
     @Override public NewGridGgfsHadoopStreamDelegate append(final GridGgfsPath path, final boolean create,
-        final @Nullable Map<String, String> props) throws GridException, IOException {
+        final @Nullable Map<String, String> props) throws IOException {
         return withReconnectHandling(new FileSystemClosure<NewGridGgfsHadoopStreamDelegate>() {
             @Override public NewGridGgfsHadoopStreamDelegate apply(NewGridGgfsHadoopEx hadoop,
                 GridGgfsHandshakeResponse hndResp) throws GridException, IOException {
@@ -247,6 +250,31 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     @Override public Boolean closeStream(NewGridGgfsHadoopStreamDelegate delegate) throws GridException,
         IOException {
         return delegate.hadoop().closeStream(delegate);
+    }
+
+    /**
+     * Cast GG exception to appropriate IO exception.
+     *
+     * @param e Exception to cast.
+     * @return Casted exception.
+     */
+    private static IOException cast(GridException e) {
+        assert e != null;
+
+        if (e instanceof GridGgfsFileNotFoundException)
+            return new FileNotFoundException(e.getMessage());
+
+        else if (e instanceof GridGgfsDirectoryNotEmptyException)
+            return new PathIsNotEmptyDirectoryException(e.getMessage());
+
+        else if (e instanceof GridGgfsParentNotDirectoryException)
+            return new ParentNotDirectoryException(e.getMessage());
+
+        else if (e instanceof GridGgfsPathAlreadyExistsException)
+            return new PathExistsException(e.getMessage());
+
+        else
+            return new IOException(e);
     }
 
     /**
@@ -280,7 +308,7 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
                 err = e;
             }
             catch (GridException e) {
-                throw new IOException(e);
+                throw cast(e);
             }
         }
 

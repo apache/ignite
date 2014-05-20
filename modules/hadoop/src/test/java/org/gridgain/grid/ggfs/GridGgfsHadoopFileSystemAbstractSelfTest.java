@@ -1948,7 +1948,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      * @throws Exception If failed.
      */
     @SuppressWarnings("deprecation")
-    public void testFileSystem() throws Exception {
+    public void _testFileSystem() throws Exception {
         Path ggfsHome = new Path("ggfs://localhost/");
         Path locHome = new Path("file:///" + U.getGridGainHome() + "/");
 

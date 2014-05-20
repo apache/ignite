@@ -15,6 +15,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.net.*;
 
 import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
 
@@ -22,6 +23,9 @@ import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
  *
  */
 public class NewGridGgfsHadoopEndpoint {
+    /** GGFS scheme. */
+    public static final String SCHEME = "ggfs";
+
     /** Localhost. */
     public static final String LOCALHOST = "127.0.0.1";
 
@@ -38,13 +42,33 @@ public class NewGridGgfsHadoopEndpoint {
     private final int port;
 
     /**
+     * Normalize URI path.
+     *
+     * @param uri URI.
+     * @return Normalized URI.
+     */
+    public static URI normalize(URI uri) {
+        if (!F.eq(SCHEME, uri.getScheme()))
+            throw new IllegalArgumentException("Normalization can only be applied to GGFS URI: " + uri);
+
+        NewGridGgfsHadoopEndpoint endpoint = new NewGridGgfsHadoopEndpoint(uri.getAuthority());
+
+        try {
+            return new URI(uri.getScheme(), endpoint.ggfsName + ":" + endpoint.gridName, endpoint.host, endpoint.port,
+                uri.getPath(), uri.getQuery(), uri.getFragment());
+        }
+        catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Failed to normalize URI: " + uri, e);
+        }
+    }
+
+    /**
      * Constructor.
      *
      * @param connStr Connection string.
-     * @throws java.io.IOException If failed to parse connection string.
      */
-    NewGridGgfsHadoopEndpoint(String connStr) throws IOException {
-        String[] tokens = connStr.split("@");
+    NewGridGgfsHadoopEndpoint(String connStr) {
+        String[] tokens = connStr.split("@", -1);
 
         GridBiTuple<String, Integer> hostPort;
 
@@ -62,7 +86,7 @@ public class NewGridGgfsHadoopEndpoint {
                 ggfsName = null;
             }
             else {
-                String[] authTokens = authStr.split(":");
+                String[] authTokens = authStr.split(":", -1);
 
                 ggfsName = F.isEmpty(authTokens[0]) ? null : authTokens[0];
 
@@ -71,13 +95,13 @@ public class NewGridGgfsHadoopEndpoint {
                 else if (authTokens.length == 2)
                     gridName = F.isEmpty(authTokens[1]) ? null : authTokens[1];
                 else
-                    throw new IOException("Invalid connection string format: " + connStr);
+                    throw new IllegalArgumentException("Invalid connection string format: " + connStr);
             }
 
             hostPort = hostPort(connStr, tokens[1]);
         }
         else
-            throw new IOException("Invalid connection string format: " + connStr);
+            throw new IllegalArgumentException("Invalid connection string format: " + connStr);
 
         host = hostPort.get1();
 
@@ -92,10 +116,9 @@ public class NewGridGgfsHadoopEndpoint {
      * @param connStr Full connection string.
      * @param hostPortStr Host/port connection string part.
      * @return Tuple with host and port.
-     * @throws IOException If failed.
      */
-    private GridBiTuple<String, Integer> hostPort(String connStr, String hostPortStr) throws IOException {
-        String[] tokens = hostPortStr.split(":");
+    private GridBiTuple<String, Integer> hostPort(String connStr, String hostPortStr) throws IllegalArgumentException {
+        String[] tokens = hostPortStr.split(":", -1);
 
         String host = tokens[0];
 
@@ -113,14 +136,14 @@ public class NewGridGgfsHadoopEndpoint {
                 port = Integer.valueOf(portStr);
 
                 if (port < 0 || port > 65535)
-                    throw new IOException("Invalid port number: " + connStr);
+                    throw new IllegalArgumentException("Invalid port number: " + connStr);
             }
             catch (NumberFormatException e) {
-                throw new IOException("Invalid port number: " + connStr);
+                throw new IllegalArgumentException("Invalid port number: " + connStr);
             }
         }
         else
-            throw new IOException("Invalid connection string format: " + connStr);
+            throw new IllegalArgumentException("Invalid connection string format: " + connStr);
 
         return F.t(host, port);
     }

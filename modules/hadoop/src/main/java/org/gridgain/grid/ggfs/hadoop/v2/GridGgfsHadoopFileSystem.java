@@ -14,15 +14,15 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.Options;
 import org.apache.hadoop.fs.permission.*;
-import org.apache.hadoop.security.AccessControlException;
 import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
+import org.gridgain.grid.kernal.ggfs.hadoop.impl.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -72,17 +72,11 @@ import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
  * and {@code config/hadoop/default-config.xml} configuration files in GridGain installation.
  */
 public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Closeable {
-    /** Endpoint type: shared memory. */
-    private static final String IPC_SHMEM = "shmem";
-
-    /** Endpoint type: loopback. */
-    private static final String IPC_TCP = "tcp";
-
     /** GGFS scheme name. */
     private static final String GGFS_SCHEME = "ggfs";
 
     /** Logger. */
-    private static final Log LOG = LogFactory.getLog(GridGgfsHadoopFileSystem2.class);
+    private static final Log LOG = LogFactory.getLog(GridGgfsHadoopFileSystem.class);
 
     /** Busy lock. */
     private final GridBusyLock busyLock = new GridBusyLock();
@@ -91,7 +85,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
     private final AtomicBoolean closeGuard = new AtomicBoolean();
 
     /** Grid remote client. */
-    private GridGgfsHadoop rmtClient;
+    private NewGridGgfsHadoopWrapper rmtClient;
 
     /** Working directory. */
     private GridGgfsPath workingDir = DFLT_WORKING_DIR;
@@ -133,7 +127,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
      * @throws IOException If initialization failed.
      */
     public GridGgfsHadoopFileSystem(URI name, Configuration cfg) throws URISyntaxException, IOException {
-        super(name, "ggfs", true, DFLT_IPC_PORT);
+        super(NewGridGgfsHadoopEndpoint.normalize(name), "ggfs", true, DFLT_IPC_PORT);
 
         try {
             initialize(name, cfg);
@@ -147,11 +141,28 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void checkPath(Path path) {
+        URI uri = path.toUri();
+
+        if (!path.isAbsoluteAndSchemeAuthorityNull()) {
+            try {
+                path = new Path(NewGridGgfsHadoopEndpoint.normalize(uri));
+            }
+            catch (IllegalArgumentException e) {
+                throw new InvalidPathException(path.toString(), e.getMessage());
+            }
+        }
+
+        super.checkPath(path);
+    }
+
     /**
      * Public setter that can be used by direct users of FS or Visor.
      *
      * @param colocateFileWrites Whether all ongoing file writes should be colocated.
      */
+    @SuppressWarnings("UnusedDeclaration")
     public void colocateFileWrites(boolean colocateFileWrites) {
         this.colocateFileWrites = colocateFileWrites;
     }
@@ -194,18 +205,18 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
             uriAuthority = name.getAuthority();
 
-            // Resolve type and port from configuration.
-            String type = parameter(cfg, PARAM_GGFS_ENDPOINT_TYPE, uriAuthority, U.isWindows() ?
-                IPC_TCP : IPC_SHMEM);
+//            // Resolve type and port from configuration.
+//            String type = parameter(cfg, PARAM_GGFS_ENDPOINT_TYPE, uriAuthority, U.isWindows() ?
+//                IPC_TCP : IPC_SHMEM);
+//
+//            String host = IPC_SHMEM.equals(type) ? IPC_SHMEM : parameter(cfg, PARAM_GGFS_ENDPOINT_HOST, uriAuthority,
+//                "127.0.0.1");
+//
+//            int port = parameter(cfg, PARAM_GGFS_ENDPOINT_PORT, uriAuthority, DFLT_IPC_PORT);
+//
+//            String endpoint = host + ':' + port;
 
-            String host = IPC_SHMEM.equals(type) ? IPC_SHMEM : parameter(cfg, PARAM_GGFS_ENDPOINT_HOST, uriAuthority,
-                "127.0.0.1");
-
-            int port = parameter(cfg, PARAM_GGFS_ENDPOINT_PORT, uriAuthority, DFLT_IPC_PORT);
-
-            String endpoint = host + ':' + port;
-
-            rmtClient = new GridGgfsHadoop(LOG, endpoint);
+//            rmtClient =  new GridGgfsHadoop(LOG, endpoint)
 
             // Override sequential reads before prefetch if needed.
             seqReadsBeforePrefetch = parameter(cfg, PARAM_GGFS_SEQ_READS_BEFORE_PREFETCH, uriAuthority, 0);
@@ -227,20 +238,17 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
             String logDir = logDirFile != null ? logDirFile.getAbsolutePath() : null;
 
+            rmtClient = new NewGridGgfsHadoopWrapper(uriAuthority, logDir, LOG);
+
             // Handshake.
             GridGgfsHandshakeResponse handshake;
             GridGgfsPaths paths;
 
-            try {
-                handshake = rmtClient.handshake(logDir).get();
+            handshake = rmtClient.handshake(logDir);
 
-                grpBlockSize = handshake.blockSize();
+            grpBlockSize = handshake.blockSize();
 
-                paths = handshake.secondaryPaths();
-            }
-            catch (GridException e) {
-                throw new IOException("Failed to perform handshake with GGFS.", e);
-            }
+            paths = handshake.secondaryPaths();
 
             Boolean logEnabled = parameter(cfg, PARAM_GGFS_LOG_ENABLED, uriAuthority, false);
 
@@ -251,7 +259,9 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
                 Integer batchSize = parameter(cfg, PARAM_GGFS_LOG_BATCH_SIZE, uriAuthority, DFLT_GGFS_LOG_BATCH_SIZE);
 
-                clientLog = GridGgfsHadoopLogger.logger(endpoint, handshake.ggfsName(), logDir, batchSize);
+                // TODO: Careful here.
+//                clientLog = GridGgfsHadoopLogger.logger(endpoint, handshake.ggfsName(), logDir, batchSize);
+                clientLog = GridGgfsHadoopLogger.logger(uriAuthority, handshake.ggfsName(), logDir, batchSize);
             }
             else
                 clientLog = GridGgfsHadoopLogger.disabledLogger();
@@ -389,39 +399,27 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
     }
 
     /** {@inheritDoc} */
-    @Override public boolean setReplication(Path f, short replication)
-        throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException {
+    @Override public boolean setReplication(Path f, short replication) throws IOException {
         return mode(f) == PROXY && secondaryFs.setReplication(f, replication);
     }
 
     /** {@inheritDoc} */
-    @Override public void setTimes(Path f, long mtime, long atime)
-        throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException {
+    @Override public void setTimes(Path f, long mtime, long atime) throws IOException {
         if (mode(f) == PROXY)
             secondaryFs.setTimes(f, mtime, atime);
         else {
             if (mtime == -1 && atime == -1)
                 return;
 
-            try {
-                rmtClient.setTimes(convert(f), atime, mtime).get();
-            }
-            catch (GridException e) {
-                throw cast(e);
-            }
+            rmtClient.setTimes(convert(f), atime, mtime);
         }
     }
 
     /** {@inheritDoc} */
     @Override public FsStatus getFsStatus() throws IOException {
-        try {
-            GridGgfsStatus status = rmtClient.fsStatus().get();
+        GridGgfsStatus status = rmtClient.fsStatus();
 
-            return new FsStatus(status.spaceTotal(), status.spaceUsed(), status.spaceTotal() - status.spaceUsed());
-        }
-        catch (GridException e) {
-            throw cast(e);
-        }
+        return new FsStatus(status.spaceTotal(), status.spaceUsed(), status.spaceTotal() - status.spaceUsed());
     }
 
     /** {@inheritDoc} */
@@ -434,14 +432,9 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
             if (mode(p) == PROXY)
                 secondaryFs.setPermission(toSecondary(p), perm);
             else {
-                try {
-                    if (rmtClient.update(convert(p), permission(perm)).get() == null)
-                        throw new IOException("Failed to set file permission (file not found?)" +
-                            " [path=" + p + ", perm=" + perm + ']');
-                }
-                catch (GridException e) {
-                    throw cast(e);
-                }
+                if (rmtClient.update(convert(p), permission(perm)) == null)
+                    throw new IOException("Failed to set file permission (file not found?)" +
+                        " [path=" + p + ", perm=" + perm + ']');
             }
         }
         finally {
@@ -460,12 +453,9 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
         try {
             if (mode(p) == PROXY)
                 secondaryFs.setOwner(toSecondary(p), usr, grp);
-            else if (rmtClient.update(convert(p), F.asMap(PROP_USER_NAME, usr, PROP_GROUP_NAME, grp)).get() == null)
+            else if (rmtClient.update(convert(p), F.asMap(PROP_USER_NAME, usr, PROP_GROUP_NAME, grp)) == null)
                 throw new IOException("Failed to set file permission (file not found?)" +
                     " [path=" + p + ", username=" + usr + ", grpName=" + grp + ']');
-        }
-        catch (GridException e) {
-            throw cast(e);
         }
         finally {
             leaveBusy();
@@ -501,32 +491,29 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                     return is;
             }
             else {
-                GridGgfsInputStreamDescriptor desc = seqReadsBeforePrefetchOverride ?
-                    rmtClient.open(path, seqReadsBeforePrefetch).get() : rmtClient.open(path).get();
+                NewGridGgfsHadoopStreamDelegate stream = seqReadsBeforePrefetchOverride ?
+                    rmtClient.open(path, seqReadsBeforePrefetch) : rmtClient.open(path);
 
                 long logId = -1;
 
                 if (clientLog.isLogEnabled()) {
                     logId = GridGgfsHadoopLogger.nextId();
 
-                    clientLog.logOpen(logId, path, mode, bufSize, desc.length());
+                    clientLog.logOpen(logId, path, mode, bufSize, stream.length());
                 }
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("Opening input stream [thread=" + Thread.currentThread().getName() + ", path=" + path +
                         ", bufSize=" + bufSize + ']');
 
-                GridGgfsHadoopInputStream ggfsIn = new GridGgfsHadoopInputStream(rmtClient, desc.streamId(),
-                    desc.length(), bufSize, LOG, clientLog, logId);
+                NewGridGgfsHadoopInputStream ggfsIn = new NewGridGgfsHadoopInputStream(stream, stream.length(),
+                    bufSize, LOG, clientLog, logId);
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Opened input stream [path=" + path + ", streamId=" + desc.streamId() + ']');
+                    LOG.debug("Opened input stream [path=" + path + ", delegate=" + stream + ']');
 
                 return new FSDataInputStream(ggfsIn);
             }
-        }
-        catch (GridException e) {
-            throw cast(e);
         }
         finally {
             leaveBusy();
@@ -545,8 +532,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
         Progressable progress,
         Options.ChecksumOpt checksumOpt,
         boolean createParent
-    ) throws AccessControlException, FileAlreadyExistsException, ParentNotDirectoryException,
-        UnsupportedFileSystemException, UnresolvedLinkException, IOException {
+    ) throws IOException {
         A.notNull(f, "f");
 
         enterBusy();
@@ -586,12 +572,12 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                 Map<String, String> permMap = permission(perm);
 
                 // Create stream and close it in the 'finally' section if any sequential operation failed.
-                Long streamId;
+                NewGridGgfsHadoopStreamDelegate stream;
 
                 long logId = -1;
 
                 if (append) {
-                    streamId = rmtClient.append(path, create, permMap).get();
+                    stream = rmtClient.append(path, create, permMap);
 
                     if (clientLog.isLogEnabled()) {
                         logId = GridGgfsHadoopLogger.nextId();
@@ -600,11 +586,11 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                     }
 
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Opened output stream in append [path=" + path + ", streamId=" + streamId + ']');
+                        LOG.debug("Opened output stream in append [path=" + path + ", delegate=" + stream + ']');
                 }
                 else {
-                    streamId = rmtClient.create(path, overwrite, colocateFileWrites, replication, blockSize,
-                        permMap).get();
+                    stream = rmtClient.create(path, overwrite, colocateFileWrites, replication, blockSize,
+                        permMap);
 
                     if (clientLog.isLogEnabled()) {
                         logId = GridGgfsHadoopLogger.nextId();
@@ -613,12 +599,12 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                     }
 
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Opened output stream in create [path=" + path + ", streamId=" + streamId + ']');
+                        LOG.debug("Opened output stream in create [path=" + path + ", delegate=" + stream + ']');
                 }
 
-                assert streamId != null;
+                assert stream != null;
 
-                GridGgfsHadoopOutputStream ggfsOut = new GridGgfsHadoopOutputStream(rmtClient, streamId, LOG,
+                NewGridGgfsHadoopOutputStream ggfsOut = new NewGridGgfsHadoopOutputStream(stream, LOG,
                     clientLog, logId);
 
                 bufSize = Math.max(64 * 1024, bufSize);
@@ -632,9 +618,6 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
                 return res;
             }
-        }
-        catch (GridException e) {
-            throw cast(e);
         }
         finally {
             // Close if failed during stream creation.
@@ -669,13 +652,10 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                 secondaryFs.renameInternal(toSecondary(src), toSecondary(dst));
             }
 
-            rmtClient.rename(srcPath, dstPath).get();
+            rmtClient.rename(srcPath, dstPath);
 
             if (clientLog.isLogEnabled())
                 clientLog.logRename(srcPath, modeRslvr.resolveMode(srcPath), dstPath);
-        }
-        catch (GridException e) {
-            throw cast(e);
         }
         finally {
             leaveBusy();
@@ -700,15 +680,12 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                 return secondaryFs.delete(toSecondary(f), recursive);
             }
 
-            boolean res = rmtClient.delete(path, recursive).get();
+            boolean res = rmtClient.delete(path, recursive);
 
             if (clientLog.isLogEnabled())
                 clientLog.logDelete(path, mode, recursive);
 
             return res;
-        }
-        catch (GridException e) {
-            throw cast(e);
         }
         finally {
             leaveBusy();
@@ -716,7 +693,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
     }
 
     /** {@inheritDoc} */
-    @Override public void setVerifyChecksum(boolean verifyChecksum) throws AccessControlException, IOException {
+    @Override public void setVerifyChecksum(boolean verifyChecksum) throws IOException {
         // Checksum has effect for secondary FS only.
         if (secondaryFs != null)
             secondaryFs.setVerifyChecksum(verifyChecksum);
@@ -764,7 +741,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                 return arr;
             }
             else {
-                List<GridGgfsFile> files = new ArrayList<>(rmtClient.listFiles(path).get());
+                List<GridGgfsFile> files = new ArrayList<>(rmtClient.listFiles(path));
 
                 FileStatus[] arr = new FileStatus[files.size()];
 
@@ -774,19 +751,14 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                 if (clientLog.isLogEnabled()) {
                     String[] fileArr = new String[arr.length];
 
-                    if (arr != null) {
-                        for (int i = 0; i < arr.length; i++)
-                            fileArr[i] = arr[i].getPath().toString();
-                    }
+                    for (int i = 0; i < arr.length; i++)
+                        fileArr[i] = arr[i].getPath().toString();
 
                     clientLog.logListDirectory(path, mode, fileArr);
                 }
 
                 return arr;
             }
-        }
-        catch (GridException e) {
-            throw cast(e);
         }
         finally {
             leaveBusy();
@@ -810,14 +782,11 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                 secondaryFs.mkdir(toSecondary(f), perm, createParent);
             }
             else {
-                rmtClient.mkdirs(path, permission(perm)).get();
+                rmtClient.mkdirs(path, permission(perm));
 
                 if (clientLog.isLogEnabled())
                     clientLog.logMakeDirectory(path, mode);
             }
-        }
-        catch (GridException e) {
-            throw cast(e);
         }
         finally {
             leaveBusy();
@@ -834,16 +803,13 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
             if (mode(f) == PROXY)
                 return toPrimary(secondaryFs.getFileStatus(toSecondary(f)));
             else {
-                GridGgfsFile info = rmtClient.info(convert(f)).get();
+                GridGgfsFile info = rmtClient.info(convert(f));
 
                 if (info == null)
                     throw new FileNotFoundException("File not found: " + f);
 
                 return convert(info);
             }
-        }
-        catch (GridException e) {
-            throw cast(e);
         }
         finally {
             leaveBusy();
@@ -865,7 +831,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                 long now = System.currentTimeMillis();
 
                 List<GridGgfsBlockLocation> affinity = new ArrayList<>(
-                    rmtClient.affinity(ggfsPath, start, len).get());
+                    rmtClient.affinity(ggfsPath, start, len));
 
                 BlockLocation[] arr = new BlockLocation[affinity.size()];
 
@@ -878,9 +844,6 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
                 return arr;
             }
-        }
-        catch (GridException e) {
-            throw cast(e);
         }
         finally {
             leaveBusy();
@@ -1031,33 +994,6 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                 return "FileStatus [path=" + getPath() + ", isDir=" + isDirectory() + ", len=" + getLen() + "]";
             }
         };
-    }
-
-    /**
-     * Converts {@code GridException} into corresponding {@code IOException} expected to be thrown
-     * from public methods of {@code AbstractFileSystem}.
-     *
-     * @param e GridException to convert.
-     * @return IOException.
-     */
-    @SuppressWarnings("IfMayBeConditional")
-    private IOException cast(GridException e) {
-        assert e != null;
-
-        if (e instanceof GridGgfsFileNotFoundException)
-            return new FileNotFoundException(e.getMessage());
-
-        else if (e instanceof GridGgfsDirectoryNotEmptyException)
-            return new PathIsNotEmptyDirectoryException(e.getMessage());
-
-        else if (e instanceof GridGgfsParentNotDirectoryException)
-            return new ParentNotDirectoryException(e.getMessage());
-
-        else if (e instanceof GridGgfsPathAlreadyExistsException)
-            return new PathExistsException(e.getMessage());
-
-        else
-            return new IOException(e);
     }
 
     /**
