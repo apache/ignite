@@ -139,7 +139,7 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
         if (meta.phase() == GridHadoopJobPhase.PHASE_COMPLETE) {
             Collection<GridFuture<?>> futures = jobs.remove(job.id());
 
-            assert futures.isEmpty();
+            assert futures == null || futures.isEmpty();
         }
     }
 
