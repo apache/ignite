@@ -1376,7 +1376,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
 
         ggfs.create(FILE, false).close();
 
-        int threadCnt = 1;
+        int threadCnt = 5;
 
         GridFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {

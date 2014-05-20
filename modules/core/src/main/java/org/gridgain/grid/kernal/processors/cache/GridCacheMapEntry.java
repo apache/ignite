@@ -261,9 +261,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         assert Thread.holdsLock(this);
 
         if (!isOffHeapValuesOnly()) {
-            if (val != null && val instanceof byte[])
-                return GridCacheValueBytes.plain(val);
-            else if (valBytes != null)
+            if (valBytes != null)
                 return GridCacheValueBytes.marshaled(valBytes);
         }
         else {
