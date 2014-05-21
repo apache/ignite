@@ -184,7 +184,11 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringInclude
-    private GridRestProcessorAdapter restProc;
+    private GridRestProcessorAdapter tcpRestProc;
+
+    /** */
+    @GridToStringInclude
+    private GridRestProcessorAdapter httpRestProc;
 
     /** */
     @GridToStringInclude
@@ -374,8 +378,14 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             segProc = (GridSegmentationProcessor)comp;
         else if (comp instanceof GridAffinityProcessor)
             affProc = (GridAffinityProcessor)comp;
-        else if (comp instanceof GridRestProcessorAdapter)
-            restProc = (GridRestProcessorAdapter)comp;
+        else if (comp instanceof GridRestProcessorAdapter) {
+            GridRestProcessorAdapter restProc = (GridRestProcessorAdapter)comp;
+
+            if (restProc.tcp())
+                tcpRestProc = restProc;
+            else
+                httpRestProc = restProc;
+        }
         else if (comp instanceof GridDataLoaderProcessor)
             dataLdrProc = (GridDataLoaderProcessor)comp;
         else if (comp instanceof GridGgfsProcessorAdapter)
@@ -588,8 +598,13 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridRestProcessorAdapter rest() {
-        return restProc;
+    @Override public GridRestProcessorAdapter tcpRest() {
+        return tcpRestProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridRestProcessorAdapter httpRest() {
+        return httpRestProc;
     }
 
     /** {@inheritDoc} */
