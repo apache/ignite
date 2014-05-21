@@ -240,8 +240,24 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
      * @param path Path for exceptions.
      * @return Casted exception.
      */
+    @SuppressWarnings("unchecked")
     static IOException cast(GridException e, @Nullable String path) {
         assert e != null;
+
+        // First check for any nested IOException; if exists - re-throw it.
+        if (e.hasCause(IOException.class)) {
+            Throwable curErr = e.getCause();
+
+            assert curErr != null;
+
+            do {
+                if (curErr instanceof IOException)
+                    return (IOException)curErr;
+
+                curErr = curErr.getCause();
+            }
+            while (curErr != null);
+        }
 
         if (e instanceof GridGgfsFileNotFoundException)
             return new FileNotFoundException(path); // TODO: Or PathNotFoundException?

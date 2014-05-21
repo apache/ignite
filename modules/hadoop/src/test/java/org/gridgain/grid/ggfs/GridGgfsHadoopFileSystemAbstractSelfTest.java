@@ -15,9 +15,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.permission.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
-import org.gridgain.grid.kernal.ggfs.hadoop.impl.*;
+import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.communication.*;
 import org.gridgain.grid.spi.communication.tcp.*;
@@ -39,9 +38,9 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 
 /**
@@ -1629,7 +1628,8 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
 
         is.close();
 
-        assert Arrays.equals(expData, data);
+        assert Arrays.equals(expData, data) : "Expected=" + Arrays.toString(expData) + ", actual=" +
+            Arrays.toString(data);
     }
 
     /**
@@ -1838,7 +1838,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
         }, THREAD_CNT);
 
         // Ensure there were no errors.
-        assert !err.get();
+        assert !err.get() : err;
 
         // Ensure correct folders structure.
         Deque<GridBiTuple<Integer, Path>> queue = new ArrayDeque<>();

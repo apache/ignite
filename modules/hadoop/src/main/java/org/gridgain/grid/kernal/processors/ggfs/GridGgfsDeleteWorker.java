@@ -132,30 +132,10 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
         }
     }
 
-    /**
-     * Cancel the worker. Will wait for thread termination.
-     */
-    void shutdown() {
+    void cancel() {
         cancelled = true;
 
-        if (log.isDebugEnabled())
-            log.debug("Delete worker cancelled.");
-
-        signal();
-
-        try {
-            try {
-                join(FREQUENCY);
-            }
-            finally {
-                interrupt();
-
-                join();
-            }
-        }
-        catch (InterruptedException ignored) {
-            currentThread().interrupt();
-        }
+        interrupt();
     }
 
     /**

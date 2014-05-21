@@ -101,12 +101,21 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
-        busyLock.block();
-
         GridGgfsDeleteWorker delWorker0 = delWorker;
 
         if (delWorker0 != null)
-            delWorker0.shutdown();
+            delWorker0.cancel();
+
+        if (delWorker0 != null) {
+            try {
+                U.join(delWorker0);
+            }
+            catch (GridInterruptedException ignored) {
+                // No-op.
+            }
+        }
+
+        busyLock.block();
     }
 
     /**
