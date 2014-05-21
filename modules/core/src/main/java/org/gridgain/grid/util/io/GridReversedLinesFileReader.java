@@ -14,21 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.gridgain.grid.util.io;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetEncoder;
-import java.nio.charset.UnsupportedCharsetException;
+import java.io.*;
+import java.nio.charset.*;
 
 /**
  * Reads lines in a file reversely (similar to a BufferedReader, but starting at
  * the last line). Useful for e.g. searching in log files.
  */
+@SuppressWarnings("ALL")
 public class GridReversedLinesFileReader implements Closeable {
     private final int blockSize;
     private final Charset encoding;
