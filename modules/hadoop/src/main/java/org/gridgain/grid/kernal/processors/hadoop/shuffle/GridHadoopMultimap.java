@@ -646,7 +646,7 @@ public class GridHadoopMultimap implements AutoCloseable {
         volatile int keysCnt;
 
         /** */
-        private final Random rnd = ThreadLocalRandom.current();
+        private final Random rnd = new GridRandom();
 
         /** */
         private boolean newKey;
