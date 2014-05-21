@@ -318,11 +318,13 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
         assert outBuf == null || msg.command() == GridGgfsIpcCommand.READ_BLOCK;
 
         if (!busyLock.readLock().tryLock())
-            throw new GridGgfsHadoopCommunicationException("Failed to send message (client is being concurrently closed).");
+            throw new GridGgfsHadoopCommunicationException("Failed to send message (client is being concurrently " +
+                "closed).");
 
         try {
             if (stopping)
-                throw new GridGgfsHadoopCommunicationException("Failed to send message (client is being concurrently closed).");
+                throw new GridGgfsHadoopCommunicationException("Failed to send message (client is being concurrently " +
+                    "closed).");
 
             long reqId = reqIdCnt.getAndIncrement();
 
