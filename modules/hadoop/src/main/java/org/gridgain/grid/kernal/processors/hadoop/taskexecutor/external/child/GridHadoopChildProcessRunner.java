@@ -75,6 +75,9 @@ public class GridHadoopChildProcessRunner {
     /** Shuffle job. */
     private GridHadoopShuffleJob<GridHadoopProcessDescriptor> shuffleJob;
 
+    /** Shared task context. */
+    private GridHadoopSharedTaskContext sharedTaskCtx;
+
     /** Concurrent mappers. */
     private int concMappers;
 
@@ -112,6 +115,10 @@ public class GridHadoopChildProcessRunner {
                     log.debug("Initializing external hadoop task: " + req);
 
                 job = jobFactory.createJob(req.jobId(), req.jobInfo());
+
+                sharedTaskCtx = new GridHadoopSharedTaskContext(nodeDesc.parentNodeId(), job, log);
+
+                sharedTaskCtx.initializeClassLoader();
 
                 shuffleJob = new GridHadoopShuffleJob<>(comm.localProcessDescriptor(), log, job, mem, job.reducers(),
                     req.hasMappers());
@@ -159,12 +166,10 @@ public class GridHadoopChildProcessRunner {
                     execSvc.setMaximumPoolSize(size);
 
                     for (GridHadoopTaskInfo taskInfo : req.tasks()) {
-                        GridHadoopTask task = job.createTask(taskInfo);
-
                         if (log.isDebugEnabled())
-                            log.debug("Submitted task for external execution: " + task);
+                            log.debug("Submitted task for external execution: " + taskInfo);
 
-                        execSvc.submit(new TaskRunnable(task));
+                        execSvc.submit(new TaskRunnable(taskInfo));
                     }
                 }
                 catch (GridException e) {
@@ -272,7 +277,7 @@ public class GridHadoopChildProcessRunner {
      * @param err Error, if any.
      */
     private void onTaskFinished(TaskRunnable run, GridHadoopTaskState state, Throwable err) {
-        GridHadoopTaskInfo info = run.task.info();
+        GridHadoopTaskInfo info = run.info;
 
         if (log.isDebugEnabled())
             log.debug("Hadoop task execution finished [info=" + info
@@ -375,7 +380,7 @@ public class GridHadoopChildProcessRunner {
      */
     private class TaskRunnable implements Runnable {
         /** Task to run. */
-        private GridHadoopTask task;
+        private GridHadoopTaskInfo info;
 
         /** Submit time. */
         private long submitTs = System.currentTimeMillis();
@@ -387,10 +392,10 @@ public class GridHadoopChildProcessRunner {
         private long execEndTs;
 
         /**
-         * @param task Tsak.
+         * @param info Task info.
          */
-        private TaskRunnable(GridHadoopTask task) {
-            this.task = task;
+        private TaskRunnable(GridHadoopTaskInfo info) {
+            this.info = info;
         }
 
         /**
@@ -411,13 +416,22 @@ public class GridHadoopChildProcessRunner {
         @Override public void run() {
             execStartTs = System.currentTimeMillis();
 
+            ClassLoader old = Thread.currentThread().getContextClassLoader();
+
+            Thread.currentThread().setContextClassLoader(sharedTaskCtx.jobClassLoader());
+
+            ((GridHadoopDefaultJobInfo)job.info()).configuration().setClassLoader(
+                sharedTaskCtx.jobClassLoader());
+
             GridHadoopTaskState state = GridHadoopTaskState.COMPLETED;
             Throwable err = null;
 
-            try (GridHadoopTaskOutput out = createOutput(task.info());
-                GridHadoopTaskInput in = createInput(task.info())) {
+            try (GridHadoopTaskOutput out = createOutput(info);
+                GridHadoopTaskInput in = createInput(info)) {
 
                 GridHadoopTaskContext ctx = new GridHadoopTaskContext(job, in, out);
+
+                GridHadoopTask task = job.createTask(info);
 
                 task.run(ctx);
             }
@@ -429,6 +443,8 @@ public class GridHadoopChildProcessRunner {
                 execEndTs = System.currentTimeMillis();
 
                 onTaskFinished(this, state, err);
+
+                Thread.currentThread().setContextClassLoader(old);
             }
         }
     }
