@@ -17,6 +17,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
+import org.gridgain.grid.kernal.ggfs.hadoop.impl.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.communication.*;
 import org.gridgain.grid.spi.communication.tcp.*;
@@ -46,6 +47,7 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 /**
  * Test hadoop file system implementation.
  */
+@SuppressWarnings("all")
 public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommonAbstractTest {
     /** Group size. */
     public static final int GRP_SIZE = 128;
@@ -383,7 +385,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
             assertTrue(e.getMessage().contains("File system is already initialized"));
         }
 
-        assertEquals(primaryFsUri, fs.getUri());
+        assertEquals(NewGridGgfsHadoopEndpoint.normalize(primaryFsUri), fs.getUri());
 
         assertEquals(0, fs.getUsed());
 
@@ -608,8 +610,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
             @Override public Object call() throws Exception {
                 return fs.create(file, FsPermission.getDefault(), false, 1024, (short)1, 2048, null);
             }
-        }, IOException.class, "Failed to create the file [path=" + convertPath(file) +
-            ", permission=rwxrwxrwx, bufferSize=1024, replication=1, blockSize=2048]");
+        }, PathExistsException.class, null);
 
         // Overwrite should be successful.
         FSDataOutputStream out1 = fs.create(file, true);
@@ -974,7 +975,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
             @Override public Object call() throws Exception {
                 return fs.open(file, 1024);
             }
-        }, IOException.class, "Failed to open a file [path=" + convertPath(file) + ", bufferSize=1024]");
+        }, FileNotFoundException.class, null);
     }
 
     /** @throws Exception If failed. */
@@ -1038,7 +1039,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
             @Override public Object call() throws Exception {
                 return fs.append(new Path(fsHome, dir), 1024);
             }
-        }, IOException.class, "Failed to append to a file [path=" + convertPath(dir) + ", bufferSize=1024]");
+        }, IOException.class, null);
     }
 
     /** @throws Exception If failed. */
@@ -1922,6 +1923,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
     }
 
     /** @throws Exception If failed. */
+    // TODO: HAngs?
     public void testConsistency() throws Exception {
         // Default buffers values
         checkConsistency(-1, 1, -1, -1, 1, -1);

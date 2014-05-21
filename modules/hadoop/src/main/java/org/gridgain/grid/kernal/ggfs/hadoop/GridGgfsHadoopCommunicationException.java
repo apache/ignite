@@ -26,7 +26,7 @@ public class GridGgfsHadoopCommunicationException extends GridException {
      *
      * @param cause Non-null throwable cause.
      */
-    public GridGgfsHadoopCommunicationException(IOException cause) {
+    public GridGgfsHadoopCommunicationException(Exception cause) {
         super(cause);
     }
 
@@ -37,5 +37,15 @@ public class GridGgfsHadoopCommunicationException extends GridException {
      */
     public GridGgfsHadoopCommunicationException(String msg) {
         super(msg);
+    }
+
+    /**
+     * Creates a new exception with given error message and optional nested cause exception.
+     *
+     * @param msg Error message.
+     * @param cause Cause.
+     */
+    public GridGgfsHadoopCommunicationException(String msg, Exception cause) {
+        super(msg, cause);
     }
 }

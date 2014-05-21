@@ -20,7 +20,7 @@ import java.net.*;
 import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
 
 /**
- *
+ * GGFS endpoint abstraction.
  */
 public class NewGridGgfsHadoopEndpoint {
     /** GGFS scheme. */

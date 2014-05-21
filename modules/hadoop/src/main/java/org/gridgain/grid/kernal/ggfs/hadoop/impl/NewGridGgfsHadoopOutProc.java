@@ -421,18 +421,14 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoopEx, GridGgfsHa
         msg.position(off);
         msg.length(len);
 
-        try {
-            withReconnectHandling(new CX1<GridGgfsHadoopIpcIo, GridPlainFuture<Void>>() {
-                @Override public GridPlainFuture<Void> applyx(GridGgfsHadoopIpcIo io) throws GridException {
-                    io.sendPlain(msg);
+        // Do not wait since no response is sent back for writes.
+        withReconnectHandling(new CX1<GridGgfsHadoopIpcIo, GridPlainFuture<Void>>() {
+            @Override public GridPlainFuture<Void> applyx(GridGgfsHadoopIpcIo io) throws GridException {
+                io.sendPlain(msg);
 
-                    return new GridPlainFutureAdapter<>();
-                }
-            }).get();
-        }
-        catch (GridException e) {
-            throw NewGridGgfsHadoopWrapper.cast(e);
-        }
+                return new GridPlainFutureAdapter<>();
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -448,16 +444,14 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoopEx, GridGgfsHa
         msg.streamId((long)desc.target());
 
         try {
-            withReconnectHandling(new CX1<GridGgfsHadoopIpcIo, GridPlainFuture<Void>>() {
-                @Override public GridPlainFuture<Void> applyx(GridGgfsHadoopIpcIo io) throws GridException {
-                    io.send(msg).chain(BOOL_RES);
-
-                    return null;
+            withReconnectHandling(new CX1<GridGgfsHadoopIpcIo, GridPlainFuture<Boolean>>() {
+                @Override public GridPlainFuture<Boolean> applyx(GridGgfsHadoopIpcIo io) throws GridException {
+                    return io.send(msg).chain(BOOL_RES);
                 }
             }).get();
         }
         catch (GridException e) {
-            throw NewGridGgfsHadoopWrapper.cast(e);
+            throw NewGridGgfsHadoopWrapper.cast(e, null);
         }
     }
 
