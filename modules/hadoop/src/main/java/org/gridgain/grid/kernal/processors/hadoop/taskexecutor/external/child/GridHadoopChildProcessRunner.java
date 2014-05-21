@@ -475,8 +475,8 @@ public class GridHadoopChildProcessRunner {
             }
             else if (msg instanceof GridHadoopShuffleMessage) {
                 try {
-                    if (log.isDebugEnabled())
-                        log.debug("Received shuffle message [desc=" + desc + ", msg=" + msg + ']');
+                    if (log.isTraceEnabled())
+                        log.trace("Received shuffle message [desc=" + desc + ", msg=" + msg + ']');
 
                     GridHadoopShuffleMessage m = (GridHadoopShuffleMessage)msg;
 
@@ -489,8 +489,8 @@ public class GridHadoopChildProcessRunner {
                 }
             }
             else if (msg instanceof GridHadoopShuffleAck) {
-                if (log.isDebugEnabled())
-                    log.debug("Received shuffle ack [desc=" + desc + ", msg=" + msg + ']');
+                if (log.isTraceEnabled())
+                    log.trace("Received shuffle ack [desc=" + desc + ", msg=" + msg + ']');
 
                 shuffleJob.onShuffleAck((GridHadoopShuffleAck)msg);
             }
