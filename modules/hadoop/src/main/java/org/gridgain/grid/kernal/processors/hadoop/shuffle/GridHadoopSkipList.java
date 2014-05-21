@@ -39,21 +39,23 @@ public class GridHadoopSkipList {
         /** */
         private Object tmpKey;
 
-        /**
-         * @return Next level.
-         */
-        private int nextLevel() {
-            int x = rnd.nextInt();
+    }
 
-            if ((x & 0x80000001) != 0)
-                return 0;
+    /**
+     * @param rnd Random.
+     * @return Next level.
+     */
+    static int nextLevel(Random rnd) {
+        int x = rnd.nextInt();
 
-            int level = 1;
+        int level = 0;
 
-            while (((x >>>= 1) & 1) != 0)
-                level++;
+        while ((x & 1) != 0) { // Count sequential 1 bits.
+            level++;
 
-            return level;
+            x >>>= 1;
         }
+
+        return level;
     }
 }
