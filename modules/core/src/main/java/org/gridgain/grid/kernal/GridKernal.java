@@ -669,18 +669,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startProcessor(ctx, new GridJobProcessor(ctx), attrs);
             startProcessor(ctx, new GridTaskProcessor(ctx), attrs);
             startProcessor(ctx, (GridProcessor)SCHEDULE.createOptional(ctx), attrs);
-
-            try {
-                startProcessor(ctx, (GridProcessor)REST_TCP.create(ctx, !cfg.isRestEnabled()), attrs);
-                startProcessor(ctx, (GridProcessor)REST_HTTP.create(ctx, !cfg.isRestEnabled()), attrs);
-            }
-            catch (GridException e) {
-                if (e.hasCause(ClassNotFoundException.class))
-                    U.warn(log, e.getMessage());
-                else
-                    throw e;
-            }
-
+            startProcessorNoOpIfFailed(ctx, REST_TCP, !cfg.isRestEnabled(), attrs);
+            startProcessorNoOpIfFailed(ctx, REST_HTTP, !cfg.isRestEnabled(), attrs);
             startProcessor(ctx, new GridDataLoaderProcessor(ctx), attrs);
             startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
             startProcessor(ctx, (GridProcessor)GGFS.create(ctx, F.isEmpty(cfg.getGgfsConfiguration())), attrs);
@@ -1423,6 +1413,31 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         }
         catch (GridException e) {
             throw new GridException("Failed to start manager: " + mgr, e);
+        }
+    }
+
+    /**
+     * Starts new processor. No-op implementation will be started anyway.
+     *
+     * @param ctx Kernal context.
+     * @param compType Component type.
+     * @param noOp No-op flag.
+     * @param attrs Attributes.
+     * @throws GridException In case of error.
+     */
+    private void startProcessorNoOpIfFailed(GridKernalContextImpl ctx, GridComponentType compType, boolean noOp,
+        Map<String, Object> attrs) throws GridException {
+        try {
+            startProcessor(ctx, (GridProcessor)compType.create(ctx, noOp), attrs);
+        }
+        catch (GridException e) {
+            if (!noOp && e.hasCause(ClassNotFoundException.class)) {
+                U.warn(log, e.getMessage());
+
+                startProcessor(ctx, (GridProcessor)compType.create(ctx, true), attrs);
+            }
+            else
+                throw e;
         }
     }
 
