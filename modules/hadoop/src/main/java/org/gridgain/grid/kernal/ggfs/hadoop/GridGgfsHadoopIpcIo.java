@@ -203,7 +203,8 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
                         log.debug("IPC IO stopping as unused: " + this);
 
                     stop();
-                } else if (log.isDebugEnabled())
+                }
+                else if (log.isDebugEnabled())
                     log.debug("IPC IO released: " + this);
 
                 return;

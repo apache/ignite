@@ -48,10 +48,14 @@ public class GridGgfsTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridIpcServerEndpointDeserializerSelfTest.class));
         suite.addTest(new TestSuite(GridGgfsMetricsSelfTest.class));
 
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackPrimarySelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackSecondarySelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackDualSyncSelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackDualAsyncSelfTest.class));
+        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackExternalPrimarySelfTest.class));
+        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackExternalSecondarySelfTest.class));
+        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackExternalDualSyncSelfTest.class));
+        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackExternalDualAsyncSelfTest.class));
+        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackEmbeddedPrimarySelfTest.class));
+        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackEmbeddedSecondarySelfTest.class));
+        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackEmbeddedDualSyncSelfTest.class));
+        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackEmbeddedDualAsyncSelfTest.class));
 
         suite.addTest(new TestSuite(GridGgfsHadoopFileSystemSecondaryModeSelfTest.class));
 

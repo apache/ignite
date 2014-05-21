@@ -128,12 +128,15 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoopEx, GridGgfsHa
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
+    @Override public void close(boolean force) {
         assert io != null;
 
         io.removeEventListener(this);
 
-        io.release();
+        if (force)
+            io.forceClose();
+        else
+            io.release();
     }
 
     /** {@inheritDoc} */

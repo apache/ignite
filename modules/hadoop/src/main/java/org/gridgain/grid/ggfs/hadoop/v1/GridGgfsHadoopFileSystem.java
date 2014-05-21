@@ -328,7 +328,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
             super.close();
 
-            rmtClient.close();
+            rmtClient.close(false);
 
             if (clientLog.isLogEnabled())
                 clientLog.close();

@@ -59,7 +59,7 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
+    @Override public void close(boolean force) {
         // Perform cleanup.
         for (GridGgfsHadoopStreamEventListener lsnr : lsnrs.values()) {
             try {

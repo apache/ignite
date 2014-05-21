@@ -33,8 +33,10 @@ public interface NewGridGgfsHadoop {
 
     /**
      * Close connection.
+     *
+     * @param force Force flag.
      */
-    public void close();
+    public void close(boolean force);
 
     /**
      * Command to retrieve file info for some GGFS path.

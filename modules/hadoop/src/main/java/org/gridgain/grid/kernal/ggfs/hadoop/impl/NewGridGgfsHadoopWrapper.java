@@ -81,11 +81,11 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
+    @Override public void close(boolean force) {
         Delegate delegate = delegateRef.get();
 
         if (delegate != null && delegateRef.compareAndSet(delegate, null))
-            delegate.hadoop.close();
+            delegate.close(force);
     }
 
     /** {@inheritDoc} */
@@ -271,6 +271,7 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
             Delegate curDelegate = null;
 
             boolean close = false;
+            boolean force = false;
 
             try {
                 curDelegate = delegate();
@@ -287,6 +288,7 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
                     delegateRef.compareAndSet(curDelegate, null);
 
                     close = true;
+                    force = true;
                 }
 
                 if (log.isDebugEnabled())
@@ -301,7 +303,7 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
                 if (close) {
                     assert curDelegate != null;
 
-                    curDelegate.close();
+                    curDelegate.close(force);
                 }
             }
         }
@@ -351,12 +353,17 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
             }
 
             if (ggfs != null) {
+                NewGridGgfsHadoopEx hadoop = null;
+
                 try {
-                    NewGridGgfsHadoopEx hadoop = new NewGridGgfsHadoopInProc(ggfs, log);
+                    hadoop = new NewGridGgfsHadoopInProc(ggfs, log);
 
                     curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
                 }
                 catch (IOException | GridException e) {
+                    if (e instanceof GridGgfsHadoopCommunicationException)
+                        hadoop.close(true);
+
                     if (log.isDebugEnabled())
                         log.debug("Failed to connect to in-proc GGFS, fallback to IPC mode.", e);
 
@@ -368,12 +375,17 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
         // 3. Try connecting using shmem.
         if (!parameter(conf, PARAM_GGFS_ENDPOINT_NO_LOCAL_SHMEM, authority, false)) {
             if (curDelegate == null && !U.isWindows()) {
+                NewGridGgfsHadoopEx hadoop = null;
+
                 try {
-                    NewGridGgfsHadoopEx hadoop = new NewGridGgfsHadoopOutProc(endpoint.port(), log);
+                    hadoop = new NewGridGgfsHadoopOutProc(endpoint.port(), log);
 
                     curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
                 }
                 catch (IOException | GridException e) {
+                    if (e instanceof GridGgfsHadoopCommunicationException)
+                        hadoop.close(true);
+
                     if (log.isDebugEnabled())
                         log.debug("Failed to connect to out-proc local GGFS using shmem.", e);
 
@@ -387,12 +399,17 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
 
         if (!skipLocalTcp) {
             if (curDelegate == null) {
+                NewGridGgfsHadoopEx hadoop = null;
+
                 try {
-                    NewGridGgfsHadoopEx hadoop = new NewGridGgfsHadoopOutProc(LOCALHOST, endpoint.port(), log);
+                    hadoop = new NewGridGgfsHadoopOutProc(LOCALHOST, endpoint.port(), log);
 
                     curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
                 }
                 catch (IOException | GridException e) {
+                    if (e instanceof GridGgfsHadoopCommunicationException)
+                        hadoop.close(true);
+
                     if (log.isDebugEnabled())
                         log.debug("Failed to connect to out-proc local GGFS using TCP.", e);
 
@@ -403,12 +420,17 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
 
         // 5. Try remote TCP connection.
         if (curDelegate == null && (skipLocalTcp || !F.eq(LOCALHOST, endpoint.host()))) {
+            NewGridGgfsHadoopEx hadoop = null;
+
             try {
-                NewGridGgfsHadoopEx hadoop = new NewGridGgfsHadoopOutProc(LOCALHOST, endpoint.port(), log);
+                hadoop = new NewGridGgfsHadoopOutProc(LOCALHOST, endpoint.port(), log);
 
                 curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
             }
             catch (IOException | GridException e) {
+                if (e instanceof GridGgfsHadoopCommunicationException)
+                    hadoop.close(true);
+
                 if (log.isDebugEnabled())
                     log.debug("Failed to connect to out-proc remote GGFS using TCP.", e);
 
@@ -471,11 +493,12 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
 
         /**
          * Close underlying RPC handler.
+         *
+         * @param force Force flag.
          */
-        private void close() {
+        private void close(boolean force) {
             if (closeGuard.compareAndSet(false, true))
-                hadoop.close();
+                hadoop.close(force);
         }
     }
-
 }

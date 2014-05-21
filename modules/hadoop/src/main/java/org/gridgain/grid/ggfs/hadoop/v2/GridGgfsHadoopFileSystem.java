@@ -133,7 +133,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
         catch (IOException e) {
             // Close client if exception occurred.
             if (rmtClient != null)
-                rmtClient.close();
+                rmtClient.close(false);
 
             throw e;
         }
@@ -310,7 +310,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
             if (rmtClient == null)
                 return;
 
-            rmtClient.close();
+            rmtClient.close(false);
 
             if (clientLog.isLogEnabled())
                 clientLog.close();
