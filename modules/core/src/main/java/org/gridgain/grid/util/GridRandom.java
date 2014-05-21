@@ -13,7 +13,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Not thread safe random.
+ * Random to be used from a single thread. Compatible with {@link Random} but faster.
  */
 public class GridRandom extends Random {
     /** */
