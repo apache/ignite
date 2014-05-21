@@ -35,7 +35,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 /**
  * IPC cache test.
  */
-public class GridGgfsHadoopFileSystemLightIpcCacheSelfTest extends GridCommonAbstractTest {
+public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
@@ -64,8 +64,8 @@ public class GridGgfsHadoopFileSystemLightIpcCacheSelfTest extends GridCommonAbs
         ggfsCfg.setName("ggfs");
         ggfsCfg.setManagementPort(GridGgfsConfiguration.DFLT_MGMT_PORT + cnt);
 
-        ggfsCfg.setIpcEndpointConfiguration("{type:'shmem', port:" + (GridIpcSharedMemoryServerEndpoint
-            .DFLT_IPC_PORT + cnt) + "}");
+        ggfsCfg.setIpcEndpointConfiguration("{type:'shmem', port:" + (GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT +
+            cnt) + "}");
 
         ggfsCfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 

@@ -37,7 +37,7 @@ public class GridGgfsLinuxAndMacOSTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridGgfsHadoopFileSystemShmemEmbeddedDualSyncSelfTest.class));
         suite.addTest(new TestSuite(GridGgfsHadoopFileSystemShmemEmbeddedDualAsyncSelfTest.class));
 
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLightIpcCacheSelfTest.class));
+        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemIpcCacheSelfTest.class));
 
         suite.addTestSuite(GridGgfsHadoop20FileSystemShmemPrimarySelfTest.class);
 
