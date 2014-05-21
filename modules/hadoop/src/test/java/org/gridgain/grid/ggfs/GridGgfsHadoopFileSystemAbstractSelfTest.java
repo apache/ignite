@@ -397,7 +397,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
             assertTrue(e.getMessage().contains("File system is already initialized"));
         }
 
-        assertEquals(NewGridGgfsHadoopEndpoint.normalize(primaryFsUri), fs.getUri());
+        assertEquals(primaryFsUri, fs.getUri());
 
         assertEquals(0, fs.getUsed());
 

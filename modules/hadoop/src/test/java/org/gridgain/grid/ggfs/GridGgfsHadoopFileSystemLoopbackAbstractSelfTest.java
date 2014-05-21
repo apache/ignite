@@ -43,7 +43,7 @@ public abstract class GridGgfsHadoopFileSystemLoopbackAbstractSelfTest extends
 
     /** {@inheritDoc} */
     @Override protected String secondaryFileSystemUriPath() {
-        return "ggfs://secondary/";
+        return "ggfs://ggfs_secondary@127.0.0.1:11500/";
     }
 
     /** {@inheritDoc} */

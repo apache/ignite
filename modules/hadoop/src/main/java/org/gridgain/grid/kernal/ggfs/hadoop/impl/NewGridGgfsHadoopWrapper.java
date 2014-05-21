@@ -377,7 +377,7 @@ public class NewGridGgfsHadoopWrapper implements NewGridGgfsHadoop {
         // 3. Try connecting using shmem.
         if (curDelegate == null && !U.isWindows()) {
             try {
-                NewGridGgfsHadoopEx hadoop = new NewGridGgfsHadoopOutProc(log);
+                NewGridGgfsHadoopEx hadoop = new NewGridGgfsHadoopOutProc(endpoint.port(), log);
 
                 curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
             }

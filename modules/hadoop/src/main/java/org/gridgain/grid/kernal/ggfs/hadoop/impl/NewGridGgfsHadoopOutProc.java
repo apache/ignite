@@ -95,11 +95,12 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoopEx, GridGgfsHa
     /**
      * Constructor for shmem endpoint.
      *
+     * @param port Port.
      * @param log Client logger.
      * @throws IOException If failed.
      */
-    public NewGridGgfsHadoopOutProc(Log log) throws IOException {
-        this(null, -1, true, log);
+    public NewGridGgfsHadoopOutProc(int port, Log log) throws IOException {
+        this(null, port, true, log);
     }
 
     /**

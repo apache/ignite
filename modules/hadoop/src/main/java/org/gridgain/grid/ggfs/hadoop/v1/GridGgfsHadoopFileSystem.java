@@ -187,7 +187,8 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                     "://[name]/[optional_path], actual=" + name + ']');
 
             try {
-                uri = NewGridGgfsHadoopEndpoint.normalize(name);
+                uri = name;
+                // TODO: ???
             }
             catch (IllegalArgumentException e) {
                 throw new IOException("Failed to create URI for name: " + name, e);
