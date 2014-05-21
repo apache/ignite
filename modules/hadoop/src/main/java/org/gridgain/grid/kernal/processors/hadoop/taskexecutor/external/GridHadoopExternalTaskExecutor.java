@@ -337,7 +337,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                 }
 
                 try {
-                    GridHadoopSharedTaskContext taskCtx = new GridHadoopSharedTaskContext(ctx.localNodeId(), job, log);
+                    GridHadoopJobClassLoadingContext taskCtx = new GridHadoopJobClassLoadingContext(ctx.localNodeId(), job, log);
 
                     taskCtx.prepareJobFiles();
 

@@ -17,6 +17,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.net.*;
@@ -28,7 +29,7 @@ import java.util.*;
  * Task context shared by all tasks during execution.
  * Contains class loader required for hadoop job class loading.
  */
-public class GridHadoopSharedTaskContext {
+public class GridHadoopJobClassLoadingContext {
     /** Job class loader. */
     private ClassLoaderWrapper jobLdr;
 
@@ -49,10 +50,10 @@ public class GridHadoopSharedTaskContext {
      *
      * @param job Job for which context is created.
      */
-    public GridHadoopSharedTaskContext(UUID locNodeId, GridHadoopJob job, GridLogger log) {
+    public GridHadoopJobClassLoadingContext(UUID locNodeId, GridHadoopJob job, GridLogger log) {
         this.locNodeId = locNodeId;
         this.job = job;
-        this.log = log.getLogger(GridHadoopSharedTaskContext.class);
+        this.log = log.getLogger(GridHadoopJobClassLoadingContext.class);
     }
 
     /**
@@ -61,7 +62,7 @@ public class GridHadoopSharedTaskContext {
      * @return Job class loader.
      */
     public ClassLoader jobClassLoader() {
-        return jobLdr;
+        return jobLdr == null ? getClass().getClassLoader() : jobLdr;
     }
 
     /**
@@ -122,12 +123,33 @@ public class GridHadoopSharedTaskContext {
     }
 
     /**
+     * Prepares class loader for task execution and returns previous context class loader.
+     *
+     * @param ctx Context, if exists.
+     * @param info Info to prepare.
+     * @return Previous context class loader.
+     */
+    public static ClassLoader prepareClassLoader(@Nullable GridHadoopJobClassLoadingContext ctx,
+        GridHadoopJobInfo info) {
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+
+        if (ctx == null)
+            return old;
+
+        Thread.currentThread().setContextClassLoader(ctx.jobClassLoader());
+
+        ((GridHadoopDefaultJobInfo)info).configuration().setClassLoader(
+            ctx.jobClassLoader());
+
+        return old;
+    }
+
+    /**
      * Prepares job files.
      *
      * @throws GridException If failed.
      */
     public void prepareJobFiles() throws GridException {
-
         try {
             outBase = U.resolveWorkDirectory("hadoop", false);
 

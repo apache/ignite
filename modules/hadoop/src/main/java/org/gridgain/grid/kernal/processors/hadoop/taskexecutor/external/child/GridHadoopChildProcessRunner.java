@@ -76,7 +76,7 @@ public class GridHadoopChildProcessRunner {
     private GridHadoopShuffleJob<GridHadoopProcessDescriptor> shuffleJob;
 
     /** Shared task context. */
-    private GridHadoopSharedTaskContext sharedTaskCtx;
+    private GridHadoopJobClassLoadingContext sharedTaskCtx;
 
     /** Concurrent mappers. */
     private int concMappers;
@@ -116,7 +116,7 @@ public class GridHadoopChildProcessRunner {
 
                 job = jobFactory.createJob(req.jobId(), req.jobInfo());
 
-                sharedTaskCtx = new GridHadoopSharedTaskContext(nodeDesc.parentNodeId(), job, log);
+                sharedTaskCtx = new GridHadoopJobClassLoadingContext(nodeDesc.parentNodeId(), job, log);
 
                 sharedTaskCtx.initializeClassLoader();
 
@@ -416,12 +416,7 @@ public class GridHadoopChildProcessRunner {
         @Override public void run() {
             execStartTs = System.currentTimeMillis();
 
-            ClassLoader old = Thread.currentThread().getContextClassLoader();
-
-            Thread.currentThread().setContextClassLoader(sharedTaskCtx.jobClassLoader());
-
-            ((GridHadoopDefaultJobInfo)job.info()).configuration().setClassLoader(
-                sharedTaskCtx.jobClassLoader());
+            ClassLoader old = GridHadoopJobClassLoadingContext.prepareClassLoader(sharedTaskCtx, job.info());
 
             GridHadoopTaskState state = GridHadoopTaskState.COMPLETED;
             Throwable err = null;

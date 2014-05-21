@@ -33,7 +33,7 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
     private final ConcurrentMap<GridHadoopJobId, Collection<GridFuture<?>>> jobs = new ConcurrentHashMap<>();
 
     /** Tasks shared contexts. */
-    private final ConcurrentMap<GridHadoopJobId, GridHadoopSharedTaskContext> ctxs = new ConcurrentHashMap<>();
+    private final ConcurrentMap<GridHadoopJobId, GridHadoopJobClassLoadingContext> ctxs = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public void onKernalStart() throws GridException {
@@ -63,16 +63,8 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
 
             GridFuture<GridFuture<?>> fut = ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<GridFuture<?>>() {
                 @Override public GridFuture<?> call() throws Exception {
-                    ClassLoader old = Thread.currentThread().getContextClassLoader();
-
-                    GridHadoopSharedTaskContext sharedCtx = ctxs.get(job.id());
-
-                    if (sharedCtx != null) {
-                        Thread.currentThread().setContextClassLoader(sharedCtx.jobClassLoader());
-
-                        ((GridHadoopDefaultJobInfo)job.info()).configuration().setClassLoader(
-                            sharedCtx.jobClassLoader());
-                    }
+                    ClassLoader old = GridHadoopJobClassLoadingContext.prepareClassLoader(ctxs.get(job.id()),
+                        job.info());
 
                     try (GridHadoopTaskOutput out = createOutput(info);
                          GridHadoopTaskInput in = createInput(info)) {
@@ -158,13 +150,13 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
 
             assert futures == null || futures.isEmpty();
 
-            GridHadoopSharedTaskContext ctx = ctxs.remove(job.id());
+            GridHadoopJobClassLoadingContext ctx = ctxs.remove(job.id());
 
             if (ctx != null)
                 ctx.destroy();
         }
         else if (meta.phase() != GridHadoopJobPhase.PHASE_CANCELLING) {
-            GridHadoopSharedTaskContext tctx = ctxs.get(job.id());
+            GridHadoopJobClassLoadingContext tctx = ctxs.get(job.id());
 
             if (tctx == null) {
                 GridHadoopMapReducePlan plan = meta.mapReducePlan();
@@ -172,12 +164,12 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
                 UUID locNodeId = ctx.localNodeId();
 
                 if (plan.mapperNodeIds().contains(locNodeId) || plan.reducerNodeIds().contains(locNodeId)) {
-                    tctx = new GridHadoopSharedTaskContext(ctx.localNodeId(), job, log);
+                    tctx = new GridHadoopJobClassLoadingContext(ctx.localNodeId(), job, log);
 
                     tctx.prepareJobFiles();
                     tctx.initializeClassLoader();
 
-                    GridHadoopSharedTaskContext old = ctxs.putIfAbsent(job.id(), tctx);
+                    GridHadoopJobClassLoadingContext old = ctxs.putIfAbsent(job.id(), tctx);
 
                     assert old == null;
                 }
