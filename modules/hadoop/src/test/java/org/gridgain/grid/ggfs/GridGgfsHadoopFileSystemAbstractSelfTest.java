@@ -70,6 +70,9 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
     /** Default GGFS mode. */
     protected GridGgfsMode mode;
 
+    /** In-process mode flag. */
+    protected boolean inProc;
+
     /** Primary file system URI. */
     protected URI primaryFsUri;
 
@@ -91,9 +94,11 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      * Constructor.
      *
      * @param mode Default GGFS mode.
+     * @param inProc {@code True} for in-process mode.
      */
-    protected GridGgfsHadoopFileSystemAbstractSelfTest(GridGgfsMode mode) {
+    protected GridGgfsHadoopFileSystemAbstractSelfTest(GridGgfsMode mode, boolean inProc) {
         this.mode = mode;
+        this.inProc = inProc;
     }
 
     /** {@inheritDoc} */
@@ -199,7 +204,9 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      *
      * @return Primary file system URI path.
      */
-    protected abstract String primaryFileSystemUriPath();
+    protected String primaryFileSystemUriPath() {
+        return inProc ? "ggfs://ggfs:" + getTestGridName(0) + "@/" : "ggfs://ggfs@/";
+    }
 
     /**
      * Gets primary file system config path.
@@ -252,6 +259,11 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      * @return Secondary IPC endpoint configuration.
      */
     protected abstract String secondaryIpcEndpointConfiguration();
+
+    /** {@inheritDoc} */
+    @Override public String getTestGridName() {
+        return "grid";
+    }
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
@@ -398,63 +410,65 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testIpcCache() throws Exception {
-        FileSystem fsOther = null;
+        if (!inProc) {
+            FileSystem fsOther = null;
 
-        try {
-            Field field = GridGgfsHadoopIpcIo.class.getDeclaredField("ipcCache");
+            try {
+                Field field = GridGgfsHadoopIpcIo.class.getDeclaredField("ipcCache");
 
-            field.setAccessible(true);
+                field.setAccessible(true);
 
-            Map<String, GridGgfsHadoopIpcIo> cache = (Map<String, GridGgfsHadoopIpcIo>)field.get(null);
+                Map<String, GridGgfsHadoopIpcIo> cache = (Map<String, GridGgfsHadoopIpcIo>)field.get(null);
 
-            Configuration cfg = new Configuration();
+                Configuration cfg = new Configuration();
 
-            cfg.addResource(U.resolveGridGainUrl(primaryFileSystemConfigPath()));
+                cfg.addResource(U.resolveGridGainUrl(primaryFileSystemConfigPath()));
 
-            // we disable caching in order to obtain new FileSystem instance.
-            cfg.setBoolean("fs.ggfs.impl.disable.cache", true);
+                // we disable caching in order to obtain new FileSystem instance.
+                cfg.setBoolean("fs.ggfs.impl.disable.cache", true);
 
-            // Initial cache size.
-            int initSize = cache.size();
+                // Initial cache size.
+                int initSize = cache.size();
 
-            // Ensure that when IO is used by multiple file systems and one of them is closed, IO is not stopped.
-            fsOther = FileSystem.get(new URI(primaryFileSystemUriPath()), cfg);
+                // Ensure that when IO is used by multiple file systems and one of them is closed, IO is not stopped.
+                fsOther = FileSystem.get(new URI(primaryFileSystemUriPath()), cfg);
 
-            assert fs != fsOther;
+                assert fs != fsOther;
 
-            assertEquals(initSize, cache.size());
+                assertEquals(initSize, cache.size());
 
-            fsOther.close();
+                fsOther.close();
 
-            assertEquals(initSize, cache.size());
+                assertEquals(initSize, cache.size());
 
-            Field stopField = GridGgfsHadoopIpcIo.class.getDeclaredField("stopping");
+                Field stopField = GridGgfsHadoopIpcIo.class.getDeclaredField("stopping");
 
-            stopField.setAccessible(true);
+                stopField.setAccessible(true);
 
-            GridGgfsHadoopIpcIo io = null;
+                GridGgfsHadoopIpcIo io = null;
 
-            for (Map.Entry<String, GridGgfsHadoopIpcIo> ioEntry : cache.entrySet()) {
-                if (primaryFileSystemEndpoint().contains(ioEntry.getKey())) {
-                    io = ioEntry.getValue();
+                for (Map.Entry<String, GridGgfsHadoopIpcIo> ioEntry : cache.entrySet()) {
+                    if (primaryFileSystemEndpoint().contains(ioEntry.getKey())) {
+                        io = ioEntry.getValue();
 
-                    break;
+                        break;
+                    }
                 }
+
+                assert io != null;
+
+                assert !(Boolean)stopField.get(io);
+
+                // Ensure that IO is stopped when nobody else is need it.
+                fs.close();
+
+                assertEquals(initSize - 1, cache.size());
+
+                assert (Boolean)stopField.get(io);
             }
-
-            assert io != null;
-
-            assert !(Boolean)stopField.get(io);
-
-            // Ensure that IO is stopped when nobody else is need it.
-            fs.close();
-
-            assertEquals(initSize - 1, cache.size());
-
-            assert (Boolean)stopField.get(io);
-        }
-        finally {
-            U.closeQuiet(fsOther);
+            finally {
+                U.closeQuiet(fsOther);
+            }
         }
     }
 
@@ -1532,8 +1546,6 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
             GridGgfsBlockLocation location = F.first(locations);
 
             assertEquals(1, location.nodeIds().size());
-
-            assertEquals(grid(0).localNode().id(), F.first(location.nodeIds()));
         }
     }
 
@@ -1923,7 +1935,6 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
     }
 
     /** @throws Exception If failed. */
-    // TODO: HAngs?
     public void testConsistency() throws Exception {
         // Default buffers values
         checkConsistency(-1, 1, -1, -1, 1, -1);

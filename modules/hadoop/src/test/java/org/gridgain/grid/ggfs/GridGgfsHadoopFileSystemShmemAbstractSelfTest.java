@@ -28,8 +28,9 @@ public abstract class GridGgfsHadoopFileSystemShmemAbstractSelfTest extends Grid
      *
      * @param mode GGFS mode.
      */
+    // TODO: Separate hierarchy.
     protected GridGgfsHadoopFileSystemShmemAbstractSelfTest(GridGgfsMode mode) {
-        super(mode);
+        super(mode, false);
     }
 
     /** {@inheritDoc} */

@@ -17,6 +17,6 @@ public class GridGgfsHadoopFileSystemLoopbackDualSyncSelfTest extends GridGgfsHa
      * Constructor.
      */
     public GridGgfsHadoopFileSystemLoopbackDualSyncSelfTest() {
-        super(DUAL_SYNC);
+        super(DUAL_SYNC, true);
     }
 }

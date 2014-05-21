@@ -20,14 +20,10 @@ public abstract class GridGgfsHadoopFileSystemLoopbackAbstractSelfTest extends
      * Constructor.
      *
      * @param mode GGFS mode.
+     * @param inProc In-process mode flag.
      */
-    protected GridGgfsHadoopFileSystemLoopbackAbstractSelfTest(GridGgfsMode mode) {
-        super(mode);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String primaryFileSystemUriPath() {
-        return "ggfs://ggfs@/";
+    protected GridGgfsHadoopFileSystemLoopbackAbstractSelfTest(GridGgfsMode mode, boolean inProc) {
+        super(mode, inProc);
     }
 
     /** {@inheritDoc} */

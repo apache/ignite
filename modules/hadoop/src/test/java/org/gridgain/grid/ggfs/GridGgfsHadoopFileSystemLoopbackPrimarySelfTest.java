@@ -19,6 +19,6 @@ public class GridGgfsHadoopFileSystemLoopbackPrimarySelfTest extends GridGgfsHad
      * Constructor.
      */
     public GridGgfsHadoopFileSystemLoopbackPrimarySelfTest() {
-        super(PRIMARY);
+        super(PRIMARY, true);
     }
 }

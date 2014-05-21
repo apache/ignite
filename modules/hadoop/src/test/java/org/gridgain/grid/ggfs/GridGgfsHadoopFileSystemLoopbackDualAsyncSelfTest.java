@@ -18,6 +18,6 @@ public class GridGgfsHadoopFileSystemLoopbackDualAsyncSelfTest extends
      * Constructor.
      */
     public GridGgfsHadoopFileSystemLoopbackDualAsyncSelfTest() {
-        super(DUAL_ASYNC);
+        super(DUAL_ASYNC, true);
     }
 }
