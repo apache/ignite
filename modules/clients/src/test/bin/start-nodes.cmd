@@ -33,9 +33,6 @@ rem Force to create log's directory.
 rmdir %GG_HOME%\work\log /S /Q
 mkdir %GG_HOME%\work\log
 
-rem Provide user library to the grid startup scripts.
-set USER_LIBS=%CLIENT_TEST_JAR%
-
 set JVM_OPTS=-DCLIENTS_MODULE_PATH=%CLIENTS_MODULE_PATH%
 
 FOR /L %%G IN (1,1,%NODES_COUNT%) DO start "Node #%%G" /low /MIN cmd /C "%BIN_PATH%\ggstart.bat -v %CONFIG_DIR%\spring-server-node.xml >> %GG_HOME%\work\log\node-%%G.log 2>&1"
