@@ -50,9 +50,23 @@
 
         <dependency>
             <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-spring</artifactId>
+            <version>${gridgain.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.gridgain</groupId>
             <artifactId>gridgain-hadoop</artifactId>
             <version>${gridgain.version}</version>
             <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>14.0.1</version>
             <scope>test</scope>
         </dependency>
 
