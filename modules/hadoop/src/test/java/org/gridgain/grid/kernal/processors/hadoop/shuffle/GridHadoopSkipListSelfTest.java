@@ -18,7 +18,7 @@ import java.util.*;
 import static java.lang.Math.*;
 
 /**
- * TODO write doc
+ * Skip list tests.
  */
 public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
 
