@@ -307,7 +307,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             JobLocalState state = activeJobs.get(info.jobId());
 
-            assert (status.state() != FAILED && status.state() != CRASHED) || status.failCause() != null :
+            // Task CRASHes with null fail cause.
+            assert (status.state() != FAILED) || status.failCause() != null :
                 "Invalid task status [info=" + info + ", status=" + status + ']';
 
             assert state != null || (ctx.jobUpdateLeader() && (info.type() == COMMIT || info.type() == ABORT)):
@@ -519,15 +520,20 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                     if (meta.pendingSplits().isEmpty() && meta.pendingReducers().isEmpty()) {
                         if (ctx.jobUpdateLeader()) {
-                            GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(),
-                                GridHadoopTaskType.ABORT, jobId, 0, 0, null);
+                            if (state == null)
+                                state = initState(job, meta);
 
-                            if (log.isDebugEnabled())
-                                log.debug("Submitting ABORT task for execution [locNodeId=" + locNodeId +
-                                    ", jobId=" + jobId + ']');
+                            // Prevent running multiple abort tasks.
+                            if (state.onAborted()) {
+                                GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(),
+                                    GridHadoopTaskType.ABORT, jobId, 0, 0, null);
 
-                            // Always use internal executor to abort or commit.
-                            ctx.taskExecutor().run(job, Collections.singletonList(info));
+                                if (log.isDebugEnabled())
+                                    log.debug("Submitting ABORT task for execution [locNodeId=" + locNodeId +
+                                        ", jobId=" + jobId + ']');
+
+                                ctx.taskExecutor().run(job, Collections.singletonList(info));
+                            }
                         }
 
                         return;
@@ -759,6 +765,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         /** Cancelled flag. */
         private boolean cancelled;
 
+        /** Aborted flag. */
+        private boolean aborted;
+
         /**
          * @param job Job.
          */
@@ -902,8 +911,21 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
          * @return {@code True} if job was cancelled by this (first) call.
          */
         public boolean onCancel() {
-            if (!cancelled) {
+            if (!cancelled && !aborted) {
                 cancelled = true;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        /**
+         * @return {@code True} if job was aborted this (first) call.
+         */
+        public boolean onAborted() {
+            if (!aborted) {
+                aborted = true;
 
                 return true;
             }
@@ -1134,9 +1156,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             cp.pendingSplits(splitsCp);
 
             cp.phase(PHASE_CANCELLING);
-
-            if (splitsCp.isEmpty() && rdcCp.isEmpty())
-                cp.phase(PHASE_COMPLETE);
 
             return cp;
         }
