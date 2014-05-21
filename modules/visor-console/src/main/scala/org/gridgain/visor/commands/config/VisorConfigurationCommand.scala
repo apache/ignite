@@ -334,7 +334,7 @@ class VisorConfigurationCommand {
             val lifecycleT = VisorTextTable()
 
             lifecycleT += ("Beans", safe(cfg.lifecycle().beans(), DFLT))
-            lifecycleT += ("Notifications", bool2Str(cfg.lifecycle().notifier()))
+            lifecycleT += ("Notifications", bool2Str(cfg.lifecycle().emailNotification()))
 
             lifecycleT.render()
 
@@ -342,12 +342,12 @@ class VisorConfigurationCommand {
 
             val execSvcT = VisorTextTable()
 
-            execSvcT += ("Executor service", safe(cfg.executeSvc().executeSvc(), DFLT))
-            execSvcT += ("Executor service shutdown", safe(cfg.executeSvc().executeSvcShutdown(), DFLT))
-            execSvcT += ("System executor service", safe(cfg.executeSvc().systemExecuteSvc(), DFLT))
-            execSvcT += ("System executor service shutdown", safe(cfg.executeSvc().systemExecuteSvcShutdown(), DFLT))
-            execSvcT += ("Peer-to-Peer executor service", safe(cfg.executeSvc().p2pExecuteSvc(), DFLT))
-            execSvcT += ("Peer-to-Peer executor service shutdown", safe(cfg.executeSvc().p2pExecuteSvcShutdown(), DFLT))
+            execSvcT += ("Executor service", safe(cfg.executeSvc().executorService(), DFLT))
+            execSvcT += ("Executor service shutdown", bool2Str(cfg.executeSvc().executeServiceShutdown()))
+            execSvcT += ("System executor service", safe(cfg.executeSvc().systemExecutorService(), DFLT))
+            execSvcT += ("System executor service shutdown", bool2Str(cfg.executeSvc().systemExecutorServiceShutdown()))
+            execSvcT += ("Peer-to-Peer executor service", safe(cfg.executeSvc().p2PExecutorService(), DFLT))
+            execSvcT += ("Peer-to-Peer executor service shutdown", bool2Str(cfg.executeSvc().p2PExecutorServiceShutdown()))
 
             execSvcT.render()
 
@@ -359,7 +359,7 @@ class VisorConfigurationCommand {
             segT += ("Segmentation resolvers", cfg.seg().resolvers())
             segT += ("Segmentation check frequency", cfg.seg().checkFrequency())
             segT += ("Wait for segmentation on start", bool2Str(cfg.seg().waitOnStart()))
-            segT += ("All resolvers pass required", bool2Str(cfg.seg().passRequired()))
+            segT += ("All resolvers pass required", bool2Str(cfg.seg().allResolversPassRequired()))
 
             segT.render()
 
@@ -377,10 +377,15 @@ class VisorConfigurationCommand {
 
             val restT = VisorTextTable()
 
-            restT += ("REST enabled", bool2Str(cfg.restEnabled()))
-            restT += ("Jetty path", safe(cfg.jettyPath(), DFLT))
-            restT += ("Jetty host", safe(cfg.jettyHost(), DFLT))
-            restT += ("Jetty port", safe(cfg.jettyPort(), DFLT))
+            restT += ("REST enabled", bool2Str(cfg.rest().restEnabled()))
+            restT += ("Rest accessible folders", safe(cfg.rest().accessibleFolders(), DFLT))
+            restT += ("Jetty path", safe(cfg.rest().jettyPath(), DFLT))
+            restT += ("Jetty host", safe(cfg.rest().jettyHost(), DFLT))
+            restT += ("Jetty port", safe(cfg.rest().jettyPort(), DFLT))
+            restT += ("Tcp ssl enabled", bool2Str(cfg.rest().tcpSslEnabled()))
+            restT += ("Tcp ssl context factory", safe(cfg.rest().tcpSslContextFactory(), DFLT))
+            restT += ("Tcp host", safe(cfg.rest().tcpHost(), DFLT))
+            restT += ("Tcp port", safe(cfg.rest().tcpPort(), DFLT))
 
             restT.render()
 

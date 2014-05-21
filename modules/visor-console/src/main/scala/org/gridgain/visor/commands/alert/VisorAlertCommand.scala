@@ -117,16 +117,16 @@ class VisorAlertCommand {
     val DFLT_FREQ = 15L * 60L
 
     /** Alerts. */
-    private var alerts = new HashMap[String, Alert]
+    private var alerts = new HashMap[String, VisorAlert]
 
     /** Map of last sent notification per alert ID. */
     private var sent = new HashMap[(String, UUID), Long]
 
     /** Map of alert statistics. */
-    private var stats = new HashMap[String, Stats]
+    private var stats = new HashMap[String, VisorStats]
 
     /** Last 10 sent alerts. */
-    private var last10 = List.empty[SentAlert]
+    private var last10 = List.empty[VisorSentAlert]
 
     /** Subscribe guard. */
     private val guard = new AtomicBoolean(false)
@@ -306,7 +306,7 @@ class VisorAlertCommand {
                     break()
                 }
 
-                val alert = new Alert(
+                val alert = new VisorAlert(
                     id = id8,
                     nodeFilter = nf,
                     gridFilter = gf,
@@ -322,7 +322,7 @@ class VisorAlertCommand {
                 registerListener()
 
                 alerts = alerts + (alert.id -> alert)
-                stats = stats + (alert.id -> Stats())
+                stats = stats + (alert.id -> VisorStats())
 
                 // Set visor var pointing to created alert.
                 mset(alert.varName, alert.id)
@@ -383,7 +383,7 @@ class VisorAlertCommand {
                                     if (gb && alert.perGrid)
                                         sent = sent + (gKey -> now)
 
-                                    val stat: Stats = stats(id)
+                                    val stat: VisorStats = stats(id)
 
                                     assert(stat != null)
 
@@ -408,7 +408,7 @@ class VisorAlertCommand {
                                         "]"
                                     )
 
-                                    last10 = SentAlert(
+                                    last10 = VisorSentAlert(
                                         id = alert.id,
                                         spec = alert.spec,
                                         createdOn = alert.createdOn,
@@ -456,7 +456,7 @@ class VisorAlertCommand {
      * @param a Alert to send email about.
      * @param n `Option` for node.
      */
-    private def sendEmail(a: Alert, n: Option[GridNode]) {
+    private def sendEmail(a: VisorAlert, n: Option[GridNode]) {
         assert(a != null)
         assert(n != null)
 
@@ -517,7 +517,7 @@ class VisorAlertCommand {
     private def unregisterAll() {
         mclear("-al")
 
-        alerts = new HashMap[String, Alert]
+        alerts = new HashMap[String, VisorAlert]
     }
 
     /**
@@ -609,7 +609,7 @@ class VisorAlertCommand {
 
             last10T #= ("ID(@)", "Spec", "Sent", "Registered", "Count")
 
-            last10.foreach((a: SentAlert) => last10T += (
+            last10.foreach((a: VisorSentAlert) => last10T += (
                 a.idVar,
                 a.spec,
                 formatDateTime(a.sentTs),
@@ -674,7 +674,7 @@ class VisorAlertCommand {
 /**
  * Visor alert.
  */
-sealed private case class Alert(
+sealed private case class VisorAlert(
     id: String,
     nodeFilter: GridNode => Boolean,
     gridFilter: () => Boolean,
@@ -693,7 +693,7 @@ sealed private case class Alert(
 /**
  * Snapshot of the sent alert.
  */
-private case class SentAlert(
+private case class VisorSentAlert(
     id: String,
     sentTs: Long,
     createdOn: Long,
@@ -712,7 +712,7 @@ private case class SentAlert(
 /**
  * Statistics holder for visor alert.
  */
-sealed private case class Stats(
+sealed private case class VisorStats(
     var cnt: Int = 0,
     var firstSnd: Long = 0,
     var lastSnd: Long = 0

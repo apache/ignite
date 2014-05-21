@@ -13,73 +13,22 @@ import org.gridgain.grid.GridException;
 import org.gridgain.grid.cache.GridCache;
 import org.gridgain.grid.kernal.processors.task.GridInternal;
 import org.gridgain.grid.kernal.visor.cmd.*;
-import org.gridgain.grid.kernal.visor.cmd.dto.*;
+
+import java.util.*;
 
 import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.escapeName;
-
-import java.io.Serializable;
-import java.util.HashMap;
 
 /**
  * Task that clears specified caches on specified node.
  */
 @GridInternal
 public class VisorClearCachesTask extends
-    VisorOneNodeTask<VisorOneNodeCachesArg, VisorClearCachesTask.VisorClearCachesTaskResult> {
-    /**
-     * {@link VisorClearCachesTask} task result item with count of cleared keys and cache size after clear.
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorClearCachesTaskResultItem implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Cleared keys count. */
-        private final int cleared;
-
-        /** Cache size after clear. */
-        private final int after;
-
-        /**
-         * Create result item.
-         *
-         * @param cleared Cleared keys count.
-         * @param after Cache size after clear.
-         */
-        public VisorClearCachesTaskResultItem(int cleared, int after) {
-            this.cleared = cleared;
-            this.after = after;
-        }
-
-        /**
-         * @return Cleared keys count.
-         */
-        public int cleared() {
-            return cleared;
-        }
-
-        /**
-         * @return Cache size after clear.
-         */
-        public int after() {
-            return after;
-        }
-    }
-
-    /**
-     * {@link VisorClearCachesTask} task result type.
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorClearCachesTaskResult extends HashMap<String, VisorClearCachesTaskResultItem>{
-        /** */
-        private static final long serialVersionUID = 0L;
-    }
-
+    VisorOneNodeTask<VisorOneNodeCachesArg, VisorCachesTaskResult> {
     /**
      * Job for {@link VisorClearCachesTask} task that clear specified caches.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorClearCachesJob extends VisorOneNodeJob<VisorOneNodeCachesArg, VisorClearCachesTaskResult> {
+    public static class VisorClearCachesJob extends VisorOneNodeJob<VisorOneNodeCachesArg, VisorCachesTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -93,21 +42,23 @@ public class VisorClearCachesTask extends
         }
 
         @Override
-        protected VisorClearCachesTaskResult run(VisorOneNodeCachesArg arg) throws GridException {
-            VisorClearCachesTaskResult res = new VisorClearCachesTaskResult();
+        protected VisorCachesTaskResult run(VisorOneNodeCachesArg arg) throws GridException {
+            VisorCachesTaskResult res = new VisorCachesTaskResult();
 
             for(GridCache cache : g.cachesx(null)) {
                 String escapedName = escapeName(cache.name());
 
                 if (arg.cacheNames().contains(escapedName)) {
-                    int cleared = 0;
+                    Set keys = cache.keySet();
 
-                    for (Object key : cache.keySet()) {
+                    long before = keys.size(), after = before;
+
+                    for (Object key : keys) {
                         if (cache.clear(key))
-                            cleared++;
+                            after--;
                     }
 
-                    res.put(escapedName, new VisorClearCachesTaskResultItem(cleared, cache.size()));
+                    res.put(escapedName, new VisorBeforeAfterResult(before, after));
                 }
             }
 
@@ -116,7 +67,7 @@ public class VisorClearCachesTask extends
     }
 
     @Override
-    protected VisorJob<VisorOneNodeCachesArg, VisorClearCachesTaskResult> job(VisorOneNodeCachesArg arg) {
+    protected VisorJob<VisorOneNodeCachesArg, VisorCachesTaskResult> job(VisorOneNodeCachesArg arg) {
         return new VisorClearCachesJob(arg);
     }
 }

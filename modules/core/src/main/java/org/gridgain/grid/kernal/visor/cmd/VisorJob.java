@@ -16,10 +16,8 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.jetbrains.annotations.*;
 
-import java.io.IOException;
-
 /**
- * TODO: Add class description.
+ * Basde class for Visor jobs.
  */
 public abstract class VisorJob<A, R> extends GridComputeJobAdapter {
     /**

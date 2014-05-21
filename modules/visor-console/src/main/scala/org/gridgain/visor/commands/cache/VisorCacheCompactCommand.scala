@@ -11,6 +11,7 @@
 
 package org.gridgain.visor.commands.cache
 
+import java.util.{HashSet => JavaHashSet}
 import org.gridgain.scalar._
 import scalar._
 import org.gridgain.visor._
@@ -20,8 +21,8 @@ import org.gridgain.grid._
 import collection.JavaConversions._
 import scala.util.control.Breaks._
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCompactCachesTask
-import org.gridgain.grid.kernal.visor.cmd.dto.VisorOneNodeCachesArg
 import org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils._
+import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeCachesArg
 
 /**
  * ==Overview==
@@ -110,7 +111,7 @@ class VisorCacheCompactCommand {
 
         t #= ("Node ID8(@)", "Entries Compacted", "Cache Size Before", "Cache Size After")
 
-        val cacheSet = Set(cacheName)
+        val cacheSet = new JavaHashSet(Seq(cacheName))
 
         prj.nodes().foreach(node => {
             val r = grid.forNode(node)
@@ -120,7 +121,7 @@ class VisorCacheCompactCommand {
                 .execute(classOf[VisorCompactCachesTask], new VisorOneNodeCachesArg(node.id(), cacheSet))
                 .get.get(cacheName)
 
-            t += (nodeId8(node.id()), r.compacted(), r.compacted() + r.after(), r.after())
+            t += (nodeId8(node.id()), r.before() - r.after(), r.before(), r.after())
         })
 
         println("Compacts entries in cache: " + escapeName(cacheName))

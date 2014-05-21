@@ -10,6 +10,7 @@
  */
 package org.gridgain.visor.commands.cache
 
+import java.util.{HashSet => JavaHashSet}
 import org.gridgain.scalar._
 import scalar._
 import org.gridgain.visor._
@@ -18,9 +19,9 @@ import org.gridgain.visor.commands.VisorTextTable
 import scala.collection.JavaConversions._
 import scala.util.control.Breaks._
 import org.gridgain.grid.GridNode
-import org.gridgain.grid.kernal.visor.cmd.dto.VisorOneNodeCachesArg
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorClearCachesTask
 import org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils._
+import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeCachesArg
 
 /**
  * ==Overview==
@@ -109,7 +110,7 @@ class VisorCacheClearCommand {
 
         t #= ("Node ID8(@)", "Entries Cleared", "Cache Size Before", "Cache Size After")
 
-        val cacheSet = Set(cacheName)
+        val cacheSet = new JavaHashSet(Seq(cacheName))
 
         prj.nodes().foreach(node => {
             val res = grid.forNode(node)
@@ -119,7 +120,7 @@ class VisorCacheClearCommand {
                 .execute(classOf[VisorClearCachesTask], new VisorOneNodeCachesArg(node.id(), cacheSet))
                 .get.get(cacheName)
 
-            t += (nodeId8(node.id()), res.cleared(), res.cleared() + res.after(), res.after())
+            t += (nodeId8(node.id()), res.before() - res.after(), res.before(), res.after())
         })
 
         println("Cleared cache with name: " + escapeName(cacheName))

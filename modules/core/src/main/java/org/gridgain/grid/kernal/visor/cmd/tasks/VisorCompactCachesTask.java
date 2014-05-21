@@ -13,68 +13,19 @@ import org.gridgain.grid.GridException;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.task.GridInternal;
 import org.gridgain.grid.kernal.visor.cmd.*;
-import org.gridgain.grid.kernal.visor.cmd.dto.*;
 
-import java.io.Serializable;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.*;
+import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.escapeName;
 
 /**
  * Compacts caches.
  */
 @GridInternal
-public class VisorCompactCachesTask extends VisorOneNodeTask<VisorOneNodeCachesArg,
-    VisorCompactCachesTask.VisorCompactCachesTaskResult> {
-    /**
-     * {@link VisorCompactCachesTask} task result item with count of compacted keys and cache size after compact.
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorCompactCachesTaskResultItem implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Compacted keys count. */
-        private final int compacted;
-
-        /** Cache size after compact. */
-        private final int after;
-
-        /**
-         * Create result item.
-         *
-         * @param compacted Cleared keys count.
-         * @param after Cache size after clear.
-         */
-        public VisorCompactCachesTaskResultItem(int compacted, int after) {
-            this.compacted = compacted;
-            this.after = after;
-        }
-
-        /**
-         * @return compacted keys count.
-         */
-        public int compacted() {
-            return compacted;
-        }
-
-        /**
-         * @return Cache size after compact.
-         */
-        public int after() {
-            return after;
-        }
-    }
-
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorCompactCachesTaskResult extends HashMap<String, VisorCompactCachesTaskResultItem> {
-        /** */
-        private static final long serialVersionUID = 0L;
-    }
-
+public class VisorCompactCachesTask extends VisorOneNodeTask<VisorOneNodeCachesArg, VisorCachesTaskResult> {
     @SuppressWarnings("PublicInnerClass")
     public static class VisorCompactCachesJob
-        extends VisorOneNodeJob<VisorOneNodeCachesArg, VisorCompactCachesTaskResult> {
+        extends VisorOneNodeJob<VisorOneNodeCachesArg, VisorCachesTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -88,21 +39,23 @@ public class VisorCompactCachesTask extends VisorOneNodeTask<VisorOneNodeCachesA
         }
 
         @Override
-        protected VisorCompactCachesTaskResult run(VisorOneNodeCachesArg arg) throws GridException {
-            VisorCompactCachesTaskResult res = new VisorCompactCachesTaskResult();
+        protected VisorCachesTaskResult run(VisorOneNodeCachesArg arg) throws GridException {
+            final VisorCachesTaskResult res = new VisorCachesTaskResult();
 
             for(GridCache cache : g.cachesx(null)) {
                 String escapedName = escapeName(cache.name());
 
                 if (arg.cacheNames().contains(escapedName)) {
-                    int compacted = 0;
+                    final Set keys = cache.keySet();
 
-                    for (Object key : cache.keySet()) {
+                    long before = keys.size(), after = before;
+
+                    for (Object key : keys) {
                         if (cache.compact(key))
-                            compacted++;
+                            after--;
                     }
 
-                    res.put(escapedName, new VisorCompactCachesTaskResultItem(compacted, cache.size()));
+                    res.put(escapedName, new VisorBeforeAfterResult(before, after));
                 }
             }
 
@@ -111,7 +64,7 @@ public class VisorCompactCachesTask extends VisorOneNodeTask<VisorOneNodeCachesA
     }
 
     @Override
-    protected VisorJob<VisorOneNodeCachesArg, VisorCompactCachesTaskResult> job(VisorOneNodeCachesArg arg) {
+    protected VisorJob<VisorOneNodeCachesArg, VisorCachesTaskResult> job(VisorOneNodeCachesArg arg) {
         return new VisorCompactCachesJob(arg);
     }
 }

@@ -9,33 +9,34 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto;
 
-import org.gridgain.grid.kernal.visor.cmd.*;
-
-import java.util.*;
+import java.io.*;
 
 /**
- * Arguments for cache tasks.
+ * Affinity configuration data.
  */
-public class VisorOneNodeCachesArg extends VisorOneNodeArg {
+public class VisorAffinityConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Names of caches to clear. */
-    private final Set<String> cacheNames;
+    private final String affinity;
+    private final String affinityMapper;
 
-    /**
-     * @param nodeId Node Id.
-     */
-    public VisorOneNodeCachesArg(UUID nodeId, Set<String> cacheNames) {
-        super(nodeId);
-
-        this.cacheNames = cacheNames;
+    public VisorAffinityConfig(String affinity, String affinityMapper) {
+        this.affinity = affinity;
+        this.affinityMapper = affinityMapper;
     }
 
     /**
-     * @return Names of caches to clear.
+     * @return Affinity.
      */
-    public Set<String> cacheNames() {
-        return cacheNames;
+    public String affinity() {
+        return affinity;
+    }
+
+    /**
+     * @return Affinity mapper.
+     */
+    public String affinityMapper() {
+        return affinityMapper;
     }
 }

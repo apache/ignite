@@ -18,7 +18,6 @@ import org.gridgain.grid.kernal.processors.task.GridInternal;
 import org.gridgain.grid.kernal.visor.cmd.*;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
@@ -29,7 +28,7 @@ import java.util.UUID;
  */
 @GridInternal
 public class VisorRunGcTask extends VisorMultiNodeTask<VisorRunGcTask.VisorRunGcArg,
-    VisorRunGcTask.VisorRunGcTaskResult, VisorRunGcTask.VisorRunGcJobResult> {
+    VisorRunGcTask.VisorRunGcTaskResult, VisorBeforeAfterResult> {
     /**
      * Arguments for {@link VisorRunGcTask}.
      */
@@ -61,14 +60,14 @@ public class VisorRunGcTask extends VisorMultiNodeTask<VisorRunGcTask.VisorRunGc
     }
 
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorRunGcTaskResult extends HashMap<UUID, VisorRunGcJobResult> {
+    public static class VisorRunGcTaskResult extends HashMap<UUID, VisorBeforeAfterResult> {
         /** */
         private static final long serialVersionUID = 0L;
     }
 
     @SuppressWarnings("PublicInnerClass")
     public static class VisorRunGcJob
-        extends VisorJob<VisorRunGcArg, VisorRunGcJobResult> {
+        extends VisorJob<VisorRunGcArg, VisorBeforeAfterResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -82,7 +81,7 @@ public class VisorRunGcTask extends VisorMultiNodeTask<VisorRunGcTask.VisorRunGc
         }
 
         @Override
-        protected VisorRunGcJobResult run(VisorRunGcArg arg) throws GridException {
+        protected VisorBeforeAfterResult run(VisorRunGcArg arg) throws GridException {
             GridNode locNode = g.localNode();
 
             GridNodeMetrics m = locNode.metrics();
@@ -95,7 +94,7 @@ public class VisorRunGcTask extends VisorMultiNodeTask<VisorRunGcTask.VisorRunGc
                 for (GridCache<?, ?> cache : g.cachesx(null))
                     cache.dgc();
 
-            return new VisorRunGcJobResult(locNode.id(), before, freeHeap(m));
+            return new VisorBeforeAfterResult(before, freeHeap(m));
         }
 
         private long freeHeap(GridNodeMetrics m) {
@@ -103,47 +102,8 @@ public class VisorRunGcTask extends VisorMultiNodeTask<VisorRunGcTask.VisorRunGc
         }
     }
 
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorRunGcJobResult implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        private final UUID nid;
-
-        private final long before;
-
-        private final long after;
-
-        public VisorRunGcJobResult(UUID nid, long before, long after) {
-            this.nid = nid;
-            this.before = before;
-            this.after = after;
-        }
-
-        /**
-         * @return Nid.
-         */
-        public UUID nid() {
-            return nid;
-        }
-
-        /**
-         * @return Before.
-         */
-        public long before() {
-            return before;
-        }
-
-        /**
-         * @return After.
-         */
-        public long after() {
-            return after;
-        }
-    }
-
     @Override
-    protected VisorJob<VisorRunGcArg, VisorRunGcJobResult> job(UUID nid, VisorRunGcArg arg) {
+    protected VisorJob<VisorRunGcArg, VisorBeforeAfterResult> job(UUID nid, VisorRunGcArg arg) {
         return new VisorRunGcJob(arg);
     }
 
@@ -151,9 +111,9 @@ public class VisorRunGcTask extends VisorMultiNodeTask<VisorRunGcTask.VisorRunGc
         VisorRunGcTaskResult total = new VisorRunGcTaskResult();
 
         for (GridComputeJobResult res: results) {
-            VisorRunGcJobResult jobRes = res.<VisorRunGcJobResult>getData();
+            VisorBeforeAfterResult jobRes = res.getData();
 
-            total.put(jobRes.nid, jobRes);
+            total.put(res.getNode().id(), jobRes);
         }
 
         return total;

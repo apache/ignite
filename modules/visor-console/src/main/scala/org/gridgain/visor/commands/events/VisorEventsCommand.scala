@@ -26,6 +26,9 @@ import org.gridgain.visor.commands._
 import org.gridgain.visor.commands.{VisorConsoleUtils => CU}
 import org.gridgain.scalar.scalar._
 import visor._
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCollectEventsTask
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCollectEventsTask.VisorCollectEventsArgs
+import org.gridgain.grid.lang.GridBiTuple
 
 /**
  * ==Overview==
@@ -140,6 +143,58 @@ class VisorEventsCommand {
             }
     }
 
+    private[this] def typeFilter(typeArg: Option[String]) = {
+        if (typeArg.isEmpty)
+            null
+        else {
+            val arr = collection.mutable.ArrayBuffer.empty[Int]
+
+            typeArg.get split "," foreach {
+                case "ch" => arr ++= EVTS_CHECKPOINT.toList
+                case "de" => arr ++= EVTS_DEPLOYMENT.toList
+                case "jo" => arr ++= EVTS_JOB_EXECUTION.toList
+                case "ta" => arr ++= EVTS_TASK_EXECUTION.toList
+                case "ca" => arr ++= EVTS_CACHE.toList
+                case "cp" => arr ++= EVTS_CACHE_PRELOAD.toList
+                case "sw" => arr ++= EVTS_SWAPSPACE.toList
+                case "di" => arr ++= EVTS_DISCOVERY.toList
+                case "au" => arr ++= EVTS_AUTHENTICATION.toList
+                case t => throw new IllegalArgumentException("Unknown event type: " + t)
+            }
+
+            arr.toArray
+        }
+    }
+
+
+    private[this] def timeFilter(timeArg: Option[String]): Integer = {
+        if (timeArg.isEmpty)
+            null
+        else {
+            val s = timeArg.get
+
+            val n = try
+                s.substring(0, s.length - 1).toInt
+            catch {
+                case _: NumberFormatException =>
+                    throw new IllegalArgumentException("Time frame size is not numeric in: " + s)
+            }
+
+            if (n <= 0)
+                throw new IllegalArgumentException("Time frame size is not positive in: " + s)
+
+            val timeUnit = s.last match {
+                case 's' => 1000
+                case 'm' => 1000 * 60
+                case 'h' => 1000 * 60 * 60
+                case 'd' => 1000 * 60 * 60 * 24
+                case _ => throw new IllegalArgumentException("Invalid time frame suffix in: " + s)
+            }
+
+            n * timeUnit
+        }
+    }
+
     /**
      * ===Command===
      * Queries events from specified node filtered by type and/or time frame.
@@ -165,176 +220,184 @@ class VisorEventsCommand {
             val id8 = argValue("id8", argLst)
             val id = argValue("id", argLst)
 
-            var evts: Array[VisorEventData] = null
+            if (!id8.isDefined && !id.isDefined) {
+                scold("Either '-id8' or '-id' must be provided.")
 
-            var nid: UUID = null
+                return
+            }
 
-            try
-                if (!id8.isDefined && !id.isDefined)
-                    scold("Either '-id8' or '-id' must be provided.")
-                else if (id8.isDefined && id.isDefined)
-                    scold("Only one of '-id8' or '-id' is allowed.")
-                else if (id8.isDefined) {
-                    val ns = nodeById8(id8.get)
+            if (id8.isDefined && id.isDefined) {
+                scold("Only one of '-id8' or '-id' is allowed.")
 
-                    if (ns.isEmpty)
-                        scold("Unknown 'id8' value: " + id8.get)
-                    else if (ns.size != 1)
-                        scold("'id8' resolves to more than one node (use full 'id' instead): " + id8.get)
-                    else {
-                        val head = ns.head
+                return
+            }
 
-                        nid = head.id
+            val node = if (id8.isDefined) {
+                val ns = nodeById8(id8.get)
 
-                        grid.forNode(head).compute()
-                            .execute(classOf[VisorConsoleCollectEventsTask],
-                                VisorConsoleCollectEventsTaskArgs(nid, typeArg, timeArg))
-                            .get match {
-                                case Left(res) => evts = res
+                if (ns.isEmpty) {
+                    scold("Unknown 'id8' value: " + id8.get)
 
-                                case Right(msg) =>
-                                    scold(msg)
-
-                                    return
-                            }
-
-                        assert(evts != null)
-                    }
+                    return
                 }
-                else {
-                    assert(id.isDefined)
 
-                    try {
-                        val node = grid.node(UUID.fromString(id.get))
+                if (ns.size != 1) {
+                    scold("'id8' resolves to more than one node (use full 'id' instead): " + id8.get)
 
-                        if (node == null) {
-                            scold("'id' does not match any node: " + id.get)
+                    return
+                }
 
-                            return
-                        }
+                ns.head
+            }
+            else {
+                val node = try
+                    grid.node(UUID.fromString(id.get))
+                catch {
+                    case _: IllegalArgumentException =>
+                        scold("Invalid node 'id': " + id.get)
 
-                        nid = node.id
+                        return
+                }
 
-                        grid.forNode(node).compute()
-                            .execute(classOf[VisorConsoleCollectEventsTask],
-                                VisorConsoleCollectEventsTaskArgs(nid, typeArg, timeArg))
-                            .get match {
-                                case Left(res) => evts = res
+                if (node == null) {
+                    scold("'id' does not match any node: " + id.get)
 
-                                case Right(msg) =>
-                                    scold(msg)
+                    return
+                }
 
-                                    return
-                            }
+                node
+            }
 
-                        assert(evts != null)
-                    }
-                    catch {
-                        case e: IllegalArgumentException => scold("Invalid node 'id': " + id.get)
-                    }
+            val nid = node.id()
+
+            val tpFilter = try
+                typeFilter(typeArg)
+            catch {
+                case e: IllegalArgumentException =>
+                    scold(e.getMessage)
+
+                    return
+            }
+
+            val tmFilter = try
+                timeFilter(timeArg)
+            catch {
+                case e: IllegalArgumentException =>
+                    scold(e.getMessage)
+
+                    return
+            }
+
+            val evts = try
+                grid.forNode(node).compute().execute(classOf[VisorCollectEventsTask],
+                    new VisorCollectEventsArgs(nid, tpFilter, tmFilter)).get match {
+                    case x if x.get1() != null =>
+                        scold(x.get())
+
+                        return
+                    case x if x.get2() == null || x.get2().isEmpty =>
+                        println("No events found.")
+
+                        return
+
+                    case x => x.get2()
                 }
             catch {
-                case e: GridException => scold(e.getMessage)
+                case e: GridException =>
+                    scold(e.getMessage)
+
+                    return
             }
 
-            if (evts == null)
+            val sortedOpt = sort(evts, argValue("s", argLst), hasArgName("r", argLst))
+
+            if (!sortedOpt.isDefined)
                 return
 
-            assert(nid != null)
+            val sorted = sortedOpt.get
 
-            if (evts.isEmpty)
-                println("No events found.")
-            else {
-                val sortedOpt = sort(evts, argValue("s", argLst), hasArgName("r", argLst))
+            val cntOpt = argValue("c", argLst)
 
-                if (!sortedOpt.isDefined)
-                    return
+            var cnt = Int.MaxValue
 
-                val sorted = sortedOpt.get
+            if (cntOpt.isDefined)
+                try
+                    cnt = cntOpt.get.toInt
+                catch {
+                    case e: NumberFormatException =>
+                        scold("Invalid count: " + cntOpt.get)
 
-                val cntOpt = argValue("c", argLst)
+                        return
+                }
 
-                var cnt = Int.MaxValue
+            println("Summary:")
 
-                if (cntOpt.isDefined)
-                    try
-                        cnt = cntOpt.get.toInt
-                    catch {
-                        case e: NumberFormatException =>
-                            scold("Invalid count: " + cntOpt.get)
+            val st = VisorTextTable()
 
-                            return
-                    }
+            st += ("Node ID8(@ID)", nodeId8Addr(nid))
+            st += ("Total", sorted.size)
+            st += ("Earliest timestamp", formatDateTime(evts.maxBy(_.timestamp).timestamp))
+            st += ("Oldest timestamp", formatDateTime(evts.minBy(_.timestamp).timestamp))
 
-                println("Summary:")
+            st.render()
 
-                val st = VisorTextTable()
+            nl()
 
-                st += ("Node ID8(@ID)", nodeId8Addr(nid))
-                st += ("Total", sorted.size)
-                st += ("Earliest timestamp", formatDateTime(evts.maxBy(_.timestamp).timestamp))
-                st += ("Oldest timestamp", formatDateTime(evts.minBy(_.timestamp).timestamp))
+            println("Per-Event Summary:")
 
-                st.render()
+            var sum = Map[Int, (String, Int, Long, Long)]()
 
-                nl()
+            evts.foreach(evt => {
+                val info = sum.getOrElse(evt.`type`, (null, 0, Long.MinValue, Long.MaxValue))
 
-                println("Per-Event Summary:")
-
-                var sum = Map[Int, (String, Int, Long, Long)]()
-
-                evts.foreach(evt => {
-                    val info = sum.getOrElse(evt.`type`, (null, 0, Long.MinValue, Long.MaxValue))
-
-                    sum += (evt.`type` -> (
-                        "(" + evt.mnemonic + ") " + evt.name,
-                        info._2 + 1,
-                        if (evt.timestamp > info._3) evt.timestamp else info._3,
-                        if (evt.timestamp < info._4) evt.timestamp else info._4)
-                    )
-                })
-
-                val et = VisorTextTable()
-
-                et #= (
-                    "Event",
-                    "Total",
-                    ("Earliest/Oldest", "Timestamp"),
-                    ("Rate", "events/sec")
+                sum += (evt.`type` -> (
+                    "(" + evt.mnemonic + ") " + evt.name,
+                    info._2 + 1,
+                    if (evt.timestamp > info._3) evt.timestamp else info._3,
+                    if (evt.timestamp < info._4) evt.timestamp else info._4)
                 )
+            })
 
-                sum.values.toList.sortBy(_._2).reverse.foreach(v => {
-                    val range = v._3 - v._4
+            val et = VisorTextTable()
 
-                    et += (
-                        v._1,
-                        v._2,
-                        (formatDateTime(v._3), formatDateTime(v._4)),
-                        formatDouble(if (range != 0) (v._2.toDouble * 1000) / range else v._2)
-                    )
-                })
+            et #= (
+                "Event",
+                "Total",
+                ("Earliest/Oldest", "Timestamp"),
+                ("Rate", "events/sec")
+            )
 
-                et.render()
+            sum.values.toList.sortBy(_._2).reverse.foreach(v => {
+                val range = v._3 - v._4
 
-                nl()
-
-                if (sorted.size > cnt)
-                    println("Top " + cnt + " Events:")
-                else
-                    println("All Events:")
-
-                val all = VisorTextTable()
-
-                all.maxCellWidth = 50
-
-                all #= ("Timestamp", "Description")
-
-                sorted.take(cnt).foreach(evt =>
-                    all += (formatDateTime(evt.timestamp), U.compact(evt.shortDisplay))
+                et += (
+                    v._1,
+                    v._2,
+                    (formatDateTime(v._3), formatDateTime(v._4)),
+                    formatDouble(if (range != 0) (v._2.toDouble * 1000) / range else v._2)
                 )
+            })
 
-                all.render()
-            }
+            et.render()
+
+            nl()
+
+            if (sorted.size > cnt)
+                println("Top " + cnt + " Events:")
+            else
+                println("All Events:")
+
+            val all = VisorTextTable()
+
+            all.maxCellWidth = 50
+
+            all #= ("Timestamp", "Description")
+
+            sorted.take(cnt).foreach(evt =>
+                all += (formatDateTime(evt.timestamp), U.compact(evt.shortDisplay))
+            )
+
+            all.render()
         }
     }
 
@@ -505,7 +568,6 @@ private class VisorConsoleCollectEventsTask
                     Left(g.events().localQuery(filter)
                         .map(e => VisorEventData(e.`type`, e.timestamp(), e.name(), e.shortDisplay(), mnemonic(e)))
                         .toArray)
-
             }
         }
     }
