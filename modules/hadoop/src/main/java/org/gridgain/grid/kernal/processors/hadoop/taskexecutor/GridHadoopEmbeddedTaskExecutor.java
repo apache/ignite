@@ -63,6 +63,8 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
 
             GridFuture<GridFuture<?>> fut = ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<GridFuture<?>>() {
                 @Override public GridFuture<?> call() throws Exception {
+                    long start = System.currentTimeMillis();
+
                     ClassLoader old = GridHadoopJobClassLoadingContext.prepareClassLoader(ctxs.get(job.id()),
                         job.info());
 
@@ -84,6 +86,12 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
                     }
                     finally {
                         Thread.currentThread().setContextClassLoader(old);
+
+                        long end = System.currentTimeMillis();
+
+                        if (log.isDebugEnabled())
+                            log.debug("Finished task execution [jobId=" + job.id() + ", taskInfo=" + info + ", " +
+                                "execTime=" + (end - start) + ']');
                     }
 
                     return null;

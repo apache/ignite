@@ -165,6 +165,10 @@ public class GridHadoopChildProcessRunner {
                     execSvc.setCorePoolSize(size);
                     execSvc.setMaximumPoolSize(size);
 
+                    if (log.isDebugEnabled())
+                        log.debug("Set executor service size for task type [type=" + info.type() +
+                            ", size=" + size + ']');
+
                     for (GridHadoopTaskInfo taskInfo : req.tasks()) {
                         if (log.isDebugEnabled())
                             log.debug("Submitted task for external execution: " + taskInfo);

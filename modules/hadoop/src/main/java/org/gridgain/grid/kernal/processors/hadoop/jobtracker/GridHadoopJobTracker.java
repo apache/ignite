@@ -228,12 +228,12 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             if (meta == null)
                 return null;
 
-            if (log.isDebugEnabled())
-                log.debug("Got job metadata for status check [locNodeId=" + ctx.localNodeId() + ", meta=" + meta + ']');
+            if (log.isTraceEnabled())
+                log.trace("Got job metadata for status check [locNodeId=" + ctx.localNodeId() + ", meta=" + meta + ']');
 
             if (meta.phase() == PHASE_COMPLETE) {
-                if (log.isDebugEnabled())
-                    log.debug("Job is complete, returning finished future: " + jobId);
+                if (log.isTraceEnabled())
+                    log.trace("Job is complete, returning finished future: " + jobId);
 
                 return new GridFinishedFutureEx<>(jobId);
             }
@@ -244,8 +244,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             // Get meta from cache one more time to close the window.
             meta = jobMetaPrj.get(jobId);
 
-            if (log.isDebugEnabled())
-                log.debug("Re-checking job metadata [locNodeId=" + ctx.localNodeId() + ", meta=" + meta + ']');
+            if (log.isTraceEnabled())
+                log.trace("Re-checking job metadata [locNodeId=" + ctx.localNodeId() + ", meta=" + meta + ']');
 
             if (meta == null) {
                 fut.onDone();
