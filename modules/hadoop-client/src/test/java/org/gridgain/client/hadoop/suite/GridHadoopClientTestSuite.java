@@ -19,13 +19,14 @@ import org.gridgain.testsuites.bamboo.*;
 public class GridHadoopClientTestSuite extends TestSuite {
     /**
      * @return Test suite.
+     * @throws Exception If failed.
      */
-    public static TestSuite suite() {
+    public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Gridgain Hadoop Client Test Suite");
 
-        suite.addTest(new GridHadoopTestSuite());
+        suite.addTestSuite(GridHadoopClientProtocolSelfTest.class);
 
-        suite.addTest(new TestSuite(GridHadoopClientProtocolSelfTest.class));
+        suite.addTest(GridHadoopTestSuite.suite());
 
         return suite;
     }

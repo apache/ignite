@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external;
 
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
@@ -26,6 +27,7 @@ public class GridHadoopTaskExecutionRequest implements GridHadoopMessage {
     private GridHadoopJobInfo jobInfo;
 
     /** Mappers. */
+    @GridToStringInclude
     private Collection<GridHadoopTaskInfo> tasks;
 
     /**

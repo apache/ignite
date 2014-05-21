@@ -52,6 +52,7 @@ public class GridHadoopJobMetadata implements Externalizable {
     private GridHadoopJobPhase phase = PHASE_MAP;
 
     /** Fail cause. */
+    @GridToStringExclude
     private Throwable failCause;
 
     /** Version. */
@@ -362,6 +363,7 @@ public class GridHadoopJobMetadata implements Externalizable {
     /** {@inheritDoc} */
     public String toString() {
         return S.toString(GridHadoopJobMetadata.class, this, "pendingMaps", pendingSplits.size(),
-            "pendingReduces", pendingReducers.size());
+            "pendingReduces", pendingReducers.size(), "failCause", failCause == null ? null :
+                failCause.getClass().getName());
     }
 }
