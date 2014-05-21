@@ -9,12 +9,21 @@
 
 package org.gridgain.grid.logger.java;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
+import java.text.*;
+import java.util.*;
 import java.util.logging.*;
+import java.util.logging.Formatter;
+
+import static org.gridgain.grid.GridSystemProperties.*;
 
 /**
  * Logger to use with Java logging. Implementation simply delegates to Java Logging.
@@ -70,14 +79,97 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private static final ThreadLocal<SimpleDateFormat> DATE_FORMATTER = new ThreadLocal<SimpleDateFormat>(){
+        /** {@inheritDoc} */
+        @Override protected SimpleDateFormat initialValue() {
+            return new SimpleDateFormat("hh:mm:ss.SSS");
+        }
+    };
+
+    /** Default log formatter. */
+    private static final Formatter DFLT_FORMATTER = new Formatter() {
+        /** {@inheritDoc} */
+        @Override public String format(LogRecord record) {
+            String threadName = Thread.currentThread().getName();
+
+            String logName = record.getLoggerName();
+
+            if (logName.contains("."))
+                logName = logName.substring(logName.lastIndexOf('.') + 1);
+
+            String ex = null;
+
+            if (record.getThrown() != null) {
+                StringWriter sw = new StringWriter();
+
+                record.getThrown().printStackTrace(new PrintWriter(sw));
+
+                String stackTrace = sw.toString();
+
+                ex = "\n" + stackTrace;
+            }
+
+
+            return "[" + DATE_FORMATTER.get().format(new Date(record.getMillis())) + "][" +
+                record.getLevel() + "][" +
+                threadName + "][" +
+                logName + "] " +
+                record.getMessage() +
+                (ex == null ? "\n" : ex + '\n');
+        }
+    };
+
+    /** */
+    private static final Object mux = new Object();
+
+    /** */
+    private static volatile boolean inited;
+
+    /** */
+    private static volatile boolean quiet0;
+
     /** Java Logging implementation proxy. */
+    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private Logger impl;
+
+    /** Quiet flag. */
+    private final boolean quiet;
 
     /**
      * Creates new logger.
      */
     public GridJavaLogger() {
-        this(Logger.getLogger(Logger.GLOBAL_LOGGER_NAME));
+        this(!isConfigured());
+    }
+
+    /**
+     * Checks if logger is already configured within this VM or not.
+     *
+     * @return {@code True} if logger was already configured, {@code false} otherwise.
+     */
+    public static boolean isConfigured() {
+        return System.getProperty("java.util.logging.config.file") != null;
+    }
+
+    /**
+     * Creates new logger.
+     *
+     * @param init If {@code true}, then a default console appender will be created.
+     *      If {@code false}, then no implicit initialization will take place,
+     *      and java logger should be configured prior to calling this constructor.
+     */
+    public GridJavaLogger(boolean init) {
+        impl = Logger.getLogger("");
+
+        if (init) {
+            // Implementation has already been inited, passing NULL.
+            addConsoleAppenderIfNeeded(Level.INFO, null);
+
+            quiet = quiet0;
+        }
+        else
+            quiet = true;
     }
 
     /**
@@ -85,16 +177,119 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
      *
      * @param impl Java Logging implementation to use.
      */
-    public GridJavaLogger(Logger impl) {
+    public GridJavaLogger(final Logger impl) {
         assert impl != null;
 
-        this.impl = impl;
+        addConsoleAppenderIfNeeded(null, impl);
+
+        quiet = quiet0;
     }
 
     /** {@inheritDoc} */
     @Override public GridLogger getLogger(Object ctgr) {
-        return new GridJavaLogger(Logger.getLogger(
+        return new GridJavaLogger(ctgr == null ? Logger.getLogger("") : Logger.getLogger(
             ctgr instanceof Class ? ((Class)ctgr).getName() : String.valueOf(ctgr)));
+    }
+
+    /**
+     * Adds console appender when needed with some default logging settings.
+     *
+     * @param logLevel Optional log level.
+     * @param initImpl Optional log implementation.
+     */
+    private void addConsoleAppenderIfNeeded(@Nullable Level logLevel, @Nullable Logger initImpl) {
+        if (inited) {
+            if (initImpl != null)
+                // Do not init.
+                impl = initImpl;
+
+            return;
+        }
+
+        synchronized (mux) {
+            if (inited) {
+                if (initImpl != null)
+                    // Do not init.
+                    impl = initImpl;
+
+                return;
+            }
+
+            if (initImpl != null)
+                // Init logger impl.
+                impl = initImpl;
+
+            boolean quiet = Boolean.valueOf(System.getProperty(GG_QUIET, "true"));
+
+            if (System.getProperty("java.util.logging.config.file") != null) {
+                quiet0 = quiet;
+                inited = true;
+
+                return;
+            }
+
+            Handler[] handlers = impl.getHandlers();
+
+            if (Boolean.valueOf(System.getProperty(GG_CONSOLE_APPENDER, "true"))) {
+                // Remove default console handler.
+                if  (!F.isEmpty(handlers))
+                    for (Handler h : handlers)
+                        if (h instanceof ConsoleHandler)
+                            impl.removeHandler(h);
+
+                try {
+                    addHandlers(impl);
+                }
+                catch (GridException e) {
+                    throw new RuntimeException("Failed to create logger", e);
+                }
+
+                if (logLevel != null)
+                    impl.setLevel(logLevel);
+            }
+
+            quiet0 = quiet;
+            inited = true;
+        }
+    }
+
+    /**
+     * Adds file handlers.
+     *
+     * @param log Logger
+     * @throws GridException If failed.
+     */
+    private static void addHandlers(Logger log) throws GridException {
+        log.setLevel(Level.INFO);
+
+        if (F.isEmpty(log.getHandlers())) {
+            ConsoleHandler consoleHnd = new ConsoleHandler();
+
+            consoleHnd.setFormatter(DFLT_FORMATTER);
+
+            consoleHnd.setLevel(Level.SEVERE);
+
+            log.addHandler(consoleHnd);
+
+            try {
+                File workDir = U.resolveWorkDirectory("log", false);
+
+                File logFile = new File(workDir, "gridgain.log");
+
+                String ptrn = logFile.getAbsolutePath().replace("gridgain.log", "gridgain-%u.%g.log");
+
+                FileHandler fileHnd = new FileHandler(ptrn, 10 * 1024 * 1024, 10);
+
+                fileHnd.setLevel(Level.INFO);
+
+                fileHnd.setFormatter(DFLT_FORMATTER);
+
+                log.addHandler(fileHnd);
+            }
+            catch (IOException e) {
+                throw new RuntimeException("Failed to configure default file logger.", e);
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -133,17 +328,17 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
 
     /** {@inheritDoc} */
     @Override public void error(String msg) {
-        impl.warning(msg);
+        impl.severe(msg);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isQuiet() {
-        return !isInfoEnabled() && !isDebugEnabled();
+        return quiet;
     }
 
     /** {@inheritDoc} */
     @Override public void error(String msg, @Nullable Throwable e) {
-        impl.log(Level.WARNING, msg, e);
+        impl.log(Level.SEVERE, msg, e);
     }
 
     /** {@inheritDoc} */

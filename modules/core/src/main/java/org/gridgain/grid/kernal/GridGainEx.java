@@ -1923,7 +1923,7 @@ public class GridGainEx {
                 return cfgLog;
             }
             catch (Exception e) {
-                throw new GridException("Failed to create GridLog4jLogger.", e);
+                throw new GridException("Failed to create logger.", e);
             }
         }
 
