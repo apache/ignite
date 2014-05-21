@@ -35,9 +35,6 @@ public class GridRouterCommandLineStartup {
     /** TCP router. */
     private GridTcpRouterImpl tcpRouter;
 
-    /** HTTP router. */
-    private GridHttpRouterImpl httpRouter;
-
     /**
      * Search given context for required configuration and starts router.
      *
@@ -68,23 +65,6 @@ public class GridRouterCommandLineStartup {
                 tcpRouter = null;
             }
         }
-
-        GridHttpRouterConfiguration httpCfg = (GridHttpRouterConfiguration)beans.get(GridHttpRouterConfiguration.class);
-
-        if (httpCfg == null)
-            U.warn(log, "HTTP router startup skipped (configuration not found).");
-        else {
-            httpRouter = new GridHttpRouterImpl(httpCfg);
-
-            try {
-                httpRouter.start();
-            }
-            catch (GridException e) {
-                U.error(log, "Failed to start HTTP router. See log above for details.", e);
-
-                httpRouter = null;
-            }
-        }
     }
 
     /**
@@ -93,9 +73,6 @@ public class GridRouterCommandLineStartup {
     public void stop() {
         if (tcpRouter != null)
             tcpRouter.stop();
-
-        if (httpRouter != null)
-            httpRouter.stop();
     }
 
     /**
@@ -150,8 +127,7 @@ public class GridRouterCommandLineStartup {
         Map<Class<?>, Object> beans;
 
         try {
-            beans = spring.loadBeans(cfgUrl, GridLogger.class, GridTcpRouterConfiguration.class,
-                GridHttpRouterConfiguration.class);
+            beans = spring.loadBeans(cfgUrl, GridLogger.class, GridTcpRouterConfiguration.class);
         }
         finally {
             if (isLog4jUsed && t != null)

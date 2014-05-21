@@ -810,9 +810,7 @@ public class GridClientTcpConnection extends GridClientConnection {
             .nodeId(nodeBean.getNodeId())
             .consistentId(nodeBean.getConsistentId())
             .tcpAddresses(nodeBean.getTcpAddresses())
-            .jettyAddresses(nodeBean.getJettyAddresses())
             .tcpPort(nodeBean.getTcpPort())
-            .httpPort(nodeBean.getJettyPort())
             .replicaCount(nodeBean.getReplicaCount());
 
         Map<String, GridClientCacheMode> caches = new HashMap<>();
