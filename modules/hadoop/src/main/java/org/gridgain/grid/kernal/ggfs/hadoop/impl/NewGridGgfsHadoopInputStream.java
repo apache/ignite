@@ -143,7 +143,7 @@ public final class NewGridGgfsHadoopInputStream extends InputStream implements S
             return res;
         }
         catch (GridException e) {
-            throw new IOException(e);
+            throw NewGridGgfsHadoopUtils.cast(e);
         }
         finally {
             readEnd();
@@ -183,7 +183,7 @@ public final class NewGridGgfsHadoopInputStream extends InputStream implements S
             return read;
         }
         catch (GridException e) {
-            throw new IOException(e);
+            throw NewGridGgfsHadoopUtils.cast(e);
         }
         finally {
             readEnd();
@@ -314,7 +314,7 @@ public final class NewGridGgfsHadoopInputStream extends InputStream implements S
                 clientLog.logRandomRead(logStreamId, position, len);
         }
         catch (GridException e) {
-            throw new IOException(e);
+            throw NewGridGgfsHadoopUtils.cast(e);
         }
         finally {
             readEnd();

@@ -34,6 +34,7 @@ import static org.gridgain.grid.ggfs.GridGgfs.*;
 import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
 import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
+import static org.gridgain.grid.kernal.ggfs.hadoop.impl.NewGridGgfsHadoopUtils.*;
 
 /**
  * {@code GGFS} Hadoop 2.x file system driver over file system API. To use
@@ -72,9 +73,6 @@ import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
  * and {@code config/hadoop/default-config.xml} configuration files in GridGain installation.
  */
 public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Closeable {
-    /** GGFS scheme name. */
-    private static final String GGFS_SCHEME = "ggfs";
-
     /** Logger. */
     private static final Log LOG = LogFactory.getLog(GridGgfsHadoopFileSystem.class);
 
@@ -127,7 +125,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
      * @throws IOException If initialization failed.
      */
     public GridGgfsHadoopFileSystem(URI name, Configuration cfg) throws URISyntaxException, IOException {
-        super(NewGridGgfsHadoopEndpoint.normalize(name), "ggfs", true, DFLT_IPC_PORT);
+        super(NewGridGgfsHadoopEndpoint.normalize(name), GGFS_SCHEME, true, DFLT_IPC_PORT);
 
         try {
             initialize(name, cfg);
@@ -225,7 +223,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
             String logDir = logDirFile != null ? logDirFile.getAbsolutePath() : null;
 
-            rmtClient = new NewGridGgfsHadoopWrapper(uriAuthority, logDir, LOG);
+            rmtClient = new NewGridGgfsHadoopWrapper(uriAuthority, logDir, cfg, LOG);
 
             // Handshake.
             GridGgfsHandshakeResponse handshake = rmtClient.handshake(logDir);
@@ -302,53 +300,6 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
         finally {
             leaveBusy();
         }
-    }
-
-    /**
-     * Get string parameter.
-     *
-     * @param cfg Configuration.
-     * @param name Parameter name.
-     * @param authority Authority.
-     * @param dflt Default value.
-     * @return String value.
-     */
-    private String parameter(Configuration cfg, String name, String authority, String dflt) {
-        return cfg.get(String.format(name, authority), dflt);
-    }
-
-    /**
-     * Get integer parameter.
-     *
-     * @param cfg Configuration.
-     * @param name Parameter name.
-     * @param authority Authority.
-     * @param dflt Default value.
-     * @return Integer value.
-     * @throws IOException In case of parse exception.
-     */
-    private int parameter(Configuration cfg, String name, String authority, int dflt) throws IOException {
-        String name0 = String.format(name, authority);
-
-        try {
-            return cfg.getInt(name0, dflt);
-        }
-        catch (NumberFormatException ignore) {
-            throw new IOException("Failed to parse parameter value to integer: " + name0);
-        }
-    }
-
-    /**
-     * Get boolean parameter.
-     *
-     * @param cfg Configuration.
-     * @param name Parameter name.
-     * @param authority Authority.
-     * @param dflt Default value.
-     * @return Boolean value.
-     */
-    private boolean parameter(Configuration cfg, String name, String authority, boolean dflt) {
-        return cfg.getBoolean(String.format(name, authority), dflt);
     }
 
     /** {@inheritDoc} */

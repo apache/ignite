@@ -21,8 +21,6 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.kernal.ggfs.hadoop.impl.NewGridGgfsHadoopMode.*;
-
 /**
  * Communication with grid in the same process.
  */
@@ -359,10 +357,5 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx {
 
         if (lsnr0 != null && log.isDebugEnabled())
             log.debug("Removed stream event listener [delegate=" + delegate + ']');
-    }
-
-    /** {@inheritDoc} */
-    @Override public NewGridGgfsHadoopMode mode() {
-        return IN_PROC;
     }
 }

@@ -33,6 +33,7 @@ import static org.gridgain.grid.ggfs.GridGgfs.*;
 import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
 import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
+import static org.gridgain.grid.kernal.ggfs.hadoop.impl.NewGridGgfsHadoopUtils.*;
 
 /**
  * {@code GGFS} Hadoop 1.x file system driver over file system API. To use
@@ -73,9 +74,6 @@ import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
 public class GridGgfsHadoopFileSystem extends FileSystem {
     /** Internal property to indicate management connection. */
     public static final String GGFS_MANAGEMENT = "fs.ggfs.management.connection";
-
-    /** GGFS scheme name. */
-    private static final String GGFS_SCHEME = "ggfs";
 
     /** Empty array of file block locations. */
     private static final BlockLocation[] EMPTY_BLOCK_LOCATIONS = new BlockLocation[0];
@@ -186,15 +184,9 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 throw new IOException("Illegal file system URI [expected=" + GGFS_SCHEME +
                     "://[name]/[optional_path], actual=" + name + ']');
 
-            try {
-                uri = name;
-                // TODO: ???
-            }
-            catch (IllegalArgumentException e) {
-                throw new IOException("Failed to create URI for name: " + name, e);
-            }
+            uri = name;
 
-            uriAuthority = name.getAuthority();
+            uriAuthority = uri.getAuthority();
 
             // Override sequential reads before prefetch if needed.
             seqReadsBeforePrefetch = parameter(cfg, PARAM_GGFS_SEQ_READS_BEFORE_PREFETCH, uriAuthority, 0);
@@ -216,7 +208,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
             String logDir = logDirFile != null ? logDirFile.getAbsolutePath() : null;
 
-            rmtClient = new NewGridGgfsHadoopWrapper(uriAuthority, logDir, LOG);
+            rmtClient = new NewGridGgfsHadoopWrapper(uriAuthority, logDir, cfg, LOG);
 
             // Handshake.
             GridGgfsHandshakeResponse handshake = rmtClient.handshake(logDir);
@@ -315,53 +307,6 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
         }
 
         super.checkPath(path);
-    }
-
-    /**
-     * Get string parameter.
-     *
-     * @param cfg Configuration.
-     * @param name Parameter name.
-     * @param authority Authority.
-     * @param dflt Default value.
-     * @return String value.
-     */
-    private String parameter(Configuration cfg, String name, String authority, String dflt) {
-        return cfg.get(String.format(name, authority), dflt);
-    }
-
-    /**
-     * Get integer parameter.
-     *
-     * @param cfg Configuration.
-     * @param name Parameter name.
-     * @param authority Authority.
-     * @param dflt Default value.
-     * @return Integer value.
-     * @throws IOException In case of parse exception.
-     */
-    private int parameter(Configuration cfg, String name, String authority, int dflt) throws IOException {
-        String name0 = String.format(name, authority);
-
-        try {
-            return cfg.getInt(name0, dflt);
-        }
-        catch (NumberFormatException ignore) {
-            throw new IOException("Failed to parse parameter value to integer: " + name0);
-        }
-    }
-
-    /**
-     * Get boolean parameter.
-     *
-     * @param cfg Configuration.
-     * @param name Parameter name.
-     * @param authority Authority.
-     * @param dflt Default value.
-     * @return Boolean value.
-     */
-    private boolean parameter(Configuration cfg, String name, String authority, boolean dflt) {
-        return cfg.getBoolean(String.format(name, authority), dflt);
     }
 
     /** {@inheritDoc} */

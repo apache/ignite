@@ -23,7 +23,6 @@ import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.ggfs.common.GridGgfsIpcCommand.*;
-import static org.gridgain.grid.kernal.ggfs.hadoop.impl.NewGridGgfsHadoopMode.*;
 
 /**
  * Communication with external process (TCP or shmem).
@@ -347,7 +346,7 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoopEx, GridGgfsHa
             io.sendPlain(msg);
         }
         catch (GridException e) {
-            throw NewGridGgfsHadoopWrapper.cast(e, null);
+            throw NewGridGgfsHadoopUtils.cast(e);
         }
     }
 
@@ -367,7 +366,7 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoopEx, GridGgfsHa
             io.send(msg).chain(BOOL_RES).get();
         }
         catch (GridException e) {
-            throw NewGridGgfsHadoopWrapper.cast(e, null);
+            throw NewGridGgfsHadoopUtils.cast(e);
         }
     }
 
@@ -415,11 +414,6 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoopEx, GridGgfsHa
         else
             log.warn("Received write error response for not registered output stream (will ignore) " +
                 "[streamId= " + streamId + ']');
-    }
-
-    /** {@inheritDoc} */
-    @Override public NewGridGgfsHadoopMode mode() {
-        return OUT_PROC;
     }
 
     /**

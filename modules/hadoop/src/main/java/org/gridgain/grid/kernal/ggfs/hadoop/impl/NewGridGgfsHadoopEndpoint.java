@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.kernal.ggfs.hadoop.impl;
 
+import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.net.*;
 
 import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
@@ -23,9 +23,6 @@ import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
  * GGFS endpoint abstraction.
  */
 public class NewGridGgfsHadoopEndpoint {
-    /** GGFS scheme. */
-    public static final String SCHEME = "ggfs";
-
     /** Localhost. */
     public static final String LOCALHOST = "127.0.0.1";
 
@@ -48,7 +45,7 @@ public class NewGridGgfsHadoopEndpoint {
      * @return Normalized URI.
      */
     public static URI normalize(URI uri) {
-        if (!F.eq(SCHEME, uri.getScheme()))
+        if (!F.eq(GridGgfs.GGFS_SCHEME, uri.getScheme()))
             throw new IllegalArgumentException("Normalization can only be applied to GGFS URI: " + uri);
 
         NewGridGgfsHadoopEndpoint endpoint = new NewGridGgfsHadoopEndpoint(uri.getAuthority());

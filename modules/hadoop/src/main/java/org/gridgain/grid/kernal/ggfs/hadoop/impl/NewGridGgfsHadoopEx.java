@@ -21,11 +21,6 @@ import java.io.*;
  */
 public interface NewGridGgfsHadoopEx extends NewGridGgfsHadoop {
     /**
-     * @return Mode.
-     */
-    public NewGridGgfsHadoopMode mode();
-
-    /**
      * Adds event listener that will be invoked when connection with server is lost or remote error has occurred.
      * If connection is closed already, callback will be invoked synchronously inside this method.
      *

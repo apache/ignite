@@ -83,15 +83,6 @@ import org.gridgain.grid.ggfs.*;
  * way to do that is {@code String.format(PARAM_GGFS_ENDPOINT_TYPE, [name])}.
  */
 public class GridGgfsHadoopParameters {
-    /** Parameter name for IPC endpoint type. */
-    public static final String PARAM_GGFS_ENDPOINT_TYPE = "fs.ggfs.%s.endpoint.type";
-
-    /** Parameter name for IPC endpoint host. */
-    public static final String PARAM_GGFS_ENDPOINT_HOST = "fs.ggfs.%s.endpoint.host";
-
-    /** Parameter name for IPC endpoint port. */
-    public static final String PARAM_GGFS_ENDPOINT_PORT = "fs.ggfs.%s.endpoint.port";
-
     /** Parameter name for control over file colocation write mode. */
     public static final String PARAM_GGFS_COLOCATED_WRITES = "fs.ggfs.%s.colocated.writes";
 
@@ -107,4 +98,13 @@ public class GridGgfsHadoopParameters {
 
     /** Parameter name for log enabled flag. */
     public static final String PARAM_GGFS_LOG_ENABLED = "fs.ggfs.%s.log.enabled";
+
+    /** Parameter name for endpoint no embed mode flag. */
+    public static final String PARAM_GGFS_ENDPOINT_NO_EMBED = "fs.ggfs.%s.endpoint.no_embed";
+
+    /** Parameter name for endpoint no shared memory flag. */
+    public static final String PARAM_GGFS_ENDPOINT_NO_LOCAL_SHMEM = "fs.ggfs.%s.endpoint.no_local_shmem";
+
+    /** Parameter name for endpoint no local TCP flag. */
+    public static final String PARAM_GGFS_ENDPOINT_NO_LOCAL_TCP = "fs.ggfs.%s.endpoint.no_local_tcp";
 }
