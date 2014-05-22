@@ -145,9 +145,6 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
     /** Node ID. */
     private volatile UUID nodeId;
 
-    /** Log file pattern. */
-    private volatile String filePtrn;
-
     /**
      * Creates new logger.
      */
@@ -234,30 +231,17 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
             boolean quiet = Boolean.valueOf(System.getProperty(GG_QUIET, "true"));
 
             if (isConfigured()) {
-                boolean consoleHandlerFound = false;
-
-                Handler[] handlers = impl.getHandlers();
-
-                // Remove predefined default console handler.
-                if  (!F.isEmpty(handlers)) {
-                    for (Handler h : handlers) {
-                        if (h instanceof ConsoleHandler) {
-                            consoleHandlerFound = true;
-
-                            break;
-                        }
-                    }
-                }
+                boolean consoleHndFound = findFileHandler(impl) != null;
 
                 // User configured console appender, but log is quiet.
-                quiet0 = !consoleHandlerFound;
+                quiet0 = !consoleHndFound;
                 inited = true;
 
                 return;
             }
 
             if (Boolean.valueOf(System.getProperty(GG_CONSOLE_APPENDER, "true"))) {
-                Handler[] handlers = impl.getHandlers();
+                Handler[] handlers = Logger.getLogger("").getHandlers();
 
                 // Remove predefined default console handler.
                 if  (!F.isEmpty(handlers)) {
@@ -310,16 +294,15 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
         assert Thread.holdsLock(mux);
 
         // Skip if file handler has been already configured.
-        for (Handler hnd : impl.getHandlers())
-            if (hnd instanceof FileHandler)
-                return;
+        if (findFileHandler(impl) != null)
+            return;
 
         try {
             File workDir = U.resolveWorkDirectory("log", false);
 
             String logFile = new File(workDir, "gridgain.log").getAbsolutePath();
 
-            filePtrn = logFile.replace("gridgain.log", "gridgain-" + U.id8(nodeId) + ".%g.log");
+            String filePtrn = logFile.replace("gridgain.log", "gridgain-" + U.id8(nodeId) + ".%g.log");
 
             FileHandler fileHnd = new FileHandler(filePtrn, MAX_FILE_SIZE, MAX_BACKUP_IDX);
 
@@ -400,7 +383,18 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
 
     /** {@inheritDoc} */
     @Nullable @Override public String fileName() {
-        return filePtrn;
+        FileHandler fileHnd = findFileHandler(impl);
+
+        if (fileHnd != null) {
+            try {
+                return (String)U.field(fileHnd, "pattern");
+            }
+            catch (Exception ignored) {
+                return null;
+            }
+        }
+
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -428,5 +422,24 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
     /** {@inheritDoc} */
     @Override public UUID getNodeId() {
         return nodeId;
+    }
+
+    /**
+     * Returns first found file handler or {@code null} if that handler isn't configured.
+     *
+     * @param log Logger.
+     * @return First found file handler or {@code null} if that handler isn't configured.
+     */
+    private static FileHandler findFileHandler(Logger log) {
+        while (log != null) {
+            for (Handler hnd : log.getHandlers()) {
+                if (hnd instanceof FileHandler)
+                    return (FileHandler)hnd;
+            }
+
+            log = log.getParent();
+        }
+
+        return null;
     }
 }
