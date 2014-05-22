@@ -133,7 +133,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        Configuration secondaryConf = configuration(SECONDARY_AUTHORITY, false, false);
+        Configuration secondaryConf = configuration(SECONDARY_AUTHORITY, true, true);
 
         secondaryConf.setInt("fs.ggfs.block.size", 1024);
 
