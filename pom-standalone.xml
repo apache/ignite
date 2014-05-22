@@ -563,6 +563,22 @@
                                     </fileset>
                                 </replace>
 
+                                <replaceregexp byline="true">
+                                    <regexp pattern='ENABLE_ASSERTIONS=.*'/>
+                                    <substitution expression="ENABLE_ASSERTIONS=&quot;0&quot;"/>
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.sh"/>
+                                    </fileset>
+                                </replaceregexp>
+
+                                <replaceregexp byline="true">
+                                    <regexp pattern='ENABLE_ASSERTIONS=.*'/>
+                                    <substitution expression="ENABLE_ASSERTIONS=0"/>
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.bat"/>
+                                    </fileset>
+                                </replaceregexp>
+
                                 <replace token="@xml.file.version" value="${gridgain.version}">
                                     <fileset dir="target/release-package">
                                         <include name="**/*.xml"/>
