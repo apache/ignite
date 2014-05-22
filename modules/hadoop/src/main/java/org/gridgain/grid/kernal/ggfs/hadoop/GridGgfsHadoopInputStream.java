@@ -434,7 +434,7 @@ public final class GridGgfsHadoopInputStream extends InputStream implements Seek
          * @param dstOff Offset in destination buffer from which start writing.
          * @param len Maximum number of bytes to copy.
          * @return Number of bytes copied.
-         * @throws org.gridgain.grid.GridException If read future failed.
+         * @throws GridException If read future failed.
          */
         public int flatten(byte[] dst, long pos, int dstOff, int len) throws GridException {
             // If read start position is within cached boundaries.
@@ -485,7 +485,7 @@ public final class GridGgfsHadoopInputStream extends InputStream implements Seek
          * @param dstOff Destination buffer offset.
          * @param len Maximum number of bytes to copy.
          * @return Number of bytes copied.
-         * @throws org.gridgain.grid.GridException If any read operation failed.
+         * @throws GridException If any read operation failed.
          */
         public int flatten(byte[] dst, long pos, int dstOff, int len) throws GridException {
             assert dstOff >= 0;
@@ -512,7 +512,7 @@ public final class GridGgfsHadoopInputStream extends InputStream implements Seek
          *
          * @param pos Stream position.
          * @return Read byte.
-         * @throws org.gridgain.grid.GridException If read failed.
+         * @throws GridException If read failed.
          */
         public int atPosition(long pos) throws GridException {
             // Should not reach here if stream contains no data.

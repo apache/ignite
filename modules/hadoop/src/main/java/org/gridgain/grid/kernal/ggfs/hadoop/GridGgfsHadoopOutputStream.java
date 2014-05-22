@@ -164,7 +164,7 @@ public class GridGgfsHadoopOutputStream extends OutputStream implements GridGgfs
     }
 
     /**
-     * @throws java.io.IOException If check failed.
+     * @throws IOException If check failed.
      */
     private void check() throws IOException {
         String errMsg0 = errMsg;
