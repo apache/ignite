@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.ggfs.hadoop.impl;
+package org.gridgain.grid.kernal.ggfs.hadoop;
 
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
@@ -21,7 +21,7 @@ import java.io.*;
 /**
  * Utility constants and methods for GGFS Hadoop file system.
  */
-public class NewGridGgfsHadoopUtils {
+public class GridGgfsHadoopUtils {
     /**
      * Get string parameter.
      *
@@ -127,7 +127,7 @@ public class NewGridGgfsHadoopUtils {
     /**
      * Constructor.
      */
-    private NewGridGgfsHadoopUtils() {
+    private GridGgfsHadoopUtils() {
         // No-op.
     }
 }

@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.ggfs.hadoop.impl;
+package org.gridgain.grid.kernal.ggfs.hadoop;
 
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.lang.*;
@@ -22,7 +22,7 @@ import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
 /**
  * GGFS endpoint abstraction.
  */
-public class NewGridGgfsHadoopEndpoint {
+public class GridGgfsHadoopEndpoint {
     /** Localhost. */
     public static final String LOCALHOST = "127.0.0.1";
 
@@ -48,7 +48,7 @@ public class NewGridGgfsHadoopEndpoint {
         if (!F.eq(GridGgfs.GGFS_SCHEME, uri.getScheme()))
             throw new IllegalArgumentException("Normalization can only be applied to GGFS URI: " + uri);
 
-        NewGridGgfsHadoopEndpoint endpoint = new NewGridGgfsHadoopEndpoint(uri.getAuthority());
+        GridGgfsHadoopEndpoint endpoint = new GridGgfsHadoopEndpoint(uri.getAuthority());
 
         try {
             return new URI(uri.getScheme(), endpoint.ggfsName + ":" + endpoint.gridName, endpoint.host, endpoint.port,
@@ -64,7 +64,7 @@ public class NewGridGgfsHadoopEndpoint {
      *
      * @param connStr Connection string.
      */
-    NewGridGgfsHadoopEndpoint(@Nullable String connStr) {
+    GridGgfsHadoopEndpoint(@Nullable String connStr) {
         if (connStr == null)
             connStr = "";
 
@@ -185,6 +185,6 @@ public class NewGridGgfsHadoopEndpoint {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(NewGridGgfsHadoopEndpoint.class, this);
+        return S.toString(GridGgfsHadoopEndpoint.class, this);
     }
 }

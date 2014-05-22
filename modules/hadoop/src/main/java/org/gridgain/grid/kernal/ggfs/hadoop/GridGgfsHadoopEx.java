@@ -7,10 +7,8 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.ggfs.hadoop.impl;
+package org.gridgain.grid.kernal.ggfs.hadoop;
 
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -19,7 +17,7 @@ import java.io.*;
 /**
  * Extended GGFS server interface.
  */
-public interface NewGridGgfsHadoopEx extends NewGridGgfsHadoop {
+public interface GridGgfsHadoopEx extends GridGgfsHadoop {
     /**
      * Adds event listener that will be invoked when connection with server is lost or remote error has occurred.
      * If connection is closed already, callback will be invoked synchronously inside this method.
@@ -27,14 +25,14 @@ public interface NewGridGgfsHadoopEx extends NewGridGgfsHadoop {
      * @param delegate Stream delegate.
      * @param lsnr Event listener.
      */
-    public void addEventListener(NewGridGgfsHadoopStreamDelegate delegate, GridGgfsHadoopStreamEventListener lsnr);
+    public void addEventListener(GridGgfsHadoopStreamDelegate delegate, GridGgfsHadoopStreamEventListener lsnr);
 
     /**
      * Removes event listener that will be invoked when connection with server is lost or remote error has occurred.
      *
      * @param delegate Stream delegate.
      */
-    public void removeEventListener(NewGridGgfsHadoopStreamDelegate delegate);
+    public void removeEventListener(GridGgfsHadoopStreamDelegate delegate);
 
     /**
      * Asynchronously reads specified amount of bytes from opened input stream.
@@ -49,7 +47,7 @@ public interface NewGridGgfsHadoopEx extends NewGridGgfsHadoop {
      * @param outLen Output length.
      * @return Read data.
      */
-    public GridPlainFuture<byte[]> readData(NewGridGgfsHadoopStreamDelegate delegate, long pos, int len,
+    public GridPlainFuture<byte[]> readData(GridGgfsHadoopStreamDelegate delegate, long pos, int len,
         @Nullable final byte[] outBuf, final int outOff, final int outLen);
 
     /**
@@ -62,7 +60,7 @@ public interface NewGridGgfsHadoopEx extends NewGridGgfsHadoop {
      * @param len Length.
      * @throws IOException If failed.
      */
-    public void writeData(NewGridGgfsHadoopStreamDelegate delegate, byte[] data, int off, int len) throws IOException;
+    public void writeData(GridGgfsHadoopStreamDelegate delegate, byte[] data, int off, int len) throws IOException;
 
     /**
      * Close server stream.
@@ -70,7 +68,7 @@ public interface NewGridGgfsHadoopEx extends NewGridGgfsHadoop {
      * @param delegate Stream delegate.
      * @throws IOException If failed.
      */
-    public void closeStream(NewGridGgfsHadoopStreamDelegate delegate) throws IOException;
+    public void closeStream(GridGgfsHadoopStreamDelegate delegate) throws IOException;
 
     /**
      * Flush output stream.
@@ -78,5 +76,5 @@ public interface NewGridGgfsHadoopEx extends NewGridGgfsHadoop {
      * @param delegate Stream delegate.
      * @throws IOException If failed.
      */
-    public void flush(NewGridGgfsHadoopStreamDelegate delegate) throws IOException;
+    public void flush(GridGgfsHadoopStreamDelegate delegate) throws IOException;
 }

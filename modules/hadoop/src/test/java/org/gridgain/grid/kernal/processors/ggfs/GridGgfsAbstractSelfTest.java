@@ -1821,7 +1821,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocks() throws Exception {
-        for (int i = 0; i < REPEAT_CNT; i++) {
+        for (int i = 0; i < REPEAT_CNT * 100; i++) {
             try {
                 checkDeadlocks(5, 2, 2, 2, OPS_CNT, OPS_CNT, OPS_CNT, OPS_CNT, OPS_CNT);
             }

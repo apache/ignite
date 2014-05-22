@@ -7,12 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.ggfs.hadoop.impl;
+package org.gridgain.grid.kernal.ggfs.hadoop;
 
 import org.apache.commons.logging.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
@@ -24,7 +23,7 @@ import java.util.concurrent.*;
 /**
  * Communication with grid in the same process.
  */
-public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx {
+public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     /** Target GGFS. */
     private final GridGgfsEx ggfs;
 
@@ -32,7 +31,7 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx {
     private final int bufSize;
 
     /** Event listeners. */
-    private final Map<NewGridGgfsHadoopStreamDelegate, GridGgfsHadoopStreamEventListener> lsnrs =
+    private final Map<GridGgfsHadoopStreamDelegate, GridGgfsHadoopStreamEventListener> lsnrs =
         new ConcurrentHashMap<>();
 
     /** Logger. */
@@ -43,7 +42,7 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx {
      *
      * @param ggfs Target GGFS.
      */
-    public NewGridGgfsHadoopInProc(GridGgfsEx ggfs, Log log) {
+    public GridGgfsHadoopInProc(GridGgfsEx ggfs, Log log) {
         this.ggfs = ggfs;
         this.log = log;
 
@@ -194,11 +193,11 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public NewGridGgfsHadoopStreamDelegate open(GridGgfsPath path) throws GridException {
+    @Override public GridGgfsHadoopStreamDelegate open(GridGgfsPath path) throws GridException {
         try {
             GridGgfsInputStreamAdapter stream = ggfs.open(path, bufSize);
 
-            return new NewGridGgfsHadoopStreamDelegate(this, stream, stream.fileInfo().length());
+            return new GridGgfsHadoopStreamDelegate(this, stream, stream.fileInfo().length());
         }
         catch (IllegalStateException e) {
             throw new GridGgfsHadoopCommunicationException("Failed to open file because Grid is stopping: " + path);
@@ -206,12 +205,12 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public NewGridGgfsHadoopStreamDelegate open(GridGgfsPath path, int seqReadsBeforePrefetch)
+    @Override public GridGgfsHadoopStreamDelegate open(GridGgfsPath path, int seqReadsBeforePrefetch)
         throws GridException {
         try {
             GridGgfsInputStreamAdapter stream = ggfs.open(path, bufSize, seqReadsBeforePrefetch);
 
-            return new NewGridGgfsHadoopStreamDelegate(this, stream, stream.fileInfo().length());
+            return new GridGgfsHadoopStreamDelegate(this, stream, stream.fileInfo().length());
         }
         catch (IllegalStateException e) {
             throw new GridGgfsHadoopCommunicationException("Failed to open file because Grid is stopping: " + path);
@@ -219,13 +218,13 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public NewGridGgfsHadoopStreamDelegate create(GridGgfsPath path, boolean overwrite, boolean colocate,
+    @Override public GridGgfsHadoopStreamDelegate create(GridGgfsPath path, boolean overwrite, boolean colocate,
         int replication, long blockSize, @Nullable Map<String, String> props) throws GridException {
         try {
             GridGgfsOutputStream stream = ggfs.create(path, bufSize, overwrite,
                 colocate ? ggfs.nextAffinityKey() : null, replication, blockSize, props);
 
-            return new NewGridGgfsHadoopStreamDelegate(this, stream);
+            return new GridGgfsHadoopStreamDelegate(this, stream);
         }
         catch (IllegalStateException e) {
             throw new GridGgfsHadoopCommunicationException("Failed to create file because Grid is stopping: " + path);
@@ -233,12 +232,12 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public NewGridGgfsHadoopStreamDelegate append(GridGgfsPath path, boolean create,
+    @Override public GridGgfsHadoopStreamDelegate append(GridGgfsPath path, boolean create,
         @Nullable Map<String, String> props) throws GridException {
         try {
             GridGgfsOutputStream stream = ggfs.append(path, bufSize, create, props);
 
-            return new NewGridGgfsHadoopStreamDelegate(this, stream);
+            return new GridGgfsHadoopStreamDelegate(this, stream);
         }
         catch (IllegalStateException e) {
             throw new GridGgfsHadoopCommunicationException("Failed to append file because Grid is stopping: " + path);
@@ -246,7 +245,7 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<byte[]> readData(NewGridGgfsHadoopStreamDelegate delegate, long pos, int len,
+    @Override public GridPlainFuture<byte[]> readData(GridGgfsHadoopStreamDelegate delegate, long pos, int len,
         @Nullable byte[] outBuf, int outOff, int outLen) {
         GridGgfsInputStreamAdapter stream = delegate.target();
 
@@ -288,7 +287,7 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeData(NewGridGgfsHadoopStreamDelegate delegate, byte[] data, int off, int len)
+    @Override public void writeData(GridGgfsHadoopStreamDelegate delegate, byte[] data, int off, int len)
         throws IOException {
         try {
             GridGgfsOutputStream stream = delegate.target();
@@ -309,7 +308,7 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void flush(NewGridGgfsHadoopStreamDelegate delegate) throws IOException {
+    @Override public void flush(GridGgfsHadoopStreamDelegate delegate) throws IOException {
         try {
             GridGgfsOutputStream stream = delegate.target();
 
@@ -329,7 +328,7 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void closeStream(NewGridGgfsHadoopStreamDelegate desc) throws IOException {
+    @Override public void closeStream(GridGgfsHadoopStreamDelegate desc) throws IOException {
         Closeable closeable = desc.target();
 
         try {
@@ -341,7 +340,7 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void addEventListener(NewGridGgfsHadoopStreamDelegate delegate,
+    @Override public void addEventListener(GridGgfsHadoopStreamDelegate delegate,
         GridGgfsHadoopStreamEventListener lsnr) {
         GridGgfsHadoopStreamEventListener lsnr0 = lsnrs.put(delegate, lsnr);
 
@@ -352,7 +351,7 @@ public class NewGridGgfsHadoopInProc implements NewGridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void removeEventListener(NewGridGgfsHadoopStreamDelegate delegate) {
+    @Override public void removeEventListener(GridGgfsHadoopStreamDelegate delegate) {
         GridGgfsHadoopStreamEventListener lsnr0 = lsnrs.remove(delegate);
 
         if (lsnr0 != null && log.isDebugEnabled())

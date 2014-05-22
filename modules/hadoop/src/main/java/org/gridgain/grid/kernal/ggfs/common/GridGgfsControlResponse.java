@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.ggfs.common;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.kernal.ggfs.hadoop.impl.*;
+import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -342,7 +342,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
             if (checkIo && e.hasCause(IOException.class)) {
                 IOException e0 = e.getCause(IOException.class);
 
-                return errorCode(NewGridGgfsHadoopUtils.cast(e0), false);
+                return errorCode(GridGgfsHadoopUtils.cast(e0), false);
             }
 
             return ERR_GGFS_GENERIC;

@@ -7,16 +7,16 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.ggfs.hadoop.impl;
+package org.gridgain.grid.kernal.ggfs.hadoop;
 
 import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * GGFS Hadoop stream descriptor.
  */
-public class NewGridGgfsHadoopStreamDelegate {
+public class GridGgfsHadoopStreamDelegate {
     /** RPC handler. */
-    private final NewGridGgfsHadoopEx hadoop;
+    private final GridGgfsHadoopEx hadoop;
 
     /** Target. */
     private final Object target;
@@ -29,7 +29,7 @@ public class NewGridGgfsHadoopStreamDelegate {
      *
      * @param target Target.
      */
-    public NewGridGgfsHadoopStreamDelegate(NewGridGgfsHadoopEx hadoop, Object target) {
+    public GridGgfsHadoopStreamDelegate(GridGgfsHadoopEx hadoop, Object target) {
         this(hadoop, target, -1);
     }
 
@@ -39,7 +39,7 @@ public class NewGridGgfsHadoopStreamDelegate {
      * @param target Target.
      * @param len Optional length.
      */
-    public NewGridGgfsHadoopStreamDelegate(NewGridGgfsHadoopEx hadoop, Object target, long len) {
+    public GridGgfsHadoopStreamDelegate(GridGgfsHadoopEx hadoop, Object target, long len) {
         assert hadoop != null;
         assert target != null;
 
@@ -51,7 +51,7 @@ public class NewGridGgfsHadoopStreamDelegate {
     /**
      * @return RPC handler.
      */
-    public NewGridGgfsHadoopEx hadoop() {
+    public GridGgfsHadoopEx hadoop() {
         return hadoop;
     }
 
@@ -77,12 +77,12 @@ public class NewGridGgfsHadoopStreamDelegate {
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
-        return obj != null && obj instanceof NewGridGgfsHadoopStreamDelegate &&
-            target == ((NewGridGgfsHadoopStreamDelegate)obj).target;
+        return obj != null && obj instanceof GridGgfsHadoopStreamDelegate &&
+            target == ((GridGgfsHadoopStreamDelegate)obj).target;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(NewGridGgfsHadoopStreamDelegate.class, this);
+        return S.toString(GridGgfsHadoopStreamDelegate.class, this);
     }
 }

@@ -18,7 +18,6 @@ import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
-import org.gridgain.grid.kernal.ggfs.hadoop.impl.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
@@ -34,7 +33,7 @@ import static org.gridgain.grid.ggfs.GridGgfs.*;
 import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
 import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
-import static org.gridgain.grid.kernal.ggfs.hadoop.impl.NewGridGgfsHadoopUtils.*;
+import static org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopUtils.*;
 
 /**
  * {@code GGFS} Hadoop 2.x file system driver over file system API. To use
@@ -83,7 +82,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
     private final AtomicBoolean closeGuard = new AtomicBoolean();
 
     /** Grid remote client. */
-    private NewGridGgfsHadoopWrapper rmtClient;
+    private GridGgfsHadoopWrapper rmtClient;
 
     /** Working directory. */
     private GridGgfsPath workingDir = DFLT_WORKING_DIR;
@@ -125,7 +124,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
      * @throws IOException If initialization failed.
      */
     public GridGgfsHadoopFileSystem(URI name, Configuration cfg) throws URISyntaxException, IOException {
-        super(NewGridGgfsHadoopEndpoint.normalize(name), GGFS_SCHEME, true, DFLT_IPC_PORT);
+        super(GridGgfsHadoopEndpoint.normalize(name), GGFS_SCHEME, true, DFLT_IPC_PORT);
 
         try {
             initialize(name, cfg);
@@ -145,7 +144,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
         if (!path.isAbsoluteAndSchemeAuthorityNull()) {
             try {
-                path = new Path(NewGridGgfsHadoopEndpoint.normalize(uri));
+                path = new Path(GridGgfsHadoopEndpoint.normalize(uri));
             }
             catch (IllegalArgumentException e) {
                 throw new InvalidPathException(path.toString(), e.getMessage());
@@ -223,7 +222,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
             String logDir = logDirFile != null ? logDirFile.getAbsolutePath() : null;
 
-            rmtClient = new NewGridGgfsHadoopWrapper(uriAuthority, logDir, cfg, LOG);
+            rmtClient = new GridGgfsHadoopWrapper(uriAuthority, logDir, cfg, LOG);
 
             // Handshake.
             GridGgfsHandshakeResponse handshake = rmtClient.handshake(logDir);
@@ -424,7 +423,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                     return is;
             }
             else {
-                NewGridGgfsHadoopStreamDelegate stream = seqReadsBeforePrefetchOverride ?
+                GridGgfsHadoopStreamDelegate stream = seqReadsBeforePrefetchOverride ?
                     rmtClient.open(path, seqReadsBeforePrefetch) : rmtClient.open(path);
 
                 long logId = -1;
@@ -439,7 +438,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                     LOG.debug("Opening input stream [thread=" + Thread.currentThread().getName() + ", path=" + path +
                         ", bufSize=" + bufSize + ']');
 
-                NewGridGgfsHadoopInputStream ggfsIn = new NewGridGgfsHadoopInputStream(stream, stream.length(),
+                GridGgfsHadoopInputStream ggfsIn = new GridGgfsHadoopInputStream(stream, stream.length(),
                     bufSize, LOG, clientLog, logId);
 
                 if (LOG.isDebugEnabled())
@@ -505,7 +504,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                 Map<String, String> permMap = permission(perm);
 
                 // Create stream and close it in the 'finally' section if any sequential operation failed.
-                NewGridGgfsHadoopStreamDelegate stream;
+                GridGgfsHadoopStreamDelegate stream;
 
                 long logId = -1;
 
@@ -537,7 +536,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
                 assert stream != null;
 
-                NewGridGgfsHadoopOutputStream ggfsOut = new NewGridGgfsHadoopOutputStream(stream, LOG,
+                GridGgfsHadoopOutputStream ggfsOut = new GridGgfsHadoopOutputStream(stream, LOG,
                     clientLog, logId);
 
                 bufSize = Math.max(64 * 1024, bufSize);

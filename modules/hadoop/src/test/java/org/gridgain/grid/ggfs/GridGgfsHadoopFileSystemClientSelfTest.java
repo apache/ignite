@@ -37,9 +37,6 @@ import static org.gridgain.grid.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint
  * Test interaction between a GGFS client and a GGFS server.
  */
 public class GridGgfsHadoopFileSystemClientSelfTest extends GridCommonAbstractTest {
-    /** Endpoint. */
-    private static final String ENDPOINT = "127.0.0.1:" + DFLT_IPC_PORT;
-
     /** Logger. */
     private static final Log LOG = LogFactory.getLog(GridGgfsHadoopFileSystemClientSelfTest.class);
 
@@ -70,7 +67,7 @@ public class GridGgfsHadoopFileSystemClientSelfTest extends GridCommonAbstractTe
         ggfsCfg.setBlockSize(512 * 1024);
         ggfsCfg.setIpcEndpointConfiguration("{type:'tcp', port:" + DFLT_IPC_PORT + '}');
 
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration());
         cfg.setGgfsConfiguration(ggfsCfg);
 
         return cfg;
@@ -79,11 +76,9 @@ public class GridGgfsHadoopFileSystemClientSelfTest extends GridCommonAbstractTe
     /**
      * Gets cache configuration.
      *
-     * @param gridName Grid name.
      * @return Cache configuration.
      */
-    @SuppressWarnings("deprecation")
-    protected GridCacheConfiguration[] cacheConfiguration(String gridName) {
+    protected GridCacheConfiguration[] cacheConfiguration() {
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName("partitioned");
@@ -113,19 +108,20 @@ public class GridGgfsHadoopFileSystemClientSelfTest extends GridCommonAbstractTe
      *
      * @throws GridException If failed.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testOutputStreamDeferredException() throws Exception {
         final byte[] data = "test".getBytes();
 
         try {
             switchHandlerErrorFlag(true);
 
-            GridGgfsHadoop client = new GridGgfsHadoop(LOG, ENDPOINT);
+            GridGgfsHadoop client = new GridGgfsHadoopOutProc("127.0.0.1", 10500, LOG);
 
-            GridGgfsPath path = new GridGgfsPath("/test.file");
+            GridGgfsPath path = new GridGgfsPath("/test1.file");
 
-            Long streamId = client.create(path, true, false, 1, 1024, null).get();
+            GridGgfsHadoopStreamDelegate delegate = client.create(path, true, false, 1, 1024, null);
 
-            final GridGgfsHadoopOutputStream ggfsOut = new GridGgfsHadoopOutputStream(client, streamId, LOG,
+            final GridGgfsHadoopOutputStream ggfsOut = new GridGgfsHadoopOutputStream(delegate, LOG,
                 GridGgfsHadoopLogger.disabledLogger(), 0);
 
             // This call should return fine as exception is thrown for the first time.
@@ -135,8 +131,7 @@ public class GridGgfsHadoopFileSystemClientSelfTest extends GridCommonAbstractTe
 
             // This call should throw an IO exception.
             GridTestUtils.assertThrows(null, new Callable<Object>() {
-                @Override
-                public Object call() throws Exception {
+                @Override public Object call() throws Exception {
                     ggfsOut.write(data);
 
                     return null;
@@ -154,6 +149,7 @@ public class GridGgfsHadoopFileSystemClientSelfTest extends GridCommonAbstractTe
      * @param flag Flag state.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ConstantConditions")
     private void switchHandlerErrorFlag(boolean flag) throws Exception {
         GridGgfsProcessorAdapter ggfsProc = ((GridKernal)grid(0)).context().ggfs();
 
@@ -180,6 +176,7 @@ public class GridGgfsHadoopFileSystemClientSelfTest extends GridCommonAbstractTe
      * @return Value of the field.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     private <T> T getField(Object obj, String fieldName) throws Exception {
         Field field = obj.getClass().getDeclaredField(fieldName);
 

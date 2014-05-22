@@ -17,7 +17,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
-import org.gridgain.grid.kernal.ggfs.hadoop.impl.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.communication.*;
 import org.gridgain.grid.spi.communication.tcp.*;
@@ -402,9 +401,9 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testIpcCache() throws Exception {
-        NewGridGgfsHadoopEx hadoop = GridTestUtils.getFieldValue(fs, "rmtClient", "delegateRef", "value", "hadoop");
+        GridGgfsHadoopEx hadoop = GridTestUtils.getFieldValue(fs, "rmtClient", "delegateRef", "value", "hadoop");
 
-        if (hadoop instanceof NewGridGgfsHadoopOutProc) {
+        if (hadoop instanceof GridGgfsHadoopOutProc) {
             FileSystem fsOther = null;
 
             try {
