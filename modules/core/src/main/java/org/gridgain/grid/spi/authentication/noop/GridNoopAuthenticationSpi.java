@@ -13,8 +13,8 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.authentication.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -70,9 +70,9 @@ public class GridNoopAuthenticationSpi extends GridSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean authenticate(GridSecuritySubjectType subjType, byte[] subjId,
+    @Override public Object authenticate(GridSecuritySubjectType subjType, byte[] subjId,
         @Nullable Object creds) throws GridSpiException {
-        return true;
+        return Boolean.TRUE;
     }
 
     /** {@inheritDoc} */

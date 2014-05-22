@@ -58,7 +58,7 @@ public interface GridAuthenticationSpi extends GridSpi, GridSpiJsonConfigurable 
      * @param subjType Subject type.
      * @return {@code True} if subject type is supported, {@code false} otherwise.
      */
-    boolean supported(GridSecuritySubjectType subjType);
+    public boolean supported(GridSecuritySubjectType subjType);
 
     /**
      * Authenticates a given subject (either node or remote client).
@@ -68,10 +68,10 @@ public interface GridAuthenticationSpi extends GridSpi, GridSpiJsonConfigurable 
      * @param credentials Authentication parameters (may be {@code null} or empty based on implementation).
      *      The map of parameters may be different for different subject types. Refer to specific
      *      authentication SPI documentation for a list of required parameters.
-     * @return {@code true} if authentication passed, {@code false} if authentication failed.
+     * @return Authenticated subject context or {@code null} if authentication did not pass.
      * @throws GridSpiException If authentication resulted in system error.
      *      Note that bad credentials should not cause this exception.
      */
-    boolean authenticate(GridSecuritySubjectType subjType, byte[] subjId, @Nullable Object credentials)
+    public Object authenticate(GridSecuritySubjectType subjType, byte[] subjId, @Nullable Object credentials)
         throws GridSpiException;
 }
