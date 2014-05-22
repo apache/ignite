@@ -16,10 +16,27 @@ import org.gridgain.grid.kernal.processors.*;
  * Rest processor.
  */
 public abstract class GridRestProcessorAdapter extends GridProcessorAdapter {
+    /** */
+    private boolean tcp;
+
     /**
      * @param ctx Kernal context.
      */
     protected GridRestProcessorAdapter(GridKernalContext ctx) {
         super(ctx);
+    }
+
+    /**
+     * @param tcp Whether this protocol handles TCP protocol (HTTP otherwise).
+     */
+    public void tcp(boolean tcp) {
+        this.tcp = tcp;
+    }
+
+    /**
+     * @return Whether this protocol handles TCP protocol (HTTP otherwise).
+     */
+    public boolean tcp() {
+        return tcp;
     }
 }

@@ -188,15 +188,11 @@
                 <version>2.9.1</version>
                 <executions>
                     <execution>
-                        <id>aggregate</id>
+                        <id>module-javadoc</id>
                         <goals>
-                            <goal>aggregate-jar</goal>
+                            <goal>jar</goal>
                         </goals>
                         <phase>package</phase>
-                        <configuration>
-                            <finalName>gridgain</finalName>
-                            <excludePackageNames>org.gridgain.examples</excludePackageNames>
-                        </configuration>
                     </execution>
 
                     <execution>
@@ -705,18 +701,13 @@
                 <version>2.2.1</version>
                 <executions>
                     <execution>
-                        <id>aggregate</id>
+                        <id>source</id>
                         <goals>
-                            <goal>aggregate</goal>
+                            <goal>jar-no-fork</goal>
                         </goals>
                         <phase>package</phase>
                         <configuration>
-                            <finalName>gridgain</finalName>
                             <excludeResources>true</excludeResources>
-                            <excludes>
-                                <exclude>**/org/gridgain/examples/**</exclude>
-                                <exclude>**/org/gridgain/scalar/examples/**</exclude>
-                            </excludes>
                         </configuration>
                     </execution>
                 </executions>

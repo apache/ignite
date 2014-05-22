@@ -35,9 +35,12 @@ goto :eof
 :: The following libraries are required for GridGain.
 set GRIDGAIN_LIBS=%GRIDGAIN_HOME%\libs\*
 
-for /D %%file in (%GRIDGAIN_HOME%\libs\*) do (
-    if not %file%=="%GRIDGAIN_HOME%\libs\optional" set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%file%
-)
-
+for /D %%F in (%GRIDGAIN_HOME%\libs\*) do if not %%F == "%GRIDGAIN_HOME%\libs\optional" call :concat %%F\*
 
 if defined USER_LIBS set GRIDGAIN_LIBS=%USER_LIBS%;%GRIDGAIN_LIBS%
+
+goto :eof
+
+:concat
+set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%1
+goto :eof

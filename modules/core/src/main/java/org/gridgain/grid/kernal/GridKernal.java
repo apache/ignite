@@ -42,6 +42,7 @@ import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
 import org.gridgain.grid.kernal.processors.port.*;
 import org.gridgain.grid.kernal.processors.resource.*;
+import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.segmentation.*;
 import org.gridgain.grid.kernal.processors.session.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
@@ -669,15 +670,18 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startProcessor(ctx, new GridJobProcessor(ctx), attrs);
             startProcessor(ctx, new GridTaskProcessor(ctx), attrs);
             startProcessor(ctx, (GridProcessor)SCHEDULE.createOptional(ctx), attrs);
-            startProcessor(ctx, (GridProcessor)REST_TCP.create(ctx, !cfg.isRestEnabled()), attrs);
 
-            try {
-                startProcessor(ctx, (GridProcessor)REST_HTTP.create(ctx, !cfg.isRestEnabled()), attrs);
-            }
-            catch (GridException e) {
-                // Optional, just write warning.
-                U.warn(log, e.getMessage());
-            }
+            GridRestProcessorAdapter tcpRest = createProcessorNoOpIfFailed(ctx, REST_TCP, !cfg.isRestEnabled());
+
+            tcpRest.tcp(true);
+
+            startProcessor(ctx, tcpRest, attrs);
+
+            GridRestProcessorAdapter httpRest = createProcessorNoOpIfFailed(ctx, REST_HTTP, !cfg.isRestEnabled());
+
+            httpRest.tcp(false);
+
+            startProcessor(ctx, httpRest, attrs);
 
             startProcessor(ctx, new GridDataLoaderProcessor(ctx), attrs);
             startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
@@ -1421,6 +1425,31 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         }
         catch (GridException e) {
             throw new GridException("Failed to start manager: " + mgr, e);
+        }
+    }
+
+    /**
+     * Creates new processor.
+     *
+     * @param ctx Kernal context.
+     * @param compType Component type.
+     * @param noOp No-op flag.
+     * @return Processor.
+     * @throws GridException In case of error.
+     */
+    private <T extends GridProcessor> T createProcessorNoOpIfFailed(GridKernalContext ctx,
+        GridComponentType compType, boolean noOp) throws GridException {
+        try {
+            return (T)compType.create(ctx, noOp);
+        }
+        catch (GridException e) {
+            if (!noOp && e.hasCause(ClassNotFoundException.class)) {
+                U.warn(log, e.getMessage());
+
+                return (T)compType.create(ctx, true);
+            }
+            else
+                throw e;
         }
     }
 
