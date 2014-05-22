@@ -281,11 +281,11 @@ public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridCommonAbstr
         fsCfg.addResource(U.resolveGridGainUrl("modules/core/src/test/config/hadoop/core-site-loopback.xml"));
 
         if (logging)
-            fsCfg.setBoolean(String.format(PARAM_GGFS_LOG_ENABLED, "127.0.0.1:10500"), logging);
+            fsCfg.setBoolean(String.format(PARAM_GGFS_LOG_ENABLED, ""), logging);
 
-        fsCfg.setStrings(String.format(PARAM_GGFS_LOG_DIR, "127.0.0.1:10500"), U.getGridGainHome());
+        fsCfg.setStrings(String.format(PARAM_GGFS_LOG_DIR, ""), U.getGridGainHome());
 
-        return (GridGgfsHadoopFileSystem)FileSystem.get(new URI("ggfs://127.0.0.1:10500/"), fsCfg);
+        return (GridGgfsHadoopFileSystem)FileSystem.get(new URI("ggfs:///"), fsCfg);
     }
 
     /**

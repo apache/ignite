@@ -125,7 +125,7 @@ public class GridGgfsHadoopFileSystemSecondaryModeSelfTest extends GridCommonAbs
 
         fsCfg.addResource(U.resolveGridGainUrl("modules/core/src/test/config/hadoop/core-site-loopback.xml"));
 
-        fs = (GridGgfsHadoopFileSystem)FileSystem.get(new URI("ggfs://127.0.0.1:10500/"), fsCfg);
+        fs = (GridGgfsHadoopFileSystem)FileSystem.get(new URI("ggfs:///"), fsCfg);
     }
 
     /**

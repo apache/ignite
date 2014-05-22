@@ -1533,7 +1533,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
      * @throws Exception If failed.
      */
     public void testMultithreadedMkdirs() throws Exception {
-        final Path dir = new Path(new Path("ggfs://127.0.0.1:10500/"), "/dir");
+        final Path dir = new Path(new Path("ggfs:///"), "/dir");
 
         fs.mkdir(dir, FsPermission.getDefault(), true);
 
@@ -1724,7 +1724,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
             startNodes(); // Start server again.
 
             // Check that client is again operational.
-            fs.mkdir(new Path("ggfs://127.0.0.1:10500/dir1/dir2"), FsPermission.getDefault(), true);
+            fs.mkdir(new Path("ggfs:///dir1/dir2"), FsPermission.getDefault(), true);
 
             // However, the streams, opened before disconnect, should not be valid.
             GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -1781,7 +1781,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
 
                 try {
                     // Check that client is again operational.
-                    assertTrue(fs.mkdirs(new Path("ggfs://127.0.0.1:10500/" + Thread.currentThread().getName())));
+                    assertTrue(fs.mkdirs(new Path("ggfs:///" + Thread.currentThread().getName())));
 
                     return true;
                 }

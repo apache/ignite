@@ -7,7 +7,7 @@
 <configuration>
     <property>
         <name>fs.default.name</name>
-        <value>ggfs://127.0.0.1:10500/</value>
+        <value>ggfs:///</value>
     </property>
 
     <property>

@@ -7,7 +7,7 @@
 <configuration>
     <property>
         <name>fs.default.name</name>
-        <value>ggfs://127.0.0.1:10500/</value>
+        <value>ggfs:///</value>
     </property>
 
     <property>
@@ -21,7 +21,7 @@
     </property>
 
     <property>
-        <name>fs.ggfs.127.0.0.1:10500.endpoint.no_local_shmem</name>
+        <name>fs.ggfs..endpoint.no_local_shmem</name>
         <value>true</value>
     </property>
 </configuration>

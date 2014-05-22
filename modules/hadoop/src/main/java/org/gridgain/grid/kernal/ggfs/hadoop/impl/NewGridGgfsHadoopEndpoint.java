@@ -64,7 +64,10 @@ public class NewGridGgfsHadoopEndpoint {
      *
      * @param connStr Connection string.
      */
-    NewGridGgfsHadoopEndpoint(String connStr) {
+    NewGridGgfsHadoopEndpoint(@Nullable String connStr) {
+        if (connStr == null)
+            connStr = "";
+
         String[] tokens = connStr.split("@", -1);
 
         GridBiTuple<String, Integer> hostPort;

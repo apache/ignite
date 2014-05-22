@@ -13,7 +13,6 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.spi.communication.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -131,6 +130,7 @@ public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridCommonAbstract
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     public void testIpcCache() throws Exception {
         Field cacheField = GridGgfsHadoopIpcIo.class.getDeclaredField("ipcCache");
 
@@ -142,16 +142,14 @@ public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridCommonAbstract
 
         Map<String, GridGgfsHadoopIpcIo> cache = (Map<String, GridGgfsHadoopIpcIo>)cacheField.get(null);
 
-        String endpoint = "127.0.0.1:10500";
-
         Configuration cfg = new Configuration();
 
         cfg.addResource(U.resolveGridGainUrl(HADOOP_FS_CFG));
         cfg.setBoolean("fs.ggfs.impl.disable.cache", true);
-        cfg.setBoolean(String.format(PARAM_GGFS_ENDPOINT_NO_EMBED, endpoint), true);
+        cfg.setBoolean(String.format(PARAM_GGFS_ENDPOINT_NO_EMBED, ""), true);
 
         // Ensure that existing IO is reused.
-        FileSystem fs1 = FileSystem.get(new URI("ggfs://" + endpoint + '/'), cfg);
+        FileSystem fs1 = FileSystem.get(new URI("ggfs:///"), cfg);
 
         assertEquals(1, cache.size());
 
@@ -172,7 +170,7 @@ public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridCommonAbstract
         assertEquals(1, ((AtomicInteger)activeCntField.get(io)).get());
 
         // Ensure that when IO is used by multiple file systems and one of them is closed, IO is not stopped.
-        FileSystem fs2 = FileSystem.get(new URI("ggfs://" + endpoint + "/abc"), cfg);
+        FileSystem fs2 = FileSystem.get(new URI("ggfs:///abc"), cfg);
 
         assertEquals(1, cache.size());
         assertEquals(2, ((AtomicInteger)activeCntField.get(io)).get());
