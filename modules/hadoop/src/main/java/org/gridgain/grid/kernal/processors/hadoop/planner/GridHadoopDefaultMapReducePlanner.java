@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.hadoop.planner;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
@@ -137,8 +138,18 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
             GridHadoopFileBlock split0 = (GridHadoopFileBlock)split;
 
             if (GGFS_SCHEME.equalsIgnoreCase(split0.file().getScheme())) {
-                // TODO GG-8300: Get GGFS by name based on URI.
-                GridGgfsEx ggfs = (GridGgfsEx)grid.ggfs("ggfs");
+                GridGgfsHadoopEndpoint endpoint = new GridGgfsHadoopEndpoint(split0.file().getAuthority());
+
+                GridGgfsEx ggfs = null;
+
+                if (F.eq(grid.name(), endpoint.grid())) {
+                    try {
+                        ggfs = (GridGgfsEx) grid.ggfs(endpoint.ggfs());
+                    }
+                    catch (IllegalArgumentException e) {
+                        // No-op.
+                    }
+                }
 
                 if (ggfs != null && !ggfs.isProxy(split0.file())) {
                     Collection<GridGgfsBlockLocation> blocks = ggfs.affinity(new GridGgfsPath(split0.file()),

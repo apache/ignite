@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.ggfs.hadoop;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -48,13 +49,13 @@ public class GridGgfsHadoopEndpoint {
         if (!F.eq(GridGgfs.GGFS_SCHEME, uri.getScheme()))
             throw new IllegalArgumentException("Normalization can only be applied to GGFS URI: " + uri);
 
-        GridGgfsHadoopEndpoint endpoint = new GridGgfsHadoopEndpoint(uri.getAuthority());
-
         try {
+            GridGgfsHadoopEndpoint endpoint = new GridGgfsHadoopEndpoint(uri.getAuthority());
+
             return new URI(uri.getScheme(), endpoint.ggfsName + ":" + endpoint.gridName, endpoint.host, endpoint.port,
                 uri.getPath(), uri.getQuery(), uri.getFragment());
         }
-        catch (URISyntaxException e) {
+        catch (GridException | URISyntaxException e) {
             throw new IllegalArgumentException("Failed to normalize URI: " + uri, e);
         }
     }
@@ -63,8 +64,9 @@ public class GridGgfsHadoopEndpoint {
      * Constructor.
      *
      * @param connStr Connection string.
+     * @throws GridException If failed to parse connection string.
      */
-    GridGgfsHadoopEndpoint(@Nullable String connStr) {
+    public GridGgfsHadoopEndpoint(@Nullable String connStr) throws GridException {
         if (connStr == null)
             connStr = "";
 
@@ -95,13 +97,13 @@ public class GridGgfsHadoopEndpoint {
                 else if (authTokens.length == 2)
                     gridName = F.isEmpty(authTokens[1]) ? null : authTokens[1];
                 else
-                    throw new IllegalArgumentException("Invalid connection string format: " + connStr);
+                    throw new GridException("Invalid connection string format: " + connStr);
             }
 
             hostPort = hostPort(connStr, tokens[1]);
         }
         else
-            throw new IllegalArgumentException("Invalid connection string format: " + connStr);
+            throw new GridException("Invalid connection string format: " + connStr);
 
         host = hostPort.get1();
 
@@ -116,8 +118,9 @@ public class GridGgfsHadoopEndpoint {
      * @param connStr Full connection string.
      * @param hostPortStr Host/port connection string part.
      * @return Tuple with host and port.
+     * @throws GridException If failed to parse connection string.
      */
-    private GridBiTuple<String, Integer> hostPort(String connStr, String hostPortStr) throws IllegalArgumentException {
+    private GridBiTuple<String, Integer> hostPort(String connStr, String hostPortStr) throws GridException {
         String[] tokens = hostPortStr.split(":", -1);
 
         String host = tokens[0];
@@ -136,14 +139,14 @@ public class GridGgfsHadoopEndpoint {
                 port = Integer.valueOf(portStr);
 
                 if (port < 0 || port > 65535)
-                    throw new IllegalArgumentException("Invalid port number: " + connStr);
+                    throw new GridException("Invalid port number: " + connStr);
             }
             catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Invalid port number: " + connStr);
+                throw new GridException("Invalid port number: " + connStr);
             }
         }
         else
-            throw new IllegalArgumentException("Invalid connection string format: " + connStr);
+            throw new GridException("Invalid connection string format: " + connStr);
 
         return F.t(host, port);
     }

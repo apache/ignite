@@ -64,7 +64,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
             this.conf = conf;
             this.log = log;
         }
-        catch (IllegalArgumentException e) {
+        catch (GridException e) {
             throw new IOException("Failed to parse endpoint: " + authority);
         }
     }

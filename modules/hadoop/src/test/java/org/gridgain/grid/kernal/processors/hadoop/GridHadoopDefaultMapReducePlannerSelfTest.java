@@ -463,7 +463,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
      * @return Split.
      */
     private static GridHadoopFileBlock split(boolean ggfs, String file, long start, long len, String... hosts) {
-        URI uri = URI.create((ggfs ? "ggfs://" : "hdfs://") + file);
+        URI uri = URI.create((ggfs ? "ggfs://ggfs@" : "hdfs://") + file);
 
         return new GridHadoopFileBlock(hosts, uri, start, len);
     }
@@ -891,6 +891,11 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
             assert F.eq("ggfs", name);
 
             return GGFS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return null;
         }
     }
 }
