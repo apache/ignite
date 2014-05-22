@@ -90,7 +90,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
         this.mem = mem;
         this.log = log;
 
-        partitioner = job.partitioner();
+        partitioner = reducers > 1 ? job.partitioner() : null;
 
         maps = new AtomicReferenceArray<>(reducers);
         msgs = new GridHadoopShuffleMessage[reducers];
@@ -434,6 +434,9 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
 
         collectUpdatesAndSend(true); // With flush.
 
+        if (log.isDebugEnabled())
+            log.debug("Finished sending collected updates to remote reducers: " + job.id());
+
         GridCompoundFuture fut = new GridCompoundFuture<>();
 
         for (GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapterEx<?>> tup : sentMsgs.values())
@@ -541,10 +544,14 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
 
         /** {@inheritDoc} */
         @Override public void write(Object key, Object val) throws GridException {
-            int part = partitioner.partition(key, val, adders.length);
+            int part = 0;
 
-            if (part < 0 || part >= adders.length)
-                throw new IllegalStateException("Invalid partition: " + part);
+            if (partitioner != null) {
+                part = partitioner.partition(key, val, adders.length);
+
+                if (part < 0 || part >= adders.length)
+                    throw new GridException("Invalid partition: " + part);
+            }
 
             GridHadoopMultimap.Adder adder = adders[part];
 

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
@@ -45,5 +46,5 @@ public abstract class GridHadoopTaskExecutorAdapter extends GridHadoopComponent 
      * @param job Job instance.
      * @param meta Job metadata.
      */
-    public abstract void onJobStateChanged(GridHadoopJob job, GridHadoopJobMetadata meta);
+    public abstract void onJobStateChanged(GridHadoopJob job, GridHadoopJobMetadata meta) throws GridException;
 }
