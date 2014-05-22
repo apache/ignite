@@ -547,7 +547,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
             int part = 0;
 
             if (partitioner != null) {
-                partitioner.partition(key, val, adders.length);
+                part = partitioner.partition(key, val, adders.length);
 
                 if (part < 0 || part >= adders.length)
                     throw new GridException("Invalid partition: " + part);
