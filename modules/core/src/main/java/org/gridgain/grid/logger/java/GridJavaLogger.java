@@ -23,6 +23,7 @@ import java.util.*;
 import java.util.logging.*;
 import java.util.logging.Formatter;
 
+import static java.util.logging.Level.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 
 /**
@@ -175,7 +176,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
 
         if (init) {
             // Implementation has already been inited, passing NULL.
-            addDefaultHandlersIfNeeded(Level.INFO, null);
+            addDefaultHandlersIfNeeded(INFO, null);
 
             quiet = quiet0;
         }
@@ -232,8 +233,24 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
 
             boolean quiet = Boolean.valueOf(System.getProperty(GG_QUIET, "true"));
 
-            if (System.getProperty("java.util.logging.config.file") != null) {
-                quiet0 = quiet;
+            if (isConfigured()) {
+                boolean consoleHandlerFound = false;
+
+                Handler[] handlers = impl.getHandlers();
+
+                // Remove predefined default console handler.
+                if  (!F.isEmpty(handlers)) {
+                    for (Handler h : handlers) {
+                        if (h instanceof ConsoleHandler) {
+                            consoleHandlerFound = true;
+
+                            break;
+                        }
+                    }
+                }
+
+                // User configured console appender, but log is quiet.
+                quiet0 = !consoleHandlerFound;
                 inited = true;
 
                 return;
@@ -243,12 +260,14 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
                 Handler[] handlers = impl.getHandlers();
 
                 // Remove predefined default console handler.
-                if  (!F.isEmpty(handlers))
-                    for (Handler h : handlers)
+                if  (!F.isEmpty(handlers)) {
+                    for (Handler h : handlers) {
                         if (h instanceof ConsoleHandler)
                             impl.removeHandler(h);
+                    }
+                }
 
-                addDefaultConsoleHandler(impl);
+                addDefaultConsoleHandler(impl, quiet ? SEVERE : INFO);
 
                 if (logLevel != null)
                     impl.setLevel(logLevel);
@@ -263,16 +282,19 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
      * Adds default console and file handlers.
      *
      * @param log Logger.
+     * @param lvl From passed in level and higher.
      */
-    private void addDefaultConsoleHandler(Logger log) {
-        log.setLevel(Level.INFO);
+    private void addDefaultConsoleHandler(Logger log, Level lvl) {
+        assert lvl != null;
+
+        log.setLevel(INFO);
 
         if (F.isEmpty(log.getHandlers())) {
             ConsoleHandler consoleHnd = new ConsoleHandler();
 
             consoleHnd.setFormatter(DFLT_FORMATTER);
 
-            consoleHnd.setLevel(Level.SEVERE);
+            consoleHnd.setLevel(lvl);
 
             log.addHandler(consoleHnd);
         }
@@ -285,6 +307,8 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
      * @throws GridException If failed to configure logger.
      */
     private void addDefaultFileHandler(Logger log) throws GridException {
+        assert Thread.holdsLock(mux);
+
         // Skip if file handler has been already configured.
         for (Handler hnd : impl.getHandlers())
             if (hnd instanceof FileHandler)
@@ -299,7 +323,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
 
             FileHandler fileHnd = new FileHandler(filePtrn, MAX_FILE_SIZE, MAX_BACKUP_IDX);
 
-            fileHnd.setLevel(Level.INFO);
+            fileHnd.setLevel(INFO);
 
             fileHnd.setFormatter(DFLT_FORMATTER);
 
@@ -312,7 +336,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
 
     /** {@inheritDoc} */
     @Override public void trace(String msg) {
-        if (!impl.isLoggable(Level.FINEST))
+        if (!impl.isLoggable(FINEST))
             warning("Logging at TRACE level without checking if TRACE level is enabled: " + msg);
 
         impl.finest(msg);
@@ -320,7 +344,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
 
     /** {@inheritDoc} */
     @Override public void debug(String msg) {
-        if (!impl.isLoggable(Level.FINE))
+        if (!impl.isLoggable(FINE))
             warning("Logging at DEBUG level without checking if DEBUG level is enabled: " + msg);
 
         impl.fine(msg);
@@ -328,7 +352,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
 
     /** {@inheritDoc} */
     @Override public void info(String msg) {
-        if (!impl.isLoggable(Level.INFO))
+        if (!impl.isLoggable(INFO))
             warning("Logging at INFO level without checking if INFO level is enabled: " + msg);
 
         impl.info(msg);
@@ -341,7 +365,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
 
     /** {@inheritDoc} */
     @Override public void warning(String msg, @Nullable Throwable e) {
-        impl.log(Level.WARNING, msg, e);
+        impl.log(WARNING, msg, e);
     }
 
     /** {@inheritDoc} */
@@ -356,22 +380,22 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
 
     /** {@inheritDoc} */
     @Override public void error(String msg, @Nullable Throwable e) {
-        impl.log(Level.SEVERE, msg, e);
+        impl.log(SEVERE, msg, e);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isTraceEnabled() {
-        return impl.isLoggable(Level.FINEST);
+        return impl.isLoggable(FINEST);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isDebugEnabled() {
-        return impl.isLoggable(Level.FINE);
+        return impl.isLoggable(FINE);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isInfoEnabled() {
-        return impl.isLoggable(Level.INFO);
+        return impl.isLoggable(INFO);
     }
 
     /** {@inheritDoc} */
@@ -383,17 +407,19 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
     @Override public void setNodeId(UUID nodeId) {
         A.notNull(nodeId, "nodeId");
 
-        if (this.nodeId == null) {
-            this.nodeId = nodeId;
+        if (this.nodeId != null)
+            return;
 
-            synchronized (mux) {
-                if (nodeId != null) {
-                    try {
-                        addDefaultFileHandler(impl);
-                    }
-                    catch (GridException e) {
-                        throw new RuntimeException("Failed to create default file handler.", e);
-                    }
+        synchronized (mux) {
+            // Double check.
+            if (this.nodeId == null) {
+                this.nodeId = nodeId;
+
+                try {
+                    addDefaultFileHandler(impl);
+                }
+                catch (GridException e) {
+                    throw new RuntimeException("Failed to create default file handler.", e);
                 }
             }
         }
