@@ -77,7 +77,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         boolean invalidate,
         boolean syncCommit,
         boolean syncRollback,
-        boolean swapEnabled,
+        boolean swapOrOffheapEnabled,
         boolean storeEnabled,
         int txSize,
         @Nullable Object grpLockKey,
@@ -94,7 +94,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
             isolation,
             timeout,
             invalidate,
-            swapEnabled,
+            swapOrOffheapEnabled,
             storeEnabled,
             txSize);
     }

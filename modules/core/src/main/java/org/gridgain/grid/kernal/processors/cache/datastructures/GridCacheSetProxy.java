@@ -408,8 +408,7 @@ public class GridCacheSetProxy<T> implements GridCacheSet<T>, Externalizable {
             try {
                 if (cctx.transactional()) {
                     CU.outTx(new Callable<Void>() {
-                        @Override
-                        public Void call() throws Exception {
+                        @Override public Void call() throws Exception {
                             delegate.clear();
 
                             return null;
@@ -432,7 +431,7 @@ public class GridCacheSetProxy<T> implements GridCacheSet<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCloseableIterator<T> iteratorEx() {
+    @Override public Iterator<T> iterator() {
         enterBusy();
 
         try {
@@ -440,13 +439,13 @@ public class GridCacheSetProxy<T> implements GridCacheSet<T>, Externalizable {
 
             try {
                 if (cctx.transactional())
-                    return CU.outTx(new Callable<GridCloseableIterator<T>>() {
-                        @Override public GridCloseableIterator<T> call() throws Exception {
-                            return delegate.iteratorEx();
+                    return CU.outTx(new Callable<Iterator<T>>() {
+                        @Override public Iterator<T> call() throws Exception {
+                            return delegate.iterator();
                         }
                     }, cctx);
 
-                return delegate.iteratorEx();
+                return delegate.iterator();
             }
             catch (GridException e) {
                 throw new GridRuntimeException(e);
@@ -458,12 +457,6 @@ public class GridCacheSetProxy<T> implements GridCacheSet<T>, Externalizable {
         finally {
             leaveBusy();
         }
-    }
-
-    /** {@inheritDoc} */
-    @NotNull @Override public Iterator<T> iterator() {
-        throw new UnsupportedOperationException("Method iterator() is not supported for GridCacheSet, " +
-            "use iteratorEx() instead.");
     }
 
     /** {@inheritDoc} */

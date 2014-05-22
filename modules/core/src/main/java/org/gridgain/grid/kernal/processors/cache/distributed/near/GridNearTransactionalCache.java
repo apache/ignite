@@ -638,10 +638,10 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     /** {@inheritDoc} */
     @Override public GridCacheTxLocalAdapter<K, V> newTx(boolean implicit, boolean implicitSingle,
         GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation, long timeout, boolean invalidate,
-        boolean syncCommit, boolean syncRollback, boolean swapEnabled, boolean storeEnabled, int txSize,
+        boolean syncCommit, boolean syncRollback, boolean swapOrOffheapEnabled, boolean storeEnabled, int txSize,
         @Nullable Object grpLockKey, boolean partLock) {
         return new GridNearTxLocal<>(ctx, implicit, implicitSingle, concurrency, isolation, timeout,
-            invalidate, syncCommit, syncRollback, swapEnabled, storeEnabled, txSize, grpLockKey, partLock);
+            invalidate, syncCommit, syncRollback, swapOrOffheapEnabled, storeEnabled, txSize, grpLockKey, partLock);
     }
 
     /** {@inheritDoc} */
