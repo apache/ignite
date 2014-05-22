@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.cmd.dto;
+package org.gridgain.grid.kernal.visor.cmd.dto.cache;
 
 import java.io.*;
 

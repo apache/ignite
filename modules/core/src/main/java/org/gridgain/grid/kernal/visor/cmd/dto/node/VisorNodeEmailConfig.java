@@ -7,14 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.cmd.dto;
+package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
 import java.io.*;
 
 /**
  * Email configuration data.
  */
-public class VisorEmailConfig implements Serializable {
+public class VisorNodeEmailConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -39,7 +39,7 @@ public class VisorEmailConfig implements Serializable {
     /** Whether or not to use TLS for SMTP. */
     private final boolean smtpStartTls;
 
-    public VisorEmailConfig(String smtpHost, int smtpPort, String smtpUsername, String adminEmails,
+    public VisorNodeEmailConfig(String smtpHost, int smtpPort, String smtpUsername, String adminEmails,
         String smtpFromEmail, boolean smtpSsl, boolean smtpStartTls) {
         this.smtpHost = smtpHost;
         this.smtpPort = smtpPort;
@@ -74,7 +74,7 @@ public class VisorEmailConfig implements Serializable {
     /**
      * @return SMTP admin emails.
      */
-    public String administrationEmails() {
+    public String adminEmails() {
         return adminEmails;
     }
 

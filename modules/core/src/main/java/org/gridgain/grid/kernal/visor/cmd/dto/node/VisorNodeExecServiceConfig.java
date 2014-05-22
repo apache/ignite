@@ -7,14 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.cmd.dto;
+package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
 import java.io.*;
 
 /**
  * Executors configuration data.
  */
-public class VisorExecServiceConfig implements Serializable {
+public class VisorNodeExecServiceConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -33,7 +33,8 @@ public class VisorExecServiceConfig implements Serializable {
     /**Whether or not GridGain will stop peer-to-peer executor service on node shutdown. */
     private final boolean p2pExecSvcShutdown;
 
-    public VisorExecServiceConfig(String execSvc, boolean execSvcShutdown, String sysExecSvc, boolean sysExecSvcShutdown,
+    public VisorNodeExecServiceConfig(String execSvc, boolean execSvcShutdown, String sysExecSvc,
+        boolean sysExecSvcShutdown,
         String p2pExecSvc, boolean p2pExecSvcShutdown) {
         this.execSvc = execSvc;
         this.execSvcShutdown = execSvcShutdown;
@@ -55,7 +56,7 @@ public class VisorExecServiceConfig implements Serializable {
     /**
      * @return Whether or not GridGain will stop executor service on node shutdown.
      */
-    public boolean executeServiceShutdown() {
+    public boolean executorServiceShutdown() {
         return execSvcShutdown;
     }
 
@@ -76,14 +77,14 @@ public class VisorExecServiceConfig implements Serializable {
     /**
      * @return Peer-to-peer executor service.
      */
-    public String p2PExecutorService() {
+    public String p2pExecutorService() {
         return p2pExecSvc;
     }
 
     /**
      * @return Whether or not GridGain will stop peer-to-peer executor service on node shutdown.
      */
-    public boolean p2PExecutorServiceShutdown() {
+    public boolean p2pExecutorServiceShutdown() {
         return p2pExecSvcShutdown;
     }
 }

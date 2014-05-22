@@ -7,14 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.cmd.dto;
+package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
 import java.io.*;
 
 /**
  * Lifecycle configuration data.
  */
-public class VisorLifecycleConfig implements Serializable {
+public class VisorNodeLifecycleConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -24,7 +24,7 @@ public class VisorLifecycleConfig implements Serializable {
     /** Whether or not email notifications should be used on node start and stop. */
     private final boolean ntf;
 
-    public VisorLifecycleConfig(String beans, boolean ntf) {
+    public VisorNodeLifecycleConfig(String beans, boolean ntf) {
         this.beans = beans;
         this.ntf = ntf;
     }

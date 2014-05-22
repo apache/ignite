@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.cmd.dto;
+package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
 import org.gridgain.grid.segmentation.*;
 
@@ -16,7 +16,7 @@ import java.io.*;
 /**
  * Segmentation configuration data.
  */
-public class VisorSegmentationConfig implements Serializable {
+public class VisorNodeSegmentationConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -31,7 +31,8 @@ public class VisorSegmentationConfig implements Serializable {
     /**Whether or not all resolvers should succeed for node to be in correct segment. */
     private final boolean passRequired;
 
-    public VisorSegmentationConfig(GridSegmentationPolicy plc, String resolvers, long checkFreq, boolean waitOnStart,
+    public VisorNodeSegmentationConfig(GridSegmentationPolicy plc, String resolvers, long checkFreq,
+        boolean waitOnStart,
         boolean passRequired) {
         this.plc = plc;
         this.resolvers = resolvers;

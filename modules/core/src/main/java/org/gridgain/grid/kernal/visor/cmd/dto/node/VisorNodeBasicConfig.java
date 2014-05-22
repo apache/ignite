@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.cmd.dto;
+package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
 import java.io.*;
 import java.util.*;
@@ -15,7 +15,7 @@ import java.util.*;
 /**
  * Basic configuration data.
  */
-public class VisorBasicConfig implements Serializable {
+public class VisorNodeBasicConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -24,7 +24,7 @@ public class VisorBasicConfig implements Serializable {
     private final String locHost;
     private final UUID nodeId;
     private final String marsh;
-    private final String deployMode;
+    private final Object deployMode;
     private final boolean daemon;
     private final boolean jmxRemote;
     private final boolean restart;
@@ -41,8 +41,8 @@ public class VisorBasicConfig implements Serializable {
     private final String successFile;
     private final boolean updateNtf;
 
-    public VisorBasicConfig(String gridName, String ggHome, String locHost, UUID nodeId, String marsh,
-        String deployMode, boolean daemon, boolean jmxRemote, boolean restart, long netTimeout, String licenseUrl,
+    public VisorNodeBasicConfig(String gridName, String ggHome, String locHost, UUID nodeId, String marsh,
+        Object deployMode, boolean daemon, boolean jmxRemote, boolean restart, long netTimeout, String licenseUrl,
         String log, long discoStartupDelay, String mBeanSrv, boolean noAscii, boolean noDiscoOrder,
         boolean noShutdownHook, String progName, boolean quiet, String successFile, boolean updateNtf) {
         this.gridName = gridName;
@@ -85,7 +85,7 @@ public class VisorBasicConfig implements Serializable {
     /**
      * @return Locale host.
      */
-    public String localeHost() {
+    public String localHost() {
         return locHost;
     }
 
@@ -99,14 +99,14 @@ public class VisorBasicConfig implements Serializable {
     /**
      * @return Marshaller.
      */
-    public String marsh() {
+    public String marshaller() {
         return marsh;
     }
 
     /**
      * @return Deploy mode.
      */
-    public String deployMode() {
+    public Object deployMode() {
         return deployMode;
     }
 

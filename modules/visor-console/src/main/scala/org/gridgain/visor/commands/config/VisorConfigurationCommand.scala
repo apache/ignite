@@ -14,8 +14,8 @@ package org.gridgain.visor.commands.config
 import java.lang.System._
 import org.gridgain.grid._
 import org.gridgain.grid.util.{GridUtils => U}
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorConfigurationTask
-import VisorConfigurationTask._
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorConfigCollectorTask
+import VisorConfigCollectorTask._
 import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeArg
 import collection.JavaConversions._
 import scala.reflect.ClassTag
@@ -23,6 +23,7 @@ import scala.util.control.Breaks._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
+import org.gridgain.grid.kernal.visor.cmd.dto.node.VisorNodeConfig
 
 /**
  * ==Overview==
@@ -198,13 +199,13 @@ class VisorConfigurationCommand {
 
             assert(node != null)
 
-            var cfg: VisorConfiguration = null
+            var cfg: VisorNodeConfig = null
 
             try
                 cfg = grid.forNode(node)
                     .compute()
                     .withNoFailover()
-                    .execute(classOf[VisorConfigurationTask], new VisorOneNodeArg(node.id()))
+                    .execute(classOf[VisorConfigCollectorTask], new VisorOneNodeArg(node.id()))
                     .get
             catch {
                 case e: GridException =>
@@ -455,17 +456,17 @@ class VisorConfigurationCommand {
                 cacheT += ("Preload batch size", cacheCfg.preload().batchSize())
                 cacheT += ("Preload thread pool size", cacheCfg.preload().poolSize())
                 cacheT += ("Eviction policy", cacheCfg.evict().policy())
-                cacheT += ("Eviction key buffer size", cacheCfg.evict().keyBufferSize())
+                cacheT += ("Eviction key buffer size", cacheCfg.evict().synchronizedKeyBufferSize())
                 cacheT += ("Eviction synchronized", bool2Str(cacheCfg.evict().evictSynchronized()))
                 cacheT += ("Eviction near synchronized", bool2Str(cacheCfg.evict().nearSynchronized()))
                 cacheT += ("Eviction overflow ratio", formatDouble(cacheCfg.evict().maxOverflowRatio()))
                 cacheT += ("Near enabled", bool2Str(cacheCfg.near().nearEnabled()))
                 cacheT += ("Near start size", cacheCfg.near().nearStartSize())
                 cacheT += ("Near eviction policy", cacheCfg.near().nearEvictPolicy())
-                cacheT += ("Default isolation", safe(cacheCfg.defaultConfig().defaultIsolation(), DFLT))
-                cacheT += ("Default concurrency", safe(cacheCfg.defaultConfig().defaultConcurrency(), DFLT))
-                cacheT += ("Default transaction timeout", cacheCfg.defaultConfig().defaultTxTimeout())
-                cacheT += ("Default lock timeout", cacheCfg.defaultConfig().defaultLockTimeout())
+                cacheT += ("Default isolation", safe(cacheCfg.defaultConfig().txIsolation(), DFLT))
+                cacheT += ("Default concurrency", safe(cacheCfg.defaultConfig().txConcurrency(), DFLT))
+                cacheT += ("Default transaction timeout", cacheCfg.defaultConfig().txTimeout())
+                cacheT += ("Default lock timeout", cacheCfg.defaultConfig().txLockTimeout())
                 cacheT += ("DGC frequency", cacheCfg.dgc().frequency())
                 cacheT += ("DGC remove locks flag", bool2Str(cacheCfg.dgc().removedLocks()))
                 cacheT += ("DGC suspect lock timeout", cacheCfg.dgc().suspectLockTimeout())

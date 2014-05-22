@@ -7,14 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.cmd.dto;
+package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
 import java.io.*;
 
 /**
  * Metrics configuration data.
  */
-public class VisorMetricsConfig implements Serializable {
+public class VisorNodeMetricsConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -27,7 +27,7 @@ public class VisorMetricsConfig implements Serializable {
     /** Frequency of metrics log printout. */
     private final long logFreq;
 
-    public VisorMetricsConfig(long expTime, int historySize, long logFreq) {
+    public VisorNodeMetricsConfig(long expTime, int historySize, long logFreq) {
         this.expTime = expTime;
         this.historySize = historySize;
         this.logFreq = logFreq;
@@ -36,7 +36,7 @@ public class VisorMetricsConfig implements Serializable {
     /**
      * @return Metrics expire time.
      */
-    public long expectedTime() {
+    public long expireTime() {
         return expTime;
     }
 
