@@ -1301,6 +1301,6 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
      */
     private boolean matches(String str, String ptrn) {
         return str != null && (ptrn == null ||
-            str.toUpperCase().matches(ptrn.toUpperCase().replace("%", ".*").replace("_", "")));
+            str.toUpperCase().matches(ptrn.toUpperCase().replace("%", ".*").replace("_", ".")));
     }
 }
