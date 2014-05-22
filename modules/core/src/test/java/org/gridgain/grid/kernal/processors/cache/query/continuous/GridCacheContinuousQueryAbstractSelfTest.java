@@ -137,7 +137,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         }
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals(0, grid(i).cache(null).size());
+            assertEquals("Cache is not empty: " + grid(i).cache(null).entrySet(), 0, grid(i).cache(null).size());
 
         for (int i = 0; i < gridCount(); i++) {
             GridContinuousProcessor proc = ((GridKernal)grid(i)).context().continuous();
