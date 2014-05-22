@@ -25,6 +25,7 @@ import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
@@ -1792,7 +1793,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
         final int depth = 3;
         final int entryCnt = 5;
 
-        final AtomicBoolean err = new AtomicBoolean();
+        final AtomicReference<IOException> err = new AtomicReference();
 
         multithreaded(new Runnable() {
             @Override public void run() {
@@ -1818,8 +1819,8 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
                             try {
                                 fs.mkdirs(subDir);
                             }
-                            catch (IOException ignore) {
-                                err.set(true);
+                            catch (IOException e) {
+                                err.compareAndSet(null, e);
                             }
 
                             queue.addLast(F.t(newDepth, subDir));
@@ -1830,7 +1831,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
         }, THREAD_CNT);
 
         // Ensure there were no errors.
-        assert !err.get() : err;
+        assert err.get() == null : err.get();
 
         // Ensure correct folders structure.
         Deque<GridBiTuple<Integer, Path>> queue = new ArrayDeque<>();
@@ -1923,7 +1924,17 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
         assert !err.get();
 
         // Ensure the directory was actually deleted.
-        assert !fs.exists(dir);
+
+        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                try {
+                    return !fs.exists(dir);
+                }
+                catch (IOException e) {
+                    throw new AssertionError(e);
+                }
+            }
+        }, 5000L);
     }
 
     /** @throws Exception If failed. */

@@ -13,6 +13,7 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.spi.communication.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -31,6 +32,7 @@ import java.util.concurrent.atomic.*;
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
 
 /**
  * IPC cache test.
@@ -140,12 +142,13 @@ public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridCommonAbstract
 
         Map<String, GridGgfsHadoopIpcIo> cache = (Map<String, GridGgfsHadoopIpcIo>)cacheField.get(null);
 
+        String endpoint = "127.0.0.1:10500";
+
         Configuration cfg = new Configuration();
 
         cfg.addResource(U.resolveGridGainUrl(HADOOP_FS_CFG));
         cfg.setBoolean("fs.ggfs.impl.disable.cache", true);
-
-        String endpoint = "shmem:10500";
+        cfg.setBoolean(String.format(PARAM_GGFS_ENDPOINT_NO_EMBED, endpoint), true);
 
         // Ensure that existing IO is reused.
         FileSystem fs1 = FileSystem.get(new URI("ggfs://" + endpoint + '/'), cfg);

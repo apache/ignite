@@ -1702,7 +1702,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                                 bufSize + ", replication=" + replication + ", blockSize=" + blockSize + ']', err);
 
                             if (err instanceof GridGgfsException)
-                                throw (GridException)err;
+                                throw (GridGgfsException)err;
                             else
                                 throw new GridGgfsException("Failed to create the file due to secondary file system " +
                                     "exception: " + path, err);

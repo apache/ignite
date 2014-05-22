@@ -103,6 +103,8 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
         cfg.setCacheConfiguration(getCacheConfiguration(gridName));
 
+        cfg.setHadoopConfiguration(null);
+
         GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 
         discoSpi.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));

@@ -91,21 +91,9 @@ public class NewGridGgfsHadoopUtils {
         assert e != null;
 
         // First check for any nested IOException; if exists - re-throw it.
-        if (e.hasCause(IOException.class)) {
-            Throwable curErr = e.getCause();
-
-            assert curErr != null;
-
-            do {
-                if (curErr instanceof IOException)
-                    return (IOException)curErr;
-
-                curErr = curErr.getCause();
-            }
-            while (curErr != null);
-        }
-
-        if (e instanceof GridGgfsFileNotFoundException)
+        if (e.hasCause(IOException.class))
+            return e.getCause(IOException.class);
+        else if (e instanceof GridGgfsFileNotFoundException)
             return new FileNotFoundException(path); // TODO: Or PathNotFoundException?
         else if (e instanceof GridGgfsParentNotDirectoryException)
             return new ParentNotDirectoryException(path);
@@ -115,6 +103,25 @@ public class NewGridGgfsHadoopUtils {
             return new PathExistsException(path);
         else
             return new IOException(e);
+    }
+
+    /**
+     * Cast IO exception to GGFS exception.
+     *
+     * @param e IO exception.
+     * @return GGFS exception.
+     */
+    public static GridGgfsException cast(IOException e) {
+        if (e instanceof FileNotFoundException)
+            return new GridGgfsFileNotFoundException(e);
+        else if (e instanceof ParentNotDirectoryException)
+            return new GridGgfsParentNotDirectoryException(e);
+        else if (e instanceof PathIsNotEmptyDirectoryException)
+            return new GridGgfsDirectoryNotEmptyException(e);
+        else if (e instanceof PathExistsException)
+            return new GridGgfsPathAlreadyExistsException(e);
+        else
+            return new GridGgfsException(e);
     }
 
     /**
