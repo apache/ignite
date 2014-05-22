@@ -110,7 +110,6 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
                 ex = "\n" + stackTrace;
             }
 
-
             return "[" + DATE_FORMATTER.get().format(new Date(record.getMillis())) + "][" +
                 record.getLevel() + "][" +
                 threadName + "][" +
