@@ -65,6 +65,9 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
     /** Secondary file system configuration path. */
     private static final String SECONDARY_CFG_PATH = "/work/core-site-test.xml";
 
+    /** Secondary endpoint configuration. */
+    private static final String SECONDARY_ENDPOINT_CFG = "{type:'tcp', port:11500}";
+
     /** Group size. */
     public static final int GRP_SIZE = 128;
 
@@ -163,7 +166,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
             ggfsCfg.setDataCacheName("partitioned");
             ggfsCfg.setMetaCacheName("replicated");
             ggfsCfg.setName("ggfs_secondary");
-            ggfsCfg.setIpcEndpointConfiguration(secondaryIpcEndpointConfiguration());
+            ggfsCfg.setIpcEndpointConfiguration(SECONDARY_ENDPOINT_CFG);
             ggfsCfg.setBlockSize(512 * 1024);
             ggfsCfg.setPrefetchBlocks(1);
 
@@ -247,13 +250,6 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      * @return IPC primary endpoint configuration.
      */
     protected abstract String primaryIpcEndpointConfiguration(String gridName);
-
-    /**
-     * Get secondary IPC endpoint configuration.
-     *
-     * @return Secondary IPC endpoint configuration.
-     */
-    protected abstract String secondaryIpcEndpointConfiguration();
 
     /** {@inheritDoc} */
     @Override public String getTestGridName() {

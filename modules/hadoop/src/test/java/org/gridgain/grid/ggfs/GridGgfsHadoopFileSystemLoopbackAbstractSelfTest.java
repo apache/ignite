@@ -30,9 +30,4 @@ public abstract class GridGgfsHadoopFileSystemLoopbackAbstractSelfTest extends
     @Override protected String primaryIpcEndpointConfiguration(String gridName) {
         return "{type:'tcp', port:" + (DFLT_IPC_PORT + getTestGridIndex(gridName)) + "}";
     }
-
-    /** {@inheritDoc} */
-    @Override protected String secondaryIpcEndpointConfiguration() {
-        return "{type:'tcp', port:11500}";
-    }
 }

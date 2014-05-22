@@ -38,11 +38,6 @@ public abstract class GridGgfsHadoopFileSystemShmemAbstractSelfTest extends Grid
         return "{type:'shmem', port:" + (DFLT_IPC_PORT + getTestGridIndex(gridName)) + "}";
     }
 
-    /** {@inheritDoc} */
-    @Override protected String secondaryIpcEndpointConfiguration() {
-        return "{type:'shmem', port:11500}";
-    }
-
     /**
      * Checks correct behaviour in case when we run out of system
      * resources.
