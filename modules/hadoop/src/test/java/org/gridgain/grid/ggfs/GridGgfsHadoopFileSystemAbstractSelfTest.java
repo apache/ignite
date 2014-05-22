@@ -1817,13 +1817,12 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
                             Path subDir = new Path(curPath, "dir-" + newDepth + "-" + i);
 
                             try {
-                                fs.mkdirs(subDir);
+                                if (fs.mkdirs(subDir))
+                                    queue.addLast(F.t(newDepth, subDir));
                             }
                             catch (IOException e) {
                                 err.compareAndSet(null, e);
                             }
-
-                            queue.addLast(F.t(newDepth, subDir));
                         }
                     }
                 }

@@ -856,6 +856,14 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 return mkdirRes;
             }
         }
+        catch (IOException e) {
+            // Intentionally ignore GGFS exceptions here to follow Hadoop contract.
+            if (F.eq(IOException.class, e.getClass()) && (e.getCause() == null ||
+                !GridGgfsException.class.isAssignableFrom(e.getCause().getClass())))
+                throw e;
+            else
+                return false;
+        }
         finally {
             leaveBusy();
         }
