@@ -155,7 +155,17 @@ public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridCommonAbstract
 
         assertEquals(1, cache.size());
 
-        GridGgfsHadoopIpcIo io = cache.get(endpoint);
+        GridGgfsHadoopIpcIo io = null;
+
+        for (String key : cache.keySet()) {
+            if (key.contains("10500")) {
+                io = cache.get(key);
+
+                break;
+            }
+        }
+
+        assert io != null;
 
         assertEquals(1, ((AtomicInteger)activeCntField.get(io)).get());
 
