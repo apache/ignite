@@ -20,6 +20,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.net.*;
 import java.text.*;
 import java.util.*;
+import java.util.logging.*;
 
 import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.kernal.GridProductImpl.*;
@@ -120,9 +121,12 @@ public class GridRouterCommandLineStartup {
         boolean isLog4jUsed = U.gridClassLoader().getResource("org/apache/log4j/Appender.class") != null;
 
         GridBiTuple<Object, Object> t = null;
+        Collection<Handler> savedHnds = null;
 
         if (isLog4jUsed)
             t = U.addLog4jNoOpLogger();
+        else
+            savedHnds = U.addJavaNoOpLogger();
 
         Map<Class<?>, Object> beans;
 
@@ -132,6 +136,9 @@ public class GridRouterCommandLineStartup {
         finally {
             if (isLog4jUsed && t != null)
                 U.removeLog4jNoOpLogger(t);
+
+            if (!isLog4jUsed)
+                U.removeJavaNoOpLogger(savedHnds);
         }
 
         final GridRouterCommandLineStartup routerStartup = new GridRouterCommandLineStartup();
