@@ -231,7 +231,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
             boolean quiet = Boolean.valueOf(System.getProperty(GG_QUIET, "true"));
 
             if (isConfigured()) {
-                boolean consoleHndFound = findConsoleHandler(impl) != null;
+                boolean consoleHndFound = findHandler(impl, ConsoleHandler.class) != null;
 
                 // User configured console appender, thus log is not quiet.
                 quiet0 = !consoleHndFound;
@@ -294,7 +294,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
         assert Thread.holdsLock(mux);
 
         // Skip if file handler has been already configured.
-        if (findFileHandler(impl) != null)
+        if (findHandler(impl, FileHandler.class) != null)
             return;
 
         try {
@@ -383,7 +383,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
 
     /** {@inheritDoc} */
     @Nullable @Override public String fileName() {
-        FileHandler fileHnd = findFileHandler(impl);
+        FileHandler fileHnd = findHandler(impl, FileHandler.class);
 
         if (fileHnd != null) {
             try {
@@ -425,35 +425,18 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
     }
 
     /**
-     * Returns first found file handler or {@code null} if that handler isn't configured.
+     * Returns first found handler of specified class type or {@code null} if that handler isn't configured.
      *
      * @param log Logger.
-     * @return First found file handler or {@code null} if that handler isn't configured.
+     * @param cls Class.
+     * @param <T> Class type.
+     * @return First found handler of specified class type or {@code null} if that handler isn't configured.
      */
-    private static FileHandler findFileHandler(Logger log) {
+    private static <T> T findHandler(Logger log, Class<T> cls) {
         while (log != null) {
             for (Handler hnd : log.getHandlers()) {
-                if (hnd instanceof FileHandler)
-                    return (FileHandler)hnd;
-            }
-
-            log = log.getParent();
-        }
-
-        return null;
-    }
-
-    /**
-     * Returns first found console handler or {@code null} if that handler isn't configured.
-     *
-     * @param log Logger.
-     * @return First found console handler or {@code null} if that handler isn't configured.
-     */
-    private static ConsoleHandler findConsoleHandler(Logger log) {
-        while (log != null) {
-            for (Handler hnd : log.getHandlers()) {
-                if (hnd instanceof ConsoleHandler)
-                    return (ConsoleHandler)hnd;
+                if (cls.isInstance(hnd))
+                    return (T)hnd;
             }
 
             log = log.getParent();
