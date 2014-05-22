@@ -1231,17 +1231,13 @@ public class GridGainEx {
             String ggHome = cfg.getGridGainHome();
 
             // Set GridGain home.
-            if (ggHome == null) {
+            if (ggHome == null)
                 ggHome = U.getGridGainHome();
-
-                U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
-            }
-            else {
+            else
                 // If user provided GRIDGAIN_HOME - set it as a system property.
                 U.setGridGainHome(ggHome);
 
-                U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
-            }
+            U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
 
             /*
              * Set up all defaults and perform all checks.

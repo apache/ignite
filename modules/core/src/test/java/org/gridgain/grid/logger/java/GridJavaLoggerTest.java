@@ -14,6 +14,8 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
+import java.util.*;
+
 /**
  * Java logger test.
  */
@@ -28,6 +30,8 @@ public class GridJavaLoggerTest extends TestCase {
         U.setWorkDirectory(null, U.getGridGainHome());
 
         log = new GridJavaLogger();
+
+        ((GridLoggerNodeIdAware)log).setNodeId(UUID.fromString("224ea4cd-f449-4dcb-869a-5317c63bd619"));
 
         if (log.isDebugEnabled())
             log.debug("This is 'debug' message.");

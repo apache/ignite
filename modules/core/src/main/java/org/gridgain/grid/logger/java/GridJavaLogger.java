@@ -75,9 +75,15 @@ import static org.gridgain.grid.GridSystemProperties.*;
  * logger in your task/job code. See {@link GridLoggerResource} annotation about logger
  * injection.
  */
-public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogger {
+public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogger, GridLoggerNodeIdAware {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Maximum size of log file. */
+    private static final int MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+    /** Maximum number of files to use by logger. */
+    private static final int MAX_BACKUP_IDX = 10;
 
     /** */
     private static final ThreadLocal<SimpleDateFormat> DATE_FORMATTER = new ThreadLocal<SimpleDateFormat>(){
@@ -135,6 +141,12 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
     /** Quiet flag. */
     private final boolean quiet;
 
+    /** Node ID. */
+    private volatile UUID nodeId;
+
+    /** Log file pattern. */
+    private volatile String filePtrn;
+
     /**
      * Creates new logger.
      */
@@ -163,7 +175,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
 
         if (init) {
             // Implementation has already been inited, passing NULL.
-            addConsoleAppenderIfNeeded(Level.INFO, null);
+            addDefaultHandlersIfNeeded(Level.INFO, null);
 
             quiet = quiet0;
         }
@@ -179,7 +191,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
     public GridJavaLogger(final Logger impl) {
         assert impl != null;
 
-        addConsoleAppenderIfNeeded(null, impl);
+        addDefaultHandlersIfNeeded(null, impl);
 
         quiet = quiet0;
     }
@@ -191,12 +203,12 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
     }
 
     /**
-     * Adds console appender when needed with some default logging settings.
+     * Adds default logger handlers when needed.
      *
      * @param logLevel Optional log level.
      * @param initImpl Optional log implementation.
      */
-    private void addConsoleAppenderIfNeeded(@Nullable Level logLevel, @Nullable Logger initImpl) {
+    private void addDefaultHandlersIfNeeded(@Nullable Level logLevel, @Nullable Logger initImpl) {
         if (inited) {
             if (initImpl != null)
                 // Do not init.
@@ -227,21 +239,16 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
                 return;
             }
 
-            Handler[] handlers = impl.getHandlers();
-
             if (Boolean.valueOf(System.getProperty(GG_CONSOLE_APPENDER, "true"))) {
-                // Remove default console handler.
+                Handler[] handlers = impl.getHandlers();
+
+                // Remove predefined default console handler.
                 if  (!F.isEmpty(handlers))
                     for (Handler h : handlers)
                         if (h instanceof ConsoleHandler)
                             impl.removeHandler(h);
 
-                try {
-                    addHandlers(impl);
-                }
-                catch (GridException e) {
-                    throw new RuntimeException("Failed to create logger", e);
-                }
+                addDefaultConsoleHandler(impl);
 
                 if (logLevel != null)
                     impl.setLevel(logLevel);
@@ -253,12 +260,11 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
     }
 
     /**
-     * Adds file handlers.
+     * Adds default console and file handlers.
      *
-     * @param log Logger
-     * @throws GridException If failed.
+     * @param log Logger.
      */
-    private static void addHandlers(Logger log) throws GridException {
+    private void addDefaultConsoleHandler(Logger log) {
         log.setLevel(Level.INFO);
 
         if (F.isEmpty(log.getHandlers())) {
@@ -269,25 +275,38 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
             consoleHnd.setLevel(Level.SEVERE);
 
             log.addHandler(consoleHnd);
+        }
+    }
 
-            try {
-                File workDir = U.resolveWorkDirectory("log", false);
+    /**
+     * Adds default console and file handlers.
+     *
+     * @param log Logger.
+     * @throws GridException If failed.
+     */
+    private void addDefaultFileHandler(Logger log) throws GridException {
+        // Skip if file handler has been already configured.
+        for (Handler hnd : impl.getHandlers())
+            if (hnd instanceof FileHandler)
+                return;
 
-                File logFile = new File(workDir, "gridgain.log");
+        try {
+            File workDir = U.resolveWorkDirectory("log", false);
 
-                String ptrn = logFile.getAbsolutePath().replace("gridgain.log", "gridgain-%u.%g.log");
+            String logFile = new File(workDir, "gridgain.log").getAbsolutePath();
 
-                FileHandler fileHnd = new FileHandler(ptrn, 10 * 1024 * 1024, 10);
+            filePtrn = logFile.replace("gridgain.log", "gridgain-" + U.id8(nodeId) + ".%g.log");
 
-                fileHnd.setLevel(Level.INFO);
+            FileHandler fileHnd = new FileHandler(filePtrn, MAX_FILE_SIZE, MAX_BACKUP_IDX);
 
-                fileHnd.setFormatter(DFLT_FORMATTER);
+            fileHnd.setLevel(Level.INFO);
 
-                log.addHandler(fileHnd);
-            }
-            catch (IOException e) {
-                throw new RuntimeException("Failed to configure default file logger.", e);
-            }
+            fileHnd.setFormatter(DFLT_FORMATTER);
+
+            log.addHandler(fileHnd);
+        }
+        catch (IOException e) {
+            throw new GridException("Failed to configure default file logger.", e);
         }
     }
 
@@ -357,6 +376,31 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
 
     /** {@inheritDoc} */
     @Nullable @Override public String fileName() {
-        return null;
+        return filePtrn;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setNodeId(UUID nodeId) {
+        A.notNull(nodeId, "nodeId");
+
+        if (this.nodeId == null) {
+            this.nodeId = nodeId;
+
+            synchronized (mux) {
+                if (nodeId != null) {
+                    try {
+                        addDefaultFileHandler(impl);
+                    }
+                    catch (GridException e) {
+                        throw new RuntimeException("Failed to create default file handler.", e);
+                    }
+                }
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID getNodeId() {
+        return nodeId;
     }
 }
