@@ -61,7 +61,7 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
 
     /** Authenticator. */
     private volatile Authenticator auth = new Authenticator() {
-        @Override public boolean authenticateNode(UUID nodeId, Map<String, Object> attrs) {
+        @Override public Object authenticateNode(UUID nodeId, Map<String, Object> attrs) {
             return false;
         }
     };
@@ -138,7 +138,7 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
         assert spiCtx != null;
 
         auth = new Authenticator() {
-            @Override public boolean authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException {
+            @Override public Object authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException {
                 return spiCtx.authenticateNode(nodeId, attrs);
             }
         };
@@ -692,7 +692,7 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
         }
 
         /** {@inheritDoc} */
-        @Override public boolean authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException {
+        @Override public Object authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException {
             return auth.authenticateNode(nodeId, attrs);
         }
 
@@ -724,6 +724,6 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
          * @return {@code True} if passed authentication.
          * @throws GridException If failed.
          */
-        public boolean authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException;
+        public Object authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException;
     }
 }

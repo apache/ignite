@@ -3229,7 +3229,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 else {
                     // Authenticate node first.
                     try {
-                        if (!getSpiContext().authenticateNode(node.id(), node.attributes())) {
+                        if (getSpiContext().authenticateNode(node.id(), node.attributes()) != null) {
                             // Node has not pass authentication.
                             LT.warn(log, null,
                                 "Authentication failed [nodeId=" + node.id() +

@@ -35,13 +35,13 @@ public class GridOsAuthenticationManager extends GridNoopManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public boolean authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException {
+    @Override public Object authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean authenticate(GridSecuritySubjectType subjType, byte[] subjId, @Nullable Object creds)
+    @Override public Object authenticate(GridSecuritySubjectType subjType, byte[] subjId, @Nullable Object creds)
         throws GridException {
-        return true;
+        return Boolean.TRUE;
     }
 }

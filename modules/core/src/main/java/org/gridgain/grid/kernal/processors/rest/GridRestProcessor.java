@@ -271,7 +271,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             return;
 
         // Authenticate client if invalid session.
-        if (!ctx.auth().authenticate(REMOTE_CLIENT, clientIdBytes, req.credentials()))
+        if (ctx.auth().authenticate(REMOTE_CLIENT, clientIdBytes, req.credentials()) != null)
             if (req.credentials() == null)
                 throw new GridException("Failed to authenticate remote client (secure session SPI not set?): " + req);
             else

@@ -36,7 +36,7 @@ public interface GridAuthenticationManager extends GridManager {
      * @return {@code True} if succeeded, {@code false} otherwise.
      * @throws GridException If error occurred.
      */
-    public boolean authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException;
+    public Object authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException;
 
     /**
      * Authenticates subject via underlying {@link GridAuthenticationSpi}s.
@@ -47,6 +47,6 @@ public interface GridAuthenticationManager extends GridManager {
      * @return {@code True} if succeeded, {@code false} otherwise.
      * @throws GridException If error occurred.
      */
-    public boolean authenticate(GridSecuritySubjectType subjType, byte[] subjId,
+    public Object authenticate(GridSecuritySubjectType subjType, byte[] subjId,
         @Nullable Object creds) throws GridException;
 }

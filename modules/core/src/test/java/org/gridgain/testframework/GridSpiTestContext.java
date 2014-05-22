@@ -474,9 +474,9 @@ public class GridSpiTestContext implements GridSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException {
+    @Override public Object authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException {
         // Force authentication always succeed.
-        return true;
+        return Boolean.TRUE;
     }
 
     /** {@inheritDoc} */
