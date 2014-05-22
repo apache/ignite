@@ -157,6 +157,8 @@ public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridCommonAbstract
 
         GridGgfsHadoopIpcIo io = null;
 
+        System.out.println("CACHE: " + cache);
+
         for (String key : cache.keySet()) {
             if (key.contains("10500")) {
                 io = cache.get(key);
