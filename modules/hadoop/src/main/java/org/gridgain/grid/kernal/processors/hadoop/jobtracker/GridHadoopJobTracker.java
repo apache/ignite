@@ -228,12 +228,12 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             if (meta == null)
                 return null;
 
-            if (log.isDebugEnabled())
-                log.debug("Got job metadata for status check [locNodeId=" + ctx.localNodeId() + ", meta=" + meta + ']');
+            if (log.isTraceEnabled())
+                log.trace("Got job metadata for status check [locNodeId=" + ctx.localNodeId() + ", meta=" + meta + ']');
 
             if (meta.phase() == PHASE_COMPLETE) {
-                if (log.isDebugEnabled())
-                    log.debug("Job is complete, returning finished future: " + jobId);
+                if (log.isTraceEnabled())
+                    log.trace("Job is complete, returning finished future: " + jobId);
 
                 return new GridFinishedFutureEx<>(jobId);
             }
@@ -244,8 +244,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             // Get meta from cache one more time to close the window.
             meta = jobMetaPrj.get(jobId);
 
-            if (log.isDebugEnabled())
-                log.debug("Re-checking job metadata [locNodeId=" + ctx.localNodeId() + ", meta=" + meta + ']');
+            if (log.isTraceEnabled())
+                log.trace("Re-checking job metadata [locNodeId=" + ctx.localNodeId() + ", meta=" + meta + ']');
 
             if (meta == null) {
                 fut.onDone();
@@ -474,7 +474,17 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             GridHadoopMapReducePlan plan = meta.mapReducePlan();
 
-            ctx.taskExecutor().onJobStateChanged(job, meta);
+            try {
+                ctx.taskExecutor().onJobStateChanged(job, meta);
+            }
+            catch (GridException e) {
+                U.error(log, "Failed to process job state changed callback (will fail the job) " +
+                    "[locNodeId=" + locNodeId + ", jobId=" + jobId + ", meta=" + meta + ']', e);
+
+                jobMetaPrj.transformAsync(jobId, new CancelJobClosure(e));
+
+                continue;
+            }
 
             switch (meta.phase()) {
                 case PHASE_MAP: {
@@ -1118,6 +1128,13 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         private Throwable err;
 
         /**
+         * @param err Fail cause.
+         */
+        private CancelJobClosure(Throwable err) {
+            this.err = err;
+        }
+
+        /**
          * @param splits Splits to remove.
          * @param rdc Reducers to remove.
          */
@@ -1145,13 +1162,15 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             Collection<Integer> rdcCp = new HashSet<>(cp.pendingReducers());
 
-            rdcCp.removeAll(rdc);
+            if (rdc != null)
+                rdcCp.removeAll(rdc);
 
             cp.pendingReducers(rdcCp);
 
             Collection<GridHadoopInputSplit> splitsCp = new HashSet<>(cp.pendingSplits());
 
-            splitsCp.removeAll(splits);
+            if (splits != null)
+                splitsCp.removeAll(splits);
 
             cp.pendingSplits(splitsCp);
 

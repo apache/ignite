@@ -27,41 +27,32 @@
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2
           http://maven.apache.org/xsd/assembly-1.1.2.xsd">
-    <id>hadoop</id>
-
-    <includeBaseDirectory>false</includeBaseDirectory>
+    <id>dependencies</id>
 
     <formats>
         <format>dir</format>
     </formats>
 
-    <componentDescriptors>
-        <componentDescriptor>assembly/release-base.xml</componentDescriptor>
-    </componentDescriptors>
+    <includeBaseDirectory>false</includeBaseDirectory>
+
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>/</outputDirectory>
+            <useTransitiveDependencies>false</useTransitiveDependencies>
+            <excludes>
+                <exclude>org.apache.ant:ant</exclude>
+                <exclude>org.apache.tomcat:catalina</exclude>
+                <exclude>jboss:*</exclude>
+                <exclude>org.apache.hadoop:*</exclude>
+                <exclude>org.apache.avro:avro</exclude>
+            </excludes>
+        </dependencySet>
+    </dependencySets>
 
     <fileSets>
         <fileSet>
-            <directory>examples</directory>
-            <outputDirectory>/examples</outputDirectory>
-            <includes>
-                <include>config/**</include>
-                <include>src/**</include>
-            </includes>
-            <excludes>
-                <exclude>**/package.html</exclude>
-                <exclude>pom-standalone.xml</exclude>
-                <exclude>src/test/**</exclude>
-                <exclude>src/main/java/org/gridgain/examples/datagrid/**</exclude>
-                <exclude>src/**/ClientCacheExample*</exclude>
-                <exclude>src/**/scala/**/ScalarCache*</exclude>
-                <exclude>src/**/scala/**/ScalarPopularNumbersRealTimeExample*</exclude>
-                <exclude>src/**/scala/**/ScalarSnowflakeSchemaExample*</exclude>
-                <exclude>src/main/java/org/gridgain/examples/streaming/**</exclude>
-                <exclude>config/example-cache*</exclude>
-                <exclude>config/hibernate/**</exclude>
-                <exclude>config/example-streamer*</exclude>
-                <exclude>config/servlet/**</exclude>
-            </excludes>
+            <directory>assembly/libs</directory>
+            <outputDirectory>/</outputDirectory>
         </fileSet>
     </fileSets>
 </assembly>

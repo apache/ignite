@@ -434,6 +434,9 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
 
         collectUpdatesAndSend(true); // With flush.
 
+        if (log.isDebugEnabled())
+            log.debug("Finished sending collected updates to remote reducers: " + job.id());
+
         GridCompoundFuture fut = new GridCompoundFuture<>();
 
         for (GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapterEx<?>> tup : sentMsgs.values())

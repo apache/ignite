@@ -15,6 +15,7 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.logger.java.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.util.ipc.shmem.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
 
 import java.io.*;
@@ -67,6 +68,8 @@ public class GridHadoopExternalProcessStarter {
      * @throws Exception
      */
     public void run() throws Exception {
+        U.setWorkDirectory(args.workDir, U.getGridGainHome());
+
         initializeStreams();
 
         ExecutorService msgExecSvc = Executors.newFixedThreadPool(
@@ -254,6 +257,15 @@ public class GridHadoopExternalProcessStarter {
 
                     break;
                 }
+
+                case "-wd": {
+                    if (i == processArgs.length - 1)
+                        throw new Exception("Missing work folder name for '-wd' parameter");
+
+                    args.workDir = processArgs[++i];
+
+                    break;
+                }
             }
         }
 
@@ -284,5 +296,8 @@ public class GridHadoopExternalProcessStarter {
 
         /** Output folder. */
         private String out;
+
+        /** Work directory. */
+        private String workDir;
     }
 }
