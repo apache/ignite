@@ -22,6 +22,8 @@ import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Demonstrates event consume API that allows to register event listeners on remote nodes.
+ * Note that grid events are disabled by default and must be specifically enabled,
+ * just like in {@code examples/config/example-compute.xml} file.
  * <p>
  * Remote nodes should always be started with configuration: {@code 'ggstart.sh examples/config/example-compute.xml'}.
  * <p>
