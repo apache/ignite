@@ -233,7 +233,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
             if (isConfigured()) {
                 boolean consoleHndFound = findConsoleHandler(impl) != null;
 
-                // User configured console appender, but log is quiet.
+                // User configured console appender, thus log is not quiet.
                 quiet0 = !consoleHndFound;
                 inited = true;
 
