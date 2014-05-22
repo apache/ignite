@@ -49,10 +49,10 @@ public class GridHadoopMultimapSelftest extends GridCommonAbstractTest {
         job.setMapOutputKeyClass(IntWritable.class);
         job.setMapOutputValueClass(IntWritable.class);
 
-        GridHadoopMultimap m = new GridHadoopMultimap(new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 10),
+        GridHadoopHashMultimap m = new GridHadoopHashMultimap(new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 10),
             new GridHadoopDefaultJobInfo(job.getConfiguration())), mem, mapSize);
 
-        GridHadoopMultimap.Adder a = m.startAdding();
+        GridHadoopHashMultimap.Adder a = m.startAdding();
 
         Multimap<Integer, Integer> mm = ArrayListMultimap.create();
         Multimap<Integer, Integer> vis = ArrayListMultimap.create();
@@ -86,7 +86,7 @@ public class GridHadoopMultimapSelftest extends GridCommonAbstractTest {
         assertEquals(0, mem.allocatedSize());
     }
 
-    private void check(GridHadoopMultimap m, Multimap<Integer, Integer> mm,
+    private void check(GridHadoopHashMultimap m, Multimap<Integer, Integer> mm,
         final Multimap<Integer, Integer> vis) throws Exception {
         final GridHadoopTaskInput in = m.input();
 
@@ -125,7 +125,7 @@ public class GridHadoopMultimapSelftest extends GridCommonAbstractTest {
 
         final GridUnsafeDataInput dataInput = new GridUnsafeDataInput();
 
-        m.visit(false, new GridHadoopMultimap.Visitor() {
+        m.visit(false, new GridHadoopHashMultimap.Visitor() {
             /** */
             IntWritable key = new IntWritable();
 
@@ -176,7 +176,7 @@ public class GridHadoopMultimapSelftest extends GridCommonAbstractTest {
             job.setMapOutputKeyClass(IntWritable.class);
             job.setMapOutputValueClass(IntWritable.class);
 
-            final GridHadoopMultimap m = new GridHadoopMultimap(new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 10),
+            final GridHadoopHashMultimap m = new GridHadoopHashMultimap(new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 10),
                 new GridHadoopDefaultJobInfo(job.getConfiguration())), mem, 16);
 
             final ConcurrentMap<Integer, Collection<Integer>> mm = new ConcurrentHashMap<>();
@@ -192,7 +192,7 @@ public class GridHadoopMultimapSelftest extends GridCommonAbstractTest {
                     IntWritable key = new IntWritable();
                     IntWritable val = new IntWritable();
 
-                    GridHadoopMultimap.Adder a = m.startAdding();
+                    GridHadoopHashMultimap.Adder a = m.startAdding();
 
                     for (int i = 0; i < 50000; i++) {
                         int k = rnd.nextInt(32000);
