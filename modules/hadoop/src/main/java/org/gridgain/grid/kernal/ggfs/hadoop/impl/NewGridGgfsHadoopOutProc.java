@@ -108,9 +108,9 @@ public class NewGridGgfsHadoopOutProc implements NewGridGgfsHadoopEx, GridGgfsHa
      */
     private NewGridGgfsHadoopOutProc(String host, int port, boolean shmem, Log log) throws IOException {
         assert host != null && !shmem || host == null && shmem :
-            "Invalid arguments [host=" + host + ", port=" + port + ", shmme=" + shmem + ']';
+            "Invalid arguments [host=" + host + ", port=" + port + ", shmem=" + shmem + ']';
 
-        String endpoint = host != null ? host + ":" + port : "shmem";
+        String endpoint = host != null ? host + ":" + port : "shmem:" + port;
 
         this.log = log;
 
