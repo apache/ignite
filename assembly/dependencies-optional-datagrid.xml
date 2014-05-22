@@ -43,6 +43,8 @@
                 <exclude>org.gridgain:gridgain-core</exclude>
                 <exclude>org.gridgain:gridgain-spring</exclude>
                 <exclude>org.gridgain:gridgain-tools</exclude>
+                <exclude>org.gridgain:gridgain-extdata-p2p</exclude>
+                <exclude>org.gridgain:gridgain-extdata-uri</exclude>
                 <exclude>org.gridgain:gridgain-visor-console</exclude>
                 <exclude>org.gridgain:gridgain-hadoop</exclude>
                 <exclude>org.gridgain:gridgain-indexing</exclude>
@@ -50,6 +52,13 @@
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
                 <fileSets>
+                    <fileSet>
+                        <directory>${basedir}</directory>
+                        <outputDirectory>/</outputDirectory>
+                        <includes>
+                            <include>readme.txt</include>
+                        </includes>
+                    </fileSet>
                     <fileSet>
                         <directory>target/libs</directory>
                         <outputDirectory>/</outputDirectory>

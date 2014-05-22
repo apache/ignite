@@ -551,8 +551,6 @@
                         <phase>package</phase>
                         <configuration>
                             <target>
-                                <mkdir dir="target/release-package/libs/ext"/>
-
                                 <replace token="@sh.file.version" value="${gridgain.version}">
                                     <fileset dir="target/release-package/bin">
                                         <include name="**/*.sh"/>

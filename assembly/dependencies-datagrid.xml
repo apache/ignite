@@ -45,6 +45,13 @@
                 <includeModuleDirectory>true</includeModuleDirectory>
                 <fileSets>
                     <fileSet>
+                        <directory>${basedir}</directory>
+                        <outputDirectory>/</outputDirectory>
+                        <includes>
+                            <include>readme.txt</include>
+                        </includes>
+                    </fileSet>
+                    <fileSet>
                         <directory>target/libs</directory>
                         <outputDirectory>/</outputDirectory>
                     </fileSet>
