@@ -61,7 +61,6 @@
                 <exclude>config/hibernate/**</exclude>
                 <exclude>config/hadoop/**</exclude>
                 <exclude>config/example-ggfs*</exclude>
-                <exclude>clients/**</exclude>
             </excludes>
         </fileSet>
     </fileSets>
