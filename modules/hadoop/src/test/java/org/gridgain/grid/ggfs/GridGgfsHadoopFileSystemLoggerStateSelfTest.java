@@ -106,6 +106,9 @@ public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridCommonAbstr
         cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
         cfg.setGgfsConfiguration(ggfsCfg);
 
+        cfg.setLocalHost("127.0.0.1");
+        cfg.setRestEnabled(false);
+
         Grid g = G.start(cfg);
 
         ggfs = (GridGgfsEx)g.ggfs("ggfs");

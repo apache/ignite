@@ -32,7 +32,7 @@ public class GridGgfsHadoopUtils {
      * @return String value.
      */
     public static String parameter(Configuration cfg, String name, String authority, String dflt) {
-        return cfg.get(String.format(name, authority), dflt);
+        return cfg.get(String.format(name, authority != null ? authority : ""), dflt);
     }
 
     /**
@@ -46,7 +46,7 @@ public class GridGgfsHadoopUtils {
      * @throws IOException In case of parse exception.
      */
     public static int parameter(Configuration cfg, String name, String authority, int dflt) throws IOException {
-        String name0 = String.format(name, authority);
+        String name0 = String.format(name, authority != null ? authority : "");
 
         try {
             return cfg.getInt(name0, dflt);
@@ -66,7 +66,7 @@ public class GridGgfsHadoopUtils {
      * @return Boolean value.
      */
     public static boolean parameter(Configuration cfg, String name, String authority, boolean dflt) {
-        return cfg.getBoolean(String.format(name, authority), dflt);
+        return cfg.getBoolean(String.format(name, authority != null ? authority : ""), dflt);
     }
 
     /**
