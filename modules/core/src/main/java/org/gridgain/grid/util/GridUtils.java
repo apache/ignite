@@ -55,6 +55,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 import java.util.jar.*;
+import java.util.logging.*;
 import java.util.regex.*;
 import java.util.zip.*;
 
@@ -7379,6 +7380,48 @@ public abstract class GridUtils {
         }
         catch (Exception e) {
             throw new GridException("Failed to remove previously added no-op logger for Log4j.", e);
+        }
+    }
+
+    /**
+     * Adds no-op console handler for root java logger.
+     *
+     * @return Removed handlers.
+     */
+    public static Collection<Handler> addJavaNoOpLogger() {
+        Collection<Handler> savedHnds = new ArrayList<>();
+
+        Logger log = Logger.getLogger("");
+
+        for (Handler h : log.getHandlers()) {
+            log.removeHandler(h);
+
+            savedHnds.add(h);
+        }
+
+        ConsoleHandler hnd = new ConsoleHandler();
+
+        hnd.setLevel(Level.OFF);
+
+        log.addHandler(hnd);
+
+        return savedHnds;
+    }
+
+    /**
+     * Removes previously added no-op handler for root java logger.
+     *
+     * @param rmvHnds Previously removed handlers.
+     */
+    public static void removeJavaNoOpLogger(Collection<Handler> rmvHnds) {
+        Logger log = Logger.getLogger("");
+
+        for (Handler h : log.getHandlers())
+            log.removeHandler(h);
+
+        if (!F.isEmpty(rmvHnds)) {
+            for (Handler h : rmvHnds)
+                log.addHandler(h);
         }
     }
 

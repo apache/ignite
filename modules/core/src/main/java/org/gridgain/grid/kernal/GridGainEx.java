@@ -67,6 +67,7 @@ import java.util.*;
 import java.util.Map.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.logging.*;
 
 import static org.gridgain.grid.GridConfiguration.*;
 import static org.gridgain.grid.GridGainState.*;
@@ -659,8 +660,12 @@ public class GridGainEx {
 
         GridBiTuple<Object, Object> t = null;
 
+        Collection<Handler> savedHnds = null;
+
         if (isLog4jUsed)
             t = U.addLog4jNoOpLogger();
+        else
+            savedHnds = U.addJavaNoOpLogger();
 
         GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> cfgMap;
 
@@ -670,6 +675,9 @@ public class GridGainEx {
         finally {
             if (isLog4jUsed && t != null)
                 U.removeLog4jNoOpLogger(t);
+
+            if (!isLog4jUsed)
+                U.removeJavaNoOpLogger(savedHnds);
         }
 
         List<GridNamedInstance> grids = new ArrayList<>(cfgMap.size());
