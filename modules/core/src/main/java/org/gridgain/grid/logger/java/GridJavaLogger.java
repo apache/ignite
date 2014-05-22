@@ -231,7 +231,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
             boolean quiet = Boolean.valueOf(System.getProperty(GG_QUIET, "true"));
 
             if (isConfigured()) {
-                boolean consoleHndFound = findFileHandler(impl) != null;
+                boolean consoleHndFound = findConsoleHandler(impl) != null;
 
                 // User configured console appender, but log is quiet.
                 quiet0 = !consoleHndFound;
@@ -435,6 +435,25 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
             for (Handler hnd : log.getHandlers()) {
                 if (hnd instanceof FileHandler)
                     return (FileHandler)hnd;
+            }
+
+            log = log.getParent();
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns first found console handler or {@code null} if that handler isn't configured.
+     *
+     * @param log Logger.
+     * @return First found console handler or {@code null} if that handler isn't configured.
+     */
+    private static ConsoleHandler findConsoleHandler(Logger log) {
+        while (log != null) {
+            for (Handler hnd : log.getHandlers()) {
+                if (hnd instanceof ConsoleHandler)
+                    return (ConsoleHandler)hnd;
             }
 
             log = log.getParent();
