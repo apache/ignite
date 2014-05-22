@@ -673,13 +673,13 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             GridRestProcessorAdapter tcpRest = createProcessorNoOpIfFailed(ctx, REST_TCP, !cfg.isRestEnabled());
 
-            tcpRest.tcp(true);
+            tcpRest.type(GridRestProtocolType.TCP);
 
             startProcessor(ctx, tcpRest, attrs);
 
             GridRestProcessorAdapter httpRest = createProcessorNoOpIfFailed(ctx, REST_HTTP, !cfg.isRestEnabled());
 
-            httpRest.tcp(false);
+            httpRest.type(GridRestProtocolType.HTTP);
 
             startProcessor(ctx, httpRest, attrs);
 

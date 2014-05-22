@@ -21,7 +21,7 @@ import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
 /**
  * Tcp rest processor implementation.
  */
-public class GridTcpRestProcessor extends GridRestProcessor {
+public class GridTcpRestProcessor extends GridRestProcessorAdapter {
     /**
      * @param ctx Context.
      */

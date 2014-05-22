@@ -381,10 +381,20 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
         else if (comp instanceof GridRestProcessorAdapter) {
             GridRestProcessorAdapter restProc = (GridRestProcessorAdapter)comp;
 
-            if (restProc.tcp())
-                tcpRestProc = restProc;
-            else
-                httpRestProc = restProc;
+            switch (restProc.type()) {
+                case HTTP:
+                    httpRestProc = restProc;
+
+                    break;
+
+                case TCP:
+                    tcpRestProc = restProc;
+
+                    break;
+
+                default:
+                    assert false : "Invalid protocol type: " + restProc.type();
+            }
         }
         else if (comp instanceof GridDataLoaderProcessor)
             dataLdrProc = (GridDataLoaderProcessor)comp;

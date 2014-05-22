@@ -21,7 +21,7 @@ import org.gridgain.grid.kernal.processors.rest.protocols.http.jetty.*;
 /**
  * Http rest processor implementation.
  */
-public class GridHttpRestProcessor extends GridRestProcessor {
+public class GridHttpRestProcessor extends GridRestProcessorAdapter {
     /**
      * @param ctx Context.
      */
