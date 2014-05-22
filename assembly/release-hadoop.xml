@@ -61,7 +61,6 @@
                 <exclude>config/hibernate/**</exclude>
                 <exclude>config/example-streamer*</exclude>
                 <exclude>config/servlet/**</exclude>
-                <exclude>clients/**</exclude>
             </excludes>
         </fileSet>
     </fileSets>
