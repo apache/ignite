@@ -89,7 +89,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
     private static final ThreadLocal<SimpleDateFormat> DATE_FORMATTER = new ThreadLocal<SimpleDateFormat>(){
         /** {@inheritDoc} */
         @Override protected SimpleDateFormat initialValue() {
-            return new SimpleDateFormat("hh:mm:ss.SSS");
+            return new SimpleDateFormat("HH:mm:ss.SSS");
         }
     };
 
