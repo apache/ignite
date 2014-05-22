@@ -492,6 +492,8 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
         List<String> cmd = new ArrayList<>();
 
+        File workDir = U.resolveWorkDirectory("", false);
+
         cmd.add(javaCmd);
         cmd.addAll(startMeta.jvmOptions());
         cmd.add("-cp");
@@ -512,10 +514,11 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
         cmd.add("-out");
         cmd.add(outFldr);
         cmd.add("-wd");
-        cmd.add(U.resolveWorkDirectory("", false).getAbsolutePath());
+        cmd.add(workDir.getAbsolutePath());
 
         return new ProcessBuilder(cmd)
             .redirectErrorStream(true)
+            .directory(workDir)
             .start();
     }
 
