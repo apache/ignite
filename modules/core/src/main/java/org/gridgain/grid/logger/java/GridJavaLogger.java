@@ -89,7 +89,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
     private static final ThreadLocal<SimpleDateFormat> DATE_FORMATTER = new ThreadLocal<SimpleDateFormat>(){
         /** {@inheritDoc} */
         @Override protected SimpleDateFormat initialValue() {
-            return new SimpleDateFormat("HH:mm:ss.SSS");
+            return new SimpleDateFormat("HH:mm:ss,SSS");
         }
     };
 
@@ -121,7 +121,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
                 threadName + "][" +
                 logName + "] " +
                 record.getMessage() +
-                (ex == null ? "\n" : ex + '\n');
+                (ex == null ? "\n" : ex);
         }
     };
 
@@ -282,7 +282,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
      * Adds default console and file handlers.
      *
      * @param log Logger.
-     * @throws GridException If failed.
+     * @throws GridException If failed to configure logger.
      */
     private void addDefaultFileHandler(Logger log) throws GridException {
         // Skip if file handler has been already configured.
@@ -306,7 +306,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
             log.addHandler(fileHnd);
         }
         catch (IOException e) {
-            throw new GridException("Failed to configure default file logger.", e);
+            warning("Failed to configure default file logger.", e);
         }
     }
 

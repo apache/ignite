@@ -31,7 +31,7 @@ public class GridJavaLoggerTest extends TestCase {
 
         log = new GridJavaLogger();
 
-        ((GridLoggerNodeIdAware)log).setNodeId(UUID.fromString("224ea4cd-f449-4dcb-869a-5317c63bd619"));
+        ((GridLoggerNodeIdAware)log).setNodeId(UUID.fromString("00000000-1111-2222-3333-444444444444"));
 
         if (log.isDebugEnabled())
             log.debug("This is 'debug' message.");
