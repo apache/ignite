@@ -136,7 +136,7 @@ public class GridGgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
      */
     protected URI getFileSystemURI(int grid) {
         try {
-            return new URI("ggfs://shmem:" + (GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + grid));
+            return new URI("ggfs://127.0.0.1:" + (GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + grid));
         }
         catch (URISyntaxException e) {
             throw new RuntimeException(e);
@@ -145,7 +145,6 @@ public class GridGgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testContentsConsistency() throws Exception {
-
         try (FileSystem fs = FileSystem.get(getFileSystemURI(0), getFileSystemConfig())) {
             Collection<GridBiTuple<String, Long>> files = F.asList(
                 F.t("/dir1/dir2/file1", 1024L),

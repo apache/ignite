@@ -1295,7 +1295,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testListStatus() throws Exception {
-        Path ggfsHome = new Path("ggfs://localhost/");
+        Path ggfsHome = new Path("ggfs://127.0.0.1:10500/");
 
         // Test listing of an empty directory.
         Path dir = new Path(ggfsHome, "dir");
@@ -1472,7 +1472,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
 
     /** @throws Exception If failed. */
     public void testGetFileBlockLocations() throws Exception {
-        Path ggfsHome = new Path("ggfs://localhost/");
+        Path ggfsHome = new Path("ggfs://127.0.0.1:10500/");
 
         Path file = new Path(ggfsHome, "someFile");
 
@@ -1517,7 +1517,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
     public void testZeroReplicationFactor() throws Exception {
         // This test doesn't make sense for any mode except of PRIMARY.
         if (mode == PRIMARY) {
-            Path ggfsHome = new Path("ggfs://localhost/");
+            Path ggfsHome = new Path("ggfs://127.0.0.1:10500/");
 
             Path file = new Path(ggfsHome, "someFile");
 
@@ -1547,7 +1547,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testMultithreadedCreate() throws Exception {
-        Path dir = new Path(new Path("ggfs://localhost/"), "/dir");
+        Path dir = new Path(new Path("ggfs://127.0.0.1:10500/"), "/dir");
 
         assert fs.mkdirs(dir);
 
@@ -1631,7 +1631,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testMultithreadedAppend() throws Exception {
-        Path dir = new Path(new Path("ggfs://localhost/"), "/dir");
+        Path dir = new Path(new Path("ggfs://127.0.0.1:10500/"), "/dir");
 
         assert fs.mkdirs(dir);
 
@@ -1720,7 +1720,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
         for (int i = 0; i < dataChunk.length; i++)
             dataChunk[i] = (byte)i;
 
-        Path dir = new Path(new Path("ggfs://localhost/"), "/dir");
+        Path dir = new Path(new Path("ggfs://127.0.0.1:10500/"), "/dir");
 
         assert fs.mkdirs(dir);
 
@@ -1786,7 +1786,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testMultithreadedMkdirs() throws Exception {
-        final Path dir = new Path(new Path("ggfs://localhost/"), "/dir");
+        final Path dir = new Path(new Path("ggfs://127.0.0.1:10500/"), "/dir");
 
         assert fs.mkdirs(dir);
 
@@ -1865,7 +1865,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      */
     @SuppressWarnings("TooBroadScope")
     public void testMultithreadedDelete() throws Exception {
-        final Path dir = new Path(new Path("ggfs://localhost/"), "/dir");
+        final Path dir = new Path(new Path("ggfs://127.0.0.1:10500/"), "/dir");
 
         assert fs.mkdirs(dir);
 
@@ -1964,7 +1964,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      */
     @SuppressWarnings("deprecation")
     public void _testFileSystem() throws Exception {
-        Path ggfsHome = new Path("ggfs://localhost/");
+        Path ggfsHome = new Path("ggfs://127.0.0.1:10500/");
         Path locHome = new Path("file:///" + U.getGridGainHome() + "/");
 
         FileSystem loc = local(locHome);
@@ -2004,7 +2004,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      * @throws Exception If error occurs.
      */
     public void testClientReconnect() throws Exception {
-        Path filePath = new Path("ggfs://localhost/file1");
+        Path filePath = new Path("ggfs://127.0.0.1:10500/file1");
 
         final FSDataOutputStream s = fs.create(filePath); // Open the stream before stopping GGFS.
 
@@ -2013,7 +2013,8 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
 
             startNodes(); // Start server again.
 
-            assertTrue(fs.mkdirs(new Path("ggfs://localhost/dir1/dir2"))); // Check that client is again operational.
+            // Check that client is again operational.
+            assertTrue(fs.mkdirs(new Path("ggfs://127.0.0.1:10500/dir1/dir2")));
 
             // However, the streams, opened before disconnect, should not be valid.
             GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -2088,7 +2089,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      */
     private void checkConsistency(int createBufSize, int writeCntsInCreate, int openAfterCreateBufSize,
         int appendBufSize, int writeCntsInAppend, int openAfterAppendBufSize) throws Exception {
-        final Path ggfsHome = new Path("ggfs://localhost/");
+        final Path ggfsHome = new Path("ggfs://127.0.0.1:10500/");
 
         Path file = new Path(ggfsHome, "/someDir/someInnerDir/someFile");
 
