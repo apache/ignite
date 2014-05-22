@@ -12,7 +12,6 @@ package org.gridgain.grid.spi.securesession;
 import org.gridgain.grid.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.securesession.noop.*;
-import org.gridgain.grid.spi.securesession.rememberme.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -30,7 +29,7 @@ import org.jetbrains.annotations.*;
  *     {@link GridNoopSecureSessionSpi} - permits any request.
  * </li>
  * <li>
- *     {@link GridRememberMeSecureSessionSpi} -
+ *     {@code GridRememberMeSecureSessionSpi} -
  *     validates client session with remember-me session token.
  * </li>
  * </ul>

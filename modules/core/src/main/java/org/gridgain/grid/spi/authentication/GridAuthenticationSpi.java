@@ -11,9 +11,7 @@ package org.gridgain.grid.spi.authentication;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.spi.authentication.jaas.*;
 import org.gridgain.grid.spi.authentication.noop.*;
-import org.gridgain.grid.spi.authentication.passcode.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -30,11 +28,11 @@ import org.jetbrains.annotations.*;
  *     {@link GridNoopAuthenticationSpi} - permits any request.
  * </li>
  * <li>
- *     {@link GridPasscodeAuthenticationSpi} -
+ *     {@code GridPasscodeAuthenticationSpi} -
  *     validates authentication with passcode phrase.
  * </li>
  * <li>
- *     {@link GridJaasAuthenticationSpi} -
+ *     {@code GridJaasAuthenticationSpi} -
  *     validates authentication with JAAS Java extension.
  * </li>
  * </ul>
