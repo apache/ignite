@@ -197,17 +197,15 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
             };
         }
 
-        final GridFuture<GridRestResponse> lastFut = ses.addMeta(GridNioSessionMetaKey.LAST_FUTURE.ordinal(), null);
+        GridFuture<GridRestResponse> lastFut = ses.addMeta(GridNioSessionMetaKey.LAST_FUTURE.ordinal(), null);
 
         if (lastFut == null)
-            ses.addMeta(GridNioSessionMetaKey.LAST_FUTURE.ordinal(),
-                    new GridEmbeddedFuture<>(ctx, new GridFinishedFuture<GridRestResponse>(ctx), lsnr));
-        else {
-            GridFuture oldFut = ses.addMeta(GridNioSessionMetaKey.LAST_FUTURE.ordinal(),
-                new GridEmbeddedFuture<>(ctx, lastFut, lsnr));
+            lastFut = new GridFinishedFuture<>(ctx);
 
-            assert oldFut == null;
-        }
+        GridFuture oldFut = ses.addMeta(GridNioSessionMetaKey.LAST_FUTURE.ordinal(),
+            new GridEmbeddedFuture<>(ctx, lastFut, lsnr));
+
+        assert oldFut == null;
     }
 
     /**
