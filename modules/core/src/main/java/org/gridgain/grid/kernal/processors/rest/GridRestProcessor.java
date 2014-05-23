@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.rest;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.managers.securesession.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
@@ -23,6 +24,7 @@ import org.gridgain.grid.kernal.processors.rest.protocols.http.jetty.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -49,6 +51,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
+    private final GridSecurityInterceptor securityInterceptor;
+
     /** Protocol handler. */
     private final GridRestProtocolHandler protoHnd = new GridRestProtocolHandler() {
         @Override public GridRestResponse handle(GridRestRequest req) throws GridException {
@@ -69,10 +73,14 @@ public class GridRestProcessor extends GridProcessorAdapter {
             if (log.isDebugEnabled())
                 log.debug("Received request from client: " + req);
 
+            final Object securitySubjCtx;
+
             try {
-                authenticate(req);
+                securitySubjCtx = authenticate(req);
+
+                checkPermissions(req, securitySubjCtx);
             }
-            catch (GridException e) {
+            catch (GridException | GridRuntimeException e) {
                 return new GridFinishedFuture<>(ctx, new GridRestResponse(STATUS_AUTH_FAILED,
                     e.getMessage()));
             }
@@ -107,7 +115,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                     if (ctx.isEnterprise()) {
                         try {
-                            res.sessionTokenBytes(updateSessionToken(req));
+                            res.sessionTokenBytes(updateSessionToken(req, securitySubjCtx));
                         }
                         catch (GridException e) {
                             U.warn(log, "Cannot update response session token: " + e.getMessage());
@@ -121,6 +129,69 @@ public class GridRestProcessor extends GridProcessorAdapter {
             });
         }
     };
+
+    /**
+     * Checks security permissions.
+     *
+     * @param req Request to validate.
+     * @param securitySubjCtx Security subject context.
+     */
+    private void checkPermissions(GridRestRequest req, Object securitySubjCtx) {
+        if (securityInterceptor != null) {
+            GridSecurityOperation op = null;
+            String cacheName = null;
+
+            switch (req.command()) {
+                case CACHE_GET:
+                case CACHE_GET_ALL:
+                    op = GridSecurityOperation.READ;
+                    cacheName = ((GridRestCacheRequest)req).cacheName();
+
+                    break;
+
+                case CACHE_PUT:
+                case CACHE_ADD:
+                case CACHE_PUT_ALL:
+                case CACHE_REPLACE:
+                case CACHE_INCREMENT:
+                case CACHE_DECREMENT:
+                case CACHE_CAS:
+                case CACHE_APPEND:
+                case CACHE_PREPEND:
+                    op = GridSecurityOperation.PUT;
+                    cacheName = ((GridRestCacheRequest)req).cacheName();
+
+                    break;
+
+                case CACHE_REMOVE:
+                case CACHE_REMOVE_ALL:
+                    op = GridSecurityOperation.REMOVE;
+                    cacheName = ((GridRestCacheRequest)req).cacheName();
+
+                    break;
+
+                case EXE:
+                case RESULT:
+                    op = GridSecurityOperation.EXECUTE;
+                    break;
+
+                case VERSION:
+                case LOG:
+                case NOOP:
+                case QUIT:
+                case CACHE_METRICS:
+                case TOPOLOGY:
+                case NODE:
+                    // No security check here.
+                    return;
+            }
+
+            GridSecurityContext sCtx = new GridSecurityContextImpl(Collections.singletonList(op),
+                cacheName, securitySubjCtx);
+
+            securityInterceptor.authorize(sCtx);
+        }
+    }
 
     /**
      * Applies {@link GridClientMessageInterceptor} from {@link GridConfiguration#getClientMessageInterceptor()}
@@ -250,15 +321,18 @@ public class GridRestProcessor extends GridProcessorAdapter {
      */
     public GridRestProcessor(GridKernalContext ctx) {
         super(ctx);
+
+        securityInterceptor = ctx.config().getSecurityInterceptor();
     }
 
     /**
      * Authenticates remote client.
      *
      * @param req Request to authenticate.
+     * @return Authentication subject context.
      * @throws GridException If authentication failed.
      */
-    private void authenticate(GridRestRequest req) throws GridException {
+    private Object authenticate(GridRestRequest req) throws GridException {
         UUID clientId = req.clientId();
 
         byte[] clientIdBytes = clientId != null ? U.uuidToBytes(clientId) : EMPTY_ID;
@@ -266,28 +340,39 @@ public class GridRestProcessor extends GridProcessorAdapter {
         byte[] sesTok = req.sessionToken();
 
         // Validate session.
-        if (sesTok != null && ctx.secureSession().validate(REMOTE_CLIENT, clientId, sesTok, null))
+        if (sesTok != null) {
             // Session is still valid.
-            return;
+            GridSecureSession ses = ctx.secureSession().validateSession(REMOTE_CLIENT, clientId, sesTok, null);
+
+            if (ses != null)
+                // Session is still valid.
+                return ses.authenticationSubjectContext();
+        }
 
         // Authenticate client if invalid session.
-        if (ctx.auth().authenticate(REMOTE_CLIENT, clientIdBytes, req.credentials()) == null)
+        Object subjCtx = ctx.auth().authenticate(REMOTE_CLIENT, clientIdBytes, req.credentials());
+
+        if (subjCtx == null) {
             if (req.credentials() == null)
                 throw new GridException("Failed to authenticate remote client (secure session SPI not set?): " + req);
             else
                 throw new GridException("Failed to authenticate remote client (invalid credentials?): " + req);
+        }
+
+        return subjCtx;
     }
 
     /**
      * Update session token to actual state.
      *
      * @param req Grid est request.
+     * @param subjCtx Authentication subject context.
      * @return Valid session token.
      * @throws GridException If session token update process failed.
      */
-    private byte[] updateSessionToken(GridRestRequest req) throws GridException {
+    private byte[] updateSessionToken(GridRestRequest req, Object subjCtx) throws GridException {
         // Update token from request to actual state.
-        byte[] sesTok = ctx.secureSession().generateSessionToken(REMOTE_CLIENT, req.clientId(), null);
+        byte[] sesTok = ctx.secureSession().updateSession(REMOTE_CLIENT, req.clientId(), subjCtx, null);
 
         // Validate token has been created.
         if (sesTok == null)

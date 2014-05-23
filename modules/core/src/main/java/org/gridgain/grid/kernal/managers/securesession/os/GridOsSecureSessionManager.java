@@ -38,13 +38,13 @@ public class GridOsSecureSessionManager extends GridNoopManagerAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public boolean validate(GridSecuritySubjectType subjType, UUID subjId, @Nullable byte[] tok,
+    @Override public GridSecureSession validateSession(GridSecuritySubjectType subjType, UUID subjId, @Nullable byte[] tok,
         @Nullable Object params) throws GridException {
-        return false;
+        return null;
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] generateSessionToken(GridSecuritySubjectType subjType, UUID subjId,
+    @Override public byte[] updateSession(GridSecuritySubjectType subjType, UUID subjId, Object subjCtx,
         @Nullable Object params) {
         return EMPTY_BYTES;
     }

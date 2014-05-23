@@ -20,5 +20,12 @@ import java.util.*;
 public interface GridSecurityContext {
     public Collection<GridSecurityOperation> operations();
 
+    /**
+     * Gets cache name if cache operation is being checked.
+     *
+     * @return Optional cache name.
+     */
+    public String cacheName();
+
     public Object subject();
 }

@@ -32,10 +32,10 @@ public interface GridSecureSessionManager extends GridManager {
      * @param subjId Subject ID.
      * @param tok Token.
      * @param params Parameters.
-     * @return Next token.
+     * @return Validated secure session or {@code null} if session is not valid.
      * @throws GridException If error occurred.
      */
-    public boolean validate(GridSecuritySubjectType subjType, UUID subjId, @Nullable byte[] tok,
+    public GridSecureSession validateSession(GridSecuritySubjectType subjType, UUID subjId, @Nullable byte[] tok,
         @Nullable Object params) throws GridException;
 
     /**
@@ -43,9 +43,10 @@ public interface GridSecureSessionManager extends GridManager {
      *
      * @param subjType Subject type.
      * @param subjId Subject ID.
+     * @param subjCtx Authentication subject context.
      * @param params Params.
-     * @return
+     * @return Generated session token.
      */
-    public byte[] generateSessionToken(GridSecuritySubjectType subjType, UUID subjId, @Nullable Object params)
+    public byte[] updateSession(GridSecuritySubjectType subjType, UUID subjId, Object subjCtx, @Nullable Object params)
         throws GridException;
 }

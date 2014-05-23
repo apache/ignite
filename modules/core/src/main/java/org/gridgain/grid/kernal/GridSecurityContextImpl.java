@@ -23,18 +23,27 @@ public class GridSecurityContextImpl implements GridSecurityContext {
     /** Authentication subject. */
     private Object subj;
 
+    /** Cache name. */
+    private String cacheName;
+
     /**
      * @param ops Operations.
      * @param subj Subject.
      */
-    public GridSecurityContextImpl(Collection<GridSecurityOperation> ops, Object subj) {
+    public GridSecurityContextImpl(Collection<GridSecurityOperation> ops, String cacheName, Object subj) {
         this.ops = ops;
+        this.cacheName = cacheName;
         this.subj = subj;
     }
 
     /** {@inheritDoc} */
     @Override public Collection<GridSecurityOperation> operations() {
         return ops;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String cacheName() {
+        return cacheName;
     }
 
     /** {@inheritDoc} */

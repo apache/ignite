@@ -539,7 +539,7 @@ public class GridCacheContext<K, V> implements Externalizable {
             if (subj == null)
                 subj = localNode().attributes().get(GridNodeAttributes.ATTR_AUTHENTICATION_SUBJECT);
 
-            GridSecurityContext sCtx = new GridSecurityContextImpl(Collections.singletonList(op), subj);
+            GridSecurityContext sCtx = new GridSecurityContextImpl(Collections.singletonList(op), name(), subj);
 
             securityInterceptor.authorize(sCtx);
         }
