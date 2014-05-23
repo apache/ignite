@@ -1180,7 +1180,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
                     GridGgfsSecondaryInputStreamDescriptor desc = meta.openDual(secondaryFs, path, bufSize);
 
-                    GgfsEventAwareInputStream os = new GgfsEventAwareInputStream(ggfsCtx, path, desc.info(), bufSize,
+                    GgfsEventAwareInputStream os = new GgfsEventAwareInputStream(ggfsCtx, path, desc.info(),
                         cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.wrapper(), metrics);
 
                     if (evts.isRecordable(EVT_GGFS_FILE_OPENED_READ))
@@ -1201,7 +1201,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     throw new GridGgfsInvalidPathException("Failed to open file (not a file): " + path);
 
                 // Input stream to read data from grid cache with separate blocks.
-                GgfsEventAwareInputStream os = new GgfsEventAwareInputStream(ggfsCtx, path, info, bufSize,
+                GgfsEventAwareInputStream os = new GgfsEventAwareInputStream(ggfsCtx, path, info,
                     cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, null, metrics);
 
                 if (evts.isRecordable(EVT_GGFS_FILE_OPENED_READ))
@@ -2028,16 +2028,15 @@ public final class GridGgfsImpl implements GridGgfsEx {
          * @param ggfsCtx GGFS context.
          * @param path Path to stored file.
          * @param fileInfo File info.
-         * @param bufSize The size of the buffer to be used.
          * @param prefetchBlocks Prefetch blocks.
          * @param seqReadsBeforePrefetch Amount of sequential reads before prefetch is triggered.
          * @param inWrapper Optional secondary file system input stream wrapper.
          * @param metrics Metrics.
          */
-        GgfsEventAwareInputStream(GridGgfsContext ggfsCtx, GridGgfsPath path, GridGgfsFileInfo fileInfo, int bufSize,
+        GgfsEventAwareInputStream(GridGgfsContext ggfsCtx, GridGgfsPath path, GridGgfsFileInfo fileInfo,
             int prefetchBlocks, int seqReadsBeforePrefetch, @Nullable GridGgfsSecondaryInputStreamWrapper inWrapper,
             GridGgfsLocalMetrics metrics) {
-            super(ggfsCtx, path, fileInfo, bufSize, prefetchBlocks, seqReadsBeforePrefetch, inWrapper, metrics);
+            super(ggfsCtx, path, fileInfo, prefetchBlocks, seqReadsBeforePrefetch, inWrapper, metrics);
 
             metrics.incrementFilesOpenedForRead();
         }
