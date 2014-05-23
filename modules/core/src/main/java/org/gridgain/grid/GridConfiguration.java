@@ -22,6 +22,7 @@ import org.gridgain.grid.logger.log4j.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.marshaller.optimized.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.segmentation.*;
 import org.gridgain.grid.spi.authentication.*;
 import org.gridgain.grid.spi.authentication.noop.*;
@@ -488,6 +489,9 @@ public class GridConfiguration {
     /** Data center ID. */
     private byte dataCenterId;
 
+    /** Security interceptor. */
+    private GridSecurityInterceptor securityInterceptor;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -582,6 +586,7 @@ public class GridConfiguration {
         restTcpSslCtxFactory = cfg.getRestTcpSslContextFactory();
         restTcpSslEnabled = cfg.isRestTcpSslEnabled();
         restTcpSslClientAuth = cfg.isRestTcpSslClientAuth();
+        securityInterceptor = cfg.getSecurityInterceptor();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
@@ -2855,6 +2860,24 @@ public class GridConfiguration {
      */
     public void setDataCenterId(byte dataCenterId) {
         this.dataCenterId = dataCenterId;
+    }
+
+    /**
+     * Gets security interceptor.
+     *
+     * @return Security interceptor.
+     */
+    public GridSecurityInterceptor getSecurityInterceptor() {
+        return securityInterceptor;
+    }
+
+    /**
+     * Sets security interceptor.
+     *
+     * @param securityInterceptor Security interceptor.
+     */
+    public void setSecurityInterceptor(GridSecurityInterceptor securityInterceptor) {
+        this.securityInterceptor = securityInterceptor;
     }
 
     /** {@inheritDoc} */

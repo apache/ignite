@@ -35,6 +35,7 @@ import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
@@ -183,6 +184,12 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Cache name. */
     private String cacheName;
 
+    /** Security interceptor. */
+    private GridSecurityInterceptor securityInterceptor;
+
+    /** Security subject. */
+    private Object subj;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -296,6 +303,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         dataCenterId = ctx.config().getDataCenterId();
 
         cacheName = cacheCfg.getName();
+
+        securityInterceptor = ctx.config().getSecurityInterceptor();
     }
 
     /**
@@ -519,6 +528,21 @@ public class GridCacheContext<K, V> implements Externalizable {
         String name = namex();
 
         return name == null ? "default" : name;
+    }
+
+    /**
+     * @param op Operation to check.
+     * @throws GridSecurityException If security check failed.
+     */
+    public void checkSecurity(GridSecurityOperation op) throws GridSecurityException {
+        if (securityInterceptor != null) {
+            if (subj == null)
+                subj = localNode().attributes().get(GridNodeAttributes.ATTR_AUTHENTICATION_SUBJECT);
+
+            GridSecurityContext sCtx = new GridSecurityContextImpl(Collections.singletonList(op), subj);
+
+            securityInterceptor.authorize(sCtx);
+        }
     }
 
     /**

@@ -11,6 +11,7 @@ package org.gridgain.grid.spi.discovery.tcp;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
@@ -1450,6 +1451,27 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             if (!sendJoinRequestMessage()) {
                 if (log.isDebugEnabled())
                     log.debug("Join request message has not been sent (local node is the first in the topology).");
+
+                // Authenticate local node.
+                try {
+                    // TODO how to safely get authentication manager here?
+                    Object subj = super.getSpiContext().authenticateNode(locNode.id(), locNode.attributes());
+
+                    if (subj == null)
+                        throw new GridSpiException("Authentication failed for local node: " + locNode.id());
+                    else if (!(subj instanceof Serializable))
+                        throw new GridSpiException("Authentication failed for local node " +
+                            "(sbuject is not Serializable): " + locNode.id());
+
+                    Map<String, Object> attrs = new HashMap<>(locNode.attributes());
+
+                    attrs.put(GridNodeAttributes.ATTR_AUTHENTICATION_SUBJECT, subj);
+
+                    locNode.setAttributes(attrs);
+                }
+                catch (GridException e) {
+                    throw new GridSpiException("Failed to authenticate local node (will shutdown local node).", e);
+                }
 
                 locNode.order(1);
                 locNode.internalOrder(1);
@@ -3229,7 +3251,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 else {
                     // Authenticate node first.
                     try {
-                        if (getSpiContext().authenticateNode(node.id(), node.attributes()) != null) {
+                        Object subj = getSpiContext().authenticateNode(node.id(), node.attributes());
+
+                        if (subj == null) {
                             // Node has not pass authentication.
                             LT.warn(log, null,
                                 "Authentication failed [nodeId=" + node.id() +
@@ -3253,6 +3277,41 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                             // Ignore join request.
                             return;
+                        }
+                        else {
+                            if (!(subj instanceof Serializable)) {
+                                // Node has not pass authentication.
+                                LT.warn(log, null,
+                                    "Authentication subject is not Serializable [nodeId=" + node.id() +
+                                        ", addrs=" + U.addressesAsString(node) + ']',
+                                    "Authentication subject is not Serializable [nodeId=" + U.id8(node.id()) +
+                                        ", addrs=" +
+                                        U.addressesAsString(node) + ']');
+
+                                // Always output in debug.
+                                if (log.isDebugEnabled())
+                                    log.debug("Authentication subject is not serializable [nodeId=" + node.id() +
+                                        ", addrs=" + U.addressesAsString(node));
+
+                                try {
+                                    trySendMessageDirectly(node, new GridTcpDiscoveryAuthFailedMessage(locNodeId, locHost));
+                                }
+                                catch (GridSpiException e) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to send unauthenticated message to node " +
+                                            "[node=" + node + ", err=" + e.getMessage() + ']');
+                                }
+
+                                // Ignore join request.
+                                return;
+                            }
+
+                            // Stick in authentication subject to node.
+                            Map<String, Object> attrs = new HashMap<>(node.attributes());
+
+                            attrs.put(GridNodeAttributes.ATTR_AUTHENTICATION_SUBJECT, subj);
+
+                            node.setAttributes(attrs);
                         }
                     }
                     catch (GridException e) {
