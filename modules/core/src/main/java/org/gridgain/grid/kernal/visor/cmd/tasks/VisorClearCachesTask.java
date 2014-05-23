@@ -16,8 +16,6 @@ import org.gridgain.grid.kernal.visor.cmd.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.escapeName;
-
 /**
  * Task that clears specified caches on specified node.
  */
@@ -46,9 +44,9 @@ public class VisorClearCachesTask extends
             VisorCachesTaskResult res = new VisorCachesTaskResult();
 
             for(GridCache cache : g.cachesx(null)) {
-                String escapedName = escapeName(cache.name());
+                String cacheName = cache.name();
 
-                if (arg.cacheNames().contains(escapedName)) {
+                if (arg.cacheNames().contains(cacheName)) {
                     Set keys = cache.keySet();
 
                     long before = keys.size(), after = before;
@@ -58,7 +56,7 @@ public class VisorClearCachesTask extends
                             after--;
                     }
 
-                    res.put(escapedName, new VisorBeforeAfterResult(before, after));
+                    res.put(cacheName, new VisorBeforeAfterResult(before, after));
                 }
             }
 

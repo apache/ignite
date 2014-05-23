@@ -16,8 +16,6 @@ import org.gridgain.grid.kernal.visor.cmd.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.escapeName;
-
 /**
  * Compacts caches.
  */
@@ -43,9 +41,9 @@ public class VisorCompactCachesTask extends VisorOneNodeTask<VisorOneNodeCachesA
             final VisorCachesTaskResult res = new VisorCachesTaskResult();
 
             for(GridCache cache : g.cachesx(null)) {
-                String escapedName = escapeName(cache.name());
+                String cacheName = cache.name();
 
-                if (arg.cacheNames().contains(escapedName)) {
+                if (arg.cacheNames().contains(cacheName)) {
                     final Set keys = cache.keySet();
 
                     long before = keys.size(), after = before;
@@ -55,7 +53,7 @@ public class VisorCompactCachesTask extends VisorOneNodeTask<VisorOneNodeCachesA
                             after--;
                     }
 
-                    res.put(escapedName, new VisorBeforeAfterResult(before, after));
+                    res.put(cacheName, new VisorBeforeAfterResult(before, after));
                 }
             }
 

@@ -13,19 +13,14 @@ package org.gridgain.grid.kernal.visor.cmd;
  * Contains utility methods for Visor tasks and jobs.
  */
 public class VisorTaskUtils {
+    /** Default substitute for {@code null} names. */
+    public static String DFLT_EMPTY_NAME = "<default>";
+
     /**
      * @param name Grid-style nullable name.
      * @return Name with {@code null} replaced to &lt;default&gt;.
      */
     public static String escapeName(String name) {
-        return name == null ? "<default>" : name;
-    }
-
-    /**
-     * @param name Visor-style name.
-     * @return Name with &lt;default&gt; replaced to {@code null}.
-     */
-    public static String unescapeName(String name) {
-        return "<default>".equals(name) ? null : name;
+        return name == null ? DFLT_EMPTY_NAME : name;
     }
 }
