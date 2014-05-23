@@ -19,6 +19,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.util.concurrent.*;
 import java.util.*;
 
+import static org.gridgain.grid.hadoop.GridHadoopJobProperty.*;
 import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
 import static org.gridgain.grid.kernal.processors.hadoop.taskexecutor.GridHadoopTaskState.*;
 
@@ -58,41 +59,20 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
             assert extractedCol == null;
         }
 
+        // Are we going to run combiner in the same thread as mapper?
+        final boolean runCombiner = job.hasCombiner() && !get(job, SINGLE_COMBINER_FOR_ALL_MAPPERS, false);
+
         for (final GridHadoopTaskInfo info : tasks) {
             assert info != null;
 
-            GridFuture<GridFuture<?>> fut = ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<GridFuture<?>>() {
+            GridFuture<GridFuture<?>> fut = ctx.kernalContext().closure().callLocalSafe(
+                new GridPlainCallable<GridFuture<?>>() {
                 @Override public GridFuture<?> call() throws Exception {
-                    long start = System.currentTimeMillis();
+                    runTask(job, info); // Mapper.
 
-                    ClassLoader old = GridHadoopJobClassLoadingContext.prepareClassLoader(ctxs.get(job.id()),
-                        job.info());
-
-                    try (GridHadoopTaskOutput out = createOutput(info);
-                         GridHadoopTaskInput in = createInput(info)) {
-                        GridHadoopTaskContext taskCtx = new GridHadoopTaskContext(job, in, out);
-
-                        GridHadoopTask task = job.createTask(info);
-
-                        if (log.isDebugEnabled())
-                            log.debug("Running task: " + task);
-
-                        task.run(taskCtx);
-                    }
-                    catch (Exception e) {
-                        U.error(log, "Failed to execute task: " + info, e);
-
-                        throw e;
-                    }
-                    finally {
-                        Thread.currentThread().setContextClassLoader(old);
-
-                        long end = System.currentTimeMillis();
-
-                        if (log.isDebugEnabled())
-                            log.debug("Finished task execution [jobId=" + job.id() + ", taskInfo=" + info + ", " +
-                                "execTime=" + (end - start) + ']');
-                    }
+                    if (runCombiner) // Combiner.
+                        runTask(job, new GridHadoopTaskInfo(info.nodeId(), COMBINE, info.jobId(), info.taskNumber(),
+                            info.attempt(), null));
 
                     return null;
                 }
@@ -123,6 +103,42 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
                     jobTracker.onTaskFinished(info, new GridHadoopTaskStatus(state, err));
                 }
             });
+        }
+    }
+
+    /**
+     * @param job Job.
+     * @param info Task info.
+     */
+    private void runTask(final GridHadoopJob job, final GridHadoopTaskInfo info) throws Exception {
+        long start = System.currentTimeMillis();
+
+        ClassLoader old = GridHadoopJobClassLoadingContext.prepareClassLoader(ctxs.get(job.id()), job.info());
+
+        try (GridHadoopTaskOutput out = createOutput(info);
+             GridHadoopTaskInput in = createInput(info)) {
+            GridHadoopTaskContext taskCtx = new GridHadoopTaskContext(job, in, out);
+
+            GridHadoopTask task = job.createTask(info);
+
+            if (log.isDebugEnabled())
+                log.debug("Running task: " + task);
+
+            task.run(taskCtx);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to execute task: " + info, e);
+
+            throw e;
+        }
+        finally {
+            Thread.currentThread().setContextClassLoader(old);
+
+            long end = System.currentTimeMillis();
+
+            if (log.isDebugEnabled())
+                log.debug("Finished task execution [jobId=" + job.id() + ", taskInfo=" + info + ", " +
+                    "execTime=" + (end - start) + ']');
         }
     }
 
