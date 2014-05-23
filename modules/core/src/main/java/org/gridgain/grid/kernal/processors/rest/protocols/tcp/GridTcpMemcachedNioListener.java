@@ -14,7 +14,6 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.cache.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -39,7 +38,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
     private final GridRestProtocolHandler hnd;
 
     /** Context. */
-    protected final GridKernalContext ctx;
+    private final GridKernalContext ctx;
 
     /**
      * Creates listener which will convert incoming tcp packets to rest requests and forward them to
@@ -68,7 +67,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
+    @SuppressWarnings({"IfMayBeConditional"})
     @Override public void onMessage(final GridNioSession ses, final GridMemcachedMessage req) {
         assert req != null;
 
@@ -107,105 +106,123 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
             return;
         }
 
-        final GridBiClosure<GridRestResponse, Exception, GridRestResponse> lsnr;
+        GridFuture<GridRestResponse> lastFut = ses.removeMeta(GridNioSessionMetaKey.LAST_FUTURE.ordinal());
 
-        if (cmd.get1() == NOOP) {
-            lsnr = new CX2<GridRestResponse, Exception, GridRestResponse>() {
-                @Override public GridRestResponse applyx(GridRestResponse o, Exception e) throws GridException {
-                    GridMemcachedMessage res = new GridMemcachedMessage(req);
+        if (lastFut != null && lastFut.isDone())
+            lastFut = null;
 
-                    res.status(SUCCESS);
+        GridFuture<GridRestResponse> f;
 
-                    ses.send(res);
-
-                    return null;
-                }
-            };
-        }
+        if (lastFut == null)
+            f = handleRequest0(ses, req, cmd);
         else {
-            final GridFuture<GridRestResponse> f = hnd.handleAsync(createRestRequest(req, cmd.get1()));
-
-            lsnr = new CX2<GridRestResponse, Exception, GridRestResponse>() {
-                @Override public GridRestResponse applyx(GridRestResponse o, Exception e) throws GridException {
-                    GridRestResponse restRes = f.get();
-
-                    // Handle 'Stat' command (special case because several packets are included in response).
-                    if (cmd.get1() == CACHE_METRICS) {
-                        assert restRes.getResponse() instanceof GridCacheRestMetrics;
-
-                        Map<String, Long> metrics = ((GridCacheRestMetrics)restRes.getResponse()).map();
-
-                        for (Map.Entry<String, Long> entry : metrics.entrySet()) {
-                            GridMemcachedMessage res = new GridMemcachedMessage(req);
-
-                            res.key(entry.getKey());
-
-                            res.value(String.valueOf(entry.getValue()));
-
-                            ses.send(res);
-                        }
-
-                        ses.send(new GridMemcachedMessage(req));
+            f = new GridEmbeddedFuture<>(
+                lastFut,
+                new C2<GridRestResponse, Exception, GridFuture<GridRestResponse>>() {
+                    @Override public GridFuture<GridRestResponse> apply(GridRestResponse res, Exception e) {
+                        return handleRequest0(ses, req, cmd);
                     }
-                    else {
+                },
+                ctx);
+        }
+
+        if (f != null)
+            ses.addMeta(GridNioSessionMetaKey.LAST_FUTURE.ordinal(), f);
+    }
+
+    /**
+     * @param ses Session.
+     * @param req Request.
+     * @param cmd Command.
+     * @return Future or {@code null} if processed immediately.
+     */
+    @Nullable private GridFuture<GridRestResponse> handleRequest0(
+        final GridNioSession ses,
+        final GridMemcachedMessage req,
+        final GridTuple3<GridRestCommand, Boolean, Boolean> cmd
+    ) {
+        if (cmd.get1() == NOOP) {
+            GridMemcachedMessage res0 = new GridMemcachedMessage(req);
+
+            res0.status(SUCCESS);
+
+            ses.send(res0);
+
+            return null;
+        }
+
+        GridFuture<GridRestResponse> f = hnd.handleAsync(createRestRequest(req, cmd.get1()));
+
+        f.listenAsync(new CIX1<GridFuture<GridRestResponse>>() {
+            @Override public void applyx(GridFuture<GridRestResponse> f) throws GridException {
+                GridRestResponse restRes = f.get();
+
+                // Handle 'Stat' command (special case because several packets are included in response).
+                if (cmd.get1() == CACHE_METRICS) {
+                    assert restRes.getResponse() instanceof GridCacheRestMetrics;
+
+                    Map<String, Long> metrics = ((GridCacheRestMetrics)restRes.getResponse()).map();
+
+                    for (Map.Entry<String, Long> entry : metrics.entrySet()) {
                         GridMemcachedMessage res = new GridMemcachedMessage(req);
 
-                        if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS) {
-                            switch (cmd.get1()) {
-                                case CACHE_GET: {
-                                    res.status(restRes.getResponse() == null ? KEY_NOT_FOUND : SUCCESS);
+                        res.key(entry.getKey());
 
-                                    break;
-                                }
-
-                                case CACHE_PUT:
-                                case CACHE_ADD:
-                                case CACHE_REMOVE:
-                                case CACHE_REPLACE:
-                                case CACHE_CAS:
-                                case CACHE_APPEND:
-                                case CACHE_PREPEND: {
-                                    boolean res0 = restRes.getResponse().equals(Boolean.TRUE);
-
-                                    res.status(res0 ? SUCCESS : FAILURE);
-
-                                    break;
-                                }
-
-                                default: {
-                                    res.status(SUCCESS);
-
-                                    break;
-                                }
-                            }
-                        }
-                        else
-                            res.status(FAILURE);
-
-                        if (cmd.get3())
-                            res.key(req.key());
-
-                        if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS && res.addData() &&
-                            restRes.getResponse() != null)
-                            res.value(restRes.getResponse());
+                        res.value(String.valueOf(entry.getValue()));
 
                         ses.send(res);
                     }
 
-                    return null;
+                    ses.send(new GridMemcachedMessage(req));
                 }
-            };
-        }
+                else {
+                    GridMemcachedMessage res = new GridMemcachedMessage(req);
 
-        GridFuture<GridRestResponse> lastFut = ses.addMeta(GridNioSessionMetaKey.LAST_FUTURE.ordinal(), null);
+                    if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS) {
+                        switch (cmd.get1()) {
+                            case CACHE_GET: {
+                                res.status(restRes.getResponse() == null ? KEY_NOT_FOUND : SUCCESS);
 
-        if (lastFut == null)
-            lastFut = new GridFinishedFuture<>(ctx);
+                                break;
+                            }
 
-        GridFuture oldFut = ses.addMeta(GridNioSessionMetaKey.LAST_FUTURE.ordinal(),
-            new GridEmbeddedFuture<>(ctx, lastFut, lsnr));
+                            case CACHE_PUT:
+                            case CACHE_ADD:
+                            case CACHE_REMOVE:
+                            case CACHE_REPLACE:
+                            case CACHE_CAS:
+                            case CACHE_APPEND:
+                            case CACHE_PREPEND: {
+                                boolean res0 = restRes.getResponse().equals(Boolean.TRUE);
 
-        assert oldFut == null;
+                                res.status(res0 ? SUCCESS : FAILURE);
+
+                                break;
+                            }
+
+                            default: {
+                                res.status(SUCCESS);
+
+                                break;
+                            }
+                        }
+                    }
+                    else
+                        res.status(FAILURE);
+
+                    if (cmd.get3())
+                        res.key(req.key());
+
+                    if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS && res.addData() &&
+                        restRes.getResponse() != null)
+                        res.value(restRes.getResponse());
+
+                    ses.send(res);
+                }
+            }
+        });
+
+        return f;
     }
 
     /**
