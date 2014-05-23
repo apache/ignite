@@ -50,7 +50,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
         GridConfiguration cfg = ctx.config();
 
-        GridNioServerListener<GridClientMessage> lsnr = new GridTcpRestNioListener(log, hnd);
+        GridNioServerListener<GridClientMessage> lsnr = new GridTcpRestNioListener(log, hnd, ctx);
 
         GridNioParser parser = new GridTcpRestParser(log);
 
