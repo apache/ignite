@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.cmd.dto;
+package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
 import org.jetbrains.annotations.*;
 
@@ -48,7 +48,8 @@ public class VisorRestConfig implements Serializable {
     private final String tcpSslContextFactory;
 
     public VisorRestConfig(boolean restEnabled, boolean tcpSslEnabled, String[] accessibleFolders,
-        String jettyPath, String jettyHost, Integer jettyPort, String tcpHost, Integer tcpPort, String tcpSslContextFactory) {
+        String jettyPath, String jettyHost, Integer jettyPort, String tcpHost, Integer tcpPort,
+        String tcpSslContextFactory) {
         this.restEnabled = restEnabled;
         this.tcpSslEnabled = tcpSslEnabled;
         this.accessibleFolders = accessibleFolders;

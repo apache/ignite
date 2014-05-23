@@ -23,7 +23,7 @@ import scala.util.control.Breaks._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
-import org.gridgain.grid.kernal.visor.cmd.dto.node.VisorNodeConfig
+import org.gridgain.grid.kernal.visor.cmd.dto.VisorGridConfig
 
 /**
  * ==Overview==
@@ -199,7 +199,7 @@ class VisorConfigurationCommand {
 
             assert(node != null)
 
-            var cfg: VisorNodeConfig = null
+            var cfg: VisorGridConfig = null
 
             try
                 cfg = grid.forNode(node)

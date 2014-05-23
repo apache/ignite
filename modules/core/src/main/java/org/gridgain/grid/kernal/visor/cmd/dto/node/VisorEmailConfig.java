@@ -14,7 +14,7 @@ import java.io.*;
 /**
  * Email configuration data.
  */
-public class VisorNodeEmailConfig implements Serializable {
+public class VisorEmailConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -39,7 +39,7 @@ public class VisorNodeEmailConfig implements Serializable {
     /** Whether or not to use TLS for SMTP. */
     private final boolean smtpStartTls;
 
-    public VisorNodeEmailConfig(String smtpHost, int smtpPort, String smtpUsername, String adminEmails,
+    public VisorEmailConfig(String smtpHost, int smtpPort, String smtpUsername, String adminEmails,
         String smtpFromEmail, boolean smtpSsl, boolean smtpStartTls) {
         this.smtpHost = smtpHost;
         this.smtpPort = smtpPort;

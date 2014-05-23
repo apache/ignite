@@ -14,7 +14,7 @@ import java.io.*;
 /**
  * P2P configuration data.
  */
-public class VisorNodePeerToPeerConfig implements Serializable {
+public class VisorPeerToPeerConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -27,7 +27,7 @@ public class VisorNodePeerToPeerConfig implements Serializable {
     /** List of packages from the system classpath that need to be loaded from task originating node. */
     private final String p2pLocClsPathExcl;
 
-    public VisorNodePeerToPeerConfig(boolean p2pEnabled, int p2pMissedResCacheSize, String p2pLocClsPathExcl) {
+    public VisorPeerToPeerConfig(boolean p2pEnabled, int p2pMissedResCacheSize, String p2pLocClsPathExcl) {
         this.p2pEnabled = p2pEnabled;
         this.p2pMissedResCacheSize = p2pMissedResCacheSize;
         this.p2pLocClsPathExcl = p2pLocClsPathExcl;

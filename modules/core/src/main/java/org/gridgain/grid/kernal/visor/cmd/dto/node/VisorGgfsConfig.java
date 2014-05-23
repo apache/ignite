@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Store configuration data.
  */
-public class VisorNodeGgfsConfig implements Serializable {
+public class VisorGgfsConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -103,7 +103,7 @@ public class VisorNodeGgfsConfig implements Serializable {
     /** Trash purge await timeout. */
     private final long trashPurgeTimeout;
 
-    public VisorNodeGgfsConfig(@Nullable String name, @Nullable String metaCacheName, @Nullable String dataCacheName,
+    public VisorGgfsConfig(@Nullable String name, @Nullable String metaCacheName, @Nullable String dataCacheName,
         int blockSize, int prefetchBlocks, int streamBufferSize, int perNodeBatchSize,
         int perNodeParallelBatchCount, @Nullable String secondaryHadoopFileSystemUri,
         @Nullable String secondaryHadoopFileSystemConfigPath, GridGgfsMode defaultMode,

@@ -14,7 +14,7 @@ import java.io.*;
 /**
  * Executors configuration data.
  */
-public class VisorNodeExecServiceConfig implements Serializable {
+public class VisorExecServiceConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -33,7 +33,7 @@ public class VisorNodeExecServiceConfig implements Serializable {
     /**Whether or not GridGain will stop peer-to-peer executor service on node shutdown. */
     private final boolean p2pExecSvcShutdown;
 
-    public VisorNodeExecServiceConfig(String execSvc, boolean execSvcShutdown, String sysExecSvc,
+    public VisorExecServiceConfig(String execSvc, boolean execSvcShutdown, String sysExecSvc,
         boolean sysExecSvcShutdown,
         String p2pExecSvc, boolean p2pExecSvcShutdown) {
         this.execSvc = execSvc;

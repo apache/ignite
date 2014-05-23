@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.cmd.dto.node;
+package org.gridgain.grid.kernal.visor.cmd.dto.cache;
 
 import org.gridgain.grid.dr.cache.receiver.*;
 
@@ -16,7 +16,7 @@ import java.io.*;
 /**
  * Visor counterpart for {@link GridDrReceiverCacheConfiguration}.
  */
-public class VisorNodeCacheDrReceiverConfig implements Serializable {
+public class VisorDrReceiverConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -26,7 +26,8 @@ public class VisorNodeCacheDrReceiverConfig implements Serializable {
     /** Conflict resolver mode. */
     private final GridDrReceiverCacheConflictResolverMode conflictResolverMode;
 
-    public VisorNodeCacheDrReceiverConfig(String conflictResolver, GridDrReceiverCacheConflictResolverMode conflictResolverMode) {
+    public VisorDrReceiverConfig(String conflictResolver,
+        GridDrReceiverCacheConflictResolverMode conflictResolverMode) {
         this.conflictResolver = conflictResolver;
         this.conflictResolverMode = conflictResolverMode;
     }

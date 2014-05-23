@@ -14,7 +14,7 @@ import java.io.*;
 /**
  * Lifecycle configuration data.
  */
-public class VisorNodeLifecycleConfig implements Serializable {
+public class VisorLifecycleConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -24,7 +24,7 @@ public class VisorNodeLifecycleConfig implements Serializable {
     /** Whether or not email notifications should be used on node start and stop. */
     private final boolean ntf;
 
-    public VisorNodeLifecycleConfig(String beans, boolean ntf) {
+    public VisorLifecycleConfig(String beans, boolean ntf) {
         this.beans = beans;
         this.ntf = ntf;
     }

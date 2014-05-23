@@ -15,7 +15,7 @@ import java.util.*;
 /**
  * Basic configuration data.
  */
-public class VisorNodeBasicConfig implements Serializable {
+public class VisorBasicConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,7 +41,7 @@ public class VisorNodeBasicConfig implements Serializable {
     private final String successFile;
     private final boolean updateNtf;
 
-    public VisorNodeBasicConfig(String gridName, String ggHome, String locHost, UUID nodeId, String marsh,
+    public VisorBasicConfig(String gridName, String ggHome, String locHost, UUID nodeId, String marsh,
         Object deployMode, boolean daemon, boolean jmxRemote, boolean restart, long netTimeout, String licenseUrl,
         String log, long discoStartupDelay, String mBeanSrv, boolean noAscii, boolean noDiscoOrder,
         boolean noShutdownHook, String progName, boolean quiet, String successFile, boolean updateNtf) {

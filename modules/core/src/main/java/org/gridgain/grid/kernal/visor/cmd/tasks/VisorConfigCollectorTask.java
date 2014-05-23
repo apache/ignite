@@ -29,6 +29,7 @@ import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
+import org.gridgain.grid.kernal.visor.cmd.dto.*;
 import org.gridgain.grid.kernal.visor.cmd.dto.cache.*;
 import org.gridgain.grid.kernal.visor.cmd.dto.node.*;
 import org.gridgain.grid.lang.*;
@@ -41,7 +42,7 @@ import org.gridgain.grid.util.typedef.internal.*;
  * Grid configuration data collect task.
  */
 @GridInternal
-public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, VisorNodeConfig> {
+public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, VisorGridConfig> {
     /**
      * Returns boolean value from system property or provided function.
      *
@@ -153,7 +154,7 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
      * @return String.
      */
     private static String compactArray(Object[] arr) {
-        if (arr == null && arr.length == 0)
+        if (arr == null || arr.length == 0)
             return null;
 
         String sep = ", ";
@@ -173,7 +174,7 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
      * Grid configuration data collect job.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorConfigurationJob extends VisorOneNodeJob<VisorOneNodeArg, VisorNodeConfig> {
+    public static class VisorConfigurationJob extends VisorOneNodeJob<VisorOneNodeArg, VisorGridConfig> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -243,11 +244,11 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
             return (GridBiTuple<String, Map<String, Object>>[]) res;
         }
 
-        @Override protected VisorNodeConfig run(VisorOneNodeArg arg) {
+        @Override protected VisorGridConfig run(VisorOneNodeArg arg) {
             final GridConfiguration c = g.configuration();
             final GridProductLicense lic = g.product().license();
 
-            final VisorNodeBasicConfig basic = new VisorNodeBasicConfig(
+            final VisorBasicConfig basic = new VisorBasicConfig(
                 c.getGridName(),
                 getProperty(GG_HOME, c.getGridGainHome()),
                 getProperty(GG_LOCAL_HOST, c.getLocalHost()),
@@ -270,12 +271,12 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
                 getProperty(GG_SUCCESS_FILE),
                 boolValue(GG_UPDATE_NOTIFIER, true));
 
-            final VisorNodeMetricsConfig metrics = new VisorNodeMetricsConfig(
+            final VisorMetricsConfig metrics = new VisorMetricsConfig(
                 c.getMetricsExpireTime(),
                 c.getMetricsHistorySize(),
                 c.getMetricsLogFrequency());
 
-            final VisorNodeSpisConfig spis = new VisorNodeSpisConfig(
+            final VisorSpisConfig spis = new VisorSpisConfig(
                 collectSpiInfo(c.getDiscoverySpi()),
                 collectSpiInfo(c.getCommunicationSpi()),
                 collectSpiInfo(c.getEventStorageSpi()),
@@ -290,13 +291,13 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
                 collectSpiInfo(c.getIndexingSpi())
             );
 
-            final VisorNodePeerToPeerConfig p2p = new VisorNodePeerToPeerConfig(
+            final VisorPeerToPeerConfig p2p = new VisorPeerToPeerConfig(
                 c.isPeerClassLoadingEnabled(),
                 c.getPeerClassLoadingMissedResourcesCacheSize(),
                 compactArray(c.getPeerClassLoadingLocalClassPathExclude())
             );
 
-            final VisorNodeEmailConfig email = new VisorNodeEmailConfig(
+            final VisorEmailConfig email = new VisorEmailConfig(
                 getProperty(GG_SMTP_HOST, c.getSmtpHost()),
                 intValue(GG_SMTP_PORT, c.getSmtpPort()),
                 getProperty(GG_SMTP_USERNAME, c.getSmtpUsername()),
@@ -305,13 +306,13 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
                 boolValue(GG_SMTP_SSL, c.isSmtpSsl()),
                 boolValue(GG_SMTP_STARTTLS, c.isSmtpStartTls()));
 
-            final VisorNodeLifecycleConfig lifecycle = new VisorNodeLifecycleConfig(
+            final VisorLifecycleConfig lifecycle = new VisorLifecycleConfig(
                 compactArray(c.getLifecycleBeans()),
                 boolValue(GG_LIFECYCLE_EMAIL_NOTIFY,
                 c.isLifeCycleEmailNotification())
             );
 
-            final VisorNodeExecServiceConfig execSvc = new VisorNodeExecServiceConfig(
+            final VisorExecServiceConfig execSvc = new VisorExecServiceConfig(
                 compactClass(c.getExecutorService()),
                 c.getExecutorServiceShutdown(),
                 compactClass(c.getSystemExecutorService()),
@@ -320,7 +321,7 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
                 c.getPeerClassLoadingExecutorServiceShutdown()
             );
 
-            final VisorNodeSegmentationConfig seg = new VisorNodeSegmentationConfig(
+            final VisorSegmentationConfig seg = new VisorSegmentationConfig(
                 c.getSegmentationPolicy(),
                 compactArray(c.getSegmentationResolvers()),
                 c.getSegmentCheckFrequency(),
@@ -328,7 +329,7 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
                 c.isAllSegmentationResolversPassRequired()
             );
 
-            final VisorNodeRestConfig rest = new VisorNodeRestConfig(
+            final VisorRestConfig rest = new VisorRestConfig(
                 c.isRestEnabled(),
                 c.isRestTcpSslEnabled(),
                 c.getRestAccessibleFolders(),
@@ -340,9 +341,7 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
                 compactClass(c.getRestTcpSslContextFactory())
             );
 
-            final List<VisorNodeCacheConfig> caches = Collections.emptyList();
-
-
+            final List<VisorCacheConfig> caches = new ArrayList<>(c.getCacheConfiguration().length);
 
             for (GridCacheConfiguration cacheCfg : c.getCacheConfiguration()) {
                 GridCacheAffinityFunction affFunc = cacheCfg.getAffinity();
@@ -431,26 +430,32 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
                     cacheCfg.getWriteBehindFlushThreadCount()
                 );
 
-                GridDrSenderCacheConfiguration sender = cacheCfg.getDrSenderConfiguration();
+                final GridDrSenderCacheConfiguration sender = cacheCfg.getDrSenderConfiguration();
 
-                final VisorNodeCacheDrSenderConfig drSenderCfg = new VisorNodeCacheDrSenderConfig(
-                    sender.getMode(),
-                    sender.getBatchSendSize(),
-                    sender.getBatchSendFrequency(),
-                    sender.getMaxBatches(),
-                    sender.getSenderHubLoadBalancingMode(),
-                    sender.getStateTransferThrottle(),
-                    sender.getStateTransferThreadsCount()
-                );
+                VisorDrSenderConfig drSenderCfg = null;
 
-                GridDrReceiverCacheConfiguration receiver = cacheCfg.getDrReceiverConfiguration();
+                if (sender != null)
+                    drSenderCfg = new VisorDrSenderConfig(
+                        sender.getMode(),
+                        sender.getBatchSendSize(),
+                        sender.getBatchSendFrequency(),
+                        sender.getMaxBatches(),
+                        sender.getSenderHubLoadBalancingMode(),
+                        sender.getStateTransferThrottle(),
+                        sender.getStateTransferThreadsCount()
+                    );
 
-                final VisorNodeCacheDrReceiverConfig drReceiverCfg = new VisorNodeCacheDrReceiverConfig(
-                    compactClass(receiver.getConflictResolver()),
-                    receiver.getConflictResolverMode()
-                );
+                final GridDrReceiverCacheConfiguration receiver = cacheCfg.getDrReceiverConfiguration();
 
-                caches.add(new VisorNodeCacheConfig(
+                VisorDrReceiverConfig drReceiverCfg = null;
+
+                if (receiver != null)
+                    drReceiverCfg = new VisorDrReceiverConfig(
+                        compactClass(receiver.getConflictResolver()),
+                        receiver.getConflictResolverMode()
+                    );
+
+                caches.add(new VisorCacheConfig(
                     cacheCfg.getName(),
                     cacheCfg.getCacheMode(),
                     cacheCfg.getDistributionMode(),
@@ -489,10 +494,10 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
                     drReceiverCfg));
             }
 
-            final List<VisorNodeGgfsConfig> ggfss = Collections.emptyList();
+            final List<VisorGgfsConfig> ggfss = new ArrayList<>(c.getGgfsConfiguration().length);
 
             for (GridGgfsConfiguration ggfs : c.getGgfsConfiguration()) {
-                ggfss.add(new VisorNodeGgfsConfig(
+                ggfss.add(new VisorGgfsConfig(
                     ggfs.getName(),
                     ggfs.getMetaCacheName(),
                     ggfs.getDataCacheName(),
@@ -523,7 +528,7 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
                 ));
             }
 
-            final List<VisorStreamerConfig> streamers = Collections.emptyList();
+            final List<VisorStreamerConfig> streamers = new ArrayList<>(c.getStreamerConfiguration().length);
 
             for (GridStreamerConfiguration streamer : c.getStreamerConfiguration())
                 streamers.add(new VisorStreamerConfig(
@@ -535,7 +540,20 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
                     streamer.isExecutorServiceShutdown()
                 ));
 
-            return new VisorNodeConfig(
+            final VisorDrSenderHubConfig senderHub = null;
+
+            if (c.getDrSenderHubConfiguration() != null) {
+//                senderHub = new VisorDrSenderHubConfig(
+//                );
+            }
+            final VisorDrReceiverHubConfig receiverHub = null;
+
+            if (c.getDrReceiverHubConfiguration() != null) {
+//                senderHub = new VisorDrSenderHubConfig(
+//                );
+            }
+
+            return new VisorGridConfig(
                 lic,
                 basic,
                 metrics,
@@ -552,8 +570,11 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
                 caches,
                 ggfss,
                 streamers,
-                getenv(),
-                getProperties());
+                senderHub,
+                receiverHub,
+                new HashMap<>(getenv()),
+                getProperties()
+            );
         }
     }
 

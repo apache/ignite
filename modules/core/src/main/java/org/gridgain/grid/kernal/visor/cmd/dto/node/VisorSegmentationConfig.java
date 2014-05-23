@@ -16,7 +16,7 @@ import java.io.*;
 /**
  * Segmentation configuration data.
  */
-public class VisorNodeSegmentationConfig implements Serializable {
+public class VisorSegmentationConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -31,7 +31,7 @@ public class VisorNodeSegmentationConfig implements Serializable {
     /**Whether or not all resolvers should succeed for node to be in correct segment. */
     private final boolean passRequired;
 
-    public VisorNodeSegmentationConfig(GridSegmentationPolicy plc, String resolvers, long checkFreq,
+    public VisorSegmentationConfig(GridSegmentationPolicy plc, String resolvers, long checkFreq,
         boolean waitOnStart,
         boolean passRequired) {
         this.plc = plc;

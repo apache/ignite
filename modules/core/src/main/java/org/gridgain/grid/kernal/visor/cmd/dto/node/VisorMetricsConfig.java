@@ -14,7 +14,7 @@ import java.io.*;
 /**
  * Metrics configuration data.
  */
-public class VisorNodeMetricsConfig implements Serializable {
+public class VisorMetricsConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -27,7 +27,7 @@ public class VisorNodeMetricsConfig implements Serializable {
     /** Frequency of metrics log printout. */
     private final long logFreq;
 
-    public VisorNodeMetricsConfig(long expTime, int historySize, long logFreq) {
+    public VisorMetricsConfig(long expTime, int historySize, long logFreq) {
         this.expTime = expTime;
         this.historySize = historySize;
         this.logFreq = logFreq;

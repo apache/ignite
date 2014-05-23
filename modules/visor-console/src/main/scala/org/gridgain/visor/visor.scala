@@ -399,11 +399,6 @@ object visor extends VisorTag {
                 "Flag forces the command to connect to the default grid",
                 "without interactive mode."
             ),
-            "-e" -> Seq(
-                "Flag forces the command to connect to the existing grid",
-                "without interactive mode. If there is no existing grid",
-                "command will fail."
-            ),
             "-dl" -> Seq(
                 "Flag disables remote log collection."
             )
@@ -1485,90 +1480,72 @@ object visor extends VisorTag {
 
             val name = argValue("g", argLst).getOrElse(null)
             val path = argValue("cpath", argLst)
-            val existing = hasArgFlag("e", argLst)
             val dflt = hasArgFlag("d", argLst)
 
             rmtLogDisabled = hasArgFlag("dl", argLst)
 
-            if (existing && dflt)
-                throw new GE("Can't have both '-e' and '-d' together.")
+            var cfg: GridConfiguration = null
+            var startedGridName: String = null
 
-            if (existing)
-                grid$(name) match {
-                    case Some(g) =>
-                        // Successfully "connected" to already joined grid.
-                        grid = g.asInstanceOf[GridEx]
-                        isCon = true
-                        conOwner = false
-                        cfgPath = "<n/a>"
-                        conTs = System.currentTimeMillis
+            val cfgPath =
+                if (path.isDefined) {
+                    cfg = configuration(path.get)
 
-                    case None => throw new GE("Failed to connect to existing grid.")
+                    path.get
                 }
-            else {
-                var cfg: GridConfiguration = null
-                var startedGridName: String = null
+                else if (dflt) {
+                    cfg = configuration(DFLT_CFG)
 
-                val cfgPath =
-                    if (path.isDefined) {
-                        cfg = configuration(path.get)
+                    "<default>"
+                }
+                else {
+                    // If configuration file is not defined in arguments,
+                    // ask to choose from the list
+                    askConfigFile() match {
+                        case Some(p) =>
+                            nl()
 
-                        path.get
+                            (VisorTextTable() += ("Using configuration", p)) render()
+
+                            nl()
+
+                            cfg = configuration(p)
+
+                            p
+                        case None =>
+                            return
                     }
-                    else if (dflt) {
-                        cfg = configuration(DFLT_CFG)
-
-                        "<default>"
-                    }
-                    else {
-                        // If configuration file is not defined in arguments,
-                        // ask to choose from the list
-                        askConfigFile() match {
-                            case Some(p) =>
-                                nl()
-
-                                (VisorTextTable() += ("Using configuration", p)) render()
-
-                                nl()
-
-                                cfg = configuration(p)
-
-                                p
-                            case None =>
-                                return
-                        }
-                    }
-
-                val daemon = scalar.isDaemon
-
-                // Make sure visor starts as daemon node.
-                scalar.daemon(true)
-
-                try {
-                    startedGridName = scalar.start(cfg).name
-                }
-                finally {
-                    scalar.daemon(daemon)
                 }
 
-                this.cfgPath = cfgPath
+            val daemon = scalar.isDaemon
 
-                val nameToCheck = if (name == null) startedGridName else name
+            // Make sure visor starts as daemon node.
+            scalar.daemon(true)
 
-                grid$(nameToCheck) match {
-                    case Some(g) => grid = g.asInstanceOf[GridEx]
-                    case None =>
-                        this.cfgPath = null
-
-                        throw new GE("Named grid unavailable: " + nameToCheck)
-                }
-
-                assert(cfgPath != null)
-
-                isCon = true
-                conOwner = true
-                conTs = System.currentTimeMillis
+            try {
+                startedGridName = scalar.start(cfg).name
             }
+            finally {
+                scalar.daemon(daemon)
+            }
+
+            this.cfgPath = cfgPath
+
+            val nameToCheck = if (name == null) startedGridName else name
+
+            grid$(nameToCheck) match {
+                case Some(g) => grid = g.asInstanceOf[GridEx]
+                case None =>
+                    this.cfgPath = null
+
+                    throw new GE("Named grid unavailable: " + nameToCheck)
+            }
+
+            assert(cfgPath != null)
+
+            isCon = true
+            conOwner = true
+            conTs = System.currentTimeMillis
 
             if (!grid.configuration().isPeerClassLoadingEnabled)
                 warn("Peer class loading is disabled (custom closures in shell mode will not work).")

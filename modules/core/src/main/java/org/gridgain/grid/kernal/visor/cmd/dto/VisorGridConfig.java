@@ -7,8 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.cmd.dto.node;
+package org.gridgain.grid.kernal.visor.cmd.dto;
 
+import org.gridgain.grid.kernal.visor.cmd.dto.cache.*;
+import org.gridgain.grid.kernal.visor.cmd.dto.node.*;
 import org.gridgain.grid.product.*;
 
 import java.io.*;
@@ -18,7 +20,7 @@ import java.util.*;
  /**
  * Node configuration data.
  */
-public class VisorNodeConfig implements Serializable {
+public class VisorGridConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -26,28 +28,28 @@ public class VisorNodeConfig implements Serializable {
     private final GridProductLicense license;
 
     /** Basic. */
-    private final VisorNodeBasicConfig basic;
+    private final VisorBasicConfig basic;
 
     /** Metrics. */
-    private final VisorNodeMetricsConfig metrics;
+    private final VisorMetricsConfig metrics;
 
     /** SPIs. */
-    private final VisorNodeSpisConfig spis;
+    private final VisorSpisConfig spis;
 
     /** P2P. */
-    private final VisorNodePeerToPeerConfig p2p;
+    private final VisorPeerToPeerConfig p2p;
 
     /** Email. */
-    private final VisorNodeEmailConfig email;
+    private final VisorEmailConfig email;
 
     /** Lifecycle. */
-    private final VisorNodeLifecycleConfig lifecycle;
+    private final VisorLifecycleConfig lifecycle;
 
     /** Executors service configuration. */
-    private final VisorNodeExecServiceConfig execSvc;
+    private final VisorExecServiceConfig execSvc;
 
     /** Segmentation. */
-    private final VisorNodeSegmentationConfig seg;
+    private final VisorSegmentationConfig seg;
 
     /** Include properties. */
     private final String inclProps;
@@ -55,25 +57,25 @@ public class VisorNodeConfig implements Serializable {
     /** Include events types. */
     private final int[] inclEvtTypes;
 
-    private final VisorNodeRestConfig rest;
+    private final VisorRestConfig rest;
 
     /** User attributes. */
     private final Map<String, ?> userAttrs;
 
     /** Caches. */
-    private final Iterable<VisorNodeCacheConfig> caches;
+    private final Iterable<VisorCacheConfig> caches;
 
     /** Ggfss. */
-    private final Iterable<VisorNodeGgfsConfig> ggfss;
+    private final Iterable<VisorGgfsConfig> ggfss;
 
     /** Streamers. */
     private final Iterable<VisorStreamerConfig> streamers;
 
-//    /** Sender hub configuration */
-//    private final VisorNodeCacheDrSenderConfig drSenderHub;
-//
-//    /** Receiver hub configuration */
-//    private final VisorNodeCacheDrReceiverConfig drReceiverHub;
+    /** Sender hub configuration */
+    private final VisorDrSenderHubConfig drSenderHub;
+
+    /** Receiver hub configuration */
+    private final VisorDrReceiverHubConfig drReceiverHub;
 
     /** Environment. */
     private final Map<String, String> env;
@@ -81,16 +83,15 @@ public class VisorNodeConfig implements Serializable {
     /** System properties. */
     private final Properties sysProps;
 
-    public VisorNodeConfig(GridProductLicense license, VisorNodeBasicConfig basic, VisorNodeMetricsConfig metrics,
-        VisorNodeSpisConfig spis, VisorNodePeerToPeerConfig p2p, VisorNodeEmailConfig email,
-        VisorNodeLifecycleConfig lifecycle,
-        VisorNodeExecServiceConfig execSvc, VisorNodeSegmentationConfig seg, String inclProps, int[] inclEvtTypes,
-        VisorNodeRestConfig rest, Map<String, ?> userAttrs, Iterable<VisorNodeCacheConfig> caches,
-        Iterable<VisorNodeGgfsConfig> ggfss,
+    public VisorGridConfig(GridProductLicense license, VisorBasicConfig basic, VisorMetricsConfig metrics,
+        VisorSpisConfig spis, VisorPeerToPeerConfig p2p, VisorEmailConfig email,
+        VisorLifecycleConfig lifecycle,
+        VisorExecServiceConfig execSvc, VisorSegmentationConfig seg, String inclProps, int[] inclEvtTypes,
+        VisorRestConfig rest, Map<String, ?> userAttrs, Iterable<VisorCacheConfig> caches,
+        Iterable<VisorGgfsConfig> ggfss,
         Iterable<VisorStreamerConfig> streamers,
-//        VisorNodeCacheDrSenderConfig drSenderHub, VisorNodeCacheDrReceiverConfig drReceiverHub,
-        Map<String, String> env,
-        Properties sysProps) {
+        VisorDrSenderHubConfig drSenderHub, VisorDrReceiverHubConfig drReceiverHub,
+        Map<String, String> env, Properties sysProps) {
         this.license = license;
         this.basic = basic;
         this.metrics = metrics;
@@ -107,8 +108,8 @@ public class VisorNodeConfig implements Serializable {
         this.caches = caches;
         this.ggfss = ggfss;
         this.streamers = streamers;
-//        this.drSenderHub = drSenderHub;
-//        this.drReceiverHub = drReceiverHub;
+        this.drSenderHub = drSenderHub;
+        this.drReceiverHub = drReceiverHub;
         this.env = env;
         this.sysProps = sysProps;
     }
@@ -123,56 +124,56 @@ public class VisorNodeConfig implements Serializable {
     /**
      * @return Basic.
      */
-    public VisorNodeBasicConfig basic() {
+    public VisorBasicConfig basic() {
         return basic;
     }
 
     /**
      * @return Metric.
      */
-    public VisorNodeMetricsConfig metrics() {
+    public VisorMetricsConfig metrics() {
         return metrics;
     }
 
     /**
      * @return Spis.
      */
-    public VisorNodeSpisConfig spis() {
+    public VisorSpisConfig spis() {
         return spis;
     }
 
     /**
      * @return P2P.
      */
-    public VisorNodePeerToPeerConfig p2p() {
+    public VisorPeerToPeerConfig p2p() {
         return p2p;
     }
 
     /**
      * @return Email.
      */
-    public VisorNodeEmailConfig email() {
+    public VisorEmailConfig email() {
         return email;
     }
 
     /**
      * @return Lifecycle.
      */
-    public VisorNodeLifecycleConfig lifecycle() {
+    public VisorLifecycleConfig lifecycle() {
         return lifecycle;
     }
 
     /**
      * @return Executors.
      */
-    public VisorNodeExecServiceConfig executorService() {
+    public VisorExecServiceConfig executorService() {
         return execSvc;
     }
 
     /**
      * @return Segmentation.
      */
-    public VisorNodeSegmentationConfig seg() {
+    public VisorSegmentationConfig seg() {
         return seg;
     }
 
@@ -193,7 +194,7 @@ public class VisorNodeConfig implements Serializable {
     /**
      * @return Rest.
      */
-    public VisorNodeRestConfig rest() {
+    public VisorRestConfig rest() {
         return rest;
     }
 
@@ -207,14 +208,14 @@ public class VisorNodeConfig implements Serializable {
     /**
      * @return Caches.
      */
-    public Iterable<VisorNodeCacheConfig> caches() {
+    public Iterable<VisorCacheConfig> caches() {
         return caches;
     }
 
     /**
      * @return Ggfss.
      */
-    public Iterable<VisorNodeGgfsConfig> ggfss() {
+    public Iterable<VisorGgfsConfig> ggfss() {
         return ggfss;
     }
 
@@ -228,16 +229,16 @@ public class VisorNodeConfig implements Serializable {
     /**
      * @return Sender hub configuration
      */
-//    public VisorNodeCacheDrSenderConfig drSenderHub() {
-//        return drSenderHub;
-//    }
+    public VisorDrSenderHubConfig drSenderHub() {
+        return drSenderHub;
+    }
 
     /**
      * @return Receiver hub configuration
      */
-//    public VisorNodeCacheDrReceiverConfig drReceiverHub() {
-//        return drReceiverHub;
-//    }
+    public VisorDrReceiverHubConfig drReceiverHub() {
+        return drReceiverHub;
+    }
 
     /**
      * @return Environment.

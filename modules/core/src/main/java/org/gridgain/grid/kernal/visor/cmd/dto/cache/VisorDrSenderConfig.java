@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.cmd.dto.node;
+package org.gridgain.grid.kernal.visor.cmd.dto.cache;
 
 import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.dr.hub.sender.*;
@@ -17,7 +17,7 @@ import java.io.*;
 /**
  * Visor counterpart for {@link GridDrSenderCacheConfiguration}.
  */
-public class VisorNodeCacheDrSenderConfig implements Serializable {
+public class VisorDrSenderConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,7 +42,7 @@ public class VisorNodeCacheDrSenderConfig implements Serializable {
     /** Amount of worker threads responsible for full state transfer. */
     private final int stateTransferThreadsCount;
 
-    public VisorNodeCacheDrSenderConfig(GridDrSenderCacheMode mode, int batchSendSize, long batchSendFrequency,
+    public VisorDrSenderConfig(GridDrSenderCacheMode mode, int batchSendSize, long batchSendFrequency,
         int maxBatches,
         GridDrSenderHubLoadBalancingMode senderHubLoadBalancingMode, long stateTransferThrottle,
         int stateTransferThreadsCount) {

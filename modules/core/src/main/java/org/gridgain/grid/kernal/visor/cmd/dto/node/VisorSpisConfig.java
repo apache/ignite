@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * SPIs configuration data.
  */
-public class VisorNodeSpisConfig implements Serializable {
+public class VisorSpisConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -34,7 +34,7 @@ public class VisorNodeSpisConfig implements Serializable {
     private final GridBiTuple<String, Map<String, Object>> swapSpaceSpis;
     private final GridBiTuple<String, Map<String, Object>>[] indexingSpi;
 
-    public VisorNodeSpisConfig(GridBiTuple<String, Map<String, Object>> discoSpi,
+    public VisorSpisConfig(GridBiTuple<String, Map<String, Object>> discoSpi,
         GridBiTuple<String, Map<String, Object>> commSpi,
         GridBiTuple<String, Map<String, Object>> evtSpi,
         GridBiTuple<String, Map<String, Object>> colSpi,

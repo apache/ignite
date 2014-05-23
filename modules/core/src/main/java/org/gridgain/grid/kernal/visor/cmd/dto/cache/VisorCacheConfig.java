@@ -7,10 +7,9 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.cmd.dto.node;
+package org.gridgain.grid.kernal.visor.cmd.dto.cache;
 
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.visor.cmd.dto.cache.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -18,7 +17,7 @@ import java.io.*;
 /**
  * Cache configuration data.
  */
-public class VisorNodeCacheConfig implements Serializable {
+public class VisorCacheConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -117,12 +116,12 @@ public class VisorNodeCacheConfig implements Serializable {
     private final VisorWriteBehindConfig writeBehind;
 
     /** Data center replication send configuration. * */
-    @Nullable private final VisorNodeCacheDrSenderConfig drSendConfig;
+    @Nullable private final VisorDrSenderConfig drSendConfig;
 
     /** Data center replication receive configuration. */
-    @Nullable private final VisorNodeCacheDrReceiverConfig drReceiveConfig;
+    @Nullable private final VisorDrReceiverConfig drReceiveConfig;
 
-    public VisorNodeCacheConfig(String name, GridCacheMode mode, GridCacheDistributionMode distributionMode,
+    public VisorCacheConfig(String name, GridCacheMode mode, GridCacheDistributionMode distributionMode,
         GridCacheAtomicityMode atomicityMode,
         int atomicSequenceReserveSize, GridCacheAtomicWriteOrderMode atomicWriteOrderMode,
         long ttl, boolean eagerTtl, double refreshAheadRatio,
@@ -136,8 +135,8 @@ public class VisorNodeCacheConfig implements Serializable {
         VisorPreloadConfig preload, VisorEvictionConfig evict,
         VisorNearCacheConfig near, VisorDefaultConfig dflt,
         VisorDgcConfig dgc, VisorStoreConfig store, VisorWriteBehindConfig writeBehind,
-        @Nullable VisorNodeCacheDrSenderConfig drSendConfig,
-        @Nullable VisorNodeCacheDrReceiverConfig drReceiveConfig) {
+        @Nullable VisorDrSenderConfig drSendConfig,
+        @Nullable VisorDrReceiverConfig drReceiveConfig) {
         this.name = name;
         this.mode = mode;
         this.distributionMode = distributionMode;
@@ -361,14 +360,14 @@ public class VisorNodeCacheConfig implements Serializable {
     /**
      * @return Data center replication send configuration. *
      */
-    public VisorNodeCacheDrSenderConfig drSendConfig() {
+    public VisorDrSenderConfig drSendConfig() {
         return drSendConfig;
     }
 
     /**
      * @return Data center replication receive configuration.
      */
-    public VisorNodeCacheDrReceiverConfig drReceiveConfig() {
+    public VisorDrReceiverConfig drReceiveConfig() {
         return drReceiveConfig;
     }
 
