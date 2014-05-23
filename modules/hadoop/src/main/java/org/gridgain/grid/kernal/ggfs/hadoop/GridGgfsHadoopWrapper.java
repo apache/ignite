@@ -65,7 +65,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
             this.log = log;
         }
         catch (GridException e) {
-            throw new IOException("Failed to parse endpoint: " + authority);
+            throw new IOException("Failed to parse endpoint: " + authority, e);
         }
     }
 
@@ -222,7 +222,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
 
     /** {@inheritDoc} */
     @Override public GridGgfsHadoopStreamDelegate create(final GridGgfsPath path, final boolean overwrite,
-        final boolean colocate, final int replication, final long blockSize, final @Nullable Map<String, String> props)
+        final boolean colocate, final int replication, final long blockSize, @Nullable final Map<String, String> props)
         throws IOException {
         return withReconnectHandling(new FileSystemClosure<GridGgfsHadoopStreamDelegate>() {
             @Override public GridGgfsHadoopStreamDelegate apply(GridGgfsHadoopEx hadoop,
@@ -234,7 +234,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
 
     /** {@inheritDoc} */
     @Override public GridGgfsHadoopStreamDelegate append(final GridGgfsPath path, final boolean create,
-        final @Nullable Map<String, String> props) throws IOException {
+        @Nullable final Map<String, String> props) throws IOException {
         return withReconnectHandling(new FileSystemClosure<GridGgfsHadoopStreamDelegate>() {
             @Override public GridGgfsHadoopStreamDelegate apply(GridGgfsHadoopEx hadoop,
                 GridGgfsHandshakeResponse hndResp) throws GridException, IOException {

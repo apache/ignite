@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.hadoop.planner;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.logger.*;
@@ -142,14 +143,8 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
 
                 GridGgfsEx ggfs = null;
 
-                if (F.eq(grid.name(), endpoint.grid())) {
-                    try {
-                        ggfs = (GridGgfsEx) grid.ggfs(endpoint.ggfs());
-                    }
-                    catch (IllegalArgumentException e) {
-                        // No-op.
-                    }
-                }
+                if (F.eq(grid.name(), endpoint.grid()))
+                    ggfs = (GridGgfsEx) ((GridEx)grid).ggfsx(endpoint.ggfs());
 
                 if (ggfs != null && !ggfs.isProxy(split0.file())) {
                     Collection<GridGgfsBlockLocation> blocks = ggfs.affinity(new GridGgfsPath(split0.file()),
