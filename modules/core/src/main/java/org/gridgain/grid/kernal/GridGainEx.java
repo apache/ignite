@@ -1271,7 +1271,7 @@ public class GridGainEx {
             if (ggHome == null) {
                 ggHome = U.getGridGainHome();
 
-                U.setWorkDirectory(cfg.getWorkDirectory(), null);
+                U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
             }
             else {
                 // If user provided GRIDGAIN_HOME - set it as a system property.
