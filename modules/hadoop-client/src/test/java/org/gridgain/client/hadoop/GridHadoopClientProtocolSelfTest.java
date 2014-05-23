@@ -17,6 +17,7 @@ import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.mapreduce.lib.output.*;
 import org.apache.hadoop.mapreduce.protocol.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -83,6 +84,15 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     }
 
     /** {@inheritDoc} */
+    @Override public GridHadoopConfiguration hadoopConfiguration(String gridName) {
+        GridHadoopConfiguration cfg = super.hadoopConfiguration(gridName);
+
+        cfg.setExternalExecution(false);
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
     }
@@ -139,6 +149,9 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
         job.setMapperClass(TestMapper.class);
         job.setReducerClass(TestReducer.class);
+
+        // TODO: Remove.
+//        job.setNumReduceTasks(0);
 
         job.setInputFormatClass(TextInputFormat.class);
         job.setOutputFormatClass(TextOutputFormat.class);
