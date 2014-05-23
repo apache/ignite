@@ -435,13 +435,12 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * from swap storage.
      *
      * @param ver Obsolete version.
-     * @param swap If {@code true} then remove from swap.
      * @param readers Flag to clear readers as well.
      * @param filter Optional entry filter.
      * @throws GridException If failed to remove from swap.
      * @return {@code True} if entry was not being used, passed the filter and could be removed.
      */
-    public boolean clear(GridCacheVersion ver, boolean swap, boolean readers,
+    public boolean clear(GridCacheVersion ver, boolean readers,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException;
 
     /**

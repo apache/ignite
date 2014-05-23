@@ -379,6 +379,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
             try {
                 if (!reload && allowLocRead) {
                     try {
+
+                        // entryEx - create if absent, peekEx - do not create if absent.
                         entry = colocated.context().isSwapEnabled() ? colocated.entryEx(key) : colocated.peekEx(key);
 
                         // If our DHT cache do has value, then we peek it.

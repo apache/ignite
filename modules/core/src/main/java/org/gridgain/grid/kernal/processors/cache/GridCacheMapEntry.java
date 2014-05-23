@@ -1686,7 +1686,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean clear(GridCacheVersion ver, boolean swap, boolean readers,
+    @Override public boolean clear(GridCacheVersion ver, boolean readers,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         cctx.denyOnFlag(GridCacheFlag.READ);
 
@@ -1749,12 +1749,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 clearIndex(val);
 
-                if (swap) {
+                if (!cctx.hasFlag(SKIP_SWAP))
                     releaseSwap();
-
-                    if (log.isDebugEnabled())
-                        log.debug("Entry has been cleared from swap storage: " + this);
-                }
 
                 ret = true;
                 rmv = true;
@@ -2000,7 +1996,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     return false;
                 }
                 else
-                    return clear(nextVersion(), cctx.isSwapOrOffheapEnabled(), false, filter);
+                    return clear(nextVersion(), false, filter);
             }
         }
 

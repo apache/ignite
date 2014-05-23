@@ -451,7 +451,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public boolean clear(GridCacheVersion ver, boolean swap, boolean readers,
+    @Override public boolean clear(GridCacheVersion ver, boolean readers,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         if (ver == null || ver.equals(this.ver)) {
             val = null;
