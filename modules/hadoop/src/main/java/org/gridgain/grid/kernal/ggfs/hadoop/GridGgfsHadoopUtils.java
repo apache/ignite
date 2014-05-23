@@ -22,6 +22,15 @@ import java.io.*;
  * Utility constants and methods for GGFS Hadoop file system.
  */
 public class GridGgfsHadoopUtils {
+    /** Parameter name for endpoint no embed mode flag. */
+    public static final String PARAM_GGFS_ENDPOINT_NO_EMBED = "fs.ggfs.%s.endpoint.no_embed";
+
+    /** Parameter name for endpoint no shared memory flag. */
+    public static final String PARAM_GGFS_ENDPOINT_NO_LOCAL_SHMEM = "fs.ggfs.%s.endpoint.no_local_shmem";
+
+    /** Parameter name for endpoint no local TCP flag. */
+    public static final String PARAM_GGFS_ENDPOINT_NO_LOCAL_TCP = "fs.ggfs.%s.endpoint.no_local_tcp";
+
     /**
      * Get string parameter.
      *

@@ -15,7 +15,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.permission.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem;
+import org.gridgain.grid.ggfs.hadoop.v1.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.communication.*;
@@ -43,7 +43,6 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.ggfs.GridGgfsMode.*;
-import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
 
 /**
  * Test hadoop file system implementation.
@@ -2384,10 +2383,10 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
         cfg.setBoolean("fs.ggfs.impl.disable.cache", true);
 
         if (skipEmbed)
-            cfg.setBoolean(String.format(PARAM_GGFS_ENDPOINT_NO_EMBED, authority), true);
+            cfg.setBoolean(String.format(GridGgfsHadoopUtils.PARAM_GGFS_ENDPOINT_NO_EMBED, authority), true);
 
         if (skipLocShmem)
-            cfg.setBoolean(String.format(PARAM_GGFS_ENDPOINT_NO_LOCAL_SHMEM, authority), true);
+            cfg.setBoolean(String.format(GridGgfsHadoopUtils.PARAM_GGFS_ENDPOINT_NO_LOCAL_SHMEM, authority), true);
 
         return cfg;
     }

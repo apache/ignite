@@ -36,19 +36,6 @@ import org.gridgain.grid.ggfs.*;
  *         node to which client is connected. If {@code true}, file will not be distributed and will be written
  *         to a single data node. Default value is {@code true}.
  *     </li>
- *     <li>
- *         {@code fs.ggfs.[name].endpoint.no_embed} - optional flag; when set to {@code true} file system will not
- *         try to find embedded GridGain instance with the given Grid and GGFS names and connect to it; only IPC will
- *         be used.
- *     </li>
- *     <li>
- *         {@code fs.ggfs.[name].endpoint.no_local_shmem} - optional flag; when set to {@code true} file system will
- *         not try to connect to IPC endpoint using shared memory if host is 127.0.0.1; TCP will be used right away.
- *     </li>
- *     <li>
- *         {@code fs.ggfs.[name].endpoint.no_local_tcp} - optional flag; when set to {@code true} and IPC host is not
- *         127.0.0.1, file system will not try to connect to local TCP address 127.0.0.1:[port].
- *     </li>
  * </ul>
  * Where {@code [name]} is file system endpoint which you specify in file system URI authority part. E.g. in
  * case your file system URI is {@code ggfs://127.0.0.1:10500} then {@code name} will be {@code 127.0.0.1:10500}.
@@ -91,13 +78,4 @@ public class GridGgfsHadoopParameters {
 
     /** Parameter name for log enabled flag. */
     public static final String PARAM_GGFS_LOG_ENABLED = "fs.ggfs.%s.log.enabled";
-
-    /** Parameter name for endpoint no embed mode flag. */
-    public static final String PARAM_GGFS_ENDPOINT_NO_EMBED = "fs.ggfs.%s.endpoint.no_embed";
-
-    /** Parameter name for endpoint no shared memory flag. */
-    public static final String PARAM_GGFS_ENDPOINT_NO_LOCAL_SHMEM = "fs.ggfs.%s.endpoint.no_local_shmem";
-
-    /** Parameter name for endpoint no local TCP flag. */
-    public static final String PARAM_GGFS_ENDPOINT_NO_LOCAL_TCP = "fs.ggfs.%s.endpoint.no_local_tcp";
 }

@@ -146,7 +146,7 @@ public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridCommonAbstract
 
         cfg.addResource(U.resolveGridGainUrl(HADOOP_FS_CFG));
         cfg.setBoolean("fs.ggfs.impl.disable.cache", true);
-        cfg.setBoolean(String.format(PARAM_GGFS_ENDPOINT_NO_EMBED, ""), true);
+        cfg.setBoolean(String.format(GridGgfsHadoopUtils.PARAM_GGFS_ENDPOINT_NO_EMBED, ""), true);
 
         // Ensure that existing IO is reused.
         FileSystem fs1 = FileSystem.get(new URI("ggfs:///"), cfg);
