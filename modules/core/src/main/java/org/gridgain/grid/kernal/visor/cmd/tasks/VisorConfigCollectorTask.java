@@ -494,51 +494,53 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
                     drReceiverCfg));
             }
 
-            final List<VisorGgfsConfig> ggfss = new ArrayList<>(c.getGgfsConfiguration().length);
+            final List<VisorGgfsConfig> ggfss = new ArrayList<>();
 
-            for (GridGgfsConfiguration ggfs : c.getGgfsConfiguration()) {
-                ggfss.add(new VisorGgfsConfig(
-                    ggfs.getName(),
-                    ggfs.getMetaCacheName(),
-                    ggfs.getDataCacheName(),
-                    ggfs.getBlockSize(),
-                    ggfs.getPrefetchBlocks(),
-                    ggfs.getStreamBufferSize(),
-                    ggfs.getPerNodeBatchSize(),
-                    ggfs.getPerNodeParallelBatchCount(),
-                    ggfs.getSecondaryHadoopFileSystemUri(),
-                    ggfs.getSecondaryHadoopFileSystemConfigPath(),
-                    ggfs.getDefaultMode(),
-                    ggfs.getPathModes(),
-                    compactClass(ggfs.getDualModePutExecutorService()),
-                    ggfs.getDualModePutExecutorServiceShutdown(),
-                    ggfs.getDualModeMaxPendingPutsSize(),
-                    ggfs.getMaximumTaskRangeLength(),
-                    ggfs.getFragmentizerConcurrentFiles(),
-                    ggfs.getFragmentizerLocalWritesRatio(),
-                    ggfs.isFragmentizerEnabled(),
-                    ggfs.getFragmentizerThrottlingBlockLength(),
-                    ggfs.getFragmentizerThrottlingDelay(),
-                    ggfs.getIpcEndpointConfiguration(),
-                    ggfs.isIpcEndpointEnabled(),
-                    ggfs.getMaxSpaceSize(),
-                    ggfs.getManagementPort(),
-                    ggfs.getSequentialReadsBeforePrefetch(),
-                    ggfs.getTrashPurgeTimeout()
-                ));
-            }
+            if (c.getGgfsConfiguration() != null)
+                for (GridGgfsConfiguration ggfs : c.getGgfsConfiguration()) {
+                    ggfss.add(new VisorGgfsConfig(
+                        ggfs.getName(),
+                        ggfs.getMetaCacheName(),
+                        ggfs.getDataCacheName(),
+                        ggfs.getBlockSize(),
+                        ggfs.getPrefetchBlocks(),
+                        ggfs.getStreamBufferSize(),
+                        ggfs.getPerNodeBatchSize(),
+                        ggfs.getPerNodeParallelBatchCount(),
+                        ggfs.getSecondaryHadoopFileSystemUri(),
+                        ggfs.getSecondaryHadoopFileSystemConfigPath(),
+                        ggfs.getDefaultMode(),
+                        ggfs.getPathModes(),
+                        compactClass(ggfs.getDualModePutExecutorService()),
+                        ggfs.getDualModePutExecutorServiceShutdown(),
+                        ggfs.getDualModeMaxPendingPutsSize(),
+                        ggfs.getMaximumTaskRangeLength(),
+                        ggfs.getFragmentizerConcurrentFiles(),
+                        ggfs.getFragmentizerLocalWritesRatio(),
+                        ggfs.isFragmentizerEnabled(),
+                        ggfs.getFragmentizerThrottlingBlockLength(),
+                        ggfs.getFragmentizerThrottlingDelay(),
+                        ggfs.getIpcEndpointConfiguration(),
+                        ggfs.isIpcEndpointEnabled(),
+                        ggfs.getMaxSpaceSize(),
+                        ggfs.getManagementPort(),
+                        ggfs.getSequentialReadsBeforePrefetch(),
+                        ggfs.getTrashPurgeTimeout()
+                    ));
+                }
 
-            final List<VisorStreamerConfig> streamers = new ArrayList<>(c.getStreamerConfiguration().length);
+            final List<VisorStreamerConfig> streamers = new ArrayList<>();
 
-            for (GridStreamerConfiguration streamer : c.getStreamerConfiguration())
-                streamers.add(new VisorStreamerConfig(
-                    streamer.getName(),
-                    compactClass(streamer.getRouter()),
-                    streamer.isAtLeastOnce(),
-                    streamer.getMaximumFailoverAttempts(),
-                    streamer.getMaximumConcurrentSessions(),
-                    streamer.isExecutorServiceShutdown()
-                ));
+            if (c.getStreamerConfiguration() != null)
+                for (GridStreamerConfiguration streamer : c.getStreamerConfiguration())
+                    streamers.add(new VisorStreamerConfig(
+                        streamer.getName(),
+                        compactClass(streamer.getRouter()),
+                        streamer.isAtLeastOnce(),
+                        streamer.getMaximumFailoverAttempts(),
+                        streamer.getMaximumConcurrentSessions(),
+                        streamer.isExecutorServiceShutdown()
+                    ));
 
             final VisorDrSenderHubConfig senderHub = null;
 
