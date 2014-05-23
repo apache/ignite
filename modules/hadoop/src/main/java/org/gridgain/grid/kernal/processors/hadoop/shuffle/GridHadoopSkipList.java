@@ -9,20 +9,29 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
+import org.gridgain.grid.*;
+import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 
 import java.util.*;
+import java.util.concurrent.atomic.*;
 
 /**
  * Skip list.
  */
-public class GridHadoopSkipList {
+public class GridHadoopSkipList implements GridHadoopMultimap {
     /** */
     private final Comparator cmp;
 
     /** */
     private final GridUnsafeMemory mem;
+
+    /** Top head index. */
+    private final AtomicInteger top = new AtomicInteger();
+
+    /** Heads for all the lists. */
+    private final AtomicLongArray heads = new AtomicLongArray(32);
 
     public GridHadoopSkipList(Comparator cmp, GridUnsafeMemory mem) {
         assert cmp != null;
@@ -32,7 +41,27 @@ public class GridHadoopSkipList {
         this.mem = mem;
     }
 
-    public class ListAdder {
+    /** {@inheritDoc} */
+    @Override public boolean visit(boolean ignoreLastVisited, Visitor v) throws GridException {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Adder startAdding() throws GridException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridHadoopTaskInput input() throws GridException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        // TODO
+    }
+
+    public class AdderImpl {
         /** */
         private Random rnd = new GridRandom();
 
