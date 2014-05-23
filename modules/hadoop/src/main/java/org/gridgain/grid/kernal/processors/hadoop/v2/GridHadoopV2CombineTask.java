@@ -27,7 +27,8 @@ public class GridHadoopV2CombineTask extends GridHadoopTask {
     }
 
     /** {@inheritDoc} */
-    @Override public void run(GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
+    @SuppressWarnings({"ConstantConditions", "unchecked"})
+    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job)taskCtx.job();
 
         JobContext jobCtx = jobImpl.hadoopJobContext();
@@ -35,9 +36,30 @@ public class GridHadoopV2CombineTask extends GridHadoopTask {
         try {
             Reducer combiner = U.newInstance(jobCtx.getCombinerClass());
 
-            ReduceContext hadoopCtx = new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx, jobImpl.attemptId(info()));
+            GridHadoopV2Context hadoopCtx = new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx,
+                jobImpl.attemptId(info()));
 
-            combiner.run(new WrappedReducer().getReducerContext(hadoopCtx));
+            if (jobImpl.reducers() == 0) {
+                // No reducers defined, so set correct writer to combiner.
+                OutputFormat outputFormat = U.newInstance(jobCtx.getOutputFormatClass());
+
+                RecordWriter writer = outputFormat.getRecordWriter(hadoopCtx);
+
+                hadoopCtx.writer(writer);
+
+                try {
+                    combiner.run(new WrappedReducer().getReducerContext(hadoopCtx));
+                }
+                finally {
+                    writer.close(hadoopCtx);
+                }
+
+                OutputCommitter outputCommitter = outputFormat.getOutputCommitter(hadoopCtx);
+
+                outputCommitter.commitTask(hadoopCtx);
+            }
+            else
+                combiner.run(new WrappedReducer().getReducerContext(hadoopCtx));
         }
         catch (InterruptedException e) {
             throw new GridInterruptedException(e);

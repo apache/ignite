@@ -31,23 +31,29 @@ public class GridHadoopV2MapTask extends GridHadoopTask {
     }
 
     /** {@inheritDoc} */
-    @Override public void run(GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
+    @SuppressWarnings({"ConstantConditions", "unchecked"})
+    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job)taskCtx.job();
 
         JobContext jobCtx = jobImpl.hadoopJobContext();
 
         Mapper mapper;
         InputFormat inFormat;
+        OutputFormat outputFormat;
 
         try {
             mapper = U.newInstance(jobCtx.getMapperClass());
             inFormat = U.newInstance(jobCtx.getInputFormatClass());
+
+            outputFormat = jobImpl.reducers() == 0 && !jobImpl.hasCombiner() ?
+                U.newInstance(jobCtx.getOutputFormatClass()) : null;
         }
         catch (ClassNotFoundException e) {
             throw new GridException(e);
         }
 
-        GridHadoopV2Context hadoopCtx = new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx, jobImpl.attemptId(info()));
+        GridHadoopV2Context hadoopCtx = new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx,
+            jobImpl.attemptId(info()));
 
         GridHadoopInputSplit split = info().inputSplit();
 
@@ -67,12 +73,26 @@ public class GridHadoopV2MapTask extends GridHadoopTask {
 
         try {
             RecordReader reader = inFormat.createRecordReader(nativeSplit, hadoopCtx);
+            RecordWriter writer = outputFormat != null ? outputFormat.getRecordWriter(hadoopCtx) : null;
 
             reader.initialize(nativeSplit, hadoopCtx);
 
             hadoopCtx.reader(reader);
+            hadoopCtx.writer(writer);
 
-            mapper.run(new WrappedMapper().getMapContext(hadoopCtx));
+            try {
+                mapper.run(new WrappedMapper().getMapContext(hadoopCtx));
+            }
+            finally {
+                if (writer != null)
+                    writer.close(hadoopCtx);
+            }
+
+            if (writer != null) {
+                OutputCommitter outputCommitter = outputFormat.getOutputCommitter(hadoopCtx);
+
+                outputCommitter.commitTask(hadoopCtx);
+            }
         }
         catch (IOException e) {
             throw new GridException(e);

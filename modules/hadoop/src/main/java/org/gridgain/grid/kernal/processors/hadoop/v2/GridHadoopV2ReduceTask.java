@@ -29,7 +29,8 @@ public class GridHadoopV2ReduceTask extends GridHadoopTask {
     }
 
     /** {@inheritDoc} */
-    @Override public void run(GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
+    @SuppressWarnings({"ConstantConditions", "unchecked"})
+    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job)taskCtx.job();
 
         JobContext jobCtx = jobImpl.hadoopJobContext();
@@ -45,7 +46,8 @@ public class GridHadoopV2ReduceTask extends GridHadoopTask {
             throw new GridException(e);
         }
 
-        GridHadoopV2Context hadoopCtx = new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx, jobImpl.attemptId(info()));
+        GridHadoopV2Context hadoopCtx = new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx,
+            jobImpl.attemptId(info()));
 
         try {
             RecordWriter writer = outputFormat.getRecordWriter(hadoopCtx);

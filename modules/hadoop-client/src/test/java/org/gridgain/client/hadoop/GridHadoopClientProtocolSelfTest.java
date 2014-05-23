@@ -151,7 +151,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         job.setReducerClass(TestReducer.class);
 
         // TODO: Remove.
-//        job.setNumReduceTasks(0);
+        job.setNumReduceTasks(0);
 
         job.setInputFormatClass(TextInputFormat.class);
         job.setOutputFormatClass(TextOutputFormat.class);
@@ -205,7 +205,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         assert F.eq(status.getJobID(), expJobId);
         assert F.eq(status.getJobName(), expJobName);
         assert F.eq(status.getUsername(), expUser);
-        assert F.eq(status.getState(), expState);
+        assert F.eq(status.getState(), expState) : status.getState();
 
         assert F.eq(status.getSetupProgress(), expSetupProgress);
         assert F.eq(status.getMapProgress(), expMapProgress);
