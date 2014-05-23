@@ -135,12 +135,12 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
 
     /** {@inheritDoc} */
     @Override public Counter getCounter(Enum<?> cntrName) {
-        return new GenericCounter(cntrName.getDeclaringClass().getName(), cntrName.name());
+        return new GenericCounter(cntrName.name(), cntrName.name());
     }
 
     /** {@inheritDoc} */
     @Override public Counter getCounter(String grpName, String cntrName) {
-        return new GenericCounter(grpName, cntrName);
+        return new GenericCounter(cntrName, cntrName);
     }
 
     /** {@inheritDoc} */
