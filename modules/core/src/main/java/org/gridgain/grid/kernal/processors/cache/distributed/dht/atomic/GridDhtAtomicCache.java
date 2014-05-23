@@ -601,6 +601,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         long ttl,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
+        ctx.checkSecurity(GridSecurityOperation.PUT);
+
         final GridNearAtomicUpdateFuture<K, V> updateFut = new GridNearAtomicUpdateFuture<>(
             ctx,
             this,
@@ -646,6 +648,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         assert keys != null || drMap != null;
+        ctx.checkSecurity(GridSecurityOperation.REMOVE);
 
         final GridNearAtomicUpdateFuture<K, V> updateFut = new GridNearAtomicUpdateFuture<>(
             ctx,
