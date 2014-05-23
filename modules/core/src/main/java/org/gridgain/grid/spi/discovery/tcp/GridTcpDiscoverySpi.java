@@ -3569,6 +3569,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                                 n.visible(true);
                             }
 
+                            locNode.setAttributes(node.attributes());
+
                             locNode.visible(true);
 
                             // Restore topology with all nodes visible.

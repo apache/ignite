@@ -14,6 +14,8 @@ import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.spi.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
+
 /**
  * This interface defines a grid secure session manager.
  */
@@ -33,6 +35,17 @@ public interface GridSecureSessionManager extends GridManager {
      * @return Next token.
      * @throws GridException If error occurred.
      */
-    @Nullable public byte[] validate(GridSecuritySubjectType subjType, byte[] subjId, @Nullable byte[] tok,
+    public boolean validate(GridSecuritySubjectType subjType, UUID subjId, @Nullable byte[] tok,
         @Nullable Object params) throws GridException;
+
+    /**
+     * Generates secure session token.
+     *
+     * @param subjType Subject type.
+     * @param subjId Subject ID.
+     * @param params Params.
+     * @return
+     */
+    public byte[] generateSessionToken(GridSecuritySubjectType subjType, UUID subjId, @Nullable Object params)
+        throws GridException;
 }

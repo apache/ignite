@@ -14,6 +14,8 @@ import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.securesession.noop.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
+
 /**
  * Secure session SPI allows for session creation and validation, typically after authentication
  * has successfully happened. The main purpose of this SPI is to ensure that remote clients are
@@ -57,23 +59,27 @@ public interface GridSecureSessionSpi extends GridSpi, GridSpiJsonConfigurable {
     public boolean supported(GridSecuritySubjectType subjType);
 
     /**
-     * Validates a given token and returns a valid {@code "remember-me"} session token.
-     * <p>If passed in token is {@code null}, then this is a first time token generation
-     * and a new session token will be created.
-     * <p>Otherwise, the passed in token is validated and if validation passes, then
-     * the next value for session token is returned. If failed, then {@code null} is returned.
+     * Validates given session token.
      *
      * @param subjType Subject type.
      * @param subjId Unique subject ID such as local or remote node ID, client ID, etc.
-     * @param tok If {@code null}, then this is the first request and new session
-     * token should be created, otherwise, the token will be validated and next session
-     * token will be generated.
+     * @param tok Token to validate.
      * @param params Additional implementation-specific parameters.
-     * @return Session token which may be used to validate consequent requests or
-     *         {@code null} if validation failed.
+     * @return {@code True} if session token is valid, {@code false} otherwise.
      * @throws GridSpiException If validation resulted in system error. Note that
-     * bad credentials should not cause this exception.
+     *      bad credentials should not cause this exception.
      */
-    @Nullable public byte[] validate(GridSecuritySubjectType subjType, byte[] subjId, @Nullable byte[] tok,
+    public boolean validate(GridSecuritySubjectType subjType, UUID subjId, byte[] tok,
         @Nullable Object params) throws GridSpiException;
+
+    /**
+     * Generates new session token.
+     *
+     * @param subjType Subject type.
+     * @param subjId Unique subject ID such as local or remote node ID, client ID, etc.
+     * @param params Additional implementation-specific parameters.
+     * @return Session token that should be used for further validation.
+     */
+    public byte[] generateSessionToken(GridSecuritySubjectType subjType, UUID subjId, @Nullable Object params)
+        throws GridSpiException;
 }

@@ -266,7 +266,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
         byte[] sesTok = req.sessionToken();
 
         // Validate session.
-        if (sesTok != null && ctx.secureSession().validate(REMOTE_CLIENT, clientIdBytes, sesTok, null) != null)
+        if (sesTok != null && ctx.secureSession().validate(REMOTE_CLIENT, clientId, sesTok, null))
             // Session is still valid.
             return;
 
@@ -286,17 +286,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @throws GridException If session token update process failed.
      */
     private byte[] updateSessionToken(GridRestRequest req) throws GridException {
-        byte[] subjId = U.uuidToBytes(req.clientId());
-
-        byte[] sesTok = req.sessionToken();
-
         // Update token from request to actual state.
-        if (sesTok != null)
-            sesTok = ctx.secureSession().validate(REMOTE_CLIENT, subjId, req.sessionToken(), null);
-
-        // Create new session token, if request doesn't valid session token.
-        if (sesTok == null)
-            sesTok = ctx.secureSession().validate(REMOTE_CLIENT, subjId, null, null);
+        byte[] sesTok = ctx.secureSession().generateSessionToken(REMOTE_CLIENT, req.clientId(), null);
 
         // Validate token has been created.
         if (sesTok == null)
