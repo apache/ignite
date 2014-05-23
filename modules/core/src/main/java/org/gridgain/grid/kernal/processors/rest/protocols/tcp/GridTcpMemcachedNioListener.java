@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.cache.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.nio.*;
@@ -21,6 +22,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 import static org.gridgain.grid.kernal.processors.rest.protocols.tcp.GridMemcachedMessage.*;
@@ -64,6 +66,8 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
     @Override public void onMessage(final GridNioSession ses, final GridMemcachedMessage req) {
         assert req != null;
 
+        System.out.println("5555555555555555555555555555555555555555 "+req.operationCode());
+
         final GridTuple3<GridRestCommand, Boolean, Boolean> cmd = command(req.operationCode());
 
         if (cmd == null) {
@@ -99,86 +103,191 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
             return;
         }
 
+        final GridFuture<GridRestResponse> fut;
+
+        final GridInClosure<GridFuture<GridRestResponse>> lsnr;
+
         if (cmd.get1() == NOOP) {
-            GridMemcachedMessage res = new GridMemcachedMessage(req);
-
-            res.status(SUCCESS);
-
-            ses.send(res);
-
-            return;
-        }
-
-        GridFuture<GridRestResponse> fut = hnd.handleAsync(createRestRequest(req, cmd.get1()));
-
-        fut.listenAsync(new CIX1<GridFuture<GridRestResponse>>() {
-            @Override public void applyx(GridFuture<GridRestResponse> f) throws GridException {
-                GridRestResponse restRes = f.get();
-
-                // Handle 'Stat' command (special case because several packets are included in response).
-                if (cmd.get1() == CACHE_METRICS) {
-                    assert restRes.getResponse() instanceof GridCacheRestMetrics;
-
-                    Map<String, Long> metrics = ((GridCacheRestMetrics)restRes.getResponse()).map();
-
-                    for (Map.Entry<String, Long> e : metrics.entrySet()) {
-                        GridMemcachedMessage res = new GridMemcachedMessage(req);
-
-                        res.key(e.getKey());
-
-                        res.value(String.valueOf(e.getValue()));
-
-                        ses.send(res);
-                    }
-
-                    ses.send(new GridMemcachedMessage(req));
+            fut = new GridFuture<GridRestResponse>() {
+                @Override
+                public GridRestResponse get() throws GridException {
+                    return null;
                 }
-                else {
+
+                @Override
+                public GridRestResponse get(long timeout) throws GridException {
+                    return null;
+                }
+
+                @Override
+                public GridRestResponse get(long timeout, TimeUnit unit) throws GridException {
+                    return null;
+                }
+
+                @Override
+                public boolean cancel() throws GridException {
+                    return false;
+                }
+
+                @Override
+                public boolean isDone() {
+                    return false;
+                }
+
+                @Override
+                public boolean isCancelled() {
+                    return false;
+                }
+
+                @Override
+                public long startTime() {
+                    return 0;
+                }
+
+                @Override
+                public long duration() {
+                    return 0;
+                }
+
+                @Override
+                public void syncNotify(boolean syncNotify) {
+
+                }
+
+                @Override
+                public boolean syncNotify() {
+                    return false;
+                }
+
+                @Override
+                public void concurrentNotify(boolean concurNotify) {
+
+                }
+
+                @Override
+                public boolean concurrentNotify() {
+                    return false;
+                }
+
+                @Override
+                public void listenAsync(@Nullable GridInClosure<? super GridFuture<GridRestResponse>> lsnr) {
+                    lsnr.apply(this);
+                }
+
+                @Override
+                public void stopListenAsync(@Nullable GridInClosure<? super GridFuture<GridRestResponse>>... lsnr) {
+
+                }
+
+                @Override
+                public <T> GridFuture<T> chain(GridClosure<? super GridFuture<GridRestResponse>, T> doneCb) {
+                    return null;
+                }
+            };
+
+            lsnr = new CIX1<GridFuture<GridRestResponse>>() {
+                @Override public void applyx(GridFuture<GridRestResponse> f) {
+                    System.out.println("++++++++++++++++++ Start sending response for opCode 10 ");
+
                     GridMemcachedMessage res = new GridMemcachedMessage(req);
 
-                    if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS) {
-                        switch (cmd.get1()) {
-                            case CACHE_GET: {
-                                res.status(restRes.getResponse() == null ? KEY_NOT_FOUND : SUCCESS);
-
-                                break;
-                            }
-
-                            case CACHE_PUT:
-                            case CACHE_ADD:
-                            case CACHE_REMOVE:
-                            case CACHE_REPLACE:
-                            case CACHE_CAS:
-                            case CACHE_APPEND:
-                            case CACHE_PREPEND: {
-                                boolean res0 = restRes.getResponse().equals(Boolean.TRUE);
-
-                                res.status(res0 ? SUCCESS : FAILURE);
-
-                                break;
-                            }
-
-                            default: {
-                                res.status(SUCCESS);
-
-                                break;
-                            }
-                        }
-                    }
-                    else
-                        res.status(FAILURE);
-
-                    if (cmd.get3())
-                        res.key(req.key());
-
-                    if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS && res.addData() &&
-                        restRes.getResponse() != null)
-                        res.value(restRes.getResponse());
+                    res.status(SUCCESS);
 
                     ses.send(res);
+
+                    System.out.println("++++++++++++++++++ End sending response for opCode 10 ");
                 }
-            }
-        });
+            };
+        }
+        else {
+            fut = hnd.handleAsync(createRestRequest(req, cmd.get1()));
+
+            lsnr = new CIX1<GridFuture<GridRestResponse>>() {
+                @Override public void applyx(GridFuture<GridRestResponse> f) throws GridException {
+                    GridRestResponse restRes = f.get();
+
+                    System.out.println("++++++++++++++++++ Start sending response: " + restRes);
+
+                    // Handle 'Stat' command (special case because several packets are included in response).
+                    if (cmd.get1() == CACHE_METRICS) {
+                        assert restRes.getResponse() instanceof GridCacheRestMetrics;
+
+                        Map<String, Long> metrics = ((GridCacheRestMetrics)restRes.getResponse()).map();
+
+                        for (Map.Entry<String, Long> e : metrics.entrySet()) {
+                            GridMemcachedMessage res = new GridMemcachedMessage(req);
+
+                            res.key(e.getKey());
+
+                            res.value(String.valueOf(e.getValue()));
+
+                            ses.send(res);
+                        }
+
+                        ses.send(new GridMemcachedMessage(req));
+                    }
+                    else {
+                        GridMemcachedMessage res = new GridMemcachedMessage(req);
+
+                        if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS) {
+                            switch (cmd.get1()) {
+                                case CACHE_GET: {
+                                    res.status(restRes.getResponse() == null ? KEY_NOT_FOUND : SUCCESS);
+
+                                    break;
+                                }
+
+                                case CACHE_PUT:
+                                case CACHE_ADD:
+                                case CACHE_REMOVE:
+                                case CACHE_REPLACE:
+                                case CACHE_CAS:
+                                case CACHE_APPEND:
+                                case CACHE_PREPEND: {
+                                    boolean res0 = restRes.getResponse().equals(Boolean.TRUE);
+
+                                    res.status(res0 ? SUCCESS : FAILURE);
+
+                                    break;
+                                }
+
+                                default: {
+                                    res.status(SUCCESS);
+
+                                    break;
+                                }
+                            }
+                        }
+                        else
+                            res.status(FAILURE);
+
+                        if (cmd.get3())
+                            res.key(req.key());
+
+                        if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS && res.addData() &&
+                            restRes.getResponse() != null)
+                            res.value(restRes.getResponse());
+
+                        ses.send(res);
+
+                        System.out.println("++++++++++++++++++ End sending response: " + restRes);
+                    }
+                }
+            };
+        }
+
+        final GridFuture<GridRestResponse> lastFut = ses.addMeta(GridNioSessionMetaKey.LAST_FUTURE.ordinal(), fut);
+
+        if (lastFut == null)
+            fut.listenAsync(lsnr);
+        else {
+            lastFut.listenAsync(new CI1<GridFuture<GridRestResponse>>() {
+                @Override
+                public void apply(GridFuture<GridRestResponse> f) {
+                    fut.listenAsync(lsnr);
+                }
+            });
+        }
     }
 
     /**
