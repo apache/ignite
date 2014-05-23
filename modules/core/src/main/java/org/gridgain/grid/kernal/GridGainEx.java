@@ -1125,6 +1125,9 @@ public class GridGainEx {
         /** DR executor service. */
         private ExecutorService drExecSvc;
 
+        /** REST requests executor service. */
+        private ExecutorService restExecSvc;
+
         /** Grid state. */
         private volatile GridGainState state = STOPPED;
 
@@ -1836,6 +1839,15 @@ public class GridGainEx {
                 ((ThreadPoolExecutor)drExecSvc).prestartAllCoreThreads();
             }
 
+            if (cfg.isRestEnabled()) {
+                restExecSvc = new GridThreadPoolExecutor(
+                    "rest-" + cfg.getGridName(),
+                    DFLT_SYSTEM_CORE_THREAD_CNT,
+                    DFLT_SYSTEM_MAX_THREAD_CNT,
+                    DFLT_SYSTEM_KEEP_ALIVE_TIME,
+                    new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
+            }
+
             // Ensure that SPIs support multiple grid instances, if required.
             if (!startCtx.single()) {
                 ensureMultiInstanceSupport(deploySpi);
@@ -1862,7 +1874,7 @@ public class GridGainEx {
                 // Init here to make grid available to lifecycle listeners.
                 grid = grid0;
 
-                grid0.start(myCfg, drExecSvc, new CA() {
+                grid0.start(myCfg, drExecSvc, restExecSvc, new CA() {
                     @Override public void apply() {
                         startLatch.countDown();
                     }
@@ -2070,6 +2082,12 @@ public class GridGainEx {
                 U.shutdownNow(getClass(), drExecSvc, log);
 
                 drExecSvc = null;
+            }
+
+            if (restExecSvc != null) {
+                U.shutdownNow(getClass(), restExecSvc, log);
+
+                restExecSvc = null;
             }
         }
 

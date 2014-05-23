@@ -23,9 +23,12 @@ import org.gridgain.grid.kernal.processors.rest.protocols.http.jetty.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.grid.util.worker.*;
+import org.jdk8.backport.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -49,78 +52,154 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
+    /** Busy lock. */
+    private final GridSpinReadWriteLock busyLock = new GridSpinReadWriteLock();
+
+    /** Workers count. */
+    private final LongAdder workersCnt = new LongAdder();
+
     /** Protocol handler. */
     private final GridRestProtocolHandler protoHnd = new GridRestProtocolHandler() {
         @Override public GridRestResponse handle(GridRestRequest req) throws GridException {
             return handleAsync(req).get();
         }
 
-        @Override public GridFuture<GridRestResponse> handleAsync(final GridRestRequest req) {
-            if (startLatch.getCount() > 0) {
-                try {
-                    startLatch.await();
-                }
-                catch (InterruptedException e) {
-                    return new GridFinishedFuture<>(ctx, new GridException("Failed to handle request " +
-                        "(protocol handler was interrupted when awaiting grid start).", e));
-                }
-            }
-
-            if (log.isDebugEnabled())
-                log.debug("Received request from client: " + req);
-
-            try {
-                authenticate(req);
-            }
-            catch (GridException e) {
-                return new GridFinishedFuture<>(ctx, new GridRestResponse(STATUS_AUTH_FAILED,
-                    e.getMessage()));
-            }
-
-            interceptRequest(req);
-
-            GridRestCommandHandler hnd = handlers.get(req.command());
-
-            GridFuture<GridRestResponse> res = hnd == null ? null : hnd.handleAsync(req);
-
-            if (res == null)
-                return new GridFinishedFuture<>(ctx,
-                    new GridException("Failed to find registered handler for command: " + req.command()));
-
-            return res.chain(new C1<GridFuture<GridRestResponse>, GridRestResponse>() {
-                @Override public GridRestResponse apply(GridFuture<GridRestResponse> f) {
-                    GridRestResponse res;
-
-                    try {
-                        res = f.get();
-                    }
-                    catch (Exception e) {
-                        LT.error(log, e, "Failed to handle request: " + req.command());
-
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to handle request [req=" + req + ", e=" + e + "]");
-
-                        res = new GridRestResponse(STATUS_FAILED, e.getMessage());
-                    }
-
-                    assert res != null;
-
-                    if (ctx.isEnterprise()) {
-                        try {
-                            res.sessionTokenBytes(updateSessionToken(req));
-                        }
-                        catch (GridException e) {
-                            U.warn(log, "Cannot update response session token: " + e.getMessage());
-                        }
-                    }
-
-                    interceptResponse(res, req);
-
-                    return res;
-                }
-            });
+        @Override public GridFuture<GridRestResponse> handleAsync(GridRestRequest req) {
+            return handleAsync0(req);
         }
     };
+
+    /**
+     * @param req Request.
+     * @return Future.
+     */
+    private GridFuture<GridRestResponse> handleAsync0(final GridRestRequest req) {
+        if (!busyLock.tryReadLock())
+            return new GridFinishedFuture<>(ctx,
+                new GridException("Failed to handle request (received request while stopping grid)."));
+
+        try {
+            final GridWorkerFuture<GridRestResponse> fut = new GridWorkerFuture<>(ctx);
+
+            workersCnt.increment();
+
+            GridWorker w = new GridWorker(ctx.gridName(), "rest-proc-worker", log) {
+                @Override protected void body() {
+                    try {
+                        GridFuture<GridRestResponse> res = handleAsyncInRestPool(req);
+
+                        res.listenAsync(new GridInClosure<GridFuture<GridRestResponse>>() {
+                            @Override public void apply(GridFuture<GridRestResponse> f) {
+                                try {
+                                    fut.onDone(f.get());
+                                }
+                                catch (GridException e) {
+                                    fut.onDone(e);
+                                }
+                            }
+                        });
+                    }
+                    catch (Throwable e) {
+                        if (e instanceof Error)
+                            U.error(log, "Client request execution failed with error.", e);
+
+                        fut.onDone(U.cast(e));
+                    }
+                    finally {
+                        workersCnt.decrement();
+                    }
+                }
+            };
+
+            fut.setWorker(w);
+
+            try {
+                ctx.restPool().execute(w);
+            }
+            catch (RejectedExecutionException e) {
+                U.error(log, "Failed to execute worker due to execution rejection " +
+                    "(increase upper bound on REST executor service). " +
+                    "Will attempt to process request in the current thread instead.", e);
+
+                w.run();
+            }
+
+            return fut;
+        }
+        finally {
+            busyLock.readUnlock();
+        }
+    }
+
+    /**
+     * @param req Request.
+     * @return Future.
+     */
+    private GridFuture<GridRestResponse> handleAsyncInRestPool(final GridRestRequest req) {
+        if (startLatch.getCount() > 0) {
+            try {
+                startLatch.await();
+            }
+            catch (InterruptedException e) {
+                return new GridFinishedFuture<>(ctx, new GridException("Failed to handle request " +
+                    "(protocol handler was interrupted when awaiting grid start).", e));
+            }
+        }
+
+        if (log.isDebugEnabled())
+            log.debug("Received request from client: " + req);
+
+        try {
+            authenticate(req);
+        }
+        catch (GridException e) {
+            return new GridFinishedFuture<>(ctx, new GridRestResponse(STATUS_AUTH_FAILED,
+                e.getMessage()));
+        }
+
+        interceptRequest(req);
+
+        GridRestCommandHandler hnd = handlers.get(req.command());
+
+        GridFuture<GridRestResponse> res = hnd == null ? null : hnd.handleAsync(req);
+
+        if (res == null)
+            return new GridFinishedFuture<>(ctx,
+                new GridException("Failed to find registered handler for command: " + req.command()));
+
+        return res.chain(new C1<GridFuture<GridRestResponse>, GridRestResponse>() {
+            @Override public GridRestResponse apply(GridFuture<GridRestResponse> f) {
+                GridRestResponse res;
+
+                try {
+                    res = f.get();
+                }
+                catch (Exception e) {
+                    LT.error(log, e, "Failed to handle request: " + req.command());
+
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to handle request [req=" + req + ", e=" + e + "]");
+
+                    res = new GridRestResponse(STATUS_FAILED, e.getMessage());
+                }
+
+                assert res != null;
+
+                if (ctx.isEnterprise()) {
+                    try {
+                        res.sessionTokenBytes(updateSessionToken(req));
+                    }
+                    catch (GridException e) {
+                        U.warn(log, "Cannot update response session token: " + e.getMessage());
+                    }
+                }
+
+                interceptResponse(res, req);
+
+                return res;
+            }
+        });
+    }
 
     /**
      * Applies {@link GridClientMessageInterceptor} from {@link GridConfiguration#getClientMessageInterceptor()}
@@ -342,6 +421,23 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         if (isRestEnabled()) {
+            busyLock.writeLock();
+
+            boolean interrupted = Thread.interrupted();
+
+            while (workersCnt.sum() != 0) {
+                try {
+                    //noinspection BusyWait
+                    Thread.sleep(200);
+                }
+                catch (InterruptedException ignored) {
+                    interrupted = true;
+                }
+            }
+
+            if (interrupted)
+                Thread.currentThread().interrupt();
+
             for (GridRestProtocol proto : protos)
                 proto.stop();
 

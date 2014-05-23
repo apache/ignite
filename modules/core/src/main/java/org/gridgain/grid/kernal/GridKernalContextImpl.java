@@ -625,6 +625,11 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
+    @Override public ExecutorService restPool() {
+        return grid.restPool();
+    }
+
+    /** {@inheritDoc} */
     @Override public GridVersionProcessor versionConverter() {
         return verProc;
     }
