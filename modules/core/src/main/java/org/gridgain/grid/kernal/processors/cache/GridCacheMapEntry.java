@@ -1749,8 +1749,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 clearIndex(val);
 
-                if (!cctx.hasFlag(SKIP_SWAP))
-                    releaseSwap();
+                releaseSwap();
 
                 ret = true;
                 rmv = true;
