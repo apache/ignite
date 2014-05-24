@@ -86,7 +86,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             GridWorker w = new GridWorker(ctx.gridName(), "rest-proc-worker", log) {
                 @Override protected void body() {
                     try {
-                        GridFuture<GridRestResponse> res = handleAsyncInRestPool(req);
+                        GridFuture<GridRestResponse> res = handleRequest(req);
 
                         res.listenAsync(new GridInClosure<GridFuture<GridRestResponse>>() {
                             @Override public void apply(GridFuture<GridRestResponse> f) {
@@ -135,7 +135,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @param req Request.
      * @return Future.
      */
-    private GridFuture<GridRestResponse> handleAsyncInRestPool(final GridRestRequest req) {
+    private GridFuture<GridRestResponse> handleRequest(final GridRestRequest req) {
         if (startLatch.getCount() > 0) {
             try {
                 startLatch.await();
@@ -419,6 +419,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("BusyWait")
     @Override public void onKernalStop(boolean cancel) {
         if (isRestEnabled()) {
             busyLock.writeLock();
@@ -427,7 +428,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
             while (workersCnt.sum() != 0) {
                 try {
-                    //noinspection BusyWait
                     Thread.sleep(200);
                 }
                 catch (InterruptedException ignored) {
