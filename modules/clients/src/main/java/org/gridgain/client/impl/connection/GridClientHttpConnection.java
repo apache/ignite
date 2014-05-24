@@ -228,6 +228,12 @@ public class GridClientHttpConnection extends GridClientConnection {
 
                                 fut.onDone(new GridClientException(errMsg));
                             }
+                            else if (okStatus == GridClientResponse.STATUS_SECURITY_CHECK_FAILED) {
+                                if (errMsg == null || errMsg.isEmpty())
+                                    errMsg = "Security check failed on server.";
+
+                                fut.onDone(new GridClientException(errMsg));
+                            }
                             else if (okStatus != GridClientResponse.STATUS_SUCCESS) {
                                 fut.onDone(new GridClientException("Unsupported server response status code" +
                                     ": " + okStatus));

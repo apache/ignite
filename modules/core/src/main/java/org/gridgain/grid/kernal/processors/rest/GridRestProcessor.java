@@ -80,7 +80,11 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 checkPermissions(req, securitySubjCtx);
             }
-            catch (GridException | GridRuntimeException e) {
+            catch (GridSecurityException e) {
+                return new GridFinishedFuture<>(ctx, new GridRestResponse(STATUS_SECURITY_CHECK_FAILED,
+                    e.getMessage()));
+            }
+            catch (GridException e) {
                 return new GridFinishedFuture<>(ctx, new GridRestResponse(STATUS_AUTH_FAILED,
                     e.getMessage()));
             }
