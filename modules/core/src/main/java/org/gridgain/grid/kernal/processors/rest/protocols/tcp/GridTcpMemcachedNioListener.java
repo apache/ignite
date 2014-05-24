@@ -26,6 +26,7 @@ import java.util.*;
 
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 import static org.gridgain.grid.kernal.processors.rest.protocols.tcp.GridMemcachedMessage.*;
+import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
 
 /**
  * Handles memcache requests.
@@ -106,7 +107,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
             return;
         }
 
-        GridFuture<GridRestResponse> lastFut = ses.removeMeta(GridNioSessionMetaKey.LAST_FUTURE.ordinal());
+        GridFuture<GridRestResponse> lastFut = ses.removeMeta(LAST_FUT.ordinal());
 
         if (lastFut != null && lastFut.isDone())
             lastFut = null;
@@ -127,7 +128,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
         }
 
         if (f != null)
-            ses.addMeta(GridNioSessionMetaKey.LAST_FUTURE.ordinal(), f);
+            ses.addMeta(LAST_FUT.ordinal(), f);
     }
 
     /**
@@ -163,12 +164,12 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
 
                     Map<String, Long> metrics = ((GridCacheRestMetrics)restRes.getResponse()).map();
 
-                    for (Map.Entry<String, Long> entry : metrics.entrySet()) {
+                    for (Map.Entry<String, Long> e : metrics.entrySet()) {
                         GridMemcachedMessage res = new GridMemcachedMessage(req);
 
-                        res.key(entry.getKey());
+                        res.key(e.getKey());
 
-                        res.value(String.valueOf(entry.getValue()));
+                        res.value(String.valueOf(e.getValue()));
 
                         ses.send(res);
                     }

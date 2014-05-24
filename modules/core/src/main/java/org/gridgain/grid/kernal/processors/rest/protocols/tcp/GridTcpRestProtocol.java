@@ -151,7 +151,10 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
                 sslFilter.needClientAuth(auth);
 
-                filters = new GridNioFilter[] { codec, sslFilter };
+                filters = new GridNioFilter[] {
+                    codec,
+                    sslFilter
+                };
             }
             else
                 filters = new GridNioFilter[] { codec };

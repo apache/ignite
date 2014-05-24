@@ -28,7 +28,7 @@ public enum GridNioSessionMetaKey {
     MARSHALLER,
 
     /** Last future. */
-    LAST_FUTURE;
+    LAST_FUT;
 
     /** Maximum count of NIO session keys in system. */
     public static final int MAX_KEYS_CNT = 64;
