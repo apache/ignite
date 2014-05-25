@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.security;
 
+import org.gridgain.grid.spi.authentication.*;
+
 import java.util.*;
 
 /**
@@ -37,5 +39,5 @@ public interface GridSecurityContext {
      *
      * @return Authentication subject context.
      */
-    public Object subjectContext();
+    public GridSecuritySubject subject();
 }

@@ -10,9 +10,9 @@
 package org.gridgain.grid.spi.authentication;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.authentication.noop.*;
-import org.jetbrains.annotations.*;
 
 /**
  * Authentication SPI used for authenticating grid nodes and remote clients. This SPI
@@ -72,6 +72,6 @@ public interface GridAuthenticationSpi extends GridSpi, GridSpiJsonConfigurable 
      * @throws GridSpiException If authentication resulted in system error.
      *      Note that bad credentials should not cause this exception.
      */
-    public Object authenticate(GridSecuritySubjectType subjType, byte[] subjId, @Nullable Object credentials)
-        throws GridSpiException;
+    public GridSecuritySubject authenticate(GridSecuritySubjectType subjType, byte[] subjId,
+        GridSecurityCredentials credentials) throws GridSpiException;
 }
