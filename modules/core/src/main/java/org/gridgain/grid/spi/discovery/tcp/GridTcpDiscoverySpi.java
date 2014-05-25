@@ -1465,7 +1465,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                     Map<String, Object> attrs = new HashMap<>(locNode.attributes());
 
-                    attrs.put(GridNodeAttributes.ATTR_AUTHENTICATION_SUBJECT, subj);
+                    attrs.put(GridNodeAttributes.ATTR_AUTHENTICATION_SUBJECT_CONTEXT, subj);
 
                     locNode.setAttributes(attrs);
                 }
@@ -3309,7 +3309,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                             // Stick in authentication subject to node.
                             Map<String, Object> attrs = new HashMap<>(node.attributes());
 
-                            attrs.put(GridNodeAttributes.ATTR_AUTHENTICATION_SUBJECT, subj);
+                            attrs.put(GridNodeAttributes.ATTR_AUTHENTICATION_SUBJECT_CONTEXT, subj);
 
                             node.setAttributes(attrs);
                         }

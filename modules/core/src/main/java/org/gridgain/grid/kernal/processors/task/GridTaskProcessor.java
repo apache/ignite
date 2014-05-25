@@ -18,6 +18,7 @@ import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -69,6 +70,12 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     /** */
     private final GridSpinReadWriteLock lock = new GridSpinReadWriteLock();
 
+    /** Security interceptor. */
+    private final GridSecurityInterceptor securityInterceptor;
+
+    /** Authentication subject context. */
+    private Object authSubjCtx;
+
     /**
      * @param ctx Kernal context.
      */
@@ -78,6 +85,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         marsh = ctx.config().getMarshaller();
 
         discoLsnr = new TaskDiscoveryListener();
+
+        securityInterceptor = ctx.config().getSecurityInterceptor();
     }
 
     /** {@inheritDoc} */
@@ -352,6 +361,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         boolean sys) {
         assert sesId != null;
 
+        checkSecurity();
+
         // Get values from thread-local context.
         Map<GridTaskThreadContextKey, Object> map = thCtx.get();
 
@@ -616,6 +627,21 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         assert fut != null;
 
         fut.onDone(ex);
+    }
+
+    /**
+     * Checks that local grid has security permissions to execute tasks.
+     */
+    private void checkSecurity() throws GridSecurityException {
+        if (securityInterceptor != null) {
+            if (authSubjCtx == null)
+                authSubjCtx = ctx.discovery().localNode().attribute(GridNodeAttributes.ATTR_AUTHENTICATION_SUBJECT_CONTEXT);
+
+            GridSecurityContext sCtx = new GridSecurityContextImpl(
+                Collections.singletonList(GridSecurityOperation.EXECUTE), null, authSubjCtx);
+
+            securityInterceptor.authorize(sCtx);
+        }
     }
 
     /**

@@ -47,7 +47,7 @@ public class GridSecurityContextImpl implements GridSecurityContext {
     }
 
     /** {@inheritDoc} */
-    @Override public Object subject() {
+    @Override public Object subjectContext() {
         return subj;
     }
 }

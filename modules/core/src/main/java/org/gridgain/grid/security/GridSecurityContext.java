@@ -12,12 +12,17 @@ package org.gridgain.grid.security;
 import java.util.*;
 
 /**
- * TODO: Add interface description.
+ * Security context.
  *
  * @author @java.author
  * @version @java.version
  */
 public interface GridSecurityContext {
+    /**
+     * Gets collection of operations requested to execute.
+     *
+     * @return Collection of operations requested to execute.
+     */
     public Collection<GridSecurityOperation> operations();
 
     /**
@@ -27,5 +32,10 @@ public interface GridSecurityContext {
      */
     public String cacheName();
 
-    public Object subject();
+    /**
+     * Authentication subject context returned by authentication SPI.
+     *
+     * @return Authentication subject context.
+     */
+    public Object subjectContext();
 }

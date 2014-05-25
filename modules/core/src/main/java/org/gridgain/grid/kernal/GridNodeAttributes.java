@@ -128,7 +128,7 @@ public final class GridNodeAttributes {
     public static final String ATTR_DATA_CENTER_ID = ATTR_PREFIX + ".data.center.id";
 
     /** Authentication subject attribute name. */
-    public static final String ATTR_AUTHENTICATION_SUBJECT = ATTR_PREFIX + ".auth.subject";
+    public static final String ATTR_AUTHENTICATION_SUBJECT_CONTEXT = ATTR_PREFIX + ".auth.subject";
 
     /**
      * Enforces singleton.
