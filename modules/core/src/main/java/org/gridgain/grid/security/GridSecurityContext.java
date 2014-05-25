@@ -35,6 +35,13 @@ public interface GridSecurityContext {
     public String cacheName();
 
     /**
+     * Gets task name being executed if task execution is checked.
+     *
+     * @return Task name.
+     */
+    public String taskName();
+
+    /**
      * Authentication subject context returned by authentication SPI.
      *
      * @return Authentication subject context.
