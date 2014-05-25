@@ -22,6 +22,9 @@ public class GridSecurityConfiguration {
     /** Security credentials. */
     private GridSecurityCredentials cred;
 
+    /** Security interceptor. */
+    private GridSecurityInterceptor securityInterceptor;
+
     /**
      * If set to false, tasks and cache operations that are not explicitly allowed, will be denied.
      *
@@ -56,5 +59,23 @@ public class GridSecurityConfiguration {
      */
     public void setCredentials(GridSecurityCredentials cred) {
         this.cred = cred;
+    }
+
+    /**
+     * Gets security interceptor.
+     *
+     * @return Security interceptor.
+     */
+    public GridSecurityInterceptor getSecurityInterceptor() {
+        return securityInterceptor;
+    }
+
+    /**
+     * Sets security interceptor.
+     *
+     * @param securityInterceptor Security interceptor.
+     */
+    public void setSecurityInterceptor(GridSecurityInterceptor securityInterceptor) {
+        this.securityInterceptor = securityInterceptor;
     }
 }
