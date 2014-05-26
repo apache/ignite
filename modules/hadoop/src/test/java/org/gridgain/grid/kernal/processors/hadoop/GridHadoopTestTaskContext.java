@@ -118,7 +118,7 @@ class GridHadoopTestTaskContext extends GridHadoopTaskContext {
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws Exception {
+        @Override public void close() {
             throw new UnsupportedOperationException();
         }
     };

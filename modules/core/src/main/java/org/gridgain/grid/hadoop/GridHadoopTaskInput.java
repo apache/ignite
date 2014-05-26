@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.hadoop;
 
+import org.gridgain.grid.*;
+
 import java.util.*;
 
 /**
@@ -35,4 +37,11 @@ public interface GridHadoopTaskInput extends AutoCloseable {
      * @return Values.
      */
     Iterator<?> values();
+
+    /**
+     * Closes input.
+     *
+     * @throws GridException If failed.
+     */
+    @Override public void close() throws GridException;
 }

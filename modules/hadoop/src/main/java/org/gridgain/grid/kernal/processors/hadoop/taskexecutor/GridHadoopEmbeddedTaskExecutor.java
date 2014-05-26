@@ -13,14 +13,10 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import java.util.concurrent.*;
 import java.util.*;
 
-import static org.gridgain.grid.hadoop.GridHadoopJobProperty.*;
-import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
 import static org.gridgain.grid.kernal.processors.hadoop.taskexecutor.GridHadoopTaskState.*;
 
 /**
@@ -59,24 +55,27 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
             assert extractedCol == null;
         }
 
-        // Are we going to run combiner in the same thread as mapper?
-        final boolean runCombiner = job.hasCombiner() && !get(job, SINGLE_COMBINER_FOR_ALL_MAPPERS, false);
+        GridHadoopJobClassLoadingContext clsLdrCtx = ctxs.get(job.id());
 
         for (final GridHadoopTaskInfo info : tasks) {
             assert info != null;
 
-            GridFuture<GridFuture<?>> fut = ctx.kernalContext().closure().callLocalSafe(
-                new GridPlainCallable<GridFuture<?>>() {
-                @Override public GridFuture<?> call() throws Exception {
-                    runTask(job, info); // Mapper.
+            GridFuture<?> fut = ctx.kernalContext().closure().callLocalSafe(
+                new GridHadoopRunnableTask(job, ctx.shuffle().memory(), info, clsLdrCtx) {
+                    @Override protected void onTaskFinished(GridHadoopTaskState state, Throwable err) {
+                        if (log.isDebugEnabled())
+                            log.debug("Finished task execution [jobId=" + job.id() + ", taskInfo=" + info + ", " +
+                                "waitTime=" + waitTime() + ", execTime=" + executionTime() + ']');
+                    }
 
-                    if (runCombiner) // Combiner.
-                        runTask(job, new GridHadoopTaskInfo(info.nodeId(), COMBINE, info.jobId(), info.taskNumber(),
-                            info.attempt(), null));
+                    @Override protected GridHadoopTaskInput createInput(GridHadoopTaskInfo info) throws GridException {
+                        return ctx.shuffle().input(info);
+                    }
 
-                    return null;
-                }
-            }, false);
+                    @Override protected GridHadoopTaskOutput createOutput(GridHadoopTaskInfo info) throws GridException {
+                        return ctx.shuffle().output(info);
+                    }
+                }, false);
 
             futures.add(fut);
 
@@ -103,42 +102,6 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
                     jobTracker.onTaskFinished(info, new GridHadoopTaskStatus(state, err));
                 }
             });
-        }
-    }
-
-    /**
-     * @param job Job.
-     * @param info Task info.
-     */
-    private void runTask(final GridHadoopJob job, final GridHadoopTaskInfo info) throws Exception {
-        long start = System.currentTimeMillis();
-
-        ClassLoader old = GridHadoopJobClassLoadingContext.prepareClassLoader(ctxs.get(job.id()), job.info());
-
-        try (GridHadoopTaskOutput out = createOutput(info);
-             GridHadoopTaskInput in = createInput(info)) {
-            GridHadoopTaskContext taskCtx = new GridHadoopTaskContext(job, in, out);
-
-            GridHadoopTask task = job.createTask(info);
-
-            if (log.isDebugEnabled())
-                log.debug("Running task: " + task);
-
-            task.run(taskCtx);
-        }
-        catch (Exception e) {
-            U.error(log, "Failed to execute task: " + info, e);
-
-            throw e;
-        }
-        finally {
-            Thread.currentThread().setContextClassLoader(old);
-
-            long end = System.currentTimeMillis();
-
-            if (log.isDebugEnabled())
-                log.debug("Finished task execution [jobId=" + job.id() + ", taskInfo=" + info + ", " +
-                    "execTime=" + (end - start) + ']');
         }
     }
 
@@ -199,31 +162,5 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
                 }
             }
         }
-    }
-
-    /**
-     * Creates task output.
-     *
-     * @param taskInfo Task info.
-     * @return Task output.
-     */
-    private GridHadoopTaskOutput createOutput(GridHadoopTaskInfo taskInfo) throws GridException {
-        if (taskInfo.type() == REDUCE || taskInfo.type() == COMMIT || taskInfo.type() == ABORT)
-            return null;
-
-        return ctx.shuffle().output(taskInfo);
-    }
-
-    /**
-     * Creates task input.
-     *
-     * @param taskInfo Task info.
-     * @return Task input.
-     */
-    private GridHadoopTaskInput createInput(GridHadoopTaskInfo taskInfo) throws GridException {
-        if (taskInfo.type() == MAP || taskInfo.type() == COMMIT || taskInfo.type() == ABORT)
-            return null;
-
-        return ctx.shuffle().input(taskInfo);
     }
 }
