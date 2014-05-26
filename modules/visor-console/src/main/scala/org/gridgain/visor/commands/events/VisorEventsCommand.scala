@@ -28,7 +28,6 @@ import org.gridgain.scalar.scalar._
 import visor._
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCollectEventsTask
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCollectEventsTask.VisorCollectEventsArgs
-import org.gridgain.grid.lang.GridBiTuple
 
 /**
  * ==Overview==
@@ -409,8 +408,7 @@ class VisorEventsCommand {
      * @param reverse If `true` sorting is reversed.
      * @return Sorted events.
      */
-    private def sort(evts: Array[VisorEventData], arg: Option[String], reverse: Boolean):
-        Option[List[VisorEventData]] = {
+    private def sort(evts: Array[VisorCollectEventsTask.VisorEventData], arg: Option[String], reverse: Boolean) = {
         assert(evts != null)
 
         val list = evts.toList

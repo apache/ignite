@@ -297,9 +297,9 @@ class VisorConfigurationCommand {
             spisT += ("Discovery", safe(cfg.spis().discoverySpi(), DFLT))
             spisT += ("Communication", safe(cfg.spis().communicationSpi(), DFLT))
             spisT += ("Event storage", safe(cfg.spis().eventStorageSpi(), DFLT))
-            spisT += ("Collision", safe(cfg.spis().columnSpi(), DFLT))
+            spisT += ("Collision", safe(cfg.spis().collisionSpi(), DFLT))
             spisT += ("Authentication", safe(cfg.spis().authenticationSpi(), DFLT))
-            spisT += ("Secure session", safe(cfg.spis().sessionSpi(), DFLT))
+            spisT += ("Secure session", safe(cfg.spis().secureSessionSpi(), DFLT))
             spisT += ("Deployment", safe(cfg.spis().deploymentSpi(), DFLT))
             spisT += ("Checkpoints", safe(cfg.spis().checkpointSpis(), DFLT))
             spisT += ("Failovers", safe(cfg.spis().failoverSpis(), DFLT))
@@ -312,9 +312,9 @@ class VisorConfigurationCommand {
 
             val p2pT = VisorTextTable()
 
-            p2pT += ("Peer class loading enabled", bool2Str(cfg.p2p().p2PEnabled()))
-            p2pT += ("Missed resources cache size", cfg.p2p().p2PMissedResponseCacheSize())
-            p2pT += ("Peer-to-Peer loaded packages", safe(cfg.p2p().p2PLocaleClassPathExcl(), DFLT))
+            p2pT += ("Peer class loading enabled", bool2Str(cfg.p2p().p2pEnabled()))
+            p2pT += ("Missed resources cache size", cfg.p2p().p2pMissedResponseCacheSize())
+            p2pT += ("Peer-to-Peer loaded packages", safe(cfg.p2p().p2pLocaleClassPathExcl(), DFLT))
 
             p2pT.render()
 
@@ -325,7 +325,7 @@ class VisorConfigurationCommand {
             emailT += ("SMTP host", safe(cfg.email().smtpHost(), DFLT))
             emailT += ("SMTP port", safe(cfg.email().smtpPort(), DFLT))
             emailT += ("SMTP username", safe(cfg.email().smtpUsername(), DFLT))
-            emailT += ("Admin emails", safe(cfg.email().administrationEmails(), DFLT))
+            emailT += ("Admin emails", safe(cfg.email().adminEmails(), DFLT))
             emailT += ("From email", safe(cfg.email().smtpFromEmail(), DFLT))
             emailT += ("SMTP SSL enabled", bool2Str(cfg.email().smtpSsl()))
             emailT += ("SMTP STARTTLS enabled", bool2Str(cfg.email().smtpStartTls()))
@@ -345,12 +345,14 @@ class VisorConfigurationCommand {
 
             val execSvcT = VisorTextTable()
 
-            execSvcT += ("Executor service", safe(cfg.executeSvc().executorService(), DFLT))
-            execSvcT += ("Executor service shutdown", bool2Str(cfg.executeSvc().executeServiceShutdown()))
-            execSvcT += ("System executor service", safe(cfg.executeSvc().systemExecutorService(), DFLT))
-            execSvcT += ("System executor service shutdown", bool2Str(cfg.executeSvc().systemExecutorServiceShutdown()))
-            execSvcT += ("Peer-to-Peer executor service", safe(cfg.executeSvc().p2PExecutorService(), DFLT))
-            execSvcT += ("Peer-to-Peer executor service shutdown", bool2Str(cfg.executeSvc().p2PExecutorServiceShutdown()))
+            val execSvc = cfg.executorService()
+
+            execSvcT += ("Executor service", safe(execSvc.executorService(), DFLT))
+            execSvcT += ("Executor service shutdown", bool2Str(execSvc.executorServiceShutdown()))
+            execSvcT += ("System executor service", safe(execSvc.systemExecutorService(), DFLT))
+            execSvcT += ("System executor service shutdown", bool2Str(execSvc.systemExecutorServiceShutdown()))
+            execSvcT += ("Peer-to-Peer executor service", safe(execSvc.p2pExecutorService(), DFLT))
+            execSvcT += ("Peer-to-Peer executor service shutdown", bool2Str(execSvc.p2pExecutorServiceShutdown()))
 
             execSvcT.render()
 
