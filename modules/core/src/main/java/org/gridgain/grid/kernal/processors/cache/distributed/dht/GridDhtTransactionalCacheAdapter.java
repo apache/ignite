@@ -148,6 +148,16 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     /** {@inheritDoc} */
     @Override public abstract GridNearTransactionalCache<K, V> near();
 
+    /** {@inheritDoc} */
+    @Override public void dgc() {
+        ctx.dgc().dgc();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void dgc(long suspectLockTimeout, boolean global, boolean rmvLocks) {
+        ctx.dgc().dgc(suspectLockTimeout, global, rmvLocks);
+    }
+
     /**
      * @param req Request.
      * @throws GridException If failed.

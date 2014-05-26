@@ -35,7 +35,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  * with {@link GridServletContextListenerStartup} to enable web sessions caching:
  * <pre name="code" class="xml">
  * &lt;listener&gt;
- *     &lt;listener-class&gt;org.gridgain.grid.loaders.servlet.GridServletContextListenerLoader&lt;/listener-class&gt;
+ *     &lt;listener-class&gt;org.gridgain.grid.startup.servlet.GridServletContextListenerStartup&lt;/listener-class&gt;
  * &lt;/listener&gt;
  *
  * &lt;filter&gt;
@@ -43,14 +43,14 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  *     &lt;filter-class&gt;org.gridgain.grid.cache.websession.GridWebSessionFilter&lt;/filter-class&gt;
  * &lt;/filter&gt;
  *
+ * &lt;!-- You can also specify a custom URL pattern. --&gt;
  * &lt;filter-mapping&gt;
  *     &lt;filter-name&gt;GridGainWebSessionsFilter&lt;/filter-name&gt;
  *     &lt;url-pattern&gt;/*&lt;/url-pattern&gt;
  * &lt;/filter-mapping&gt;
  * </pre>
- * You can also specify a custom URL pattern, if you want to cache sessions
- * only for particular requests. It is also possible to specify a servlet name
- * in a filter mapping, and a servlet URL pattern will be used in this case:
+ * It is also possible to specify a servlet name in a filter mapping, and a servlet URL pattern will
+ * be used in this case:
  * <pre name="code" class="xml">
  * &lt;filter&gt;
  *     &lt;filter-name&gt;GridGainWebSessionsFilter&lt;/filter-name&gt;
@@ -82,7 +82,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  *     <tr>
  *         <td>GridGainWebSessionsMaximumRetriesOnFail</td>
  *         <td>
- *             Maximum number of retries for session updates in case
+ *             Valid for {@code ATOMIC} caches only. Maximum number of retries for session updates in case
  *             node leaves topology and update fails. If retry is enabled,
  *             some updates can be applied more than once, otherwise some
  *             updates can be lost.
@@ -106,6 +106,8 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  *         &lt;param-name&gt;GridGainWebSessionsCacheName&lt;/param-name&gt;
  *         &lt;param-value&gt;WebCache&lt;/param-value&gt;
  *     &lt;/init-param&gt;
+ *
+ *     &lt;!-- Valid for ATOMIC caches only. --&gt;
  *     &lt;init-param&gt;
  *         &lt;param-name&gt;GridGainWebSessionsMaximumRetriesOnFail&lt;/param-name&gt;
  *         &lt;param-value&gt;10&lt;/param-value&gt;
@@ -132,7 +134,7 @@ public class GridWebSessionFilter implements Filter {
     /** Web sessions caching cache name parameter name. */
     public static final String WEB_SES_CACHE_NAME_PARAM = "GridGainWebSessionsCacheName";
 
-    /** Web sessions caching retry on fail parameter name. */
+    /** Web sessions caching retry on fail parameter name (valid for ATOMIC */
     public static final String WEB_SES_MAX_RETRIES_ON_FAIL_NAME_PARAM = "GridGainWebSessionsMaximumRetriesOnFail";
 
     /** Default retry on fail flag value. */

@@ -47,15 +47,6 @@
                 <exclude>org.apache.avro:avro</exclude>
             </excludes>
         </dependencySet>
-
-        <dependencySet>
-            <outputDirectory>/hadoop2</outputDirectory>
-            <useTransitiveDependencies>false</useTransitiveDependencies>
-            <includes>
-                <include>org.apache.hadoop:*</include>
-                <include>org.apache.avro:avro</include>
-            </includes>
-        </dependencySet>
     </dependencySets>
 
     <fileSets>
@@ -64,11 +55,4 @@
             <outputDirectory>/</outputDirectory>
         </fileSet>
     </fileSets>
-
-    <files>
-        <file>
-            <source>${settings.localRepository}/org/apache/hadoop/hadoop-core/1.0.4/hadoop-core-1.0.4.jar</source>
-            <outputDirectory>/hadoop1</outputDirectory>
-        </file>
-    </files>
 </assembly>

@@ -419,7 +419,9 @@ public class GridClientTcpConnection extends GridClientConnection {
         byte rc = msg.resultCode();
 
         if (rc != GridClientHandshakeResponse.OK.resultCode()) {
-            if (rc == GridClientHandshakeResponse.ERR_UNKNOWN_PROTO_ID.resultCode())
+            if (rc == GridClientHandshakeResponse.ERR_VERSION_CHECK_FAILED.resultCode())
+                log.warning("Client and server versions are different (see server log for more details).");
+            else if (rc == GridClientHandshakeResponse.ERR_UNKNOWN_PROTO_ID.resultCode())
                 throw new GridClientHandshakeException(rc, "Unknown/unsupported protocol ID.");
             else
                 throw new GridClientHandshakeException(rc,
@@ -996,7 +998,7 @@ public class GridClientTcpConnection extends GridClientConnection {
         @Override protected void encode(ChannelHandlerContext ctx, ByteBuf body, List<Object> out) throws Exception {
             int len = body.readableBytes();
 
-            ByteBuf hdr = ctx.alloc().buffer(5);
+            ByteBuf hdr = Unpooled.buffer(5, 5);
 
             hdr.writeByte((byte)0x90);
             hdr.writeInt(len);
@@ -1091,7 +1093,7 @@ public class GridClientTcpConnection extends GridClientConnection {
                     Unpooled.wrappedBuffer(((GridRouterRequest)msg).body()) :
                     Unpooled.wrappedBuffer(marsh.marshal(msg));
 
-                ByteBuf hdr = ctx.alloc().buffer(40);
+                ByteBuf hdr = Unpooled.buffer(40, 40);
 
                 hdr.writeLong(msg.requestId());
                 hdr.writeLong(msg.clientId().getMostSignificantBits());
