@@ -20,7 +20,7 @@ import java.io.*;
 /**
  * Hadoop reduce task implementation for v2 API.
  */
-public class GridHadoopV2ReduceTask extends GridHadoopTask {
+public class GridHadoopV2ReduceTask extends GridHadoopTaskEx {
     /**
      * @param taskInfo Task info.
      */
@@ -36,11 +36,9 @@ public class GridHadoopV2ReduceTask extends GridHadoopTask {
         JobContext jobCtx = jobImpl.hadoopJobContext();
 
         Reducer reducer;
-        OutputFormat outputFormat;
 
         try {
             reducer = U.newInstance(jobCtx.getReducerClass());
-            outputFormat = U.newInstance(jobCtx.getOutputFormatClass());
         }
         catch (ClassNotFoundException e) {
             throw new GridException(e);
@@ -50,20 +48,14 @@ public class GridHadoopV2ReduceTask extends GridHadoopTask {
             jobImpl.attemptId(info()));
 
         try {
-            RecordWriter writer = outputFormat.getRecordWriter(hadoopCtx);
-
-            hadoopCtx.writer(writer);
+            OutputFormat outputFormat = putWriter(hadoopCtx, jobCtx);
 
             try {
                 reducer.run(new WrappedReducer().getReducerContext(hadoopCtx));
             }
             finally {
-                writer.close(hadoopCtx);
+                commit(hadoopCtx, outputFormat);
             }
-
-            OutputCommitter outputCommitter = outputFormat.getOutputCommitter(hadoopCtx);
-
-            outputCommitter.commitTask(hadoopCtx);
         }
         catch (IOException e) {
             throw new GridException(e);

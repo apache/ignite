@@ -22,7 +22,7 @@ import java.io.*;
 /**
  * Hadoop map task implementation for v2 API.
  */
-public class GridHadoopV2MapTask extends GridHadoopTask {
+public class GridHadoopV2MapTask extends GridHadoopTaskEx {
     /**
      * @param taskInfo Task info.
      */
@@ -39,14 +39,10 @@ public class GridHadoopV2MapTask extends GridHadoopTask {
 
         Mapper mapper;
         InputFormat inFormat;
-        OutputFormat outputFormat;
 
         try {
             mapper = U.newInstance(jobCtx.getMapperClass());
             inFormat = U.newInstance(jobCtx.getInputFormatClass());
-
-            outputFormat = jobImpl.reducers() == 0 && !jobImpl.hasCombiner() ?
-                U.newInstance(jobCtx.getOutputFormatClass()) : null;
         }
         catch (ClassNotFoundException e) {
             throw new GridException(e);
@@ -73,25 +69,19 @@ public class GridHadoopV2MapTask extends GridHadoopTask {
 
         try {
             RecordReader reader = inFormat.createRecordReader(nativeSplit, hadoopCtx);
-            RecordWriter writer = outputFormat != null ? outputFormat.getRecordWriter(hadoopCtx) : null;
 
             reader.initialize(nativeSplit, hadoopCtx);
 
             hadoopCtx.reader(reader);
-            hadoopCtx.writer(writer);
+
+            OutputFormat outputFormat = jobImpl.hasCombiner() && jobImpl.reducers() == 0 ?
+                putWriter(hadoopCtx, jobCtx) : null;
 
             try {
                 mapper.run(new WrappedMapper().getMapContext(hadoopCtx));
             }
             finally {
-                if (writer != null)
-                    writer.close(hadoopCtx);
-            }
-
-            if (writer != null) {
-                OutputCommitter outputCommitter = outputFormat.getOutputCommitter(hadoopCtx);
-
-                outputCommitter.commitTask(hadoopCtx);
+                commit(hadoopCtx, outputFormat);
             }
         }
         catch (IOException e) {

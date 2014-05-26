@@ -13,6 +13,7 @@ import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 
@@ -30,29 +31,34 @@ public abstract class GridHadoopTaskEx extends GridHadoopTask {
     }
 
     /**
-     *
+     * Put write into Hadoop context and return associated output format instance.
      *
      * @param hadoopCtx Hadoop context.
-     * @param cls Output format class.
+     * @param jobCtx Job context.
      * @return Output format.
      * @throws GridException In case of Grid exception.
-     * @throws IOException In case of IO exception.
      * @throws InterruptedException In case of interrupt.
      */
-    protected static OutputFormat putWriter(GridHadoopV2Context hadoopCtx, Class<? extends OutputFormat<?, ?>> cls)
-        throws GridException, IOException, InterruptedException {
-        OutputFormat outputFormat = U.newInstance(cls);
+    protected static OutputFormat putWriter(GridHadoopV2Context hadoopCtx, JobContext jobCtx)
+        throws GridException, InterruptedException {
+        try {
+            OutputFormat outputFormat = U.newInstance(jobCtx.getOutputFormatClass());
 
-        assert outputFormat != null;
+            assert outputFormat != null;
 
-        RecordWriter writer = outputFormat.getRecordWriter(hadoopCtx);
+            RecordWriter writer = outputFormat.getRecordWriter(hadoopCtx);
 
-        hadoopCtx.writer(writer);
+            hadoopCtx.writer(writer);
 
-        return outputFormat;
+            return outputFormat;
+        }
+        catch (IOException | ClassNotFoundException e) {
+            throw new GridException(e);
+        }
     }
 
     /**
+     * Commit
      *
      * @param hadoopCtx Hadoop context.
      * @param outputFormat Output format.
@@ -60,16 +66,20 @@ public abstract class GridHadoopTaskEx extends GridHadoopTask {
      * @throws IOException In case of IO exception.
      * @throws InterruptedException In case of interrupt.
      */
-    protected static void commit(GridHadoopV2Context hadoopCtx, OutputFormat outputFormat) throws GridException,
-        IOException, InterruptedException {
+    protected static void commit(GridHadoopV2Context hadoopCtx, @Nullable OutputFormat outputFormat)
+        throws GridException, IOException, InterruptedException {
         RecordWriter writer = hadoopCtx.writer();
 
         if (writer != null) {
+            assert outputFormat != null;
+
             writer.close(hadoopCtx);
 
             OutputCommitter outputCommitter = outputFormat.getOutputCommitter(hadoopCtx);
 
             outputCommitter.commitTask(hadoopCtx);
         }
+        else
+            assert outputFormat == null;
     }
 }

@@ -18,7 +18,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 /**
  * Hadoop combine task implementation for v2 API.
  */
-public class GridHadoopV2CombineTask extends GridHadoopTask {
+public class GridHadoopV2CombineTask extends GridHadoopTaskEx {
     /**
      * @param taskInfo Task info.
      */
@@ -39,27 +39,14 @@ public class GridHadoopV2CombineTask extends GridHadoopTask {
             GridHadoopV2Context hadoopCtx = new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx,
                 jobImpl.attemptId(info()));
 
-            if (jobImpl.reducers() == 0) {
-                // No reducers defined, so set correct writer to combiner.
-                OutputFormat outputFormat = U.newInstance(jobCtx.getOutputFormatClass());
+            OutputFormat outputFormat = jobImpl.reducers() == 0 ? putWriter(hadoopCtx, jobCtx) : null;
 
-                RecordWriter writer = outputFormat.getRecordWriter(hadoopCtx);
-
-                hadoopCtx.writer(writer);
-
-                try {
-                    combiner.run(new WrappedReducer().getReducerContext(hadoopCtx));
-                }
-                finally {
-                    writer.close(hadoopCtx);
-                }
-
-                OutputCommitter outputCommitter = outputFormat.getOutputCommitter(hadoopCtx);
-
-                outputCommitter.commitTask(hadoopCtx);
-            }
-            else
+            try {
                 combiner.run(new WrappedReducer().getReducerContext(hadoopCtx));
+            }
+            finally {
+                commit(hadoopCtx, outputFormat);
+            }
         }
         catch (InterruptedException e) {
             throw new GridInterruptedException(e);
