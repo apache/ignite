@@ -39,7 +39,7 @@ public class GridHadoopV2CombineTask extends GridHadoopV2Task {
             GridHadoopV2Context hadoopCtx = new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx,
                 jobImpl.attemptId(info()));
 
-            OutputFormat outputFormat = jobImpl.reducers() == 0 ? putWriter(hadoopCtx, jobCtx) : null;
+            OutputFormat outputFormat = jobImpl.hasReducer() ? null : putWriter(hadoopCtx, jobCtx);
 
             try {
                 combiner.run(new WrappedReducer().getReducerContext(hadoopCtx));

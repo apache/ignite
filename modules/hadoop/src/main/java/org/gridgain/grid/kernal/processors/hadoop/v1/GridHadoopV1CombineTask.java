@@ -47,7 +47,7 @@ public class GridHadoopV1CombineTask extends GridHadoopTask {
 
         try {
             GridHadoopOutputCollector collector = new GridHadoopOutputCollector(jobConf, taskCtx,
-                jobImpl.reducers() == 0, fileName(), jobImpl.attemptId(info()));
+                !jobImpl.hasReducer(), fileName(), jobImpl.attemptId(info()));
 
             try {
                 while (input.next())

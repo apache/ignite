@@ -16,7 +16,6 @@ import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.IOException;
-import java.text.NumberFormat;
 
 /**
  * Hadoop reduce task implementation for v1 API.
