@@ -555,7 +555,7 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
 
                 for (GridDrSenderHubConnectionConfiguration cCfg : hCfg.getConnectionConfiguration()) {
                     hubConnections.add(new VisorDrSenderHubConnectionConfig(
-                        c.getDataCenterId(),
+                        cCfg.getDataCenterId(),
                         cCfg.getReceiverHubAddresses(),
                         cCfg.getLocalOutboundHost(),
                         cCfg.getReceiverHubLoadBalancingMode(),
@@ -575,6 +575,7 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
                     hCfg.getCacheNames()
                 );
             }
+
             VisorDrReceiverHubConfig receiverHub = null;
 
             if (c.getDrReceiverHubConfiguration() != null) {
