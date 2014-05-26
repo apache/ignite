@@ -106,6 +106,9 @@ public class GridCacheSwapEntry<V> implements Externalizable {
      */
     void value(V val) {
         this.val = val;
+
+        if (val instanceof byte[])
+            valBytes = null;
     }
 
     /**
