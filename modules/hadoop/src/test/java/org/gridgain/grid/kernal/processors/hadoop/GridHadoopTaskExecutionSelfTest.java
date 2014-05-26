@@ -254,6 +254,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         job.setInputFormatClass(TextInputFormat.class);
 
         FileInputFormat.setInputPaths(job, new Path("ggfs://ipc/"));
+        FileOutputFormat.setOutputPath(job, new Path("ggfs://ipc/out/"));
 
         job.setJarByClass(getClass());
 
