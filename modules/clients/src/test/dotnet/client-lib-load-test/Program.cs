@@ -34,7 +34,7 @@ namespace GridGain {
             X.WriteLine(">>> Running test: PUT_GET");
             X.WriteLine(">>>");
 
-            var threadsCount = 16;
+            var threadsCount = 128;
 
             var warmup = 20;
 
@@ -47,43 +47,14 @@ namespace GridGain {
             var closed = false;
 
             var timer = new Thread(() => {
-                Stopwatch testStart = new Stopwatch();
-                Stopwatch start = new Stopwatch();
-
-                testStart.Restart();
-          
                 int i = 0;
 
                 while (!closed) {
-                    i++;
-
-                    if (i == warmup) {
-                        Interlocked.Exchange(ref adder, 0);
-
-                        testStart.Restart();
-
-                        X.WriteLine("Warm up finished...");
-                    }
-
-                    start.Restart();
-
-                    long opers = adder;
-
                     Thread.Sleep(TimeSpan.FromSeconds(1));
 
-                    long diff = adder - opers;
 
-                    start.Stop();
-
-                    // Convert to seconds.
-                    double tm = start.Elapsed.TotalSeconds;
-
-                    X.WriteLine("Operations/second: " + (long)(diff / tm));
+                    X.WriteLine("Operations/second: " + Interlocked.Exchange(ref adder, 0));
                 }                
-
-                testStart.Stop();
-
-                Interlocked.Exchange(ref operationPerSecond, (long)(adder / testStart.Elapsed.TotalSeconds));
             });
 
             timer.IsBackground = true;
@@ -94,9 +65,9 @@ namespace GridGain {
                 
             var threads = new List<Thread>();
 
-            Stopwatch testStart2 = new Stopwatch();
+            //Stopwatch testStart2 = new Stopwatch();
 
-            testStart2.Start();
+            //testStart2.Start();
 
             while (threads.Count < threadsCount) {
                 var t = new Thread(() => {
@@ -104,34 +75,34 @@ namespace GridGain {
  
                     int i = 0;
 
-                    Stopwatch start = new Stopwatch();
+                    //Stopwatch start = new Stopwatch();
 
                     while(true) {
-                        start.Restart();
+                        //start.Restart();
 
                         // Operation begin.
                         Object key = rnd.Next(1000000);
 
-                        Object o = cache.GetItem<Object, Object>(key);
+                        //Object o = cache.GetItem<Object, Object>(key);
 
-                        if (o != null)
-                            key = rnd.Next(1000000);
+                        //if (o != null)
+                        //    key = rnd.Next(1000000);
 
                         cache.Put(key, key);
                         // Operation end.
 
-                        start.Stop();
+                        //start.Stop();
 
-                        Interlocked.Add(ref time, (long)(start.Elapsed.TotalMilliseconds));
+                        //Interlocked.Add(ref time, (long)(start.Elapsed.TotalMilliseconds));
 
                         Interlocked.Increment(ref adder);
 
-                        testStart2.Stop();
+                        //testStart2.Stop();
 
-                        if (testStart2.Elapsed.TotalSeconds > (duration + warmup))
-                            break;
-                        else 
-                            testStart2.Start();
+                        //if (testStart2.Elapsed.TotalSeconds > (duration + warmup))
+                        //    break;
+                        //else 
+                        //    testStart2.Start();
 
                         i++;
                     }

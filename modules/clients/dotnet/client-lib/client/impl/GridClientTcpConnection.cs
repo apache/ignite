@@ -83,6 +83,9 @@ namespace GridGain.Client.Impl {
         /** <summary>Output stream.</summary> */
         private readonly Stream stream;
 
+        /** <summary>Input stream.</summary> */
+        private readonly Stream inStream;
+        
         /** <summary>Last stream reading failed with timeout.</summary> */
         private bool lastReadTimedOut = false;
 
@@ -100,6 +103,12 @@ namespace GridGain.Client.Impl {
 
         /** <summary>Reader thread.</summary> */
         private readonly Thread rdr;
+
+        /** */
+        private readonly Thread writer;
+
+        /** */
+        private BlockingCollection<GridClientRequest> q = new BlockingCollection<GridClientRequest>();
 
         /**
          * <summary>
@@ -141,6 +150,7 @@ namespace GridGain.Client.Impl {
 
                     tcp.ReceiveTimeout = connectTimeout;
                     tcp.SendTimeout = connectTimeout;
+                    tcp.NoDelay = false;
 
                     // Open connection.
                     tcp.Connect(srvAddr);
@@ -156,12 +166,15 @@ namespace GridGain.Client.Impl {
                 }
             } while (!tcp.Connected);
 
-            if (sslCtx == null)
+            if (sslCtx == null) {
                 stream = tcp.GetStream();
+                inStream = new BufferedStream(tcp.GetStream(), 8192);
+            }
             else {
                 stream = sslCtx.CreateStream(tcp);
 
-                lock (stream) {
+                lock (stream)
+                {
                     // Flush client authentication packets (if any).
                     stream.Flush();
                 }
@@ -172,11 +185,17 @@ namespace GridGain.Client.Impl {
 
             rdr = new Thread(readPackets);
 
-            rdr.Name = "grid-tcp-connection--client#" + clientId + "--addr#" + srvAddr;
+            rdr.Name = "grid-tcp-connection-rdr--client#" + clientId + "--addr#" + srvAddr;
 
             //Dbg.WriteLine("Start thread: " + rdr.Name);
 
             rdr.Start();
+
+            writer = new Thread(writePackets);
+
+            writer.Name = "grid-tcp-connection-writer--client#" + clientId + "--addr#" + srvAddr;
+
+            writer.Start();
         }
 
         /**
@@ -221,10 +240,10 @@ namespace GridGain.Client.Impl {
                     return false;
 
                 // Skip, if there are several pending requests.
-                lock (pendingReqs) {
+                //lock (pendingReqs) {
                     if (pendingReqs.Count != 0)
                         return false;
-                }
+                //}
 
                 // Mark connection as closed.
                 closed = true;
@@ -245,7 +264,6 @@ namespace GridGain.Client.Impl {
             Dbg.Assert(closed);
             Dbg.Assert(!Thread.CurrentThread.Equals(rdr));
 
-
             rdr.Interrupt();
             rdr.Join();
 
@@ -258,15 +276,7 @@ namespace GridGain.Client.Impl {
                 U.DoSilent<Exception>(() => tcp.Close(), null);
             }
 
-            IList<GridClientFuture> reqs;
-
-            lock (pendingReqs) {
-                reqs = new List<GridClientFuture>(pendingReqs.Values);
-
-                pendingReqs.Clear();
-            }
-
-            foreach (GridClientFuture fut in reqs)
+            foreach (GridClientFuture fut in pendingReqs.Values)
                 fut.Fail(() => {
                     throw new GridClientClosedException("Failed to perform request" +
                         " (connection was closed before response was received): " + ServerAddress);
@@ -339,9 +349,9 @@ namespace GridGain.Client.Impl {
                 fut.Message.SessionToken = sesTok;
 
                 // Add request to pending queue.
-                lock (pendingReqs) {
+                //lock (pendingReqs) {
                     pendingReqs.Add(reqId, fut);
-                }
+                //}
             }
             finally {
                 closeLock.ReleaseReaderLock();
@@ -361,10 +371,10 @@ namespace GridGain.Client.Impl {
 
             GridClientTcpRequestFuture fut;
 
-            lock (pendingReqs) {
+            //lock (pendingReqs) {
                 if (!pendingReqs.TryGetValue(msg.RequestId, out fut))
                     return;
-            }
+            //}
 
             // Update authentication session token.
             if (msg.SessionToken != null)
@@ -459,9 +469,9 @@ namespace GridGain.Client.Impl {
                     break;
             }
 
-            lock (pendingReqs) {
+//            lock (pendingReqs) {
                 pendingReqs.Remove(resp.RequestId);
-            }
+//            }
         }
 
         /**
@@ -472,7 +482,7 @@ namespace GridGain.Client.Impl {
          * <exception cref="IOException">If client was closed before message was sent over network.</exception>
          */
         private void sendPacket(GridClientRequest msg) {
-            try {
+            try {/*
                 byte[] data = marshaller.Marshal(msg);
                 byte[] size = U.ToBytes(40 + data.Length);
                 byte[] head = new byte[1 + size.Length + 40 + data.Length];
@@ -483,13 +493,14 @@ namespace GridGain.Client.Impl {
                 Array.Copy(GridClientUtils.ToBytes(msg.RequestId), 0, head, 5, 8);
                 Array.Copy(GridClientUtils.ToBytes(msg.ClientId), 0, head, 13, 16);
                 Array.Copy(GridClientUtils.ToBytes(msg.DestNodeId), 0, head, 29, 16);
-                Array.Copy(data, 0, head, 45, data.Length);
+                Array.Copy(data, 0, head, 45, data.Length);*/
 
                 // Enqueue packet to send.
-                lock (stream) {
-                    stream.Write(head, 0, head.Length);
-                    stream.Flush();
-                }
+                //lock (stream) {
+                //    stream.Write(head, 0, head.Length);
+                //   stream.Flush();
+                //}
+                q.Add(msg);
 
                 lastPacketSndTime = U.Now;
             }
@@ -846,6 +857,83 @@ namespace GridGain.Client.Impl {
             return node;
         }
 
+        private void writePackets() {
+            byte[] buf = new byte[8192];
+
+            int pos = 0;
+
+            bool take = true;
+
+            while (true)
+            {
+                GridClientRequest msg;
+
+                if (take) {
+                    msg = q.Take();
+
+                    take = false;
+                }
+                else 
+                    q.TryTake(out msg);
+
+                if (msg == null) {
+                    take = true;
+
+                    if (pos != null)
+                    {
+                        lock (stream)
+                        {
+                            stream.Write(buf, 0, pos);
+                        }
+
+                        pos = 0;
+
+                        continue;
+                    }
+                }
+
+                byte[] data = marshaller.Marshal(msg);
+
+                int len = 1 + 4 + 40 + data.Length;
+
+                if (len > buf.Length - pos) {
+                    lock (stream)
+                    {
+                        stream.Write(buf, 0, pos);
+                    }
+
+                    pos = 0;
+
+                    if (len > buf.Length)
+                    {
+                        byte[] buf0 = new byte[len];
+
+                        buf0[0] = (byte)0x90;
+                        Array.Copy(U.ToBytes(40 + data.Length), 0, buf0, 1, 4);
+                        Array.Copy(GridClientUtils.ToBytes(msg.RequestId), 0, buf0, 5, 8);
+                        Array.Copy(GridClientUtils.ToBytes(msg.ClientId), 0, buf0, 13, 16);
+                        Array.Copy(GridClientUtils.ToBytes(msg.DestNodeId), 0, buf0, 29, 16);
+                        Array.Copy(data, 0, buf0, 45, data.Length);
+
+                        lock (stream)
+                        {
+                            stream.Write(buf0, 0, buf0.Length);
+                        }
+
+                        continue;
+                    }
+                }
+
+                buf[pos++] = (byte)0x90;
+
+                Array.Copy(U.ToBytes(40 + data.Length), 0, buf, pos, 4); pos += 4;
+                Array.Copy(GridClientUtils.ToBytes(msg.RequestId), 0, buf, pos, 8); pos += 8;
+                Array.Copy(GridClientUtils.ToBytes(msg.ClientId), 0, buf, pos, 16); pos += 16;
+                Array.Copy(GridClientUtils.ToBytes(msg.DestNodeId), 0, buf, pos, 16); pos += 16;
+                Array.Copy(data, 0, buf, pos, data.Length); pos += data.Length;
+            }
+        }
+
         /** <summary>Reader thread.</summary> */
         private void readPackets() {
             try {
@@ -860,10 +948,10 @@ namespace GridGain.Client.Impl {
                         if (!waitCompletion)
                             break;
 
-                        lock (pendingReqs) {
+//                        lock (pendingReqs) {
                             if (pendingReqs.Count == 0)
                                 break;
-                        }
+//                        }
                     }
 
                     // Header.
@@ -998,12 +1086,12 @@ namespace GridGain.Client.Impl {
                 if (lastReadTimedOut) {
                     lastReadTimedOut = false;
 
-                    if (stream is SslStream)
+                    if (inStream is SslStream)
                         // Recover SSL stream state after socket exception.
                         skipSslDataRecordHeader();
                 }
 
-                return stream.ReadByte();
+                return inStream.ReadByte();
             }
             catch (Exception e) {
                 if (e.InnerException is SocketException)
@@ -1046,7 +1134,7 @@ namespace GridGain.Client.Impl {
             byte[] data = new byte[5];
 
             for (int pos = 0; pos < 5; ) {
-                int read = stream.Read(data, pos, 5 - pos);
+                int read = inStream.Read(data, pos, 5 - pos);
 
                 if (read == 0)
                     return; // EOF.
