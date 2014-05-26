@@ -39,6 +39,7 @@
         <moduleSet>
             <includes>
                 <include>org.gridgain:gridgain-spring</include>
+                <include>org.gridgain:gridgain-hadoop</include>
             </includes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>

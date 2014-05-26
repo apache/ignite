@@ -49,6 +49,7 @@
                 <exclude>org.gridgain:gridgain-hibernate</exclude>
                 <exclude>org.gridgain:gridgain-indexing</exclude>
                 <exclude>org.gridgain:gridgain-jta</exclude>
+                <exclude>org.gridgain:gridgain-hadoop</exclude>
             </excludes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>

@@ -47,6 +47,7 @@
                 <exclude>org.gridgain:gridgain-extdata-uri</exclude>
                 <exclude>org.gridgain:gridgain-visor-console</exclude>
                 <exclude>org.gridgain:gridgain-indexing</exclude>
+                <exclude>org.gridgain:gridgain-hadoop</exclude>
             </excludes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
