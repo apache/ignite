@@ -181,6 +181,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public Collection<? extends GridNode> nodes() {
         return
             F.viewReadOnly(futures(), new GridClosure<GridFuture<Map<K, V>>, GridNode>() {
@@ -364,6 +365,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @param mapped Previously mapped.
      * @return {@code True} if has remote nodes.
      */
+    @SuppressWarnings("ConstantConditions")
     private boolean map(K key, Map<GridNode, LinkedHashMap<K, Boolean>> mappings, Map<K, V> locVals,
         long topVer, Map<GridNode, LinkedHashMap<K, Boolean>> mapped) {
         GridDhtCacheAdapter<K, V> colocated = cache();
@@ -379,9 +381,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
             try {
                 if (!reload && allowLocRead) {
                     try {
-
-                        // entryEx - create if absent, peekEx - do not create if absent.
-                        entry = colocated.context().isSwapEnabled() ? colocated.entryEx(key) : colocated.peekEx(key);
+                        entry = colocated.context().isSwapOrOffheapEnabled() ? colocated.entryEx(key) :
+                            colocated.peekEx(key);
 
                         // If our DHT cache do has value, then we peek it.
                         if (entry != null) {
@@ -579,6 +580,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         /**
          * @param e Failure exception.
          */
+        @SuppressWarnings("UnusedParameters")
         void onResult(GridTopologyException e) {
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will retry): " + this);
@@ -598,6 +600,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         /**
          * @param res Result callback.
          */
+        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
         void onResult(final GridNearGetResponse<K, V> res) {
             final Collection<Integer> invalidParts = res.invalidPartitions();
 
@@ -631,6 +634,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 GridFuture<Long> topFut = ctx.discovery().topologyFuture(rmtTopVer);
 
                 topFut.listenAsync(new CIX1<GridFuture<Long>>() {
+                    @SuppressWarnings("unchecked")
                     @Override public void applyx(GridFuture<Long> fut) throws GridException {
                         long topVer = fut.get();
 
