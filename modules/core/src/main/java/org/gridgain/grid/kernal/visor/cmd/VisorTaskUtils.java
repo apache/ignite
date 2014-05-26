@@ -9,12 +9,25 @@
 
 package org.gridgain.grid.kernal.visor.cmd;
 
+import org.gridgain.grid.util.typedef.*;
+import org.jetbrains.annotations.*;
+
+import java.io.*;
+import java.util.*;
+
 /**
  * Contains utility methods for Visor tasks and jobs.
  */
 public class VisorTaskUtils {
-    /** Default substitute for {@code null} names. */
-    public static String DFLT_EMPTY_NAME = "<default>";
+    /**
+     * Default substitute for {@code null} names.
+     * */
+    private static final String DFLT_EMPTY_NAME = "<default>";
+
+    /**
+     * Maximum folder depth. I.e. if depth is 4 we look in starting folder and 3 levels of sub-folders.
+     */
+    public static final int MAX_FOLDER_DEPTH = 4;
 
     /**
      * @param name Grid-style nullable name.
