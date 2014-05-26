@@ -9,9 +9,6 @@
 
 package org.gridgain.grid.spi.authentication;
 
-import org.gridgain.grid.security.*;
-
-import java.net.*;
 import java.util.*;
 
 /**
@@ -39,11 +36,8 @@ public class GridAuthenticatedSubject {
     /** Subject ID. */
     private UUID id;
 
-    /** Task permissions. */
-    private Map<String, Collection<GridSecurityOperation>> taskPermissions;
-
-    /** Cache permissions. */
-    private Map<String, Collection<GridSecurityOperation>> cachePermissions;
+    /** Permissions assigned to a subject. */
+    private GridAuthorizationPermissions permissions;
 
     /**
      * @param id Subject ID.
@@ -61,39 +55,11 @@ public class GridAuthenticatedSubject {
         return id;
     }
 
-    /**
-     * Gets mapping from task name mask to allowed operations.
-     *
-     * @return Mapping from task name to collection of permitted operations.
-     */
-    public Map<String, Collection<GridSecurityOperation>> taskPermissions() {
-        return taskPermissions;
+    public GridAuthorizationPermissions permissions() {
+        return permissions;
     }
 
-    /**
-     * Sets mapping from task name mask to allowed operations.
-     *
-     * @param taskPermissions Mapping from task name to collection of permitted operations.
-     */
-    public void taskPermissions(Map<String, Collection<GridSecurityOperation>> taskPermissions) {
-        this.taskPermissions = taskPermissions;
-    }
-
-    /**
-     * Gets mapping from cache name mask to collection of allowed operations.
-     *
-     * @return Mapping from cache name to collection of permitted operations.
-     */
-    public Map<String, Collection<GridSecurityOperation>> cachePermissions() {
-        return cachePermissions;
-    }
-
-    /**
-     * Sets mapping from cache name mask to collection of allowed operations.
-     *
-     * @param cachePermissions Mapping from cache name to collection of allowed operations.
-     */
-    public void cachePermissions(Map<String, Collection<GridSecurityOperation>> cachePermissions) {
-        this.cachePermissions = cachePermissions;
+    public void permissions(GridAuthorizationPermissions permissions) {
+        this.permissions = permissions;
     }
 }
