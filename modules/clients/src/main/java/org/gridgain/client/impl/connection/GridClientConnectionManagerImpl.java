@@ -53,6 +53,9 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
     /** Request header. */
     private static final byte REQ_HEADER = (byte)0x90;
 
+    /** */
+    private static final long TCP_IDLE_CONN_TIMEOUT = 10_000;
+
     /** NIO server. */
     private GridNioServer srv;
 
@@ -89,7 +92,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
     /** Custom protocol ID. */
     private final Byte protoId;
 
-    /** Service for ping requests. */
+    /** Service for ping requests, {@code null} if HTTP protocol is used. */
     private final ScheduledExecutorService pingExecutor;
 
     /**
@@ -102,6 +105,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
      * @param top Topology.
      * @param protoId Custom protocol ID (optional).
      */
+    @SuppressWarnings("unchecked")
     public GridClientConnectionManagerImpl(UUID clientId, SSLContext sslCtx, GridClientConfiguration cfg,
         Collection<InetSocketAddress> routers, GridClientTopology top, Byte protoId) {
         assert clientId != null : "clientId != null";
@@ -128,6 +132,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
                 GridNioFilter[] filters;
 
                 GridNioFilter codecFilter = new GridNioCodecFilter(new NioParser(), gridLog, false);
+                GridNioFilter asyncFilter = new GridNioAsyncNotifyFilter("gridClient", executor, gridLog);
 
                 if (sslCtx != null) {
                     filters = new GridNioFilter[]{codecFilter};
@@ -138,7 +143,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
                     //filters = new GridNioFilter[]{codecFilter, sslFilter};
                 }
                 else
-                    filters = new GridNioFilter[]{codecFilter};
+                    filters = new GridNioFilter[]{asyncFilter, codecFilter};
 
                 srv = GridNioServer.builder().address(U.getLocalHost())
                     .port(-1)
@@ -150,20 +155,20 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
                     .byteOrder(ByteOrder.nativeOrder())
                     .tcpNoDelay(cfg.isTcpNoDelay())
                     .directBuffer(true)
-                    .idleTimeout(60_000)
-                    .gridName("client")
+                    .idleTimeout(TCP_IDLE_CONN_TIMEOUT)
+                    .gridName("gridClient")
                     .build();
 
                 srv.start();
             }
             catch (IOException | GridException e) {
-                throw new RuntimeException("Failed to start connection server.", e);
+                throw new IllegalArgumentException("Failed to start connection server.", e);
             }
         }
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"BusyWait", "unchecked"})
+    @SuppressWarnings("BusyWait")
     @Override public void init(Collection<InetSocketAddress> srvs) throws GridClientException, InterruptedException {
         GridClientException firstEx = null;
 

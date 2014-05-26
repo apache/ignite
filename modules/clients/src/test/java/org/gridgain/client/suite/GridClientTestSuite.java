@@ -27,7 +27,6 @@ import java.io.*;
 public class GridClientTestSuite extends TestSuite {
     /**
      * @return Suite that contains all tests for REST.
-     * @throws IOException If failed.
      */
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Gridgain Clients Test Suite");
@@ -65,8 +64,9 @@ public class GridClientTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridClientHttpDirectSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpDirectSelfTest.class));
-        suite.addTest(new TestSuite(GridClientTcpSslSelfTest.class));
-        suite.addTest(new TestSuite(GridClientTcpSslDirectSelfTest.class));
+        // TODO 8416 ssl support.
+        //suite.addTest(new TestSuite(GridClientTcpSslSelfTest.class));
+        //suite.addTest(new TestSuite(GridClientTcpSslDirectSelfTest.class));
         suite.addTest(new TestSuite(GridClientHttpsSelfTest.class));
         suite.addTest(new TestSuite(GridClientHttpsDirectSelfTest.class));
 
@@ -75,8 +75,9 @@ public class GridClientTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridClientHttpDirectMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpDirectMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridClientTcpSslMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridClientTcpSslDirectMultiNodeSelfTest.class));
+        // TODO 8416 ssl support.
+        //suite.addTest(new TestSuite(GridClientTcpSslMultiNodeSelfTest.class));
+        //suite.addTest(new TestSuite(GridClientTcpSslDirectMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridClientHttpsMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridClientHttpsDirectMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpUnreachableMultiNodeSelfTest.class));
@@ -85,11 +86,13 @@ public class GridClientTestSuite extends TestSuite {
         // Test client with many nodes and in multithreaded scenarios
         suite.addTest(new TestSuite(GridClientHttpMultiThreadedSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpMultiThreadedSelfTest.class));
-        suite.addTest(new TestSuite(GridClientTcpSslMultiThreadedSelfTest.class));
+        // TODO 8416 ssl support.
+        //suite.addTest(new TestSuite(GridClientTcpSslMultiThreadedSelfTest.class));
         suite.addTest(new TestSuite(GridClientHttpsMultiThreadedSelfTest.class));
 
         // Test client authentication.
-        suite.addTest(new TestSuite(GridClientTcpSslAuthenticationSelfTest.class));
+        // TODO 8416 ssl support.
+        // suite.addTest(new TestSuite(GridClientTcpSslAuthenticationSelfTest.class));
 
         suite.addTest(new TestSuite(GridClientTcpConnectivitySelfTest.class));
         suite.addTest(new TestSuite(GridClientReconnectionSelfTest.class));
@@ -114,7 +117,8 @@ public class GridClientTestSuite extends TestSuite {
         // Router tests.
         suite.addTest(new TestSuite(GridTcpRouterSelfTest.class));
         suite.addTest(new TestSuite(GridHttpRouterSelfTest.class));
-        suite.addTest(new TestSuite(GridTcpSslRouterSelfTest.class));
+        // TODO 8416 ssl support.
+        //suite.addTest(new TestSuite(GridTcpSslRouterSelfTest.class));
         suite.addTest(new TestSuite(GridHttpsRouterSelfTest.class));
         suite.addTest(new TestSuite(GridTcpRouterMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridHttpRouterMultiNodeSelfTest.class));

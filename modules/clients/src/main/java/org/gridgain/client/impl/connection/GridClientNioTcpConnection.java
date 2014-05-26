@@ -115,14 +115,13 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      * @param cred Client credentials.      @throws IOException If connection could not be established.
      * @param protoId Custom protocol ID, if marshaller is not defined.
      * @throws IOException If IO error occurs.
-     * @throws InterruptedException If connection was interrupted.
      * @throws GridClientException If handshake error occurs.
      */
     @SuppressWarnings("unchecked")
     GridClientNioTcpConnection(GridNioServer srv, UUID clientId, InetSocketAddress srvAddr, final SSLContext sslCtx,
         ScheduledExecutorService pingExecutor, int connectTimeout, long pingInterval, long pingTimeout,
         boolean tcpNoDelay, final GridClientMarshaller marsh, GridClientTopology top, Object cred, Byte protoId)
-        throws IOException, InterruptedException, GridClientException {
+        throws IOException, GridClientException {
         super(clientId, srvAddr, sslCtx, top, cred);
 
         assert marsh != null || protoId != null;
@@ -398,7 +397,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      */
     @SuppressWarnings({"unchecked", "TooBroadScope"})
     void handleResponse(GridClientRequestData reqData) {
-        lastMsgRcvTime = System.currentTimeMillis();
+        lastMsgRcvTime = U.currentTimeMillis();
 
         TcpClientFuture fut = pendingReqs.get(reqData.requestId());
 
@@ -555,8 +554,9 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public <K> GridClientFutureAdapter<Boolean> cacheRemove(String cacheName, K key, Set<GridClientCacheFlag> flags,
-        UUID destNodeId) throws GridClientConnectionResetException, GridClientClosedException {
+    @Override public <K> GridClientFutureAdapter<Boolean> cacheRemove(String cacheName, K key,
+        Set<GridClientCacheFlag> flags, UUID destNodeId)
+        throws GridClientConnectionResetException, GridClientClosedException {
         GridClientCacheRequest<K, Object> req = new GridClientCacheRequest<>(RMV);
 
         req.cacheName(cacheName);
@@ -568,7 +568,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
     /** {@inheritDoc} */
     @Override public <K> GridClientFutureAdapter<Boolean> cacheRemoveAll(String cacheName, Collection<K> keys,
-                                                                         Set<GridClientCacheFlag> flags, UUID destNodeId)
+        Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException {
         assert keys != null;
 
@@ -583,7 +583,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
     /** {@inheritDoc} */
     @Override public <K, V> GridClientFutureAdapter<Boolean> cacheReplace(String cacheName, K key, V val,
-                                                                          Set<GridClientCacheFlag> flags, UUID destNodeId)
+        Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException {
         assert key != null;
         assert val != null;
@@ -600,7 +600,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
     /** {@inheritDoc} */
     @Override public <K, V> GridClientFutureAdapter<Boolean> cacheCompareAndSet(String cacheName, K key, V newVal, V oldVal,
-                                                                                Set<GridClientCacheFlag> flags, UUID destNodeId)
+        Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException {
         assert key != null;
 
@@ -635,7 +635,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
     /** {@inheritDoc} */
     @Override public <K, V> GridClientFutureAdapter<Boolean> cacheAppend(String cacheName, K key, V val,
-                                                                         Set<GridClientCacheFlag> flags, UUID destNodeId)
+        Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException {
         assert key != null;
         assert val != null;
@@ -652,7 +652,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
     /** {@inheritDoc} */
     @Override public <K, V> GridClientFutureAdapter<Boolean> cachePrepend(String cacheName, K key, V val,
-                                                                          Set<GridClientCacheFlag> flags, UUID destNodeId)
+        Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException {
         assert key != null;
         assert val != null;
@@ -677,7 +677,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
         return this.<GridClientTaskResultBean>makeRequest(msg, destNodeId).chain(
             new GridClientFutureCallback<GridClientTaskResultBean, R>() {
-                @Override public R onComplete(GridClientFuture<GridClientTaskResultBean> fut) throws GridClientException {
+                @Override public R onComplete(GridClientFuture<GridClientTaskResultBean> fut)
+                    throws GridClientException {
                     return fut.get().getResult();
                 }
             });
@@ -728,8 +729,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridClientFuture<GridClientNode> node(String ipAddr, boolean inclAttrs, boolean includeMetrics,
-                                                           UUID destNodeId) throws GridClientConnectionResetException, GridClientClosedException {
-
+        UUID destNodeId) throws GridClientConnectionResetException, GridClientClosedException {
         GridClientTopologyRequest msg = new GridClientTopologyRequest();
 
         TcpClientFuture fut = new TcpClientFuture() {
@@ -754,7 +754,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridClientFuture<List<GridClientNode>> topology(boolean inclAttrs, boolean inclMetrics,
-                                                                     UUID destNodeId) throws GridClientConnectionResetException, GridClientClosedException {
+        UUID destNodeId) throws GridClientConnectionResetException, GridClientClosedException {
         GridClientTopologyRequest msg = new GridClientTopologyRequest();
 
         TcpClientFuture fut = new TcpClientFuture() {
