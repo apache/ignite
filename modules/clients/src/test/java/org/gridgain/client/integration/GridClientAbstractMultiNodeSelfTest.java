@@ -783,7 +783,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
-    public void testMultithreadedCommand() throws Exception {
+    public void _testMultithreadedCommand() throws Exception {
         final GridClientData data = client.data(PARTITIONED_CACHE_NAME);
         final GridClientCompute compute = client.compute();
         final AtomicInteger cnt = new AtomicInteger(0);
