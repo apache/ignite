@@ -9,12 +9,6 @@
 
 package org.gridgain.grid.kernal.visor.cmd.tasks;
 
-import static java.lang.System.*;
-import static org.gridgain.grid.GridSystemProperties.*;
-
-import java.lang.reflect.*;
-import java.util.*;
-
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
@@ -25,6 +19,8 @@ import org.gridgain.grid.cache.eviction.lru.*;
 import org.gridgain.grid.cache.eviction.random.*;
 import org.gridgain.grid.dr.cache.receiver.*;
 import org.gridgain.grid.dr.cache.sender.*;
+import org.gridgain.grid.dr.hub.receiver.*;
+import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.task.*;
@@ -37,6 +33,12 @@ import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.typedef.internal.*;
+
+import java.lang.reflect.*;
+import java.util.*;
+
+import static java.lang.System.*;
+import static org.gridgain.grid.GridSystemProperties.*;
 
 /**
  * Grid configuration data collect task.
@@ -194,6 +196,8 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
 
             HashMap<String, Object> res = new HashMap<>();
 
+            res.put("Class Name", compactClass(spi));
+
             for (Method mtd : spiCls.getDeclaredMethods()) {
                 if (mtd.isAnnotationPresent(GridSpiConfiguration.class) && !mtd.isAnnotationPresent(Deprecated.class)) {
                     String mtdName = mtd.getName();
@@ -232,7 +236,7 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
                 }
             }
 
-            return new GridBiTuple<String, Map<String, Object>>(compactClass(spi), res);
+            return new GridBiTuple<String, Map<String, Object>>(spi.getName(), res);
         }
 
         private GridBiTuple<String, Map<String, Object>>[] collectSpiInfo(GridSpi[] spis) {
@@ -542,17 +546,54 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
                         streamer.isExecutorServiceShutdown()
                     ));
 
-            final VisorDrSenderHubConfig senderHub = null;
+            VisorDrSenderHubConfig senderHub = null;
 
             if (c.getDrSenderHubConfiguration() != null) {
-//                senderHub = new VisorDrSenderHubConfig(
-//                );
+                GridDrSenderHubConfiguration hCfg = c.getDrSenderHubConfiguration();
+
+                List<VisorDrSenderHubConnectionConfig> hubConnections = new ArrayList<>();
+
+                for (GridDrSenderHubConnectionConfiguration cCfg : hCfg.getConnectionConfiguration()) {
+                    hubConnections.add(new VisorDrSenderHubConnectionConfig(
+                        c.getDataCenterId(),
+                        cCfg.getReceiverHubAddresses(),
+                        cCfg.getLocalOutboundHost(),
+                        cCfg.getReceiverHubLoadBalancingMode(),
+                        cCfg.getIgnoredDataCenterIds()
+                    ));
+                }
+
+                senderHub = new VisorDrSenderHubConfig(
+                    hubConnections,
+                    hCfg.getMaxFailedConnectAttempts(),
+                    hCfg.getMaxErrors(),
+                    hCfg.getHealthCheckFrequency(),
+                    hCfg.getSystemRequestTimeout(),
+                    hCfg.getReadTimeout(),
+                    hCfg.getMaxQueueSize(),
+                    hCfg.getReconnectOnFailureTimeout(),
+                    hCfg.getCacheNames()
+                );
             }
-            final VisorDrReceiverHubConfig receiverHub = null;
+            VisorDrReceiverHubConfig receiverHub = null;
 
             if (c.getDrReceiverHubConfiguration() != null) {
-//                senderHub = new VisorDrSenderHubConfig(
-//                );
+                GridDrReceiverHubConfiguration hCfg = c.getDrReceiverHubConfiguration();
+
+                receiverHub = new VisorDrReceiverHubConfig(
+                    hCfg.getLocalInboundHost(),
+                    hCfg.getLocalInboundPort(),
+                    hCfg.getSelectorCount(),
+                    hCfg.getWorkerThreads(),
+                    hCfg.getMessageQueueLimit(),
+                    hCfg.isTcpNodelay(),
+                    hCfg.isDirectBuffer(),
+                    hCfg.getIdleTimeout(),
+                    hCfg.getWriteTimeout(),
+                    hCfg.getFlushFrequency(),
+                    hCfg.getPerNodeBufferSize(),
+                    hCfg.getPerNodeParallelLoadOperations()
+                );
             }
 
             return new VisorGridConfig(

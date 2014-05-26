@@ -25,7 +25,7 @@ public class VisorDrSenderHubConnectionConfig implements Serializable {
     private final Byte dataCenterId;
 
     /** Addresses of remote receiver hubs. */
-    private final Iterable<String> receiverHubAddresses;
+    private final String[] receiverHubAddresses;
 
     /** Local network interface name to which this replica hub will be bound to. */
     @Nullable private final String localOutboundHost;
@@ -34,11 +34,11 @@ public class VisorDrSenderHubConnectionConfig implements Serializable {
     private final GridDrReceiverHubLoadBalancingMode receiverHubLoadBalancingMode;
 
     /** IDs of data centers updates from which will not be replicated to this remote data center. */
-    private final Iterable<Byte> ignoredDataCenterIds;
+    private final byte[] ignoredDataCenterIds;
 
-    public VisorDrSenderHubConnectionConfig(Byte dataCenterId, Iterable<String> receiverHubAddresses,
+    public VisorDrSenderHubConnectionConfig(Byte dataCenterId, String[] receiverHubAddresses,
         @Nullable String localOutboundHost, GridDrReceiverHubLoadBalancingMode receiverHubLoadBalancingMode,
-        Iterable<Byte> ignoredDataCenterIds) {
+        byte[] ignoredDataCenterIds) {
         this.dataCenterId = dataCenterId;
         this.receiverHubAddresses = receiverHubAddresses;
         this.localOutboundHost = localOutboundHost;
@@ -56,7 +56,7 @@ public class VisorDrSenderHubConnectionConfig implements Serializable {
     /**
      * @return Addresses of remote receiver hubs.
      */
-    public Iterable<String> receiverHubAddresses() {
+    public String[] receiverHubAddresses() {
         return receiverHubAddresses;
     }
 }

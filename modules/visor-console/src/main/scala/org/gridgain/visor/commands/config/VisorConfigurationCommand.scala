@@ -220,9 +220,9 @@ class VisorConfigurationCommand {
 
             cmnT += ("Grid name", safe(cfg.basic().gridName(), "<default>"))
             cmnT += ("GridGain home", safe(cfg.basic().ggHome(), DFLT))
-            cmnT += ("Localhost", safe(cfg.basic().localeHost(), DFLT))
+            cmnT += ("Localhost", safe(cfg.basic().localHost(), DFLT))
             cmnT += ("Node ID", safe(cfg.basic().nodeId(), DFLT))
-            cmnT += ("Marshaller", cfg.basic().marsh())
+            cmnT += ("Marshaller", cfg.basic().marshaller())
             cmnT += ("Deployment mode", safe(cfg.basic().deployMode(), DFLT))
             cmnT += ("Daemon", bool2Str(cfg.basic().daemon()))
             cmnT += ("Remote JMX", bool2Str(cfg.basic().jmxRemote()))
@@ -239,7 +239,7 @@ class VisorConfigurationCommand {
             cmnT += ("Quiet mode", bool2Str(cfg.basic().quiet()))
             cmnT += ("Success filename", safe(cfg.basic().successFile(), DFLT))
             cmnT += ("Update notification", bool2Str(cfg.basic().updateNotifier()))
-            cmnT += ("Include properties", safe(cfg.inclProperties(), DFLT))
+            cmnT += ("Include properties", safe(cfg.includeProperties(), DFLT))
 
             cmnT.render()
 
@@ -279,7 +279,7 @@ class VisorConfigurationCommand {
 
             val metricsT = VisorTextTable()
 
-            val expTime = cfg.metrics().expectedTime()
+            val expTime = cfg.metrics().expireTime()
 
             metricsT += ("Metrics expire time", if (expTime != Long.MaxValue) expTime + "ms" else "<never>")
             metricsT += ("Metrics history size", cfg.metrics().historySize())
@@ -292,17 +292,19 @@ class VisorConfigurationCommand {
 
             val spisT = VisorTextTable()
 
-            spisT += ("Discovery", safe(cfg.spis().discoSpi(), DFLT))
-            spisT += ("Communication", safe(cfg.spis().communicationSpi()))
-            spisT += ("Event storage", safe(cfg.spis().eventSpi(), DFLT))
+            // TODO
+
+            spisT += ("Discovery", safe(cfg.spis().discoverySpi(), DFLT))
+            spisT += ("Communication", safe(cfg.spis().communicationSpi(), DFLT))
+            spisT += ("Event storage", safe(cfg.spis().eventStorageSpi(), DFLT))
             spisT += ("Collision", safe(cfg.spis().columnSpi(), DFLT))
-            spisT += ("Authentication", safe(cfg.spis().authSpi(), DFLT))
+            spisT += ("Authentication", safe(cfg.spis().authenticationSpi(), DFLT))
             spisT += ("Secure session", safe(cfg.spis().sessionSpi(), DFLT))
-            spisT += ("Deployment", safe(cfg.spis().deploySpi(), DFLT))
-            spisT += ("Checkpoints", safe(cfg.spis().cpSpis(), DFLT))
-            spisT += ("Failovers", safe(cfg.spis().failSpis(), DFLT))
+            spisT += ("Deployment", safe(cfg.spis().deploymentSpi(), DFLT))
+            spisT += ("Checkpoints", safe(cfg.spis().checkpointSpis(), DFLT))
+            spisT += ("Failovers", safe(cfg.spis().failoverSpis(), DFLT))
             spisT += ("Load balancings", safe(cfg.spis().loadBalancingSpis(), DFLT))
-            spisT += ("Swap spaces", safe(cfg.spis().swapSpaceSpis(), DFLT))
+            spisT += ("Swap spaces", safe(cfg.spis().swapSpaceSpi(), DFLT))
 
             spisT.render()
 

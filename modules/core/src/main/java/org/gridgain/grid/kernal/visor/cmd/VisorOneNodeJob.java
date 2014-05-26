@@ -9,13 +9,6 @@
 
 package org.gridgain.grid.kernal.visor.cmd;
 
-import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
-import org.jetbrains.annotations.*;
-
 /**
  * Base class for Visor job intended to query data from a single node.
  *

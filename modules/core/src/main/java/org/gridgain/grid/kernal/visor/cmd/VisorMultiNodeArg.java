@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.visor.cmd;
 
-import java.io.Serializable;
+import java.io.*;
 import java.util.*;
 
 /**

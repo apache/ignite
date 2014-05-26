@@ -43,11 +43,11 @@ public class VisorDrSenderHubConfig implements Serializable {
     private final long reconnectOnFailureTimeout;
 
     /** Cache names this sender hub works with. */
-    private final Iterable<String> cacheNames;
+    private final String[] cacheNames;
 
     public VisorDrSenderHubConfig(Iterable<VisorDrSenderHubConnectionConfig> connectionConfiguration,
         int maxFailedConnectAttempts, int maxErrors, long healthCheckFrequency, long systemRequestTimeout,
-        long readTimeout, int maxQueueSize, long reconnectOnFailureTimeout, Iterable<String> cacheNames) {
+        long readTimeout, int maxQueueSize, long reconnectOnFailureTimeout, String[] cacheNames) {
         this.connectionConfiguration = connectionConfiguration;
         this.maxFailedConnectAttempts = maxFailedConnectAttempts;
         this.maxErrors = maxErrors;

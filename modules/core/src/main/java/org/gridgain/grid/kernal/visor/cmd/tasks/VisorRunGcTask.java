@@ -9,19 +9,14 @@
 
 package org.gridgain.grid.kernal.visor.cmd.tasks;
 
-import org.gridgain.grid.GridException;
-import org.gridgain.grid.GridNode;
-import org.gridgain.grid.GridNodeMetrics;
+import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.compute.GridComputeJobResult;
-import org.gridgain.grid.kernal.processors.task.GridInternal;
+import org.gridgain.grid.compute.*;
+import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Task to run gc on nodes.
