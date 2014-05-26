@@ -79,9 +79,7 @@ public class VisorRunGcTask extends VisorMultiNodeTask<VisorRunGcTask.VisorRunGc
         protected VisorBeforeAfterResult run(VisorRunGcArg arg) throws GridException {
             GridNode locNode = g.localNode();
 
-            GridNodeMetrics m = locNode.metrics();
-
-            long before = freeHeap(m);
+            long before = freeHeap(locNode.metrics());
 
             System.gc();
 
@@ -89,7 +87,7 @@ public class VisorRunGcTask extends VisorMultiNodeTask<VisorRunGcTask.VisorRunGc
                 for (GridCache<?, ?> cache : g.cachesx(null))
                     cache.dgc();
 
-            return new VisorBeforeAfterResult(before, freeHeap(m));
+            return new VisorBeforeAfterResult(before, freeHeap(locNode.metrics()));
         }
 
         private long freeHeap(GridNodeMetrics m) {
