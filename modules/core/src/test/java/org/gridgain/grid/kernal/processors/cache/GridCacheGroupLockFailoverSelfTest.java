@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.cache;
 import com.google.common.collect.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -75,6 +74,13 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
      * to 50 in order to prevent in-memory data grid from over loading).
      */
     private final BlockingQueue<GridComputeTaskFuture<?>> resQueue = new LinkedBlockingQueue<>(10);
+
+    /**
+     * @return {@code True} if test should use optimistic transactions.
+     */
+    protected boolean optimisticTx() {
+        return false;
+    }
 
     /**
      * @throws Exception If failed.
@@ -163,8 +169,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
             // Dummy call to fetch affinity function from remote node
             master.mapKeyToNode(CACHE_NAME, "Dummy");
 
-            Map<UUID, Collection<Integer>> dataChunks =
-                new HashMap<>();
+            Map<UUID, Collection<Integer>> dataChunks = new HashMap<>();
 
             int chunkCntr = 0;
 
@@ -302,7 +307,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
      */
     private void submitDataChunk(final Grid master, UUID preferredNodeId, final Collection<Integer> dataChunk) {
         GridComputeTaskFuture<Void> fut = master.forPredicate(workerNodesFilter).compute().execute(
-            new GridCacheGroupLockPutTask(preferredNodeId, CACHE_NAME),
+            new GridCacheGroupLockPutTask(preferredNodeId, CACHE_NAME, optimisticTx()),
             dataChunk);
 
         fut.listenAsync(new CI1<GridFuture<Void>>() {

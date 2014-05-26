@@ -349,6 +349,17 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         if (!groupLock())
             return writeEntries();
         else {
+            if (!F.isEmpty(invalidParts)) {
+                assert invalidParts.size() == 1 : "Only one partition expected for group lock transaction " +
+                    "[tx=" + this + ", invalidParts=" + invalidParts + ']';
+                assert groupLockEntry() == null : "Group lock key should be rejected " +
+                    "[tx=" + this + ", groupLockEntry=" + groupLockEntry() + ']';
+                assert F.isEmpty(writeMap()) : "All entries should be rejected for group lock transaction " +
+                    "[tx=" + this + ", writes=" + writeMap() + ']';
+
+                return Collections.emptyList();
+            }
+
             GridCacheTxEntry<K, V> grpLockEntry = groupLockEntry();
 
             assert grpLockEntry != null || (near() && !local()):
