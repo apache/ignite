@@ -13,35 +13,8 @@ package org.gridgain.grid.security;
  * Security configuration.
  */
 public class GridSecurityConfiguration {
-    /** Default value for default allow all flag. */
-    public static final boolean DFLT_ALLOW_ALL = true;
-
-    /** Default allow all flag. */
-    private boolean defaultAllowAll = DFLT_ALLOW_ALL;
-
     /** Security credentials. */
     private GridSecurityCredentials cred;
-
-    /** Security interceptor. */
-    private GridSecurityInterceptor securityInterceptor;
-
-    /**
-     * If set to false, tasks and cache operations that are not explicitly allowed, will be denied.
-     *
-     * @return {@code True} if task execution and cache operations should be allowed by default.
-     */
-    public boolean isDefaultAllowAll() {
-        return defaultAllowAll;
-    }
-
-    /**
-     * Gets default allow all flag value.
-     *
-     * @param defaultAllowAll {@code True} if task execution and cache operations should be allowed by default.
-     */
-    public void setDefaultAllowAll(boolean defaultAllowAll) {
-        this.defaultAllowAll = defaultAllowAll;
-    }
 
     /**
      * Gets security credentials.
@@ -59,23 +32,5 @@ public class GridSecurityConfiguration {
      */
     public void setCredentials(GridSecurityCredentials cred) {
         this.cred = cred;
-    }
-
-    /**
-     * Gets security interceptor.
-     *
-     * @return Security interceptor.
-     */
-    public GridSecurityInterceptor getSecurityInterceptor() {
-        return securityInterceptor;
-    }
-
-    /**
-     * Sets security interceptor.
-     *
-     * @param securityInterceptor Security interceptor.
-     */
-    public void setSecurityInterceptor(GridSecurityInterceptor securityInterceptor) {
-        this.securityInterceptor = securityInterceptor;
     }
 }

@@ -11,11 +11,12 @@ package org.gridgain.grid.events;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.spi.*;
+import org.gridgain.grid.security.*;
+import org.gridgain.grid.spi.authentication.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 /**
- * Grid authentication event.
+ * Grid authorization event.
  * <p>
  * Grid events are used for notification about what happens within the grid. Note that by
  * design GridGain keeps all events generated on the local node locally and it provides
@@ -36,106 +37,101 @@ import org.gridgain.grid.util.typedef.internal.*;
  * </ul>
  * User can also wait for events using method {@link GridEvents#waitForLocal(GridPredicate, int...)}.
  * <h1 class="header">Events and Performance</h1>
- * Note that by default all events in GridGain are enabled and therefore generated and stored
- * by whatever event storage SPI is configured. GridGain can and often does generate thousands events per seconds
- * under the load and therefore it creates a significant additional load on the system. If these events are
- * not needed by the application this load is unnecessary and leads to significant performance degradation.
- * <p>
  * It is <b>highly recommended</b> to enable only those events that your application logic requires
  * by using {@link GridConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- * @see GridEventType#EVT_AUTH_FAILED
- * @see GridEventType#EVT_AUTH_SUCCEEDED
+ * @see GridEventType#EVT_AUTHORIZATION_FAILED
+ * @see GridEventType#EVT_AUTHORIZATION_SUCCEEDED
  */
-public class GridAuthenticationEvent extends GridEventAdapter {
+public class GridAuthorizationEvent extends GridEventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /**  Subject type. */
-    private GridSecuritySubjectType subjType;
+    /** Requested operation. */
+    private GridSecurityOperation op;
 
-    /** Subject ID. */
-    private byte[] subjId;
+    /** Authenticated subject authorized to perform operation. */
+    private GridAuthenticatedSubject subj;
 
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
-        return name() + ": subjType=" + subjType;
+        return name() + ": op=" + op;
     }
 
     /**
      * No-arg constructor.
      */
-    public GridAuthenticationEvent() {
+    public GridAuthorizationEvent() {
         // No-op.
     }
 
     /**
-     * Creates authentication event with given parameters.
+     * Creates authorization event with given parameters.
      *
      * @param msg Optional message.
      * @param type Event type.
      */
-    public GridAuthenticationEvent(GridNode node, String msg, int type) {
+    public GridAuthorizationEvent(GridNode node, String msg, int type) {
         super(node, msg, type);
     }
 
     /**
-     * Creates authentication event with given parameters.
+     * Creates authorization event with given parameters.
      *
      * @param node Node.
      * @param msg Optional message.
      * @param type Event type.
-     * @param subjType Subject type.
-     * @param subjId Subject ID.
+     * @param op Requested operation.
+     * @param subj Authenticated subject.
      */
-    public GridAuthenticationEvent(GridNode node, String msg, int type, GridSecuritySubjectType subjType,
-        byte[] subjId) {
+    public GridAuthorizationEvent(GridNode node, String msg, int type, GridSecurityOperation op,
+        GridAuthenticatedSubject subj) {
         super(node, msg, type);
 
-        this.subjType = subjType;
-        this.subjId = subjId;
+        this.op = op;
+        this.subj = subj;
     }
 
     /**
-     * Gets subject type that triggered the event.
+     * Gets requested operation.
      *
-     * @return Subject type that triggered the event.
+     * @return Requested operation.
      */
-    public GridSecuritySubjectType subjectType() {
-        return subjType;
+    public GridSecurityOperation operation() {
+        return op;
     }
 
     /**
-     * Gets subject ID that triggered the event.
+     * Sets requested operation.
      *
-     * @return Subject ID that triggered the event.
+     * @param op Requested operation.
      */
-    public byte[] subjectId() {
-        return subjId;
+    public void operation(GridSecurityOperation op) {
+        this.op = op;
     }
 
     /**
-     * Sets subject type that triggered the event.
+     * Gets authenticated subject.
      *
-     * @param subjType Subject type to set.
+     * @return Authenticated subject.
      */
-    public void subjectType(GridSecuritySubjectType subjType) {
-        this.subjType = subjType;
+    public GridAuthenticatedSubject subject() {
+        return subj;
     }
 
     /**
-     * Sets subject ID that triggered the event.
+     * Sets authenticated subject.
      *
-     * @param subjId Subject ID to set.
+     * @param subj Authenticated subject.
      */
-    public void subjectId(byte[] subjId) {
-        this.subjId = subjId;
+    public void subject(GridAuthenticatedSubject subj) {
+        this.subj = subj;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridAuthenticationEvent.class, this,
+        return S.toString(GridAuthorizationEvent.class, this,
             "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),

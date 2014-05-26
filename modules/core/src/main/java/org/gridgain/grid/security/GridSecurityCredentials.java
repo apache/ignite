@@ -21,9 +21,6 @@ public class GridSecurityCredentials {
     /** Password. */
     private String password;
 
-    /** Inet address. Automatically set by GridGain if available. */
-    private InetAddress addr;
-
     /** Additional user object. */
     private Object userObj;
 
@@ -61,24 +58,6 @@ public class GridSecurityCredentials {
      */
     public void setPassword(String password) {
         this.password = password;
-    }
-
-    /**
-     * Gets network address of subject, if available. Network address is provided by GridGain.
-     *
-     * @return Subject network address.
-     */
-    public InetAddress getAddress() {
-        return addr;
-    }
-
-    /**
-     * Sets subject network address. Should not be used bu user.
-     *
-     * @param addr Address.
-     */
-    public void setAddress(InetAddress addr) {
-        this.addr = addr;
     }
 
     /**

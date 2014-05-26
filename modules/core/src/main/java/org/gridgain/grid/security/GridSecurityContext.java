@@ -46,5 +46,5 @@ public interface GridSecurityContext {
      *
      * @return Authentication subject context.
      */
-    public GridSecuritySubject subject();
+    public GridAuthenticatedSubject subject();
 }

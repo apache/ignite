@@ -10,7 +10,6 @@
 package org.gridgain.grid.spi.authentication;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.authentication.noop.*;
 
@@ -63,15 +62,11 @@ public interface GridAuthenticationSpi extends GridSpi, GridSpiJsonConfigurable 
     /**
      * Authenticates a given subject (either node or remote client).
      *
-     * @param subjType Subject type.
-     * @param subjId Unique subject ID such as local or remote node ID, client ID, etc.
-     * @param credentials Authentication parameters (may be {@code null} or empty based on implementation).
-     *      The map of parameters may be different for different subject types. Refer to specific
-     *      authentication SPI documentation for a list of required parameters.
+     * @param authCtx Authentication context. Contains all necessary information required to authenticate
+     *      the subject.
      * @return Authenticated subject context or {@code null} if authentication did not pass.
      * @throws GridSpiException If authentication resulted in system error.
      *      Note that bad credentials should not cause this exception.
      */
-    public GridSecuritySubject authenticate(GridSecuritySubjectType subjType, byte[] subjId,
-        GridSecurityCredentials credentials) throws GridSpiException;
+    public GridAuthenticatedSubject authenticate(GridAuthenticationContext authCtx) throws GridSpiException;
 }

@@ -653,7 +653,7 @@ public interface GridEventType {
      * Built-in event type: authentication failed.
      * <p>
      * Authentication procedure failed. This means that  there was some error event
-     * during authentication procedure and authentication procedure was not succeed.
+     * during authentication procedure and authentication procedure was not successful.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
@@ -839,6 +839,32 @@ public interface GridEventType {
      * @see GridGgfsEvent
      */
     public static final int EVT_GGFS_FILE_PURGED = 127;
+
+    /**
+     * Built-in event type: authorization succeed.
+     * <p>
+     * Authorization procedure succeed. This event is triggered every time
+     * an authorization procedure finished without exception.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal GridGain events and should not be used by user-defined events.
+     *
+     * @see GridAuthorizationEvent
+     */
+    public static final int EVT_AUTHORIZATION_SUCCEEDED = 128;
+
+    /**
+     * Built-in event type: authorization failed.
+     * <p>
+     * Authorization procedure failed. This means that  there was some error event
+     * during authorization procedure and authorization procedure was not successful.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal GridGain events and should not be used by user-defined events.
+     *
+     * @see GridAuthorizationEvent
+     */
+    public static final int EVT_AUTHORIZATION_FAILED = 129;
 
     /**
      * All license events. This array can be directly passed into
@@ -1034,6 +1060,18 @@ public interface GridEventType {
     public static final int[] EVTS_AUTHENTICATION = {
         EVT_AUTH_SUCCEEDED,
         EVT_AUTH_FAILED
+    };
+
+    /**
+     * All authorization events. This array can be directly passed into
+     * {@link GridEvents#localListen(GridPredicate, int...)} method to
+     * subscribe to all cloud events.
+     *
+     * @see GridAuthenticationEvent
+     */
+    public static final int[] EVTS_AUTHORIZATION = {
+        EVT_AUTHORIZATION_SUCCEEDED,
+        EVT_AUTHORIZATION_FAILED
     };
 
     /**
