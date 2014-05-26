@@ -24,9 +24,9 @@ public class GridHadoopClientTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Gridgain Hadoop Client Test Suite");
 
-//        suite.addTestSuite(GridHadoopClientProtocolSelfTest.class);
-
         suite.addTest(GridHadoopTestSuite.suite());
+
+        suite.addTestSuite(GridHadoopClientProtocolSelfTest.class);
 
         return suite;
     }
