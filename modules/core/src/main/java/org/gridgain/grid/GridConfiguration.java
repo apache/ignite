@@ -229,6 +229,9 @@ public class GridConfiguration {
     /** GGFS executor service. */
     private ExecutorService ggfsSvc;
 
+    /** REST requests executor service. */
+    private ExecutorService restExecSvc;
+
     /** Peer class loading executor service shutdown flag. */
     private boolean p2pSvcShutdown = true;
 
@@ -582,6 +585,7 @@ public class GridConfiguration {
         restTcpSslCtxFactory = cfg.getRestTcpSslContextFactory();
         restTcpSslEnabled = cfg.isRestTcpSslEnabled();
         restTcpSslClientAuth = cfg.isRestTcpSslClientAuth();
+        restExecSvc = cfg.getRestExecutorService();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
@@ -2592,6 +2596,35 @@ public class GridConfiguration {
      */
     public void setRestAccessibleFolders(String... restAccessibleFolders) {
         this.restAccessibleFolders = restAccessibleFolders;
+    }
+
+    /**
+     * Should return an instance of fully configured thread pool to be used for
+     * processing of client messages (REST requests).
+     * <p>
+     * If not provided, new executor service will be created using the following
+     * configuration:
+     * <ul>
+     *     <li>Core pool size - {@link #DFLT_PUBLIC_CORE_THREAD_CNT}</li>
+     *     <li>Max pool size - {@link #DFLT_PUBLIC_MAX_THREAD_CNT}</li>
+     *     <li>Queue capacity - {@link #DFLT_PUBLIC_THREADPOOL_QUEUE_CAP}</li>
+     * </ul>
+     *
+     * @return Thread pool implementation to be used for processing of client
+     *      messages.
+     */
+    public ExecutorService getRestExecutorService() {
+        return restExecSvc;
+    }
+
+    /**
+     * Sets thread pool to use for processing of client messages (REST requests).
+     *
+     * @param restExecSvc Thread pool to use for processing of client messages.
+     * @see GridConfiguration#getRestExecutorService()
+     */
+    public void setRestExecutorService(ExecutorService restExecSvc) {
+        this.restExecSvc = restExecSvc;
     }
 
     /**

@@ -1840,12 +1840,21 @@ public class GridGainEx {
             }
 
             if (cfg.isRestEnabled()) {
-                restExecSvc = new GridThreadPoolExecutor(
-                    "rest-" + cfg.getGridName(),
-                    DFLT_SYSTEM_CORE_THREAD_CNT,
-                    DFLT_SYSTEM_MAX_THREAD_CNT,
-                    DFLT_SYSTEM_KEEP_ALIVE_TIME,
-                    new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
+                restExecSvc = cfg.getRestExecutorService();
+
+                if (restExecSvc == null) {
+                    restExecSvc = new GridThreadPoolExecutor(
+                        "rest-" + cfg.getGridName(),
+                        DFLT_SYSTEM_CORE_THREAD_CNT,
+                        DFLT_SYSTEM_MAX_THREAD_CNT,
+                        DFLT_SYSTEM_KEEP_ALIVE_TIME,
+                        new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP)
+                    );
+                }
+            }
+            else {
+                if (restExecSvc != null)
+                    U.warn(log, "Configuration of REST executor service ignored (REST access is disabled).");
             }
 
             // Ensure that SPIs support multiple grid instances, if required.
