@@ -408,6 +408,13 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
     }
 
     /**
+     * @return Overridden output data writer.
+     */
+    public RecordWriter writer() {
+        return writer;
+    }
+
+    /**
      * Overrides default output data writer.
      *
      * @param writer New writer.
