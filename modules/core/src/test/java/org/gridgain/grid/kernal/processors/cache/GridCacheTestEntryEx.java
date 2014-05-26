@@ -420,8 +420,8 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
 
     /** {@inheritDoc} */
     @Override public GridBiTuple<Boolean, V> innerUpdateLocal(GridCacheVersion ver, GridCacheOperation op,
-                                                              @Nullable Object writeObj, boolean writeThrough, boolean retval, long ttl, boolean evt, boolean metrics,
-                                                              @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException, GridCacheEntryRemovedException {
+        @Nullable Object writeObj, boolean writeThrough, boolean retval, long ttl, boolean evt, boolean metrics,
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException, GridCacheEntryRemovedException {
         return new GridBiTuple<>(false, null);
     }
 
@@ -492,6 +492,11 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         }
 
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onMarkedObsolete() {
+        // No-op.
     }
 
     /** {@inheritDoc} */

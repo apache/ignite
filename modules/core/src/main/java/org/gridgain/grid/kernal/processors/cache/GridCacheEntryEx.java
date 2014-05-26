@@ -222,6 +222,12 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
     public GridCacheBatchSwapEntry<K, V> evictInBatchInternal(GridCacheVersion obsoleteVer) throws GridException;
 
     /**
+     * This method should be called each time entry is marked obsolete
+     * other than by calling {@link #markObsolete(GridCacheVersion)}.
+     */
+    public void onMarkedObsolete();
+
+    /**
      * Checks if entry is new assuming lock is held externally.
      *
      * @return {@code True} if entry is new.
