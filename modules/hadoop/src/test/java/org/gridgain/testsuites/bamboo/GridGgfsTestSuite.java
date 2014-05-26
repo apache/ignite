@@ -85,6 +85,8 @@ public class GridGgfsTestSuite extends TestSuite {
 
         suite.addTestSuite(GridGgfsTaskSelfTest.class);
 
+        suite.addTestSuite(GridGgfsGroupDataBlockKeyMapperHashSelfTest.class);
+
         return suite;
     }
 }
