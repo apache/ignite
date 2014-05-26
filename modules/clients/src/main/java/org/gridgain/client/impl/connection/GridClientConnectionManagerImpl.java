@@ -18,6 +18,7 @@ import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.logger.java.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -95,6 +96,59 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
     /** Service for ping requests, {@code null} if HTTP protocol is used. */
     private final ScheduledExecutorService pingExecutor;
 
+    /** Message writer. */
+    private final GridNioMessageWriter msgWriter = new GridNioMessageWriter() {
+        @Override public boolean write(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf) {
+            assert msg != null;
+            assert buf != null;
+
+            msg.messageWriter(this, nodeId);
+
+            boolean finished = msg.writeTo(buf);
+
+            return finished;
+        }
+
+        @Override public int writeFully(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, OutputStream out,
+            ByteBuffer buf) throws IOException {
+            assert msg != null;
+            assert out != null;
+            assert buf != null;
+            assert buf.hasArray();
+
+            msg.messageWriter(this, nodeId);
+
+            boolean finished = false;
+            int cnt = 0;
+
+            while (!finished) {
+                finished = msg.writeTo(buf);
+
+                out.write(buf.array(), 0, buf.position());
+
+                cnt += buf.position();
+
+                buf.clear();
+            }
+
+            return cnt;
+        }
+    };
+
+    /** Message reader. */
+    private final GridNioMessageReader msgReader = new GridNioMessageReader() {
+        @Override public boolean read(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf) {
+            assert msg != null;
+            assert buf != null;
+
+            msg.messageReader(this, nodeId);
+
+            boolean finished = msg.readFrom(buf);
+
+            return finished;
+        }
+    };
+
     /**
      * Constructs connection manager.
      *
@@ -131,7 +185,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
 
                 GridNioFilter[] filters;
 
-                GridNioFilter codecFilter = new GridNioCodecFilter(new NioParser(), gridLog, false);
+                GridNioFilter codecFilter = new GridNioCodecFilter(new NioParser(msgReader), gridLog, true);
 
                 if (sslCtx != null) {
                     filters = new GridNioFilter[]{codecFilter};
@@ -154,8 +208,10 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
                     .byteOrder(ByteOrder.nativeOrder())
                     .tcpNoDelay(cfg.isTcpNoDelay())
                     .directBuffer(true)
+                    .directMode(true)
                     .idleTimeout(TCP_IDLE_CONN_TIMEOUT)
                     .gridName("gridClient")
+                    .messageWriter(msgWriter)
                     .build();
 
                 srv.start();
@@ -534,6 +590,8 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
             GridClientFutureAdapter<Boolean> handshakeFut =
                 ses.removeMeta(GridClientNioTcpConnection.SES_META_HANDSHAKE);
 
+            //System.out.println("Client message " + msg);
+
             if (handshakeFut != null) {
                 assert msg instanceof GridClientHandshakeResponse;
 
@@ -544,12 +602,12 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
 
                 assert conn != null;
 
-                if (msg instanceof GridClientRequestData) {
-                    GridClientRequestData reqData = (GridClientRequestData)msg;
+                if (msg instanceof GridClientMessageWrapper) {
+                    GridClientMessageWrapper reqData = (GridClientMessageWrapper)msg;
 
-                    assert reqData.body() != null;
+                    assert reqData.getMsg() != null;
 
-                    conn.handleResponse((GridClientRequestData)msg);
+                    conn.handleResponse(reqData);
                 }
                 else {
                     assert msg instanceof GridClientPingPacket : msg;
@@ -595,45 +653,23 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
         }
     }
 
+
+
+    /** Message metadata key. */
+    private static final int MSG_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+
     /**
      *
      */
     private class NioParser implements GridNioParser {
-        /** {@inheritDoc} */
-        @Override public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, GridException {
-            if (msg instanceof GridClientPingPacket)
-                return ByteBuffer.wrap(GridClientPingPacket.PING_PACKET);
-            else if (msg instanceof GridClientHandshakeRequest)
-                return ByteBuffer.wrap(((GridClientHandshakeRequest)msg).rawBytes());
+        /** Message reader. */
+        private final GridNioMessageReader msgReader;
 
-            GridClientMessage clientMsg = (GridClientMessage)msg;
-
-            byte[] msgBytes = clientMsg instanceof GridRouterRequest ? ((GridRouterRequest)clientMsg).body() :
-                cfg.getMarshaller().marshal(clientMsg);
-
-            ByteBuffer res = ByteBuffer.allocate(msgBytes.length + 45);
-
-            res.put(REQ_HEADER);
-
-            res.put(U.intToBytes(msgBytes.length + 40));
-
-            res.put(U.longToBytes(clientMsg.requestId()));
-            res.put(U.uuidToBytes(clientMsg.clientId()));
-
-            if (clientMsg.destinationId() != null) {
-                res.put(U.longToBytes(clientMsg.destinationId().getMostSignificantBits()));
-                res.put(U.longToBytes(clientMsg.destinationId().getLeastSignificantBits()));
-            }
-            else {
-                res.put(U.longToBytes(0));
-                res.put(U.longToBytes(0));
-            }
-
-            res.put(msgBytes);
-
-            res.flip();
-
-            return res;
+        /**
+         * @param msgReader Message reader.
+         */
+        public NioParser(GridNioMessageReader msgReader) {
+            this.msgReader = msgReader;
         }
 
         /** {@inheritDoc} */
@@ -646,153 +682,34 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
                 return new GridClientHandshakeResponse(code);
             }
 
-            ParserState state = ses.removeMeta(PARSER_STATE.ordinal());
+            GridTcpCommunicationMessageAdapter msg = ses.removeMeta(MSG_META_KEY);
+            UUID nodeId = ses.meta(GridNioServer.DIFF_VER_NODE_ID_META_KEY);
 
-            if (state == null)
-                state = new ParserState();
+            if (msg == null && buf.hasRemaining()) {
+                byte type = buf.get();
 
-            if (state.packetType() == null) {
-                byte hdr = buf.get();
-
-                if (hdr != REQ_HEADER)
-                    throw new GridException("Unexpected message header: " + Integer.toHexString(hdr));
-
-                state.packetType(GRIDGAIN);
+                if (type == GridClientMessageWrapper.REQ_HEADER)
+                    msg = new GridClientMessageWrapper();
             }
 
-            Object msg = parseCustomPacket(ses, buf, state);
+            boolean finished = false;
 
-            if (msg == null)
-                // Packet was not fully parsed yet.
-                ses.addMeta(PARSER_STATE.ordinal(), state);
+            if (buf.hasRemaining())
+                finished = msgReader.read(nodeId, msg, buf);
 
-            return msg;
-        }
-
-        /**
-         * Parses custom packet serialized by GridGain marshaller.
-         *
-         * @param ses Session.
-         * @param buf Buffer containing not parsed bytes.
-         * @param state Parser state.
-         * @return Parsed message.
-         * @throws IOException If packet parsing or deserialization failed.
-         */
-        @Nullable private Object parseCustomPacket(GridNioSession ses, ByteBuffer buf, ParserState state)
-            throws IOException {
-            ByteArrayOutputStream tmp = state.buffer();
-
-            int len = state.index();
-
-            if (buf.remaining() > 0) {
-                if (len == 0) { // Don't know the size yet.
-                    byte[] lenBytes = statefulRead(buf, tmp, 4);
-
-                    if (lenBytes != null) {
-                        len = U.bytesToInt(lenBytes, 0);
-
-                        if (len == 0)
-                            return GridClientPingPacket.PING_MESSAGE;
-                        else if (len < 0)
-                            throw new IOException("Failed to parse incoming packet (invalid packet length) " +
-                                "[ses=" + ses + ", len=" + len + ']');
-
-                        state.index(len);
-                    }
-                }
-
-                if (len > 0 && state.requestData() == null) {
-                    byte[] hdrBytes = statefulRead(buf, tmp, 40);
-
-                    if (hdrBytes != null) {
-                        long reqId = GridClientByteUtils.bytesToLong(hdrBytes, 0);
-                        UUID clientId = GridClientByteUtils.bytesToUuid(hdrBytes, 8);
-                        UUID destId = GridClientByteUtils.bytesToUuid(hdrBytes, 24);
-
-                        state.requestData(new GridClientRequestData(reqId, clientId, destId));
-                    }
-                }
-
-                if (len > 0 && state.requestData() != null) {
-                    final int packetSize = len - 40;
-
-                    if (tmp.size() + buf.remaining() >= packetSize) {
-                        if (buf.remaining() > 0) {
-                            byte[] bodyBytes = new byte[packetSize - tmp.size()];
-
-                            buf.get(bodyBytes);
-
-                            tmp.write(bodyBytes);
-                        }
-
-                        GridClientRequestData reqData = state.requestData();
-
-                        reqData.body(state.buffer().toByteArray());
-
-                        return reqData;
-                    }
-                    else
-                        copyRemaining(buf, tmp);
-                }
-            }
-
-            return null;
-        }
-
-        /**
-         * Tries to read the specified amount of bytes using intermediate buffer. Stores
-         * the bytes to intermediate buffer, if size requirement is not met.
-         *
-         * @param buf Byte buffer to read from.
-         * @param intBuf Intermediate buffer to read bytes from and to save remaining bytes to.
-         * @param size Number of bytes to read.
-         * @return Resulting byte array or {@code null}, if both buffers contain less bytes
-         *         than required. In case of non-null result, the intermediate buffer is empty.
-         *         In case of {@code null} result, the input buffer is empty (read fully).
-         * @throws IOException If IO error occurs.
-         */
-        @Nullable private byte[] statefulRead(ByteBuffer buf, ByteArrayOutputStream intBuf, int size)
-            throws IOException {
-            if (intBuf.size() + buf.remaining() >= size) {
-                int off = 0;
-                byte[] bytes = new byte[size];
-
-                if (intBuf.size() > 0) {
-                    assert intBuf.size() < size;
-
-                    byte[] tmpBytes = intBuf.toByteArray();
-
-                    System.arraycopy(tmpBytes, 0, bytes, 0, tmpBytes.length);
-
-                    off = intBuf.size();
-
-                    intBuf.reset();
-                }
-
-                buf.get(bytes, off, size - off);
-
-                return bytes;
-            }
+            if (finished)
+                return msg;
             else {
-                copyRemaining(buf, intBuf);
+                ses.addMeta(MSG_META_KEY, msg);
 
                 return null;
             }
         }
 
-        /**
-         * Copies remaining bytes from byte buffer to output stream.
-         *
-         * @param src Source buffer.
-         * @param dest Destination stream.
-         * @throws IOException If IO error occurs.
-         */
-        private void copyRemaining(ByteBuffer src, OutputStream dest) throws IOException {
-            byte[] b = new byte[src.remaining()];
-
-            src.get(b);
-
-            dest.write(b);
+        /** {@inheritDoc} */
+        @Override public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, GridException {
+            // No encoding needed for direct messages.
+            throw new UnsupportedEncodingException();
         }
     }
 

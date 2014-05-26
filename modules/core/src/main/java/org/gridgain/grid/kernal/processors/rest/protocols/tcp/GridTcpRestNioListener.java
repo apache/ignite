@@ -26,11 +26,13 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.GridProductImpl.*;
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 import static org.gridgain.grid.kernal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.*;
+import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.MARSHALLER;
 
 /**
  * Listener for nio server that handles incoming tcp rest packets.
@@ -155,7 +157,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
                 ses.addMeta(GridNioSessionMetaKey.MARSHALLER.ordinal(), marsh);
 
-                ses.send(GridClientHandshakeResponse.OK);
+                ses.send(new GridClientHandshakeResponseWrapper((byte)0));
             }
             else {
                 final GridRestRequest req = createRestRequest(msg);
@@ -190,14 +192,50 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                                 res.errorMessage("Failed to process client request: " + e.getMessage());
                             }
 
-                            ses.send(res);
+                            GridClientMessageWrapper wrapper = new GridClientMessageWrapper();
+
+                            wrapper.setReqId(msg.requestId());
+                            wrapper.setClientId(msg.clientId());
+
+                            try {
+                                byte[] bytes = marshaller(ses).marshal(res);
+
+                                wrapper.setMsg(bytes);
+
+                                wrapper.setMsgSize(bytes.length + 40);
+                            }
+                            catch (IOException e) {
+                                e.printStackTrace();
+                            }
+
+                            ses.send(wrapper);
                         }
                     });
                 else
                     U.error(log, "Failed to process client request (unknown packet type) [ses=" + ses +
-                        ", msg=" + msg + ']');
+                            ", msg=" + msg + ']');
             }
         }
+    }
+
+    /**
+     * Returns marshaller from session, if no marshaller found - init it with default.
+     *
+     * @param ses Current session.
+     * @return Current session's marshaller.
+     */
+    protected GridClientMarshaller marshaller(GridNioSession ses) {
+        GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
+
+        if (marsh == null) {
+            U.warn(log, "No marshaller defined for NIO session, using PROTOBUF as default [ses=" + ses + ']');
+
+            //marsh = protobufMarshaller;
+
+            ses.addMeta(MARSHALLER.ordinal(), marsh);
+        }
+
+        return marsh;
     }
 
     /**

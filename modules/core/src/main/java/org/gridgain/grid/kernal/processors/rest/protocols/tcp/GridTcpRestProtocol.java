@@ -16,6 +16,7 @@ import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.*;
 import org.gridgain.grid.spi.*;
+import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.nio.ssl.*;
@@ -25,6 +26,7 @@ import javax.net.ssl.*;
 import java.io.*;
 import java.net.*;
 import java.nio.*;
+import java.util.*;
 
 /**
  * TCP binary protocol implementation.
@@ -43,6 +45,20 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
         return "TCP binary";
     }
 
+    /** Message reader. */
+    private final GridNioMessageReader msgReader = new GridNioMessageReader() {
+        @Override public boolean read(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf) {
+            assert msg != null;
+            assert buf != null;
+
+            msg.messageReader(this, nodeId);
+
+            boolean finished = msg.readFrom(buf);
+
+            return finished;
+        }
+    };
+
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
     @Override public void start(final GridRestProtocolHandler hnd) throws GridException {
@@ -52,7 +68,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
         GridNioServerListener<GridClientMessage> lsnr = new GridTcpRestNioListener(log, hnd);
 
-        GridNioParser parser = new GridTcpRestParser(log);
+        GridNioParser parser = new GridTcpRestDirectParser(msgReader);
 
         try {
             host = resolveRestTcpHost(cfg);
@@ -123,6 +139,45 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
         return U.resolveLocalHost(host);
     }
 
+    /** Message writer. */
+    private final GridNioMessageWriter msgWriter = new GridNioMessageWriter() {
+        @Override public boolean write(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf) {
+            assert msg != null;
+            assert buf != null;
+
+            msg.messageWriter(this, nodeId);
+
+            boolean finished = msg.writeTo(buf);
+
+            return finished;
+        }
+
+        @Override public int writeFully(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, OutputStream out,
+            ByteBuffer buf) throws IOException {
+            assert msg != null;
+            assert out != null;
+            assert buf != null;
+            assert buf.hasArray();
+
+            msg.messageWriter(this, nodeId);
+
+            boolean finished = false;
+            int cnt = 0;
+
+            while (!finished) {
+                finished = msg.writeTo(buf);
+
+                out.write(buf.array(), 0, buf.position());
+
+                cnt += buf.position();
+
+                buf.clear();
+            }
+
+            return cnt;
+        }
+    };
+
     /**
      * Tries to start server with given parameters.
      *
@@ -138,7 +193,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<GridClientMessage> lsnr,
         GridNioParser parser, @Nullable SSLContext sslCtx, GridConfiguration cfg) {
         try {
-            GridNioFilter codec = new GridNioCodecFilter(parser, log, false);
+            GridNioFilter codec = new GridNioCodecFilter(parser, log, true);
 
             GridNioFilter[] filters;
 
@@ -170,6 +225,8 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                 .socketReceiveBufferSize(cfg.getRestTcpReceiveBufferSize())
                 .sendQueueLimit(cfg.getRestTcpSendQueueLimit())
                 .filters(filters)
+                .directMode(true)
+                .messageWriter(msgWriter)
                 .build();
 
             srv.idleTimeout(cfg.getRestIdleTimeout());

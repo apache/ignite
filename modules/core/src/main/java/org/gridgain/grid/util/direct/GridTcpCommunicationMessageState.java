@@ -1377,6 +1377,243 @@ public class GridTcpCommunicationMessageState {
     }
 
     /**
+     * @param i Integer value.
+     * @return Whether value was written.
+     */
+    public final boolean putIntClient(int i) {
+        assert buf != null;
+
+        if (buf.remaining() < 4)
+            return false;
+
+        putByte((byte)(0xFF & (i >>> 24)));
+        putByte((byte)(0xFF & (i >>> 16)));
+        putByte((byte)(0xFF & (i >>> 8)));
+        putByte((byte)(0xFF & i));
+
+        return true;
+    }
+
+    /**
+     * @return Integer value.
+     */
+    public final int getIntClient() {
+        assert buf != null;
+        assert buf.remaining() >= 4;
+
+        int val = 0;
+
+        val |= (0xFF & getByte()) << 24;
+        val |= (0xFF & getByte()) << 16;
+        val |= (0xFF & getByte()) << 8;
+        val |= (0xFF & getByte());
+
+        return val;
+    }
+
+    /**
+     * @param val Long value.
+     * @return Whether value was written.
+     */
+    public final boolean putLongClient(long val) {
+        assert buf != null;
+
+        if (buf.remaining() < 8)
+            return false;
+
+        putByte((byte)(val >>> 56));
+        putByte((byte)(0xFFL & (val >>> 48)));
+        putByte((byte)(0xFFL & (val >>> 40)));
+        putByte((byte)(0xFFL & (val >>> 32)));
+        putByte((byte)(0xFFL & (val >>> 24)));
+        putByte((byte)(0xFFL & (val >>> 16)));
+        putByte((byte)(0xFFL & (val >>> 8)));
+        putByte((byte) (0xFFL & val));
+
+        return true;
+    }
+
+    /**
+     * @return Long value.
+     */
+    public final long getLongClient() {
+        assert buf != null;
+        assert buf.remaining() >= 8;
+
+        long x = 0;
+
+        x |= ( 0xFFL & getByte()) << 56;
+        x |= ( 0xFFL & getByte()) << 48;
+        x |= ( 0xFFL & getByte()) << 40;
+        x |= ( 0xFFL & getByte()) << 32;
+        x |= ( 0xFFL & getByte()) << 24;
+        x |= ( 0xFFL & getByte()) << 16;
+        x |= ( 0xFFL & getByte()) << 8;
+        x |= ( 0xFFL & getByte()) << 0;
+
+        return x;
+    }
+
+    /**
+     * @param uuid {@link UUID}.
+     * @return Whether value was fully written.
+     */
+    public final boolean putUuidClient(@Nullable UUID uuid) {
+        byte[] arr = null;
+
+        if (uuid != null) {
+            arr = new byte[16];
+
+            UNSAFE.putLong(arr, BYTE_ARR_OFF, uuid.getMostSignificantBits());
+            UNSAFE.putLong(arr, BYTE_ARR_OFF + 8, uuid.getLeastSignificantBits());
+        }
+        else
+            arr = new byte[16];
+
+        return putByteArrayClient(arr);
+    }
+
+    /**
+     * @param arr Byte array.
+     * @return Whether array was fully written.
+     */
+    public final boolean putByteArrayClient(byte[] arr) {
+        assert buf != null;
+        assert arr != null;
+
+        return putArrayClient(arr, BYTE_ARR_OFF, arr.length, arr.length);
+    }
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @param len Length.
+     * @param bytes Length in bytes.
+     * @return Whether array was fully written
+     */
+    private boolean putArrayClient(Object arr, long off, int len, int bytes) {
+        assert off > 0;
+        assert len >= 0;
+        assert bytes >= 0;
+        assert bytes >= arrOff;
+        assert arr != null;
+
+        if (!buf.hasRemaining())
+            return false;
+
+        int pos = buf.position();
+
+        assert arr.getClass().isArray() && arr.getClass().getComponentType().isPrimitive();
+
+        if (!arrHdrDone) {
+            arrHdrDone = true;
+        }
+
+        if (!buf.hasRemaining())
+            return false;
+
+        int left = bytes - arrOff;
+        int remaining = buf.remaining();
+
+        if (left <= remaining) {
+            UNSAFE.copyMemory(arr, off + arrOff, heapArr, baseOff + pos, left);
+
+            pos += left;
+
+            buf.position(pos);
+
+            arrHdrDone = false;
+            arrOff = 0;
+        }
+        else {
+            UNSAFE.copyMemory(arr, off + arrOff, heapArr, baseOff + pos, remaining);
+
+            pos += remaining;
+
+            buf.position(pos);
+
+            arrOff += remaining;
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @return Byte array or special
+     *      {@link GridTcpCommunicationMessageAdapter#BYTE_ARR_NOT_READ}
+     *      value if it was not fully read.
+     */
+    public final byte[] getByteArrayClient(int len) {
+        assert buf != null;
+
+        return getArrayClient(BYTE_ARR_CREATOR, BYTE_ARR_OFF, len);
+    }
+
+    /**
+     * @return {@link UUID} or special
+     *      {@link GridTcpCommunicationMessageAdapter#UUID_NOT_READ}
+     *      value if it was not fully read.
+     */
+    public final UUID getUuidClient() {
+        byte[] arr = getByteArrayClient(16);
+
+        assert arr != null;
+
+        if (arr == BYTE_ARR_NOT_READ)
+            return UUID_NOT_READ;
+        else {
+            long most = UNSAFE.getLong(arr, BYTE_ARR_OFF);
+            long least = UNSAFE.getLong(arr, BYTE_ARR_OFF + 8);
+
+            return most == 0 && least == 0 ? null : new UUID(most, least);
+        }
+    }
+
+    /**
+     * @param creator Array creator.
+     * @param off Base offset.
+     * @return Array or special value if it was not fully read.
+     */
+    private <T> T getArrayClient(ArrayCreator<T> creator, long off, int len) {
+        assert creator != null;
+
+        if (tmpArr == null) {
+            tmpArr = creator.create(len);
+            tmpArrBytes = len;
+        }
+
+        int toRead = tmpArrBytes - tmpArrOff;
+        int remaining = buf.remaining();
+        int pos = buf.position();
+
+        if (remaining < toRead) {
+            UNSAFE.copyMemory(heapArr, baseOff + pos, tmpArr, off + tmpArrOff, remaining);
+
+            buf.position(pos + remaining);
+
+            tmpArrOff += remaining;
+
+            return creator.create(-1);
+        }
+        else {
+            UNSAFE.copyMemory(heapArr, baseOff + pos, tmpArr, off + tmpArrOff, toRead);
+
+            buf.position(pos + toRead);
+
+            T arr = (T)tmpArr;
+
+            arrHdrDone = false;
+            tmpArr = null;
+            tmpArrBytes = 0;
+            tmpArrOff = 0;
+
+            return arr;
+        }
+    }
+
+    /**
      * Array creator.
      */
     private static interface ArrayCreator<T> {
