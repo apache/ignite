@@ -123,18 +123,30 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         assert !F.eq(jobId, nextJobId);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testJobSubmitMap() throws Exception {
         checkJobSubmit(true, true);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testJobSubmitMapCombine() throws Exception {
         checkJobSubmit(false, true);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testJobSubmitMapReduce() throws Exception {
         checkJobSubmit(true, false);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testJobSubmitMapCombineReduce() throws Exception {
         checkJobSubmit(false, false);
     }

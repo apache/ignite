@@ -39,10 +39,14 @@ public class GridHadoopV2MapTask extends GridHadoopTaskEx {
 
         Mapper mapper;
         InputFormat inFormat;
+//        OutputFormat outputFormat;
 
         try {
             mapper = U.newInstance(jobCtx.getMapperClass());
             inFormat = U.newInstance(jobCtx.getInputFormatClass());
+
+//            outputFormat = jobImpl.reducers() == 0 && !jobImpl.hasCombiner() ?
+//                U.newInstance(jobCtx.getOutputFormatClass()) : null;
         }
         catch (ClassNotFoundException e) {
             throw new GridException(e);
@@ -74,7 +78,7 @@ public class GridHadoopV2MapTask extends GridHadoopTaskEx {
 
             hadoopCtx.reader(reader);
 
-            OutputFormat outputFormat = jobImpl.hasCombiner() && jobImpl.reducers() == 0 ?
+            OutputFormat outputFormat = !jobImpl.hasCombiner() && jobImpl.reducers() == 0 ?
                 putWriter(hadoopCtx, jobCtx) : null;
 
             try {
