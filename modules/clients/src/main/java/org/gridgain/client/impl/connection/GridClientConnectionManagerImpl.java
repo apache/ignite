@@ -132,7 +132,6 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
                 GridNioFilter[] filters;
 
                 GridNioFilter codecFilter = new GridNioCodecFilter(new NioParser(), gridLog, false);
-                GridNioFilter asyncFilter = new GridNioAsyncNotifyFilter("gridClient", executor, gridLog);
 
                 if (sslCtx != null) {
                     filters = new GridNioFilter[]{codecFilter};
@@ -143,7 +142,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
                     //filters = new GridNioFilter[]{codecFilter, sslFilter};
                 }
                 else
-                    filters = new GridNioFilter[]{asyncFilter, codecFilter};
+                    filters = new GridNioFilter[]{codecFilter};
 
                 srv = GridNioServer.builder().address(U.getLocalHost())
                     .port(-1)
