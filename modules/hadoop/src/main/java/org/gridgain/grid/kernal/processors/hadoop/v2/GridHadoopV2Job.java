@@ -281,6 +281,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
     private TaskType taskType(GridHadoopTaskType type) {
         switch (type) {
             case MAP:
+            case COMBINE:
                 return TaskType.MAP;
 
             case REDUCE:
