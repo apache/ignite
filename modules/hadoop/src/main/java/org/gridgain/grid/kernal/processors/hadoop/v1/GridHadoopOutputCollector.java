@@ -10,6 +10,10 @@
 package org.gridgain.grid.kernal.processors.hadoop.v1;
 
 import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.mapred.OutputFormat;
+import org.apache.hadoop.mapred.RecordWriter;
+import org.apache.hadoop.mapred.TaskAttemptID;
+import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.jetbrains.annotations.*;
@@ -29,6 +33,9 @@ public class GridHadoopOutputCollector implements OutputCollector {
     /** Optional direct writer. */
     private final RecordWriter writer;
 
+    /** Task attempt. */
+    private final TaskAttemptID attempt;
+
     /**
      *
      * @param jobConf Job configuration.
@@ -38,11 +45,14 @@ public class GridHadoopOutputCollector implements OutputCollector {
      * @throws IOException In case of IO exception.
      */
     GridHadoopOutputCollector(JobConf jobConf, GridHadoopTaskContext taskCtx, boolean directWrite,
-        @Nullable String fileName) throws IOException {
+        @Nullable String fileName, TaskAttemptID attempt) throws IOException {
         this.jobConf = jobConf;
         this.taskCtx = taskCtx;
+        this.attempt = attempt;
 
         if (directWrite) {
+            jobConf.set("mapreduce.task.attempt.id", attempt.toString());
+
             OutputFormat outFormat = jobConf.getOutputFormat();
 
             writer = outFormat.getRecordWriter(null, jobConf, fileName, Reporter.NULL);
@@ -69,13 +79,12 @@ public class GridHadoopOutputCollector implements OutputCollector {
     /**
      * Close collector.
      *
-     * @param taskId Task attempt ID.
      * @throws IOException In case of IO exception.
      */
-    public void close(TaskAttemptID taskId) throws IOException {
+    public void close() throws IOException {
         if (writer != null)
             writer.close(Reporter.NULL);
 
-        jobConf.getOutputCommitter().commitTask(new TaskAttemptContextImpl(jobConf, taskId));
+        jobConf.getOutputCommitter().commitTask(new TaskAttemptContextImpl(jobConf, attempt));
     }
 }

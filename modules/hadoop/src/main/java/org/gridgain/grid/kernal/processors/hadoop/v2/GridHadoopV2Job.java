@@ -198,6 +198,13 @@ public class GridHadoopV2Job implements GridHadoopJob {
         return ctx.getNumReduceTasks();
     }
 
+    /**
+     * @return {@code True} in case either combiner or reducer exists.
+     */
+    public boolean hasCombinerOrReducer() {
+        return hasCombiner() || reducers() != 0;
+    }
+
     /** {@inheritDoc} */
     @Override public GridHadoopPartitioner partitioner() throws GridException {
         Class<?> partClsOld = ctx.getConfiguration().getClass("mapred.partitioner.class", null);

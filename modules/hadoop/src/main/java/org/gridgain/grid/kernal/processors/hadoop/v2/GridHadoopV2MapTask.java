@@ -78,8 +78,7 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
 
             hadoopCtx.reader(reader);
 
-            OutputFormat outputFormat = !jobImpl.hasCombiner() && jobImpl.reducers() == 0 ?
-                putWriter(hadoopCtx, jobCtx) : null;
+            OutputFormat outputFormat = !jobImpl.hasCombinerOrReducer() ? putWriter(hadoopCtx, jobCtx) : null;
 
             try {
                 mapper.run(new WrappedMapper().getMapContext(hadoopCtx));

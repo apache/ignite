@@ -44,12 +44,9 @@ public class GridHadoopV1ReduceTask extends GridHadoopTask {
 
         GridHadoopTaskInput input = taskCtx.input();
 
-        TaskAttemptID attempt = jobImpl.attemptId(info());
-
-        jobConf.set("mapreduce.task.attempt.id", attempt.toString());
-
         try {
-            GridHadoopOutputCollector collector = new GridHadoopOutputCollector(jobConf, taskCtx, true, fileName());
+            GridHadoopOutputCollector collector = new GridHadoopOutputCollector(jobConf, taskCtx, true, fileName(),
+                jobImpl.attemptId(info()));
 
             try {
                 while (input.next())
@@ -58,7 +55,7 @@ public class GridHadoopV1ReduceTask extends GridHadoopTask {
                 reducer.close();
             }
             finally {
-                collector.close(attempt);
+                collector.close();
             }
         }
         catch (IOException e) {
