@@ -129,7 +129,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
         Path outputDir = Files.createTempDirectory(GridHadoopWordCount2.class.getSimpleName() + "-output");
 
         try {
-            URI testOutputDirURI = URI.create(outputDir.toString());
+            URI testOutputDirURI = outputDir.toUri();
 
             GridHadoopJob gridJob = getHadoopJob("/", testOutputDirURI.toString());
 

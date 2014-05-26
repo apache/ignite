@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.processors.hadoop.v1;
 import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Job;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.IOException;
@@ -28,23 +28,17 @@ public class GridHadoopV1ReduceTask extends GridHadoopTask {
     }
 
     /** {@inheritDoc} */
-    @Override public void run(GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
+    @SuppressWarnings("unchecked")
+    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job) taskCtx.job();
 
         JobConf jobConf = new JobConf(jobImpl.hadoopJobContext().getJobConf());
 
         Reducer reducer = U.newInstance(jobConf.getReducerClass());
 
-        OutputFormat outFormat = jobConf.getOutputFormat();
-
         Reporter reporter = Reporter.NULL;
 
-        NumberFormat numFormat = NumberFormat.getInstance();
-
-        numFormat.setMinimumIntegerDigits(5);
-        numFormat.setGroupingUsed(false);
-
-        String fileName = "part-" + numFormat.format(info().taskNumber());
+        assert reducer != null;
 
         reducer.configure(jobConf);
 
@@ -55,13 +49,7 @@ public class GridHadoopV1ReduceTask extends GridHadoopTask {
         jobConf.set("mapreduce.task.attempt.id", attempt.toString());
 
         try {
-            final RecordWriter writer = outFormat.getRecordWriter(null, jobConf, fileName, reporter);
-
-            OutputCollector collector = new OutputCollector() {
-                @Override public void collect(Object key, Object val) throws IOException {
-                    writer.write(key, val);
-                }
-            };
+            GridHadoopOutputCollector collector = new GridHadoopOutputCollector(jobConf, taskCtx, true, fileName());
 
             try {
                 while (input.next())
@@ -70,12 +58,8 @@ public class GridHadoopV1ReduceTask extends GridHadoopTask {
                 reducer.close();
             }
             finally {
-                writer.close(reporter);
+                collector.close(attempt);
             }
-
-            OutputCommitter commiter = jobConf.getOutputCommitter();
-
-            commiter.commitTask(new TaskAttemptContextImpl(jobConf, attempt));
         }
         catch (IOException e) {
             throw new GridException(e);

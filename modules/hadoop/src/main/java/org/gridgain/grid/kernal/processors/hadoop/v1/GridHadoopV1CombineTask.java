@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.processors.hadoop.v1;
 import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Job;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.IOException;
@@ -29,12 +29,15 @@ public class GridHadoopV1CombineTask extends GridHadoopTask {
     }
 
     /** {@inheritDoc} */
-    @Override public void run(final GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
+    @SuppressWarnings("unchecked")
+    @Override public void run(final GridHadoopTaskContext taskCtx) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job) taskCtx.job();
 
         JobConf jobConf = new JobConf(jobImpl.hadoopJobContext().getJobConf());
 
         Reducer combiner = U.newInstance(jobConf.getCombinerClass());
+
+        assert combiner != null;
 
         combiner.configure(jobConf);
 
@@ -42,22 +45,19 @@ public class GridHadoopV1CombineTask extends GridHadoopTask {
 
         Reporter reporter = Reporter.NULL;
 
-        OutputCollector collector = new OutputCollector() {
-            @Override public void collect(Object key, Object val) throws IOException {
-                try {
-                    taskCtx.output().write(key, val);
-                }
-                catch (GridException e) {
-                    throw new IOException(e);
-                }
-            }
-        };
-
         try {
-            while (input.next())
-                combiner.reduce(input.key(), input.values(), collector, reporter);
+            GridHadoopOutputCollector collector = new GridHadoopOutputCollector(jobConf, taskCtx,
+                jobImpl.reducers() == 0, fileName());
 
-            combiner.close();
+            try {
+                while (input.next())
+                    combiner.reduce(input.key(), input.values(), collector, reporter);
+
+                combiner.close();
+            }
+            finally {
+                collector.close(jobImpl.attemptId(info()));
+            }
         }
         catch (IOException e) {
             throw new GridException(e);

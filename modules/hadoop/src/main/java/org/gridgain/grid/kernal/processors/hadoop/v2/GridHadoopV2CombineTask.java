@@ -18,7 +18,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 /**
  * Hadoop combine task implementation for v2 API.
  */
-public class GridHadoopV2CombineTask extends GridHadoopTaskEx {
+public class GridHadoopV2CombineTask extends GridHadoopV2Task {
     /**
      * @param taskInfo Task info.
      */

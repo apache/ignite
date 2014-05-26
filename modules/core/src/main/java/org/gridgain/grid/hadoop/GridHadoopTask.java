@@ -12,11 +12,15 @@ package org.gridgain.grid.hadoop;
 import org.gridgain.grid.*;
 
 import java.io.*;
+import java.text.*;
 
 /**
  * Hadoop task.
  */
 public abstract class GridHadoopTask implements Externalizable {
+    /** Number format. */
+    private static NumberFormat numFormat = NumberFormat.getInstance();
+
     /** */
     private GridHadoopTaskInfo taskInfo;
 
@@ -45,6 +49,18 @@ public abstract class GridHadoopTask implements Externalizable {
      */
     public GridHadoopTaskInfo info() {
         return taskInfo;
+    }
+
+    /**
+     * Gets file name for that task result.
+     *
+     * @return File name.
+     */
+    public String fileName() {
+        numFormat.setMinimumIntegerDigits(5);
+        numFormat.setGroupingUsed(false);
+
+        return "part-" + numFormat.format(taskInfo.taskNumber());
     }
 
     /**

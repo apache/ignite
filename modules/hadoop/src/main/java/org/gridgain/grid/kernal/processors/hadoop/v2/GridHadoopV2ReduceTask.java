@@ -20,7 +20,7 @@ import java.io.*;
 /**
  * Hadoop reduce task implementation for v2 API.
  */
-public class GridHadoopV2ReduceTask extends GridHadoopTaskEx {
+public class GridHadoopV2ReduceTask extends GridHadoopV2Task {
     /**
      * @param taskInfo Task info.
      */

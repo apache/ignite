@@ -20,13 +20,13 @@ import java.io.*;
 /**
  * Extended Hadoop task.
  */
-public abstract class GridHadoopTaskEx extends GridHadoopTask {
+public abstract class GridHadoopV2Task extends GridHadoopTask {
     /**
      * Constructor.
      *
      * @param taskInfo Task info.
      */
-    public GridHadoopTaskEx(GridHadoopTaskInfo taskInfo) {
+    public GridHadoopV2Task(GridHadoopTaskInfo taskInfo) {
         super(taskInfo);
     }
 

@@ -22,7 +22,7 @@ import java.io.*;
 /**
  * Hadoop map task implementation for v2 API.
  */
-public class GridHadoopV2MapTask extends GridHadoopTaskEx {
+public class GridHadoopV2MapTask extends GridHadoopV2Task {
     /**
      * @param taskInfo Task info.
      */
