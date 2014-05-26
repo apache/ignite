@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.shuffle;
+package org.gridgain.grid.kernal.processors.hadoop.shuffle.collections;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
@@ -16,7 +16,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * Multimap for hadoop intermediate results input/output.
+ * Multimap for hadoop intermediate results.
  */
 public interface GridHadoopMultimap extends AutoCloseable {
     /**
@@ -52,9 +52,8 @@ public interface GridHadoopMultimap extends AutoCloseable {
          *
          * @param key Key.
          * @param val Value.
-         * @return Meta pointer for the key.
          */
-        public long add(Object key, Object val) throws GridException;
+        public void add(Object key, Object val) throws GridException;
 
         /**
          * @param in Data input.

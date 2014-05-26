@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.shuffle;
+package org.gridgain.grid.kernal.processors.hadoop.shuffle.collections;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
@@ -27,11 +27,7 @@ import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
 /**
  * Multimap for map reduce intermediate results.
  */
-public class GridHadoopHashMultimap implements GridHadoopMultimap {
-    /** */
-    private static AtomicIntegerFieldUpdater<Adder> keysCntUpdater =
-        AtomicIntegerFieldUpdater.newUpdater(Adder.class, "keysCnt");
-
+public class GridHadoopHashMultimap extends GridHadoopMultimapBase {
     /** */
     private final AtomicReference<State> state = new AtomicReference<>(State.READING_WRITING);
 
@@ -50,21 +46,14 @@ public class GridHadoopHashMultimap implements GridHadoopMultimap {
     /** */
     private final AtomicInteger inputs = new AtomicInteger();
 
-    /** */
-    private final GridHadoopJob job;
-
-    /** */
-    private final GridUnsafeMemory mem;
-
     /**
      * @param job Job.
      * @param mem Memory.
      */
     public GridHadoopHashMultimap(GridHadoopJob job, GridUnsafeMemory mem, int tblCap) {
-        assert U.isPow2(tblCap);
+        super(job, mem);
 
-        this.job = job;
-        this.mem = mem;
+        assert U.isPow2(tblCap);
 
         newTbl = oldTbl = new AtomicLongArray(tblCap);
     }
@@ -76,7 +65,7 @@ public class GridHadoopHashMultimap implements GridHadoopMultimap {
         int res = keys.get();
 
         for (AdderImpl adder : adders)
-            res += adder.keysCnt;
+            res += adder.localKeys.get();
 
         return res;
     }
@@ -480,51 +469,14 @@ public class GridHadoopHashMultimap implements GridHadoopMultimap {
     }
 
     /**
-     * @param valPtr Value page pointer.
-     * @param nextValPtr Next value page pointer.
-     */
-    private void nextValue(long valPtr, long nextValPtr) {
-        mem.writeLong(valPtr, nextValPtr);
-    }
-
-    private long nextValue(long valPtr) {
-        return mem.readLong(valPtr);
-    }
-
-    /**
-     * @param valPtr Value page pointer.
-     * @param size Size.
-     */
-    private void valueSize(long valPtr, int size) {
-        mem.writeInt(valPtr + 8, size);
-    }
-
-    /**
-     * @param valPtr Value page pointer.
-     * @return Value size.
-     */
-    private int valueSize(long valPtr) {
-        return mem.readInt(valPtr + 8);
-    }
-
-    /**
      * Reader for key and value.
      */
-    private class Reader {
-        /** */
-        private Object tmp;
-
-        /** */
-        private final GridHadoopSerialization ser;
-
-        /** */
-        private final GridHadoopDataInStream in = new GridHadoopDataInStream(mem);
-
+    private class Reader extends ReaderBase {
         /**
          * @param ser Serialization.
          */
         private Reader(GridHadoopSerialization ser) {
-            this.ser = ser;
+            super(ser);
         }
 
         /**
@@ -540,34 +492,6 @@ public class GridHadoopHashMultimap implements GridHadoopMultimap {
             catch (GridException e) {
                 throw new GridRuntimeException(e);
             }
-        }
-
-        /**
-         * @param valPtr Value page pointer.
-         * @return Value.
-         */
-        public Object readValue(long valPtr) {
-            assert valPtr > 0 : valPtr;
-
-            try {
-                return read(valPtr + 12, valueSize(valPtr));
-            }
-            catch (GridException e) {
-                throw new GridRuntimeException(e);
-            }
-        }
-
-        /**
-         * @param ptr Pointer.
-         * @param size Object size.
-         * @return Object.
-         */
-        private Object read(long ptr, long size) throws GridException {
-            in.buffer().buffer(ptr, size);
-
-            tmp = ser.read(in, tmp);
-
-            return tmp;
         }
     }
 
@@ -614,47 +538,25 @@ public class GridHadoopHashMultimap implements GridHadoopMultimap {
     /**
      * Adder. Must not be shared between threads.
      */
-    public class AdderImpl implements Adder {
-        /** */
-        private final GridHadoopSerialization keySer;
-
-        /** */
-        private final GridHadoopSerialization valSer;
-
-        /** */
-        private final GridUnsafeDataOutput out = new GridUnsafeDataOutput(256);
-
+    public class AdderImpl extends AdderBase {
         /** */
         private final Reader keyReader;
 
         /** */
-        volatile int keysCnt;
+        private final AtomicInteger localKeys = new AtomicInteger();
 
         /** */
         private final Random rnd = new GridRandom();
-
-        /** */
-        private boolean newKey;
 
         /**
          * @throws GridException If failed.
          */
         public AdderImpl() throws GridException {
-            valSer = job.valueSerialization();
-            keySer = job.keySerialization();
-
             keyReader = new Reader(keySer);
 
             rehashIfNeeded(oldTbl);
 
             adders.add(this);
-        }
-
-        /**
-         * @return {@code true} If new key was added by the last operation.
-         */
-        public boolean isNewKey() {
-            return newKey;
         }
 
         /**
@@ -673,26 +575,18 @@ public class GridHadoopHashMultimap implements GridHadoopMultimap {
             return reuse;
         }
 
-        /**
-         * Adds value for the given key.
-         *
-         * @param key Key.
-         * @param val Value.
-         * @return Meta pointer for the key.
-         */
-        @Override public long add(Object key, Object val) throws GridException {
+        /** {@inheritDoc} */
+        @Override public void add(Object key, Object val) throws GridException {
             A.notNull(val, "val");
 
-            return doAdd(key, val);
+            doAdd(key, val);
         }
 
         /**
          * @param tbl Table.
          */
         private void incrementKeys(AtomicLongArray tbl) {
-            newKey = true;
-
-            keysCntUpdater.lazySet(this, keysCnt + 1);
+            localKeys.lazySet(localKeys.get() + 1);
 
             if (rnd.nextInt(tbl.length()) < 512)
                 rehashIfNeeded(tbl);
@@ -762,8 +656,6 @@ public class GridHadoopHashMultimap implements GridHadoopMultimap {
                                 while (!casValue(metaPtr, nextValPtr, valPtr));
                             }
 
-                            newKey = false;
-
                             return metaPtr;
                         }
 
@@ -815,38 +707,14 @@ public class GridHadoopHashMultimap implements GridHadoopMultimap {
             }
         }
 
-        /**
-         * @param o Object.
-         */
-        private void write(Object o, GridHadoopSerialization ser) throws GridException {
-            out.reset();
-
-            ser.write(out, o);
-        }
-
-        /**
-         * @param off Offset.
-         * @return Allocated pointer.
-         */
-        private long copy(int off) {
-            int size = out.offset();
-
-            long ptr = mem.allocate(off + size);
-
-            UNSAFE.copyMemory(out.internalArray(), BYTE_ARR_OFF, null, ptr + off, size);
-
-            return ptr;
-        }
-
         /** {@inheritDoc} */
         @Override public void close() throws GridException {
             if (!adders.remove(this))
                 throw new IllegalStateException();
 
-            keys.addAndGet(keysCnt); // Here we have race and #keys() method can return wrong result but it is ok.
+            keys.addAndGet(localKeys.get()); // Here we have race and #keys() method can return wrong result but it is ok.
 
-            keySer.close();
-            valSer.close();
+            super.close();
         }
     }
 
