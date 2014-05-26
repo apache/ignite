@@ -14,6 +14,8 @@ import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
+import java.util.concurrent.*;
+
 /**
  * Tests for {@link GridGgfsGroupDataBlocksKeyMapper} hash.
  */
@@ -21,53 +23,21 @@ public class GridGgfsGroupDataBlockKeyMapperHashSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testDistributionGroupSizePower2PartitionCountPower2() throws Exception {
-        checkDistribution(256, 64);
+    public void testDistribution() throws Exception {
+        for (int i = 0; i < 100; i++) {
+            int grpSize = ThreadLocalRandom.current().nextInt(2, 100000);
+            int partCnt = ThreadLocalRandom.current().nextInt(1, grpSize);
+
+            checkDistribution(grpSize, partCnt);
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testDistributionGroupSizePower2PartitionCountNonPower2() throws Exception {
-        checkDistribution(256, 63);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDistributionGroupSizeNonPower2PartitionCountPower2() throws Exception {
-        checkDistribution(255, 64);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDistributionGroupSizeNonPower2PartitionCountNonPower2() throws Exception {
-        checkDistribution(255, 63);
-    }
-
-    /**
-     * Test distribution for integer overflow.
-     *
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("NumericOverflow")
     public void testIntOverflowDistribution() throws Exception {
-        int partCnt = 100;
-
-        GridUuid fileId = GridUuid.randomUuid();
-
-        GridGgfsGroupDataBlocksKeyMapper mapper = new GridGgfsGroupDataBlocksKeyMapper(1);
-
-        Integer part1 = (Integer) mapper.affinityKey(new GridGgfsBlockKey(fileId, null, false,
-            Integer.MAX_VALUE - 1)) % partCnt;
-        Integer part2 = (Integer) mapper.affinityKey(new GridGgfsBlockKey(fileId, null, false,
-            Integer.MAX_VALUE)) % partCnt;
-        Integer part3 = (Integer) mapper.affinityKey(new GridGgfsBlockKey(fileId, null, false,
-            (long)Integer.MAX_VALUE + 1)) % partCnt;
-
-        assert U.safeAbs(part1 - part2) == 1;
-        assert U.safeAbs(part2 - part3) == 1;
+        for (int i = 0; i < 100; i++)
+            checkIntOverflowDistribution(ThreadLocalRandom.current().nextInt(1, Integer.MAX_VALUE));
     }
 
     /**
@@ -97,15 +67,49 @@ public class GridGgfsGroupDataBlockKeyMapperHashSelfTest extends GridCommonAbstr
                     if (first)
                         first = false;
                     else
-                        assert U.safeAbs(lastPart - part) == 1;
+                        checkPartition(lastPart, part, partCnt);
 
                     firstInGroup = false;
-                } else
+                }
+                else
                     assert part == lastPart;
 
                 lastPart = part;
             }
         }
+    }
+
+    /**
+     * Check distribution for integer overflow.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("NumericOverflow")
+    public void checkIntOverflowDistribution(int partCnt) throws Exception {
+        GridUuid fileId = GridUuid.randomUuid();
+
+        GridGgfsGroupDataBlocksKeyMapper mapper = new GridGgfsGroupDataBlocksKeyMapper(1);
+
+        Integer part1 = (Integer) mapper.affinityKey(new GridGgfsBlockKey(fileId, null, false,
+            Integer.MAX_VALUE - 1)) % partCnt;
+        Integer part2 = (Integer) mapper.affinityKey(new GridGgfsBlockKey(fileId, null, false,
+            Integer.MAX_VALUE)) % partCnt;
+        Integer part3 = (Integer) mapper.affinityKey(new GridGgfsBlockKey(fileId, null, false,
+            (long)Integer.MAX_VALUE + 1)) % partCnt;
+
+        checkPartition(part1, part2, partCnt);
+        checkPartition(part2, part3, partCnt);
+    }
+
+    /**
+     * Check correct partition shift.
+     *
+     * @param prevPart Previous partition.
+     * @param part Current partition.
+     * @param totalParts Total partitions.
+     */
+    private void checkPartition(int prevPart, int part, int totalParts) {
+        assert U.safeAbs(prevPart - part) == 1 || (part == 0 && prevPart == totalParts);
     }
 }
 
