@@ -45,7 +45,6 @@ import java.nio.*;
 import java.nio.channels.*;
 import java.nio.channels.spi.*;
 import java.nio.charset.*;
-import java.nio.file.*;
 import java.security.*;
 import java.security.cert.*;
 import java.sql.*;
