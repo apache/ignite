@@ -128,12 +128,15 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
         // If we have a local process for this job.
         if (proc != null) {
-            if (log.isDebugEnabled())
-                log.debug("Updating job information for remote task process [proc=" + proc + ", meta=" + meta + ']');
+                // TODO
+//                if (log.isDebugEnabled())
+                    log.info("Updating job information for remote task process [proc=" + proc + ", meta=" +
+                        meta + ']');
 
             if (meta.phase() == GridHadoopJobPhase.PHASE_COMPLETE) {
-                if (log.isDebugEnabled())
-                    log.debug("Completed job execution, will terminate child process [jobId=" + job.id() +
+                // TODO
+//                if (log.isDebugEnabled())
+                    log.info("Completed job execution, will terminate child process [jobId=" + job.id() +
                         ", proc=" + proc + ']');
 
                 runningProcsByJobId.remove(job.id());
@@ -147,8 +150,12 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
             if (proc.initFut.isDone()) {
                 if (!proc.initFut.isFailed())
                     sendJobInfoUpdate(proc, meta);
-                else if (log.isDebugEnabled())
-                    log.debug("Failed to initialize child process (will skip job state notification) " +
+                // TODO
+//                else if (log.isDebugEnabled())
+//                    log.debug("Failed to initialize child process (will skip job state notification) " +
+//                        "[jobId=" + job.id() + ", meta=" + meta + ']');
+                else
+                    log.info("Failed to initialize child process (will skip job state notification) " +
                         "[jobId=" + job.id() + ", meta=" + meta + ']');
             }
             else {
@@ -160,8 +167,9 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                             sendJobInfoUpdate(proc, meta);
                         }
                         catch (GridException e) {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to initialize child process (will skip job state notification) " +
+                            // TODO
+//                            if (log.isDebugEnabled())
+                                log.info("Failed to initialize child process (will skip job state notification) " +
                                     "[jobId=" + job.id() + ", meta=" + meta + ", err=" + e + ']');
                         }
 
@@ -180,8 +188,9 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
     /** {@inheritDoc} */
     @Override public void run(final GridHadoopJob job, final Collection<GridHadoopTaskInfo> tasks) {
         if (!busyLock.tryReadLock()) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to start hadoop tasks (grid is stopping, will ignore).");
+            // TODO
+//            if (log.isDebugEnabled())
+                log.info("Failed to start hadoop tasks (grid is stopping, will ignore).");
 
             return;
         }
@@ -198,8 +207,9 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                     // Start new process for ABORT task since previous processes were killed.
                     proc = startProcess(job, null);
 
-                    if (log.isDebugEnabled())
-                        log.debug("Starting new process for finalizing task [jobId=" + job.id() +
+                    // TODO
+//                    if (log.isDebugEnabled())
+                        log.info("Starting new process for finalizing task [jobId=" + job.id() +
                             ", proc=" + proc + ", taskType=" + taskType + ']');
                 }
             }
@@ -219,8 +229,9 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
                         proc0.addTasks(tasks);
 
-                        if (log.isDebugEnabled())
-                            log.debug("Sending task execution request to child process [jobId=" + job.id() +
+                        // TODO
+//                        if (log.isDebugEnabled())
+                            log.info("Sending task execution request to child process [jobId=" + job.id() +
                                 ", proc=" + proc0 + ", tasks=" + tasks + ']');
 
                         sendExecutionRequest(proc0, job, tasks);
@@ -343,8 +354,9 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
                     GridHadoopExternalTaskMetadata startMeta = buildTaskMeta();
 
-                    if (log.isDebugEnabled())
-                        log.debug("Created hadoop child process metadata for job [job=" + job +
+                    // TODO
+//                    if (log.isDebugEnabled())
+                        log.info("Created hadoop child process metadata for job [job=" + job +
                             ", childProcId=" + childProcId + ", taskMeta=" + startMeta + ']');
 
                     Process proc = startJavaProcess(childProcId, startMeta, job);
@@ -355,13 +367,15 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
                     // Read up all the process output.
                     while ((line = rdr.readLine()) != null) {
-                        if (log.isDebugEnabled())
-                            log.debug("Tracing process output: " + line);
+                        // TODO
+//                        if (log.isDebugEnabled())
+                            log.info("Tracing process output: " + line);
 
                         if ("Started".equals(line)) {
                             // Process started successfully, it should not write anything more to the output stream.
-                            if (log.isDebugEnabled())
-                                log.debug("Successfully started child process [childProcId=" + childProcId +
+                            // TODO
+//                            if (log.isDebugEnabled())
+                                log.info("Successfully started child process [childProcId=" + childProcId +
                                     ", meta=" + job + ']');
 
                             fut.onProcessStarted(proc);
@@ -487,8 +501,9 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
         GridHadoopJob job) throws Exception {
         String outFldr = jobWorkFolder(job.id()) + File.separator + childProcId;
 
-        if (log.isDebugEnabled())
-            log.debug("Will write process log output to: " + outFldr);
+        // TODO
+//        if (log.isDebugEnabled())
+            log.info("Will write process log output to: " + outFldr);
 
         List<String> cmd = new ArrayList<>();
 
@@ -931,8 +946,9 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
             if (super.onDone(res, err)) {
                 if (err == null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Initialized child process for external task execution [jobId=" + jobId +
+                    // TODO
+//                    if (log.isDebugEnabled())
+                        log.info("Initialized child process for external task execution [jobId=" + jobId +
                             ", desc=" + desc + ", initTime=" + duration() + ']');
                 }
                 else
