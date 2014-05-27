@@ -35,7 +35,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.kernal.processors.rest.GridRestResponse.*;
-import static org.gridgain.grid.spi.GridSecuritySubjectType.*;
+import static org.gridgain.grid.security.GridSecuritySubjectType.*;
 
 /**
  * Rest processor implementation.

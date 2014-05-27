@@ -12,70 +12,13 @@ package org.gridgain.grid.security;
 import java.util.*;
 
 /**
- * Permissions object detached from subject.
- * // TODO make java bean.
+ * TODO: Add interface description.
  */
-public class GridSecurityPermissionSet {
-    /** Default allow all flag. */
-    private boolean dfltAllowAll;
+public interface GridSecurityPermissionSet {
 
-    /** Task permissions. */
-    private Map<String, Collection<GridSecurityPermission>> taskPermissions;
+    public boolean defaultAllowAll();
 
-    /** Cache permissions. */
-    private Map<String, Collection<GridSecurityPermission>> cachePermissions;
+    public Map<String, Collection<GridSecurityPermission>> taskPermissions();
 
-    /**
-     * Gets default allow all flag.
-     *
-     * @return Default allow all flag.
-     */
-    public boolean defaultAllowAll() {
-        return dfltAllowAll;
-    }
-
-    /**
-     * Sets default allow all flag.
-     *
-     * @param dfltAllowAll Default allow all flag.
-     */
-    public void defaultAllowAll(boolean dfltAllowAll) {
-        this.dfltAllowAll = dfltAllowAll;
-    }
-
-    /**
-     * Gets mapping from task name mask to allowed operations.
-     *
-     * @return Mapping from task name to collection of permitted operations.
-     */
-    public Map<String, Collection<GridSecurityPermission>> taskPermissions() {
-        return taskPermissions;
-    }
-
-    /**
-     * Sets mapping from task name mask to allowed operations.
-     *
-     * @param taskPermissions Mapping from task name to collection of permitted operations.
-     */
-    public void taskPermissions(Map<String, Collection<GridSecurityPermission>> taskPermissions) {
-        this.taskPermissions = taskPermissions;
-    }
-
-    /**
-     * Gets mapping from cache name mask to collection of allowed operations.
-     *
-     * @return Mapping from cache name to collection of permitted operations.
-     */
-    public Map<String, Collection<GridSecurityPermission>> cachePermissions() {
-        return cachePermissions;
-    }
-
-    /**
-     * Sets mapping from cache name mask to collection of allowed operations.
-     *
-     * @param cachePermissions Mapping from cache name to collection of allowed operations.
-     */
-    public void cachePermissions(Map<String, Collection<GridSecurityPermission>> cachePermissions) {
-        this.cachePermissions = cachePermissions;
-    }
+    public Map<String, Collection<GridSecurityPermission>> cachePermissions();
 }

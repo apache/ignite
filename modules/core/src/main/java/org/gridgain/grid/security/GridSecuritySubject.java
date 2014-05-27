@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.security;
 
-import org.gridgain.grid.spi.*;
-
 import java.net.*;
 import java.util.*;
 

@@ -13,7 +13,9 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.security.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
+import org.gridgain.grid.spi.authentication.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -35,13 +37,13 @@ public class GridOsSecurityManager extends GridNoopManagerAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public Object authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException {
+    @Override public GridSecurityContext authenticateNode(GridNode node, GridSecurityCredentials cred)
+        throws GridException {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public Object authenticate(GridSecuritySubjectType subjType, byte[] subjId, @Nullable Object creds)
-        throws GridException {
+    @Override public GridSecurityContext authenticate(GridAuthenticationContext ctx) throws GridException {
         return Boolean.TRUE;
     }
 }

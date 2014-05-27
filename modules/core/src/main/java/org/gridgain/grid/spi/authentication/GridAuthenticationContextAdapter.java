@@ -10,7 +10,6 @@
 package org.gridgain.grid.spi.authentication;
 
 import org.gridgain.grid.security.*;
-import org.gridgain.grid.spi.*;
 
 import java.net.*;
 import java.util.*;

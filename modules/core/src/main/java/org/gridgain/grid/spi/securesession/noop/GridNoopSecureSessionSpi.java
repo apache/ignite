@@ -11,6 +11,7 @@ package org.gridgain.grid.spi.securesession.noop;
 
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.securesession.*;
 import org.gridgain.grid.util.typedef.internal.*;

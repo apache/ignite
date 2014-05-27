@@ -11,7 +11,7 @@ package org.gridgain.grid.events;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.spi.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
