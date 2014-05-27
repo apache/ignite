@@ -72,6 +72,8 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+
+        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
