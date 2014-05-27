@@ -16,12 +16,41 @@ import java.net.*;
 import java.util.*;
 
 /**
- * TODO: Add interface description.
+ * Authentication context.
  */
 public interface GridAuthenticationContext {
-    public GridSecuritySubject subject();
+    /**
+     * Gets subject type.
+     *
+     * @return Subject type.
+     */
+    public GridSecuritySubjectType subjectType();
 
-    public boolean taskOperationPermitted(GridSecurityPermission perm, String taskName);
+    /**
+     * Gets subject ID.
+     *
+     * @return Subject ID.
+     */
+    public UUID subjectId();
 
-    public boolean cacheOperationPermitted(GridSecurityPermission perm, String cacheName);
+    /**
+     * Gets security credentials.
+     *
+     * @return Security credentials.
+     */
+    public GridSecurityCredentials credentials();
+
+    /**
+     * Gets subject network address.
+     *
+     * @return Subject network address.
+     */
+    public InetAddress address();
+
+    /**
+     * Gets subject port.
+     *
+     * @return Port.
+     */
+    public int port();
 }

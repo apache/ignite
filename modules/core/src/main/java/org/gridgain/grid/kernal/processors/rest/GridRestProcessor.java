@@ -26,6 +26,7 @@ import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.security.*;
+import org.gridgain.grid.spi.authentication.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -52,8 +53,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
-    private final GridSecurityInterceptor securityInterceptor;
-
     /** Protocol handler. */
     private final GridRestProtocolHandler protoHnd = new GridRestProtocolHandler() {
         @Override public GridRestResponse handle(GridRestRequest req) throws GridException {
@@ -74,12 +73,12 @@ public class GridRestProcessor extends GridProcessorAdapter {
             if (log.isDebugEnabled())
                 log.debug("Received request from client: " + req);
 
-            final Object securitySubjCtx;
+            final GridSecurityContext sCtx;
 
             try {
-                securitySubjCtx = authenticate(req);
+                sCtx = authenticate(req);
 
-                checkPermissions(req, securitySubjCtx);
+                checkPermissions(req, sCtx);
             }
             catch (GridSecurityException e) {
                 return new GridFinishedFuture<>(ctx, new GridRestResponse(STATUS_SECURITY_CHECK_FAILED,
@@ -120,7 +119,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                     if (ctx.isEnterprise()) {
                         try {
-                            res.sessionTokenBytes(updateSessionToken(req, securitySubjCtx));
+                            res.sessionTokenBytes(updateSessionToken(req, sCtx));
                         }
                         catch (GridException e) {
                             U.warn(log, "Cannot update response session token: " + e.getMessage());
@@ -141,61 +140,58 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @param req Request to validate.
      * @param securitySubjCtx Security subject context.
      */
-    private void checkPermissions(GridRestRequest req, Object securitySubjCtx) {
-        if (securityInterceptor != null) {
-            GridSecurityPermission op = null;
-            String cacheName = null;
+    private void checkPermissions(GridRestRequest req, GridSecurityContext securityCtx) {
+        GridSecurityPermission op = null;
+        String name = null;
 
-            switch (req.command()) {
-                case CACHE_GET:
-                case CACHE_GET_ALL:
-                    op = GridSecurityPermission.READ;
-                    cacheName = ((GridRestCacheRequest)req).cacheName();
+        switch (req.command()) {
+            case CACHE_GET:
+            case CACHE_GET_ALL:
+                op = GridSecurityPermission.CACHE_READ;
+                name = ((GridRestCacheRequest)req).cacheName();
 
-                    break;
+                break;
 
-                case CACHE_PUT:
-                case CACHE_ADD:
-                case CACHE_PUT_ALL:
-                case CACHE_REPLACE:
-                case CACHE_INCREMENT:
-                case CACHE_DECREMENT:
-                case CACHE_CAS:
-                case CACHE_APPEND:
-                case CACHE_PREPEND:
-                    op = GridSecurityPermission.PUT;
-                    cacheName = ((GridRestCacheRequest)req).cacheName();
+            case CACHE_PUT:
+            case CACHE_ADD:
+            case CACHE_PUT_ALL:
+            case CACHE_REPLACE:
+            case CACHE_INCREMENT:
+            case CACHE_DECREMENT:
+            case CACHE_CAS:
+            case CACHE_APPEND:
+            case CACHE_PREPEND:
+                op = GridSecurityPermission.CACHE_PUT;
+                name = ((GridRestCacheRequest)req).cacheName();
 
-                    break;
+                break;
 
-                case CACHE_REMOVE:
-                case CACHE_REMOVE_ALL:
-                    op = GridSecurityPermission.REMOVE;
-                    cacheName = ((GridRestCacheRequest)req).cacheName();
+            case CACHE_REMOVE:
+            case CACHE_REMOVE_ALL:
+                op = GridSecurityPermission.CACHE_REMOVE;
+                name = ((GridRestCacheRequest)req).cacheName();
 
-                    break;
+                break;
 
-                case EXE:
-                case RESULT:
-                    op = GridSecurityPermission.EXECUTE;
-                    break;
+            case EXE:
+            case RESULT:
+                op = GridSecurityPermission.TASK_EXECUTE;
+                name = ((GridRestTaskRequest)req).taskName();
+                break;
 
-                case VERSION:
-                case LOG:
-                case NOOP:
-                case QUIT:
-                case CACHE_METRICS:
-                case TOPOLOGY:
-                case NODE:
-                    // No security check here.
-                    return;
-            }
-
-            GridSecurityContext sCtx = new GridSecurityContextImpl(Collections.singletonList(op),
-                cacheName, securitySubjCtx);
-
-            securityInterceptor.authorize(sCtx);
+            case VERSION:
+            case LOG:
+            case NOOP:
+            case QUIT:
+            case CACHE_METRICS:
+            case TOPOLOGY:
+            case NODE:
+                // No security check here.
+                return;
         }
+
+        if (op != null)
+            ctx.auth().authorize(name, op, securityCtx);
     }
 
     /**
@@ -326,8 +322,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
      */
     public GridRestProcessor(GridKernalContext ctx) {
         super(ctx);
-
-        securityInterceptor = ctx.config().getSecurityInterceptor();
     }
 
     /**
@@ -337,10 +331,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @return Authentication subject context.
      * @throws GridException If authentication failed.
      */
-    private Object authenticate(GridRestRequest req) throws GridException {
+    private GridSecurityContext authenticate(GridRestRequest req) throws GridException {
         UUID clientId = req.clientId();
-
-        byte[] clientIdBytes = clientId != null ? U.uuidToBytes(clientId) : EMPTY_ID;
 
         byte[] sesTok = req.sessionToken();
 
@@ -355,7 +347,26 @@ public class GridRestProcessor extends GridProcessorAdapter {
         }
 
         // Authenticate client if invalid session.
-        Object subjCtx = ctx.auth().authenticate(REMOTE_CLIENT, clientIdBytes, req.credentials());
+        GridAuthenticationContextAdapter authCtx = new GridAuthenticationContextAdapter();
+
+        authCtx.subjectType(REMOTE_CLIENT);
+        authCtx.subjectId(req.clientId());
+
+        GridSecurityCredentials cred;
+
+        if (req.credentials() instanceof GridSecurityCredentials)
+            cred = (GridSecurityCredentials)req.credentials();
+        else {
+            cred = new GridSecurityCredentials();
+
+            cred.setUserObject(req.credentials());
+        }
+
+        // TODO address and port.
+
+        authCtx.credentials(cred);
+
+        GridSecurityContext subjCtx = ctx.auth().authenticate(authCtx);
 
         if (subjCtx == null) {
             if (req.credentials() == null)
@@ -375,7 +386,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @return Valid session token.
      * @throws GridException If session token update process failed.
      */
-    private byte[] updateSessionToken(GridRestRequest req, Object subjCtx) throws GridException {
+    private byte[] updateSessionToken(GridRestRequest req, GridSecurityContext subjCtx) throws GridException {
         // Update token from request to actual state.
         byte[] sesTok = ctx.secureSession().updateSession(REMOTE_CLIENT, req.clientId(), subjCtx, null);
 

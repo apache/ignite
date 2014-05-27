@@ -9,14 +9,11 @@
 
 package org.gridgain.grid.kernal.managers.security;
 
+import com.beust.jcommander.internal.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.security.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.authentication.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
 
 /**
  * This interface defines a grid authentication manager.
@@ -32,30 +29,30 @@ public interface GridSecurityManager extends GridManager {
     /**
      * Authenticates grid node with it's attributes via underlying {@link GridAuthenticationSpi}s.
      *
-     * @param nodeId Node id to authenticate.
-     * @param attrs Node attributes.
+     * @param node Node id to authenticate.
+     * @param cred Security credentials.
      * @return {@code True} if succeeded, {@code false} otherwise.
      * @throws GridException If error occurred.
      */
-    public Object authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException;
+    public GridSecurityContext authenticateNode(GridNode node, GridSecurityCredentials cred) throws GridException;
 
     /**
      * Authenticates subject via underlying {@link GridAuthenticationSpi}s.
      *
-     * @param subjType Subject type.
-     * @param subjId Subject ID.
-     * @param creds Credentials.
+     * @param ctx Authentication context.
      * @return {@code True} if succeeded, {@code false} otherwise.
      * @throws GridException If error occurred.
      */
-    public Object authenticate(GridSecuritySubjectType subjType, byte[] subjId,
-        @Nullable Object creds) throws GridException;
+    public GridSecurityContext authenticate(GridAuthenticationContext ctx) throws GridException;
 
     /**
      * Authorizes grid operation.
      *
+     * @param name Cache name or task class name.
      * @param perm Permission to authorize.
+     * @param securityCtx Optional security context.
      * @throws GridSecurityException If security check failed.
      */
-    public void authorize(GridSecurityPermission perm) throws GridSecurityException;
+    public void authorize(String name, GridSecurityPermission perm, @Nullable GridSecurityContext securityCtx)
+        throws GridSecurityException;
 }

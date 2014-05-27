@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.managers.securesession;
 
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.spi.*;
 
 import java.util.*;
@@ -17,49 +18,25 @@ import java.util.*;
  * Secure session object.
  */
 public class GridSecureSession {
-    /** Subject type. */
-    private GridSecuritySubjectType subjType;
-
-    /** Subject. */
-    private UUID subj;
-
     /** Authentication subject context returned by authentication SPI. */
-    private Object authSubjCtx;
+    private GridSecurityContext authSubjCtx;
 
     /** Session creation time. */
     private byte[] sesTok;
 
     /**
-     * @param subjType Subject type.
-     * @param subj Subject.
      * @param authSubjCtx Authentication subject context.
      * @param sesTok Session token.
      */
-    public GridSecureSession(GridSecuritySubjectType subjType, UUID subj, Object authSubjCtx, byte[] sesTok) {
-        this.subjType = subjType;
-        this.subj = subj;
+    public GridSecureSession(GridSecurityContext authSubjCtx, byte[] sesTok) {
         this.authSubjCtx = authSubjCtx;
         this.sesTok = sesTok;
     }
 
     /**
-     * @return Subject type.
-     */
-    public GridSecuritySubjectType subjectType() {
-        return subjType;
-    }
-
-    /**
-     * @return Subject.
-     */
-    public UUID subject() {
-        return subj;
-    }
-
-    /**
      * @return Authentication subject context returned by authentication SPI.
      */
-    public Object authenticationSubjectContext() {
+    public GridSecurityContext authenticationSubjectContext() {
         return authSubjCtx;
     }
 
