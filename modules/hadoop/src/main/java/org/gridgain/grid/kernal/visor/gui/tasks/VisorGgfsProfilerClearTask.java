@@ -16,13 +16,10 @@ import org.gridgain.grid.kernal.visor.cmd.VisorJob;
 import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeArg;
 import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeJob;
 import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeTask;
-import org.gridgain.grid.lang.GridBiTuple;
-import org.jetbrains.annotations.Nullable;
 import static org.gridgain.grid.kernal.visor.gui.tasks.VisorHadoopTaskUtilsEnt.resolveGgfsProfilerLogsDir;
 
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.*;
-import java.util.Iterator;
 import java.util.UUID;
 
 /**
@@ -32,33 +29,56 @@ import java.util.UUID;
 public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<VisorGgfsProfilerClearTask.VisorGgfsProfilerClearArg,
     VisorGgfsProfilerClearTask.VisorGgfsProfilerClearTaskResult> {
     /**
-     * Arguments for {@link org.gridgain.grid.kernal.visor.gui.tasks.VisorGgfsProfilerClearTask}.
+     * Arguments for {@link VisorGgfsProfilerClearTask}.
      */
     @SuppressWarnings("PublicInnerClass")
     public static class VisorGgfsProfilerClearArg extends VisorOneNodeArg {
         /** */
         private static final long serialVersionUID = 0L;
 
-        public final String ggfsName;
+        /** */
+        private final String ggfsName;
 
         /**
          * @param nodeId Node Id.
-         * @param ggfsName
+         * @param ggfsName GGFS instance name.
          */
-        protected VisorGgfsProfilerClearArg(UUID nodeId, String ggfsName) {
+        public VisorGgfsProfilerClearArg(UUID nodeId, String ggfsName) {
             super(nodeId);
 
             this.ggfsName = ggfsName;
         }
     }
 
+    /** TODO */
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorGgfsProfilerClearTaskResult extends GridBiTuple<Integer, Integer> {
+    public static class VisorGgfsProfilerClearTaskResult implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
-        public VisorGgfsProfilerClearTaskResult(@Nullable Integer deleted, @Nullable Integer failed) {
-            super(deleted, failed);
+        /** */
+        private final int deleted;
+
+        /** */
+        private final int notDeleted;
+
+        public VisorGgfsProfilerClearTaskResult(int deleted, int failed) {
+            this.deleted = deleted;
+            this.notDeleted = failed;
+        }
+
+        /**
+         * @return Number of deleted log files.
+         */
+        public int deleted() {
+            return deleted;
+        }
+
+        /**
+         * @return Number of log files that were not deleted.
+         */
+        public int notDeleted() {
+            return notDeleted;
         }
     }
 
@@ -73,14 +93,14 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<VisorGgfsProfil
          *
          * @param arg Job argument.
          */
-        protected VisorGgfsProfilerClearJob(VisorGgfsProfilerClearArg arg) {
+        public VisorGgfsProfilerClearJob(VisorGgfsProfilerClearArg arg) {
             super(arg);
         }
 
         @Override
         protected VisorGgfsProfilerClearTaskResult run(VisorGgfsProfilerClearArg arg) throws GridException {
             int deleted = 0;
-            int failed = 0;
+            int notDeleted = 0;
 
             try {
                 GridGgfs ggfs = g.ggfs(arg.ggfsName);
@@ -91,33 +111,27 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<VisorGgfsProfil
                     PathMatcher matcher = FileSystems.getDefault().getPathMatcher(
                         "glob:ggfs-log-" + arg.ggfsName + "-*.csv");
 
-                    DirectoryStream<Path> dirStream = Files.newDirectoryStream(logsDir);
-
-                    try {
-                        Iterator<Path> itr = dirStream.iterator();
-
-                        while(itr.hasNext()) {
-                            Path p = itr.next();
-
-                            if (matcher.matches(p.getFileName()))
+                    try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(logsDir)) {
+                        for (Path p : dirStream) {
+                            if (matcher.matches(p.getFileName())) {
                                 try {
                                     Files.delete(p); // Try to delete file.
 
                                     if (Files.exists(p)) // Checks if it still exists.
-                                        failed ++;
+                                        notDeleted++;
                                     else
-                                        deleted ++;
+                                        deleted++;
                                 }
-                                catch (NoSuchFileException nsfe) {} // Files was already deleted, skip.
+                                catch (NoSuchFileException ignored) {
+                                    // Files was already deleted, skip.
+                                }
                                 catch (IOException io) {
-                                    failed ++;
+                                    notDeleted++;
 
                                     g.log().warning("Profiler log file was not deleted: " + p, io);
                                 }
+                            }
                         }
-                    }
-                    finally {
-                        dirStream.close();
                     }
                 }
             }
@@ -125,7 +139,7 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<VisorGgfsProfil
                 throw new GridException("Failed to clear profiler logs for GGFS: " + arg.ggfsName, ioe);
             }
 
-            return new VisorGgfsProfilerClearTaskResult(deleted, failed);
+            return new VisorGgfsProfilerClearTaskResult(deleted, notDeleted);
         }
     }
 
