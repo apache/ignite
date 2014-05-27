@@ -19,8 +19,6 @@ import org.gridgain.client.util.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
 
-import java.io.*;
-
 /**
  * Test suite includes all test that concern REST processors.
  */

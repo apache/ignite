@@ -16,6 +16,7 @@ import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.dr.messages.internal.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.nio.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 import sun.nio.ch.*;
@@ -1445,14 +1446,14 @@ public class GridTcpCommunicationMessageState {
 
         long x = 0;
 
-        x |= ( 0xFFL & getByte()) << 56;
-        x |= ( 0xFFL & getByte()) << 48;
-        x |= ( 0xFFL & getByte()) << 40;
-        x |= ( 0xFFL & getByte()) << 32;
-        x |= ( 0xFFL & getByte()) << 24;
-        x |= ( 0xFFL & getByte()) << 16;
-        x |= ( 0xFFL & getByte()) << 8;
-        x |= ( 0xFFL & getByte()) << 0;
+        x |= (0xFFL & getByte()) << 56;
+        x |= (0xFFL & getByte()) << 48;
+        x |= (0xFFL & getByte()) << 40;
+        x |= (0xFFL & getByte()) << 32;
+        x |= (0xFFL & getByte()) << 24;
+        x |= (0xFFL & getByte()) << 16;
+        x |= (0xFFL & getByte()) << 8;
+        x |= (0xFFL & getByte());
 
         return x;
     }
@@ -1462,16 +1463,7 @@ public class GridTcpCommunicationMessageState {
      * @return Whether value was fully written.
      */
     public final boolean putUuidClient(@Nullable UUID uuid) {
-        byte[] arr;
-
-        if (uuid != null) {
-            arr = new byte[16];
-
-            UNSAFE.putLong(arr, BYTE_ARR_OFF, uuid.getMostSignificantBits());
-            UNSAFE.putLong(arr, BYTE_ARR_OFF + 8, uuid.getLeastSignificantBits());
-        }
-        else
-            arr = EMPTY_UUID_BYTES;
+        byte[] arr = uuid != null ? U.uuidToBytes(uuid) : EMPTY_UUID_BYTES;
 
         return putByteArrayClient(arr);
     }
@@ -1564,19 +1556,13 @@ public class GridTcpCommunicationMessageState {
 
         assert arr != null;
 
-        if (arr == BYTE_ARR_NOT_READ)
-            return UUID_NOT_READ;
-        else {
-            long most = UNSAFE.getLong(arr, BYTE_ARR_OFF);
-            long least = UNSAFE.getLong(arr, BYTE_ARR_OFF + 8);
-
-            return most == 0 && least == 0 ? null : new UUID(most, least);
-        }
+        return arr == BYTE_ARR_NOT_READ ? UUID_NOT_READ : U.bytesToUuid(arr, 0);
     }
 
     /**
      * @param creator Array creator.
      * @param off Base offset.
+     * @param len Length.
      * @return Array or special value if it was not fully read.
      */
     private <T> T getArrayClient(ArrayCreator<T> creator, long off, int len) {

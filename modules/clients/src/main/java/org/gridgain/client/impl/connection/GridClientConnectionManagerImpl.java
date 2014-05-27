@@ -47,9 +47,6 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
     /** Initialization retry interval. */
     private static final int INIT_RETRY_INTERVAL = 1000;
 
-    /** Request header. */
-    private static final byte REQ_HEADER = (byte)0x90;
-
     /** */
     private static final long TCP_IDLE_CONN_TIMEOUT = 10_000;
 
@@ -100,9 +97,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
 
             msg.messageWriter(this, nodeId);
 
-            boolean finished = msg.writeTo(buf);
-
-            return finished;
+            return msg.writeTo(buf);
         }
 
         @Override public int writeFully(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, OutputStream out,
@@ -128,20 +123,6 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
             }
 
             return cnt;
-        }
-    };
-
-    /** Message reader. */
-    private final GridNioMessageReader msgReader = new GridNioMessageReader() {
-        @Override public boolean read(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf) {
-            assert msg != null;
-            assert buf != null;
-
-            msg.messageReader(this, nodeId);
-
-            boolean finished = msg.readFrom(buf);
-
-            return finished;
         }
     };
 
@@ -181,12 +162,24 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
 
                 GridNioFilter[] filters;
 
+                GridNioMessageReader msgReader = new GridNioMessageReader() {
+                    @Override public boolean read(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg,
+                        ByteBuffer buf) {
+                        assert msg != null;
+                        assert buf != null;
+
+                        msg.messageReader(this, nodeId);
+
+                        return msg.readFrom(buf);
+                    }
+                };
+
                 GridNioFilter codecFilter = new GridNioCodecFilter(new NioParser(msgReader), gridLog, true);
 
                 if (sslCtx != null) {
                     filters = new GridNioFilter[]{codecFilter};
 
-                    // FIXME: need client SSL filter.
+                    // FIXME: 8416 need client SSL filter.
                     //GridNioFilter sslFilter = ;
 
                     //filters = new GridNioFilter[]{codecFilter, sslFilter};

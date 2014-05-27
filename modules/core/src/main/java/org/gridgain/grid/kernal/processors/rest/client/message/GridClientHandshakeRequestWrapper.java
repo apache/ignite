@@ -1,6 +1,7 @@
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
 import org.gridgain.grid.util.direct.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.nio.*;
 
@@ -99,5 +100,10 @@ public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessa
         GridClientHandshakeRequestWrapper _clone = (GridClientHandshakeRequestWrapper)_msg;
 
         _clone.bytes = bytes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridClientHandshakeRequestWrapper.class, this);
     }
 }

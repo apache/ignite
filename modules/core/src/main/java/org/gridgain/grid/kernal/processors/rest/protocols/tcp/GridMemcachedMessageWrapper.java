@@ -252,4 +252,9 @@ public class GridMemcachedMessageWrapper extends GridTcpCommunicationMessageAdap
 
         return flags;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridMemcachedMessageWrapper.class, this);
+    }
 }
