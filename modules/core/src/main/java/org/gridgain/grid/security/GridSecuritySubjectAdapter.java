@@ -72,7 +72,7 @@ public class GridSecuritySubjectAdapter implements GridSecuritySubject {
      *
      * @return Subject type.
      */
-    @Override public GridSecuritySubjectType subjectType() {
+    @Override public GridSecuritySubjectType type() {
         return subjType;
     }
 

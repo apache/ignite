@@ -22,7 +22,7 @@ public interface GridSecurity {
      *
      * @return Collection of authorized subjects.
      */
-    public Collection<GridSecuritySubject> authorizedSubjects();
+    public Collection<GridSecuritySubject> authenticatedSubjects();
 
     /**
      * Gets security subject by subject type and subject ID.
@@ -31,5 +31,5 @@ public interface GridSecurity {
      * @param subjId Subject ID.
      * @return Authorized security subject.
      */
-    public GridSecuritySubject authorizedSubject(GridSecuritySubjectType subjType, UUID subjId);
+    public GridSecuritySubject authenticatedSubject(GridSecuritySubjectType subjType, UUID subjId);
 }

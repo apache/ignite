@@ -16,111 +16,12 @@ import java.net.*;
 import java.util.*;
 
 /**
- * Authentication context.
+ * TODO: Add interface description.
  */
-public class GridAuthenticationContext {
-    /** Subject type. */
-    private GridSecuritySubjectType subjType;
+public interface GridAuthenticationContext {
+    public GridSecuritySubject subject();
 
-    /** Subject ID.w */
-    private UUID subjId;
+    public boolean taskOperationPermitted(GridSecurityPermission perm, String taskName);
 
-    /** Credentials. */
-    private GridSecurityCredentials credentials;
-
-    /** Subject address. */
-    private InetAddress addr;
-
-    /** Subject port. */
-    private int port;
-
-    /**
-     * Gets subject type.
-     *
-     * @return Subject type.
-     */
-    public GridSecuritySubjectType subjectType() {
-        return subjType;
-    }
-
-    /**
-     * Sets subject type.
-     *
-     * @param subjType Subject type.
-     */
-    public void subjectType(GridSecuritySubjectType subjType) {
-        this.subjType = subjType;
-    }
-
-    /**
-     * Gets subject ID.
-     *
-     * @return Subject ID.
-     */
-    public UUID subjectId() {
-        return subjId;
-    }
-
-    /**
-     * Sets subject ID.
-     *
-     * @param subjId Subject ID.
-     */
-    public void subjectId(UUID subjId) {
-        this.subjId = subjId;
-    }
-
-    /**
-     * Gets security credentials.
-     *
-     * @return Security credentials.
-     */
-    public GridSecurityCredentials credentials() {
-        return credentials;
-    }
-
-    /**
-     * Sets security credentials.
-     *
-     * @param credentials Security credentials.
-     */
-    public void credentials(GridSecurityCredentials credentials) {
-        this.credentials = credentials;
-    }
-
-    /**
-     * Gets subject network address.
-     *
-     * @return Subject network address.
-     */
-    public InetAddress address() {
-        return addr;
-    }
-
-    /**
-     * Sets subject network address.
-     *
-     * @param addr Subject network address.
-     */
-    public void address(InetAddress addr) {
-        this.addr = addr;
-    }
-
-    /**
-     * Gets subject port.
-     *
-     * @return Port.
-     */
-    public int port() {
-        return port;
-    }
-
-    /**
-     * Sets subject port.
-     *
-     * @param port Subject port.
-     */
-    public void port(int port) {
-        this.port = port;
-    }
+    public boolean cacheOperationPermitted(GridSecurityPermission perm, String cacheName);
 }

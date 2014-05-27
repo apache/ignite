@@ -19,13 +19,13 @@ import java.util.*;
  */
 public interface GridSecuritySubject {
 
-    UUID id();
+    public UUID id();
 
-    GridSecuritySubjectType subjectType();
+    public GridSecuritySubjectType type();
 
-    InetAddress address();
+    public InetAddress address();
 
-    int port();
+    public int port();
 
-    GridSecurityPermissionSet permissions();
+    public GridSecurityPermissionSet permissions();
 }
