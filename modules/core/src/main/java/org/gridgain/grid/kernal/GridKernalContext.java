@@ -313,13 +313,6 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
     public ExecutorService drPool();
 
     /**
-     * Gets REST requests pool.
-     *
-     * @return REST requests pool.
-     */
-    public ExecutorService restPool();
-
-    /**
      * Gets version converter processor.
      *
      * @return Version converter processor.

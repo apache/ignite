@@ -150,6 +150,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     /** */
     private ObjectName p2PExecSvcMBean;
 
+    /** */
+    private ObjectName restExecSvcMBean;
+
     /** Kernal start timestamp. */
     private long startTime = U.currentTimeMillis();
 
@@ -179,9 +182,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** DR pool. */
     private ExecutorService drPool;
-
-    /** REST pool. */
-    private ExecutorService restPool;
 
     /** Kernal gateway. */
     private final AtomicReference<GridKernalGateway> gw = new AtomicReference<>();
@@ -479,7 +479,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     /**
      * @param cfg Grid configuration to use.
      * @param drPool Dr executor service.
-     * @param restPool REST requests executor service.
      * @param errHnd Error handler to use for notification about startup problems.
      * @throws GridException Thrown in case of any errors.
      */
@@ -487,7 +486,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     public void start(
         final GridConfiguration cfg,
         @Nullable ExecutorService drPool,
-        @Nullable ExecutorService restPool,
         GridAbsClosure errHnd
     ) throws GridException {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getGridName()));
@@ -616,8 +614,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             scheduler = new GridSchedulerImpl(ctx);
 
             this.drPool = drPool;
-
-            this.restPool = restPool;
 
             startProcessor(ctx, rsrcProc, attrs);
 
@@ -1400,6 +1396,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         sysExecSvcMBean = registerExecutorMBean(cfg.getSystemExecutorService(), "GridSystemExecutor");
         mgmtExecSvcMBean = registerExecutorMBean(cfg.getManagementExecutorService(), "GridManagementExecutor");
         p2PExecSvcMBean = registerExecutorMBean(cfg.getPeerClassLoadingExecutorService(), "GridClassLoadingExecutor");
+        restExecSvcMBean = registerExecutorMBean(cfg.getRestExecutorService(), "GridRestExecutor");
     }
 
     /**
@@ -1868,7 +1865,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                     unregisterMBean(mgmtExecSvcMBean) &
                     unregisterMBean(p2PExecSvcMBean) &
                     unregisterMBean(kernalMBean) &
-                    unregisterMBean(locNodeMBean)))
+                    unregisterMBean(locNodeMBean) &
+                    unregisterMBean(restExecSvcMBean)
+            ))
                 errOnStop = false;
 
             // Stop components in reverse order.
@@ -2634,11 +2633,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     /** {@inheritDoc} */
     @Nullable @Override public ExecutorService drPool() {
         return drPool;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public ExecutorService restPool() {
-        return restPool;
     }
 
     /**

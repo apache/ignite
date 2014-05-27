@@ -169,6 +169,18 @@ public class GridConfiguration {
     /** Default max queue capacity of GGFS thread pool. */
     public static final int DFLT_GGFS_THREADPOOL_QUEUE_CAP = 16;
 
+    /** Default size of REST thread pool. */
+    public static final int DFLT_REST_CORE_THREAD_CNT = DFLT_PUBLIC_CORE_THREAD_CNT;
+
+    /** Default max size of REST thread pool. */
+    public static final int DFLT_REST_MAX_THREAD_CNT = DFLT_PUBLIC_CORE_THREAD_CNT;
+
+    /** Default keep alive time for REST thread pool. */
+    public static final long DFLT_REST_KEEP_ALIVE_TIME = 0;
+
+    /** Default max queue capacity of REST thread pool. */
+    public static final int DFLT_REST_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
+
     /** Default segmentation policy. */
     public static final GridSegmentationPolicy DFLT_SEG_PLC = STOP;
 
@@ -246,6 +258,9 @@ public class GridConfiguration {
 
     /** GGFS executor service shutdown flag. */
     private boolean ggfsSvcShutdown = true;
+
+    /** REST executor service shutdown flag. */
+    private boolean restSvcShutdown = true;
 
     /** Lifecycle email notification. */
     private boolean lifeCycleEmailNtf = true;
@@ -586,6 +601,7 @@ public class GridConfiguration {
         restTcpSslEnabled = cfg.isRestTcpSslEnabled();
         restTcpSslClientAuth = cfg.isRestTcpSslClientAuth();
         restExecSvc = cfg.getRestExecutorService();
+        restSvcShutdown = cfg.getRestExecutorServiceShutdown();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
@@ -2605,9 +2621,9 @@ public class GridConfiguration {
      * If not provided, new executor service will be created using the following
      * configuration:
      * <ul>
-     *     <li>Core pool size - {@link #DFLT_PUBLIC_CORE_THREAD_CNT}</li>
-     *     <li>Max pool size - {@link #DFLT_PUBLIC_MAX_THREAD_CNT}</li>
-     *     <li>Queue capacity - {@link #DFLT_PUBLIC_THREADPOOL_QUEUE_CAP}</li>
+     *     <li>Core pool size - {@link #DFLT_REST_CORE_THREAD_CNT}</li>
+     *     <li>Max pool size - {@link #DFLT_REST_MAX_THREAD_CNT}</li>
+     *     <li>Queue capacity - {@link #DFLT_REST_THREADPOOL_QUEUE_CAP}</li>
      * </ul>
      *
      * @return Thread pool implementation to be used for processing of client
@@ -2625,6 +2641,29 @@ public class GridConfiguration {
      */
     public void setRestExecutorService(ExecutorService restExecSvc) {
         this.restExecSvc = restExecSvc;
+    }
+
+    /**
+     * Sets REST executor service shutdown flag.
+     *
+     * @param restSvcShutdown REST executor service shutdown flag.
+     * @see GridConfiguration#getRestExecutorService()
+     */
+    public void setRestExecutorServiceShutdown(boolean restSvcShutdown) {
+        this.restSvcShutdown = restSvcShutdown;
+    }
+
+    /**
+     * Shutdown flag for REST executor service.
+     * <p>
+     * If not provided, default value {@code true} will be used which will shutdown
+     * executor service when GridGain stops regardless whether it was started before GridGain
+     * or by GridGain.
+     *
+     * @return REST executor service shutdown flag.
+     */
+    public boolean getRestExecutorServiceShutdown() {
+        return restSvcShutdown;
     }
 
     /**

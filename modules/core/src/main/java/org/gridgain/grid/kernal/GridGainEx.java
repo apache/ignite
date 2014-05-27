@@ -1510,10 +1510,10 @@ public class GridGainEx {
 
                 restExecSvc = new GridThreadPoolExecutor(
                     "rest-" + cfg.getGridName(),
-                    DFLT_SYSTEM_CORE_THREAD_CNT,
-                    DFLT_SYSTEM_MAX_THREAD_CNT,
-                    DFLT_SYSTEM_KEEP_ALIVE_TIME,
-                    new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP)
+                    DFLT_REST_CORE_THREAD_CNT,
+                    DFLT_REST_MAX_THREAD_CNT,
+                    DFLT_REST_KEEP_ALIVE_TIME,
+                    new LinkedBlockingQueue<Runnable>(DFLT_REST_THREADPOOL_QUEUE_CAP)
                 );
             }
 
@@ -1522,7 +1522,7 @@ public class GridGainEx {
             mgmtSvcShutdown = cfg.getManagementExecutorServiceShutdown();
             p2pSvcShutdown = cfg.getPeerClassLoadingExecutorServiceShutdown();
             ggfsSvcShutdown = cfg.getGgfsExecutorServiceShutdown();
-            // restSvcShutdown = cfg.getRestExecutorService();
+            restSvcShutdown = cfg.getRestExecutorServiceShutdown();
 
             if (marsh == null) {
                 if (!U.isHotSpot()) {
@@ -1567,6 +1567,7 @@ public class GridGainEx {
             myCfg.setManagementExecutorServiceShutdown(mgmtSvcShutdown);
             myCfg.setPeerClassLoadingExecutorServiceShutdown(p2pSvcShutdown);
             myCfg.setGgfsExecutorServiceShutdown(ggfsSvcShutdown);
+            myCfg.setRestExecutorServiceShutdown(restSvcShutdown);
             myCfg.setNodeId(nodeId);
 
             GridGgfsConfiguration[] ggfsCfgs = cfg.getGgfsConfiguration();
@@ -1890,7 +1891,7 @@ public class GridGainEx {
                 // Init here to make grid available to lifecycle listeners.
                 grid = grid0;
 
-                grid0.start(myCfg, drExecSvc, restExecSvc, new CA() {
+                grid0.start(myCfg, drExecSvc, new CA() {
                     @Override public void apply() {
                         startLatch.countDown();
                     }

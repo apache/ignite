@@ -114,11 +114,4 @@ public interface GridEx extends Grid {
      * @return DR pool.
      */
     @Nullable public ExecutorService drPool();
-
-    /**
-     * Get REST requests pool.
-     *
-     * @return REST requests pool.
-     */
-    @Nullable public ExecutorService restPool();
 }
