@@ -45,6 +45,8 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+
+        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */

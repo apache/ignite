@@ -57,6 +57,8 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+
+        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */

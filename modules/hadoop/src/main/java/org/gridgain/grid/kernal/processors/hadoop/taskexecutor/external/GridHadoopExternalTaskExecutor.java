@@ -296,7 +296,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
     private GridHadoopExternalTaskMetadata buildTaskMeta() {
         GridHadoopExternalTaskMetadata meta = new GridHadoopExternalTaskMetadata();
 
-        meta.classpath(Arrays.asList(System.getProperty("java.class.path").split(":")));
+        meta.classpath(Arrays.asList(System.getProperty("java.class.path").split(File.pathSeparator)));
         meta.jvmOptions(Arrays.asList("-Xmx1g", "-ea", "-XX:+UseConcMarkSweepGC", "-XX:+CMSClassUnloadingEnabled",
             "-DGRIDGAIN_HOME=" + U.getGridGainHome()));
 

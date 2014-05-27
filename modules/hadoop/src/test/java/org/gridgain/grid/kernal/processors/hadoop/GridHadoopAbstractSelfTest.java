@@ -16,6 +16,8 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.spi.communication.tcp.*;
 import org.gridgain.testframework.junits.common.*;
 
+import java.io.*;
+
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.TRANSACTIONAL;
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -48,6 +50,32 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
 
     /** Initial REST port. */
     private int restPort = REST_PORT;
+
+    /** Initial classpath. */
+    private static String initCp;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        // Add surefire classpath to regular classpath.
+        initCp = System.getProperty("java.class.path");
+
+        String surefireCp = System.getProperty("surefire.test.class.path");
+
+        if (surefireCp != null)
+            System.setProperty("java.class.path", initCp + File.pathSeparatorChar + surefireCp);
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        // Restore classpath.
+        System.setProperty("java.class.path", initCp);
+
+        initCp = null;
+    }
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
