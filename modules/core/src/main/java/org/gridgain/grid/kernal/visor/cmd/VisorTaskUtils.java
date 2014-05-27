@@ -19,11 +19,6 @@ public class VisorTaskUtils {
     private static final String DFLT_EMPTY_NAME = "<default>";
 
     /**
-     * Maximum folder depth. I.e. if depth is 4 we look in starting folder and 3 levels of sub-folders.
-     */
-    public static final int MAX_FOLDER_DEPTH = 4;
-
-    /**
      * @param name Grid-style nullable name.
      * @return Name with {@code null} replaced to &lt;default&gt;.
      */

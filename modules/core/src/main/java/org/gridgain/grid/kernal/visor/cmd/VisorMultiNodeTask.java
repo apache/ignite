@@ -32,9 +32,13 @@ public abstract class VisorMultiNodeTask<A extends VisorMultiNodeArg, T, J> impl
      */
     protected abstract VisorJob<A, J> job(UUID nid, A arg);
 
+    protected A arg;
+
     @Nullable @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
         @Nullable A arg) throws GridException {
         assert arg != null;
+
+        this.arg = arg;
 
         Map<GridComputeJob, GridNode> map = new HashMap<>();
 
