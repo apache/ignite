@@ -103,6 +103,9 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
             onTaskFinished(state, err);
 
             Thread.currentThread().setContextClassLoader(old);
+
+            if (runCombiner)
+                local.close();
         }
 
         return null;
