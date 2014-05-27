@@ -18,7 +18,7 @@ import org.gridgain.grid.kernal.processors.hadoop.v2.*;
  */
 public class GridHadoopDefaultJobFactory implements GridHadoopJobFactory {
     /** {@inheritDoc} */
-    @Override public GridHadoopJob createJob(GridHadoopJobId id, GridHadoopJobInfo jobInfo) throws GridException {
+    @Override public GridHadoopJob createJob(GridHadoopJobId id, GridHadoopJobInfo jobInfo) {
         if (jobInfo instanceof GridHadoopDefaultJobInfo) {
             GridHadoopDefaultJobInfo info = (GridHadoopDefaultJobInfo)jobInfo;
 

@@ -22,5 +22,5 @@ public interface GridHadoopJobFactory {
      * @param jobInfo Job information.
      * @return Job instance.
      */
-    public GridHadoopJob createJob(GridHadoopJobId id, GridHadoopJobInfo jobInfo) throws GridException;
+    public GridHadoopJob createJob(GridHadoopJobId id, GridHadoopJobInfo jobInfo);
 }
