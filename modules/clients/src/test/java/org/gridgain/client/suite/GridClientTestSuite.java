@@ -19,8 +19,6 @@ import org.gridgain.client.util.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
 
-import java.io.*;
-
 /**
  * Test suite includes all test that concern REST processors.
  */
@@ -60,32 +58,22 @@ public class GridClientTestSuite extends TestSuite {
         // Test clients.
         suite.addTest(new TestSuite(GridClientDataImplSelfTest.class));
         suite.addTest(new TestSuite(GridClientComputeImplSelfTest.class));
-        suite.addTest(new TestSuite(GridClientHttpSelfTest.class));
-        suite.addTest(new TestSuite(GridClientHttpDirectSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpDirectSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpSslSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpSslDirectSelfTest.class));
-        suite.addTest(new TestSuite(GridClientHttpsSelfTest.class));
-        suite.addTest(new TestSuite(GridClientHttpsDirectSelfTest.class));
 
         // Test client with many nodes.
-        suite.addTest(new TestSuite(GridClientHttpMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridClientHttpDirectMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpDirectMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpSslMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpSslDirectMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridClientHttpsMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridClientHttpsDirectMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpUnreachableMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridClientPreferDirectSelfTest.class));
 
         // Test client with many nodes and in multithreaded scenarios
-        suite.addTest(new TestSuite(GridClientHttpMultiThreadedSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpMultiThreadedSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpSslMultiThreadedSelfTest.class));
-        suite.addTest(new TestSuite(GridClientHttpsMultiThreadedSelfTest.class));
 
         // Test client authentication.
         suite.addTest(new TestSuite(GridClientTcpSslAuthenticationSelfTest.class));
@@ -112,12 +100,8 @@ public class GridClientTestSuite extends TestSuite {
 
         // Router tests.
         suite.addTest(new TestSuite(GridTcpRouterSelfTest.class));
-        suite.addTest(new TestSuite(GridHttpRouterSelfTest.class));
         suite.addTest(new TestSuite(GridTcpSslRouterSelfTest.class));
-        suite.addTest(new TestSuite(GridHttpsRouterSelfTest.class));
         suite.addTest(new TestSuite(GridTcpRouterMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridHttpRouterMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridHttpsRouterMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridRouterMultiAuthSelfTest.class));
 
         suite.addTest(new TestSuite(GridClientFailedInitSelfTest.class));

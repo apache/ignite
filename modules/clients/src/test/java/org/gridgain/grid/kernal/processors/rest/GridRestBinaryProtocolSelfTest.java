@@ -167,7 +167,7 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     public void testFailure() throws Exception {
         GridKernal kernal = ((GridKernal)grid());
 
-        GridRestProcessorAdapter proc = kernal.context().rest();
+        GridRestProcessor proc = kernal.context().rest();
 
         // Clearing handlers collection to force failure.
         Field hndField = proc.getClass().getDeclaredField("handlers");

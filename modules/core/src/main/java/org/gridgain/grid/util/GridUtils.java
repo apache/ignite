@@ -55,6 +55,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 import java.util.jar.*;
+import java.util.logging.*;
 import java.util.regex.*;
 import java.util.zip.*;
 
@@ -2135,54 +2136,60 @@ public abstract class GridUtils {
         if (!F.isEmpty(ggHome0))
             return ggHome0;
 
-        Class<?> libsCls;
+        String appWorkDir = System.getProperty("user.dir");
+
+        if (appWorkDir != null) {
+            ggHome0 = findProjectHome(new File(appWorkDir));
+
+            if (ggHome0 != null)
+                return ggHome0;
+        }
+
+        URI uri;
+
+        Class<GridUtils> cls = GridUtils.class;
 
         try {
-            libsCls = Class.forName("org.springframework.context.ApplicationContext");
-        }
-        catch (ClassNotFoundException ignored) {
-            libsCls = null;
-        }
+            ProtectionDomain domain = cls.getProtectionDomain();
 
-        Collection<Class<?>> clsList = libsCls != null ? Arrays.asList(GridUtils.class, libsCls) :
-            Collections.<Class<?>>singleton(GridUtils.class);
+            // Should not happen, but to make sure our code is not broken.
+            if (domain == null || domain.getCodeSource() == null || domain.getCodeSource().getLocation() == null) {
+                logResolveFailed(cls, null);
 
-        // Order: gridgain.jar, 'libs'.
-        for (Class<?> cls : clsList) {
-            URI uri;
-
-            try {
-                ProtectionDomain domain = cls.getProtectionDomain();
-
-                // Should not happen, but to make sure our code is not broken.
-                if (domain == null || domain.getCodeSource() == null || domain.getCodeSource().getLocation() == null) {
-                    logResolveFailed(cls, null);
-
-                    continue;
-                }
-
-                // Resolve path to class-file.
-                uri = domain.getCodeSource().getLocation().toURI();
-
-                // Overcome UNC path problem on Windows (http://www.tomergabel.com/JavaMishandlesUNCPathsOnWindows.aspx)
-                if (isWindows() && uri.getAuthority() != null)
-                    uri = new URI(uri.toString().replace("file://", "file:/"));
+                return null;
             }
-            catch (URISyntaxException | SecurityException e) {
-                logResolveFailed(cls, e);
 
+            // Resolve path to class-file.
+            uri = domain.getCodeSource().getLocation().toURI();
+
+            // Overcome UNC path problem on Windows (http://www.tomergabel.com/JavaMishandlesUNCPathsOnWindows.aspx)
+            if (isWindows() && uri.getAuthority() != null)
+                uri = new URI(uri.toString().replace("file://", "file:/"));
+        }
+        catch (URISyntaxException | SecurityException e) {
+            logResolveFailed(cls, e);
+
+            return null;
+        }
+
+        return findProjectHome(new File(uri));
+    }
+
+    /**
+     * Tries to find project home starting from specified directory and moving to root.
+     *
+     * @param startDir First directory in search hierarchy.
+     * @return Project home path or {@code null} if it wasn't found.
+     */
+    private static String findProjectHome(File startDir) {
+        for (File cur = startDir.getAbsoluteFile(); cur != null; cur = cur.getParentFile()) {
+            // Check 'cur' is project home directory.
+            if (!new File(cur, "bin").isDirectory() ||
+                !new File(cur, "libs").isDirectory() ||
+                !new File(cur, "config").isDirectory())
                 continue;
-            }
 
-            for (File cur = new File(uri).getAbsoluteFile(); cur != null; cur = cur.getParentFile()) {
-                // Check 'cur' is project home directory.
-                if (!new File(cur, "bin").isDirectory() ||
-                    !new File(cur, "libs").isDirectory() ||
-                    !new File(cur, "config").isDirectory())
-                    continue;
-
-                return cur.getPath();
-            }
+            return cur.getPath();
         }
 
         return null;
@@ -7379,6 +7386,48 @@ public abstract class GridUtils {
         }
         catch (Exception e) {
             throw new GridException("Failed to remove previously added no-op logger for Log4j.", e);
+        }
+    }
+
+    /**
+     * Adds no-op console handler for root java logger.
+     *
+     * @return Removed handlers.
+     */
+    public static Collection<Handler> addJavaNoOpLogger() {
+        Collection<Handler> savedHnds = new ArrayList<>();
+
+        Logger log = Logger.getLogger("");
+
+        for (Handler h : log.getHandlers()) {
+            log.removeHandler(h);
+
+            savedHnds.add(h);
+        }
+
+        ConsoleHandler hnd = new ConsoleHandler();
+
+        hnd.setLevel(Level.OFF);
+
+        log.addHandler(hnd);
+
+        return savedHnds;
+    }
+
+    /**
+     * Removes previously added no-op handler for root java logger.
+     *
+     * @param rmvHnds Previously removed handlers.
+     */
+    public static void removeJavaNoOpLogger(Collection<Handler> rmvHnds) {
+        Logger log = Logger.getLogger("");
+
+        for (Handler h : log.getHandlers())
+            log.removeHandler(h);
+
+        if (!F.isEmpty(rmvHnds)) {
+            for (Handler h : rmvHnds)
+                log.addHandler(h);
         }
     }
 

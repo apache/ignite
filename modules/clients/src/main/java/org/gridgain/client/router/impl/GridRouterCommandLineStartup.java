@@ -20,6 +20,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.net.*;
 import java.text.*;
 import java.util.*;
+import java.util.logging.*;
 
 import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.kernal.GridProductImpl.*;
@@ -34,9 +35,6 @@ public class GridRouterCommandLineStartup {
 
     /** TCP router. */
     private GridTcpRouterImpl tcpRouter;
-
-    /** HTTP router. */
-    private GridHttpRouterImpl httpRouter;
 
     /**
      * Search given context for required configuration and starts router.
@@ -68,23 +66,6 @@ public class GridRouterCommandLineStartup {
                 tcpRouter = null;
             }
         }
-
-        GridHttpRouterConfiguration httpCfg = (GridHttpRouterConfiguration)beans.get(GridHttpRouterConfiguration.class);
-
-        if (httpCfg == null)
-            U.warn(log, "HTTP router startup skipped (configuration not found).");
-        else {
-            httpRouter = new GridHttpRouterImpl(httpCfg);
-
-            try {
-                httpRouter.start();
-            }
-            catch (GridException e) {
-                U.error(log, "Failed to start HTTP router. See log above for details.", e);
-
-                httpRouter = null;
-            }
-        }
     }
 
     /**
@@ -93,9 +74,6 @@ public class GridRouterCommandLineStartup {
     public void stop() {
         if (tcpRouter != null)
             tcpRouter.stop();
-
-        if (httpRouter != null)
-            httpRouter.stop();
     }
 
     /**
@@ -143,19 +121,24 @@ public class GridRouterCommandLineStartup {
         boolean isLog4jUsed = U.gridClassLoader().getResource("org/apache/log4j/Appender.class") != null;
 
         GridBiTuple<Object, Object> t = null;
+        Collection<Handler> savedHnds = null;
 
         if (isLog4jUsed)
             t = U.addLog4jNoOpLogger();
+        else
+            savedHnds = U.addJavaNoOpLogger();
 
         Map<Class<?>, Object> beans;
 
         try {
-            beans = spring.loadBeans(cfgUrl, GridLogger.class, GridTcpRouterConfiguration.class,
-                GridHttpRouterConfiguration.class);
+            beans = spring.loadBeans(cfgUrl, GridLogger.class, GridTcpRouterConfiguration.class);
         }
         finally {
             if (isLog4jUsed && t != null)
                 U.removeLog4jNoOpLogger(t);
+
+            if (!isLog4jUsed)
+                U.removeJavaNoOpLogger(savedHnds);
         }
 
         final GridRouterCommandLineStartup routerStartup = new GridRouterCommandLineStartup();
