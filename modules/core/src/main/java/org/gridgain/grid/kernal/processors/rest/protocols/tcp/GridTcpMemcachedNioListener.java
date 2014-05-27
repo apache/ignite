@@ -10,12 +10,14 @@
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.cache.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
+import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.typedef.*;
@@ -26,6 +28,7 @@ import java.util.*;
 
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 import static org.gridgain.grid.kernal.processors.rest.protocols.tcp.GridMemcachedMessage.*;
+import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
 
 /**
  * Handles memcache requests.
@@ -40,16 +43,21 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
     /** JDK marshaller. */
     private final GridMarshaller jdkMarshaller = new GridJdkMarshaller();
 
+    /** Context. */
+    private final GridKernalContext ctx;
+
     /**
      * Creates listener which will convert incoming tcp packets to rest requests and forward them to
      * a given rest handler.
      *
      * @param log Logger to use.
      * @param hnd Rest handler.
+     * @param ctx Context.
      */
-    public GridTcpMemcachedNioListener(GridLogger log, GridRestProtocolHandler hnd) {
+    public GridTcpMemcachedNioListener(GridLogger log, GridRestProtocolHandler hnd, GridKernalContext ctx) {
         this.log = log;
         this.hnd = hnd;
+        this.ctx = ctx;
     }
 
     /** {@inheritDoc} */
@@ -65,7 +73,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
+    @SuppressWarnings({"IfMayBeConditional"})
     @Override public void onMessage(final GridNioSession ses, final GridMemcachedMessage req) {
         assert req != null;
 
@@ -104,19 +112,54 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
             return;
         }
 
-        if (cmd.get1() == NOOP) {
-            GridMemcachedMessage res = new GridMemcachedMessage(req);
+        GridFuture<GridRestResponse> lastFut = ses.removeMeta(LAST_FUT.ordinal());
 
-            res.status(SUCCESS);
+        if (lastFut != null && lastFut.isDone())
+            lastFut = null;
 
-            sendResponse(ses, res);
+        GridFuture<GridRestResponse> f;
 
-            return;
+        if (lastFut == null)
+            f = handleRequest0(ses, req, cmd);
+        else {
+            f = new GridEmbeddedFuture<>(
+                lastFut,
+                new C2<GridRestResponse, Exception, GridFuture<GridRestResponse>>() {
+                    @Override public GridFuture<GridRestResponse> apply(GridRestResponse res, Exception e) {
+                        return handleRequest0(ses, req, cmd);
+                    }
+                },
+                ctx);
         }
 
-        GridFuture<GridRestResponse> fut = hnd.handleAsync(createRestRequest(req, cmd.get1()));
+        if (f != null)
+            ses.addMeta(LAST_FUT.ordinal(), f);
+    }
 
-        fut.listenAsync(new CIX1<GridFuture<GridRestResponse>>() {
+    /**
+     * @param ses Session.
+     * @param req Request.
+     * @param cmd Command.
+     * @return Future or {@code null} if processed immediately.
+     */
+    @Nullable private GridFuture<GridRestResponse> handleRequest0(
+        final GridNioSession ses,
+        final GridMemcachedMessage req,
+        final GridTuple3<GridRestCommand, Boolean, Boolean> cmd
+    ) {
+        if (cmd.get1() == NOOP) {
+            GridMemcachedMessage res0 = new GridMemcachedMessage(req);
+
+            res0.status(SUCCESS);
+
+            sendResponse(ses, res0);
+
+            return null;
+        }
+
+        GridFuture<GridRestResponse> f = hnd.handleAsync(createRestRequest(req, cmd.get1()));
+
+        f.listenAsync(new CIX1<GridFuture<GridRestResponse>>() {
             @Override public void applyx(GridFuture<GridRestResponse> f) throws GridException {
                 GridRestResponse restRes = f.get();
 
@@ -202,6 +245,8 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
 
             return null;
         }
+
+        return f;
     }
 
     /**

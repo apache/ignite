@@ -14,6 +14,7 @@ import org.gridgain.client.marshaller.jdk.*;
 import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.client.marshaller.protobuf.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.cache.*;
@@ -82,9 +83,10 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
      * @param log Logger to use.
      * @param proto Protocol.
      * @param hnd Rest handler.
+     * @param ctx Context.
      */
-    public GridTcpRestNioListener(GridLogger log, GridTcpRestProtocol proto, GridRestProtocolHandler hnd) {
-        memcachedLsnr = new GridTcpMemcachedNioListener(log, hnd);
+    public GridTcpRestNioListener(GridLogger log, GridRestProtocolHandler hnd, GridKernalContext ctx) {
+        memcachedLsnr = new GridTcpMemcachedNioListener(log, hnd, ctx);
 
         this.log = log;
         this.proto = proto;

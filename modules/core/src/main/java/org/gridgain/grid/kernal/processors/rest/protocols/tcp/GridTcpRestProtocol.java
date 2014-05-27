@@ -140,7 +140,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
         GridConfiguration cfg = ctx.config();
 
-        GridNioServerListener<GridClientMessage> lsnr = new GridTcpRestNioListener(log, this, hnd);
+        GridNioServerListener<GridClientMessage> lsnr = new GridTcpRestNioListener(log, hnd, ctx);
 
         GridNioParser parser = new GridTcpRestDirectParser(this, msgReader);
 
@@ -241,7 +241,10 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
                 sslFilter.needClientAuth(auth);
 
-                filters = new GridNioFilter[] { codec, sslFilter };
+                filters = new GridNioFilter[] {
+                    codec,
+                    sslFilter
+                };
             }
             else
                 filters = new GridNioFilter[] { codec };
