@@ -97,8 +97,7 @@ public class VisorRunGcTask extends VisorMultiNodeTask<VisorRunGcTask.VisorRunGc
         }
     }
 
-    @Override
-    protected VisorJob<VisorRunGcArg, VisorBeforeAfterResult> job(UUID nid, VisorRunGcArg arg) {
+    @Override protected VisorJob<VisorRunGcArg, VisorBeforeAfterResult> job(VisorRunGcArg arg) {
         return new VisorRunGcJob(arg);
     }
 

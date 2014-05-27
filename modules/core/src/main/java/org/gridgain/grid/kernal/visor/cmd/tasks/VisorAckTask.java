@@ -63,13 +63,13 @@ public class VisorAckTask extends VisorMultiNodeTask<VisorAckTask.VisorAckArg, V
         }
 
         @Override protected Void run(VisorAckArg arg) throws GridException {
-            System.out.println("<visor>: ack: " + arg.msg == null ? g.localNode().id() : arg.msg); // TODO
+            System.out.println("<visor>: ack: " + (arg.msg == null ? g.localNode().id() : arg.msg)); // TODO
 
             return null;
         }
     }
 
-    @Override protected VisorJob<VisorAckArg, Void> job(UUID nid, VisorAckArg arg) {
+    @Override protected VisorAckJob job(VisorAckArg arg) {
         return new VisorAckJob(arg);
     }
 
