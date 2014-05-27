@@ -9,16 +9,39 @@
 
 package org.gridgain.grid.hadoop;
 
+import org.gridgain.grid.*;
+
 import java.util.*;
 
 /**
- * TODO write doc
+ * Task input.
  */
 public interface GridHadoopTaskInput extends AutoCloseable {
-
+    /**
+     * Moves cursor to the next element.
+     *
+     * @return {@code false} If input is exceeded.
+     */
     boolean next();
 
+    /**
+     * Gets current key.
+     *
+     * @return Key.
+     */
     Object key();
 
+    /**
+     * Gets values for current key.
+     *
+     * @return Values.
+     */
     Iterator<?> values();
+
+    /**
+     * Closes input.
+     *
+     * @throws GridException If failed.
+     */
+    @Override public void close() throws GridException;
 }

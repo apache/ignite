@@ -501,7 +501,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
                         throw new IllegalStateException();
                     }
 
-                    @Override public void close() throws Exception {
+                    @Override public void close() {
                         // No-op.
                     }
                 };

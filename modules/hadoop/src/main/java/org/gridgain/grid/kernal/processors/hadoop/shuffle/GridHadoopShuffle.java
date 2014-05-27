@@ -238,4 +238,11 @@ public class GridHadoopShuffle extends GridHadoopComponent {
             return new GridFinishedFutureEx<>(e);
         }
     }
+
+    /**
+     * @return Memory.
+     */
+    public GridUnsafeMemory memory() {
+        return mem;
+    }
 }

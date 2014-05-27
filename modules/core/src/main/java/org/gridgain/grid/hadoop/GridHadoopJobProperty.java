@@ -15,10 +15,18 @@ import org.jetbrains.annotations.*;
  * Enumeration of optional properties supported by GridGain for Apache Hadoop.
  */
 public enum GridHadoopJobProperty {
-    /** */
+    /**
+     * Initial size for hashmap which stores output of mapper and will be used as input of combiner.
+     * <p>
+     * Setting it right allows to avoid rehashing.
+     */
     COMBINER_HASHMAP_SIZE,
 
-    /** */
+    /**
+     * Initial size for hashmap which stores output of mapper or combiner and will be used as input of reducer.
+     * <p>
+     * Setting it right allows to avoid rehashing.
+     */
     PARTITION_HASHMAP_SIZE,
 
     /**
@@ -35,8 +43,15 @@ public enum GridHadoopJobProperty {
      */
     EXTERNAL_CONCURRENT_REDUCERS,
 
-    /** */
-    JOB_STATUS_POLL_DELAY;
+    /**
+     * Delay in milliseconds after which GridGain server will reply job status.
+     */
+    JOB_STATUS_POLL_DELAY,
+
+    /**
+     * Use single combiner for all mappers running in current process. By default is {@code false}.
+     */
+    SINGLE_COMBINER_FOR_ALL_MAPPERS;
 
     /** */
     private final String ptyName;
@@ -74,5 +89,17 @@ public enum GridHadoopJobProperty {
         String res = job.property(pty.propertyName());
 
         return res == null ? dflt : Integer.parseInt(res);
+    }
+
+    /**
+     * @param job Job.
+     * @param pty Property.
+     * @param dflt Default value.
+     * @return Property value.
+     */
+    public static boolean get(GridHadoopJob job, GridHadoopJobProperty pty, boolean dflt) {
+        String res = job.property(pty.propertyName());
+
+        return res == null ? dflt : Boolean.parseBoolean(res);
     }
 }
