@@ -142,13 +142,13 @@ public class GridRestProcessor extends GridProcessorAdapter {
      */
     private void checkPermissions(GridRestRequest req, Object securitySubjCtx) {
         if (securityInterceptor != null) {
-            GridSecurityOperation op = null;
+            GridSecurityPermission op = null;
             String cacheName = null;
 
             switch (req.command()) {
                 case CACHE_GET:
                 case CACHE_GET_ALL:
-                    op = GridSecurityOperation.READ;
+                    op = GridSecurityPermission.READ;
                     cacheName = ((GridRestCacheRequest)req).cacheName();
 
                     break;
@@ -162,21 +162,21 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 case CACHE_CAS:
                 case CACHE_APPEND:
                 case CACHE_PREPEND:
-                    op = GridSecurityOperation.PUT;
+                    op = GridSecurityPermission.PUT;
                     cacheName = ((GridRestCacheRequest)req).cacheName();
 
                     break;
 
                 case CACHE_REMOVE:
                 case CACHE_REMOVE_ALL:
-                    op = GridSecurityOperation.REMOVE;
+                    op = GridSecurityPermission.REMOVE;
                     cacheName = ((GridRestCacheRequest)req).cacheName();
 
                     break;
 
                 case EXE:
                 case RESULT:
-                    op = GridSecurityOperation.EXECUTE;
+                    op = GridSecurityPermission.EXECUTE;
                     break;
 
                 case VERSION:

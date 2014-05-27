@@ -534,7 +534,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param op Operation to check.
      * @throws GridSecurityException If security check failed.
      */
-    public void checkSecurity(GridSecurityOperation op) throws GridSecurityException {
+    public void checkSecurity(GridSecurityPermission op) throws GridSecurityException {
         if (securityInterceptor != null) {
             if (subj == null)
                 subj = localNode().attributes().get(GridNodeAttributes.ATTR_AUTHENTICATION_SUBJECT_CONTEXT);

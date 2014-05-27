@@ -601,7 +601,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         long ttl,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
-        ctx.checkSecurity(GridSecurityOperation.PUT);
+        ctx.checkSecurity(GridSecurityPermission.PUT);
 
         final GridNearAtomicUpdateFuture<K, V> updateFut = new GridNearAtomicUpdateFuture<>(
             ctx,
@@ -648,7 +648,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         assert keys != null || drMap != null;
-        ctx.checkSecurity(GridSecurityOperation.REMOVE);
+        ctx.checkSecurity(GridSecurityPermission.REMOVE);
 
         final GridNearAtomicUpdateFuture<K, V> updateFut = new GridNearAtomicUpdateFuture<>(
             ctx,
@@ -685,7 +685,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     private GridFuture<Map<K, V>> getAllAsync0(@Nullable Collection<? extends K> keys, boolean reload,
         boolean forcePrimary, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
-        ctx.checkSecurity(GridSecurityOperation.READ);
+        ctx.checkSecurity(GridSecurityPermission.READ);
 
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());

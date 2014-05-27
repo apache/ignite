@@ -18,7 +18,7 @@ import java.util.*;
  */
 public class GridSecurityContextImpl implements GridSecurityContext {
     /** Security operations. */
-    private Collection<GridSecurityOperation> ops;
+    private Collection<GridSecurityPermission> ops;
 
     /** Authentication subject. */
     private Object subj;
@@ -30,14 +30,14 @@ public class GridSecurityContextImpl implements GridSecurityContext {
      * @param ops Operations.
      * @param subj Subject.
      */
-    public GridSecurityContextImpl(Collection<GridSecurityOperation> ops, String cacheName, Object subj) {
+    public GridSecurityContextImpl(Collection<GridSecurityPermission> ops, String cacheName, Object subj) {
         this.ops = ops;
         this.cacheName = cacheName;
         this.subj = subj;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridSecurityOperation> operations() {
+    @Override public Collection<GridSecurityPermission> operations() {
         return ops;
     }
 

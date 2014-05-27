@@ -15,12 +15,12 @@ package org.gridgain.grid.security;
  * @author @java.author
  * @version @java.version
  */
-public enum GridSecurityOperation {
-    READ,
+public enum GridSecurityPermission {
+    CACHE_READ,
 
-    PUT,
+    CACHE_PUT,
 
-    REMOVE,
+    CACHE_REMOVE,
 
-    EXECUTE
+    TASK_EXECUTE
 }

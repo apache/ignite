@@ -10,6 +10,7 @@
 package org.gridgain.grid.spi.authentication;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.authentication.noop.*;
 
@@ -68,5 +69,5 @@ public interface GridAuthenticationSpi extends GridSpi, GridSpiJsonConfigurable 
      * @throws GridSpiException If authentication resulted in system error.
      *      Note that bad credentials should not cause this exception.
      */
-    public GridAuthenticatedSubject authenticate(GridAuthenticationContext authCtx) throws GridSpiException;
+    public GridSecuritySubject authenticate(GridAuthenticationContext authCtx) throws GridSpiException;
 }

@@ -638,7 +638,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                 authSubjCtx = ctx.discovery().localNode().attribute(GridNodeAttributes.ATTR_AUTHENTICATION_SUBJECT_CONTEXT);
 
             GridSecurityContext sCtx = new GridSecurityContextImpl(
-                Collections.singletonList(GridSecurityOperation.EXECUTE), null, authSubjCtx);
+                Collections.singletonList(GridSecurityPermission.EXECUTE), null, authSubjCtx);
 
             securityInterceptor.authorize(sCtx);
         }

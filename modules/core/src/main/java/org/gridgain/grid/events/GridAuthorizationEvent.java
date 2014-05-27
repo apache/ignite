@@ -12,7 +12,6 @@ package org.gridgain.grid.events;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.security.*;
-import org.gridgain.grid.spi.authentication.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 /**
@@ -49,10 +48,10 @@ public class GridAuthorizationEvent extends GridEventAdapter {
     private static final long serialVersionUID = 0L;
 
     /** Requested operation. */
-    private GridSecurityOperation op;
+    private GridSecurityPermission op;
 
     /** Authenticated subject authorized to perform operation. */
-    private GridAuthenticatedSubject subj;
+    private GridSecuritySubject subj;
 
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
@@ -85,8 +84,8 @@ public class GridAuthorizationEvent extends GridEventAdapter {
      * @param op Requested operation.
      * @param subj Authenticated subject.
      */
-    public GridAuthorizationEvent(GridNode node, String msg, int type, GridSecurityOperation op,
-        GridAuthenticatedSubject subj) {
+    public GridAuthorizationEvent(GridNode node, String msg, int type, GridSecurityPermission op,
+        GridSecuritySubject subj) {
         super(node, msg, type);
 
         this.op = op;
@@ -98,7 +97,7 @@ public class GridAuthorizationEvent extends GridEventAdapter {
      *
      * @return Requested operation.
      */
-    public GridSecurityOperation operation() {
+    public GridSecurityPermission operation() {
         return op;
     }
 
@@ -107,7 +106,7 @@ public class GridAuthorizationEvent extends GridEventAdapter {
      *
      * @param op Requested operation.
      */
-    public void operation(GridSecurityOperation op) {
+    public void operation(GridSecurityPermission op) {
         this.op = op;
     }
 
@@ -116,7 +115,7 @@ public class GridAuthorizationEvent extends GridEventAdapter {
      *
      * @return Authenticated subject.
      */
-    public GridAuthenticatedSubject subject() {
+    public GridSecuritySubject subject() {
         return subj;
     }
 
@@ -125,7 +124,7 @@ public class GridAuthorizationEvent extends GridEventAdapter {
      *
      * @param subj Authenticated subject.
      */
-    public void subject(GridAuthenticatedSubject subj) {
+    public void subject(GridSecuritySubject subj) {
         this.subj = subj;
     }
 

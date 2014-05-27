@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.security;
 
-import org.gridgain.grid.spi.authentication.*;
-
 import java.util.*;
 
 /**
@@ -25,7 +23,7 @@ public interface GridSecurityContext {
      *
      * @return Collection of operations requested to execute.
      */
-    public Collection<GridSecurityOperation> operations();
+    public Collection<GridSecurityPermission> operations();
 
     /**
      * Gets cache name if cache operation is being checked.
@@ -46,5 +44,5 @@ public interface GridSecurityContext {
      *
      * @return Authentication subject context.
      */
-    public GridAuthenticatedSubject subject();
+    public GridSecuritySubject subject();
 }
