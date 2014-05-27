@@ -442,7 +442,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
 
             k.meta = doAdd(k.tmpKey, null);
 
-            return reuse;
+            return k;
         }
 
         /** {@inheritDoc} */
