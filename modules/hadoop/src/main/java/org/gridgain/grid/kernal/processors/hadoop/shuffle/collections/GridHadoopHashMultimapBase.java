@@ -141,6 +141,13 @@ public abstract class GridHadoopHashMultimapBase extends GridHadoopMultimapBase 
     protected long value(long meta) {
         return mem.readLong(meta + 16);
     }
+    /**
+     * @param meta Meta pointer.
+     * @param val Value pointer.
+     */
+    protected void value(long meta, long val) {
+        mem.writeLong(meta + 16, val);
+    }
 
     /**
      * @param meta Meta pointer.

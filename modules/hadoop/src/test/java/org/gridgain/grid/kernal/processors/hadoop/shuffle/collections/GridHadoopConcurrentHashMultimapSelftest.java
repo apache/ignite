@@ -49,8 +49,9 @@ public class GridHadoopConcurrentHashMultimapSelftest extends GridCommonAbstract
         job.setMapOutputKeyClass(IntWritable.class);
         job.setMapOutputValueClass(IntWritable.class);
 
-        GridHadoopConcurrentHashMultimap m = new GridHadoopConcurrentHashMultimap(new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 10),
-            new GridHadoopDefaultJobInfo(job.getConfiguration())), mem, mapSize);
+        GridHadoopConcurrentHashMultimap m = new GridHadoopConcurrentHashMultimap(new GridHadoopV2Job(
+            new GridHadoopJobId(UUID.randomUUID(), 10), new GridHadoopDefaultJobInfo(job.getConfiguration())),
+            mem, mapSize);
 
         GridHadoopConcurrentHashMultimap.Adder a = m.startAdding();
 

@@ -21,6 +21,9 @@ public class GridHadoopHashMultimap extends GridHadoopHashMultimapBase {
     /** */
     private long[] tbl;
 
+    /** */
+    private int keys;
+
     /**
      * @param job Job.
      * @param mem Memory.
@@ -36,11 +39,39 @@ public class GridHadoopHashMultimap extends GridHadoopHashMultimapBase {
 
     /** {@inheritDoc} */
     @Override public Adder startAdding() throws GridException {
-        return new AdderBase() {
-            @Override public void write(Object key, Object val) throws GridException {
-                // TODO
+        return new AdderImpl();
+    }
+
+    /**
+     * Rehash.
+     */
+    private void rehash() {
+        long[] newTbl = new long[tbl.length << 1];
+
+        int newMask = newTbl.length - 1;
+
+        for (long meta : tbl) {
+            while (meta != 0) {
+                long collision = collision(meta);
+
+                int idx = keyHash(meta) & newMask;
+
+                collision(meta, newTbl[idx]);
+
+                newTbl[idx] = meta;
+
+                meta = collision;
             }
-        };
+        }
+
+        tbl = newTbl;
+    }
+
+    /**
+     * @return Keys count.
+     */
+    public int keys() {
+        return keys;
     }
 
     /** {@inheritDoc} */
@@ -51,5 +82,66 @@ public class GridHadoopHashMultimap extends GridHadoopHashMultimapBase {
     /** {@inheritDoc} */
     @Override protected long meta(int idx) {
         return tbl[idx];
+    }
+
+    /**
+     * Adder.
+     */
+    private class AdderImpl extends AdderBase {
+        /** */
+        private final Reader keyReader;
+
+        /**
+         * @throws GridException If failed.
+         */
+        protected AdderImpl() throws GridException {
+            keyReader = new Reader(keySer);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(Object key, Object val) throws GridException {
+            int keyHash = U.hash(key.hashCode());
+
+            // Write value.
+            write(val, valSer);
+
+            int valSize = out.offset();
+
+            long valPtr = copy(12);
+
+            valueSize(valPtr, valSize);
+
+            // Find position in table.
+            int idx = keyHash & (tbl.length - 1);
+
+            long meta = tbl[idx];
+
+            // Search for our key in collisions.
+            while (meta != 0) {
+                if (keyHash(meta) == keyHash && key.equals(keyReader.readKey(meta))) { // Found key.
+                    nextValue(valPtr, value(meta));
+
+                    value(meta, valPtr);
+
+                    return;
+                }
+
+                meta = collision(meta);
+            }
+
+            // Write key.
+            write(key, keySer);
+
+            int keySize = out.offset();
+
+            long keyPtr = copy(0);
+
+            nextValue(valPtr, 0);
+
+            tbl[idx] = createMeta0(keyHash, keySize, keyPtr, valPtr, tbl[idx]);
+
+            if (++keys > (tbl.length >>> 2) * 3)
+                rehash();
+        }
     }
 }

@@ -190,7 +190,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
                 if (localCombiner) {
                     assert local == null;
 
-                    local = new GridHadoopConcurrentHashMultimap(job, mem, get(job, COMBINER_HASHMAP_SIZE, 8 * 1024));
+                    local = new GridHadoopHashMultimap(job, mem, get(job, COMBINER_HASHMAP_SIZE, 8 * 1024));
 
                     return local.startAdding();
                 }
