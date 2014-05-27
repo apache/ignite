@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;

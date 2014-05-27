@@ -16,7 +16,7 @@ import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.dr.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.managers.*;
-import org.gridgain.grid.kernal.managers.authentication.*;
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.grid.kernal.managers.collision.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -646,7 +646,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             // Start SPI managers.
             // NOTE: that order matters as there are dependencies between managers.
-            startManager(ctx, createComponent(GridAuthenticationManager.class, ctx), attrs);
+            startManager(ctx, createComponent(GridSecurityManager.class, ctx), attrs);
             startManager(ctx, createComponent(GridSecureSessionManager.class, ctx), attrs);
             startManager(ctx, new GridIoManager(ctx), attrs);
             startManager(ctx, new GridCheckpointManager(ctx), attrs);

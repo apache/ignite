@@ -489,8 +489,8 @@ public class GridConfiguration {
     /** Data center ID. */
     private byte dataCenterId;
 
-    /** Security interceptor. */
-    private GridSecurityInterceptor securityInterceptor;
+    /** Security credentials. */
+    private GridSecurityCredentials securityCred;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -586,7 +586,7 @@ public class GridConfiguration {
         restTcpSslCtxFactory = cfg.getRestTcpSslContextFactory();
         restTcpSslEnabled = cfg.isRestTcpSslEnabled();
         restTcpSslClientAuth = cfg.isRestTcpSslClientAuth();
-        securityInterceptor = cfg.getSecurityInterceptor();
+        securityCred = cfg.getSecurityCredentials();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
@@ -2863,21 +2863,21 @@ public class GridConfiguration {
     }
 
     /**
-     * Gets security interceptor.
+     * Gets security credentials.
      *
-     * @return Security interceptor.
+     * @return Security credentials.
      */
-    public GridSecurityInterceptor getSecurityInterceptor() {
-        return securityInterceptor;
+    public GridSecurityCredentials getSecurityCredentials() {
+        return securityCred;
     }
 
     /**
-     * Sets security interceptor.
+     * Sets security credentials.
      *
-     * @param securityInterceptor Security interceptor.
+     * @param securityCred Security credentials.
      */
-    public void setSecurityInterceptor(GridSecurityInterceptor securityInterceptor) {
-        this.securityInterceptor = securityInterceptor;
+    public void setSecurityCredentials(GridSecurityCredentials securityCred) {
+        this.securityCred = securityCred;
     }
 
     /** {@inheritDoc} */

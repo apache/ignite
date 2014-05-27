@@ -7,8 +7,9 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.security;
+package org.gridgain.grid.kernal.managers.security;
 
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 
 import java.net.*;

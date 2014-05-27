@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.rest;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.managers.securesession.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
