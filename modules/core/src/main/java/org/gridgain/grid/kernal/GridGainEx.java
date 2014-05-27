@@ -1122,11 +1122,17 @@ public class GridGainEx {
         /** GGFS executor service shutdown flag. */
         private boolean ggfsSvcShutdown;
 
-        /** DR executor service. */
-        private ExecutorService drExecSvc;
-
         /** REST requests executor service. */
         private ExecutorService restExecSvc;
+
+        /** Auto REST service flag. */
+        private boolean isAutoRestSvc;
+
+        /** REST executor service shutdown flag. */
+        private boolean restSvcShutdown;
+
+        /** DR executor service. */
+        private ExecutorService drExecSvc;
 
         /** Grid state. */
         private volatile GridGainState state = STOPPED;
@@ -1493,11 +1499,30 @@ public class GridGainEx {
                     new ArrayBlockingQueue<Runnable>(DFLT_GGFS_THREADPOOL_QUEUE_CAP));
             }
 
+            restExecSvc = cfg.getRestExecutorService();
+
+            if (restExecSvc != null && !cfg.isRestEnabled()) {
+                U.warn(log, "REST executor service is configured, but REST is disabled in configuration " +
+                    "(safely ignoring).");
+            }
+            else if (restExecSvc == null && cfg.isRestEnabled()) {
+                isAutoRestSvc = true;
+
+                restExecSvc = new GridThreadPoolExecutor(
+                    "rest-" + cfg.getGridName(),
+                    DFLT_SYSTEM_CORE_THREAD_CNT,
+                    DFLT_SYSTEM_MAX_THREAD_CNT,
+                    DFLT_SYSTEM_KEEP_ALIVE_TIME,
+                    new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP)
+                );
+            }
+
             execSvcShutdown = cfg.getExecutorServiceShutdown();
             sysSvcShutdown = cfg.getSystemExecutorServiceShutdown();
             mgmtSvcShutdown = cfg.getManagementExecutorServiceShutdown();
             p2pSvcShutdown = cfg.getPeerClassLoadingExecutorServiceShutdown();
             ggfsSvcShutdown = cfg.getGgfsExecutorServiceShutdown();
+            // restSvcShutdown = cfg.getRestExecutorService();
 
             if (marsh == null) {
                 if (!U.isHotSpot()) {
@@ -1839,24 +1864,6 @@ public class GridGainEx {
                 ((ThreadPoolExecutor)drExecSvc).prestartAllCoreThreads();
             }
 
-            if (cfg.isRestEnabled()) {
-                restExecSvc = cfg.getRestExecutorService();
-
-                if (restExecSvc == null) {
-                    restExecSvc = new GridThreadPoolExecutor(
-                        "rest-" + cfg.getGridName(),
-                        DFLT_SYSTEM_CORE_THREAD_CNT,
-                        DFLT_SYSTEM_MAX_THREAD_CNT,
-                        DFLT_SYSTEM_KEEP_ALIVE_TIME,
-                        new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP)
-                    );
-                }
-            }
-            else {
-                if (restExecSvc != null)
-                    U.warn(log, "Configuration of REST executor service ignored (REST access is disabled).");
-            }
-
             // Ensure that SPIs support multiple grid instances, if required.
             if (!startCtx.single()) {
                 ensureMultiInstanceSupport(deploySpi);
@@ -2087,16 +2094,16 @@ public class GridGainEx {
                 ggfsExecSvc = null;
             }
 
+            if (isAutoRestSvc || restSvcShutdown) {
+                U.shutdownNow(getClass(), restExecSvc, log);
+
+                restExecSvc = null;
+            }
+
             if (drExecSvc != null) {
                 U.shutdownNow(getClass(), drExecSvc, log);
 
                 drExecSvc = null;
-            }
-
-            if (restExecSvc != null) {
-                U.shutdownNow(getClass(), restExecSvc, log);
-
-                restExecSvc = null;
             }
         }
 
