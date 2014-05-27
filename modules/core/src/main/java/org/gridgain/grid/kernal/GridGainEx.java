@@ -1562,6 +1562,7 @@ public class GridGainEx {
             myCfg.setManagementExecutorService(mgmtExecSvc);
             myCfg.setPeerClassLoadingExecutorService(p2pExecSvc);
             myCfg.setGgfsExecutorService(ggfsExecSvc);
+            myCfg.setRestExecutorService(restExecSvc);
             myCfg.setExecutorServiceShutdown(execSvcShutdown);
             myCfg.setSystemExecutorServiceShutdown(sysSvcShutdown);
             myCfg.setManagementExecutorServiceShutdown(mgmtSvcShutdown);
