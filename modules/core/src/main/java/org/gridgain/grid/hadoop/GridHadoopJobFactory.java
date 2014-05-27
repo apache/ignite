@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.hadoop;
 
+import org.gridgain.grid.*;
+
 /**
  * Job factory.
  */
@@ -20,5 +22,5 @@ public interface GridHadoopJobFactory {
      * @param jobInfo Job information.
      * @return Job instance.
      */
-    public GridHadoopJob createJob(GridHadoopJobId id, GridHadoopJobInfo jobInfo);
+    public GridHadoopJob createJob(GridHadoopJobId id, GridHadoopJobInfo jobInfo) throws GridException;
 }

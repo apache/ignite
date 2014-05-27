@@ -44,7 +44,6 @@ public class GridHadoopTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridHadoopExternalTaskExecutionSelfTest.class));
         suite.addTest(new TestSuite(GridHadoopExternalCommunicationSelfTest.class));
 
-
         return suite;
     }
 }

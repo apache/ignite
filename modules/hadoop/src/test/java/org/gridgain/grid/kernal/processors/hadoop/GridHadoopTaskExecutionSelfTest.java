@@ -72,6 +72,11 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        grid(0).ggfs(ggfsName).format().get();
+    }
+
+    /** {@inheritDoc} */
     @Override public GridHadoopConfiguration hadoopConfiguration(String gridName) {
         GridHadoopConfiguration cfg = super.hadoopConfiguration(gridName);
 
@@ -106,7 +111,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         job.setInputFormatClass(TextInputFormat.class);
 
         FileInputFormat.setInputPaths(job, new Path("ggfs://ipc/"));
-        FileOutputFormat.setOutputPath(job, new Path("ggfs://ipc/"));
+        FileOutputFormat.setOutputPath(job, new Path("ggfs://ipc/output/"));
 
         job.setJarByClass(getClass());
 
@@ -149,7 +154,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         job.setInputFormatClass(TextInputFormat.class);
 
         FileInputFormat.setInputPaths(job, new Path("ggfs://ipc/"));
-        FileOutputFormat.setOutputPath(job, new Path("ggfs://ipc/"));
+        FileOutputFormat.setOutputPath(job, new Path("ggfs://ipc/output"));
 
         job.setJarByClass(getClass());
 

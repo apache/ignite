@@ -308,6 +308,11 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
         @Override public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo) {
             return new HadoopTestTask(taskInfo);
         }
+
+        /** {@inheritDoc} */
+        @Override public void validate() throws GridException {
+            // No-op.
+        }
     }
 
     /**

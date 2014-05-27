@@ -157,6 +157,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         try {
             GridHadoopJob job = ctx.jobFactory().createJob(jobId, info);
 
+            job.validate();
+
             Collection<GridHadoopInputSplit> splits = job.input();
 
             GridHadoopMapReducePlan mrPlan = mrPlanner.preparePlan(splits, ctx.nodes(), job, null);
@@ -470,11 +472,12 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             JobLocalState state = activeJobs.get(jobId);
 
-            GridHadoopJob job = ctx.jobFactory().createJob(jobId, meta.jobInfo());
+            GridHadoopJob job;
 
-            GridHadoopMapReducePlan plan = meta.mapReducePlan();
 
             try {
+                job = ctx.jobFactory().createJob(jobId, meta.jobInfo());
+
                 ctx.taskExecutor().onJobStateChanged(job, meta);
             }
             catch (GridException e) {
@@ -485,6 +488,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                 continue;
             }
+
+            GridHadoopMapReducePlan plan = meta.mapReducePlan();
 
             switch (meta.phase()) {
                 case PHASE_MAP: {
