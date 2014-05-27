@@ -22,5 +22,7 @@ public enum GridSecurityPermission {
 
     CACHE_REMOVE,
 
-    TASK_EXECUTE
+    TASK_EXECUTE,
+
+    TASK_CANCEL
 }
