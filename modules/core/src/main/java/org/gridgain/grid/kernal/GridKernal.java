@@ -1396,7 +1396,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         sysExecSvcMBean = registerExecutorMBean(cfg.getSystemExecutorService(), "GridSystemExecutor");
         mgmtExecSvcMBean = registerExecutorMBean(cfg.getManagementExecutorService(), "GridManagementExecutor");
         p2PExecSvcMBean = registerExecutorMBean(cfg.getPeerClassLoadingExecutorService(), "GridClassLoadingExecutor");
-        restExecSvcMBean = registerExecutorMBean(cfg.getRestExecutorService(), "GridRestExecutor");
+        restExecSvcMBean = cfg.getRestExecutorService() != null ?
+            registerExecutorMBean(cfg.getRestExecutorService(), "GridRestExecutor") : null;
     }
 
     /**
@@ -1406,6 +1407,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      * @throws GridException If registration failed.
      */
     private ObjectName registerExecutorMBean(ExecutorService exec, String name) throws GridException {
+        assert exec != null;
+
         try {
             ObjectName res = U.registerMBean(
                 cfg.getMBeanServer(),
