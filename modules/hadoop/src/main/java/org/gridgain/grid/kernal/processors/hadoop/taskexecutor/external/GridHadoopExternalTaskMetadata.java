@@ -19,6 +19,7 @@ import java.util.*;
  */
 public class GridHadoopExternalTaskMetadata {
     /** Process classpath. */
+    @GridToStringInclude
     private Collection<String> classpath;
 
     /** JVM options. */

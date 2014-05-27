@@ -542,12 +542,13 @@ public class GridHadoopExternalCommunication {
             throw new GridException("Failed to initialize local address: " + locAddr, e);
         }
 
-        try {
-            shmemSrv = resetShmemServer();
-        }
-        catch (GridException e) {
-            U.warn(log, "Failed to start shared memory communication server.", e);
-        }
+        // TODO: Enable.
+//        try {
+//            shmemSrv = resetShmemServer();
+//        }
+//        catch (GridException e) {
+//            U.warn(log, "Failed to start shared memory communication server.", e);
+//        }
 
         try {
             // This method potentially resets local port to the value
