@@ -10,15 +10,14 @@
 package org.gridgain.grid.kernal.processors.hadoop;
 
 import com.google.common.base.*;
-import org.apache.commons.io.*;
 import org.apache.hadoop.io.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.examples.*;
 
 import java.io.*;
 import java.net.*;
-import java.nio.file.*;
 import java.util.*;
 
 /**
@@ -48,42 +47,51 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
      *
      * @throws Exception If fails.
      */
+    @SuppressWarnings("ConstantConditions")
     public void testMapTask() throws Exception {
-        File testInputFile = File.createTempFile(GridHadoopWordCount2.class.getSimpleName(), "-input");
+        GridGgfsPath inDir = new GridGgfsPath(PATH_INPUT);
 
-        testInputFile.deleteOnExit();
+        ggfs.mkdirs(inDir);
 
-        URI testInputFileURI = URI.create(testInputFile.getAbsolutePath());
+        GridGgfsPath inFile = new GridGgfsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
 
-        PrintWriter testInputFileWriter = new PrintWriter(testInputFile);
+        URI inFileUri = URI.create(GGFS_SCHEME + inFile.toString());
 
-        testInputFileWriter.println("hello0 world0");
-        testInputFileWriter.println("world1 hello1");
-        testInputFileWriter.flush();
+        try (PrintWriter pw = new PrintWriter(ggfs.create(inFile, true))) {
+            pw.println("hello0 world0");
+            pw.println("world1 hello1");
+        }
 
-        GridHadoopFileBlock fileBlock1 = new GridHadoopFileBlock(HOSTS, testInputFileURI, 0, testInputFile.length() - 1);
+        GridHadoopFileBlock fileBlock1 = new GridHadoopFileBlock(HOSTS, inFileUri, 0, ggfs.info(inFile).length() - 1);
 
-        testInputFileWriter.println("hello2 world2");
-        testInputFileWriter.println("world3 hello3");
-        testInputFileWriter.close();
+        try (PrintWriter pw = new PrintWriter(ggfs.append(inFile, false))) {
+            pw.println("hello2 world2");
+            pw.println("world3 hello3");
+        }
+        GridHadoopFileBlock fileBlock2 = new GridHadoopFileBlock(HOSTS, inFileUri, fileBlock1.length(),
+                ggfs.info(inFile).length() - fileBlock1.length());
 
-        GridHadoopFileBlock fileBlock2 =
-                new GridHadoopFileBlock(HOSTS, testInputFileURI, fileBlock1.length(), testInputFile.length() - fileBlock1.length());
-
-        GridHadoopJob gridJob = getHadoopJob(testInputFileURI.toString(), "/");
+        GridHadoopJob gridJob = getHadoopJob(GGFS_SCHEME + inFile.toString(), GGFS_SCHEME + PATH_OUTPUT);
 
         GridHadoopTestTaskContext ctx = new GridHadoopTestTaskContext(gridJob);
 
         ctx.mockOutput().clear();
-        GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.MAP, gridJob.id(), 0, 0, fileBlock1);
+
+        GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.MAP, gridJob.id(), 0, 0,
+            fileBlock1);
+
         GridHadoopTask task = gridJob.createTask(taskInfo);
+
         task.run(ctx);
 
         assertEquals("hello0,1; world0,1; world1,1; hello1,1", Joiner.on("; ").join(ctx.mockOutput()));
 
         ctx.mockOutput().clear();
+
         taskInfo = new GridHadoopTaskInfo (null, GridHadoopTaskType.MAP, gridJob.id(), 0, 0, fileBlock2);
+
         task = gridJob.createTask(taskInfo);
+
         task.run(ctx);
 
         assertEquals("hello2,1; world2,1; world3,1; hello3,1", Joiner.on("; ").join(ctx.mockOutput()));
@@ -126,33 +134,24 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
      * @throws Exception If fails.
      */
     public void testReduceTask() throws Exception {
-        Path outputDir = Files.createTempDirectory(GridHadoopWordCount2.class.getSimpleName() + "-output");
+        GridHadoopJob gridJob = getHadoopJob(GGFS_SCHEME + PATH_INPUT, GGFS_SCHEME + PATH_OUTPUT);
 
-        try {
-            URI testOutputDirURI = outputDir.toUri();
+        runTaskWithInput(gridJob, GridHadoopTaskType.REDUCE, 0, "word1", "5", "word2", "10");
+        runTaskWithInput(gridJob, GridHadoopTaskType.REDUCE, 1, "word3", "7", "word4", "15");
 
-            GridHadoopJob gridJob = getHadoopJob("/", testOutputDirURI.toString());
+        assertEquals(
+            "word1\t5\n" +
+            "word2\t10\n",
+            readAndSortFile(PATH_OUTPUT + "/_temporary/0/task_00000000-0000-0000-0000-000000000000_0000_r_000000/" +
+                    getOutputFileNamePrefix() + "00000")
+        );
 
-            runTaskWithInput(gridJob, GridHadoopTaskType.REDUCE, 0, "word1", "5", "word2", "10");
-            runTaskWithInput(gridJob, GridHadoopTaskType.REDUCE, 1, "word3", "7", "word4", "15");
-
-            assertEquals(
-                "word1\t5\n" +
-                "word2\t10\n",
-                readAndSortFile(outputDir + "/_temporary/0/task_00000000-0000-0000-0000-000000000000_0000_r_000000/" +
-                        getOutputFileNamePrefix() + "00000")
-            );
-
-            assertEquals(
-                "word3\t7\n" +
-                "word4\t15\n",
-                readAndSortFile(outputDir + "/_temporary/0/task_00000000-0000-0000-0000-000000000000_0000_r_000001/" +
-                        getOutputFileNamePrefix() + "00001")
-            );
-        }
-        finally {
-            FileUtils.deleteDirectory(outputDir.toFile());
-        }
+        assertEquals(
+            "word3\t7\n" +
+            "word4\t15\n",
+            readAndSortFile(PATH_OUTPUT + "/_temporary/0/task_00000000-0000-0000-0000-000000000000_0000_r_000001/" +
+                    getOutputFileNamePrefix() + "00001")
+        );
     }
 
     /**
@@ -207,56 +206,56 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
      *
      * @throws Exception If fails.
      */
+    @SuppressWarnings("ConstantConditions")
     public void testAllTasks() throws Exception {
-        Path outputDir = Files.createTempDirectory(GridHadoopWordCount2.class.getSimpleName() + "-output");
+        GridGgfsPath inDir = new GridGgfsPath(PATH_INPUT);
 
-        try {
-            URI testOutputDirURI = URI.create(outputDir.toString());
+        ggfs.mkdirs(inDir);
 
-            File testInputFile = File.createTempFile(GridHadoopWordCount2.class.getSimpleName(), "-input");
-            testInputFile.deleteOnExit();
+        GridGgfsPath inFile = new GridGgfsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
 
-            URI testInputFileURI = URI.create(testInputFile.getAbsolutePath());
+        URI inFileUri = URI.create(GGFS_SCHEME + inFile.toString());
 
-            generateTestFile(testInputFile, "red", 100, "blue", 200, "green", 150, "yellow", 70);
+        generateTestFile(inFile.toString(), "red", 100, "blue", 200, "green", 150, "yellow", 70);
 
-            //Split file into two blocks
-            Long l = testInputFile.length() / 2;
-            GridHadoopFileBlock fileBlock1 = new GridHadoopFileBlock(HOSTS, testInputFileURI, 0, l);
-            GridHadoopFileBlock fileBlock2 = new GridHadoopFileBlock(HOSTS, testInputFileURI, l, testInputFile.length() - l);
+        //Split file into two blocks
+        long fileLen = ggfs.info(inFile).length();
 
-            GridHadoopJob gridJob = getHadoopJob(testInputFileURI.toString(), testOutputDirURI.toString());
+        Long l = fileLen / 2;
 
-            GridHadoopTestTaskContext combine1Ctx = runMapCombineTask(fileBlock1, gridJob);
+        GridHadoopFileBlock fileBlock1 = new GridHadoopFileBlock(HOSTS, inFileUri, 0, l);
+        GridHadoopFileBlock fileBlock2 = new GridHadoopFileBlock(HOSTS, inFileUri, l, fileLen - l);
 
-            GridHadoopTestTaskContext combine2Ctx = runMapCombineTask(fileBlock2, gridJob);
+        GridHadoopJob gridJob = getHadoopJob(GGFS_SCHEME + inFileUri.toString(), GGFS_SCHEME + PATH_OUTPUT);
 
-            //Prepare input for combine
-            GridHadoopTestTaskContext reduceCtx = new GridHadoopTestTaskContext(gridJob);
-            reduceCtx.makeTreeOfWritables(combine1Ctx.mockOutput());
-            reduceCtx.makeTreeOfWritables(combine2Ctx.mockOutput());
+        GridHadoopTestTaskContext combine1Ctx = runMapCombineTask(fileBlock1, gridJob);
 
-            GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.REDUCE, gridJob.id(), 0, 0, null);
-            GridHadoopTask task = gridJob.createTask(taskInfo);
+        GridHadoopTestTaskContext combine2Ctx = runMapCombineTask(fileBlock2, gridJob);
 
-            task.run(reduceCtx);
+        //Prepare input for combine
+        GridHadoopTestTaskContext reduceCtx = new GridHadoopTestTaskContext(gridJob);
 
-            taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.COMMIT, gridJob.id(), 0, 0, null);
-            task = gridJob.createTask(taskInfo);
+        reduceCtx.makeTreeOfWritables(combine1Ctx.mockOutput());
+        reduceCtx.makeTreeOfWritables(combine2Ctx.mockOutput());
 
-            task.run(reduceCtx);
+        GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.REDUCE, gridJob.id(), 0, 0, null);
 
-            assertEquals(
-                "blue\t200\n" +
+        GridHadoopTask task = gridJob.createTask(taskInfo);
+
+        task.run(reduceCtx);
+
+        taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.COMMIT, gridJob.id(), 0, 0, null);
+
+        task = gridJob.createTask(taskInfo);
+
+        task.run(reduceCtx);
+
+        assertEquals(
+            "blue\t200\n" +
                 "green\t150\n" +
                 "red\t100\n" +
                 "yellow\t70\n",
-                readAndSortFile(outputDir + "/" + getOutputFileNamePrefix() + "00000")
-            );
-        }
-        finally {
-            FileUtils.deleteDirectory(outputDir.toFile());
-        }
+            readAndSortFile(PATH_OUTPUT + "/" + getOutputFileNamePrefix() + "00000")
+        );
     }
-
 }

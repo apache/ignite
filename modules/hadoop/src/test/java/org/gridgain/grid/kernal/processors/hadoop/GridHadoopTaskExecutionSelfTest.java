@@ -106,6 +106,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         job.setInputFormatClass(TextInputFormat.class);
 
         FileInputFormat.setInputPaths(job, new Path("ggfs://ipc/"));
+        FileOutputFormat.setOutputPath(job, new Path("ggfs://ipc/"));
 
         job.setJarByClass(getClass());
 
@@ -229,6 +230,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    // TODO: Hangs.
     public void testTaskCancelling() throws Exception {
         int lineCnt = 10000;
         String fileName = "/testFile";
@@ -241,7 +243,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         Configuration cfg = new Configuration();
 
-        cfg.setStrings("fs.ggfs.impl", GridGgfsHadoopFileSystem.class.getName());
+        cfg.set("fs.ggfs.impl", GridGgfsHadoopFileSystem.class.getName());
 
         Job job = Job.getInstance(cfg);
         job.setOutputKeyClass(Text.class);

@@ -32,6 +32,10 @@ public class GridHadoopTasksV1Test extends GridHadoopTasksAllVersionsTest {
     @Override public GridHadoopJob getHadoopJob(String inFile, String outFile) throws Exception {
         JobConf hadoopJob = GridHadoopWordCount1.getJob(inFile, outFile);
 
+        hadoopJob.set("fs.default.name", GGFS_SCHEME);
+        hadoopJob.set("fs.ggfs.impl", "org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem");
+        hadoopJob.set("fs.AbstractFileSystem.ggfs.impl", "org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem");
+
         GridHadoopDefaultJobInfo jobInfo = new GridHadoopDefaultJobInfo(hadoopJob);
 
         GridHadoopJobId jobId = new GridHadoopJobId(new UUID(0, 0), 0);
@@ -44,25 +48,5 @@ public class GridHadoopTasksV1Test extends GridHadoopTasksAllVersionsTest {
     /** {@inheritDoc} */
     @Override public String getOutputFileNamePrefix() {
         return "part-";
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testMapTask() throws Exception {
-        super.testMapTask();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testReduceTask() throws Exception {
-        super.testReduceTask();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testCombinerTask() throws Exception {
-        super.testCombinerTask();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testAllTasks() throws Exception {
-        super.testAllTasks();
     }
 }

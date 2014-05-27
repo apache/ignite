@@ -25,7 +25,7 @@ public class GridHadoopTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Gridgain Hadoop MR Test Suite");
 
-        suite.addTest(new TestSuite(GridHadoopDefaultMapReducePlannerSelfTest .class));
+        suite.addTest(new TestSuite(GridHadoopDefaultMapReducePlannerSelfTest.class));
         suite.addTest(new TestSuite(GridHadoopJobTrackerSelfTest.class));
         suite.addTest(new TestSuite(GridHadoopMultimapSelftest.class));
         suite.addTest(new TestSuite(GridHadoopTaskExecutionSelfTest.class)); // TODO: Hangs.
@@ -35,11 +35,11 @@ public class GridHadoopTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridHadoopSerializationWrapperSelfTest.class));
         suite.addTest(new TestSuite(GridHadoopSplitWrapperSelfTest.class));
 
-        suite.addTest(new TestSuite(GridHadoopTasksV1Test.class)); // TODO: Fails.
-        suite.addTest(new TestSuite(GridHadoopTasksV2Test.class)); // TODO: Fails.
+        suite.addTest(new TestSuite(GridHadoopTasksV1Test.class));
+        suite.addTest(new TestSuite(GridHadoopTasksV2Test.class));
 
-        suite.addTest(new TestSuite(GridHadoopMapReduceTest.class)); // TODO: Fails.
-        suite.addTest(new TestSuite(GridHadoopMapReduceEmbeddedSelfTest.class)); // TODO: Fails.
+        suite.addTest(new TestSuite(GridHadoopMapReduceTest.class));
+        suite.addTest(new TestSuite(GridHadoopMapReduceEmbeddedSelfTest.class));
 
         suite.addTest(new TestSuite(GridHadoopExternalTaskExecutionSelfTest.class));
         suite.addTest(new TestSuite(GridHadoopExternalCommunicationSelfTest.class));
