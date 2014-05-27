@@ -227,6 +227,8 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
                 }
             }
         });
+
+        return f;
     }
 
     /**
@@ -245,8 +247,6 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
 
             return null;
         }
-
-        return f;
     }
 
     /**
