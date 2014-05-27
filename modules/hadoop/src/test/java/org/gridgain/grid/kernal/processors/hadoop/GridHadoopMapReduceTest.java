@@ -38,10 +38,14 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+
+        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGrids(gridCount());
     }
 
