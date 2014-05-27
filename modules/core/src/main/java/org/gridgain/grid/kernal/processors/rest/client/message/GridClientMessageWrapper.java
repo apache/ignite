@@ -1,83 +1,103 @@
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.direct.*;
 
 import java.nio.*;
 import java.util.*;
 
 /**
+ * Client message wrapper for direct marshalling.
  */
 public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter {
-    /** Request header. */
+    /** Client request header. */
     public static final byte REQ_HEADER = (byte)0x90;
 
-    @GridDirectVersion(1)
+    /** */
     private int msgSize;
 
-    @GridDirectVersion(2)
+    /** */
     private long reqId;
 
-    @GridDirectVersion(3)
+    /** */
     private UUID clientId;
 
-    @GridDirectVersion(4)
+    /** */
     private UUID destId;
 
-    @GridDirectVersion(5)
+    /** */
     private byte[] msg;
 
-    @GridDirectTransient
-    private GridClientMessage clientMsg;
-
-    public long getReqId() {
+    /**
+     * @return Request ID.
+     */
+    public long requestId() {
         return reqId;
     }
 
-    public void setReqId(long reqId) {
+    /**
+     * @param reqId Request ID.
+     */
+    public void requestId(long reqId) {
         this.reqId = reqId;
     }
 
-    public int getMsgSize() {
+    /**
+     * @return Message size.
+     */
+    public int messageSize() {
         return msgSize;
     }
 
-    public void setMsgSize(int msgSize) {
+    /**
+     * @param msgSize Message size.
+     */
+    public void messageSize(int msgSize) {
         this.msgSize = msgSize;
     }
 
-    public UUID getClientId() {
+    /**
+     * @return Client ID.
+     */
+    public UUID clientId() {
         return clientId;
     }
 
-    public void setClientId(UUID clientId) {
+    /**
+     * @param clientId Client ID.
+     */
+    public void clientId(UUID clientId) {
         this.clientId = clientId;
     }
 
-    public UUID getDestId() {
+    /**
+     * @return Destination ID.
+     */
+    public UUID destinationId() {
         return destId;
     }
 
-    public void setDestId(UUID destId) {
+    /**
+     * @param destId Destination ID.
+     */
+    public void destinationId(UUID destId) {
         this.destId = destId;
     }
 
-    public byte[] getMsg() {
+    /**
+     * @return Message bytes.
+     */
+    public byte[] message() {
         return msg;
     }
 
-    public void setMsg(byte[] msg) {
+    /**
+     * @param msg Message bytes.
+     */
+    public void message(byte[] msg) {
         this.msg = msg;
     }
 
-    public GridClientMessage getClientMsg() {
-        return clientMsg;
-    }
-
-    public void setClientMsg(GridClientMessage clientMsg) {
-        this.clientMsg = clientMsg;
-    }
-
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf) {
         commState.setBuffer(buf);
 
@@ -124,6 +144,7 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf) {
         commState.setBuffer(buf);
 
@@ -178,10 +199,13 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public byte directType() {
         return REQ_HEADER;
     }
 
+    /** {@inheritDoc} */
+    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public GridTcpCommunicationMessageAdapter clone() {
         GridClientMessageWrapper _clone = new GridClientMessageWrapper();
 
@@ -190,6 +214,7 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
         return _clone;
     }
 
+    /** {@inheritDoc} */
     @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
         GridClientMessageWrapper _clone = (GridClientMessageWrapper)_msg;
 

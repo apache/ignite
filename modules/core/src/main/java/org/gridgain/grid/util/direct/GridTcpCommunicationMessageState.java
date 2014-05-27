@@ -82,6 +82,9 @@ public class GridTcpCommunicationMessageState {
     private static final boolean[] BOOLEAN_ARR_EMPTY = new boolean[0];
 
     /** */
+    private static final byte[] EMPTY_UUID_BYTES = new byte[16];
+
+    /** */
     private static final ArrayCreator<byte[]> BYTE_ARR_CREATOR = new ArrayCreator<byte[]>() {
         @Override public byte[] create(int len) {
             switch (len) {
@@ -1459,7 +1462,7 @@ public class GridTcpCommunicationMessageState {
      * @return Whether value was fully written.
      */
     public final boolean putUuidClient(@Nullable UUID uuid) {
-        byte[] arr = null;
+        byte[] arr;
 
         if (uuid != null) {
             arr = new byte[16];
@@ -1468,7 +1471,7 @@ public class GridTcpCommunicationMessageState {
             UNSAFE.putLong(arr, BYTE_ARR_OFF + 8, uuid.getLeastSignificantBits());
         }
         else
-            arr = new byte[16];
+            arr = EMPTY_UUID_BYTES;
 
         return putByteArrayClient(arr);
     }

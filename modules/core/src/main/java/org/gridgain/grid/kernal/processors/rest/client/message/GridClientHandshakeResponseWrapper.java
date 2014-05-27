@@ -4,16 +4,28 @@ import org.gridgain.grid.util.direct.*;
 
 import java.nio.*;
 
+/**
+ * Client handshake wrapper for direct marshalling.
+ */
 public class GridClientHandshakeResponseWrapper extends GridTcpCommunicationMessageAdapter {
-    byte code;
+    /** */
+    private byte code;
 
+    /**
+     *
+     */
     public GridClientHandshakeResponseWrapper() {
+        // No-op.
     }
 
+    /**
+     * @param code Response code.
+     */
     public GridClientHandshakeResponseWrapper(byte code) {
         this.code = code;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf) {
         commState.setBuffer(buf);
 
@@ -27,16 +39,20 @@ public class GridClientHandshakeResponseWrapper extends GridTcpCommunicationMess
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf) {
         commState.setBuffer(buf);
 
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public byte directType() {
         return code;
     }
 
+    /** {@inheritDoc} */
+    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public GridTcpCommunicationMessageAdapter clone() {
         GridClientHandshakeResponseWrapper _clone = new GridClientHandshakeResponseWrapper();
 
@@ -45,6 +61,7 @@ public class GridClientHandshakeResponseWrapper extends GridTcpCommunicationMess
         return _clone;
     }
 
+    /** {@inheritDoc} */
     @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
         GridClientHandshakeResponseWrapper _clone = (GridClientHandshakeResponseWrapper)_msg;
 

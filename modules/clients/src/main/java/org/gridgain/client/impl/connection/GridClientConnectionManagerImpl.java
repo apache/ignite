@@ -14,10 +14,8 @@ import org.gridgain.client.impl.*;
 import org.gridgain.client.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
-import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.logger.java.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.typedef.*;
@@ -35,8 +33,6 @@ import java.util.logging.*;
 import static java.util.logging.Level.*;
 import static org.gridgain.client.impl.connection.GridClientConnectionCloseReason.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
-import static org.gridgain.grid.kernal.processors.rest.protocols.tcp.GridClientPacketType.*;
-import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
 
 /**
  * Cached connections manager.
@@ -204,11 +200,13 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
                     .filters(filters)
                     .logger(gridLog)
                     .selectorCount(Runtime.getRuntime().availableProcessors())
-                    .sendQueueLimit(0)
+                    .sendQueueLimit(1024)
                     .byteOrder(ByteOrder.nativeOrder())
                     .tcpNoDelay(cfg.isTcpNoDelay())
                     .directBuffer(true)
                     .directMode(true)
+                    .socketReceiveBufferSize(0)
+                    .socketSendBufferSize(0)
                     .idleTimeout(TCP_IDLE_CONN_TIMEOUT)
                     .gridName("gridClient")
                     .messageWriter(msgWriter)
@@ -590,8 +588,6 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
             GridClientFutureAdapter<Boolean> handshakeFut =
                 ses.removeMeta(GridClientNioTcpConnection.SES_META_HANDSHAKE);
 
-            //System.out.println("Client message " + msg);
-
             if (handshakeFut != null) {
                 assert msg instanceof GridClientHandshakeResponse;
 
@@ -605,7 +601,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
                 if (msg instanceof GridClientMessageWrapper) {
                     GridClientMessageWrapper reqData = (GridClientMessageWrapper)msg;
 
-                    assert reqData.getMsg() != null;
+                    assert reqData.message() != null;
 
                     conn.handleResponse(reqData);
                 }
@@ -653,22 +649,20 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
         }
     }
 
-
-
-    /** Message metadata key. */
-    private static final int MSG_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
-
     /**
      *
      */
-    private class NioParser implements GridNioParser {
+    private static class NioParser implements GridNioParser {
+        /** Message metadata key. */
+        private static final int MSG_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+
         /** Message reader. */
         private final GridNioMessageReader msgReader;
 
         /**
          * @param msgReader Message reader.
          */
-        public NioParser(GridNioMessageReader msgReader) {
+        NioParser(GridNioMessageReader msgReader) {
             this.msgReader = msgReader;
         }
 
@@ -683,7 +677,6 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
             }
 
             GridTcpCommunicationMessageAdapter msg = ses.removeMeta(MSG_META_KEY);
-            UUID nodeId = ses.meta(GridNioServer.DIFF_VER_NODE_ID_META_KEY);
 
             if (msg == null && buf.hasRemaining()) {
                 byte type = buf.get();
@@ -695,7 +688,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
             boolean finished = false;
 
             if (buf.hasRemaining())
-                finished = msgReader.read(nodeId, msg, buf);
+                finished = msgReader.read(null, msg, buf);
 
             if (finished)
                 return msg;
@@ -710,77 +703,6 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
         @Override public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, GridException {
             // No encoding needed for direct messages.
             throw new UnsupportedEncodingException();
-        }
-    }
-
-    /**
-     * Holder for parser state and temporary buffer.
-     */
-    private static class ParserState {
-        /** Parser index. */
-        private int idx;
-
-        /** Temporary data buffer. */
-        private ByteArrayOutputStream buf = new ByteArrayOutputStream();
-
-        /** Packet type. */
-        private GridClientPacketType packetType;
-
-        /** Request data. */
-        private GridClientRequestData reqData;
-
-        /**
-         * @return Stored parser index.
-         */
-        public int index() {
-            return idx;
-        }
-
-        /**
-         * @param idx Index to store.
-         */
-        public void index(int idx) {
-            this.idx = idx;
-        }
-
-        /**
-         * @return Temporary data buffer.
-         */
-        public ByteArrayOutputStream buffer() {
-            return buf;
-        }
-
-        /**
-         * @return Pending packet type.
-         */
-        public GridClientPacketType packetType() {
-            return packetType;
-        }
-
-        /**
-         * @param packetType Pending packet type.
-         */
-        public void packetType(GridClientPacketType packetType) {
-            this.packetType = packetType;
-        }
-
-        /**
-         * @return Request data.
-         */
-        public GridClientRequestData requestData() {
-            return reqData;
-        }
-
-        /**
-         * @param reqData Request data.
-         */
-        public void requestData(GridClientRequestData reqData) {
-            this.reqData = reqData;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(ParserState.class, this);
         }
     }
 }
