@@ -9,12 +9,16 @@
 
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
+import org.gridgain.client.marshaller.*;
+import org.gridgain.client.marshaller.protobuf.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.*;
+import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -28,6 +32,8 @@ import java.net.*;
 import java.nio.*;
 import java.util.*;
 
+import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
+
 /**
  * TCP binary protocol implementation.
  */
@@ -35,15 +41,11 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     /** Server. */
     private GridNioServer<GridClientMessage> srv;
 
-    /** @param ctx Context. */
-    public GridTcpRestProtocol(GridKernalContext ctx) {
-        super(ctx);
-    }
+    /** JDK marshaller. */
+    private final GridMarshaller jdkMarshaller = new GridJdkMarshaller();
 
-    /** {@inheritDoc} */
-    @Override public String name() {
-        return "TCP binary";
-    }
+    /** Protobuf marshaller. */
+    private final GridClientMarshaller protobufMarshaller = new GridClientProtobufMarshaller();
 
     /** Message reader. */
     private final GridNioMessageReader msgReader = new GridNioMessageReader() {
@@ -53,11 +55,83 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
             msg.messageReader(this, nodeId);
 
-            boolean finished = msg.readFrom(buf);
-
-            return finished;
+            return msg.readFrom(buf);
         }
     };
+
+    /** Message writer. */
+    private final GridNioMessageWriter msgWriter = new GridNioMessageWriter() {
+        @Override public boolean write(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf) {
+            assert msg != null;
+            assert buf != null;
+
+            msg.messageWriter(this, nodeId);
+
+            return msg.writeTo(buf);
+        }
+
+        @Override public int writeFully(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, OutputStream out,
+            ByteBuffer buf) throws IOException {
+            assert msg != null;
+            assert out != null;
+            assert buf != null;
+            assert buf.hasArray();
+
+            msg.messageWriter(this, nodeId);
+
+            boolean finished = false;
+            int cnt = 0;
+
+            while (!finished) {
+                finished = msg.writeTo(buf);
+
+                out.write(buf.array(), 0, buf.position());
+
+                cnt += buf.position();
+
+                buf.clear();
+            }
+
+            return cnt;
+        }
+    };
+
+    /** @param ctx Context. */
+    public GridTcpRestProtocol(GridKernalContext ctx) {
+        super(ctx);
+    }
+
+    /**
+     * @return JDK marshaller.
+     */
+    GridMarshaller jdkMarshaller() {
+        return jdkMarshaller;
+    }
+
+    /**
+     * Returns marshaller from session, if no marshaller found - init it with default.
+     *
+     * @param ses Current session.
+     * @return Current session's marshaller.
+     */
+    GridClientMarshaller marshaller(GridNioSession ses) {
+        GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
+
+        if (marsh == null) {
+            U.warn(log, "No marshaller defined for NIO session, using PROTOBUF as default [ses=" + ses + ']');
+
+            marsh = protobufMarshaller;
+
+            ses.addMeta(MARSHALLER.ordinal(), marsh);
+        }
+
+        return marsh;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return "TCP binary";
+    }
 
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
@@ -66,9 +140,9 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
         GridConfiguration cfg = ctx.config();
 
-        GridNioServerListener<GridClientMessage> lsnr = new GridTcpRestNioListener(log, hnd);
+        GridNioServerListener<GridClientMessage> lsnr = new GridTcpRestNioListener(log, this, hnd);
 
-        GridNioParser parser = new GridTcpRestDirectParser(msgReader);
+        GridNioParser parser = new GridTcpRestDirectParser(this, msgReader);
 
         try {
             host = resolveRestTcpHost(cfg);
@@ -138,45 +212,6 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
         return U.resolveLocalHost(host);
     }
-
-    /** Message writer. */
-    private final GridNioMessageWriter msgWriter = new GridNioMessageWriter() {
-        @Override public boolean write(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf) {
-            assert msg != null;
-            assert buf != null;
-
-            msg.messageWriter(this, nodeId);
-
-            boolean finished = msg.writeTo(buf);
-
-            return finished;
-        }
-
-        @Override public int writeFully(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, OutputStream out,
-            ByteBuffer buf) throws IOException {
-            assert msg != null;
-            assert out != null;
-            assert buf != null;
-            assert buf.hasArray();
-
-            msg.messageWriter(this, nodeId);
-
-            boolean finished = false;
-            int cnt = 0;
-
-            while (!finished) {
-                finished = msg.writeTo(buf);
-
-                out.write(buf.array(), 0, buf.position());
-
-                cnt += buf.position();
-
-                buf.clear();
-            }
-
-            return cnt;
-        }
-    };
 
     /**
      * Tries to start server with given parameters.

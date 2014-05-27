@@ -15,6 +15,7 @@ import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
 import org.jdk8.backport.*;
@@ -713,6 +714,7 @@ public class GridNioServer<T> {
          * @param key Key that is ready to be written.
          * @throws IOException If write failed.
          */
+        @SuppressWarnings("ForLoopReplaceableByForEach")
         @Override protected void processWrite(SelectionKey key) throws IOException {
             WritableByteChannel sockCh = (WritableByteChannel)key.channel();
 
@@ -720,6 +722,8 @@ public class GridNioServer<T> {
             ByteBuffer buf = ses.writeBuffer();
             NioOperationFuture<?> req = ses.removeMeta(NIO_OPERATION.ordinal());
             UUID nodeId = ses.meta(DIFF_VER_NODE_ID_META_KEY);
+
+            List<NioOperationFuture<?>> doneFuts = null;
 
             while (true) {
                 if (req == null) {
@@ -746,6 +750,11 @@ public class GridNioServer<T> {
 
                 // Fill up as many messages as possible to write buffer.
                 while (finished) {
+                    if (doneFuts == null)
+                        doneFuts = new ArrayList<>();
+
+                    doneFuts.add(req);
+
                     req = (NioOperationFuture<?>)ses.pollFuture();
 
                     if (req == null)
@@ -765,6 +774,13 @@ public class GridNioServer<T> {
 
                 if (!skipWrite) {
                     int cnt = sockCh.write(buf);
+
+                    if (!F.isEmpty(doneFuts)) {
+                        for (int i = 0; i < doneFuts.size(); i++)
+                            doneFuts.get(i).onDone();
+
+                        doneFuts.clear();
+                    }
 
                     if (log.isTraceEnabled())
                         log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');

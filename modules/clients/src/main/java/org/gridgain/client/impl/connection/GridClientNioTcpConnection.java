@@ -168,14 +168,12 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
         pingTask = pingExecutor.scheduleAtFixedRate(new Runnable() {
             @Override public void run() {
-                /**
                 try {
                     makeRequest(GridClientPingPacket.PING_MESSAGE, null, false);
                 }
                 catch (Exception e) {
                     log.warning("Failed to send ping message: " + e);
                 }
-                 */
             }
         }, pingInterval, pingInterval, TimeUnit.MILLISECONDS);
 
@@ -312,8 +310,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      */
     private <R> GridClientFutureAdapter<R> makeRequest(GridClientMessage msg, final TcpClientFuture<R> fut,
         boolean routeMode) throws GridClientConnectionResetException, GridClientClosedException, InterruptedException {
-        //System.out.println("Client make request " + msg);
-
         assert msg != null;
 
         if (msg instanceof GridClientPingPacket) {
@@ -331,7 +327,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             else if (now - lastPingSndTime > pingInterval && lastPingRcvTime != Long.MAX_VALUE) {
                 lastPingRcvTime = Long.MAX_VALUE;
 
-                ses.send(msg);
+                ses.send(new GridClientPingPacketWrapper());
 
                 lastPingSndTime = now;
             }
@@ -354,29 +350,11 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
             assert old == null;
 
-            GridClientMessageWrapper wrapper = new GridClientMessageWrapper();
-
-            wrapper.setReqId(reqId);
-            wrapper.setClientId(clientId);
-
-            try {
-                byte[] data = marsh.marshal(msg);
-
-                wrapper.setMsg(data);
-
-                wrapper.setMsgSize(data.length + 40);
-            }
-            catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            //ChannelFuture write = ch.write(msg);
-            GridNioFuture<?> sndFut = ses.send(wrapper);
+            GridNioFuture<?> sndFut = ses.send(messageWrapper(msg));
 
             if (routeMode) {
                 sndFut.listenAsync(new CI1<GridNioFuture<?>>() {
-                    @Override
-                    public void apply(GridNioFuture<?> sndFut) {
+                    @Override public void apply(GridNioFuture<?> sndFut) {
                         try {
                             sndFut.get();
                         }
@@ -389,7 +367,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
                 });
             }
             else {
-                /*
                 try {
                     sndFut.get();
                 }
@@ -397,7 +374,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
                     throw new GridClientConnectionResetException("Failed to send message over connection " +
                         "(will try to reconnect): " + serverAddress(), e);
                 }
-                */
             }
 
             lastMsgSndTime = U.currentTimeMillis();
@@ -420,7 +396,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      * @param reqData Incoming response data.
      */
     @SuppressWarnings({"unchecked", "TooBroadScope"})
-    void handleResponse(GridClientRequestData reqData) {
+    void handleResponse(GridClientMessageWrapper reqData) {
         lastMsgRcvTime = U.currentTimeMillis();
 
         TcpClientFuture fut = pendingReqs.get(reqData.requestId());
@@ -432,7 +408,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         }
 
         if (fut.forward()) {
-            GridRouterResponse msg = new GridRouterResponse(reqData.body(),
+            GridRouterResponse msg = new GridRouterResponse(reqData.message(),
                 reqData.requestId(),
                 clientId,
                 reqData.destinationId());
@@ -445,7 +421,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             GridClientMessage msg;
 
             try {
-                msg = marsh.unmarshal(reqData.body());
+                msg = marsh.unmarshal(reqData.message());
             }
             catch (IOException e) {
                 fut.onDone(new GridClientException("Failed to unmarshal message.", e));
@@ -456,57 +432,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             msg.requestId(reqData.requestId());
             msg.clientId(reqData.clientId());
             msg.destinationId(reqData.destinationId());
-
-            if (msg instanceof GridClientResponse)
-                handleClientResponse(fut, (GridClientResponse)msg);
-            else
-                log.warning("Unsupported response type received: " + msg);
-        }
-    }
-
-    /**
-     * Handles incoming response message. If this connection is closed this method would signal empty event
-     * if there is no more pending requests.
-     *
-     * @param reqData Incoming response data.
-     */
-    @SuppressWarnings({"unchecked", "TooBroadScope"})
-    void handleResponse(GridClientMessageWrapper reqData) {
-        lastMsgRcvTime = U.currentTimeMillis();
-
-        TcpClientFuture fut = pendingReqs.get(reqData.getReqId());
-
-        if (fut == null) {
-            log.warning("Response for an unknown request is received, ignoring. Request ID: " + reqData.getReqId());
-
-            return;
-        }
-
-        if (fut.forward()) {
-            GridRouterResponse msg = new GridRouterResponse(reqData.getMsg(),
-                reqData.getReqId(),
-                clientId,
-                reqData.getDestId());
-
-            removePending(msg.requestId());
-
-            fut.onDone(msg);
-        }
-        else {
-            GridClientMessage msg;
-
-            try {
-                msg = marsh.unmarshal(reqData.getMsg());
-            }
-            catch (IOException e) {
-                fut.onDone(new GridClientException("Failed to unmarshal message.", e));
-
-                return;
-            }
-
-            msg.requestId(reqData.getReqId());
-            msg.clientId(reqData.getClientId());
-            msg.destinationId(reqData.getDestId());
 
             if (msg instanceof GridClientResponse)
                 handleClientResponse(fut, (GridClientResponse)msg);
@@ -537,7 +462,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
                     req.requestId(resp.requestId());
 
-                    ses.send(req);
+                    ses.send(messageWrapper(req));
 
                     return;
                 }
@@ -551,7 +476,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
                     src.sessionToken(sesTok);
 
-                    ses.send(src);
+                    ses.send(messageWrapper(src));
 
                     return;
                 }
@@ -569,6 +494,30 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             fut.onDone(new GridClientException(resp.errorMessage()));
         else
             fut.onDone(resp.result());
+    }
+
+    /**
+     * @param msg Client message.
+     * @return Message wrapper for direct marshalling.
+     */
+    private GridClientMessageWrapper messageWrapper(GridClientMessage msg) {
+        GridClientMessageWrapper wrapper = new GridClientMessageWrapper();
+
+        wrapper.requestId(msg.requestId());
+        wrapper.clientId(clientId);
+
+        try {
+            byte[] data = marsh.marshal(msg);
+
+            wrapper.message(data);
+
+            wrapper.messageSize(data.length + 40);
+        }
+        catch (IOException e) {
+            e.printStackTrace(); // TODO 8416.
+        }
+
+        return wrapper;
     }
 
     /**

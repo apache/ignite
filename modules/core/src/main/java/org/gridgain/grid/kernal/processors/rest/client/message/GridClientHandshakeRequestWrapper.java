@@ -4,27 +4,39 @@ import org.gridgain.grid.util.direct.*;
 
 import java.nio.*;
 
+/**
+ * Client handshake wrapper for direct marshalling.
+ */
 public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessageAdapter {
     /** Signal char. */
-    public static final byte SIGNAL_CHAR = (byte)0x91;
+    public static final byte HANDSHAKE_HEADER = (byte)0x91;
 
+    /** Handshake bytes. */
     private byte[] bytes;
 
+    /**
+     *
+     */
     public GridClientHandshakeRequestWrapper() {
+        // No-op.
     }
 
+    /**
+     *
+     * @param req Handshake request.
+     */
     public GridClientHandshakeRequestWrapper(GridClientHandshakeRequest req) {
-        bytes = new byte[5];
-
-        byte[] raw = req.rawBytes();
-
-        System.arraycopy(raw, 1, bytes, 0, bytes.length);
+        bytes = req.rawBytesNoHeader();
     }
 
-    public byte protocol() {
+    /**
+     * @return Protocol ID.
+     */
+    public byte protocolId() {
         return bytes[4];
     }
 
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf) {
         commState.setBuffer(buf);
 
@@ -47,6 +59,7 @@ public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessa
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf) {
         commState.setBuffer(buf);
 
@@ -66,10 +79,13 @@ public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessa
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public byte directType() {
-        return SIGNAL_CHAR;
+        return HANDSHAKE_HEADER;
     }
 
+    /** {@inheritDoc} */
+    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public GridTcpCommunicationMessageAdapter clone() {
         GridClientHandshakeRequestWrapper _clone = new GridClientHandshakeRequestWrapper();
 
@@ -78,6 +94,7 @@ public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessa
         return _clone;
     }
 
+    /** {@inheritDoc} */
     @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
         GridClientHandshakeRequestWrapper _clone = (GridClientHandshakeRequestWrapper)_msg;
 

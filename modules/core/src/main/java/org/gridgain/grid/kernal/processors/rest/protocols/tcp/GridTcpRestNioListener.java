@@ -32,7 +32,7 @@ import java.util.*;
 import static org.gridgain.grid.kernal.GridProductImpl.*;
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 import static org.gridgain.grid.kernal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.*;
-import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.MARSHALLER;
+import static org.gridgain.grid.kernal.processors.rest.client.message.GridClientHandshakeResponse.*;
 
 /**
  * Listener for nio server that handles incoming tcp rest packets.
@@ -40,6 +40,9 @@ import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.MARSHALLER;
 public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridClientMessage> {
     /** Logger. */
     private GridLogger log;
+
+    /** Protocol. */
+    private GridTcpRestProtocol proto;
 
     /** Protocol handler. */
     private GridRestProtocolHandler hnd;
@@ -77,12 +80,14 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
      * a given rest handler.
      *
      * @param log Logger to use.
+     * @param proto Protocol.
      * @param hnd Rest handler.
      */
-    public GridTcpRestNioListener(GridLogger log, GridRestProtocolHandler hnd) {
+    public GridTcpRestNioListener(GridLogger log, GridTcpRestProtocol proto, GridRestProtocolHandler hnd) {
         memcachedLsnr = new GridTcpMemcachedNioListener(log, hnd);
 
         this.log = log;
+        this.proto = proto;
         this.hnd = hnd;
 
         Map<Byte, GridClientMarshaller> tmpMap = new GridLeanMap<>(3);
@@ -129,7 +134,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             memcachedLsnr.onMessage(ses, (GridMemcachedMessage)msg);
         else {
             if (msg == GridClientPingPacket.PING_MESSAGE)
-                ses.send(GridClientPingPacket.PING_MESSAGE);
+                ses.send(new GridClientPingPacketWrapper());
             else if (msg instanceof GridClientHandshakeRequest) {
                 GridClientHandshakeRequest hs = (GridClientHandshakeRequest)msg;
 
@@ -145,19 +150,20 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                 if (marsh == null) {
                     log.error("No marshaller found with given protocol ID [protocolId=" + hs.protocolId() + ']');
 
-                    ses.send(GridClientHandshakeResponse.ERR_UNKNOWN_PROTO_ID).listenAsync(
+                    ses.send(new GridClientHandshakeResponseWrapper(CODE_UNKNOWN_PROTO_ID)).listenAsync(
                         new CI1<GridNioFuture<?>>() {
                             @Override public void apply(GridNioFuture<?> fut) {
                                 ses.close();
                             }
-                        });
+                        }
+                    );
 
                     return;
                 }
 
                 ses.addMeta(GridNioSessionMetaKey.MARSHALLER.ordinal(), marsh);
 
-                ses.send(new GridClientHandshakeResponseWrapper((byte)0));
+                ses.send(new GridClientHandshakeResponseWrapper(CODE_OK));
             }
             else {
                 final GridRestRequest req = createRestRequest(msg);
@@ -194,18 +200,18 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
                             GridClientMessageWrapper wrapper = new GridClientMessageWrapper();
 
-                            wrapper.setReqId(msg.requestId());
-                            wrapper.setClientId(msg.clientId());
+                            wrapper.requestId(msg.requestId());
+                            wrapper.clientId(msg.clientId());
 
                             try {
-                                byte[] bytes = marshaller(ses).marshal(res);
+                                byte[] bytes = proto.marshaller(ses).marshal(res);
 
-                                wrapper.setMsg(bytes);
+                                wrapper.message(bytes);
 
-                                wrapper.setMsgSize(bytes.length + 40);
+                                wrapper.messageSize(bytes.length + 40);
                             }
                             catch (IOException e) {
-                                e.printStackTrace();
+                                e.printStackTrace(); // TODO 8416.
                             }
 
                             ses.send(wrapper);
@@ -213,29 +219,9 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                     });
                 else
                     U.error(log, "Failed to process client request (unknown packet type) [ses=" + ses +
-                            ", msg=" + msg + ']');
+                        ", msg=" + msg + ']');
             }
         }
-    }
-
-    /**
-     * Returns marshaller from session, if no marshaller found - init it with default.
-     *
-     * @param ses Current session.
-     * @return Current session's marshaller.
-     */
-    protected GridClientMarshaller marshaller(GridNioSession ses) {
-        GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
-
-        if (marsh == null) {
-            U.warn(log, "No marshaller defined for NIO session, using PROTOBUF as default [ses=" + ses + ']');
-
-            //marsh = protobufMarshaller;
-
-            ses.addMeta(MARSHALLER.ordinal(), marsh);
-        }
-
-        return marsh;
     }
 
     /**
