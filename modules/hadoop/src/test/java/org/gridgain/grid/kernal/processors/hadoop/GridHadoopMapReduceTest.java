@@ -42,8 +42,7 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
      * Tests whole job execution with all phases in all combination of new and old versions of API.
      * @throws Exception If fails.
      */
-    // TODO: Enable.
-    public void _testWholeMapReduceExecution() throws Exception {
+    public void testWholeMapReduceExecution() throws Exception {
         GridGgfsPath inDir = new GridGgfsPath(PATH_INPUT);
 
         ggfs.mkdirs(inDir);

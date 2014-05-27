@@ -233,11 +233,6 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         }
     }
 
-    // TODO: Remove.
-    @Override protected long getTestTimeout() {
-        return Long.MAX_VALUE;
-    }
-
     /**
      * @throws Exception If failed.
      */

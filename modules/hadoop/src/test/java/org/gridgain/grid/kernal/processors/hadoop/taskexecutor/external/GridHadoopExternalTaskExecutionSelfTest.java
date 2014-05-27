@@ -59,8 +59,7 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
     /**
      * @throws Exception If failed.
      */
-    // TODO: Enable.
-    public void _testSimpleTaskSubmit() throws Exception {
+    public void testSimpleTaskSubmit() throws Exception {
         String testInputFile = "/test";
 
         prepareTestFile(testInputFile);
@@ -98,8 +97,7 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
     /**
      * @throws Exception If failed.
      */
-    // TODO: Enable.
-    public void _testMapperException() throws Exception {
+    public void testMapperException() throws Exception {
         String testInputFile = "/test";
 
         prepareTestFile(testInputFile);
