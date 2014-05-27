@@ -28,7 +28,7 @@ public class GridHadoopTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(GridHadoopDefaultMapReducePlannerSelfTest .class));
         suite.addTest(new TestSuite(GridHadoopJobTrackerSelfTest.class));
-        suite.addTest(new TestSuite(GridHadoopMultimapSelftest.class));
+        suite.addTest(new TestSuite(GridHadoopConcurrentHashMultimapSelftest.class));
         suite.addTestSuite(GridHadoopSkipListSelfTest.class);
         suite.addTest(new TestSuite(GridHadoopTaskExecutionSelfTest.class));
 

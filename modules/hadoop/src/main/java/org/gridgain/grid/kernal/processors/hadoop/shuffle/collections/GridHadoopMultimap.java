@@ -46,15 +46,7 @@ public interface GridHadoopMultimap extends AutoCloseable {
     /**
      * Adder.
      */
-    public interface Adder extends AutoCloseable {
-        /**
-         * Adds value for the given key.
-         *
-         * @param key Key.
-         * @param val Value.
-         */
-        public void add(Object key, Object val) throws GridException;
-
+    public interface Adder extends GridHadoopTaskOutput {
         /**
          * @param in Data input.
          * @param reuse Reusable key.
@@ -62,9 +54,6 @@ public interface GridHadoopMultimap extends AutoCloseable {
          * @throws GridException If failed.
          */
         public Key addKey(DataInput in, @Nullable Key reuse) throws GridException;
-
-        /** {@inheritDoc} */
-        public void close() throws GridException;
     }
 
     /**

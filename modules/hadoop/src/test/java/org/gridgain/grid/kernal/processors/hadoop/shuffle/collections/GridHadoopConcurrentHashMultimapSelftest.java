@@ -13,7 +13,6 @@ import com.google.common.collect.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
@@ -29,7 +28,7 @@ import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
 /**
  *
  */
-public class GridHadoopMultimapSelftest extends GridCommonAbstractTest {
+public class GridHadoopConcurrentHashMultimapSelftest extends GridCommonAbstractTest {
     /** */
     public void testMapSimple() throws Exception {
         GridUnsafeMemory mem = new GridUnsafeMemory(0);
@@ -50,10 +49,10 @@ public class GridHadoopMultimapSelftest extends GridCommonAbstractTest {
         job.setMapOutputKeyClass(IntWritable.class);
         job.setMapOutputValueClass(IntWritable.class);
 
-        GridHadoopHashMultimap m = new GridHadoopHashMultimap(new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 10),
+        GridHadoopConcurrentHashMultimap m = new GridHadoopConcurrentHashMultimap(new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 10),
             new GridHadoopDefaultJobInfo(job.getConfiguration())), mem, mapSize);
 
-        GridHadoopHashMultimap.Adder a = m.startAdding();
+        GridHadoopConcurrentHashMultimap.Adder a = m.startAdding();
 
         Multimap<Integer, Integer> mm = ArrayListMultimap.create();
         Multimap<Integer, Integer> vis = ArrayListMultimap.create();
@@ -62,7 +61,7 @@ public class GridHadoopMultimapSelftest extends GridCommonAbstractTest {
             int key = rnd.nextInt(mapSize);
             int val = rnd.nextInt();
 
-            a.add(new IntWritable(key), new IntWritable(val));
+            a.write(new IntWritable(key), new IntWritable(val));
             mm.put(key, val);
 
             X.println("k: " + key + " v: " + val);
@@ -87,7 +86,7 @@ public class GridHadoopMultimapSelftest extends GridCommonAbstractTest {
         assertEquals(0, mem.allocatedSize());
     }
 
-    private void check(GridHadoopHashMultimap m, Multimap<Integer, Integer> mm,
+    private void check(GridHadoopConcurrentHashMultimap m, Multimap<Integer, Integer> mm,
         final Multimap<Integer, Integer> vis) throws Exception {
         final GridHadoopTaskInput in = m.input();
 
@@ -126,7 +125,7 @@ public class GridHadoopMultimapSelftest extends GridCommonAbstractTest {
 
         final GridUnsafeDataInput dataInput = new GridUnsafeDataInput();
 
-        m.visit(false, new GridHadoopHashMultimap.Visitor() {
+        m.visit(false, new GridHadoopConcurrentHashMultimap.Visitor() {
             /** */
             IntWritable key = new IntWritable();
 
@@ -177,7 +176,7 @@ public class GridHadoopMultimapSelftest extends GridCommonAbstractTest {
             job.setMapOutputKeyClass(IntWritable.class);
             job.setMapOutputValueClass(IntWritable.class);
 
-            final GridHadoopHashMultimap m = new GridHadoopHashMultimap(new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 10),
+            final GridHadoopConcurrentHashMultimap m = new GridHadoopConcurrentHashMultimap(new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 10),
                 new GridHadoopDefaultJobInfo(job.getConfiguration())), mem, 16);
 
             final ConcurrentMap<Integer, Collection<Integer>> mm = new ConcurrentHashMap<>();
@@ -193,7 +192,7 @@ public class GridHadoopMultimapSelftest extends GridCommonAbstractTest {
                     IntWritable key = new IntWritable();
                     IntWritable val = new IntWritable();
 
-                    GridHadoopHashMultimap.Adder a = m.startAdding();
+                    GridHadoopConcurrentHashMultimap.Adder a = m.startAdding();
 
                     for (int i = 0; i < 50000; i++) {
                         int k = rnd.nextInt(32000);
@@ -202,7 +201,7 @@ public class GridHadoopMultimapSelftest extends GridCommonAbstractTest {
                         key.set(k);
                         val.set(v);
 
-                        a.add(key, val);
+                        a.write(key, val);
 
                         Collection<Integer> list = mm.get(k);
 

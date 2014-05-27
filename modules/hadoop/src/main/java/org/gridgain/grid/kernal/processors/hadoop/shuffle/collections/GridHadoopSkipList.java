@@ -162,7 +162,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
         }
 
         /** {@inheritDoc} */
-        @Override public void add(Object key, Object val) throws GridException {
+        @Override public void write(Object key, Object val) throws GridException {
             // TODO
         }
 

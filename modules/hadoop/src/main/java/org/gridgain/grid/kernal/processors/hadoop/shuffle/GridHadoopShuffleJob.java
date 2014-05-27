@@ -97,7 +97,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
         msgs = new GridHadoopShuffleMessage[reducers];
 
         if (job.hasCombiner() && hasLocMappers) // We have combiner and local mappers.
-            combinerMap = new GridHadoopHashMultimap(job, mem, get(job, COMBINER_HASHMAP_SIZE, 8 * 1024));
+            combinerMap = new GridHadoopConcurrentHashMultimap(job, mem, get(job, COMBINER_HASHMAP_SIZE, 8 * 1024));
     }
 
     /**
@@ -163,7 +163,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
         GridHadoopMultimap map = maps.get(idx);
 
         if (map == null) { // Create new map.
-            map = new GridHadoopHashMultimap(job, mem, get(job, PARTITION_HASHMAP_SIZE, 8 * 1024));
+            map = new GridHadoopConcurrentHashMultimap(job, mem, get(job, PARTITION_HASHMAP_SIZE, 8 * 1024));
 
             if (!maps.compareAndSet(idx, null, map)) {
                 map.close();
@@ -460,7 +460,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
         switch (taskInfo.type()) {
             case MAP:
                 if (combinerMap != null)
-                    return new MapOutput(combinerMap.startAdding());
+                    return combinerMap.startAdding();
 
             case COMBINE:
                 return new PartitionedOutput();
@@ -512,36 +512,11 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
     }
 
     /**
-     * Map output.
-     */
-    private class MapOutput implements GridHadoopTaskOutput {
-        /** */
-        private final GridHadoopMultimap.Adder adder;
-
-        /**
-         * @param adder Map adder.
-         */
-        private MapOutput(GridHadoopMultimap.Adder adder) {
-            this.adder = adder;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void write(Object key, Object val) throws GridException {
-            adder.add(key, val);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() throws GridException {
-            adder.close();
-        }
-    }
-
-    /**
      * Partitioned output.
      */
     private class PartitionedOutput implements GridHadoopTaskOutput {
         /** */
-        private GridHadoopMultimap.Adder[] adders = new GridHadoopMultimap.Adder[maps.length()];
+        private GridHadoopTaskOutput[] adders = new GridHadoopTaskOutput[maps.length()];
 
         /** {@inheritDoc} */
         @Override public void write(Object key, Object val) throws GridException {
@@ -554,17 +529,17 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
                     throw new GridException("Invalid partition: " + part);
             }
 
-            GridHadoopMultimap.Adder adder = adders[part];
+            GridHadoopTaskOutput out = adders[part];
 
-            if (adder == null)
-                adders[part] = adder = getOrCreateMap(maps, part).startAdding();
+            if (out == null)
+                adders[part] = out = getOrCreateMap(maps, part).startAdding();
 
-            adder.add(key, val);
+            out.write(key, val);
         }
 
         /** {@inheritDoc} */
         @Override public void close() throws GridException {
-            for (GridHadoopMultimap.Adder adder : adders) {
+            for (GridHadoopTaskOutput adder : adders) {
                 if (adder != null)
                     adder.close();
             }

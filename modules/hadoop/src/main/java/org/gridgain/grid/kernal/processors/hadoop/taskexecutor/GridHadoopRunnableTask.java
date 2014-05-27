@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
+import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 
@@ -190,19 +190,9 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
                 if (localCombiner) {
                     assert local == null;
 
-                    local = new GridHadoopMultimap(job, mem, get(job, COMBINER_HASHMAP_SIZE, 8 * 1024));
+                    local = new GridHadoopConcurrentHashMultimap(job, mem, get(job, COMBINER_HASHMAP_SIZE, 8 * 1024));
 
-                    final GridHadoopMultimap.Adder in = local.startAdding();
-
-                    return new GridHadoopTaskOutput() {
-                        @Override public void write(Object key, Object val) throws GridException {
-                            in.add(key, val);
-                        }
-
-                        @Override public void close() throws GridException {
-                            in.close();
-                        }
-                    };
+                    return local.startAdding();
                 }
 
             default:
