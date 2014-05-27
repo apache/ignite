@@ -26,8 +26,7 @@ public class GridHadoopClientTestSuite extends TestSuite {
 
         suite.addTest(GridHadoopTestSuite.suite());
 
-        //  TODO: GG-8022: Enable later.
-//        suite.addTestSuite(GridHadoopClientProtocolSelfTest.class);
+        suite.addTestSuite(GridHadoopClientProtocolSelfTest.class);
 
         return suite;
     }

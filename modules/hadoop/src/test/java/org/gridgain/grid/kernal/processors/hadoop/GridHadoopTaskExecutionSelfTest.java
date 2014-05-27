@@ -233,8 +233,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
-    // TODO: GG-8022: Enable later.
-    public void _testTaskCancelling() throws Exception {
+    public void testTaskCancelling() throws Exception {
         int lineCnt = 10000;
         String fileName = "/testFile";
 
