@@ -16,6 +16,10 @@ import java.util.*;
  * Base class for Visor task arguments intended to query data from multiple nodes.
  */
 public class VisorMultiNodeArg implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private final Set<UUID> nodeIds;
 
     /**

@@ -17,6 +17,9 @@ import java.util.*;
  */
 public class VisorOneNodeArg implements Serializable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private final UUID nodeId;
 
     /**
