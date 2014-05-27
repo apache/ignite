@@ -1211,7 +1211,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
             try {
                 if (e != null)
-                    e.clear(obsoleteVer, ctx.isSwapEnabled(), readers, null);
+                    e.clear(obsoleteVer, readers, null);
             }
             catch (GridException ex) {
                 U.error(log, "Failed to clear entry (will continue to clear other entries): " + e,
@@ -1233,7 +1233,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         GridCacheEntryEx<K, V> e = peekEx(key);
 
         try {
-            return e != null && e.clear(obsoleteVer, ctx.isSwapEnabled(), false, filter);
+            return e != null && e.clear(obsoleteVer, false, filter);
         }
         catch (GridException ex) {
             U.error(log, "Failed to clear entry: " + e, ex);
@@ -3128,7 +3128,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 ctx.hasFlag(INVALIDATE),
                 ctx.syncCommit(),
                 ctx.syncRollback(),
-                ctx.isSwapEnabled(),
+                ctx.isSwapOrOffheapEnabled(),
                 ctx.isStoreEnabled(),
                 txSize,
                 grpLockKey,

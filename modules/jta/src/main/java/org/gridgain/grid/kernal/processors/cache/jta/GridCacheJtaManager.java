@@ -75,7 +75,7 @@ public class GridCacheJtaManager<K, V> extends GridCacheJtaManagerAdapter<K, V> 
                                     cfg.isInvalidate() || cctx.hasFlag(INVALIDATE),
                                     cctx.syncCommit(),
                                     cctx.syncRollback(),
-                                    cctx.isSwapEnabled(),
+                                    cctx.isSwapOrOffheapEnabled(),
                                     cctx.isStoreEnabled(),
                                     0,
                                     /** group lock keys */null,
