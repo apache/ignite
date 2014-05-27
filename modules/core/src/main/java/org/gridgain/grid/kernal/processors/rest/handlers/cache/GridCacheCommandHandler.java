@@ -764,7 +764,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<?> applyx(final  GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
+        @Override public GridFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
             return c.putAllAsync(map).chain(new FixedResult(true));
         }
     }

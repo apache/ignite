@@ -1515,6 +1515,8 @@ public class GridGainEx {
                     DFLT_REST_KEEP_ALIVE_TIME,
                     new LinkedBlockingQueue<Runnable>(DFLT_REST_THREADPOOL_QUEUE_CAP)
                 );
+
+                myCfg.setRestExecutorService(restExecSvc);
             }
 
             execSvcShutdown = cfg.getExecutorServiceShutdown();

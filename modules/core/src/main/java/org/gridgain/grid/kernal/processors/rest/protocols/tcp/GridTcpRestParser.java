@@ -116,16 +116,12 @@ public class GridTcpRestParser implements GridNioParser {
             // Packet was not fully parsed yet.
             ses.addMeta(PARSER_STATE.ordinal(), state);
 
-        //System.out.println("Server decode " + res);
-
         return res;
     }
 
     /** {@inheritDoc} */
     @Override public ByteBuffer encode(GridNioSession ses, Object msg0) throws IOException, GridException {
         assert msg0 != null;
-
-        //System.out.println("Server encode " + msg0);
 
         GridClientMessage msg = (GridClientMessage)msg0;
 
