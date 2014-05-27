@@ -13,6 +13,7 @@ import java.util.*;
 
 /**
  * Permissions object detached from subject.
+ * // TODO make java bean.
  */
 public class GridSecurityPermissionSet {
     /** Default allow all flag. */

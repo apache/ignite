@@ -9,59 +9,23 @@
 
 package org.gridgain.grid.security;
 
+import org.gridgain.grid.spi.*;
+
+import java.net.*;
 import java.util.*;
 
 /**
- * Authenticated security subject.
- *
- * Example JSON configuration:
- * <code>
- *     {
- *         {
- *             "cache": "partitioned",
- *             "permissions": ["CACHE_PUT", "CACHE_READ"]
- *         },
- *         {
- *             "cache": "replicated",
- *             "permissions": ["CACHE_PUT", "CACHE_REMOVE"]
- *         },
- *         {
- *             "task": "org.mytask.*",
- *             "permissions": ["TASK_EXECUTE", "TASK_CANCEL"]
- *         }
- *     }
- * </code>
+ * Security subject.
  */
-public class GridSecuritySubject {
-    /** Subject ID. */
-    private UUID id;
+public interface GridSecuritySubject {
 
-    //TODO subject type
+    UUID id();
 
-    /** Permissions assigned to a subject. */
-    private GridSecurityPermissionSet permissions;
+    GridSecuritySubjectType subjectType();
 
-    /**
-     * @param id Subject ID.
-     */
-    public GridSecuritySubject(UUID id) {
-        this.id = id;
-    }
+    InetAddress address();
 
-    /**
-     * Gets subject ID.
-     *
-     * @return Subject ID.
-     */
-    public UUID id() {
-        return id;
-    }
+    int port();
 
-    public GridSecurityPermissionSet permissions() {
-        return permissions;
-    }
-
-    public void permissions(GridSecurityPermissionSet permissions) {
-        this.permissions = permissions;
-    }
+    GridSecurityPermissionSet permissions();
 }
