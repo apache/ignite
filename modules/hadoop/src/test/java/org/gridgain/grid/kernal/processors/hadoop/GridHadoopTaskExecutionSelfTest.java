@@ -197,6 +197,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         job.setInputFormatClass(TextInputFormat.class);
 
         FileInputFormat.setInputPaths(job, new Path("ggfs://ipc/"));
+        FileOutputFormat.setOutputPath(job, new Path("ggfs://ipc/out/"));
 
         job.setJarByClass(getClass());
 
@@ -232,11 +233,15 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         }
     }
 
+    // TODO: Remove.
+    @Override protected long getTestTimeout() {
+        return Long.MAX_VALUE;
+    }
+
     /**
      * @throws Exception If failed.
      */
-    // TODO: Enable afterwards.
-    public void _testTaskCancelling() throws Exception {
+    public void testTaskCancelling() throws Exception {
         int lineCnt = 10000;
         String fileName = "/testFile";
 
@@ -261,7 +266,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         job.setInputFormatClass(TextInputFormat.class);
 
         FileInputFormat.setInputPaths(job, new Path("ggfs://ipc/"));
-        FileOutputFormat.setOutputPath(job, new Path("ggfs://ipc/out/"));
+        FileOutputFormat.setOutputPath(job, new Path("ggfs://ipc/output/"));
 
         job.setJarByClass(getClass());
 
@@ -271,9 +276,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         final GridFuture<?> fut = hadoop.submit(jobId, new GridHadoopDefaultJobInfo(job.getConfiguration()));
 
-        while (executedTasks.get() != 32) {
-            Thread.sleep(100);
-        }
+        Thread.sleep(2000);
 
         // Fail mapper with id "1", cancels others
         failMapperId = 1;
