@@ -12,7 +12,8 @@ package org.gridgain.grid.hadoop;
 import java.io.*;
 
 /**
- * Job description.
+ * Job description. Configured implementation of {@link GridHadoopJobFactory} must understand it.
  */
 public interface GridHadoopJobInfo extends Serializable {
+    // No-op.
 }

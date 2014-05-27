@@ -62,6 +62,9 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
         this.cfg = new Configuration(cfg);
         this.taskAttemptID = taskAttemptID;
 
+        this.cfg.set("mapreduce.job.id", taskAttemptID.getJobID().toString());
+        this.cfg.set("mapreduce.task.id", taskAttemptID.getTaskID().toString());
+
         output = ctx.output();
         input = ctx.input();
     }
