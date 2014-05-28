@@ -67,6 +67,7 @@ import java.util.*;
 import java.util.Map.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.logging.*;
 
 import static org.gridgain.grid.GridConfiguration.*;
 import static org.gridgain.grid.GridGainState.*;
@@ -659,8 +660,12 @@ public class GridGainEx {
 
         GridBiTuple<Object, Object> t = null;
 
+        Collection<Handler> savedHnds = null;
+
         if (isLog4jUsed)
             t = U.addLog4jNoOpLogger();
+        else
+            savedHnds = U.addJavaNoOpLogger();
 
         GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> cfgMap;
 
@@ -670,6 +675,9 @@ public class GridGainEx {
         finally {
             if (isLog4jUsed && t != null)
                 U.removeLog4jNoOpLogger(t);
+
+            if (!isLog4jUsed)
+                U.removeJavaNoOpLogger(savedHnds);
         }
 
         List<GridNamedInstance> grids = new ArrayList<>(cfgMap.size());
@@ -1231,17 +1239,13 @@ public class GridGainEx {
             String ggHome = cfg.getGridGainHome();
 
             // Set GridGain home.
-            if (ggHome == null) {
+            if (ggHome == null)
                 ggHome = U.getGridGainHome();
-
-                U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
-            }
-            else {
+            else
                 // If user provided GRIDGAIN_HOME - set it as a system property.
                 U.setGridGainHome(ggHome);
 
-                U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
-            }
+            U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
 
             /*
              * Set up all defaults and perform all checks.
@@ -1923,7 +1927,7 @@ public class GridGainEx {
                 return cfgLog;
             }
             catch (Exception e) {
-                throw new GridException("Failed to create GridLog4jLogger.", e);
+                throw new GridException("Failed to create logger.", e);
             }
         }
 

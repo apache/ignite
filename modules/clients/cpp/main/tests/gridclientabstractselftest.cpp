@@ -135,41 +135,10 @@ public:
     }
 };
 
-/**
- * Configuration for HTTP client over router.
- */
-class HttpRouterConfig {
-public:
-    /**
-     * Invocation operator.
-     *
-     * @return Client configuration.
-     */
-    GridClientConfiguration operator()() const {
-        GridClientConfiguration clientConfig;
-
-        vector<GridClientSocketAddress> routers;
-
-        routers.push_back(GridClientSocketAddress("127.0.0.1", 12200));
-
-        clientConfig.routers(routers);
-
-        GridClientProtocolConfiguration protoCfg;
-
-        protoCfg.credentials(CREDS);
-
-        protoCfg.protocol(HTTP);
-
-        clientConfig.protocolConfiguration(protoCfg);
-
-        return clientConfig;
-    }
-};
-
 #ifdef GRIDGAIN_ROUTER_TEST
 
 /** Test configuration list. */
-typedef boost::mpl::list<TcpRouterConfig, HttpRouterConfig> TestCfgs;
+typedef boost::mpl::list<TcpRouterConfig> TestCfgs;
 
 /** Test configuration list for TCP only transport. */
 typedef boost::mpl::list<TcpRouterConfig> TestCfgsTcpOnly;

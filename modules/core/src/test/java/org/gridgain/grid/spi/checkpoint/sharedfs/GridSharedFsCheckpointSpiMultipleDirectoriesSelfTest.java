@@ -24,10 +24,10 @@ import java.util.*;
 public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
     GridSpiAbstractTest<GridSharedFsCheckpointSpi> {
     /** */
-    private static final String PATH1 = "work/cp/test-shared-fs1";
+    private static final String PATH1 = "cp/test-shared-fs1";
 
     /** */
-    private static final String PATH2 = "work/cp/test-shared-fs2";
+    private static final String PATH2 = "cp/test-shared-fs2";
 
     /** */
     private static final String CHECK_POINT_KEY_PREFIX = "testCheckpoint";
@@ -38,6 +38,7 @@ public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
     @GridSpiTestConfig(setterName="setDirectoryPaths")
     public Collection<String> getDirectoryPaths() {
         Collection<String> dirs = new ArrayList<>();
+
         dirs.add(PATH1);
         dirs.add(PATH2);
 
@@ -58,7 +59,7 @@ public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
 
         String curSpiPath1 = getSpi().getCurrentDirectoryPath();
 
-        File folder1 = new File(U.getGridGainHome(), curSpiPath1);
+        File folder1 = U.resolveWorkDirectory(curSpiPath1, false);
 
         assert folder1.exists() : "Checkpoint folder doesn't exist.";
 
@@ -71,7 +72,7 @@ public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
 
         String curSpiPath2 = getSpi().getCurrentDirectoryPath();
 
-        File folder2 = new File(U.getGridGainHome(), curSpiPath2);
+        File folder2 = U.resolveWorkDirectory(curSpiPath2, false);
 
         assert folder2.exists() : "Check point folder doesn't exist.";
 
@@ -85,7 +86,7 @@ public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
 
         String newCurSpiPath = getSpi().getCurrentDirectoryPath();
 
-        File changedFolder = new File(U.getGridGainHome(), newCurSpiPath);
+        File changedFolder = U.resolveWorkDirectory(newCurSpiPath, false);
 
         assert changedFolder.exists() : "Check point folder doesn't exist.";
 
