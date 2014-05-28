@@ -9,31 +9,24 @@
 
 package org.gridgain.grid.kernal.visor.cmd.tasks;
 
-import org.gridgain.grid.GridException;
-import org.gridgain.grid.GridNodeLocalMap;
-import org.gridgain.grid.cache.GridCache;
-import org.gridgain.grid.cache.query.GridCacheQueryFuture;
-import org.gridgain.grid.kernal.processors.cache.query.GridCacheQueriesEx;
-import org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryMetadataAware;
-import org.gridgain.grid.kernal.processors.task.GridInternal;
-import org.gridgain.grid.kernal.visor.cmd.VisorJob;
-import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeArg;
-import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeJob;
-import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeTask;
-import org.gridgain.grid.kernal.visor.cmd.dto.VisorFieldsQueryResult;
-import org.gridgain.grid.kernal.visor.cmd.dto.node.VisorFieldsQueryColumn;
-import org.gridgain.grid.lang.GridBiTuple;
-import org.gridgain.grid.spi.indexing.GridIndexingFieldMetadata;
-import org.gridgain.grid.util.typedef.CAX;
-import org.jetbrains.annotations.Nullable;
+import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.kernal.processors.cache.query.*;
+import org.gridgain.grid.kernal.processors.task.*;
+import org.gridgain.grid.kernal.visor.cmd.*;
+import org.gridgain.grid.kernal.visor.cmd.dto.*;
+import org.gridgain.grid.kernal.visor.cmd.dto.node.*;
+import org.gridgain.grid.lang.*;
+import org.gridgain.grid.spi.indexing.*;
+import org.gridgain.grid.util.typedef.*;
+import org.jetbrains.annotations.*;
+
+import java.io.*;
+import java.sql.*;
+import java.util.*;
 
 import static org.gridgain.grid.kernal.visor.cmd.tasks.VisorFieldsQueryUtils.*;
-
-import java.io.Serializable;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Executes SCAN or SQL query and get first page of results.
@@ -213,7 +206,7 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
 
                 String qryId = (scan ? SCAN_QRY_NAME : SQL_QRY_NAME) + "-" + UUID.randomUUID();
 
-                GridCache c = g.<Object, Object>cachex(arg.cacheName);
+                GridCache<Object, Object> c = g.cachex(arg.cacheName);
 
                 if (scan) {
                     GridCacheQueryFuture fut = c.queries().createScanQuery(null)
