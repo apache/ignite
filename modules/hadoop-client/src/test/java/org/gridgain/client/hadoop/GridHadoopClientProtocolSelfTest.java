@@ -128,7 +128,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     /**
      * @throws Exception If failed.
      */
-    // TODO: Enable.
+    // TODO: GG-8427: Enable when fixed.
     public void _testJobSubmitMap() throws Exception {
         checkJobSubmit(true, true);
     }
@@ -136,7 +136,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     /**
      * @throws Exception If failed.
      */
-    // TODO: Enable.
+    // TODO: GG-8427: Enable when fixed.
     public void _testJobSubmitMapCombine() throws Exception {
         checkJobSubmit(false, true);
     }
@@ -144,7 +144,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     /**
      * @throws Exception If failed.
      */
-    // TODO: Enable.
+    // TODO: GG-8427: Enable when fixed.
     public void _testJobSubmitMapReduce() throws Exception {
         checkJobSubmit(true, false);
     }
@@ -152,7 +152,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     /**
      * @throws Exception If failed.
      */
-    // TODO: Enable.
+    // TODO: GG-8427: Enable when fixed.
     public void _testJobSubmitMapCombineReduce() throws Exception {
         checkJobSubmit(false, false);
     }
