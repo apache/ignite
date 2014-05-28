@@ -21,6 +21,7 @@ import org.gridgain.grid.ggfs.hadoop.v1.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 
 import java.io.*;
@@ -267,9 +268,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         final GridFuture<?> fut = hadoop.submit(jobId, new GridHadoopDefaultJobInfo(job.getConfiguration()));
 
-        while (executedTasks.get() != 32) {
-            Thread.sleep(100);
-        }
+        U.sleep(2000);
 
         // Fail mapper with id "1", cancels others
         failMapperId = 1;
@@ -308,6 +307,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
                 cancelledTasks.incrementAndGet();
 
                 Thread.currentThread().interrupt();
+
                 throw e;
             }
         }

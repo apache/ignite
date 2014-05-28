@@ -108,6 +108,13 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
                 local.close();
         }
 
+        if (err != null) {
+            if (err instanceof GridException)
+                throw (GridException)err;
+            else
+                throw new GridException("Task execution failed.", err);
+        }
+
         return null;
     }
 

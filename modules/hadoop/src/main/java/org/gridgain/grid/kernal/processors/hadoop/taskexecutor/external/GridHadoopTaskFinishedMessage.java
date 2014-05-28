@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Task finished message. Sent when local task finishes execution.
@@ -56,5 +57,10 @@ public class GridHadoopTaskFinishedMessage implements GridHadoopMessage {
      */
     public Throwable error() {
         return err;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridHadoopTaskFinishedMessage.class, this);
     }
 }
