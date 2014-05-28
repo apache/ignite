@@ -10,6 +10,9 @@
 package org.gridgain.grid.kernal.processors.hadoop;
 
 import com.google.common.base.*;
+import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.kernal.processors.ggfs.*;
+
 import java.io.*;
 import java.util.*;
 
@@ -17,14 +20,45 @@ import java.util.*;
  * Abstract class for tests based on WordCount test job.
  */
 public abstract class GridHadoopAbstractWordCountTest extends GridHadoopAbstractSelfTest {
+    /** GGFS scheme. */
+    protected static final String GGFS_SCHEME = "ggfs://ipc";
+
+    /** Input path. */
+    protected static final String PATH_INPUT = "/input";
+
+    /** Output path. */
+    protected static final String PATH_OUTPUT = "/output";
+
+    /** GGFS instance. */
+    protected GridGgfsEx ggfs;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        ggfs = (GridGgfsEx)startGrids(gridCount()).ggfs(ggfsName);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean ggfsEnabled() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 1;
+    }
+
     /**
-     * Generates text file with words. In one line there are from 5 to 9 words.
      *
-     * @param file File that there is generation for.
-     * @param wordCounts Pair word and count, i.e "hello", 2, "world", 3, etc.
-     * @throws java.io.FileNotFoundException If could not create the file.
+     * @param path
+     * @param wordCounts
+     * @throws Exception
      */
-    protected void generateTestFile(File file, Object... wordCounts) throws FileNotFoundException {
+    protected void generateTestFile(String path, Object... wordCounts) throws Exception {
         List<String> wordsArr = new ArrayList<>();
 
         //Generating
@@ -44,7 +78,7 @@ public abstract class GridHadoopAbstractWordCountTest extends GridHadoopAbstract
         }
 
         //Input file preparing
-        PrintWriter testInputFileWriter = new PrintWriter(file);
+        PrintWriter testInputFileWriter = new PrintWriter(ggfs.create(new GridGgfsPath(path), true));
 
         int j = 0;
 
@@ -65,10 +99,10 @@ public abstract class GridHadoopAbstractWordCountTest extends GridHadoopAbstract
      *
      * @param fileName Name of the file to read.
      * @return Content of the file as String value.
-     * @throws java.io.IOException If could not read the file.
+     * @throws Exception If could not read the file.
      */
-    protected String readAndSortFile(String fileName) throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(fileName));
+    protected String readAndSortFile(String fileName) throws Exception {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(ggfs.open(new GridGgfsPath(fileName))));
 
         List<String> list = new ArrayList<>();
 

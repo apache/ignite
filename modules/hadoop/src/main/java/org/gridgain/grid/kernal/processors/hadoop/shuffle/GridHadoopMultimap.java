@@ -259,7 +259,7 @@ public class GridHadoopMultimap implements AutoCloseable {
                 };
             }
 
-            @Override public void close() throws Exception {
+            @Override public void close() {
                 if (inputs.decrementAndGet() < 0)
                     throw new IllegalStateException();
             }

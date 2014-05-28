@@ -7,13 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.hadoop;
-
-import java.io.*;
+package org.gridgain.grid.kernal.processors.cache;
 
 /**
- * Job description. Configured implementation of {@link GridHadoopJobFactory} must understand it.
+ * Tests optimistic group lock transactions.
  */
-public interface GridHadoopJobInfo extends Serializable {
-    // No-op.
+public class GridCacheGroupLockFailoverOptimisticTxSelfTest extends GridCacheGroupLockFailoverSelfTest {
+    /** {@inheritDoc} */
+    @Override protected boolean optimisticTx() {
+        return true;
+    }
 }

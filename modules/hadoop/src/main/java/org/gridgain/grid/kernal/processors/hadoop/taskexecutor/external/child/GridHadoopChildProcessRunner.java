@@ -76,7 +76,7 @@ public class GridHadoopChildProcessRunner {
     private GridHadoopShuffleJob<GridHadoopProcessDescriptor> shuffleJob;
 
     /** Shared task context. */
-    private GridHadoopJobClassLoadingContext sharedTaskCtx;
+    private GridHadoopJobClassLoadingContext clsLdrCtx;
 
     /** Concurrent mappers. */
     private int concMappers;
@@ -116,9 +116,9 @@ public class GridHadoopChildProcessRunner {
 
                 job = jobFactory.createJob(req.jobId(), req.jobInfo());
 
-                sharedTaskCtx = new GridHadoopJobClassLoadingContext(nodeDesc.parentNodeId(), job, log);
+                clsLdrCtx = new GridHadoopJobClassLoadingContext(nodeDesc.parentNodeId(), job, log);
 
-                sharedTaskCtx.initializeClassLoader();
+                clsLdrCtx.initializeClassLoader();
 
                 shuffleJob = new GridHadoopShuffleJob<>(comm.localProcessDescriptor(), log, job, mem, job.reducers(),
                     req.hasMappers());
@@ -173,7 +173,21 @@ public class GridHadoopChildProcessRunner {
                         if (log.isDebugEnabled())
                             log.debug("Submitted task for external execution: " + taskInfo);
 
-                        execSvc.submit(new TaskRunnable(taskInfo));
+                        execSvc.submit(new GridHadoopRunnableTask(job, mem, taskInfo, clsLdrCtx) {
+                            @Override protected void onTaskFinished(GridHadoopTaskState state, Throwable err) {
+                                onTaskFinished0(this, state, err);
+                            }
+
+                            @Override protected GridHadoopTaskInput createInput(GridHadoopTaskInfo info)
+                                throws GridException {
+                                return shuffleJob.input(info);
+                            }
+
+                            @Override protected GridHadoopTaskOutput createOutput(GridHadoopTaskInfo info)
+                                throws GridException {
+                                return shuffleJob.output(info);
+                            }
+                        });
                     }
                 }
                 catch (GridException e) {
@@ -207,32 +221,6 @@ public class GridHadoopChildProcessRunner {
 
         execSvc = new ThreadPoolExecutor(concMappers, concMappers,
             1, TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
-    }
-
-    /**
-     * Creates task output.
-     *
-     * @param taskInfo Task info.
-     * @return Task output.
-     */
-    private GridHadoopTaskOutput createOutput(GridHadoopTaskInfo taskInfo) throws GridException {
-        if (taskInfo.type() == REDUCE || taskInfo.type() == COMMIT || taskInfo.type() == ABORT)
-            return null;
-
-        return shuffleJob.output(taskInfo);
-    }
-
-    /**
-     * Creates task input.
-     *
-     * @param taskInfo Task info.
-     * @return Task input.
-     */
-    private GridHadoopTaskInput createInput(GridHadoopTaskInfo taskInfo) throws GridException {
-        if (taskInfo.type() == MAP || taskInfo.type() == COMMIT || taskInfo.type() == ABORT)
-            return null;
-
-        return shuffleJob.input(taskInfo);
     }
 
     /**
@@ -280,21 +268,19 @@ public class GridHadoopChildProcessRunner {
      * @param state Task finish state.
      * @param err Error, if any.
      */
-    private void onTaskFinished(TaskRunnable run, GridHadoopTaskState state, Throwable err) {
-        GridHadoopTaskInfo info = run.info;
+    private void onTaskFinished0(GridHadoopRunnableTask run, GridHadoopTaskState state, Throwable err) {
+        GridHadoopTaskInfo info = run.taskInfo();
 
-        int remainder = pendingTasks.decrementAndGet();
+        int pendingTasks0 = pendingTasks.decrementAndGet();
 
         if (log.isDebugEnabled())
             log.debug("Hadoop task execution finished [info=" + info
                 + ", state=" + state + ", waitTime=" + run.waitTime() + ", execTime=" + run.executionTime() +
-                ", pendingTasks=" + remainder +
+                ", pendingTasks=" + pendingTasks0 +
                 ", err=" + err + ']');
 
-        boolean flush = false;
-
-        if (remainder == 0 && (info.type() == COMBINE || (info.type() == MAP && !job.hasCombiner())))
-            flush = true;
+        boolean flush = pendingTasks0 == 0 && (info.type() == COMBINE || (info.type() == MAP &&
+            (!job.hasCombiner() || !GridHadoopJobProperty.get(job, SINGLE_COMBINER_FOR_ALL_MAPPERS, false))));
 
         notifyTaskFinished(info, state, err, flush);
     }
@@ -378,75 +364,6 @@ public class GridHadoopChildProcessRunner {
         }
 
         return true;
-    }
-
-    /**
-     * Task runnable.
-     */
-    private class TaskRunnable implements Runnable {
-        /** Task to run. */
-        private GridHadoopTaskInfo info;
-
-        /** Submit time. */
-        private long submitTs = System.currentTimeMillis();
-
-        /** Execution start timestamp. */
-        private long execStartTs;
-
-        /** Execution end timestamp. */
-        private long execEndTs;
-
-        /**
-         * @param info Task info.
-         */
-        private TaskRunnable(GridHadoopTaskInfo info) {
-            this.info = info;
-        }
-
-        /**
-         * @return Wait time.
-         */
-        private long waitTime() {
-            return execStartTs - submitTs;
-        }
-
-        /**
-         * @return Execution time.
-         */
-        private long executionTime() {
-            return execEndTs - execStartTs;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            execStartTs = System.currentTimeMillis();
-
-            ClassLoader old = GridHadoopJobClassLoadingContext.prepareClassLoader(sharedTaskCtx, job.info());
-
-            GridHadoopTaskState state = GridHadoopTaskState.COMPLETED;
-            Throwable err = null;
-
-            try (GridHadoopTaskOutput out = createOutput(info);
-                GridHadoopTaskInput in = createInput(info)) {
-
-                GridHadoopTaskContext ctx = new GridHadoopTaskContext(job, in, out);
-
-                GridHadoopTask task = job.createTask(info);
-
-                task.run(ctx);
-            }
-            catch (Throwable e) {
-                state = GridHadoopTaskState.FAILED;
-                err = e;
-            }
-            finally {
-                execEndTs = System.currentTimeMillis();
-
-                onTaskFinished(this, state, err);
-
-                Thread.currentThread().setContextClassLoader(old);
-            }
-        }
     }
 
     /**

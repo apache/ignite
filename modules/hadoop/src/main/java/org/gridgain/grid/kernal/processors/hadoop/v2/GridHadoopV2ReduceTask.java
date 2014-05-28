@@ -20,50 +20,47 @@ import java.io.*;
 /**
  * Hadoop reduce task implementation for v2 API.
  */
-public class GridHadoopV2ReduceTask extends GridHadoopTask {
+public class GridHadoopV2ReduceTask extends GridHadoopV2Task {
+    /** {@code True} if reduce, {@code false} if combine. */
+    private final boolean reduce;
+
     /**
+     * Constructor.
+     *
      * @param taskInfo Task info.
+     * @param reduce {@code True} if reduce, {@code false} if combine.
      */
-    public GridHadoopV2ReduceTask(GridHadoopTaskInfo taskInfo) {
+    public GridHadoopV2ReduceTask(GridHadoopTaskInfo taskInfo, boolean reduce) {
         super(taskInfo);
+
+        this.reduce = reduce;
     }
 
     /** {@inheritDoc} */
-    @Override public void run(GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
+    @SuppressWarnings({"ConstantConditions", "unchecked"})
+    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job)taskCtx.job();
 
         JobContext jobCtx = jobImpl.hadoopJobContext();
 
-        Reducer reducer;
-        OutputFormat outputFormat;
-
         try {
-            reducer = U.newInstance(jobCtx.getReducerClass());
-            outputFormat = U.newInstance(jobCtx.getOutputFormatClass());
-        }
-        catch (ClassNotFoundException e) {
-            throw new GridException(e);
-        }
+            Reducer reducer = U.newInstance(reduce ? jobCtx.getReducerClass() : jobCtx.getCombinerClass());
 
-        GridHadoopV2Context hadoopCtx = new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx, jobImpl.attemptId(info()));
+            GridHadoopV2Context hadoopCtx = new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx,
+                jobImpl.attemptId(info()));
 
-        try {
-            RecordWriter writer = outputFormat.getRecordWriter(hadoopCtx);
-
-            hadoopCtx.writer(writer);
+            OutputFormat outputFormat = reduce || !jobImpl.hasReducer() ? prepareWriter(hadoopCtx, jobCtx) : null;
 
             try {
                 reducer.run(new WrappedReducer().getReducerContext(hadoopCtx));
             }
             finally {
-                writer.close(hadoopCtx);
+                closeWriter(hadoopCtx);
             }
 
-            OutputCommitter outputCommitter = outputFormat.getOutputCommitter(hadoopCtx);
-
-            outputCommitter.commitTask(hadoopCtx);
+            commit(hadoopCtx, outputFormat);
         }
-        catch (IOException e) {
+        catch (ClassNotFoundException | IOException e) {
             throw new GridException(e);
         }
         catch (InterruptedException e) {

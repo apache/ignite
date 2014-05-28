@@ -186,14 +186,9 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
                             }
                         }
 
-                        if (bestNodeIds != null && bestNodeIds.size() == 1)
-                            // Optimization: if there is only one node with maximum length, return it.
-                            return bestNodeIds.get(0);
-                        else {
-                            // Several nodes have maximum length, decide which one to use.
-                            assert bestNodeIds != null;
-
-                            return bestNode(bestNodeIds, topIds, nodeLoads, true);
+                        if (bestNodeIds != null) {
+                            return bestNodeIds.size() == 1 ? bestNodeIds.get(0) :
+                                bestNode(bestNodeIds, topIds, nodeLoads, true);
                         }
                     }
                 }

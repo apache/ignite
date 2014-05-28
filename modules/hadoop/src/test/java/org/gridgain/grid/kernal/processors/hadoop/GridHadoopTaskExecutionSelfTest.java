@@ -21,6 +21,7 @@ import org.gridgain.grid.ggfs.hadoop.v1.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 
 import java.io.*;
@@ -63,12 +64,21 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGrids(gridCount());
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+
+        super.afterTestsStopped();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        grid(0).ggfs(ggfsName).format().get();
     }
 
     /** {@inheritDoc} */
@@ -106,6 +116,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         job.setInputFormatClass(TextInputFormat.class);
 
         FileInputFormat.setInputPaths(job, new Path("ggfs:///"));
+        FileOutputFormat.setOutputPath(job, new Path("ggfs:///output/"));
 
         job.setJarByClass(getClass());
 
@@ -148,7 +159,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         job.setInputFormatClass(TextInputFormat.class);
 
         FileInputFormat.setInputPaths(job, new Path("ggfs:///"));
-        FileOutputFormat.setOutputPath(job, new Path("ggfs:///"));
+        FileOutputFormat.setOutputPath(job, new Path("ggfs:///output"));
 
         job.setJarByClass(getClass());
 
@@ -191,6 +202,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         job.setInputFormatClass(TextInputFormat.class);
 
         FileInputFormat.setInputPaths(job, new Path("ggfs:///"));
+        FileOutputFormat.setOutputPath(job, new Path("ggfs:///output/"));
 
         job.setJarByClass(getClass());
 
@@ -241,7 +253,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         Configuration cfg = new Configuration();
 
-        cfg.setStrings("fs.ggfs.impl", GridGgfsHadoopFileSystem.class.getName());
+        cfg.set("fs.ggfs.impl", GridGgfsHadoopFileSystem.class.getName());
 
         Job job = Job.getInstance(cfg);
         job.setOutputKeyClass(Text.class);
@@ -253,7 +265,8 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         job.setInputFormatClass(TextInputFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("ggfs://ipc/"));
+        FileInputFormat.setInputPaths(job, new Path("ggfs:///"));
+        FileOutputFormat.setOutputPath(job, new Path("ggfs:///output/"));
 
         job.setJarByClass(getClass());
 
@@ -263,9 +276,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         final GridFuture<?> fut = hadoop.submit(jobId, new GridHadoopDefaultJobInfo(job.getConfiguration()));
 
-        while (executedTasks.get() != 32) {
-            Thread.sleep(100);
-        }
+        U.sleep(2000);
 
         // Fail mapper with id "1", cancels others
         failMapperId = 1;
@@ -304,6 +315,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
                 cancelledTasks.incrementAndGet();
 
                 Thread.currentThread().interrupt();
+
                 throw e;
             }
         }

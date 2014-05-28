@@ -57,6 +57,8 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+
+        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
@@ -156,7 +158,21 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testTaskWithCombiner() throws Exception {
+    public void testTaskWithCombinerPerMap() throws Exception {
+        checkTaskWithCombiner(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTaskWithCombinerPerNode() throws Exception {
+        checkTaskWithCombiner(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkTaskWithCombiner(boolean singleCombiner) throws Exception {
         try {
             GridKernal kernal = (GridKernal)grid(0);
 
@@ -171,6 +187,8 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
             cfg.setInt(BLOCK_CNT, cnt);
 
             cfg.setClass(MRJobConfig.COMBINE_CLASS_ATTR, TestCombiner.class, Reducer.class);
+
+            cfg.setBoolean(GridHadoopJobProperty.SINGLE_COMBINER_FOR_ALL_MAPPERS.propertyName(), singleCombiner);
 
             GridHadoopJobId jobId = new GridHadoopJobId(globalId, 1);
 
@@ -224,7 +242,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
             }
 
             assertEquals(10, maps);
-            assertEquals(3, combines);
+            assertEquals(singleCombiner ? 3 : 10, combines);
             assertEquals(1, reduces);
         }
         finally {

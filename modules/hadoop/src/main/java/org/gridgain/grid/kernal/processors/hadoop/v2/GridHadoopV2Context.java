@@ -10,11 +10,20 @@
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.conf.*;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.*;
+import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.mapreduce.InputFormat;
+import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.JobID;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.counters.*;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+import org.apache.hadoop.mapreduce.lib.partition.*;
 import org.apache.hadoop.security.*;
-
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 
@@ -53,6 +62,9 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
         this.cfg = new Configuration(cfg);
         this.taskAttemptID = taskAttemptID;
 
+        this.cfg.set("mapreduce.job.id", taskAttemptID.getJobID().toString());
+        this.cfg.set("mapreduce.task.id", taskAttemptID.getTaskID().toString());
+
         output = ctx.output();
         input = ctx.input();
     }
@@ -85,6 +97,7 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void write(Object key, Object val) throws IOException, InterruptedException {
         if (writer != null)
             writer.write(key, val);
@@ -125,12 +138,12 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
 
     /** {@inheritDoc} */
     @Override public Counter getCounter(Enum<?> cntrName) {
-        throw new UnsupportedOperationException();
+        return new GenericCounter(cntrName.name(), cntrName.name());
     }
 
     /** {@inheritDoc} */
     @Override public Counter getCounter(String grpName, String cntrName) {
-        throw new UnsupportedOperationException();
+        return new GenericCounter(cntrName, cntrName);
     }
 
     /** {@inheritDoc} */
@@ -145,72 +158,103 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
 
     /** {@inheritDoc} */
     @Override public JobID getJobID() {
-        throw new UnsupportedOperationException();
+        return taskAttemptID.getJobID();
     }
 
     /** {@inheritDoc} */
     @Override public int getNumReduceTasks() {
-        throw new UnsupportedOperationException();
+        return cfg.getInt(org.apache.hadoop.mapred.JobContext.NUM_REDUCES, 1);
     }
 
     /** {@inheritDoc} */
     @Override public Path getWorkingDirectory() throws IOException {
-        throw new UnsupportedOperationException();
+        String name = cfg.get(JobContext.WORKING_DIR);
+
+        if (name != null)
+            return new Path(name);
+        else {
+            try {
+                Path dir = FileSystem.get(cfg).getWorkingDirectory();
+
+                cfg.set(JobContext.WORKING_DIR, dir.toString());
+
+                return dir;
+            }
+            catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     /** {@inheritDoc} */
     @Override public Class<?> getOutputKeyClass() {
-        throw new UnsupportedOperationException();
+        return cfg.getClass(JobContext.OUTPUT_KEY_CLASS, LongWritable.class, Object.class);
     }
 
     /** {@inheritDoc} */
     @Override public Class<?> getOutputValueClass() {
-        throw new UnsupportedOperationException();
+        return cfg.getClass(JobContext.OUTPUT_VALUE_CLASS, Text.class, Object.class);
     }
 
     /** {@inheritDoc} */
     @Override public Class<?> getMapOutputKeyClass() {
-        throw new UnsupportedOperationException();
+        Class<?> res = cfg.getClass(JobContext.MAP_OUTPUT_KEY_CLASS, null, Object.class);
+
+        if (res == null)
+            res = getOutputKeyClass();
+
+        return res;
     }
 
     /** {@inheritDoc} */
     @Override public Class<?> getMapOutputValueClass() {
-        throw new UnsupportedOperationException();
+        Class<?> res = cfg.getClass(JobContext.MAP_OUTPUT_VALUE_CLASS, null, Object.class);
+
+        if (res == null)
+            res = getOutputValueClass();
+
+        return res;
     }
 
     /** {@inheritDoc} */
     @Override public String getJobName() {
-        throw new UnsupportedOperationException();
+        return cfg.get(JobContext.JOB_NAME, "");
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public Class<? extends InputFormat<?, ?>> getInputFormatClass() throws ClassNotFoundException {
-        throw new UnsupportedOperationException();
+        return (Class<? extends InputFormat<?,?>>)cfg.getClass(INPUT_FORMAT_CLASS_ATTR, TextInputFormat.class);
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public Class<? extends Mapper<?, ?, ?, ?>> getMapperClass() throws ClassNotFoundException {
-        throw new UnsupportedOperationException();
+        return (Class<? extends Mapper<?,?,?,?>>)cfg.getClass(MAP_CLASS_ATTR, Mapper.class);
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public Class<? extends Reducer<?, ?, ?, ?>> getCombinerClass() throws ClassNotFoundException {
-        throw new UnsupportedOperationException();
+        return (Class<? extends Reducer<?,?,?,?>>)cfg.getClass(COMBINE_CLASS_ATTR, null);
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public Class<? extends Reducer<?, ?, ?, ?>> getReducerClass() throws ClassNotFoundException {
-        throw new UnsupportedOperationException();
+        return (Class<? extends Reducer<?,?,?,?>>)cfg.getClass(REDUCE_CLASS_ATTR, Reducer.class);
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public Class<? extends OutputFormat<?, ?>> getOutputFormatClass() throws ClassNotFoundException {
-        throw new UnsupportedOperationException();
+        return (Class<? extends OutputFormat<?,?>>)cfg.getClass(OUTPUT_FORMAT_CLASS_ATTR, TextOutputFormat.class);
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public Class<? extends Partitioner<?, ?>> getPartitionerClass() throws ClassNotFoundException {
-        throw new UnsupportedOperationException();
+        return (Class<? extends Partitioner<?,?>>)cfg.getClass(PARTITIONER_CLASS_ATTR, HashPartitioner.class);
     }
 
     /** {@inheritDoc} */
@@ -220,7 +264,7 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
 
     /** {@inheritDoc} */
     @Override public String getJar() {
-        throw new UnsupportedOperationException();
+        return cfg.get(JobContext.JAR);
     }
 
     /** {@inheritDoc} */
@@ -230,87 +274,109 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
 
     /** {@inheritDoc} */
     @Override public boolean getJobSetupCleanupNeeded() {
-        throw new UnsupportedOperationException();
+        return cfg.getBoolean(JobContext.SETUP_CLEANUP_NEEDED, false);
     }
 
     /** {@inheritDoc} */
     @Override public boolean getTaskCleanupNeeded() {
-        throw new UnsupportedOperationException();
+        return cfg.getBoolean(JobContext.TASK_CLEANUP_NEEDED, false);
     }
 
     /** {@inheritDoc} */
     @Override public boolean getProfileEnabled() {
-        throw new UnsupportedOperationException();
+        return cfg.getBoolean(JobContext.TASK_PROFILE, false);
     }
 
     /** {@inheritDoc} */
     @Override public String getProfileParams() {
-        throw new UnsupportedOperationException();
+        return cfg.get(JobContext.TASK_PROFILE_PARAMS,
+            "-agentlib:hprof=cpu=samples,heap=sites,force=n,thread=y,verbose=n,file=%s");
     }
 
     /** {@inheritDoc} */
     @Override public Configuration.IntegerRanges getProfileTaskRange(boolean isMap) {
-        throw new UnsupportedOperationException();
+        return new Configuration.IntegerRanges(cfg.get(isMap ? JobContext.NUM_MAP_PROFILES :
+            JobContext.NUM_REDUCE_PROFILES, "0-2"));
     }
 
     /** {@inheritDoc} */
     @Override public String getUser() {
-        throw new UnsupportedOperationException();
+        return cfg.get(JobContext.USER_NAME);
     }
 
     /** {@inheritDoc} */
     @Override public boolean getSymlink() {
-        throw new UnsupportedOperationException();
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public Path[] getArchiveClassPaths() {
-        throw new UnsupportedOperationException();
+        ArrayList<String> list = (ArrayList<String>)cfg.getStringCollection(MRJobConfig.CLASSPATH_ARCHIVES);
+
+        if (list.size() == 0)
+            return null;
+
+        Path[] paths = new Path[list.size()];
+
+        for (int i = 0; i < list.size(); i++)
+            paths[i] = new Path(list.get(i));
+
+        return paths;
     }
 
     /** {@inheritDoc} */
     @Override public URI[] getCacheArchives() throws IOException {
-        throw new UnsupportedOperationException();
+        return stringsToURIs(cfg.getStrings(MRJobConfig.CACHE_ARCHIVES));
     }
 
     /** {@inheritDoc} */
     @Override public URI[] getCacheFiles() throws IOException {
-        throw new UnsupportedOperationException();
+        return stringsToURIs(cfg.getStrings(MRJobConfig.CACHE_FILES));
     }
 
     /** {@inheritDoc} */
     @Override public Path[] getLocalCacheArchives() throws IOException {
-        throw new UnsupportedOperationException();
+        return stringsToPaths(cfg.getStrings(MRJobConfig.CACHE_LOCALARCHIVES));
     }
 
     /** {@inheritDoc} */
     @Override public Path[] getLocalCacheFiles() throws IOException {
-        throw new UnsupportedOperationException();
+        return stringsToPaths(cfg.getStrings(MRJobConfig.CACHE_LOCALFILES));
     }
 
     /** {@inheritDoc} */
     @Override public Path[] getFileClassPaths() {
-        throw new UnsupportedOperationException();
+        ArrayList<String> list = (ArrayList<String>)cfg.getStringCollection(MRJobConfig.CLASSPATH_FILES);
+
+        if (list.size() == 0)
+            return null;
+
+        Path[] paths = new Path[list.size()];
+
+        for (int i = 0; i < list.size(); i++)
+            paths[i] = new Path(list.get(i));
+
+        return paths;
     }
 
     /** {@inheritDoc} */
     @Override public String[] getArchiveTimestamps() {
-        throw new UnsupportedOperationException();
+        return cfg.getStrings(MRJobConfig.CACHE_ARCHIVES_TIMESTAMPS);
     }
 
     /** {@inheritDoc} */
     @Override public String[] getFileTimestamps() {
-        throw new UnsupportedOperationException();
+        return cfg.getStrings(MRJobConfig.CACHE_FILE_TIMESTAMPS);
     }
 
     /** {@inheritDoc} */
     @Override public int getMaxMapAttempts() {
-        throw new UnsupportedOperationException();
+        return cfg.getInt(JobContext.MAP_MAX_ATTEMPTS, 4);
     }
 
     /** {@inheritDoc} */
     @Override public int getMaxReduceAttempts() {
-        throw new UnsupportedOperationException();
+        return cfg.getInt(JobContext.REDUCE_MAX_ATTEMPTS, 4);
     }
 
     /** {@inheritDoc} */
@@ -345,11 +411,60 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
     }
 
     /**
+     * @return Overridden output data writer.
+     */
+    public RecordWriter writer() {
+        return writer;
+    }
+
+    /**
      * Overrides default output data writer.
      *
      * @param writer New writer.
      */
     public void writer(RecordWriter writer) {
         this.writer = writer;
+    }
+
+    /**
+     * Convert strings to URIs.
+     *
+     * @param strs Strings.
+     * @return URIs.
+     */
+    public static URI[] stringsToURIs(String[] strs){
+        if (strs == null)
+            return null;
+
+        URI[] uris = new URI[strs.length];
+
+        for (int i = 0; i < strs.length;i++){
+
+            try{
+                uris[i] = new URI(strs[i]);
+            }
+            catch(URISyntaxException e){
+                throw new IllegalArgumentException("Failed to create URI for string:" + strs[i], e);
+            }
+        }
+        return uris;
+    }
+
+    /**
+     * Convert strings to paths.
+     *
+     * @param strs Strings.
+     * @return Paths.
+     */
+    public static Path[] stringsToPaths(String[] strs){
+        if (strs == null)
+            return null;
+
+        Path[] paths = new Path[strs.length];
+
+        for (int i = 0; i < strs.length;i++)
+            paths[i] = new Path(strs[i]);
+
+        return paths;
     }
 }

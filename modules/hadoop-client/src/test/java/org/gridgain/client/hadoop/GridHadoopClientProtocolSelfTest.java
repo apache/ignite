@@ -17,6 +17,7 @@ import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.mapreduce.lib.output.*;
 import org.apache.hadoop.mapreduce.protocol.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -72,6 +73,8 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+
+        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
@@ -84,7 +87,18 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        grid(0).ggfs(GridHadoopAbstractSelfTest.ggfsName).format().get();
+
         super.afterTest();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridHadoopConfiguration hadoopConfiguration(String gridName) {
+        GridHadoopConfiguration cfg = super.hadoopConfiguration(gridName);
+
+        cfg.setExternalExecution(false);
+
+        return cfg;
     }
 
     /**
@@ -112,11 +126,45 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     }
 
     /**
-     * Test job submission.
-     *
      * @throws Exception If failed.
      */
-    public void testJobSubmit() throws Exception {
+    // TODO: GG-8427: Enable when fixed.
+    public void _testJobSubmitMap() throws Exception {
+        checkJobSubmit(true, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    // TODO: GG-8427: Enable when fixed.
+    public void _testJobSubmitMapCombine() throws Exception {
+        checkJobSubmit(false, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    // TODO: GG-8427: Enable when fixed.
+    public void _testJobSubmitMapReduce() throws Exception {
+        checkJobSubmit(true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    // TODO: GG-8427: Enable when fixed.
+    public void _testJobSubmitMapCombineReduce() throws Exception {
+        checkJobSubmit(false, false);
+    }
+
+    /**
+     * Test job submission.
+     *
+     * @param noCombiners Whether there are no combiners.
+     * @param noReducers Whether there are no reducers.
+     * @throws Exception If failed.
+     */
+    public void checkJobSubmit(boolean noCombiners, boolean noReducers) throws Exception {
         GridGgfs ggfs = grid(0).ggfs(GridHadoopAbstractSelfTest.ggfsName);
 
         ggfs.mkdirs(new GridGgfsPath(PATH_INPUT));
@@ -139,6 +187,12 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
         job.setMapperClass(TestMapper.class);
         job.setReducerClass(TestReducer.class);
+
+        if (!noCombiners)
+            job.setCombinerClass(TestCombiner.class);
+
+        if (noReducers)
+            job.setNumReduceTasks(0);
 
         job.setInputFormatClass(TextInputFormat.class);
         job.setOutputFormatClass(TextOutputFormat.class);
@@ -163,13 +217,49 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
         assert F.eq(1.0f, job.getStatus().getMapProgress());
 
-        checkJobStatus(job.getStatus(), jobId, JOB_NAME, USR, JobStatus.State.RUNNING, 1.0f, 1.0f, 0.0f, 0.0f);
+        if (!noReducers) {
+            checkJobStatus(job.getStatus(), jobId, JOB_NAME, USR, JobStatus.State.RUNNING, 1.0f, 1.0f, 0.0f, 0.0f);
 
-        reduceLatch.countDown();
+            reduceLatch.countDown();
+        }
 
         job.waitForCompletion(false);
 
         checkJobStatus(job.getStatus(), jobId, JOB_NAME, USR, JobStatus.State.SUCCEEDED, 1.0f, 1.0f, 1.0f, 1.0f);
+
+        dumpGgfs(ggfs, new GridGgfsPath(PATH_OUTPUT));
+    }
+
+    /**
+     * Dump GGFS content.
+     *
+     * @param ggfs GGFS.
+     * @param path Path.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ConstantConditions")
+    private static void dumpGgfs(GridGgfs ggfs, GridGgfsPath path) throws Exception {
+        GridGgfsFile file = ggfs.info(path);
+
+        assert file != null;
+
+        System.out.println(file.path());
+
+        if (file.isDirectory()) {
+            for (GridGgfsPath child : ggfs.listPaths(path))
+                dumpGgfs(ggfs, child);
+        }
+        else {
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(ggfs.open(path)))) {
+                String line = br.readLine();
+
+                while (line != null) {
+                    System.out.println(line);
+
+                    line = br.readLine();
+                }
+            }
+        }
     }
 
     /**
@@ -192,7 +282,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         assert F.eq(status.getJobID(), expJobId);
         assert F.eq(status.getJobName(), expJobName);
         assert F.eq(status.getUsername(), expUser);
-        assert F.eq(status.getState(), expState);
+        assert F.eq(status.getState(), expState) : status.getState();
 
         assert F.eq(status.getSetupProgress(), expSetupProgress);
         assert F.eq(status.getMapProgress(), expMapProgress);
@@ -244,6 +334,13 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
                 ctx.write(word, one);
             }
         }
+    }
+
+    /**
+     * Test combiner.
+     */
+    public static class TestCombiner extends Reducer<Text, IntWritable, Text, IntWritable> {
+        // No-op.
     }
 
     /**

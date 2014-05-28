@@ -212,6 +212,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
     /**
      * @param ack Shuffle ack.
      */
+    @SuppressWarnings("ConstantConditions")
     public void onShuffleAck(GridHadoopShuffleAck ack) {
         GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapterEx<?>> tup = sentMsgs.get(ack.id());
 
@@ -411,6 +412,9 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
 
         flushed = true;
 
+        if (maps.length() == 0)
+            return new GridFinishedFutureEx<>();
+
         U.await(ioInitLatch);
 
         GridWorker sender0 = sender;
@@ -500,7 +504,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
                         throw new IllegalStateException();
                     }
 
-                    @Override public void close() throws Exception {
+                    @Override public void close() {
                         // No-op.
                     }
                 };

@@ -15,7 +15,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * TODO write doc
+ * Map-reduce execution planner.
  */
 public interface GridHadoopMapReducePlanner {
     /**

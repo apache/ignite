@@ -13,13 +13,10 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import java.util.concurrent.*;
 import java.util.*;
 
-import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
 import static org.gridgain.grid.kernal.processors.hadoop.taskexecutor.GridHadoopTaskState.*;
 
 /**
@@ -58,45 +55,27 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
             assert extractedCol == null;
         }
 
+        GridHadoopJobClassLoadingContext clsLdrCtx = ctxs.get(job.id());
+
         for (final GridHadoopTaskInfo info : tasks) {
             assert info != null;
 
-            GridFuture<GridFuture<?>> fut = ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<GridFuture<?>>() {
-                @Override public GridFuture<?> call() throws Exception {
-                    long start = System.currentTimeMillis();
-
-                    ClassLoader old = GridHadoopJobClassLoadingContext.prepareClassLoader(ctxs.get(job.id()),
-                        job.info());
-
-                    try (GridHadoopTaskOutput out = createOutput(info);
-                         GridHadoopTaskInput in = createInput(info)) {
-                        GridHadoopTaskContext taskCtx = new GridHadoopTaskContext(job, in, out);
-
-                        GridHadoopTask task = job.createTask(info);
-
-                        if (log.isDebugEnabled())
-                            log.debug("Running task: " + task);
-
-                        task.run(taskCtx);
-                    }
-                    catch (Exception e) {
-                        U.error(log, "Failed to execute task: " + info, e);
-
-                        throw e;
-                    }
-                    finally {
-                        Thread.currentThread().setContextClassLoader(old);
-
-                        long end = System.currentTimeMillis();
-
+            GridFuture<?> fut = ctx.kernalContext().closure().callLocalSafe(
+                new GridHadoopRunnableTask(job, ctx.shuffle().memory(), info, clsLdrCtx) {
+                    @Override protected void onTaskFinished(GridHadoopTaskState state, Throwable err) {
                         if (log.isDebugEnabled())
                             log.debug("Finished task execution [jobId=" + job.id() + ", taskInfo=" + info + ", " +
-                                "execTime=" + (end - start) + ']');
+                                "waitTime=" + waitTime() + ", execTime=" + executionTime() + ']');
                     }
 
-                    return null;
-                }
-            }, false);
+                    @Override protected GridHadoopTaskInput createInput(GridHadoopTaskInfo info) throws GridException {
+                        return ctx.shuffle().input(info);
+                    }
+
+                    @Override protected GridHadoopTaskOutput createOutput(GridHadoopTaskInfo info) throws GridException {
+                        return ctx.shuffle().output(info);
+                    }
+                }, false);
 
             futures.add(fut);
 
@@ -183,31 +162,5 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
                 }
             }
         }
-    }
-
-    /**
-     * Creates task output.
-     *
-     * @param taskInfo Task info.
-     * @return Task output.
-     */
-    private GridHadoopTaskOutput createOutput(GridHadoopTaskInfo taskInfo) throws GridException {
-        if (taskInfo.type() == REDUCE || taskInfo.type() == COMMIT || taskInfo.type() == ABORT)
-            return null;
-
-        return ctx.shuffle().output(taskInfo);
-    }
-
-    /**
-     * Creates task input.
-     *
-     * @param taskInfo Task info.
-     * @return Task input.
-     */
-    private GridHadoopTaskInput createInput(GridHadoopTaskInfo taskInfo) throws GridException {
-        if (taskInfo.type() == MAP || taskInfo.type() == COMMIT || taskInfo.type() == ABORT)
-            return null;
-
-        return ctx.shuffle().input(taskInfo);
     }
 }

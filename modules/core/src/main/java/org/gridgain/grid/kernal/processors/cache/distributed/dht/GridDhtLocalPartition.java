@@ -201,15 +201,17 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
     /**
      * @param entry Entry to remove.
      */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     void onRemoved(GridDhtCacheEntry<K, V> entry) {
-        assert Thread.holdsLock(entry);
         assert entry.obsolete();
 
         // Make sure to remove exactly this entry.
-        map.remove(entry.key(), entry);
+        synchronized (entry) {
+            map.remove(entry.key(), entry);
 
-        if (!entry.isInternal() && !entry.deleted())
-            mapPubSize.decrement();
+            if (!entry.isInternal() && !entry.deleted())
+                mapPubSize.decrement();
+        }
 
         // Attempt to evict.
         tryEvict(true);
