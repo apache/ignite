@@ -42,10 +42,8 @@ public class VisorFieldsQueryUtils {
         if (o != null) {
             Class<?> clazz = o.getClass();
 
-            if (clazz.isArray())
-                return GridUtils.compact(clazz.getComponentType().getName()) + "[]";
-            else
-                return GridUtils.compact(o.getClass().getName());
+            return clazz.isArray() ? GridUtils.compact(clazz.getComponentType().getName()) + "[]"
+                : GridUtils.compact(o.getClass().getName());
         }
         else
             return "n/a";
@@ -54,6 +52,8 @@ public class VisorFieldsQueryUtils {
     private static String valueOf(Object o) {
         if (o == null)
             return "null";
+        if (o instanceof byte[])
+            return "size=" + ((byte[]) o).length;
         if (o instanceof Byte[])
             return "size=" + ((Byte[]) o).length;
         if (o instanceof Object[])
@@ -118,7 +118,7 @@ public class VisorFieldsQueryUtils {
             next = fut.next();
         }
 
-        return new GridBiTuple<List<Object[]>, Map.Entry<Object, Object>>(rows, next);
+        return new GridBiTuple<>(rows, next);
     }
 
     /**
@@ -149,13 +149,13 @@ public class VisorFieldsQueryUtils {
      * @param pageSize Number of rows to fetch.
      * @return Fetched rows and last processed element.
      */
-    public static GridBiTuple<List<Object[]>, List<Object>> fetchSqlQueryRows(GridCacheQueryFuture<List<Object>> fut,
-        List<Object> savedNext, int pageSize) throws GridException {
-        List<Object> rows = new ArrayList<Object>();
+    public static GridBiTuple<List<Object[]>, List<?>> fetchSqlQueryRows(GridCacheQueryFuture<List<?>> fut,
+        List<?> savedNext, int pageSize) throws GridException {
+        List<Object[]> rows = new ArrayList<>();
 
         int cnt = 0;
 
-        List<Object> next = savedNext != null ? savedNext : fut.next();
+        List<?> next = savedNext != null ? savedNext : fut.next();
 
         while (next != null && cnt < pageSize) {
             Object[] row = new Object[next.size()];
@@ -179,6 +179,6 @@ public class VisorFieldsQueryUtils {
             next = fut.next();
         }
 
-        return new GridBiTuple(rows, next);
+        return new GridBiTuple<List<Object[]>, List<?>>(rows, next);
     }
 }
