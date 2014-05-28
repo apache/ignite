@@ -25,6 +25,7 @@ import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -238,10 +239,14 @@ public class GridHadoopChildProcessRunner {
 
                 if (req.reducersAddresses() != null) {
                     if (shuffleJob.initializeReduceAddresses(req.reducersAddresses())) {
+                        System.out.println("INITIALIZED REDUCERS: " + Arrays.toString(req.reducersAddresses()));
+
                         shuffleJob.startSending("external",
                             new GridInClosure2X<GridHadoopProcessDescriptor, GridHadoopShuffleMessage>() {
                                 @Override public void applyx(GridHadoopProcessDescriptor dest,
                                     GridHadoopShuffleMessage msg) throws GridException {
+                                    System.out.println("SEND SHUFFLE MESSAGE: " + msg);
+
                                     comm.sendMessage(dest, msg);
                                 }
                             });
@@ -401,6 +406,8 @@ public class GridHadoopChildProcessRunner {
                         log.trace("Received shuffle message [desc=" + desc + ", msg=" + msg + ']');
 
                     GridHadoopShuffleMessage m = (GridHadoopShuffleMessage)msg;
+
+                    System.out.println("RECEIVED SHUFFLE: " + m);
 
                     shuffleJob.onShuffleMessage(m);
 

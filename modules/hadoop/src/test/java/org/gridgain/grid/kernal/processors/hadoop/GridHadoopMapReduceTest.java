@@ -33,11 +33,11 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
         return 2;
     }
 
-    @Override
-    public GridHadoopConfiguration hadoopConfiguration(String gridName) {
+    // TODO: Remove.
+    @Override public GridHadoopConfiguration hadoopConfiguration(String gridName) {
         GridHadoopConfiguration cfg = super.hadoopConfiguration(gridName);
 
-        cfg.setExternalExecution(false);
+        cfg.setExternalExecution(true);
 
         return cfg;
     }

@@ -29,6 +29,7 @@ public class GridHadoopWordCount2Reducer extends Reducer<Text, IntWritable, Text
             wordCnt += value.get();
 
         totalWordCnt.set(wordCnt);
+
         ctx.write(key, totalWordCnt);
     }
 }

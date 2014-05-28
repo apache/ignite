@@ -186,7 +186,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
      * @return Task output.
      * @throws GridException If failed.
      */
-    private GridHadoopTaskOutput createOutput(GridHadoopTaskInfo info, boolean localCombiner) throws GridException {
+    private GridHadoopTaskOutput createOutput(GridHadoopTaskInfo info, final boolean localCombiner) throws GridException {
         switch (info.type()) {
             case REDUCE:
             case COMMIT:
@@ -203,7 +203,6 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
 
                     return new GridHadoopTaskOutput() {
                         @Override public void write(Object key, Object val) throws GridException {
-                            // TODO: Possibly here?
                             in.add(key, val);
                         }
 

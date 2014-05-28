@@ -305,12 +305,12 @@ public class GridHadoopJobMetadata implements Externalizable {
     public int taskNumber(Object src) {
         Integer res = taskNumMap.get(src);
 
-        U.debug("TASK NUM FOR SPLIT [src=" + src + ", res=" + res + ']');
-
-        for (Map.Entry<Object, Integer> entry : taskNumMap.entrySet())
-            U.debug("    " + entry);
-
-        System.out.println("");
+//        U.debug("TASK NUM FOR SPLIT [src=" + src + ", res=" + res + ']');
+//
+//        for (Map.Entry<Object, Integer> entry : taskNumMap.entrySet())
+//            U.debug("    " + entry);
+//
+//        System.out.println("");
 
         if (res == null)
             throw new IllegalArgumentException("Failed to find task number for source [src=" + src +
