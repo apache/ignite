@@ -11,23 +11,26 @@
 
 package org.gridgain.visor.commands.events
 
-import java.util.UUID
-import collection.immutable._
-import collection.JavaConversions._
 import org.gridgain.grid._
 import org.gridgain.grid.events._
 import org.gridgain.grid.events.GridEventType._
 import org.gridgain.grid.kernal.GridEx
 import org.gridgain.grid.kernal.processors.task.GridInternal
-import org.gridgain.grid.util.{GridUtils => U}
-import org.gridgain.grid.util.scala.impl
-import org.gridgain.visor._
-import org.gridgain.visor.commands._
-import org.gridgain.visor.commands.{VisorConsoleUtils => CU}
-import org.gridgain.scalar.scalar._
-import visor._
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCollectEventsTask
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCollectEventsTask.VisorCollectEventsArgs
+import org.gridgain.grid.util.{GridUtils => U}
+import org.gridgain.grid.util.scala.impl
+
+import java.util.UUID
+
+import scala.collection.JavaConversions._
+import scala.collection.immutable._
+import scala.language.implicitConversions
+
+import org.gridgain.scalar.scalar._
+import org.gridgain.visor._
+import org.gridgain.visor.commands.{VisorConsoleUtils => CU, _}
+import org.gridgain.visor.visor._
 
 /**
  * ==Overview==
@@ -430,7 +433,7 @@ class VisorEventsCommand {
 /** Descriptor for `GridEvent`. */
 private case class VisorEventData(
     `type`: Int,
-    timestamp: Long,
+    ts: Long,
     name: String,
     shortDisplay: String,
     mnemonic: String
@@ -480,7 +483,7 @@ private class VisorConsoleCollectEventsTask
                 case t => return Right("Unknown event type: " + t)
             }
 
-            Left(if (!arr.isEmpty) (e: GridEvent) => arr.contains(e.`type`) else _ => true)
+            Left(if (arr.nonEmpty) (e: GridEvent) => arr.contains(e.`type`) else _ => true)
         }
     }
 

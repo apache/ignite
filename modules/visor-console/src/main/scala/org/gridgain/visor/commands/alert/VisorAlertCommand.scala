@@ -11,18 +11,22 @@
 
 package org.gridgain.visor.commands.alert
 
+import org.gridgain.grid._
+import org.gridgain.grid.events._
+import org.gridgain.grid.events.GridEventType._
+import org.gridgain.grid.lang.GridPredicate
+import org.gridgain.grid.util.lang.{GridFunc => F}
+
 import java.util.UUID
 import java.util.concurrent.atomic._
-import org.gridgain.visor._
-import org.gridgain.grid._
-import org.gridgain.grid.util.lang.{GridFunc => F}
-import org.gridgain.grid.events._
-import GridEventType._
-import collection.immutable._
+
+import scala.collection.immutable._
+import scala.language.implicitConversions
 import scala.util.control.Breaks._
+
+import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import visor._
-import org.gridgain.grid.lang.GridPredicate
+import org.gridgain.visor.visor._
 
 /**
  * ==Overview==
