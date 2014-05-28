@@ -179,7 +179,34 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         proceedExceptionCaught(ses, ex);
     }
 
-    public ByteBuffer encrypt(GridNioSession ses, ByteBuffer input) throws SSLException, GridException {
+    /**
+     * @param ses Session.
+     * @return SSL handshake flag.
+     */
+    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
+    public boolean lock(GridNioSession ses) {
+        GridNioSslHandler hnd = sslHandler(ses);
+
+        hnd.lock();
+
+        return hnd.isHandshakeFinished();
+    }
+
+    /**
+     * @param ses NIO session.
+     */
+    public void unlock(GridNioSession ses) {
+        sslHandler(ses).unlock();
+    }
+
+    /**
+     * @param ses Session.
+     * @param input Data to encrypt.
+     * @return Output buffer with encrypted data.
+     * @throws SSLException If failed to encrypt.
+     * @throws GridNioException If no handlers were associated with the session.
+     */
+    public ByteBuffer encrypt(GridNioSession ses, ByteBuffer input) throws SSLException, GridNioException {
         GridNioSslHandler hnd = sslHandler(ses);
 
         hnd.lock();
@@ -322,13 +349,12 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
      *
      * @param ses Session instance.
      * @return SSL handler.
-     * @throws GridNioException If no handlers were associated with the session.
      */
-    private GridNioSslHandler sslHandler(GridNioSession ses) throws GridNioException {
+    private GridNioSslHandler sslHandler(GridNioSession ses) {
         GridNioSslHandler hnd = ses.meta(SSL_HANDLER.ordinal());
 
         if (hnd == null)
-            throw new GridNioException("Failed to process incoming message (received message before SSL handler " +
+            throw new GridRuntimeException("Failed to process incoming message (received message before SSL handler " +
                 "was created): " + ses);
 
         return hnd;
