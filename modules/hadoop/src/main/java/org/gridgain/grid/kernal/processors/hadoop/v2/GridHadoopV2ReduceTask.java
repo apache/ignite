@@ -21,11 +21,19 @@ import java.io.*;
  * Hadoop reduce task implementation for v2 API.
  */
 public class GridHadoopV2ReduceTask extends GridHadoopV2Task {
+    /** {@code True} if reduce, {@code false} if combine. */
+    private final boolean reduce;
+
     /**
+     * Constructor.
+     *
      * @param taskInfo Task info.
+     * @param reduce {@code True} if reduce, {@code false} if combine.
      */
-    public GridHadoopV2ReduceTask(GridHadoopTaskInfo taskInfo) {
+    public GridHadoopV2ReduceTask(GridHadoopTaskInfo taskInfo, boolean reduce) {
         super(taskInfo);
+
+        this.reduce = reduce;
     }
 
     /** {@inheritDoc} */
@@ -35,20 +43,13 @@ public class GridHadoopV2ReduceTask extends GridHadoopV2Task {
 
         JobContext jobCtx = jobImpl.hadoopJobContext();
 
-        Reducer reducer;
-
         try {
-            reducer = U.newInstance(jobCtx.getReducerClass());
-        }
-        catch (ClassNotFoundException e) {
-            throw new GridException(e);
-        }
+            Reducer reducer = U.newInstance(reduce ? jobCtx.getReducerClass() : jobCtx.getCombinerClass());
 
-        GridHadoopV2Context hadoopCtx = new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx,
-            jobImpl.attemptId(info()));
+            GridHadoopV2Context hadoopCtx = new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx,
+                jobImpl.attemptId(info()));
 
-        try {
-            OutputFormat outputFormat = prepareWriter(hadoopCtx, jobCtx);
+            OutputFormat outputFormat = reduce || !jobImpl.hasReducer() ? prepareWriter(hadoopCtx, jobCtx) : null;
 
             try {
                 reducer.run(new WrappedReducer().getReducerContext(hadoopCtx));
@@ -59,7 +60,7 @@ public class GridHadoopV2ReduceTask extends GridHadoopV2Task {
 
             commit(hadoopCtx, outputFormat);
         }
-        catch (IOException e) {
+        catch (ClassNotFoundException | IOException e) {
             throw new GridException(e);
         }
         catch (InterruptedException e) {

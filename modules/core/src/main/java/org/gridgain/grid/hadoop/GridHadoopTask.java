@@ -12,14 +12,13 @@ package org.gridgain.grid.hadoop;
 import org.gridgain.grid.*;
 
 import java.io.*;
-import java.text.*;
 
 /**
  * Hadoop task.
  */
 public abstract class GridHadoopTask implements Externalizable {
     /** */
-    protected GridHadoopTaskInfo taskInfo;
+    private GridHadoopTaskInfo taskInfo;
 
     /**
      * Creates task.
