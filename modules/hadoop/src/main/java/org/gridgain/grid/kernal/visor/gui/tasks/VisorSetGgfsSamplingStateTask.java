@@ -51,6 +51,7 @@ public class VisorSetGgfsSamplingStateTask
         }
     }
 
+    /** TODO */
     @SuppressWarnings("PublicInnerClass")
     public static class VisorSetGgfsSamplingStateJob extends VisorOneNodeJob<VisorSetGgfsSamplingStateArg, VisorDummyObject> {
         /** */
