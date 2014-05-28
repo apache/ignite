@@ -75,9 +75,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     private final boolean internal;
 
     /** */
-    private final UUID locNodeId;
-
-    /** */
     private final GridLogger log;
 
     /** */
@@ -175,7 +172,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         marsh = ctx.config().getMarshaller();
 
-        locNodeId = ctx.discovery().localNode().id();
+        UUID locNodeId = ctx.discovery().localNode().id();
 
         jobTopic = TOPIC_JOB.topic(ses.getJobId(), locNodeId);
         taskTopic = TOPIC_TASK.topic(ses.getJobId(), locNodeId);
@@ -616,6 +613,10 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      */
     private void recordEvent(int evtType, @Nullable String msg) {
         assert ctx.event().isRecordable(evtType);
+
+        // Don't generate job events for internal tasks.
+        if (internal)
+            return;
 
         GridJobEvent evt = new GridJobEvent();
 
