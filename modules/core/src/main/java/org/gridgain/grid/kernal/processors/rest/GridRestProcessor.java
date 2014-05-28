@@ -416,8 +416,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
             startProtocol(proto);
         }
         catch (ClassNotFoundException ignored) {
-            U.quietAndWarn(log, "Failed to initialize HTTP REST protocol (consider adding gridgain-rest-http " +
-                "module to classpath).");
+            U.quietAndWarn(log, "Failed to initialize HTTP REST protocol. Consider adding gridgain-rest-http " +
+                "module to classpath.");
         }
         catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
             throw new GridException("Failed to initialize HTTP REST protocol.", e);
