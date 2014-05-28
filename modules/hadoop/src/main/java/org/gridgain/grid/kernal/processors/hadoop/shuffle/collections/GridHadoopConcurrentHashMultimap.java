@@ -344,46 +344,6 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
     }
 
     /**
-     * Key.
-     */
-    public class KeyImpl implements Key {
-        /** */
-        private long meta;
-
-        /** */
-        private Object tmpKey;
-
-        /**
-         * @return Meta pointer for the key.
-         */
-        public long address() {
-            return meta;
-        }
-
-        /**
-         * @param val Value.
-         */
-        @Override public void add(Value val) {
-            int size = val.size();
-
-            long valPtr = mem.allocate(size + 12);
-
-            val.copyTo(valPtr + 12);
-
-            valueSize(valPtr, size);
-
-            long nextVal;
-
-            do {
-                nextVal = value(meta);
-
-                nextValue(valPtr, nextVal);
-            }
-            while(!casValue(meta, nextVal, valPtr));
-        }
-    }
-
-    /**
      * Adder. Must not be shared between threads.
      */
     public class AdderImpl extends AdderBase {
@@ -577,6 +537,46 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
             keys.addAndGet(localKeys.get()); // Here we have race and #keys() method can return wrong result but it is ok.
 
             super.close();
+        }
+
+        /**
+         * Key.
+         */
+        public class KeyImpl implements Key {
+            /** */
+            private long meta;
+
+            /** */
+            private Object tmpKey;
+
+            /**
+             * @return Meta pointer for the key.
+             */
+            public long address() {
+                return meta;
+            }
+
+            /**
+             * @param val Value.
+             */
+            @Override public void add(Value val) {
+                int size = val.size();
+
+                long valPtr = allocate(size + 12);
+
+                val.copyTo(valPtr + 12);
+
+                valueSize(valPtr, size);
+
+                long nextVal;
+
+                do {
+                    nextVal = value(meta);
+
+                    nextValue(valPtr, nextVal);
+                }
+                while(!casValue(meta, nextVal, valPtr));
+            }
         }
     }
 

@@ -34,6 +34,9 @@ import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
  */
 public class GridHadoopShuffleJob<T> implements AutoCloseable {
     /** */
+    private static final int MSG_BUF_SIZE = 32 * 1024;
+
+    /** */
     private final GridHadoopJob job;
 
     /** */
@@ -267,7 +270,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
                 continue; // Skip empty map and local node.
 
             if (msgs[i] == null)
-                msgs[i] = new GridHadoopShuffleMessage(job.id(), i, 4 * 1024);
+                msgs[i] = new GridHadoopShuffleMessage(job.id(), i, MSG_BUF_SIZE);
 
             final int idx = i;
 
@@ -372,7 +375,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
         });
 
         msgs[idx] = newBufMinSize == 0 ? null : new GridHadoopShuffleMessage(job.id(), idx,
-            Math.max(4 * 1024, newBufMinSize));
+            Math.max(MSG_BUF_SIZE, newBufMinSize));
     }
 
     /** {@inheritDoc} */
