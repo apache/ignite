@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 import org.gridgain.client.marshaller.*;
 import org.gridgain.client.marshaller.jdk.*;
 import org.gridgain.client.marshaller.optimized.*;
-import org.gridgain.client.marshaller.protobuf.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
@@ -26,6 +25,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.lang.reflect.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.GridProductImpl.*;
@@ -36,6 +36,10 @@ import static org.gridgain.grid.kernal.processors.rest.client.message.GridClient
  * Listener for nio server that handles incoming tcp rest packets.
  */
 public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridClientMessage> {
+    /** Protobuf marshaller class name. */
+    private static final String PROTOBUF_MARSH_CLS =
+        "org.gridgain.client.marshaller.protobuf.GridClientProtobufMarshaller";
+
     /** Logger. */
     private GridLogger log;
 
@@ -85,8 +89,9 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
         Map<Byte, GridClientMarshaller> tmpMap = new GridLeanMap<>(3);
 
-        tmpMap.put(GridClientProtobufMarshaller.PROTOCOL_ID, new GridClientProtobufMarshaller());
         tmpMap.put(GridClientJdkMarshaller.PROTOCOL_ID, new GridClientJdkMarshaller());
+
+        addProtobufMarshaller(tmpMap);
 
         // Special case for Optimized marshaller, which may throw exception.
         // This may happen, for example, if some Unsafe methods are unavailable.
@@ -103,6 +108,31 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         }
 
         suppMarshMap = Collections.unmodifiableMap(tmpMap);
+    }
+
+    /**
+     * @param map Marshallers map.
+     */
+    private void addProtobufMarshaller(Map<Byte, GridClientMarshaller> map) {
+        try {
+            Class<?> cls = Class.forName(PROTOBUF_MARSH_CLS);
+
+            Constructor<?> cons = cls.getConstructor();
+
+            GridClientMarshaller marsh = (GridClientMarshaller)cons.newInstance();
+
+            Byte protoId = (Byte)cls.getField("PROTOCOL_ID").get(null);
+
+            map.put(protoId, marsh);
+        }
+        catch (ClassNotFoundException ignored) {
+            U.quietAndWarn(log, "Failed to create Protobuf marshaller for REST (C++ and .NET clients won't work). " +
+                "Consider adding gridgain-protobuf module to classpath.");
+        }
+        catch (InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException |
+            NoSuchFieldException e) {
+            U.error(log, "Failed to create Protobuf marshaller for REST.", e);
+        }
     }
 
     /** {@inheritDoc} */

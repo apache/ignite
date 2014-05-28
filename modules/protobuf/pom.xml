@@ -25,7 +25,7 @@
         <relativePath>../../</relativePath>
     </parent>
 
-    <artifactId>gridgain-rest-tcp</artifactId>
+    <artifactId>gridgain-protobuf</artifactId>
 
     <dependencies>
         <dependency>

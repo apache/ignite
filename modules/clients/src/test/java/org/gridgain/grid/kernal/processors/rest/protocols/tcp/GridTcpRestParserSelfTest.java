@@ -46,7 +46,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
     public void testSimplePacketParsing() throws Exception {
         GridNioSession ses = new GridMockNioSession();
 
-        GridTcpRestParser parser = new GridTcpRestParser(log);
+        GridTcpRestParser parser = new GridTcpRestParser();
 
         byte hdr = MEMCACHE_REQ_FLAG;
 
@@ -81,7 +81,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
     public void testIncorrectPackets() throws Exception {
         final GridNioSession ses = new GridMockNioSession();
 
-        final GridTcpRestParser parser = new GridTcpRestParser(log);
+        final GridTcpRestParser parser = new GridTcpRestParser();
 
         final byte[] opaque = new byte[] {0x01, 0x02, 0x03, (byte)0xFF};
 
@@ -139,7 +139,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
 
         GridNioSession ses = new GridMockNioSession();
 
-        GridTcpRestParser parser = new GridTcpRestParser(log);
+        GridTcpRestParser parser = new GridTcpRestParser();
 
         GridClientMessage msg = parser.decode(ses, raw);
 
@@ -166,7 +166,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
 
         GridNioSession ses2 = new GridMockNioSession();
 
-        GridTcpRestParser parser = new GridTcpRestParser(log);
+        GridTcpRestParser parser = new GridTcpRestParser();
 
         GridClientCacheRequest<String, String> req = new GridClientCacheRequest<>(CAS);
 
@@ -250,7 +250,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
 
             GridNioSession ses = new GridMockNioSession();
 
-            GridTcpRestParser parser = new GridTcpRestParser(log);
+            GridTcpRestParser parser = new GridTcpRestParser();
 
             Collection<GridClientCacheRequest> lst = new ArrayList<>(5);
 
@@ -290,7 +290,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
 
             GridNioSession ses = new GridMockNioSession();
 
-            GridTcpRestParser parser = new GridTcpRestParser(log);
+            GridTcpRestParser parser = new GridTcpRestParser();
 
             Collection<GridClientMessage> lst = new ArrayList<>(1);
 

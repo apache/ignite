@@ -56,7 +56,7 @@
 
         <dependency>
             <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-rest-tcp</artifactId>
+            <artifactId>gridgain-protobuf</artifactId>
             <version>${gridgain.version}</version>
             <scope>test</scope>
         </dependency>

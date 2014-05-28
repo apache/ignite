@@ -123,7 +123,7 @@ public class GridClientTestRestServer {
                 .directBuffer(false)
                 .filters(
                     new GridNioAsyncNotifyFilter(gridName, Executors.newFixedThreadPool(2), log),
-                    new GridNioCodecFilter(new GridTcpRestParser(log), log, false)
+                    new GridNioCodecFilter(new GridTcpRestParser(), log, false)
                 )
                 .build();
         }

@@ -9,15 +9,13 @@
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
 import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.protobuf.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.nio.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -35,21 +33,8 @@ public class GridTcpRestParser implements GridNioParser {
     /** UTF-8 charset. */
     private static final Charset UTF_8 = Charset.forName("UTF-8");
 
-    /** Logger. */
-    private final GridLogger log;
-
     /** JDK marshaller. */
     private final GridMarshaller jdkMarshaller = new GridJdkMarshaller();
-
-    /** Protobuf marshaller. */
-    private final GridClientMarshaller protobufMarshaller = new GridClientProtobufMarshaller();
-
-    /**
-     * @param log Logger.
-     */
-    public GridTcpRestParser(GridLogger log) {
-        this.log = log;
-    }
 
     /** {@inheritDoc} */
     @Nullable @Override public GridClientMessage decode(GridNioSession ses, ByteBuffer buf) throws IOException,
@@ -746,13 +731,7 @@ public class GridTcpRestParser implements GridNioParser {
     protected GridClientMarshaller marshaller(GridNioSession ses) {
         GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
 
-        if (marsh == null) {
-            U.warn(log, "No marshaller defined for NIO session, using PROTOBUF as default [ses=" + ses + ']');
-
-            marsh = protobufMarshaller;
-
-            ses.addMeta(MARSHALLER.ordinal(), marsh);
-        }
+        assert marsh != null;
 
         return marsh;
     }

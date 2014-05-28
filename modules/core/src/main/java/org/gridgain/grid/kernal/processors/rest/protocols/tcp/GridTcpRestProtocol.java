@@ -52,7 +52,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
         GridNioServerListener<GridClientMessage> lsnr = new GridTcpRestNioListener(log, hnd);
 
-        GridNioParser parser = new GridTcpRestParser(log);
+        GridNioParser parser = new GridTcpRestParser();
 
         try {
             host = resolveRestTcpHost(cfg);

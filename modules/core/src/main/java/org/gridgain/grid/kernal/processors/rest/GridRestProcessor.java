@@ -19,6 +19,7 @@ import org.gridgain.grid.kernal.processors.rest.handlers.log.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.task.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.top.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.version.*;
+import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.future.*;
@@ -36,10 +37,6 @@ import static org.gridgain.grid.spi.GridSecuritySubjectType.*;
  * Rest processor implementation.
  */
 public class GridRestProcessor extends GridProcessorAdapter {
-    /** TCP protocol class name. */
-    private static final String TCP_PROTO_CLS =
-        "org.gridgain.grid.kernal.processors.rest.protocols.tcp.GridTcpRestProtocol";
-
     /** HTTP protocol class name. */
     private static final String HTTP_PROTO_CLS =
         "org.gridgain.grid.kernal.processors.rest.protocols.http.jetty.GridJettyRestProtocol";
@@ -147,8 +144,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
             addHandler(new GridLogCommandHandler(ctx));
 
             // Start protocols.
-            startProtocol(TCP_PROTO_CLS, "TCP", "gridgain-rest-tcp");
-            startProtocol(HTTP_PROTO_CLS, "HTTP", "gridgain-rest-http");
+            startTcpProtocol();
+            startHttpProtocol();
         }
     }
 
@@ -395,39 +392,52 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param protoCls Protocol class name.
-     * @throws GridException If protocol initialization failed.
+     * Starts TCP protocol.
+     *
+     * @throws GridException In case of error.
      */
-    private void startProtocol(String protoCls, String protoName, String moduleName) throws GridException {
-        assert protoCls != null;
+    private void startTcpProtocol() throws GridException {
+        startProtocol(new GridTcpRestProtocol(ctx));
+    }
 
-        GridRestProtocol proto = null;
-
+    /**
+     * Starts HTTP protocol if it exists on classpath.
+     *
+     * @throws GridException In case of error.
+     */
+    private void startHttpProtocol() throws GridException {
         try {
-            Class<?> cls = Class.forName(protoCls);
+            Class<?> cls = Class.forName(HTTP_PROTO_CLS);
 
             Constructor<?> ctor = cls.getConstructor(GridKernalContext.class);
 
-            proto = (GridRestProtocol)ctor.newInstance(ctx);
+            GridRestProtocol proto = (GridRestProtocol)ctor.newInstance(ctx);
+
+            startProtocol(proto);
         }
         catch (ClassNotFoundException ignored) {
-            U.quietAndWarn(log, "Failed to initialize " + protoName + " REST protocol (consider adding " +
-                moduleName + " module to classpath).");
+            U.quietAndWarn(log, "Failed to initialize HTTP REST protocol (consider adding gridgain-rest-http " +
+                "module to classpath).");
         }
         catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
-            throw new GridException("Failed to initialize " + protoName + " REST protocol: " + protoCls, e);
+            throw new GridException("Failed to initialize HTTP REST protocol.", e);
         }
+    }
 
-        if (proto != null) {
-            assert !protos.contains(proto);
+    /**
+     * @param proto Protocol.
+     * @throws GridException If protocol initialization failed.
+     */
+    private void startProtocol(GridRestProtocol proto) throws GridException {
+        assert proto != null;
+        assert !protos.contains(proto);
 
-            protos.add(proto);
+        protos.add(proto);
 
-            proto.start(protoHnd);
+        proto.start(protoHnd);
 
-            if (log.isDebugEnabled())
-                log.debug("Added REST protocol: " + proto);
-        }
+        if (log.isDebugEnabled())
+            log.debug("Added REST protocol: " + proto);
     }
 
     /** {@inheritDoc} */
