@@ -15,7 +15,6 @@ import org.gridgain.grid.cache.cloner.*;
 import org.gridgain.grid.dr.*;
 import org.gridgain.grid.dr.cache.receiver.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
@@ -184,9 +183,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Cache name. */
     private String cacheName;
-
-    /** Security subject. */
-    private Object subj;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -531,7 +527,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @throws GridSecurityException If security check failed.
      */
     public void checkSecurity(GridSecurityPermission op) throws GridSecurityException {
-        ctx.auth().authorize(op);
+        ctx.auth().authorize(name(), op, null);
     }
 
     /**

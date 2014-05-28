@@ -14,7 +14,6 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.product.*;
-import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -205,15 +204,6 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
      */
     public Map<String, Object> getAttributes() {
         return attrs;
-    }
-
-    /**
-     * Gets node security credentials.
-     *
-     * @return Node security credentials.
-     */
-    public GridSecurityCredentials securityCredentials() {
-        return (GridSecurityCredentials)attrs.get(GridNodeAttributes.ATTR_SECURITY_CREDENTIALS);
     }
 
     /** {@inheritDoc} */

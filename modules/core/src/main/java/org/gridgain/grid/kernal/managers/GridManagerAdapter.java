@@ -15,7 +15,9 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.util.direct.*;
@@ -435,9 +437,9 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                         ctx.swap().remove(spaceName, key, null, ldr);
                     }
 
-                    @Override public Object authenticateNode(UUID nodeId, Map<String, Object> attrs)
+                    @Override public GridSecurityContext authenticateNode(GridNode node, GridSecurityCredentials cred)
                         throws GridException {
-                        return ctx.auth().authenticateNode(nodeId, attrs);
+                        return ctx.auth().authenticateNode(node, cred);
                     }
 
                     @Override public GridNodeValidationResult validateNode(GridNode node) {

@@ -22,6 +22,15 @@ public class GridSecurityContext {
     private GridSecuritySubject subj;
 
     /**
+     * @param subj Subject.
+     */
+    public GridSecurityContext(GridSecuritySubject subj) {
+        this.subj = subj;
+
+        // TODO init permissions rules.
+    }
+
+    /**
      * @return Security subject.
      */
     public GridSecuritySubject subject() {

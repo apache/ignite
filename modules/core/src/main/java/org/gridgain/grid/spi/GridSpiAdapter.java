@@ -14,8 +14,10 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.util.json.*;
 import org.gridgain.grid.util.typedef.*;
@@ -61,8 +63,8 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
 
     /** Authenticator. */
     private volatile Authenticator auth = new Authenticator() {
-        @Override public Object authenticateNode(UUID nodeId, Map<String, Object> attrs) {
-            return false;
+        @Override public GridSecurityContext authenticateNode(GridNode node, GridSecurityCredentials cred) {
+            return null;
         }
     };
 
@@ -138,8 +140,9 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
         assert spiCtx != null;
 
         auth = new Authenticator() {
-            @Override public Object authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException {
-                return spiCtx.authenticateNode(nodeId, attrs);
+            @Override public GridSecurityContext authenticateNode(GridNode node, GridSecurityCredentials cred) throws
+                GridException {
+                return spiCtx.authenticateNode(node, cred);
             }
         };
 
@@ -692,8 +695,8 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
         }
 
         /** {@inheritDoc} */
-        @Override public Object authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException {
-            return auth.authenticateNode(nodeId, attrs);
+        @Override public GridSecurityContext authenticateNode(GridNode node, GridSecurityCredentials cred) throws GridException {
+            return auth.authenticateNode(node, cred);
         }
 
         /** {@inheritDoc} */
@@ -719,11 +722,11 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
         /**
          * Delegates to real implementation whenever possible.
          *
-         * @param nodeId Node ID.
-         * @param attrs Attributes.
+         * @param node Node.
+         * @param cred Credentials.
          * @return {@code True} if passed authentication.
          * @throws GridException If failed.
          */
-        public Object authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException;
+        public GridSecurityContext authenticateNode(GridNode node, GridSecurityCredentials cred) throws GridException;
     }
 }

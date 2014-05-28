@@ -1651,7 +1651,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     public GridFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached, boolean checkTx,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>... filter) {
-        ctx.checkSecurity(GridSecurityPermission.READ);
+        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         ctx.denyOnFlag(LOCAL);
 

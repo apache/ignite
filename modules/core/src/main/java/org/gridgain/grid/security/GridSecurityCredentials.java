@@ -9,12 +9,14 @@
 
 package org.gridgain.grid.security;
 
-import java.net.*;
+import org.gridgain.grid.util.typedef.*;
+
+import java.io.*;
 
 /**
  * Security credentials.
  */
-public class GridSecurityCredentials {
+public class GridSecurityCredentials implements Externalizable {
     /** Login. */
     private String login;
 
@@ -23,6 +25,33 @@ public class GridSecurityCredentials {
 
     /** Additional user object. */
     private Object userObj;
+
+    /**
+     * Empty constructor required by {@link Externalizable}.
+     */
+    public GridSecurityCredentials() {
+        // No-op.
+    }
+
+    /**
+     * @param login Login.
+     * @param password Password.
+     */
+    public GridSecurityCredentials(String login, String password) {
+        this.login = login;
+        this.password = password;
+    }
+
+    /**
+     * @param login Login.
+     * @param password Password.
+     * @param userObj User object.
+     */
+    public GridSecurityCredentials(String login, String password, Object userObj) {
+        this.login = login;
+        this.password = password;
+        this.userObj = userObj;
+    }
 
     /**
      * Gets login.
@@ -76,5 +105,42 @@ public class GridSecurityCredentials {
      */
     public void setUserObject(Object userObj) {
         this.userObj = userObj;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeUTF(login);
+        out.writeUTF(password);
+        out.writeObject(userObj);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        login = in.readUTF();
+        password = in.readUTF();
+        userObj = in.readObject();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (!(o instanceof GridSecurityCredentials))
+            return false;
+
+        GridSecurityCredentials that = (GridSecurityCredentials)o;
+
+        return F.eq(login, that.login) && F.eq(password, that.password) && F.eq(userObj, that.userObj);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = login != null ? login.hashCode() : 0;
+
+        res = 31 * res + (password != null ? password.hashCode() : 0);
+        res = 31 * res + (userObj != null ? userObj.hashCode() : 0);
+
+        return res;
     }
 }

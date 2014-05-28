@@ -13,6 +13,8 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.gridgain.grid.kernal.managers.security.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.authentication.*;
 import org.gridgain.grid.spi.communication.*;
 import org.gridgain.grid.spi.discovery.*;
@@ -321,13 +323,13 @@ public interface GridSpiContext {
     /**
      * Authenticate grid node via underlying {@link GridAuthenticationSpi} implementation.
      *
-     * @param nodeId Node id to authenticate.
-     * @param attrs Node attributes.
-     * @return Authentication context if authentication passes, {@code null} if authentication fails.
+     * @param node Node to authenticate.
+     * @param cred Node security credentials.
+     * @return Security context if authentication passes, {@code null} if authentication fails.
      * @throws GridException If any exception occurs.
      * @see GridAuthenticationSpi
      */
-    public Object authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException;
+    public GridSecurityContext authenticateNode(GridNode node, GridSecurityCredentials cred) throws GridException;
 
     /**
      * Validates that new node can join grid topology, this method is called on coordinator

@@ -13,6 +13,8 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.gridgain.grid.kernal.managers.security.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.swapspace.*;
@@ -474,9 +476,30 @@ public class GridSpiTestContext implements GridSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public Object authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException {
+    @Override public GridSecurityContext authenticateNode(GridNode node, GridSecurityCredentials cred)
+        throws GridException {
         // Force authentication always succeed.
-        return Boolean.TRUE;
+        GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(GridSecuritySubjectType.REMOTE_NODE,
+            node.id());
+
+        subj.permissions(new GridSecurityPermissionSet() {
+            /** {@inheritDoc} */
+            @Override public boolean defaultAllowAll() {
+                return true;
+            }
+
+            /** {@inheritDoc} */
+            @Override public Map<String, Collection<GridSecurityPermission>> taskPermissions() {
+                return Collections.emptyMap();
+            }
+
+            /** {@inheritDoc} */
+            @Override public Map<String, Collection<GridSecurityPermission>> cachePermissions() {
+                return Collections.emptyMap();
+            }
+        });
+
+        return new GridSecurityContext(subj);
     }
 
     /** {@inheritDoc} */

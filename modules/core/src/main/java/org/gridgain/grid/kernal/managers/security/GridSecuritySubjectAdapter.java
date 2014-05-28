@@ -52,9 +52,11 @@ public class GridSecuritySubjectAdapter implements GridSecuritySubject {
     private GridSecurityPermissionSet permissions;
 
     /**
+     * @param subjType Subject type.
      * @param id Subject ID.
      */
-    public GridSecuritySubjectAdapter(UUID id) {
+    public GridSecuritySubjectAdapter(GridSecuritySubjectType subjType, UUID id) {
+        this.subjType = subjType;
         this.id = id;
     }
 
@@ -74,15 +76,6 @@ public class GridSecuritySubjectAdapter implements GridSecuritySubject {
      */
     @Override public GridSecuritySubjectType type() {
         return subjType;
-    }
-
-    /**
-     * Sets subject type.
-     *
-     * @param subjType Subject type.
-     */
-    public void subjectType(GridSecuritySubjectType subjType) {
-        this.subjType = subjType;
     }
 
     /**

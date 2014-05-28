@@ -957,7 +957,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         assert keysCnt == keys.size();
         assert cached == null || F.first(keys).equals(cached.key());
 
-        cctx.checkSecurity(GridSecurityPermission.READ);
+        cctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         groupLockSanityCheck(keys);
 
@@ -2115,7 +2115,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         @Nullable GridCacheEntryEx<K, V> cached,
         long ttl,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter) {
-        cctx.checkSecurity(GridSecurityPermission.PUT);
+        cctx.checkSecurity(GridSecurityPermission.CACHE_PUT);
 
         // Cached entry may be passed only from entry wrapper.
         final Map<? extends K, ? extends V> map0;
@@ -2375,7 +2375,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         boolean implicit,
         final boolean retval,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter) {
-        cctx.checkSecurity(GridSecurityPermission.REMOVE);
+        cctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
 
         final Collection<? extends K> keys0;
 

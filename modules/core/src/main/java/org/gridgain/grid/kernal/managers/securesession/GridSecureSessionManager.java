@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.managers.securesession;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.*;
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.security.*;
 import org.jetbrains.annotations.*;
 
@@ -47,6 +48,6 @@ public interface GridSecureSessionManager extends GridManager {
      * @param params Params.
      * @return Generated session token.
      */
-    public byte[] updateSession(GridSecuritySubjectType subjType, UUID subjId, Object subjCtx, @Nullable Object params)
-        throws GridException;
+    public byte[] updateSession(GridSecuritySubjectType subjType, UUID subjId, GridSecurityContext subjCtx,
+        @Nullable Object params) throws GridException;
 }

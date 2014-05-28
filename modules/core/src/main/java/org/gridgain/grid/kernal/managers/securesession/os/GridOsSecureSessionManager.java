@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.securesession.*;
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.security.*;
 import org.jetbrains.annotations.*;
 
@@ -44,7 +45,7 @@ public class GridOsSecureSessionManager extends GridNoopManagerAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] updateSession(GridSecuritySubjectType subjType, UUID subjId, Object subjCtx,
+    @Override public byte[] updateSession(GridSecuritySubjectType subjType, UUID subjId, GridSecurityContext subjCtx,
         @Nullable Object params) {
         return EMPTY_BYTES;
     }

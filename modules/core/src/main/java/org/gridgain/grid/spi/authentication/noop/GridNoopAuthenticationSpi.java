@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.spi.authentication.noop;
 
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.security.*;
@@ -16,7 +17,8 @@ import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.authentication.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+
+import java.util.*;
 
 /**
  * Default implementation of the authentication SPI which permits any request.
@@ -64,6 +66,23 @@ public class GridNoopAuthenticationSpi extends GridSpiAdapter
     @GridToStringExclude
     private GridLogger log;
 
+    private static final GridSecurityPermissionSet allowAll = new GridSecurityPermissionSet() {
+        /** {@inheritDoc} */
+        @Override public boolean defaultAllowAll() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Collection<GridSecurityPermission>> taskPermissions() {
+            return Collections.emptyMap();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Collection<GridSecurityPermission>> cachePermissions() {
+            return Collections.emptyMap();
+        }
+    };
+
     /** {@inheritDoc} */
     @Override public boolean supported(GridSecuritySubjectType subjType) {
         // If this SPI is configured, then authentication is disabled.
@@ -71,9 +90,14 @@ public class GridNoopAuthenticationSpi extends GridSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public Object authenticate(GridSecuritySubjectType subjType, byte[] subjId,
-        @Nullable Object creds) throws GridSpiException {
-        return Boolean.TRUE;
+    @Override public GridSecuritySubject authenticate(GridAuthenticationContext authCtx) throws GridSpiException {
+        GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(authCtx.subjectType(), authCtx.subjectId());
+
+        subj.address(authCtx.address());
+        subj.port(authCtx.port());
+        subj.permissions(allowAll);
+
+        return subj;
     }
 
     /** {@inheritDoc} */

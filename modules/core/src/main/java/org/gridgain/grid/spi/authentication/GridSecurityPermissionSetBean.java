@@ -22,10 +22,39 @@ public class GridSecurityPermissionSetBean implements GridSecurityPermissionSet 
     private boolean dfltAllowAll;
 
     /** Task permissions. */
-    private Map<String, Collection<GridSecurityPermission>> taskPermissions;
+    private Map<String, Collection<GridSecurityPermission>> taskPermissions = Collections.emptyMap();
 
     /** Cache permissions. */
-    private Map<String, Collection<GridSecurityPermission>> cachePermissions;
+    private Map<String, Collection<GridSecurityPermission>> cachePermissions = Collections.emptyMap();
+
+    /**
+     * Default constructor (forbids all).
+     */
+    public GridSecurityPermissionSetBean() {
+        // No-op.
+    }
+
+    /**
+     * @param dfltAllowAll Default allow all flag.
+     */
+    public GridSecurityPermissionSetBean(boolean dfltAllowAll) {
+        this.dfltAllowAll = dfltAllowAll;
+    }
+
+    /**
+     * Creates permission set with all task and cache permissions.
+     *
+     * @param dfltAllowAll Default allow all flag.
+     * @param taskPermissions Mapping from task name to collection of permitted operations.
+     * @param cachePermissions Mapping from cache name to collection of allowed operations.
+     */
+    public GridSecurityPermissionSetBean(boolean dfltAllowAll,
+        Map<String, Collection<GridSecurityPermission>> taskPermissions,
+        Map<String, Collection<GridSecurityPermission>> cachePermissions) {
+        this.dfltAllowAll = dfltAllowAll;
+        this.taskPermissions = taskPermissions;
+        this.cachePermissions = cachePermissions;
+    }
 
     /**
      * Gets default allow all flag.

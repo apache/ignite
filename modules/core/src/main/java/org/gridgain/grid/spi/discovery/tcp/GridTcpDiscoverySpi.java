@@ -12,12 +12,14 @@ package org.gridgain.grid.spi.discovery.tcp;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.internal.*;
@@ -275,6 +277,10 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
     /** Marshaller. */
     private final GridMarshaller marsh = new GridJdkMarshaller();
+
+    /** Grid marshaller. */
+    @GridMarshallerResource
+    private GridMarshaller gridMarsh;
 
     /**
      * Local node (although, it may be reassigned on segmentation, it may be non-volatile,
@@ -1447,6 +1453,12 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             spiState = CONNECTING;
         }
 
+        GridSecurityCredentials locCred = (GridSecurityCredentials)locNode.getAttributes()
+            .get(GridNodeAttributes.ATTR_SECURITY_CREDENTIALS);
+
+        // Marshal credentials for backward compatibility and security.
+        marshalCredentials(locNode);
+
         while (true) {
             if (!sendJoinRequestMessage()) {
                 if (log.isDebugEnabled())
@@ -1454,8 +1466,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                 // Authenticate local node.
                 try {
-                    // TODO how to safely get authentication manager here?
-                    Object subj = super.getSpiContext().authenticateNode(locNode.id(), locNode.attributes());
+                    GridSpiContext spiCtx = super.getSpiContext();
+
+                    GridSecurityContext subj = spiCtx.authenticateNode(locNode, locCred);
 
                     if (subj == null)
                         throw new GridSpiException("Authentication failed for local node: " + locNode.id());
@@ -1465,7 +1478,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                     Map<String, Object> attrs = new HashMap<>(locNode.attributes());
 
-                    attrs.put(GridNodeAttributes.ATTR_AUTHENTICATION_SUBJECT_CONTEXT, subj);
+                    attrs.put(GridNodeAttributes.ATTR_SECURITY_SUBJECT, gridMarsh.marshal(subj));
+                    attrs.remove(GridNodeAttributes.ATTR_SECURITY_CREDENTIALS);
 
                     locNode.setAttributes(attrs);
                 }
@@ -1812,6 +1826,48 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             "Failed to send message to address [addr=" + addr + ", msg=" + msg + ']',
             U.exceptionWithSuppressed("Failed to send message to address " +
                 "[addr=" + addr + ", msg=" + msg + ']', errs));
+    }
+
+    /**
+     * Marshalls credentials with discovery SPI marshaller (will replace attribute value).
+     *
+     * @param node Node to marshall credentials for.
+     * @throws GridSpiException If marshalling failed.
+     */
+    private void marshalCredentials(GridTcpDiscoveryNode node) throws GridSpiException {
+        try {
+            // Use security-unsafe getter.
+            Map<String, Object> attrs = new HashMap<>(node.getAttributes());
+
+            attrs.put(GridNodeAttributes.ATTR_SECURITY_CREDENTIALS,
+                marsh.marshal(attrs.get(GridNodeAttributes.ATTR_SECURITY_CREDENTIALS)));
+
+            node.setAttributes(attrs);
+        }
+        catch (GridException e) {
+            throw new GridSpiException("Failed to marshal node security credentials: " + node.id(), e);
+        }
+    }
+
+    /**
+     * Unmarshalls credentials with discovery SPI marshaller (will not replace attribute value).
+     *
+     * @param node Node to unmarshall credentials for.
+     * @return Security credentials.
+     * @throws GridSpiException If unmarshal fails.
+     */
+    private GridSecurityCredentials unmarshalCredentials(GridTcpDiscoveryNode node) throws GridSpiException {
+        try {
+            byte[] credBytes = (byte[])node.getAttributes().get(GridNodeAttributes.ATTR_SECURITY_CREDENTIALS);
+
+            if (credBytes == null)
+                return null;
+
+            return marsh.unmarshal(credBytes, null);
+        }
+        catch (GridException e) {
+            throw new GridSpiException("Failed to unmarshal node security credentials: " + node.id(), e);
+        }
     }
 
     /**
@@ -3251,7 +3307,11 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 else {
                     // Authenticate node first.
                     try {
-                        Object subj = getSpiContext().authenticateNode(node.id(), node.attributes());
+                        GridSecurityCredentials cred = unmarshalCredentials(node);
+
+                        GridSpiContext spiCtx = getSpiContext();
+
+                        GridSecurityContext subj = spiCtx.authenticateNode(node, cred);
 
                         if (subj == null) {
                             // Node has not pass authentication.
@@ -3306,10 +3366,10 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                                 return;
                             }
 
-                            // Stick in authentication subject to node.
+                            // Stick in authentication subject to node (use security-safe attributes for copy).
                             Map<String, Object> attrs = new HashMap<>(node.attributes());
 
-                            attrs.put(GridNodeAttributes.ATTR_AUTHENTICATION_SUBJECT_CONTEXT, subj);
+                            attrs.put(GridNodeAttributes.ATTR_SECURITY_SUBJECT, gridMarsh.marshal(subj));
 
                             node.setAttributes(attrs);
                         }

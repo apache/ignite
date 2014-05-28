@@ -194,7 +194,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
         if (cb == null)
             throw new IllegalStateException("Mandatory local callback is not set for the query: " + this);
 
-        ctx.checkSecurity(GridSecurityPermission.READ);
+        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         if (prj == null)
             prj = ctx.grid();

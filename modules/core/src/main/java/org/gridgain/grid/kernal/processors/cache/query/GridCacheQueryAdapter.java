@@ -336,7 +336,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         @Nullable GridClosure<T, R> rmtTransform, @Nullable Object... args) {
         Collection<GridNode> nodes = nodes();
 
-        cctx.checkSecurity(GridSecurityPermission.READ);
+        cctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         if (log.isDebugEnabled())
             log.debug("Executing query [query=" + this + ", nodes=" + nodes + ']');

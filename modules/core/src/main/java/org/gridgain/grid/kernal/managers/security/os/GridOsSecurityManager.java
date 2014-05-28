@@ -9,14 +9,13 @@
 
 package org.gridgain.grid.kernal.managers.security.os;
 
+import com.beust.jcommander.internal.Nullable;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.security.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.authentication.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -31,6 +30,24 @@ public class GridOsSecurityManager extends GridNoopManagerAdapter implements Gri
         super(ctx);
     }
 
+    /** Allow all permissions. */
+    private static final GridSecurityPermissionSet ALLOW_ALL = new GridSecurityPermissionSet() {
+        /** {@inheritDoc} */
+        @Override public boolean defaultAllowAll() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Collection<GridSecurityPermission>> taskPermissions() {
+            return Collections.emptyMap();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Collection<GridSecurityPermission>> cachePermissions() {
+            return Collections.emptyMap();
+        }
+    };
+
     /** {@inheritDoc} */
     @Override public boolean securityEnabled() {
         return false;
@@ -39,11 +56,27 @@ public class GridOsSecurityManager extends GridNoopManagerAdapter implements Gri
     /** {@inheritDoc} */
     @Override public GridSecurityContext authenticateNode(GridNode node, GridSecurityCredentials cred)
         throws GridException {
-        return true;
+        GridSecuritySubjectAdapter s = new GridSecuritySubjectAdapter(GridSecuritySubjectType.REMOTE_NODE, node.id());
+
+        s.permissions(ALLOW_ALL);
+
+        return new GridSecurityContext(s);
     }
 
     /** {@inheritDoc} */
     @Override public GridSecurityContext authenticate(GridAuthenticationContext ctx) throws GridException {
-        return Boolean.TRUE;
+        GridSecuritySubjectAdapter s = new GridSecuritySubjectAdapter(ctx.subjectType(), ctx.subjectId());
+
+        s.permissions(ALLOW_ALL);
+        s.address(ctx.address());
+        s.port(ctx.port());
+
+        return new GridSecurityContext(s);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void authorize(String name, GridSecurityPermission perm, @Nullable GridSecurityContext securityCtx)
+        throws GridSecurityException {
+        // No-op.
     }
 }
