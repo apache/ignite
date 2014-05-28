@@ -271,15 +271,15 @@ public class GridHadoopChildProcessRunner {
     private void onTaskFinished0(GridHadoopRunnableTask run, GridHadoopTaskState state, Throwable err) {
         GridHadoopTaskInfo info = run.taskInfo();
 
-        int remainder = pendingTasks.decrementAndGet();
+        int pendingTasks0 = pendingTasks.decrementAndGet();
 
         if (log.isDebugEnabled())
             log.debug("Hadoop task execution finished [info=" + info
                 + ", state=" + state + ", waitTime=" + run.waitTime() + ", execTime=" + run.executionTime() +
-                ", pendingTasks=" + remainder +
+                ", pendingTasks=" + pendingTasks0 +
                 ", err=" + err + ']');
 
-        boolean flush = remainder == 0 && (info.type() == COMBINE || (info.type() == MAP &&
+        boolean flush = pendingTasks0 == 0 && (info.type() == COMBINE || (info.type() == MAP &&
             (!job.hasCombiner() || !GridHadoopJobProperty.get(job, SINGLE_COMBINER_FOR_ALL_MAPPERS, false))));
 
         notifyTaskFinished(info, state, err, flush);

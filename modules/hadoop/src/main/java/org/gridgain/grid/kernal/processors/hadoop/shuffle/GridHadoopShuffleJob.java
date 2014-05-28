@@ -212,6 +212,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
     /**
      * @param ack Shuffle ack.
      */
+    @SuppressWarnings("ConstantConditions")
     public void onShuffleAck(GridHadoopShuffleAck ack) {
         GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapterEx<?>> tup = sentMsgs.get(ack.id());
 
@@ -410,6 +411,9 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
             log.debug("Waiting for remote addresses initialization.");
 
         flushed = true;
+
+        if (maps.length() == 0)
+            return new GridFinishedFutureEx<>();
 
         U.await(ioInitLatch);
 
