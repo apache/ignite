@@ -10,22 +10,25 @@
  */
 package org.gridgain.visor.commands.cswap
 
-import org.gridgain.scalar._
-import scalar._
-import org.gridgain.visor._
-import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import visor._
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.GridEx
-import resources._
-import collection.JavaConversions._
-import java.util.UUID
-import scala.util.control.Breaks._
-import org.jetbrains.annotations.Nullable
-import org.gridgain.grid.util.typedef._
-import util.scala.impl
 import org.gridgain.grid.kernal.processors.task.GridInternal
 import org.gridgain.grid.lang.GridCallable
+import org.gridgain.grid.resources._
+import org.gridgain.grid.util.scala.impl
+
+import java.util.UUID
+
+import scala.collection.JavaConversions._
+import scala.language.{implicitConversions, reflectiveCalls}
+import scala.util.control.Breaks._
+
+import org.jetbrains.annotations.Nullable
+
+import org.gridgain.scalar.scalar._
+import org.gridgain.visor._
+import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
+import org.gridgain.visor.visor._
 
 /**
  * ==Overview==

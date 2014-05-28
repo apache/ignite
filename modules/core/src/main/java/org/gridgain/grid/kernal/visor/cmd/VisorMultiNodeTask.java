@@ -26,11 +26,10 @@ public abstract class VisorMultiNodeTask<A extends VisorMultiNodeArg, T, J> impl
     /**
      * Create job that will be mapped to node.
      *
-     * @param nid Node ID where job will ba mapped.
      * @param arg Job arguments.
      * @return New job instance that will be mapped to node.
      */
-    protected abstract VisorJob<A, J> job(UUID nid, A arg);
+    protected abstract VisorJob<A, J> job(A arg);
 
     protected A arg;
 
@@ -44,7 +43,7 @@ public abstract class VisorMultiNodeTask<A extends VisorMultiNodeArg, T, J> impl
 
         for (GridNode node : subgrid)
             if (arg.nodeIds().contains(node.id()))
-                map.put(job(node.id(), arg), node);
+                map.put(job(arg), node);
 
         return map;
     }

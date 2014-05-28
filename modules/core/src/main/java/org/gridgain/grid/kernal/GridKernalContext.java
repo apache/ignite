@@ -243,7 +243,7 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      *
      * @return REST processor.
      */
-    public GridRestProcessorAdapter rest();
+    public GridRestProcessor rest();
 
     /**
      * Gets segmentation processor.

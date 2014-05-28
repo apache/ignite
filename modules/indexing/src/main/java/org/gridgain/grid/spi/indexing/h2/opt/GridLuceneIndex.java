@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.spi.indexing.h2.opt;
 
-import org.apache.commons.net.util.*;
+import org.apache.commons.codec.binary.*;
 import org.apache.lucene.analysis.standard.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
@@ -21,9 +21,9 @@ import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.offheap.unsafe.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

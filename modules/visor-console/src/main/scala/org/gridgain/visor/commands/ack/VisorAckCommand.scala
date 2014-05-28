@@ -13,14 +13,16 @@ package org.gridgain.visor.commands.ack
 
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorAckTask
-import VisorAckTask.VisorAckArg
-import org.gridgain.visor._
-import visor._
-import org.gridgain.visor.commands.VisorConsoleCommand
-import collection._
-import JavaConversions._
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorAckTask.VisorAckArg
+
 import java.util.UUID
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorAckTask
+
+import scala.collection.JavaConversions._
+import scala.language.implicitConversions
+
+import org.gridgain.visor._
+import org.gridgain.visor.commands.VisorConsoleCommand
+import org.gridgain.visor.visor._
 
 /**
  * ==Overview==
@@ -121,15 +123,15 @@ object VisorAckCommand {
     addHelp(
         name = "ack",
         shortInfo = "Acks arguments on all remote nodes.",
-        spec = immutable.Seq(
+        spec = Seq(
             "ack",
             "ack <message>"
         ),
-        args = immutable.Seq(
+        args = Seq(
             "<message>" ->
                 "Optional string to print on each remote node."
         ),
-        examples = immutable.Seq(
+        examples = Seq(
             "ack" ->
                 "Prints local node ID on all nodes in the topology.",
             "ack Howdy!" ->

@@ -11,22 +11,23 @@
 
 package org.gridgain.visor.commands.tasks
 
-import java.util.UUID
 import org.gridgain.grid._
 import org.gridgain.grid.events._
-import GridEventType._
-import events._
-import org.gridgain.grid.util.typedef.X
-import org.gridgain.grid.lang.GridPredicate
+import org.gridgain.grid.events.GridEventType._
 import org.gridgain.grid.kernal.processors.task.GridInternal
+import org.gridgain.grid.lang.GridPredicate
 import org.gridgain.grid.util.{GridUtils => U}
-import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import org.gridgain.visor._
-import visor._
-import collection.immutable._
-import collection.JavaConversions._
+import org.gridgain.grid.util.typedef.X
+
+import java.util.UUID
+
+import scala.collection.JavaConversions._
+import scala.language.implicitConversions
 import scala.util.control.Breaks._
-import org.gridgain.visor.commands.{VisorConsoleUtils => CU}
+
+import org.gridgain.visor._
+import org.gridgain.visor.commands.{VisorConsoleCommand, VisorConsoleUtils => CU, VisorTextTable}
+import org.gridgain.visor.visor._
 
 /**
  * Task execution state.
@@ -547,25 +548,25 @@ class VisorTasksCommand {
             assert(id != null)
             assert(taskName != null)
 
-            sMap.get(id) getOrElse {
+            sMap.getOrElse(id, {
                 val s = Execution(id, taskName)
 
                 sMap = sMap + (id -> s)
 
                 s
-            }
+            })
         }
 
         def getTask(taskName: String): Task = {
             assert(taskName != null)
 
-            tMap.get(taskName) getOrElse {
+            tMap.getOrElse(taskName, {
                 val t = Task(taskName)
 
                 tMap = tMap + (taskName -> t)
 
                 t
-            }
+            })
         }
 
         evts foreach {

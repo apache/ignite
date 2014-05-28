@@ -11,19 +11,22 @@
 
 package org.gridgain.visor.commands.config
 
-import java.lang.System._
 import org.gridgain.grid._
-import org.gridgain.grid.util.{GridUtils => U}
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorConfigCollectorTask
-import VisorConfigCollectorTask._
 import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeArg
-import collection.JavaConversions._
+import org.gridgain.grid.kernal.visor.cmd.dto.VisorGridConfig
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorConfigCollectorTask
+import org.gridgain.grid.util.{GridUtils => U}
+
+import java.lang.System._
+
+import scala.collection.JavaConversions._
+import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.util.control.Breaks._
+
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
-import org.gridgain.grid.kernal.visor.cmd.dto.VisorGridConfig
 
 /**
  * ==Overview==

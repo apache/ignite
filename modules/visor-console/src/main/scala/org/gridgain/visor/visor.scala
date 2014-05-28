@@ -11,35 +11,38 @@
 
 package org.gridgain.visor
 
-import java.net._
-import java.text._
-import java.io._
-import java.util._
-import java.util.concurrent._
-import org.jetbrains.annotations.Nullable
-import scala.collection.immutable
-import collection.JavaConversions._
-import org.gridgain.grid._
-import org.gridgain.grid.{GridGain => G, GridException => GE}
-import org.gridgain.grid.util.lang.{GridFunc => F}
+import org.gridgain.grid.{GridException => GE, GridGain => G, _}
 import org.gridgain.grid.events._
 import org.gridgain.grid.events.GridEventType._
-import org.gridgain.grid.events.GridDiscoveryEvent
-import org.gridgain.grid.kernal.{GridProductImpl, GridEx}
+import org.gridgain.grid.kernal.{GridEx, GridProductImpl}
+import org.gridgain.grid.kernal.GridComponentType._
 import org.gridgain.grid.kernal.GridNodeAttributes._
-import org.gridgain.grid.lang.{GridCallable, GridPredicate, GridBiTuple}
+import org.gridgain.grid.kernal.processors.spring.GridSpringProcessor
+import org.gridgain.grid.kernal.processors.task.GridInternal
+import org.gridgain.grid.lang.{GridBiTuple, GridCallable, GridPredicate}
+import org.gridgain.grid.resources.GridInstanceResource
 import org.gridgain.grid.spi.communication.tcp.GridTcpCommunicationSpi
 import org.gridgain.grid.thread._
+import org.gridgain.grid.util.{GridConfigurationFinder, GridUtils => U}
+import org.gridgain.grid.util.lang.{GridFunc => F}
+import org.gridgain.grid.util.scala.impl
 import org.gridgain.grid.util.typedef._
-import org.gridgain.grid.util.{GridUtils => U, GridConfigurationFinder}
+
+import java.io._
+import java.net._
+import java.text._
+import java.util._
+import java.util.concurrent._
+
+import scala.collection.immutable
+import scala.collection.JavaConversions._
+import scala.language.{implicitConversions, reflectiveCalls}
+
+import org.jetbrains.annotations.Nullable
+
 import org.gridgain.scalar._
 import org.gridgain.scalar.scalar._
-import org.gridgain.visor.commands.{VisorTextTable, VisorConsoleCommand}
-import org.gridgain.grid.resources.GridInstanceResource
-import org.gridgain.grid.kernal.processors.task.GridInternal
-import org.gridgain.grid.util.scala.impl
-import org.gridgain.grid.kernal.processors.spring.GridSpringProcessor
-import org.gridgain.grid.kernal.GridComponentType._
+import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 
 /**
  * Holder for command help information.
@@ -56,7 +59,7 @@ sealed case class VisorConsoleCommandHolder(
     ) {
     /** Command host with optional aliases. */
     lazy val nameWithAliases: String =
-        if (aliases != null && !aliases.isEmpty)
+        if (aliases != null && aliases.nonEmpty)
             name + " (" + ("" /: aliases)((b, a) => if (b.length() == 0) a else b + ", " + a) + ")"
         else
             name
@@ -225,12 +228,12 @@ object visor extends VisorTag {
         val g = grid
 
         if (g == null)
-            throw new GridException("Visor disconnected")
+            throw new GE("Visor disconnected")
         else {
             val node = g.node(nid)
 
             if (node == null)
-                throw new GridException("Node is gone: " + nid)
+                throw new GE("Node is gone: " + nid)
 
             node
         }
@@ -642,7 +645,7 @@ object visor extends VisorTag {
      * @return Previous value.
      */
     def mset(n: String, v: String): String = {
-        msetOpt(n, v).getOrElse(null)
+        msetOpt(n, v).orNull
     }
 
     /**
@@ -806,8 +809,8 @@ object visor extends VisorTag {
         ref: VisorConsoleCommand) {
         assert(name != null)
         assert(shortInfo != null)
-        assert(spec != null && !spec.isEmpty)
-        assert(examples != null && !examples.isEmpty)
+        assert(spec != null && spec.nonEmpty)
+        assert(examples != null && examples.nonEmpty)
         assert(ref != null)
 
         // Add and re-sort
@@ -905,7 +908,7 @@ object visor extends VisorTag {
     def hasArgValue(@Nullable v: String, args: ArgList): Boolean = {
         assert(args != null)
 
-        !args.find(_._2 == v).isEmpty
+        args.find(_._2 == v).nonEmpty
     }
 
     /**
@@ -917,7 +920,7 @@ object visor extends VisorTag {
     def hasArgName(@Nullable n: String, args: ArgList): Boolean = {
         assert(args != null)
 
-        !args.find(_._1 == n).isEmpty
+        args.find(_._1 == n).nonEmpty
     }
 
     /**
@@ -930,7 +933,7 @@ object visor extends VisorTag {
     def hasArgFlag(n: String, args: ArgList): Boolean = {
         assert(n != null && args != null)
 
-        !args.find((a) => a._1 == n && a._2 == null).isEmpty
+        args.find((a) => a._1 == n && a._2 == null).nonEmpty
     }
 
     /**
@@ -1310,7 +1313,7 @@ object visor extends VisorTag {
      * Tests whether passed in sequence is not `null` and not empty.
      */
     private def has[T](@Nullable s: Seq[T]): Boolean = {
-        s != null && !s.isEmpty
+        s != null && s.nonEmpty
     }
 
     /**
@@ -1394,7 +1397,7 @@ object visor extends VisorTag {
             open0(args, repl)
         }
         catch {
-            case e: GridException => scold(e.getMessage)
+            case e: GE => scold(e.getMessage)
         }
     }
 
@@ -1478,7 +1481,7 @@ object visor extends VisorTag {
         else {
             val argLst = parseArgs(args)
 
-            val name = argValue("g", argLst).getOrElse(null)
+            val name = argValue("g", argLst).orNull
             val path = argValue("cpath", argLst)
             val dflt = hasArgFlag("d", argLst)
 
@@ -2353,7 +2356,7 @@ object visor extends VisorTag {
                             case _: Exception => logText("Failed to collect remote log.")
                         }
 
-                    if (!evts.isEmpty) {
+                    if (evts.nonEmpty) {
                         var out: FileWriter = null
 
                         try {

@@ -71,6 +71,12 @@
         </dependency>
 
         <dependency>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+            <version>1.1.1</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-urideploy</artifactId>
             <version>${gridgain.version}</version>
@@ -79,7 +85,7 @@
 
         <dependency>
             <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-rest</artifactId>
+            <artifactId>gridgain-rest-tcp</artifactId>
             <version>${gridgain.version}</version>
             <scope>test</scope>
         </dependency>

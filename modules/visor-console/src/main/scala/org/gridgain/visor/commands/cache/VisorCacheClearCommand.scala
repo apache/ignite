@@ -10,18 +10,20 @@
  */
 package org.gridgain.visor.commands.cache
 
-import java.util.{HashSet => JavaHashSet}
-import org.gridgain.scalar._
-import scalar._
-import org.gridgain.visor._
-import visor._
-import org.gridgain.visor.commands.VisorTextTable
-import scala.collection.JavaConversions._
-import scala.util.control.Breaks._
 import org.gridgain.grid.GridNode
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorClearCachesTask
-import org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils._
 import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeCachesArg
+import org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils._
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorClearCachesTask
+
+import java.util.{HashSet => JavaHashSet}
+
+import scala.collection.JavaConversions._
+import scala.language.reflectiveCalls
+import scala.util.control.Breaks._
+
+import org.gridgain.scalar.scalar._
+import org.gridgain.visor.commands.VisorTextTable
+import org.gridgain.visor.visor._
 
 /**
  * ==Overview==
