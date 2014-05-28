@@ -353,7 +353,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         boolean sys) {
         assert sesId != null;
 
-        ctx.auth().authorize(taskCls == null ? taskName : taskCls.getName(), GridSecurityPermission.TASK_EXECUTE, null);
+        ctx.security().authorize(taskCls == null ? taskName : taskCls.getName(), GridSecurityPermission.TASK_EXECUTE,
+            null);
 
         // Get values from thread-local context.
         Map<GridTaskThreadContextKey, Object> map = thCtx.get();

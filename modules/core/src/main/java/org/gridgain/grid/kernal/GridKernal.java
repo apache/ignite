@@ -58,6 +58,7 @@ import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.*;
@@ -179,6 +180,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** Scheduler. */
     private GridScheduler scheduler;
+
+    /** Grid security instance. */
+    private GridSecurity security;
 
     /** DR pool. */
     private ExecutorService drPool;
@@ -689,6 +693,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             // Put version converters to attributes after
             // all components are started.
             verProc.addConvertersToAttributes(attrs);
+
+            security = new GridSecurityImpl(ctx.security(), ctx.secureSession());
 
             gw.writeLock();
 
@@ -2243,7 +2249,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         assert log != null;
 
         if (log.isInfoEnabled())
-            log.info("Security status [authentication=" + onOff(ctx.auth().securityEnabled()) + ", " +
+            log.info("Security status [authentication=" + onOff(ctx.security().securityEnabled()) + ", " +
                 "secure-session=" + onOff(ctx.secureSession().securityEnabled()) + ']');
     }
 
@@ -2982,6 +2988,11 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     /** {@inheritDoc} */
     @Override public GridScheduler scheduler() {
         return scheduler;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridSecurity security() {
+        return security;
     }
 
     /** {@inheritDoc} */

@@ -376,7 +376,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
         authCtx.credentials(cred);
 
-        GridSecurityContext subjCtx = ctx.auth().authenticate(authCtx);
+        GridSecurityContext subjCtx = ctx.security().authenticate(authCtx);
 
         if (subjCtx == null) {
             if (req.credentials() == null)

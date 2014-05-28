@@ -49,4 +49,14 @@ public class GridOsSecureSessionManager extends GridNoopManagerAdapter implement
         @Nullable Object params) {
         return EMPTY_BYTES;
     }
+
+    /** {@inheritDoc} */
+    @Override public Collection<GridSecuritySubject> authenticatedClients() {
+        return Collections.emptyList();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridSecuritySubject authenticatedClient(UUID clientId) {
+        return null;
+    }
 }

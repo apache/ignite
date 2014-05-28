@@ -555,7 +555,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecurityManager auth() {
+    @Override public GridSecurityManager security() {
         return authMgr;
     }
 

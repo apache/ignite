@@ -264,7 +264,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         getSpi().setAuthenticator(new GridDiscoverySpiNodeAuthenticator() {
             @Override public GridSecurityContext authenticateNode(GridNode node, GridSecurityCredentials cred)
                 throws GridException {
-                return ctx.auth().authenticateNode(node, cred);
+                return ctx.security().authenticateNode(node, cred);
             }
         });
 

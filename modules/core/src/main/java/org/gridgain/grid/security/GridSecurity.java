@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.security;
 
+import org.gridgain.grid.*;
+
 import java.util.*;
 
 /**
@@ -20,7 +22,7 @@ public interface GridSecurity {
      *
      * @return Collection of authorized subjects.
      */
-    public Collection<GridSecuritySubject> authenticatedSubjects();
+    public Collection<GridSecuritySubject> authenticatedSubjects() throws GridException;
 
     /**
      * Gets security subject by subject type and subject ID.
@@ -29,5 +31,5 @@ public interface GridSecurity {
      * @param subjId Subject ID.
      * @return Authorized security subject.
      */
-    public GridSecuritySubject authenticatedSubject(GridSecuritySubjectType subjType, UUID subjId);
+    public GridSecuritySubject authenticatedSubject(GridSecuritySubjectType subjType, UUID subjId) throws GridException;
 }

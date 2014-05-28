@@ -373,7 +373,7 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      *
      * @return Authentication manager.
      */
-    public GridSecurityManager auth();
+    public GridSecurityManager security();
 
     /**
      * Gets secure session manager.

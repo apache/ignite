@@ -15,6 +15,8 @@ import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.authentication.*;
 
+import java.util.*;
+
 /**
  * This interface defines a grid authentication manager.
  */
@@ -44,6 +46,21 @@ public interface GridSecurityManager extends GridManager {
      * @throws GridException If error occurred.
      */
     public GridSecurityContext authenticate(GridAuthenticationContext ctx) throws GridException;
+
+    /**
+     * Gets collection of authenticated nodes.
+     *
+     * @return Collection of authenticated nodes.
+     */
+    public Collection<GridSecuritySubject> authenticatedNodes() throws GridException;
+
+    /**
+     * Gets authenticated node subject.
+     *
+     * @param nodeId Node ID.
+     * @return Security subject.
+     */
+    public GridSecuritySubject authenticatedNode(UUID nodeId) throws GridException;
 
     /**
      * Authorizes grid operation.

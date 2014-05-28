@@ -78,6 +78,16 @@ public class GridOsSecurityManager extends GridNoopManagerAdapter implements Gri
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<GridSecuritySubject> authenticatedNodes() {
+        return Collections.emptyList();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridSecuritySubject authenticatedNode(UUID nodeId) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public void authorize(String name, GridSecurityPermission perm, @Nullable GridSecurityContext securityCtx)
         throws GridSecurityException {
         // No-op.
