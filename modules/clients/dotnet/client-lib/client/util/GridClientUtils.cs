@@ -23,7 +23,7 @@ namespace GridGain.Client.Util {
         //   orig: 2ec84557-f7c4-4a2e-aea8-251eb13acff3
         //          3 2 1 0  5 4  7 6  8 9  a b c d e f
         // parsed: 5745c82e-c4f7-2e4a-aea8-251eb13acff3
-        private static readonly byte[] JAVA_GUID_CONV = new byte[] { 3, 2, 1, 0, 5, 4, 7, 6, 8, 9, 10, 11, 12, 13, 14, 15 };
+        public static readonly byte[] JAVA_GUID_CONV = new byte[] { 3, 2, 1, 0, 5, 4, 7, 6, 8, 9, 10, 11, 12, 13, 14, 15 };
 
         /** <summary>Background task execution threads counter.</summary> */
         private static long asyncThreadsCounter;
