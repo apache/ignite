@@ -203,6 +203,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
 
                     return new GridHadoopTaskOutput() {
                         @Override public void write(Object key, Object val) throws GridException {
+                            // TODO: Possibly here?
                             in.add(key, val);
                         }
 

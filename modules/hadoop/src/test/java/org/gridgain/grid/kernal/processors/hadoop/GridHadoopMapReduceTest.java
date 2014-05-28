@@ -37,7 +37,7 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
     public GridHadoopConfiguration hadoopConfiguration(String gridName) {
         GridHadoopConfiguration cfg = super.hadoopConfiguration(gridName);
 
-        cfg.setExternalExecution(true);
+        cfg.setExternalExecution(false);
 
         return cfg;
     }

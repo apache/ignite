@@ -185,6 +185,7 @@ public class GridHadoopChildProcessRunner {
 
                             @Override protected GridHadoopTaskOutput createOutput(GridHadoopTaskInfo info)
                                 throws GridException {
+                                // TODO: Possibly here?
                                 return shuffleJob.output(info);
                             }
                         });
@@ -318,6 +319,7 @@ public class GridHadoopChildProcessRunner {
             final long start = System.currentTimeMillis();
 
             try {
+                // TODO: Or here?
                 shuffleJob.flush().listenAsync(new CI1<GridFuture<?>>() {
                     @Override public void apply(GridFuture<?> f) {
                         long end = System.currentTimeMillis();
