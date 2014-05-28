@@ -34,8 +34,6 @@ public abstract class GridHadoopAbstractWordCountTest extends GridHadoopAbstract
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
         ggfs = (GridGgfsEx)startGrids(gridCount()).ggfs(ggfsName);
     }
 
