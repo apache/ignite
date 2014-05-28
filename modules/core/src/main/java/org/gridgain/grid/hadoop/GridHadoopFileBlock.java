@@ -63,7 +63,6 @@ public class GridHadoopFileBlock implements GridHadoopInputSplit {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(hosts);
         out.writeObject(file());
         out.writeLong(start());
         out.writeLong(length());
@@ -71,7 +70,6 @@ public class GridHadoopFileBlock implements GridHadoopInputSplit {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        hosts = (String[])in.readObject();
         file = (URI)in.readObject();
         start = in.readLong();
         len = in.readLong();
