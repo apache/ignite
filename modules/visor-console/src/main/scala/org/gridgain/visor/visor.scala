@@ -34,7 +34,6 @@ import java.text._
 import java.util._
 import java.util.concurrent._
 
-import scala.Some
 import scala.collection.immutable
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
@@ -385,19 +384,14 @@ object visor extends VisorTag {
             "user to select XML configuration file in interactive mode."
         ),
         spec = Seq(
-            "open {-cpath=<path>} {-g=<gridName>} {-dl}",
-            "open {-d} {-g=<gridName>} {-dl}",
-            "open {-e} {-g=<gridName>} {-dl}",
-            "open"
+            "open -cpath=<path> {-dl}",
+            "open -d {-dl}",
+            "open {-dl}"
         ),
         args = Seq(
             "-cpath=<path>" -> Seq(
                 "Spring configuration path.",
                 "Can be absolute, relative to GRIDGAIN_HOME or any well formed URL."
-            ),
-            "-g=<gridName>" -> Seq(
-                "Optional grid name.",
-                "Can be used with '-cpath', '-d' and '-e'."
             ),
             "-d" -> Seq(
                 "Flag forces the command to connect to the default grid",
@@ -412,12 +406,10 @@ object visor extends VisorTag {
                 "Prompts user to select XML Spring configuration file in interactive mode.",
             "open -d" ->
                 "Connects visor using default XML configuration.",
-            "open -g=mygrid" ->
-                "Connects visor to 'mygrid' grid using default configuration.",
-            "open -cpath=/gg/config/mycfg.xml -g=mygrid" ->
-                "Connects visor to 'mygrid' grid using configuration from provided Spring file."
+            "open -cpath=/gg/config/mycfg.xml" ->
+                "Connects visor to grid using configuration from provided Spring file."
         ),
-        ref = VisorConsoleCommand(open, open(_))
+        ref = VisorConsoleCommand(open, open)
     )
 
     addHelp(
