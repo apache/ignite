@@ -52,6 +52,12 @@ public abstract class GridHadoopAbstractWordCountTest extends GridHadoopAbstract
         return 1;
     }
 
+    /**
+     *
+     * @param path
+     * @param wordCounts
+     * @throws Exception
+     */
     protected void generateTestFile(String path, Object... wordCounts) throws Exception {
         List<String> wordsArr = new ArrayList<>();
 
@@ -73,49 +79,6 @@ public abstract class GridHadoopAbstractWordCountTest extends GridHadoopAbstract
 
         //Input file preparing
         PrintWriter testInputFileWriter = new PrintWriter(ggfs.create(new GridGgfsPath(path), true));
-
-        int j = 0;
-
-        while (j < wordsArr.size()) {
-            int i = 5 + (int)(Math.random() * 5);
-
-            List<String> subList = wordsArr.subList(j, Math.min(j + i, wordsArr.size()));
-            j += i;
-
-            testInputFileWriter.println(Joiner.on(' ').join(subList));
-        }
-
-        testInputFileWriter.close();
-    }
-
-    /**
-     * Generates text file with words. In one line there are from 5 to 9 words.
-     *
-     * @param file File that there is generation for.
-     * @param wordCounts Pair word and count, i.e "hello", 2, "world", 3, etc.
-     * @throws java.io.FileNotFoundException If could not create the file.
-     */
-    protected void generateTestFile(File file, Object... wordCounts) throws FileNotFoundException {
-        List<String> wordsArr = new ArrayList<>();
-
-        //Generating
-        for (int i = 0; i < wordCounts.length; i += 2) {
-            String word = (String) wordCounts[i];
-            int cnt = (Integer) wordCounts[i + 1];
-
-            while (cnt-- > 0)
-                wordsArr.add(word);
-        }
-
-        //Shuffling
-        for (int i = 0; i < wordsArr.size(); i++) {
-            int j = (int)(Math.random() * wordsArr.size());
-
-            Collections.swap(wordsArr, i, j);
-        }
-
-        //Input file preparing
-        PrintWriter testInputFileWriter = new PrintWriter(file);
 
         int j = 0;
 

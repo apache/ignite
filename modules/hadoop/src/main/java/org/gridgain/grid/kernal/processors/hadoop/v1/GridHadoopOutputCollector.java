@@ -62,7 +62,7 @@ public class GridHadoopOutputCollector implements OutputCollector {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void collect(Object key, Object val) throws IOException {
+    @Override public void   collect(Object key, Object val) throws IOException {
         if (writer != null)
             writer.write(key, val);
         else {
@@ -76,14 +76,22 @@ public class GridHadoopOutputCollector implements OutputCollector {
     }
 
     /**
-     * Close collector.
+     * Close writer.
      *
      * @throws IOException In case of IO exception.
      */
-    public void close() throws IOException {
+    public void closeWriter() throws IOException {
         if (writer != null)
             writer.close(Reporter.NULL);
+    }
 
-        jobConf.getOutputCommitter().commitTask(new TaskAttemptContextImpl(jobConf, attempt));
+    /**
+     * Commit data.
+     *
+     * @throws IOException In case of IO exception.
+     */
+    public void commit() throws IOException {
+        if (writer != null)
+            jobConf.getOutputCommitter().commitTask(new TaskAttemptContextImpl(jobConf, attempt));
     }
 }

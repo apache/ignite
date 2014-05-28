@@ -158,8 +158,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         try {
             GridHadoopJob job = ctx.jobFactory().createJob(jobId, info);
 
-            job.validate();
-
             Collection<GridHadoopInputSplit> splits = job.input();
 
             GridHadoopMapReducePlan mrPlan = mrPlanner.preparePlan(splits, ctx.nodes(), job, null);

@@ -21,7 +21,7 @@ import java.io.*;
 /**
  * Hadoop map task implementation for v1 API.
  */
-public class GridHadoopV1MapTask extends GridHadoopTask {
+public class GridHadoopV1MapTask extends GridHadoopV1Task {
     /** */
     private static final String[] EMPTY_HOSTS = new String[0];
 
@@ -78,12 +78,14 @@ public class GridHadoopV1MapTask extends GridHadoopTask {
             try {
                 while (reader.next(key, val))
                     mapper.map(key, val, collector, reporter);
-
-                mapper.close();
             }
             finally {
-                collector.close();
+                U.closeQuiet(mapper);
+
+                collector.closeWriter();
             }
+
+            collector.commit();
         }
         catch (IOException e) {
             throw new GridException(e);

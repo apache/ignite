@@ -91,11 +91,4 @@ public interface GridHadoopJob {
      * @return Value or {@code null} if none.
      */
     @Nullable public String property(String name);
-
-    /**
-     * Validate job.
-     *
-     * @throws GridException If failed.
-     */
-    public void validate() throws GridException;
 }

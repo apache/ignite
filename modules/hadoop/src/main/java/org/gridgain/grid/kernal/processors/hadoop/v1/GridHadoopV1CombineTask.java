@@ -20,7 +20,7 @@ import java.io.IOException;
 /**
  * Hadoop combine task implementation for v1 API.
  */
-public class GridHadoopV1CombineTask extends GridHadoopTask {
+public class GridHadoopV1CombineTask extends GridHadoopV1Task {
     /**
      * @param taskInfo Task info.
      */
@@ -52,12 +52,14 @@ public class GridHadoopV1CombineTask extends GridHadoopTask {
             try {
                 while (input.next())
                     combiner.reduce(input.key(), input.values(), collector, reporter);
-
-                combiner.close();
             }
             finally {
-                collector.close();
+                U.closeQuiet(combiner);
+
+                collector.closeWriter();
             }
+
+            collector.commit();
         }
         catch (IOException e) {
             throw new GridException(e);

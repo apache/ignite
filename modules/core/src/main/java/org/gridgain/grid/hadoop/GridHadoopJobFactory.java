@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.hadoop;
 
-import org.gridgain.grid.*;
-
 /**
  * Job factory.
  */

@@ -18,7 +18,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * Extended Hadoop task.
+ * Extended Hadoop v2 task.
  */
 public abstract class GridHadoopV2Task extends GridHadoopTask {
     /**
@@ -39,7 +39,7 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
      * @throws GridException In case of Grid exception.
      * @throws InterruptedException In case of interrupt.
      */
-    protected static OutputFormat putWriter(GridHadoopV2Context hadoopCtx, JobContext jobCtx)
+    protected static OutputFormat prepareWriter(GridHadoopV2Context hadoopCtx, JobContext jobCtx)
         throws GridException, InterruptedException {
         try {
             OutputFormat outputFormat = U.newInstance(jobCtx.getOutputFormatClass());
@@ -58,7 +58,21 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
     }
 
     /**
-     * Commit
+     * Close writer.
+     *
+     * @param hadoopCtx Hadoop context.
+     * @throws IOException In case of IO exception.
+     * @throws InterruptedException In case of interrupt.
+     */
+    protected static void closeWriter(GridHadoopV2Context hadoopCtx) throws IOException, InterruptedException {
+        RecordWriter writer = hadoopCtx.writer();
+
+        if (writer != null)
+            writer.close(hadoopCtx);
+    }
+
+    /**
+     * Commit data.
      *
      * @param hadoopCtx Hadoop context.
      * @param outputFormat Output format.
@@ -68,12 +82,8 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
      */
     protected static void commit(GridHadoopV2Context hadoopCtx, @Nullable OutputFormat outputFormat)
         throws GridException, IOException, InterruptedException {
-        RecordWriter writer = hadoopCtx.writer();
-
-        if (writer != null) {
+        if (hadoopCtx.writer() != null) {
             assert outputFormat != null;
-
-            writer.close(hadoopCtx);
 
             OutputCommitter outputCommitter = outputFormat.getOutputCommitter(hadoopCtx);
 
