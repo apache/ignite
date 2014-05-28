@@ -476,33 +476,6 @@ public class GridSpiTestContext implements GridSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecurityContext authenticateNode(GridNode node, GridSecurityCredentials cred)
-        throws GridException {
-        // Force authentication always succeed.
-        GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(GridSecuritySubjectType.REMOTE_NODE,
-            node.id());
-
-        subj.permissions(new GridSecurityPermissionSet() {
-            /** {@inheritDoc} */
-            @Override public boolean defaultAllowAll() {
-                return true;
-            }
-
-            /** {@inheritDoc} */
-            @Override public Map<String, Collection<GridSecurityPermission>> taskPermissions() {
-                return Collections.emptyMap();
-            }
-
-            /** {@inheritDoc} */
-            @Override public Map<String, Collection<GridSecurityPermission>> cachePermissions() {
-                return Collections.emptyMap();
-            }
-        });
-
-        return new GridSecurityContext(subj);
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public GridNodeValidationResult validateNode(GridNode node) {
         return null;
     }

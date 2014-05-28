@@ -9,13 +9,14 @@
 
 package org.gridgain.grid.security;
 
+import java.io.*;
 import java.net.*;
 import java.util.*;
 
 /**
  * Security subject.
  */
-public interface GridSecuritySubject {
+public interface GridSecuritySubject extends Serializable {
 
     public UUID id();
 

@@ -15,10 +15,12 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.product.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.segmentation.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
@@ -258,6 +260,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         new GridThread(metricsUpdater).start();
 
         getSpi().setMetricsProvider(createMetricsProvider());
+
+        getSpi().setAuthenticator(new GridDiscoverySpiNodeAuthenticator() {
+            @Override public GridSecurityContext authenticateNode(GridNode node, GridSecurityCredentials cred)
+                throws GridException {
+                return ctx.auth().authenticateNode(node, cred);
+            }
+        });
 
         // Start reconnect worker first.
         // We should always start it, even if we have no resolvers.

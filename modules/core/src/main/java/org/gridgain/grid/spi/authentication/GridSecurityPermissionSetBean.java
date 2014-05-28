@@ -18,6 +18,9 @@ import java.util.*;
  * // TODO make java bean.
  */
 public class GridSecurityPermissionSetBean implements GridSecurityPermissionSet {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Default allow all flag. */
     private boolean dfltAllowAll;
 

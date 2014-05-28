@@ -389,6 +389,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     @GridToStringExclude
     private final CountDownLatch ctxInitLatch = new CountDownLatch(1);
 
+    /** Node authenticator. */
+    private GridDiscoverySpiNodeAuthenticator nodeAuth;
+
     /** Mutex. */
     private final Object mux = new Object();
 
@@ -1441,6 +1444,11 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         spiStart0(true);
     }
 
+    /** {@inheritDoc} */
+    @Override public void setAuthenticator(GridDiscoverySpiNodeAuthenticator nodeAuth) {
+        this.nodeAuth = nodeAuth;
+    }
+
     /**
      * Tries to join this node to topology.
      *
@@ -1466,9 +1474,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                 // Authenticate local node.
                 try {
-                    GridSpiContext spiCtx = super.getSpiContext();
-
-                    GridSecurityContext subj = spiCtx.authenticateNode(locNode, locCred);
+                    GridSecurityContext subj = nodeAuth.authenticateNode(locNode, locCred);
 
                     if (subj == null)
                         throw new GridSpiException("Authentication failed for local node: " + locNode.id());
@@ -3311,7 +3317,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                         GridSpiContext spiCtx = getSpiContext();
 
-                        GridSecurityContext subj = spiCtx.authenticateNode(node, cred);
+                        GridSecurityContext subj = nodeAuth.authenticateNode(node, cred);
 
                         if (subj == null) {
                             // Node has not pass authentication.

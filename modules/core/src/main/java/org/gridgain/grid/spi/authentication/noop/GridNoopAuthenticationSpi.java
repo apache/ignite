@@ -67,6 +67,9 @@ public class GridNoopAuthenticationSpi extends GridSpiAdapter
     private GridLogger log;
 
     private static final GridSecurityPermissionSet allowAll = new GridSecurityPermissionSet() {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** {@inheritDoc} */
         @Override public boolean defaultAllowAll() {
             return true;

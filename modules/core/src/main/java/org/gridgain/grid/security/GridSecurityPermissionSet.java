@@ -9,12 +9,13 @@
 
 package org.gridgain.grid.security;
 
+import java.io.*;
 import java.util.*;
 
 /**
  * TODO: Add interface description.
  */
-public interface GridSecurityPermissionSet {
+public interface GridSecurityPermissionSet extends Serializable {
 
     public boolean defaultAllowAll();
 

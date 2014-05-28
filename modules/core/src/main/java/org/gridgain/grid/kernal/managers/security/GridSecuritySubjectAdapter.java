@@ -36,6 +36,9 @@ import java.util.*;
  * </code>
  */
 public class GridSecuritySubjectAdapter implements GridSecuritySubject {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Subject ID. */
     private UUID id;
 

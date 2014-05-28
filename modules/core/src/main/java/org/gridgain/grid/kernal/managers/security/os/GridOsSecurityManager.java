@@ -32,6 +32,9 @@ public class GridOsSecurityManager extends GridNoopManagerAdapter implements Gri
 
     /** Allow all permissions. */
     private static final GridSecurityPermissionSet ALLOW_ALL = new GridSecurityPermissionSet() {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** {@inheritDoc} */
         @Override public boolean defaultAllowAll() {
             return true;
