@@ -84,6 +84,8 @@ public class GridTcpRestDirectParser implements GridNioParser {
 
                 return memcacheMsg;
             }
+            else
+                throw new IOException("Invalid message type: " + type);
         }
 
         boolean finished = false;
@@ -111,9 +113,12 @@ public class GridTcpRestDirectParser implements GridNioParser {
             else {
                 assert msg instanceof GridClientHandshakeRequestWrapper;
 
+                GridClientHandshakeRequestWrapper req = (GridClientHandshakeRequestWrapper)msg;
+
                 GridClientHandshakeRequest ret = new GridClientHandshakeRequest();
 
-                ret.protocolId(((GridClientHandshakeRequestWrapper)msg).protocolId());
+                ret.putVersionBytes(req.bytes(), 0 ,4);
+                ret.protocolId(req.protocolId());
 
                 return ret;
             }

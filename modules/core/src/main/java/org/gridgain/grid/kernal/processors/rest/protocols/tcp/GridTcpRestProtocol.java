@@ -235,6 +235,8 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
             if (sslCtx != null) {
                 GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, log);
 
+                sslFilter.directMode(true);
+
                 boolean auth = cfg.isRestTcpSslClientAuth();
 
                 sslFilter.wantClientAuth(auth);

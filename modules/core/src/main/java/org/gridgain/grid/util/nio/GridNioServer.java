@@ -14,6 +14,7 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.direct.*;
+import org.gridgain.grid.util.nio.ssl.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -55,6 +56,9 @@ public class GridNioServer<T> {
 
     /** Buffer metadata key. */
     private static final int BUF_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+
+    /** SSL sysmtem data buffer metadata key. */
+    private static final int BUF_SSL_SYSTEM_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Node ID meta key (set only if versions are different). */
     public static final int DIFF_VER_NODE_ID_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
@@ -126,6 +130,9 @@ public class GridNioServer<T> {
     /** Sessions. */
     private final GridConcurrentHashSet<GridSelectorNioSessionImpl> sessions = new GridConcurrentHashSet<>();
 
+    /** */
+    private GridNioSslFilter sslFilter;
+
     /** Static initializer ensures single-threaded execution of workaround. */
     static {
         // This is a workaround for JDK bug (NPE in Selector.open()).
@@ -194,6 +201,16 @@ public class GridNioServer<T> {
         this.sndQueueLimit = sndQueueLimit;
 
         filterChain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
+
+        if (directMode) {
+            for (GridNioFilter filter : filters) {
+                if (filter instanceof GridNioSslFilter) {
+                    sslFilter = (GridNioSslFilter)filter;
+
+                    assert sslFilter.directMode();
+                }
+            }
+        }
 
         if (port != -1) {
             // Once bind, we will not change the port in future.
@@ -708,6 +725,31 @@ public class GridNioServer<T> {
             }
         }
 
+        private boolean writeSslSystem(GridSelectorNioSessionImpl ses, WritableByteChannel sockCh, ByteBuffer buf)
+            throws IOException {
+            if (buf == null)
+                buf = ses.removeMeta(BUF_SSL_SYSTEM_META_KEY);
+
+            if (buf != null) {
+                int cnt = sockCh.write(buf);
+
+                if (metricsLsnr != null)
+                    metricsLsnr.onBytesSent(cnt);
+
+                ses.bytesSent(cnt);
+
+                if (buf.hasRemaining()) {
+                    ses.addMeta(BUF_SSL_SYSTEM_META_KEY, buf);
+
+                    return false;
+                }
+            }
+
+            assert ses.meta(BUF_SSL_SYSTEM_META_KEY) == null;
+
+            return true;
+        }
+
         /**
          * Processes write-ready event on the key.
          *
@@ -719,6 +761,29 @@ public class GridNioServer<T> {
             WritableByteChannel sockCh = (WritableByteChannel)key.channel();
 
             GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
+
+            if (sslFilter != null) {
+                if (!writeSslSystem(ses, sockCh, null))
+                    return;
+
+                ByteBuffer sslNetBuf = ses.removeMeta(BUF_META_KEY);
+
+                if (sslNetBuf != null) {
+                    int cnt = sockCh.write(sslNetBuf);
+
+                    if (metricsLsnr != null)
+                        metricsLsnr.onBytesSent(cnt);
+
+                    ses.bytesSent(cnt);
+
+                    if (sslNetBuf.hasRemaining()) {
+                        ses.addMeta(BUF_META_KEY, sslNetBuf);
+
+                        return;
+                    }
+                }
+            }
+
             ByteBuffer buf = ses.writeBuffer();
             NioOperationFuture<?> req = ses.removeMeta(NIO_OPERATION.ordinal());
             UUID nodeId = ses.meta(DIFF_VER_NODE_ID_META_KEY);
@@ -739,13 +804,26 @@ public class GridNioServer<T> {
                 GridTcpCommunicationMessageAdapter msg;
                 boolean finished = false;
 
-                if (req != null) {
+                while (req != null) {
+                    if (req.message() != null) {
+                        assert sslFilter != null;
+
+                        if (!writeSslSystem(ses, sockCh, req.message()))
+                            return;
+
+                        req = (NioOperationFuture<?>)ses.pollFuture();
+
+                        continue;
+                    }
+
                     msg = req.directMessage();
 
                     assert msg != null;
                     assert msgWriter != null;
 
                     finished = msgWriter.write(nodeId, msg, buf);
+
+                    break;
                 }
 
                 // Fill up as many messages as possible to write buffer.
@@ -760,15 +838,44 @@ public class GridNioServer<T> {
                     if (req == null)
                         break;
 
-                    msg = req.directMessage();
+                    if (req.message() != null) {
+                        assert sslFilter != null;
 
-                    assert msg != null;
-                    assert msgWriter != null;
+                        if (!writeSslSystem(ses, sockCh, req.message()))
+                            return;
 
-                    finished = msgWriter.write(nodeId, msg, buf);
+                        req = (NioOperationFuture<?>)ses.pollFuture();
+
+                        if (req == null)
+                            break;
+                    }
+                    else {
+                        msg = req.directMessage();
+
+                        assert msg != null;
+                        assert msgWriter != null;
+
+                        finished = msgWriter.write(nodeId, msg, buf);
+                    }
                 }
 
+                if (buf.position() == 0)
+                    break;
+
                 buf.flip();
+
+                if (sslFilter != null) {
+                    try {
+                        ByteBuffer sesBuf = ses.writeBuffer();
+
+                        buf = sslFilter.encrypt(ses, sesBuf);
+
+                        sesBuf.clear();
+                    }
+                    catch (GridException e) {
+                        throw new IOException("Failed to encode SSL data: " + ses, e);
+                    }
+                }
 
                 assert buf.hasRemaining();
 
@@ -800,15 +907,26 @@ public class GridNioServer<T> {
                     }
                 }
 
-                if (buf.hasRemaining()) {
-                    buf.compact();
+                ses.addMeta(NIO_OPERATION.ordinal(), req);
 
-                    ses.addMeta(NIO_OPERATION.ordinal(), req);
+                if (sslFilter != null) {
+                    if (buf.hasRemaining()) {
+                        ses.addMeta(BUF_META_KEY, buf);
 
-                    break;
+                        break;
+                    }
+                    else
+                        buf = ses.writeBuffer();
                 }
-                else
-                    buf.clear();
+                else {
+                    if (buf.hasRemaining()) {
+                        buf.compact();
+
+                        break;
+                    }
+                    else
+                        buf.clear();
+                }
             }
         }
     }
@@ -1621,7 +1739,13 @@ public class GridNioServer<T> {
 
         /** {@inheritDoc} */
         @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) {
-            return directMode ? send(ses, (GridTcpCommunicationMessageAdapter)msg) : send(ses, (ByteBuffer)msg);
+            if (directMode) {
+                boolean sslSystem = sslFilter != null && msg instanceof ByteBuffer;
+
+                return sslSystem ? send(ses, (ByteBuffer) msg) : send(ses, (GridTcpCommunicationMessageAdapter) msg);
+            }
+            else
+                return send(ses, (ByteBuffer)msg);
         }
 
         /** {@inheritDoc} */

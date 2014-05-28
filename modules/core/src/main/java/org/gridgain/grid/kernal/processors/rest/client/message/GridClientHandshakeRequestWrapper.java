@@ -31,6 +31,13 @@ public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessa
     }
 
     /**
+     * @return Handshake bytes.
+     */
+    public byte[] bytes() {
+        return bytes;
+    }
+
+    /**
      * @return Protocol ID.
      */
     public byte protocolId() {

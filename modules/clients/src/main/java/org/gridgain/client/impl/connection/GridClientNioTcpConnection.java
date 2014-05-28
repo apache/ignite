@@ -14,6 +14,7 @@ import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.util.nio.*;
+import org.gridgain.grid.util.nio.ssl.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -65,15 +66,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     /** Request ID counter. */
     private AtomicLong reqIdCntr = new AtomicLong(1);
 
-    /** Communication channel. */
-    //private final Channel ch;
-
-    /** Timestamp of last send message. */
-    private volatile long lastMsgSndTime;
-
-    /** Timestamp of last received message. */
-    private volatile long lastMsgRcvTime;
-
     /**
      * Ping receive time.
      * {@code 0} until first ping send and {@link Long#MAX_VALUE} while response isn't received.
@@ -118,9 +110,19 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      * @throws GridClientException If handshake error occurs.
      */
     @SuppressWarnings("unchecked")
-    GridClientNioTcpConnection(GridNioServer srv, UUID clientId, InetSocketAddress srvAddr, final SSLContext sslCtx,
-        ScheduledExecutorService pingExecutor, int connectTimeout, long pingInterval, long pingTimeout,
-        boolean tcpNoDelay, final GridClientMarshaller marsh, GridClientTopology top, Object cred, Byte protoId)
+    GridClientNioTcpConnection(GridNioServer srv,
+        UUID clientId,
+        InetSocketAddress srvAddr,
+        SSLContext sslCtx,
+        ScheduledExecutorService pingExecutor,
+        int connectTimeout,
+        long pingInterval,
+        long pingTimeout,
+        boolean tcpNoDelay,
+        GridClientMarshaller marsh,
+        GridClientTopology top,
+        Object cred,
+        Byte protoId)
         throws IOException, GridClientException {
         super(clientId, srvAddr, sslCtx, top, cred);
 
@@ -141,9 +143,24 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
             sock.connect(srvAddr, connectTimeout);
 
-            GridClientFutureAdapter<?> handshakeFut = new GridClientFutureAdapter<>();
+            GridClientFuture<?> handshakeFut = new GridClientFutureAdapter<>();
 
-            ses = (GridNioSession)srv.createSession(ch, F.asMap(SES_META_HANDSHAKE, handshakeFut)).get();
+            Map<Integer, Object> meta = new HashMap<>();
+
+            meta.put(SES_META_HANDSHAKE, handshakeFut);
+
+            GridNioFuture<?> sslHandshakeFut = null;
+
+            if (sslCtx != null) {
+                sslHandshakeFut = new GridNioFutureImpl<>();
+
+                meta.put(GridNioSslFilter.HANDSHAKE_FUT_META_KEY, sslHandshakeFut);
+            }
+
+            ses = (GridNioSession)srv.createSession(ch, meta).get();
+
+            if (sslHandshakeFut != null)
+                sslHandshakeFut.get();
 
             GridClientHandshakeRequest req =
                 new GridClientHandshakeRequest(marsh != null ? marsh.getProtocolId() : protoId);
@@ -240,7 +257,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             return true;
 
         // Timestamp of the last sent or received message.
-        long lastMsgTime = Math.max(Math.max(lastMsgSndTime, lastMsgRcvTime), createTs);
+        long lastMsgTime = Math.max(Math.max(ses.lastSendTime(), ses.lastReceiveTime()), createTs);
 
         if (lastMsgTime + idleTimeout < System.currentTimeMillis() && pendingReqs.isEmpty()) {
             // In case of new request came between empty check and setting closing flag
@@ -350,7 +367,22 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
             assert old == null;
 
-            GridNioFuture<?> sndFut = ses.send(messageWrapper(msg));
+            GridClientMessageWrapper wrapper;
+
+            try {
+                wrapper = messageWrapper(msg);
+            }
+            catch (IOException e) {
+                log.log(Level.SEVERE, "Failed to marshal message: " + msg, e);
+
+                removePending(reqId);
+
+                fut.onDone(e);
+
+                return fut;
+            }
+
+            GridNioFuture<?> sndFut = ses.send(wrapper);
 
             if (routeMode) {
                 sndFut.listenAsync(new CI1<GridNioFuture<?>>() {
@@ -375,8 +407,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
                         "(will try to reconnect): " + serverAddress(), e);
                 }
             }
-
-            lastMsgSndTime = U.currentTimeMillis();
         }
 
         return fut;
@@ -393,25 +423,24 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      * Handles incoming response message. If this connection is closed this method would signal empty event
      * if there is no more pending requests.
      *
-     * @param reqData Incoming response data.
+     * @param req Incoming response data.
      */
     @SuppressWarnings({"unchecked", "TooBroadScope"})
-    void handleResponse(GridClientMessageWrapper reqData) {
-        lastMsgRcvTime = U.currentTimeMillis();
-
-        TcpClientFuture fut = pendingReqs.get(reqData.requestId());
+    void handleResponse(GridClientMessageWrapper req) {
+        TcpClientFuture fut = pendingReqs.get(req.requestId());
 
         if (fut == null) {
-            log.warning("Response for an unknown request is received, ignoring. Request ID: " + reqData.requestId());
+            log.warning("Response for an unknown request is received, ignoring. " +
+                "[req=" + req + ", ses=" + ses + ']');
 
             return;
         }
 
         if (fut.forward()) {
-            GridRouterResponse msg = new GridRouterResponse(reqData.message(),
-                reqData.requestId(),
+            GridRouterResponse msg = new GridRouterResponse(req.message(),
+                req.requestId(),
                 clientId,
-                reqData.destinationId());
+                req.destinationId());
 
             removePending(msg.requestId());
 
@@ -421,7 +450,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             GridClientMessage msg;
 
             try {
-                msg = marsh.unmarshal(reqData.message());
+                msg = marsh.unmarshal(req.message());
             }
             catch (IOException e) {
                 fut.onDone(new GridClientException("Failed to unmarshal message.", e));
@@ -429,9 +458,9 @@ public class GridClientNioTcpConnection extends GridClientConnection {
                 return;
             }
 
-            msg.requestId(reqData.requestId());
-            msg.clientId(reqData.clientId());
-            msg.destinationId(reqData.destinationId());
+            msg.requestId(req.requestId());
+            msg.clientId(req.clientId());
+            msg.destinationId(req.destinationId());
 
             if (msg instanceof GridClientResponse)
                 handleClientResponse(fut, (GridClientResponse)msg);
@@ -462,7 +491,22 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
                     req.requestId(resp.requestId());
 
-                    ses.send(messageWrapper(req));
+                    GridClientMessageWrapper wrapper;
+
+                    try {
+                        wrapper = messageWrapper(req);
+                    }
+                    catch (IOException e) {
+                        log.log(Level.SEVERE, "Failed to marshal message: " + req, e);
+
+                        removePending(resp.requestId());
+
+                        fut.onDone(e);
+
+                        return;
+                    }
+
+                    ses.send(wrapper);
 
                     return;
                 }
@@ -476,7 +520,22 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
                     src.sessionToken(sesTok);
 
-                    ses.send(messageWrapper(src));
+                    GridClientMessageWrapper wrapper;
+
+                    try {
+                        wrapper = messageWrapper(src);
+                    }
+                    catch (IOException e) {
+                        log.log(Level.SEVERE, "Failed to marshal message: " + src, e);
+
+                        removePending(resp.requestId());
+
+                        fut.onDone(e);
+
+                        return;
+                    }
+
+                    ses.send(wrapper);
 
                     return;
                 }
@@ -499,24 +558,20 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     /**
      * @param msg Client message.
      * @return Message wrapper for direct marshalling.
+     * @throws IOException If failed to marshal message.
      */
-    private GridClientMessageWrapper messageWrapper(GridClientMessage msg) {
+    private GridClientMessageWrapper messageWrapper(GridClientMessage msg) throws IOException {
         GridClientMessageWrapper wrapper = new GridClientMessageWrapper();
 
         wrapper.requestId(msg.requestId());
         wrapper.clientId(clientId);
         wrapper.destinationId(msg.destinationId());
 
-        try {
-            byte[] data = (msg instanceof GridRouterRequest) ? ((GridRouterRequest) msg).body() : marsh.marshal(msg);
+        byte[] data = (msg instanceof GridRouterRequest) ? ((GridRouterRequest) msg).body() : marsh.marshal(msg);
 
-            wrapper.message(data);
+        wrapper.message(data);
 
-            wrapper.messageSize(data.length + 40);
-        }
-        catch (IOException e) {
-            e.printStackTrace(); // TODO 8416.
-        }
+        wrapper.messageSize(data.length + 40);
 
         return wrapper;
     }

@@ -243,9 +243,11 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
             return ses.send(wrapper);
         }
         catch (GridException e) {
-            e.printStackTrace(); // FIXME 8416.
+            U.error(log, "Failed to marshal response: " + res, e);
 
-            return null;
+            ses.close();
+
+            return new GridNioFinishedFuture<>(e);
         }
     }
 

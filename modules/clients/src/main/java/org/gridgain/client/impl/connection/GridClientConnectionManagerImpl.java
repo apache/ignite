@@ -18,6 +18,7 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.logger.java.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.nio.*;
+import org.gridgain.grid.util.nio.ssl.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -177,12 +178,12 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
                 GridNioFilter codecFilter = new GridNioCodecFilter(new NioParser(msgReader), gridLog, true);
 
                 if (sslCtx != null) {
-                    filters = new GridNioFilter[]{codecFilter};
+                    GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, gridLog);
 
-                    // FIXME: 8416 need client SSL filter.
-                    //GridNioFilter sslFilter = ;
+                    sslFilter.directMode(true);
+                    sslFilter.clientMode(true);
 
-                    //filters = new GridNioFilter[]{codecFilter, sslFilter};
+                    filters = new GridNioFilter[]{codecFilter, sslFilter};
                 }
                 else
                     filters = new GridNioFilter[]{codecFilter};
@@ -681,6 +682,8 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
 
                 if (type == GridClientMessageWrapper.REQ_HEADER)
                     msg = new GridClientMessageWrapper();
+                else
+                    throw new IOException("Invalid message type: " + type);
             }
 
             boolean finished = false;
