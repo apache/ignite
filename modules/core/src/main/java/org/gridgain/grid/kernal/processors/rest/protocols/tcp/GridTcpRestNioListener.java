@@ -121,16 +121,13 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
             GridClientMarshaller marsh = (GridClientMarshaller)cons.newInstance();
 
-            Byte protoId = (Byte)cls.getField("PROTOCOL_ID").get(null);
-
-            map.put(protoId, marsh);
+            map.put(marsh.getProtocolId(), marsh);
         }
         catch (ClassNotFoundException ignored) {
             U.quietAndWarn(log, "Failed to create Protobuf marshaller for REST (C++ and .NET clients won't work). " +
                 "Consider adding gridgain-protobuf module to classpath.");
         }
-        catch (InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException |
-            NoSuchFieldException e) {
+        catch (InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e) {
             U.error(log, "Failed to create Protobuf marshaller for REST.", e);
         }
     }

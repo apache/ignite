@@ -14,15 +14,15 @@ import org.gridgain.client.*;
 import org.gridgain.client.marshaller.*;
 import org.gridgain.client.marshaller.jdk.*;
 import org.gridgain.client.marshaller.optimized.*;
-import org.gridgain.client.marshaller.protobuf.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.lang.reflect.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.GridProductImpl.*;
@@ -33,6 +33,10 @@ import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
  * and delegates their delivery to underlying client.
  */
 class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessage> {
+    /** Protobuf marshaller class name. */
+    private static final String PROTOBUF_MARSH_CLS =
+        "org.gridgain.client.marshaller.protobuf.GridClientProtobufMarshaller";
+
     /** Logger. */
     private final GridLogger log;
 
@@ -41,11 +45,7 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
 
     /** Supported marshallers. */
     @GridToStringExclude
-    private static final Map<Byte, GridClientMarshaller> suppMarshMap = F.asMap(
-        GridClientOptimizedMarshaller.PROTOCOL_ID, new GridClientOptimizedMarshaller(),
-        GridClientProtobufMarshaller.PROTOCOL_ID, new GridClientProtobufMarshaller(),
-        GridClientJdkMarshaller.PROTOCOL_ID, new GridClientJdkMarshaller()
-    );
+    private final Map<Byte, GridClientMarshaller> suppMarshMap;
 
     /**
      * @param log Logger.
@@ -54,6 +54,37 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
     GridTcpRouterNioListener(GridLogger log, GridRouterClientImpl client) {
         this.log = log;
         this.client = client;
+
+        Map<Byte, GridClientMarshaller> tmpMap = new GridLeanMap<>(3);
+
+        tmpMap.put(GridClientOptimizedMarshaller.PROTOCOL_ID, new GridClientOptimizedMarshaller());
+        tmpMap.put(GridClientJdkMarshaller.PROTOCOL_ID, new GridClientJdkMarshaller());
+
+        addProtobufMarshaller(tmpMap);
+
+        suppMarshMap = Collections.unmodifiableMap(tmpMap);
+    }
+
+    /**
+     * @param map Marshallers map.
+     */
+    private void addProtobufMarshaller(Map<Byte, GridClientMarshaller> map) {
+        try {
+            Class<?> cls = Class.forName(PROTOBUF_MARSH_CLS);
+
+            Constructor<?> cons = cls.getConstructor();
+
+            GridClientMarshaller marsh = (GridClientMarshaller)cons.newInstance();
+
+            map.put(marsh.getProtocolId(), marsh);
+        }
+        catch (ClassNotFoundException ignored) {
+            U.quietAndWarn(log, "Failed to create Protobuf marshaller for router (C++ and .NET clients won't work). " +
+                "Consider adding gridgain-protobuf module to classpath.");
+        }
+        catch (InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e) {
+            U.error(log, "Failed to create Protobuf marshaller for router.", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -81,16 +112,11 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
             final long reqId = routerMsg.requestId();
 
             try {
-                byte protoId = GridClientProtobufMarshaller.PROTOCOL_ID;
-
                 GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
 
-                if (marsh != null)
-                    protoId = marsh.getProtocolId();
-                else
-                    U.warn(log, "No marshaller defined for session, using default PROTOBUF [ses=" + ses + ']');
+                assert marsh != null;
 
-                client.forwardMessage(routerMsg, routerMsg.destinationId(), protoId)
+                client.forwardMessage(routerMsg, routerMsg.destinationId(), marsh.getProtocolId())
                     .listenAsync(new GridClientFutureListener() {
                         @Override public void onDone(GridClientFuture fut) {
                             try {
