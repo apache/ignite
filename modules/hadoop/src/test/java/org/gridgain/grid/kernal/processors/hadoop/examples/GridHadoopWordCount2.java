@@ -58,6 +58,7 @@ public class GridHadoopWordCount2 {
         FileOutputFormat.setOutputPath(job, new Path(output));
 
         job.setJarByClass(GridHadoopWordCount2.class);
+
         return job;
     }
 

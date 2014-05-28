@@ -31,6 +31,7 @@ public class GridHadoopWordCount2Mapper extends Mapper<Object, Text, Text, IntWr
 
         while (wordList.hasMoreTokens()) {
             word.set(wordList.nextToken());
+
             ctx.write(word, one);
         }
     }

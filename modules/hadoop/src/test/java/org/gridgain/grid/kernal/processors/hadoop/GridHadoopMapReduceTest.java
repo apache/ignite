@@ -9,21 +9,19 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
-import org.apache.commons.io.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.io.serializer.*;
-import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapreduce.*;
-import org.apache.hadoop.mapreduce.lib.input.*;
-import org.apache.hadoop.mapreduce.lib.output.*;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.gridgain.grid.*;
+import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.hadoop.examples.*;
 
-import java.io.*;
-import java.nio.file.Files;
 import java.util.*;
 
 /**
@@ -31,22 +29,8 @@ import java.util.*;
  */
 public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
     /** {@inheritDoc} */
-    @Override protected boolean ggfsEnabled() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        startGrids(gridCount());
+    @Override protected int gridCount() {
+        return 3;
     }
 
     /**
@@ -59,15 +43,17 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
      * @throws Exception If fails.
      */
     public void testWholeMapReduceExecution() throws Exception {
-        File testInputFile = File.createTempFile(GridHadoopWordCount2.class.getSimpleName(), "-input");
+        GridGgfsPath inDir = new GridGgfsPath(PATH_INPUT);
 
-        testInputFile.deleteOnExit();
+        ggfs.mkdirs(inDir);
 
-        generateTestFile(testInputFile, "red", 100000, "blue", 200000, "green", 150000, "yellow", 70000);
+        GridGgfsPath inFile = new GridGgfsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
 
-        File testOutputDir = Files.createTempDirectory("job-output").toFile();
+        generateTestFile(inFile.toString(), "red", 100000, "blue", 200000, "green", 150000, "yellow", 70000 );
 
         for (int i = 0; i < 16; i++) {
+            ggfs.delete(new GridGgfsPath(PATH_OUTPUT), true);
+
             boolean useNewMapper = (i & 1) == 0;
             boolean useNewCombiner = (i & 2) == 0;
             boolean useNewReducer = (i & 4) == 0;
@@ -84,6 +70,11 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
             //For v1
             jobConf.setInt("fs.local.block.size", 65000);
 
+            // File system coordinates.
+            jobConf.set("fs.default.name", GGFS_SCHEME);
+            jobConf.set("fs.ggfs.impl", "org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem");
+            jobConf.set("fs.AbstractFileSystem.ggfs.impl", "org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem");
+
             GridHadoopWordCount1.setTasksClasses(jobConf, !useNewMapper, !useNewCombiner, !useNewReducer);
 
             Job job = Job.getInstance(jobConf);
@@ -93,30 +84,27 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
             job.setOutputKeyClass(Text.class);
             job.setOutputValueClass(IntWritable.class);
 
-            FileInputFormat.setInputPaths(job, new Path(testInputFile.getAbsolutePath()));
-            FileOutputFormat.setOutputPath(job, new Path(testOutputDir.getAbsolutePath()));
+            FileInputFormat.setInputPaths(job, new Path(GGFS_SCHEME + inFile.toString()));
+            FileOutputFormat.setOutputPath(job, new Path(GGFS_SCHEME + PATH_OUTPUT));
 
             job.setJarByClass(GridHadoopWordCount2.class);
 
-            try {
-                GridHadoopProcessorAdapter hadoop = ((GridKernal) grid(0)).context().hadoop();
+            GridHadoopProcessorAdapter hadoop = ((GridKernal) grid(0)).context().hadoop();
 
-                GridFuture<?> fut = hadoop.submit(new GridHadoopJobId(UUID.randomUUID(), 1),
-                        new GridHadoopDefaultJobInfo(job.getConfiguration()));
+            GridFuture<?> fut = hadoop.submit(new GridHadoopJobId(UUID.randomUUID(), 1),
+                    new GridHadoopDefaultJobInfo(job.getConfiguration()));
 
-                fut.get();
+            fut.get();
 
-                assertEquals("Use new mapper = " + useNewMapper + ", combiner = " + useNewCombiner + "reducer = " + useNewReducer,
-                    "blue\t200000\n" +
-                    "green\t150000\n" +
-                    "red\t100000\n" +
-                    "yellow\t70000\n",
-                    readAndSortFile(testOutputDir.getAbsolutePath() + "/" + (useNewReducer ? "part-r-" : "part-") + "00000")
-                );
-            }
-            finally {
-                FileUtils.deleteDirectory(testOutputDir);
-            }
+            assertEquals("Use new mapper = " + useNewMapper + ", combiner = " + useNewCombiner + "reducer = " +
+                    useNewReducer,
+                "blue\t200000\n" +
+                "green\t150000\n" +
+                "red\t100000\n" +
+                "yellow\t70000\n",
+                readAndSortFile(PATH_OUTPUT + "/" + (useNewReducer ? "part-r-" : "part-") +
+                    "00000")
+            );
         }
     }
 }

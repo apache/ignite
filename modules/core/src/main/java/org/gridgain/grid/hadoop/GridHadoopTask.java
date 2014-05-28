@@ -54,7 +54,7 @@ public abstract class GridHadoopTask implements Externalizable {
      * @throws GridInterruptedException If interrupted.
      * @throws GridException If failed.
      */
-    public abstract void run(GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException;
+    public abstract void run(GridHadoopTaskContext taskCtx) throws GridException;
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {

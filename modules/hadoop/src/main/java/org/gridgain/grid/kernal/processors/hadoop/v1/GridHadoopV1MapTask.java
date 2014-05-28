@@ -21,7 +21,7 @@ import java.io.*;
 /**
  * Hadoop map task implementation for v1 API.
  */
-public class GridHadoopV1MapTask extends GridHadoopTask {
+public class GridHadoopV1MapTask extends GridHadoopV1Task {
     /** */
     private static final String[] EMPTY_HOSTS = new String[0];
 
@@ -31,7 +31,8 @@ public class GridHadoopV1MapTask extends GridHadoopTask {
     }
 
     /** {@inheritDoc} */
-    @Override public void run(final GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
+    @SuppressWarnings("unchecked")
+    @Override public void run(final GridHadoopTaskContext taskCtx) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job) taskCtx.job();
 
         JobConf jobConf = new JobConf(jobImpl.hadoopJobContext().getJobConf());
@@ -51,36 +52,40 @@ public class GridHadoopV1MapTask extends GridHadoopTask {
         }
         else if (split instanceof GridHadoopExternalSplit)
             nativeSplit = jobImpl.readExternalSplit((GridHadoopExternalSplit)split);
-        else
+        else {
+            assert split != null;
+
             nativeSplit = split.innerSplit();
+        }
 
         assert nativeSplit != null;
-
-        OutputCollector collector = new OutputCollector() {
-            @Override public void collect(Object key, Object val) throws IOException {
-                try {
-                    taskCtx.output().write(key, val);
-                }
-                catch (GridException e) {
-                    throw new IOException(e);
-                }
-            }
-        };
 
         Reporter reporter = Reporter.NULL;
 
         try {
+            GridHadoopOutputCollector collector = new GridHadoopOutputCollector(jobConf, taskCtx,
+                !jobImpl.hasCombinerOrReducer(), fileName(), jobImpl.attemptId(info()));
+
             RecordReader reader = inFormat.getRecordReader(nativeSplit, jobConf, reporter);
 
             Object key = reader.createKey();
             Object val = reader.createValue();
 
+            assert mapper != null;
+
             mapper.configure(jobConf);
 
-            while (reader.next(key, val))
-                mapper.map(key, val, collector, reporter);
+            try {
+                while (reader.next(key, val))
+                    mapper.map(key, val, collector, reporter);
+            }
+            finally {
+                U.closeQuiet(mapper);
 
-            mapper.close();
+                collector.closeWriter();
+            }
+
+            collector.commit();
         }
         catch (IOException e) {
             throw new GridException(e);

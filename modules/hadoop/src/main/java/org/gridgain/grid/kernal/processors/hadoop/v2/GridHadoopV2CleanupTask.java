@@ -19,7 +19,7 @@ import java.io.*;
 /**
  * Hadoop cleanup task (commits or aborts job).
  */
-public class GridHadoopV2CleanupTask extends GridHadoopTask {
+public class GridHadoopV2CleanupTask extends GridHadoopV2Task {
     /** Abort flag. */
     private boolean abort;
 

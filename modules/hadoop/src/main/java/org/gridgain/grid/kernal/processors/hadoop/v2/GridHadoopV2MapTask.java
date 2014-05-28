@@ -22,7 +22,7 @@ import java.io.*;
 /**
  * Hadoop map task implementation for v2 API.
  */
-public class GridHadoopV2MapTask extends GridHadoopTask {
+public class GridHadoopV2MapTask extends GridHadoopV2Task {
     /**
      * @param taskInfo Task info.
      */
@@ -31,7 +31,8 @@ public class GridHadoopV2MapTask extends GridHadoopTask {
     }
 
     /** {@inheritDoc} */
-    @Override public void run(GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
+    @SuppressWarnings({"ConstantConditions", "unchecked"})
+    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job)taskCtx.job();
 
         JobContext jobCtx = jobImpl.hadoopJobContext();
@@ -47,7 +48,8 @@ public class GridHadoopV2MapTask extends GridHadoopTask {
             throw new GridException(e);
         }
 
-        GridHadoopV2Context hadoopCtx = new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx, jobImpl.attemptId(info()));
+        GridHadoopV2Context hadoopCtx = new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx,
+            jobImpl.attemptId(info()));
 
         GridHadoopInputSplit split = info().inputSplit();
 
@@ -72,7 +74,16 @@ public class GridHadoopV2MapTask extends GridHadoopTask {
 
             hadoopCtx.reader(reader);
 
-            mapper.run(new WrappedMapper().getMapContext(hadoopCtx));
+            OutputFormat outputFormat = jobImpl.hasCombinerOrReducer() ? null : prepareWriter(hadoopCtx, jobCtx);
+
+            try {
+                mapper.run(new WrappedMapper().getMapContext(hadoopCtx));
+            }
+            finally {
+                closeWriter(hadoopCtx);
+            }
+
+            commit(hadoopCtx, outputFormat);
         }
         catch (IOException e) {
             throw new GridException(e);

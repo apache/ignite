@@ -9,7 +9,12 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
+import org.apache.hadoop.conf.*;
+import org.apache.hadoop.fs.*;
+import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.mapreduce.lib.input.*;
+import org.apache.hadoop.mapreduce.lib.output.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.examples.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
@@ -29,6 +34,24 @@ public class GridHadoopTasksV2Test extends GridHadoopTasksAllVersionsTest {
      * @throws Exception if fails.
      */
     @Override public GridHadoopJob getHadoopJob(String inFile, String outFile) throws Exception {
+        Job job = Job.getInstance();
+
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(IntWritable.class);
+
+        GridHadoopWordCount2.setTasksClasses(job, true, true, true);
+
+        Configuration conf = job.getConfiguration();
+
+        conf.set("fs.default.name", GGFS_SCHEME);
+        conf.set("fs.ggfs.impl", "org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem");
+        conf.set("fs.AbstractFileSystem.ggfs.impl", "org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem");
+
+        FileInputFormat.setInputPaths(job, new Path(inFile));
+        FileOutputFormat.setOutputPath(job, new Path(outFile));
+
+        job.setJarByClass(GridHadoopWordCount2.class);
+
         Job hadoopJob = GridHadoopWordCount2.getJob(inFile, outFile);
 
         GridHadoopDefaultJobInfo jobInfo = new GridHadoopDefaultJobInfo(hadoopJob.getConfiguration());
@@ -45,25 +68,5 @@ public class GridHadoopTasksV2Test extends GridHadoopTasksAllVersionsTest {
     /** {@inheritDoc} */
     @Override public String getOutputFileNamePrefix() {
         return "part-r-";
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testMapTask() throws Exception {
-        super.testMapTask();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testReduceTask() throws Exception {
-        super.testReduceTask();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testCombinerTask() throws Exception {
-        super.testCombinerTask();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testAllTasks() throws Exception {
-        super.testAllTasks();
     }
 }

@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.io.serializer.*;
 import org.apache.hadoop.mapred.*;
@@ -198,7 +199,21 @@ public class GridHadoopV2Job implements GridHadoopJob {
         return ctx.getNumReduceTasks();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return {@code True} in case reducer exists.
+     */
+    public boolean hasReducer() {
+        return reducers() != 0;
+    }
+
+    /**
+     * @return {@code True} in case either combiner or reducer exists.
+     */
+    public boolean hasCombinerOrReducer() {
+        return hasCombiner() || hasReducer();
+    }
+
+        /** {@inheritDoc} */
     @Override public GridHadoopPartitioner partitioner() throws GridException {
         Class<?> partClsOld = ctx.getConfiguration().getClass("mapred.partitioner.class", null);
 
@@ -222,14 +237,17 @@ public class GridHadoopV2Job implements GridHadoopJob {
                 return useNewMapper ? new GridHadoopV2MapTask(taskInfo) : new GridHadoopV1MapTask(taskInfo);
 
             case REDUCE:
-                return useNewReducer ? new GridHadoopV2ReduceTask(taskInfo) : new GridHadoopV1ReduceTask(taskInfo);
+                return useNewReducer ? new GridHadoopV2ReduceTask(taskInfo, true) :
+                    new GridHadoopV1ReduceTask(taskInfo, true);
 
             case COMBINE:
-                return useNewCombiner ? new GridHadoopV2CombineTask(taskInfo) : new GridHadoopV1CombineTask(taskInfo);
+                return useNewCombiner ? new GridHadoopV2ReduceTask(taskInfo, false) :
+                    new GridHadoopV1ReduceTask(taskInfo, false);
 
             case COMMIT:
             case ABORT:
-                return useNewReducer ? new GridHadoopV2CleanupTask(taskInfo, isAbort) : new GridHadoopV1CleanupTask(taskInfo, isAbort);
+                return useNewReducer ? new GridHadoopV2CleanupTask(taskInfo, isAbort) :
+                    new GridHadoopV1CleanupTask(taskInfo, isAbort);
 
             default:
                 return null;
