@@ -21,15 +21,11 @@ class VisorAckCommandSpec extends VisorRuntimeBaseSpec(2) {
     behavior of "A 'ack' visor command"
 
     it should "properly execute w/o arguments" in {
-        visor open("-d", false)
         visor ack()
-        visor close()
     }
 
     it should "properly execute with arguments" in {
-        visor open("-d", false)
         visor ack("Broadcasting!")
-        visor close()
     }
 
     it should "print error message when not connected" in {

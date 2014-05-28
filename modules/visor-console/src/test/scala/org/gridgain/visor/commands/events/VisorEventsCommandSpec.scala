@@ -37,24 +37,20 @@ class VisorEventsCommandSpec extends VisorRuntimeBaseSpec(1) {
     behavior of "A 'events' visor command"
 
     it should "print error message when not connected" in {
+        closeVisorQuiet()
+
         visor events()
     }
 
     it should "display all events from remote node" in {
-        visor open("-d", false)
         visor events("-id8=@n0")
-        visor close()
     }
 
     it should "display top 3 events from remote node" in {
-        visor open("-d", false)
         visor events("-id8=@n0 -c=3")
-        visor close()
     }
 
     it should "print error message with invalid count" in {
-        visor open("-d", false)
         visor events("-id8=@n0 -c=x")
-        visor close()
     }
 }

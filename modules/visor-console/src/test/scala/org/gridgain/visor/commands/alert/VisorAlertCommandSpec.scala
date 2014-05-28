@@ -11,14 +11,15 @@
 
 package org.gridgain.visor.commands.alert
 
-import java.util.regex.Pattern
-import org.gridgain.visor._
-import VisorAlertCommand._
-import org.gridgain.grid._
-import org.gridgain.grid.{GridGain => G}
+import org.gridgain.grid.{GridConfiguration, GridGain => G}
 import org.gridgain.grid.spi.discovery.GridDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
+
+import java.util.regex.Pattern
+
+import org.gridgain.visor._
+import org.gridgain.visor.commands.alert.VisorAlertCommand._
 
 /**
  * Unit test for alert commands.
@@ -103,8 +104,6 @@ class VisorAlertCommandSpec extends VisorRuntimeBaseSpec(1) {
 
     it should "register new alert" in {
         try {
-            visor open("-e -g=node-1", false)
-
             checkOut(visor alert(), "No alerts are registered.")
 
             matchOut(visor alert("-r -t=5 -cc=gte4"), "Alert.+registered.")
@@ -113,15 +112,11 @@ class VisorAlertCommandSpec extends VisorRuntimeBaseSpec(1) {
         }
         finally {
             visor alert("-u -a")
-
-            visor close()
         }
     }
 
     it should "print error messages on incorrect alerts" in {
         try {
-            visor open("-e -g=node-1", false)
-
             matchOut(visor alert("-r -t=5"), "Alert.+registered.")
 
             checkOut(visor alert("-r -UNKNOWN_KEY=lt20"), "Invalid argument")
@@ -130,27 +125,21 @@ class VisorAlertCommandSpec extends VisorRuntimeBaseSpec(1) {
         }
         finally {
             visor alert("-u -a")
-
-            visor close()
         }
     }
 
     it should "write alert to log" in {
         try {
-            visor.open("-e -g=node-1", false)
-
             matchOut(visor alert("-r -nc=gte1"), "Alert.+registered.")
 
-            GridGain.start(config("node-2"))
+            G.start(config("node-2"))
 
-            GridGain.stop("node-2", false)
+            G.stop("node-2", false)
 
             checkOut(visor alert(), "No alerts are registered.", false)
         }
         finally {
             visor alert("-u -a")
-
-            visor close()
         }
     }
 }

@@ -18,8 +18,31 @@ import org.scalatest._
  * Base abstract class for unit tests requiring Visor runtime.
  */
 abstract class VisorRuntimeBaseSpec(private[this] val num: Int) extends FlatSpec with Matchers
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll with BeforeAndAfterEach {
     assert(num >= 1)
+
+    /**
+     * Gets grid configuration.
+     *
+     * @param name Grid name.
+     * @return Grid configuration.
+     */
+    protected def config(name: String): GridConfiguration = {
+        val cfg = new GridConfiguration
+
+        cfg.setGridName(name)
+
+        cfg
+    }
+
+    protected def openVisor() {
+        visor.open(config("visor-demo-node"), "n/a")
+    }
+
+    protected def closeVisorQuiet() {
+        if (visor.isConnected)
+            visor.close()
+    }
 
     /**
      * Runs before all tests.
@@ -35,17 +58,11 @@ abstract class VisorRuntimeBaseSpec(private[this] val num: Int) extends FlatSpec
         (1 to num).foreach((n: Int) => G.stop("node-" + n, false))
     }
 
-    /**
-     * Gets grid configuration.
-     *
-     * @param name Grid name.
-     * @return Grid configuration.
-     */
-    protected def config(name: String): GridConfiguration = {
-        val cfg = new GridConfiguration
+    override protected def beforeEach() {
+        openVisor()
+    }
 
-        cfg.setGridName(name)
-
-        cfg
+    override protected def afterEach() {
+        closeVisorQuiet()
     }
 }

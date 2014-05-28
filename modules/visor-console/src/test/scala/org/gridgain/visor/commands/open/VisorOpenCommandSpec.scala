@@ -20,18 +20,12 @@ class VisorOpenCommandSpec extends VisorRuntimeBaseSpec(3) {
     behavior of "A 'open' visor command"
 
     it should "properly connect using default configuration" in {
-        visor open("-d", false)
         visor mlist()
-        visor close()
     }
 
     it should "print error message when already connected" in {
-        visor open("-d", false)
-        visor open("-d", false)
-        visor close()
-    }
+        openVisor()
 
-    it should "print error message about wrong parameter combination" in {
-        visor open("-d -e", false)
+        visor close()
     }
 }

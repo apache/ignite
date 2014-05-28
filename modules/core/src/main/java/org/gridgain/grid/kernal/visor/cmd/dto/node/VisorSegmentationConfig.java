@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
 import org.gridgain.grid.segmentation.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 
@@ -23,7 +24,7 @@ public class VisorSegmentationConfig implements Serializable {
     /**Segmentation policy. */
     private final GridSegmentationPolicy plc;
     /**Segmentation resolvers. */
-    private final String resolvers;
+    @Nullable private final String resolvers;
     /**Frequency of network segment check by discovery manager. */
     private final long checkFreq;
     /**Whether or not node should wait for correct segment on start. */
@@ -31,7 +32,7 @@ public class VisorSegmentationConfig implements Serializable {
     /**Whether or not all resolvers should succeed for node to be in correct segment. */
     private final boolean passRequired;
 
-    public VisorSegmentationConfig(GridSegmentationPolicy plc, String resolvers, long checkFreq,
+    public VisorSegmentationConfig(GridSegmentationPolicy plc, @Nullable String resolvers, long checkFreq,
         boolean waitOnStart,
         boolean passRequired) {
         this.plc = plc;
@@ -51,7 +52,7 @@ public class VisorSegmentationConfig implements Serializable {
     /**
      * @return Segmentation resolvers.
      */
-    public String resolvers() {
+    @Nullable public String resolvers() {
         return resolvers;
     }
 

@@ -21,18 +21,16 @@ class VisorNodeCommandSpec extends VisorRuntimeBaseSpec(1) {
     behavior of "A 'node' visor command"
 
     it should "properly execute with valid node ID" in {
-        visor open("-d", false)
         visor node("-id8=@n1")
-        visor close()
     }
 
     it should "print the error message for invalid node ID" in {
-        visor open("-d", false)
         visor node("-id8=zeee")
-        visor close()
     }
 
     it should "print error message when not connected" in {
+        closeVisorQuiet()
+
         visor node("") // Arguments are ignored.
     }
 }

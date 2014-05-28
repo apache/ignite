@@ -21,12 +21,12 @@ class VisorPingCommandSpec extends VisorRuntimeBaseSpec(2) {
     behavior of "A 'ping' visor command"
 
     it should "properly execute" in {
-        visor open("-d", false)
         visor ping()
-        visor close()
     }
 
     it should "print error message when not connected" in {
+        closeVisorQuiet()
+
         visor ping()
     }
 }

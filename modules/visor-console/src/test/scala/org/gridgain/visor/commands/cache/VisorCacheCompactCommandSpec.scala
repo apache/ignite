@@ -71,7 +71,7 @@ class VisorCacheCompactCommandSpec extends VisorRuntimeBaseSpec(2) {
 
         G.grid("node-1").cache[Int, Int](null).clear(1)
 
-        visor.open("-e -g=node-1", false)
+        visor.open("-e -g=node-1")
 
         VisorCacheCompactCommand().compact(Nil, None)
 
@@ -83,7 +83,7 @@ class VisorCacheCompactCommandSpec extends VisorRuntimeBaseSpec(2) {
 
         G.grid("node-1").cache[Int, Int]("cache").clear(1)
 
-        visor.open("-e -g=node-1", false)
+        visor.open("-e -g=node-1")
 
         visor.cache("-compact -c=cache")
 
@@ -97,7 +97,7 @@ class VisorCacheCompactCommandSpec extends VisorRuntimeBaseSpec(2) {
     }
 
     it should "show empty projection error message" in {
-        visor.open("-e -g=node-1", false)
+        visor.open("-e -g=node-1")
 
         visor.cache("-compact -c=wrong")
 

@@ -22,7 +22,7 @@ import org.gridgain.visor.commands.top.VisorTopologyCommand._
  */
 class VisorStartCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     override def beforeAll() {
-        visor.open("-d", false)
+        visor.open("-d")
     }
 
     override def afterAll() {

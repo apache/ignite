@@ -11,7 +11,7 @@
 
 package org.gridgain.visor.commands.tasks
 
-import org.gridgain.grid._
+import org.gridgain.grid.{GridGain => G, GridConfiguration}
 import org.gridgain.grid.compute.{GridComputeJob, GridComputeJobAdapter, GridComputeJobResult, GridComputeTaskSplitAdapter}
 import org.gridgain.grid.events.GridEventType._
 
@@ -33,10 +33,10 @@ class VisorTasksCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAl
      * Open visor and execute several tasks before all tests.
      */
     override def beforeAll() {
-        GridGain.start(config("grid-1"))
-        GridGain.start(config("grid-2"))
+        G.start(config("grid-1"))
+        G.start(config("grid-2"))
 
-        visor.open("-d", false)
+        visor.open(config("grid-1"), "n/a")
 
         try {
             val compute = visor.grid.compute()
@@ -80,7 +80,7 @@ class VisorTasksCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAl
     override def afterAll() {
         visor.close()
 
-        GridGain.stopAll(false)
+        G.stopAll(false)
     }
 
     behavior of "A 'tasks' visor command"

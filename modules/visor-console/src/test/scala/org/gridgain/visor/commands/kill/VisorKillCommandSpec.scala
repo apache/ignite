@@ -23,13 +23,13 @@ class VisorKillCommandSpec extends FlatSpec with Matchers {
     behavior of "A 'kill' visor command"
 
     it should "print error message with null argument" in {
-        visor open("-d", false)
+        visor open("-d")
         visor kill(null)
         visor close()
     }
 
     it should "print error message if both kill and restart specified" in {
-        visor open("-d", false)
+        visor open("-d")
         visor kill("-k -r")
         visor close()
     }
@@ -39,13 +39,13 @@ class VisorKillCommandSpec extends FlatSpec with Matchers {
     }
 
     it should "restart node" in {
-        visor open("-d", false)
+        visor open("-d")
         visor kill("-r -id8=@n1")
         visor close()
     }
 
     it should "print error message" in {
-        visor open("-d", false)
+        visor open("-d")
         visor kill("-r -id=xxx")
         visor close()
     }

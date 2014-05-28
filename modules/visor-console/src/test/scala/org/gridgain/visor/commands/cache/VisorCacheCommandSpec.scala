@@ -31,7 +31,7 @@ class VisorCacheCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAl
 
         assert(g.caches().size() > 0)
 
-        visor.open("-e", false)
+        visor.open("-e")
     }
 
     /**

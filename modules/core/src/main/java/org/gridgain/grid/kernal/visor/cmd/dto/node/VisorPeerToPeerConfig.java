@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
+import org.jetbrains.annotations.*;
+
 import java.io.*;
 
 /**
@@ -25,9 +27,9 @@ public class VisorPeerToPeerConfig implements Serializable {
     private final int p2pMissedResCacheSize;
 
     /** List of packages from the system classpath that need to be loaded from task originating node. */
-    private final String p2pLocClsPathExcl;
+    @Nullable private final String p2pLocClsPathExcl;
 
-    public VisorPeerToPeerConfig(boolean p2pEnabled, int p2pMissedResCacheSize, String p2pLocClsPathExcl) {
+    public VisorPeerToPeerConfig(boolean p2pEnabled, int p2pMissedResCacheSize, @Nullable String p2pLocClsPathExcl) {
         this.p2pEnabled = p2pEnabled;
         this.p2pMissedResCacheSize = p2pMissedResCacheSize;
         this.p2pLocClsPathExcl = p2pLocClsPathExcl;
@@ -50,7 +52,7 @@ public class VisorPeerToPeerConfig implements Serializable {
     /**
      * @return List of packages from the system classpath that need to be loaded from task originating node.
      */
-    public String p2pLocaleClassPathExcl() {
+    @Nullable public String p2pLocaleClassPathExcl() {
         return p2pLocClsPathExcl;
     }
 }

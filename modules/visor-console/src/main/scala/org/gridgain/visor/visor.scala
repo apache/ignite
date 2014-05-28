@@ -34,6 +34,7 @@ import java.text._
 import java.util._
 import java.util.concurrent._
 
+import scala.Some
 import scala.collection.immutable
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
@@ -1383,124 +1384,91 @@ object visor extends VisorTag {
      * Connects to 'mygrid' grid.
      *
      * @param args Command arguments.
-     * @param repl Whether or not Visor is running inside of the Scala REPL.
      */
-    def open(args: String, repl: Boolean = true) {
-        def scold(errMsgs: String*) {
-            assert(errMsgs != null)
-
-            warn(errMsgs: _*)
-            warn("Type 'help open' to see how to use this command.")
-        }
-
-        try {
-            open0(args, repl)
-        }
-        catch {
-            case e: GE => scold(e.getMessage)
-        }
-    }
-
-    /**
-     * Internal implementation of 'open' command that throws 'GridException' in
-     * case of any error.
-     *
-     * @param args Command arguments.
-     * @param repl Whether or not Visor is running inside of the Scala REPL.
-     */
-    def open0(args: String, repl: Boolean) {
+    def open(args: String) {
         assert(args != null)
-
-        def configuration(path: String): GridConfiguration = {
-            assert(path != null)
-
-            val url =
-                try
-                    new URL(path)
-                catch {
-                    case e: Exception =>
-                        val url = U.resolveGridGainUrl(path)
-
-                        if (url == null)
-                            throw new GE("Spring XML configuration path is invalid: " + path, e)
-
-                        url
-                }
-
-            val isLog4jUsed = classOf[G].getClassLoader.getResource("org/apache/log4j/Appender.class") != null
-
-            var log4jTup: GridBiTuple[AnyRef, AnyRef] = null
-
-            val spring: GridSpringProcessor = SPRING.create(false)
-
-            val cfgs =
-                try {
-                    spring.loadConfigurations(url).get1()
-                }
-                finally {
-                    if (isLog4jUsed && log4jTup != null)
-                        U.removeLog4jNoOpLogger(log4jTup)
-                }
-
-            if (cfgs == null || cfgs.isEmpty)
-                throw new GE("Can't find grid configuration in: " + url)
-
-            if (cfgs.size > 1)
-                throw new GE("More than one grid configuration found in: " + url)
-
-            val cfg = cfgs.iterator().next()
-
-            // Setting up 'Config URL' for properly print in console.
-            System.setProperty(GridSystemProperties.GG_CONFIG_URL, url.getPath)
-
-            var cpuCnt = Runtime.getRuntime.availableProcessors
-
-            if (cpuCnt < 4)
-                cpuCnt = 4
-
-            cfg.setRestEnabled(false)
-
-            // All thread pools are overridden to have size equal to number of CPUs.
-            cfg.setExecutorService(new GridThreadPoolExecutor(cpuCnt, cpuCnt,
-                Long.MaxValue, new LinkedBlockingQueue[Runnable]))
-            cfg.setSystemExecutorService(new GridThreadPoolExecutor(cpuCnt, cpuCnt,
-                Long.MaxValue, new LinkedBlockingQueue[Runnable]))
-            cfg.setPeerClassLoadingExecutorService(new GridThreadPoolExecutor(cpuCnt, cpuCnt,
-                Long.MaxValue, new LinkedBlockingQueue[Runnable]))
-
-            var ioSpi = cfg.getCommunicationSpi
-
-            if (ioSpi == null)
-                ioSpi = new GridTcpCommunicationSpi()
-
-            cfg
-        }
 
         if (isConnected)
             throw new GE("Visor is already connected. Disconnect first.")
-        else {
+
+        try {
+            def configuration(path: String): GridConfiguration = {
+                assert(path != null)
+
+                val url =
+                    try
+                        new URL(path)
+                    catch {
+                        case e: Exception =>
+                            val url = U.resolveGridGainUrl(path)
+
+                            if (url == null)
+                                throw new GE("Spring XML configuration path is invalid: " + path, e)
+
+                            url
+                    }
+
+                val isLog4jUsed = classOf[G].getClassLoader.getResource("org/apache/log4j/Appender.class") != null
+
+                var log4jTup: GridBiTuple[AnyRef, AnyRef] = null
+
+                val spring: GridSpringProcessor = SPRING.create(false)
+
+                val cfgs =
+                    try {
+                        spring.loadConfigurations(url).get1()
+                    }
+                    finally {
+                        if (isLog4jUsed && log4jTup != null)
+                            U.removeLog4jNoOpLogger(log4jTup)
+                    }
+
+                if (cfgs == null || cfgs.isEmpty)
+                    throw new GE("Can't find grid configuration in: " + url)
+
+                if (cfgs.size > 1)
+                    throw new GE("More than one grid configuration found in: " + url)
+
+                val cfg = cfgs.iterator().next()
+
+                // Setting up 'Config URL' for properly print in console.
+                System.setProperty(GridSystemProperties.GG_CONFIG_URL, url.getPath)
+
+                var cpuCnt = Runtime.getRuntime.availableProcessors
+
+                if (cpuCnt < 4)
+                    cpuCnt = 4
+
+                cfg.setRestEnabled(false)
+
+                // All thread pools are overridden to have size equal to number of CPUs.
+                cfg.setExecutorService(new GridThreadPoolExecutor(cpuCnt, cpuCnt,
+                    Long.MaxValue, new LinkedBlockingQueue[Runnable]))
+                cfg.setSystemExecutorService(new GridThreadPoolExecutor(cpuCnt, cpuCnt,
+                    Long.MaxValue, new LinkedBlockingQueue[Runnable]))
+                cfg.setPeerClassLoadingExecutorService(new GridThreadPoolExecutor(cpuCnt, cpuCnt,
+                    Long.MaxValue, new LinkedBlockingQueue[Runnable]))
+
+                var ioSpi = cfg.getCommunicationSpi
+
+                if (ioSpi == null)
+                    ioSpi = new GridTcpCommunicationSpi()
+
+                cfg
+            }
+
             val argLst = parseArgs(args)
 
-            val name = argValue("g", argLst).orNull
             val path = argValue("cpath", argLst)
             val dflt = hasArgFlag("d", argLst)
 
             rmtLogDisabled = hasArgFlag("dl", argLst)
 
-            var cfg: GridConfiguration = null
-            var startedGridName: String = null
-
-            val cfgPath =
-                if (path.isDefined) {
-                    cfg = configuration(path.get)
-
-                    path.get
-                }
-                else if (dflt) {
-                    cfg = configuration(DFLT_CFG)
-
-                    "<default>"
-                }
+            val (cfg, cfgPath) =
+                if (path.isDefined)
+                    (configuration(path.get), path.get)
+                else if (dflt)
+                    (configuration(DFLT_CFG), "<default>")
                 else {
                     // If configuration file is not defined in arguments,
                     // ask to choose from the list
@@ -1508,185 +1476,187 @@ object visor extends VisorTag {
                         case Some(p) =>
                             nl()
 
-                            (VisorTextTable() += ("Using configuration", p)) render()
+                            (VisorTextTable() +=("Using configuration", p)) render()
 
                             nl()
 
-                            cfg = configuration(p)
-
-                            p
+                            (configuration(p), p)
                         case None =>
                             return
                     }
                 }
+        }
+        catch {
+            case e: GE =>
+                warn(e.getMessage)
+                warn("Type 'help open' to see how to use this command.")
+        }
+    }
 
-            val daemon = scalar.isDaemon
+    /**
+     * Connects visor to configuration with path.
+     *
+     * @param cfg Configuration.
+     * @param cfgPath Configuration path.
+     */
+    def open(cfg: GridConfiguration, cfgPath: String) {
+        val daemon = scalar.isDaemon
 
-            // Make sure visor starts as daemon node.
-            scalar.daemon(true)
+        // Make sure visor starts as daemon node.
+        scalar.daemon(true)
 
-            try {
-                startedGridName = scalar.start(cfg).name
-            }
-            finally {
-                scalar.daemon(daemon)
-            }
+        val startedGridName = try {
+             scalar.start(cfg).name
+        }
+        finally {
+            scalar.daemon(daemon)
+        }
 
-            this.cfgPath = cfgPath
+        this.cfgPath = cfgPath
 
-            val nameToCheck = if (name == null) startedGridName else name
+        grid$(startedGridName) match {
+            case Some(g) => grid = g.asInstanceOf[GridEx]
+            case None =>
+                this.cfgPath = null
 
-            grid$(nameToCheck) match {
-                case Some(g) => grid = g.asInstanceOf[GridEx]
-                case None =>
-                    this.cfgPath = null
+                throw new GE("Named grid unavailable: " + startedGridName)
+        }
 
-                    throw new GE("Named grid unavailable: " + nameToCheck)
-            }
+        assert(cfgPath != null)
 
-            assert(cfgPath != null)
+        isCon = true
+        conOwner = true
+        conTs = System.currentTimeMillis
 
-            isCon = true
-            conOwner = true
-            conTs = System.currentTimeMillis
+        if (!grid.configuration().isPeerClassLoadingEnabled)
+            warn("Peer class loading is disabled (custom closures in shell mode will not work).")
 
-            if (!grid.configuration().isPeerClassLoadingEnabled)
-                warn("Peer class loading is disabled (custom closures in shell mode will not work).")
+        pool = new GridThreadPoolExecutor()
 
-            pool = new GridThreadPoolExecutor()
+        grid.nodes().foreach(n => {
+            setVarIfAbsent(nid8(n), "n")
 
-            grid.nodes().foreach(n => {
-                setVarIfAbsent(nid8(n), "n")
+            val ip = n.addresses().headOption
 
-                val ip = n.addresses().headOption
+            if (ip.isDefined)
+                setVarIfAbsent(ip.get, "h")
+        })
 
-                if (ip.isDefined)
-                    setVarIfAbsent(ip.get, "h")
-            })
+        nodeJoinLsnr = new GridPredicate[GridEvent]() {
+            override def apply(e: GridEvent): Boolean = {
+                e match {
+                    case de: GridDiscoveryEvent =>
+                        setVarIfAbsent(nid8(de.eventNode()), "n")
 
-            nodeJoinLsnr = new GridPredicate[GridEvent]() {
-                override def apply(e: GridEvent): Boolean = {
-                    e match {
-                        case de: GridDiscoveryEvent =>
-                            setVarIfAbsent(nid8(de.eventNode()), "n")
+                        val node = grid.node(de.eventNode().id())
 
-                            val node = grid.node(de.eventNode().id())
+                        if (node != null) {
+                            val ip = node.addresses().headOption
 
-                            if (node != null) {
-                                val ip = node.addresses().headOption
-
-                                if (ip.isDefined)
-                                    setVarIfAbsent(ip.get, "h")
-                            }
-                            else {
-                                if (repl)
-                                    warn(
-                                        "New node not found: " + de.eventNode().id(),
-                                        "Visor must have discovery configuration and local " +
-                                            "host bindings identical with grid nodes."
-                                    )
-                            }
-                    }
-
-                    true
+                            if (ip.isDefined)
+                                setVarIfAbsent(ip.get, "h")
+                        }
+                        else {
+                            warn(
+                                "New node not found: " + de.eventNode().id(),
+                                "Visor must have discovery configuration and local " +
+                                    "host bindings identical with grid nodes."
+                            )
+                        }
                 }
+
+                true
             }
+        }
 
-            grid.events().localListen(nodeJoinLsnr, EVT_NODE_JOINED)
+        grid.events().localListen(nodeJoinLsnr, EVT_NODE_JOINED)
 
-            nodeLeftLsnr = new GridPredicate[GridEvent]() {
-                override def apply(e: GridEvent): Boolean = {
-                    e match {
-                        case (de: GridDiscoveryEvent) =>
-                            val nv = mfind(nid8(de.eventNode()))
+        nodeLeftLsnr = new GridPredicate[GridEvent]() {
+            override def apply(e: GridEvent): Boolean = {
+                e match {
+                    case (de: GridDiscoveryEvent) =>
+                        val nv = mfind(nid8(de.eventNode()))
 
-                            if (nv.isDefined)
-                                mem.remove(nv.get._1)
+                        if (nv.isDefined)
+                            mem.remove(nv.get._1)
 
-                            val ip = de.eventNode().addresses.headOption
+                        val ip = de.eventNode().addresses.headOption
 
-                            if (ip.isDefined) {
-                                val last = !grid.nodes().exists(n =>
-                                    n.addresses.size > 0 && n.addresses.head == ip.get
-                                )
+                        if (ip.isDefined) {
+                            val last = !grid.nodes().exists(n =>
+                                n.addresses.size > 0 && n.addresses.head == ip.get
+                            )
 
-                                if (last) {
-                                    val hv = mfind(ip.get)
+                            if (last) {
+                                val hv = mfind(ip.get)
 
-                                    if (hv.isDefined)
-                                        mem.remove(hv.get._1)
-                                }
+                                if (hv.isDefined)
+                                    mem.remove(hv.get._1)
                             }
-                    }
-
-                    true
+                        }
                 }
+
+                true
             }
+        }
 
-            grid.events().localListen(nodeLeftLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED)
+        grid.events().localListen(nodeLeftLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED)
 
-            nodeSegLsnr = new GridPredicate[GridEvent] {
-                override def apply(e: GridEvent): Boolean = {
-                    e match {
-                        case de: GridDiscoveryEvent =>
-                            if (de.eventNode().id() == grid.localNode.id) {
-                                if (repl) {
-                                    warn("Closing visor due to topology segmentation.")
-                                    warn("Contact your system administrator.")
-
-                                    nl()
-                                }
-
-                                close()
-                            }
-                    }
-
-                    true
-                }
-            }
-
-            grid.events().localListen(nodeSegLsnr, EVT_NODE_SEGMENTED)
-
-            nodeStopLsnr = new GridGainListener {
-                def onStateChange(name: String, state: GridGainState) {
-                    if (name == grid.name && state == GridGainState.STOPPED) {
-                        if (repl) {
-                            warn("Closing visor due to stopping of host grid instance.")
+        nodeSegLsnr = new GridPredicate[GridEvent] {
+            override def apply(e: GridEvent): Boolean = {
+                e match {
+                    case de: GridDiscoveryEvent =>
+                        if (de.eventNode().id() == grid.localNode.id) {
+                            warn("Closing visor due to topology segmentation.")
+                            warn("Contact your system administrator.")
 
                             nl()
-                        }
 
-                        close()
-                    }
+                            close()
+                        }
+                }
+
+                true
+            }
+        }
+
+        grid.events().localListen(nodeSegLsnr, EVT_NODE_SEGMENTED)
+
+        nodeStopLsnr = new GridGainListener {
+            def onStateChange(name: String, state: GridGainState) {
+                if (name == grid.name && state == GridGainState.STOPPED) {
+                    warn("Closing visor due to stopping of host grid instance.")
+
+                    nl()
+
+                    close()
                 }
             }
-
-            G.addListener(nodeStopLsnr)
-
-            if (repl) {
-                logText("Visor joined topology: " + cfgPath)
-                logText("All live nodes, if any, will re-join.")
-
-                nl()
-
-                val t = VisorTextTable()
-
-                // Print advise.
-                println("Some useful commands:")
-
-                t += ("Type 'top'", "to see full topology.")
-                t += ("Type 'node'", "to see node statistics.")
-                t += ("Type 'cache'", "to see cache statistics.")
-                t += ("Type 'tasks'", "to see tasks statistics.")
-                t += ("Type 'config'", "to see node configuration.")
-
-                t.render()
-
-                println("\nType 'help' to get help.\n")
-            }
-
-            status()
         }
+
+        G.addListener(nodeStopLsnr)
+
+        logText("Visor joined topology: " + cfgPath)
+        logText("All live nodes, if any, will re-join.")
+
+        nl()
+
+        val t = VisorTextTable()
+
+        // Print advise.
+        println("Some useful commands:")
+
+        t += ("Type 'top'", "to see full topology.")
+        t += ("Type 'node'", "to see node statistics.")
+        t += ("Type 'cache'", "to see cache statistics.")
+        t += ("Type 'tasks'", "to see tasks statistics.")
+        t += ("Type 'config'", "to see node configuration.")
+
+        t.render()
+
+        println("\nType 'help' to get help.\n")
+
+        status()
     }
 
     /**

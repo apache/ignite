@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
+import org.jetbrains.annotations.*;
+
 import java.io.*;
 
 /**
@@ -19,12 +21,12 @@ public class VisorLifecycleConfig implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Lifecycle beans. */
-    private final String beans;
+    @Nullable private final String beans;
 
     /** Whether or not email notifications should be used on node start and stop. */
     private final boolean ntf;
 
-    public VisorLifecycleConfig(String beans, boolean ntf) {
+    public VisorLifecycleConfig(@Nullable String beans, boolean ntf) {
         this.beans = beans;
         this.ntf = ntf;
     }
@@ -32,7 +34,7 @@ public class VisorLifecycleConfig implements Serializable {
     /**
      * @return Lifecycle beans.
      */
-    public String beans() {
+    @Nullable public String beans() {
         return beans;
     }
 

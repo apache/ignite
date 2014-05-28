@@ -22,7 +22,7 @@ class VisorScalarSpec extends FlatSpec with ShouldMatchers {
     behavior of "A visor object"
 
     it should "properly open and close w/o Scalar" in {
-        visor open("-d", false)
+        visor open("-d")
         visor status()
         visor close()
     }
@@ -31,7 +31,7 @@ class VisorScalarSpec extends FlatSpec with ShouldMatchers {
         scalar start()
 
         try {
-            visor open("-d", false)
+            visor open("-d")
             visor status()
             visor close()
         }
@@ -48,7 +48,7 @@ class VisorScalarSpec extends FlatSpec with ShouldMatchers {
         scalar start(cfg)
 
         try {
-            visor open("-e -g=grid-visor", false)
+            visor open(cfg, "n/a")
             visor status()
             visor close()
         }
@@ -61,7 +61,7 @@ class VisorScalarSpec extends FlatSpec with ShouldMatchers {
         scalar start()
 
         try {
-            visor open("-d", false)
+            visor open("-d")
             scalar stop()
             visor status()
         }
@@ -74,11 +74,11 @@ class VisorScalarSpec extends FlatSpec with ShouldMatchers {
         scalar start()
 
         try {
-            visor open("-d", false)
+            visor open("-d")
             visor status()
             visor close()
 
-            visor open("-d", false)
+            visor open("-d")
             visor status()
             visor close()
         }

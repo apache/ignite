@@ -24,7 +24,7 @@ class VisorGcCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     behavior of "A 'gc' visor command"
 
     override def beforeAll() {
-        visor.open("-d", false)
+        visor.open("-d")
 
         visor.top()
     }
