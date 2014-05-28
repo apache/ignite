@@ -41,9 +41,6 @@ import static org.gridgain.grid.security.GridSecuritySubjectType.*;
  * Rest processor implementation.
  */
 public class GridRestProcessor extends GridProcessorAdapter {
-    /** */
-    private static final byte[] EMPTY_ID = new byte[0];
-
     /** Protocols. */
     private final Collection<GridRestProtocol> protos = new ArrayList<>();
 
@@ -138,7 +135,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * Checks security permissions.
      *
      * @param req Request to validate.
-     * @param securitySubjCtx Security subject context.
+     * @param securityCtx Security subject context.
      */
     private void checkPermissions(GridRestRequest req, GridSecurityContext securityCtx) {
         GridSecurityPermission op = null;

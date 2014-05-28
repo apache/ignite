@@ -17,6 +17,7 @@ import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -406,7 +407,12 @@ public class GridJettyRestHandler extends AbstractHandler {
 
         restReq.command(cmd);
 
-        restReq.credentials(params.get("cred"));
+        if (params.containsKey("gridgain.login") || params.containsKey("gridgain.password")) {
+            GridSecurityCredentials cred = new GridSecurityCredentials(
+                (String)params.get("gridgain.login"), (String)params.get("gridgain.password"));
+
+            restReq.credentials(cred);
+        }
 
         String clientId = (String) params.get("clientId");
 
