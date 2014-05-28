@@ -66,6 +66,8 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
                         if (log.isDebugEnabled())
                             log.debug("Finished task execution [jobId=" + job.id() + ", taskInfo=" + info + ", " +
                                 "waitTime=" + waitTime() + ", execTime=" + executionTime() + ']');
+
+                        jobTracker.onTaskFinished(info, new GridHadoopTaskStatus(state, err));
                     }
 
                     @Override protected GridHadoopTaskInput createInput(GridHadoopTaskInfo info) throws GridException {
@@ -79,27 +81,28 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
 
             futures.add(fut);
 
+            final Collection<GridFuture<?>> futs = futures;
             fut.listenAsync(new CIX1<GridFuture<?>>() {
                 @Override public void applyx(GridFuture<?> f) {
-                    Collection<GridFuture<?>> futs = jobs.get(info.jobId());
+//                    Collection<GridFuture<?>> futs = jobs.get(info.jobId());
 
                     futs.remove(f);
 
-                    GridHadoopTaskState state = COMPLETED;
-                    Throwable err = null;
-
-                    try {
-                        f.get();
-                    }
-                    catch (GridFutureCancelledException ignored) {
-                        state = CANCELED;
-                    }
-                    catch (Throwable e) {
-                        state = FAILED;
-                        err = e;
-                    }
-
-                    jobTracker.onTaskFinished(info, new GridHadoopTaskStatus(state, err));
+//                    GridHadoopTaskState state = COMPLETED;
+//                    Throwable err = null;
+//
+//                    try {
+//                        f.get();
+//                    }
+//                    catch (GridFutureCancelledException ignored) {
+//                        state = CANCELED;
+//                    }
+//                    catch (Throwable e) {
+//                        state = FAILED;
+//                        err = e;
+//                    }
+//
+//                    jobTracker.onTaskFinished(info, new GridHadoopTaskStatus(state, err));
                 }
             });
         }
@@ -135,7 +138,7 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
         if (meta.phase() == GridHadoopJobPhase.PHASE_COMPLETE) {
             Collection<GridFuture<?>> futures = jobs.remove(job.id());
 
-            assert futures == null || futures.isEmpty();
+            //assert futures == null || futures.isEmpty();
 
             GridHadoopJobClassLoadingContext ctx = ctxs.remove(job.id());
 
