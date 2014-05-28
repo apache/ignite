@@ -508,7 +508,7 @@ public class GridConfiguration {
     private byte dataCenterId;
 
     /** Security credentials. */
-    private GridSecurityCredentials securityCred;
+    private GridSecurityCredentialsProvider securityCred;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -606,7 +606,7 @@ public class GridConfiguration {
         restTcpSslClientAuth = cfg.isRestTcpSslClientAuth();
         restExecSvc = cfg.getRestExecutorService();
         restSvcShutdown = cfg.getRestExecutorServiceShutdown();
-        securityCred = cfg.getSecurityCredentials();
+        securityCred = cfg.getSecurityCredentialsProvider();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
@@ -2939,7 +2939,7 @@ public class GridConfiguration {
      *
      * @return Security credentials.
      */
-    public GridSecurityCredentials getSecurityCredentials() {
+    public GridSecurityCredentialsProvider getSecurityCredentialsProvider() {
         return securityCred;
     }
 
@@ -2948,7 +2948,7 @@ public class GridConfiguration {
      *
      * @param securityCred Security credentials.
      */
-    public void setSecurityCredentials(GridSecurityCredentials securityCred) {
+    public void setSecurityCredentialsProvider(GridSecurityCredentialsProvider securityCred) {
         this.securityCred = securityCred;
     }
 

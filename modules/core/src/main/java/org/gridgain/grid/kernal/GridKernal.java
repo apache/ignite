@@ -694,7 +694,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             // all components are started.
             verProc.addConvertersToAttributes(attrs);
 
-            security = new GridSecurityImpl(ctx.security(), ctx.secureSession());
+            if (ctx.isEnterprise())
+                security = new GridSecurityImpl(ctx.security(), ctx.secureSession());
 
             gw.writeLock();
 
