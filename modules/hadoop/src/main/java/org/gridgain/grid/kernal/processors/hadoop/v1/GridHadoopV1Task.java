@@ -37,6 +37,6 @@ public abstract class GridHadoopV1Task extends GridHadoopTask {
         numFormat.setMinimumIntegerDigits(5);
         numFormat.setGroupingUsed(false);
 
-        return "part-" + numFormat.format(taskInfo.taskNumber());
+        return "part-" + numFormat.format(info().taskNumber());
     }
 }
