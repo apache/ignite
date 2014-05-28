@@ -12,14 +12,14 @@
 package org.gridgain.visor.commands.kill
 
 import org.scalatest._
-import matchers._
+
 import org.gridgain.visor._
-import VisorKillCommand._
+import org.gridgain.visor.commands.kill.VisorKillCommand._
 
 /**
  * Unit test for 'kill' command.
  */
-class VisorKillCommandSpec extends FlatSpec with ShouldMatchers {
+class VisorKillCommandSpec extends FlatSpec with Matchers {
     behavior of "A 'kill' visor command"
 
     it should "print error message with null argument" in {

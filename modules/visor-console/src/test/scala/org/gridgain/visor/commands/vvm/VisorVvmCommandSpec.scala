@@ -12,14 +12,14 @@
 package org.gridgain.visor.commands.vvm
 
 import org.scalatest._
-import matchers._
+
 import org.gridgain.visor._
-import VisorVvmCommand._
+import org.gridgain.visor.commands.vvm.VisorVvmCommand._
 
 /**
  * Unit test for 'vvm' command.
  */
-class VisorVvmCommandSpec extends FlatSpec with ShouldMatchers {
+class VisorVvmCommandSpec extends FlatSpec with Matchers {
     behavior of "A 'vvm' visor command"
 
     it should "print error message when not connected" in {

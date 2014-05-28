@@ -11,28 +11,28 @@
 
 package org.gridgain.visor.commands.disco
 
+import org.gridgain.grid.{GridGain => G, _}
+
 import org.scalatest._
-import org.scalatest.matchers._
+
 import org.gridgain.visor._
-import VisorDiscoveryCommand._
-import org.gridgain.grid.{GridGain => G}
-import org.gridgain.grid._
+import org.gridgain.visor.commands.disco.VisorDiscoveryCommand._
 
 /**
  * Unit test for 'disco' command.
  */
-class VisorDiscoveryCommandSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterAll {
+class VisorDiscoveryCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     /**
      * Open visor and execute several tasks before all tests.
      */
     override def beforeAll() {
-        GridGain.start(config("grid-1"))
-        GridGain.start(config("grid-2"))
-        GridGain.start(config("grid-3"))
-        GridGain.start(config("grid-4"))
+        G.start(config("grid-1"))
+        G.start(config("grid-2"))
+        G.start(config("grid-3"))
+        G.start(config("grid-4"))
 
-        GridGain.stop("grid-1", false)
-        GridGain.stop("grid-2", false)
+        G.stop("grid-1", false)
+        G.stop("grid-2", false)
     }
 
     /**
@@ -56,7 +56,7 @@ class VisorDiscoveryCommandSpec extends FlatSpec with ShouldMatchers with Before
     override def afterAll() {
         visor.close()
 
-        GridGain.stopAll(false)
+        G.stopAll(false)
     }
 
     behavior of  "A 'disco' visor command"

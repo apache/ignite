@@ -12,13 +12,13 @@
 package org.gridgain.visor.commands.log
 
 import org.scalatest._
-import matchers._
+
 import org.gridgain.visor._
 
 /**
 * Unit test for 'log' command.
 */
-class VisorLogCommandSpec extends FlatSpec with ShouldMatchers {
+class VisorLogCommandSpec extends FlatSpec with Matchers {
     behavior of "A 'log' visor command"
 
     it should "print log status" in {

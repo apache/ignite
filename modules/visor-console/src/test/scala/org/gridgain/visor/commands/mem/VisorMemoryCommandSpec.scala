@@ -12,13 +12,13 @@
 package org.gridgain.visor.commands.mem
 
 import org.scalatest._
-import matchers._
+
 import org.gridgain.visor._
 
 /**
  * Unit test for memory commands.
  */
-class VisorMemoryCommandSpec extends FlatSpec with ShouldMatchers {
+class VisorMemoryCommandSpec extends FlatSpec with Matchers {
     "A 'mget' visor command" should "get correct value" in {
         visor mset("key", "value")
 

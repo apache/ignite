@@ -11,19 +11,18 @@
 
 package org.gridgain.visor.commands.cache
 
-import org.scalatest._
-import matchers._
-import org.gridgain.visor._
-import VisorCacheCommand._
 import org.gridgain.grid.{GridGain => G}
-import org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType
-import GridCacheQueryType._
 import org.gridgain.grid.cache.query.GridCacheQuerySqlField
+
+import org.scalatest._
+
+import org.gridgain.visor._
+import org.gridgain.visor.commands.cache.VisorCacheCommand._
 
 /**
  * Unit test for 'events' command.
  */
-class VisorCacheCommandSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterAll {
+class VisorCacheCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     /**
      * Open Visor.
      */

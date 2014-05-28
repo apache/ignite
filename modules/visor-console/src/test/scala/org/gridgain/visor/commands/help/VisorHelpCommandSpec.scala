@@ -12,13 +12,13 @@
 package org.gridgain.visor.commands.help
 
 import org.scalatest._
-import matchers._
+
 import org.gridgain.visor._
 
 /**
  * Unit test for 'help' command.
  */
-class VisorHelpCommandSpec extends FlatSpec with ShouldMatchers {
+class VisorHelpCommandSpec extends FlatSpec with Matchers {
     // Pre-initialize command so that help can be registered.
     commands.ack.VisorAckCommand
     commands.ping.VisorPingCommand
