@@ -266,7 +266,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
                 enabledEvts[enabledEvtsLen++] = type;
         }
 
-        return U.unique(enabledEvts, inclEvtTypes);
+        return U.unique(enabledEvts, enabledEvtsLen, inclEvtTypes, inclEvtTypes.length);
     }
 
     /**
@@ -298,7 +298,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
 
             userTypes = compact(userTypes, userTypesLen);
 
-            inclEvtTypes0 = U.unique(inclEvtTypes0, userTypes);
+            inclEvtTypes0 = U.unique(inclEvtTypes0, inclEvtTypes0.length, userTypes, userTypesLen);
         }
 
         // Volatile write.
@@ -347,7 +347,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
 
             userTypes = compact(userTypes, userTypesLen);
 
-            inclEvtTypes0 = U.difference(inclEvtTypes0, userTypes);
+            inclEvtTypes0 = U.difference(inclEvtTypes0, inclEvtTypes0.length, userTypes, userTypesLen);
         }
 
         // Volatile write.

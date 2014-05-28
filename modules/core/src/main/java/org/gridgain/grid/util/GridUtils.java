@@ -6299,21 +6299,19 @@ public abstract class GridUtils {
      * Note: arrays must be increasing.
      *
      * @param a First array.
+     * @param aLen Length of prefix {@code a}.
      * @param b Second array.
+     * @param bLen Length of prefix {@code b}.
      * @return Increasing array which is union of {@code a} and {@code b}.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public static int[] unique(int[] a, int[] b) {
+    public static int[] unique(int[] a, int aLen, int[] b, int bLen) {
         assert a != null;
         assert b != null;
-
-        int aLen = a.length;
-        int bLen = b.length;
-
         assert isIncreasingArray(a, aLen);
         assert isIncreasingArray(b, bLen);
 
-        int[] res = new int[aLen];
+        int[] res = new int[aLen + bLen];
         int resLen = 0;
 
         int i = 0;
@@ -6344,17 +6342,15 @@ public abstract class GridUtils {
      * Note: arrays must be increasing.
      *
      * @param a First array.
+     * @param aLen Length of prefix {@code a}.
      * @param b Second array.
+     * @param bLen Length of prefix {@code b}.
      * @return Increasing array which is difference between {@code a} and {@code b}.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public static int[] difference(int[] a, int[] b) {
+    public static int[] difference(int[] a, int aLen, int[] b, int bLen) {
         assert a != null;
         assert b != null;
-
-        int aLen = a.length;
-        int bLen = b.length;
-
         assert isIncreasingArray(a, aLen);
         assert isIncreasingArray(b, bLen);
 
