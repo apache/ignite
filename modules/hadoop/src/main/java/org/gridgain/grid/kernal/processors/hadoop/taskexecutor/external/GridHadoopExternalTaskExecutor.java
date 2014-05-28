@@ -621,9 +621,6 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
         if (proc != null)
             proc.removeTask(taskMsg.taskInfo());
 
-        U.debug("Task finished [process=" + desc.processId() + ", parentNode=" + desc.parentNodeId() + ", msg=" +
-            taskMsg + ']');
-
         jobTracker.onTaskFinished(taskMsg.taskInfo(), new GridHadoopTaskStatus(taskMsg.state(), taskMsg.error()));
     }
 

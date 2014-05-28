@@ -100,9 +100,6 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
     @SuppressWarnings("unchecked")
     @Override public void write(Object key, Object val) throws IOException, InterruptedException {
         if (writer != null)
-            System.out.println("WRITTEN TO GG HADOOP CTX [key=" + key + ", val=" + val + ", writer=" + writer + ']');
-
-        if (writer != null)
             writer.write(key, val);
         else {
             try {

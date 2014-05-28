@@ -30,16 +30,7 @@ import java.util.*;
 public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return 2;
-    }
-
-    // TODO: Remove.
-    @Override public GridHadoopConfiguration hadoopConfiguration(String gridName) {
-        GridHadoopConfiguration cfg = super.hadoopConfiguration(gridName);
-
-        cfg.setExternalExecution(true);
-
-        return cfg;
+        return 3;
     }
 
     /**
@@ -58,11 +49,9 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
 
         GridGgfsPath inFile = new GridGgfsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
 
-        generateTestFile(inFile.toString(), "aaaa", 1000, "bbbb", 2000, "cccc", 1500, "dddd", 700 );
+        generateTestFile(inFile.toString(), "red", 100000, "blue", 200000, "green", 150000, "yellow", 70000 );
 
         for (int i = 0; i < 16; i++) {
-            System.out.println("ITERATION " + i);
-
             ggfs.delete(new GridGgfsPath(PATH_OUTPUT), true);
 
             boolean useNewMapper = (i & 1) == 0;
@@ -107,14 +96,12 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
 
             fut.get();
 
-            System.out.println("Future completed.");
-
             assertEquals("Use new mapper = " + useNewMapper + ", combiner = " + useNewCombiner + "reducer = " +
                     useNewReducer,
-                "aaaa\t1000\n" +
-                "bbbb\t2000\n" +
-                "cccc\t1500\n" +
-                "dddd\t700\n",
+                "blue\t200000\n" +
+                "green\t150000\n" +
+                "red\t100000\n" +
+                "yellow\t70000\n",
                 readAndSortFile(PATH_OUTPUT + "/" + (useNewReducer ? "part-r-" : "part-") +
                     "00000")
             );

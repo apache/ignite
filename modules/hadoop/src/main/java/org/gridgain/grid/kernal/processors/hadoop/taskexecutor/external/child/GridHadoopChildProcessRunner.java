@@ -25,7 +25,6 @@ import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -174,8 +173,6 @@ public class GridHadoopChildProcessRunner {
                         if (log.isDebugEnabled())
                             log.debug("Submitted task for external execution: " + taskInfo);
 
-                        System.out.println("SUBMIT TASK [taskInfo=" + taskInfo + ']');
-
                         execSvc.submit(new GridHadoopRunnableTask(job, mem, taskInfo, clsLdrCtx) {
                             @Override protected void onTaskFinished(GridHadoopTaskState state, Throwable err) {
                                 onTaskFinished0(this, state, err);
@@ -188,7 +185,6 @@ public class GridHadoopChildProcessRunner {
 
                             @Override protected GridHadoopTaskOutput createOutput(GridHadoopTaskInfo info)
                                 throws GridException {
-                                // TODO: Possibly here?
                                 return shuffleJob.output(info);
                             }
                         });
@@ -241,14 +237,10 @@ public class GridHadoopChildProcessRunner {
 
                 if (req.reducersAddresses() != null) {
                     if (shuffleJob.initializeReduceAddresses(req.reducersAddresses())) {
-                        System.out.println("INITIALIZED REDUCERS: " + Arrays.toString(req.reducersAddresses()));
-
                         shuffleJob.startSending("external",
                             new GridInClosure2X<GridHadoopProcessDescriptor, GridHadoopShuffleMessage>() {
                                 @Override public void applyx(GridHadoopProcessDescriptor dest,
                                     GridHadoopShuffleMessage msg) throws GridException {
-                                    System.out.println("SEND SHUFFLE MESSAGE: " + msg);
-
                                     comm.sendMessage(dest, msg);
                                 }
                             });
@@ -290,8 +282,6 @@ public class GridHadoopChildProcessRunner {
         boolean flush = remainder == 0 && (info.type() == COMBINE || (info.type() == MAP &&
             (!job.hasCombiner() || !GridHadoopJobProperty.get(job, SINGLE_COMBINER_FOR_ALL_MAPPERS, false))));
 
-        System.out.println("ON_TASK_FINISHED_0 [remainder=" + remainder + ", type=" + info.type() + ", flush=" + flush + ']');
-
         notifyTaskFinished(info, state, err, flush);
     }
 
@@ -326,7 +316,6 @@ public class GridHadoopChildProcessRunner {
             final long start = System.currentTimeMillis();
 
             try {
-                // TODO: Or here?
                 shuffleJob.flush().listenAsync(new CI1<GridFuture<?>>() {
                     @Override public void apply(GridFuture<?> f) {
                         long end = System.currentTimeMillis();
@@ -408,8 +397,6 @@ public class GridHadoopChildProcessRunner {
                         log.trace("Received shuffle message [desc=" + desc + ", msg=" + msg + ']');
 
                     GridHadoopShuffleMessage m = (GridHadoopShuffleMessage)msg;
-
-                    System.out.println("RECEIVED SHUFFLE: " + m);
 
                     shuffleJob.onShuffleMessage(m);
 
