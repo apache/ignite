@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle.collections;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
+import org.gridgain.grid.kernal.processors.hadoop.shuffle.streams.*;
 import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.jetbrains.annotations.*;
@@ -117,7 +117,7 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
          * @return Object.
          */
         protected Object read(long ptr, long size) throws GridException {
-            in.buffer().buffer(ptr, size);
+            in.buffer().set(ptr, size);
 
             tmp = ser.read(in, tmp);
 

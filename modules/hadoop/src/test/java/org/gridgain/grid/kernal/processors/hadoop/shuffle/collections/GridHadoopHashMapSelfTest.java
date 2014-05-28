@@ -20,11 +20,53 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  *
  */
 public class GridHadoopHashMapSelfTest extends GridCommonAbstractTest {
+
+    public void testAllocation() throws Exception {
+        final GridUnsafeMemory mem = new GridUnsafeMemory(0);
+
+        long size = 3L * 1024 * 1024 * 1024;
+
+        final long chunk = 16;// * 1024;
+
+        final int page = 4 * 1024;
+
+        final int writes = chunk < page ? 1 : (int)(chunk / page);
+
+        final long cnt = size / chunk;
+
+        assert cnt < Integer.MAX_VALUE;
+
+        final int threads = 4;
+
+        long start = System.currentTimeMillis();
+
+        multithreaded(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                int cnt0 = (int)(cnt / threads);
+
+                for (int i = 0; i < cnt0; i++) {
+                    long ptr = mem.allocate(chunk);
+
+                    for (int j = 0; j < writes; j++)
+                        mem.writeInt(ptr + j * page, 100500);
+                }
+
+                return null;
+            }
+        }, threads);
+
+        X.println("End: " + (System.currentTimeMillis() - start) + " mem: " + mem.allocatedSize() + " cnt: " + cnt);
+
+        Thread.sleep(30000);
+    }
+
+
     /** */
     public void testMapSimple() throws Exception {
         GridUnsafeMemory mem = new GridUnsafeMemory(0);

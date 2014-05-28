@@ -7,14 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.shuffle;
-
-import java.io.*;
+package org.gridgain.grid.kernal.processors.hadoop.shuffle.streams;
 
 /**
  * Offheap buffer.
  */
-public class GridHadoopBuffer {
+public class GridHadoopOffheapBuffer {
     /** Buffer begin address. */
     private long bufPtr;
 
@@ -28,15 +26,15 @@ public class GridHadoopBuffer {
      * @param bufPtr Pointer to buffer begin.
      * @param bufSize Size of the buffer.
      */
-    public GridHadoopBuffer(long bufPtr, long bufSize) {
-        buffer(bufPtr, bufSize);
+    public GridHadoopOffheapBuffer(long bufPtr, long bufSize) {
+        set(bufPtr, bufSize);
     }
 
     /**
      * @param bufPtr Pointer to buffer begin.
      * @param bufSize Size of the buffer.
      */
-    public void buffer(long bufPtr, long bufSize) {
+    public void set(long bufPtr, long bufSize) {
         this.posPtr = bufPtr;
         this.bufPtr = bufPtr;
         this.bufEnd = bufPtr + bufSize;
@@ -45,7 +43,7 @@ public class GridHadoopBuffer {
     /**
      * @return Pointer to internal buffer begin.
      */
-    public long buffer() {
+    public long begin() {
         return bufPtr;
     }
 
