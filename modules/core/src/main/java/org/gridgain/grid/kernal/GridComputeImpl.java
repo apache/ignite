@@ -324,15 +324,11 @@ public class GridComputeImpl implements GridCompute {
         try {
             GridComputeTaskFuture<Object> task = ctx.task().taskFuture(sesId);
 
-            if (task != null) {
-                boolean loc = F.nodeIds(prj.nodes()).contains(ctx.localNodeId());
-
-                if (loc)
-                    task.cancel();
-            }
+            if (task != null)
+                task.cancel();
             else
                 ctx.io().send(
-                    prj.forRemotes().nodes(),
+                    sesId.globalId(),
                     TOPIC_TASK_CANCEL,
                     new GridTaskCancelRequest(sesId),
                     SYSTEM_POOL
