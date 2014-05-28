@@ -173,7 +173,7 @@ public class GridHadoopChildProcessRunner {
                         if (log.isDebugEnabled())
                             log.debug("Submitted task for external execution: " + taskInfo);
 
-                        execSvc.submit(new GridHadoopRunnableTask(job, mem, info, clsLdrCtx) {
+                        execSvc.submit(new GridHadoopRunnableTask(job, mem, taskInfo, clsLdrCtx) {
                             @Override protected void onTaskFinished(GridHadoopTaskState state, Throwable err) {
                                 onTaskFinished0(this, state, err);
                             }
