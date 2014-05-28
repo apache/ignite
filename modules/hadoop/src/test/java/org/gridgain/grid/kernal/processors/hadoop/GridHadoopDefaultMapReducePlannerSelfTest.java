@@ -640,11 +640,6 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         @Nullable @Override public String property(String name) {
             return null;
         }
-
-        /** {@inheritDoc} */
-        @Override public void validate() throws GridException {
-            // No-op.
-        }
     }
 
     /**

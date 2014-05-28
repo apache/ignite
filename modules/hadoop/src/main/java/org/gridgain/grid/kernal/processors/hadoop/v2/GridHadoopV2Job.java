@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
-import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.*;
@@ -20,19 +19,15 @@ import org.apache.hadoop.mapred.JobID;
 import org.apache.hadoop.mapred.TaskAttemptID;
 import org.apache.hadoop.mapred.TaskID;
 import org.apache.hadoop.mapreduce.*;
-import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.mapreduce.split.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v1.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
-
-import static org.apache.hadoop.mapreduce.MRJobConfig.*;
 
 /**
  * Hadoop job implementation for v2 API.
@@ -331,26 +326,5 @@ public class GridHadoopV2Job implements GridHadoopJob {
     /** Hadoop native job context. */
     public JobContext hadoopJobContext() {
         return ctx;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
-    @Override public void validate() throws GridException {
-        Configuration conf = ctx.getConfiguration();
-
-        OutputFormat outputFormat = (OutputFormat) U.newInstance(conf.getClass(OUTPUT_FORMAT_CLASS_ATTR,
-            org.apache.hadoop.mapreduce.lib.output.TextOutputFormat.class));
-
-        try {
-            outputFormat.checkOutputSpecs(ctx);
-        }
-        catch (IOException e) {
-            throw new GridException("Job validation failed. ", e);
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new GridInterruptedException("Job validation failed due to interrupt.");
-        }
     }
 }

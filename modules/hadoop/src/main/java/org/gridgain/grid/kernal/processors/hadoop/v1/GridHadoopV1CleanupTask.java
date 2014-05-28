@@ -19,7 +19,7 @@ import java.io.*;
 /**
  * Hadoop cleanup task implementation for v1 API.
  */
-public class GridHadoopV1CleanupTask extends GridHadoopTask {
+public class GridHadoopV1CleanupTask extends GridHadoopV1Task {
     /** Abort flag. */
     private boolean abort;
 
@@ -34,7 +34,7 @@ public class GridHadoopV1CleanupTask extends GridHadoopTask {
     }
 
     /** {@inheritDoc} */
-    @Override public void run(GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
+    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job) taskCtx.job();
 
         JobContext jobCtx = jobImpl.hadoopJobContext();

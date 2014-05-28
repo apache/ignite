@@ -20,7 +20,7 @@ import java.io.IOException;
 /**
  * Hadoop reduce task implementation for v1 API.
  */
-public class GridHadoopV1ReduceTask extends GridHadoopTask {
+public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
     /** {@inheritDoc} */
     public GridHadoopV1ReduceTask(GridHadoopTaskInfo taskInfo) {
         super(taskInfo);
@@ -50,12 +50,14 @@ public class GridHadoopV1ReduceTask extends GridHadoopTask {
             try {
                 while (input.next())
                     reducer.reduce(input.key(), input.values(), collector, reporter);
-
-                reducer.close();
             }
             finally {
-                collector.close();
+                U.closeQuiet(reducer);
+
+                collector.closeWriter();
             }
+
+            collector.commit();
         }
         catch (IOException e) {
             throw new GridException(e);

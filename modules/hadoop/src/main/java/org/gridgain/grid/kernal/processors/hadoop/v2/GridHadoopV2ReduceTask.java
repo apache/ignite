@@ -48,14 +48,16 @@ public class GridHadoopV2ReduceTask extends GridHadoopV2Task {
             jobImpl.attemptId(info()));
 
         try {
-            OutputFormat outputFormat = putWriter(hadoopCtx, jobCtx);
+            OutputFormat outputFormat = prepareWriter(hadoopCtx, jobCtx);
 
             try {
                 reducer.run(new WrappedReducer().getReducerContext(hadoopCtx));
             }
             finally {
-                commit(hadoopCtx, outputFormat);
+                closeWriter(hadoopCtx);
             }
+
+            commit(hadoopCtx, outputFormat);
         }
         catch (IOException e) {
             throw new GridException(e);
