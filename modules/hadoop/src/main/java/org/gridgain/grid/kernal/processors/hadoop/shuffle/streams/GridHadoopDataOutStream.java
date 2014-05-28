@@ -44,72 +44,77 @@ public class GridHadoopDataOutStream extends OutputStream implements DataOutput 
      * @param size Size.
      * @return Old pointer.
      */
-    protected long move(long size) throws IOException {
+    public long move(long size) {
         return buf.move(size);
     }
 
     /** {@inheritDoc} */
-    @Override public void write(int b) throws IOException {
+    @Override public void write(int b) {
         writeByte(b);
     }
 
     /** {@inheritDoc} */
-    @Override public void write(byte[] b, int off, int len) throws IOException {
+    @Override public void write(byte[] b) {
+        write(b, 0, b.length);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void write(byte[] b, int off, int len) {
         UNSAFE.copyMemory(b, BYTE_ARR_OFF + off, null, move(len), len);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBoolean(boolean v) throws IOException {
+    @Override public void writeBoolean(boolean v) {
         writeByte(v ? 1 : 0);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeByte(int v) throws IOException {
+    @Override public void writeByte(int v) {
         mem.writeByte(move(1), (byte)v);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeShort(int v) throws IOException {
+    @Override public void writeShort(int v) {
         mem.writeShort(move(2), (short)v);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeChar(int v) throws IOException {
+    @Override public void writeChar(int v) {
         writeShort(v);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeInt(int v) throws IOException {
+    @Override public void writeInt(int v) {
         mem.writeInt(move(4), v);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeLong(long v) throws IOException {
+    @Override public void writeLong(long v) {
         mem.writeLong(move(8), v);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeFloat(float v) throws IOException {
+    @Override public void writeFloat(float v) {
         mem.writeFloat(move(4), v);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeDouble(double v) throws IOException {
+    @Override public void writeDouble(double v) {
         mem.writeDouble(move(8), v);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBytes(String s) throws IOException {
+    @Override public void writeBytes(String s) {
         writeUTF(s);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeChars(String s) throws IOException {
+    @Override public void writeChars(String s) {
         writeUTF(s);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeUTF(String s) throws IOException {
+    @Override public void writeUTF(String s) {
         byte[] b = s.getBytes(StandardCharsets.UTF_8);
 
         writeInt(b.length);

@@ -98,16 +98,33 @@ public class GridHadoopHashMultimap extends GridHadoopHashMultimapBase {
             keyReader = new Reader(keySer);
         }
 
+        /**
+         * @param keyHash Key hash.
+         * @param keySize Key size.
+         * @param keyPtr Key pointer.
+         * @param valPtr Value page pointer.
+         * @param collisionPtr Pointer to meta with hash collision.
+         * @return Created meta page pointer.
+         */
+        private long createMeta(int keyHash, int keySize, long keyPtr, long valPtr, long collisionPtr) {
+            long meta = allocate(32);
+
+            mem.writeInt(meta, keyHash);
+            mem.writeInt(meta + 4, keySize);
+            mem.writeLong(meta + 8, keyPtr);
+            mem.writeLong(meta + 16, valPtr);
+            mem.writeLong(meta + 24, collisionPtr);
+
+            return meta;
+        }
+
         /** {@inheritDoc} */
         @Override public void write(Object key, Object val) throws GridException {
             int keyHash = U.hash(key.hashCode());
 
             // Write value.
-            write(val, valSer);
-
-            int valSize = out.offset();
-
-            long valPtr = copy(12);
+            long valPtr = write(12, val, valSer);
+            int valSize = writtenSize() - 12;
 
             valueSize(valPtr, valSize);
 
@@ -130,15 +147,12 @@ public class GridHadoopHashMultimap extends GridHadoopHashMultimapBase {
             }
 
             // Write key.
-            write(key, keySer);
-
-            int keySize = out.offset();
-
-            long keyPtr = copy(0);
+            long keyPtr = write(0, key, keySer);
+            int keySize = writtenSize();
 
             nextValue(valPtr, 0);
 
-            tbl[idx] = createMeta0(keyHash, keySize, keyPtr, valPtr, tbl[idx]);
+            tbl[idx] = createMeta(keyHash, keySize, keyPtr, valPtr, tbl[idx]);
 
             if (++keys > (tbl.length >>> 2) * 3)
                 rehash();

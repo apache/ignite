@@ -48,68 +48,6 @@ public abstract class GridHadoopHashMultimapBase extends GridHadoopMultimapBase 
      */
     protected abstract long meta(int idx);
 
-    /** {@inheritDoc} */
-    @Override public void close() {
-        int metaSize = metaSize();
-
-        for (int i = 0, cap = capacity(); i < cap; i++) {
-            long meta = meta(i);
-
-            while (meta != 0) {
-                mem.release(key(meta), keySize(meta));
-
-                long valPtr = value(meta);
-
-                do {
-                    long valPtr0 = valPtr;
-                    int valSize = valueSize(valPtr) + 12;
-
-                    valPtr = nextValue(valPtr);
-
-                    mem.release(valPtr0, valSize);
-                }
-                while (valPtr != 0);
-
-                long meta0 = meta;
-
-                meta = collision(meta);
-
-                mem.release(meta0, metaSize);
-            }
-        }
-    }
-
-    /**
-     * @param keyHash Key hash.
-     * @param keySize Key size.
-     * @param keyPtr Key pointer.
-     * @param valPtr Value page pointer.
-     * @param collisionPtr Pointer to meta with hash collision.
-     * @return Created meta page pointer.
-     */
-    protected long createMeta0(int keyHash, int keySize, long keyPtr, long valPtr, long collisionPtr) {
-        int size = metaSize();
-
-        assert size >= 32 : size;
-
-        long meta = mem.allocate(size);
-
-        mem.writeInt(meta, keyHash);
-        mem.writeInt(meta + 4, keySize);
-        mem.writeLong(meta + 8, keyPtr);
-        mem.writeLong(meta + 16, valPtr);
-        mem.writeLong(meta + 24, collisionPtr);
-
-        return meta;
-    }
-
-    /**
-     * @return Size of meta page.
-     */
-    protected int metaSize() {
-        return 32;
-    }
-
     /**
      * @param meta Meta pointer.
      * @return Key hash.
@@ -166,7 +104,6 @@ public abstract class GridHadoopHashMultimapBase extends GridHadoopMultimapBase 
 
         mem.writeLong(meta + 24, collision);
     }
-
 
     /**
      * Reader for key and value.

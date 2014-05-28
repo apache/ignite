@@ -292,28 +292,6 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
     }
 
     /**
-     * @param keyHash Key hash.
-     * @param keySize Key size.
-     * @param keyPtr Key pointer.
-     * @param valPtr Value page pointer.
-     * @param collisionPtr Pointer to meta with hash collision.
-     * @param lastVisitedVal Last visited value pointer.
-     * @return Created meta page pointer.
-     */
-    private long createMeta(int keyHash, int keySize, long keyPtr, long valPtr, long collisionPtr, long lastVisitedVal) {
-        long meta = createMeta0(keyHash, keySize, keyPtr, valPtr, collisionPtr);
-
-        mem.writeLong(meta + 32, lastVisitedVal);
-
-        return meta;
-    }
-
-    /** */
-    @Override protected int metaSize() {
-        return 40;
-    }
-
-    /**
      * @param meta Meta pointer.
      * @return Value pointer.
      */
@@ -463,6 +441,28 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
         }
 
         /**
+         * @param keyHash Key hash.
+         * @param keySize Key size.
+         * @param keyPtr Key pointer.
+         * @param valPtr Value page pointer.
+         * @param collisionPtr Pointer to meta with hash collision.
+         * @param lastVisitedVal Last visited value pointer.
+         * @return Created meta page pointer.
+         */
+        private long createMeta(int keyHash, int keySize, long keyPtr, long valPtr, long collisionPtr, long lastVisitedVal) {
+            long meta = allocate(40);
+
+            mem.writeInt(meta, keyHash);
+            mem.writeInt(meta + 4, keySize);
+            mem.writeLong(meta + 8, keyPtr);
+            mem.writeLong(meta + 16, valPtr);
+            mem.writeLong(meta + 24, collisionPtr);
+            mem.writeLong(meta + 32, lastVisitedVal);
+
+            return meta;
+        }
+
+        /**
          * @param key Key.
          * @param val Value.
          * @return Updated or created meta page pointer.
@@ -478,11 +478,8 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
             long valPtr = 0;
 
             if (val != null) {
-                write(val, valSer);
-
-                int valSize = out.offset();
-
-                valPtr = copy(12);
+                valPtr = write(12, val, valSer);
+                int valSize = writtenSize() - 12;
 
                 valueSize(valPtr, valSize);
             }
@@ -508,10 +505,8 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
 
                     do { // Scan all the collisions.
                         if (keyHash(metaPtr) == keyHash && key.equals(keyReader.readKey(metaPtr))) { // Found key.
-                            if (newMetaPtr != 0) { // Deallocate new meta if one was allocated.
-                                mem.release(key(newMetaPtr), keySize(newMetaPtr));
-                                mem.release(newMetaPtr, 40);
-                            }
+                            if (newMetaPtr != 0)  // Deallocate new meta if one was allocated.
+                                localDeallocate(key(newMetaPtr)); // Key was allocated first, so rewind to it's pointer.
 
                             if (valPtr != 0) { // Add value if it exists.
                                 long nextValPtr;
@@ -555,11 +550,8 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
                 }
 
                 if (newMetaPtr == 0) { // Allocate new meta page.
-                    write(key, keySer);
-
-                    int keySize = out.offset();
-
-                    long keyPtr = copy(0);
+                    long keyPtr = write(0, key, keySer);
+                    int keySize = writtenSize();
 
                     if (valPtr != 0)
                         nextValue(valPtr, 0);

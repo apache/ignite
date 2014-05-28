@@ -72,7 +72,8 @@ public class GridHadoopOffheapBuffer {
      * @param ptr Absolute pointer to the current position inside of the buffer.
      */
     public void pointer(long ptr) {
-        assert ptr >= bufPtr && ptr <= bufEnd;
+        assert ptr >= bufPtr : bufPtr + " <= " + ptr;
+        assert ptr <= bufEnd : bufEnd + " <= " + bufPtr;
 
         posPtr = ptr;
     }
@@ -93,5 +94,20 @@ public class GridHadoopOffheapBuffer {
         posPtr = newPos;
 
         return oldPos;
+    }
+
+    /**
+     * @param ptr Pointer.
+     * @return {@code true} If the given pointer is inside of this buffer.
+     */
+    public boolean isInside(long ptr) {
+        return ptr >= bufPtr && ptr <= bufEnd;
+    }
+
+    /**
+     * Resets position to the beginning of buffer.
+     */
+    public void reset() {
+        posPtr = bufPtr;
     }
 }

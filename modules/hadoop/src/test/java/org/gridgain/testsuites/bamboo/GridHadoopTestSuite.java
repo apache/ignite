@@ -12,6 +12,7 @@ package org.gridgain.testsuites.bamboo;
 import junit.framework.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
+import org.gridgain.grid.kernal.processors.hadoop.shuffle.streams.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication.*;
 
@@ -29,6 +30,7 @@ public class GridHadoopTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridHadoopDefaultMapReducePlannerSelfTest .class));
         suite.addTest(new TestSuite(GridHadoopJobTrackerSelfTest.class));
         suite.addTest(new TestSuite(GridHadoopHashMapSelfTest.class));
+        suite.addTest(new TestSuite(GridHadoopDataStreamSelfTest.class));
         suite.addTest(new TestSuite(GridHadoopConcurrentHashMultimapSelftest.class));
         suite.addTestSuite(GridHadoopSkipListSelfTest.class);
         suite.addTest(new TestSuite(GridHadoopTaskExecutionSelfTest.class));

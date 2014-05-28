@@ -53,11 +53,6 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public void close() {
-        // TODO
-    }
-
     private long key(long meta) {
         return mem.readLong(meta);
     }
@@ -178,11 +173,8 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
          * @throws GridException If failed.
          */
         private long writeKey(Object key) throws GridException {
-            write(key, keySer);
-
-            int keySize = out.offset();
-
-            long keyPtr = copy(4);
+            long keyPtr = write(4, key, keySer);
+            int keySize = writtenSize() - 4;
 
             keySize(keyPtr, keySize);
 
@@ -194,11 +186,8 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
             long keyPtr = 0;
 
             if (val != null) {
-                write(val, valSer);
-
-                int valSize = out.offset();
-
-                valPtr = copy(12);
+                valPtr = write(12, val, valSer);
+                int valSize = writtenSize() - 12;
 
                 valueSize(valPtr, valSize);
             }
@@ -262,11 +251,6 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
 
 
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() throws GridException {
-            // TODO
         }
     }
 }

@@ -12,13 +12,15 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle.collections;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.streams.*;
-import org.gridgain.grid.util.io.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.util.*;
+import java.util.concurrent.*;
 
-import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
+import static org.gridgain.grid.hadoop.GridHadoopJobProperty.*;
 
 /**
  * Base class for all multimaps.
@@ -30,6 +32,12 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
     /** */
     protected final GridUnsafeMemory mem;
 
+    /** */
+    protected final int pageSize;
+
+    /** */
+    private final Collection<GridLongList> allPages = new ConcurrentLinkedQueue<>();
+
     /**
      * @param job Job.
      * @param mem Memory.
@@ -40,6 +48,16 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
 
         this.job = job;
         this.mem = mem;
+
+        pageSize = get(job, SHUFFLE_OFFHEAP_PAGE_SIZE, 16 * 1024);
+    }
+
+    /**
+     * @param ptrs Page pointers.
+     */
+    private void deallocate(GridLongList ptrs) {
+        while (!ptrs.isEmpty())
+            mem.release(ptrs.remove(), ptrs.remove());
     }
 
     /**
@@ -72,6 +90,12 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
      */
     protected int valueSize(long valPtr) {
         return mem.readInt(valPtr + 8);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        for (GridLongList list : allPages)
+            deallocate(list);
     }
 
     /**
@@ -136,7 +160,13 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
         protected final GridHadoopSerialization valSer;
 
         /** */
-        protected final GridUnsafeDataOutput out = new GridUnsafeDataOutput(256);
+        private GridHadoopDataOutStream out;
+
+        /** */
+        private long writeStart;
+
+        /** Size and pointer pairs list. */
+        private GridLongList pages = new GridLongList(16);
 
         /**
          * @throws GridException If failed.
@@ -144,29 +174,114 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
         protected AdderBase() throws GridException {
             valSer = job.valueSerialization();
             keySer = job.keySerialization();
+
+            out = new GridHadoopDataOutStream(mem) {
+                @Override public long move(long size) {
+                    long ptr = super.move(size);
+
+                    if (ptr == 0) // Was not able to move - not enough free space.
+                        ptr = allocateNextPage(size);
+
+                    assert ptr != 0;
+
+                    return ptr;
+                }
+            };
         }
 
         /**
-         * @param o Object.
+         * @param requestedSize Requested size.
+         * @return Next write pointer.
          */
-        protected void write(Object o, GridHadoopSerialization ser) throws GridException {
-            out.reset();
+        private long allocateNextPage(long requestedSize) {
+            int writtenSize = writtenSize();
 
-            ser.write(out, o);
+            long newPageSize = Math.max(writtenSize + requestedSize, pageSize);
+            long newPagePtr = mem.allocate(newPageSize);
+
+            pages.add(newPageSize);
+            pages.add(newPagePtr);
+
+            GridHadoopOffheapBuffer b = out.buffer();
+
+            b.set(newPagePtr, newPageSize);
+
+            if (writtenSize != 0) {
+                mem.copyMemory(writeStart, newPagePtr, writtenSize);
+
+                b.move(writtenSize);
+            }
+
+            writeStart = newPagePtr;
+
+            return b.move(requestedSize);
+        }
+
+        /**
+         * @return Fixed pointer.
+         */
+        private long fixAlignment() {
+            GridHadoopOffheapBuffer b = out.buffer();
+
+            long ptr = b.pointer();
+
+            if ((ptr & 7L) != 0) { // Address is not aligned by octet.
+                ptr = (ptr + 8L) & ~7L;
+
+                b.pointer(ptr);
+            }
+
+            return ptr;
         }
 
         /**
          * @param off Offset.
-         * @return Allocated pointer.
+         * @param o Object.
+         * @return Page pointer.
+         * @throws GridException If failed.
          */
-        protected long copy(int off) {
-            int size = out.offset();
+        protected long write(int off, Object o, GridHadoopSerialization ser) throws GridException {
+            writeStart = fixAlignment();
 
-            long ptr = mem.allocate(off + size);
+            if (off != 0)
+                out.move(off);
 
-            UNSAFE.copyMemory(out.internalArray(), BYTE_ARR_OFF, null, ptr + off, size);
+            ser.write(out, o);
 
-            return ptr;
+            return writeStart;
+        }
+
+        /**
+         * @param size Size.
+         * @return Pointer.
+         */
+        protected long allocate(int size) {
+            writeStart = fixAlignment();
+
+            out.move(size);
+
+            return writeStart;
+        }
+
+        /**
+         * Rewinds local allocation pointer to the given pointer if possible.
+         *
+         * @param ptr Pointer.
+         */
+        protected void localDeallocate(long ptr) {
+            GridHadoopOffheapBuffer b = out.buffer();
+
+            if (b.isInside(ptr))
+                b.pointer(ptr);
+            else
+                b.reset();
+        }
+
+        /**
+         * @return Written size.
+         */
+        protected int writtenSize() {
+            return (int)(out.buffer().pointer() - writeStart);
         }
 
         /** */
@@ -176,6 +291,8 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
 
         /** {@inheritDoc} */
         @Override public void close() throws GridException {
+            allPages.add(pages);
+
             keySer.close();
             valSer.close();
         }

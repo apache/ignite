@@ -27,7 +27,7 @@ import java.util.concurrent.*;
  */
 public class GridHadoopHashMapSelfTest extends GridCommonAbstractTest {
 
-    public void testAllocation() throws Exception {
+    public void _testAllocation() throws Exception {
         final GridUnsafeMemory mem = new GridUnsafeMemory(0);
 
         long size = 3L * 1024 * 1024 * 1024;
