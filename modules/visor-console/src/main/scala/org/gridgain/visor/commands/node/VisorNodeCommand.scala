@@ -11,20 +11,23 @@
 
 package org.gridgain.visor.commands.node
 
+import org.gridgain.grid._
+import org.gridgain.grid.kernal.GridNodeAttributes._
+import org.gridgain.grid.util.typedef.X
+
+import java.text._
+import java.util.UUID
+
+import scala.collection.JavaConversions._
+import scala.language.{implicitConversions, reflectiveCalls}
+import scala.util.control.Breaks._
+
+import org.jetbrains.annotations._
+
+import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import visor._
-import org.jetbrains.annotations._
-import org.gridgain.grid._
-import org.gridgain.grid.util.typedef._
-import kernal.GridNodeAttributes._
-import java.util.UUID
-import java.text._
-import scala.util.control.Breaks._
-import scala.collection.immutable._
-import scala.collection.JavaConversions._
-import org.gridgain.scalar._
-import scalar._
+import org.gridgain.visor.visor._
 
 /**
  * ==Overview==
@@ -128,7 +131,7 @@ class VisorNodeCommand {
                 val argLst = parseArgs(args)
 
                 if (argLst.isEmpty)
-                    warn("Missing arguments.") ^^
+                    warn("Missing arguments.").^^
                 else {
                     val id8 = argValue("id8", argLst)
                     val id = argValue("id", argLst)
@@ -140,7 +143,7 @@ class VisorNodeCommand {
                         val ns = nodeById8(id8.get)
 
                         if (ns.size != 1)
-                            warn("Unknown (invalid) node ID8: " + id8.get) ^^
+                            warn("Unknown (invalid) node ID8: " + id8.get).^^
                         else
                             node = ns.head
                     }
@@ -148,10 +151,10 @@ class VisorNodeCommand {
                         try
                             node = grid.node(UUID.fromString(id.get))
                         catch {
-                            case e: IllegalArgumentException => warn("Invalid node ID: " + id.get) ^^
+                            case e: IllegalArgumentException => warn("Invalid node ID: " + id.get).^^
                         }
                     else
-                        warn("Invalid arguments: " + args) ^^
+                        warn("Invalid arguments: " + args).^^
 
                     if (node != null) {
                         val t = VisorTextTable()

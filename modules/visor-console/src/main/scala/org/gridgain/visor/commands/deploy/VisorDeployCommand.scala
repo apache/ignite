@@ -11,15 +11,18 @@
 
 package org.gridgain.visor.commands.deploy
 
-import org.gridgain.scalar._
-import scalar._
-import org.gridgain.visor._
-import org.gridgain.visor.commands.VisorConsoleCommand
-import visor._
-import scala.util.control.Breaks._
-import com.jcraft.jsch._
 import java.io._
 import java.util.concurrent._
+
+import scala.language.{implicitConversions, reflectiveCalls}
+import scala.util.control.Breaks._
+
+import com.jcraft.jsch._
+
+import org.gridgain.scalar.scalar._
+import org.gridgain.visor._
+import org.gridgain.visor.commands.VisorConsoleCommand
+import org.gridgain.visor.visor._
 
 /**
  * Host data.
@@ -301,7 +304,7 @@ class VisorDeployCommand {
             val dest = argValue("d", argLst)
 
             if (!src.isDefined)
-                scold("Source is not defined.") ^^
+                scold("Source is not defined.").^^
 
             var hosts = Set.empty[VisorHost]
 
@@ -309,7 +312,7 @@ class VisorDeployCommand {
                 try
                     hosts ++= mkHosts(h, dfltUname, dfltPasswd, key.isDefined)
                 catch {
-                    case e: IllegalArgumentException => scold(e.getMessage) ^^
+                    case e: IllegalArgumentException => scold(e.getMessage).^^
                 }
             })
 
@@ -318,7 +321,7 @@ class VisorDeployCommand {
             try
                 copiers.map(pool.submit(_)).foreach(_.get)
             catch {
-                case _: RejectedExecutionException => scold("Failed due to system error.") ^^
+                case _: RejectedExecutionException => scold("Failed due to system error.").^^
             }
         }
     }
@@ -357,14 +360,14 @@ class VisorDeployCommand {
                     if (hostPort.size > 1) hostPort(1).toInt else DFLT_PORT
                 catch {
                     case e: NumberFormatException =>
-                        scold("Invalid port number: " + hostPort(1)) ^^
+                        scold("Invalid port number: " + hostPort(1)).^^
 
                         // Never happens.
                         0
                 }
 
             if (port <= 0)
-                scold("Invalid port number: " + port) ^^
+                scold("Invalid port number: " + port).^^
 
             (hosts, port)
         }
@@ -395,7 +398,7 @@ class VisorDeployCommand {
             hosts.map(VisorHost(_, port, uname, passwd))
         }
         else {
-            scold("Invalid host string: " + host) ^^
+            scold("Invalid host string: " + host).^^
 
             // Never happens.
             Set.empty
@@ -416,12 +419,12 @@ class VisorDeployCommand {
             val parts = addr.split(RANGE_SMB)
 
             if (parts.size != 2)
-                scold("Invalid IP range: " + addr) ^^
+                scold("Invalid IP range: " + addr).^^
 
             val lastDot = parts(0).lastIndexOf('.')
 
             if (lastDot < 0)
-                scold("Invalid IP range: " + addr) ^^
+                scold("Invalid IP range: " + addr).^^
 
             val (base, begin) = parts(0).splitAt(lastDot)
             val end = parts(1)
@@ -431,13 +434,13 @@ class VisorDeployCommand {
                 val b = end.toInt
 
                 if (a > b)
-                    scold("Invalid IP range: " + addr) ^^
+                    scold("Invalid IP range: " + addr).^^
 
                 (a to b).map(base + "." + _).toSet
             }
             catch {
                 case _: NumberFormatException =>
-                    scold("Invalid IP range: " + addr) ^^
+                    scold("Invalid IP range: " + addr).^^
 
                     // Never happens.
                     Set.empty

@@ -34,12 +34,14 @@ public class VisorHadoopTaskUtilsEnt extends VisorTaskUtils {
      * @throws org.gridgain.grid.GridException if failed to resolve.
      */
     public static Path resolveGgfsProfilerLogsDir(GridGgfs ggfs) throws GridException {
-        String logsDir = null;
+        String logsDir;
 
-        if (ggfs instanceof GridGgfsEx) logsDir = ((GridGgfsEx) ggfs).clientLogDirectory();
+        if (ggfs instanceof GridGgfsEx)
+            logsDir = ((GridGgfsEx) ggfs).clientLogDirectory();
         else if (ggfs == null)
-            throw new GridException("Failed to get profiler log folder (GGFS instance not found): " + ggfs.name());
-        else throw new GridException("Failed to get profiler log folder");
+            throw new GridException("Failed to get profiler log folder (GGFS instance not found)");
+        else
+            throw new GridException("Failed to get profiler log folder (unexpected GGFS instance type)");
 
         URL logsDirUrl = GridUtils.resolveGridGainUrl(logsDir != null ? logsDir : DFLT_GGFS_LOG_DIR);
 

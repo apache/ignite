@@ -12,15 +12,17 @@
 package org.gridgain.visor.commands.gc
 
 import org.gridgain.grid._
-import org.gridgain.scalar._
-import scalar._
-import org.gridgain.visor._
-import org.gridgain.visor.commands.VisorConsoleCommand
-import visor._
-import collection.JavaConversions._
-import scala.util.control.Breaks._
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorRunGcTask
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorRunGcTask.VisorRunGcArg
+
+import scala.collection.JavaConversions._
+import scala.language.{implicitConversions, reflectiveCalls}
+import scala.util.control.Breaks._
+
+import org.gridgain.scalar.scalar._
+import org.gridgain.visor._
+import org.gridgain.visor.commands.VisorConsoleCommand
+import org.gridgain.visor.visor._
 
 /**
  * ==Overview==
@@ -104,14 +106,14 @@ class VisorGcCommand {
             var node: GridNode = null
 
             if (id8.isDefined && id.isDefined)
-                scold("Only one of '-id8' or '-id' is allowed.") ^^
+                scold("Only one of '-id8' or '-id' is allowed.").^^
             else if (id8.isDefined) {
                 val ns = nodeById8(id8.get)
 
                 if (ns.isEmpty)
-                    scold("Unknown 'id8' value: " + id8.get) ^^
+                    scold("Unknown 'id8' value: " + id8.get).^^
                 else if (ns.size != 1) {
-                    scold("'id8' resolves to more than one node (use full 'id' instead): " + id8.get) ^^
+                    scold("'id8' resolves to more than one node (use full 'id' instead): " + id8.get).^^
                 }
                 else
                     node = ns.head
@@ -121,10 +123,10 @@ class VisorGcCommand {
                     node = grid.node(java.util.UUID.fromString(id.get))
 
                     if (node == null)
-                        scold("'id' does not match any node: " + id.get) ^^
+                        scold("'id' does not match any node: " + id.get).^^
                 }
                 catch {
-                    case e: IllegalArgumentException => scold("Invalid node 'id': " + id.get) ^^
+                    case e: IllegalArgumentException => scold("Invalid node 'id': " + id.get).^^
                 }
 
             val nodesIds = if (node != null) Set(node.id()) else grid.nodes().map(_.id()).toSet

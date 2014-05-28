@@ -11,25 +11,29 @@
 
 package org.gridgain.visor.commands.cache
 
-import java.util
-import java.util.UUID
-import org.jetbrains.annotations._
-import scala.collection._
-import scala.collection.JavaConversions._
-import scala.util.control.Breaks._
 import org.gridgain.grid._
-import org.gridgain.grid.compute.{GridComputeJobResult, GridComputeJobAdapter, GridComputeJob}
+import org.gridgain.grid.cache._
+import org.gridgain.grid.compute.{GridComputeJob, GridComputeJobAdapter, GridComputeJobResult}
+import org.gridgain.grid.kernal.GridEx
 import org.gridgain.grid.kernal.processors.task.GridInternal
+import org.gridgain.grid.resources.GridInstanceResource
 import org.gridgain.grid.util.scala.impl
 import org.gridgain.grid.util.typedef._
-import org.gridgain.grid.cache._
-import org.gridgain.grid.kernal.GridEx
-import org.gridgain.grid.resources.GridInstanceResource
+
+import java.util
+import java.util.UUID
+
+import scala.collection.JavaConversions._
+import scala.language.{implicitConversions, reflectiveCalls}
+import scala.util.control.Breaks._
+
+import org.jetbrains.annotations._
+
 import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
-import visor._
-import org.gridgain.visor.commands.{VisorConsoleMultiNodeTask, VisorConsoleCommand, VisorTextTable}
-import VisorCacheCommand._
+import org.gridgain.visor.commands.{VisorConsoleCommand, VisorConsoleMultiNodeTask, VisorTextTable}
+import org.gridgain.visor.commands.cache.VisorCacheCommand._
+import org.gridgain.visor.visor._
 
 /**
  * ==Overview==
@@ -627,7 +631,7 @@ private class VisorCacheDataTask extends VisorConsoleMultiNodeTask[Option[String
     }
 
     override def reduce(results: util.List[GridComputeJobResult]): Iterable[VisorCacheAggregatedData] = {
-        val aggrData = mutable.Map.empty[String, VisorCacheAggregatedData]
+        val aggrData = collection.mutable.Map.empty[String, VisorCacheAggregatedData]
 
         for (res <- results if res.getException == null) {
             for (cd <- res.getData[Seq[VisorCacheData]]) {

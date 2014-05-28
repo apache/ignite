@@ -18,7 +18,6 @@ import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeArg;
 import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeJob;
 import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeTask;
 import org.gridgain.grid.lang.GridBiTuple;
-import org.jetbrains.annotations.Nullable;
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorFieldsQueryTask.*;
 
 import static org.gridgain.grid.kernal.visor.cmd.tasks.VisorFieldsQueryUtils.*;
@@ -49,8 +48,8 @@ public class VisorNextFieldsQueryPageTask extends VisorOneNodeTask<
 
         /**
          * @param nodeId Node Id.
-         * @param qryId
-         * @param pageSize
+         * @param qryId Query ID for future extraction in nextPage() access.
+         * @param pageSize Results page size.
          */
         public VisorNextFieldsQueryPageArg(UUID nodeId, String qryId, Integer pageSize) {
             super(nodeId);
@@ -118,7 +117,7 @@ public class VisorNextFieldsQueryPageTask extends VisorOneNodeTask<
             if (t == null)
                 throw new GridInternalException("SQL query results are expired.");
 
-            GridBiTuple<List<Object[]>, List<Object>> nextRows = fetchSqlQueryRows(t.future(), t.next(), arg.pageSize);
+            GridBiTuple<List<Object[]>, List<?>> nextRows = fetchSqlQueryRows(t.future(), t.next(), arg.pageSize);
 
             boolean hasMore = nextRows.get2() != null;
 

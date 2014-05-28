@@ -11,20 +11,24 @@
 
 package org.gridgain.visor.commands.license
 
-import org.gridgain.scalar._
-import scalar._
+import org.gridgain.grid._
+import org.gridgain.grid.lang.{GridCallable, GridRunnable}
+import org.gridgain.grid.resources.GridInstanceResource
+
+import java.io._
+import java.net.URL
+import java.text.SimpleDateFormat
+import java.util.{Date, Locale, UUID}
+
+import scala.io.Source
+import scala.language.implicitConversions
+
+import org.jetbrains.annotations.Nullable
+
+import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import visor._
-import org.gridgain.grid._
-import resources.GridInstanceResource
-import org.jetbrains.annotations.Nullable
-import java.text.SimpleDateFormat
-import java.io._
-import scala.io.Source
-import java.util.{Locale, Date, UUID}
-import java.net.URL
-import org.gridgain.grid.lang.{GridCallable, GridRunnable}
+import org.gridgain.visor.visor._
 
 /**
  * License data.
@@ -271,7 +275,7 @@ class VisorLicenseCommand {
                     }
                 })
 
-                if (!ls.isEmpty) {
+                if (ls.nonEmpty) {
                     sumT.render()
 
                     ls.foreach(l => {
