@@ -258,6 +258,8 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
      * Sends map updates to remote reducers.
      */
     private void collectUpdatesAndSend(boolean flush) throws GridException {
+        System.out.println("COLLECT BEFORE: " + Arrays.toString(msgs));
+
         for (int i = 0; i < maps.length(); i++) {
             GridHadoopMultimap map = maps.get(i);
 
@@ -329,6 +331,8 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
             if (flush && msgs[i].offset() != 0)
                 send(i, 0);
         }
+
+        System.out.println("COLLECT AFTER: " + Arrays.toString(msgs));
     }
 
     /**

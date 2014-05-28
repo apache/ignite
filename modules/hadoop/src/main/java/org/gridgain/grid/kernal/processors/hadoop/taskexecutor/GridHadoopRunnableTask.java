@@ -89,6 +89,8 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
         try {
             runTask(info, runCombiner);
 
+            System.out.println("RUN COMBINER FLAG [this=" + this + ", runCombiner=" + runCombiner + ']');
+
             if (runCombiner)
                 runTask(new GridHadoopTaskInfo(info.nodeId(), COMBINE, info.jobId(), info.taskNumber(), info.attempt(),
                     null), runCombiner);

@@ -174,6 +174,8 @@ public class GridHadoopChildProcessRunner {
                         if (log.isDebugEnabled())
                             log.debug("Submitted task for external execution: " + taskInfo);
 
+                        System.out.println("SUBMIT TASK [taskInfo=" + taskInfo + ']');
+
                         execSvc.submit(new GridHadoopRunnableTask(job, mem, taskInfo, clsLdrCtx) {
                             @Override protected void onTaskFinished(GridHadoopTaskState state, Throwable err) {
                                 onTaskFinished0(this, state, err);
@@ -285,10 +287,10 @@ public class GridHadoopChildProcessRunner {
                 ", pendingTasks=" + remainder +
                 ", err=" + err + ']');
 
-        boolean flush = false;
+        boolean flush = remainder == 0 && (info.type() == COMBINE || (info.type() == MAP &&
+            (!job.hasCombiner() || !GridHadoopJobProperty.get(job, SINGLE_COMBINER_FOR_ALL_MAPPERS, false))));
 
-        if (remainder == 0 && (info.type() == COMBINE || (info.type() == MAP && !job.hasCombiner())))
-            flush = true;
+        System.out.println("ON_TASK_FINISHED_0 [remainder=" + remainder + ", type=" + info.type() + ", flush=" + flush + ']');
 
         notifyTaskFinished(info, state, err, flush);
     }
