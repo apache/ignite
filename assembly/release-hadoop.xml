@@ -36,7 +36,7 @@
     </formats>
 
     <componentDescriptors>
-        <componentDescriptor>assembly/release-base.xml</componentDescriptor>
+        <componentDescriptor>release-base.xml</componentDescriptor>
     </componentDescriptors>
 
     <fileSets>
@@ -58,8 +58,9 @@
                 <exclude>src/**/scala/**/ScalarSnowflakeSchemaExample*</exclude>
                 <exclude>src/main/java/org/gridgain/examples/streaming/**</exclude>
                 <exclude>config/example-cache*</exclude>
-                <exclude>config/hibernate-L2-cache*</exclude>
+                <exclude>config/hibernate/**</exclude>
                 <exclude>config/example-streamer*</exclude>
+                <exclude>config/servlet/**</exclude>
             </excludes>
         </fileSet>
     </fileSets>

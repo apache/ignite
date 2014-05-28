@@ -332,30 +332,15 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
 
             GridClientConnection conn;
 
-            switch (cfg.getProtocol()) {
-                case TCP: {
-                    conn = new GridClientTcpConnection(clientId, addr, sslCtx, evtLoop,
-                        cfg.getConnectTimeout(), cfg.getPingInterval(), cfg.getPingTimeout(),
-                        cfg.isTcpNoDelay(), protoId == null ? cfg.getMarshaller() : null,
-                        top, cfg.getCredentials(), protoId);
-
-                    break;
-                }
-
-                case HTTP: {
-                    conn = new GridClientHttpConnection(clientId, addr, sslCtx,
-                        // Applying max idle time as read timeout for HTTP connections.
-                        cfg.getConnectTimeout(), (int)cfg.getMaxConnectionIdleTime(), top,
-                        executor == null ? cfg.getExecutorService() : executor, cfg.getCredentials());
-
-                    break;
-                }
-
-                default: {
-                    throw new GridServerUnreachableException("Failed to create client (protocol is not supported): " +
-                        cfg.getProtocol());
-                }
+            if (cfg.getProtocol() == GridClientProtocol.TCP) {
+                conn = new GridClientTcpConnection(clientId, addr, sslCtx, evtLoop,
+                    cfg.getConnectTimeout(), cfg.getPingInterval(), cfg.getPingTimeout(),
+                    cfg.isTcpNoDelay(), protoId == null ? cfg.getMarshaller() : null,
+                    top, cfg.getCredentials(), protoId);
             }
+            else
+                throw new GridServerUnreachableException("Failed to create client (protocol is not supported): " +
+                    cfg.getProtocol());
 
             old = conns.putIfAbsent(addr, conn);
 

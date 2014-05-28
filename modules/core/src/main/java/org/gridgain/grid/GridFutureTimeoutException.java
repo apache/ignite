@@ -13,8 +13,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Future computation completion is timed out.
- * 
- *
  */
 public class GridFutureTimeoutException extends GridException {
     /** */

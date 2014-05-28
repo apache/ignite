@@ -16,13 +16,12 @@
 
     This file is automatically scanned by
     $GRIDGAIN_HOME/bin/ggrouter.sh and $GRIDGAIN_HOME/bin/ggrouter.bat
-    for org.gridgain.client.router.GridTcpRestRouterConfiguration and
-    org.gridgain.client.router.GridHttpRestRouterConfiguration bean definitions.
-    First found are used to start corresponding router instances.
+    for org.gridgain.client.router.GridTcpRestRouterConfiguration  bean definition.
+    First found is used to start router instance.
 
     You can also use org.gridgain.client.router.GridRouterFactory to
     programmatically start and stop router instances inside your application.
-    Please refer to javadoc for more details.
+    Please refer to JavaDoc for more details.
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -32,9 +31,7 @@
     <description>Main Spring file for router configuration.</description>
 
     <!--
-        Configuration of Tcp router.
-
-        Just comment it out to disable Tcp routing.
+        Configuration of TCP router.
     -->
     <bean id="tcp.router.cfg" class="org.gridgain.client.router.GridTcpRouterConfiguration"
           scope="singleton">
@@ -43,20 +40,7 @@
     </bean>
 
     <!--
-        Configuration of Http router.
-
-        Just comment it out to disable Http routing.
-    -->
-    <bean id="http.router.cfg" class="org.gridgain.client.router.GridHttpRouterConfiguration"
-          scope="singleton">
-
-        <property name="logger" ref="router.log"/>
-    </bean>
-
-    <!--
         Logger with the same configuration as in default grid instances.
     -->
-    <bean id="router.log" class="org.gridgain.grid.logger.log4j.GridLog4jLogger">
-        <constructor-arg type="java.lang.String" value="config/gridgain-log4j.xml"/>
-    </bean>
+    <bean id="router.log" class="org.gridgain.grid.logger.java.GridJavaLogger"/>
 </beans>

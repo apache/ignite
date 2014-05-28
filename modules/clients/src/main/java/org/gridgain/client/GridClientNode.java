@@ -53,6 +53,7 @@ public interface GridClientNode {
      *
      * @return REST HTTP server addresses.
      */
+    @Deprecated
     public List<String> jettyAddresses();
 
     /**
@@ -60,6 +61,7 @@ public interface GridClientNode {
      *
      * @return REST HTTP server host names.
      */
+    @Deprecated
     public List<String> jettyHostNames();
 
     /**
@@ -74,6 +76,7 @@ public interface GridClientNode {
      *
      * @return Remote http port.
      */
+    @Deprecated
     public int httpPort();
 
     /**
