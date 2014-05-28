@@ -150,6 +150,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     /** */
     private ObjectName p2PExecSvcMBean;
 
+    /** */
+    private ObjectName restExecSvcMBean;
+
     /** Kernal start timestamp. */
     private long startTime = U.currentTimeMillis();
 
@@ -475,12 +478,16 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /**
      * @param cfg Grid configuration to use.
+     * @param drPool Dr executor service.
      * @param errHnd Error handler to use for notification about startup problems.
      * @throws GridException Thrown in case of any errors.
      */
     @SuppressWarnings("CatchGenericClass")
-    public void start(final GridConfiguration cfg, @Nullable ExecutorService drPool, GridAbsClosure errHnd)
-        throws GridException {
+    public void start(
+        final GridConfiguration cfg,
+        @Nullable ExecutorService drPool,
+        GridAbsClosure errHnd
+    ) throws GridException {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getGridName()));
 
         GridKernalGateway gw = this.gw.get();
@@ -1394,6 +1401,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         sysExecSvcMBean = registerExecutorMBean(cfg.getSystemExecutorService(), "GridSystemExecutor");
         mgmtExecSvcMBean = registerExecutorMBean(cfg.getManagementExecutorService(), "GridManagementExecutor");
         p2PExecSvcMBean = registerExecutorMBean(cfg.getPeerClassLoadingExecutorService(), "GridClassLoadingExecutor");
+        restExecSvcMBean = cfg.getRestExecutorService() != null ?
+            registerExecutorMBean(cfg.getRestExecutorService(), "GridRestExecutor") : null;
     }
 
     /**
@@ -1403,6 +1412,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      * @throws GridException If registration failed.
      */
     private ObjectName registerExecutorMBean(ExecutorService exec, String name) throws GridException {
+        assert exec != null;
+
         try {
             ObjectName res = U.registerMBean(
                 cfg.getMBeanServer(),
@@ -1862,7 +1873,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                     unregisterMBean(mgmtExecSvcMBean) &
                     unregisterMBean(p2PExecSvcMBean) &
                     unregisterMBean(kernalMBean) &
-                    unregisterMBean(locNodeMBean)))
+                    unregisterMBean(locNodeMBean) &
+                    unregisterMBean(restExecSvcMBean)
+            ))
                 errOnStop = false;
 
             // Stop components in reverse order.

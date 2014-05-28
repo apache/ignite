@@ -11,8 +11,6 @@ package org.gridgain.grid.kernal.processors.rest;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.managers.security.*;
-import org.gridgain.grid.kernal.managers.securesession.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
@@ -25,22 +23,26 @@ import org.gridgain.grid.kernal.processors.rest.protocols.http.jetty.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.security.*;
-import org.gridgain.grid.spi.authentication.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.grid.util.worker.*;
+import org.jdk8.backport.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.kernal.processors.rest.GridRestResponse.*;
-import static org.gridgain.grid.security.GridSecuritySubjectType.*;
+import static org.gridgain.grid.spi.GridSecuritySubjectType.*;
 
 /**
  * Rest processor implementation.
  */
 public class GridRestProcessor extends GridProcessorAdapter {
+    /** */
+    private static final byte[] EMPTY_ID = new byte[0];
+
     /** Protocols. */
     private final Collection<GridRestProtocol> protos = new ArrayList<>();
 
@@ -50,145 +52,153 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
+    /** Busy lock. */
+    private final GridSpinReadWriteLock busyLock = new GridSpinReadWriteLock();
+
+    /** Workers count. */
+    private final LongAdder workersCnt = new LongAdder();
+
     /** Protocol handler. */
     private final GridRestProtocolHandler protoHnd = new GridRestProtocolHandler() {
         @Override public GridRestResponse handle(GridRestRequest req) throws GridException {
             return handleAsync(req).get();
         }
 
-        @Override public GridFuture<GridRestResponse> handleAsync(final GridRestRequest req) {
-            if (startLatch.getCount() > 0) {
-                try {
-                    startLatch.await();
-                }
-                catch (InterruptedException e) {
-                    return new GridFinishedFuture<>(ctx, new GridException("Failed to handle request " +
-                        "(protocol handler was interrupted when awaiting grid start).", e));
-                }
-            }
-
-            if (log.isDebugEnabled())
-                log.debug("Received request from client: " + req);
-
-            final GridSecurityContext sCtx;
-
-            try {
-                sCtx = authenticate(req);
-
-                checkPermissions(req, sCtx);
-            }
-            catch (GridSecurityException e) {
-                return new GridFinishedFuture<>(ctx, new GridRestResponse(STATUS_SECURITY_CHECK_FAILED,
-                    e.getMessage()));
-            }
-            catch (GridException e) {
-                return new GridFinishedFuture<>(ctx, new GridRestResponse(STATUS_AUTH_FAILED,
-                    e.getMessage()));
-            }
-
-            interceptRequest(req);
-
-            GridRestCommandHandler hnd = handlers.get(req.command());
-
-            GridFuture<GridRestResponse> res = hnd == null ? null : hnd.handleAsync(req);
-
-            if (res == null)
-                return new GridFinishedFuture<>(ctx,
-                    new GridException("Failed to find registered handler for command: " + req.command()));
-
-            return res.chain(new C1<GridFuture<GridRestResponse>, GridRestResponse>() {
-                @Override public GridRestResponse apply(GridFuture<GridRestResponse> f) {
-                    GridRestResponse res;
-
-                    try {
-                        res = f.get();
-                    }
-                    catch (Exception e) {
-                        LT.error(log, e, "Failed to handle request: " + req.command());
-
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to handle request [req=" + req + ", e=" + e + "]");
-
-                        res = new GridRestResponse(STATUS_FAILED, e.getMessage());
-                    }
-
-                    assert res != null;
-
-                    if (ctx.isEnterprise()) {
-                        try {
-                            res.sessionTokenBytes(updateSessionToken(req, sCtx));
-                        }
-                        catch (GridException e) {
-                            U.warn(log, "Cannot update response session token: " + e.getMessage());
-                        }
-                    }
-
-                    interceptResponse(res, req);
-
-                    return res;
-                }
-            });
+        @Override public GridFuture<GridRestResponse> handleAsync(GridRestRequest req) {
+            return handleAsync0(req);
         }
     };
 
     /**
-     * Checks security permissions.
-     *
-     * @param req Request to validate.
-     * @param securityCtx Security subject context.
+     * @param req Request.
+     * @return Future.
      */
-    private void checkPermissions(GridRestRequest req, GridSecurityContext securityCtx) {
-        GridSecurityPermission op = null;
-        String name = null;
+    private GridFuture<GridRestResponse> handleAsync0(final GridRestRequest req) {
+        if (!busyLock.tryReadLock())
+            return new GridFinishedFuture<>(ctx,
+                new GridException("Failed to handle request (received request while stopping grid)."));
 
-        switch (req.command()) {
-            case CACHE_GET:
-            case CACHE_GET_ALL:
-                op = GridSecurityPermission.CACHE_READ;
-                name = ((GridRestCacheRequest)req).cacheName();
+        try {
+            final GridWorkerFuture<GridRestResponse> fut = new GridWorkerFuture<>(ctx);
 
-                break;
+            workersCnt.increment();
 
-            case CACHE_PUT:
-            case CACHE_ADD:
-            case CACHE_PUT_ALL:
-            case CACHE_REPLACE:
-            case CACHE_INCREMENT:
-            case CACHE_DECREMENT:
-            case CACHE_CAS:
-            case CACHE_APPEND:
-            case CACHE_PREPEND:
-                op = GridSecurityPermission.CACHE_PUT;
-                name = ((GridRestCacheRequest)req).cacheName();
+            GridWorker w = new GridWorker(ctx.gridName(), "rest-proc-worker", log) {
+                @Override protected void body() {
+                    try {
+                        GridFuture<GridRestResponse> res = handleRequest(req);
 
-                break;
+                        res.listenAsync(new GridInClosure<GridFuture<GridRestResponse>>() {
+                            @Override public void apply(GridFuture<GridRestResponse> f) {
+                                try {
+                                    fut.onDone(f.get());
+                                }
+                                catch (GridException e) {
+                                    fut.onDone(e);
+                                }
+                            }
+                        });
+                    }
+                    catch (Throwable e) {
+                        if (e instanceof Error)
+                            U.error(log, "Client request execution failed with error.", e);
 
-            case CACHE_REMOVE:
-            case CACHE_REMOVE_ALL:
-                op = GridSecurityPermission.CACHE_REMOVE;
-                name = ((GridRestCacheRequest)req).cacheName();
+                        fut.onDone(U.cast(e));
+                    }
+                    finally {
+                        workersCnt.decrement();
+                    }
+                }
+            };
 
-                break;
+            fut.setWorker(w);
 
-            case EXE:
-            case RESULT:
-                op = GridSecurityPermission.TASK_EXECUTE;
-                name = ((GridRestTaskRequest)req).taskName();
-                break;
+            try {
+                ctx.config().getRestExecutorService().execute(w);
+            }
+            catch (RejectedExecutionException e) {
+                U.error(log, "Failed to execute worker due to execution rejection " +
+                    "(increase upper bound on REST executor service). " +
+                    "Will attempt to process request in the current thread instead.", e);
 
-            case VERSION:
-            case LOG:
-            case NOOP:
-            case QUIT:
-            case CACHE_METRICS:
-            case TOPOLOGY:
-            case NODE:
-                // No security check here.
-                return;
+                w.run();
+            }
+
+            return fut;
+        }
+        finally {
+            busyLock.readUnlock();
+        }
+    }
+
+    /**
+     * @param req Request.
+     * @return Future.
+     */
+    private GridFuture<GridRestResponse> handleRequest(final GridRestRequest req) {
+        if (startLatch.getCount() > 0) {
+            try {
+                startLatch.await();
+            }
+            catch (InterruptedException e) {
+                return new GridFinishedFuture<>(ctx, new GridException("Failed to handle request " +
+                    "(protocol handler was interrupted when awaiting grid start).", e));
+            }
         }
 
-        if (op != null)
-            ctx.auth().authorize(name, op, securityCtx);
+        if (log.isDebugEnabled())
+            log.debug("Received request from client: " + req);
+
+        try {
+            authenticate(req);
+        }
+        catch (GridException e) {
+            return new GridFinishedFuture<>(ctx, new GridRestResponse(STATUS_AUTH_FAILED,
+                e.getMessage()));
+        }
+
+        interceptRequest(req);
+
+        GridRestCommandHandler hnd = handlers.get(req.command());
+
+        GridFuture<GridRestResponse> res = hnd == null ? null : hnd.handleAsync(req);
+
+        if (res == null)
+            return new GridFinishedFuture<>(ctx,
+                new GridException("Failed to find registered handler for command: " + req.command()));
+
+        return res.chain(new C1<GridFuture<GridRestResponse>, GridRestResponse>() {
+            @Override public GridRestResponse apply(GridFuture<GridRestResponse> f) {
+                GridRestResponse res;
+
+                try {
+                    res = f.get();
+                }
+                catch (Exception e) {
+                    LT.error(log, e, "Failed to handle request: " + req.command());
+
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to handle request [req=" + req + ", e=" + e + "]");
+
+                    res = new GridRestResponse(STATUS_FAILED, e.getMessage());
+                }
+
+                assert res != null;
+
+                if (ctx.isEnterprise()) {
+                    try {
+                        res.sessionTokenBytes(updateSessionToken(req));
+                    }
+                    catch (GridException e) {
+                        U.warn(log, "Cannot update response session token: " + e.getMessage());
+                    }
+                }
+
+                interceptResponse(res, req);
+
+                return res;
+            }
+        });
     }
 
     /**
@@ -325,67 +335,47 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * Authenticates remote client.
      *
      * @param req Request to authenticate.
-     * @return Authentication subject context.
      * @throws GridException If authentication failed.
      */
-    private GridSecurityContext authenticate(GridRestRequest req) throws GridException {
+    private void authenticate(GridRestRequest req) throws GridException {
         UUID clientId = req.clientId();
+
+        byte[] clientIdBytes = clientId != null ? U.uuidToBytes(clientId) : EMPTY_ID;
 
         byte[] sesTok = req.sessionToken();
 
         // Validate session.
-        if (sesTok != null) {
+        if (sesTok != null && ctx.secureSession().validate(REMOTE_CLIENT, clientIdBytes, sesTok, null) != null)
             // Session is still valid.
-            GridSecureSession ses = ctx.secureSession().validateSession(REMOTE_CLIENT, clientId, sesTok, null);
-
-            if (ses != null)
-                // Session is still valid.
-                return ses.authenticationSubjectContext();
-        }
+            return;
 
         // Authenticate client if invalid session.
-        GridAuthenticationContextAdapter authCtx = new GridAuthenticationContextAdapter();
-
-        authCtx.subjectType(REMOTE_CLIENT);
-        authCtx.subjectId(req.clientId());
-
-        GridSecurityCredentials cred;
-
-        if (req.credentials() instanceof GridSecurityCredentials)
-            cred = (GridSecurityCredentials)req.credentials();
-        else {
-            cred = new GridSecurityCredentials();
-
-            cred.setUserObject(req.credentials());
-        }
-
-        // TODO address and port.
-
-        authCtx.credentials(cred);
-
-        GridSecurityContext subjCtx = ctx.auth().authenticate(authCtx);
-
-        if (subjCtx == null) {
+        if (!ctx.auth().authenticate(REMOTE_CLIENT, clientIdBytes, req.credentials()))
             if (req.credentials() == null)
                 throw new GridException("Failed to authenticate remote client (secure session SPI not set?): " + req);
             else
                 throw new GridException("Failed to authenticate remote client (invalid credentials?): " + req);
-        }
-
-        return subjCtx;
     }
 
     /**
      * Update session token to actual state.
      *
      * @param req Grid est request.
-     * @param subjCtx Authentication subject context.
      * @return Valid session token.
      * @throws GridException If session token update process failed.
      */
-    private byte[] updateSessionToken(GridRestRequest req, GridSecurityContext subjCtx) throws GridException {
+    private byte[] updateSessionToken(GridRestRequest req) throws GridException {
+        byte[] subjId = U.uuidToBytes(req.clientId());
+
+        byte[] sesTok = req.sessionToken();
+
         // Update token from request to actual state.
-        byte[] sesTok = ctx.secureSession().updateSession(REMOTE_CLIENT, req.clientId(), subjCtx, null);
+        if (sesTok != null)
+            sesTok = ctx.secureSession().validate(REMOTE_CLIENT, subjId, req.sessionToken(), null);
+
+        // Create new session token, if request doesn't valid session token.
+        if (sesTok == null)
+            sesTok = ctx.secureSession().validate(REMOTE_CLIENT, subjId, null, null);
 
         // Validate token has been created.
         if (sesTok == null)
@@ -429,8 +419,25 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("BusyWait")
     @Override public void onKernalStop(boolean cancel) {
         if (isRestEnabled()) {
+            busyLock.writeLock();
+
+            boolean interrupted = Thread.interrupted();
+
+            while (workersCnt.sum() != 0) {
+                try {
+                    Thread.sleep(200);
+                }
+                catch (InterruptedException ignored) {
+                    interrupted = true;
+                }
+            }
+
+            if (interrupted)
+                Thread.currentThread().interrupt();
+
             for (GridRestProtocol proto : protos)
                 proto.stop();
 
