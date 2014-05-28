@@ -1139,6 +1139,8 @@ public final class GridGgfsImpl implements GridGgfsEx {
         @Nullable Map<String, String> props,
         final boolean simpleCreate
     ) throws GridException {
+        U.debug("CREATE FILE: " + path);
+
         A.notNull(path, "path");
         A.ensure(bufSize >= 0, "bufSize >= 0");
 
