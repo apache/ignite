@@ -63,10 +63,10 @@ public interface GridEx extends Grid {
      * Checks whether all provided events are user-recordable.
      * <p>
      * Note that this method supports only predefined GridGain events.
-     * If arrays contains user event type, assertion will be thrown.
      *
      * @param types Event types.
      * @return Whether all events are recordable.
+     * @throws IllegalArgumentException If {@code types} contains user event type.
      */
     public boolean allEventsUserRecordable(int[] types);
 

@@ -197,6 +197,16 @@ public class GridEventsImpl implements GridEvents {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public int[] enabledEvents() {
+        return ctx.event().enabledEvents();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isEnabled(int type) {
+        return ctx.event().isUserRecordable(type);
+    }
+
     /**
      * <tt>ctx.gateway().readLock()</tt>
      */
