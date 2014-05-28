@@ -204,9 +204,8 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
      * @param input Data to encrypt.
      * @return Output buffer with encrypted data.
      * @throws SSLException If failed to encrypt.
-     * @throws GridNioException If no handlers were associated with the session.
      */
-    public ByteBuffer encrypt(GridNioSession ses, ByteBuffer input) throws SSLException, GridNioException {
+    public ByteBuffer encrypt(GridNioSession ses, ByteBuffer input) throws SSLException {
         GridNioSslHandler hnd = sslHandler(ses);
 
         hnd.lock();

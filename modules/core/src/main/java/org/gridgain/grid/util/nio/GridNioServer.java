@@ -824,21 +824,13 @@ public class GridNioServer<T> {
                         finished = msgWriter.write(nodeId, msg, buf);
                     }
 
-                    if (buf.position() == 0)
-                        break;
-
                     buf.flip();
 
-                    try {
-                        ByteBuffer sesBuf = ses.writeBuffer();
+                    ByteBuffer sesBuf = ses.writeBuffer();
 
-                        buf = sslFilter.encrypt(ses, sesBuf);
+                    buf = sslFilter.encrypt(ses, sesBuf);
 
-                        sesBuf.clear();
-                    }
-                    catch (GridException e) {
-                        throw new IOException("Failed to encode SSL data: " + ses, e);
-                    }
+                    sesBuf.clear();
 
                     assert buf.hasRemaining();
 
@@ -918,6 +910,7 @@ public class GridNioServer<T> {
          * @param key Key that is ready to be written.
          * @throws IOException If write failed.
          */
+        @SuppressWarnings("ForLoopReplaceableByForEach")
         private void processWrite0(SelectionKey key) throws IOException {
             WritableByteChannel sockCh = (WritableByteChannel)key.channel();
 
@@ -925,6 +918,8 @@ public class GridNioServer<T> {
             ByteBuffer buf = ses.writeBuffer();
             NioOperationFuture<?> req = ses.removeMeta(NIO_OPERATION.ordinal());
             UUID nodeId = ses.meta(DIFF_VER_NODE_ID_META_KEY);
+
+            List<NioOperationFuture<?>> doneFuts = null;
 
             while (true) {
                 if (req == null) {
@@ -951,6 +946,11 @@ public class GridNioServer<T> {
 
                 // Fill up as many messages as possible to write buffer.
                 while (finished) {
+                    if (doneFuts == null)
+                        doneFuts = new ArrayList<>();
+
+                    doneFuts.add(req);
+
                     req = (NioOperationFuture<?>)ses.pollFuture();
 
                     if (req == null)
@@ -970,6 +970,13 @@ public class GridNioServer<T> {
 
                 if (!skipWrite) {
                     int cnt = sockCh.write(buf);
+
+                    if (!F.isEmpty(doneFuts)) {
+                        for (int i = 0; i < doneFuts.size(); i++)
+                            doneFuts.get(i).onDone();
+
+                        doneFuts.clear();
+                    }
 
                     if (log.isTraceEnabled())
                         log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
