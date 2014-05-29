@@ -221,7 +221,7 @@ public interface GridEvents {
      * Check if event is enabled.
      *
      * @param type Event type.
-     * @return {@code True} if event with provided type is enabled.
+     * @return {@code True} if event of passed in type is enabled.
      */
     public boolean isEnabled(int type);
 }
