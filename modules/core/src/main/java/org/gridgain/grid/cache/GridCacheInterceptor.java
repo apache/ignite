@@ -49,7 +49,7 @@ public interface GridCacheInterceptor<K, V> {
      * @return Value to be put to cache. Returning {@code null} cancels the update.
      * @see GridCacheProjection#put(Object, Object, GridPredicate[])
      */
-    @Nullable public V onBeforePut(K key, V oldVal, V newVal);
+    @Nullable public V onBeforePut(K key, @Nullable V oldVal, V newVal);
 
     /**
      * This method is called after new value has been stored.
@@ -79,10 +79,12 @@ public interface GridCacheInterceptor<K, V> {
      *
      * @param key Key.
      * @param val Val
-     * @return The new value to be returned as result of {@code remove()} operation.
+     * @return Tuple. The first value is the flag whether remove should be cancelled or not.
+     *      The second is the value to be returned as result of {@code remove()} operation,
+     *      may be {@code null}.
      * @see GridCacheProjection#remove(Object, GridPredicate[])
      */
-    @Nullable public V onBeforeRemove(K key, V val);
+    @Nullable public GridBiTuple<Boolean, V> onBeforeRemove(K key, @Nullable V val);
 
     /**
      * This method is called after value has been removed.
