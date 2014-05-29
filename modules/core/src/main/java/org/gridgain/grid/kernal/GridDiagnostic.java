@@ -149,7 +149,7 @@ final class GridDiagnostic {
                     long initMb = initBytes / 1024 / 1024;
 
                     if (initBytes < HALF_GB)
-                        U.warn(log,
+                        U.quietAndWarn(log,
                             String.format("Initial heap size is less than 512MB (%dMB). It is highly recommended to " +
                                 "allocate at least 512MB of initial heap to run GridGain. " +
                                 "Use -Xms512m -Xmx512m to set initial heap size.", initMb),

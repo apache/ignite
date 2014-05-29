@@ -3567,10 +3567,21 @@ public abstract class GridUtils {
      * @param msg Message to log.
      */
     public static void quietAndWarn(GridLogger log, Object msg) {
+        quietAndWarn(log, msg, msg);
+    }
+
+    /**
+     * Logs warning message in both verbose and quite modes.
+     *
+     * @param log Logger to use.
+     * @param shortMsg Short message.
+     * @param msg Message to log.
+     */
+    public static void quietAndWarn(GridLogger log, Object msg, Object shortMsg) {
         warn(log, msg);
 
         if (log.isQuiet())
-            quiet(false, msg);
+            quiet(false, shortMsg);
     }
 
     /**
