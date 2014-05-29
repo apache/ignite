@@ -6293,6 +6293,148 @@ public abstract class GridUtils {
     }
 
     /**
+     * Returns array which is the union of two arrays
+     * (array of elements contained in any of provided arrays).
+     * <p/>
+     * Note: arrays must be increasing.
+     *
+     * @param a First array.
+     * @param aLen Length of prefix {@code a}.
+     * @param b Second array.
+     * @param bLen Length of prefix {@code b}.
+     * @return Increasing array which is union of {@code a} and {@code b}.
+     */
+    @SuppressWarnings("IfMayBeConditional")
+    public static int[] unique(int[] a, int aLen, int[] b, int bLen) {
+        assert a != null;
+        assert b != null;
+        assert isIncreasingArray(a, aLen);
+        assert isIncreasingArray(b, bLen);
+
+        int[] res = new int[aLen + bLen];
+        int resLen = 0;
+
+        int i = 0;
+        int j = 0;
+
+        while (i < aLen && j < bLen) {
+            if (a[i] == b[j])
+                i++;
+            else if (a[i] < b[j])
+                res[resLen++] = a[i++];
+            else
+                res[resLen++] = b[j++];
+        }
+
+        while (i < aLen)
+            res[resLen++] = a[i++];
+
+        while (j < bLen)
+            res[resLen++] = b[j++];
+
+        return copyIfExceeded(res, resLen);
+    }
+
+    /**
+     * Returns array which is the difference between two arrays
+     * (array of elements contained in first array but not contained in second).
+     * <p/>
+     * Note: arrays must be increasing.
+     *
+     * @param a First array.
+     * @param aLen Length of prefix {@code a}.
+     * @param b Second array.
+     * @param bLen Length of prefix {@code b}.
+     * @return Increasing array which is difference between {@code a} and {@code b}.
+     */
+    @SuppressWarnings("IfMayBeConditional")
+    public static int[] difference(int[] a, int aLen, int[] b, int bLen) {
+        assert a != null;
+        assert b != null;
+        assert isIncreasingArray(a, aLen);
+        assert isIncreasingArray(b, bLen);
+
+        int[] res = new int[aLen];
+        int resLen = 0;
+
+        int i = 0;
+        int j = 0;
+
+        while (i < aLen && j < bLen) {
+            if (a[i] == b[j])
+                i++;
+            else if (a[i] < b[j])
+                res[resLen++] = a[i++];
+            else
+                j++;
+        }
+
+        while (i < aLen)
+            res[resLen++] = a[i++];
+
+        return copyIfExceeded(res, resLen);
+    }
+
+    /**
+     * Checks if array prefix increases.
+     *
+     * @param arr Array.
+     * @param len Prefix length.
+     * @return {@code True} if {@code arr} from 0 to ({@code len} - 1) increases.
+     */
+    public static boolean isIncreasingArray(int[] arr, int len) {
+        assert arr != null;
+        assert 0 <= len && len <= arr.length;
+
+        if (arr.length == 0)
+            return true;
+
+        for (int i = 1; i < len; i++) {
+            if (arr[i - 1] >= arr[i])
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Checks if array prefix do not decreases.
+     *
+     * @param arr Array.
+     * @param len Prefix length.
+     * @return {@code True} if {@code arr} from 0 to ({@code len} - 1) do not decreases.
+     */
+    public static boolean isNonDecreasingArray(int[] arr, int len) {
+        assert arr != null;
+        assert 0 <= len && len <= arr.length;
+
+        if (arr.length == 0)
+            return true;
+
+        for (int i = 1; i < len; i++) {
+            if (arr[i - 1] > arr[i])
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Copies array only if array length greater than needed length.
+     *
+     * @param arr Array.
+     * @param len Prefix length.
+     * @return Old array if length of {@code arr} is equals to {@code len},
+     *      otherwise copy of array.
+     */
+    public static int[] copyIfExceeded(int[] arr, int len) {
+        assert arr != null;
+        assert 0 <= len && len <= arr.length;
+
+        return len == arr.length ? arr : Arrays.copyOf(arr, len);
+    }
+
+    /**
      *
      * @param t Tokenizer.
      * @param str Input string.
