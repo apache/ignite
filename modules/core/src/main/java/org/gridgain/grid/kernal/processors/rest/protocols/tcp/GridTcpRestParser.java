@@ -731,8 +731,6 @@ public class GridTcpRestParser implements GridNioParser {
     protected GridClientMarshaller marshaller(GridNioSession ses) {
         GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
 
-        U.debug("Marshaller from session: " + marsh);
-
         assert marsh != null;
 
         return marsh;

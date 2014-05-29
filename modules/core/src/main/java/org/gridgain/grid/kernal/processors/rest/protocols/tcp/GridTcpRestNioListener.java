@@ -158,8 +158,6 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             else if (msg instanceof GridClientHandshakeRequest) {
                 GridClientHandshakeRequest hs = (GridClientHandshakeRequest)msg;
 
-                U.debug("Handshake received: " + hs);
-
                 byte[] verBytes = hs.versionBytes();
 
                 if (!Arrays.equals(VER_BYTES, verBytes))
@@ -168,8 +166,6 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                         + ", actual=" + Arrays.toString(verBytes) + ']');
 
                 GridClientMarshaller marsh = suppMarshMap.get(hs.protocolId());
-
-                U.debug("Marshaller from map: " + marsh);
 
                 if (marsh == null) {
                     log.error("No marshaller found with given protocol ID [protocolId=" + hs.protocolId() + ']');
@@ -183,8 +179,6 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
                     return;
                 }
-
-                U.debug("Adding marshaller to session and sending OK.");
 
                 ses.addMeta(GridNioSessionMetaKey.MARSHALLER.ordinal(), marsh);
 
