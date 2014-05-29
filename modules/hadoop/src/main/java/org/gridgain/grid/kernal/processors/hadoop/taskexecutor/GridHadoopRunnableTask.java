@@ -46,6 +46,9 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
     /** */
     private GridHadoopMultimap local;
 
+    /** */
+    private GridHadoopTask task;
+
     /**
      * @param job Job.
      * @param mem Memory.
@@ -129,10 +132,19 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
 
             GridHadoopTaskContext ctx = new GridHadoopTaskContext(job, in, out);
 
-            GridHadoopTask task = job.createTask(info);
+            task = job.createTask(info);
 
             task.run(ctx);
         }
+    }
+
+    /**
+     * Cancel the executed task.
+     */
+    public void cancel() {
+        assert task != null;
+
+        task.cancel();
     }
 
     /**

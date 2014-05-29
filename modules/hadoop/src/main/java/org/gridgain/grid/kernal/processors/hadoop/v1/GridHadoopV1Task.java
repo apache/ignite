@@ -17,6 +17,9 @@ import java.text.*;
  * Extended Hadoop v1 task.
  */
 public abstract class GridHadoopV1Task extends GridHadoopTask {
+    /** */
+    private boolean isCancelled;
+
     /**
      * Constructor.
      *
@@ -38,5 +41,13 @@ public abstract class GridHadoopV1Task extends GridHadoopTask {
         numFormat.setGroupingUsed(false);
 
         return "part-" + numFormat.format(info().taskNumber());
+    }
+
+    @Override public void cancel() {
+        isCancelled = true;
+    }
+
+    public boolean isCancelled() {
+        return isCancelled;
     }
 }

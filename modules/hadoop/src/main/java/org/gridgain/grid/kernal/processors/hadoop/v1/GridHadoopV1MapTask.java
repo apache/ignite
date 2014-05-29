@@ -13,6 +13,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -76,8 +77,12 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
             mapper.configure(jobConf);
 
             try {
-                while (reader.next(key, val))
+                while (reader.next(key, val)) {
+                    if (isCancelled())
+                        throw new GridHadoopTaskCancelledException(null);
+
                     mapper.map(key, val, collector, reporter);
+                }
             }
             finally {
                 U.closeQuiet(mapper);

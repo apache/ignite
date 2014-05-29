@@ -301,23 +301,24 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
             mapperId = executedTasks.incrementAndGet();
         }
 
-        /** {@inheritDoc} */
-        @Override protected void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+        @Override
+        public void run(Context context) throws IOException, InterruptedException {
             try {
-                while (true) {
-                    if (mapperId == failMapperId)
-                        throw new IOException();
-
-                    Thread.sleep(100);
-                }
+                super.run(context);
             }
-            catch (InterruptedException e) {
+            catch (GridHadoopTaskCancelledException e) {
                 cancelledTasks.incrementAndGet();
-
-                Thread.currentThread().interrupt();
 
                 throw e;
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+            if (mapperId == failMapperId)
+                throw new IOException();
+
+            Thread.sleep(1000);
         }
     }
 

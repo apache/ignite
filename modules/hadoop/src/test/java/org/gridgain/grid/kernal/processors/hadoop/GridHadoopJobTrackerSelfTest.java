@@ -346,6 +346,10 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
             // No-op.
         }
 
+        @Override public void cancel() {
+            // No-op.
+        }
+
         /** {@inheritDoc} */
         @Override public void run(GridHadoopTaskContext ctx) {
             try {

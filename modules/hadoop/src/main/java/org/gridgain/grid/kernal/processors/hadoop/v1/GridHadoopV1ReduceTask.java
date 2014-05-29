@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.hadoop.v1;
 import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -36,9 +37,12 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
         this.reduce = reduce;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @SuppressWarnings("unchecked")
-    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
+    @Override
+    public void run(GridHadoopTaskContext taskCtx) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job) taskCtx.job();
 
         JobConf jobConf = new JobConf(jobImpl.hadoopJobContext().getJobConf());
@@ -53,21 +57,23 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
 
         try {
             GridHadoopOutputCollector collector = new GridHadoopOutputCollector(jobConf, taskCtx,
-                reduce || !jobImpl.hasReducer(), fileName(), jobImpl.attemptId(info()));
+                    reduce || !jobImpl.hasReducer(), fileName(), jobImpl.attemptId(info()));
 
             try {
-                while (input.next())
+                while (input.next()) {
+                    if (isCancelled())
+                        throw new GridHadoopTaskCancelledException(null);
+
                     reducer.reduce(input.key(), input.values(), collector, Reporter.NULL);
-            }
-            finally {
+                }
+            } finally {
                 U.closeQuiet(reducer);
 
                 collector.closeWriter();
             }
 
             collector.commit();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new GridException(e);
         }
     }

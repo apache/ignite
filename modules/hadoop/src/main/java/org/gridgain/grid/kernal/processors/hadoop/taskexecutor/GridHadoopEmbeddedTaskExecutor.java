@@ -27,7 +27,7 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
     private GridHadoopJobTracker jobTracker;
 
     /** */
-    private final ConcurrentMap<GridHadoopJobId, Collection<GridFuture<?>>> jobs = new ConcurrentHashMap<>();
+    private final ConcurrentMap<GridHadoopJobId, Collection<GridHadoopRunnableTask>> jobs = new ConcurrentHashMap<>();
 
     /** Tasks shared contexts. */
     private final ConcurrentMap<GridHadoopJobId, GridHadoopJobClassLoadingContext> ctxs = new ConcurrentHashMap<>();
@@ -45,66 +45,48 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
             log.debug("Submitting tasks for local execution [locNodeId=" + ctx.localNodeId() +
                 ", tasksCnt=" + tasks.size() + ']');
 
-        Collection<GridFuture<?>> futures = jobs.get(job.id());
+        Collection<GridHadoopRunnableTask> executedTasks = jobs.get(job.id());
 
-        if (futures == null) {
-            futures = new GridConcurrentHashSet<>();
+        if (executedTasks == null) {
+            executedTasks = new GridConcurrentHashSet<>();
 
-            Collection<GridFuture<?>> extractedCol = jobs.put(job.id(), futures);
+            Collection<GridHadoopRunnableTask> extractedCol = jobs.put(job.id(), executedTasks);
 
             assert extractedCol == null;
         }
 
         GridHadoopJobClassLoadingContext clsLdrCtx = ctxs.get(job.id());
 
+        final Collection<GridHadoopRunnableTask> finalExecutedTasks = executedTasks;
         for (final GridHadoopTaskInfo info : tasks) {
             assert info != null;
 
-            GridFuture<?> fut = ctx.kernalContext().closure().callLocalSafe(
-                new GridHadoopRunnableTask(job, ctx.shuffle().memory(), info, clsLdrCtx) {
-                    @Override protected void onTaskFinished(GridHadoopTaskState state, Throwable err) {
-                        if (log.isDebugEnabled())
-                            log.debug("Finished task execution [jobId=" + job.id() + ", taskInfo=" + info + ", " +
+            GridHadoopRunnableTask task = new GridHadoopRunnableTask(job, ctx.shuffle().memory(), info, clsLdrCtx) {
+                @Override
+                protected void onTaskFinished(GridHadoopTaskState state, Throwable err) {
+                    if (log.isDebugEnabled())
+                        log.debug("Finished task execution [jobId=" + job.id() + ", taskInfo=" + info + ", " +
                                 "waitTime=" + waitTime() + ", execTime=" + executionTime() + ']');
 
-                        jobTracker.onTaskFinished(info, new GridHadoopTaskStatus(state, err));
-                    }
+                    finalExecutedTasks.remove(this);
 
-                    @Override protected GridHadoopTaskInput createInput(GridHadoopTaskInfo info) throws GridException {
-                        return ctx.shuffle().input(info);
-                    }
-
-                    @Override protected GridHadoopTaskOutput createOutput(GridHadoopTaskInfo info) throws GridException {
-                        return ctx.shuffle().output(info);
-                    }
-                }, false);
-
-            futures.add(fut);
-
-            final Collection<GridFuture<?>> futs = futures;
-            fut.listenAsync(new CIX1<GridFuture<?>>() {
-                @Override public void applyx(GridFuture<?> f) {
-//                    Collection<GridFuture<?>> futs = jobs.get(info.jobId());
-
-                    futs.remove(f);
-
-//                    GridHadoopTaskState state = COMPLETED;
-//                    Throwable err = null;
-//
-//                    try {
-//                        f.get();
-//                    }
-//                    catch (GridFutureCancelledException ignored) {
-//                        state = CANCELED;
-//                    }
-//                    catch (Throwable e) {
-//                        state = FAILED;
-//                        err = e;
-//                    }
-//
-//                    jobTracker.onTaskFinished(info, new GridHadoopTaskStatus(state, err));
+                    jobTracker.onTaskFinished(info, new GridHadoopTaskStatus(state, err));
                 }
-            });
+
+                @Override
+                protected GridHadoopTaskInput createInput(GridHadoopTaskInfo info) throws GridException {
+                    return ctx.shuffle().input(info);
+                }
+
+                @Override
+                protected GridHadoopTaskOutput createOutput(GridHadoopTaskInfo info) throws GridException {
+                    return ctx.shuffle().output(info);
+                }
+            };
+
+            executedTasks.add(task);
+
+            ctx.kernalContext().closure().callLocalSafe(task, false);
         }
     }
 
@@ -119,24 +101,18 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
      * @param jobId Job ID to cancel.
      */
     @Override public void cancelTasks(GridHadoopJobId jobId) {
-        Collection<GridFuture<?>> futures = jobs.get(jobId);
+        Collection<GridHadoopRunnableTask> futures = jobs.get(jobId);
 
         if (futures != null) {
-            for (GridFuture<?> f : futures) {
-                try {
-                    f.cancel();
-                }
-                catch (GridException e) {
-                    log.error("Future cancelling failed", e);
-                }
-            }
+            for (GridHadoopRunnableTask f : futures)
+                f.cancel();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void onJobStateChanged(GridHadoopJob job, GridHadoopJobMetadata meta) throws GridException {
         if (meta.phase() == GridHadoopJobPhase.PHASE_COMPLETE) {
-            Collection<GridFuture<?>> futures = jobs.remove(job.id());
+            Collection<GridHadoopRunnableTask> futures = jobs.remove(job.id());
 
             //assert futures == null || futures.isEmpty();
 

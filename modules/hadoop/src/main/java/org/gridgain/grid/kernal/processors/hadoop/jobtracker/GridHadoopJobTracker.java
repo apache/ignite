@@ -351,6 +351,22 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         }
     }
 
+    private void transform(GridHadoopJobId jobId, GridClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> closure) {
+        GridFuture<?> fut = jobMetaPrj.transformAsync(jobId, closure);
+
+        fut.listenAsync(new CI1<GridFuture<?>>() {
+            @Override public void apply(GridFuture<?> gridFuture) {
+                try {
+                    gridFuture.get();
+                }
+                catch (GridException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+
     /**
      * Callback from task executor called when process is ready to received shuffle messages.
      *
@@ -360,7 +376,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      */
     public void onExternalMappersInitialized(GridHadoopJobId jobId, Collection<Integer> reducers,
         GridHadoopProcessDescriptor desc) {
-        jobMetaPrj.transformAsync(jobId, new InitializeReducersClosure(reducers, desc));
+        transform(jobId, new InitializeReducersClosure(reducers, desc));
     }
 
     /**
@@ -482,7 +498,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 U.error(log, "Failed to process job state changed callback (will fail the job) " +
                     "[locNodeId=" + locNodeId + ", jobId=" + jobId + ", meta=" + meta + ']', e);
 
-                jobMetaPrj.transformAsync(jobId, new CancelJobClosure(e));
+                transform(jobId, new CancelJobClosure(e));
 
                 continue;
             }
@@ -573,7 +589,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         }
 
                         if (!cancelMappers.isEmpty() || !cancelReducers.isEmpty())
-                            jobMetaPrj.transformAsync(jobId, new CancelJobClosure(cancelMappers, cancelReducers));
+                            transform(jobId, new CancelJobClosure(cancelMappers, cancelReducers));
                     }
 
                     break;
@@ -834,7 +850,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             if (status.state() == FAILED || status.state() == CRASHED) {
                 // Fail the whole job.
-                jobMetaPrj.transformAsync(jobId, new RemoveMappersClosure(taskInfo.inputSplit(), status.failCause()));
+                transform(jobId, new RemoveMappersClosure(taskInfo.inputSplit(), status.failCause()));
 
                 return;
             }
@@ -862,7 +878,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                             }
                         }
 
-                        jobMetaPrj.transformAsync(jobId, new RemoveMappersClosure(taskInfo.inputSplit(), err));
+                        transform(jobId, new RemoveMappersClosure(taskInfo.inputSplit(), err));
                     }
                 };
 
@@ -881,9 +897,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             GridHadoopJobId jobId = taskInfo.jobId();
             if (status.state() == FAILED || status.state() == CRASHED)
                 // Fail the whole job.
-                jobMetaPrj.transformAsync(jobId, new RemoveReducerClosure(taskInfo.taskNumber(), status.failCause()));
+                transform(jobId, new RemoveReducerClosure(taskInfo.taskNumber(), status.failCause()));
             else
-                jobMetaPrj.transformAsync(jobId, new RemoveReducerClosure(taskInfo.taskNumber()));
+                transform(jobId, new RemoveReducerClosure(taskInfo.taskNumber()));
         }
 
         /**
@@ -897,7 +913,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             if (status.state() == FAILED || status.state() == CRASHED)
                 // Fail the whole job.
-                jobMetaPrj.transformAsync(jobId, new RemoveMappersClosure(currMappers, status.failCause()));
+                transform(jobId, new RemoveMappersClosure(currMappers, status.failCause()));
             else {
                 ctx.shuffle().flush(jobId).listenAsync(new CIX1<GridFuture<?>>() {
                     @Override public void applyx(GridFuture<?> f) {
@@ -912,7 +928,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                             }
                         }
 
-                        jobMetaPrj.transformAsync(jobId, new RemoveMappersClosure(currMappers, err));
+                        transform(jobId, new RemoveMappersClosure(currMappers, err));
                     }
                 });
             }
@@ -986,15 +1002,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
          * @param split Mapper split to remove.
          */
         private RemoveMappersClosure(GridHadoopInputSplit split, Throwable err) {
-            splits = Collections.singletonList(split);
-            this.err = err;
-        }
-
-        /**
-         * @param splits Mapper splits to remove.
-         */
-        private RemoveMappersClosure(Collection<GridHadoopInputSplit> splits) {
-            this.splits = splits;
+            this(Collections.singletonList(split), err);
         }
 
         /**
@@ -1003,10 +1011,14 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         private RemoveMappersClosure(Collection<GridHadoopInputSplit> splits, Throwable err) {
             this.splits = splits;
             this.err = err;
+
+            System.out.println("new RemoveMappersClosure(" + splits + ")");
         }
 
         /** {@inheritDoc} */
         @Override public GridHadoopJobMetadata apply(GridHadoopJobMetadata meta) {
+            System.out.println("RemoveMappersClosure.apply(" + splits + ")");
+
             GridHadoopJobMetadata cp = new GridHadoopJobMetadata(meta);
 
             Collection<GridHadoopInputSplit> splitsCp = new HashSet<>(cp.pendingSplits());

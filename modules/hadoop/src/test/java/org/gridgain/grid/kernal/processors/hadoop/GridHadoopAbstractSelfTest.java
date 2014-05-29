@@ -92,6 +92,7 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
         GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
 
         cacheCfg.setCacheMode(REPLICATED);
+        //cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setAtomicWriteOrderMode(PRIMARY);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setName(hadoopSysCacheName);
