@@ -114,18 +114,17 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
             super(arg);
         }
 
-        @Override
-        protected Collection<VisorGgfsProfilerEntry> run(VisorGgfsProfilerArg arg) throws GridException {
+        @Override protected Collection<VisorGgfsProfilerEntry> run(VisorGgfsProfilerArg arg) throws GridException {
             try {
                 Path logsDir = resolveGgfsProfilerLogsDir(g.ggfs(arg.ggfsName));
 
                 if (logsDir != null)
-                    return null; // TODO parse(logsDir, g, arg.ggfsName);
+                    return parse(logsDir, arg.ggfsName);
                 else
                     return Collections.emptyList();
             }
-            catch (IllegalArgumentException iae) {
-                throw new GridException("Failed to parse profiler logs for GGFS: " + arg.ggfsName);
+            catch (IOException | IllegalArgumentException e) {
+                throw new GridException("Failed to parse profiler logs for GGFS: " + arg.ggfsName, e);
             }
         }
 
@@ -326,8 +325,22 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
                 }
             }
 
+            // Group parsed lines by streamId.
+            Map<Long, List<VisorGgfsProfilerParsedLine>> byStreamId = new HashMap<>();
+
+            for (VisorGgfsProfilerParsedLine line: parsedLines) {
+                List<VisorGgfsProfilerParsedLine> grp = byStreamId.get(line.streamId);
+
+                if (grp == null) {
+                    grp = new ArrayList<>();
+
+                    byStreamId.put(line.streamId, grp);
+                }
+
+                grp.add(line);
+            }
+
 // TODO
-//            parsedLines.groupBy(_.streamId) // Group parsed lines by streamId.
 //            .values.map(aggregateParsedLines) // Aggregate each group.
 //            .flatten // Skip empty aggregation results.
 //            .groupBy(_.path) // Group by files.
@@ -371,57 +384,3 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
         return new VisorGgfsProfilerJob(arg);
     }
 }
-
-//object VisorGgfsProfiler {
-//    /**
-//     * Aggregate GGFS profiler entries.
-//     *
-//     * @param lines Lines to sum.
-//     * @return Single aggregated entry.
-//     */
-//    def aggregateGgfsProfilerEntries(lines: Iterable[VisorGgfsProfilerEntry]): VisorGgfsProfilerEntry = {
-//        assert(lines.nonEmpty)
-//
-//        if (lines.size == 1) {
-//            lines.head // No need to aggregate.
-//        }
-//        else {
-//            val path = lines.head.path
-//
-//            var timestamp = 0L
-//            var size = 0L
-//            var bytesRead = 0L
-//            var readTime = 0L
-//            var userReadTime = 0L
-//            var bytesWritten = 0L
-//            var writeTime = 0L
-//            var userWriteTime = 0L
-//            var mode: Option[GridGgfsMode] = None
-//            val counters = new VisorGgfsProfilerUniformityCounters
-//
-//            lines.toSeq.sortBy(_.timestamp).foreach(line => {
-//                // Take last timestamp.
-//                timestamp = line.timestamp
-//
-//                // Take last size.
-//                size = line.size
-//
-//                // Take last size.
-//                mode = line.mode
-//
-//                // Aggregate metrics.
-//                bytesRead += line.bytesRead
-//                readTime += line.readTime
-//                userReadTime += line.userReadTime
-//                bytesWritten += line.bytesWritten
-//                writeTime += line.writeTime
-//                userWriteTime += line.userWriteTime
-//
-//                counters.aggregate(line.counters)
-//            })
-//
-//            new VisorGgfsProfilerEntryImpl(path, timestamp, mode, size, bytesRead, readTime, userReadTime,
-//                bytesWritten, writeTime, userWriteTime, counters)
-//        }
-//    }
-//    }
