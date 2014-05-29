@@ -996,7 +996,7 @@ public class GridClientTcpConnection extends GridClientConnection {
         @Override protected void encode(ChannelHandlerContext ctx, ByteBuf body, List<Object> out) throws Exception {
             int len = body.readableBytes();
 
-            ByteBuf hdr = ctx.alloc().buffer(5);
+            ByteBuf hdr = Unpooled.buffer(5, 5);
 
             hdr.writeByte((byte)0x90);
             hdr.writeInt(len);
@@ -1091,7 +1091,7 @@ public class GridClientTcpConnection extends GridClientConnection {
                     Unpooled.wrappedBuffer(((GridRouterRequest)msg).body()) :
                     Unpooled.wrappedBuffer(marsh.marshal(msg));
 
-                ByteBuf hdr = ctx.alloc().buffer(40);
+                ByteBuf hdr = Unpooled.buffer(40, 40);
 
                 hdr.writeLong(msg.requestId());
                 hdr.writeLong(msg.clientId().getMostSignificantBits());

@@ -14,12 +14,18 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
+import org.gridgain.grid.kernal.processors.rest.handlers.cache.*;
+import org.gridgain.grid.kernal.processors.rest.handlers.log.*;
+import org.gridgain.grid.kernal.processors.rest.handlers.task.*;
+import org.gridgain.grid.kernal.processors.rest.handlers.top.*;
+import org.gridgain.grid.kernal.processors.rest.handlers.version.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -29,7 +35,15 @@ import static org.gridgain.grid.spi.GridSecuritySubjectType.*;
 /**
  * Rest processor implementation.
  */
-public abstract class GridRestProcessorAdapter extends GridProcessorAdapter {
+public class GridRestProcessor extends GridProcessorAdapter {
+    /** TCP protocol class name. */
+    private static final String TCP_PROTO_CLS =
+        "org.gridgain.grid.kernal.processors.rest.protocols.tcp.GridTcpRestProtocol";
+
+    /** HTTP protocol class name. */
+    private static final String HTTP_PROTO_CLS =
+        "org.gridgain.grid.kernal.processors.rest.protocols.http.jetty.GridJettyRestProtocol";
+
     /** */
     private static final byte[] EMPTY_ID = new byte[0];
 
@@ -41,9 +55,6 @@ public abstract class GridRestProcessorAdapter extends GridProcessorAdapter {
 
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
-
-    /** */
-    private GridRestProtocolType type;
 
     /** Protocol handler. */
     private final GridRestProtocolHandler protoHnd = new GridRestProtocolHandler() {
@@ -117,6 +128,71 @@ public abstract class GridRestProcessorAdapter extends GridProcessorAdapter {
             });
         }
     };
+
+    /**
+     * @param ctx Context.
+     */
+    public GridRestProcessor(GridKernalContext ctx) {
+        super(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws GridException {
+        if (isRestEnabled()) {
+            // Register handlers.
+            addHandler(new GridCacheCommandHandler(ctx));
+            addHandler(new GridTaskCommandHandler(ctx));
+            addHandler(new GridTopologyCommandHandler(ctx));
+            addHandler(new GridVersionCommandHandler(ctx));
+            addHandler(new GridLogCommandHandler(ctx));
+
+            // Start protocols.
+            startProtocol(TCP_PROTO_CLS, "TCP", "gridgain-rest-tcp");
+            startProtocol(HTTP_PROTO_CLS, "HTTP", "gridgain-rest-http");
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart() throws GridException {
+        if (isRestEnabled()) {
+            startLatch.countDown();
+
+            if (log.isDebugEnabled())
+                log.debug("REST processor started.");
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStop(boolean cancel) {
+        if (isRestEnabled()) {
+            for (GridRestProtocol proto : protos)
+                proto.stop();
+
+            // Safety.
+            startLatch.countDown();
+
+            if (log.isDebugEnabled())
+                log.debug("REST processor stopped.");
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addAttributes(Map<String, Object> attrs)  throws GridException {
+        for (GridRestProtocol proto : protos) {
+            for (GridBiTuple<String, Object> p : proto.getProperties()) {
+                String key = p.getKey();
+
+                if (key == null)
+                    continue;
+
+                if (attrs.containsKey(key))
+                    throw new GridException(
+                        "Node attribute collision for attribute [processor=GridRestProcessor, attr=" + key + ']');
+
+                attrs.put(key, p.getValue());
+            }
+        }
+    }
 
     /**
      * Applies {@link GridClientMessageInterceptor} from {@link GridConfiguration#getClientMessageInterceptor()}
@@ -242,13 +318,6 @@ public abstract class GridRestProcessorAdapter extends GridProcessorAdapter {
     }
 
     /**
-     * @param ctx Context.
-     */
-    protected GridRestProcessorAdapter(GridKernalContext ctx) {
-        super(ctx);
-    }
-
-    /**
      * Authenticates remote client.
      *
      * @param req Request to authenticate.
@@ -305,38 +374,14 @@ public abstract class GridRestProcessorAdapter extends GridProcessorAdapter {
      *
      * @return Whether or not REST is enabled.
      */
-    protected boolean isRestEnabled() {
+    private boolean isRestEnabled() {
         return !ctx.config().isDaemon() && ctx.config().isRestEnabled();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStart() throws GridException {
-        if (isRestEnabled()) {
-            startLatch.countDown();
-
-            if (log.isDebugEnabled())
-                log.debug("REST processor started.");
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStop(boolean cancel) {
-        if (isRestEnabled()) {
-            for (GridRestProtocol proto : protos)
-                proto.stop();
-
-            // Safety.
-            startLatch.countDown();
-
-            if (log.isDebugEnabled())
-                log.debug("REST processor stopped.");
-        }
     }
 
     /**
      * @param hnd Command handler.
      */
-    protected void addHandler(GridRestCommandHandler hnd) {
+    private void addHandler(GridRestCommandHandler hnd) {
         assert !handlers.containsValue(hnd);
 
         if (log.isDebugEnabled())
@@ -350,50 +395,39 @@ public abstract class GridRestProcessorAdapter extends GridProcessorAdapter {
     }
 
     /**
-     * @param proto Protocol.
+     * @param protoCls Protocol class name.
      * @throws GridException If protocol initialization failed.
      */
-    protected void startProtocol(GridRestProtocol proto) throws GridException {
-        assert !protos.contains(proto);
+    private void startProtocol(String protoCls, String protoName, String moduleName) throws GridException {
+        assert protoCls != null;
 
-        protos.add(proto);
+        GridRestProtocol proto = null;
 
-        proto.start(protoHnd);
+        try {
+            Class<?> cls = Class.forName(protoCls);
 
-        if (log.isDebugEnabled())
-            log.debug("Added REST protocol: " + proto);
-    }
+            Constructor<?> ctor = cls.getConstructor(GridKernalContext.class);
 
-    /** {@inheritDoc} */
-    @Override public void addAttributes(Map<String, Object> attrs)  throws GridException {
-        for (GridRestProtocol proto : protos) {
-            for (GridBiTuple<String, Object> p : proto.getProperties()) {
-                String key = p.getKey();
-
-                if (key == null)
-                    continue;
-
-                if (attrs.containsKey(key))
-                    throw new GridException(
-                        "Node attribute collision for attribute [processor=GridRestProcessor, attr=" + key + ']');
-
-                attrs.put(key, p.getValue());
-            }
+            proto = (GridRestProtocol)ctor.newInstance(ctx);
         }
-    }
+        catch (ClassNotFoundException ignored) {
+            U.quietAndWarn(log, "Failed to initialize " + protoName + " REST protocol (consider adding " +
+                moduleName + " module to classpath).");
+        }
+        catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
+            throw new GridException("Failed to initialize " + protoName + " REST protocol: " + protoCls, e);
+        }
 
-    /**
-     * @param type Protocol type.
-     */
-    public void type(GridRestProtocolType type) {
-        this.type = type;
-    }
+        if (proto != null) {
+            assert !protos.contains(proto);
 
-    /**
-     * @return Protocol type.
-     */
-    public GridRestProtocolType type() {
-        return type;
+            protos.add(proto);
+
+            proto.start(protoHnd);
+
+            if (log.isDebugEnabled())
+                log.debug("Added REST protocol: " + proto);
+        }
     }
 
     /** {@inheritDoc} */

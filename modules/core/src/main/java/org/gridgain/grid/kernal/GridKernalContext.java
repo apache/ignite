@@ -239,18 +239,11 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
     public GridScheduleProcessorAdapter schedule();
 
     /**
-     * Gets TCP REST processor.
+     * Gets REST processor.
      *
-     * @return TCP REST processor.
+     * @return REST processor.
      */
-    public GridRestProcessorAdapter tcpRest();
-
-    /**
-     * Gets HTTP REST processor.
-     *
-     * @return HTTP REST processor.
-     */
-    public GridRestProcessorAdapter httpRest();
+    public GridRestProcessor rest();
 
     /**
      * Gets segmentation processor.

@@ -7,18 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.rest;
-
-import org.gridgain.grid.kernal.*;
+package org.gridgain.grid.kernal.processors.cache;
 
 /**
- * No-op implementation of {@link GridRestProcessorAdapter}.
+ * Tests optimistic group lock transactions.
  */
-public class GridNoopRestProcessor extends GridRestProcessorAdapter {
-    /**
-     * @param ctx Kernal context.
-     */
-    public GridNoopRestProcessor(GridKernalContext ctx) {
-        super(ctx);
+public class GridCacheGroupLockFailoverOptimisticTxSelfTest extends GridCacheGroupLockFailoverSelfTest {
+    /** {@inheritDoc} */
+    @Override protected boolean optimisticTx() {
+        return true;
     }
 }

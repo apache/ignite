@@ -184,11 +184,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringInclude
-    private GridRestProcessorAdapter tcpRestProc;
-
-    /** */
-    @GridToStringInclude
-    private GridRestProcessorAdapter httpRestProc;
+    private GridRestProcessor restProc;
 
     /** */
     @GridToStringInclude
@@ -278,6 +274,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
      * @param gw Kernal gateway.
      * @param ent Release enterprise flag.
      */
+    @SuppressWarnings("TypeMayBeWeakened")
     protected GridKernalContextImpl(GridLoggerProxy log, GridEx grid, GridConfiguration cfg, GridKernalGateway gw,
         boolean ent) {
         assert grid != null;
@@ -378,24 +375,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             segProc = (GridSegmentationProcessor)comp;
         else if (comp instanceof GridAffinityProcessor)
             affProc = (GridAffinityProcessor)comp;
-        else if (comp instanceof GridRestProcessorAdapter) {
-            GridRestProcessorAdapter restProc = (GridRestProcessorAdapter)comp;
-
-            switch (restProc.type()) {
-                case HTTP:
-                    httpRestProc = restProc;
-
-                    break;
-
-                case TCP:
-                    tcpRestProc = restProc;
-
-                    break;
-
-                default:
-                    assert false : "Invalid protocol type: " + restProc.type();
-            }
-        }
+        else if (comp instanceof GridRestProcessor)
+            restProc = (GridRestProcessor)comp;
         else if (comp instanceof GridDataLoaderProcessor)
             dataLdrProc = (GridDataLoaderProcessor)comp;
         else if (comp instanceof GridGgfsProcessorAdapter)
@@ -608,13 +589,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridRestProcessorAdapter tcpRest() {
-        return tcpRestProc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridRestProcessorAdapter httpRest() {
-        return httpRestProc;
+    @Override public GridRestProcessor rest() {
+        return restProc;
     }
 
     /** {@inheritDoc} */

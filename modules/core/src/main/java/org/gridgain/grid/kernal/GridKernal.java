@@ -670,19 +670,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startProcessor(ctx, new GridJobProcessor(ctx), attrs);
             startProcessor(ctx, new GridTaskProcessor(ctx), attrs);
             startProcessor(ctx, (GridProcessor)SCHEDULE.createOptional(ctx), attrs);
-
-            GridRestProcessorAdapter tcpRest = createProcessorNoOpIfFailed(ctx, REST_TCP, !cfg.isRestEnabled());
-
-            tcpRest.type(GridRestProtocolType.TCP);
-
-            startProcessor(ctx, tcpRest, attrs);
-
-            GridRestProcessorAdapter httpRest = createProcessorNoOpIfFailed(ctx, REST_HTTP, !cfg.isRestEnabled());
-
-            httpRest.type(GridRestProtocolType.HTTP);
-
-            startProcessor(ctx, httpRest, attrs);
-
+            startProcessor(ctx, new GridRestProcessor(ctx), attrs);
             startProcessor(ctx, new GridDataLoaderProcessor(ctx), attrs);
             startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
             startProcessor(ctx, (GridProcessor)GGFS.create(ctx, F.isEmpty(cfg.getGgfsConfiguration())), attrs);
@@ -1425,31 +1413,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         }
         catch (GridException e) {
             throw new GridException("Failed to start manager: " + mgr, e);
-        }
-    }
-
-    /**
-     * Creates new processor.
-     *
-     * @param ctx Kernal context.
-     * @param compType Component type.
-     * @param noOp No-op flag.
-     * @return Processor.
-     * @throws GridException In case of error.
-     */
-    private <T extends GridProcessor> T createProcessorNoOpIfFailed(GridKernalContext ctx,
-        GridComponentType compType, boolean noOp) throws GridException {
-        try {
-            return (T)compType.create(ctx, noOp);
-        }
-        catch (GridException e) {
-            if (!noOp && e.hasCause(ClassNotFoundException.class)) {
-                U.warn(log, e.getMessage());
-
-                return (T)compType.create(ctx, true);
-            }
-            else
-                throw e;
         }
     }
 
