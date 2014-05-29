@@ -1257,10 +1257,15 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         // Add data center ID.
         add(attrs, ATTR_DATA_CENTER_ID, cfg.getDataCenterId());
 
-        add(attrs, ATTR_SECURITY_CREDENTIALS, cfg.getSecurityCredentials());
+        try {
+            GridSecurityCredentialsProvider provider = cfg.getSecurityCredentialsProvider();
 
-        // Clear security credentials on local node configuration.
-        cfg.setSecurityCredentials(null);
+            if (provider != null)
+                add(attrs, ATTR_SECURITY_CREDENTIALS, provider.credentials());
+        }
+        catch (GridException e) {
+            throw new GridException("Failed to create node security credentials", e);
+        }
 
         // Stick in SPI versions and classes attributes.
         addAttributes(attrs, cfg.getCollisionSpi());

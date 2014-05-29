@@ -28,10 +28,7 @@ public class GridAuthenticationContextAdapter implements GridAuthenticationConte
     private GridSecurityCredentials credentials;
 
     /** Subject address. */
-    private InetAddress addr;
-
-    /** Subject port. */
-    private int port;
+    private SocketAddress addr;
 
     /**
      * Gets subject type.
@@ -92,7 +89,7 @@ public class GridAuthenticationContextAdapter implements GridAuthenticationConte
      *
      * @return Subject network address.
      */
-    @Override public InetAddress address() {
+    @Override public SocketAddress address() {
         return addr;
     }
 
@@ -101,25 +98,7 @@ public class GridAuthenticationContextAdapter implements GridAuthenticationConte
      *
      * @param addr Subject network address.
      */
-    public void address(InetAddress addr) {
+    public void address(SocketAddress addr) {
         this.addr = addr;
-    }
-
-    /**
-     * Gets subject port.
-     *
-     * @return Port.
-     */
-    @Override public int port() {
-        return port;
-    }
-
-    /**
-     * Sets subject port.
-     *
-     * @param port Subject port.
-     */
-    public void port(int port) {
-        this.port = port;
     }
 }

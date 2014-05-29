@@ -97,7 +97,6 @@ public class GridNoopAuthenticationSpi extends GridSpiAdapter
         GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(authCtx.subjectType(), authCtx.subjectId());
 
         subj.address(authCtx.address());
-        subj.port(authCtx.port());
         subj.permissions(allowAll);
 
         return subj;

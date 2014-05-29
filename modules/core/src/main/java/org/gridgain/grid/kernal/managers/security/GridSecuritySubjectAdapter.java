@@ -46,10 +46,7 @@ public class GridSecuritySubjectAdapter implements GridSecuritySubject {
     private GridSecuritySubjectType subjType;
 
     /** Address. */
-    private InetAddress addr;
-
-    /** Port. */
-    private int port;
+    private SocketAddress addr;
 
     /** Permissions assigned to a subject. */
     private GridSecurityPermissionSet permissions;
@@ -86,7 +83,7 @@ public class GridSecuritySubjectAdapter implements GridSecuritySubject {
      *
      * @return Subject address.
      */
-    @Override public InetAddress address() {
+    @Override public SocketAddress address() {
         return addr;
     }
 
@@ -95,26 +92,8 @@ public class GridSecuritySubjectAdapter implements GridSecuritySubject {
      *
      * @param addr Subject address.
      */
-    public void address(InetAddress addr) {
+    public void address(SocketAddress addr) {
         this.addr = addr;
-    }
-
-    /**
-     * Gets subject port.
-     *
-     * @return Subject port.
-     */
-    @Override public int port() {
-        return port;
-    }
-
-    /**
-     * Sets subject port.
-     *
-     * @param port Subject port.
-     */
-    public void port(int port) {
-        this.port = port;
     }
 
     /**

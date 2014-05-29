@@ -44,12 +44,5 @@ public interface GridAuthenticationContext {
      *
      * @return Subject network address.
      */
-    public InetAddress address();
-
-    /**
-     * Gets subject port.
-     *
-     * @return Port.
-     */
-    public int port();
+    public SocketAddress address();
 }

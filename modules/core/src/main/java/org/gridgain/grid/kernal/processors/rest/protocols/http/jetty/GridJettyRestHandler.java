@@ -25,6 +25,7 @@ import org.jetbrains.annotations.*;
 import javax.servlet.*;
 import javax.servlet.http.*;
 import java.io.*;
+import java.net.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.processors.rest.GridRestResponse.*;
@@ -228,7 +229,7 @@ public class GridJettyRestHandler extends AbstractHandler {
         Map<String, Object> params = parameters(req);
 
         try {
-            GridRestRequest cmdReq = createRequest(cmd, params);
+            GridRestRequest cmdReq = createRequest(cmd, params, req);
 
             if (log.isDebugEnabled())
                 log.debug("Initialized command request: " + cmdReq);
@@ -287,9 +288,8 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @return REST request.
      * @throws GridException If creation failed.
      */
-    @Nullable private GridRestRequest createRequest(GridRestCommand cmd, Map<String, Object> params)
-        throws GridException
-    {
+    @Nullable private GridRestRequest createRequest(GridRestCommand cmd, Map<String, Object> params,
+        ServletRequest req) throws GridException {
         GridRestRequest restReq;
 
         switch (cmd) {
@@ -404,6 +404,8 @@ public class GridJettyRestHandler extends AbstractHandler {
             default:
                 throw new GridException("Invalid command: " + cmd);
         }
+
+        restReq.address(new InetSocketAddress(req.getRemoteAddr(), req.getRemotePort()));
 
         restReq.command(cmd);
 

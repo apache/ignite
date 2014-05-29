@@ -72,7 +72,6 @@ public class GridOsSecurityManager extends GridNoopManagerAdapter implements Gri
 
         s.permissions(ALLOW_ALL);
         s.address(ctx.address());
-        s.port(ctx.port());
 
         return new GridSecurityContext(s);
     }
