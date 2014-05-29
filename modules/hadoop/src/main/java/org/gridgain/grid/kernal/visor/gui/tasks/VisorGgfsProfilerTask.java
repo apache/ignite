@@ -18,6 +18,8 @@ import org.gridgain.grid.kernal.visor.gui.dto.*;
 import static org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopLogger.*;
 import static org.gridgain.grid.kernal.visor.gui.tasks.VisorHadoopTaskUtilsEnt.*;
 
+import java.io.*;
+import java.nio.charset.*;
 import java.nio.file.*;
 import java.util.*;
 
@@ -49,26 +51,51 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
     }
 
     /** Holder class for parsed data. */
-    public static class VisorGgfsProfilerParsedLine {
-        public long ts = 0;
-        public int entryType = 0;
-        public String path;
-        public GridGgfsMode mode;
-        public long streamId;
-        public long dataLen;
-        public boolean append;
-        public boolean overwrite;
-        public long pos;
-        public int readLen;
-        public long userTime;
-        public long sysTime;
-        public long totalBytes;
+    private static class VisorGgfsProfilerParsedLine {
+        private final long ts;
+        private final int entryType;
+        private final String path;
+        private final GridGgfsMode mode;
+        private final long streamId;
+        private final long dataLen;
+        private final boolean append;
+        private final boolean overwrite;
+        private final long pos;
+        private final int readLen;
+        private final long userTime;
+        private final long sysTime;
+        private final long totalBytes;
 
-        public VisorGgfsProfilerParsedLine(long l, int entryType, String s, GridGgfsMode gridGgfsMode, long streamId, long l1, boolean b, boolean b1, long l2, int i, long l3, long l4, long l5) {
-
+        public VisorGgfsProfilerParsedLine(
+            long ts,
+            int entryType,
+            String path,
+            GridGgfsMode mode,
+            long streamId,
+            long dataLen,
+            boolean append,
+            boolean overwrite,
+            long pos,
+            int readLen,
+            long userTime,
+            long sysTime,
+            long totalBytes
+        ) {
+            this.ts = ts;
+            this.entryType = entryType;
+            this.path = path;
+            this.mode = mode;
+            this.streamId = streamId;
+            this.dataLen = dataLen;
+            this.append = append;
+            this.overwrite = overwrite;
+            this.pos = pos;
+            this.readLen = readLen;
+            this.userTime = userTime;
+            this.sysTime = sysTime;
+            this.totalBytes = totalBytes;
         }
     }
-
 
     /**
      * Job that do actual profiler work.
@@ -96,7 +123,8 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
                     return null; // TODO parse(logsDir, g, arg.ggfsName);
                 else
                     return Collections.emptyList();
-            } catch (IllegalArgumentException iae) {
+            }
+            catch (IllegalArgumentException iae) {
                 throw new GridException("Failed to parse profiler logs for GGFS: " + arg.ggfsName);
             }
         }
@@ -104,8 +132,8 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
         /**
          * Parse boolean.
          */
-        private boolean parseBoolean(String[] ss, int sz, int ix, boolean dflt) {
-            if (sz <= ix)
+        private boolean parseBoolean(String[] ss, int ix, boolean dflt) {
+            if (ss.length <= ix)
                 return dflt;
             else if ("0".equals(ss[ix]))
                 return false;
@@ -115,8 +143,8 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
                 return dflt;
         }
 
-        private int parseInt(String[] ss, int sz, int ix, int dflt) {
-            if (sz <= ix)
+        private int parseInt(String[] ss, int ix, int dflt) {
+            if (ss.length <= ix)
                 return dflt;
             else {
                 String s = ss[ix];
@@ -125,8 +153,8 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
             }
         }
 
-        private long parseLong(String[] ss, int sz, int ix, long dflt) {
-            if (sz <= ix)
+        private long parseLong(String[] ss, int ix, long dflt) {
+            if (ss.length <= ix)
                 return dflt;
             else {
                 String s = ss[ix];
@@ -135,8 +163,8 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
             }
         }
 
-        private String parseString(String[] ss, int sz, int ix, String dflt) {
-            if (sz <= ix)
+        private String parseString(String[] ss, int ix, String dflt) {
+            if (ss.length <= ix)
                 return dflt;
             else {
                 String s = ss[ix];
@@ -153,29 +181,28 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
          */
         private VisorGgfsProfilerParsedLine parseLine(String s) {
             String[] ss = s.split(DELIM_FIELD);
-            int sz = ss.length;
 
-            long streamId = parseLong(ss, sz, LOG_COL_STREAM_ID, -1);
+            long streamId = parseLong(ss, LOG_COL_STREAM_ID, -1);
 
             if (streamId >= 0) {
-                int entryType = parseInt(ss, sz, LOG_COL_ENTRY_TYPE, -1);
+                int entryType = parseInt(ss, LOG_COL_ENTRY_TYPE, -1);
 
                 // Parse only needed types.
                 if (LOG_TYPES.contains(entryType))
                     return new VisorGgfsProfilerParsedLine(
-                            parseLong(ss, sz, LOG_COL_TIMESTAMP, 0),
-                            entryType,
-                            parseString(ss, sz, LOG_COL_PATH, ""),
-                            GridGgfsMode.valueOf(parseString(ss, sz, LOG_COL_GGFS_MODE, "")),
-                            streamId,
-                            parseLong(ss, sz, LOG_COL_DATA_LEN, 0),
-                            parseBoolean(ss, sz, LOG_COL_APPEND, false),
-                            parseBoolean(ss, sz, LOG_COL_OVERWRITE, false),
-                            parseLong(ss, sz, LOG_COL_POS, 0),
-                            parseInt(ss, sz, LOG_COL_READ_LEN, 0),
-                            parseLong(ss, sz, LOG_COL_USER_TIME, 0),
-                            parseLong(ss, sz, LOG_COL_SYSTEM_TIME, 0),
-                            parseLong(ss, sz, LOG_COL_TOTAL_BYTES, 0)
+                        parseLong(ss, LOG_COL_TIMESTAMP, 0),
+                        entryType,
+                        parseString(ss, LOG_COL_PATH, ""),
+                        GridGgfsMode.valueOf(parseString(ss, LOG_COL_GGFS_MODE, "")),
+                        streamId,
+                        parseLong(ss, LOG_COL_DATA_LEN, 0),
+                        parseBoolean(ss, LOG_COL_APPEND, false),
+                        parseBoolean(ss, LOG_COL_OVERWRITE, false),
+                        parseLong(ss, LOG_COL_POS, 0),
+                        parseInt(ss, LOG_COL_READ_LEN, 0),
+                        parseLong(ss, LOG_COL_USER_TIME, 0),
+                        parseLong(ss, LOG_COL_SYSTEM_TIME, 0),
+                        parseLong(ss, LOG_COL_TOTAL_BYTES, 0)
                     );
             }
 
@@ -253,117 +280,94 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
                 }
             }
 
-//            // Return only fully parsed data with path.
-//            if (!path.isEmpty())
-//                return new VisorGgfsProfilerEntry(
-//                        path,
-//                        ts,
-//                        mode,
-//                        size,
-//                        bytesRead,
-//                        readTime,
-//                        userReadTime,
-//                        bytesWritten,
-//                        writeTime,
-//                        userWriteTime,
-//                        counters);
-//            else
+            // Return only fully parsed data with path.
+            if (!path.isEmpty())
+                return new VisorGgfsProfilerEntry(
+                    path,
+                    ts,
+                    mode,
+                    size,
+                    bytesRead,
+                    readTime,
+                    userReadTime,
+                    bytesWritten,
+                    writeTime,
+                    userWriteTime,
+                    0d, // TODO
+                    counters);
+            else
                 return null;
+        }
+
+        private Collection<VisorGgfsProfilerEntry> parseFile(Path p) throws IOException {
+            ArrayList<VisorGgfsProfilerParsedLine> parsedLines = new ArrayList<>(512);
+
+            try (BufferedReader br = Files.newBufferedReader(p, Charset.forName("UTF-8"))) {
+                String line = br.readLine(); // Skip first line with columns header.
+
+                if (line != null) {
+                    // Check file header.
+                    if (line.equalsIgnoreCase(HDR))
+                        do {
+                            line = br.readLine();
+
+                            if (line != null)
+                                try {
+                                    VisorGgfsProfilerParsedLine ln = parseLine(line);
+
+                                    if (ln != null)
+                                        parsedLines.add(ln);
+                                }
+                                catch (NumberFormatException ignored) {
+                                    // Skip invalid lines.
+                                }
+                        }
+                        while (line != null);
+                }
+            }
+
+// TODO
+//            parsedLines.groupBy(_.streamId) // Group parsed lines by streamId.
+//            .values.map(aggregateParsedLines) // Aggregate each group.
+//            .flatten // Skip empty aggregation results.
+//            .groupBy(_.path) // Group by files.
+//            .values.map(aggregateGgfsProfilerEntries) // Aggregate by files.
+
+            return null;
+        }
+
+        /**
+         * Parse all GGFS log files in specified log directory.
+         *
+         * @param logDir Folder were log files located.
+         * @return List of line with aggregated information by files.
+         */
+        private Collection<VisorGgfsProfilerEntry> parse(Path logDir, String ggfsName) throws IOException {
+            ArrayList<VisorGgfsProfilerEntry> parsedFiles = new ArrayList<>(512);
+
+            try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(logDir)) {
+                PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:ggfs-log-" + ggfsName + "-*.csv");
+
+                for (Path p : dirStream) {
+                    if (matcher.matches(p.getFileName())) {
+                        try {
+                            parsedFiles.addAll(parseFile(p));
+                        }
+                        catch (NoSuchFileException ignored) {
+                            // Files was deleted, skip it.
+                        }
+                        catch (Exception e) {
+                            g.log().warning("Failed to parse GGFS profiler log file: " + p, e);
+                        }
+                    }
+                }
+            }
+
+            return parsedFiles;
         }
     }
 
-    @Override protected VisorJob<VisorGgfsProfilerArg, Collection<VisorGgfsProfilerEntry>> job(
-        VisorGgfsProfilerArg arg) {
-        return null; // TODO: CODE: implement.
+    @Override protected VisorGgfsProfilerJob job(VisorGgfsProfilerArg arg) {
+        return new VisorGgfsProfilerJob(arg);
     }
 }
-
-//    object VisorGgfsProfilerTask {
-
-//
-//
-//    def parseFile(p: Path): Iterable[VisorGgfsProfilerEntry] = {
-//    val parsedLines = new collection.mutable.ArrayBuffer[VisorGgfsProfilerParsedLine](512)
-//
-//    val br = Files.newBufferedReader(p, Charset.forName("UTF-8"))
-//
-//    try {
-//    var line = br.readLine() // Skip first line with columns header.
-//
-//    if (line != null) {
-//    // Check file header.
-//    if (line.equalsIgnoreCase(GGHL.HDR))
-//    do {
-//    line = br.readLine()
-//
-//    if (line != null)
-//    try
-//    parseLine(line).foreach(ln => parsedLines += ln)
-//    catch {
-//    case nfe: NumberFormatException => // Skip invalid lines.
-//    }
-//    }
-//    while (line != null)
-//    }
-//    }
-//    finally {
-//    br.close()
-//    }
-//
-//    parsedLines.groupBy(_.streamId) // Group parsed lines by streamId.
-//    .values.map(aggregateParsedLines) // Aggregate each group.
-//    .flatten // Skip empty aggregation results.
-//    .groupBy(_.path) // Group by files.
-//    .values.map(aggregateGgfsProfilerEntries) // Aggregate by files.
-//    }
-//
-//    /**
-//     * Parse all GGFS log files in specified log directory.
-//     *
-//     * @param logDir Folder were log files located.
-//     * @return List of line with aggregated information by files.
-//     */
-//    def parse(logDir: Path, g: GridEx, ggfsName: String): List[VisorGgfsProfilerEntry] = {
-//    val matcher = FileSystems.getDefault.getPathMatcher("glob:ggfs-log-" + ggfsName + "-*.csv")
-//    val dirStream = Files.newDirectoryStream(logDir)
-//
-//    try {
-//    val parsedFiles = new collection.mutable.ArrayBuffer[Iterable[VisorGgfsProfilerEntry]](512)
-//
-//    dirStream.iterator()
-//    .filter(p => matcher.matches(p.getFileName))
-//    .foreach(p => {
-//    try {
-//    parsedFiles += parseFile(p)
-//    }
-//    catch {
-//    case nsfe: NoSuchFileException => () // Files was deleted, skip it.
-//
-//    case e: Exception => g.log().warning("Failed to parse GGFS profiler log file: " + p, e)
-//    }
-//    })
-//
-//    parsedFiles.flatten.toList
-//    }
-//    finally {
-//    dirStream.close()
-//    }
-//    }
-//    }
-//
-///** Wrapper class to hold parsed data. */
-//    case class VisorGgfsProfilerParsedLine(
-//    ts: Long,
-//    entryType: Int,
-//    path: String,
-//    mode: Option[GridGgfsMode],
-//    streamId: Long,
-//    dataLen: Long,
-//    append: Boolean,
-//    overwrite: Boolean,
-//    pos: Long,
-//    readLen: Int,
-//    userTime: Long,
-//    sysTime: Long,
-//    totalBytes: Long)
-
