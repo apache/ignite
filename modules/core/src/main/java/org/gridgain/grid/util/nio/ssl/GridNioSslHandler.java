@@ -538,9 +538,12 @@ class GridNioSslHandler extends ReentrantLock {
             if (log.isDebugEnabled())
                 log.debug("Unwrapped raw data [status=" + res.getStatus() + ", handshakeStatus=" +
                     res.getHandshakeStatus() + ", ses=" + ses + ']');
+
+            if (res.getStatus() == Status.BUFFER_OVERFLOW)
+                appBuf = expandBuffer(appBuf, appBuf.capacity() * 2);
         }
-        while (res.getStatus() == Status.OK && (handshakeFinished && res.getHandshakeStatus() == NOT_HANDSHAKING ||
-            res.getHandshakeStatus() == NEED_UNWRAP));
+        while ((res.getStatus() == Status.OK || res.getStatus() == Status.BUFFER_OVERFLOW) &&
+            (handshakeFinished && res.getHandshakeStatus() == NOT_HANDSHAKING || res.getHandshakeStatus() == NEED_UNWRAP));
 
         return res;
     }
