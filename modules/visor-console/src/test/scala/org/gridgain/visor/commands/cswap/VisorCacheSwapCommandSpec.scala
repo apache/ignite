@@ -11,8 +11,8 @@
 
 package org.gridgain.visor.commands.cswap
 
-import org.gridgain.grid.cache.GridCacheConfiguration
-import org.gridgain.grid.{GridGain => G, GridConfiguration}
+import org.gridgain.grid.{GridConfiguration, GridGain => G}
+import org.gridgain.grid.cache.{GridCacheConfiguration, GridCacheMode}
 import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
 
@@ -56,8 +56,9 @@ class VisorCacheSwapCommandSpec extends VisorRuntimeBaseSpec(2) {
     def cacheConfig(@Nullable name: String): GridCacheConfiguration = {
         val cfg = new GridCacheConfiguration
 
-        cfg.setCacheMode(PARTITIONED)
         cfg.setName(name)
+        cfg.setCacheMode(GridCacheMode.PARTITIONED)
+        cfg.setSwapEnabled(true)
 
         cfg
     }
@@ -65,13 +66,13 @@ class VisorCacheSwapCommandSpec extends VisorRuntimeBaseSpec(2) {
     behavior of "An 'cswap' visor command"
 
     it should "show correct result for default cache" in {
-        G.grid("node-1").cache[Int, Int](null).putAll(Map((1 -> 1), (2 -> 2), (3 -> 3)))
+        G.grid("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
         visor.cswap()
     }
 
     it should "show correct result for named cache" in {
-        G.grid("node-1").cache[Int, Int]("cache").putAll(Map((1 -> 1), (2 -> 2), (3 -> 3)))
+        G.grid("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
         visor.cswap("cache")
     }
