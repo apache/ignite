@@ -75,6 +75,9 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
      */
     @SuppressWarnings("PublicInnerClass")
     class VisorGgfsProfilerJob extends VisorOneNodeJob<VisorGgfsProfilerArg, Collection<VisorGgfsProfilerEntry>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          * Create job with specified argument.
          *

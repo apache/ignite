@@ -70,7 +70,7 @@ import org.gridgain.visor.visor._
  *         Node ID8.
  *         Either '-id' or '-id8' can be specified.
  *         If called without the arguments - starts in interactive mode.
- *     -e=<ch,de,di,jo,ta,cl,ca,sw>
+ *     -e=<ch,de,di,jo,ta,ca,cp,sw,au>
  *         Comma separated list of event types that should be queried:
  *            ch Checkpoint events.
  *            de Deployment events.
@@ -597,7 +597,7 @@ object VisorEventsCommand {
         ),
         spec = List(
             "events",
-            "events {-id=<node-id>|-id8=<node-id8>} {-e=<ch,cp,de,di,jo,ta,cl,ca,sw,au>}",
+            "events {-id=<node-id>|-id8=<node-id8>} {-e=<ch,de,di,jo,ta,ca,cp,sw,au>}",
             "    {-t=<num>s|m|h|d} {-s=e|t} {-r} {-c=<n>}"
         ),
         args = List(
@@ -612,7 +612,7 @@ object VisorEventsCommand {
                     "you can also use '@n0' ... '@nn' variables as shortcut to <node-id8>.",
                 "If called without the arguments - starts in interactive mode."
             ),
-            "-e=<ch,de,di,jo,ta,cl,ca,sw>" -> List(
+            "-e=<ch,de,di,jo,ta,ca,cp,sw,au>" -> List(
                 "Comma separated list of event types that should be queried:",
                 "   ch Checkpoint events.",
                 "   de Deployment events.",
