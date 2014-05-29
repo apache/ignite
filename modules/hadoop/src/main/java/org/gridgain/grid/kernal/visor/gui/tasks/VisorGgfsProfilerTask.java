@@ -372,14 +372,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
     }
 }
 
-///**
-// * Various global constants for GGFS profiler.
-// */
 //object VisorGgfsProfiler {
-//final val UNIFORMITY_DFLT_BLOCK_SIZE = 4096
-//final val UNIFORMITY_BLOCKS = 100
-//
-//
 //    /**
 //     * Aggregate GGFS profiler entries.
 //     *

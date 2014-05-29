@@ -9,8 +9,11 @@
 
 package org.gridgain.grid.kernal.visor.gui.dto;
 
+import org.gridgain.grid.util.typedef.F;
+
 import java.io.*;
 import java.util.ArrayList;
+import static org.gridgain.grid.kernal.visor.gui.dto.VisorGgfsProfiler.*;
 
 /**
  * Class to support uniformity calculation.
@@ -24,11 +27,11 @@ public class VisorGgfsProfilerUniformityCounters implements Serializable {
     private static final long serialVersionUID = 0L;
 
     private long fileSize = 0;
-    private long blockSize = 0; // TODO UNIFORMITY_DFLT_BLOCK_SIZE
+    private long blockSize = UNIFORMITY_DFLT_BLOCK_SIZE;
     private ArrayList<Integer> counters = new ArrayList<>();
 
     private long calcBlockSize(long fileSize) {
-        return 0; // TODO  math.max(UNIFORMITY_DFLT_BLOCK_SIZE, fileSize / UNIFORMITY_BLOCKS)
+        return Math.max(UNIFORMITY_DFLT_BLOCK_SIZE, fileSize / UNIFORMITY_BLOCKS);
     }
 
     /**
@@ -57,12 +60,31 @@ public class VisorGgfsProfilerUniformityCounters implements Serializable {
     private void compact(long newFileSize) {
         long newBlockSize = calcBlockSize(newFileSize);
 
-        if (!counters.isEmpty()) {
+        if (counters.isEmpty())
+            blockSize = newBlockSize;
+        else {
             if (newBlockSize >= 2 * blockSize) {
                 int ratio = (int)(newBlockSize / blockSize);
 
-                ArrayList<Integer> compacted = new ArrayList<>(); // TODO counters.grouped(ratio).map(_.sum) // Perform compact.
-                        //TODO .toArray // We need to convert to array, because .grouped() is a lazy wrapper on counters.
+                ArrayList<Integer> compacted = new ArrayList<>();
+
+                int sum = 0;
+                int cnt = 0;
+
+                for (Integer counter : counters) {
+                    sum += counter;
+                    cnt++;
+
+                    if (cnt >= ratio) {
+                        compacted.add(sum);
+
+                        sum = 0;
+                        cnt = 0;
+                    }
+                }
+
+                if (sum > 0)
+                    compacted.add(sum);
 
                 counters.clear();
                 counters.addAll(compacted);
@@ -70,14 +92,15 @@ public class VisorGgfsProfilerUniformityCounters implements Serializable {
                 blockSize = newBlockSize;
             }
         }
-        else
-            blockSize = newBlockSize;
 
         fileSize = newFileSize;
     }
 
     private void capacity(int c) {
         counters.ensureCapacity(c);
+
+        while(counters.size() < c)
+            counters.add(0);
     }
 
     public void increment(long pos, long len) {
@@ -87,7 +110,7 @@ public class VisorGgfsProfilerUniformityCounters implements Serializable {
         capacity(blockTo);
 
         for (int i = blockFrom; i < blockTo; i++)
-            counters.set(i, counters.get(i));
+            counters.set(i, counters.get(i) + 1);
     }
 
     public void aggregate(VisorGgfsProfilerUniformityCounters other) {
@@ -101,8 +124,8 @@ public class VisorGgfsProfilerUniformityCounters implements Serializable {
         if (counters.size() < cnt)
             capacity(cnt);
 
-// TODO        for (i <- 0 until cnt)
-//            counters(i) += other.counters(i);
+        for (int i = 0; i < cnt; i++)
+            counters.set(i, counters.get(i) + other.counters.get(i));
     }
 
     /**
@@ -112,28 +135,34 @@ public class VisorGgfsProfilerUniformityCounters implements Serializable {
      * @return Uniformity value as number in `0..1` range.
      */
     public double calc() {
-        if (!counters.isEmpty()) {
+        if (counters.isEmpty())
+            return -1;
+        else {
             int cap = (int) (fileSize / blockSize + (fileSize % blockSize > 0 ? 1 : 0));
 
             capacity(cap);
 
             int sz = counters.size();
 
-            int n = 0; // TODO counters.sum
+            int n = F.sumInt(counters);
 
             double mean = 1.0 / sz;
+
 
             // Calc standard deviation for block read frequency: SQRT(SUM(Freq_i - Mean)^2 / K)
             // where Mean = 1 / K
             //       K - Number of blocks
             //       Freq_i = Counter_i / N
             //       N - Sum of all counters
-            double sigma = 0; // TODO Math.sqrt(counters.map(x => math.pow(x.toDouble / n - mean, 2)).sum / sz);
+            double sigma = 0;
+
+            for (Integer counter : counters)
+                sigma += Math.pow(counter.doubleValue() / n - mean, 2);
+
+            sigma = Math.sqrt(sigma / sz);
 
             // Calc uniformity coefficient.
             return 1.0 - sigma;
         }
-        else
-            return -1;
     }
 }
