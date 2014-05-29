@@ -1176,6 +1176,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         boolean readersOnly = false;
 
+        boolean intercept = ctx.config().getInterceptor() != null;
+
         // Avoid iterator creation.
         for (int i = 0; i < keys.size(); i++) {
             K k = keys.get(i);
@@ -1233,7 +1235,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     newDrTtl,
                     newDrExpireTime,
                     newDrVer,
-                    true);
+                    true,
+                    intercept);
 
                 if (dhtFut == null && !F.isEmpty(filteredReaders)) {
                     dhtFut = createDhtFuture(ver, req, res, completionCb, true);
@@ -1457,6 +1460,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         -1L,
                         -1L,
                         null,
+                        false,
                         false);
 
                     batchRes.addDeleted(entry, updRes, entries);
@@ -1855,6 +1859,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         Boolean replicate = ctx.isDrEnabled();
 
+        boolean intercept = req.forceTransformBackups() && ctx.config().getInterceptor() != null;
+
         for (int i = 0; i < req.size(); i++) {
             K key = req.key(i);
 
@@ -1893,7 +1899,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             req.drTtl(i),
                             req.drExpireTime(i),
                             req.drVersion(i),
-                            false);
+                            false,
+                            intercept);
 
                         if (updRes.removeVersion() != null)
                             ctx.onDeferredDelete(entry, updRes.removeVersion());

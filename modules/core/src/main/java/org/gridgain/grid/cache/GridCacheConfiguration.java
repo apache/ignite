@@ -380,6 +380,9 @@ public class GridCacheConfiguration {
     /** */
     private GridDrSenderCacheConfiguration drSndCacheCfg;
 
+    /** */
+    private GridCacheInterceptor interceptor;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public GridCacheConfiguration() {
         /* No-op. */
@@ -423,6 +426,7 @@ public class GridCacheConfiguration {
         evictSyncConcurrencyLvl = cc.getEvictSynchronizedConcurrencyLevel();
         evictSyncTimeout = cc.getEvictSynchronizedTimeout();
         indexingSpiName = cc.getIndexingSpiName();
+        interceptor = cc.getInterceptor();
         invalidate = cc.isInvalidate();
         offHeapMaxMem = cc.getOffHeapMaxMemory();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
@@ -1948,6 +1952,20 @@ public class GridCacheConfiguration {
      */
     public void setDrReceiverConfiguration(GridDrReceiverCacheConfiguration drRcvCacheCfg) {
         this.drRcvCacheCfg = drRcvCacheCfg;
+    }
+
+    /**
+     * @return Cache interceptor.
+     */
+    @Nullable public GridCacheInterceptor getInterceptor() {
+        return interceptor;
+    }
+
+    /**
+     * @param interceptor Cache interceptor.
+     */
+    public void setInterceptor(GridCacheInterceptor interceptor) {
+        this.interceptor = interceptor;
     }
 
     /** {@inheritDoc} */

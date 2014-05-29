@@ -430,8 +430,8 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         GridCacheVersion ver, UUID evtNodeId, UUID affNodeId, GridCacheOperation op, @Nullable Object val,
         @Nullable byte[] valBytes, boolean writeThrough, boolean retval, long ttl, boolean evt,
         boolean metrics, boolean primary, boolean checkVer, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter,
-        GridDrType drType, long drTtl, long drExpireTime, @Nullable GridCacheVersion drVer, boolean drResolve)
-        throws GridException,
+        GridDrType drType, long drTtl, long drExpireTime, @Nullable GridCacheVersion drVer, boolean drResolve,
+        boolean intercept) throws GridException,
         GridCacheEntryRemovedException {
         return new GridCacheUpdateAtomicResult<>(true, rawPut((V)val, 0), (V)val, 0L, 0L, null, null, true);
     }

@@ -444,6 +444,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     protected void batchStoreCommit(Iterable<GridCacheTxEntry<K, V>> writeEntries) throws GridException {
         GridCacheStoreManager<K, V> store = cctx.store();
 
+        boolean intercept = cctx.config().getInterceptor() != null;
+
         if (store.configured() && storeEnabled && (!internal() || groupLock())) {
             try {
                 // Implicit transactions are always updated at the end.
@@ -470,6 +472,15 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                                     // Reset.
                                     rmvCol.clear();
+                                }
+
+                                if (intercept) {
+                                    V old = e.cached().rawGetOrUnmarshal(); // TODO: need to load if on near node.
+
+                                    val = (V)cctx.config().getInterceptor().onBeforePut(key, old, val);
+
+                                    if (val == null)
+                                        continue;
                                 }
 
                                 if (putMap == null)

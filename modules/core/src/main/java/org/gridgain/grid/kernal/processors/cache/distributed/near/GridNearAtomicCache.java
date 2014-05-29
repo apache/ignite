@@ -204,6 +204,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         -1,
                         -1,
                         null,
+                        false,
                         false);
 
                     if (updRes.removeVersion() != null)
@@ -243,6 +244,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         assert ver != null;
 
         Collection<K> backupKeys = req.keys();
+
+        boolean intercept = req.forceTransformBackups() && ctx.config().getInterceptor() != null;
 
         for (int i = 0; i < req.nearSize(); i++) {
             K key = req.nearKey(i);
@@ -293,7 +296,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             -1,
                             -1,
                             null,
-                            false);
+                            false,
+                            intercept);
 
                         if (updRes.removeVersion() != null)
                             ctx.onDeferredDelete(entry, updRes.removeVersion());

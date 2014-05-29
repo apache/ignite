@@ -609,7 +609,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable protected V readThrough(@Nullable GridCacheTxEx<K, V> tx, K key, boolean reload,
         GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
-        // NOTE: Do not remove explicit cast as it breaks ANT builds.
         return cctx.store().loadFromStore(tx, key);
     }
 
@@ -975,6 +974,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         final GridCacheVersion newVer;
 
+        boolean intercept = cctx.config().getInterceptor() != null;
+
         synchronized (this) {
             checkObsolete();
 
@@ -1007,7 +1008,19 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 }
             }
 
-            old = retval ? rawGetOrUnmarshalUnlocked() : this.val;
+            old = (retval || intercept) ? rawGetOrUnmarshalUnlocked() : this.val;
+
+            if (intercept) {
+                V interceptorVal = (V)cctx.config().getInterceptor().onBeforePut(key, old, val);
+
+                if (interceptorVal == null)
+                    return new GridCacheUpdateTxResult<>(false, old);
+                else if (interceptorVal != val) {
+                    val = interceptorVal;
+
+                    valBytes = null;
+                }
+            }
 
             // Determine new ttl and expire time.
             if (ttl < 0)
@@ -1056,6 +1069,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         if (writeThrough)
             cctx.store().putToStore(tx, key, val, newVer);
 
+        if (intercept)
+            cctx.config().getInterceptor().onAfterPut(key, val);
+
         return valid ? new GridCacheUpdateTxResult<>(true, old) : new GridCacheUpdateTxResult<V>(false, null);
     }
 
@@ -1088,6 +1104,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         GridCacheVersion obsoleteVer = null;
 
         GridCacheVersion enqueueVer = null;
+
+        boolean intercept = cctx.config().getInterceptor() != null;
+
+        GridBiTuple<Boolean, V> interceptRes = null;
 
         try {
             synchronized (this) {
@@ -1125,7 +1145,18 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                         enqueueVer = newVer;
                 }
 
-                old = retval ? rawGetOrUnmarshalUnlocked() : val;
+                old = (retval || intercept) ? rawGetOrUnmarshalUnlocked() : val;
+
+                if (intercept) {
+                    interceptRes = cctx.config().getInterceptor().onBeforeRemove(key, old);
+
+                    if (interceptRes != null) {
+                        if (interceptRes.get1())
+                            return new GridCacheUpdateTxResult<>(false, interceptRes.get2());
+                    }
+                    else
+                        U.warn(log, "GridCacheInterceptor must not return null from 'onBeforeRemove' method.");
+                }
 
                 if (old == null)
                     old = saveValueForIndexUnlocked();
@@ -1211,7 +1242,11 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 onMarkedObsolete();
         }
 
-        return valid ? new GridCacheUpdateTxResult<>(true, old) : new GridCacheUpdateTxResult<V>(false, null);
+        if (intercept)
+            cctx.config().getInterceptor().onAfterRemove(key, old);
+
+        return valid ? new GridCacheUpdateTxResult<>(true, interceptRes != null ? interceptRes.get2() : old) :
+            new GridCacheUpdateTxResult<V>(false, null);
     }
 
     /** {@inheritDoc} */
@@ -1352,7 +1387,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         long drTtl,
         long drExpireTime,
         @Nullable GridCacheVersion drVer,
-        boolean drResolve
+        boolean drResolve,
+        boolean intercept
     ) throws GridException, GridCacheEntryRemovedException, GridClosureException {
         assert cctx.atomic();
 
@@ -1369,8 +1405,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         long newTtl = 0L;
         long newExpireTime = 0L;
         long newDrExpireTime = -1L; // Explicit DR expire time which possibly will be sent to DHT node.
-
-        boolean intercept = cctx.config().getInterceptor() != null && !verCheck;
 
         synchronized (this) {
             boolean needVal = intercept || retval || op == GridCacheOperation.TRANSFORM || !F.isEmptyOrNulls(filter);
@@ -1532,15 +1566,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             assert op == GridCacheOperation.UPDATE || (op == GridCacheOperation.DELETE && updated == null);
 
-            if (intercept) {
-                if (op == GridCacheOperation.UPDATE) {
-                    updated = (V)cctx.config().getInterceptor().onBeforePut(key, old, updated);
-                }
-                else {
-                    cctx.config().getInterceptor().onBeforeRemove(key, old);
-                }
-            }
-
             boolean hadVal = hasValueUnlocked();
 
             // Incorporate DR version into new version if needed.
@@ -1548,8 +1573,21 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 newVer = new GridCacheVersionEx(newVer.topologyVersion(), newVer.globalTime(), newVer.order(),
                     newVer.nodeOrder(), newVer.dataCenterId(), drVer);
 
+            GridBiTuple<Boolean, V> interceptRes = null;
+
             // Try write-through.
             if (op == GridCacheOperation.UPDATE) {
+                if (intercept) {
+                    V interceptorVal = (V)cctx.config().getInterceptor().onBeforePut(key, old, updated);
+
+                    if (interceptorVal == null)
+                        return new GridCacheUpdateAtomicResult<>(false, old, null, 0L, -1L, null, null, false);
+                    else if (interceptorVal != updated) {
+                        updated = interceptorVal;
+                        valBytes = null;
+                    }
+                }
+
                 if (writeThrough)
                     // Must persist inside synchronization in non-tx mode.
                     cctx.store().putToStore(null, key, updated, newVer);
@@ -1586,6 +1624,16 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                         old != null || hadVal);
             }
             else {
+                if (intercept) {
+                    interceptRes = cctx.config().getInterceptor().onBeforeRemove(key, old);
+
+                    if (interceptRes == null)
+                        U.warn(log, "GridCacheInterceptor must not return null from 'onBeforeRemove' method.");
+                    else if (interceptRes.get1())
+                        return new GridCacheUpdateAtomicResult<>(false, interceptRes.get2(), null, 0L, -1L, null, null,
+                            false);
+                }
+
                 if (writeThrough)
                     // Must persist inside synchronization in non-tx mode.
                     cctx.store().removeFromStore(null, key);
@@ -1641,6 +1689,16 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), false);
 
             cctx.dataStructures().onEntryUpdated(key, op == DELETE);
+
+            if (intercept) {
+                if (op == UPDATE)
+                    cctx.config().getInterceptor().onAfterPut(key, val);
+                else
+                    cctx.config().getInterceptor().onAfterRemove(key, old);
+
+                if (interceptRes != null)
+                    old = interceptRes.get2();
+            }
         }
 
         if (log.isDebugEnabled())

@@ -78,7 +78,7 @@ public interface GridCacheInterceptor<K, V> {
      * This method should not throw any exception.
      *
      * @param key Key.
-     * @param val Val
+     * @param val Old value.
      * @return Tuple. The first value is the flag whether remove should be cancelled or not.
      *      The second is the value to be returned as result of {@code remove()} operation,
      *      may be {@code null}.

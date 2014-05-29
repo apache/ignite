@@ -404,7 +404,8 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         long drTtl,
         long drExpireTime,
         @Nullable GridCacheVersion drVer,
-        boolean drResolve
+        boolean drResolve,
+        boolean intercept
     ) throws GridException, GridCacheEntryRemovedException;
 
     /**
