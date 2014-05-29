@@ -647,7 +647,7 @@ public interface GridEventType {
      *
      * @see GridAuthenticationEvent
      */
-    public static final int EVT_AUTH_SUCCEEDED = 111;
+    public static final int EVT_AUTHENTICATION_SUCCEEDED = 111;
 
     /**
      * Built-in event type: authentication failed.
@@ -660,7 +660,7 @@ public interface GridEventType {
      *
      * @see GridAuthenticationEvent
      */
-    public static final int EVT_AUTH_FAILED = 112;
+    public static final int EVT_AUTHENTICATION_FAILED = 112;
 
     /**
      * Built-in event type: secure session validation succeed.
@@ -1058,8 +1058,8 @@ public interface GridEventType {
      * @see GridAuthenticationEvent
      */
     public static final int[] EVTS_AUTHENTICATION = {
-        EVT_AUTH_SUCCEEDED,
-        EVT_AUTH_FAILED
+        EVT_AUTHENTICATION_SUCCEEDED,
+        EVT_AUTHENTICATION_FAILED
     };
 
     /**

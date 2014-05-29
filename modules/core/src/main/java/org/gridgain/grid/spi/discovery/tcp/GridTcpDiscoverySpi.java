@@ -3315,8 +3315,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     try {
                         GridSecurityCredentials cred = unmarshalCredentials(node);
 
-                        GridSpiContext spiCtx = getSpiContext();
-
                         GridSecurityContext subj = nodeAuth.authenticateNode(node, cred);
 
                         if (subj == null) {
