@@ -15,6 +15,8 @@ import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.cache.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.nio.*;
@@ -37,6 +39,9 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
 
     /** Handler. */
     private final GridRestProtocolHandler hnd;
+
+    /** JDK marshaller. */
+    private final GridMarshaller jdkMarshaller = new GridJdkMarshaller();
 
     /** Context. */
     private final GridKernalContext ctx;
@@ -92,7 +97,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
                 if (cmd.get2()) {
                     GridMemcachedMessage res = new GridMemcachedMessage(req);
 
-                    ses.send(res).get();
+                    sendResponse(ses, res).get();
                 }
             }
             // Catch all when quitting.
@@ -147,7 +152,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
 
             res0.status(SUCCESS);
 
-            ses.send(res0);
+            sendResponse(ses, res0);
 
             return null;
         }
@@ -171,10 +176,10 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
 
                         res.value(String.valueOf(e.getValue()));
 
-                        ses.send(res);
+                        sendResponse(ses, res);
                     }
 
-                    ses.send(new GridMemcachedMessage(req));
+                    sendResponse(ses, new GridMemcachedMessage(req));
                 }
                 else {
                     GridMemcachedMessage res = new GridMemcachedMessage(req);
@@ -218,12 +223,32 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
                         restRes.getResponse() != null)
                         res.value(restRes.getResponse());
 
-                    ses.send(res);
+                    sendResponse(ses, res);
                 }
             }
         });
 
         return f;
+    }
+
+    /**
+     * @param ses NIO session.
+     * @param res Response.
+     * @return NIO send future.
+     */
+    private GridNioFuture<?> sendResponse(GridNioSession ses, GridMemcachedMessage res) {
+        try {
+            GridMemcachedMessageWrapper wrapper = new GridMemcachedMessageWrapper(res, jdkMarshaller);
+
+            return ses.send(wrapper);
+        }
+        catch (GridException e) {
+            U.error(log, "Failed to marshal response: " + res, e);
+
+            ses.close();
+
+            return new GridNioFinishedFuture<>(e);
+        }
     }
 
     /**
