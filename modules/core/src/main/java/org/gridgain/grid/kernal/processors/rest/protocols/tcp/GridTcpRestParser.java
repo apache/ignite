@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
+import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.util.*;
@@ -35,6 +36,21 @@ public class GridTcpRestParser implements GridNioParser {
 
     /** JDK marshaller. */
     private final GridMarshaller jdkMarshaller = new GridJdkMarshaller();
+
+    /** Protobuf marshaller. */
+    private final GridClientMarshaller protobufMarshaller;
+
+    /** Logger. */
+    private final GridLogger log;
+
+    /**
+     * @param log Logger.
+     */
+    public GridTcpRestParser(GridLogger log) {
+        this.log = log;
+
+        protobufMarshaller = U.createProtobufMarshaller(log);
+    }
 
     /** {@inheritDoc} */
     @Nullable @Override public GridClientMessage decode(GridNioSession ses, ByteBuffer buf) throws IOException,
@@ -727,11 +743,22 @@ public class GridTcpRestParser implements GridNioParser {
      *
      * @param ses Current session.
      * @return Current session's marshaller.
+     * @throws GridException If marshaller can't be found.
      */
-    protected GridClientMarshaller marshaller(GridNioSession ses) {
+    protected GridClientMarshaller marshaller(GridNioSession ses) throws GridException {
         GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
 
-        assert marsh != null;
+        if (marsh == null) {
+            U.warn(log, "No marshaller defined for NIO session, using Protobuf as default [ses=" + ses + ']');
+
+            if (protobufMarshaller == null)
+                throw new GridException("Failed to use Protobuf marshaller (session will be closed). " +
+                    "Is gridgain-protobuf module added to classpath?");
+
+            marsh = protobufMarshaller;
+
+            ses.addMeta(MARSHALLER.ordinal(), marsh);
+        }
 
         return marsh;
     }

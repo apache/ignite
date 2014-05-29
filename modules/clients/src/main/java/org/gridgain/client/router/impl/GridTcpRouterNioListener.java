@@ -22,7 +22,6 @@ import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import java.lang.reflect.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.GridProductImpl.*;
@@ -33,10 +32,6 @@ import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
  * and delegates their delivery to underlying client.
  */
 class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessage> {
-    /** Protobuf marshaller class name. */
-    private static final String PROTOBUF_MARSH_CLS =
-        "org.gridgain.client.marshaller.protobuf.GridClientProtobufMarshaller";
-
     /** Logger. */
     private final GridLogger log;
 
@@ -69,22 +64,10 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
      * @param map Marshallers map.
      */
     private void addProtobufMarshaller(Map<Byte, GridClientMarshaller> map) {
-        try {
-            Class<?> cls = Class.forName(PROTOBUF_MARSH_CLS);
+        GridClientMarshaller marsh = U.createProtobufMarshaller(log);
 
-            Constructor<?> cons = cls.getConstructor();
-
-            GridClientMarshaller marsh = (GridClientMarshaller)cons.newInstance();
-
+        if (marsh != null)
             map.put(marsh.getProtocolId(), marsh);
-        }
-        catch (ClassNotFoundException ignored) {
-            U.quietAndWarn(log, "Failed to create Protobuf marshaller for router (C++ and .NET clients won't work). " +
-                "Consider adding gridgain-protobuf module to classpath.");
-        }
-        catch (InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e) {
-            U.error(log, "Failed to create Protobuf marshaller for router.", e);
-        }
     }
 
     /** {@inheritDoc} */
@@ -159,8 +142,7 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
             GridClientMarshaller marsh = suppMarshMap.get(protoId);
 
             if (marsh == null) {
-                U.warn(log,
-                    "No marshaller found for a given protocol ID (will use a stub): " + protoId);
+                U.warn(log, "No marshaller found for a given protocol ID (will use a stub): " + protoId);
 
                 // Use a marshaller stub to just save protocol ID.
                 ses.addMeta(MARSHALLER.ordinal(), new GridClientMarshaller() {

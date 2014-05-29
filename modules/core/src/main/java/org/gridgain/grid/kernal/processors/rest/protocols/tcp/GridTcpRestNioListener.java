@@ -25,7 +25,6 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import java.lang.reflect.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.GridProductImpl.*;
@@ -36,10 +35,6 @@ import static org.gridgain.grid.kernal.processors.rest.client.message.GridClient
  * Listener for nio server that handles incoming tcp rest packets.
  */
 public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridClientMessage> {
-    /** Protobuf marshaller class name. */
-    private static final String PROTOBUF_MARSH_CLS =
-        "org.gridgain.client.marshaller.protobuf.GridClientProtobufMarshaller";
-
     /** Logger. */
     private GridLogger log;
 
@@ -114,22 +109,10 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
      * @param map Marshallers map.
      */
     private void addProtobufMarshaller(Map<Byte, GridClientMarshaller> map) {
-        try {
-            Class<?> cls = Class.forName(PROTOBUF_MARSH_CLS);
+        GridClientMarshaller marsh = U.createProtobufMarshaller(log);
 
-            Constructor<?> cons = cls.getConstructor();
-
-            GridClientMarshaller marsh = (GridClientMarshaller)cons.newInstance();
-
+        if (marsh != null)
             map.put(marsh.getProtocolId(), marsh);
-        }
-        catch (ClassNotFoundException ignored) {
-            U.quietAndWarn(log, "Failed to create Protobuf marshaller for REST (C++ and .NET clients won't work). " +
-                "Consider adding gridgain-protobuf module to classpath.");
-        }
-        catch (InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e) {
-            U.error(log, "Failed to create Protobuf marshaller for REST.", e);
-        }
     }
 
     /** {@inheritDoc} */

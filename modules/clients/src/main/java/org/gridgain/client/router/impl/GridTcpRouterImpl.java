@@ -85,7 +85,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean {
 
         final GridNioServerListener<GridClientMessage> lsnr = new GridTcpRouterNioListener(log, client);
 
-        parser = new GridTcpRouterNioParser();
+        parser = new GridTcpRouterNioParser(log);
 
         final InetAddress hostAddr;
 
