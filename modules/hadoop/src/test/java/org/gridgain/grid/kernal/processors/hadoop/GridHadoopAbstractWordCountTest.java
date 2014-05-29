@@ -21,7 +21,7 @@ import java.util.*;
  */
 public abstract class GridHadoopAbstractWordCountTest extends GridHadoopAbstractSelfTest {
     /** GGFS scheme. */
-    protected static final String GGFS_SCHEME = "ggfs://ipc";
+    protected static final String GGFS_SCHEME = "ggfs:///";
 
     /** Input path. */
     protected static final String PATH_INPUT = "/input";

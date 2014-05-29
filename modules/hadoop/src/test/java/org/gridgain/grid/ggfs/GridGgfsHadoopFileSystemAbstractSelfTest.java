@@ -1956,47 +1956,6 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
     }
 
     /**
-     * Test file systems behaviour: local FS vs GGFS.
-     *
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("deprecation")
-    public void _testFileSystem() throws Exception {
-        Path ggfsHome = new Path(PRIMARY_URI);
-        Path locHome = new Path("file:///" + U.getGridGainHome() + "/");
-
-        FileSystem loc = local(locHome);
-
-        loc.setWriteChecksum(false);
-
-        Path locSrc = new Path(locHome, "os/examples");
-        Path locTmp = new Path(locHome, "work/tmp");
-        Path ggfsTmp = new Path(ggfsHome, "/tmp");
-
-        Map<String, Config> map = new LinkedHashMap<>();
-
-        map.put("LOC => GGFS", new Config(loc, locSrc, fs, ggfsTmp));
-        map.put("GGFS => LOC", new Config(fs, ggfsTmp, loc, locTmp));
-
-        FileStatus status = loc.getFileStatus(locSrc);
-
-        assertTrue("Expects source directory exist [status=" + status + ", locSrc=" + locSrc + ']',
-            status != null && status.isDir());
-
-        for (Map.Entry<String, Config> e : map.entrySet()) {
-            String name = e.getKey();
-            Config c = e.getValue();
-
-            copy(name, c.srcFs, c.src, c.destFs, c.dest);
-
-            compareContent(new Config(c.srcFs, c.src, c.destFs, new Path(c.dest, c.src.getName())));
-        }
-
-        // Cleanup.
-        loc.delete(locTmp, true);
-    }
-
-    /**
      * Verifies that client reconnects after connection to the server has been lost.
      *
      * @throws Exception If error occurs.

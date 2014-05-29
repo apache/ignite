@@ -10,13 +10,10 @@
 package org.gridgain.grid.kernal.ggfs.hadoop;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
-
-import java.net.*;
 
 import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
 
@@ -38,27 +35,6 @@ public class GridGgfsHadoopEndpoint {
 
     /** Port. */
     private final int port;
-
-    /**
-     * Normalize URI path.
-     *
-     * @param uri URI.
-     * @return Normalized URI.
-     */
-    public static URI normalize(URI uri) {
-        if (!F.eq(GridGgfs.GGFS_SCHEME, uri.getScheme()))
-            throw new IllegalArgumentException("Normalization can only be applied to GGFS URI: " + uri);
-
-        try {
-            GridGgfsHadoopEndpoint endpoint = new GridGgfsHadoopEndpoint(uri.getAuthority());
-
-            return new URI(uri.getScheme(), endpoint.ggfsName + ":" + endpoint.gridName, endpoint.host, endpoint.port,
-                uri.getPath(), uri.getQuery(), uri.getFragment());
-        }
-        catch (GridException | URISyntaxException e) {
-            throw new IllegalArgumentException("Failed to normalize URI: " + uri, e);
-        }
-    }
 
     /**
      * Constructor.

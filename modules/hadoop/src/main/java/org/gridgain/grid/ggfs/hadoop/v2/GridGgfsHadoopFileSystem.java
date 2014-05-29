@@ -87,6 +87,9 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
     /** Working directory. */
     private GridGgfsPath workingDir = DFLT_WORKING_DIR;
 
+    /** URI. */
+    private URI uri;
+
     /** Authority. */
     private String uriAuthority;
 
@@ -124,7 +127,9 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
      * @throws IOException If initialization failed.
      */
     public GridGgfsHadoopFileSystem(URI name, Configuration cfg) throws URISyntaxException, IOException {
-        super(GridGgfsHadoopEndpoint.normalize(name), GGFS_SCHEME, true, DFLT_IPC_PORT);
+        super(name, GGFS_SCHEME, false, -1);
+
+        uri = name;
 
         try {
             initialize(name, cfg);
@@ -142,16 +147,15 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
     @Override public void checkPath(Path path) {
         URI uri = path.toUri();
 
-        if (!path.isAbsoluteAndSchemeAuthorityNull()) {
-            try {
-                path = new Path(GridGgfsHadoopEndpoint.normalize(uri));
-            }
-            catch (IllegalArgumentException e) {
-                throw new InvalidPathException(path.toString(), e.getMessage());
-            }
-        }
+        if (uri.isAbsolute()) {
+            if (!F.eq(uri.getScheme(), GGFS_SCHEME))
+                throw new InvalidPathException("Wrong path scheme [expected=" + GGFS_SCHEME + ", actual=" +
+                    uri.getAuthority() + ']');
 
-        super.checkPath(path);
+            if (!F.eq(uri.getAuthority(), uriAuthority))
+                throw new InvalidPathException("Wrong path authority [expected=" + uriAuthority + ", actual=" +
+                    uri.getAuthority() + ']');
+        }
     }
 
     /**
@@ -320,8 +324,13 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
     }
 
     /** {@inheritDoc} */
+    @Override public URI getUri() {
+        return uri;
+    }
+
+    /** {@inheritDoc} */
     @Override public int getUriDefaultPort() {
-        return DFLT_IPC_PORT;
+        return -1;
     }
 
     /** {@inheritDoc} */

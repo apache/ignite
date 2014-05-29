@@ -296,16 +296,15 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
     @Override protected void checkPath(Path path) {
         URI uri = path.toUri();
 
-        if (!path.isAbsoluteAndSchemeAuthorityNull()) {
-            try {
-                path = new Path(GridGgfsHadoopEndpoint.normalize(uri));
-            }
-            catch (IllegalArgumentException e) {
-                throw new InvalidPathException(path.toString(), e.getMessage());
-            }
-        }
+        if (uri.isAbsolute()) {
+            if (!F.eq(uri.getScheme(), GGFS_SCHEME))
+                throw new InvalidPathException("Wrong path scheme [expected=" + GGFS_SCHEME + ", actual=" +
+                    uri.getAuthority() + ']');
 
-        super.checkPath(path);
+            if (!F.eq(uri.getAuthority(), uriAuthority))
+                throw new InvalidPathException("Wrong path authority [expected=" + uriAuthority + ", actual=" +
+                    uri.getAuthority() + ']');
+        }
     }
 
     /** {@inheritDoc} */
