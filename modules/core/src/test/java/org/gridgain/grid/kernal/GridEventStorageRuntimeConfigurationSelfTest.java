@@ -147,25 +147,25 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     public void testGetters() throws Exception {
-        inclEvtTypes = new int[]{EVT_TASK_STARTED, EVT_TASK_FINISHED};
+        inclEvtTypes = new int[]{EVT_TASK_STARTED, EVT_TASK_FINISHED, 30000};
 
         try {
             Grid g = startGrid();
 
             assertEqualsWithoutOrder(inclEvtTypes, getEnabledEvents(g));
-            assertEqualsWithoutOrder(inclEvtTypes, getEnabledEvents(1013, g));
+            assertEqualsWithoutOrder(inclEvtTypes, getEnabledEvents(1013, g, 30000));
 
             g.events().enableLocal(20000, EVT_TASK_STARTED, EVT_CACHE_ENTRY_CREATED);
 
-            assertEqualsWithoutOrder(new int[]{EVT_TASK_STARTED, EVT_TASK_FINISHED, EVT_CACHE_ENTRY_CREATED, 20000},
+            assertEqualsWithoutOrder(new int[]{EVT_TASK_STARTED, EVT_TASK_FINISHED, EVT_CACHE_ENTRY_CREATED, 20000, 30000},
                 getEnabledEvents(g));
-            assertEqualsWithoutOrder(new int[]{EVT_TASK_STARTED, EVT_TASK_FINISHED, EVT_CACHE_ENTRY_CREATED, 20000},
-                getEnabledEvents(1013, g, 20000));
+            assertEqualsWithoutOrder(new int[]{EVT_TASK_STARTED, EVT_TASK_FINISHED, EVT_CACHE_ENTRY_CREATED, 20000, 30000},
+                getEnabledEvents(1013, g, 20000, 30000));
 
-            g.events().disableLocal(20000, 20001, EVT_TASK_STARTED, EVT_CACHE_ENTRY_CREATED);
+            g.events().disableLocal(20000, 20001, 30000, EVT_TASK_STARTED, EVT_CACHE_ENTRY_CREATED);
 
-            assertEqualsWithoutOrder(new int[]{EVT_TASK_FINISHED, EVT_TASK_STARTED}, getEnabledEvents(g));
-            assertEqualsWithoutOrder(new int[]{EVT_TASK_FINISHED, EVT_TASK_STARTED}, getEnabledEvents(1013, g, 20000));
+            assertEqualsWithoutOrder(new int[]{EVT_TASK_FINISHED, EVT_TASK_STARTED, 30000}, getEnabledEvents(g));
+            assertEqualsWithoutOrder(new int[]{EVT_TASK_FINISHED, EVT_TASK_STARTED, 30000}, getEnabledEvents(1013, g, 20000, 30000));
 
             int[] a = new int[1013];
 
@@ -182,16 +182,17 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
             g.events().enableLocal(Arrays.copyOf(a, 1002));
 
             a0[1002] = EVT_TASK_FINISHED;
+            a0[1003] = 30000;
 
-            assertEqualsWithoutOrder(Arrays.copyOf(a0, 1003), getEnabledEvents(g));
-            assertEqualsWithoutOrder(Arrays.copyOf(a0, 1003), getEnabledEvents(2013, g));
+            assertEqualsWithoutOrder(Arrays.copyOf(a0, 1004), getEnabledEvents(g));
+            assertEqualsWithoutOrder(Arrays.copyOf(a0, 1004), getEnabledEvents(2013, g, 30000));
 
             g.events().disableLocal(Arrays.copyOf(a, 1002));
 
-            assertEqualsWithoutOrder(new int[]{EVT_TASK_STARTED, EVT_TASK_FINISHED},
+            assertEqualsWithoutOrder(new int[]{EVT_TASK_STARTED, EVT_TASK_FINISHED, 30000},
                 getEnabledEvents(g));
-            assertEqualsWithoutOrder(new int[]{EVT_TASK_STARTED, EVT_TASK_FINISHED},
-                getEnabledEvents(1013, g, 20000));
+            assertEqualsWithoutOrder(new int[]{EVT_TASK_STARTED, EVT_TASK_FINISHED, 30000},
+                getEnabledEvents(1013, g, 20000, 30000));
         }
         finally {
             stopAllGrids();
@@ -219,9 +220,9 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
      * @param b Second array.
      */
     private void assertEqualsWithoutOrder(int[] a, int[] b) {
-        assert a != null;
-        assert b != null;
-        assert a.length == b.length;
+        assertNotNull(a);
+        assertNotNull(b);
+        assertEquals(a.length, b.length);
 
         int[] a0 = Arrays.copyOf(a, a.length);
         int[] b0 = Arrays.copyOf(a, a.length);

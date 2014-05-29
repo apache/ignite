@@ -105,8 +105,6 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
             cfgInclEvtTypes = compact(cfgInclEvtTypes0, cfgInclEvtTypes0.length);
         }
 
-        inclEvtTypes = EMPTY;
-
         // Initialize recordable events arrays.
         int maxIdx = 0;
 
@@ -127,11 +125,13 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
         boolean[] recordableEvts = new boolean[len];
         boolean[] userRecordableEvts = new boolean[len];
 
+        Collection<Integer> inclEvtTypes0 = new HashSet<>(U.toIntList(cfgInclEvtTypes));
+
         // Internal events are always "recordable" for notification
         // purposes (regardless of whether they were enabled or disabled).
         // However, won't be sent down to SPI level if user specifically excluded them.
         for (int type : EVTS_ALL) {
-            boolean userRecordable = binarySearch(cfgInclEvtTypes, type);
+            boolean userRecordable = inclEvtTypes0.remove(type);
 
             if (userRecordable)
                 userRecordableEvts[type] = true;
@@ -148,6 +148,12 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
 
         this.recordableEvts = recordableEvts;
         this.userRecordableEvts = userRecordableEvts;
+
+        int[] inclEvtTypes = U.toIntArray(inclEvtTypes0);
+
+        Arrays.sort(inclEvtTypes);
+
+        this.inclEvtTypes = inclEvtTypes;
     }
 
     /** {@inheritDoc} */
