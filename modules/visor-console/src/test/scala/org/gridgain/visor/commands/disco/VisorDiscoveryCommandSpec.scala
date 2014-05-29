@@ -23,7 +23,7 @@ class VisorDiscoveryCommandSpec extends VisorRuntimeBaseSpec(4) {
     /**
      * Open visor and execute several tasks before all tests.
      */
-    override def beforeAll() {
+    override protected def beforeAll() {
         super.beforeAll()
 
         G.stop("node-1", false)

@@ -47,7 +47,7 @@ abstract class VisorRuntimeBaseSpec(private[this] val num: Int) extends FlatSpec
     /**
      * Runs before all tests.
      */
-    final override def beforeAll() {
+    override protected def beforeAll() {
         (1 to num).foreach((n: Int) => G.start(config("node-" + n)))
     }
 
