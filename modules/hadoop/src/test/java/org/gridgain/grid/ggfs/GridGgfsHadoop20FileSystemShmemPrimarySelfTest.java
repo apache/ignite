@@ -25,7 +25,7 @@ public class GridGgfsHadoop20FileSystemShmemPrimarySelfTest extends GridGgfsHado
 
     /** {@inheritDoc} */
     @Override protected String primaryFileSystemUriPath() {
-        return "ggfs://primary/";
+        return "ggfs:///";
     }
 
     /** {@inheritDoc} */

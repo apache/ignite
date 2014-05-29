@@ -106,6 +106,9 @@ public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridCommonAbstr
         cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
         cfg.setGgfsConfiguration(ggfsCfg);
 
+        cfg.setLocalHost("127.0.0.1");
+        cfg.setRestEnabled(false);
+
         Grid g = G.start(cfg);
 
         ggfs = (GridGgfsEx)g.ggfs("ggfs");
@@ -281,11 +284,11 @@ public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridCommonAbstr
         fsCfg.addResource(U.resolveGridGainUrl("modules/core/src/test/config/hadoop/core-site-loopback.xml"));
 
         if (logging)
-            fsCfg.setBoolean(String.format(PARAM_GGFS_LOG_ENABLED, "primary"), logging);
+            fsCfg.setBoolean(String.format(PARAM_GGFS_LOG_ENABLED, ""), logging);
 
-        fsCfg.setStrings(String.format(PARAM_GGFS_LOG_DIR, "primary"), U.getGridGainHome());
+        fsCfg.setStrings(String.format(PARAM_GGFS_LOG_DIR, ""), U.getGridGainHome());
 
-        return (GridGgfsHadoopFileSystem)FileSystem.get(new URI("ggfs://primary/"), fsCfg);
+        return (GridGgfsHadoopFileSystem)FileSystem.get(new URI("ggfs:///"), fsCfg);
     }
 
     /**

@@ -270,7 +270,8 @@ public abstract class GridGgfsIpcEndpointAbstractSelfTest extends GridCommonAbst
         try {
             startUp(2, endpointEnabled, setEndpoint ? endpointConfiguration() : null);
 
-            fs = FileSystem.get(URI.create("ggfs://myGgfs"), fileSystemConfiguration(setType, setHost, setPort));
+            fs = FileSystem.get(URI.create("ggfs:///"),
+                fileSystemConfiguration(setType, setHost, setPort));
 
             fs.mkdirs(PATH_FS);
 
@@ -307,17 +308,8 @@ public abstract class GridGgfsIpcEndpointAbstractSelfTest extends GridCommonAbst
     private Configuration fileSystemConfiguration(boolean setType, boolean setHost, boolean setPort) throws Exception {
         Configuration cfg = new Configuration();
 
-        cfg.set("fs.default.name", "ggfs://myGgfs");
+        cfg.set("fs.default.name", "ggfs:///");
         cfg.set("fs.ggfs.impl", GridGgfsHadoopFileSystem.class.getName());
-
-        if (setType)
-            cfg.set(String.format(PARAM_GGFS_ENDPOINT_TYPE, "myGgfs"), tcp ? "tcp" : "shmem");
-
-        if (setHost)
-            cfg.set(String.format(PARAM_GGFS_ENDPOINT_HOST, "myGgfs"), "127.0.0.1");
-
-        if (setPort)
-            cfg.set(String.format(PARAM_GGFS_ENDPOINT_PORT, "myGgfs"), Integer.toString(DFLT_IPC_PORT));
 
         return cfg;
     }

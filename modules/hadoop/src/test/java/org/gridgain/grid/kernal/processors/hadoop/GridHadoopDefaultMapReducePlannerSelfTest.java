@@ -10,11 +10,14 @@
 package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.mapreduce.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.hadoop.planner.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.java.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
@@ -22,6 +25,7 @@ import org.jetbrains.annotations.*;
 
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  *
@@ -463,7 +467,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
      * @return Split.
      */
     private static GridHadoopFileBlock split(boolean ggfs, String file, long start, long len, String... hosts) {
-        URI uri = URI.create((ggfs ? "ggfs://" : "hdfs://") + file);
+        URI uri = URI.create((ggfs ? "ggfs://ggfs@" : "hdfs://") + file);
 
         return new GridHadoopFileBlock(hosts, uri, start, len);
     }
@@ -507,15 +511,6 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         Collections.addAll(locationsList, locations);
 
         BLOCK_MAP.put(block, locationsList);
-    }
-
-    /**
-     * Mark URI as proxy.
-     *
-     * @param uri URI.
-     */
-    private static void proxy(URI uri) {
-        PROXY_MAP.put(uri, true);
     }
 
     /**
@@ -879,18 +874,89 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
             long maxRangeLen, @Nullable T arg) throws GridException {
             return null;
         }
+
+        /** {@inheritDoc} */
+        @Override public GridUuid nextAffinityKey() {
+            return null;
+        }
     }
 
     /**
      * Mocked Grid.
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    private static class MockGrid extends GridSpringBean {
+    private static class MockGrid extends GridSpringBean implements GridEx {
         /** {@inheritDoc} */
-        @Override public GridGgfs ggfs(String name) {
+        @Override public GridGgfs ggfsx(String name) {
             assert F.eq("ggfs", name);
 
             return GGFS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <K, V> GridCache<K, V> cachex(@Nullable String name) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <K, V> GridCache<K, V> cachex() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override public Collection<GridCache<?, ?>> cachesx(@Nullable GridPredicate<? super GridCache<?, ?>>... p) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean eventUserRecordable(int type) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean allEventsUserRecordable(int[] types) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<String> compatibleVersions() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long licenseGracePeriodLeft() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isJmxRemoteEnabled() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isRestartEnabled() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isSmtpEnabled() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public ExecutorService drPool() {
+            return null;
         }
     }
 }

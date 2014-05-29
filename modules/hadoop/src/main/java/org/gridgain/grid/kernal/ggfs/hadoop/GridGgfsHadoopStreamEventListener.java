@@ -14,7 +14,7 @@ import org.gridgain.grid.*;
 /**
  * GGFS input stream event listener.
  */
-public interface GridGgfsStreamEventListener {
+public interface GridGgfsHadoopStreamEventListener {
     /**
      * Callback invoked when the stream is being closed.
      *
@@ -26,7 +26,6 @@ public interface GridGgfsStreamEventListener {
      * Callback invoked when remote error occurs.
      *
      * @param errMsg Error message.
-     * @throws GridException If failed.
      */
-    public void onError(String errMsg) throws GridException;
+    public void onError(String errMsg);
 }

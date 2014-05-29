@@ -83,8 +83,8 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
 
         job.setNumReduceTasks(1);
 
-        FileInputFormat.setInputPaths(job, new Path("ggfs://ipc/" + testInputFile));
-        FileOutputFormat.setOutputPath(job, new Path("ggfs://ipc/output"));
+        FileInputFormat.setInputPaths(job, new Path("ggfs:///" + testInputFile));
+        FileOutputFormat.setOutputPath(job, new Path("ggfs:///output"));
 
         job.setJarByClass(getClass());
 
@@ -121,8 +121,8 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
 
         job.setNumReduceTasks(1);
 
-        FileInputFormat.setInputPaths(job, new Path("ggfs://ipc/" + testInputFile));
-        FileOutputFormat.setOutputPath(job, new Path("ggfs://ipc/output"));
+        FileInputFormat.setInputPaths(job, new Path("ggfs:///" + testInputFile));
+        FileOutputFormat.setOutputPath(job, new Path("ggfs:///output"));
 
         job.setJarByClass(getClass());
 

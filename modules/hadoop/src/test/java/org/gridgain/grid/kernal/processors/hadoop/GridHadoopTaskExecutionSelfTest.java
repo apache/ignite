@@ -115,8 +115,8 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         job.setInputFormatClass(TextInputFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("ggfs://ipc/"));
-        FileOutputFormat.setOutputPath(job, new Path("ggfs://ipc/output/"));
+        FileInputFormat.setInputPaths(job, new Path("ggfs:///"));
+        FileOutputFormat.setOutputPath(job, new Path("ggfs:///output/"));
 
         job.setJarByClass(getClass());
 
@@ -158,8 +158,8 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         job.setInputFormatClass(TextInputFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("ggfs://ipc/"));
-        FileOutputFormat.setOutputPath(job, new Path("ggfs://ipc/output"));
+        FileInputFormat.setInputPaths(job, new Path("ggfs:///"));
+        FileOutputFormat.setOutputPath(job, new Path("ggfs:///output"));
 
         job.setJarByClass(getClass());
 
@@ -201,8 +201,8 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         job.setInputFormatClass(TextInputFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("ggfs://ipc/"));
-        FileOutputFormat.setOutputPath(job, new Path("ggfs://ipc/out/"));
+        FileInputFormat.setInputPaths(job, new Path("ggfs:///"));
+        FileOutputFormat.setOutputPath(job, new Path("ggfs:///output/"));
 
         job.setJarByClass(getClass());
 
@@ -265,8 +265,8 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         job.setInputFormatClass(TextInputFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("ggfs://ipc/"));
-        FileOutputFormat.setOutputPath(job, new Path("ggfs://ipc/output/"));
+        FileInputFormat.setInputPaths(job, new Path("ggfs:///"));
+        FileOutputFormat.setOutputPath(job, new Path("ggfs:///output/"));
 
         job.setJarByClass(getClass());
 

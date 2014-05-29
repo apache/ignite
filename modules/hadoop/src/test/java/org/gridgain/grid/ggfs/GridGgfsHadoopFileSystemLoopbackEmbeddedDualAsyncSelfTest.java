@@ -10,13 +10,14 @@ package org.gridgain.grid.ggfs;
 import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 
 /**
- * GGFS Hadoop file system IPC shmem self test in SECONDARY mode.
+ * GGFS Hadoop file system IPC loopback self test in DUAL_ASYNC mode.
  */
-public class GridGgfsHadoopFileSystemShmemSecondarySelfTest extends GridGgfsHadoopFileSystemShmemAbstractSelfTest {
+public class GridGgfsHadoopFileSystemLoopbackEmbeddedDualAsyncSelfTest extends
+    GridGgfsHadoopFileSystemLoopbackAbstractSelfTest {
     /**
      * Constructor.
      */
-    public GridGgfsHadoopFileSystemShmemSecondarySelfTest() {
-        super(PROXY);
+    public GridGgfsHadoopFileSystemLoopbackEmbeddedDualAsyncSelfTest() {
+        super(DUAL_ASYNC, false);
     }
 }

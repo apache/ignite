@@ -96,7 +96,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
         @Override protected GridGgfsConfiguration getGgfsConfiguration() {
             GridGgfsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
-            ggfsCfg.setSecondaryHadoopFileSystemUri("ggfs://secondary/");
+            ggfsCfg.setSecondaryHadoopFileSystemUri("ggfs://127.0.0.1:11500/");
             ggfsCfg.setSecondaryHadoopFileSystemConfigPath(
                 "modules/core/src/test/config/hadoop/core-site-secondary.xml");
 
@@ -111,7 +111,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
 
             ggfsCfg.setName("ggfs-secondary");
             ggfsCfg.setDefaultMode(PRIMARY);
-            ggfsCfg.setIpcEndpointConfiguration("{type:'shmem', port:11500}");
+            ggfsCfg.setIpcEndpointConfiguration("{type:'tcp', port:11500}");
 
             return ggfsCfg;
         }
@@ -193,6 +193,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
         @Override protected GridGgfsConfiguration getGgfsConfiguration() {
             GridGgfsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
+            ggfsCfg.setSecondaryHadoopFileSystemUri("ggfs://127.0.0.1:11500/");
             ggfsCfg.setSecondaryHadoopFileSystemConfigPath(
                 "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml");
 

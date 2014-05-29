@@ -7,7 +7,7 @@
 <configuration>
     <property>
         <name>fs.default.name</name>
-        <value>ggfs://primary/</value>
+        <value>ggfs:///</value>
     </property>
 
     <property>
@@ -18,15 +18,5 @@
     <property>
         <name>fs.AbstractFileSystem.ggfs.impl</name>
         <value>org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem</value>
-    </property>
-
-    <property>
-        <name>fs.ggfs.primary.endpoint.type</name>
-        <value>shmem</value>
-    </property>
-
-    <property>
-        <name>fs.ggfs.primary.endpoint.port</name>
-        <value>10500</value>
     </property>
 </configuration>

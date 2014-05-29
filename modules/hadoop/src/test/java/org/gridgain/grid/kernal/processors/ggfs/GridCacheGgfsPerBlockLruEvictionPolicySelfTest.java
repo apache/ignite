@@ -41,7 +41,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridCommonAb
     private static final String GGFS_SECONDARY = "ggfs-secondary";
 
     /** Secondary file system URI. */
-    private static final String SECONDARY_URI = "ggfs://secondary/";
+    private static final String SECONDARY_URI = "ggfs://127.0.0.1:11500/";
 
     /** Secondary file system configuration path. */
     private static final String SECONDARY_CFG = "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml";
