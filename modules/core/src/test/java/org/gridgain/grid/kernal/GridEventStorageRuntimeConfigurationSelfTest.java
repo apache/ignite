@@ -146,6 +146,42 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("UnusedDeclaration")
+    public void testInvalidTypes() throws Exception {
+        inclEvtTypes = new int[]{EVT_TASK_STARTED};
+
+        try (Grid g = startGrid()) {
+            assertTrue(g.events().isEnabled(EVT_TASK_STARTED));
+
+            try {
+                g.events().isEnabled(-13);
+
+                fail("Expected GridException");
+            }
+            catch (IllegalArgumentException e) {
+                info("Caught expected exception: " + e);
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+
+        inclEvtTypes = new int[]{-13};
+
+        try (Grid g = startGrid()) {
+            fail("Expected GridException");
+        }
+        catch (GridException e) {
+            info("Caught expected exception: " + e);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetters() throws Exception {
         inclEvtTypes = new int[]{EVT_TASK_STARTED, EVT_TASK_FINISHED, 30000};
 

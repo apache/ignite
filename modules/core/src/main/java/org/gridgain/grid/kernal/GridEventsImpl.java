@@ -204,6 +204,9 @@ public class GridEventsImpl implements GridEvents {
 
     /** {@inheritDoc} */
     @Override public boolean isEnabled(int type) {
+        if (type < 0)
+            throw new IllegalArgumentException("Invalid event type: " + type);
+
         return ctx.event().isUserRecordable(type);
     }
 

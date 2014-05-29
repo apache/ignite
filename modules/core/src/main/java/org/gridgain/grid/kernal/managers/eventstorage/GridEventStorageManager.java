@@ -102,6 +102,9 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
 
             Arrays.sort(cfgInclEvtTypes0);
 
+            if (cfgInclEvtTypes0[0] < 0)
+                throw new IllegalArgumentException("Invalid event type: " + cfgInclEvtTypes0[0]);
+
             cfgInclEvtTypes = compact(cfgInclEvtTypes0, cfgInclEvtTypes0.length);
         }
 
