@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.thread.*;
@@ -32,6 +33,9 @@ import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
  * Shuffle job.
  */
 public class GridHadoopShuffleJob<T> implements AutoCloseable {
+    /** */
+    private static final int MSG_BUF_SIZE = 32 * 1024;
+
     /** */
     private final GridHadoopJob job;
 
@@ -96,7 +100,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
         msgs = new GridHadoopShuffleMessage[reducers];
 
         if (job.hasCombiner() && hasLocMappers) // We have combiner and local mappers.
-            combinerMap = new GridHadoopMultimap(job, mem, get(job, COMBINER_HASHMAP_SIZE, 8 * 1024));
+            combinerMap = new GridHadoopConcurrentHashMultimap(job, mem, get(job, COMBINER_HASHMAP_SIZE, 8 * 1024));
     }
 
     /**
@@ -162,7 +166,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
         GridHadoopMultimap map = maps.get(idx);
 
         if (map == null) { // Create new map.
-            map = new GridHadoopMultimap(job, mem, get(job, PARTITION_HASHMAP_SIZE, 8 * 1024));
+            map = new GridHadoopConcurrentHashMultimap(job, mem, get(job, PARTITION_HASHMAP_SIZE, 8 * 1024));
 
             if (!maps.compareAndSet(idx, null, map)) {
                 map.close();
@@ -266,7 +270,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
                 continue; // Skip empty map and local node.
 
             if (msgs[i] == null)
-                msgs[i] = new GridHadoopShuffleMessage(job.id(), i, 4 * 1024);
+                msgs[i] = new GridHadoopShuffleMessage(job.id(), i, MSG_BUF_SIZE);
 
             final int idx = i;
 
@@ -371,7 +375,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
         });
 
         msgs[idx] = newBufMinSize == 0 ? null : new GridHadoopShuffleMessage(job.id(), idx,
-            Math.max(4 * 1024, newBufMinSize));
+            Math.max(MSG_BUF_SIZE, newBufMinSize));
     }
 
     /** {@inheritDoc} */
@@ -463,7 +467,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
         switch (taskInfo.type()) {
             case MAP:
                 if (combinerMap != null)
-                    return new MapOutput(combinerMap.startAdding());
+                    return combinerMap.startAdding();
 
             case COMBINE:
                 return new PartitionedOutput();
@@ -515,36 +519,11 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
     }
 
     /**
-     * Map output.
-     */
-    private class MapOutput implements GridHadoopTaskOutput {
-        /** */
-        private final GridHadoopMultimap.Adder adder;
-
-        /**
-         * @param adder Map adder.
-         */
-        private MapOutput(GridHadoopMultimap.Adder adder) {
-            this.adder = adder;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void write(Object key, Object val) throws GridException {
-            adder.add(key, val);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() throws GridException {
-            adder.close();
-        }
-    }
-
-    /**
      * Partitioned output.
      */
     private class PartitionedOutput implements GridHadoopTaskOutput {
         /** */
-        private GridHadoopMultimap.Adder[] adders = new GridHadoopMultimap.Adder[maps.length()];
+        private GridHadoopTaskOutput[] adders = new GridHadoopTaskOutput[maps.length()];
 
         /** {@inheritDoc} */
         @Override public void write(Object key, Object val) throws GridException {
@@ -557,17 +536,17 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
                     throw new GridException("Invalid partition: " + part);
             }
 
-            GridHadoopMultimap.Adder adder = adders[part];
+            GridHadoopTaskOutput out = adders[part];
 
-            if (adder == null)
-                adders[part] = adder = getOrCreateMap(maps, part).startAdding();
+            if (out == null)
+                adders[part] = out = getOrCreateMap(maps, part).startAdding();
 
-            adder.add(key, val);
+            out.write(key, val);
         }
 
         /** {@inheritDoc} */
         @Override public void close() throws GridException {
-            for (GridHadoopMultimap.Adder adder : adders) {
+            for (GridHadoopTaskOutput adder : adders) {
                 if (adder != null)
                     adder.close();
             }

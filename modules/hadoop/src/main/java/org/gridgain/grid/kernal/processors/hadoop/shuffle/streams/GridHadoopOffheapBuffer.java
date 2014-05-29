@@ -7,14 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.shuffle;
-
-import java.io.*;
+package org.gridgain.grid.kernal.processors.hadoop.shuffle.streams;
 
 /**
  * Offheap buffer.
  */
-public class GridHadoopBuffer {
+public class GridHadoopOffheapBuffer {
     /** Buffer begin address. */
     private long bufPtr;
 
@@ -28,15 +26,15 @@ public class GridHadoopBuffer {
      * @param bufPtr Pointer to buffer begin.
      * @param bufSize Size of the buffer.
      */
-    public GridHadoopBuffer(long bufPtr, long bufSize) {
-        buffer(bufPtr, bufSize);
+    public GridHadoopOffheapBuffer(long bufPtr, long bufSize) {
+        set(bufPtr, bufSize);
     }
 
     /**
      * @param bufPtr Pointer to buffer begin.
      * @param bufSize Size of the buffer.
      */
-    public void buffer(long bufPtr, long bufSize) {
+    public void set(long bufPtr, long bufSize) {
         this.posPtr = bufPtr;
         this.bufPtr = bufPtr;
         this.bufEnd = bufPtr + bufSize;
@@ -45,7 +43,7 @@ public class GridHadoopBuffer {
     /**
      * @return Pointer to internal buffer begin.
      */
-    public long buffer() {
+    public long begin() {
         return bufPtr;
     }
 
@@ -74,7 +72,8 @@ public class GridHadoopBuffer {
      * @param ptr Absolute pointer to the current position inside of the buffer.
      */
     public void pointer(long ptr) {
-        assert ptr >= bufPtr && ptr <= bufEnd;
+        assert ptr >= bufPtr : bufPtr + " <= " + ptr;
+        assert ptr <= bufEnd : bufEnd + " <= " + bufPtr;
 
         posPtr = ptr;
     }
@@ -95,5 +94,20 @@ public class GridHadoopBuffer {
         posPtr = newPos;
 
         return oldPos;
+    }
+
+    /**
+     * @param ptr Pointer.
+     * @return {@code true} If the given pointer is inside of this buffer.
+     */
+    public boolean isInside(long ptr) {
+        return ptr >= bufPtr && ptr <= bufEnd;
+    }
+
+    /**
+     * Resets position to the beginning of buffer.
+     */
+    public void reset() {
+        posPtr = bufPtr;
     }
 }
