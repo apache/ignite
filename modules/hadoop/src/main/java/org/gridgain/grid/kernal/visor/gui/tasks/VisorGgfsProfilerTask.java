@@ -371,3 +371,64 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
         return new VisorGgfsProfilerJob(arg);
     }
 }
+
+///**
+// * Various global constants for GGFS profiler.
+// */
+//object VisorGgfsProfiler {
+//final val UNIFORMITY_DFLT_BLOCK_SIZE = 4096
+//final val UNIFORMITY_BLOCKS = 100
+//
+//
+//    /**
+//     * Aggregate GGFS profiler entries.
+//     *
+//     * @param lines Lines to sum.
+//     * @return Single aggregated entry.
+//     */
+//    def aggregateGgfsProfilerEntries(lines: Iterable[VisorGgfsProfilerEntry]): VisorGgfsProfilerEntry = {
+//        assert(lines.nonEmpty)
+//
+//        if (lines.size == 1) {
+//            lines.head // No need to aggregate.
+//        }
+//        else {
+//            val path = lines.head.path
+//
+//            var timestamp = 0L
+//            var size = 0L
+//            var bytesRead = 0L
+//            var readTime = 0L
+//            var userReadTime = 0L
+//            var bytesWritten = 0L
+//            var writeTime = 0L
+//            var userWriteTime = 0L
+//            var mode: Option[GridGgfsMode] = None
+//            val counters = new VisorGgfsProfilerUniformityCounters
+//
+//            lines.toSeq.sortBy(_.timestamp).foreach(line => {
+//                // Take last timestamp.
+//                timestamp = line.timestamp
+//
+//                // Take last size.
+//                size = line.size
+//
+//                // Take last size.
+//                mode = line.mode
+//
+//                // Aggregate metrics.
+//                bytesRead += line.bytesRead
+//                readTime += line.readTime
+//                userReadTime += line.userReadTime
+//                bytesWritten += line.bytesWritten
+//                writeTime += line.writeTime
+//                userWriteTime += line.userWriteTime
+//
+//                counters.aggregate(line.counters)
+//            })
+//
+//            new VisorGgfsProfilerEntryImpl(path, timestamp, mode, size, bytesRead, readTime, userReadTime,
+//                bytesWritten, writeTime, userWriteTime, counters)
+//        }
+//    }
+//    }
