@@ -9,12 +9,11 @@
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
 import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.client.marshaller.protobuf.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
+import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.nio.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -284,7 +283,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
         for (int splitPos = 1; splitPos < 5; splitPos++) {
             log.info("Checking split position: " + splitPos);
 
-            ByteBuffer tmp = clientHandshakePacket(GridClientOptimizedMarshaller.PROTOCOL_ID);
+            ByteBuffer tmp = clientHandshakePacket(U.OPTIMIZED_CLIENT_PROTO_ID);
 
             ByteBuffer[] split = split(tmp, splitPos);
 
@@ -308,7 +307,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
             GridClientHandshakeRequest req = (GridClientHandshakeRequest)F.first(lst);
 
             assertNotNull(req);
-            assertEquals((byte)GridClientOptimizedMarshaller.PROTOCOL_ID, req.protocolId());
+            assertEquals(U.OPTIMIZED_CLIENT_PROTO_ID, req.protocolId());
             assertTrue(Arrays.equals(new byte[]{5,0,0,0}, req.versionBytes()));
         }
     }

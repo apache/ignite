@@ -9,6 +9,7 @@
 package org.gridgain.client.marshaller.jdk;
 
 import org.gridgain.client.marshaller.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 
@@ -16,9 +17,6 @@ import java.io.*;
  * Simple marshaller that utilize JDK serialization features.
  */
 public class GridClientJdkMarshaller implements GridClientMarshaller {
-    /** Unique marshaller ID. */
-    public static final Byte PROTOCOL_ID = 3;
-
     /** {@inheritDoc} */
     @Override public byte[] marshal(Object obj) throws IOException {
         ByteArrayOutputStream tmp = new ByteArrayOutputStream();
@@ -49,6 +47,6 @@ public class GridClientJdkMarshaller implements GridClientMarshaller {
 
     /** {@inheritDoc} */
     @Override public byte getProtocolId() {
-        return PROTOCOL_ID;
+        return U.JDK_CLIENT_PROTO_ID;
     }
 }

@@ -14,6 +14,7 @@ import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.protobuf.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.protobuf.ClientMessagesProtocols.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.net.*;
@@ -27,9 +28,6 @@ import static org.gridgain.grid.kernal.processors.rest.client.message.protobuf.C
  */
 @SuppressWarnings({"unchecked", "UnnecessaryFullyQualifiedName"})
 public class GridClientProtobufMarshaller implements GridClientMarshaller {
-    /** Unique marshaller ID. */
-    public static final Byte PROTOCOL_ID = 2;
-
     /** Empty byte array. */
     private static final byte[] EMPTY = new byte[0];
 
@@ -370,7 +368,7 @@ public class GridClientProtobufMarshaller implements GridClientMarshaller {
 
     /** {@inheritDoc} */
     @Override public byte getProtocolId() {
-        return PROTOCOL_ID;
+        return U.PROTOBUF_CLIENT_PROTO_ID;
     }
 
     /**

@@ -84,14 +84,14 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
         Map<Byte, GridClientMarshaller> tmpMap = new GridLeanMap<>(3);
 
-        tmpMap.put(GridClientJdkMarshaller.PROTOCOL_ID, new GridClientJdkMarshaller());
+        tmpMap.put(U.JDK_CLIENT_PROTO_ID, new GridClientJdkMarshaller());
 
         addProtobufMarshaller(tmpMap);
 
         // Special case for Optimized marshaller, which may throw exception.
         // This may happen, for example, if some Unsafe methods are unavailable.
         try {
-            tmpMap.put(GridClientOptimizedMarshaller.PROTOCOL_ID, new GridClientOptimizedMarshaller());
+            tmpMap.put(U.OPTIMIZED_CLIENT_PROTO_ID, new GridClientOptimizedMarshaller());
         }
         catch (Exception e) {
             U.warn(

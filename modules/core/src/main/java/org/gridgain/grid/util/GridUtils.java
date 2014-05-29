@@ -116,6 +116,15 @@ public abstract class GridUtils {
     private static final String PROTOBUF_MARSH_CLS =
         "org.gridgain.client.marshaller.protobuf.GridClientProtobufMarshaller";
 
+    /** Optimized client marshaller ID. */
+    public static final byte OPTIMIZED_CLIENT_PROTO_ID = 1;
+
+    /** Protobuf client marshaller ID. */
+    public static final byte PROTOBUF_CLIENT_PROTO_ID = 2;
+
+    /** JDK client marshaller ID. */
+    public static final byte JDK_CLIENT_PROTO_ID = 3;
+
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
 
