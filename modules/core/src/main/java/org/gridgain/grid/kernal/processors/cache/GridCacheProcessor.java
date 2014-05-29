@@ -1206,6 +1206,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "queryIndexEnabled",
                             "Query index enabled", locAttr.queryIndexEnabled(), rmtAttr.queryIndexEnabled(), true);
 
+                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "interceptor", "CacheInterceptor",
+                            locAttr.interceptorClassName(), rmtAttr.interceptorClassName(), true);
+
                         if (locAttr.cacheMode() == PARTITIONED) {
                             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictSynchronized",
                                 "Eviction synchronized", locAttr.evictSynchronized(), rmtAttr.evictSynchronized(),

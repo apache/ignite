@@ -175,6 +175,9 @@ public class GridCacheAttributes implements Externalizable {
     /** DR send attributes. */
     private GridCacheDrSendAttributes drSndAttrs;
 
+    /** Cache interceptor class name. */
+    private String interceptorClsName;
+
     /**
      * @param cfg Cache configuration.
      */
@@ -200,6 +203,7 @@ public class GridCacheAttributes implements Externalizable {
         evictNearSync = cfg.isEvictNearSynchronized();
         evictSync = cfg.isEvictSynchronized();
         indexingSpiName = cfg.getIndexingSpiName();
+        interceptorClsName = className(cfg.getInterceptor());
         name = cfg.getName();
         partDistro = GridCacheUtils.distributionMode(cfg);
         preloadBatchSize = cfg.getPreloadBatchSize();
@@ -611,6 +615,13 @@ public class GridCacheAttributes implements Externalizable {
         return drSndAttrs;
     }
 
+    /**
+     * @return Cache interceptor class name.
+     */
+    @Nullable public String interceptorClassName() {
+        return interceptorClsName;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeEnum0(out, atomicityMode);
@@ -627,6 +638,7 @@ public class GridCacheAttributes implements Externalizable {
         out.writeBoolean(evictNearSync);
         out.writeBoolean(evictSync);
         U.writeString(out, indexingSpiName);
+        U.writeString(out, interceptorClsName);
         U.writeString(out, name);
         U.writeEnum0(out, partDistro);
         out.writeInt(preloadBatchSize);
@@ -682,6 +694,7 @@ public class GridCacheAttributes implements Externalizable {
         evictNearSync = in.readBoolean();
         evictSync  = in.readBoolean();
         indexingSpiName = U.readString(in);
+        interceptorClsName = U.readString(in);
         name = U.readString(in);
         partDistro = GridCacheDistributionMode.fromOrdinal(U.readEnumOrdinal0(in));
         preloadBatchSize = in.readInt();

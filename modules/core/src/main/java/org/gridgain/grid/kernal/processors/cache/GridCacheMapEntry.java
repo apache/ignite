@@ -1370,8 +1370,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         long newExpireTime = 0L;
         long newDrExpireTime = -1L; // Explicit DR expire time which possibly will be sent to DHT node.
 
+        boolean intercept = cctx.config().getInterceptor() != null && !verCheck;
+
         synchronized (this) {
-            boolean needVal = retval || op == GridCacheOperation.TRANSFORM || !F.isEmptyOrNulls(filter);
+            boolean needVal = intercept || retval || op == GridCacheOperation.TRANSFORM || !F.isEmptyOrNulls(filter);
 
             checkObsolete();
 
@@ -1415,8 +1417,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     newTtlResolved = true;
 
                     GridDrEntry<K, V> oldEntry = drEntry();
-                    GridDrEntry<K, V> newEntry = new GridDrPlainEntry<>(k, (V)writeObj, newTtl, newExpireTime,
-                        drVer);
+                    GridDrEntry<K, V> newEntry = new GridDrPlainEntry<>(k, (V)writeObj, newTtl, newExpireTime, drVer);
 
                     drRes = cctx.drResolveConflict(k, oldEntry, newEntry);
 
@@ -1525,11 +1526,20 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 valBytes = null;
             }
             else
-                updated = (V) writeObj;
+                updated = (V)writeObj;
 
             op = updated == null ? GridCacheOperation.DELETE : GridCacheOperation.UPDATE;
 
             assert op == GridCacheOperation.UPDATE || (op == GridCacheOperation.DELETE && updated == null);
+
+            if (intercept) {
+                if (op == GridCacheOperation.UPDATE) {
+                    updated = (V)cctx.config().getInterceptor().onBeforePut(key, old, updated);
+                }
+                else {
+                    cctx.config().getInterceptor().onBeforeRemove(key, old);
+                }
+            }
 
             boolean hadVal = hasValueUnlocked();
 
