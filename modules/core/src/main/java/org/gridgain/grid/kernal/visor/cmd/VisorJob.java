@@ -30,7 +30,7 @@ public abstract class VisorJob<A, R> extends GridComputeJobAdapter {
     }
 
     @GridInstanceResource
-    protected GridKernal g;
+    protected GridEx g;
 
     /** */
     @GridLoggerResource
