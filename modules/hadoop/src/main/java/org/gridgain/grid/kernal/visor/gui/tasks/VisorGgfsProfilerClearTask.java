@@ -97,8 +97,7 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<VisorGgfsProfil
             super(arg);
         }
 
-        @Override
-        protected VisorGgfsProfilerClearTaskResult run(VisorGgfsProfilerClearArg arg) throws GridException {
+        @Override protected VisorGgfsProfilerClearTaskResult run(VisorGgfsProfilerClearArg arg) throws GridException {
             int deleted = 0;
             int notDeleted = 0;
 
