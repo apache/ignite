@@ -93,7 +93,7 @@ public class GridGgfsModesSelfTest extends GridCommonAbstractTest {
         ggfsCfg.setPathModes(pathModes);
 
         if (setSecondaryFsUri)
-            ggfsCfg.setSecondaryHadoopFileSystemUri("ggfs://secondary/");
+            ggfsCfg.setSecondaryHadoopFileSystemUri("ggfs://127.0.0.1:11500/");
 
         if (setSecondaryFsCfg)
             ggfsCfg.setSecondaryHadoopFileSystemConfigPath(
@@ -129,6 +129,9 @@ public class GridGgfsModesSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
         cfg.setGgfsConfiguration(ggfsCfg);
+
+        cfg.setLocalHost("127.0.0.1");
+        cfg.setRestEnabled(false);
 
         grid = (GridEx)G.start(cfg);
 
@@ -180,6 +183,9 @@ public class GridGgfsModesSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
         cfg.setGgfsConfiguration(ggfsCfg);
+
+        cfg.setLocalHost("127.0.0.1");
+        cfg.setRestEnabled(false);
 
         ggfsSecondary = (GridGgfsImpl)G.start(cfg).ggfs("ggfs-secondary");
     }

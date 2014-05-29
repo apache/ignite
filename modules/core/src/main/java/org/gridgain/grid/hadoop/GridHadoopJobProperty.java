@@ -51,11 +51,21 @@ public enum GridHadoopJobProperty {
     /**
      * Use single combiner for all mappers running in current process. By default is {@code false}.
      */
-    SINGLE_COMBINER_FOR_ALL_MAPPERS;
+    SINGLE_COMBINER_FOR_ALL_MAPPERS,
+
+    /**
+     * Size in bytes of single memory page which will be allocated for data structures in shuffle.
+     * <p>
+     * By default is {@code 16 * 1024}.
+     */
+    SHUFFLE_OFFHEAP_PAGE_SIZE;
 
     /** */
     private final String ptyName;
 
+    /**
+     *
+     */
     GridHadoopJobProperty() {
         ptyName = "gridgain." + name().toLowerCase().replace('_', '.');
     }

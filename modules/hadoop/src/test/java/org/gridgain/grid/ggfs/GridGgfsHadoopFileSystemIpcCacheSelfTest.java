@@ -31,11 +31,12 @@ import java.util.concurrent.atomic.*;
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
 
 /**
  * IPC cache test.
  */
-public class GridGgfsHadoopFileSystemLightIpcCacheSelfTest extends GridCommonAbstractTest {
+public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
@@ -64,8 +65,8 @@ public class GridGgfsHadoopFileSystemLightIpcCacheSelfTest extends GridCommonAbs
         ggfsCfg.setName("ggfs");
         ggfsCfg.setManagementPort(GridGgfsConfiguration.DFLT_MGMT_PORT + cnt);
 
-        ggfsCfg.setIpcEndpointConfiguration("{type:'shmem', port:" + (GridIpcSharedMemoryServerEndpoint
-            .DFLT_IPC_PORT + cnt) + "}");
+        ggfsCfg.setIpcEndpointConfiguration("{type:'shmem', port:" + (GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT +
+            cnt) + "}");
 
         ggfsCfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 
@@ -129,6 +130,7 @@ public class GridGgfsHadoopFileSystemLightIpcCacheSelfTest extends GridCommonAbs
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     public void testIpcCache() throws Exception {
         Field cacheField = GridGgfsHadoopIpcIo.class.getDeclaredField("ipcCache");
 
@@ -144,20 +146,31 @@ public class GridGgfsHadoopFileSystemLightIpcCacheSelfTest extends GridCommonAbs
 
         cfg.addResource(U.resolveGridGainUrl(HADOOP_FS_CFG));
         cfg.setBoolean("fs.ggfs.impl.disable.cache", true);
-
-        String endpoint = "shmem:10500";
+        cfg.setBoolean(String.format(GridGgfsHadoopUtils.PARAM_GGFS_ENDPOINT_NO_EMBED, ""), true);
 
         // Ensure that existing IO is reused.
-        FileSystem fs1 = FileSystem.get(new URI("ggfs://" + endpoint + '/'), cfg);
+        FileSystem fs1 = FileSystem.get(new URI("ggfs:///"), cfg);
 
         assertEquals(1, cache.size());
 
-        GridGgfsHadoopIpcIo io = cache.get(endpoint);
+        GridGgfsHadoopIpcIo io = null;
+
+        System.out.println("CACHE: " + cache);
+
+        for (String key : cache.keySet()) {
+            if (key.contains("10500")) {
+                io = cache.get(key);
+
+                break;
+            }
+        }
+
+        assert io != null;
 
         assertEquals(1, ((AtomicInteger)activeCntField.get(io)).get());
 
         // Ensure that when IO is used by multiple file systems and one of them is closed, IO is not stopped.
-        FileSystem fs2 = FileSystem.get(new URI("ggfs://" + endpoint + "/abc"), cfg);
+        FileSystem fs2 = FileSystem.get(new URI("ggfs:///abc"), cfg);
 
         assertEquals(1, cache.size());
         assertEquals(2, ((AtomicInteger)activeCntField.get(io)).get());

@@ -2793,8 +2793,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** {@inheritDoc} */
     @Override public GridGgfs ggfs(String name) {
-        A.ensure(!F.isEmpty(name), "!F.isEmpty(name)");
-
         guard();
 
         try{
@@ -2804,6 +2802,18 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                 throw new IllegalArgumentException("GGFS is not configured: " + name);
 
             return ggfs;
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridGgfs ggfsx(@Nullable String name) {
+        guard();
+
+        try {
+            return ctx.ggfs().ggfs(name);
         }
         finally {
             unguard();

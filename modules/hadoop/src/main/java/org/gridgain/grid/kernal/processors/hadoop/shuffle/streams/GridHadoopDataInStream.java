@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.shuffle;
+package org.gridgain.grid.kernal.processors.hadoop.shuffle.streams;
 
 import org.gridgain.grid.util.offheap.unsafe.*;
 
@@ -19,7 +19,7 @@ import java.nio.charset.*;
  */
 public class GridHadoopDataInStream extends InputStream implements DataInput {
     /** */
-    private final GridHadoopBuffer buf = new GridHadoopBuffer(0, 0);
+    private final GridHadoopOffheapBuffer buf = new GridHadoopOffheapBuffer(0, 0);
 
     /** */
     private final GridUnsafeMemory mem;
@@ -36,7 +36,7 @@ public class GridHadoopDataInStream extends InputStream implements DataInput {
     /**
      * @return Buffer.
      */
-    public GridHadoopBuffer buffer() {
+    public GridHadoopOffheapBuffer buffer() {
         return buf;
     }
 
@@ -45,7 +45,11 @@ public class GridHadoopDataInStream extends InputStream implements DataInput {
      * @return Old pointer.
      */
     protected long move(long size) throws IOException {
-        return buf.move(size);
+        long ptr = buf.move(size);
+
+        assert ptr != 0;
+
+        return ptr;
     }
 
     /** {@inheritDoc} */
@@ -133,7 +137,7 @@ public class GridHadoopDataInStream extends InputStream implements DataInput {
 
     /** {@inheritDoc} */
     @Override public float readFloat() throws IOException {
-        return mem.readFloat(move(8));
+        return mem.readFloat(move(4));
     }
 
     /** {@inheritDoc} */
@@ -148,14 +152,9 @@ public class GridHadoopDataInStream extends InputStream implements DataInput {
 
     /** {@inheritDoc} */
     @Override public String readUTF() throws IOException {
-        int len = readInt();
+        byte[] bytes = new byte[readInt()];
 
-        if (len == -1)
-            return null;
-
-        byte[] bytes = new byte[len];
-
-        if (len != 0)
+        if (bytes.length != 0)
             readFully(bytes);
 
         return new String(bytes, StandardCharsets.UTF_8);

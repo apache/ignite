@@ -7,12 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.shuffle;
+package org.gridgain.grid.kernal.processors.hadoop.shuffle.collections;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -22,16 +21,10 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
-
 /**
  * Multimap for map reduce intermediate results.
  */
-public class GridHadoopMultimap implements AutoCloseable {
-    /** */
-    private static AtomicIntegerFieldUpdater<Adder> keysCntUpdater =
-        AtomicIntegerFieldUpdater.newUpdater(Adder.class, "keysCnt");
-
+public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase {
     /** */
     private final AtomicReference<State> state = new AtomicReference<>(State.READING_WRITING);
 
@@ -45,28 +38,22 @@ public class GridHadoopMultimap implements AutoCloseable {
     private final AtomicInteger keys = new AtomicInteger();
 
     /** */
-    private final CopyOnWriteArrayList<Adder> adders = new CopyOnWriteArrayList<>();
+    private final CopyOnWriteArrayList<AdderImpl> adders = new CopyOnWriteArrayList<>();
 
     /** */
     private final AtomicInteger inputs = new AtomicInteger();
 
-    /** */
-    private final GridHadoopJob job;
-
-    /** */
-    private final GridUnsafeMemory mem;
-
     /**
      * @param job Job.
      * @param mem Memory.
+     * @param cap Initial capacity.
      */
-    public GridHadoopMultimap(GridHadoopJob job, GridUnsafeMemory mem, int tblCap) {
-        assert U.isPow2(tblCap);
+    public GridHadoopConcurrentHashMultimap(GridHadoopJob job, GridUnsafeMemory mem, int cap) {
+        super(job, mem);
 
-        this.job = job;
-        this.mem = mem;
+        assert U.isPow2(cap);
 
-        newTbl = oldTbl = new AtomicLongArray(tblCap);
+        newTbl = oldTbl = new AtomicLongArray(cap);
     }
 
     /**
@@ -75,8 +62,8 @@ public class GridHadoopMultimap implements AutoCloseable {
     public long keys() {
         int res = keys.get();
 
-        for (Adder adder : adders)
-            res += adder.keysCnt;
+        for (AdderImpl adder : adders)
+            res += adder.localKeys.get();
 
         return res;
     }
@@ -91,14 +78,14 @@ public class GridHadoopMultimap implements AutoCloseable {
     /**
      * @return Adder object.
      */
-    public Adder startAdding() throws GridException {
+    @Override public Adder startAdding() throws GridException {
         if (inputs.get() != 0)
             throw new IllegalStateException("Active inputs.");
 
         if (state.get() == State.CLOSING)
             throw new IllegalStateException("Closed.");
 
-        return new Adder();
+        return new AdderImpl();
     }
 
     /** {@inheritDoc} */
@@ -111,33 +98,12 @@ public class GridHadoopMultimap implements AutoCloseable {
         if (keys() == 0)
             return;
 
-        AtomicLongArray tbl = oldTbl;
+        super.close();
+    }
 
-        for (int i = 0; i < tbl.length(); i++) {
-            long meta = tbl.get(i);
-
-            while (meta != 0) {
-                mem.release(key(meta), keySize(meta));
-
-                long valPtr = value(meta);
-
-                do {
-                    long valPtr0 = valPtr;
-                    int valSize = valueSize(valPtr) + 12;
-
-                    valPtr = nextValue(valPtr);
-
-                    mem.release(valPtr0, valSize);
-                }
-                while (valPtr != 0);
-
-                long meta0 = meta;
-
-                meta = collision(meta);
-
-                mem.release(meta0, 40);
-            }
-        }
+    /** {@inheritDoc} */
+    @Override protected long meta(int idx) {
+        return oldTbl.get(idx);
     }
 
     /**
@@ -147,7 +113,7 @@ public class GridHadoopMultimap implements AutoCloseable {
      * @param v Visitor.
      * @return {@code false} If visiting was impossible due to rehashing.
      */
-    public boolean visit(boolean ignoreLastVisited, Visitor v) throws GridException {
+    @Override public boolean visit(boolean ignoreLastVisited, Visitor v) throws GridException {
         if (!state.compareAndSet(State.READING_WRITING, State.VISITING)) {
             assert state.get() != State.CLOSING;
 
@@ -189,7 +155,7 @@ public class GridHadoopMultimap implements AutoCloseable {
     /**
      * @return New input for task.
      */
-    public GridHadoopTaskInput input() throws GridException {
+    @Override public GridHadoopTaskInput input() throws GridException {
         inputs.incrementAndGet();
 
         if (!adders.isEmpty())
@@ -202,63 +168,7 @@ public class GridHadoopMultimap implements AutoCloseable {
 
         assert s != State.REHASHING;
 
-        final Reader keyReader = new Reader(job.keySerialization());
-        final Reader valReader = new Reader(job.valueSerialization());
-
-        final AtomicLongArray tbl = oldTbl;
-
-        return new GridHadoopTaskInput() {
-            /** */
-            private int addr = -1;
-
-            /** */
-            private long metaPtr;
-
-            @Override public boolean next() {
-                if (metaPtr != 0) {
-                    metaPtr = collision(metaPtr);
-
-                    if (metaPtr != 0)
-                        return true;
-                }
-
-                while (++addr < tbl.length()) { // Scan table.
-                    metaPtr = tbl.get(addr);
-
-                    if (metaPtr != 0)
-                        return true;
-                }
-
-                return false;
-            }
-
-            @Override public Object key() {
-                return keyReader.readKey(metaPtr);
-            }
-
-            @Override public Iterator<?> values() {
-                return new Iterator<Object>() {
-                    /** */
-                    private long valPtr = value(metaPtr);
-
-                    @Override public boolean hasNext() {
-                        return valPtr != 0;
-                    }
-
-                    @Override public Object next() {
-                        Object res = valReader.readValue(valPtr);
-
-                        valPtr = nextValue(valPtr);
-
-                        return res;
-                    }
-
-                    @Override public void remove() {
-                        throw new UnsupportedOperationException();
-                    }
-                };
-            }
-
+        return new Input() {
             @Override public void close() {
                 if (inputs.decrementAndGet() < 0)
                     throw new IllegalStateException();
@@ -382,56 +292,10 @@ public class GridHadoopMultimap implements AutoCloseable {
     }
 
     /**
-     * @param keyHash Key hash.
-     * @param keySize Key size.
-     * @param keyPtr Key pointer.
-     * @param valPtr Value page pointer.
-     * @param collisionPtr Pointer to meta with hash collision.
-     * @param lastVisitedVal Last visited value pointer.
-     * @return Created meta page pointer.
-     */
-    private long createMeta(int keyHash, int keySize, long keyPtr, long valPtr, long collisionPtr, long lastVisitedVal) {
-        long meta = mem.allocate(40);
-
-        mem.writeInt(meta, keyHash);
-        mem.writeInt(meta + 4, keySize);
-        mem.writeLong(meta + 8, keyPtr);
-        mem.writeLong(meta + 16, valPtr);
-        mem.writeLong(meta + 24, collisionPtr);
-        mem.writeLong(meta + 32, lastVisitedVal);
-
-        return meta;
-    }
-
-    /**
-     * @param meta Meta pointer.
-     * @return Key hash.
-     */
-    private int keyHash(long meta) {
-        return mem.readInt(meta);
-    }
-
-    /**
-     * @param meta Meta pointer.
-     * @return Key size.
-     */
-    private int keySize(long meta) {
-        return mem.readInt(meta + 4);
-    }
-
-    /**
-     * @param meta Meta pointer.
-     * @return Key pointer.
-     */
-    private long key(long meta) {
-        return mem.readLong(meta + 8);
-    }
-
-    /**
      * @param meta Meta pointer.
      * @return Value pointer.
      */
-    private long value(long meta) {
+    protected long value(long meta) {
         return mem.readLongVolatile(meta + 16);
     }
 
@@ -449,7 +313,7 @@ public class GridHadoopMultimap implements AutoCloseable {
      * @param meta Meta pointer.
      * @return Collision pointer.
      */
-    private long collision(long meta) {
+    protected long collision(long meta) {
         return mem.readLongVolatile(meta + 24);
     }
 
@@ -457,7 +321,7 @@ public class GridHadoopMultimap implements AutoCloseable {
      * @param meta Meta pointer.
      * @param collision Collision pointer.
      */
-    private void collision(long meta, long collision) {
+    protected void collision(long meta, long collision) {
         assert meta != collision : meta;
 
         mem.writeLongVolatile(meta + 24, collision);
@@ -480,184 +344,22 @@ public class GridHadoopMultimap implements AutoCloseable {
     }
 
     /**
-     * @param valPtr Value page pointer.
-     * @param nextValPtr Next value page pointer.
-     */
-    private void nextValue(long valPtr, long nextValPtr) {
-        mem.writeLong(valPtr, nextValPtr);
-    }
-
-    private long nextValue(long valPtr) {
-        return mem.readLong(valPtr);
-    }
-
-    /**
-     * @param valPtr Value page pointer.
-     * @param size Size.
-     */
-    private void valueSize(long valPtr, int size) {
-        mem.writeInt(valPtr + 8, size);
-    }
-
-    /**
-     * @param valPtr Value page pointer.
-     * @return Value size.
-     */
-    private int valueSize(long valPtr) {
-        return mem.readInt(valPtr + 8);
-    }
-
-    /**
-     * Reader for key and value.
-     */
-    private class Reader {
-        /** */
-        private Object tmp;
-
-        /** */
-        private final GridHadoopSerialization ser;
-
-        /** */
-        private final GridHadoopDataInStream in = new GridHadoopDataInStream(mem);
-
-        /**
-         * @param ser Serialization.
-         */
-        private Reader(GridHadoopSerialization ser) {
-            this.ser = ser;
-        }
-
-        /**
-         * @param meta Meta pointer.
-         * @return Key.
-         */
-        public Object readKey(long meta) {
-            assert meta > 0 : meta;
-
-            try {
-                return read(key(meta), keySize(meta));
-            }
-            catch (GridException e) {
-                throw new GridRuntimeException(e);
-            }
-        }
-
-        /**
-         * @param valPtr Value page pointer.
-         * @return Value.
-         */
-        public Object readValue(long valPtr) {
-            assert valPtr > 0 : valPtr;
-
-            try {
-                return read(valPtr + 12, valueSize(valPtr));
-            }
-            catch (GridException e) {
-                throw new GridRuntimeException(e);
-            }
-        }
-
-        /**
-         * @param ptr Pointer.
-         * @param size Object size.
-         * @return Object.
-         */
-        private Object read(long ptr, long size) throws GridException {
-            in.buffer().buffer(ptr, size);
-
-            tmp = ser.read(in, tmp);
-
-            return tmp;
-        }
-    }
-
-    /**
-     * Key.
-     */
-    public class Key {
-        /** */
-        private long meta;
-
-        /** */
-        private Object tmpKey;
-
-        /**
-         * @return Meta pointer for the key.
-         */
-        public long address() {
-            return meta;
-        }
-
-        /**
-         * @param val Value.
-         */
-        public void add(Value val) {
-            int size = val.size();
-
-            long valPtr = mem.allocate(size + 12);
-
-            val.copyTo(valPtr + 12);
-
-            valueSize(valPtr, size);
-
-            long nextVal;
-
-            do {
-                nextVal = value(meta);
-
-                nextValue(valPtr, nextVal);
-            }
-            while(!casValue(meta, nextVal, valPtr));
-        }
-    }
-
-    /**
-     * Value.
-     */
-    public interface Value {
-        /**
-         * @return Size in bytes.
-         */
-        public int size();
-
-        /**
-         * @param ptr Pointer.
-         */
-        public void copyTo(long ptr);
-    }
-
-    /**
      * Adder. Must not be shared between threads.
      */
-    public class Adder implements AutoCloseable {
-        /** */
-        private final GridHadoopSerialization keySer;
-
-        /** */
-        private final GridHadoopSerialization valSer;
-
-        /** */
-        private final GridUnsafeDataOutput out = new GridUnsafeDataOutput(256);
-
+    public class AdderImpl extends AdderBase {
         /** */
         private final Reader keyReader;
 
         /** */
-        volatile int keysCnt;
+        private final AtomicInteger localKeys = new AtomicInteger();
 
         /** */
-        private final Random rnd = ThreadLocalRandom.current();
-
-        /** */
-        private boolean newKey;
+        private final Random rnd = new GridRandom();
 
         /**
          * @throws GridException If failed.
          */
-        public Adder() throws GridException {
-            valSer = job.valueSerialization();
-            keySer = job.keySerialization();
-
+        public AdderImpl() throws GridException {
             keyReader = new Reader(keySer);
 
             rehashIfNeeded(oldTbl);
@@ -666,52 +368,58 @@ public class GridHadoopMultimap implements AutoCloseable {
         }
 
         /**
-         * @return {@code true} If new key was added by the last operation.
-         */
-        public boolean isNewKey() {
-            return newKey;
-        }
-
-        /**
          * @param in Data input.
          * @param reuse Reusable key.
          * @return Key.
          * @throws GridException If failed.
          */
-        public Key addKey(DataInput in, @Nullable Key reuse) throws GridException {
-            if (reuse == null)
-                reuse = new Key();
+        @Override public Key addKey(DataInput in, @Nullable Key reuse) throws GridException {
+            KeyImpl k = reuse == null ? new KeyImpl() : (KeyImpl)reuse;
 
-            reuse.tmpKey = keySer.read(in, reuse.tmpKey);
+            k.tmpKey = keySer.read(in, k.tmpKey);
 
-            reuse.meta = doAdd(reuse.tmpKey, null);
+            k.meta = doAdd(k.tmpKey, null);
 
-            return reuse;
+            return k;
         }
 
-        /**
-         * Adds value for the given key.
-         *
-         * @param key Key.
-         * @param val Value.
-         * @return Meta pointer for the key.
-         */
-        public long add(Object key, Object val) throws GridException {
+        /** {@inheritDoc} */
+        @Override public void write(Object key, Object val) throws GridException {
             A.notNull(val, "val");
 
-            return doAdd(key, val);
+            doAdd(key, val);
         }
 
         /**
          * @param tbl Table.
          */
         private void incrementKeys(AtomicLongArray tbl) {
-            newKey = true;
-
-            keysCntUpdater.lazySet(this, keysCnt + 1);
+            localKeys.lazySet(localKeys.get() + 1);
 
             if (rnd.nextInt(tbl.length()) < 512)
                 rehashIfNeeded(tbl);
+        }
+
+        /**
+         * @param keyHash Key hash.
+         * @param keySize Key size.
+         * @param keyPtr Key pointer.
+         * @param valPtr Value page pointer.
+         * @param collisionPtr Pointer to meta with hash collision.
+         * @param lastVisitedVal Last visited value pointer.
+         * @return Created meta page pointer.
+         */
+        private long createMeta(int keyHash, int keySize, long keyPtr, long valPtr, long collisionPtr, long lastVisitedVal) {
+            long meta = allocate(40);
+
+            mem.writeInt(meta, keyHash);
+            mem.writeInt(meta + 4, keySize);
+            mem.writeLong(meta + 8, keyPtr);
+            mem.writeLong(meta + 16, valPtr);
+            mem.writeLong(meta + 24, collisionPtr);
+            mem.writeLong(meta + 32, lastVisitedVal);
+
+            return meta;
         }
 
         /**
@@ -730,11 +438,8 @@ public class GridHadoopMultimap implements AutoCloseable {
             long valPtr = 0;
 
             if (val != null) {
-                write(val, valSer);
-
-                int valSize = out.offset();
-
-                valPtr = copy(12);
+                valPtr = write(12, val, valSer);
+                int valSize = writtenSize() - 12;
 
                 valueSize(valPtr, valSize);
             }
@@ -760,10 +465,8 @@ public class GridHadoopMultimap implements AutoCloseable {
 
                     do { // Scan all the collisions.
                         if (keyHash(metaPtr) == keyHash && key.equals(keyReader.readKey(metaPtr))) { // Found key.
-                            if (newMetaPtr != 0) { // Deallocate new meta if one was allocated.
-                                mem.release(key(newMetaPtr), keySize(newMetaPtr));
-                                mem.release(newMetaPtr, 40);
-                            }
+                            if (newMetaPtr != 0)  // Deallocate new meta if one was allocated.
+                                localDeallocate(key(newMetaPtr)); // Key was allocated first, so rewind to it's pointer.
 
                             if (valPtr != 0) { // Add value if it exists.
                                 long nextValPtr;
@@ -777,8 +480,6 @@ public class GridHadoopMultimap implements AutoCloseable {
                                 }
                                 while (!casValue(metaPtr, nextValPtr, valPtr));
                             }
-
-                            newKey = false;
 
                             return metaPtr;
                         }
@@ -809,11 +510,8 @@ public class GridHadoopMultimap implements AutoCloseable {
                 }
 
                 if (newMetaPtr == 0) { // Allocate new meta page.
-                    write(key, keySer);
-
-                    int keySize = out.offset();
-
-                    long keyPtr = copy(0);
+                    long keyPtr = write(0, key, keySer);
+                    int keySize = writtenSize();
 
                     if (valPtr != 0)
                         nextValue(valPtr, 0);
@@ -831,56 +529,55 @@ public class GridHadoopMultimap implements AutoCloseable {
             }
         }
 
-        /**
-         * @param o Object.
-         */
-        private void write(Object o, GridHadoopSerialization ser) throws GridException {
-            out.reset();
-
-            ser.write(out, o);
-        }
-
-        /**
-         * @param off Offset.
-         * @return Allocated pointer.
-         */
-        private long copy(int off) {
-            int size = out.offset();
-
-            long ptr = mem.allocate(off + size);
-
-            UNSAFE.copyMemory(out.internalArray(), BYTE_ARR_OFF, null, ptr + off, size);
-
-            return ptr;
-        }
-
         /** {@inheritDoc} */
         @Override public void close() throws GridException {
             if (!adders.remove(this))
                 throw new IllegalStateException();
 
-            keys.addAndGet(keysCnt); // Here we have race and #keys() method can return wrong result but it is ok.
+            keys.addAndGet(localKeys.get()); // Here we have race and #keys() method can return wrong result but it is ok.
 
-            keySer.close();
-            valSer.close();
+            super.close();
         }
-    }
-
-    /**
-     * Key and values visitor.
-     */
-    public static interface Visitor {
-        /**
-         * @param keyPtr Key pointer.
-         * @param keySize Key size.
-         */
-        public void onKey(long keyPtr, int keySize) throws GridException;
 
         /**
-         * @param valPtr Value pointer.
-         * @param valSize Value size.
+         * Key.
          */
-        public void onValue(long valPtr, int valSize) throws GridException;
+        public class KeyImpl implements Key {
+            /** */
+            private long meta;
+
+            /** */
+            private Object tmpKey;
+
+            /**
+             * @return Meta pointer for the key.
+             */
+            public long address() {
+                return meta;
+            }
+
+            /**
+             * @param val Value.
+             */
+            @Override public void add(Value val) {
+                int size = val.size();
+
+                long valPtr = allocate(size + 12);
+
+                val.copyTo(valPtr + 12);
+
+                valueSize(valPtr, size);
+
+                long nextVal;
+
+                do {
+                    nextVal = value(meta);
+
+                    nextValue(valPtr, nextVal);
+                }
+                while(!casValue(meta, nextVal, valPtr));
+            }
+        }
     }
 
     /**

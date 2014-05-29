@@ -183,6 +183,11 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
     }
 
     /** {@inheritDoc} */
+    @Override public String getTestGridName() {
+        return "grid";
+    }
+
+    /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
@@ -1296,8 +1301,6 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
             GridGgfsBlockLocation location = F.first(locations);
 
             assertEquals(1, location.nodeIds().size());
-
-            assertEquals(grid(0).localNode().id(), F.first(location.nodeIds()));
         }
     }
 
@@ -1530,7 +1533,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
      * @throws Exception If failed.
      */
     public void testMultithreadedMkdirs() throws Exception {
-        final Path dir = new Path(new Path("ggfs://localhost/"), "/dir");
+        final Path dir = new Path(new Path("ggfs:///"), "/dir");
 
         fs.mkdir(dir, FsPermission.getDefault(), true);
 
@@ -1721,7 +1724,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
             startNodes(); // Start server again.
 
             // Check that client is again operational.
-            fs.mkdir(new Path("ggfs://localhost/dir1/dir2"), FsPermission.getDefault(), true);
+            fs.mkdir(new Path("ggfs:///dir1/dir2"), FsPermission.getDefault(), true);
 
             // However, the streams, opened before disconnect, should not be valid.
             GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -1778,7 +1781,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
 
                 try {
                     // Check that client is again operational.
-                    assertTrue(fs.mkdirs(new Path("ggfs://localhost/" + Thread.currentThread().getName())));
+                    assertTrue(fs.mkdirs(new Path("ggfs:///" + Thread.currentThread().getName())));
 
                     return true;
                 }

@@ -12,11 +12,12 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 /**
  * GGFS Hadoop file system IPC shmem self test in DUAL_SYNC mode.
  */
-public class GridGgfsHadoopFileSystemShmemDualSyncSelfTest extends GridGgfsHadoopFileSystemShmemAbstractSelfTest {
+public class GridGgfsHadoopFileSystemShmemExternalDualSyncSelfTest
+    extends GridGgfsHadoopFileSystemShmemAbstractSelfTest {
     /**
      * Constructor.
      */
-    public GridGgfsHadoopFileSystemShmemDualSyncSelfTest() {
-        super(DUAL_SYNC);
+    public GridGgfsHadoopFileSystemShmemExternalDualSyncSelfTest() {
+        super(DUAL_SYNC, true);
     }
 }
