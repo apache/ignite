@@ -9,9 +9,10 @@
 
 namespace GridGain.Client.Util {
     using System;
-    using System.Threading;
     using System.Collections;
     using System.Collections.Generic;
+    using System.IO;
+    using System.Threading;
 
     using A = GridGain.Client.Util.GridClientArgumentCheck;
     using GridGain.Client.Impl;
@@ -492,6 +493,26 @@ namespace GridGain.Client.Util {
                 return source;
 
             return new GridClientNullDictionary<TKey, TVal>(source);
+        }
+
+        /**
+         * <summary>
+         * Reads exact amount of bytes from stream to provided buffer.</summary>
+         *
+         * <param name="input">Input.</param>
+         * <param name="buf">Buffer.</param>
+         * <param name="offs">Offset.</param>
+         * <param name="len">Length.</param>
+         */
+        public static void ReadFully(Stream input, byte[] buf, int offs, int len) {
+            for (int i = 0; i < len; ) {
+                int next = input.Read(buf, offs + i, len - i);
+
+                if (next == 0)
+                    throw new EndOfStreamException();
+
+                i += next;
+            }
         }
     }
 }

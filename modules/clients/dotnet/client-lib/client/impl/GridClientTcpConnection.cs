@@ -84,7 +84,10 @@ namespace GridGain.Client.Impl {
         private readonly Stream outStream;
 
         /** <summary>Input stream.</summary> */
-        private readonly RecoverableBufferedStream inStream;
+        private readonly Stream inStream;
+
+        /** <summary>SSL stream flag.</summary> */
+        private readonly bool isSslStream;
         
         /** <summary>Last stream reading failed with timeout.</summary> */
         internal bool lastReadTimedOut = false;
@@ -104,10 +107,10 @@ namespace GridGain.Client.Impl {
         /** <summary>Reader thread.</summary> */
         private readonly Thread rdr;
 
-        /** */
+        /** <summary>Writer thread.</summary> */
         private readonly Thread writer;
 
-        /** */
+        /** <summary>Queue to pass messages to writer.</summary> */
         private BlockingCollection<MemoryStream> q = new BlockingCollection<MemoryStream>();
 
         /**
@@ -167,14 +170,18 @@ namespace GridGain.Client.Impl {
             } while (!tcp.Connected);
 
             if (sslCtx == null) {
+                isSslStream = false;
+
                 outStream = new BufferedStream(tcp.GetStream(), Math.Min(tcp.SendBufferSize, 32768));
-                inStream = new RecoverableBufferedStream(this, tcp.GetStream(), Math.Min(tcp.ReceiveBufferSize, 32768));
+                inStream = new BufferedStream(tcp.GetStream(), Math.Min(tcp.ReceiveBufferSize, 32768));
             }
             else {
+                isSslStream = true;
+
                 Stream sslStream = sslCtx.CreateStream(tcp);
 
                 outStream = new BufferedStream(sslStream, Math.Min(tcp.SendBufferSize, 32768));
-                inStream = new RecoverableBufferedStream(this, sslStream, Math.Min(tcp.ReceiveBufferSize, 32768));
+                inStream = new BufferedStream(sslStream, Math.Min(tcp.ReceiveBufferSize, 32768));
 
                 lock (outStream) {
                     // Flush client authentication packets (if any).
@@ -368,8 +375,6 @@ namespace GridGain.Client.Impl {
          * <param name="msg">Incoming response message.</param>
          */
         private void handleResponse(GridClientResponse msg) {
-            Dbg.Assert(Thread.CurrentThread.Equals(rdr));
-
             GridClientTcpRequestFuture fut;
 
             if (!pendingReqs.TryGetValue(msg.RequestId, out fut))
@@ -897,8 +902,7 @@ namespace GridGain.Client.Impl {
         }
 
         /** <summary>Writer thread.</summary> */
-        private void writePackets()
-        {
+        private void writePackets() {
             try {
                 bool take = true;
 
@@ -910,19 +914,19 @@ namespace GridGain.Client.Impl {
 
                         take = false;
                     }
-                    else 
+                    else
                         q.TryTake(out msg);
 
                     if (msg == null) {
                         take = true;
 
-                        lock (outStream)       {
+                        lock (outStream) {
                             outStream.Flush();
                         }
 
-                        continue;                    
+                        continue;
                     }
-                
+
                     lock (outStream) {
                         msg.WriteTo(outStream);
                     }
@@ -947,6 +951,8 @@ namespace GridGain.Client.Impl {
         private void readPackets() {
             try {
                 bool running = true;
+                byte[] lenByte = new byte[4];
+                byte[] head = new byte[40];
 
                 while (running) {
                     // Note that only this thread removes futures from map.
@@ -965,12 +971,32 @@ namespace GridGain.Client.Impl {
                     int symbol;
 
                     try {
+                        if (lastReadTimedOut) {
+                            lastReadTimedOut = false;
+
+                            if (isSslStream)
+                                // Recover SSL stream state after socket exception.
+                                skipSslDataRecordHeader();
+                        }
+
                         symbol = inStream.ReadByte();
                     }
-                    catch (TimeoutException) {
-                        checkPing();
+                    catch (Exception e) {
+                        if (e.InnerException is SocketException)
+                            e = e.InnerException;
 
-                        continue;
+                        var sockEx = e as SocketException;
+
+                        if (sockEx != null && sockEx.ErrorCode == 10060) {
+                            checkPing();
+
+                            lastReadTimedOut = true;
+
+                            continue;
+                        }
+
+                        // All other exceptions are interpreted as stream ends.
+                        throw;
                     }
 
                     // Connection closed.
@@ -989,7 +1015,9 @@ namespace GridGain.Client.Impl {
                         break;
                     }
 
-                    int len = inStream.GetInt();
+                    U.ReadFully(inStream, lenByte, 0, 4);
+
+                    int len = U.BytesToInt32(lenByte, 0);
 
                     if (len == 0) {
                         // Ping received.
@@ -1004,17 +1032,17 @@ namespace GridGain.Client.Impl {
                         break;
                     }
 
-                    long reqId = inStream.GetLong();
-                    Guid clientId = inStream.GetGuid();
-                    Guid destNodeId = inStream.GetGuid();
+                    U.ReadFully(inStream, head, 0, 40);
 
-                    // Put limit for marshaller.
-                    inStream.Limit(len - 40);
+                    long reqId = U.BytesToInt64(head, 0);
+                    Guid clientId = U.BytesToGuid(head, 8);
+                    Guid destNodeId = U.BytesToGuid(head, 24);
 
-                    GridClientResponse msg = marshaller.Unmarshal<GridClientResponse>(inStream);
+                    byte[] msgBytes = new byte[len - 40];
 
-                    // Remove all limits.
-                    inStream.Limit(-1);
+                    U.ReadFully(inStream, msgBytes, 0, msgBytes.Length);
+
+                    GridClientResponse msg = marshaller.Unmarshal<GridClientResponse>(msgBytes);
 
                     msg.RequestId = reqId;
                     msg.ClientId = clientId;
@@ -1063,6 +1091,48 @@ namespace GridGain.Client.Impl {
                 throw new IOException("Did not receive any packets within ping response interval (connection is " +
                     "considered to be half-opened) [lastPingSendTime=" + lastPingSndTime + ", lastReceiveTime=" +
                     lastRcvTime + ", addr=" + ServerAddress + ']');
+        }
+
+        /**
+         * <summary>
+         * After read exception happens inside SSL stream, underlaying stream passes SSL service information
+         * upto application level (our code). We should validate and skip this information.</summary>
+         */
+        private void skipSslDataRecordHeader() {
+            //
+            // Format of an SSL record
+            // - Byte  0   = SSL record type
+            // - Bytes 1-2 = SSL version (major/minor)
+            // - Bytes 3-4 = Length of data in the record (excluding the header itself). The maximum SSL supports is 16384 (16K).
+            //
+            // Byte 0 in the record has the following record type values:
+            // - SSL3_RT_CHANGE_CIPHER_SPEC  20 (x'14')
+            // - SSL3_RT_ALERT               21 (x'15')
+            // - SSL3_RT_HANDSHAKE           22 (x'16')
+            // - SSL3_RT_APPLICATION_DATA    23 (x'17')
+            //
+            // For more details see: http://publib.boulder.ibm.com/infocenter/tpfhelp/current/index.jsp?topic=%2Fcom.ibm.ztpf-ztpfdf.doc_put.cur%2Fgtps5%2Fs5rcd.html
+            //
+
+            byte[] data = new byte[5];
+
+            for (int pos = 0; pos < 5; ) {
+                int read = tcp.GetStream().Read(data, pos, 5 - pos);
+
+                if (read == 0)
+                    return; // EOF.
+
+                pos += read;
+            }
+
+            if (data[0] != (byte)23)
+                throw new IOException("Invalid SSL data record header byte: " + data[0]);
+
+            if (data[1] != (byte)3)
+                throw new IOException("Unsupported SSL version: " + data[1]);
+
+            if (data[2] != (byte)0 && data[2] != (byte)1)
+                throw new IOException("Unsupported SSL type: " + data[2]);
         }
     }
 
@@ -1175,341 +1245,6 @@ namespace GridGain.Client.Impl {
          */
         public void Done(T res) {
             Done(() => this.res = res);
-        }
-    }
-
-    /** <summary>Recoverable buffered stream.</summary> */
-    internal class RecoverableBufferedStream : Stream {
-        private GridClientTcpConnection _conn;
-        private Stream _s;         // Underlying stream.  Close sets _s to null.
-        private byte[] _buf;    // Shared read/write buffer.  Alloc on first use.
-        private int _readPos;      // Read pointer within shared buffer.
-        private int _readLen;      // Number of bytes read in buffer from _s.
-        private int _bufSize;   // Length of internal buffer, if it's allocated.
-        private int _lim = -1;
- 
-        public RecoverableBufferedStream(GridClientTcpConnection conn, Stream stream, int bufferSize) {
-            if (stream == null)
-                throw new ArgumentNullException("stream");
-            
-            if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException("bufferSize");
-
-            _conn = conn;
-            _s = stream;
-            _bufSize = bufferSize;
-
-            if (!_s.CanRead)
-                StreamClosed();
-        }
-
-        private void StreamClosed() {
-            throw new ObjectDisposedException("stream");
-        }
-
-        private void NotSupported() {
-            throw new NotSupportedException();
-        }
-
-        public override bool CanRead {
-            get { return _s != null && _s.CanRead; }
-        }
-
-        public override bool CanWrite {
-            get { return false; }
-        }
-
-        public override bool CanSeek {
-            get { return false; }
-        }
-
-        public override long Length {
-            get {
-                if (_s == null)
-                    StreamClosed();
-
-                return _s.Length;
-            }
-        }
-
-        public override long Position {
-            get {
-                NotSupported();
-
-                return 0L;
-            }
-
-            set { NotSupported(); }
-        }
-
-        protected override void Dispose(bool disposing) {
-            try {
-                if (disposing && _s != null) {
-                    try {
-                        Flush();
-                    }
-                    finally {
-                        _s.Close();
-                    }
-                }
-            }
-            finally {
-                _s = null;
-                _buf = null;
-
-                base.Dispose(disposing);
-            }
-        }
-
-        public override void Flush() {
-            NotSupported();
-        }
-
-        public override int Read(byte[] arr, int offs, int cnt) {
-            if (_lim == 0)
-                return 0;
-
-            if (_lim != -1 && cnt > _lim)
-                cnt = _lim;
-
-            if (arr == null)
-                throw new ArgumentNullException("array");
-            
-            if (offs < 0)
-                throw new ArgumentOutOfRangeException("offset");
-            
-            if (cnt < 0)
-                throw new ArgumentOutOfRangeException("count");
-            
-            if (arr.Length - offs < cnt)
-                throw new ArgumentException();
-
-            if (_s == null) 
-                StreamClosed();
-
-            int n = _readLen - _readPos;
-
-            // if the read buffer is empty, read into either user's array or our
-            // buffer, depending on number of bytes user asked for and buffer size.
-            if (n == 0) {
-                if (cnt >= _bufSize) {
-                    n = Read0(arr, offs, cnt);
-
-                    // Throw away read buffer.
-                    _readPos = 0;
-                    _readLen = 0;
-
-                    if (_lim > 0) {
-                        _lim -= n;
-
-                        Dbg.Assert(_lim >= 0);
-                    }
-
-                    return n;
-                }
-
-                if (_buf == null) 
-                    _buf = new byte[_bufSize];
-                
-                n = Read0(_buf, 0, _bufSize);
-                
-                if (n == 0) 
-                    return 0;
-                
-                _readPos = 0;
-                _readLen = n;
-            }
-
-            // Now copy min of count or numBytesAvailable (ie, near EOF) to array.
-            if (n > cnt) 
-                n = cnt;
-
-            Array.Copy(_buf, _readPos, arr, offs, n);
-
-            _readPos += n;
-
-            if (n < cnt) {
-                int moreBytesRead = Read0(arr, offs + n, cnt - n);
-                
-                n += moreBytesRead;
-
-                _readPos = 0;
-                _readLen = 0;
-            }
-
-            if (_lim > 0) {
-                _lim -= n;
-
-                Dbg.Assert(_lim >= 0);
-            }
-
-            return n;
-        }
-
-        public override int ReadByte() {
-            if (_s == null)
-                StreamClosed();
-
-            if (_lim == 0)
-                return -1;
-            
-            if (_readPos == _readLen) {
-                if (_buf == null) 
-                    _buf = new byte[_bufSize];
-                
-                _readLen = Read0(_buf, 0, _bufSize);
-                
-                _readPos = 0;
-            }
-
-            if (_readPos == _readLen) 
-                return -1;
-
-            if (_lim > 0)
-                _lim--;
-
-            return _buf[_readPos++];
-        }
-
-        private int Read0(byte[] arr, int offs, int cnt) {
-            try {
-                if (_conn.lastReadTimedOut) {
-                    _conn.lastReadTimedOut = false;
-
-                    if (_s is SslStream)
-                        // Recover SSL stream state after socket exception.
-                        skipSslDataRecordHeader();
-                }
-
-                return _s.Read(_buf, offs, cnt);
-            }
-            catch (Exception e) {
-                if (e.InnerException is SocketException)
-                    e = e.InnerException;
-
-                var sockEx = e as SocketException;
-
-                if (sockEx != null && sockEx.ErrorCode == 10060) {
-                    _conn.lastReadTimedOut = true;
-
-                    throw new TimeoutException(e.Message, e);
-                }
-
-                // All other exceptions are interpreted as stream ends.
-                throw;
-            }
-        }
-
-        internal int GetInt() {
-            int res = 0;
-
-            for (int i = 0; i < 4; i++) {
-                int next = ReadByte();
-
-                if (next == -1)
-                    throw new EndOfStreamException();
-
-                res |= (byte)next;
-
-                if (i < 3)
-                    res <<= 8;
-            }
-
-            return res;
-        }
-
-        /**
-         * <summary>
-         * After read exception happens inside SSL stream, underlaying stream passes SSL service information
-         * upto application level (our code). We should validate and skip this information.</summary>
-         */
-        private void skipSslDataRecordHeader() {
-            //
-            // Format of an SSL record
-            // - Byte  0   = SSL record type
-            // - Bytes 1-2 = SSL version (major/minor)
-            // - Bytes 3-4 = Length of data in the record (excluding the header itself). The maximum SSL supports is 16384 (16K).
-            //
-            // Byte 0 in the record has the following record type values:
-            // - SSL3_RT_CHANGE_CIPHER_SPEC  20 (x'14')
-            // - SSL3_RT_ALERT               21 (x'15')
-            // - SSL3_RT_HANDSHAKE           22 (x'16')
-            // - SSL3_RT_APPLICATION_DATA    23 (x'17')
-            //
-            // For more details see: http://publib.boulder.ibm.com/infocenter/tpfhelp/current/index.jsp?topic=%2Fcom.ibm.ztpf-ztpfdf.doc_put.cur%2Fgtps5%2Fs5rcd.html
-            //
-
-            byte[] data = new byte[5];
-
-            for (int pos = 0; pos < 5; ) {
-                int read = Read0(data, pos, 5 - pos);
-
-                if (read == 0)
-                    return; // EOF.
-
-                pos += read;
-            }
-
-            if (data[0] != (byte)23)
-                throw new IOException("Invalid SSL data record header byte: " + data[0]);
-
-            if (data[1] != (byte)3)
-                throw new IOException("Unsupported SSL version: " + data[1]);
-
-            if (data[2] != (byte)0 && data[2] != (byte)1)
-                throw new IOException("Unsupported SSL type: " + data[2]);
-        }
-
-        public override long Seek(long offset, SeekOrigin origin) {
-            NotSupported();
-
-            return 0L;
-        }
-
-        public override void SetLength(long value) {
-            NotSupported();
-        }
-
-        public override void Write(byte[] buffer, int offset, int count) {
-            NotSupported();
-        }
-
-        internal long GetLong() {
-            long res = 0;
-
-            for (int i = 0; i < 8; i++)
-            {
-                int next = ReadByte();
-
-                if (next == -1)
-                    throw new EndOfStreamException();
-
-                res |= (byte)next;
-
-                if (i < 7)
-                    res <<= 8;
-            }
-
-            return res;
-        }
-
-        internal Guid GetGuid() {
-            byte[] bytes = new byte[16];
-
-            for (int i = 0; i < U.JAVA_GUID_CONV.Length; i++) {
-                int next = ReadByte();
-
-                if (next == -1)
-                    throw new EndOfStreamException();
-
-                bytes[U.JAVA_GUID_CONV[i]] = (byte)next;
-            }
-
-            return new Guid(bytes);
-        }
-
-        internal void Limit(int lim) {
-            _lim = lim;
         }
     }
 }
