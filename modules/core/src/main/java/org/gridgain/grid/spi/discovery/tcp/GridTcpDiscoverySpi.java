@@ -3303,6 +3303,90 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     String rmtBuildVer = node.attribute(ATTR_BUILD_VER);
 
                     if (!F.eq(rmtBuildVer, locBuildVer)) {
+                        final String osFlag = "-os-";
+                        final String entFlag = "-ent-";
+
+                        assert locBuildVer.contains(osFlag) || locBuildVer.contains(entFlag);
+                        assert rmtBuildVer.contains(osFlag) || rmtBuildVer.contains(entFlag);
+
+                        // OS and ENT nodes cannot join one topology.
+                        if (locBuildVer.contains(entFlag) && rmtBuildVer.contains(osFlag) ||
+                            locBuildVer.contains(osFlag) && rmtBuildVer.contains(entFlag)) {
+                            String errMsg = "Local and remote nodes have different release types " +
+                                "(node will not join, all nodes in topology should have either " +
+                                "'Enterprise' or 'Open Source' release types) " +
+                                "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
+                                ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                                ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                                ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+
+                            LT.warn(log, null, errMsg);
+
+                            // Always output in debug.
+                            if (log.isDebugEnabled())
+                                log.debug(errMsg);
+
+                            try {
+                                String sndMsg = "Local and remote nodes have different release types " +
+                                    "(node will not join, all nodes in topology should have either " +
+                                    "'Enterprise' or 'Open Source' release types) " +
+                                    "[locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
+                                    ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                                    ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                                    ", rmtNodeId=" + locNode.id() + ']';
+
+                                trySendMessageDirectly(node,
+                                    new GridTcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
+                            }
+                            catch (GridSpiException e) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to send version check failed message to node " +
+                                        "[node=" + node + ", err=" + e.getMessage() + ']');
+                            }
+
+                            // Ignore join request.
+                            return;
+                        }
+
+                        // OS nodes don't support rolling updates.
+                        if (locBuildVer.contains(osFlag) && rmtBuildVer.contains(osFlag) &&
+                            !locBuildVer.equals(rmtBuildVer)) {
+                            String errMsg = "Local node and remote nodes have different versions " +
+                                "(node will not join, 'Open Source' releases do not support rolling updates " +
+                                "so versions must be identical) " +
+                                "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
+                                ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                                ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                                ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+
+                            LT.warn(log, null, errMsg);
+
+                            // Always output in debug.
+                            if (log.isDebugEnabled())
+                                log.debug(errMsg);
+
+                            try {
+                                String sndMsg = "Local node and remote nodes have different versions " +
+                                    "(node will not join, 'Open Source' releases do not support rolling updates " +
+                                    "so versions must be identical) " +
+                                    "[locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
+                                    ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                                    ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                                    ", rmtNodeId=" + locNode.id() + ']';
+
+                                trySendMessageDirectly(node,
+                                    new GridTcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
+                            }
+                            catch (GridSpiException e) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to send version check failed message to node " +
+                                        "[node=" + node + ", err=" + e.getMessage() + ']');
+                            }
+
+                            // Ignore join request.
+                            return;
+                        }
+
                         Collection<String> locCompatibleVers = locNode.attribute(ATTR_COMPATIBLE_VERS);
                         Collection<String> rmtCompatibleVers = node.attribute(ATTR_COMPATIBLE_VERS);
 

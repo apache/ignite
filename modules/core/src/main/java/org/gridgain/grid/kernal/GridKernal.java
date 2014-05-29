@@ -55,6 +55,8 @@ import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.spi.*;
+import org.gridgain.grid.spi.authentication.noop.*;
+import org.gridgain.grid.spi.securesession.noop.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
@@ -698,6 +700,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             // Suggest configuration optimizations.
             suggestOptimizations(ctx, cfg);
 
+            if (!ctx.isEnterprise())
+                warnNotSupportedFeaturesForOs(cfg);
+
             // Notify discovery manager the first to make sure that topology is discovered.
             ctx.discovery().onKernalStart();
 
@@ -1104,6 +1109,29 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         if (GridOptimizedMarshaller.available() && !(cfg.getMarshaller() instanceof GridOptimizedMarshaller))
             perf.add("Enable optimized marshaller (set 'marshaller' to " +
                 GridOptimizedMarshaller.class.getSimpleName() + ')');
+    }
+
+    /**
+     * Warns user about unsupported features which was configured in OS edition.
+     *
+     * @param cfg Grid configuration.
+     */
+    private void warnNotSupportedFeaturesForOs(GridConfiguration cfg) {
+        if (!F.isEmpty(cfg.getSegmentationResolvers()))
+            U.warn(log, "Network segmentation resolvers was configured but this feature is not available " +
+                "in open source edition (this configuration options will not take effect).");
+
+        if (cfg.getDrReceiverHubConfiguration() != null || cfg.getDrSenderHubConfiguration() != null)
+            U.warn(log, "Data replication was configured but this feature is not available in open source edition " +
+                "(this configuration options will not take effect).");
+
+        if (cfg.getSecureSessionSpi() != null && !(cfg.getSecureSessionSpi() instanceof GridNoopSecureSessionSpi))
+            U.warn(log, "Secure session SPI was configured but this feature is not available in open source edition " +
+                "(this configuration options will not take effect).");
+
+        if (cfg.getAuthenticationSpi() != null && !(cfg.getAuthenticationSpi() instanceof GridNoopAuthenticationSpi))
+            U.warn(log, "Authentication SPI was configured but this feature is not available in open source edition " +
+                "(this configuration options will not take effect).");
     }
 
     /**

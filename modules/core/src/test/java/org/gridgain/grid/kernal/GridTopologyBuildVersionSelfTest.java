@@ -31,7 +31,8 @@ public class GridTopologyBuildVersionSelfTest extends GridCommonAbstractTest {
     private static final AtomicInteger cnt = new AtomicInteger();
 
     /** Test compatible versions. */
-    private static final Collection<String> COMPATIBLE_VERS = F.asList("1.0.0", "2.0.0", "3.0.0", "4.0.0");
+    private static final Collection<String> COMPATIBLE_VERS =
+        F.asList("platform-ent-1.0.0", "platform-ent-2.0.0", "platform-ent-3.0.0", "platform-ent-4.0.0");
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
@@ -44,7 +45,7 @@ public class GridTopologyBuildVersionSelfTest extends GridCommonAbstractTest {
             @Override public void setNodeAttributes(Map<String, Object> attrs, GridProductVersion ver) {
                 super.setNodeAttributes(attrs, ver);
 
-                attrs.put(GridNodeAttributes.ATTR_BUILD_VER, idx + ".0.0");
+                attrs.put(GridNodeAttributes.ATTR_BUILD_VER, "platform-ent-" + idx + ".0.0");
 
                 if (idx < 3)
                     attrs.remove(GridNodeAttributes.ATTR_BUILD_DATE);
