@@ -35,6 +35,7 @@ import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
@@ -519,6 +520,14 @@ public class GridCacheContext<K, V> implements Externalizable {
         String name = namex();
 
         return name == null ? "default" : name;
+    }
+
+    /**
+     * @param op Operation to check.
+     * @throws GridSecurityException If security check failed.
+     */
+    public void checkSecurity(GridSecurityPermission op) throws GridSecurityException {
+        ctx.security().authorize(name(), op, null);
     }
 
     /**

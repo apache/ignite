@@ -19,6 +19,7 @@ import org.gridgain.grid.logger.java.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.nio.ssl.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -430,6 +431,17 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
                 return old;
             }
 
+            GridSecurityCredentials cred = null;
+
+            try {
+                if (cfg.getCredentialsProvider() != null) {
+                    cred = cfg.getCredentialsProvider().credentials();
+                }
+            }
+            catch (GridException e) {
+                throw new GridClientException("Failed to obtain client credentials.", e);
+            }
+
             GridClientConnection conn;
 
             switch (cfg.getProtocol()) {
@@ -437,7 +449,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
                     conn = new GridClientNioTcpConnection(srv, clientId, addr, sslCtx, pingExecutor,
                         cfg.getConnectTimeout(), cfg.getPingInterval(), cfg.getPingTimeout(),
                         cfg.isTcpNoDelay(), protoId == null ? cfg.getMarshaller() : null,
-                        top, cfg.getCredentials(), protoId);
+                        top, cred, protoId);
 
                     break;
                 }
@@ -446,7 +458,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
                     conn = new GridClientHttpConnection(clientId, addr, sslCtx,
                         // Applying max idle time as read timeout for HTTP connections.
                         cfg.getConnectTimeout(), (int)cfg.getMaxConnectionIdleTime(), top,
-                        executor == null ? cfg.getExecutorService() : executor, cfg.getCredentials());
+                        executor == null ? cfg.getExecutorService() : executor, cred);
 
                     break;
                 }

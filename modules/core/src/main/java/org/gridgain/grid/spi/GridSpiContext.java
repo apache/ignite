@@ -319,17 +319,6 @@ public interface GridSpiContext {
     public void removeFromSwap(String spaceName, Object key, @Nullable ClassLoader ldr) throws GridException;
 
     /**
-     * Authenticate grid node via underlying {@link GridAuthenticationSpi} implementation.
-     *
-     * @param nodeId Node id to authenticate.
-     * @param attrs Node attributes.
-     * @return {@code true} if authentication passes, {@code false} if authentication fails.
-     * @throws GridException If any exception occurs.
-     * @see GridAuthenticationSpi
-     */
-    public boolean authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException;
-
-    /**
      * Validates that new node can join grid topology, this method is called on coordinator
      * node before new node joins topology.
      *

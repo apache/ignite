@@ -16,6 +16,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
@@ -192,6 +193,8 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     public void execute(@Nullable GridProjection prj, boolean internal) throws GridException {
         if (cb == null)
             throw new IllegalStateException("Mandatory local callback is not set for the query: " + this);
+
+        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         if (prj == null)
             prj = ctx.grid();

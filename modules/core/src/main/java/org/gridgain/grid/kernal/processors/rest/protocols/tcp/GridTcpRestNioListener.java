@@ -169,7 +169,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                 ses.send(new GridClientHandshakeResponseWrapper(CODE_OK));
             }
             else {
-                final GridRestRequest req = createRestRequest(msg);
+                final GridRestRequest req = createRestRequest(ses, msg);
 
                 if (req != null)
                     hnd.handleAsync(req).listenAsync(new CI1<GridFuture<GridRestResponse>>() {
@@ -237,7 +237,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
      * @param msg Request message.
      * @return REST request object.
      */
-    @Nullable private GridRestRequest createRestRequest(GridClientMessage msg) {
+    @Nullable private GridRestRequest createRestRequest(GridNioSession ses, GridClientMessage msg) {
         GridRestRequest restReq = null;
 
         if (msg instanceof GridClientAuthenticationRequest) {
@@ -323,6 +323,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             restReq.clientId(msg.clientId());
             restReq.sessionToken(msg.sessionToken());
         }
+
+        restReq.address(ses.remoteAddress());
 
         return restReq;
     }
