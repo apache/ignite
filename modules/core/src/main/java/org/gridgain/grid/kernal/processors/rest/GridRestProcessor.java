@@ -150,14 +150,31 @@ public class GridRestProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Received request from client: " + req);
 
-        final GridSecurityContext subjCtx;
+        GridSecurityContext subjCtx = null;
 
         try {
             subjCtx = authenticate(req);
+
+            authorize(req, subjCtx);
+        }
+        catch (GridSecurityException e) {
+            assert subjCtx != null;
+
+            GridRestResponse res = new GridRestResponse(STATUS_SECURITY_CHECK_FAILED, e.getMessage());
+
+            if (ctx.isEnterprise()) {
+                try {
+                    res.sessionTokenBytes(updateSessionToken(req, subjCtx));
+                }
+                catch (GridException e1) {
+                    U.warn(log, "Cannot update response session token: " + e1.getMessage());
+                }
+            }
+
+            return new GridFinishedFuture<>(ctx, res);
         }
         catch (GridException e) {
-            return new GridFinishedFuture<>(ctx, new GridRestResponse(STATUS_AUTH_FAILED,
-                e.getMessage()));
+            return new GridFinishedFuture<>(ctx, new GridRestResponse(STATUS_AUTH_FAILED, e.getMessage()));
         }
 
         interceptRequest(req);
@@ -169,6 +186,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
         if (res == null)
             return new GridFinishedFuture<>(ctx,
                 new GridException("Failed to find registered handler for command: " + req.command()));
+
+        final GridSecurityContext subjCtx0 = subjCtx;
 
         return res.chain(new C1<GridFuture<GridRestResponse>, GridRestResponse>() {
             @Override public GridRestResponse apply(GridFuture<GridRestResponse> f) {
@@ -190,7 +209,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 if (ctx.isEnterprise()) {
                     try {
-                        res.sessionTokenBytes(updateSessionToken(req, subjCtx));
+                        res.sessionTokenBytes(updateSessionToken(req, subjCtx0));
                     }
                     catch (GridException e) {
                         U.warn(log, "Cannot update response session token: " + e.getMessage());
@@ -414,6 +433,65 @@ public class GridRestProcessor extends GridProcessorAdapter {
             throw new GridException("Cannot create session token (is secure session SPI set?).");
 
         return sesTok;
+    }
+
+    /**
+     * @param req REST request.
+     * @param sCtx Security context.
+     * @throws GridSecurityException If authorization failed.
+     */
+    private void authorize(GridRestRequest req, GridSecurityContext sCtx) throws GridSecurityException {
+        GridSecurityPermission perm = null;
+        String name = null;
+
+        switch (req.command()) {
+            case CACHE_GET:
+            case CACHE_GET_ALL:
+                perm = GridSecurityPermission.CACHE_READ;
+                name = ((GridRestCacheRequest)req).cacheName();
+
+                break;
+
+            case CACHE_PUT:
+            case CACHE_ADD:
+            case CACHE_PUT_ALL:
+            case CACHE_REPLACE:
+            case CACHE_INCREMENT:
+            case CACHE_DECREMENT:
+            case CACHE_CAS:
+            case CACHE_APPEND:
+            case CACHE_PREPEND:
+                perm = GridSecurityPermission.CACHE_PUT;
+                name = ((GridRestCacheRequest)req).cacheName();
+
+                break;
+
+            case CACHE_REMOVE:
+            case CACHE_REMOVE_ALL:
+                perm = GridSecurityPermission.CACHE_REMOVE;
+                name = ((GridRestCacheRequest)req).cacheName();
+
+                break;
+
+            case EXE:
+            case RESULT:
+                perm = GridSecurityPermission.TASK_EXECUTE;
+                name = ((GridRestTaskRequest)req).taskName();
+
+                break;
+
+            case CACHE_METRICS:
+            case TOPOLOGY:
+            case NODE:
+            case VERSION:
+            case LOG:
+            case NOOP:
+            case QUIT:
+                break;
+        }
+
+        if (perm != null)
+            ctx.security().authorize(name, perm, sCtx);
     }
 
     /**

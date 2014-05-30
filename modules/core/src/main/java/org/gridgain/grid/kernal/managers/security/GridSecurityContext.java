@@ -102,8 +102,15 @@ public class GridSecurityContext implements Externalizable {
             return p.contains(perm);
 
         for (Map.Entry<String, Collection<GridSecurityPermission>> entry : wildcardCachePermissions.entrySet()) {
-            if (cacheName.startsWith(entry.getKey()))
-                return entry.getValue().contains(perm);
+            if (cacheName != null) {
+                if (cacheName.startsWith(entry.getKey()))
+                    return entry.getValue().contains(perm);
+            }
+            else {
+                // Match null cache to '*'
+                if (entry.getKey().isEmpty())
+                    return entry.getValue().contains(perm);
+            }
         }
 
         return subj.permissions().defaultAllowAll();
@@ -134,7 +141,7 @@ public class GridSecurityContext implements Externalizable {
 
             Collection<GridSecurityPermission> vals = Collections.unmodifiableCollection(entry.getValue());
 
-            if (ptrn.endsWith("*")) {
+            if (ptrn != null && ptrn.endsWith("*")) {
                 String noWildcard = ptrn.substring(0, ptrn.length() - 1);
 
                 wildcardCachePermissions.put(noWildcard, vals);
