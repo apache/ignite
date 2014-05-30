@@ -1260,15 +1260,18 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         long ttl,
         boolean evt,
         boolean metrics,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter,
+        boolean intercept
     ) throws GridException, GridCacheEntryRemovedException {
         assert cctx.isLocal() && cctx.atomic();
 
         V old;
         boolean res = true;
 
+        GridBiTuple<Boolean, ?> interceptorRes = null;
+
         synchronized (this) {
-            boolean needVal = retval || op == GridCacheOperation.TRANSFORM || !F.isEmpty(filter);
+            boolean needVal = retval || intercept || op == GridCacheOperation.TRANSFORM || !F.isEmpty(filter);
 
             checkObsolete();
 
@@ -1319,6 +1322,21 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             op = updated == null ? GridCacheOperation.DELETE : GridCacheOperation.UPDATE;
 
+            if (intercept) {
+                if (op == GridCacheOperation.UPDATE) {
+                    updated = (V)cctx.config().getInterceptor().onBeforePut(key, old, updated);
+
+                    if (updated == null)
+                        return new GridBiTuple<>(false, old);
+                }
+                else {
+                    interceptorRes = cctx.config().getInterceptor().onBeforeRemove(key, old);
+
+                    if (cctx.cancelRemove(interceptorRes))
+                        return new GridBiTuple<>(false, (V)interceptorRes.get2());
+                }
+            }
+
             boolean hadVal = hasValueUnlocked();
 
             // Try write-through.
@@ -1362,9 +1380,16 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), false);
 
             cctx.dataStructures().onEntryUpdated(key, op == DELETE);
+
+            if (intercept) {
+                if (op == UPDATE)
+                    cctx.config().getInterceptor().onAfterPut(key, val);
+                else
+                    cctx.config().getInterceptor().onAfterRemove(key, old);
+            }
         }
 
-        return new GridBiTuple<>(res, old);
+        return new GridBiTuple<>(res, interceptorRes != null ? (V)interceptorRes.get2() : old);
     }
 
     /** {@inheritDoc} */
@@ -1575,7 +1600,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             GridBiTuple<Boolean, V> interceptRes = null;
 
-            // Try write-through.
             if (op == GridCacheOperation.UPDATE) {
                 if (intercept) {
                     V interceptorVal = (V)cctx.config().getInterceptor().onBeforePut(key, old, updated);
@@ -1588,6 +1612,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     }
                 }
 
+                // Try write-through.
                 if (writeThrough)
                     // Must persist inside synchronization in non-tx mode.
                     cctx.store().putToStore(null, key, updated, newVer);
@@ -1627,11 +1652,13 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 if (intercept) {
                     interceptRes = cctx.config().getInterceptor().onBeforeRemove(key, old);
 
-                    if (interceptRes == null)
+                    if (interceptRes != null) {
+                        if (interceptRes.get1())
+                            return new GridCacheUpdateAtomicResult<>(false, interceptRes.get2(), null, 0L, -1L, null,
+                                null, false);
+                    }
+                    else
                         U.warn(log, "GridCacheInterceptor must not return null from 'onBeforeRemove' method.");
-                    else if (interceptRes.get1())
-                        return new GridCacheUpdateAtomicResult<>(false, interceptRes.get2(), null, 0L, -1L, null, null,
-                            false);
                 }
 
                 if (writeThrough)

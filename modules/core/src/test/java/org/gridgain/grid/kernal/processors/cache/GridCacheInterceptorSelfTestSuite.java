@@ -22,6 +22,9 @@ public class GridCacheInterceptorSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Gridgain CacheInterceptor Test Suite");
 
+        suite.addTestSuite(GridCacheInterceptorLocalSelfTest.class);
+        suite.addTestSuite(GridCacheInterceptorLocalAtomicSelfTest.class);
+
         suite.addTestSuite(GridCacheInterceptorAtomicSelfTest.class);
         suite.addTestSuite(GridCacheInterceptorAtomicPrimaryWriteOrderSelfTest.class);
 

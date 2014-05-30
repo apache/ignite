@@ -953,6 +953,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @return Deleted entries.
      * @throws GridCacheEntryRemovedException Should not be thrown.
      */
+    @SuppressWarnings("unchecked")
     private UpdateBatchResult<K, V> updateWithBatch(
         UUID nodeId,
         boolean hasNear,
@@ -978,6 +979,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         int firstEntryIdx = 0;
 
+        boolean intercept = ctx.config().getInterceptor() != null;
+
         for (int i = 0; i < locked.size(); i++) {
             GridDhtCacheEntry<K, V> entry = locked.get(i);
 
@@ -997,8 +1000,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     continue;
                 }
-
-                filtered.add(entry);
 
                 if (op == TRANSFORM) {
                     V old = entry.innerGet(
@@ -1021,6 +1022,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     V updated = transform.apply(old);
 
                     if (updated == null) {
+                        if (intercept) {
+                            GridBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
+                                entry.key(), old);
+
+                            if (ctx.cancelRemove(interceptorRes))
+                                continue;
+                        }
+
                         // Update previous batch.
                         if (putMap != null) {
                             dhtFut = updatePartialBatch(
@@ -1054,6 +1063,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         rmvKeys.add(entry.key());
                     }
                     else {
+                        if (intercept) {
+                            updated = (V)ctx.config().getInterceptor().onBeforePut(entry.key(), old, updated);
+
+                            if (updated == null)
+                                continue;
+                        }
+
                         // Update previous batch.
                         if (rmvKeys != null) {
                             dhtFut = updatePartialBatch(
@@ -1087,23 +1103,60 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     }
                 }
                 else if (op == UPDATE) {
-                    if (putMap == null)
-                        putMap = new LinkedHashMap<>(size, 1.0f);
-
                     V updated = req.value(i);
 
+                    if (intercept) {
+                        V old = entry.innerGet(
+                             null,
+                            /*read swap*/true,
+                            /*read through*/true,
+                            /*fail fast*/false,
+                            /*unmarshal*/true,
+                            /*metrics*/true,
+                            /*event*/true,
+                            CU.<K, V>empty());
+
+                        updated = (V)ctx.config().getInterceptor().onBeforePut(entry.key(), old, updated);
+
+                        if (updated == null)
+                            continue;
+                    }
+
                     assert updated != null;
+
+                    if (putMap == null)
+                        putMap = new LinkedHashMap<>(size, 1.0f);
 
                     putMap.put(entry.key(), updated);
                 }
                 else {
                     assert op == DELETE;
 
+                    if (intercept) {
+                        V old = entry.innerGet(
+                            null,
+                            /*read swap*/true,
+                            /*read through*/true,
+                            /*fail fast*/false,
+                            /*unmarshal*/true,
+                            /*metrics*/true,
+                            /*event*/true,
+                            CU.<K, V>empty());
+
+                        GridBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
+                            entry.key(), old);
+
+                        if (ctx.cancelRemove(interceptorRes))
+                            continue;
+                    }
+
                     if (rmvKeys == null)
                         rmvKeys = new ArrayList<>(size);
 
                     rmvKeys.add(entry.key());
                 }
+
+                filtered.add(entry);
             }
             catch (GridException e) {
                 res.addFailedKey(entry.key(), e);
@@ -1343,6 +1396,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param nodeId Originating node ID.
      * @param putMap Values to put.
      * @param rmvKeys Keys to remove.
+     * @param transformMap Transform closures.
      * @param dhtFut DHT update future if has backups.
      * @param completionCb Completion callback to invoke when DHT future is completed.
      * @param req Request.
@@ -1412,6 +1466,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 op = DELETE;
             }
 
+            boolean intercept = ctx.config().getInterceptor() != null;
+
             // Avoid iterator creation.
             for (int i = 0; i < entries.size(); i++) {
                 GridDhtCacheEntry<K, V> entry = entries.get(i);
@@ -1462,6 +1518,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         null,
                         false,
                         false);
+
+                    if (intercept) {
+                        if (op == UPDATE)
+                            ctx.config().getInterceptor().onAfterPut(entry.key(), updRes.newValue());
+                        else {
+                            assert op == DELETE : op;
+
+                            // Old value should be already loaded for 'GridCacheInterceptor.onBeforeRemove'.
+                            ctx.config().getInterceptor().onAfterRemove(entry.key(), updRes.oldValue());
+                        }
+                    }
 
                     batchRes.addDeleted(entry, updRes, entries);
 
