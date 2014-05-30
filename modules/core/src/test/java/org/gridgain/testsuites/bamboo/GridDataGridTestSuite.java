@@ -306,6 +306,9 @@ public class GridDataGridTestSuite extends TestSuite {
         // Add tx recovery test suite.
         suite.addTest(GridCacheTxRecoverySelfTestSuite.suite());
 
+        // Cache interceptor tests.
+        suite.addTest(GridCacheInterceptorSelfTestSuite.suite());
+
         return suite;
     }
 }

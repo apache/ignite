@@ -13,6 +13,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -20,7 +21,9 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 
 /**
  * Tests {@link GridCacheInterceptor}.
@@ -64,11 +67,13 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         ccfg.setInterceptor(interceptor);
 
-        if (ccfg.getAtomicityMode() == GridCacheAtomicityMode.ATOMIC) {
+        if (ccfg.getAtomicityMode() == ATOMIC) {
             assertNotNull(writeOrderMode());
 
             ccfg.setAtomicWriteOrderMode(writeOrderMode());
         }
+        else
+            ccfg.setTxSerializableEnabled(true);
 
         if (!storeEnabled())
             ccfg.setStore(null);
@@ -92,15 +97,238 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @return {@code True} if cache store is enabled.
      */
     protected boolean storeEnabled() {
-        return true; // TODO: 8429 tests with store enabled.
+        return false;
     }
 
-    private void assertCancelInvokeCount(Operation op) {
-        // TODO 8429.
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGet() throws Exception {
+        testGet(primaryKey(0));
+
+        afterTest();
+
+        if (cacheMode() != LOCAL)
+            testGet(backupKey(0));
     }
 
-    private void assertInvokeCount(Operation op) {
-        // TODO 8429.
+    /**
+     * @param key Key.
+     * @throws Exception If failed.
+     */
+    private void testGet(String key) throws Exception {
+        // Try when value is not in cache.
+
+        interceptor.retInterceptor = new InterceptorAdapter() {
+            @Nullable @Override public Object onGet(Object key, Object val) {
+                return null;
+            }
+        };
+
+        log.info("Get 1.");
+
+        assertEquals(null, cache(0).get(key));
+
+        assertEquals(1, interceptor.invokeCnt.get());
+
+        assertEquals(0, interceptor.getMap.size());
+
+        interceptor.reset();
+
+        interceptor.retInterceptor = new InterceptorAdapter() {
+            @Nullable @Override public Object onGet(Object key, Object val) {
+                return 1;
+            }
+        };
+
+        log.info("Get 2.");
+
+        assertEquals((Integer)1, cache(0).get(key));
+
+        assertEquals(1, interceptor.invokeCnt.get());
+
+        assertEquals(0, interceptor.getMap.size());
+
+        interceptor.reset();
+
+        // Disable interceptor and update cache.
+
+        interceptor.disabled = true;
+
+        cache(0).put(key, 100);
+
+        interceptor.disabled = false;
+
+        // Try when value is in cache.
+
+        interceptor.retInterceptor = new InterceptorAdapter() {
+            @Nullable @Override public Object onGet(Object key, Object val) {
+                return null;
+            }
+        };
+
+        log.info("Get 3.");
+
+        assertEquals(null, cache(0).get(key));
+
+        assertEquals(1, interceptor.invokeCnt.get());
+
+        assertEquals(1, interceptor.getMap.size());
+
+        assertEquals(100, interceptor.getMap.get(key));
+
+        checkCacheValue(key, 100);
+
+        interceptor.reset();
+
+        interceptor.retInterceptor = new InterceptorAdapter() {
+            @Nullable @Override public Object onGet(Object key, Object val) {
+                return (Integer)val + 1;
+            }
+        };
+
+        log.info("Get 4.");
+
+        assertEquals((Integer)101, cache(0).get(key));
+
+        assertEquals(1, interceptor.invokeCnt.get());
+
+        assertEquals(1, interceptor.getMap.size());
+
+        assertEquals(100, interceptor.getMap.get(key));
+
+        checkCacheValue(key, 100);
+
+        interceptor.reset();
+
+        interceptor.retInterceptor = new InterceptorAdapter() {
+            @Nullable @Override public Object onGet(Object key, Object val) {
+                return (Integer)val + 1;
+            }
+        };
+
+        log.info("GetAsync 1.");
+
+        assertEquals((Integer)101, cache(0).getAsync(key).get());
+
+        assertEquals(1, interceptor.invokeCnt.get());
+
+        assertEquals(1, interceptor.getMap.size());
+
+        assertEquals(100, interceptor.getMap.get(key));
+
+        checkCacheValue(key, 100);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetAll() throws Exception {
+        List<String> keys = new ArrayList<>();
+
+        for (int i = 0; i < 1000; i++)
+            keys.add(String.valueOf(i));
+
+        interceptor.retInterceptor = new InterceptorAdapter() {
+            @Nullable @Override public Object onGet(Object key, Object val) {
+                return null;
+            }
+        };
+
+        Map<String, Integer> map = cache(0).getAll(keys);
+
+        for (String key : keys)
+            assertEquals(null, map.get(key));
+
+        assertEquals(1000, interceptor.invokeCnt.get());
+
+        interceptor.reset();
+
+        interceptor.retInterceptor = new InterceptorAdapter() {
+            @Nullable @Override public Object onGet(Object key, Object val) {
+                int k = Integer.valueOf((String)key);
+
+                return k % 2 == 0 ? null : (k * 2);
+            }
+        };
+
+        map = cache(0).getAll(keys);
+
+        for (String key : keys) {
+            int k = Integer.valueOf(key);
+
+            if (k % 2 == 0)
+                assertEquals(null, map.get(key));
+            else
+                assertEquals((Integer)(k * 2), map.get(key));
+        }
+
+        assertEquals(1000, interceptor.invokeCnt.get());
+
+        // Put some values in cache.
+
+        interceptor.disabled = true;
+
+        for (int i = 0; i < 500; i++)
+            cache(0).put(String.valueOf(i), i);
+
+        interceptor.disabled = false;
+
+        for (int j = 0; j < 2; j++) {
+            interceptor.reset();
+
+            interceptor.retInterceptor = new InterceptorAdapter() {
+                @Nullable @Override public Object onGet(Object key, Object val) {
+                    int k = Integer.valueOf((String)key);
+
+                    switch (k % 3) {
+                        case 0:
+                            return null;
+
+                        case 1:
+                            return val;
+
+                        case 2:
+                            return k * 3;
+
+                        default:
+                            fail();
+                    }
+
+                    return null;
+                }
+            };
+
+            map = j == 0 ? cache(0).getAll(keys) : cache(0).getAllAsync(keys).get();
+
+            for (int i = 0; i < keys.size(); i++) {
+                String key = keys.get(i);
+
+                switch (i % 3) {
+                    case 0:
+                        assertEquals(null, map.get(key));
+
+                        break;
+
+                    case 1:
+                        Integer exp = i < 500 ? i : null;
+
+                        assertEquals(exp, map.get(key));
+
+                        break;
+
+                    case 2:
+                        assertEquals((Integer)(i * 3), map.get(key));
+
+                        break;
+
+                    default:
+                        fail();
+                }
+            }
+
+            assertEquals(1000, interceptor.invokeCnt.get());
+        }
     }
 
     /**
@@ -127,7 +355,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     private int expectedIgnoreInvokeCount(Operation op) {
         int dataNodes = cacheMode() == REPLICATED ? gridCount() : 2;
 
-        if (atomicityMode() == GridCacheAtomicityMode.TRANSACTIONAL)
+        if (atomicityMode() == TRANSACTIONAL)
             return dataNodes + (storeEnabled() ? 1 : 0); // One call before store is updated.
         else {
             // If update goes through primary node and it is cancelled then backups aren't updated.
@@ -143,7 +371,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     private int expectedInvokeCount(Operation op) {
         int dataNodes = cacheMode() == REPLICATED ? gridCount() : 2;
 
-        if (atomicityMode() == GridCacheAtomicityMode.TRANSACTIONAL)
+        if (atomicityMode() == TRANSACTIONAL)
             // Update + after update + one call before store is updated.
             return dataNodes * 2 + (storeEnabled() ? 1 : 0);
         else {
@@ -184,8 +412,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         assertEquals(null, t.get1());
         assertEquals(1, t.get2());
 
-        assertCancelInvokeCount(op);
-
         // Disable interceptor and update cache.
 
         interceptor.reset();
@@ -217,8 +443,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         assertEquals(1, t.get1());
         assertEquals(2, t.get2());
-
-        assertCancelInvokeCount(op);
     }
 
     /**
@@ -274,8 +498,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         assertEquals(2, interceptor.afterPutMap.get(key));
 
-        assertInvokeCount(op);
-
         // Execute update when value is not null.
 
         interceptor.reset();
@@ -300,8 +522,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         assertEquals(1, interceptor.afterPutMap.size());
 
         assertEquals(4, interceptor.afterPutMap.get(key));
-
-        assertInvokeCount(op);
     }
 
     /**
@@ -349,8 +569,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         assertEquals(null, interceptor.beforeRemoveMap.get(key));
 
-        assertCancelInvokeCount(op);
-
         log.info("Remove 2 " + op);
 
         interceptor.reset();
@@ -373,8 +591,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         assertEquals(0, interceptor.beforeRemoveMap.size());
 
         assertEquals(null, interceptor.beforeRemoveMap.get(key));
-
-        assertCancelInvokeCount(op);
 
         // Disable interceptor and update cache.
 
@@ -413,8 +629,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         assertEquals(1, interceptor.beforeRemoveMap.get(key));
 
-        assertCancelInvokeCount(op);
-
         interceptor.reset();
 
         // Interceptor disables remove and changes return value.
@@ -435,8 +649,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         assertEquals(1, interceptor.beforeRemoveMap.size());
 
         assertEquals(1, interceptor.beforeRemoveMap.get(key));
-
-        assertCancelInvokeCount(op);
     }
 
     /**
@@ -484,8 +696,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         assertEquals(0, interceptor.afterRemoveMap.size());
 
-        assertInvokeCount(op);
-
         log.info("Remove 2 " + op);
 
         interceptor.reset();
@@ -508,8 +718,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         assertEquals(0, interceptor.beforeRemoveMap.size());
 
         assertEquals(0, interceptor.afterRemoveMap.size());
-
-        assertInvokeCount(op);
 
         // Disable interceptor and update cache.
 
@@ -552,8 +760,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         assertEquals(1, interceptor.afterRemoveMap.get(key));
 
-        assertInvokeCount(op);
-
         // Disable interceptor and update cache.
 
         interceptor.disabled = true;
@@ -592,8 +798,81 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         assertEquals(1, interceptor.afterRemoveMap.size());
 
         assertEquals(2, interceptor.afterRemoveMap.get(key));
+    }
 
-        assertInvokeCount(op);
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNearNodeKey() throws Exception {
+        if (cacheMode() != PARTITIONED)
+            return;
+
+        if (atomicityMode() == TRANSACTIONAL) {
+            for (GridCacheTxConcurrency txConcurrency : GridCacheTxConcurrency.values()) {
+                for (GridCacheTxIsolation txIsolation : GridCacheTxIsolation.values()) {
+                    for (Operation op : Operation.values()) {
+                        // TODO: GG-8118 enable when fixed.
+                        if (op == Operation.UPDATE_FILTER && txConcurrency == OPTIMISTIC)
+                            continue;
+
+                        testNearNodeKey(txConcurrency, txIsolation, op);
+
+                        afterTest();
+                    }
+                }
+            }
+        }
+
+        testNearNodeKey(null, null, null);
+    }
+
+    /**
+     * @param txConcurrency Transaction concurrency.
+     * @param txIsolation Transaction isolation.
+     * @param op Operation type.
+     * @throws Exception If failed.
+     */
+    private void testNearNodeKey(@Nullable GridCacheTxConcurrency txConcurrency,
+        @Nullable GridCacheTxIsolation txIsolation, @Nullable Operation op) throws Exception {
+        // Interceptor returns incremented new value.
+        interceptor.retInterceptor = new InterceptorAdapter() {
+            @Nullable @Override public Object onBeforePut(Object key, @Nullable Object oldVal, Object newVal) {
+                return (Integer)newVal + 1;
+            }
+        };
+
+        String key1 = primaryKey(0);
+        String key2 = backupKey(0);
+        String key3 = nearKey(0);
+
+        interceptor.disabled = true;
+
+        // Put from grid 1 to be sure grid 0 does not have value for near key.
+        cache(1).putAll(F.asMap(key1, 1, key2, 2, key3, 3));
+
+        interceptor.disabled = false;
+
+        log.info("Update [op=" + op + ", key1=" + key1 + ", key2=" + key2 + ", key3=" + key3 +
+            ", txConcurrency=" + txConcurrency + ", txIsolation=" + txIsolation + ']');
+
+        if (txConcurrency != null) {
+            assertNotNull(txIsolation);
+            assertNotNull(op);
+
+            try (GridCacheTx tx = cache(0).txStart(txConcurrency, txIsolation)) {
+                update(0, op, key1, 100, 1);
+                update(0, op, key2, 200, 2);
+                update(0, op, key3, 300, 3);
+
+                tx.commit();
+            }
+        }
+        else
+            cache(0).putAll(F.asMap(key1, 100, key2, 200, key3, 300));
+
+        checkCacheValue(key1, 101);
+        checkCacheValue(key2, 201);
+        checkCacheValue(key3, 301);
     }
 
     /**
@@ -632,7 +911,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         }
         else {
             List<String> keys = primaryKeys(0, 2);
-            key1 = keys.get(0);
+            key1 = keys.get(0); // Need two keys for the same node to test atomic cache batch store upadte.
             key2 = keys.get(1);
             key3 = backupKey(0);
         }
@@ -1122,6 +1401,28 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     }
 
     /**
+     * @param idx Grid index.
+     * @return Key which does not belong to the grid.
+     */
+    private String nearKey(int idx) {
+        GridCacheAffinity aff = cache(0).affinity();
+
+        String key = null;
+
+        for (int i = 0; i < 10_000; i++) {
+            if (!aff.isPrimaryOrBackup(grid(idx).localNode(), String.valueOf(i))) {
+                key = String.valueOf(i);
+
+                break;
+            }
+        }
+
+        assertNotNull(key);
+
+        return key;
+    }
+
+    /**
      * @param key Key.
      * @param expVal Expected value.
      * @throws Exception If failed.
@@ -1239,15 +1540,26 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         private volatile GridCacheInterceptor retInterceptor;
 
         /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
         @Nullable @Override public Object onGet(Object key, Object val) {
             if (disabled)
                 return val;
 
-            log.info("Get [key=" + key + ", val=" + val + ']');
+            assertNotNull(retInterceptor);
 
-            getMap.put(key, val);
+            Object ret = retInterceptor.onGet(key, val);
 
-            return null;
+            log.info("Get [key=" + key + ", val=" + val + ", ret=" + ret + ']');
+
+            if (val != null) {
+                Object old = getMap.put(key, val);
+
+                assertNull(old); // Fot get interceptor is called on near node only.
+            }
+
+            invokeCnt.incrementAndGet();
+
+            return ret;
         }
 
         /** {@inheritDoc} */
@@ -1267,8 +1579,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             GridBiTuple t = beforePutMap.put(key, new GridBiTuple(oldVal, newVal));
 
             if (t != null) {
-                assertEquals(t.get1(), oldVal);
-                assertEquals(t.get2(), newVal);
+                assertEquals("Interceptor called with different old values for key " + key, t.get1(), oldVal);
+                assertEquals("Interceptor called with different new values for key " + key, t.get2(), newVal);
             }
 
             return ret;

@@ -133,6 +133,9 @@ public final class GridNodeAttributes {
     /** Security subject for authenticated node. */
     public static final String ATTR_SECURITY_SUBJECT = ATTR_PREFIX + ".security.subject";
 
+    /** Cache interceptors. */
+    public static final String ATTR_CACHE_INTERCEPTORS = ATTR_PREFIX + ".cache.interceptors";
+
     /**
      * Enforces singleton.
      */
