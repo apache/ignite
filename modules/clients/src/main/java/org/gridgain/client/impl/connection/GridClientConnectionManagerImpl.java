@@ -136,10 +136,11 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
      * @param routers Routers or empty collection to use endpoints from topology info.
      * @param top Topology.
      * @param protoId Custom protocol ID (optional).
+     * @throws GridClientException If failed to start.
      */
     @SuppressWarnings("unchecked")
     public GridClientConnectionManagerImpl(UUID clientId, SSLContext sslCtx, GridClientConfiguration cfg,
-        Collection<InetSocketAddress> routers, GridClientTopology top, Byte protoId) {
+        Collection<InetSocketAddress> routers, GridClientTopology top, Byte protoId) throws GridClientException {
         assert clientId != null : "clientId != null";
         assert cfg != null : "cfg != null";
         assert routers != null : "routers != null";
@@ -209,7 +210,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
                 srv.start();
             }
             catch (IOException | GridException e) {
-                throw new IllegalArgumentException("Failed to start connection server.", e);
+                throw new GridClientException("Failed to start connection server.", e);
             }
         }
     }
