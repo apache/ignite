@@ -659,9 +659,7 @@ public class GridClientConfiguration {
         if (!isEmpty(connectTimeout))
             setConnectTimeout(Integer.parseInt(connectTimeout));
 
-        if (cred == null)
-            setCredentialsProvider(new GridSecurityCredentialsBasicProvider(new GridSecurityCredentials()));
-        else {
+        if (!isEmpty(cred)) {
             int idx = cred.indexOf(':');
 
             if (idx >= 0 && idx < cred.length() - 1) {
