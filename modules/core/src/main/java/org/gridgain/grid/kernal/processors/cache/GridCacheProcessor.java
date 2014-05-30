@@ -484,6 +484,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         prepare(cfg, cfg.getCloner(), false);
         prepare(cfg, cfg.getStore(), false);
         prepare(cfg, cfg.getEvictionFilter(), false);
+        prepare(cfg, cfg.getInterceptor(), false);
 
         GridDrSenderCacheConfiguration drSndCfg = cfg.getDrSenderConfiguration();
 
@@ -1819,7 +1820,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private Iterable<Object> lifecycleAwares(GridCacheConfiguration ccfg) {
         return F.asList(ccfg.getAffinity(), ccfg.getAffinityMapper(), ccfg.getCloner(),
             ccfg.getEvictionFilter(), ccfg.getEvictionPolicy(), ccfg.getNearEvictionPolicy(),
-            ccfg.getTransactionManagerLookup());
+            ccfg.getTransactionManagerLookup(), ccfg.getInterceptor());
     }
 
     /**

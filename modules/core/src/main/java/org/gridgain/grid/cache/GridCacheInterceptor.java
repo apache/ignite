@@ -14,6 +14,11 @@ import org.jetbrains.annotations.*;
 
 /**
  * Grid cache interceptor.
+ * <p>
+ * Cache interceptor is configured via {@link GridCacheConfiguration#getInterceptor()}
+ * configuration property.
+ * <p>
+ * You can inject any resources in implementation of this interface.
  */
 public interface GridCacheInterceptor<K, V> {
     /**

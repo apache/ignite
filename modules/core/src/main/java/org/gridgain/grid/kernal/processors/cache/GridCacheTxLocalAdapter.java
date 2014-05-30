@@ -476,7 +476,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 }
 
                                 if (intercept) {
-                                    V old = e.cached().rawGetOrUnmarshal(); // TODO: need to load if on near node?
+                                    V old = e.cached().rawGetOrUnmarshal();
 
                                     val = (V)cctx.config().getInterceptor().onBeforePut(key, old, val);
 
@@ -499,7 +499,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 }
 
                                 if (intercept) {
-                                    V old = e.cached().rawGetOrUnmarshal(); // TODO: need to load if on near node?
+                                    V old = e.cached().rawGetOrUnmarshal();
 
                                     GridBiTuple<Boolean, V> t = cctx.config().getInterceptor().onBeforeRemove(key, old);
 

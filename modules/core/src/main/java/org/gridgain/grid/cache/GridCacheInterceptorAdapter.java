@@ -13,7 +13,8 @@ import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 /**
- * TODO
+ * Cache interceptor convenience adapter. It provides no-op implementations for all
+ * interceptor callbacks.
  */
 public class GridCacheInterceptorAdapter<K, V> implements GridCacheInterceptor<K, V> {
     /** {@inheritDoc} */
