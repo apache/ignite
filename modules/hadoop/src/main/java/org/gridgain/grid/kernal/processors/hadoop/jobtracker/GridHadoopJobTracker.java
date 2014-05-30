@@ -351,6 +351,11 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         }
     }
 
+    /**
+     * Transforms, async wait and check future.
+     * @param jobId Job id.
+     * @param closure Closure of operation.
+     */
     private void transform(GridHadoopJobId jobId, GridClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> closure) {
         GridFuture<?> fut = jobMetaPrj.transformAsync(jobId, closure);
 
@@ -360,7 +365,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     gridFuture.get();
                 }
                 catch (GridException e) {
-                    e.printStackTrace();
+                    log.error("transform() returned failed future.", e);
                 }
             }
         });
@@ -1011,14 +1016,10 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         private RemoveMappersClosure(Collection<GridHadoopInputSplit> splits, Throwable err) {
             this.splits = splits;
             this.err = err;
-
-            System.out.println("new RemoveMappersClosure(" + splits + ")");
         }
 
         /** {@inheritDoc} */
         @Override public GridHadoopJobMetadata apply(GridHadoopJobMetadata meta) {
-            System.out.println("RemoveMappersClosure.apply(" + splits + ")");
-
             GridHadoopJobMetadata cp = new GridHadoopJobMetadata(meta);
 
             Collection<GridHadoopInputSplit> splitsCp = new HashSet<>(cp.pendingSplits());

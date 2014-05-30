@@ -64,8 +64,8 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
         Reporter reporter = Reporter.NULL;
 
         try {
-            GridHadoopOutputCollector collector = new GridHadoopOutputCollector(jobConf, taskCtx,
-                !jobImpl.hasCombinerOrReducer(), fileName(), jobImpl.attemptId(info()));
+            GridHadoopOutputCollector collector = getCollector(jobConf, taskCtx, !jobImpl.hasCombinerOrReducer(),
+                    fileName(), jobImpl.attemptId(info()));
 
             RecordReader reader = inFormat.getRecordReader(nativeSplit, jobConf, reporter);
 
@@ -79,7 +79,7 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
             try {
                 while (reader.next(key, val)) {
                     if (isCancelled())
-                        throw new GridHadoopTaskCancelledException(null);
+                        throw new GridHadoopTaskCancelledException("Map task cancelled.");
 
                     mapper.map(key, val, collector, reporter);
                 }

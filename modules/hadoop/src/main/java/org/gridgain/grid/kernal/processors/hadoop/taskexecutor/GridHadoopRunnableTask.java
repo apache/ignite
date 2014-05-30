@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
@@ -96,6 +97,9 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
                 runTask(new GridHadoopTaskInfo(info.nodeId(), COMBINE, info.jobId(), info.taskNumber(), info.attempt(),
                     null), runCombiner);
         }
+        catch (GridHadoopTaskCancelledException e) {
+            state = GridHadoopTaskState.CANCELED;
+        }
         catch (Throwable e) {
             state = GridHadoopTaskState.FAILED;
             err = e;
@@ -110,13 +114,6 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
             if (runCombiner)
                 local.close();
         }
-
-//        if (err != null) {
-//            if (err instanceof GridException)
-//                throw (GridException)err;
-//            else
-//                throw new GridException("Task execution failed.", err);
-//        }
 
         return null;
     }

@@ -37,12 +37,9 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
         this.reduce = reduce;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override
-    public void run(GridHadoopTaskContext taskCtx) throws GridException {
+    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job) taskCtx.job();
 
         JobConf jobConf = new JobConf(jobImpl.hadoopJobContext().getJobConf());
@@ -56,24 +53,26 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
         GridHadoopTaskInput input = taskCtx.input();
 
         try {
-            GridHadoopOutputCollector collector = new GridHadoopOutputCollector(jobConf, taskCtx,
-                    reduce || !jobImpl.hasReducer(), fileName(), jobImpl.attemptId(info()));
+            GridHadoopOutputCollector collector = getCollector (jobConf, taskCtx, reduce || !jobImpl.hasReducer(),
+                    fileName(), jobImpl.attemptId(info()));
 
             try {
                 while (input.next()) {
                     if (isCancelled())
-                        throw new GridHadoopTaskCancelledException(null);
+                        throw new GridHadoopTaskCancelledException("Reduce task cancelled.");
 
                     reducer.reduce(input.key(), input.values(), collector, Reporter.NULL);
                 }
-            } finally {
+            }
+            finally {
                 U.closeQuiet(reducer);
 
                 collector.closeWriter();
             }
 
             collector.commit();
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new GridException(e);
         }
     }

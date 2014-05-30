@@ -46,12 +46,12 @@ public class GridHadoopV2ReduceTask extends GridHadoopV2Task {
         try {
             Reducer reducer = U.newInstance(reduce ? jobCtx.getReducerClass() : jobCtx.getCombinerClass());
 
-            context(new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx, jobImpl.attemptId(info())));
+            hadoopContext(new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx, jobImpl.attemptId(info())));
 
             OutputFormat outputFormat = reduce || !jobImpl.hasReducer() ? prepareWriter(jobCtx) : null;
 
             try {
-                reducer.run(new WrappedReducer().getReducerContext(hadoopCtx()));
+                reducer.run(new WrappedReducer().getReducerContext(hadoopContext()));
             }
             finally {
                 closeWriter();

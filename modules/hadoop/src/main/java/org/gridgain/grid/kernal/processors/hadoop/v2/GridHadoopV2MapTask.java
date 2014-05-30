@@ -48,10 +48,7 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
             throw new GridException(e);
         }
 
-        context(new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx, jobImpl.attemptId(info())));
-
-        GridHadoopV2Context hadoopCtx = new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx,
-            jobImpl.attemptId(info()));
+        hadoopContext(new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx, jobImpl.attemptId(info())));
 
         GridHadoopInputSplit split = info().inputSplit();
 
@@ -70,16 +67,16 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
         assert nativeSplit != null;
 
         try {
-            RecordReader reader = inFormat.createRecordReader(nativeSplit, hadoopCtx);
+            RecordReader reader = inFormat.createRecordReader(nativeSplit, hadoopContext());
 
-            reader.initialize(nativeSplit, hadoopCtx);
+            reader.initialize(nativeSplit, hadoopContext());
 
-            hadoopCtx.reader(reader);
+            hadoopContext().reader(reader);
 
             OutputFormat outputFormat = jobImpl.hasCombinerOrReducer() ? null : prepareWriter(jobCtx);
 
             try {
-                mapper.run(new WrappedMapper().getMapContext(hadoopCtx));
+                mapper.run(new WrappedMapper().getMapContext(hadoopContext()));
             }
             finally {
                 closeWriter();
@@ -96,5 +93,4 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
             throw new GridInterruptedException(e);
         }
     }
-
 }

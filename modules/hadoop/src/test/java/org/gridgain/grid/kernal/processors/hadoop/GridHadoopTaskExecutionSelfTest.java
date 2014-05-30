@@ -289,7 +289,6 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
             }
         }, GridException.class, null);
 
-
         assertEquals(executedTasks.get(), cancelledTasks.get() + 1);
     }
 
@@ -301,10 +300,14 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
             mapperId = executedTasks.incrementAndGet();
         }
 
-        @Override
-        public void run(Context context) throws IOException, InterruptedException {
+        /** {@inheritDoc} */
+        @Override public void run(Context context) throws IOException, InterruptedException {
             try {
-                super.run(context);
+                setup(context);
+                while (context.nextKeyValue()) {
+                    map(context.getCurrentKey(), context.getCurrentValue(), context);
+                }
+                cleanup(context);
             }
             catch (GridHadoopTaskCancelledException e) {
                 cancelledTasks.incrementAndGet();

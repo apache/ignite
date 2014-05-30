@@ -37,14 +37,14 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
      * Set hadoop context.
      * @param ctx Hadoop context.
      */
-    protected void context(GridHadoopV2Context ctx) {
+    protected void hadoopContext(GridHadoopV2Context ctx) {
         hadoopCtx = ctx;
     }
 
     /**
      * @return hadoop context.
      */
-    protected ReduceContext hadoopCtx() {
+    protected GridHadoopV2Context hadoopContext() {
         return hadoopCtx;
     }
 
@@ -110,7 +110,6 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-        if (hadoopCtx != null)
-            hadoopCtx.cancel();
+        hadoopCtx.cancel();
     }
 }

@@ -10,7 +10,6 @@
 package org.gridgain.grid.hadoop;
 
 import org.apache.hadoop.conf.*;
-import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.*;
@@ -125,18 +124,6 @@ public class GridHadoopDefaultJobInfo implements GridHadoopJobInfo, Externalizab
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         cfg = new JobConf();
 
-        int size = WritableUtils.readVInt(in);
-        for(int i=0; i < size; ++i) {
-            String key = org.apache.hadoop.io.Text.readString(in);
-            String value = org.apache.hadoop.io.Text.readString(in);
-
-            if (!cfg.isDeprecated(key))
-                cfg.set(key, value);
-
-            String sources[] = WritableUtils.readCompressedStringArray(in);
-            //cfg.updatingResource.put(key, sources);
-        }
-
-        //cfg.readFields(in);
+        cfg.readFields(in);
     }
 }
