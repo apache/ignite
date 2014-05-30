@@ -27,11 +27,13 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.GridProductImpl.*;
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 import static org.gridgain.grid.kernal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.*;
+import static org.gridgain.grid.kernal.processors.rest.client.message.GridClientHandshakeResponse.*;
 
 /**
  * Listener for nio server that handles incoming tcp rest packets.
@@ -39,6 +41,9 @@ import static org.gridgain.grid.kernal.processors.rest.client.message.GridClient
 public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridClientMessage> {
     /** Logger. */
     private GridLogger log;
+
+    /** Protocol. */
+    private GridTcpRestProtocol proto;
 
     /** Protocol handler. */
     private GridRestProtocolHandler hnd;
@@ -76,13 +81,16 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
      * a given rest handler.
      *
      * @param log Logger to use.
+     * @param proto Protocol.
      * @param hnd Rest handler.
      * @param ctx Context.
      */
-    public GridTcpRestNioListener(GridLogger log, GridRestProtocolHandler hnd, GridKernalContext ctx) {
+    public GridTcpRestNioListener(GridLogger log, GridTcpRestProtocol proto, GridRestProtocolHandler hnd,
+        GridKernalContext ctx) {
         memcachedLsnr = new GridTcpMemcachedNioListener(log, hnd, ctx);
 
         this.log = log;
+        this.proto = proto;
         this.hnd = hnd;
 
         Map<Byte, GridClientMarshaller> tmpMap = new GridLeanMap<>(3);
@@ -129,7 +137,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             memcachedLsnr.onMessage(ses, (GridMemcachedMessage)msg);
         else {
             if (msg == GridClientPingPacket.PING_MESSAGE)
-                ses.send(GridClientPingPacket.PING_MESSAGE);
+                ses.send(new GridClientPingPacketWrapper());
             else if (msg instanceof GridClientHandshakeRequest) {
                 GridClientHandshakeRequest hs = (GridClientHandshakeRequest)msg;
 
@@ -145,19 +153,20 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                 if (marsh == null) {
                     log.error("No marshaller found with given protocol ID [protocolId=" + hs.protocolId() + ']');
 
-                    ses.send(GridClientHandshakeResponse.ERR_UNKNOWN_PROTO_ID).listenAsync(
+                    ses.send(new GridClientHandshakeResponseWrapper(CODE_UNKNOWN_PROTO_ID)).listenAsync(
                         new CI1<GridNioFuture<?>>() {
                             @Override public void apply(GridNioFuture<?> fut) {
                                 ses.close();
                             }
-                        });
+                        }
+                    );
 
                     return;
                 }
 
                 ses.addMeta(GridNioSessionMetaKey.MARSHALLER.ordinal(), marsh);
 
-                ses.send(GridClientHandshakeResponse.OK);
+                ses.send(new GridClientHandshakeResponseWrapper(CODE_OK));
             }
             else {
                 final GridRestRequest req = createRestRequest(ses, msg);
@@ -192,7 +201,27 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                                 res.errorMessage("Failed to process client request: " + e.getMessage());
                             }
 
-                            ses.send(res);
+                            GridClientMessageWrapper wrapper = new GridClientMessageWrapper();
+
+                            wrapper.requestId(msg.requestId());
+                            wrapper.clientId(msg.clientId());
+
+                            try {
+                                byte[] bytes = proto.marshaller(ses).marshal(res);
+
+                                wrapper.message(bytes);
+
+                                wrapper.messageSize(bytes.length + 40);
+                            }
+                            catch (IOException e) {
+                                U.error(log, "Failed to marshal response: " + res, e);
+
+                                ses.close();
+
+                                return;
+                            }
+
+                            ses.send(wrapper);
                         }
                     });
                 else

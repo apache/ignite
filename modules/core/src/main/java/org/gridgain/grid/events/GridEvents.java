@@ -209,4 +209,19 @@ public interface GridEvents {
      * @param types Events to disable.
      */
     public void disableLocal(int... types);
+
+    /**
+     * Gets types of enabled events.
+     *
+     * @return Types of enabled events.
+     */
+    public int[] enabledEvents();
+
+    /**
+     * Check if event is enabled.
+     *
+     * @param type Event type.
+     * @return {@code True} if event of passed in type is enabled.
+     */
+    public boolean isEnabled(int type);
 }
