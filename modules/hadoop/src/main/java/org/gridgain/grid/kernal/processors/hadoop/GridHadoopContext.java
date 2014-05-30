@@ -15,6 +15,7 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 
@@ -27,9 +28,6 @@ public class GridHadoopContext {
 
     /** Hadoop configuration. */
     private GridHadoopConfiguration cfg;
-
-    /** Hadoop system cache name. */
-    private String sysCacheName; // TODO
 
     /** Job tracker. */
     private GridHadoopJobTracker jobTracker;
@@ -59,8 +57,6 @@ public class GridHadoopContext {
         this.jobTracker = add(jobTracker);
         this.taskExecutor = add(taskExecutor);
         this.shuffle = add(shuffle);
-
-        sysCacheName = cfg.getSystemCacheName();
     }
 
     /**
@@ -103,16 +99,7 @@ public class GridHadoopContext {
      * @return Hadoop-enabled nodes.
      */
     public Collection<GridNode> nodes() {
-        return ctx.discovery().cacheNodes(sysCacheName, ctx.discovery().topologyVersion());
-    }
-
-    /**
-     * Gets hadoop system cache name.
-     *
-     * @return System cache name.
-     */
-    public String systemCacheName() {
-        return sysCacheName;
+        return ctx.discovery().cacheNodes(CU.SYS_CACHE_HADOOP, ctx.discovery().topologyVersion());
     }
 
     /**

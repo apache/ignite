@@ -19,9 +19,6 @@ public class GridHadoopConfiguration {
     /** */
     public static final boolean DFLT_EXTERNAL_EXECUTION = true;
 
-    /** System cache name. TODO get rid of it. */
-    private String sysCacheName;
-
     /** Job factory. */
     private GridHadoopJobFactory jobFactory;
 
@@ -52,7 +49,6 @@ public class GridHadoopConfiguration {
         finishedJobInfoTtl = cfg.getFinishedJobInfoTtl();
         jobFactory = cfg.getJobFactory();
         planner = cfg.getMapReducePlanner();
-        sysCacheName = cfg.getSystemCacheName();
     }
 
     /**
@@ -111,20 +107,6 @@ public class GridHadoopConfiguration {
      */
     public void setMapReducePlanner(GridHadoopMapReducePlanner planner) {
         this.planner = planner;
-    }
-
-    /**
-     * @return TODO remove.
-     */
-    public String getSystemCacheName() {
-        return sysCacheName;
-    }
-
-    /**
-     * @param sysCacheName TODO remove.
-     */
-    public void setSystemCacheName(String sysCacheName) {
-        this.sysCacheName = sysCacheName;
     }
 
     /**
