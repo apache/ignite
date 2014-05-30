@@ -60,6 +60,7 @@ import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
+import org.gridgain.grid.spi.authentication.noop.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
@@ -1258,10 +1259,23 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         add(attrs, ATTR_DATA_CENTER_ID, cfg.getDataCenterId());
 
         try {
+            boolean securityEnabled = cfg.getAuthenticationSpi() != null &&
+                cfg.getAuthenticationSpi().getClass() != GridNoopAuthenticationSpi.class;
+
             GridSecurityCredentialsProvider provider = cfg.getSecurityCredentialsProvider();
 
-            if (provider != null)
-                add(attrs, ATTR_SECURITY_CREDENTIALS, provider.credentials());
+            if (provider != null) {
+                GridSecurityCredentials cred = provider.credentials();
+
+                if (cred != null)
+                    add(attrs, ATTR_SECURITY_CREDENTIALS, cred);
+                else if (securityEnabled)
+                    throw new GridException("Failed to start node (authentication SPI is configured, " +
+                        "by security credentials provider returned null).");
+            }
+            else if (securityEnabled)
+                throw new GridException("Failed to start node (authentication SPI is configured, " +
+                    "but security credentials provider is not set. Fix the configuration and restart the node).");
         }
         catch (GridException e) {
             throw new GridException("Failed to create node security credentials", e);

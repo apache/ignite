@@ -27,7 +27,7 @@ public class GridRestRequest {
     private UUID clientId;
 
     /** Client network address. */
-    private SocketAddress addr;
+    private InetSocketAddress addr;
 
     /** Client credentials. */
     @GridToStringExclude
@@ -124,14 +124,14 @@ public class GridRestRequest {
     /**
      * @return Client address.
      */
-    public SocketAddress address() {
+    public InetSocketAddress address() {
         return addr;
     }
 
     /**
      * @param addr Client address.
      */
-    public void address(SocketAddress addr) {
+    public void address(InetSocketAddress addr) {
         this.addr = addr;
     }
 

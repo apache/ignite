@@ -22,7 +22,7 @@ public interface GridSecuritySubject extends Serializable {
 
     public GridSecuritySubjectType type();
 
-    public SocketAddress address();
+    public InetSocketAddress address();
 
     public GridSecurityPermissionSet permissions();
 }
