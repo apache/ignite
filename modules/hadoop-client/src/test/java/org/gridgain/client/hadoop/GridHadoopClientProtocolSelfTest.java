@@ -17,6 +17,7 @@ import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.mapreduce.lib.output.*;
 import org.apache.hadoop.mapreduce.protocol.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -102,6 +103,15 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         reduceLockFile.delete();
 
         super.afterTest();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridHadoopConfiguration hadoopConfiguration(String gridName) {
+        GridHadoopConfiguration cfg = super.hadoopConfiguration(gridName);
+
+        cfg.setExternalExecution(true);
+
+        return cfg;
     }
 
     /**

@@ -28,9 +28,6 @@ public class GridHadoopClientTestSuite extends TestSuite {
 
         suite.addTestSuite(GridHadoopClientProtocolSelfTest.class);
 
-        // TODO: GG-8466: Enable when fixed.
-//        suite.addTestSuite(GridHadoopClientProtocolEmbeddedSelfTest.class);
-
         return suite;
     }
 }
