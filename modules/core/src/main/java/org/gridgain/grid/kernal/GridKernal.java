@@ -2998,6 +2998,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** {@inheritDoc} */
     @Override public GridSecurity security() {
+        if (!ctx.isEnterprise())
+            throw new UnsupportedOperationException("Security interface available in Enterprise edition only.");
+
         return security;
     }
 
