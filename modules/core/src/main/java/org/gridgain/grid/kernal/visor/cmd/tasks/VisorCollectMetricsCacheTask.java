@@ -25,14 +25,14 @@ import java.util.*;
  * Task that runs on all nodes and returns cache metrics.
  */
 @GridInternal
-public class VisorCacheMetricsTask extends VisorMultiNodeTask<VisorCacheMetricsTask.VisorCacheDataTaskArg,
-    Iterable<VisorCacheMetricsTask.VisorCacheAggregatedMetrics>,
-    Collection<VisorCacheMetricsTask.VisorCacheMetrics>> {
+public class VisorCollectMetricsCacheTask extends VisorMultiNodeTask<VisorCollectMetricsCacheTask.VisorCollectMetricsCacheArg,
+    Iterable<VisorCollectMetricsCacheTask.VisorCacheAggregatedMetrics>,
+    Collection<VisorCollectMetricsCacheTask.VisorCacheMetrics>> {
     /**
-     * Arguments for {@link VisorCacheMetricsTask}.
+     * Arguments for {@link VisorCollectMetricsCacheTask}.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorCacheDataTaskArg extends VisorMultiNodeArg {
+    public static class VisorCollectMetricsCacheArg extends VisorMultiNodeArg {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -42,7 +42,7 @@ public class VisorCacheMetricsTask extends VisorMultiNodeTask<VisorCacheMetricsT
         /** Name of cache to collect metrics. */
         @Nullable private final String cacheName;
 
-        public VisorCacheDataTaskArg(Set<UUID> ids, boolean all, @Nullable String cacheName) {
+        public VisorCollectMetricsCacheArg(Set<UUID> ids, boolean all, @Nullable String cacheName) {
             super(ids);
 
             this.all = all;
@@ -669,15 +669,15 @@ public class VisorCacheMetricsTask extends VisorMultiNodeTask<VisorCacheMetricsT
      * Aggregated cache metrics.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorCacheMetricsJob extends VisorJob<VisorCacheDataTaskArg, Collection<VisorCacheMetrics>> {
+    public static class VisorCacheMetricsJob extends VisorJob<VisorCollectMetricsCacheArg, Collection<VisorCacheMetrics>> {
         /** */
         private static final long serialVersionUID = 0L;
 
-        public VisorCacheMetricsJob(VisorCacheDataTaskArg arg) {
+        public VisorCacheMetricsJob(VisorCollectMetricsCacheArg arg) {
             super(arg);
         }
 
-        @Override protected Collection<VisorCacheMetrics> run(VisorCacheDataTaskArg arg) throws GridException {
+        @Override protected Collection<VisorCacheMetrics> run(VisorCollectMetricsCacheArg arg) throws GridException {
             Collection<? extends GridCache<?, ?>> caches = arg.all() ? g.cachesx(null) : F.asList(g.cachex(arg.cacheName()));
 
             if (caches != null) {
@@ -715,7 +715,7 @@ public class VisorCacheMetricsTask extends VisorMultiNodeTask<VisorCacheMetricsT
     }
 
 
-    @Override protected VisorCacheMetricsJob job(VisorCacheDataTaskArg arg) {
+    @Override protected VisorCacheMetricsJob job(VisorCollectMetricsCacheArg arg) {
         return new VisorCacheMetricsJob(arg);
     }
 

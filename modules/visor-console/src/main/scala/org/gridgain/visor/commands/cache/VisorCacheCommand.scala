@@ -12,8 +12,8 @@
 package org.gridgain.visor.commands.cache
 
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCacheMetricsTask
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCacheMetricsTask.{VisorCacheAggregatedMetrics, VisorCacheDataTaskArg, VisorCacheMetrics}
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCollectMetricsCacheTask
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCollectMetricsCacheTask.{VisorCacheAggregatedMetrics, VisorCollectMetricsCacheArg, VisorCacheMetrics}
 import org.gridgain.grid.util.typedef._
 
 import java.util.UUID
@@ -437,8 +437,8 @@ class VisorCacheCommand {
 
             val nids = new java.util.HashSet(prj.nodes().map(_.id()))
 
-            prj.compute().execute(classOf[VisorCacheMetricsTask],
-                new VisorCacheDataTaskArg(nids, name.isEmpty, name.orNull)).get().toList
+            prj.compute().execute(classOf[VisorCollectMetricsCacheTask],
+                new VisorCollectMetricsCacheArg(nids, name.isEmpty, name.orNull)).get().toList
         }
         catch {
             case e: GridException => Nil
