@@ -97,6 +97,17 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
         }
     }
 
+    private static class VisorGgfsProfilerParsedLineComparator implements Comparator<VisorGgfsProfilerParsedLine> {
+        @Override public int compare(VisorGgfsProfilerParsedLine a, VisorGgfsProfilerParsedLine b) {
+            return a.ts < b.ts ? -1
+                : a.ts > b.ts ? 1
+                : 0;
+        }
+    }
+
+    private static final VisorGgfsProfilerParsedLineComparator PARSED_LINE_COMPARATOR
+        = new VisorGgfsProfilerParsedLineComparator();
+
     /**
      * Job that do actual profiler work.
      */
@@ -225,7 +236,8 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
 
             VisorGgfsProfilerUniformityCounters counters = new VisorGgfsProfilerUniformityCounters();
 
-            //lines.sortBy(_.ts).foreach(line => {
+            Collections.sort(lines, PARSED_LINE_COMPARATOR);
+
             for (VisorGgfsProfilerParsedLine line : lines) {
                 if (!line.path.isEmpty())
                     path = line.path;
