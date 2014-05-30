@@ -1380,8 +1380,11 @@ object visor extends VisorTag {
     def open(args: String) {
         assert(args != null)
 
-        if (isConnected)
-            throw new GE("Visor is already connected. Disconnect first.")
+        if (isConnected) {
+            warn("Visor is already connected. Disconnect first.")
+
+            return
+        }
 
         try {
             def configuration(path: String): GridConfiguration = {
@@ -1400,9 +1403,12 @@ object visor extends VisorTag {
                             url
                     }
 
-                val isLog4jUsed = classOf[G].getClassLoader.getResource("org/apache/log4j/Appender.class") != null
-
-                var log4jTup: GridBiTuple[AnyRef, AnyRef] = null
+                // Add no-op logger to remove no-appender warning.
+                val log4jTup =
+                    if (classOf[G].getClassLoader.getResource("org/apache/log4j/Appender.class") == null)
+                        U.addLog4jNoOpLogger()
+                    else
+                        null
 
                 val spring: GridSpringProcessor = SPRING.create(false)
 
@@ -1411,7 +1417,7 @@ object visor extends VisorTag {
                         spring.loadConfigurations(url).get1()
                     }
                     finally {
-                        if (isLog4jUsed && log4jTup != null)
+                        if (log4jTup != null)
                             U.removeLog4jNoOpLogger(log4jTup)
                     }
 
