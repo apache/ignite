@@ -14,6 +14,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;
 import static org.gridgain.grid.hadoop.GridHadoopJobState.*;
@@ -24,6 +25,15 @@ import static org.gridgain.grid.hadoop.GridHadoopJobState.*;
 public class GridHadoopUtils {
     /** Staging constant. */
     private static final String STAGING_CONSTANT = ".staging";
+
+    /** Step span. */
+    private static final long STEP_SPAN = 1000L;
+
+    /** Minimum doubling interval. */
+    private static final long MIN_DOUBLE_INTERVAL = 5000L;
+
+    /** Doubling interval delta. */
+    private static final long DOUBLE_INTERVAL_DELTA = 45000L;
 
     /**
      * Convert Hadoop job metadata to job status.
@@ -120,6 +130,72 @@ public class GridHadoopUtils {
 
         return new JobStatus(jobId, 1.0f, mapProgress, reduceProgress, cleanupProgress, state, JobPriority.NORMAL,
             status.user(), status.jobName(), jobFile(conf, status.user(), jobId).toString(), "N/A");
+    }
+
+    /**
+     * Calculate progress.
+     *
+     * @param totalTasks Total tasks.
+     * @param completedTasks Completed tasks.
+     * @param maxConcurrentTasks Maximum possible number of concurrent tasks.
+     * @param startTime Start time.
+     * @return Progress.
+     */
+    private static float progress(int totalTasks, int completedTasks, int maxConcurrentTasks, long startTime) {
+        assert maxConcurrentTasks >= totalTasks;
+
+        int concurrentTasks = Math.min(totalTasks - completedTasks, maxConcurrentTasks);
+
+        long dur = U.currentTimeMillis() - startTime;
+
+        float speculativeProgress = speculativeProgress(totalTasks, maxConcurrentTasks, dur) * concurrentTasks;
+
+        return ((float)completedTasks + speculativeProgress) / totalTasks;
+    }
+
+    public static void main(String[] args) {
+//        speculativeProgress(800, 8, 8, 100 * UPDATE_INTERVAL + 1500);
+    }
+
+    /**
+     * Calculate speculative progress.
+     *
+     * @param totalTasks Total tasks.
+     * @param maxConcurrentTasks Maximum possible number of concurrent tasks.
+     * @param dur Duration.
+     * @return Speculative progress.
+     */
+    private static float speculativeProgress(int totalTasks, int maxConcurrentTasks, long dur) {
+        // Determine doubling interval based on maximum possible concurrent tasks and total tasks.
+        float doubleRatio = (float)maxConcurrentTasks / totalTasks;
+
+        U.debug("Double ratio: " + doubleRatio);
+
+        long doubleInterval = ((long)(DOUBLE_INTERVAL_DELTA * doubleRatio) + MIN_DOUBLE_INTERVAL);
+
+        doubleInterval = doubleInterval - doubleInterval % STEP_SPAN;
+
+        U.debug("Double interval: " + doubleInterval);
+
+        // Determine amount of full double interval and amount of remaining update intervals.
+        long fullDoubles = dur / doubleInterval;
+
+        U.debug("Big updates: " + fullDoubles);
+
+        long partialUpdates = (dur - fullDoubles * doubleInterval) / STEP_SPAN;
+
+        U.debug("Small updates: " + partialUpdates);
+
+        // Now, as we have intervals count, calculate speculative progress for a single task.
+        float power2 = (float)Math.pow(0.5, fullDoubles);
+
+        float progress = /** Sum of geom. progression 1/2 + 1/4 ... */ 1 - power2 +
+            /** Next member of geom. progression. */ power2 / 2 *
+            /** Relative progress of the next doubling update. */ partialUpdates * STEP_SPAN / doubleInterval;
+
+        U.debug("Single progress: " + progress);
+
+        return progress;
     }
 
     /**
