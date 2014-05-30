@@ -32,7 +32,7 @@ import static org.gridgain.client.hadoop.GridHadoopClientProtocol.*;
  */
 public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
     /** Clients. */
-    private static final ConcurrentHashMap<String, GridFuture<GridClient>> cliMap = new ConcurrentHashMap<>();
+    public static ConcurrentHashMap<String, GridFuture<GridClient>> cliMap = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public ClientProtocol create(Configuration conf) throws IOException {

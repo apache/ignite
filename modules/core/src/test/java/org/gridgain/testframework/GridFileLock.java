@@ -37,7 +37,7 @@ public class GridFileLock {
      * @param file FS file to use as a lock file.
      * @throws FileNotFoundException If error occurs on opening or creating the file.
      */
-    GridFileLock(File file) throws FileNotFoundException {
+    public GridFileLock(File file) throws FileNotFoundException {
         this.file = file;
 
         raFile = new RandomAccessFile(file, "rw");
@@ -47,9 +47,9 @@ public class GridFileLock {
      * Performs an exclusive lock on a file, that
      * this lock instance was constructed with.
      *
-     * @throws GridException If failed to perform locking. The file remains open.
+     * @throws GridRuntimeException If failed to perform locking. The file remains open.
      */
-    public void lock() throws GridException {
+    public void lock() throws GridRuntimeException {
         lock(false);
     }
 
@@ -58,20 +58,20 @@ public class GridFileLock {
      * this lock instance was constructed with.
      *
      * @param shared Whether a lock is shared (non-exclusive).
-     * @throws GridException If failed to perform locking. The file remains open.
+     * @throws GridRuntimeException If failed to perform locking. The file remains open.
      */
-    public void lock(boolean shared) throws GridException {
+    public void lock(boolean shared) throws GridRuntimeException {
         if (fileLock != null)
-            throw new GridException("Already locked [lockFile=" + file + ']');
+            throw new GridRuntimeException("Already locked [lockFile=" + file + ']');
 
         try {
             fileLock = raFile.getChannel().tryLock(0, Long.MAX_VALUE, shared);
 
             if (fileLock == null)
-                throw new GridException("Failed to get exclusive lock on lock file [lockFile=" + file + ']');
+                throw new GridRuntimeException("Failed to get exclusive lock on lock file [lockFile=" + file + ']');
         }
         catch (IOException | OverlappingFileLockException e) {
-            throw new GridException("Failed to get exclusive lock on lock file [lockFile=" + file + ']', e);
+            throw new GridRuntimeException("Failed to get exclusive lock on lock file [lockFile=" + file + ']', e);
         }
     }
 

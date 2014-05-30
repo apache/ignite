@@ -17,7 +17,6 @@ import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.mapreduce.lib.output.*;
 import org.apache.hadoop.mapreduce.protocol.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -26,11 +25,11 @@ import org.gridgain.testframework.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
- * Hadoop client protocol tests.
+ * Hadoop client protocol tests in external process mode.
  */
+@SuppressWarnings("ResultOfMethodCallIgnored")
 public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest {
     /** Input path. */
     private static final String PATH_INPUT = "/input";
@@ -44,11 +43,11 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     /** Job name. */
     private static final String JOB_NAME = "myJob";
 
-    /** Map latch. */
-    private static CountDownLatch mapLatch;
+    /** Map lock file. */
+    private static File mapLockFile = new File(System.getProperty("java.io.tmpdir"), "gg-lock-map.file");
 
-    /** Reduce latch. */
-    private static CountDownLatch reduceLatch;
+    /** Reduce lock file. */
+    private static File reduceLockFile = new File(System.getProperty("java.io.tmpdir"), "gg-lock-reduce.file");
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -70,6 +69,9 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         super.beforeTestsStarted();
 
         startGrids(gridCount());
+
+        mapLockFile.delete();
+        reduceLockFile.delete();
     }
 
     /** {@inheritDoc} */
@@ -77,12 +79,17 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         stopAllGrids();
 
         super.afterTestsStopped();
+
+//        GridHadoopClientProtocolProvider.cliMap.clear();
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        mapLatch = new CountDownLatch(1);
-        reduceLatch = new CountDownLatch(1);
+        mapLockFile.createNewFile();
+        reduceLockFile.createNewFile();
+
+        mapLockFile.deleteOnExit();
+        reduceLockFile.deleteOnExit();
 
         super.beforeTest();
     }
@@ -91,16 +98,10 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     @Override protected void afterTest() throws Exception {
         grid(0).ggfs(GridHadoopAbstractSelfTest.ggfsName).format().get();
 
+        mapLockFile.delete();
+        reduceLockFile.delete();
+
         super.afterTest();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridHadoopConfiguration hadoopConfiguration(String gridName) {
-        GridHadoopConfiguration cfg = super.hadoopConfiguration(gridName);
-
-        cfg.setExternalExecution(false);
-
-        return cfg;
     }
 
     /**
@@ -130,7 +131,6 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     /**
      * @throws Exception If failed.
      */
-    // TODO: GG-8427: Enable when fixed.
     public void testJobSubmitMap() throws Exception {
         checkJobSubmit(true, true);
     }
@@ -138,7 +138,6 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     /**
      * @throws Exception If failed.
      */
-    // TODO: GG-8427: Enable when fixed.
     public void testJobSubmitMapCombine() throws Exception {
         checkJobSubmit(false, true);
     }
@@ -146,7 +145,6 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     /**
      * @throws Exception If failed.
      */
-    // TODO: GG-8427: Enable when fixed.
     public void testJobSubmitMapReduce() throws Exception {
         checkJobSubmit(true, false);
     }
@@ -154,7 +152,6 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     /**
      * @throws Exception If failed.
      */
-    // TODO: GG-8427: Enable when fixed.
     public void testJobSubmitMapCombineReduce() throws Exception {
         checkJobSubmit(false, false);
     }
@@ -219,7 +216,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         assert recentJobStatus.getMapProgress() > jobStatus.getMapProgress() :
             "Old=" + jobStatus.getMapProgress() + ", new=" + recentJobStatus.getMapProgress();
 
-        mapLatch.countDown();
+        mapLockFile.delete();
 
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -246,7 +243,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
             assert recentJobStatus.getReduceProgress() > jobStatus.getReduceProgress() :
                 "Old=" + jobStatus.getReduceProgress() + ", new=" + recentJobStatus.getReduceProgress();
 
-            reduceLatch.countDown();
+            reduceLockFile.delete();
         }
 
         job.waitForCompletion(false);
@@ -351,12 +348,14 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
         /** {@inheritDoc} */
         @Override public void map(Object key, Text val, Context ctx) throws IOException, InterruptedException {
-            mapLatch.await();
+            while (mapLockFile.exists())
+                Thread.sleep(50);
 
             StringTokenizer wordList = new StringTokenizer(val.toString());
 
             while (wordList.hasMoreTokens()) {
                 word.set(wordList.nextToken());
+
                 ctx.write(word, one);
             }
         }
@@ -379,15 +378,16 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         /** {@inheritDoc} */
         @Override public void reduce(Text key, Iterable<IntWritable> values, Context ctx) throws IOException,
             InterruptedException {
-            reduceLatch.await();
+            while (reduceLockFile.exists())
+                Thread.sleep(50);
 
             int wordCnt = 0;
 
-            for (IntWritable value : values) {
+            for (IntWritable value : values)
                 wordCnt += value.get();
-            }
 
             totalWordCnt.set(wordCnt);
+
             ctx.write(key, totalWordCnt);
         }
     }
