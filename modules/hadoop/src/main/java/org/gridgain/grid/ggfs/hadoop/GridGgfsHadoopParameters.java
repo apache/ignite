@@ -60,7 +60,7 @@ import org.gridgain.grid.ggfs.*;
  * hadoop jar myjarfile.jar MyMapReduceJob -Dfs.ggfs.open.sequential_reads_before_prefetch=4
  * </pre>
  * If you want to use these parameters in code, then you have to substitute you file system name in it. The easiest
- * way to do that is {@code String.format(PARAM_GGFS_ENDPOINT_TYPE, [name])}.
+ * way to do that is {@code String.format(PARAM_GGFS_COLOCATED_WRITES, [name])}.
  */
 public class GridGgfsHadoopParameters {
     /** Parameter name for control over file colocation write mode. */

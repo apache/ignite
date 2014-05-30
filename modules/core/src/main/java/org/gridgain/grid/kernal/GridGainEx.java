@@ -71,9 +71,7 @@ import java.util.concurrent.atomic.*;
 import static org.gridgain.grid.GridConfiguration.*;
 import static org.gridgain.grid.GridGainState.*;
 import static org.gridgain.grid.GridSystemProperties.*;
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
 
@@ -1725,6 +1723,8 @@ public class GridGainEx {
 
             GridCacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
 
+            boolean hasHadoop = GridComponentType.HADOOP.isInClassPath();
+
             if (cacheCfgs != null && cacheCfgs.length > 0) {
                 if (!U.discoOrdered(discoSpi) && !U.relaxDiscoveryOrdered())
                     throw new GridException("Discovery SPI implementation does not support node ordering and " +
@@ -1733,32 +1733,44 @@ public class GridGainEx {
 
                 for (GridCacheConfiguration ccfg : cacheCfgs) {
                     if (CU.isDrSystemCache(ccfg.getName()))
-                        throw new GridException("Cache name cannot start with \"" + CU.DR_SYS_CACHE_PREFIX +
+                        throw new GridException("Cache name cannot start with \"" + CU.SYS_CACHE_DR_PREFIX +
                             "\" because this prefix is reserved for internal purposes.");
+
+                    if (CU.isHadoopSystemCache(ccfg.getName()))
+                        throw new GridException("Cache name cannot be \"" + CU.SYS_CACHE_HADOOP_MR +
+                            "\" because it is reserved for internal purposes.");
 
                     if (ccfg.getDrSenderConfiguration() != null)
                         drSysCaches.add(CU.cacheNameForDrSystemCache(ccfg.getName()));
                 }
 
-                GridCacheConfiguration[] clone = new GridCacheConfiguration[cacheCfgs.length + drSysCaches.size()];
+                GridCacheConfiguration[] clone = new GridCacheConfiguration[cacheCfgs.length + drSysCaches.size() +
+                    (hasHadoop ? 1 : 0)];
 
                 int cloneIdx = 0;
 
+                if (hasHadoop)
+                    clone[cloneIdx++] = CU.hadoopSystemCache();
+
                 for (String drSysCache : drSysCaches)
-                    clone[cloneIdx++] = drSystemCache(drSysCache);
+                    clone[cloneIdx++] = CU.drSystemCache(drSysCache);
 
                 for (GridCacheConfiguration ccfg : cacheCfgs)
                     clone[cloneIdx++] = new GridCacheConfiguration(ccfg);
 
                 myCfg.setCacheConfiguration(clone);
             }
-            else if (!drSysCaches.isEmpty()) {
-                GridCacheConfiguration[] ccfgs = new GridCacheConfiguration[drSysCaches.size()];
+            else if (!drSysCaches.isEmpty() || hasHadoop) {
+                // Populate system caches/
+                GridCacheConfiguration[] ccfgs = new GridCacheConfiguration[drSysCaches.size() + (hasHadoop ? 1 : 0)];
 
                 int idx = 0;
 
+                if (hasHadoop)
+                    ccfgs[idx++] = CU.hadoopSystemCache();
+
                 for (String drSysCache : drSysCaches)
-                    ccfgs[idx++] = drSystemCache(drSysCache);
+                    ccfgs[idx++] = CU.drSystemCache(drSysCache);
 
                 myCfg.setCacheConfiguration(ccfgs);
             }
@@ -1926,24 +1938,6 @@ public class GridGainEx {
             catch (Exception e) {
                 throw new GridException("Failed to create GridLog4jLogger.", e);
             }
-        }
-
-        /**
-         * Creates system cache configuration used by data center replication component.
-         *
-         * @param cacheName Cache name.
-         * @return Replication cache configuration.
-         */
-        private GridCacheConfiguration drSystemCache(String cacheName) {
-            GridCacheConfiguration cache = new GridCacheConfiguration();
-
-            cache.setName(cacheName);
-            cache.setCacheMode(REPLICATED);
-            cache.setAtomicityMode(TRANSACTIONAL);
-            cache.setSwapEnabled(false);
-            cache.setWriteSynchronizationMode(FULL_SYNC);
-
-            return cache;
         }
 
         /**

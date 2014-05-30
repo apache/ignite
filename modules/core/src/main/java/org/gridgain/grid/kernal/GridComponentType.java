@@ -119,6 +119,22 @@ public enum GridComponentType {
     }
 
     /**
+     * Check whether real component class is in classpath.
+     *
+     * @return {@code True} if in classpath.
+     */
+    public boolean isInClassPath() {
+        try {
+            Class.forName(clsName);
+
+            return true;
+        }
+        catch (ClassNotFoundException ignore) {
+            return false;
+        }
+    }
+
+    /**
      * Creates component.
      *
      * @param ctx Kernal context.
