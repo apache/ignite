@@ -248,7 +248,8 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
                 ts = line.ts; // Remember last timestamp.
 
                 // Remember last GGFS mode.
-                mode = line.mode;
+                if (line.mode != null)
+                    mode = line.mode;
 
                 switch (line.entryType) {
                     case TYPE_OPEN_IN:
