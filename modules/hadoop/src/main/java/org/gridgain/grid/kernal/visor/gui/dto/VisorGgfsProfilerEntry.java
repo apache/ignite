@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.visor.gui.dto;
 import org.gridgain.grid.ggfs.*;
 
 import java.io.*;
+import java.util.*;
 
 /**
  * Visor GGFS profiler information about one file.
@@ -19,6 +20,17 @@ import java.io.*;
 public class VisorGgfsProfilerEntry implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    public static class VisorGgfsProfilerEntryTimestampComparator implements Comparator<VisorGgfsProfilerEntry> {
+        @Override public int compare(VisorGgfsProfilerEntry a, VisorGgfsProfilerEntry b) {
+            return a.timestamp < b.timestamp ? -1
+                : a.timestamp > b.timestamp ? 1
+                : 0;
+        }
+    }
+
+    public static final VisorGgfsProfilerEntryTimestampComparator ENTRY_TIMESTAMP_COMPARATOR
+        = new VisorGgfsProfilerEntryTimestampComparator();
 
     /** Path to file. */
     private final String path;
@@ -51,7 +63,7 @@ public class VisorGgfsProfilerEntry implements Serializable {
     private final long userWriteTime;
 
     /** Calculated uniformity. */
-    private final double uniformity;
+    private double uniformity;
 
     /** Counters for uniformity calculation.  */
     private final VisorGgfsProfilerUniformityCounters counters;
@@ -73,9 +85,11 @@ public class VisorGgfsProfilerEntry implements Serializable {
         long bytesWritten,
         long writeTime,
         long userWriteTime,
-        double uniformity,
+//        double uniformity,
         VisorGgfsProfilerUniformityCounters counters
     ) {
+        assert counters != null;
+
         this.path = path;
         this.timestamp = timestamp;
         this.mode = mode;
@@ -86,7 +100,7 @@ public class VisorGgfsProfilerEntry implements Serializable {
         this.bytesWritten = bytesWritten;
         this.writeTime = writeTime;
         this.userWriteTime = userWriteTime;
-        this.uniformity = uniformity;
+        this.uniformity = -1;
         this.counters = counters;
 
         this.readSpeed = speed(bytesRead, readTime);
@@ -185,6 +199,9 @@ public class VisorGgfsProfilerEntry implements Serializable {
      * @return Calculated uniformity.
      */
     public double uniformity() {
+        if (uniformity < 0)
+            uniformity = counters.calc();
+
         return uniformity;
     }
 
@@ -208,17 +225,4 @@ public class VisorGgfsProfilerEntry implements Serializable {
     public long writeSpeed() {
         return writeSpeed;
     }
-// TODO ???
-//    assert(counters != null)
-//
-//    private var uniformityCached = -1d
-//
-//    @impl def uniformity: Double = {
-//        if (uniformityCached < 0)
-//            uniformityCached = counters.calc()
-//
-//        uniformityCached
-//    }
-
-
 }

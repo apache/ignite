@@ -105,7 +105,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
         }
     }
 
-    private static final VisorGgfsProfilerParsedLineComparator PARSED_LINE_COMPARATOR
+    private static final VisorGgfsProfilerParsedLineComparator PARSED_LINE_BY_TS_COMPARATOR
         = new VisorGgfsProfilerParsedLineComparator();
 
     /**
@@ -222,7 +222,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
         /**
          * Aggregate information from parsed lines grouped by `streamId`.
          */
-        private VisorGgfsProfilerEntry aggregateParsedLines(ArrayList<VisorGgfsProfilerParsedLine> lines) {
+        private VisorGgfsProfilerEntry aggregateParsedLines(List<VisorGgfsProfilerParsedLine> lines) {
             String path = "";
             long ts = 0;
             long size = 0;
@@ -236,7 +236,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
 
             VisorGgfsProfilerUniformityCounters counters = new VisorGgfsProfilerUniformityCounters();
 
-            Collections.sort(lines, PARSED_LINE_COMPARATOR);
+            Collections.sort(lines, PARSED_LINE_BY_TS_COMPARATOR);
 
             for (VisorGgfsProfilerParsedLine line : lines) {
                 if (!line.path.isEmpty())
@@ -304,7 +304,6 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
                     bytesWritten,
                     writeTime,
                     userWriteTime,
-                    0d, // TODO
                     counters);
             else
                 return null;
@@ -319,7 +318,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
                 if (line != null) {
                     // Check file header.
                     if (line.equalsIgnoreCase(HDR))
-                        do {
+                        while (line != null) {
                             line = br.readLine();
 
                             if (line != null)
@@ -333,7 +332,6 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
                                     // Skip invalid lines.
                                 }
                         }
-                        while (line != null);
                 }
             }
 
@@ -352,13 +350,38 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
                 grp.add(line);
             }
 
-// TODO
-//            .values.map(aggregateParsedLines) // Aggregate each group.
-//            .flatten // Skip empty aggregation results.
-//            .groupBy(_.path) // Group by files.
-//            .values.map(aggregateGgfsProfilerEntries) // Aggregate by files.
+            // Aggregate each group.
+            List<VisorGgfsProfilerEntry> entries = new ArrayList<>(byStreamId.size());
 
-            return null;
+            for (List<VisorGgfsProfilerParsedLine> lines : byStreamId.values()) {
+                VisorGgfsProfilerEntry entry = aggregateParsedLines(lines);
+
+                if (entry != null)
+                    entries.add(entry);
+            }
+
+            // Group by files.
+            Map<String, List<VisorGgfsProfilerEntry>> byPath = new HashMap<>();
+
+            for (VisorGgfsProfilerEntry entry: entries) {
+                List<VisorGgfsProfilerEntry> grp = byPath.get(entry.path());
+
+                if (grp == null) {
+                    grp = new ArrayList<>();
+
+                    byPath.put(entry.path(), grp);
+                }
+
+                grp.add(entry);
+            }
+
+            // Aggregate by files.
+            List<VisorGgfsProfilerEntry> res = new ArrayList<>(byPath.size());
+
+            for (List<VisorGgfsProfilerEntry> lst : byPath.values())
+                res.add(VisorGgfsProfiler.aggregateGgfsProfilerEntries(lst));
+
+            return res;
         }
 
         /**

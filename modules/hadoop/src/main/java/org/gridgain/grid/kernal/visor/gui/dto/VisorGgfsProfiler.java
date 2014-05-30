@@ -70,7 +70,7 @@ public class VisorGgfsProfiler {
 //            })
 
             return new VisorGgfsProfilerEntry(path, timestamp, mode, size, bytesRead, readTime, userReadTime,
-                bytesWritten, writeTime, userWriteTime, 0d, counters);
+                bytesWritten, writeTime, userWriteTime, counters);
         }
     }
 
