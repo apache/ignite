@@ -30,7 +30,7 @@ public interface GridCacheInterceptor<K, V> {
      * @return The new value to be returned as result of {@code get()} operation.
      * @see GridCacheProjection#get(Object)
      */
-    @Nullable public V onGet(K key, V val);
+    @Nullable public V onGet(K key, @Nullable V val);
 
     /**
      * This method is called within {@link GridCacheProjection#put(Object, Object, GridPredicate[])}
