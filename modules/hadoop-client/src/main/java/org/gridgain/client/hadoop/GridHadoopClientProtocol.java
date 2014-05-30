@@ -26,6 +26,7 @@ import org.gridgain.client.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.proto.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 
@@ -52,7 +53,7 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     private long lastVer = -1;
 
     /** Last received status. */
-    private JobStatus lastStatus;
+    private GridHadoopJobStatus lastStatus;
 
     /**
      * Constructor.
@@ -295,11 +296,11 @@ public class GridHadoopClientProtocol implements ClientProtocol {
         if (lastVer < status.version()) {
             lastVer = status.version();
 
-            lastStatus = GridHadoopUtils.status(status, conf);
+            lastStatus = status;
         }
         else
             assert lastStatus != null;
 
-        return lastStatus;
+        return GridHadoopUtils.status(lastStatus, conf);
     }
 }

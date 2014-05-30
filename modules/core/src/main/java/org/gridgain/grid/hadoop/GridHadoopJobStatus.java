@@ -29,20 +29,29 @@ public class GridHadoopJobStatus implements Externalizable {
     /** User. */
     private String usr;
 
-    /** Pending split count. */
-    private int pendingSplitCnt;
+    /** Pending mappers count. */
+    private int pendingMapperCnt;
 
-    /** Pending reducer count. */
+    /** Pending reducers count. */
     private int pendingReducerCnt;
 
-    /** Total split count. */
-    private int totalSplitCnt;
+    /** Total mappers count. */
+    private int totalMapperCnt;
 
-    /** Total reducer count. */
+    /** Total reducers count. */
     private int totalReducerCnt;
+
+    /** Map start time. */
+    private long mapStartTs;
+
+    /** Reduce start time. */
+    private long reduceStartTs;
 
     /** Phase. */
     private GridHadoopJobPhase jobPhase;
+
+    /** Speculative concurrency level. */
+    private int concurrencyLvl;
 
     /** Version. */
     private long ver;
@@ -61,25 +70,31 @@ public class GridHadoopJobStatus implements Externalizable {
      * @param jobState Job state.
      * @param jobName Job name.
      * @param usr User.
-     * @param pendingSplitCnt Pending split count.
-     * @param pendingReducerCnt Pending reducer count.
-     * @param totalSplitCnt Total split count.
-     * @param totalReducerCnt Total reducer count.
+     * @param pendingMapperCnt Pending mappers count.
+     * @param pendingReducerCnt Pending reducers count.
+     * @param totalMapCnt Total mappers count.
+     * @param totalReducerCnt Total reducers count.
+     * @param mapStartTs Map start time.
+     * @param reduceStartTs Reduce start time.
      * @param jobPhase Job phase.
+     * @param concurrencyLvl Speculative concurrency level.
      * @param ver Version.
      */
     public GridHadoopJobStatus(GridHadoopJobId jobId, GridHadoopJobState jobState, String jobName, String usr,
-        int pendingSplitCnt, int pendingReducerCnt, int totalSplitCnt, int totalReducerCnt,
-        GridHadoopJobPhase jobPhase, long ver) {
+        int pendingMapperCnt, int pendingReducerCnt, int totalMapCnt, int totalReducerCnt, long mapStartTs,
+        long reduceStartTs, GridHadoopJobPhase jobPhase, int concurrencyLvl, long ver) {
         this.jobId = jobId;
         this.jobState = jobState;
         this.jobName = jobName;
         this.usr = usr;
-        this.pendingSplitCnt = pendingSplitCnt;
+        this.pendingMapperCnt = pendingMapperCnt;
         this.pendingReducerCnt = pendingReducerCnt;
-        this.totalSplitCnt = totalSplitCnt;
+        this.totalMapperCnt = totalMapCnt;
         this.totalReducerCnt = totalReducerCnt;
+        this.mapStartTs = mapStartTs;
+        this.reduceStartTs = reduceStartTs;
         this.jobPhase = jobPhase;
+        this.concurrencyLvl = concurrencyLvl;
         this.ver = ver;
     }
 
@@ -112,31 +127,52 @@ public class GridHadoopJobStatus implements Externalizable {
     }
 
     /**
-     * @return Pending split count.
+     * @return Pending mappers count.
      */
-    public int pendingSplitCnt() {
-        return pendingSplitCnt;
+    public int pendingMapperCnt() {
+        return pendingMapperCnt;
     }
 
     /**
-     * @return Pending reducer count.
+     * @return Pending reducers count.
      */
     public int pendingReducerCnt() {
         return pendingReducerCnt;
     }
 
     /**
-     * @return Total split count.
+     * @return Total mappers count.
      */
-    public int totalSplitCnt() {
-        return totalSplitCnt;
+    public int totalMapperCnt() {
+        return totalMapperCnt;
     }
 
     /**
-     * @return Total reducer count.
+     * @return Total reducers count.
      */
     public int totalReducerCnt() {
         return totalReducerCnt;
+    }
+
+    /**
+     * @return Map start time.
+     */
+    public long mapStartTime() {
+        return mapStartTs;
+    }
+
+    /**
+     * @return Reduce start time.
+     */
+    public long reduceStartTime() {
+        return reduceStartTs;
+    }
+
+    /**
+     * @return Speculative concurrency level.
+     */
+    public int concurrencyLevel() {
+        return concurrencyLvl;
     }
 
     /**
@@ -144,20 +180,6 @@ public class GridHadoopJobStatus implements Externalizable {
      */
     public long version() {
         return ver;
-    }
-
-    /**
-     * @return Map progress.
-     */
-    public float mapProgress() {
-        return totalSplitCnt == 0 ? 1.0f : (float)(totalSplitCnt - pendingSplitCnt) / totalSplitCnt;
-    }
-
-    /**
-     * @return Reducer progress.
-     */
-    public float reducerProgress() {
-        return totalReducerCnt == 0 ? 1.0f : (float)(totalReducerCnt - pendingReducerCnt) / totalReducerCnt;
     }
 
     /**
@@ -178,11 +200,14 @@ public class GridHadoopJobStatus implements Externalizable {
         out.writeObject(jobState);
         U.writeString(out, jobName);
         U.writeString(out, usr);
-        out.writeInt(pendingSplitCnt);
+        out.writeInt(pendingMapperCnt);
         out.writeInt(pendingReducerCnt);
-        out.writeInt(totalSplitCnt);
+        out.writeInt(totalMapperCnt);
         out.writeInt(totalReducerCnt);
+        out.writeLong(mapStartTs);
+        out.writeLong(reduceStartTs);
         out.writeObject(jobPhase);
+        out.writeInt(concurrencyLvl);
         out.writeLong(ver);
     }
 
@@ -192,11 +217,14 @@ public class GridHadoopJobStatus implements Externalizable {
         jobState = (GridHadoopJobState)in.readObject();
         jobName = U.readString(in);
         usr = U.readString(in);
-        pendingSplitCnt = in.readInt();
+        pendingMapperCnt = in.readInt();
         pendingReducerCnt = in.readInt();
-        totalSplitCnt = in.readInt();
+        totalMapperCnt = in.readInt();
         totalReducerCnt = in.readInt();
+        mapStartTs = in.readLong();
+        reduceStartTs = in.readLong();
         jobPhase = (GridHadoopJobPhase)in.readObject();
+        concurrencyLvl = in.readInt();
         ver = in.readLong();
     }
 }

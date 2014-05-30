@@ -19,8 +19,10 @@ import org.apache.hadoop.mapreduce.protocol.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.testframework.*;
 
 import java.io.*;
 import java.util.*;
@@ -129,7 +131,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
      * @throws Exception If failed.
      */
     // TODO: GG-8427: Enable when fixed.
-    public void _testJobSubmitMap() throws Exception {
+    public void testJobSubmitMap() throws Exception {
         checkJobSubmit(true, true);
     }
 
@@ -137,7 +139,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
      * @throws Exception If failed.
      */
     // TODO: GG-8427: Enable when fixed.
-    public void _testJobSubmitMapCombine() throws Exception {
+    public void testJobSubmitMapCombine() throws Exception {
         checkJobSubmit(false, true);
     }
 
@@ -145,7 +147,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
      * @throws Exception If failed.
      */
     // TODO: GG-8427: Enable when fixed.
-    public void _testJobSubmitMapReduce() throws Exception {
+    public void testJobSubmitMapReduce() throws Exception {
         checkJobSubmit(true, false);
     }
 
@@ -153,7 +155,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
      * @throws Exception If failed.
      */
     // TODO: GG-8427: Enable when fixed.
-    public void _testJobSubmitMapCombineReduce() throws Exception {
+    public void testJobSubmitMapCombineReduce() throws Exception {
         checkJobSubmit(false, false);
     }
 
@@ -204,28 +206,55 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
         JobID jobId = job.getJobID();
 
-        checkJobStatus(job.getStatus(), jobId, JOB_NAME, USR, JobStatus.State.RUNNING, 1.0f, 0.0f, 0.0f, 0.0f);
+        JobStatus jobStatus = job.getStatus();
+        checkJobStatus(jobStatus, jobId, JOB_NAME, USR, JobStatus.State.RUNNING, 1.0f, 0.0f);
+        assert jobStatus.getMapProgress() >= 0.0f && jobStatus.getMapProgress() < 1.0f;
+        assert jobStatus.getReduceProgress() == 0.0f;
+
+        // Ensure that map progress increases.
+        U.sleep(2100);
+
+        JobStatus recentJobStatus = job.getStatus();
+
+        assert recentJobStatus.getMapProgress() > jobStatus.getMapProgress() :
+            "Old=" + jobStatus.getMapProgress() + ", new=" + recentJobStatus.getMapProgress();
 
         mapLatch.countDown();
 
-        long endTime = U.currentTimeMillis() + 5000L;
-
-        while (U.currentTimeMillis() < endTime) {
-            if (F.eq(1.0f, job.getStatus().getMapProgress()))
-                break;
-        }
-
-        assert F.eq(1.0f, job.getStatus().getMapProgress());
+        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                try {
+                    return F.eq(1.0f, job.getStatus().getMapProgress());
+                }
+                catch (Exception e) {
+                    throw new RuntimeException("Unexpected exception.", e);
+                }
+            }
+        }, 5000L);
 
         if (!noReducers) {
-            checkJobStatus(job.getStatus(), jobId, JOB_NAME, USR, JobStatus.State.RUNNING, 1.0f, 1.0f, 0.0f, 0.0f);
+            jobStatus = job.getStatus();
+            checkJobStatus(jobStatus, jobId, JOB_NAME, USR, JobStatus.State.RUNNING, 1.0f, 0.0f);
+            assert jobStatus.getMapProgress() == 1.0f;
+            assert jobStatus.getReduceProgress() >= 0.0f && jobStatus.getReduceProgress() < 1.0f;
+
+            // Ensure that reduces progress increases.
+            U.sleep(2100);
+
+            recentJobStatus = job.getStatus();
+
+            assert recentJobStatus.getReduceProgress() > jobStatus.getReduceProgress() :
+                "Old=" + jobStatus.getReduceProgress() + ", new=" + recentJobStatus.getReduceProgress();
 
             reduceLatch.countDown();
         }
 
         job.waitForCompletion(false);
 
-        checkJobStatus(job.getStatus(), jobId, JOB_NAME, USR, JobStatus.State.SUCCEEDED, 1.0f, 1.0f, 1.0f, 1.0f);
+        jobStatus = job.getStatus();
+        checkJobStatus(job.getStatus(), jobId, JOB_NAME, USR, JobStatus.State.SUCCEEDED, 1.0f, 1.0f);
+        assert jobStatus.getMapProgress() == 1.0f;
+        assert jobStatus.getReduceProgress() == 1.0f;
 
         dumpGgfs(ggfs, new GridGgfsPath(PATH_OUTPUT));
     }
@@ -271,23 +300,20 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
      * @param expUser Expected user.
      * @param expState Expected state.
      * @param expSetupProgress Expected setup progress.
-     * @param expMapProgress Expected map progress.
-     * @param expReduceProgress Expected reduce progress.
      * @param expCleanupProgress Expected cleanup progress.
      * @throws Exception If failed.
      */
     private static void checkJobStatus(JobStatus status, JobID expJobId, String expJobName, String expUser,
-        JobStatus.State expState, float expSetupProgress, float expMapProgress, float expReduceProgress,
-        float expCleanupProgress) throws Exception {
-        assert F.eq(status.getJobID(), expJobId);
-        assert F.eq(status.getJobName(), expJobName);
-        assert F.eq(status.getUsername(), expUser);
-        assert F.eq(status.getState(), expState) : status.getState();
+        JobStatus.State expState, float expSetupProgress, float expCleanupProgress) throws Exception {
+        assert F.eq(status.getJobID(), expJobId) : "Expected=" + expJobId + ", actual=" + status.getJobID();
+        assert F.eq(status.getJobName(), expJobName) : "Expected=" + expJobName + ", actual=" + status.getJobName();
+        assert F.eq(status.getUsername(), expUser) : "Expected=" + expUser + ", actual=" + status.getUsername();
+        assert F.eq(status.getState(), expState) : "Expected=" + expState + ", actual=" + status.getState();
 
-        assert F.eq(status.getSetupProgress(), expSetupProgress);
-        assert F.eq(status.getMapProgress(), expMapProgress);
-        assert F.eq(status.getReduceProgress(), expReduceProgress);
-        assert F.eq(status.getCleanupProgress(), expCleanupProgress);
+        assert F.eq(status.getSetupProgress(), expSetupProgress) :
+            "Expected=" + expSetupProgress + ", actual=" + status.getSetupProgress();
+        assert F.eq(status.getCleanupProgress(), expCleanupProgress) :
+            "Expected=" + expCleanupProgress + ", actual=" + status.getCleanupProgress();
     }
 
     /**

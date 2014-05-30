@@ -23,17 +23,20 @@ import static org.gridgain.grid.hadoop.GridHadoopJobState.*;
  * Hadoop utility methods.
  */
 public class GridHadoopUtils {
+    /** Speculative concurrency on this machine. Mimics default public pool size calculation. */
+    public static final int SPECULATIVE_CONCURRENCY = Math.min(8, Runtime.getRuntime().availableProcessors() * 2);
+
     /** Staging constant. */
     private static final String STAGING_CONSTANT = ".staging";
 
     /** Step span. */
     private static final long STEP_SPAN = 1000L;
 
-    /** Minimum doubling interval. */
-    private static final long MIN_DOUBLE_INTERVAL = 5000L;
+    /** Minimum possible amount of steps giving 50% of remaining progress. */
+    private static final int MIN_STEPS_PER_HALF_PROGRESS = 5;
 
-    /** Doubling interval delta. */
-    private static final long DOUBLE_INTERVAL_DELTA = 45000L;
+    /** Range of possible amount of steps giving 50% of remaining progress. Gives [5 .. 50] range. */
+    private static final int STEPS_PER_HALF_PROGRESS_RANGE = 45;
 
     /**
      * Convert Hadoop job metadata to job status.
@@ -54,7 +57,10 @@ public class GridHadoopUtils {
             meta.pendingReducers() != null ? meta.pendingReducers().size() : 0,
             meta.mapReducePlan().mappers(),
             meta.mapReducePlan().reducers(),
+            meta.startTimestamp(),
+            meta.mapCompleteTimestamp(),
             meta.phase(),
+            SPECULATIVE_CONCURRENCY,
             meta.version()
         );
     }
@@ -98,7 +104,7 @@ public class GridHadoopUtils {
 
         switch (status.jobPhase()) {
             case PHASE_MAP:
-                mapProgress = status.mapProgress();
+                mapProgress = mapProgress(status);
                 reduceProgress = 0.0f;
                 cleanupProgress = 0.0f;
 
@@ -106,15 +112,15 @@ public class GridHadoopUtils {
 
             case PHASE_REDUCE:
                 mapProgress = 1.0f;
-                reduceProgress = status.reducerProgress();
+                reduceProgress = reduceProgress(status);
                 cleanupProgress = 0.0f;
 
                 break;
 
             case PHASE_CANCELLING:
                 // Do not know where cancel occurred, hence calculate map/reduce progress.
-                mapProgress = status.mapProgress();
-                reduceProgress = status.reducerProgress();
+                mapProgress = mapProgress(status);
+                reduceProgress = reduceProgress(status);
                 cleanupProgress = 0.0f;
 
                 break;
@@ -123,79 +129,13 @@ public class GridHadoopUtils {
                 assert status.jobPhase() == PHASE_COMPLETE;
 
                 // Do not know whether this is complete on success or failure, hence calculate map/reduce progress.
-                mapProgress = status.mapProgress();
-                reduceProgress = status.reducerProgress();
+                mapProgress = mapProgress(status);
+                reduceProgress = reduceProgress(status);
                 cleanupProgress = 1.0f;
         }
 
         return new JobStatus(jobId, 1.0f, mapProgress, reduceProgress, cleanupProgress, state, JobPriority.NORMAL,
             status.user(), status.jobName(), jobFile(conf, status.user(), jobId).toString(), "N/A");
-    }
-
-    /**
-     * Calculate progress.
-     *
-     * @param totalTasks Total tasks.
-     * @param completedTasks Completed tasks.
-     * @param maxConcurrentTasks Maximum possible number of concurrent tasks.
-     * @param startTime Start time.
-     * @return Progress.
-     */
-    private static float progress(int totalTasks, int completedTasks, int maxConcurrentTasks, long startTime) {
-        assert maxConcurrentTasks >= totalTasks;
-
-        int concurrentTasks = Math.min(totalTasks - completedTasks, maxConcurrentTasks);
-
-        long dur = U.currentTimeMillis() - startTime;
-
-        float speculativeProgress = speculativeProgress(totalTasks, maxConcurrentTasks, dur) * concurrentTasks;
-
-        return ((float)completedTasks + speculativeProgress) / totalTasks;
-    }
-
-    public static void main(String[] args) {
-//        speculativeProgress(800, 8, 8, 100 * UPDATE_INTERVAL + 1500);
-    }
-
-    /**
-     * Calculate speculative progress.
-     *
-     * @param totalTasks Total tasks.
-     * @param maxConcurrentTasks Maximum possible number of concurrent tasks.
-     * @param dur Duration.
-     * @return Speculative progress.
-     */
-    private static float speculativeProgress(int totalTasks, int maxConcurrentTasks, long dur) {
-        // Determine doubling interval based on maximum possible concurrent tasks and total tasks.
-        float doubleRatio = (float)maxConcurrentTasks / totalTasks;
-
-        U.debug("Double ratio: " + doubleRatio);
-
-        long doubleInterval = ((long)(DOUBLE_INTERVAL_DELTA * doubleRatio) + MIN_DOUBLE_INTERVAL);
-
-        doubleInterval = doubleInterval - doubleInterval % STEP_SPAN;
-
-        U.debug("Double interval: " + doubleInterval);
-
-        // Determine amount of full double interval and amount of remaining update intervals.
-        long fullDoubles = dur / doubleInterval;
-
-        U.debug("Big updates: " + fullDoubles);
-
-        long partialUpdates = (dur - fullDoubles * doubleInterval) / STEP_SPAN;
-
-        U.debug("Small updates: " + partialUpdates);
-
-        // Now, as we have intervals count, calculate speculative progress for a single task.
-        float power2 = (float)Math.pow(0.5, fullDoubles);
-
-        float progress = /** Sum of geom. progression 1/2 + 1/4 ... */ 1 - power2 +
-            /** Next member of geom. progression. */ power2 / 2 *
-            /** Relative progress of the next doubling update. */ partialUpdates * STEP_SPAN / doubleInterval;
-
-        U.debug("Single progress: " + progress);
-
-        return progress;
     }
 
     /**
@@ -223,9 +163,107 @@ public class GridHadoopUtils {
     }
 
     /**
+     * Calculate map progress.
+     *
+     * @param status Status.
+     * @return Map progress.
+     */
+    private static float mapProgress(GridHadoopJobStatus status) {
+        // Reduce phase wsa started => map had been finished.
+        if (status.reduceStartTime() > 0)
+            return 1.0f;
+
+        return progress(status.totalMapperCnt(), status.totalMapperCnt() - status.pendingMapperCnt(),
+            Math.min(status.totalMapperCnt(), status.concurrencyLevel()), status.mapStartTime());
+    }
+
+    /**
+     * Calculate reduce progress.
+     *
+     * @param status Status.
+     * @return Reduce progress.
+     */
+    private static float reduceProgress(GridHadoopJobStatus status) {
+        // Reduce has net started yet => no progress.
+        if (status.reduceStartTime() == 0)
+            return 0.0f;
+
+        return progress(status.totalReducerCnt(), status.totalReducerCnt() - status.pendingReducerCnt(),
+            Math.min(status.totalReducerCnt(), status.concurrencyLevel()), status.reduceStartTime());
+    }
+
+    /**
+     * Calculate progress.
+     *
+     * @param totalTasks Total tasks.
+     * @param completedTasks Completed tasks.
+     * @param maxConcurrentTasks Maximum possible number of concurrent tasks.
+     * @param startTime Start time.
+     * @return Progress.
+     */
+    private static float progress(int totalTasks, int completedTasks, int maxConcurrentTasks, long startTime) {
+        // Fast-path when all tasks are completed.
+        if (totalTasks == 0 || totalTasks == completedTasks)
+            return 1.0f;
+        else {
+            assert maxConcurrentTasks <= totalTasks;
+
+            int concurrentTasks = Math.min(totalTasks - completedTasks, maxConcurrentTasks);
+
+            long dur = U.currentTimeMillis() - startTime;
+
+            float speculativeProgress = speculativeProgress(totalTasks, maxConcurrentTasks, dur) * concurrentTasks;
+
+            float res = ((float)completedTasks + speculativeProgress) / totalTasks;
+
+            assert res <= 1.01f; // Assume that > .01f is an algorithm bug, not precision issue.
+
+            if (res > 1.0f)
+                res = 1.0f; // Protect from FP precision problems.
+
+            return res;
+        }
+    }
+
+    /**
+     * Calculate speculative progress.
+     *
+     * @param totalTasks Total tasks.
+     * @param maxConcurrentTasks Maximum possible number of concurrent tasks.
+     * @param dur Duration.
+     * @return Speculative progress.
+     */
+    private static float speculativeProgress(int totalTasks, int maxConcurrentTasks, long dur) {
+        // Determine amount of steps needed to cover 50% of remaining progress.
+        // More total tasks => less steps to double the progress.
+        float halfRatio = (float)maxConcurrentTasks / totalTasks;
+
+        int halfProgressSteps = MIN_STEPS_PER_HALF_PROGRESS + (int)(STEPS_PER_HALF_PROGRESS_RANGE * halfRatio);
+
+
+        // Determine amount of step size half events and amount of tail steps with the same size.
+        long stepSizeChanges = dur / (halfProgressSteps * STEP_SPAN);
+
+        long tailSteps = dur / STEP_SPAN - stepSizeChanges * halfProgressSteps;
+
+        assert halfProgressSteps * stepSizeChanges + tailSteps == dur / STEP_SPAN;
+
+        // Calculate speculative progress.
+        float power2 = (float)Math.pow(0.5, stepSizeChanges);
+
+        return /** Sum of geom. progression 1/2 + 1/4 ... */ 1 - power2 +
+            /** Relative progress of tail steps. */ (power2 / 2) * tailSteps / halfProgressSteps;
+    }
+
+    /**
      * Constructor.
      */
     private GridHadoopUtils() {
         // No-op.
     }
+
+    // TODO: Remove.
+//    public static void main(String[] args) {
+//        speculativeProgress(10, 10, 100 * STEP_SPAN + 1500);
+//    }
 }
