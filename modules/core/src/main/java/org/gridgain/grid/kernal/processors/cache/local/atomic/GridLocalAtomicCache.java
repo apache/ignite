@@ -898,10 +898,12 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             rmvKeys.add(entry.key());
                         }
                         else {
-                            updated = (V)ctx.config().getInterceptor().onBeforePut(entry.key(), old, updated);
+                            if (intercept) {
+                                updated = (V)ctx.config().getInterceptor().onBeforePut(entry.key(), old, updated);
 
-                            if (updated == null)
-                                continue;
+                                if (updated == null)
+                                    continue;
+                            }
 
                             // Update previous batch.
                             if (rmvKeys != null) {
