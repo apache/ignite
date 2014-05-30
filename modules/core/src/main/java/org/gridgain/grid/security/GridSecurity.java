@@ -72,7 +72,7 @@ public interface GridSecurity {
     public Collection<GridSecuritySubject> authenticatedSubjects() throws GridException;
 
     /**
-     * Gets security subject by subject type and subject ID.
+     * Gets security subject based on subject type and subject ID.
      *
      * @param subjType Subject type.
      * @param subjId Subject ID.
