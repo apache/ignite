@@ -26,7 +26,6 @@ import org.gridgain.client.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.proto.*;
-import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 

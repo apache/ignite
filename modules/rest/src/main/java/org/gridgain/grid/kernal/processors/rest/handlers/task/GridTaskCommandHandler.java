@@ -172,8 +172,6 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
                 long timeout = req0.timeout();
 
-                U.debug("Destination: " + req.destinationId());
-
                 final GridFuture<Object> taskFut =
                     locExec ?
                         ctx.grid().compute().withTimeout(timeout).execute(

@@ -216,7 +216,7 @@ public class GridHadoopUtils {
 
             float res = ((float)completedTasks + speculativeProgress) / totalTasks;
 
-            assert res <= 1.01f; // Assume that > .01f is an algorithm bug, not precision issue.
+            assert res <= 1.01f; // Assume that > .01f is an algorithm bug, not precision problem.
 
             if (res > 1.0f)
                 res = 1.0f; // Protect from FP precision problems.
@@ -240,7 +240,6 @@ public class GridHadoopUtils {
 
         int halfProgressSteps = MIN_STEPS_PER_HALF_PROGRESS + (int)(STEPS_PER_HALF_PROGRESS_RANGE * halfRatio);
 
-
         // Determine amount of step size half events and amount of tail steps with the same size.
         long stepSizeChanges = dur / (halfProgressSteps * STEP_SPAN);
 
@@ -261,9 +260,4 @@ public class GridHadoopUtils {
     private GridHadoopUtils() {
         // No-op.
     }
-
-    // TODO: Remove.
-//    public static void main(String[] args) {
-//        speculativeProgress(10, 10, 100 * STEP_SPAN + 1500);
-//    }
 }
