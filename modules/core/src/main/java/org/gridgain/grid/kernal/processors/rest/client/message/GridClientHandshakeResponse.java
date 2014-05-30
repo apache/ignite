@@ -19,6 +19,15 @@ public class GridClientHandshakeResponse extends GridClientAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    public static final byte CODE_OK = 0;
+
+    /** */
+    public static final byte CODE_VER_CHECK_FAILED = 1;
+
+    /** */
+    public static final byte CODE_UNKNOWN_PROTO_ID = 2;
+
     /** Response, indicating successful handshake. */
     public static final GridClientHandshakeResponse OK = new GridClientHandshakeResponse((byte)0);
 

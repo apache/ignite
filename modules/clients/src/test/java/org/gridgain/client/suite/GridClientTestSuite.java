@@ -19,15 +19,12 @@ import org.gridgain.client.util.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
 
-import java.io.*;
-
 /**
  * Test suite includes all test that concern REST processors.
  */
 public class GridClientTestSuite extends TestSuite {
     /**
      * @return Suite that contains all tests for REST.
-     * @throws IOException If failed.
      */
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Gridgain Clients Test Suite");
