@@ -122,7 +122,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         else {
             // If update goes through primary node and it is cancelled then backups aren't updated.
             return (writeOrderMode() == PRIMARY ||
-                (op == Operation.TRANSFORM || op == Operation.PUT_FILTER)) ? 1 : dataNodes;
+                (op == Operation.TRANSFORM || op == Operation.UPDATE_FILTER)) ? 1 : dataNodes;
         }
     }
 
@@ -138,7 +138,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             return dataNodes * 2 + (storeEnabled() ? 1 : 0);
         else {
             return (writeOrderMode() == PRIMARY ||
-                (op == Operation.TRANSFORM || op == Operation.PUT_FILTER)) ? 2 : dataNodes * 2;
+                (op == Operation.TRANSFORM || op == Operation.UPDATE_FILTER)) ? 2 : dataNodes * 2;
         }
     }
 
@@ -163,7 +163,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         log.info("Update 1 " + op);
 
-        update(0, op, key, 1, null);
+        update(0, false, op, key, 1, null);
 
         checkCacheValue(key, null);
 
@@ -197,7 +197,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         log.info("Update 2 " + op);
 
-        update(0, op, key, 2, 1);
+        update(0, false, op, key, 2, 1);
 
         checkCacheValue(key, 1);
 
@@ -249,7 +249,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         log.info("Update 1 " + op);
 
-        update(0, op, key, 1, null);
+        update(0, false, op, key, 1, null);
 
         checkCacheValue(key, 2);
 
@@ -276,7 +276,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         log.info("Update 2 " + op);
 
-        update(0, op, key, 3, 2);
+        update(0, false, op, key, 3, 2);
 
         checkCacheValue(key, 4);
 
@@ -308,25 +308,31 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @param op Operation type.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     private void testIgnoreRemove(String key, Operation op) throws Exception {
         int expInvokeCnt = expectedIgnoreInvokeCount(op);
 
         // Interceptor returns null to disabled update.
         GridCacheInterceptor retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public Object onBeforePut(Object key, @Nullable Object oldVal, Object newVal) {
-                return null;
+            @Nullable @Override public GridBiTuple onBeforeRemove(Object key, @Nullable Object val) {
+                return new GridBiTuple(true, null);
             }
         };
 
         interceptor.retInterceptor = retInterceptor;
 
-        // Execute update when value is null, it should not change cache value.
+        // Execute remove when value is null.
 
         log.info("Update 1 " + op);
+
+        update(0, true, op, key, null, null);
+
+
     }
 
     /**
      * @param grid Grid index.
+     * @param rmv If {@code true} then executes remove.
      * @param op Operation type.
      * @param key Key.
      * @param val Value.
@@ -334,47 +340,96 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    private void update(int grid, Operation op, String key, final Integer val, @Nullable final Integer expOld)
+    private void update(int grid, boolean rmv, Operation op, String key, final Integer val,
+        @Nullable final Integer expOld)
         throws Exception {
         GridCache cache = cache(grid);
 
-        switch (op) {
-            case PUT: {
-                assertEquals(expOld, cache.put(key, val));
+        if (rmv) {
+            assertNull(val);
 
-                break;
+            switch (op) {
+                case UPDATE: {
+                    assertEquals(expOld, cache.remove(key));
+
+                    break;
+                }
+
+                case UPDATEX: {
+                    cache.removex(key);
+
+                    break;
+                }
+
+                case UPDATE_FILTER: {
+                    Object old = cache.remove(key, new P1<GridCacheEntry>() {
+                        @Override public boolean apply(GridCacheEntry entry) {
+                            return true;
+                        }
+                    });
+
+                    assertEquals(expOld, old);
+
+                    break;
+                }
+
+                case TRANSFORM: {
+                    cache.transform(key, new GridClosure<Integer, Integer>() {
+                        @Nullable @Override public Integer apply(Integer old) {
+                            assertEquals(expOld, old);
+
+                            return null;
+                        }
+                    });
+
+                    break;
+                }
+
+                default:
+                    fail();
             }
+        }
+        else {
+            switch (op) {
+                case UPDATE: {
+                    assertEquals(expOld, cache.put(key, val));
 
-            case PUTX: {
-                cache.putx(key, val);
+                    break;
+                }
 
-                break;
+                case UPDATEX: {
+                    cache.putx(key, val);
+
+                    break;
+                }
+
+                case UPDATE_FILTER: {
+                    Object old = cache.put(key, val, new P1<GridCacheEntry>() {
+                        @Override public boolean apply(GridCacheEntry entry) {
+                            return true;
+                        }
+                    });
+
+                    assertEquals(expOld, old);
+
+                    break;
+                }
+
+                case TRANSFORM: {
+                    cache.transform(key, new GridClosure<Integer, Integer>() {
+                        @Override public Integer apply(Integer old) {
+                            assertEquals(expOld, old);
+
+                            return val;
+                        }
+                    });
+
+                    break;
+                }
+
+                default:
+                    fail();
             }
-
-            case PUT_FILTER: {
-                Object old = cache.put(key, val, new P1<GridCacheEntry>() {
-                    @Override public boolean apply(GridCacheEntry entry) {
-                        return true;
-                    }
-                });
-
-                assertEquals(expOld, old);
-
-                break;
-            }
-
-            case TRANSFORM: {
-                cache.transform(key, new GridClosure<Integer, Integer>() {
-                    @Override public Integer apply(Integer old) {
-                        assertEquals(expOld, old);
-
-                        return val;
-                    }
-                });
-            }
-
-            default:
-                fail();
         }
     }
 
@@ -493,12 +548,12 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         /**
          *
          */
-        PUT,
+        UPDATE,
 
         /**
          *
          */
-        PUTX,
+        UPDATEX,
 
         /**
          *
@@ -508,7 +563,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         /**
          *
          */
-        PUT_FILTER
+        UPDATE_FILTER
     }
 
     /**
