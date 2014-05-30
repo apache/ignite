@@ -1049,23 +1049,12 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
             throw new GridSpiException("Failed to initialize TCP server: " + locHost, e);
         }
 
-        Collection<InetSocketAddress> extAddrs = null;
-
-        if (addrRslvr != null) {
-            InetSocketAddress addr = new InetSocketAddress(locHost, boundTcpPort);
-
-            try {
-                extAddrs = addrRslvr.getExternalAddresses(addr);
-            }
-            catch (GridException e) {
-                throw new GridSpiException("Failed to get mapped external addresses " +
-                    "[addrRslvr=" + addrRslvr + ", addr=" + addr + ']', e);
-            }
-        }
-
         // Set local node attributes.
         try {
             GridBiTuple<Collection<String>, Collection<String>> addrs = U.resolveLocalAddresses(locHost);
+
+            Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
+                U.resolveAddresses(addrRslvr, F.flat(Arrays.asList(addrs.get1(), addrs.get2())), boundTcpPort);
 
             return F.asMap(
                 createSpiAttributeName(ATTR_ADDRS), addrs.get1(),
