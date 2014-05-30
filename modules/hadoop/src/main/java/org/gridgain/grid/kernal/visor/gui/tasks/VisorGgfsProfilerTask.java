@@ -142,15 +142,8 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
         /**
          * Parse boolean.
          */
-        private boolean parseBoolean(String[] ss, int ix, boolean dflt) {
-            if (ss.length <= ix)
-                return dflt;
-            else if ("0".equals(ss[ix]))
-                return false;
-            else if ("1".equals(ss[ix]))
-                return true;
-            else
-                return dflt;
+        private boolean parseBoolean(String[] ss, int ix) {
+            return ix < ss.length && "1".equals(ss[ix]);
         }
 
         private int parseInt(String[] ss, int ix, int dflt) {
@@ -173,13 +166,23 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
             }
         }
 
-        private String parseString(String[] ss, int ix, String dflt) {
+        private String parseString(String[] ss, int ix) {
             if (ss.length <= ix)
-                return dflt;
+                return "";
             else {
                 String s = ss[ix];
 
-                return s.isEmpty() ? dflt : s;
+                return s.isEmpty() ? "" : s;
+            }
+        }
+
+        private GridGgfsMode parseGgfsMode(String[] ss, int ix) {
+            if (ss.length <= ix)
+                return null;
+            else {
+                String s = ss[ix];
+
+                return s.isEmpty() ? null : GridGgfsMode.valueOf(s);
             }
         }
 
@@ -202,12 +205,12 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
                     return new VisorGgfsProfilerParsedLine(
                         parseLong(ss, LOG_COL_TIMESTAMP, 0),
                         entryType,
-                        parseString(ss, LOG_COL_PATH, ""),
-                        GridGgfsMode.valueOf(parseString(ss, LOG_COL_GGFS_MODE, "")),
+                        parseString(ss, LOG_COL_PATH),
+                        parseGgfsMode(ss, LOG_COL_GGFS_MODE),
                         streamId,
                         parseLong(ss, LOG_COL_DATA_LEN, 0),
-                        parseBoolean(ss, LOG_COL_APPEND, false),
-                        parseBoolean(ss, LOG_COL_OVERWRITE, false),
+                        parseBoolean(ss, LOG_COL_APPEND),
+                        parseBoolean(ss, LOG_COL_OVERWRITE),
                         parseLong(ss, LOG_COL_POS, 0),
                         parseInt(ss, LOG_COL_READ_LEN, 0),
                         parseLong(ss, LOG_COL_USER_TIME, 0),
@@ -318,19 +321,20 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorGgfsProfilerTas
                 if (line != null) {
                     // Check file header.
                     if (line.equalsIgnoreCase(HDR))
+                        line = br.readLine();
+
                         while (line != null) {
+                            try {
+                                VisorGgfsProfilerParsedLine ln = parseLine(line);
+
+                                if (ln != null)
+                                    parsedLines.add(ln);
+                            }
+                            catch (NumberFormatException ignored) {
+                                // Skip invalid lines.
+                            }
+
                             line = br.readLine();
-
-                            if (line != null)
-                                try {
-                                    VisorGgfsProfilerParsedLine ln = parseLine(line);
-
-                                    if (ln != null)
-                                        parsedLines.add(ln);
-                                }
-                                catch (NumberFormatException ignored) {
-                                    // Skip invalid lines.
-                                }
                         }
                 }
             }

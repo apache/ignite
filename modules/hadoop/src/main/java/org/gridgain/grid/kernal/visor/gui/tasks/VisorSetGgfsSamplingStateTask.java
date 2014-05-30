@@ -51,7 +51,7 @@ public class VisorSetGgfsSamplingStateTask
         }
     }
 
-    /** TODO */
+    /** Job that perform parsing of GGFS profiler logs. */
     @SuppressWarnings("PublicInnerClass")
     public static class VisorSetGgfsSamplingStateJob extends VisorOneNodeJob<VisorSetGgfsSamplingStateArg, Void> {
         /** */

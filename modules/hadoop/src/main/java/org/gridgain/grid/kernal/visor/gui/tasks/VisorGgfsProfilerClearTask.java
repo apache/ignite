@@ -50,7 +50,7 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<VisorGgfsProfil
         }
     }
 
-    /** TODO */
+    /** GGFS profiler task result. */
     @SuppressWarnings("PublicInnerClass")
     public static class VisorGgfsProfilerClearTaskResult implements Serializable {
         /** */

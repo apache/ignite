@@ -10,8 +10,9 @@
 package org.gridgain.grid.kernal.visor.gui.dto;
 
 import org.gridgain.grid.ggfs.GridGgfsMode;
+import org.gridgain.grid.util.typedef.*;
 
-import java.util.List;
+import java.util.*;
 
 /**
  * Various global constants for GGFS profiler.
@@ -23,18 +24,17 @@ public class VisorGgfsProfiler {
     /**
      * Aggregate GGFS profiler entries.
      *
-     * @param lines Lines to sum.
+     * @param entries Entries to sum.
      * @return Single aggregated entry.
      */
-    public static VisorGgfsProfilerEntry aggregateGgfsProfilerEntries(List<VisorGgfsProfilerEntry> lines) {
-        assert lines != null;
-        assert !lines.isEmpty();
+    public static VisorGgfsProfilerEntry aggregateGgfsProfilerEntries(List<VisorGgfsProfilerEntry> entries) {
+        assert !F.isEmpty(entries);
 
-        if (lines.size() == 1) {
-            return lines.get(0); // No need to aggregate.
+        if (entries.size() == 1) {
+            return entries.get(0); // No need to aggregate.
         }
         else {
-            String path = lines.get(0).path();
+            String path = entries.get(0).path();
 
             long timestamp = 0;
             long size = 0;
@@ -47,27 +47,28 @@ public class VisorGgfsProfiler {
             GridGgfsMode mode = null;
             VisorGgfsProfilerUniformityCounters counters = new VisorGgfsProfilerUniformityCounters();
 
-            // TODO
-//            lines.toSeq.sortBy(_.timestamp).foreach(line => {
-//                // Take last timestamp.
-//                timestamp = line.timestamp
-//
-//                // Take last size.
-//                size = line.size
-//
-//                // Take last size.
-//                mode = line.mode
-//
-//                // Aggregate metrics.
-//                bytesRead += line.bytesRead
-//                readTime += line.readTime
-//                userReadTime += line.userReadTime
-//                bytesWritten += line.bytesWritten
-//                writeTime += line.writeTime
-//                userWriteTime += line.userWriteTime
-//
-//                counters.aggregate(line.counters)
-//            })
+            Collections.sort(entries, VisorGgfsProfilerEntry.ENTRY_TIMESTAMP_COMPARATOR);
+
+            for (VisorGgfsProfilerEntry entry : entries) {
+                // Take last timestamp.
+                timestamp = entry.timestamp();
+
+                // Take last size.
+                size = entry.size();
+
+                // Take last size.
+                mode = entry.mode();
+
+                // Aggregate metrics.
+                bytesRead += entry.bytesRead();
+                readTime += entry.readTime();
+                userReadTime += entry.userReadTime();
+                bytesWritten += entry.bytesWritten();
+                writeTime += entry.writeTime();
+                userWriteTime += entry.userWriteTime();
+
+                counters.aggregate(entry.counters());
+            }
 
             return new VisorGgfsProfilerEntry(path, timestamp, mode, size, bytesRead, readTime, userReadTime,
                 bytesWritten, writeTime, userWriteTime, counters);
