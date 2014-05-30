@@ -137,15 +137,15 @@ public class GridSecurityCredentials implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeUTF(login);
-        out.writeUTF(password);
+        U.writeString(out, login);
+        U.writeString(out, password);
         out.writeObject(userObj);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        login = in.readUTF();
-        password = in.readUTF();
+        login = U.readString(in);
+        password = U.readString(in);
         userObj = in.readObject();
     }
 
