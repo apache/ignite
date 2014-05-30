@@ -23,9 +23,8 @@ import java.io.*;
 public class GridRouterTestSuite extends TestSuite {
     /**
      * @return Suite that contains all router tests.
-     * @throws IOException If failed.
      */
-    public static TestSuite suite() throws IOException {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Gridgain Router Test Suite");
 
         suite.addTest(new TestSuite(GridRouterFactorySelfTest.class));

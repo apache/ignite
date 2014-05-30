@@ -19,7 +19,6 @@ import org.gridgain.grid.logger.java.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.nio.ssl.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;

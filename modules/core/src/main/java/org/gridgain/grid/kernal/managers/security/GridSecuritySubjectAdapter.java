@@ -16,24 +16,6 @@ import java.util.*;
 
 /**
  * Authenticated security subject.
- *
- * Example JSON configuration:
- * <code>
- *     {
- *         {
- *             "cache": "partitioned",
- *             "permissions": ["CACHE_PUT", "CACHE_READ"]
- *         },
- *         {
- *             "cache": "replicated",
- *             "permissions": ["CACHE_PUT", "CACHE_REMOVE"]
- *         },
- *         {
- *             "task": "org.mytask.*",
- *             "permissions": ["TASK_EXECUTE", "TASK_CANCEL"]
- *         }
- *     }
- * </code>
  */
 public class GridSecuritySubjectAdapter implements GridSecuritySubject {
     /** */

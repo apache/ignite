@@ -10,9 +10,6 @@
 package org.gridgain.grid.kernal.managers.securesession;
 
 import org.gridgain.grid.kernal.managers.security.*;
-import org.gridgain.grid.spi.*;
-
-import java.util.*;
 
 /**
  * Secure session object.

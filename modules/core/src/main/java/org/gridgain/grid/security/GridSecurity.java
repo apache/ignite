@@ -48,11 +48,11 @@ import java.util.*;
  * {
  *     {
  *         "cache":"partitioned",
- *         "permissions":["CACHE_PUT", "CACHE_REMOVE", "CACHE_GET"]
+ *         "permissions":["CACHE_PUT", "CACHE_REMOVE", "CACHE_READ"]
  *     },
  *     {
  *         "cache":"*",
- *         "permissions":["CACHE_GET"]
+ *         "permissions":["CACHE_READ"]
  *     },
  *     {
  *         "task":"org.mytasks.*",

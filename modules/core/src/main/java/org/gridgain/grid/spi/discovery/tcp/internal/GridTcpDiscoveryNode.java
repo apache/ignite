@@ -173,6 +173,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T attribute(String name) {
+        // Even though discovery SPI removes this attribute after authentication, keep this check for safety.
         if (GridNodeAttributes.ATTR_SECURITY_CREDENTIALS.equals(name))
             return null;
 
@@ -181,6 +182,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
 
     /** {@inheritDoc} */
     @Override public Map<String, Object> attributes() {
+        // Even though discovery SPI removes this attribute after authentication, keep this check for safety.
         return F.view(attrs, new GridPredicate<String>() {
             @Override public boolean apply(String s) {
                 return !GridNodeAttributes.ATTR_SECURITY_CREDENTIALS.equals(s);
