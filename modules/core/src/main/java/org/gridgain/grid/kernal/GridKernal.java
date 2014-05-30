@@ -16,7 +16,7 @@ import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.dr.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.managers.*;
-import org.gridgain.grid.kernal.managers.authentication.*;
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.grid.kernal.managers.collision.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -58,6 +58,7 @@ import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.*;
@@ -179,6 +180,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** Scheduler. */
     private GridScheduler scheduler;
+
+    /** Grid security instance. */
+    private GridSecurity security;
 
     /** DR pool. */
     private ExecutorService drPool;
@@ -653,7 +657,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             // Start SPI managers.
             // NOTE: that order matters as there are dependencies between managers.
-            startManager(ctx, createComponent(GridAuthenticationManager.class, ctx), attrs);
+            startManager(ctx, createComponent(GridSecurityManager.class, ctx), attrs);
             startManager(ctx, createComponent(GridSecureSessionManager.class, ctx), attrs);
             startManager(ctx, new GridIoManager(ctx), attrs);
             startManager(ctx, new GridCheckpointManager(ctx), attrs);
@@ -689,6 +693,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             // Put version converters to attributes after
             // all components are started.
             verProc.addConvertersToAttributes(attrs);
+
+            if (ctx.isEnterprise())
+                security = new GridSecurityImpl(ctx.security(), ctx.secureSession());
 
             gw.writeLock();
 
@@ -1249,6 +1256,16 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         // Add data center ID.
         add(attrs, ATTR_DATA_CENTER_ID, cfg.getDataCenterId());
+
+        try {
+            GridSecurityCredentialsProvider provider = cfg.getSecurityCredentialsProvider();
+
+            if (provider != null)
+                add(attrs, ATTR_SECURITY_CREDENTIALS, provider.credentials());
+        }
+        catch (GridException e) {
+            throw new GridException("Failed to create node security credentials", e);
+        }
 
         // Stick in SPI versions and classes attributes.
         addAttributes(attrs, cfg.getCollisionSpi());
@@ -2238,7 +2255,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         assert log != null;
 
         if (log.isInfoEnabled())
-            log.info("Security status [authentication=" + onOff(ctx.auth().securityEnabled()) + ", " +
+            log.info("Security status [authentication=" + onOff(ctx.security().securityEnabled()) + ", " +
                 "secure-session=" + onOff(ctx.secureSession().securityEnabled()) + ']');
     }
 
@@ -2977,6 +2994,14 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     /** {@inheritDoc} */
     @Override public GridScheduler scheduler() {
         return scheduler;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridSecurity security() {
+        if (!ctx.isEnterprise())
+            throw new UnsupportedOperationException("Security interface available in Enterprise edition only.");
+
+        return security;
     }
 
     /** {@inheritDoc} */

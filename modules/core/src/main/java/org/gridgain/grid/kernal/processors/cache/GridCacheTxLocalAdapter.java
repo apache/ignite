@@ -15,6 +15,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
@@ -955,6 +956,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         assert !F.isEmpty(keys);
         assert keysCnt == keys.size();
         assert cached == null || F.first(keys).equals(cached.key());
+
+        cctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         groupLockSanityCheck(keys);
 
@@ -1981,8 +1984,6 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         boolean retval,
         GridPredicate<GridCacheEntry<K, V>>[] filter
     ) throws GridException {
-        long topVer = topologyVersion();
-
         for (K k : keys) {
             GridCacheTxEntry<K, V> txEntry = entry(k);
 
@@ -2114,6 +2115,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         @Nullable GridCacheEntryEx<K, V> cached,
         long ttl,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        cctx.checkSecurity(GridSecurityPermission.CACHE_PUT);
+
         // Cached entry may be passed only from entry wrapper.
         final Map<? extends K, ? extends V> map0;
         if (drMap != null) {
@@ -2372,6 +2375,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         boolean implicit,
         final boolean retval,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        cctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
+
         final Collection<? extends K> keys0;
 
         if (drMap != null) {

@@ -10,6 +10,8 @@
 package org.gridgain.grid.spi.discovery.tcp.internal;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.*;
@@ -46,6 +48,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
     private Object consistentId;
 
     /** Node attributes. */
+    @GridToStringExclude
     private Map<String, Object> attrs;
 
     /** Internal discovery addresses as strings. */
@@ -170,12 +173,21 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T attribute(String name) {
+        // Even though discovery SPI removes this attribute after authentication, keep this check for safety.
+        if (GridNodeAttributes.ATTR_SECURITY_CREDENTIALS.equals(name))
+            return null;
+
         return (T)attrs.get(name);
     }
 
     /** {@inheritDoc} */
     @Override public Map<String, Object> attributes() {
-        return attrs;
+        // Even though discovery SPI removes this attribute after authentication, keep this check for safety.
+        return F.view(attrs, new GridPredicate<String>() {
+            @Override public boolean apply(String s) {
+                return !GridNodeAttributes.ATTR_SECURITY_CREDENTIALS.equals(s);
+            }
+        });
     }
 
     /**
@@ -185,6 +197,15 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
      */
     public void setAttributes(Map<String, Object> attrs) {
         this.attrs = U.sealMap(attrs);
+    }
+
+    /**
+     * Gets node attributes without filtering.
+     *
+     * @return Node attributes without filtering.
+     */
+    public Map<String, Object> getAttributes() {
+        return attrs;
     }
 
     /** {@inheritDoc} */
@@ -412,6 +433,6 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryNode.class, this);
+        return S.toString(GridTcpDiscoveryNode.class, this, "attrs", attributes());
     }
 }

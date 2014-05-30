@@ -31,6 +31,9 @@ public class GridRestResponse implements Externalizable {
     /** Authentication failure. */
     public static final int STATUS_AUTH_FAILED = 2;
 
+    /** Security check failed. */
+    public static final int STATUS_SECURITY_CHECK_FAILED = 3;
+
     /** Success status. */
     @SuppressWarnings("RedundantFieldInitialization")
     private int successStatus = STATUS_SUCCESS;

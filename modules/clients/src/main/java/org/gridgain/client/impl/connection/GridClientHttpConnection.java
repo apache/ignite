@@ -14,6 +14,8 @@ import org.gridgain.client.*;
 import org.gridgain.client.impl.*;
 import org.gridgain.client.util.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
+import org.gridgain.grid.security.*;
+import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
@@ -228,6 +230,12 @@ public class GridClientHttpConnection extends GridClientConnection {
 
                                 fut.onDone(new GridClientException(errMsg));
                             }
+                            else if (okStatus == GridClientResponse.STATUS_SECURITY_CHECK_FAILED) {
+                                if (errMsg == null || errMsg.isEmpty())
+                                    errMsg = "Security check failed on server.";
+
+                                fut.onDone(new GridClientException(errMsg));
+                            }
                             else if (okStatus != GridClientResponse.STATUS_SUCCESS) {
                                 fut.onDone(new GridClientException("Unsupported server response status code" +
                                     ": " + okStatus));
@@ -353,15 +361,31 @@ public class GridClientHttpConnection extends GridClientConnection {
         StringBuilder data = new StringBuilder();
 
         for (Map.Entry<String, Object> e : params.entrySet()) {
-            if (!(e.getValue() instanceof String))
+            if (e.getValue() instanceof String) {
+                if (data.length() > 0)
+                    data.append('&');
+
+                data.append(URLEncoder.encode(e.getKey(), "UTF-8")).append('=')
+                    .append(URLEncoder.encode((String)e.getValue(), "UTF-8"));
+            }
+            else if (e.getValue() instanceof GridSecurityCredentials) {
+                GridSecurityCredentials cred = (GridSecurityCredentials)e.getValue();
+
+                if (data.length() > 0)
+                    data.append('&');
+
+                if (!F.isEmpty(cred.getLogin()))
+                    data.append("gridgain.login=").append(URLEncoder.encode(cred.getLogin(), "UTF-8"));
+
+                if (data.length() > 0)
+                    data.append('&');
+
+                if (!F.isEmpty(cred.getPassword()))
+                    data.append("gridgain.password=").append(URLEncoder.encode(cred.getPassword(), "UTF-8"));
+            }
+            else
                 throw new IllegalArgumentException("Http connection supports only string arguments in requests" +
                     ", while received [key=" + e.getKey() + ", value=" + e.getValue() + "]");
-
-            if (data.length() > 0)
-                data.append('&');
-
-            data.append(URLEncoder.encode(e.getKey(), "UTF-8")).append('=')
-                .append(URLEncoder.encode((String)e.getValue(), "UTF-8"));
         }
 
         return data;

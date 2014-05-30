@@ -59,15 +59,8 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
     /** SPI name. */
     private String name;
 
-    /** Authenticator. */
-    private volatile Authenticator auth = new Authenticator() {
-        @Override public boolean authenticateNode(UUID nodeId, Map<String, Object> attrs) {
-            return false;
-        }
-    };
-
     /** Grid SPI context. */
-    private volatile GridSpiContext spiCtx = new GridDummySpiContext(null, auth);
+    private volatile GridSpiContext spiCtx = new GridDummySpiContext(null);
 
     /** Discovery listener. */
     private GridLocalEventListener paramsLsnr;
@@ -137,12 +130,6 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
     @Override public final void onContextInitialized(final GridSpiContext spiCtx) throws GridSpiException {
         assert spiCtx != null;
 
-        auth = new Authenticator() {
-            @Override public boolean authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException {
-                return spiCtx.authenticateNode(nodeId, attrs);
-            }
-        };
-
         this.spiCtx = spiCtx;
 
         spiCtx.addLocalEventListener(paramsLsnr = new GridLocalEventListener() {
@@ -191,7 +178,7 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
         GridNode locNode = spiCtx == null ? null : spiCtx.localNode();
 
         // Set dummy no-op context.
-        spiCtx = new GridDummySpiContext(locNode, auth);
+        spiCtx = new GridDummySpiContext(locNode);
     }
 
     /**
@@ -534,18 +521,13 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
         /** */
         private final GridNode locNode;
 
-        /** */
-        private final Authenticator auth;
-
         /**
          * Create temp SPI context.
          *
          * @param locNode Local node.
-         * @param auth Authenticator.
          */
-        GridDummySpiContext(GridNode locNode, Authenticator auth) {
+        GridDummySpiContext(GridNode locNode) {
             this.locNode = locNode;
-            this.auth = auth;
         }
 
         /** {@inheritDoc} */
@@ -692,11 +674,6 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
         }
 
         /** {@inheritDoc} */
-        @Override public boolean authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException {
-            return auth.authenticateNode(nodeId, attrs);
-        }
-
-        /** {@inheritDoc} */
         @Nullable @Override public GridNodeValidationResult validateNode(GridNode node) {
             return null;
         }
@@ -710,20 +687,5 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
         @Override public boolean readDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf) {
             return false;
         }
-    }
-
-    /**
-     *
-     */
-    private interface Authenticator {
-        /**
-         * Delegates to real implementation whenever possible.
-         *
-         * @param nodeId Node ID.
-         * @param attrs Attributes.
-         * @return {@code True} if passed authentication.
-         * @throws GridException If failed.
-         */
-        public boolean authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException;
     }
 }

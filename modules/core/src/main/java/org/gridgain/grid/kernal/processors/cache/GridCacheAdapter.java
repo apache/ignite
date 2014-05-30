@@ -32,6 +32,7 @@ import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -1650,6 +1651,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     public GridFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached, boolean checkTx,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>... filter) {
+        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
+
         ctx.denyOnFlag(LOCAL);
 
         // Entry must be passed for one key only.

@@ -11,7 +11,7 @@ package org.gridgain.grid.events;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.spi.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
@@ -58,7 +58,7 @@ public class GridSecureSessionEvent extends GridEventAdapter {
     private GridSecuritySubjectType subjType;
 
     /** Subject ID. */
-    private byte[] subjId;
+    private UUID subjId;
 
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
@@ -93,7 +93,7 @@ public class GridSecureSessionEvent extends GridEventAdapter {
      * @param subjId Subject ID.
      */
     public GridSecureSessionEvent(GridNode node, String msg, int type, GridSecuritySubjectType subjType,
-        byte[] subjId) {
+        UUID subjId) {
         super(node, msg, type);
 
         this.subjType = subjType;
@@ -114,7 +114,7 @@ public class GridSecureSessionEvent extends GridEventAdapter {
      *
      * @return Subject ID that triggered the event.
      */
-    public byte[] subjectId() {
+    public UUID subjectId() {
         return subjId;
     }
 
@@ -132,7 +132,7 @@ public class GridSecureSessionEvent extends GridEventAdapter {
      *
      * @param subjId Subject ID to set.
      */
-    public void subjectId(byte[] subjId) {
+    public void subjectId(UUID subjId) {
         this.subjId = subjId;
     }
 
