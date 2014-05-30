@@ -1737,7 +1737,7 @@ public class GridGainEx {
                             "\" because this prefix is reserved for internal purposes.");
 
                     if (CU.isHadoopSystemCache(ccfg.getName()))
-                        throw new GridException("Cache name cannot be \"" + CU.SYS_CACHE_HADOOP +
+                        throw new GridException("Cache name cannot be \"" + CU.SYS_CACHE_HADOOP_MR +
                             "\" because it is reserved for internal purposes.");
 
                     if (ccfg.getDrSenderConfiguration() != null)

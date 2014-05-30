@@ -99,7 +99,7 @@ public class GridHadoopContext {
      * @return Hadoop-enabled nodes.
      */
     public Collection<GridNode> nodes() {
-        return ctx.discovery().cacheNodes(CU.SYS_CACHE_HADOOP, ctx.discovery().topologyVersion());
+        return ctx.discovery().cacheNodes(CU.SYS_CACHE_HADOOP_MR, ctx.discovery().topologyVersion());
     }
 
     /**

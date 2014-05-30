@@ -29,9 +29,10 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
+import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
@@ -45,7 +46,7 @@ public class GridCacheUtils {
     public static final String SYS_CACHE_DR_PREFIX = "gg-dr-sys-cache-";
 
     /**  Hadoop syste cache name. */
-    public static final String SYS_CACHE_HADOOP = "gg-hadoop-sys-cache";
+    public static final String SYS_CACHE_HADOOP_MR = "gg-hadoop-mr-sys-cache";
 
     /** Flag to turn off DHT cache for debugging purposes. */
     public static final boolean DHT_ENABLED = true;
@@ -632,7 +633,7 @@ public class GridCacheUtils {
     public static boolean cacheNode(GridCacheContext ctx, GridNodeShadow s) {
         assert ctx != null;
 
-        return cacheNode(ctx.namex(), (GridCacheAttributes[])s.attribute(ATTR_CACHE));
+        return cacheNode(ctx.namex(), (GridCacheAttributes[]) s.attribute(ATTR_CACHE));
     }
 
     /**
@@ -1419,7 +1420,7 @@ public class GridCacheUtils {
      * @return {@code True} if this is Hadoop system cache.
      */
     public static boolean isHadoopSystemCache(String cacheName) {
-        return F.eq(cacheName, SYS_CACHE_HADOOP);
+        return F.eq(cacheName, SYS_CACHE_HADOOP_MR);
     }
 
     /**
@@ -1446,10 +1447,17 @@ public class GridCacheUtils {
     public static GridCacheConfiguration hadoopSystemCache() {
         GridCacheConfiguration cache = new GridCacheConfiguration();
 
-        cache.setName(CU.SYS_CACHE_HADOOP);
+        cache.setName(CU.SYS_CACHE_HADOOP_MR);
         cache.setCacheMode(REPLICATED);
         cache.setAtomicityMode(TRANSACTIONAL);
         cache.setWriteSynchronizationMode(FULL_SYNC);
+
+        cache.setEvictionPolicy(null);
+        cache.setSwapEnabled(false);
+        cache.setQueryIndexEnabled(false);
+        cache.setStore(null);
+        cache.setEagerTtl(true);
+        cache.setPreloadMode(SYNC);
 
         return cache;
     }

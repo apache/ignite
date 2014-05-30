@@ -584,7 +584,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (GridComponentType.HADOOP.isInClassPath())
-            sysCaches.add(CU.SYS_CACHE_HADOOP);
+            sysCaches.add(CU.SYS_CACHE_HADOOP_MR);
 
         for (GridCacheConfiguration ccfg : ctx.grid().configuration().getCacheConfiguration()) {
             if (ccfg.getDrSenderConfiguration() != null)
