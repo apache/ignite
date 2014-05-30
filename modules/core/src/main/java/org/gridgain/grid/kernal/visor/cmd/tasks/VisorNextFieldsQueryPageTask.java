@@ -74,9 +74,9 @@ public class VisorNextFieldsQueryPageTask extends VisorOneNodeTask<VisorNextFiel
 
         /** Collect data from SQL query */
         private VisorFieldsQueryResult nextSqlPage(VisorNextFieldsQueryPageArg arg) throws GridException {
-            GridNodeLocalMap<String, VisorSqlStorageValType> storage = g.nodeLocalMap();
+            GridNodeLocalMap<String, VisorFutureResultSetHolder<List<?>>> storage = g.nodeLocalMap();
 
-            VisorSqlStorageValType t = storage.get(arg.qryId);
+            VisorFutureResultSetHolder<List<?>> t = storage.get(arg.qryId);
 
             if (t == null)
                 throw new GridInternalException("SQL query results are expired.");
@@ -86,7 +86,7 @@ public class VisorNextFieldsQueryPageTask extends VisorOneNodeTask<VisorNextFiel
             boolean hasMore = nextRows.get2() != null;
 
             if (hasMore)
-                storage.put(arg.qryId, new VisorSqlStorageValType(t.future(), nextRows.get2(), true));
+                storage.put(arg.qryId, new VisorFutureResultSetHolder<>(t.future(), nextRows.get2(), true));
             else
                 storage.remove(arg.qryId);
 
@@ -95,9 +95,9 @@ public class VisorNextFieldsQueryPageTask extends VisorOneNodeTask<VisorNextFiel
 
         /** Collect data from SCAN query */
         private VisorFieldsQueryResult nextScanPage(VisorNextFieldsQueryPageArg arg) throws GridException {
-            GridNodeLocalMap<String, VisorScanStorageValType> storage = g.nodeLocalMap();
+            GridNodeLocalMap<String, VisorFutureResultSetHolder<Map.Entry<Object, Object>>> storage = g.nodeLocalMap();
 
-            VisorScanStorageValType t = storage.get(arg.qryId);
+            VisorFutureResultSetHolder<Map.Entry<Object, Object>> t = storage.get(arg.qryId);
 
             if (t == null)
                 throw new GridInternalException("Scan query results are expired.");
@@ -107,7 +107,7 @@ public class VisorNextFieldsQueryPageTask extends VisorOneNodeTask<VisorNextFiel
             Boolean hasMore = nextRows.get2() != null;
 
             if (hasMore)
-                storage.put(arg.qryId, new VisorScanStorageValType(t.future(), nextRows.get2(), true));
+                storage.put(arg.qryId, new VisorFutureResultSetHolder<>(t.future(), nextRows.get2(), true));
             else
                 storage.remove(arg.qryId);
 

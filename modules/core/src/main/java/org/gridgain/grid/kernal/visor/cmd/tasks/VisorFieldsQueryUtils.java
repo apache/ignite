@@ -27,7 +27,7 @@ import java.util.Map;
  */
 public class VisorFieldsQueryUtils {
     /** How long to store future. */
-    public static final Integer RMV_DELAY = 5 * 60; // 5 minutes.
+    public static final Integer RMV_DELAY = 5 * 60 * 1000; // 5 minutes.
 
     public static final String SQL_QRY_NAME = "VISOR_FIELDS_QUERY";
 

@@ -12,14 +12,15 @@ package org.gridgain.grid.kernal.visor.cmd.tasks;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.task.*;
+import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.kernal.visor.cmd.dto.*;
 import org.gridgain.grid.kernal.visor.cmd.dto.node.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.indexing.*;
-import org.gridgain.grid.util.typedef.*;
 
 import java.io.*;
 import java.sql.*;
@@ -99,17 +100,20 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
     }
 
     /**
-     * Tuple with iterable sql query future, page size and accessed flag.
+     * ResultSet future holder.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorSqlStorageValType implements Serializable {
-        private final GridCacheQueryFuture<List<?>> fut;
+    public static class VisorFutureResultSetHolder<R> implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
 
-        private final List<?> next;
+        private final GridCacheQueryFuture<R> fut;
 
-        private final Boolean accessed;
+        private final R next;
 
-        public VisorSqlStorageValType(GridCacheQueryFuture<List<?>> fut, List<?> next, Boolean accessed) {
+        private Boolean accessed;
+
+        public VisorFutureResultSetHolder(GridCacheQueryFuture<R> fut, R next, Boolean accessed) {
             this.fut = fut;
             this.next = next;
             this.accessed = accessed;
@@ -118,14 +122,14 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
         /**
          * @return Future.
          */
-        public GridCacheQueryFuture<List<?>> future() {
+        public GridCacheQueryFuture<R> future() {
             return fut;
         }
 
         /**
          * @return Next.
          */
-        public List<?> next() {
+        public R next() {
             return next;
         }
 
@@ -135,44 +139,12 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
         public Boolean accessed() {
             return accessed;
         }
-    }
 
-    /**
-     * Tuple with iterable scan query future, page size and accessed flag.
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorScanStorageValType implements Serializable {
-        private final GridCacheQueryFuture<Map.Entry<Object, Object>> fut;
-
-        private final Map.Entry<Object, Object> next;
-
-        private final Boolean accessed;
-
-        public VisorScanStorageValType(GridCacheQueryFuture<Map.Entry<Object, Object>> fut, Map.Entry<Object, Object> next, Boolean accessed) {
-            this.fut = fut;
-            this.next = next;
+        /**
+         * @param accessed New accessed.
+         */
+        public void accessed(Boolean accessed) {
             this.accessed = accessed;
-        }
-
-        /**
-         * @return Future.
-         */
-        public GridCacheQueryFuture<Map.Entry<Object, Object>> future() {
-            return fut;
-        }
-
-        /**
-         * @return Next.
-         */
-        public Map.Entry<Object, Object> next() {
-            return next;
-        }
-
-        /**
-         * @return Accessed.
-         */
-        public Boolean accessed() {
-            return accessed;
         }
     }
 
@@ -211,10 +183,10 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
 
                     Map.Entry<Object, Object> next = rows.get2();
 
-                    g.<String, VisorScanStorageValType>nodeLocalMap().put(qryId,
-                        new VisorScanStorageValType(fut, next, false));
+                    g.<String, VisorFutureResultSetHolder>nodeLocalMap().put(qryId,
+                        new VisorFutureResultSetHolder<>(fut, next, false));
 
-                    scheduleScanQueryRemoval(qryId);
+                    scheduleQueryRemoval(qryId);
 
                     return new GridBiTuple<>(null, new VisorFieldsQueryResultEx(g.localNode().id(), qryId,
                         SCAN_COL_NAMES, rows.get1(), next != null));
@@ -242,10 +214,10 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
 
                         GridBiTuple<List<Object[]>, List<?>> nextRows = fetchSqlQueryRows(fut, firstRow, arg.pageSize());
 
-                        g.<String, VisorSqlStorageValType>nodeLocalMap().put(qryId, new VisorSqlStorageValType(
-                            fut, nextRows.get2(), false));
+                        g.<String, VisorFutureResultSetHolder>nodeLocalMap().put(qryId,
+                            new VisorFutureResultSetHolder<>(fut, nextRows.get2(), false));
 
-                        scheduleSqlQueryRemoval(qryId);
+                        scheduleQueryRemoval(qryId);
 
                         return new GridBiTuple<>(null, new VisorFieldsQueryResultEx(g.localNode().id(), qryId,
                             names, nextRows.get1(), nextRows.get2() != null));
@@ -255,50 +227,25 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
             catch (Exception e) { return new GridBiTuple<>(e, null); }
         }
 
-        private void scheduleSqlQueryRemoval(final String id) {
-            g.scheduler().scheduleLocal(new CAX() {
-                @Override public void applyx() {
-                    GridNodeLocalMap<String, VisorSqlStorageValType> storage = g.nodeLocalMap();
+        private void scheduleQueryRemoval(final String id) {
+            ((GridKernal)g).context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(RMV_DELAY) {
+                @Override public void onTimeout() {
+                    GridNodeLocalMap<String, VisorFutureResultSetHolder> storage = g.nodeLocalMap();
 
-                    VisorSqlStorageValType t = storage.get(id);
+                    VisorFutureResultSetHolder<?> t = storage.get(id);
 
                     if (t != null) {
-                        // If future was accessed since last scheduling,
-                        // set access flag to false and reschedule.
-
+                        // If future was accessed since last scheduling,  set access flag to false and reschedule.
                         if (t.accessed()) {
-                            storage.put(id, new VisorSqlStorageValType(t.future(), t.next(), false));
+                            t.accessed(false);
 
-                            scheduleSqlQueryRemoval(id);
+                            scheduleQueryRemoval(id);
                         }
                         else
                             storage.remove(id); // Remove stored future otherwise.
                     }
                 }
-            }, "{" + RMV_DELAY + ", 1} * * * * *");
-        }
-
-        private void scheduleScanQueryRemoval(final String id) {
-            g.scheduler().scheduleLocal(new CAX() {
-                @Override public void applyx() {
-                    GridNodeLocalMap<String, VisorScanStorageValType> storage = g.nodeLocalMap();
-
-                    VisorScanStorageValType t = storage.get(id);
-
-                    if (t != null) {
-                        // If future was accessed since last scheduling,
-                        // set access flag to false and reschedule.
-
-                        if (t.accessed()) {
-                            storage.put(id, new VisorScanStorageValType(t.future(), t.next(), false));
-
-                            scheduleScanQueryRemoval(id);
-                        }
-                        else
-                            storage.remove(id); // Remove stored future otherwise.
-                    }
-                }
-            }, "{" + RMV_DELAY + ", 1} * * * * *");
+            });
         }
     }
 
