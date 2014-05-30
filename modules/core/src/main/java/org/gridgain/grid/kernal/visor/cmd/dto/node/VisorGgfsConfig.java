@@ -222,7 +222,7 @@ public class VisorGgfsConfig implements Serializable {
     /**
      * @return Map of paths to GGFS modes.
      */
-    public Map<String, GridGgfsMode> pathModes() {
+    @Nullable public Map<String, GridGgfsMode> pathModes() {
         return pathModes;
     }
 

@@ -19,8 +19,8 @@ import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.kernal.visor.cmd.dto.*;
 import org.gridgain.grid.kernal.visor.cmd.dto.node.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.indexing.*;
+import org.gridgain.grid.util.typedef.*;
 
 import java.io.*;
 import java.sql.*;
@@ -33,7 +33,7 @@ import static org.gridgain.grid.kernal.visor.cmd.tasks.VisorFieldsQueryUtils.*;
  */
 @GridInternal
 public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.VisorFieldsQueryArg,
-    GridBiTuple<? extends Exception, VisorFieldsQueryResultEx>> {
+    T2<? extends Exception, VisorFieldsQueryResultEx>> {
     /**
      * Arguments for {@link VisorFieldsQueryTask}.
      */
@@ -150,7 +150,7 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
 
     @SuppressWarnings("PublicInnerClass")
     public static class VisorFieldsQueryJob
-        extends VisorOneNodeJob<VisorFieldsQueryArg, GridBiTuple<? extends Exception, VisorFieldsQueryResultEx>> {
+        extends VisorOneNodeJob<VisorFieldsQueryArg, T2<? extends Exception, VisorFieldsQueryResultEx>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -164,7 +164,7 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
         }
 
         @Override
-        protected GridBiTuple<? extends Exception, VisorFieldsQueryResultEx> run(VisorFieldsQueryArg arg) throws GridException {
+        protected T2<? extends Exception, VisorFieldsQueryResultEx> run(VisorFieldsQueryArg arg) throws GridException {
             try {
                 Boolean scan = arg.queryTxt().toUpperCase().startsWith("SCAN");
 
@@ -178,7 +178,7 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
                             .projection(g.forNodeIds(arg.proj()))
                             .execute();
 
-                    GridBiTuple<List<Object[]>, Map.Entry<Object, Object>> rows =
+                    T2<List<Object[]>, Map.Entry<Object, Object>> rows =
                         fetchScanQueryRows(fut, null, arg.pageSize());
 
                     Map.Entry<Object, Object> next = rows.get2();
@@ -188,7 +188,7 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
 
                     scheduleQueryRemoval(qryId);
 
-                    return new GridBiTuple<>(null, new VisorFieldsQueryResultEx(g.localNode().id(), qryId,
+                    return new T2<>(null, new VisorFieldsQueryResultEx(g.localNode().id(), qryId,
                         SCAN_COL_NAMES, rows.get1(), next != null));
                 }
                 else {
@@ -202,7 +202,7 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
                     List<GridIndexingFieldMetadata> meta = ((GridCacheQueryMetadataAware) fut).metadata().get();
 
                     if (meta == null)
-                        return new GridBiTuple<Exception, VisorFieldsQueryResultEx>(new SQLException("Fail to execute query. No metadata available."), null);
+                        return new T2<Exception, VisorFieldsQueryResultEx>(new SQLException("Fail to execute query. No metadata available."), null);
                     else {
                         VisorFieldsQueryColumn[] names = new VisorFieldsQueryColumn[meta.size()];
 
@@ -212,19 +212,19 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
                             names[i] = new VisorFieldsQueryColumn(col.typeName(), col.fieldName());
                         }
 
-                        GridBiTuple<List<Object[]>, List<?>> nextRows = fetchSqlQueryRows(fut, firstRow, arg.pageSize());
+                        T2<List<Object[]>, List<?>> nextRows = fetchSqlQueryRows(fut, firstRow, arg.pageSize());
 
                         g.<String, VisorFutureResultSetHolder>nodeLocalMap().put(qryId,
                             new VisorFutureResultSetHolder<>(fut, nextRows.get2(), false));
 
                         scheduleQueryRemoval(qryId);
 
-                        return new GridBiTuple<>(null, new VisorFieldsQueryResultEx(g.localNode().id(), qryId,
+                        return new T2<>(null, new VisorFieldsQueryResultEx(g.localNode().id(), qryId,
                             names, nextRows.get1(), nextRows.get2() != null));
                     }
                 }
             }
-            catch (Exception e) { return new GridBiTuple<>(e, null); }
+            catch (Exception e) { return new T2<>(e, null); }
         }
 
         private void scheduleQueryRemoval(final String id) {
@@ -250,7 +250,7 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
     }
 
     @Override
-    protected VisorJob<VisorFieldsQueryArg, GridBiTuple<? extends Exception, VisorFieldsQueryResultEx>> job(VisorFieldsQueryArg arg) {
+    protected VisorJob<VisorFieldsQueryArg, T2<? extends Exception, VisorFieldsQueryResultEx>> job(VisorFieldsQueryArg arg) {
         return new VisorFieldsQueryJob(arg);
     }
 }

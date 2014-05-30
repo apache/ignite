@@ -11,9 +11,13 @@
 
 package org.gridgain.visor.commands.gc
 
+import java.util
+import java.util.UUID
+
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorRunGcTask
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorRunGcTask.VisorRunGcArg
+import org.gridgain.grid.util
 
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
@@ -120,7 +124,7 @@ class VisorGcCommand {
             }
             else if (id.isDefined)
                 try {
-                    node = grid.node(java.util.UUID.fromString(id.get))
+                    node = grid.node(UUID.fromString(id.get))
 
                     if (node == null)
                         scold("'id' does not match any node: " + id.get).^^
@@ -129,7 +133,7 @@ class VisorGcCommand {
                     case e: IllegalArgumentException => scold("Invalid node 'id': " + id.get).^^
                 }
 
-            val nodesIds = if (node != null) Set(node.id()) else grid.nodes().map(_.id()).toSet
+            val nodesIds = new java.util.HashSet(Option(node).fold(grid.nodes())(Set(_)).map(_.id()))
 
             try {
                 grid.forNodeIds(nodesIds)

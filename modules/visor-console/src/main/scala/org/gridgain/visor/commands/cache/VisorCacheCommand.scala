@@ -63,6 +63,7 @@ import org.gridgain.visor.visor._
  *     cache -clear {-c=<cache-name>}
  *     cache -compact {-c=<cache-name>}
  *     cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}
+ *     cache -swap {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}
  * }}}
  *
  * ====Arguments====
@@ -101,6 +102,8 @@ import org.gridgain.visor.visor._
  *          Clears cache.
  *     -scan
  *          Prints list of all entries from cache.
+ *     -swap
+ *          Swaps backup entries in cache.
  *     -p=<page size>
  *         Number of object to fetch from cache at once.
  *         Valid range from 1 to 100.
@@ -135,6 +138,12 @@ import org.gridgain.visor.visor._
  *         with page of 50 items from all nodes with this cache.
  *     cache -scan -c=cache -id8=12345678
  *         Prints list entries from cache with name 'cache' and node '12345678' ID8.
+ *     cache -swap
+ *         Swaps entries in interactively selected cache.
+ *     cache -swap -c=cache
+ *         Swaps entries in cache with name 'cache'.
+ *     cache -swap -c=@c0
+ *         Swaps entries in cache with name taken from 'c0' memory variable.
  * }}}
  */
 class VisorCacheCommand {
@@ -186,6 +195,15 @@ class VisorCacheCommand {
      * <br>
      * <ex>cache -scan -c=cache -id8=12345678</ex>
      *     Prints list entries from cache with name 'cache' and node '12345678' ID8.
+     * <br>
+     * <ex>cache -swap</ex>
+     *     Swaps entries in interactively selected cache.
+     * <br>
+     * <ex>cache -swap -c=cache</ex>
+     *     Swaps entries in cache with name 'cache'.
+     * <br>
+     * <ex>cache -swap -c=@c0</ex>
+     *     Swaps entries in cache with name taken from 'c0' memory variable.
      *
      * @param args Command arguments.
      */
@@ -226,7 +244,7 @@ class VisorCacheCommand {
                     case cn => cn
                 }
 
-                if (Seq("clear", "compact", "scan").exists(hasArgFlag(_, argLst))) {
+                if (Seq("clear", "compact", "swap", "scan").exists(hasArgFlag(_, argLst))) {
                     if (cacheName.isEmpty)
                         askForCache("Select cache from:", node) match {
                             case Some(name) => argLst = argLst ++ Seq("c" -> name)
@@ -237,6 +255,8 @@ class VisorCacheCommand {
                         VisorCacheClearCommand().clear(argLst, node)
                     else if (hasArgFlag("compact", argLst))
                         VisorCacheCompactCommand().compact(argLst, node)
+                    else if (hasArgFlag("swap", argLst))
+                        VisorCacheSwapCommand().swap(argLst, node)
                     else if (hasArgFlag("scan", argLst))
                         VisorCacheScanCommand().scan(argLst, node)
 
@@ -604,16 +624,19 @@ object VisorCacheCommand {
             " ",
             "Compacts entries in cache.",
             " ",
-            "Prints list of all entries from cache."
+            "Prints list of all entries from cache.",
+            " ",
+            "Swaps backup entries in cache."
         ),
         spec = Seq(
             "cache",
             "cache -i",
             "cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=lr|lw|hi|mi|re|wr} {-a} {-r}",
-            "cache -clear {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}",
             "cache -compact {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}",
-            "cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}"
-        ),
+            "cache -clear {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}",
+            "cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}",
+            "cache -swap {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}"
+    ),
         args = Seq(
             "-id=<node-id>" -> Seq(
                 "Full ID of the node to get cache statistics from.",
@@ -630,14 +653,17 @@ object VisorCacheCommand {
                 "Name of the cache.",
                 "Note you can also use '@c0' ... '@cn' variables as shortcut to <cache-name>."
             ),
-            "-clear" -> Seq(
-                "Clears cache."
-            ),
             "-compact" -> Seq(
                 "Compacts entries in cache."
             ),
+            "-clear" -> Seq(
+                "Clears cache."
+            ),
             "-scan" -> Seq(
                 "Prints list of all entries from cache."
+            ),
+            "-swap" -> Seq(
+                "Swaps backup entries in cache."
             ),
             "-s=lr|lw|hi|mi|re|wr|cn" -> Seq(
                 "Defines sorting type. Sorted by:",
@@ -696,7 +722,10 @@ object VisorCacheCommand {
             "cache -scan -c=cache" -> "List entries from cache with name 'cache' from all nodes with this cache.",
             "cache -scan -c=@c0 -p=50" -> ("Prints list entries from cache with name taken from 'c0' memory variable" +
                 " with page of 50 items from all nodes with this cache."),
-            "cache -scan -c=cache -id8=12345678" -> "Prints list entries from cache with name 'cache' and node '12345678' ID8."
+            "cache -scan -c=cache -id8=12345678" -> "Prints list entries from cache with name 'cache' and node '12345678' ID8.",
+            "cache -swap" -> "Swaps entries in interactively selected cache.",
+            "cache -swap -c=cache" -> "Swaps entries in cache with name 'cache'.",
+            "cache -swap -c=@c0" -> "Swaps entries in cache with name taken from 'c0' memory variable."
         ),
         ref = VisorConsoleCommand(cmd.cache, cmd.cache)
     )

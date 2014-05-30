@@ -11,17 +11,15 @@
 
 package org.gridgain.visor.commands.cswap
 
-import org.gridgain.grid.{GridConfiguration, GridGain => G}
 import org.gridgain.grid.cache.{GridCacheConfiguration, GridCacheMode}
 import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
-
-import scala.collection.JavaConversions._
-
+import org.gridgain.grid.{GridConfiguration, GridGain => G}
+import org.gridgain.visor._
+import org.gridgain.visor.commands.cache.VisorCacheCommand._
 import org.jetbrains.annotations.Nullable
 
-import org.gridgain.visor._
-import org.gridgain.visor.commands.cswap.VisorCacheSwapCommand._
+import scala.collection.JavaConversions._
 
 class VisorCacheSwapCommandSpec extends VisorRuntimeBaseSpec(2) {
     /** IP finder. */
@@ -68,22 +66,16 @@ class VisorCacheSwapCommandSpec extends VisorRuntimeBaseSpec(2) {
     it should "show correct result for default cache" in {
         G.grid("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-        visor.cswap()
+        visor.cache("-swap")
     }
 
     it should "show correct result for named cache" in {
         G.grid("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-        visor.cswap("cache")
-    }
-
-    it should "show correct help" in {
-        VisorCacheSwapCommand
-
-        visor.help("cswap")
+        visor.cache("-swap -c=cache")
     }
 
     it should "show empty projection error message" in {
-        visor.cswap("wrong")
+        visor.cache("-swap -c=wrong")
     }
 }

@@ -31,8 +31,7 @@ import org.gridgain.grid.kernal.GridProductImpl
 // Note the importing of implicit conversions.
 import ack.VisorAckCommand
 import alert.VisorAlertCommand
-import org.gridgain.visor.commands.cache.{VisorCacheClearCommand, VisorCacheCompactCommand, VisorCacheCommand}
-import cswap.VisorCacheSwapCommand
+import org.gridgain.visor.commands.cache.{VisorCacheSwapCommand, VisorCacheClearCommand, VisorCacheCompactCommand, VisorCacheCommand}
 import config.VisorConfigurationCommand
 import deploy.VisorDeployCommand
 import disco.VisorDiscoveryCommand

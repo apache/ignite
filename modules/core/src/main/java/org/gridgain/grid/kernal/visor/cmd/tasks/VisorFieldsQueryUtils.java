@@ -9,18 +9,15 @@
 
 package org.gridgain.grid.kernal.visor.cmd.tasks;
 
-import org.gridgain.grid.GridException;
-import org.gridgain.grid.cache.query.GridCacheQueryFuture;
-import org.gridgain.grid.kernal.visor.cmd.dto.node.VisorFieldsQueryColumn;
-import org.gridgain.grid.lang.GridBiTuple;
-import org.gridgain.grid.util.GridUtils;
+import org.gridgain.grid.*;
+import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.kernal.visor.cmd.dto.node.*;
+import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.typedef.*;
 
-import java.math.BigDecimal;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.math.*;
+import java.net.*;
+import java.util.*;
 
 /**
  * Contains utility methods for Visor query fields tasks and jobs.
@@ -98,7 +95,7 @@ public class VisorFieldsQueryUtils {
      * @param pageSize Number of rows to fetch.
      * @return Fetched rows and last processed element.
      */
-    public static GridBiTuple<List<Object[]>, Map.Entry<Object, Object>> fetchScanQueryRows(
+    public static T2<List<Object[]>, Map.Entry<Object, Object>> fetchScanQueryRows(
         GridCacheQueryFuture<Map.Entry<Object, Object>> fut, Map.Entry<Object, Object> savedNext, int pageSize
     ) throws GridException {
         List<Object[]> rows = new ArrayList<>();
@@ -118,7 +115,7 @@ public class VisorFieldsQueryUtils {
             next = fut.next();
         }
 
-        return new GridBiTuple<>(rows, next);
+        return new T2<>(rows, next);
     }
 
     /**
@@ -149,7 +146,7 @@ public class VisorFieldsQueryUtils {
      * @param pageSize Number of rows to fetch.
      * @return Fetched rows and last processed element.
      */
-    public static GridBiTuple<List<Object[]>, List<?>> fetchSqlQueryRows(GridCacheQueryFuture<List<?>> fut,
+    public static T2<List<Object[]>, List<?>> fetchSqlQueryRows(GridCacheQueryFuture<List<?>> fut,
         List<?> savedNext, int pageSize) throws GridException {
         List<Object[]> rows = new ArrayList<>();
 
@@ -179,6 +176,6 @@ public class VisorFieldsQueryUtils {
             next = fut.next();
         }
 
-        return new GridBiTuple<List<Object[]>, List<?>>(rows, next);
+        return new T2<List<Object[]>, List<?>>(rows, next);
     }
 }
