@@ -46,16 +46,12 @@ public class GridSecurityImpl implements GridSecurity {
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecuritySubject authenticatedSubject(GridSecuritySubjectType subjType, UUID subjId)
-        throws GridException {
-        switch (subjType) {
-            case REMOTE_NODE:
-                return secMgr.authenticatedNode(subjId);
+    @Override public GridSecuritySubject authenticatedSubject(UUID subjId) throws GridException {
+        GridSecuritySubject subj = secMgr.authenticatedNode(subjId);
 
-            case REMOTE_CLIENT:
-                return secSesMgr.authenticatedClient(subjId);
-        }
+        if (subj != null)
+            return subj;
 
-        throw new IllegalArgumentException("Invalid subject type: " + subjType);
+        return secSesMgr.authenticatedClient(subjId);
     }
 }
