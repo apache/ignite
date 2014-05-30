@@ -60,9 +60,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     /** Latch indicating pending are empty and connection could be terminated. */
     private final CountDownLatch closedLatch = new CountDownLatch(1);
 
-    /** Reason why connection was closed. {@code null} means connection is still alive. */
-    private volatile GridClientConnectionCloseReason closeReason;
-
     /** Request ID counter. */
     private AtomicLong reqIdCntr = new AtomicLong(1);
 
@@ -209,6 +206,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      * @param waitCompletion If {@code true} this method will wait for all pending requests to be completed.
      * @param cause The cause of connection close, or {@code null} if it is an ordinal close.
      */
+    @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
     private void close(GridClientConnectionCloseReason reason, boolean waitCompletion, @Nullable Throwable cause) {
         synchronized (this) {
             if (closeReason != null)

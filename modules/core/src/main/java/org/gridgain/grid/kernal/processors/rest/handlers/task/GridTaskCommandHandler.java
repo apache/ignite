@@ -157,7 +157,8 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         // Set ID placeholder for the case it wouldn't be available due to remote execution.
         taskRestRes.setId('~' + ctx.localNodeId().toString());
 
-        final boolean locExec = req0.destinationId() == null || req0.destinationId().equals(ctx.localNodeId());
+        final boolean locExec = req0.destinationId() == null || req0.destinationId().equals(ctx.localNodeId()) ||
+            ctx.discovery().node(req0.destinationId()) == null;
 
         switch (req.command()) {
             case EXE: {
@@ -178,7 +179,10 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                             name,
                             !F.isEmpty(params) ? params.size() == 1 ? params.get(0) : params.toArray() : null)
                         :
-                        ctx.grid().compute().withNoFailover().call(new ExeCallable(name, params, timeout));
+                        // Using predicate instead of node intentionally
+                        // in order to provide user well-structured EmptyProjectionException.
+                        ctx.grid().forPredicate(F.nodeForNodeId(req.destinationId())).
+                            compute().withNoFailover().call(new ExeCallable(name, params, timeout));
 
                 if (async) {
                     if (locExec) {

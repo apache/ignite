@@ -36,9 +36,6 @@ public class GridClientHttpConnection extends GridClientConnection {
     /** Thread pool. */
     private final ExecutorService pool;
 
-    /** Reason why connection was closed. {@code null} means connection is still alive. */
-    private GridClientConnectionCloseReason closeReason;
-
     /** Busy lock for graceful close. */
     private ReadWriteLock busyLock = new ReentrantReadWriteLock();
 

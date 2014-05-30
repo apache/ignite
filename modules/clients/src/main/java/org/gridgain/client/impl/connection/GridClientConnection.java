@@ -38,6 +38,9 @@ public abstract class GridClientConnection {
     /** Client credentials. */
     private Object cred;
 
+    /** Reason why connection was closed. {@code null} means connection is still alive. */
+    protected volatile GridClientConnectionCloseReason closeReason;
+
     /**
      * Creates a facade.
      *
@@ -370,6 +373,13 @@ public abstract class GridClientConnection {
      * @throws GridClientException If message forwarding failed.
      */
     public abstract GridClientFutureAdapter<?> forwardMessage(Object body) throws GridClientException;
+
+    /**
+     * @return {@code True} if connection is closed.
+     */
+    public boolean isClosed() {
+        return closeReason != null;
+    }
 
     /**
      * Gets SSLContext of this client connection.

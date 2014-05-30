@@ -426,10 +426,18 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
             GridClientConnection old = conns.get(addr);
 
             if (old != null) {
-                if (nodeId != null)
-                    nodeConns.put(nodeId, old);
+                if (old.isClosed()) {
+                    conns.remove(addr, old);
 
-                return old;
+                    if (nodeId != null)
+                        nodeConns.remove(nodeId, old);
+                }
+                else {
+                    if (nodeId != null)
+                        nodeConns.put(nodeId, old);
+
+                    return old;
+                }
             }
 
             GridSecurityCredentials cred = null;
