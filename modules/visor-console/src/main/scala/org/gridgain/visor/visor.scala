@@ -1477,6 +1477,8 @@ object visor extends VisorTag {
                             return
                     }
                 }
+
+            open(cfg, cfgPath)
         }
         catch {
             case e: GE =>

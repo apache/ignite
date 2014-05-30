@@ -15,6 +15,7 @@ import org.gridgain.grid._
 import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeArg
 import org.gridgain.grid.kernal.visor.cmd.dto.VisorGridConfig
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorConfigCollectorTask
+import org.gridgain.grid.lang.GridBiTuple
 import org.gridgain.grid.util.{GridUtils => U}
 
 import java.lang.System._
@@ -295,19 +296,25 @@ class VisorConfigurationCommand {
 
             val spisT = VisorTextTable()
 
-            // TODO
+            def spiClass(spi: GridBiTuple[String, java.util.Map[String, AnyRef]]) = {
+                if (spi != null) spi.get2().getOrElse("Class Name", DFLT) else DFLT
+            }
 
-            spisT += ("Discovery", safe(cfg.spis().discoverySpi(), DFLT))
-            spisT += ("Communication", safe(cfg.spis().communicationSpi(), DFLT))
-            spisT += ("Event storage", safe(cfg.spis().eventStorageSpi(), DFLT))
-            spisT += ("Collision", safe(cfg.spis().collisionSpi(), DFLT))
-            spisT += ("Authentication", safe(cfg.spis().authenticationSpi(), DFLT))
-            spisT += ("Secure session", safe(cfg.spis().secureSessionSpi(), DFLT))
-            spisT += ("Deployment", safe(cfg.spis().deploymentSpi(), DFLT))
-            spisT += ("Checkpoints", safe(cfg.spis().checkpointSpis(), DFLT))
-            spisT += ("Failovers", safe(cfg.spis().failoverSpis(), DFLT))
-            spisT += ("Load balancings", safe(cfg.spis().loadBalancingSpis(), DFLT))
-            spisT += ("Swap spaces", safe(cfg.spis().swapSpaceSpi(), DFLT))
+            def spisClass(spis: Array[GridBiTuple[String, java.util.Map[String, AnyRef]]]) = {
+                spis.map(spiClass).mkString("[", ", ", "]")
+            }
+
+            spisT += ("Discovery", spiClass(cfg.spis().discoverySpi()))
+            spisT += ("Communication", spiClass(cfg.spis().communicationSpi()))
+            spisT += ("Event storage", spiClass(cfg.spis().eventStorageSpi()))
+            spisT += ("Collision", spiClass(cfg.spis().collisionSpi()))
+            spisT += ("Authentication", spiClass(cfg.spis().authenticationSpi()))
+            spisT += ("Secure session", spiClass(cfg.spis().secureSessionSpi()))
+            spisT += ("Deployment", spiClass(cfg.spis().deploymentSpi()))
+            spisT += ("Checkpoints", spisClass(cfg.spis().checkpointSpis()))
+            spisT += ("Failovers", spisClass(cfg.spis().failoverSpis()))
+            spisT += ("Load balancings", spisClass(cfg.spis().loadBalancingSpis()))
+            spisT += ("Swap spaces", spiClass(cfg.spis().swapSpaceSpi()))
 
             spisT.render()
 
@@ -364,7 +371,7 @@ class VisorConfigurationCommand {
             val segT = VisorTextTable()
 
             segT += ("Segmentation policy", safe(cfg.seg().policy(), DFLT))
-            segT += ("Segmentation resolvers", cfg.seg().resolvers())
+            segT += ("Segmentation resolvers", safe(cfg.seg().resolvers(), DFLT))
             segT += ("Segmentation check frequency", cfg.seg().checkFrequency())
             segT += ("Wait for segmentation on start", bool2Str(cfg.seg().waitOnStart()))
             segT += ("All resolvers pass required", bool2Str(cfg.seg().allResolversPassRequired()))
@@ -455,21 +462,21 @@ class VisorConfigurationCommand {
                 cacheT += ("Batch update", bool2Str(cacheCfg.txBatchUpdate()))
                 cacheT += ("Invalidate", bool2Str(cacheCfg.invalidate()))
                 cacheT += ("Start size", safe(cacheCfg.startSize(), DFLT))
-                cacheT += ("Cloner", cacheCfg.cloner())
-                cacheT += ("Transaction manager lookup", cacheCfg.txManagerLookup())
+                cacheT += ("Cloner", safe(cacheCfg.cloner(), DFLT))
+                cacheT += ("Transaction manager lookup", safe(cacheCfg.txManagerLookup(), DFLT))
                 cacheT += ("Affinity", cacheCfg.affinity().affinity())
                 cacheT += ("Affinity mapper", cacheCfg.affinity.affinityMapper())
                 cacheT += ("Preload mode", safe(cacheCfg.preload().mode(), DFLT))
                 cacheT += ("Preload batch size", cacheCfg.preload().batchSize())
                 cacheT += ("Preload thread pool size", cacheCfg.preload().poolSize())
-                cacheT += ("Eviction policy", cacheCfg.evict().policy())
+                cacheT += ("Eviction policy", safe(cacheCfg.evict().policy(), DFLT))
                 cacheT += ("Eviction key buffer size", cacheCfg.evict().synchronizedKeyBufferSize())
                 cacheT += ("Eviction synchronized", bool2Str(cacheCfg.evict().evictSynchronized()))
                 cacheT += ("Eviction near synchronized", bool2Str(cacheCfg.evict().nearSynchronized()))
                 cacheT += ("Eviction overflow ratio", formatDouble(cacheCfg.evict().maxOverflowRatio()))
                 cacheT += ("Near enabled", bool2Str(cacheCfg.near().nearEnabled()))
                 cacheT += ("Near start size", cacheCfg.near().nearStartSize())
-                cacheT += ("Near eviction policy", cacheCfg.near().nearEvictPolicy())
+                cacheT += ("Near eviction policy", safe(cacheCfg.near().nearEvictPolicy(), DFLT))
                 cacheT += ("Default isolation", safe(cacheCfg.defaultConfig().txIsolation(), DFLT))
                 cacheT += ("Default concurrency", safe(cacheCfg.defaultConfig().txConcurrency(), DFLT))
                 cacheT += ("Default transaction timeout", cacheCfg.defaultConfig().txTimeout())
@@ -478,7 +485,7 @@ class VisorConfigurationCommand {
                 cacheT += ("DGC remove locks flag", bool2Str(cacheCfg.dgc().removedLocks()))
                 cacheT += ("DGC suspect lock timeout", cacheCfg.dgc().suspectLockTimeout())
                 cacheT += ("Store enabled", bool2Str(cacheCfg.store().enabled()))
-                cacheT += ("Store", cacheCfg.store().store())
+                cacheT += ("Store", safe(cacheCfg.store().store(), DFLT))
                 cacheT += ("Store values in bytes", bool2Str(cacheCfg.store().valueBytes()))
 
                 cacheT.render()

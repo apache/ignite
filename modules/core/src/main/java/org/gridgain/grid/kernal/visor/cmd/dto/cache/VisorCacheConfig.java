@@ -65,10 +65,10 @@ public class VisorCacheConfig implements Serializable {
     private final int startSize;
 
     /**  */
-    private final String cloner;
+    @Nullable private final String cloner;
 
     /**  */
-    private final String txMgrLookup;
+    @Nullable private final String txMgrLookup;
 
     /**  */
     private final boolean txSerializableEnabled;
@@ -127,8 +127,8 @@ public class VisorCacheConfig implements Serializable {
         long ttl, boolean eagerTtl, double refreshAheadRatio,
         GridCacheWriteSynchronizationMode writeSynchronizationMode,
         int seqReserveSize, boolean swapEnabled, boolean queryIndexEnabled, boolean txBatchUpdate, boolean invalidate,
-        int startSize, String cloner,
-        String txMgrLookup, boolean txSerializableEnabled,
+        int startSize, @Nullable String cloner,
+        @Nullable String txMgrLookup, boolean txSerializableEnabled,
         long offHeapMaxMemory, int maxQueryIteratorCnt, int maxConcurrentAsyncOps, int pessimisticTxLogSize,
         int pessimisticTxLogLinger,
         GridCacheMemoryMode memoryMode, String indexingSpiName, VisorAffinityConfig affinity,
@@ -290,14 +290,14 @@ public class VisorCacheConfig implements Serializable {
     /**
      * @return Cloner.
      */
-    public String cloner() {
+    @Nullable public String cloner() {
         return cloner;
     }
 
     /**
      * @return Tx manager lookup.
      */
-    public String txManagerLookup() {
+    @Nullable public String txManagerLookup() {
         return txMgrLookup;
     }
 

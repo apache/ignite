@@ -9,31 +9,24 @@
 
 package org.gridgain.grid.kernal.visor.cmd.tasks;
 
-import org.gridgain.grid.GridException;
-import org.gridgain.grid.GridNodeLocalMap;
-import org.gridgain.grid.kernal.GridInternalException;
-import org.gridgain.grid.kernal.processors.task.GridInternal;
-import org.gridgain.grid.kernal.visor.cmd.VisorJob;
-import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeArg;
-import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeJob;
-import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeTask;
-import org.gridgain.grid.lang.GridBiTuple;
+import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.task.*;
+import org.gridgain.grid.kernal.visor.cmd.*;
+import org.gridgain.grid.kernal.visor.cmd.dto.*;
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorFieldsQueryTask.*;
+import org.gridgain.grid.lang.*;
+
+import java.util.*;
 
 import static org.gridgain.grid.kernal.visor.cmd.tasks.VisorFieldsQueryUtils.*;
-
-import java.io.Serializable;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  *  Task for collecting next page for previously executed SQL or SCAN query.
  */
 @GridInternal
-public class VisorNextFieldsQueryPageTask extends VisorOneNodeTask<
-    VisorNextFieldsQueryPageTask.VisorNextFieldsQueryPageArg,
-    VisorNextFieldsQueryPageTask.VisorNextFieldsQueryPageTaskResult> {
+public class VisorNextFieldsQueryPageTask extends VisorOneNodeTask<VisorNextFieldsQueryPageTask.VisorNextFieldsQueryPageArg,
+    VisorFieldsQueryResult> {
     /**
      * Arguments for {@link VisorNextFieldsQueryPageTask}.
      */
@@ -60,37 +53,8 @@ public class VisorNextFieldsQueryPageTask extends VisorOneNodeTask<
     }
 
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorNextFieldsQueryPageTaskResult implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        private final List<Object[]> rows;
-
-        private final Boolean hasMore;
-
-        public VisorNextFieldsQueryPageTaskResult(List<Object[]> rows, Boolean hasMore) {
-            this.rows = rows;
-            this.hasMore = hasMore;
-        }
-
-        /**
-         * @return Rows.
-         */
-        public List<Object[]> rows() {
-            return rows;
-        }
-
-        /**
-         * @return Has more.
-         */
-        public Boolean hasMore() {
-            return hasMore;
-        }
-    }
-
-    @SuppressWarnings("PublicInnerClass")
     public static class VisorNextFieldsQueryPageJob
-        extends VisorOneNodeJob<VisorNextFieldsQueryPageArg, VisorNextFieldsQueryPageTaskResult> {
+        extends VisorOneNodeJob<VisorNextFieldsQueryPageArg, VisorFieldsQueryResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -104,12 +68,12 @@ public class VisorNextFieldsQueryPageTask extends VisorOneNodeTask<
         }
 
         @Override
-        protected VisorNextFieldsQueryPageTaskResult run(VisorNextFieldsQueryPageArg arg) throws GridException {
+        protected VisorFieldsQueryResult run(VisorNextFieldsQueryPageArg arg) throws GridException {
             return arg.qryId.startsWith(SCAN_QRY_NAME) ? nextScanPage(arg) : nextSqlPage(arg);
         }
 
         /** Collect data from SQL query */
-        private VisorNextFieldsQueryPageTaskResult nextSqlPage(VisorNextFieldsQueryPageArg arg) throws GridException {
+        private VisorFieldsQueryResult nextSqlPage(VisorNextFieldsQueryPageArg arg) throws GridException {
             GridNodeLocalMap<String, VisorSqlStorageValType> storage = g.nodeLocalMap();
 
             VisorSqlStorageValType t = storage.get(arg.qryId);
@@ -126,11 +90,11 @@ public class VisorNextFieldsQueryPageTask extends VisorOneNodeTask<
             else
                 storage.remove(arg.qryId);
 
-            return new VisorNextFieldsQueryPageTaskResult (nextRows.get1(), hasMore);
+            return new VisorFieldsQueryResult (nextRows.get1(), hasMore);
         }
 
         /** Collect data from SCAN query */
-        private VisorNextFieldsQueryPageTaskResult nextScanPage(VisorNextFieldsQueryPageArg arg) throws GridException {
+        private VisorFieldsQueryResult nextScanPage(VisorNextFieldsQueryPageArg arg) throws GridException {
             GridNodeLocalMap<String, VisorScanStorageValType> storage = g.nodeLocalMap();
 
             VisorScanStorageValType t = storage.get(arg.qryId);
@@ -147,12 +111,12 @@ public class VisorNextFieldsQueryPageTask extends VisorOneNodeTask<
             else
                 storage.remove(arg.qryId);
 
-            return new VisorNextFieldsQueryPageTaskResult(nextRows.get1(), hasMore);
+            return new VisorFieldsQueryResult(nextRows.get1(), hasMore);
         }
     }
 
     @Override
-    protected VisorJob<VisorNextFieldsQueryPageArg, VisorNextFieldsQueryPageTaskResult> job(
+    protected VisorJob<VisorNextFieldsQueryPageArg, VisorFieldsQueryResult> job(
         VisorNextFieldsQueryPageArg arg) {
         return new VisorNextFieldsQueryPageJob(arg);
     }

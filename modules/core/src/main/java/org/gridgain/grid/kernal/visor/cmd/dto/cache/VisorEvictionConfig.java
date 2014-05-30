@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto.cache;
 
+import org.jetbrains.annotations.*;
+
 import java.io.*;
 
 /**
@@ -18,7 +20,7 @@ public class VisorEvictionConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    private final String plc;
+    @Nullable private final String plc;
     private final Integer plcMaxSize;
     private final String filter;
     private final int syncConcurrencyLvl;
@@ -28,7 +30,7 @@ public class VisorEvictionConfig implements Serializable {
     private final boolean nearSynchronized;
     private final float maxOverflowRatio;
 
-    public VisorEvictionConfig(String plc, Integer plcMaxSize, String filter, int syncConcurrencyLvl,
+    public VisorEvictionConfig(@Nullable String plc, Integer plcMaxSize, String filter, int syncConcurrencyLvl,
         long syncTimeout,
         int syncKeyBufSize, boolean evictSynchronized, boolean nearSynchronized, float maxOverflowRatio) {
         this.plc = plc;
@@ -45,7 +47,7 @@ public class VisorEvictionConfig implements Serializable {
     /**
      * @return Policy.
      */
-    public String policy() {
+    @Nullable public String policy() {
         return plc;
     }
 

@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto.cache;
 
+import org.jetbrains.annotations.*;
+
 import java.io.*;
 
 /**
@@ -20,9 +22,9 @@ public class VisorNearCacheConfig implements Serializable {
 
     private final boolean nearEnabled;
     private final int nearStartSize;
-    private final String nearEvictPlc;
+    @Nullable private final String nearEvictPlc;
 
-    public VisorNearCacheConfig(boolean nearEnabled, int nearStartSize, String nearEvictPlc) {
+    public VisorNearCacheConfig(boolean nearEnabled, int nearStartSize, @Nullable String nearEvictPlc) {
         this.nearEnabled = nearEnabled;
         this.nearStartSize = nearStartSize;
         this.nearEvictPlc = nearEvictPlc;
@@ -45,7 +47,7 @@ public class VisorNearCacheConfig implements Serializable {
     /**
      * @return Near evict policy.
      */
-    public String nearEvictPolicy() {
+    @Nullable public String nearEvictPolicy() {
         return nearEvictPlc;
     }
 }

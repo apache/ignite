@@ -123,19 +123,23 @@ object VisorConsole extends App {
                     buf.clear()
                 }
 
-                line match {
-                    case emptyArg(c) =>
-                        visor.searchCmd(c) match {
-                            case Some(cmdHolder) => cmdHolder.impl.invoke()
-                            case _ => adviseToHelp(c)
-                        }
-                    case varArg(c, args) =>
-                        visor.searchCmd(c) match {
-                            case Some(cmdHolder) => cmdHolder.impl.invoke(args.trim)
-                            case _ => adviseToHelp(c)
-                        }
-                    case s if "".equals(s.trim)  => // Ignore empty user input.
-                    case _ => adviseToHelp(line)
+                try {
+                    line match {
+                        case emptyArg(c) =>
+                            visor.searchCmd(c) match {
+                                case Some(cmdHolder) => cmdHolder.impl.invoke()
+                                case _ => adviseToHelp(c)
+                            }
+                        case varArg(c, args) =>
+                            visor.searchCmd(c) match {
+                                case Some(cmdHolder) => cmdHolder.impl.invoke(args.trim)
+                                case _ => adviseToHelp(c)
+                            }
+                        case s if "".equals(s.trim) => // Ignore empty user input.
+                        case _ => adviseToHelp(line)
+                    }
+                } catch {
+                    case ignore: Exception => ignore.printStackTrace()
                 }
             }
         }

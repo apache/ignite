@@ -58,7 +58,7 @@ public class VisorAckTask extends VisorMultiNodeTask<VisorAckTask.VisorAckArg, V
         /** */
         private static final long serialVersionUID = 0L;
 
-        protected VisorAckJob(VisorAckArg arg) {
+        public VisorAckJob(VisorAckArg arg) {
             super(arg);
         }
 

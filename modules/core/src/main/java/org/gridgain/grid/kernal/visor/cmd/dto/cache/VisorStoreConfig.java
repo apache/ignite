@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto.cache;
 
+import org.jetbrains.annotations.*;
+
 import java.io.*;
 
 /**
@@ -18,10 +20,10 @@ public class VisorStoreConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    private final String store;
+    @Nullable private final String store;
     private final boolean valueBytes;
 
-    public VisorStoreConfig(String store, boolean valueBytes) {
+    public VisorStoreConfig(@Nullable String store, boolean valueBytes) {
         this.store = store;
         this.valueBytes = valueBytes;
     }
@@ -33,7 +35,7 @@ public class VisorStoreConfig implements Serializable {
     /**
      * @return Store.
      */
-    public String store() {
+    @Nullable public String store() {
         return store;
     }
 

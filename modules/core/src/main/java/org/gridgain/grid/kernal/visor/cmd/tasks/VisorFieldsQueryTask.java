@@ -32,7 +32,7 @@ import static org.gridgain.grid.kernal.visor.cmd.tasks.VisorFieldsQueryUtils.*;
  */
 @GridInternal
 public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.VisorFieldsQueryArg,
-    GridBiTuple<? extends Exception, VisorFieldsQueryResult>> {
+    GridBiTuple<? extends Exception, VisorFieldsQueryResultEx>> {
     /**
      * Arguments for {@link VisorFieldsQueryTask}.
      */
@@ -178,7 +178,7 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
 
     @SuppressWarnings("PublicInnerClass")
     public static class VisorFieldsQueryJob
-        extends VisorOneNodeJob<VisorFieldsQueryArg, GridBiTuple<? extends Exception, VisorFieldsQueryResult>> {
+        extends VisorOneNodeJob<VisorFieldsQueryArg, GridBiTuple<? extends Exception, VisorFieldsQueryResultEx>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -192,7 +192,7 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
         }
 
         @Override
-        protected GridBiTuple<? extends Exception, VisorFieldsQueryResult> run(VisorFieldsQueryArg arg) throws GridException {
+        protected GridBiTuple<? extends Exception, VisorFieldsQueryResultEx> run(VisorFieldsQueryArg arg) throws GridException {
             try {
                 Boolean scan = arg.queryTxt().toUpperCase().startsWith("SCAN");
 
@@ -216,7 +216,7 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
 
                     scheduleScanQueryRemoval(qryId);
 
-                    return new GridBiTuple<>(null, new VisorFieldsQueryResult(g.localNode().id(), qryId,
+                    return new GridBiTuple<>(null, new VisorFieldsQueryResultEx(g.localNode().id(), qryId,
                         SCAN_COL_NAMES, rows.get1(), next != null));
                 }
                 else {
@@ -230,7 +230,7 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
                     List<GridIndexingFieldMetadata> meta = ((GridCacheQueryMetadataAware) fut).metadata().get();
 
                     if (meta == null)
-                        return new GridBiTuple<Exception, VisorFieldsQueryResult>(new SQLException("Fail to execute query. No metadata available."), null);
+                        return new GridBiTuple<Exception, VisorFieldsQueryResultEx>(new SQLException("Fail to execute query. No metadata available."), null);
                     else {
                         VisorFieldsQueryColumn[] names = new VisorFieldsQueryColumn[meta.size()];
 
@@ -247,7 +247,7 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
 
                         scheduleSqlQueryRemoval(qryId);
 
-                        return new GridBiTuple<>(null, new VisorFieldsQueryResult(g.localNode().id(), qryId,
+                        return new GridBiTuple<>(null, new VisorFieldsQueryResultEx(g.localNode().id(), qryId,
                             names, nextRows.get1(), nextRows.get2() != null));
                     }
                 }
@@ -303,7 +303,7 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
     }
 
     @Override
-    protected VisorJob<VisorFieldsQueryArg, GridBiTuple<? extends Exception, VisorFieldsQueryResult>> job(VisorFieldsQueryArg arg) {
+    protected VisorJob<VisorFieldsQueryArg, GridBiTuple<? extends Exception, VisorFieldsQueryResultEx>> job(VisorFieldsQueryArg arg) {
         return new VisorFieldsQueryJob(arg);
     }
 }
