@@ -750,6 +750,17 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     }
 
     /**
+     * Initiates job cancelling process.
+     * @param jobId Job to cancel.
+     * @throws GridException If fails.
+     */
+    public void cancelJob(GridHadoopJobId jobId) throws GridException {
+        GridHadoopTaskCancelledException err = new GridHadoopTaskCancelledException("Job cancelled.");
+
+        jobMetaPrj.transform(jobId, new CancelJobClosure(err));
+    }
+
+    /**
      * Event handler protected by busy lock.
      */
     private abstract class EventHandler implements Runnable {
@@ -1145,7 +1156,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
          * @param err Fail cause.
          */
         private CancelJobClosure(Throwable err) {
-            this.err = err;
+            this(err, null, null);
         }
 
         /**
@@ -1153,8 +1164,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
          * @param rdc Reducers to remove.
          */
         private CancelJobClosure(Collection<GridHadoopInputSplit> splits, Collection<Integer> rdc) {
-            this.splits = splits;
-            this.rdc = rdc;
+            this(null, splits, rdc);
         }
 
         /**
@@ -1189,6 +1199,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             cp.pendingSplits(splitsCp);
 
             cp.phase(PHASE_CANCELLING);
+
+            cp.failCause(err);
 
             return cp;
         }
