@@ -21,7 +21,7 @@ import java.util.UUID;
  */
 @GridInternal
 public class VisorSetGgfsSamplingStateTask
-    extends VisorOneNodeTask<VisorSetGgfsSamplingStateTask.VisorSetGgfsSamplingStateArg, VisorDummyObject> {
+    extends VisorOneNodeTask<VisorSetGgfsSamplingStateTask.VisorSetGgfsSamplingStateArg, Void> {
     /**
      * Arguments for {@link VisorSetGgfsSamplingStateTask}.
      */
@@ -53,7 +53,7 @@ public class VisorSetGgfsSamplingStateTask
 
     /** TODO */
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorSetGgfsSamplingStateJob extends VisorOneNodeJob<VisorSetGgfsSamplingStateArg, VisorDummyObject> {
+    public static class VisorSetGgfsSamplingStateJob extends VisorOneNodeJob<VisorSetGgfsSamplingStateArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -66,7 +66,7 @@ public class VisorSetGgfsSamplingStateTask
             super(arg);
         }
 
-        @Override protected VisorDummyObject run(VisorSetGgfsSamplingStateArg arg) throws GridException {
+        @Override protected Void run(VisorSetGgfsSamplingStateArg arg) throws GridException {
             try {
                 ((GridGgfsEx) g.ggfs(arg.ggfsName)).globalSampling(arg.state);
 
