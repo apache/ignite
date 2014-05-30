@@ -16,10 +16,10 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.logger.java.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.nio.ssl.*;
-import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -92,6 +92,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
     private final ScheduledExecutorService pingExecutor;
 
     /** Message writer. */
+    @SuppressWarnings("FieldCanBeLocal")
     private final GridNioMessageWriter msgWriter = new GridNioMessageWriter() {
         @Override public boolean write(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf) {
             assert msg != null;
