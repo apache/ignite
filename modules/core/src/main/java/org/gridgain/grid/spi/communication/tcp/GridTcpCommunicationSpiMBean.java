@@ -119,14 +119,6 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
     public int getOutboundMessagesQueueSize();
 
     /**
-     * Gets port resolver for ports mapping determination.
-     *
-     * @return Port resolver for ports mapping determination.
-     */
-    @GridMBeanDescription("Port resolver for ports mapping determination.")
-    public GridSpiPortResolver getSpiPortResolver();
-
-    /**
      * Gets connect timeout used when establishing connection
      * with remote nodes.
      *

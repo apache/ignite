@@ -47,7 +47,6 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
      * @param metricsLsnr Metrics listener.
      * @param msgWriter Message writer.
      * @param addr Address.
-     * @param port Port.
      * @param locHost Local address.
      * @param connTimeout Connect timeout.
      * @param tcpNoDelay Value for {@code TCP_NODELAY} socket option.
@@ -61,8 +60,7 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
     public GridTcpCommunicationClient(
         GridNioMetricsListener metricsLsnr,
         GridNioMessageWriter msgWriter,
-        InetAddress addr,
-        int port,
+        InetSocketAddress addr,
         InetAddress locHost,
         long connTimeout,
         boolean tcpNoDelay,
@@ -77,7 +75,6 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
         assert metricsLsnr != null;
         assert msgWriter != null;
         assert addr != null;
-        assert port > 0 && port < 0xffff;
         assert locHost != null;
         assert connTimeout >= 0;
         assert bufSize >= 0;
@@ -110,15 +107,15 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
             if (sockSndBuf > 0)
                 sock.setSendBufferSize(sockSndBuf);
 
-            sock.connect(new InetSocketAddress(addr, port), (int)connTimeout);
+            sock.connect(addr, (int)connTimeout);
 
             out = new UnsafeBufferedOutputStream(sock.getOutputStream(), bufSize);
 
             success = true;
         }
         catch (IOException e) {
-            throw new GridException("Failed to connect to remote host [addr=" + addr + ", port=" + port +
-                ", localHost=" + locHost + ']', e);
+            throw new GridException("Failed to connect to remote host " +
+                "[addr=" + addr + ", localHost=" + locHost + ']', e);
         }
         finally {
             if (!success)
