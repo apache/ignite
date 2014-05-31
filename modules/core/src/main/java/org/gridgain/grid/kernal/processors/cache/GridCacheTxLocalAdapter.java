@@ -503,10 +503,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                                     GridBiTuple<Boolean, V> t = cctx.config().getInterceptor().onBeforeRemove(key, old);
 
-                                    if (t == null)
-                                        U.warn(log,
-                                            "GridCacheInterceptor must not return null from 'onBeforeRemove' method.");
-                                    else if (t.get1())
+                                    if (cctx.cancelRemove(t))
                                         continue;
                                 }
 
@@ -1667,9 +1664,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         V ret = removeAllAsync(Collections.singletonList(key), cached, implicit, true, filter).get().value();
 
-        if (cctx.config().getInterceptor() != null) {
+        if (cctx.config().getInterceptor() != null)
             return (V)cctx.config().getInterceptor().onBeforeRemove(key, ret).get2();
-        }
 
         return ret;
     }

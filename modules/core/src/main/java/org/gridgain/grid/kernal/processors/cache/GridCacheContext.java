@@ -1658,7 +1658,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @param interceptorRes {@link GridCacheInterceptor#onBeforeRemove}.
+     * @param interceptorRes Result of {@link GridCacheInterceptor#onBeforeRemove} callback.
      * @return {@code True} if interceptor cancels remove.
      */
     public boolean cancelRemove(@Nullable GridBiTuple<Boolean, ?> interceptorRes) {

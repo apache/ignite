@@ -194,7 +194,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         mappings = new ConcurrentHashMap8<>(keys.size(), 1.0f);
 
         fastMap = F.isEmpty(filter) && op != TRANSFORM && cctx.config().getWriteSynchronizationMode() == FULL_SYNC &&
-            cctx.config().getAtomicWriteOrderMode() == CLOCK && !(cctx.isStoreEnabled() && cctx.config().getInterceptor() != null);
+            cctx.config().getAtomicWriteOrderMode() == CLOCK &&
+            !(cctx.isStoreEnabled() && cctx.config().getInterceptor() != null);
 
         nearEnabled = CU.isNearEnabled(cctx);
     }

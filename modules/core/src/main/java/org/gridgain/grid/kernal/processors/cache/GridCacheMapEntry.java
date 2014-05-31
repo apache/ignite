@@ -1150,12 +1150,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 if (intercept) {
                     interceptRes = cctx.config().getInterceptor().onBeforeRemove(key, old);
 
-                    if (interceptRes != null) {
-                        if (interceptRes.get1())
-                            return new GridCacheUpdateTxResult<>(false, interceptRes.get2());
-                    }
-                    else
-                        U.warn(log, "GridCacheInterceptor must not return null from 'onBeforeRemove' method.");
+                    if (cctx.cancelRemove(interceptRes))
+                        return new GridCacheUpdateTxResult<>(false, interceptRes.get2());
                 }
 
                 if (old == null)
@@ -1652,13 +1648,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 if (intercept) {
                     interceptRes = cctx.config().getInterceptor().onBeforeRemove(key, old);
 
-                    if (interceptRes != null) {
-                        if (interceptRes.get1())
-                            return new GridCacheUpdateAtomicResult<>(false, interceptRes.get2(), null, 0L, -1L, null,
-                                null, false);
-                    }
-                    else
-                        U.warn(log, "GridCacheInterceptor must not return null from 'onBeforeRemove' method.");
+                    if (cctx.cancelRemove(interceptRes))
+                        return new GridCacheUpdateAtomicResult<>(false, interceptRes.get2(), null, 0L, -1L, null,
+                            null, false);
                 }
 
                 if (writeThrough)
