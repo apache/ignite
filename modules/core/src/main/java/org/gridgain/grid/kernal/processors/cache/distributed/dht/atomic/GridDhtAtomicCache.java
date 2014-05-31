@@ -1532,7 +1532,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             assert op == DELETE : op;
 
                             // Old value should be already loaded for 'GridCacheInterceptor.onBeforeRemove'.
-                            ctx.config().getInterceptor().onAfterRemove(entry.key(), updRes.oldValue());
+                            ctx.config().<K, V>getInterceptor().onAfterRemove(entry.key(), updRes.oldValue());
                         }
                     }
 
