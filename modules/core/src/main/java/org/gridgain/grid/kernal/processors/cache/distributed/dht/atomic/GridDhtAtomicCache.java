@@ -2394,7 +2394,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             pendingResponses.remove(nodeId, this);
         }
     }
+
     /**
+     *
      */
     @SuppressWarnings("PublicInnerClass")
     public static class DhtAtomicUpdateRequestConverter603 extends GridVersionConverter {
