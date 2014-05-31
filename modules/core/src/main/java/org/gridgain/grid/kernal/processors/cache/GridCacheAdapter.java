@@ -1676,14 +1676,14 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(keys))
             return map;
 
-        GridCacheInterceptor interceptor = cacheCfg.getInterceptor();
+        GridCacheInterceptor<K, V> interceptor = cacheCfg.getInterceptor();
 
         assert interceptor != null;
 
         Map<K, V> res = new HashMap<>(keys.size());
 
         for (Map.Entry<K, V> e : map.entrySet()) {
-            V val = (V)interceptor.onGet(e.getKey(), e.getValue());
+            V val = interceptor.onGet(e.getKey(), e.getValue());
 
             if (val != null)
                 res.put(e.getKey(), val);
@@ -1693,7 +1693,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             for (K key : keys) {
                 if (key != null) {
                     if (!map.containsKey(key)) {
-                        V val = (V)interceptor.onGet(key, null);
+                        V val = interceptor.onGet(key, null);
 
                         if (val != null)
                             res.put(key, val);
@@ -3953,7 +3953,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         try {
             return ctx.dr().listStateTransfers();
         }
-        catch (GridException e) {
+        catch (GridException ignored) {
             throw new IllegalStateException("Failed to list state transfers because grid is stopping.");
         }
     }
