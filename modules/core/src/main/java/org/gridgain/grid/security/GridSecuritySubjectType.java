@@ -13,7 +13,7 @@ import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Enumeration for supported subject types.
+ * Supported security subject types. Subject type can be retrieved form {@link GridSecuritySubject#type()} method.
  */
 public enum GridSecuritySubjectType {
     /**

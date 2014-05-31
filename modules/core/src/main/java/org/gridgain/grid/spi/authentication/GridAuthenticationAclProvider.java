@@ -15,8 +15,19 @@ import org.gridgain.grid.security.*;
 import java.util.*;
 
 /**
- * TODO: Add interface description.
+ * Access control list provider. Specific SPI implementation may use this
+ * interface for declarative user permission specifications.
+ * <p>
+ * Abstracting access control specification through a provider allows users
+ * to implement custom stores for per-user access control specifications,
+ * e.g. encrypting them or storing in a separate file.
  */
 public interface GridAuthenticationAclProvider {
+    /**
+     * Gets per-user access control map.
+     *
+     * @return Per-user access control map.
+     * @throws GridException If failed.
+     */
     public Map<GridSecurityCredentials, GridSecurityPermissionSet> acl() throws GridException;
 }
