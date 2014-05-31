@@ -12,13 +12,17 @@ package org.gridgain.grid.security;
 import org.gridgain.grid.*;
 
 /**
- * TODO: Add class description.
+ * Basic implementation for {@link GridSecurityCredentialsProvider}. Use it
+ * when custom logic for storing security credentials is not required and it
+ * is OK to specify credentials directly in configuration.
  */
 public class GridSecurityCredentialsBasicProvider implements GridSecurityCredentialsProvider {
     /** */
     private GridSecurityCredentials cred;
 
     /**
+     * Constructs security credentials provider based on security credentials passed in.
+     *
      * @param cred Security credentials.
      */
     public GridSecurityCredentialsBasicProvider(GridSecurityCredentials cred) {

@@ -44,5 +44,5 @@ public interface GridAuthenticationContext {
      *
      * @return Subject network address.
      */
-    public SocketAddress address();
+    public InetSocketAddress address();
 }

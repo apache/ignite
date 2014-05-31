@@ -38,12 +38,18 @@ import java.util.*;
  * <p>
  * For remote C++ and .NET clients, security credentials are provided in configuration
  * as well in the form of {@code "username:password"} string.
- * <h1 class="header">Security Permissions</h1>
- * Security permissions for every connected client or node are specified in {@link GridAuthenticationSpi}
- * configuration. All permissions supported by GridGain are provided in {@link GridSecurityPermission} enum.
+ * <h1 class="header">Authentication And Authorization</h1>
+ * Node or client authentication happens in {@link GridAuthenticationSpi}. Upon successful
+ * authentication, the SPI will return list of permissions for authenticated subject.
  * <p>
- * Different SPI implementations may use different mechanisms to authenticate users, but
- * all SPIs should usually (although not required) specify security permissions in the following JSON format:
+ * GridGain ships with following authentication SPIs out of the box:
+ * <ul>
+ * <li>{@code GridJaasAuthenticationSpi} - provides authentication based on JAAS standard.</li>
+ * <li>{@code GridPasscodeAuthenticationSpi} - basic username and password authentication.</li>
+ * </ul>
+ * All permissions supported by GridGain are provided in {@link GridSecurityPermission} enum. Permissions
+ * are specified on per-cache or per-task level (wildcards are allowed). Authentication SPIs should usually
+ * (although not required) specify security permissions in the following JSON format:
  * <pre class="brush: text">
  * {
  *     {
@@ -65,9 +71,9 @@ import java.util.*;
  */
 public interface GridSecurity {
     /**
-     * Gets collection of authorized subjects.
+     * Gets collection of authenticated subjects together with their permissions.
      *
-     * @return Collection of authorized subjects.
+     * @return Collection of authenticated subjects.
      */
     public Collection<GridSecuritySubject> authenticatedSubjects() throws GridException;
 

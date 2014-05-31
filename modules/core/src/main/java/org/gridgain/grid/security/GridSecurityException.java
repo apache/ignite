@@ -13,7 +13,7 @@ import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Common security exception for grid.
+ * Common security exception for the grid.
  */
 public class GridSecurityException extends GridRuntimeException {
     /** */

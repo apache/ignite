@@ -123,7 +123,7 @@ public class GridClientConfiguration {
         autoFetchMetrics = cfg.isAutoFetchMetrics();
         balancer = cfg.getBalancer();
         connectTimeout = cfg.getConnectTimeout();
-        credProvider = cfg.getCredentialsProvider();
+        credProvider = cfg.getSecurityCredentialsProvider();
         enableAttrsCache = cfg.isEnableAttributesCache();
         enableMetricsCache = cfg.isEnableMetricsCache();
         executor = cfg.getExecutorService();
@@ -335,7 +335,7 @@ public class GridClientConfiguration {
      *
      * @return Credentials provider.
      */
-    public GridSecurityCredentialsProvider getCredentialsProvider() {
+    public GridSecurityCredentialsProvider getSecurityCredentialsProvider() {
         return credProvider;
     }
 
@@ -344,7 +344,7 @@ public class GridClientConfiguration {
      *
      * @param credProvider Client credentials provider.
      */
-    public void setCredentialsProvider(GridSecurityCredentialsProvider credProvider) {
+    public void setSecurityCredentialsProvider(GridSecurityCredentialsProvider credProvider) {
         this.credProvider = credProvider;
     }
 
@@ -663,11 +663,11 @@ public class GridClientConfiguration {
             int idx = cred.indexOf(':');
 
             if (idx >= 0 && idx < cred.length() - 1) {
-                setCredentialsProvider(new GridSecurityCredentialsBasicProvider(
+                setSecurityCredentialsProvider(new GridSecurityCredentialsBasicProvider(
                     new GridSecurityCredentials(cred.substring(0, idx), cred.substring(idx + 1))));
             }
             else {
-                setCredentialsProvider(new GridSecurityCredentialsBasicProvider(
+                setSecurityCredentialsProvider(new GridSecurityCredentialsBasicProvider(
                     new GridSecurityCredentials(null, null, cred)));
             }
         }

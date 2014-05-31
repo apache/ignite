@@ -9,20 +9,38 @@
 
 package org.gridgain.grid.security;
 
+import org.jetbrains.annotations.*;
+
 /**
- * TODO: Add enum description.
- *
- * @author @java.author
- * @version @java.version
+ * Supported security permissions within grid. Permissions
+ * are specified on per-cache or per-task level.
  */
 public enum GridSecurityPermission {
+    /** Cache {@code read} permission. */
     CACHE_READ,
 
+    /** Cache {@code put} permission. */
     CACHE_PUT,
 
+    /** Cache {@code remove} permission. */
     CACHE_REMOVE,
 
+    /** Task {@code execute} permission. */
     TASK_EXECUTE,
 
-    TASK_CANCEL
+    /** Task {@code cancel} permission. */
+    TASK_CANCEL;
+
+    /** Enumerated values. */
+    private static final GridSecurityPermission[] VALS = values();
+
+    /**
+     * Efficiently gets enumerated value from its ordinal.
+     *
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
+     */
+    @Nullable public static GridSecurityPermission fromOrdinal(int ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
 }
