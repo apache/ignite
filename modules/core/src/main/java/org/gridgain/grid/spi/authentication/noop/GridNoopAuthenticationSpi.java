@@ -18,8 +18,6 @@ import org.gridgain.grid.spi.authentication.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.util.*;
-
 /**
  * Default implementation of the authentication SPI which permits any request.
  * <p>
