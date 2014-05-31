@@ -9,21 +9,44 @@
 
 package org.gridgain.grid.security;
 
+import org.gridgain.grid.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 
 /**
- * Security credentials.
+ * Security credentials used for client or node authentication. Security credentials
+ * are provided by {@link GridSecurityCredentialsProvider} which is specified on
+ * client or node startup in configuration.
+ * <p>
+ * For grid node, security credentials provider is specified in
+ * {@link GridConfiguration#setSecurityCredentialsProvider(GridSecurityCredentialsProvider)}
+ * configuration property. For Java clients, you can provide credentials in
+ * {@code GridClientConfiguration.setSecurityCredentialsProvider(...)} method.
+ * <p>
+ * Getting credentials through {@link GridSecurityCredentialsProvider} abstraction allows
+ * users to provide custom implementations for storing user names and passwords in their
+ * environment, possibly in encrypted format. GridGain comes with
+ * {@link GridSecurityCredentialsBasicProvider} which simply provides
+ * the passed in {@code login} and {@code password} when encryption or custom logic is not required.
+ * <p>
+ * In addition to {@code login} and {@code password}, security credentials allow for
+ * specifying {@link #setUserObject(Object) userObject} as well, which can be used
+ * to pass in any additional information required for authentication.
  */
 public class GridSecurityCredentials implements Externalizable {
     /** Login. */
     private String login;
 
     /** Password. */
+    @GridToStringExclude
     private String password;
 
     /** Additional user object. */
+    @GridToStringExclude
     private Object userObj;
 
     /**
@@ -34,6 +57,8 @@ public class GridSecurityCredentials implements Externalizable {
     }
 
     /**
+     * Constructs security credentials based on {@code login} and {@code password}.
+     *
      * @param login Login.
      * @param password Password.
      */
@@ -43,11 +68,14 @@ public class GridSecurityCredentials implements Externalizable {
     }
 
     /**
+     * Constructs security credentials based on {@code login}, {@code password},
+     * and custom user object.
+     *
      * @param login Login.
      * @param password Password.
      * @param userObj User object.
      */
-    public GridSecurityCredentials(String login, String password, Object userObj) {
+    public GridSecurityCredentials(String login, String password, @Nullable Object userObj) {
         this.login = login;
         this.password = password;
         this.userObj = userObj;
@@ -94,7 +122,7 @@ public class GridSecurityCredentials implements Externalizable {
      *
      * @return User object.
      */
-    public Object getUserObject() {
+    @Nullable public Object getUserObject() {
         return userObj;
     }
 
@@ -103,21 +131,21 @@ public class GridSecurityCredentials implements Externalizable {
      *
      * @param userObj User object.
      */
-    public void setUserObject(Object userObj) {
+    public void setUserObject(@Nullable Object userObj) {
         this.userObj = userObj;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeUTF(login);
-        out.writeUTF(password);
+        U.writeString(out, login);
+        U.writeString(out, password);
         out.writeObject(userObj);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        login = in.readUTF();
-        password = in.readUTF();
+        login = U.readString(in);
+        password = U.readString(in);
         userObj = in.readObject();
     }
 
@@ -142,5 +170,10 @@ public class GridSecurityCredentials implements Externalizable {
         res = 31 * res + (userObj != null ? userObj.hashCode() : 0);
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridSecurityCredentials.class, this);
     }
 }

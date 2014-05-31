@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.managers.security;
 
 import org.gridgain.grid.security.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.net.*;
 import java.util.*;
@@ -28,7 +29,7 @@ public class GridSecuritySubjectAdapter implements GridSecuritySubject {
     private GridSecuritySubjectType subjType;
 
     /** Address. */
-    private SocketAddress addr;
+    private InetSocketAddress addr;
 
     /** Permissions assigned to a subject. */
     private GridSecurityPermissionSet permissions;
@@ -65,7 +66,7 @@ public class GridSecuritySubjectAdapter implements GridSecuritySubject {
      *
      * @return Subject address.
      */
-    @Override public SocketAddress address() {
+    @Override public InetSocketAddress address() {
         return addr;
     }
 
@@ -74,7 +75,7 @@ public class GridSecuritySubjectAdapter implements GridSecuritySubject {
      *
      * @param addr Subject address.
      */
-    public void address(SocketAddress addr) {
+    public void address(InetSocketAddress addr) {
         this.addr = addr;
     }
 
@@ -94,5 +95,10 @@ public class GridSecuritySubjectAdapter implements GridSecuritySubject {
      */
     public void permissions(GridSecurityPermissionSet permissions) {
         this.permissions = permissions;
+    }
+
+    /** {@inheritDoc} */
+    public String toString() {
+        return S.toString(GridSecuritySubjectAdapter.class, this);
     }
 }

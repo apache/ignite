@@ -13,13 +13,37 @@ import java.io.*;
 import java.util.*;
 
 /**
- * TODO: Add interface description.
+ * Security permission set for authorized security subjects. Permission set
+ * allows to specify task permissions for every task and cache permissions
+ * for every cache. While cards are supported at the end of task or
+ * cache name.
+ * <p>
+ * Property {@link #defaultAllowAll()} specifies whether to allow or deny
+ * cache and task operations if they were not explicitly specified.
  */
 public interface GridSecurityPermissionSet extends Serializable {
-
+    /**
+     * Flag indicating whether to allow or deny cache and task operations
+     * if they were not explicitly specified.
+     *
+     * @return {@code True} to allow all cache task operations if they were
+     *      not explicitly specified, {@code false} otherwise.
+     */
     public boolean defaultAllowAll();
 
+    /**
+     * Map of task names to task permissions. Wildcards are allowed at the
+     * end of task names.
+     *
+     * @return Map of task names to task permissions.
+     */
     public Map<String, Collection<GridSecurityPermission>> taskPermissions();
 
+    /**
+     * Map of cache names to cache permissions. Wildcards are allowed at the
+     * end of cache names.
+     *
+     * @return Map of cache names to cache permissions.
+     */
     public Map<String, Collection<GridSecurityPermission>> cachePermissions();
 }

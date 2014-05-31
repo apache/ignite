@@ -16,7 +16,9 @@ import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.authentication.*;
+import org.gridgain.grid.util.typedef.*;
 
+import java.net.*;
 import java.util.*;
 
 /**
@@ -31,25 +33,7 @@ public class GridOsSecurityManager extends GridNoopManagerAdapter implements Gri
     }
 
     /** Allow all permissions. */
-    private static final GridSecurityPermissionSet ALLOW_ALL = new GridSecurityPermissionSet() {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** {@inheritDoc} */
-        @Override public boolean defaultAllowAll() {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<String, Collection<GridSecurityPermission>> taskPermissions() {
-            return Collections.emptyMap();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<String, Collection<GridSecurityPermission>> cachePermissions() {
-            return Collections.emptyMap();
-        }
-    };
+    private static final GridSecurityPermissionSet ALLOW_ALL = new GridAllowAllPermissionSet();
 
     /** {@inheritDoc} */
     @Override public boolean securityEnabled() {
@@ -60,6 +44,8 @@ public class GridOsSecurityManager extends GridNoopManagerAdapter implements Gri
     @Override public GridSecurityContext authenticateNode(GridNode node, GridSecurityCredentials cred)
         throws GridException {
         GridSecuritySubjectAdapter s = new GridSecuritySubjectAdapter(GridSecuritySubjectType.REMOTE_NODE, node.id());
+
+        s.address(new InetSocketAddress(F.first(node.addresses()), 0));
 
         s.permissions(ALLOW_ALL);
 

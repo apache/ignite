@@ -14,15 +14,35 @@ import java.net.*;
 import java.util.*;
 
 /**
- * Security subject.
+ * Security subject representing authenticated node or client with a set of permissions.
+ * List of authenticated subjects can be retrieved from {@link GridSecurity#authenticatedSubjects()} method.
  */
 public interface GridSecuritySubject extends Serializable {
-
+    /**
+     * Gets subject ID.
+     *
+     * @return Subject ID.
+     */
     public UUID id();
 
+    /**
+     * Gets subject type, either node or client.
+     *
+     * @return Subject type.
+     */
     public GridSecuritySubjectType type();
 
-    public SocketAddress address();
+    /**
+     * Gets subject connection address. Usually {@link InetSocketAddress} representing connection IP and port.
+     *
+     * @return Subject connection address.
+     */
+    public InetSocketAddress address();
 
+    /**
+     * Authorized permission set for the subject.
+     *
+     * @return Authorized permission set for the subject.
+     */
     public GridSecurityPermissionSet permissions();
 }

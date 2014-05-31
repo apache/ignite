@@ -181,7 +181,7 @@ public class GridTcpRouterConfiguration {
      *
      * @return Credentials.
      */
-    @Nullable public GridSecurityCredentialsProvider getCredentialsProvider() {
+    @Nullable public GridSecurityCredentialsProvider getSecurityCredentialsProvider() {
         return credsProvider;
     }
 
@@ -279,7 +279,7 @@ public class GridTcpRouterConfiguration {
      *
      * @param credsProvider Credentials provider.
      */
-    public void setCredentialsProvider(GridSecurityCredentialsProvider credsProvider) {
+    public void setSecurityCredentialsProvider(GridSecurityCredentialsProvider credsProvider) {
         this.credsProvider = credsProvider;
     }
 

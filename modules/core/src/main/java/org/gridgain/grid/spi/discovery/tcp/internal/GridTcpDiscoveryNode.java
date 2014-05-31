@@ -433,6 +433,6 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryNode.class, this, "attrs", attributes());
+        return S.toString(GridTcpDiscoveryNode.class, this);
     }
 }
