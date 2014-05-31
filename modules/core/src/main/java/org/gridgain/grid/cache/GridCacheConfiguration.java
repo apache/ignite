@@ -761,6 +761,7 @@ public class GridCacheConfiguration {
      *
      * @return Eviction filter or {@code null}.
      */
+    @SuppressWarnings("unchecked")
     public <K, V> GridCacheEvictionFilter<K, V> getEvictionFilter() {
         return (GridCacheEvictionFilter<K, V>)evictFilter;
     }
@@ -1955,13 +1956,18 @@ public class GridCacheConfiguration {
     }
 
     /**
+     * Gets cache interceptor.
+     *
      * @return Cache interceptor.
      */
+    @SuppressWarnings({"unchecked"})
     @Nullable public <K, V> GridCacheInterceptor<K, V> getInterceptor() {
         return (GridCacheInterceptor<K, V>)interceptor;
     }
 
     /**
+     * Sets cache interceptor.
+     *
      * @param interceptor Cache interceptor.
      */
     public <K, V> void setInterceptor(GridCacheInterceptor<K, V> interceptor) {

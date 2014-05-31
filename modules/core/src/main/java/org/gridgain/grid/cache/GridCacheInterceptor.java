@@ -13,12 +13,16 @@ import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Grid cache interceptor.
+ * Cache interceptor. Cache interceptor can be used for getting callbacks before
+ * and after cache {@code get(...)}, {@code put(...)}, and {@code remove(...)}
+ * operations. The {@code onBefore} callbacks can also be used to change the values
+ * stored in cache or preventing entries from being removed from cache.
  * <p>
  * Cache interceptor is configured via {@link GridCacheConfiguration#getInterceptor()}
  * configuration property.
  * <p>
- * You can inject any resources in implementation of this interface.
+ * Any grid resource from {@code org.gridgain.grid.resources} package can be injected
+ * into implementation of this interface.
  */
 public interface GridCacheInterceptor<K, V> {
     /**
