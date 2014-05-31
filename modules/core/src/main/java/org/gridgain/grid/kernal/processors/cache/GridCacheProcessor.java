@@ -484,6 +484,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         prepare(cfg, cfg.getCloner(), false);
         prepare(cfg, cfg.getStore(), false);
         prepare(cfg, cfg.getEvictionFilter(), false);
+        prepare(cfg, cfg.getInterceptor(), false);
 
         GridDrSenderCacheConfiguration drSndCfg = cfg.getDrSenderConfiguration();
 
@@ -916,6 +917,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         Collection<String> replicationCaches = new ArrayList<>();
 
+        Map<String, String> interceptors = new HashMap<>();
+
         int i = 0;
 
         for (GridCacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
@@ -923,11 +926,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (cfg.getDrSenderConfiguration() != null)
                 replicationCaches.add(cfg.getName());
+
+            if (cfg.getInterceptor() != null)
+                interceptors.put(cfg.getName(), cfg.getInterceptor().getClass().getName());
         }
 
         attrs.put(ATTR_CACHE, attrVals);
 
         attrs.put(ATTR_REPLICATION_CACHES, replicationCaches);
+
+        if (!interceptors.isEmpty())
+            attrs.put(ATTR_CACHE_INTERCEPTORS, interceptors);
     }
 
     /**
@@ -1053,6 +1062,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Gets cache interceptor class name from node attributes.
+     *
+     * @param node Node.
+     * @param cacheName Cache name.
+     * @return Interceptor class name.
+     */
+    @Nullable private String interceptor(GridNode node, @Nullable String cacheName) {
+        Map<String, String> map = node.attribute(ATTR_CACHE_INTERCEPTORS);
+
+        return map != null ? map.get(cacheName) : null;
+    }
+
+    /**
      * Checks that remote caches has configuration compatible with the local.
      *
      * @param rmt Node.
@@ -1076,6 +1098,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         locAttr.cacheMode(), rmtAttr.cacheMode(), true);
 
                     if (rmtAttr.cacheMode() != LOCAL) {
+                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "interceptor", "Cache Interceptor",
+                            interceptor(ctx.discovery().localNode(), rmtAttr.cacheName()),
+                            interceptor(rmt, rmtAttr.cacheName()), true);
+
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "atomicityMode",
                             "Cache atomicity mode", locAttr.atomicityMode(), rmtAttr.atomicityMode(), true);
 
@@ -1205,9 +1231,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "queryIndexEnabled",
                             "Query index enabled", locAttr.queryIndexEnabled(), rmtAttr.queryIndexEnabled(), true);
-
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "interceptor", "CacheInterceptor",
-                            locAttr.interceptorClassName(), rmtAttr.interceptorClassName(), true);
 
                         if (locAttr.cacheMode() == PARTITIONED) {
                             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictSynchronized",
@@ -1797,7 +1820,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private Iterable<Object> lifecycleAwares(GridCacheConfiguration ccfg) {
         return F.asList(ccfg.getAffinity(), ccfg.getAffinityMapper(), ccfg.getCloner(),
             ccfg.getEvictionFilter(), ccfg.getEvictionPolicy(), ccfg.getNearEvictionPolicy(),
-            ccfg.getTransactionManagerLookup());
+            ccfg.getTransactionManagerLookup(), ccfg.getInterceptor());
     }
 
     /**

@@ -476,7 +476,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 }
 
                                 if (intercept) {
-                                    V old = e.cached().rawGetOrUnmarshal(); // TODO: need to load if on near node.
+                                    V old = e.cached().rawGetOrUnmarshal();
 
                                     val = (V)cctx.config().getInterceptor().onBeforePut(key, old, val);
 
@@ -496,6 +496,15 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                                     // Reset.
                                     putMap.clear();
+                                }
+
+                                if (intercept) {
+                                    V old = e.cached().rawGetOrUnmarshal();
+
+                                    GridBiTuple<Boolean, V> t = cctx.config().getInterceptor().onBeforeRemove(key, old);
+
+                                    if (cctx.cancelRemove(t))
+                                        continue;
                                 }
 
                                 if (rmvCol == null)
@@ -1653,7 +1662,12 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     /** {@inheritDoc} */
     @Override public V remove(K key, @Nullable GridCacheEntryEx<K, V> cached,
         GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
-        return removeAllAsync(Collections.singletonList(key), cached, implicit, true, filter).get().value();
+        V ret = removeAllAsync(Collections.singletonList(key), cached, implicit, true, filter).get().value();
+
+        if (cctx.config().getInterceptor() != null)
+            return (V)cctx.config().getInterceptor().onBeforeRemove(key, ret).get2();
+
+        return ret;
     }
 
     /** {@inheritDoc} */

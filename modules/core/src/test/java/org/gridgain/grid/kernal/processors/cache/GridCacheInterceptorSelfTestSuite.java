@@ -22,14 +22,26 @@ public class GridCacheInterceptorSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Gridgain CacheInterceptor Test Suite");
 
+        suite.addTestSuite(GridCacheInterceptorLocalSelfTest.class);
+        suite.addTestSuite(GridCacheInterceptorLocalWithStoreSelfTest.class);
+
+        suite.addTestSuite(GridCacheInterceptorLocalAtomicSelfTest.class);
+        suite.addTestSuite(GridCacheInterceptorLocalAtomicWithStoreSelfTest.class);
+
         suite.addTestSuite(GridCacheInterceptorAtomicSelfTest.class);
+        suite.addTestSuite(GridCacheInterceptorAtomicNearEnabledSelfTest.class);
+        suite.addTestSuite(GridCacheInterceptorAtomicWithStoreSelfTest.class);
         suite.addTestSuite(GridCacheInterceptorAtomicPrimaryWriteOrderSelfTest.class);
 
         suite.addTestSuite(GridCacheInterceptorAtomicReplicatedSelfTest.class);
+        suite.addTestSuite(GridCacheInterceptorAtomicWithStoreReplicatedSelfTest.class);
         suite.addTestSuite(GridCacheInterceptorAtomicReplicatedPrimaryWriteOrderSelfTest.class);
 
         suite.addTestSuite(GridCacheInterceptorSelfTest.class);
+        suite.addTestSuite(GridCacheInterceptorNearEnabledSelfTest.class);
+        suite.addTestSuite(GridCacheInterceptorWithStoreSelfTest.class);
         suite.addTestSuite(GridCacheInterceptorReplicatedSelfTest.class);
+        suite.addTestSuite(GridCacheInterceptorReplicatedWithStoreSelfTest.class);
 
         return suite;
     }

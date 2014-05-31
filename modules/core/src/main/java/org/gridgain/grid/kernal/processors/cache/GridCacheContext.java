@@ -1658,6 +1658,28 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @param interceptorRes Result of {@link GridCacheInterceptor#onBeforeRemove} callback.
+     * @return {@code True} if interceptor cancels remove.
+     */
+    public boolean cancelRemove(@Nullable GridBiTuple<Boolean, ?> interceptorRes) {
+        if (interceptorRes != null) {
+            if (interceptorRes.get1() == null) {
+                U.warn(log, "GridCacheInterceptor must not return null as cancellation flag value from " +
+                    "'onBeforeRemove' method.");
+
+                return false;
+            }
+            else
+                return interceptorRes.get1();
+        }
+        else {
+            U.warn(log, "GridCacheInterceptor must not return null from 'onBeforeRemove' method.");
+
+            return false;
+        }
+    }
+
+    /**
      * Nulling references to potentially leak-prone objects.
      */
     public void cleanup() {
