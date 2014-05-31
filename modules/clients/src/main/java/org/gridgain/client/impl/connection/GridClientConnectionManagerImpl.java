@@ -16,6 +16,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.logger.java.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.nio.ssl.*;
@@ -91,6 +92,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
     private final ScheduledExecutorService pingExecutor;
 
     /** Message writer. */
+    @SuppressWarnings("FieldCanBeLocal")
     private final GridNioMessageWriter msgWriter = new GridNioMessageWriter() {
         @Override public boolean write(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf) {
             assert msg != null;
@@ -424,10 +426,29 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
             GridClientConnection old = conns.get(addr);
 
             if (old != null) {
-                if (nodeId != null)
-                    nodeConns.put(nodeId, old);
+                if (old.isClosed()) {
+                    conns.remove(addr, old);
 
-                return old;
+                    if (nodeId != null)
+                        nodeConns.remove(nodeId, old);
+                }
+                else {
+                    if (nodeId != null)
+                        nodeConns.put(nodeId, old);
+
+                    return old;
+                }
+            }
+
+            GridSecurityCredentials cred = null;
+
+            try {
+                if (cfg.getSecurityCredentialsProvider() != null) {
+                    cred = cfg.getSecurityCredentialsProvider().credentials();
+                }
+            }
+            catch (GridException e) {
+                throw new GridClientException("Failed to obtain client credentials.", e);
             }
 
             GridClientConnection conn;
@@ -437,7 +458,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
                     conn = new GridClientNioTcpConnection(srv, clientId, addr, sslCtx, pingExecutor,
                         cfg.getConnectTimeout(), cfg.getPingInterval(), cfg.getPingTimeout(),
                         cfg.isTcpNoDelay(), protoId == null ? cfg.getMarshaller() : null,
-                        top, cfg.getCredentials(), protoId);
+                        top, cred, protoId);
 
                     break;
                 }
@@ -446,7 +467,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
                     conn = new GridClientHttpConnection(clientId, addr, sslCtx,
                         // Applying max idle time as read timeout for HTTP connections.
                         cfg.getConnectTimeout(), (int)cfg.getMaxConnectionIdleTime(), top,
-                        executor == null ? cfg.getExecutorService() : executor, cfg.getCredentials());
+                        executor == null ? cfg.getExecutorService() : executor, cred);
 
                     break;
                 }

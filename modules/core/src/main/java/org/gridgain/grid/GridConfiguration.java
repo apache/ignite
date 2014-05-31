@@ -22,6 +22,7 @@ import org.gridgain.grid.logger.log4j.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.marshaller.optimized.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.segmentation.*;
 import org.gridgain.grid.spi.authentication.*;
 import org.gridgain.grid.spi.authentication.noop.*;
@@ -506,6 +507,9 @@ public class GridConfiguration {
     /** Data center ID. */
     private byte dataCenterId;
 
+    /** Security credentials. */
+    private GridSecurityCredentialsProvider securityCred;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -602,6 +606,7 @@ public class GridConfiguration {
         restTcpSslClientAuth = cfg.isRestTcpSslClientAuth();
         restExecSvc = cfg.getRestExecutorService();
         restSvcShutdown = cfg.getRestExecutorServiceShutdown();
+        securityCred = cfg.getSecurityCredentialsProvider();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
@@ -2927,6 +2932,24 @@ public class GridConfiguration {
      */
     public void setDataCenterId(byte dataCenterId) {
         this.dataCenterId = dataCenterId;
+    }
+
+    /**
+     * Gets security credentials.
+     *
+     * @return Security credentials.
+     */
+    public GridSecurityCredentialsProvider getSecurityCredentialsProvider() {
+        return securityCred;
+    }
+
+    /**
+     * Sets security credentials.
+     *
+     * @param securityCred Security credentials.
+     */
+    public void setSecurityCredentialsProvider(GridSecurityCredentialsProvider securityCred) {
+        this.securityCred = securityCred;
     }
 
     /** {@inheritDoc} */

@@ -17,6 +17,7 @@ import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -24,6 +25,7 @@ import org.jetbrains.annotations.*;
 import javax.servlet.*;
 import javax.servlet.http.*;
 import java.io.*;
+import java.net.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.processors.rest.GridRestResponse.*;
@@ -227,7 +229,7 @@ public class GridJettyRestHandler extends AbstractHandler {
         Map<String, Object> params = parameters(req);
 
         try {
-            GridRestRequest cmdReq = createRequest(cmd, params);
+            GridRestRequest cmdReq = createRequest(cmd, params, req);
 
             if (log.isDebugEnabled())
                 log.debug("Initialized command request: " + cmdReq);
@@ -286,9 +288,8 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @return REST request.
      * @throws GridException If creation failed.
      */
-    @Nullable private GridRestRequest createRequest(GridRestCommand cmd, Map<String, Object> params)
-        throws GridException
-    {
+    @Nullable private GridRestRequest createRequest(GridRestCommand cmd, Map<String, Object> params,
+        ServletRequest req) throws GridException {
         GridRestRequest restReq;
 
         switch (cmd) {
@@ -404,9 +405,16 @@ public class GridJettyRestHandler extends AbstractHandler {
                 throw new GridException("Invalid command: " + cmd);
         }
 
+        restReq.address(new InetSocketAddress(req.getRemoteAddr(), req.getRemotePort()));
+
         restReq.command(cmd);
 
-        restReq.credentials(params.get("cred"));
+        if (params.containsKey("gridgain.login") || params.containsKey("gridgain.password")) {
+            GridSecurityCredentials cred = new GridSecurityCredentials(
+                (String)params.get("gridgain.login"), (String)params.get("gridgain.password"));
+
+            restReq.credentials(cred);
+        }
 
         String clientId = (String) params.get("clientId");
 

@@ -13,6 +13,7 @@ import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.net.*;
 import java.util.*;
 
 /**
@@ -24,6 +25,9 @@ public class GridRestRequest {
 
     /** Client ID. */
     private UUID clientId;
+
+    /** Client network address. */
+    private InetSocketAddress addr;
 
     /** Client credentials. */
     @GridToStringExclude
@@ -115,6 +119,20 @@ public class GridRestRequest {
      */
     public void sessionToken(byte[] sesTok) {
         this.sesTok = sesTok;
+    }
+
+    /**
+     * @return Client address.
+     */
+    public InetSocketAddress address() {
+        return addr;
+    }
+
+    /**
+     * @param addr Client address.
+     */
+    public void address(InetSocketAddress addr) {
+        this.addr = addr;
     }
 
     /** {@inheritDoc} */

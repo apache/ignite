@@ -87,7 +87,7 @@
         </property>
 
         <!-- Specify credentials for grid connection. -->
-        <property name="credentials" value="s3cret"/>
+        <!--<property name="credentials" value="s3cret"/>-->
     </bean>
 
     <!-- Configuration of Http router. -->
@@ -117,7 +117,7 @@
         </property>
 
         <!-- Specify credentials for grid connection. -->
-        <property name="credentials" value="s3cret"/>
+        <!--<property name="credentials" value="s3cret"/>-->
     </bean>
 
     <!--

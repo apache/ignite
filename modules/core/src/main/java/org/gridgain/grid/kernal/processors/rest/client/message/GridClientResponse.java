@@ -28,6 +28,9 @@ public class GridClientResponse extends GridClientAbstractMessage {
     /** Authentication failure. */
     public static final int STATUS_AUTH_FAILURE = 2;
 
+    /** Operation security failure. */
+    public static final int STATUS_SECURITY_CHECK_FAILED = 3;
+
     /** Success flag */
     private int successStatus;
 

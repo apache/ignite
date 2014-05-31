@@ -43,7 +43,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     static final int SES_META_CONN = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Logger */
-    private static final Logger log = Logger.getLogger(GridClientTcpConnection.class.getName());
+    private static final Logger log = Logger.getLogger(GridClientNioTcpConnection.class.getName());
 
     /** Ping interval. */
     private final long pingInterval;
@@ -59,9 +59,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
     /** Latch indicating pending are empty and connection could be terminated. */
     private final CountDownLatch closedLatch = new CountDownLatch(1);
-
-    /** Reason why connection was closed. {@code null} means connection is still alive. */
-    private volatile GridClientConnectionCloseReason closeReason;
 
     /** Request ID counter. */
     private AtomicLong reqIdCntr = new AtomicLong(1);
@@ -209,6 +206,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      * @param waitCompletion If {@code true} this method will wait for all pending requests to be completed.
      * @param cause The cause of connection close, or {@code null} if it is an ordinal close.
      */
+    @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
     private void close(GridClientConnectionCloseReason reason, boolean waitCompletion, @Nullable Throwable cause) {
         synchronized (this) {
             if (closeReason != null)
@@ -302,15 +300,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      */
     private <R> GridClientFutureAdapter<R> makeRequest(GridClientMessage msg, TcpClientFuture<R> fut)
         throws GridClientConnectionResetException, GridClientClosedException {
-        try {
-            return makeRequest(msg, fut, false);
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            return new GridClientFutureAdapter<>(
-                new GridClientException("Interrupted when trying to perform request message.", e));
-        }
+        return makeRequest(msg, fut, false);
     }
 
     /**
@@ -322,11 +312,9 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      *     otherwise keep original value.
      * @return Response object.
      * @throws GridClientConnectionResetException If request failed.
-     * @throws GridClientClosedException If client was closed.
-     * @throws InterruptedException Thread was interrupted while sending message or establishing a new connection.
      */
     private <R> GridClientFutureAdapter<R> makeRequest(GridClientMessage msg, final TcpClientFuture<R> fut,
-        boolean routeMode) throws GridClientConnectionResetException, GridClientClosedException, InterruptedException {
+        boolean routeMode) throws GridClientConnectionResetException, GridClientClosedException {
         assert msg != null;
 
         if (msg instanceof GridClientPingPacket) {
@@ -876,16 +864,9 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
         TcpClientFuture<GridRouterRequest> res = new TcpClientFuture<>(true);
 
-        try {
-            makeRequest((GridClientMessage)msg, res, true);
+        makeRequest((GridClientMessage)msg, res, true);
 
-            return res;
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new GridClientException("Synchronous IO happened in routing mode and was interrupted.", e);
-        }
+        return res;
     }
 
     /**
@@ -1005,7 +986,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     /**
      * Future extension that holds client tcp message and auth retry flag.
      */
-    static class TcpClientFuture<R> extends GridClientFutureAdapter<R> {
+    private static class TcpClientFuture<R> extends GridClientFutureAdapter<R> {
         /** Initial request. */
         private static final int STATE_INITIAL = 0;
 
