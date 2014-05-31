@@ -48,7 +48,7 @@ class GridRouterClientImpl implements GridClient {
 
         cliCfg.setServers(routerCfg.getServers());
         cliCfg.setSslContextFactory(routerCfg.getSslContextFactory());
-        cliCfg.setCredentialsProvider(routerCfg.getCredentialsProvider());
+        cliCfg.setSecurityCredentialsProvider(routerCfg.getSecurityCredentialsProvider());
 
         this.cliCfg = cliCfg;
 
@@ -67,7 +67,7 @@ class GridRouterClientImpl implements GridClient {
 
         cliCfg.setProtocol(GridClientProtocol.HTTP);
         cliCfg.setServers(routerCfg.getServers());
-        cliCfg.setCredentialsProvider(routerCfg.getCredentialsProvider());
+        cliCfg.setSecurityCredentialsProvider(routerCfg.getSecurityCredentialsProvider());
         cliCfg.setMaxConnectionIdleTime(routerCfg.getRequestTimeout());
 
         if (routerCfg.getClientSslContextFactory() != null)

@@ -435,8 +435,8 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
             GridSecurityCredentials cred = null;
 
             try {
-                if (cfg.getCredentialsProvider() != null) {
-                    cred = cfg.getCredentialsProvider().credentials();
+                if (cfg.getSecurityCredentialsProvider() != null) {
+                    cred = cfg.getSecurityCredentialsProvider().credentials();
                 }
             }
             catch (GridException e) {
