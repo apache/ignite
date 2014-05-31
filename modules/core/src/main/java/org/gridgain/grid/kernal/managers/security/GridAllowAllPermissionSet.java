@@ -34,4 +34,9 @@ public class GridAllowAllPermissionSet implements GridSecurityPermissionSet {
     @Override public Map<String, Collection<GridSecurityPermission>> cachePermissions() {
         return Collections.emptyMap();
     }
+
+    /** {@inheritDoc} */
+    public String toString() {
+        return getClass().getSimpleName();
+    }
 }

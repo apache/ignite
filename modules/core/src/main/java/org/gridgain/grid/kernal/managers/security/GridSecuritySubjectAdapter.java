@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.managers.security;
 
 import org.gridgain.grid.security.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.net.*;
 import java.util.*;
@@ -94,5 +95,10 @@ public class GridSecuritySubjectAdapter implements GridSecuritySubject {
      */
     public void permissions(GridSecurityPermissionSet permissions) {
         this.permissions = permissions;
+    }
+
+    /** {@inheritDoc} */
+    public String toString() {
+        return S.toString(GridSecuritySubjectAdapter.class, this);
     }
 }

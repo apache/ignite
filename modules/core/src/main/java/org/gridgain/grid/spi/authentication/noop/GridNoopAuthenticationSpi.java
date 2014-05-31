@@ -66,25 +66,8 @@ public class GridNoopAuthenticationSpi extends GridSpiAdapter
     @GridToStringExclude
     private GridLogger log;
 
-    private static final GridSecurityPermissionSet allowAll = new GridSecurityPermissionSet() {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** {@inheritDoc} */
-        @Override public boolean defaultAllowAll() {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<String, Collection<GridSecurityPermission>> taskPermissions() {
-            return Collections.emptyMap();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<String, Collection<GridSecurityPermission>> cachePermissions() {
-            return Collections.emptyMap();
-        }
-    };
+    /** Always allow permission set. */
+    private static final GridSecurityPermissionSet allowAll = new GridAllowAllPermissionSet();
 
     /** {@inheritDoc} */
     @Override public boolean supported(GridSecuritySubjectType subjType) {
