@@ -381,7 +381,7 @@ public class GridCacheConfiguration {
     private GridDrSenderCacheConfiguration drSndCacheCfg;
 
     /** */
-    private GridCacheInterceptor interceptor;
+    private GridCacheInterceptor<?, ?> interceptor;
 
     /** Empty constructor (all values are initialized to their defaults). */
     public GridCacheConfiguration() {
@@ -1957,14 +1957,14 @@ public class GridCacheConfiguration {
     /**
      * @return Cache interceptor.
      */
-    @Nullable public GridCacheInterceptor getInterceptor() {
-        return interceptor;
+    @Nullable public <K, V> GridCacheInterceptor<K, V> getInterceptor() {
+        return (GridCacheInterceptor<K, V>)interceptor;
     }
 
     /**
      * @param interceptor Cache interceptor.
      */
-    public void setInterceptor(GridCacheInterceptor interceptor) {
+    public <K, V> void setInterceptor(GridCacheInterceptor<K, V> interceptor) {
         this.interceptor = interceptor;
     }
 
