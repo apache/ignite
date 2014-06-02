@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
+import org.jetbrains.annotations.*;
+
 import java.io.*;
 import java.util.*;
 
@@ -19,32 +21,90 @@ public class VisorBasicConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Grid name. */
     private final String gridName;
+
+    /** GRIDGAIN_HOME determined at startup. */
     private final String ggHome;
+
+    /** Local host value used. */
     private final String locHost;
+
+    /** Node id. */
     private final UUID nodeId;
+
+    /** Marshaller used. */
     private final String marsh;
+
+    /** Deploy Mode. */
     private final Object deployMode;
+
+    /** Whether this node daemon or not. */
     private final boolean daemon;
+
+    /** Whether remote JMX is enabled. */
     private final boolean jmxRemote;
+
+    /** Is node restart enabled. */
     private final boolean restart;
+
+    /** Network timeout. */
     private final long netTimeout;
-    private final String licenseUrl;
+
+    /** Node license URL */
+    @Nullable private final String licenseUrl;
+
+    /** Logger used on node. */
     private final String log;
+
+    /** Discovery startup delay. */
     private final long discoStartupDelay;
+
+    /** MBean server name */
     private final String mBeanSrv;
+
+    /** Whether ASCII logo is disabled. */
     private final boolean noAscii;
+
+    /** Whether no discovery order is allowed. */
     private final boolean noDiscoOrder;
+
+    /** Whether shutdown hook is disabled. */
     private final boolean noShutdownHook;
+
+    /** Name of command line program. */
     private final String progName;
+
+    /** Whether node is in quiet mode. */
     private final boolean quiet;
+
+    /** Success file name. */
     private final String successFile;
+
+    /** Whether update checker is enabled. */
     private final boolean updateNtf;
 
-    public VisorBasicConfig(String gridName, String ggHome, String locHost, UUID nodeId, String marsh,
-        Object deployMode, boolean daemon, boolean jmxRemote, boolean restart, long netTimeout, String licenseUrl,
-        String log, long discoStartupDelay, String mBeanSrv, boolean noAscii, boolean noDiscoOrder,
-        boolean noShutdownHook, String progName, boolean quiet, String successFile, boolean updateNtf) {
+    public VisorBasicConfig(String gridName,
+        String ggHome,
+        String locHost,
+        UUID nodeId,
+        String marsh,
+        Object deployMode,
+        boolean daemon,
+        boolean jmxRemote,
+        boolean restart,
+        long netTimeout,
+        @Nullable String licenseUrl,
+        String log,
+        long discoStartupDelay,
+        String mBeanSrv,
+        boolean noAscii,
+        boolean noDiscoOrder,
+        boolean noShutdownHook,
+        String progName,
+        boolean quiet,
+        String successFile,
+        boolean updateNtf) {
         this.gridName = gridName;
         this.ggHome = ggHome;
         this.locHost = locHost;
@@ -76,14 +136,14 @@ public class VisorBasicConfig implements Serializable {
     }
 
     /**
-     * @return GridGain home.
+     * @return GRIDGAIN_HOME determined at startup.
      */
     public String ggHome() {
         return ggHome;
     }
 
     /**
-     * @return Locale host.
+     * @return Local host value used.
      */
     public String localHost() {
         return locHost;
@@ -97,35 +157,35 @@ public class VisorBasicConfig implements Serializable {
     }
 
     /**
-     * @return Marshaller.
+     * @return Marshaller used.
      */
     public String marshaller() {
         return marsh;
     }
 
     /**
-     * @return Deploy mode.
+     * @return Deploy Mode.
      */
     public Object deployMode() {
         return deployMode;
     }
 
     /**
-     * @return Is daemon node.
+     * @return Whether this node daemon or not.
      */
     public boolean daemon() {
         return daemon;
     }
 
     /**
-     * @return Jmx remote.
+     * @return Whether remote JMX is enabled.
      */
     public boolean jmxRemote() {
         return jmxRemote;
     }
 
     /**
-     * @return Is restart supported.
+     * @return Is node restart enabled.
      */
     public boolean restart() {
         return restart;
@@ -139,77 +199,77 @@ public class VisorBasicConfig implements Serializable {
     }
 
     /**
-     * @return License url.
+     * @return Node license URL
      */
     public String licenseUrl() {
         return licenseUrl;
     }
 
     /**
-     * @return Logger.
+     * @return Logger used on node.
      */
     public String logger() {
         return log;
     }
 
     /**
-     * @return Disco startup delay.
+     * @return Discovery startup delay.
      */
     public long discoStartupDelay() {
         return discoStartupDelay;
     }
 
     /**
-     * @return Mbean server.
+     * @return MBean server name
      */
     public String mBeanServer() {
         return mBeanSrv;
     }
 
     /**
-     * @return No ascii.
+     * @return Whether ASCII logo is disabled.
      */
     public boolean noAscii() {
         return noAscii;
     }
 
     /**
-     * @return No disco order.
+     * @return Whether no discovery order is allowed.
      */
     public boolean noDiscoOrder() {
         return noDiscoOrder;
     }
 
     /**
-     * @return No shutdown hook.
+     * @return Whether shutdown hook is disabled.
      */
     public boolean noShutdownHook() {
         return noShutdownHook;
     }
 
     /**
-     * @return Program name.
+     * @return Name of command line program.
      */
     public String program() {
         return progName;
     }
 
     /**
-     * @return Quiet.
+     * @return Whether node is in quiet mode.
      */
     public boolean quiet() {
         return quiet;
     }
 
     /**
-     * @return Success file.
+     * @return Success file name.
      */
     public String successFile() {
         return successFile;
     }
 
     /**
-     * @return Update notifier.
+     * @return Whether update checker is enabled.
      */
     public boolean updateNotifier() {
         return updateNtf;

@@ -32,6 +32,7 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.streamer.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.lang.reflect.*;
@@ -191,7 +192,7 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
          * @param spi SPI to collect information on.
          * @return Tuple where first component is SPI name and
          */
-        private GridBiTuple<String, Map<String, Object>> collectSpiInfo(GridSpi spi) {
+        private T2<String, Map<String, Object>> collectSpiInfo(GridSpi spi) {
             Class<? extends GridSpi> spiCls = spi.getClass();
 
             HashMap<String, Object> res = new HashMap<>();
@@ -236,16 +237,16 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
                 }
             }
 
-            return new GridBiTuple<String, Map<String, Object>>(spi.getName(), res);
+            return new T2<String, Map<String, Object>>(spi.getName(), res);
         }
 
-        private GridBiTuple<String, Map<String, Object>>[] collectSpiInfo(GridSpi[] spis) {
+        private T2<String, Map<String, Object>>[] collectSpiInfo(GridSpi[] spis) {
             GridBiTuple[] res = new GridBiTuple[spis.length];
 
             for (int i = 0; i < spis.length; i++)
                 res[i] = collectSpiInfo(spis[i]);
 
-            return (GridBiTuple<String, Map<String, Object>>[]) res;
+            return (T2<String, Map<String, Object>>[]) res;
         }
 
         @Override protected VisorGridConfig run(VisorOneNodeArg arg) {

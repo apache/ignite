@@ -20,8 +20,13 @@ public class VisorNearCacheConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Flag to enable/disable near cache eviction policy. */
     private final boolean nearEnabled;
+
+    /** Near cache start size. */
     private final int nearStartSize;
+
+    /** Near cache eviction policy. */
     @Nullable private final String nearEvictPlc;
 
     public VisorNearCacheConfig(boolean nearEnabled, int nearStartSize, @Nullable String nearEvictPlc) {
@@ -31,21 +36,21 @@ public class VisorNearCacheConfig implements Serializable {
     }
 
     /**
-     * @return Near enabled.
+     * @return Flag to enable/disable near cache eviction policy.
      */
     public boolean nearEnabled() {
         return nearEnabled;
     }
 
     /**
-     * @return Near start size.
+     * @return Near cache start size.
      */
     public int nearStartSize() {
         return nearStartSize;
     }
 
     /**
-     * @return Near evict policy.
+     * @return Near cache eviction policy.
      */
     @Nullable public String nearEvictPolicy() {
         return nearEvictPlc;

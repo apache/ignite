@@ -11,23 +11,21 @@
 
 package org.gridgain.visor.commands.config
 
+import java.lang.System._
+
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeArg
-import org.gridgain.grid.kernal.visor.cmd.dto.VisorGridConfig
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorConfigCollectorTask
-import org.gridgain.grid.lang.GridBiTuple
+import org.gridgain.grid.util.typedef.T2
 import org.gridgain.grid.util.{GridUtils => U}
-
-import java.lang.System._
+import org.gridgain.visor._
+import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
+import org.gridgain.visor.visor._
 
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.util.control.Breaks._
-
-import org.gridgain.visor._
-import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import org.gridgain.visor.visor._
 
 /**
  * ==Overview==
@@ -203,10 +201,8 @@ class VisorConfigurationCommand {
 
             assert(node != null)
 
-            var cfg: VisorGridConfig = null
-
-            try
-                cfg = grid.forNode(node)
+            val cfg = try
+                grid.forNode(node)
                     .compute()
                     .withNoFailover()
                     .execute(classOf[VisorConfigCollectorTask], new VisorOneNodeArg(node.id()))
@@ -296,11 +292,11 @@ class VisorConfigurationCommand {
 
             val spisT = VisorTextTable()
 
-            def spiClass(spi: GridBiTuple[String, java.util.Map[String, AnyRef]]) = {
+            def spiClass(spi: T2[String, java.util.Map[String, AnyRef]]) = {
                 if (spi != null) spi.get2().getOrElse("Class Name", DFLT) else DFLT
             }
 
-            def spisClass(spis: Array[GridBiTuple[String, java.util.Map[String, AnyRef]]]) = {
+            def spisClass(spis: Array[T2[String, java.util.Map[String, AnyRef]]]) = {
                 spis.map(spiClass).mkString("[", ", ", "]")
             }
 

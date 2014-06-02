@@ -18,11 +18,22 @@ public class VisorAffinityConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Cache affinity. */
     private final String affinity;
+
+    /** Cache affinity mapper. */
     private final String affinityMapper;
+
+    /** Count of key backups. */
     private final int partitionedBackups;
+
+    /** Cache affinity partitions. */
     private final Integer partitions;
+
+    /** Cache partitioned affinity default replicas. */
     private final Integer dfltReplicas;
+
+    /** Cache partitioned affinity exclude neighbors. */
     private final Boolean excludeNeighbors;
 
     public VisorAffinityConfig(String affinity, String affinityMapper, int partitionedBackups, Integer partitions,
@@ -36,42 +47,42 @@ public class VisorAffinityConfig implements Serializable {
     }
 
     /**
-     * @return Affinity.
+     * @return Cache affinity.
      */
     public String affinity() {
         return affinity;
     }
 
     /**
-     * @return Affinity mapper.
+     * @return Cache affinity mapper.
      */
     public String affinityMapper() {
         return affinityMapper;
     }
 
     /**
-     * @return Partitioned backups.
+     * @return Count of key backups.
      */
     public int partitionedBackups() {
         return partitionedBackups;
     }
 
     /**
-     * @return Partitions.
+     * @return Cache affinity partitions.
      */
     public Integer partitions() {
         return partitions;
     }
 
     /**
-     * @return Default replicas.
+     * @return Cache partitioned affinity default replicas.
      */
     public Integer defaultReplicas() {
         return dfltReplicas;
     }
 
     /**
-     * @return Exclude neighbors.
+     * @return Cache partitioned affinity exclude neighbors..
      */
     public Boolean excludeNeighbors() {
         return excludeNeighbors;

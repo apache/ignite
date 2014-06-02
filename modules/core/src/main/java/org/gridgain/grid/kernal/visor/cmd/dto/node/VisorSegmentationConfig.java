@@ -23,12 +23,16 @@ public class VisorSegmentationConfig implements Serializable {
 
     /**Segmentation policy. */
     private final GridSegmentationPolicy plc;
+
     /**Segmentation resolvers. */
     @Nullable private final String resolvers;
+
     /**Frequency of network segment check by discovery manager. */
     private final long checkFreq;
+
     /**Whether or not node should wait for correct segment on start. */
     private final boolean waitOnStart;
+
     /**Whether or not all resolvers should succeed for node to be in correct segment. */
     private final boolean passRequired;
 

@@ -18,14 +18,22 @@ public class VisorWriteBehindConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Flag indicating whether write-behind behaviour should be used for the cache store. */
     private final boolean enabled;
+
+    /** Maximum batch size for write-behind cache store operations. */
     private final int batchSize;
+
+    /** Frequency with which write-behind cache is flushed to the cache store in milliseconds. */
     private final long flushFrequency;
+
+    /** Maximum object count in write-behind cache. */
     private final int flushSize;
+
+    /** Number of threads that will perform cache flushing. */
     private final int flushThreadCnt;
 
-    public VisorWriteBehindConfig(boolean enabled, int batchSize, long flushFrequency, int flushSize,
-        int flushThreadCnt) {
+    public VisorWriteBehindConfig(boolean enabled, int batchSize, long flushFrequency, int flushSize, int flushThreadCnt) {
         this.enabled = enabled;
         this.batchSize = batchSize;
         this.flushFrequency = flushFrequency;
@@ -34,35 +42,35 @@ public class VisorWriteBehindConfig implements Serializable {
     }
 
     /**
-     * @return Enabled.
+     * @return Flag indicating whether write-behind behaviour should be used for the cache store.
      */
     public boolean enabled() {
         return enabled;
     }
 
     /**
-     * @return Batch size.
+     * @return Maximum batch size for write-behind cache store operations.
      */
     public int batchSize() {
         return batchSize;
     }
 
     /**
-     * @return Flush frequency.
+     * @return Frequency with which write-behind cache is flushed to the cache store in milliseconds.
      */
     public long flushFrequency() {
         return flushFrequency;
     }
 
     /**
-     * @return Flush size.
+     * @return Maximum object count in write-behind cache.
      */
     public int flushSize() {
         return flushSize;
     }
 
     /**
-     * @return Flush thread count.
+     * @return Number of threads that will perform cache flushing.
      */
     public int flushThreadCount() {
         return flushThreadCnt;

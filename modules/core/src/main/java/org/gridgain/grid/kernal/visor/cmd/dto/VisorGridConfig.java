@@ -17,7 +17,6 @@ import java.io.*;
 import java.util.*;
 
 /**
- /**
  * Node configuration data.
  */
 public class VisorGridConfig implements Serializable {

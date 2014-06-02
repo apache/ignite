@@ -169,14 +169,14 @@ class VisorEventsCommand {
     }
 
 
-    private[this] def timeFilter(timeArg: Option[String]): Integer = {
+    private[this] def timeFilter(timeArg: Option[String]): java.lang.Long = {
         if (timeArg.isEmpty)
             null
         else {
             val s = timeArg.get
 
             val n = try
-                s.substring(0, s.length - 1).toInt
+                s.substring(0, s.length - 1).toLong
             catch {
                 case _: NumberFormatException =>
                     throw new IllegalArgumentException("Time frame size is not numeric in: " + s)
@@ -186,10 +186,10 @@ class VisorEventsCommand {
                 throw new IllegalArgumentException("Time frame size is not positive in: " + s)
 
             val timeUnit = s.last match {
-                case 's' => 1000
-                case 'm' => 1000 * 60
-                case 'h' => 1000 * 60 * 60
-                case 'd' => 1000 * 60 * 60 * 24
+                case 's' => 1000L
+                case 'm' => 1000L * 60L
+                case 'h' => 1000L * 60L * 60L
+                case 'd' => 1000L * 60L * 60L * 24L
                 case _ => throw new IllegalArgumentException("Invalid time frame suffix in: " + s)
             }
 

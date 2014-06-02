@@ -10,9 +10,11 @@
 package org.gridgain.grid.kernal.visor.cmd.tasks;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -35,7 +37,7 @@ public class VisorCollectEventsTask extends VisorOneNodeTask<VisorCollectEventsT
         /** Arguments for type filter. */
         @Nullable private final int[] typeArg;
         /** Arguments for time filter. */
-        @Nullable private final Integer timeArg;
+        @Nullable private final Long timeArg;
 
         /**
          * Arguments for {@link VisorCollectEventsTask}.
@@ -44,7 +46,7 @@ public class VisorCollectEventsTask extends VisorOneNodeTask<VisorCollectEventsT
          * @param typeArg Arguments for type filter.
          * @param timeArg Arguments for time filter.
          */
-        public VisorCollectEventsArgs(UUID nodeId, @Nullable int[] typeArg, @Nullable Integer timeArg) {
+        public VisorCollectEventsArgs(UUID nodeId, @Nullable int[] typeArg, @Nullable Long timeArg) {
             super(nodeId);
 
             this.typeArg = typeArg;
@@ -61,7 +63,7 @@ public class VisorCollectEventsTask extends VisorOneNodeTask<VisorCollectEventsT
         /**
          * @return Arguments for time filter.
          */
-        public Integer timeArgument() {
+        public Long timeArgument() {
             return timeArg;
         }
     }
@@ -154,7 +156,19 @@ public class VisorCollectEventsTask extends VisorOneNodeTask<VisorCollectEventsT
         }
 
 
-        @Override protected GridBiTuple<String, VisorEventData[]> run(VisorCollectEventsArgs arg) throws GridException {
+        @Override protected GridBiTuple<String, VisorEventData[]> run(final VisorCollectEventsArgs arg) throws GridException {
+            final long startEvtTime = arg.timeArgument() == null ? 0L : System.currentTimeMillis() - arg.timeArgument();
+
+            Collection<GridEvent> evt = g.events().localQuery(new GridPredicate<GridEvent>() {
+                  @Override public boolean apply(GridEvent event) {
+                      return (arg.typeArgument() == null || F.contains(arg.typeArgument(), event.type())) &&
+                          event.timestamp() >= startEvtTime;
+
+                  }
+              }
+            );
+
+
 
 
             return null; // TODO: CODE: implement.

@@ -20,10 +20,19 @@ public class VisorDefaultConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Default transaction isolation. */
     private final GridCacheTxIsolation txIsolation;
+
+    /** Default transaction concurrency. */
     private final GridCacheTxConcurrency txConcurrency;
+
+    /** Default transaction concurrency. */
     private final long txTimeout;
+
+    /** Default transaction timeout. */
     private final long txLockTimeout;
+
+    /** Default query timeout. */
     private final long queryTimeout;
 
     public VisorDefaultConfig(GridCacheTxIsolation txIsolation,
@@ -36,35 +45,35 @@ public class VisorDefaultConfig implements Serializable {
     }
 
     /**
-     * @return Default isolation.
+     * @return Default transaction isolation.
      */
     public GridCacheTxIsolation txIsolation() {
         return txIsolation;
     }
 
     /**
-     * @return Default concurrency.
+     * @return Default transaction concurrency.
      */
     public GridCacheTxConcurrency txConcurrency() {
         return txConcurrency;
     }
 
     /**
-     * @return Default tx timeout.
+     * @return Default transaction concurrency.
      */
     public long txTimeout() {
         return txTimeout;
     }
 
     /**
-     * @return Default lock timeout.
+     * @return Default transaction timeout.
      */
     public long txLockTimeout() {
         return txLockTimeout;
     }
 
     /**
-     * @return Query timeout.
+     * @return Default query timeout.
      */
     public long queryTimeout() {
         return queryTimeout;

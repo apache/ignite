@@ -12,8 +12,9 @@
 package org.gridgain.visor.commands.cache
 
 import org.gridgain.grid._
+import org.gridgain.grid.kernal.visor.cmd.dto.{VisorCacheMetrics, VisorCacheAggregatedMetrics}
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCollectMetricsCacheTask
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCollectMetricsCacheTask.{VisorCacheAggregatedMetrics, VisorCollectMetricsCacheArg, VisorCacheMetrics}
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCollectMetricsCacheTask.VisorCollectMetricsCacheArg
 import org.gridgain.grid.util.typedef._
 
 import java.util.UUID

@@ -18,7 +18,6 @@ import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.kernal.visor.cmd.dto.*;
-import org.gridgain.grid.kernal.visor.cmd.dto.node.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.typedef.*;
 

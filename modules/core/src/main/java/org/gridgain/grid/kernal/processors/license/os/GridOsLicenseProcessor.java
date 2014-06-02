@@ -23,6 +23,9 @@ import java.util.*;
 public class GridOsLicenseProcessor extends GridProcessorAdapter implements GridLicenseProcessor {
     /** */
     private static final GridProductLicense dummyLic = new GridProductLicense() {
+        /** TODO GG-8358 */
+        private static final long serialVersionUID = 0L;
+
         @Override public String disabledSubsystems() {
             return null;
         }

@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.cmd.dto.node;
+package org.gridgain.grid.kernal.visor.cmd.dto;
 
 import java.io.Serializable;
 
@@ -18,8 +18,10 @@ public class VisorFieldsQueryColumn implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Column type. */
     private final String type;
 
+    /** Field name. */
     private final String field;
 
     public VisorFieldsQueryColumn(String type, String field) {
@@ -28,14 +30,14 @@ public class VisorFieldsQueryColumn implements Serializable {
     }
 
     /**
-     * @return Type.
+     * @return Column type.
      */
     public String type() {
         return type;
     }
 
     /**
-     * @return Field.
+     * @return Field name.
      */
     public String field() {
         return field;

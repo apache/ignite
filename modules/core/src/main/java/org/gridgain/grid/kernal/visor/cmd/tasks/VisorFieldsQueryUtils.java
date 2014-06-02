@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.visor.cmd.tasks;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.kernal.visor.cmd.dto.node.*;
+import org.gridgain.grid.kernal.visor.cmd.dto.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 

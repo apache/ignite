@@ -65,4 +65,61 @@ public class VisorDrSenderHubConfig implements Serializable {
     public Iterable<VisorDrSenderHubConnectionConfig> connectionConfiguration() {
         return connectionConfiguration;
     }
+
+    /**
+     * @return Maximum failed connect attempts. When all replica nodes reaches this limit replica become offline.
+     */
+    public int maxFailedConnectAttempts() {
+        return maxFailedConnectAttempts;
+    }
+
+    /**
+     * @return Maximum amount of errors received from the replica. When replica node reaches this limit, it is
+     * disconnected.
+     */
+    public int maxErrors() {
+        return maxErrors;
+    }
+
+    /**
+     * @return Get health check frequency in milliseconds.
+     */
+    public long healthCheckFrequency() {
+        return healthCheckFrequency;
+    }
+
+    /**
+     * @return System request timeout in milliseconds.
+     */
+    public long systemRequestTimeout() {
+        return systemRequestTimeout;
+    }
+
+    /**
+     * @return Read timeout in milliseconds.
+     */
+    public long readTimeout() {
+        return readTimeout;
+    }
+
+    /**
+     * @return Maximum wait queue size.
+     */
+    public int maxQueueSize() {
+        return maxQueueSize;
+    }
+
+    /**
+     * @return Timeout after which node can be reconnected in case it was previously disconnected due to a failure.
+     */
+    public long reconnectOnFailureTimeout() {
+        return reconnectOnFailureTimeout;
+    }
+
+    /**
+     * @return Cache names this sender hub works with.
+     */
+    public String[] cacheNames() {
+        return cacheNames;
+    }
 }

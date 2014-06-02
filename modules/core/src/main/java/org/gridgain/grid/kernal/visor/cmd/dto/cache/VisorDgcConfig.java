@@ -18,8 +18,13 @@ public class VisorDgcConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** DGC check frequency. */
     private final long freq;
+
+    /** DGC remove locks flag. */
     private final boolean rmvLocks;
+
+    /** Timeout for considering lock to be suspicious. */
     private final long suspectLockTimeout;
 
     public VisorDgcConfig(long freq, boolean rmvLocks, long suspectLockTimeout) {
@@ -29,21 +34,21 @@ public class VisorDgcConfig implements Serializable {
     }
 
     /**
-     * @return Frequency.
+     * @return DGC check frequency.
      */
     public long frequency() {
         return freq;
     }
 
     /**
-     * @return Removed locks.
+     * @return DGC remove locks flag.
      */
     public boolean removedLocks() {
         return rmvLocks;
     }
 
     /**
-     * @return Suspect lock timeout.
+     * @return Timeout for considering lock to be suspicious.
      */
     public long suspectLockTimeout() {
         return suspectLockTimeout;

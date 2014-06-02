@@ -20,14 +20,31 @@ public class VisorEvictionConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Eviction policy. */
     @Nullable private final String plc;
+
+    /** Cache eviction policy max size. */
     private final Integer plcMaxSize;
+
+    /** Eviction filter to specify which entries should not be evicted. */
     private final String filter;
+
+    /** Synchronous eviction concurrency level. */
     private final int syncConcurrencyLvl;
+
+    /** Synchronous eviction timeout. */
     private final long syncTimeout;
+
+    /** Synchronized key buffer size. */
     private final int syncKeyBufSize;
+
+    /** Synchronous evicts flag. */
     private final boolean evictSynchronized;
+
+    /** Synchronous near evicts flag. */
     private final boolean nearSynchronized;
+
+    /** Eviction max overflow ratio. */
     private final float maxOverflowRatio;
 
     public VisorEvictionConfig(@Nullable String plc, Integer plcMaxSize, String filter, int syncConcurrencyLvl,
@@ -45,28 +62,28 @@ public class VisorEvictionConfig implements Serializable {
     }
 
     /**
-     * @return Policy.
+     * @return Eviction policy.
      */
     @Nullable public String policy() {
         return plc;
     }
 
     /**
-     * @return Policy max size.
+     * @return Cache eviction policy max size.
      */
     public Integer policyMaxSize() {
         return plcMaxSize;
     }
 
     /**
-     * @return Filter.
+     * @return Eviction filter to specify which entries should not be evicted.
      */
     public String filter() {
         return filter;
     }
 
     /**
-     * @return Synchronized Timeout.
+     * @return Synchronous eviction timeout.
      */
     public long synchronizedTimeout() {
         return syncTimeout;
@@ -80,28 +97,28 @@ public class VisorEvictionConfig implements Serializable {
     }
 
     /**
-     * @return Evict synchronized.
+     * @return Synchronous evicts flag.
      */
     public boolean evictSynchronized() {
         return evictSynchronized;
     }
 
     /**
-     * @return Near synchronized.
+     * @return Synchronous near evicts flag.
      */
     public boolean nearSynchronized() {
         return nearSynchronized;
     }
 
     /**
-     * @return Max overflow ratio.
+     * @return Eviction max overflow ratio.
      */
     public float maxOverflowRatio() {
         return maxOverflowRatio;
     }
 
     /**
-     * @return Sync concurrency lvl.
+     * @return Synchronous eviction concurrency level.
      */
     public int syncConcurrencyLvl() {
         return syncConcurrencyLvl;

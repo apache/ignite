@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
-import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.typedef.*;
 
 import java.io.*;
 import java.util.*;
@@ -21,31 +21,54 @@ public class VisorSpisConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    private final GridBiTuple<String, Map<String, Object>> discoSpi;
-    private final GridBiTuple<String, Map<String, Object>> commSpi;
-    private final GridBiTuple<String, Map<String, Object>> evtSpi;
-    private final GridBiTuple<String, Map<String, Object>> colSpi;
-    private final GridBiTuple<String, Map<String, Object>> authSpi;
-    private final GridBiTuple<String, Map<String, Object>> sesSpi;
-    private final GridBiTuple<String, Map<String, Object>> deploySpi;
-    private final GridBiTuple<String, Map<String, Object>>[] cpSpis;
-    private final GridBiTuple<String, Map<String, Object>>[] failSpis;
-    private final GridBiTuple<String, Map<String, Object>>[] loadBalancingSpis;
-    private final GridBiTuple<String, Map<String, Object>> swapSpaceSpis;
-    private final GridBiTuple<String, Map<String, Object>>[] indexingSpi;
+    /** Discovery SPI. */
+    private final T2<String, Map<String, Object>> discoSpi;
 
-    public VisorSpisConfig(GridBiTuple<String, Map<String, Object>> discoSpi,
-        GridBiTuple<String, Map<String, Object>> commSpi,
-        GridBiTuple<String, Map<String, Object>> evtSpi,
-        GridBiTuple<String, Map<String, Object>> colSpi,
-        GridBiTuple<String, Map<String, Object>> authSpi,
-        GridBiTuple<String, Map<String, Object>> sesSpi,
-        GridBiTuple<String, Map<String, Object>> deploySpi,
-        GridBiTuple<String, Map<String, Object>>[] cpSpis,
-        GridBiTuple<String, Map<String, Object>>[] failSpis,
-        GridBiTuple<String, Map<String, Object>>[] loadBalancingSpis,
-        GridBiTuple<String, Map<String, Object>> swapSpaceSpis,
-        GridBiTuple<String, Map<String, Object>>[] indexingSpi) {
+    /** Communication SPI. */
+    private final T2<String, Map<String, Object>> commSpi;
+
+    /** Event storage SPI. */
+    private final T2<String, Map<String, Object>> evtSpi;
+
+    /** Collision SPI. */
+    private final T2<String, Map<String, Object>> colSpi;
+
+    /** Authentication SPI. */
+    private final T2<String, Map<String, Object>> authSpi;
+
+    /** Secure Session SPI. */
+    private final T2<String, Map<String, Object>> sesSpi;
+
+    /** Deployment SPI. */
+    private final T2<String, Map<String, Object>> deploySpi;
+
+    /** Checkpoint SPIs. */
+    private final T2<String, Map<String, Object>>[] cpSpis;
+
+    /** Failover SPIs. */
+    private final T2<String, Map<String, Object>>[] failSpis;
+
+    /** Load balancing SPIs. */
+    private final T2<String, Map<String, Object>>[] loadBalancingSpis;
+
+    /** Swap space SPIs. */
+    private final T2<String, Map<String, Object>> swapSpaceSpis;
+
+    /** Indexing SPIs. */
+    private final T2<String, Map<String, Object>>[] indexingSpi;
+
+    public VisorSpisConfig(T2<String, Map<String, Object>> discoSpi,
+        T2<String, Map<String, Object>> commSpi,
+        T2<String, Map<String, Object>> evtSpi,
+        T2<String, Map<String, Object>> colSpi,
+        T2<String, Map<String, Object>> authSpi,
+        T2<String, Map<String, Object>> sesSpi,
+        T2<String, Map<String, Object>> deploySpi,
+        T2<String, Map<String, Object>>[] cpSpis,
+        T2<String, Map<String, Object>>[] failSpis,
+        T2<String, Map<String, Object>>[] loadBalancingSpis,
+        T2<String, Map<String, Object>> swapSpaceSpis,
+        T2<String, Map<String, Object>>[] indexingSpi) {
         this.discoSpi = discoSpi;
         this.commSpi = commSpi;
         this.evtSpi = evtSpi;
@@ -61,86 +84,86 @@ public class VisorSpisConfig implements Serializable {
     }
 
     /**
-     * @return Disco spi.
+     * @return Discovery SPI.
      */
-    public GridBiTuple<String, Map<String, Object>> discoverySpi() {
+    public T2<String, Map<String, Object>> discoverySpi() {
         return discoSpi;
     }
 
     /**
-     * @return Communication spi.
+     * @return Communication SPI.
      */
-    public GridBiTuple<String, Map<String, Object>> communicationSpi() {
+    public T2<String, Map<String, Object>> communicationSpi() {
         return commSpi;
     }
 
     /**
-     * @return Event spi.
+     * @return Event storage SPI.
      */
-    public GridBiTuple<String, Map<String, Object>> eventStorageSpi() {
+    public T2<String, Map<String, Object>> eventStorageSpi() {
         return evtSpi;
     }
 
     /**
-     * @return Column spi.
+     * @return Collision SPI.
      */
-    public GridBiTuple<String, Map<String, Object>> collisionSpi() {
+    public T2<String, Map<String, Object>> collisionSpi() {
         return colSpi;
     }
 
     /**
-     * @return Auth spi.
+     * @return Authentication SPI.
      */
-    public GridBiTuple<String, Map<String, Object>> authenticationSpi() {
+    public T2<String, Map<String, Object>> authenticationSpi() {
         return authSpi;
     }
 
     /**
-     * @return Session spi.
+     * @return Secure Session SPI.
      */
-    public GridBiTuple<String, Map<String, Object>> secureSessionSpi() {
+    public T2<String, Map<String, Object>> secureSessionSpi() {
         return sesSpi;
     }
 
     /**
-     * @return Deploy spi.
+     * @return Deployment SPI.
      */
-    public GridBiTuple<String, Map<String, Object>> deploymentSpi() {
+    public T2<String, Map<String, Object>> deploymentSpi() {
         return deploySpi;
     }
 
     /**
-     * @return Copy spis.
+     * @return Checkpoint SPIs.
      */
-    public GridBiTuple<String, Map<String, Object>>[] checkpointSpis() {
+    public T2<String, Map<String, Object>>[] checkpointSpis() {
         return cpSpis;
     }
 
     /**
-     * @return Fail spis.
+     * @return Failover SPIs.
      */
-    public GridBiTuple<String, Map<String, Object>>[] failoverSpis() {
+    public T2<String, Map<String, Object>>[] failoverSpis() {
         return failSpis;
     }
 
     /**
-     * @return Load balancing spis.
+     * @return Load balancing SPIs.
      */
-    public GridBiTuple<String, Map<String, Object>>[] loadBalancingSpis() {
+    public T2<String, Map<String, Object>>[] loadBalancingSpis() {
         return loadBalancingSpis;
     }
 
     /**
-     * @return Swap space spis.
+     * @return Swap space SPIs.
      */
-    public GridBiTuple<String, Map<String, Object>> swapSpaceSpi() {
+    public T2<String, Map<String, Object>> swapSpaceSpi() {
         return swapSpaceSpis;
     }
 
     /**
-     * @return Indexing spi.
+     * @return Indexing SPIs.
      */
-    public GridBiTuple<String, Map<String, Object>>[] indexingSpi() {
+    public T2<String, Map<String, Object>>[] indexingSpi() {
         return indexingSpi;
     }
 }

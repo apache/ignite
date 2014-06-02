@@ -20,11 +20,22 @@ public class VisorPreloadConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Cache preload mode. */
     private final GridCachePreloadMode mode;
+
+    /** Preload pool size. */
     private final int poolSize;
+
+    /** Cache preload batch size. */
     private final int batchSize;
+
+    /** Preloading partitioned delay. */
     private final long partitionedDelay;
+
+    /** Time in milliseconds to wait between preload messages. */
     private final long throttle;
+
+    /** Preload timeout. */
     private final long timeout;
 
     public VisorPreloadConfig(GridCachePreloadMode mode, int poolSize, int batchSize, long partitionedDelay,
@@ -38,21 +49,21 @@ public class VisorPreloadConfig implements Serializable {
     }
 
     /**
-     * @return Mode.
+     * @return Cache preload mode.
      */
     public GridCachePreloadMode mode() {
         return mode;
     }
 
     /**
-     * @return Pool size.
+     * @return Preload pool size.
      */
     public int poolSize() {
         return poolSize;
     }
 
     /**
-     * @return Batch size.
+     * @return Cache preload batch size.
      */
     public int batchSize() {
         return batchSize;
@@ -66,14 +77,14 @@ public class VisorPreloadConfig implements Serializable {
     }
 
     /**
-     * @return Throttle.
+     * @return Time in milliseconds to wait between preload messages.
      */
     public long throttle() {
         return throttle;
     }
 
     /**
-     * @return Timeout.
+     * @return Preload timeout.
      */
     public long timeout() {
         return timeout;
