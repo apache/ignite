@@ -14,6 +14,7 @@ package org.gridgain.client;
  */
 public enum GridClientProtocol {
     /** Communication via HTTP protocol. */
+    @Deprecated
     HTTP,
 
     /** Communication via tcp binary protocol. */

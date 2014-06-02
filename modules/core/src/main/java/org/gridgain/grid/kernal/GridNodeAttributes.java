@@ -124,6 +124,15 @@ public final class GridNodeAttributes {
     /** Internal attribute name constant. */
     public static final String ATTR_DATA_CENTER_ID = ATTR_PREFIX + ".data.center.id";
 
+    /** Security credentials attribute name. Attribute is not available via public API. */
+    public static final String ATTR_SECURITY_CREDENTIALS = ATTR_PREFIX + ".security.cred";
+
+    /** Security subject for authenticated node. */
+    public static final String ATTR_SECURITY_SUBJECT = ATTR_PREFIX + ".security.subject";
+
+    /** Cache interceptors. */
+    public static final String ATTR_CACHE_INTERCEPTORS = ATTR_PREFIX + ".cache.interceptors";
+
     /**
      * Enforces singleton.
      */

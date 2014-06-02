@@ -22,6 +22,7 @@ import java.util.concurrent.locks.*;
 import static javax.net.ssl.SSLEngineResult.*;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.*;
 import static javax.net.ssl.SSLEngineResult.Status.*;
+import static org.gridgain.grid.util.nio.ssl.GridNioSslFilter.*;
 
 /**
  * Class that encapsulate the per-session SSL state, encoding and decoding logic.
@@ -143,81 +144,93 @@ class GridNioSslHandler extends ReentrantLock {
         if (log.isDebugEnabled())
             log.debug("Entered handshake(): [handshakeStatus=" + handshakeStatus + ", ses=" + ses + ']');
 
-        boolean loop = true;
+        lock();
 
-        while (loop) {
-            switch (handshakeStatus) {
-                case NOT_HANDSHAKING:
-                case FINISHED: {
-                    SSLSession sslSes = sslEngine.getSession();
+        try {
+            boolean loop = true;
 
-                    if (log.isDebugEnabled())
-                        log.debug("Finished ssl handshake [protocol=" + sslSes.getProtocol() + ", cipherSuite=" +
-                            sslSes.getCipherSuite() + ", ses=" + ses + ']');
+            while (loop) {
+                switch (handshakeStatus) {
+                    case NOT_HANDSHAKING:
+                    case FINISHED: {
+                        SSLSession sslSes = sslEngine.getSession();
 
-                    handshakeFinished = true;
+                        if (log.isDebugEnabled())
+                            log.debug("Finished ssl handshake [protocol=" + sslSes.getProtocol() + ", cipherSuite=" +
+                                sslSes.getCipherSuite() + ", ses=" + ses + ']');
 
-                    if (!initHandshakeComplete) {
-                        initHandshakeComplete = true;
+                        handshakeFinished = true;
 
-                        parent.proceedSessionOpened(ses);
-                    }
+                        if (!initHandshakeComplete) {
+                            initHandshakeComplete = true;
 
-                    loop = false;
+                            GridNioFutureImpl<?> fut = ses.removeMeta(HANDSHAKE_FUT_META_KEY);
 
-                    break;
-                }
+                            if (fut != null)
+                                fut.onDone();
 
-                case NEED_TASK: {
-                    if (log.isDebugEnabled())
-                        log.debug("Need to run ssl tasks: " + ses);
+                            parent.proceedSessionOpened(ses);
+                        }
 
-                    handshakeStatus = runTasks();
-
-                    break;
-                }
-
-                case NEED_UNWRAP: {
-                    if (log.isDebugEnabled())
-                        log.debug("Need to unwrap incoming data: " + ses);
-
-                    Status status = unwrapHandshake();
-
-                    if (status == BUFFER_UNDERFLOW && handshakeStatus != FINISHED ||
-                        sslEngine.isInboundDone())
-                        // Either there is no enough data in buffer or session was closed.
                         loop = false;
 
-                    break;
-                }
+                        break;
+                    }
 
-                case NEED_WRAP: {
-                    // If the output buffer has remaining data, clear it.
-                    if (outNetBuf.hasRemaining())
-                        U.warn(log, "Output net buffer has unsent bytes during handshake (will clear): " + ses);
+                    case NEED_TASK: {
+                        if (log.isDebugEnabled())
+                            log.debug("Need to run ssl tasks: " + ses);
 
-                    outNetBuf.clear();
+                        handshakeStatus = runTasks();
 
-                    SSLEngineResult res = sslEngine.wrap(handshakeBuf, outNetBuf);
+                        break;
+                    }
 
-                    outNetBuf.flip();
+                    case NEED_UNWRAP: {
+                        if (log.isDebugEnabled())
+                            log.debug("Need to unwrap incoming data: " + ses);
 
-                    handshakeStatus = res.getHandshakeStatus();
+                        Status status = unwrapHandshake();
 
-                    if (log.isDebugEnabled())
-                        log.debug("Wrapped handshake data [status=" + res.getStatus() + ", handshakeStatus=" +
+                        if (status == BUFFER_UNDERFLOW && handshakeStatus != FINISHED ||
+                            sslEngine.isInboundDone())
+                            // Either there is no enough data in buffer or session was closed.
+                            loop = false;
+
+                        break;
+                    }
+
+                    case NEED_WRAP: {
+                        // If the output buffer has remaining data, clear it.
+                        if (outNetBuf.hasRemaining())
+                            U.warn(log, "Output net buffer has unsent bytes during handshake (will clear): " + ses);
+
+                        outNetBuf.clear();
+
+                        SSLEngineResult res = sslEngine.wrap(handshakeBuf, outNetBuf);
+
+                        outNetBuf.flip();
+
+                        handshakeStatus = res.getHandshakeStatus();
+
+                        if (log.isDebugEnabled())
+                            log.debug("Wrapped handshake data [status=" + res.getStatus() + ", handshakeStatus=" +
+                                handshakeStatus + ", ses=" + ses + ']');
+
+                        writeNetBuffer();
+
+                        break;
+                    }
+
+                    default: {
+                        throw new IllegalStateException("Invalid handshake status in handshake method [handshakeStatus=" +
                             handshakeStatus + ", ses=" + ses + ']');
-
-                    writeNetBuffer();
-
-                    break;
-                }
-
-                default: {
-                    throw new IllegalStateException("Invalid handshake status in handshake method [handshakeStatus=" +
-                        handshakeStatus + ", ses=" + ses + ']');
+                    }
                 }
             }
+        }
+        finally {
+            unlock();
         }
 
         if (log.isDebugEnabled())
@@ -233,9 +246,9 @@ class GridNioSslHandler extends ReentrantLock {
      */
     void messageReceived(ByteBuffer buf) throws GridException, SSLException {
         if (buf.limit() > inNetBuf.remaining()) {
-            inNetBuf = GridNioSslFilter.expandBuffer(inNetBuf, inNetBuf.capacity() + buf.limit() * 2);
+            inNetBuf = expandBuffer(inNetBuf, inNetBuf.capacity() + buf.limit() * 2);
 
-            appBuf = GridNioSslFilter.expandBuffer(appBuf, inNetBuf.capacity() * 2);
+            appBuf = expandBuffer(appBuf, inNetBuf.capacity() * 2);
 
             if (log.isDebugEnabled())
                 log.debug("Expanded buffers [inNetBufCapacity=" + inNetBuf.capacity() + ", appBufCapacity=" +
@@ -268,10 +281,11 @@ class GridNioSslHandler extends ReentrantLock {
     /**
      * Encrypts data to be written to the network.
      *
-     * @param src data to encrypt
-     * @throws SSLException on errors
+     * @param src data to encrypt.
+     * @throws SSLException on errors.
+     * @return Output buffer with encrypted data.
      */
-    void encrypt(ByteBuffer src) throws SSLException {
+    ByteBuffer encrypt(ByteBuffer src) throws SSLException {
         assert handshakeFinished;
         assert isHeldByCurrentThread();
 
@@ -284,7 +298,7 @@ class GridNioSslHandler extends ReentrantLock {
             int outNetRemaining = outNetBuf.capacity() - outNetBuf.position();
 
             if (outNetRemaining < src.remaining() * 2) {
-                outNetBuf = GridNioSslFilter.expandBuffer(outNetBuf, Math.max(
+                outNetBuf = expandBuffer(outNetBuf, Math.max(
                     outNetBuf.position() + src.remaining() * 2, outNetBuf.capacity() * 2));
 
                 if (log.isDebugEnabled())
@@ -308,6 +322,8 @@ class GridNioSslHandler extends ReentrantLock {
         }
 
         outNetBuf.flip();
+
+        return outNetBuf;
     }
 
     /**
@@ -346,7 +362,7 @@ class GridNioSslHandler extends ReentrantLock {
 
         GridNioEmbeddedFuture<Object> fut = new GridNioEmbeddedFuture<>();
 
-        ByteBuffer cp = GridNioSslFilter.copy(buf);
+        ByteBuffer cp = copy(buf);
 
         deferredWriteQueue.offer(new WriteRequest(fut, cp));
 
@@ -407,7 +423,7 @@ class GridNioSslHandler extends ReentrantLock {
     GridNioFuture<?> writeNetBuffer() throws GridException {
         assert isHeldByCurrentThread();
 
-        ByteBuffer cp = GridNioSslFilter.copy(outNetBuf);
+        ByteBuffer cp = copy(outNetBuf);
 
         return parent.proceedSessionWrite(ses, cp);
     }
@@ -522,9 +538,12 @@ class GridNioSslHandler extends ReentrantLock {
             if (log.isDebugEnabled())
                 log.debug("Unwrapped raw data [status=" + res.getStatus() + ", handshakeStatus=" +
                     res.getHandshakeStatus() + ", ses=" + ses + ']');
+
+            if (res.getStatus() == Status.BUFFER_OVERFLOW)
+                appBuf = expandBuffer(appBuf, appBuf.capacity() * 2);
         }
-        while (res.getStatus() == Status.OK && (handshakeFinished && res.getHandshakeStatus() == NOT_HANDSHAKING ||
-            res.getHandshakeStatus() == NEED_UNWRAP));
+        while ((res.getStatus() == Status.OK || res.getStatus() == Status.BUFFER_OVERFLOW) &&
+            (handshakeFinished && res.getHandshakeStatus() == NOT_HANDSHAKING || res.getHandshakeStatus() == NEED_UNWRAP));
 
         return res;
     }

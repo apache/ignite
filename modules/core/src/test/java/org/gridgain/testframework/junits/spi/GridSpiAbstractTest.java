@@ -11,6 +11,8 @@ package org.gridgain.testframework.junits.spi;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.managers.security.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.communication.*;
 import org.gridgain.grid.spi.communication.tcp.*;
@@ -304,6 +306,17 @@ public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstrac
 
         getTestResources().inject(discoSpi);
 
+        discoSpi.setAuthenticator(new GridDiscoverySpiNodeAuthenticator() {
+            @Override public GridSecurityContext authenticateNode(GridNode n, GridSecurityCredentials cred) {
+                GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(
+                    GridSecuritySubjectType.REMOTE_NODE, n.id());
+
+                subj.permissions(new GridAllowAllPermissionSet());
+
+                return new GridSecurityContext(subj);
+            }
+        });
+
         configure(discoSpi);
 
         if (discoSpi.getNodeAttributes() != null)
@@ -391,7 +404,7 @@ public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstrac
      * @throws Exception If failed.
      */
     protected void spiStart(GridSpi spi) throws Exception {
-        U.setWorkDirectory(U.getGridGainHome(), null);
+        U.setWorkDirectory(null, U.getGridGainHome());
 
         // Start SPI with unique grid name.
         spi.spiStart(getTestGridName());

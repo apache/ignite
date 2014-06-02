@@ -14,6 +14,7 @@ import org.gridgain.client.marshaller.jdk.*;
 import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.client.marshaller.protobuf.*;
 import org.gridgain.client.ssl.*;
+import org.gridgain.grid.security.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;
@@ -96,7 +97,7 @@ public class GridClientConfiguration {
     private Map<String, GridClientDataConfiguration> dataCfgs = Collections.emptyMap();
 
     /** Credentials. */
-    private Object cred;
+    private GridSecurityCredentialsProvider credProvider;
 
     /** Executor. */
     private ExecutorService executor;
@@ -122,7 +123,7 @@ public class GridClientConfiguration {
         autoFetchMetrics = cfg.isAutoFetchMetrics();
         balancer = cfg.getBalancer();
         connectTimeout = cfg.getConnectTimeout();
-        cred = cfg.getCredentials();
+        credProvider = cfg.getSecurityCredentialsProvider();
         enableAttrsCache = cfg.isEnableAttributesCache();
         enableMetricsCache = cfg.isEnableMetricsCache();
         executor = cfg.getExecutorService();
@@ -330,21 +331,21 @@ public class GridClientConfiguration {
     }
 
     /**
-     * Gets client credentials to authenticate with.
+     * Gets client credentials provider to authenticate with.
      *
-     * @return Credentials object (possibly {@code null})
+     * @return Credentials provider.
      */
-    public Object getCredentials() {
-        return cred;
+    public GridSecurityCredentialsProvider getSecurityCredentialsProvider() {
+        return credProvider;
     }
 
     /**
-     * Sets client credentials object used in authentication process.
+     * Sets client credentials provider used in authentication process.
      *
-     * @param cred Client credentials.
+     * @param credProvider Client credentials provider.
      */
-    public void setCredentials(Object cred) {
-        this.cred = cred;
+    public void setSecurityCredentialsProvider(GridSecurityCredentialsProvider credProvider) {
+        this.credProvider = credProvider;
     }
 
     /**
@@ -658,7 +659,18 @@ public class GridClientConfiguration {
         if (!isEmpty(connectTimeout))
             setConnectTimeout(Integer.parseInt(connectTimeout));
 
-        setCredentials(isEmpty(cred) ? null : cred);
+        if (!isEmpty(cred)) {
+            int idx = cred.indexOf(':');
+
+            if (idx >= 0 && idx < cred.length() - 1) {
+                setSecurityCredentialsProvider(new GridSecurityCredentialsBasicProvider(
+                    new GridSecurityCredentials(cred.substring(0, idx), cred.substring(idx + 1))));
+            }
+            else {
+                setSecurityCredentialsProvider(new GridSecurityCredentialsBasicProvider(
+                    new GridSecurityCredentials(null, null, cred)));
+            }
+        }
 
         if (!isEmpty(autoFetchMetrics))
             setAutoFetchMetrics(Boolean.parseBoolean(autoFetchMetrics));
@@ -799,5 +811,20 @@ public class GridClientConfiguration {
         }
 
         return exp.cast(obj);
+    }
+
+    public static void main(String[] args) {
+        String[] creds = {"a:b", ":ab", "ab:", "ab"};
+
+        for (String cred : creds) {
+            int idx = cred.indexOf(':');
+
+            if (idx >= 0 && idx < cred.length()) {
+                System.out.println("'" + cred.substring(0, idx) +  "' '" + cred.substring(idx + 1) + '\'');
+            }
+            else {
+                System.out.println(cred);
+            }
+        }
     }
 }

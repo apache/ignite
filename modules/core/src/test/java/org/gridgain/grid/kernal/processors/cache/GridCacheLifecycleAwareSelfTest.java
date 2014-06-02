@@ -200,6 +200,41 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
     }
 
+    /**
+     */
+    private static class TestInterceptor extends TestLifecycleAware implements GridCacheInterceptor {
+        /**
+         */
+        private TestInterceptor() {
+            super(CACHE_NAME);
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object onGet(Object key, @Nullable Object val) {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object onBeforePut(Object key, @Nullable Object oldVal, Object newVal) {
+            return newVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onAfterPut(Object key, Object val) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked") @Nullable @Override public GridBiTuple onBeforeRemove(Object key, @Nullable Object val) {
+            return new GridBiTuple(false, val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onAfterRemove(Object key, Object val) {
+            // No-op.
+        }
+    }
+
     /** {@inheritDoc} */
     @Override protected final GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
@@ -259,6 +294,12 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         ccfg.setAffinityMapper(mapper);
 
         lifecycleAwares.add(mapper);
+
+        TestInterceptor interceptor = new TestInterceptor();
+
+        lifecycleAwares.add(interceptor);
+
+        ccfg.setInterceptor(interceptor);
 
         cfg.setCacheConfiguration(ccfg);
 

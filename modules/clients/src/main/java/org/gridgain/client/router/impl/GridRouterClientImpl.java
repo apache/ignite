@@ -48,34 +48,11 @@ class GridRouterClientImpl implements GridClient {
 
         cliCfg.setServers(routerCfg.getServers());
         cliCfg.setSslContextFactory(routerCfg.getSslContextFactory());
-        cliCfg.setCredentials(routerCfg.getCredentials());
+        cliCfg.setSecurityCredentialsProvider(routerCfg.getSecurityCredentialsProvider());
 
         this.cliCfg = cliCfg;
 
         clientImpl = new GridClientImpl(id, cliCfg);
-    }
-
-    /**
-     * Creates a new HTTP client based on the given configuration.
-     *
-     * @param id Client identifier.
-     * @param routerCfg Router configuration.
-     * @throws GridClientException If client configuration is incorrect.
-     */
-    GridRouterClientImpl(UUID id, GridHttpRouterConfiguration routerCfg) throws GridClientException {
-        GridClientConfiguration cliCfg = new GridClientConfiguration();
-
-        cliCfg.setProtocol(GridClientProtocol.HTTP);
-        cliCfg.setServers(routerCfg.getServers());
-        cliCfg.setCredentials(routerCfg.getCredentials());
-        cliCfg.setMaxConnectionIdleTime(routerCfg.getRequestTimeout());
-
-        if (routerCfg.getClientSslContextFactory() != null)
-            cliCfg.setSslContextFactory(routerCfg.getClientSslContextFactory());
-
-        this.cliCfg = cliCfg;
-
-        clientImpl = new GridClientImpl(id, this.cliCfg);
     }
 
     /**
@@ -86,30 +63,23 @@ class GridRouterClientImpl implements GridClient {
      * @throws GridClientException If the protocol is not supported.
      */
     private GridClientConnectionManager connectionManager(@Nullable Byte protoId) throws GridClientException {
-        switch (cliCfg.getProtocol()) {
-            case HTTP:
-                assert protoId == null;
+        if (cliCfg.getProtocol() == GridClientProtocol.TCP) {
+            assert protoId != null;
 
-                return clientImpl.connectionManager();
+            GridClientConnectionManager mgr = tcpConnMgrs.get(protoId);
 
-            case TCP:
-                assert protoId != null;
+            if (mgr == null)
+                mgr = clientImpl.newConnectionManager(protoId);
 
-                GridClientConnectionManager mgr = tcpConnMgrs.get(protoId);
+            if (mgr == null)
+                throw new GridClientException("Unsupported protocol [protocolId=" + protoId + ']');
 
-                if (mgr == null)
-                    mgr = clientImpl.newConnectionManager(protoId);
+            GridClientConnectionManager old = tcpConnMgrs.putIfAbsent(protoId, mgr);
 
-                if (mgr == null)
-                    throw new GridClientException("Unsupported protocol [protocolId=" + protoId + ']');
-
-                GridClientConnectionManager old = tcpConnMgrs.putIfAbsent(protoId, mgr);
-
-                return old != null ? old : mgr;
-
-            default:
-                throw new AssertionError("Unhandled case.");
+            return old != null ? old : mgr;
         }
+        else
+            throw new AssertionError("Unknown protocol: " + cliCfg.getProtocol());
     }
 
     /**

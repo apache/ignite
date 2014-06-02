@@ -15,30 +15,33 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.locks.*;
 import java.util.logging.*;
 
 /**
  * Future adapter.
  */
-public class GridClientFutureAdapter<R> implements GridClientFuture<R> {
+public class GridClientFutureAdapter<R> extends AbstractQueuedSynchronizer implements GridClientFuture<R> {
+    /** Initial state. */
+    private static final int INIT = 0;
+
+    /** Done state. */
+    private static final int DONE = 1;
+
     /** Logger. */
     private static final Logger log = Logger.getLogger(GridClientFutureAdapter.class.getName());
 
     /** This future done callbacks. */
     private final ConcurrentLinkedQueue<DoneCallback> cbs = new ConcurrentLinkedQueue<>();
 
-    /** Done flag. */
-    private final AtomicBoolean done = new AtomicBoolean(false);
-
-    /** Latch. */
-    private final CountDownLatch doneLatch = new CountDownLatch(1);
-
     /** Result. */
     private R res;
 
     /** Error. */
     private Throwable err;
+
+    /** */
+    private volatile boolean done;
 
     /**
      * Creates not-finished future without any result.
@@ -53,10 +56,7 @@ public class GridClientFutureAdapter<R> implements GridClientFuture<R> {
      * @param res Future result.
      */
     public GridClientFutureAdapter(R res) {
-        this.res = res;
-
-        done.set(true);
-        doneLatch.countDown();
+        onDone(res, null);
     }
 
     /**
@@ -65,25 +65,22 @@ public class GridClientFutureAdapter<R> implements GridClientFuture<R> {
      * @param err Future error.
      */
     public GridClientFutureAdapter(Throwable err) {
-        this.err = err;
-
-        done.set(true);
-        doneLatch.countDown();
+        onDone(null, err);
     }
 
     /** {@inheritDoc} */
     @Override public R get() throws GridClientException {
         try {
-            if (doneLatch.getCount() > 0)
-                doneLatch.await();
+            if (!done)
+                acquireSharedInterruptibly(0);
+
+            return getResult();
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
             throw new GridClientException("Operation was interrupted.", e);
         }
-
-        return getResult();
     }
 
     /** {@inheritDoc} */
@@ -91,12 +88,10 @@ public class GridClientFutureAdapter<R> implements GridClientFuture<R> {
         A.ensure(timeout >= 0, "timeout >= 0");
 
         try {
-            if (doneLatch.getCount() > 0 && !doneLatch.await(timeout, unit))
+            if (!done && !tryAcquireSharedNanos(0, unit.toNanos(timeout)))
                 throw new GridClientFutureTimeoutException("Failed to get future result due to waiting timed out.");
         }
         catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
             throw new GridClientException("Operation was interrupted.", e);
         }
 
@@ -110,7 +105,7 @@ public class GridClientFutureAdapter<R> implements GridClientFuture<R> {
      * @throws GridClientException In case of error.
      */
     private R getResult() throws GridClientException {
-        assert doneLatch.getCount() == 0;
+        assert getState() == DONE;
 
         if (err == null)
             return res;
@@ -126,7 +121,7 @@ public class GridClientFutureAdapter<R> implements GridClientFuture<R> {
 
     /** {@inheritDoc} */
     @Override public boolean isDone() {
-        return done.get();
+        return getState() != INIT;
     }
 
     /**
@@ -135,13 +130,7 @@ public class GridClientFutureAdapter<R> implements GridClientFuture<R> {
      * @param res Result (can be {@code null}).
      */
     public void onDone(@Nullable R res) {
-        if (done.compareAndSet(false, true)) {
-            this.res = res;
-
-            doneLatch.countDown();
-
-            fireDone();
-        }
+        onDone(res, null);
     }
 
     /**
@@ -152,13 +141,48 @@ public class GridClientFutureAdapter<R> implements GridClientFuture<R> {
     public void onDone(Throwable err) {
         assert err != null;
 
-        if (done.compareAndSet(false, true)) {
-            this.err = err;
+        onDone(null, err);
+    }
 
-            doneLatch.countDown();
+    /**
+     * @param res Result.
+     * @param err Error.
+     * @return {@code True} if result was set by this call.
+     */
+    private boolean onDone(@Nullable R res, @Nullable Throwable err) {
+        boolean notify = false;
 
-            fireDone();
+        try {
+            if (compareAndSetState(INIT, DONE)) {
+                this.res = res;
+                this.err = err;
+
+                notify = true;
+
+                releaseShared(0);
+
+                return true;
+            }
+
+            return false;
         }
+        finally {
+            if (notify)
+                fireDone();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected final int tryAcquireShared(int ignore) {
+        return done ? 1 : -1;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected final boolean tryReleaseShared(int ignore) {
+        done = true;
+
+        // Always signal after setting final done status.
+        return true;
     }
 
     /**
