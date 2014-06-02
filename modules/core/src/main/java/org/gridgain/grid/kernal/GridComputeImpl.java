@@ -325,8 +325,10 @@ public class GridComputeImpl implements GridCompute {
             GridComputeTaskFuture<Object> task = ctx.task().taskFuture(sesId);
 
             if (task != null)
+                // Cancel local task.
                 task.cancel();
-            else
+            else if (prj.node(sesId.globalId()) != null)
+                // Cancel remote task only if its master is in projection.
                 ctx.io().send(
                     sesId.globalId(),
                     TOPIC_TASK_CANCEL,
