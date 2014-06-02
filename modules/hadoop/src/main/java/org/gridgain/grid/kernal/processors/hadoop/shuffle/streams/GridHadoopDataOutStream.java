@@ -42,7 +42,7 @@ public class GridHadoopDataOutStream extends OutputStream implements DataOutput 
 
     /**
      * @param size Size.
-     * @return Old pointer.
+     * @return Old pointer or {@code 0} if move was impossible.
      */
     public long move(long size) {
         return buf.move(size);

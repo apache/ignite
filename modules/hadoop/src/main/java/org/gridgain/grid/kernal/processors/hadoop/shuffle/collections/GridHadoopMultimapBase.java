@@ -160,13 +160,13 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
         protected final GridHadoopSerialization valSer;
 
         /** */
-        private GridHadoopDataOutStream out;
+        private final GridHadoopDataOutStream out;
 
         /** */
         private long writeStart;
 
         /** Size and pointer pairs list. */
-        private GridLongList pages = new GridLongList(16);
+        private final GridLongList pages = new GridLongList(16);
 
         /**
          * @throws GridException If failed.
