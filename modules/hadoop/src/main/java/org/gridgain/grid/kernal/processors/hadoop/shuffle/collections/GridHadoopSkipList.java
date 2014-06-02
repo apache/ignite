@@ -41,7 +41,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
 
     /** {@inheritDoc} */
     @Override public boolean visit(boolean ignoreLastVisited, Visitor v) throws GridException {
-        return false;
+        return false; // TODO
     }
 
     /** {@inheritDoc} */
@@ -51,29 +51,56 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
 
     /** {@inheritDoc} */
     @Override public GridHadoopTaskInput input() throws GridException {
-        return null;
+        return null; // TODO
     }
 
+    /**
+     * @param meta Meta pointer.
+     * @return Key pointer.
+     */
     private long key(long meta) {
         return mem.readLong(meta);
     }
 
+    /**
+     * @param meta Meta pointer.
+     * @param key Key pointer.
+     */
     private void key(long meta, long key) {
         mem.writeLong(meta, key);
     }
 
+    /**
+     * @param meta Meta pointer.
+     * @return Value pointer.
+     */
     private long value(long meta) {
         return mem.readLongVolatile(meta + 8);
     }
 
+    /**
+     * @param meta Meta pointer.
+     * @param valPtr Value pointer.
+     */
     private void value(long meta, long valPtr) {
         mem.writeLongVolatile(meta + 8, valPtr);
     }
 
+    /**
+     * @param meta Meta pointer.
+     * @param oldValPtr Old first value pointer.
+     * @param newValPtr New first value pointer.
+     * @return {@code true} If operation succeeded.
+     */
     private boolean casValue(long meta, long oldValPtr, long newValPtr) {
         return mem.casLong(meta + 8, oldValPtr, newValPtr);
     }
 
+    /**
+     * @param meta Meta pointer.
+     * @param level Level.
+     * @return Next meta pointer.
+     */
     private long nextMeta(long meta, int level) {
         if (meta == 0)
             return heads.get(level);
@@ -81,6 +108,13 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
         return mem.readLongVolatile(meta + 16 + 8 * level);
     }
 
+    /**
+     * @param meta Meta pointer.
+     * @param level Level.
+     * @param oldNext Old next meta pointer.
+     * @param newNext New next meta pointer.
+     * @return {@code true} If operation succeeded.
+     */
     private boolean casNextMeta(long meta, int level, long oldNext, long newNext) {
         if (meta == 0)
             return heads.compareAndSet(level, oldNext, newNext);
@@ -88,10 +122,18 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
         return mem.casLong(meta + 16 + 8 * level, oldNext, newNext);
     }
 
+    /**
+     * @param keyPtr Key pointer.
+     * @return Key size.
+     */
     private int keySize(long keyPtr) {
         return mem.readInt(keyPtr);
     }
 
+    /**
+     * @param keyPtr Key pointer.
+     * @param keySize Key size.
+     */
     private void keySize(long keyPtr, int keySize) {
         mem.writeInt(keyPtr, keySize);
     }
