@@ -132,6 +132,13 @@ public interface GridDiscoverySpi extends GridSpi {
     public void reconnect() throws GridSpiException;
 
     /**
+     * Sets discovery SPI node authenticator. This method is called before SPI start() method.
+     *
+     * @param auth Discovery SPI authenticator.
+     */
+    public void setAuthenticator(GridDiscoverySpiNodeAuthenticator auth);
+
+    /**
      * Gets start time of the very first node in the grid. This value should be the same
      * on all nodes in the grid and it should not change even if very first node fails
      * of leaves grid.

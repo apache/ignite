@@ -721,7 +721,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                     taskTopic,
                                     msgId,
                                     jobRes,
-                                    SYSTEM_POOL,
+                                    internal ? MANAGEMENT_POOL : SYSTEM_POOL,
                                     timeout,
                                     false);
                             }
@@ -729,7 +729,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                 ctx.task().processJobExecuteResponse(ctx.localNodeId(), jobRes);
                             else
                                 // Send response to common topic as unordered message.
-                                ctx.io().send(sndNode, TOPIC_TASK, jobRes, SYSTEM_POOL);
+                                ctx.io().send(sndNode, TOPIC_TASK, jobRes, internal ? MANAGEMENT_POOL : SYSTEM_POOL);
                         }
                         catch (GridException e) {
                             // Log and invoke the master-leave callback.

@@ -426,8 +426,47 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
      * @param res Response being sent.
      */
     private void addDhtValues(GridNearTxPrepareResponse<K, V> res) {
+        // Interceptor on near node needs old values to execute callbacks.
+        if (cctx.config().getInterceptor() != null && !F.isEmpty(writes)) {
+            for (GridCacheTxEntry<K, V> e : writes) {
+                GridCacheTxEntry<K, V> txEntry = tx.entry(e.key());
+
+                while (true) {
+                    try {
+                        GridCacheEntryEx<K, V> entry = txEntry.cached();
+
+                        GridCacheVersion dhtVer = entry.version();
+
+                        V val0 = null;
+                        byte[] valBytes0 = null;
+
+                        GridCacheValueBytes valBytesTuple = entry.valueBytes();
+
+                        if (!valBytesTuple.isNull()) {
+                            if (valBytesTuple.isPlain())
+                                val0 = (V) valBytesTuple.get();
+                            else
+                                valBytes0 = valBytesTuple.get();
+                        }
+                        else
+                            val0 = entry.rawGet();
+
+                        res.addOwnedValue(txEntry.key(), dhtVer, val0, valBytes0);
+
+                        break;
+                    }
+                    catch (GridCacheEntryRemovedException ignored) {
+                        // Retry.
+                    }
+                }
+            }
+        }
+
         for (Map.Entry<K, GridCacheVersion> ver : dhtVerMap.entrySet()) {
             GridCacheTxEntry<K, V> txEntry = tx.entry(ver.getKey());
+
+            if (res.hasOwnedValue(ver.getKey()))
+                continue;
 
             while (true) {
                 try {

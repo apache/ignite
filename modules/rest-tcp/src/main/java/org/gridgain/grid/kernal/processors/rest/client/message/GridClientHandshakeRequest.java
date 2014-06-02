@@ -130,6 +130,21 @@ public class GridClientHandshakeRequest extends GridClientAbstractMessage {
         return ret;
     }
 
+    /**
+     * @return Raw representation of this packet.
+     */
+    public byte[] rawBytesNoHeader() {
+        byte[] ret = new byte[PACKET_SIZE - 1];
+
+        ret[0] = VER_BYTES[0];
+        ret[1] = VER_BYTES[1];
+        ret[2] = VER_BYTES[2];
+        ret[3] = VER_BYTES[3];
+        ret[4] = protoId;
+
+        return ret;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);

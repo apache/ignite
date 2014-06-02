@@ -106,6 +106,8 @@ public class GridClientTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(GridClientFailedInitSelfTest.class));
 
+        suite.addTest(new TestSuite(GridClientTcpTaskExecutionAfterTopologyRestartSelfTest.class));
+
         return suite;
     }
 }
