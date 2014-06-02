@@ -228,12 +228,17 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
             PrintWriter w = new PrintWriter(new OutputStreamWriter(os));
 
             for (int i = 0; i < lineCnt; i++)
-                w.println("Hello, Hadoop map-reduce!");
+                w.print("Hello, Hadoop map-reduce!\n");
 
             w.flush();
         }
     }
 
+    /**
+     * Prepare job with mappers to cancel.
+     * @return Fully configured job.
+     * @throws Exception If fails.
+     */
     private Configuration prepareJobForCancelling() throws Exception {
         prepareFile("/testFile", 10000);
 
@@ -343,11 +348,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         /** {@inheritDoc} */
         @Override public void run(Context context) throws IOException, InterruptedException {
             try {
-                setup(context);
-                while (context.nextKeyValue()) {
-                    map(context.getCurrentKey(), context.getCurrentValue(), context);
-                }
-                cleanup(context);
+                super.run(context);
             }
             catch (GridHadoopTaskCancelledException e) {
                 cancelledTasks.incrementAndGet();
