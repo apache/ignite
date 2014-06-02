@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.managers.security.os;
 
-import com.beust.jcommander.internal.Nullable;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
@@ -17,6 +16,7 @@ import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.authentication.*;
 import org.gridgain.grid.util.typedef.*;
+import org.jetbrains.annotations.*;
 
 import java.net.*;
 import java.util.*;

@@ -540,9 +540,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
             addHandler(new GridVersionCommandHandler(ctx));
             addHandler(new GridLogCommandHandler(ctx));
 
-            // Start protocol.
-            startProtocol(new GridJettyRestProtocol(ctx));
-            startProtocol(new GridTcpRestProtocol(ctx));
+            // Start protocols.
+            startProtocol(TCP_PROTO_CLS, "TCP", "gridgain-rest-tcp");
+            startProtocol(HTTP_PROTO_CLS, "HTTP", "gridgain-rest-http");
         }
     }
 

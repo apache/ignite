@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.kernal.managers.security;
 
-import com.beust.jcommander.internal.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.authentication.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -51,6 +51,7 @@ public interface GridSecurityManager extends GridManager {
      * Gets collection of authenticated nodes.
      *
      * @return Collection of authenticated nodes.
+     * @throws GridException If error occurred.
      */
     public Collection<GridSecuritySubject> authenticatedNodes() throws GridException;
 
@@ -59,6 +60,7 @@ public interface GridSecurityManager extends GridManager {
      *
      * @param nodeId Node ID.
      * @return Security subject.
+     * @throws GridException If error occurred.
      */
     public GridSecuritySubject authenticatedNode(UUID nodeId) throws GridException;
 

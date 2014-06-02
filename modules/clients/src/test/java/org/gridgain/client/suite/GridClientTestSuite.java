@@ -102,7 +102,6 @@ public class GridClientTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridTcpRouterSelfTest.class));
         suite.addTest(new TestSuite(GridTcpSslRouterSelfTest.class));
         suite.addTest(new TestSuite(GridTcpRouterMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridRouterMultiAuthSelfTest.class));
 
         suite.addTest(new TestSuite(GridClientFailedInitSelfTest.class));
 

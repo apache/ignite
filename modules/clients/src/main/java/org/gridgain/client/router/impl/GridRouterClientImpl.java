@@ -56,29 +56,6 @@ class GridRouterClientImpl implements GridClient {
     }
 
     /**
-     * Creates a new HTTP client based on the given configuration.
-     *
-     * @param id Client identifier.
-     * @param routerCfg Router configuration.
-     * @throws GridClientException If client configuration is incorrect.
-     */
-    GridRouterClientImpl(UUID id, GridHttpRouterConfiguration routerCfg) throws GridClientException {
-        GridClientConfiguration cliCfg = new GridClientConfiguration();
-
-        cliCfg.setProtocol(GridClientProtocol.HTTP);
-        cliCfg.setServers(routerCfg.getServers());
-        cliCfg.setSecurityCredentialsProvider(routerCfg.getSecurityCredentialsProvider());
-        cliCfg.setMaxConnectionIdleTime(routerCfg.getRequestTimeout());
-
-        if (routerCfg.getClientSslContextFactory() != null)
-            cliCfg.setSslContextFactory(routerCfg.getClientSslContextFactory());
-
-        this.cliCfg = cliCfg;
-
-        clientImpl = new GridClientImpl(id, this.cliCfg);
-    }
-
-    /**
      * Gets the connection manager for a given protocol.
      *
      * @param protoId Client protocol ID (if applicable).
