@@ -438,7 +438,6 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     private int selectorsCnt = DFLT_SELECTORS_CNT;
 
     /** Address resolver. */
-    @GridAddressResolverResource
     private GridAddressResolver addrRslvr;
 
     /** Local node ID message. */
@@ -553,6 +552,28 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
             return cnt;
         }
     };
+
+    /**
+     * Sets address resolver.
+     *
+     * @param addrRslvr Address resolver.
+     */
+    @GridSpiConfiguration(optional = true)
+    @GridAddressResolverResource
+    public void setAddressResolver(GridAddressResolver addrRslvr) {
+        // Injection should not override value already set by Spring or user.
+        if (this.addrRslvr == null)
+            this.addrRslvr = addrRslvr;
+    }
+
+    /**
+     * Gets address resolver.
+     *
+     * @return Address resolver.
+     */
+    public GridAddressResolver getAddressResolver() {
+        return addrRslvr;
+    }
 
     /**
      * Sets local host address for socket binding. Note that one node could have

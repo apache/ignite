@@ -210,7 +210,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     public static final String ATTR_EXT_ADDRS = "disc.tcp.ext-addrs";
 
     /** Address resolver. */
-    @GridAddressResolverResource
     private GridAddressResolver addrRslvr;
 
     /** Local port which node uses. */
@@ -420,6 +419,28 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
      */
     public String getLocalAddress() {
         return locAddr;
+    }
+
+    /**
+     * Sets address resolver.
+     *
+     * @param addrRslvr Address resolver.
+     */
+    @GridSpiConfiguration(optional = true)
+    @GridAddressResolverResource
+    public void setAddressResolver(GridAddressResolver addrRslvr) {
+        // Injection should not override value already set by Spring or user.
+        if (this.addrRslvr == null)
+            this.addrRslvr = addrRslvr;
+    }
+
+    /**
+     * Gets address resolver.
+     *
+     * @return Address resolver.
+     */
+    public GridAddressResolver getAddressResolver() {
+        return addrRslvr;
     }
 
     /** {@inheritDoc} */
