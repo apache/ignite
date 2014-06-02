@@ -123,6 +123,14 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
     }
 
     /**
+     * @param meta Meta pointer.
+     * @param nextMeta Next meta.
+     */
+    private void nextMeta(long meta, long nextMeta) {
+        mem.writeLong(meta + 16, nextMeta);
+    }
+
+    /**
      * @param keyPtr Key pointer.
      * @return Key size.
      */
@@ -212,15 +220,18 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
          * @param key Key.
          * @param val Value.
          * @param level Level.
+         * @param nextMeta Next meta.
          * @return Meta pointer.
          */
-        private long createMeta(long key, long val, int level) {
+        private long createMeta(long key, long val, int level, long nextMeta) {
             int size = 24 + 8 * level;
 
             long meta = allocate(size);
 
             key(meta, key);
             value(meta, val);
+
+            nextMeta(meta, nextMeta);
 
             for (int i = 24; i < size; i += 8) // Fill with 0.
                 mem.writeLong(meta + i, 0L);
@@ -250,7 +261,6 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
          */
         private long add(Object key, @Nullable Object val) throws GridException {
             long valPtr = 0;
-            long keyPtr = 0;
 
             if (val != null) { // Write value.
                 valPtr = write(12, val, valSer);
@@ -259,6 +269,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
                 valueSize(valPtr, valSize);
             }
 
+            long keyPtr = 0;
             long newMeta = 0;
             int newMetaLevel = -1;
 
@@ -267,17 +278,15 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
             long meta = heads.get(top);
 
             for (int level = top;;) {
-                while (meta == 0 && level != 0) // If we can go down here we have to.
+                while (meta == 0 && level > 0) // If we can go down here we have to.
                     meta = nextMeta(prevMeta, --level);
 
-                if (meta == 0) { // We've found nothing, try to add new meta.
-                    assert level == 0 : level;
-
+                if (meta == 0 || level < 0) { // We've found nothing, try to add new meta.
                     if (keyPtr == 0) { // Write key and create meta.
                         keyPtr = writeKey(key);
 
                         newMetaLevel = randomLevel(rnd);
-                        newMeta = createMeta(keyPtr, valPtr, newMetaLevel);
+                        newMeta = createMeta(keyPtr, valPtr, newMetaLevel, meta);
                     }
 
                     if (casNextMeta(prevMeta, 0, meta, newMeta)) { // We just added new key.
@@ -317,8 +326,8 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
                     prevMeta = meta;
                     meta = nextMeta(meta, level);
                 }
-                else if (level != 0)
-                    level--; // Go down.
+                else
+                    --level; // Go down.
             }
         }
 
