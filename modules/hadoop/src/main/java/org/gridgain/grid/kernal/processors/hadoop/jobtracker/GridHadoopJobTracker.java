@@ -755,7 +755,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * Kills job.
      *
      * @param jobId Job ID.
-     * @return {@code True} if job was killed by that or concurrent call.
+     * @return {@code True} if job was killed.
+     * @throws GridException If failed.
      */
     public boolean killJob(GridHadoopJobId jobId) throws GridException {
         if (!busyLock.tryReadLock())

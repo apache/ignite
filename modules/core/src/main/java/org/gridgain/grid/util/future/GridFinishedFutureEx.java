@@ -40,8 +40,7 @@ public class GridFinishedFutureEx<T> implements GridFuture<T>, Externalizable {
      * Created finished future with {@code null} value.
      */
     public GridFinishedFutureEx() {
-        t = null;
-        err = null;
+        this(null, null);
     }
 
     /**
