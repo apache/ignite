@@ -55,6 +55,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 import java.util.jar.*;
+import java.util.logging.*;
 import java.util.regex.*;
 import java.util.zip.*;
 
@@ -2155,54 +2156,60 @@ public abstract class GridUtils {
         if (!F.isEmpty(ggHome0))
             return ggHome0;
 
-        Class<?> libsCls;
+        String appWorkDir = System.getProperty("user.dir");
+
+        if (appWorkDir != null) {
+            ggHome0 = findProjectHome(new File(appWorkDir));
+
+            if (ggHome0 != null)
+                return ggHome0;
+        }
+
+        URI uri;
+
+        Class<GridUtils> cls = GridUtils.class;
 
         try {
-            libsCls = Class.forName("org.springframework.context.ApplicationContext");
-        }
-        catch (ClassNotFoundException ignored) {
-            libsCls = null;
-        }
+            ProtectionDomain domain = cls.getProtectionDomain();
 
-        Collection<Class<?>> clsList = libsCls != null ? Arrays.asList(GridUtils.class, libsCls) :
-            Collections.<Class<?>>singleton(GridUtils.class);
+            // Should not happen, but to make sure our code is not broken.
+            if (domain == null || domain.getCodeSource() == null || domain.getCodeSource().getLocation() == null) {
+                logResolveFailed(cls, null);
 
-        // Order: gridgain.jar, 'libs'.
-        for (Class<?> cls : clsList) {
-            URI uri;
-
-            try {
-                ProtectionDomain domain = cls.getProtectionDomain();
-
-                // Should not happen, but to make sure our code is not broken.
-                if (domain == null || domain.getCodeSource() == null || domain.getCodeSource().getLocation() == null) {
-                    logResolveFailed(cls, null);
-
-                    continue;
-                }
-
-                // Resolve path to class-file.
-                uri = domain.getCodeSource().getLocation().toURI();
-
-                // Overcome UNC path problem on Windows (http://www.tomergabel.com/JavaMishandlesUNCPathsOnWindows.aspx)
-                if (isWindows() && uri.getAuthority() != null)
-                    uri = new URI(uri.toString().replace("file://", "file:/"));
+                return null;
             }
-            catch (URISyntaxException | SecurityException e) {
-                logResolveFailed(cls, e);
 
+            // Resolve path to class-file.
+            uri = domain.getCodeSource().getLocation().toURI();
+
+            // Overcome UNC path problem on Windows (http://www.tomergabel.com/JavaMishandlesUNCPathsOnWindows.aspx)
+            if (isWindows() && uri.getAuthority() != null)
+                uri = new URI(uri.toString().replace("file://", "file:/"));
+        }
+        catch (URISyntaxException | SecurityException e) {
+            logResolveFailed(cls, e);
+
+            return null;
+        }
+
+        return findProjectHome(new File(uri));
+    }
+
+    /**
+     * Tries to find project home starting from specified directory and moving to root.
+     *
+     * @param startDir First directory in search hierarchy.
+     * @return Project home path or {@code null} if it wasn't found.
+     */
+    private static String findProjectHome(File startDir) {
+        for (File cur = startDir.getAbsoluteFile(); cur != null; cur = cur.getParentFile()) {
+            // Check 'cur' is project home directory.
+            if (!new File(cur, "bin").isDirectory() ||
+                !new File(cur, "libs").isDirectory() ||
+                !new File(cur, "config").isDirectory())
                 continue;
-            }
 
-            for (File cur = new File(uri).getAbsoluteFile(); cur != null; cur = cur.getParentFile()) {
-                // Check 'cur' is project home directory.
-                if (!new File(cur, "bin").isDirectory() ||
-                    !new File(cur, "libs").isDirectory() ||
-                    !new File(cur, "config").isDirectory())
-                    continue;
-
-                return cur.getPath();
-            }
+            return cur.getPath();
         }
 
         return null;
@@ -2301,19 +2308,13 @@ public abstract class GridUtils {
         assert path != null;
 
         /*
-         * 1. Check relative to GRIDGAIN_HOME specified in
-         *    configuration, if any.
+         * 1. Check relative to GRIDGAIN_HOME specified in configuration, if any.
          */
 
         String home = getGridGainHome();
 
         if (home != null) {
             File file = new File(home, path);
-
-            if (file.exists())
-                return file;
-
-            file = new File(home, "os/" + path);
 
             if (file.exists())
                 return file;
@@ -2328,7 +2329,14 @@ public abstract class GridUtils {
         if (file.exists())
             return file;
 
-        return null;
+        /*
+         * 3. Check development path.
+         */
+
+        if (home != null)
+            file = new File(home, "os/" + path);
+
+        return file.exists() ? file : null;
     }
 
     /**
@@ -3499,10 +3507,21 @@ public abstract class GridUtils {
      * @param msg Message to log.
      */
     public static void quietAndWarn(GridLogger log, Object msg) {
+        quietAndWarn(log, msg, msg);
+    }
+
+    /**
+     * Logs warning message in both verbose and quite modes.
+     *
+     * @param log Logger to use.
+     * @param shortMsg Short message.
+     * @param msg Message to log.
+     */
+    public static void quietAndWarn(GridLogger log, Object msg, Object shortMsg) {
         warn(log, msg);
 
         if (log.isQuiet())
-            quiet(false, msg);
+            quiet(false, shortMsg);
     }
 
     /**
@@ -6075,6 +6094,148 @@ public abstract class GridUtils {
     }
 
     /**
+     * Returns array which is the union of two arrays
+     * (array of elements contained in any of provided arrays).
+     * <p/>
+     * Note: arrays must be increasing.
+     *
+     * @param a First array.
+     * @param aLen Length of prefix {@code a}.
+     * @param b Second array.
+     * @param bLen Length of prefix {@code b}.
+     * @return Increasing array which is union of {@code a} and {@code b}.
+     */
+    @SuppressWarnings("IfMayBeConditional")
+    public static int[] unique(int[] a, int aLen, int[] b, int bLen) {
+        assert a != null;
+        assert b != null;
+        assert isIncreasingArray(a, aLen);
+        assert isIncreasingArray(b, bLen);
+
+        int[] res = new int[aLen + bLen];
+        int resLen = 0;
+
+        int i = 0;
+        int j = 0;
+
+        while (i < aLen && j < bLen) {
+            if (a[i] == b[j])
+                i++;
+            else if (a[i] < b[j])
+                res[resLen++] = a[i++];
+            else
+                res[resLen++] = b[j++];
+        }
+
+        while (i < aLen)
+            res[resLen++] = a[i++];
+
+        while (j < bLen)
+            res[resLen++] = b[j++];
+
+        return copyIfExceeded(res, resLen);
+    }
+
+    /**
+     * Returns array which is the difference between two arrays
+     * (array of elements contained in first array but not contained in second).
+     * <p/>
+     * Note: arrays must be increasing.
+     *
+     * @param a First array.
+     * @param aLen Length of prefix {@code a}.
+     * @param b Second array.
+     * @param bLen Length of prefix {@code b}.
+     * @return Increasing array which is difference between {@code a} and {@code b}.
+     */
+    @SuppressWarnings("IfMayBeConditional")
+    public static int[] difference(int[] a, int aLen, int[] b, int bLen) {
+        assert a != null;
+        assert b != null;
+        assert isIncreasingArray(a, aLen);
+        assert isIncreasingArray(b, bLen);
+
+        int[] res = new int[aLen];
+        int resLen = 0;
+
+        int i = 0;
+        int j = 0;
+
+        while (i < aLen && j < bLen) {
+            if (a[i] == b[j])
+                i++;
+            else if (a[i] < b[j])
+                res[resLen++] = a[i++];
+            else
+                j++;
+        }
+
+        while (i < aLen)
+            res[resLen++] = a[i++];
+
+        return copyIfExceeded(res, resLen);
+    }
+
+    /**
+     * Checks if array prefix increases.
+     *
+     * @param arr Array.
+     * @param len Prefix length.
+     * @return {@code True} if {@code arr} from 0 to ({@code len} - 1) increases.
+     */
+    public static boolean isIncreasingArray(int[] arr, int len) {
+        assert arr != null;
+        assert 0 <= len && len <= arr.length;
+
+        if (arr.length == 0)
+            return true;
+
+        for (int i = 1; i < len; i++) {
+            if (arr[i - 1] >= arr[i])
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Checks if array prefix do not decreases.
+     *
+     * @param arr Array.
+     * @param len Prefix length.
+     * @return {@code True} if {@code arr} from 0 to ({@code len} - 1) do not decreases.
+     */
+    public static boolean isNonDecreasingArray(int[] arr, int len) {
+        assert arr != null;
+        assert 0 <= len && len <= arr.length;
+
+        if (arr.length == 0)
+            return true;
+
+        for (int i = 1; i < len; i++) {
+            if (arr[i - 1] > arr[i])
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Copies array only if array length greater than needed length.
+     *
+     * @param arr Array.
+     * @param len Prefix length.
+     * @return Old array if length of {@code arr} is equals to {@code len},
+     *      otherwise copy of array.
+     */
+    public static int[] copyIfExceeded(int[] arr, int len) {
+        assert arr != null;
+        assert 0 <= len && len <= arr.length;
+
+        return len == arr.length ? arr : Arrays.copyOf(arr, len);
+    }
+
+    /**
      *
      * @param t Tokenizer.
      * @param str Input string.
@@ -7398,6 +7559,48 @@ public abstract class GridUtils {
         }
         catch (Exception e) {
             throw new GridException("Failed to remove previously added no-op logger for Log4j.", e);
+        }
+    }
+
+    /**
+     * Adds no-op console handler for root java logger.
+     *
+     * @return Removed handlers.
+     */
+    public static Collection<Handler> addJavaNoOpLogger() {
+        Collection<Handler> savedHnds = new ArrayList<>();
+
+        Logger log = Logger.getLogger("");
+
+        for (Handler h : log.getHandlers()) {
+            log.removeHandler(h);
+
+            savedHnds.add(h);
+        }
+
+        ConsoleHandler hnd = new ConsoleHandler();
+
+        hnd.setLevel(Level.OFF);
+
+        log.addHandler(hnd);
+
+        return savedHnds;
+    }
+
+    /**
+     * Removes previously added no-op handler for root java logger.
+     *
+     * @param rmvHnds Previously removed handlers.
+     */
+    public static void removeJavaNoOpLogger(Collection<Handler> rmvHnds) {
+        Logger log = Logger.getLogger("");
+
+        for (Handler h : log.getHandlers())
+            log.removeHandler(h);
+
+        if (!F.isEmpty(rmvHnds)) {
+            for (Handler h : rmvHnds)
+                log.addHandler(h);
         }
     }
 

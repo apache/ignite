@@ -9,6 +9,7 @@
 
 namespace GridGain.Client.Impl.Marshaller {
     using System;
+    using System.IO;
 
     /** <summary>Marshaller for binary protocol messages.</summary> */
     internal interface IGridClientMarshaller {
@@ -24,6 +25,16 @@ namespace GridGain.Client.Impl.Marshaller {
 
         /**
          * <summary>
+         * Marshals object to stream.</summary>
+         *
+         * <param name="val">Object to marshal.</param>
+         * <param name="output">Stream.</param>
+         * <exception cref="System.IO.IOException">If marshalling failed.</exception>
+         */
+        void Marshal(Object val, Stream output);
+
+        /**
+         * <summary>
          * Unmarshalls object from byte array.</summary>
          *
          * <param name="data">Byte array.</param>
@@ -31,5 +42,15 @@ namespace GridGain.Client.Impl.Marshaller {
          * <exception cref="System.IO.IOException">If unmarshalling failed.</exception>
          */
         T Unmarshal<T>(byte[] data);
+
+        /**
+         * <summary>
+         * Unmarshalls object from stream.</summary>
+         *
+         * <param name="input">Stream.</param>
+         * <returns>Unmarshalled object.</returns>
+         * <exception cref="System.IO.IOException">If unmarshalling failed.</exception>
+         */
+        T Unmarshal<T>(Stream input);
     }
 }

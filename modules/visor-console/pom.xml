@@ -61,7 +61,7 @@
 
         <dependency>
             <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-rest</artifactId>
+            <artifactId>gridgain-rest-tcp</artifactId>
             <version>${gridgain.version}</version>
             <scope>test</scope>
         </dependency>

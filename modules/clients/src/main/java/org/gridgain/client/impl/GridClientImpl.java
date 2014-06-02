@@ -44,18 +44,26 @@ public class GridClientImpl implements GridClient {
         boolean isLog4jUsed = U.gridClassLoader().getResource("org/apache/log4j/Appender.class") != null;
 
         try {
-            if (isLog4jUsed) {
-                GridBiTuple<Object, Object> t = U.addLog4jNoOpLogger();
+            GridBiTuple<Object, Object> t = null;
+            Collection<Handler> savedHnds = null;
 
-                try {
-                    InternalLoggerFactory.setDefaultFactory(new JdkLoggerFactory());
-                }
-                catch (Exception e) {
-                    log.warning("Failed to set Jdk logging for Netty: " + e.getMessage());
-                }
-                finally {
+            if (isLog4jUsed)
+                t = U.addLog4jNoOpLogger();
+            else
+                savedHnds = U.addJavaNoOpLogger();
+
+            try {
+                InternalLoggerFactory.setDefaultFactory(new JdkLoggerFactory());
+            }
+            catch (Exception e) {
+                log.warning("Failed to set Jdk logging for Netty: " + e.getMessage());
+            }
+            finally {
+                if (isLog4jUsed && t != null)
                     U.removeLog4jNoOpLogger(t);
-                }
+
+                if (!isLog4jUsed)
+                    U.removeJavaNoOpLogger(savedHnds);
             }
         }
         catch (GridException ignored) {
@@ -382,8 +390,9 @@ public class GridClientImpl implements GridClient {
     /**
      * @param protoId Protocol ID to use in this connection manager.
      * @return New connection manager based on current client settings.
+     * @throws GridClientException If failed to start connection server.
      */
-    public GridClientConnectionManager newConnectionManager(Byte protoId) {
+    public GridClientConnectionManager newConnectionManager(Byte protoId) throws GridClientException {
         return new GridClientConnectionManagerImpl(id, sslCtx, cfg, routers, top, protoId);
     }
 

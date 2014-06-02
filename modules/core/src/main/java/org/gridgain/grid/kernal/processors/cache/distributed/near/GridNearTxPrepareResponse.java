@@ -151,6 +151,14 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
     }
 
     /**
+     * @param key Key.
+     * @return {@code True} if response has owned value for given key.
+     */
+    public boolean hasOwnedValue(K key) {
+        return ownedVals != null && ownedVals.containsKey(key);
+    }
+
+    /**
      * @return Invalid partitions.
      */
     public Collection<Integer> invalidPartitions() {

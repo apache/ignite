@@ -130,7 +130,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
      */
     protected void clearEntry(GridCacheEntryEx<K, V> e) {
         try {
-            e.clear(obsoleteVer, false, false, CU.<K, V>empty());
+            e.clear(obsoleteVer, false, CU.<K, V>empty());
         }
         catch (GridException ex) {
             U.error(log, "Failed to clear entry from cache (will continue to clear other entries): " + e, ex);

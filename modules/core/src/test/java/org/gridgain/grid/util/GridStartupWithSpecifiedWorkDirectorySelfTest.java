@@ -50,9 +50,7 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
         nullifyHomeDirectory();
         nullifyWorkDirectory();
 
-        String ggHome = U.getGridGainHome();
-
-        U.setWorkDirectory(ggHome, null);
+        U.setWorkDirectory(null, U.getGridGainHome());
     }
 
     /**

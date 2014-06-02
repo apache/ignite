@@ -9,6 +9,9 @@
 
 package org.gridgain.grid.spi.discovery.tcp;
 
+import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.managers.security.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -44,5 +47,44 @@ public class GridTcpDiscoverySpiStartStopSelfTest extends GridSpiStartStopAbstra
                 // No-op.
             }
         };
+    }
+
+    /**
+     * Discovery SPI authenticator.
+     *
+     * @return Authenticator.
+     */
+    @GridSpiTestConfig
+    public GridDiscoverySpiNodeAuthenticator getAuthenticator() {
+        return new GridDiscoverySpiNodeAuthenticator() {
+            @Override public GridSecurityContext authenticateNode(GridNode n, GridSecurityCredentials cred) {
+                GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(
+                    GridSecuritySubjectType.REMOTE_NODE, n.id());
+
+                subj.permissions(new Allow());
+
+                return new GridSecurityContext(subj);
+            }
+        };
+    }
+
+    /**
+     *
+     */
+    private static class Allow implements GridSecurityPermissionSet {
+        /** {@inheritDoc} */
+        @Override public boolean defaultAllowAll() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Collection<GridSecurityPermission>> taskPermissions() {
+            return Collections.emptyMap();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Collection<GridSecurityPermission>> cachePermissions() {
+            return Collections.emptyMap();
+        }
     }
 }
