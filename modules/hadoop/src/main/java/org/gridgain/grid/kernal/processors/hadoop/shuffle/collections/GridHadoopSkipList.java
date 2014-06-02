@@ -215,6 +215,8 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
                     meta = nextMeta(prevMeta, --level);
 
                 if (meta == 0) { // We've found nothing, create new meta.
+                    assert level == 0 : level;
+
                     keyPtr = writeKey(key);
 
                     newMetaLevel = nextLevel(rnd);
@@ -224,6 +226,11 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
                         laceUp(newMeta, newMetaLevel);
 
                         return newMeta;
+                    }
+                    else {
+                        meta = nextMeta(prevMeta, 0);
+
+                        continue;
                     }
                 }
 
