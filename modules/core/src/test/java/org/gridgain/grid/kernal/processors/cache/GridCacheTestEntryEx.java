@@ -421,7 +421,8 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     /** {@inheritDoc} */
     @Override public GridBiTuple<Boolean, V> innerUpdateLocal(GridCacheVersion ver, GridCacheOperation op,
         @Nullable Object writeObj, boolean writeThrough, boolean retval, long ttl, boolean evt, boolean metrics,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException, GridCacheEntryRemovedException {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter, boolean intercept)
+        throws GridException, GridCacheEntryRemovedException {
         return new GridBiTuple<>(false, null);
     }
 
@@ -430,8 +431,8 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         GridCacheVersion ver, UUID evtNodeId, UUID affNodeId, GridCacheOperation op, @Nullable Object val,
         @Nullable byte[] valBytes, boolean writeThrough, boolean retval, long ttl, boolean evt,
         boolean metrics, boolean primary, boolean checkVer, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter,
-        GridDrType drType, long drTtl, long drExpireTime, @Nullable GridCacheVersion drVer, boolean drResolve)
-        throws GridException,
+        GridDrType drType, long drTtl, long drExpireTime, @Nullable GridCacheVersion drVer, boolean drResolve,
+        boolean intercept) throws GridException,
         GridCacheEntryRemovedException {
         return new GridCacheUpdateAtomicResult<>(true, rawPut((V)val, 0), (V)val, 0L, 0L, null, null, true);
     }

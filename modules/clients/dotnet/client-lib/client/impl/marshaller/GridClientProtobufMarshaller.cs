@@ -9,6 +9,7 @@
 
 namespace GridGain.Client.Impl.Marshaller {
     using System;
+    using System.IO;
     using GridGain.Client.Impl.Protobuf;
 
     /** <summary>Client messages marshaller based on protocol buffers compiled code.</summary> */
@@ -21,6 +22,16 @@ namespace GridGain.Client.Impl.Marshaller {
         /** <inheritdoc /> */
         public T Unmarshal<T>(byte[] data) {
             return GridClientProtobufBackConverter.WrapObject<T>(ObjectWrapper.ParseFrom(data));
+        }
+
+        /** <inheritdoc /> */
+        public void Marshal(object val, Stream output) {
+            GridClientProtobufConverter.WrapObject(val).WriteTo(output);
+        }
+
+        /** <inheritdoc /> */
+        public T Unmarshal<T>(Stream input) {
+            return GridClientProtobufBackConverter.WrapObject<T>(ObjectWrapper.ParseFrom(input));
         }
     }
 }

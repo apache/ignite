@@ -249,6 +249,10 @@
                                     <packages>org.gridgain.grid.streamer:org.gridgain.grid.streamer.router:org.gridgain.grid.streamer.window:org.gridgain.grid.streamer.index:org.gridgain.grid.streamer.index.hash:org.gridgain.grid.streamer.index.tree</packages>
                                 </group>
                                 <group>
+                                    <title>Security APIs</title>
+                                    <packages>org.gridgain.grid.security</packages>
+                                </group>
+                                <group>
                                     <title>JDBC Driver</title>
                                     <packages>org.gridgain.jdbc</packages>
                                 </group>

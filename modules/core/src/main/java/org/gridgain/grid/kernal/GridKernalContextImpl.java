@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.managers.authentication.*;
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.grid.kernal.managers.collision.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -111,7 +111,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringExclude
-    private GridAuthenticationManager authMgr;
+    private GridSecurityManager authMgr;
 
     /** */
     @GridToStringExclude
@@ -331,8 +331,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             failoverMgr = (GridFailoverManager)comp;
         else if (comp instanceof GridCollisionManager)
             colMgr = (GridCollisionManager)comp;
-        else if (comp instanceof GridAuthenticationManager)
-            authMgr = (GridAuthenticationManager)comp;
+        else if (comp instanceof GridSecurityManager)
+            authMgr = (GridSecurityManager)comp;
         else if (comp instanceof GridSecureSessionManager)
             sesMgr = (GridSecureSessionManager)comp;
         else if (comp instanceof GridLoadBalancerManager)
@@ -554,7 +554,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridAuthenticationManager auth() {
+    @Override public GridSecurityManager security() {
         return authMgr;
     }
 

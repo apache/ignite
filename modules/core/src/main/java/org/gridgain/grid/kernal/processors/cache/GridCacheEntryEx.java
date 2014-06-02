@@ -377,6 +377,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @param drExpireTime DR expire time (if any).
      * @param drVer DR version (if any).
      * @param drResolve If {@code true} then performs DR conflicts resolution.
+     * @param intercept If {@code true} then calls cache interceptor.
      * @return Tuple where first value is flag showing whether operation succeeded,
      *      second value is old entry value if return value is requested, third is updated entry value,
      *      fourth is the version to enqueue for deferred delete the fifth is DR conflict context
@@ -404,7 +405,8 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         long drTtl,
         long drExpireTime,
         @Nullable GridCacheVersion drVer,
-        boolean drResolve
+        boolean drResolve,
+        boolean intercept
     ) throws GridException, GridCacheEntryRemovedException;
 
     /**
@@ -419,6 +421,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @param evt Event flag.
      * @param metrics Metrics update flag.
      * @param filter Optional filter to check.
+     * @param intercept If {@code true} then calls cache interceptor.
      * @return Tuple containing success flag and old value.
      * @throws GridException If update failed.
      * @throws GridCacheEntryRemovedException If entry is obsolete.
@@ -432,7 +435,8 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         long ttl,
         boolean evt,
         boolean metrics,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter,
+        boolean intercept
     ) throws GridException, GridCacheEntryRemovedException;
 
 

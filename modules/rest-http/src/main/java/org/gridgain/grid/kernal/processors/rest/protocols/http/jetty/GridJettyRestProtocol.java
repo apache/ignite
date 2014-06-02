@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.rest.protocols.http.jetty;
 
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.util.*;
+import org.eclipse.jetty.util.log.*;
 import org.eclipse.jetty.util.thread.*;
 import org.eclipse.jetty.xml.*;
 import org.gridgain.grid.*;
@@ -25,6 +26,7 @@ import org.xml.sax.*;
 
 import java.io.*;
 import java.net.*;
+import java.util.*;
 
 import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.spi.GridPortProtocol.*;
@@ -38,6 +40,14 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      */
     static {
         if (!Boolean.getBoolean(GridSystemProperties.GG_JETTY_LOG_NO_OVERRIDE)) {
+            Properties p = new Properties();
+
+            p.setProperty("org.eclipse.jetty.LEVEL", "WARN");
+            p.setProperty("org.eclipse.jetty.util.log.LEVEL", "OFF");
+            p.setProperty("org.eclipse.jetty.util.component.LEVEL", "OFF");
+
+            StdErrLog.setProperties(p);
+
             try {
                 Class<?> logCls = Class.forName("org.apache.log4j.Logger");
 

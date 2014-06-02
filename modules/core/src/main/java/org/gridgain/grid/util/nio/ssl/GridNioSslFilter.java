@@ -24,6 +24,9 @@ import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
  * Implementation of SSL filter using {@link SSLEngine}
  */
 public class GridNioSslFilter extends GridNioFilterAdapter {
+    /** SSL handshake future metadata key. */
+    public static final int HANDSHAKE_FUT_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+
     /** Logger to use. */
     private GridLogger log;
 
@@ -42,6 +45,12 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     /** SSL context to use. */
     private SSLContext sslCtx;
 
+    /** Whether SSLEngine should use client mode. */
+    private boolean clientMode;
+
+    /** Whether direct mode is used. */
+    private boolean directMode;
+
     /**
      * Creates SSL filter.
      *
@@ -53,6 +62,28 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
 
         this.log = log;
         this.sslCtx = sslCtx;
+    }
+
+    /**
+     * @param clientMode Flag indicating whether SSLEngine should use client mode..
+     */
+    public void clientMode(boolean clientMode) {
+        this.clientMode = clientMode;
+    }
+
+    /**
+     *
+     * @param directMode Flag indicating whether direct mode is used.
+     */
+    public void directMode(boolean directMode) {
+        this.directMode = directMode;
+    }
+
+    /**
+     * @return Flag indicating whether direct mode is used.
+     */
+    public boolean directMode() {
+        return directMode;
     }
 
     /**
@@ -98,11 +129,13 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
 
         SSLEngine engine = sslCtx.createSSLEngine();
 
-        engine.setUseClientMode(false);
+        engine.setUseClientMode(clientMode);
 
-        engine.setWantClientAuth(wantClientAuth);
+        if (!clientMode) {
+            engine.setWantClientAuth(wantClientAuth);
 
-        engine.setNeedClientAuth(needClientAuth);
+            engine.setNeedClientAuth(needClientAuth);
+        }
 
         if (enabledCipherSuites != null)
             engine.setEnabledCipherSuites(enabledCipherSuites);
@@ -129,6 +162,11 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         GridNioSslHandler hnd = sslHandler(ses);
 
         try {
+            GridNioFutureImpl<?> fut = ses.removeMeta(HANDSHAKE_FUT_META_KEY);
+
+            if (fut != null)
+                fut.onDone(new GridException("SSL handshake failed (connection closed)."));
+
             hnd.shutdown();
         }
         finally {
@@ -141,8 +179,52 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         proceedExceptionCaught(ses, ex);
     }
 
+    /**
+     * @param ses Session.
+     * @return SSL handshake flag.
+     */
+    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
+    public boolean lock(GridNioSession ses) {
+        GridNioSslHandler hnd = sslHandler(ses);
+
+        hnd.lock();
+
+        return hnd.isHandshakeFinished();
+    }
+
+    /**
+     * @param ses NIO session.
+     */
+    public void unlock(GridNioSession ses) {
+        sslHandler(ses).unlock();
+    }
+
+    /**
+     * @param ses Session.
+     * @param input Data to encrypt.
+     * @return Output buffer with encrypted data.
+     * @throws SSLException If failed to encrypt.
+     */
+    public ByteBuffer encrypt(GridNioSession ses, ByteBuffer input) throws SSLException {
+        GridNioSslHandler hnd = sslHandler(ses);
+
+        hnd.lock();
+
+        try {
+            assert hnd.isHandshakeFinished();
+
+            return hnd.encrypt(input);
+        }
+        finally {
+            hnd.unlock();
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws GridException {
+        if (directMode)
+            return proceedSessionWrite(ses, msg);
+
         ByteBuffer input = checkMessage(ses, msg);
 
         if (!input.hasRemaining())
@@ -199,7 +281,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
             if (appBuf.hasRemaining())
                 proceedMessageReceived(ses, appBuf);
 
-            appBuf.clear();
+            appBuf.compact();
 
             if (hnd.isInboundDone() && !hnd.isOutboundDone()) {
                 if (log.isDebugEnabled())
@@ -266,13 +348,12 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
      *
      * @param ses Session instance.
      * @return SSL handler.
-     * @throws GridNioException If no handlers were associated with the session.
      */
-    private GridNioSslHandler sslHandler(GridNioSession ses) throws GridNioException {
+    private GridNioSslHandler sslHandler(GridNioSession ses) {
         GridNioSslHandler hnd = ses.meta(SSL_HANDLER.ordinal());
 
         if (hnd == null)
-            throw new GridNioException("Failed to process incoming message (received message before SSL handler " +
+            throw new GridRuntimeException("Failed to process incoming message (received message before SSL handler " +
                 "was created): " + ses);
 
         return hnd;

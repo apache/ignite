@@ -116,7 +116,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridCache<K, V> cache() {
+    @Override public <K1, V1> GridCache<K1, V1> cache() {
         return cache.cache();
     }
 
