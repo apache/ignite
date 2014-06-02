@@ -50,18 +50,26 @@ public class GridFinishedFutureEx<T> implements GridFuture<T>, Externalizable {
      * @param t Finished value.
      */
     public GridFinishedFutureEx(T t) {
-        this.t = t;
-
-        err = null;
+        this(t, null);
     }
 
     /**
      * @param err Future error.
      */
     public GridFinishedFutureEx(Throwable err) {
+        this(null, err);
+    }
+
+    /**
+     * Creates finished future with complete value and error.
+     *
+     * @param t Finished value.
+     * @param err Future error.
+     */
+    public GridFinishedFutureEx(T t, Throwable err) {
         this.err = err;
 
-        t = null;
+        this.t = t;
     }
 
     /** {@inheritDoc} */

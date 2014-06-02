@@ -97,24 +97,23 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             .createContinuousQuery();
 
         qry.callback(new GridBiPredicate<UUID,
-                Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>>>() {
-            @Override
-            public boolean apply(UUID nodeId,
-                                 final Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>> evts) {
+            Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>>>() {
+            @Override public boolean apply(UUID nodeId,
+                final Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>> evts) {
                 if (!busyLock.tryReadLock())
                     return false;
 
                 try {
                     // Must process query callback in a separate thread to avoid deadlocks.
                     evtProcSvc.submit(new EventHandler() {
-                        @Override
-                        protected void body() {
+                        @Override protected void body() {
                             processJobMetadata(evts);
                         }
                     });
 
                     return true;
-                } finally {
+                }
+                finally {
                     busyLock.readUnlock();
                 }
             }
@@ -249,7 +248,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 if (log.isTraceEnabled())
                     log.trace("Job is complete, returning finished future: " + jobId);
 
-                return new GridFinishedFutureEx<>(jobId);
+                return new GridFinishedFutureEx<>(jobId, meta.failCause());
             }
 
             GridFutureAdapter<GridHadoopJobId> fut = F.addIfAbsent(activeFinishFuts, jobId,
@@ -485,6 +484,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         for (Map.Entry<GridHadoopJobId, GridHadoopJobMetadata> entry : updated) {
             GridHadoopJobId jobId = entry.getKey();
             GridHadoopJobMetadata meta = entry.getValue();
+
+            if (meta == null)
+                continue;
 
             if (log.isDebugEnabled())
                 log.debug("Processing job metadata update callback [locNodeId=" + locNodeId +
@@ -749,6 +751,12 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         return ctx.jobFactory().createJob(jobId, meta.jobInfo());
     }
 
+    /**
+     * Kills job.
+     *
+     * @param jobId Job ID.
+     * @return {@code True} if job was killed by that or concurrent call.
+     */
     public boolean killJob(GridHadoopJobId jobId) throws GridException {
         if (!busyLock.tryReadLock())
             return false; // Grid is stopping.
@@ -756,12 +764,11 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         try {
             GridHadoopJobMetadata meta = jobMetaPrj.get(jobId);
 
-            if (meta == null || meta.phase() == PHASE_COMPLETE || meta.phase() == PHASE_CANCELLING)
-                return false;
+            if (meta != null && meta.phase() != PHASE_COMPLETE && meta.phase() != PHASE_CANCELLING) {
+                GridHadoopTaskCancelledException err = new GridHadoopTaskCancelledException("Job cancelled.");
 
-            GridHadoopTaskCancelledException err = new GridHadoopTaskCancelledException("Job cancelled.");
-
-            jobMetaPrj.transform(jobId, new CancelJobClosure(err));
+                jobMetaPrj.transform(jobId, new CancelJobClosure(err));
+            }
         }
         finally {
             busyLock.readUnlock();
@@ -769,12 +776,13 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         GridFuture<?> fut = finishFuture(jobId);
 
-        try {
-            fut.get();
-        }
-        catch(Throwable e) {
-            if (e.getCause() instanceof GridHadoopTaskCancelledException)
-                return true;
+        if (fut != null) {
+            try {
+                fut.get();
+            } catch (Throwable e) {
+                if (e.getCause() instanceof GridHadoopTaskCancelledException)
+                    return true;
+            }
         }
 
         return false;
@@ -1200,6 +1208,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         /** {@inheritDoc} */
         @Override public GridHadoopJobMetadata apply(GridHadoopJobMetadata meta) {
+            if (meta == null)
+                return null;
+
             assert meta.phase() == PHASE_CANCELLING || err != null: "Invalid phase for cancel: " + meta;
 
             GridHadoopJobMetadata cp = new GridHadoopJobMetadata(meta);

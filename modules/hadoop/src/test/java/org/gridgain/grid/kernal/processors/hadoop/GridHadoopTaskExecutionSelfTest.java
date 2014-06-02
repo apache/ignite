@@ -19,7 +19,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 
@@ -202,8 +201,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
                 new GridHadoopDefaultJobInfo(job.getConfiguration()));
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 fut.get();
 
                 return null;
@@ -338,7 +336,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         //Kill the same job again.
         killRes = hadoop.kill(jobId);
 
-        assertFalse(killRes);
+        assertTrue(killRes);
     }
 
     private static class CancellingTestMapper extends Mapper<Object, Text, Text, IntWritable> {
