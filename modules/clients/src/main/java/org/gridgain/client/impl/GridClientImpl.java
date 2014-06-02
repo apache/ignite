@@ -390,8 +390,9 @@ public class GridClientImpl implements GridClient {
     /**
      * @param protoId Protocol ID to use in this connection manager.
      * @return New connection manager based on current client settings.
+     * @throws GridClientException If failed to start connection server.
      */
-    public GridClientConnectionManager newConnectionManager(Byte protoId) {
+    public GridClientConnectionManager newConnectionManager(Byte protoId) throws GridClientException {
         return new GridClientConnectionManagerImpl(id, sslCtx, cfg, routers, top, protoId);
     }
 

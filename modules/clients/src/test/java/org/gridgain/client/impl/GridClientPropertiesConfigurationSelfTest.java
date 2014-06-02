@@ -115,7 +115,7 @@ public class GridClientPropertiesConfigurationSelfTest extends GridCommonAbstrac
             GRID_CLIENT_SPRING_CONFIG.toString()).getBean(GridClientConfiguration.class);
 
         assertEquals(Arrays.asList("127.0.0.1:11211"), new ArrayList<>(cfg.getServers()));
-        assertNull(cfg.getCredentials());
+        assertNull(cfg.getSecurityCredentialsProvider());
 
         Collection<GridClientDataConfiguration> dataCfgs = cfg.getDataConfigurations();
 
@@ -194,7 +194,7 @@ public class GridClientPropertiesConfigurationSelfTest extends GridCommonAbstrac
     private void validateConfig(int expDataCfgs, GridClientConfiguration cfg) {
         assertEquals(GridClientRandomBalancer.class, cfg.getBalancer().getClass());
         assertEquals(10000, cfg.getConnectTimeout());
-        assertEquals(null, cfg.getCredentials());
+        assertEquals(null, cfg.getSecurityCredentialsProvider());
 
         assertEquals(expDataCfgs, cfg.getDataConfigurations().size());
 

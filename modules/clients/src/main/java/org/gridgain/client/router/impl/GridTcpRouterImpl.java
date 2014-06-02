@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Wrapper class for router process.
  */
-public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean {
+public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, GridLifecycleAware {
     /** Id. */
     private final UUID id = UUID.randomUUID();
 
@@ -75,7 +75,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean {
      *
      * @throws GridException If failed.
      */
-    public void start() throws GridException {
+    @Override public void start() throws GridException {
         try {
             client = createClient(cfg);
         }
@@ -145,7 +145,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean {
     /**
      * Stops this router.
      */
-    public void stop() {
+    @Override public void stop() {
         if (srv != null)
             srv.stop();
 

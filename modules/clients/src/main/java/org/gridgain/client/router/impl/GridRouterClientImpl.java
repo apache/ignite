@@ -48,7 +48,7 @@ class GridRouterClientImpl implements GridClient {
 
         cliCfg.setServers(routerCfg.getServers());
         cliCfg.setSslContextFactory(routerCfg.getSslContextFactory());
-        cliCfg.setCredentials(routerCfg.getCredentials());
+        cliCfg.setSecurityCredentialsProvider(routerCfg.getSecurityCredentialsProvider());
 
         this.cliCfg = cliCfg;
 

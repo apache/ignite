@@ -32,6 +32,7 @@ import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -1611,22 +1612,91 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Nullable @Override public V get(K key) throws GridException {
-        return get(key, null);
+        V val = get(key, null);
+
+        if (ctx.config().getInterceptor() != null)
+            val = (V)ctx.config().getInterceptor().onGet(key, val);
+
+        return val;
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<V> getAsync(K key) {
-        return getAsync(key, null);
+    @Override public GridFuture<V> getAsync(final K key) {
+        GridFuture<V> fut = getAsync(key, null);
+
+        if (ctx.config().getInterceptor() != null)
+            return fut.chain(new CX1<GridFuture<V>, V>() {
+                @Override public V applyx(GridFuture<V> f) throws GridException {
+                    return (V)ctx.config().getInterceptor().onGet(key, f.get());
+                }
+            });
+
+        return fut;
     }
 
     /** {@inheritDoc} */
     @Override public Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws GridException {
-        return getAll(keys, null);
+        Map<K, V> map = getAll(keys, null);
+
+        if (ctx.config().getInterceptor() != null)
+            map = interceptGet(keys, map);
+
+        return map;
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys) {
-        return getAllAsync(keys, null);
+    @Override public GridFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys) {
+        GridFuture<Map<K, V>> fut = getAllAsync(keys, null);
+
+        if (ctx.config().getInterceptor() != null)
+            return fut.chain(new CX1<GridFuture<Map<K, V>>, Map<K, V>>() {
+                @Override public Map<K, V> applyx(GridFuture<Map<K, V>> f) throws GridException {
+                    return interceptGet(keys, f.get());
+                }
+            });
+
+        return fut;
+    }
+
+    /**
+     * Applies cache interceptor on result of 'get' operation.
+     *
+     * @param keys All requested keys.
+     * @param map Result map.
+     * @return Map with values returned by cache interceptor..
+     */
+    @SuppressWarnings("IfMayBeConditional")
+    private Map<K, V> interceptGet(@Nullable Collection<? extends K> keys, Map<K, V> map) {
+        if (F.isEmpty(keys))
+            return map;
+
+        GridCacheInterceptor<K, V> interceptor = cacheCfg.getInterceptor();
+
+        assert interceptor != null;
+
+        Map<K, V> res = new HashMap<>(keys.size());
+
+        for (Map.Entry<K, V> e : map.entrySet()) {
+            V val = interceptor.onGet(e.getKey(), e.getValue());
+
+            if (val != null)
+                res.put(e.getKey(), val);
+        }
+
+        if (map.size() != keys.size()) { // Not all requested keys were in cache.
+            for (K key : keys) {
+                if (key != null) {
+                    if (!map.containsKey(key)) {
+                        V val = interceptor.onGet(key, null);
+
+                        if (val != null)
+                            res.put(key, val);
+                    }
+                }
+            }
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -1644,6 +1714,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     public GridFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached, boolean checkTx,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>... filter) {
+        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
+
         ctx.denyOnFlag(LOCAL);
 
         // Entry must be passed for one key only.
@@ -3820,7 +3892,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         try {
             return ctx.dr().listStateTransfers();
         }
-        catch (GridException e) {
+        catch (GridException ignored) {
             throw new IllegalStateException("Failed to list state transfers because grid is stopping.");
         }
     }

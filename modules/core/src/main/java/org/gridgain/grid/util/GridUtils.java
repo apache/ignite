@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.util;
 
+import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
@@ -110,6 +111,19 @@ public abstract class GridUtils {
 
     /** Secure socket protocol to use. */
     private static final String HTTPS_PROTOCOL = "TLS";
+
+    /** Protobuf marshaller class name. */
+    private static final String PROTOBUF_MARSH_CLS =
+        "org.gridgain.client.marshaller.protobuf.GridClientProtobufMarshaller";
+
+    /** Optimized client marshaller ID. */
+    public static final byte OPTIMIZED_CLIENT_PROTO_ID = 1;
+
+    /** Protobuf client marshaller ID. */
+    public static final byte PROTOBUF_CLIENT_PROTO_ID = 2;
+
+    /** JDK client marshaller ID. */
+    public static final byte JDK_CLIENT_PROTO_ID = 3;
 
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
@@ -3487,10 +3501,21 @@ public abstract class GridUtils {
      * @param msg Message to log.
      */
     public static void quietAndWarn(GridLogger log, Object msg) {
+        quietAndWarn(log, msg, msg);
+    }
+
+    /**
+     * Logs warning message in both verbose and quite modes.
+     *
+     * @param log Logger to use.
+     * @param shortMsg Short message.
+     * @param msg Message to log.
+     */
+    public static void quietAndWarn(GridLogger log, Object msg, Object shortMsg) {
         warn(log, msg);
 
         if (log.isQuiet())
-            quiet(false, msg);
+            quiet(false, shortMsg);
     }
 
     /**
@@ -6063,6 +6088,148 @@ public abstract class GridUtils {
     }
 
     /**
+     * Returns array which is the union of two arrays
+     * (array of elements contained in any of provided arrays).
+     * <p/>
+     * Note: arrays must be increasing.
+     *
+     * @param a First array.
+     * @param aLen Length of prefix {@code a}.
+     * @param b Second array.
+     * @param bLen Length of prefix {@code b}.
+     * @return Increasing array which is union of {@code a} and {@code b}.
+     */
+    @SuppressWarnings("IfMayBeConditional")
+    public static int[] unique(int[] a, int aLen, int[] b, int bLen) {
+        assert a != null;
+        assert b != null;
+        assert isIncreasingArray(a, aLen);
+        assert isIncreasingArray(b, bLen);
+
+        int[] res = new int[aLen + bLen];
+        int resLen = 0;
+
+        int i = 0;
+        int j = 0;
+
+        while (i < aLen && j < bLen) {
+            if (a[i] == b[j])
+                i++;
+            else if (a[i] < b[j])
+                res[resLen++] = a[i++];
+            else
+                res[resLen++] = b[j++];
+        }
+
+        while (i < aLen)
+            res[resLen++] = a[i++];
+
+        while (j < bLen)
+            res[resLen++] = b[j++];
+
+        return copyIfExceeded(res, resLen);
+    }
+
+    /**
+     * Returns array which is the difference between two arrays
+     * (array of elements contained in first array but not contained in second).
+     * <p/>
+     * Note: arrays must be increasing.
+     *
+     * @param a First array.
+     * @param aLen Length of prefix {@code a}.
+     * @param b Second array.
+     * @param bLen Length of prefix {@code b}.
+     * @return Increasing array which is difference between {@code a} and {@code b}.
+     */
+    @SuppressWarnings("IfMayBeConditional")
+    public static int[] difference(int[] a, int aLen, int[] b, int bLen) {
+        assert a != null;
+        assert b != null;
+        assert isIncreasingArray(a, aLen);
+        assert isIncreasingArray(b, bLen);
+
+        int[] res = new int[aLen];
+        int resLen = 0;
+
+        int i = 0;
+        int j = 0;
+
+        while (i < aLen && j < bLen) {
+            if (a[i] == b[j])
+                i++;
+            else if (a[i] < b[j])
+                res[resLen++] = a[i++];
+            else
+                j++;
+        }
+
+        while (i < aLen)
+            res[resLen++] = a[i++];
+
+        return copyIfExceeded(res, resLen);
+    }
+
+    /**
+     * Checks if array prefix increases.
+     *
+     * @param arr Array.
+     * @param len Prefix length.
+     * @return {@code True} if {@code arr} from 0 to ({@code len} - 1) increases.
+     */
+    public static boolean isIncreasingArray(int[] arr, int len) {
+        assert arr != null;
+        assert 0 <= len && len <= arr.length;
+
+        if (arr.length == 0)
+            return true;
+
+        for (int i = 1; i < len; i++) {
+            if (arr[i - 1] >= arr[i])
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Checks if array prefix do not decreases.
+     *
+     * @param arr Array.
+     * @param len Prefix length.
+     * @return {@code True} if {@code arr} from 0 to ({@code len} - 1) do not decreases.
+     */
+    public static boolean isNonDecreasingArray(int[] arr, int len) {
+        assert arr != null;
+        assert 0 <= len && len <= arr.length;
+
+        if (arr.length == 0)
+            return true;
+
+        for (int i = 1; i < len; i++) {
+            if (arr[i - 1] > arr[i])
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Copies array only if array length greater than needed length.
+     *
+     * @param arr Array.
+     * @param len Prefix length.
+     * @return Old array if length of {@code arr} is equals to {@code len},
+     *      otherwise copy of array.
+     */
+    public static int[] copyIfExceeded(int[] arr, int len) {
+        assert arr != null;
+        assert 0 <= len && len <= arr.length;
+
+        return len == arr.length ? arr : Arrays.copyOf(arr, len);
+    }
+
+    /**
      *
      * @param t Tokenizer.
      * @param str Input string.
@@ -8114,6 +8281,34 @@ public abstract class GridUtils {
         int idx = clsName.indexOf("$$Lambda$");
 
         return idx != -1 ? clsName.substring(0, idx) : null;
+    }
+
+    /**
+     * Creates new instance of Protobuf marshaller. If {@code gridgain-protobuf}
+     * module is not enabled, {@code null} is returned.
+     *
+     * @param log Logger.
+     * @return Marshaller instance or {@code null} if {@code gridgain-protobuf} module is not enabled.
+     */
+    @Nullable public static GridClientMarshaller createProtobufMarshaller(GridLogger log) {
+        GridClientMarshaller marsh = null;
+
+        try {
+            Class<?> cls = Class.forName(PROTOBUF_MARSH_CLS);
+
+            Constructor<?> cons = cls.getConstructor();
+
+            marsh = (GridClientMarshaller)cons.newInstance();
+        }
+        catch (ClassNotFoundException ignored) {
+            U.quietAndWarn(log, "Failed to create Protobuf marshaller for REST C++ and .NET clients " +
+                "(consider adding gridgain-protobuf module to classpath).");
+        }
+        catch (InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e) {
+            U.error(log, "Failed to create Protobuf marshaller for REST.", e);
+        }
+
+        return marsh;
     }
 
     /**
