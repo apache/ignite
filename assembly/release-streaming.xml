@@ -52,6 +52,8 @@
                 <exclude>pom-standalone.xml</exclude>
                 <exclude>src/test/**</exclude>
                 <exclude>src/main/java/org/gridgain/examples/datagrid/**</exclude>
+                <exclude>src/**/client/interceptor/**</exclude>
+                <exclude>src/**/client/memcache/**</exclude>
                 <exclude>src/**/ClientCacheExample*</exclude>
                 <exclude>src/**/scala/**/ScalarCache*</exclude>
                 <exclude>src/**/scala/**/ScalarPopularNumbersRealTimeExample*</exclude>
