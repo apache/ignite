@@ -9,11 +9,17 @@
 
 package org.gridgain.client.impl.connection;
 
-import io.netty.channel.*;
-import io.netty.channel.nio.*;
 import org.gridgain.client.*;
 import org.gridgain.client.impl.*;
 import org.gridgain.client.util.*;
+import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.processors.rest.client.message.*;
+import org.gridgain.grid.logger.*;
+import org.gridgain.grid.logger.java.*;
+import org.gridgain.grid.security.*;
+import org.gridgain.grid.util.direct.*;
+import org.gridgain.grid.util.nio.*;
+import org.gridgain.grid.util.nio.ssl.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -21,6 +27,7 @@ import org.jetbrains.annotations.*;
 import javax.net.ssl.*;
 import java.io.*;
 import java.net.*;
+import java.nio.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
@@ -41,6 +48,12 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
 
     /** Initialization retry interval. */
     private static final int INIT_RETRY_INTERVAL = 1000;
+
+    /** */
+    private static final long TCP_IDLE_CONN_TIMEOUT = 10_000;
+
+    /** NIO server. */
+    private GridNioServer srv;
 
     /** Active connections. */
     private final ConcurrentMap<InetSocketAddress, GridClientConnection> conns = new ConcurrentHashMap<>();
@@ -69,17 +82,52 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
     /** Shared executor service. */
     private final ExecutorService executor;
 
-    /**
-     * Netty executor common for all connections.
-     * Initialized to {@code null} if HTTP protocol is used.
-     */
-    protected final EventLoopGroup evtLoop;
-
     /** Endpoint striped lock. */
     private final GridClientStripedLock endpointStripedLock = new GridClientStripedLock(16);
 
     /** Custom protocol ID. */
     private final Byte protoId;
+
+    /** Service for ping requests, {@code null} if HTTP protocol is used. */
+    private final ScheduledExecutorService pingExecutor;
+
+    /** Message writer. */
+    @SuppressWarnings("FieldCanBeLocal")
+    private final GridNioMessageWriter msgWriter = new GridNioMessageWriter() {
+        @Override public boolean write(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf) {
+            assert msg != null;
+            assert buf != null;
+
+            msg.messageWriter(this, nodeId);
+
+            return msg.writeTo(buf);
+        }
+
+        @Override public int writeFully(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, OutputStream out,
+            ByteBuffer buf) throws IOException {
+            assert msg != null;
+            assert out != null;
+            assert buf != null;
+            assert buf.hasArray();
+
+            msg.messageWriter(this, nodeId);
+
+            boolean finished = false;
+            int cnt = 0;
+
+            while (!finished) {
+                finished = msg.writeTo(buf);
+
+                out.write(buf.array(), 0, buf.position());
+
+                cnt += buf.position();
+
+                buf.clear();
+            }
+
+            return cnt;
+        }
+    };
 
     /**
      * Constructs connection manager.
@@ -90,9 +138,11 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
      * @param routers Routers or empty collection to use endpoints from topology info.
      * @param top Topology.
      * @param protoId Custom protocol ID (optional).
+     * @throws GridClientException If failed to start.
      */
+    @SuppressWarnings("unchecked")
     public GridClientConnectionManagerImpl(UUID clientId, SSLContext sslCtx, GridClientConfiguration cfg,
-        Collection<InetSocketAddress> routers, GridClientTopology top, Byte protoId) {
+        Collection<InetSocketAddress> routers, GridClientTopology top, Byte protoId) throws GridClientException {
         assert clientId != null : "clientId != null";
         assert cfg != null : "cfg != null";
         assert routers != null : "routers != null";
@@ -108,10 +158,64 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
         executor = cfg.getExecutorService() != null ? cfg.getExecutorService() :
             Executors.newCachedThreadPool(new GridClientThreadFactory("exec", true));
 
-        int workerCnt = Runtime.getRuntime().availableProcessors();
+        pingExecutor = cfg.getProtocol() == GridClientProtocol.TCP ?
+            Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors()) : null;
 
-        evtLoop = cfg.getProtocol() == GridClientProtocol.TCP ?
-            new NioEventLoopGroup(workerCnt, new GridClientThreadFactory("nio", true)) : null;
+        if (cfg.getProtocol() == GridClientProtocol.TCP) {
+            try {
+                GridLogger gridLog = new GridJavaLogger();
+
+                GridNioFilter[] filters;
+
+                GridNioMessageReader msgReader = new GridNioMessageReader() {
+                    @Override public boolean read(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg,
+                        ByteBuffer buf) {
+                        assert msg != null;
+                        assert buf != null;
+
+                        msg.messageReader(this, nodeId);
+
+                        return msg.readFrom(buf);
+                    }
+                };
+
+                GridNioFilter codecFilter = new GridNioCodecFilter(new NioParser(msgReader), gridLog, true);
+
+                if (sslCtx != null) {
+                    GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, gridLog);
+
+                    sslFilter.directMode(true);
+                    sslFilter.clientMode(true);
+
+                    filters = new GridNioFilter[]{codecFilter, sslFilter};
+                }
+                else
+                    filters = new GridNioFilter[]{codecFilter};
+
+                srv = GridNioServer.builder().address(U.getLocalHost())
+                    .port(-1)
+                    .listener(new NioListener())
+                    .filters(filters)
+                    .logger(gridLog)
+                    .selectorCount(Runtime.getRuntime().availableProcessors())
+                    .sendQueueLimit(1024)
+                    .byteOrder(ByteOrder.nativeOrder())
+                    .tcpNoDelay(cfg.isTcpNoDelay())
+                    .directBuffer(true)
+                    .directMode(true)
+                    .socketReceiveBufferSize(0)
+                    .socketSendBufferSize(0)
+                    .idleTimeout(TCP_IDLE_CONN_TIMEOUT)
+                    .gridName("gridClient")
+                    .messageWriter(msgWriter)
+                    .build();
+
+                srv.start();
+            }
+            catch (IOException | GridException e) {
+                throw new GridClientException("Failed to start connection server.", e);
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -317,45 +421,48 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
      */
     protected GridClientConnection connect(@Nullable UUID nodeId, InetSocketAddress addr)
         throws IOException, GridClientException, InterruptedException {
-
         endpointStripedLock.lock(addr);
 
         try {
             GridClientConnection old = conns.get(addr);
 
             if (old != null) {
-                if (nodeId != null)
-                    nodeConns.put(nodeId, old);
+                if (old.isClosed()) {
+                    conns.remove(addr, old);
 
-                return old;
+                    if (nodeId != null)
+                        nodeConns.remove(nodeId, old);
+                }
+                else {
+                    if (nodeId != null)
+                        nodeConns.put(nodeId, old);
+
+                    return old;
+                }
+            }
+
+            GridSecurityCredentials cred = null;
+
+            try {
+                if (cfg.getSecurityCredentialsProvider() != null) {
+                    cred = cfg.getSecurityCredentialsProvider().credentials();
+                }
+            }
+            catch (GridException e) {
+                throw new GridClientException("Failed to obtain client credentials.", e);
             }
 
             GridClientConnection conn;
 
-            switch (cfg.getProtocol()) {
-                case TCP: {
-                    conn = new GridClientTcpConnection(clientId, addr, sslCtx, evtLoop,
-                        cfg.getConnectTimeout(), cfg.getPingInterval(), cfg.getPingTimeout(),
-                        cfg.isTcpNoDelay(), protoId == null ? cfg.getMarshaller() : null,
-                        top, cfg.getCredentials(), protoId);
-
-                    break;
-                }
-
-                case HTTP: {
-                    conn = new GridClientHttpConnection(clientId, addr, sslCtx,
-                        // Applying max idle time as read timeout for HTTP connections.
-                        cfg.getConnectTimeout(), (int)cfg.getMaxConnectionIdleTime(), top,
-                        executor == null ? cfg.getExecutorService() : executor, cfg.getCredentials());
-
-                    break;
-                }
-
-                default: {
-                    throw new GridServerUnreachableException("Failed to create client (protocol is not supported): " +
-                        cfg.getProtocol());
-                }
+            if (cfg.getProtocol() == GridClientProtocol.TCP) {
+                conn = new GridClientNioTcpConnection(srv, clientId, addr, sslCtx, pingExecutor,
+                    cfg.getConnectTimeout(), cfg.getPingInterval(), cfg.getPingTimeout(),
+                    cfg.isTcpNoDelay(), protoId == null ? cfg.getMarshaller() : null,
+                    top, cred, protoId);
             }
+            else
+                throw new GridServerUnreachableException("Failed to create client (protocol is not supported): " +
+                    cfg.getProtocol());
 
             old = conns.putIfAbsent(addr, conn);
 
@@ -408,11 +515,13 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
         for (GridClientConnection conn : closeConns)
             conn.close(CLIENT_CLOSED, waitCompletion);
 
-        if (evtLoop != null)
-            evtLoop.shutdownGracefully();
-        else if (executor != null)
-            // If we are in HTTP mode shutdown explicitly.
-            GridClientUtils.shutdownNow(GridClientConnectionManager.class, executor, log);
+        if (pingExecutor != null)
+            GridClientUtils.shutdownNow(GridClientConnectionManager.class, pingExecutor, log);
+
+        GridClientUtils.shutdownNow(GridClientConnectionManager.class, executor, log);
+
+        if (srv != null)
+            srv.stop();
     }
 
     /**
@@ -446,5 +555,163 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
     private void checkClosed() throws GridClientClosedException {
         if (closed)
             throw new GridClientClosedException("Client was closed (no public methods of client can be used anymore).");
+    }
+
+    /**
+     *
+     */
+    private static class NioListener implements GridNioServerListener {
+        /** {@inheritDoc} */
+        @Override public void onConnected(GridNioSession ses) {
+            if (log.isLoggable(Level.FINE))
+                log.fine("Session connected: " + ses);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
+            if (log.isLoggable(Level.FINE))
+                log.fine("Session disconnected: " + ses);
+
+            GridClientFutureAdapter<Boolean> handshakeFut =
+                ses.removeMeta(GridClientNioTcpConnection.SES_META_HANDSHAKE);
+
+            if (handshakeFut != null)
+                handshakeFut.onDone(
+                    new GridClientConnectionResetException("Failed to perform handshake (connection failed)."));
+            else {
+                GridClientNioTcpConnection conn = ses.meta(GridClientNioTcpConnection.SES_META_CONN);
+
+                if (conn != null)
+                    conn.close(FAILED, false);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMessage(GridNioSession ses, Object msg) {
+            GridClientFutureAdapter<Boolean> handshakeFut =
+                ses.removeMeta(GridClientNioTcpConnection.SES_META_HANDSHAKE);
+
+            if (handshakeFut != null) {
+                assert msg instanceof GridClientHandshakeResponse;
+
+                handleHandshakeResponse(handshakeFut, (GridClientHandshakeResponse)msg);
+            }
+            else {
+                GridClientNioTcpConnection conn = ses.meta(GridClientNioTcpConnection.SES_META_CONN);
+
+                assert conn != null;
+
+                if (msg instanceof GridClientMessageWrapper) {
+                    GridClientMessageWrapper req = (GridClientMessageWrapper)msg;
+
+                    if (req.messageSize() != 0) {
+                        assert req.message() != null;
+
+                        conn.handleResponse(req);
+                    }
+                    else
+                        conn.handlePingResponse();
+                }
+                else {
+                    assert msg instanceof GridClientPingPacket : msg;
+
+                    conn.handlePingResponse();
+                }
+            }
+        }
+
+        /**
+         * Handles client handshake response.
+         *
+         * @param handshakeFut Future.
+         * @param msg A handshake response.
+         */
+        private void handleHandshakeResponse(GridClientFutureAdapter<Boolean> handshakeFut,
+            GridClientHandshakeResponse msg) {
+            byte rc = msg.resultCode();
+
+            if (rc != GridClientHandshakeResponse.OK.resultCode()) {
+                if (rc == GridClientHandshakeResponse.ERR_UNKNOWN_PROTO_ID.resultCode())
+                    handshakeFut.onDone(new GridClientHandshakeException(rc, "Unknown/unsupported protocol ID."));
+                else
+                    handshakeFut.onDone(new GridClientHandshakeException(rc,
+                        "Handshake failed due to internal error (see server log for more details)."));
+            }
+            else
+                handshakeFut.onDone(true);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onSessionWriteTimeout(GridNioSession ses) {
+            log.warning("Closing NIO session because of write timeout.");
+
+            ses.close();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onSessionIdleTimeout(GridNioSession ses) {
+            log.warning("Closing NIO session because of idle timeout.");
+
+            ses.close();
+        }
+    }
+
+    /**
+     *
+     */
+    private static class NioParser implements GridNioParser {
+        /** Message metadata key. */
+        private static final int MSG_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+
+        /** Message reader. */
+        private final GridNioMessageReader msgReader;
+
+        /**
+         * @param msgReader Message reader.
+         */
+        NioParser(GridNioMessageReader msgReader) {
+            this.msgReader = msgReader;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, GridException {
+            GridClientFutureAdapter<?> handshakeFut = ses.meta(GridClientNioTcpConnection.SES_META_HANDSHAKE);
+
+            if (handshakeFut != null) {
+                byte code = buf.get();
+
+                return new GridClientHandshakeResponse(code);
+            }
+
+            GridTcpCommunicationMessageAdapter msg = ses.removeMeta(MSG_META_KEY);
+
+            if (msg == null && buf.hasRemaining()) {
+                byte type = buf.get();
+
+                if (type == GridClientMessageWrapper.REQ_HEADER)
+                    msg = new GridClientMessageWrapper();
+                else
+                    throw new IOException("Invalid message type: " + type);
+            }
+
+            boolean finished = false;
+
+            if (buf.hasRemaining())
+                finished = msgReader.read(null, msg, buf);
+
+            if (finished)
+                return msg;
+            else {
+                ses.addMeta(MSG_META_KEY, msg);
+
+                return null;
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, GridException {
+            // No encoding needed for direct messages.
+            throw new UnsupportedEncodingException();
+        }
     }
 }

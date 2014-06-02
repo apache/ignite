@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.managers.authentication.*;
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.grid.kernal.managers.collision.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -111,7 +111,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringExclude
-    private GridAuthenticationManager authMgr;
+    private GridSecurityManager authMgr;
 
     /** */
     @GridToStringExclude
@@ -184,7 +184,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringInclude
-    private GridRestProcessorAdapter restProc;
+    private GridRestProcessor restProc;
 
     /** */
     @GridToStringInclude
@@ -274,6 +274,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
      * @param gw Kernal gateway.
      * @param ent Release enterprise flag.
      */
+    @SuppressWarnings("TypeMayBeWeakened")
     protected GridKernalContextImpl(GridLoggerProxy log, GridEx grid, GridConfiguration cfg, GridKernalGateway gw,
         boolean ent) {
         assert grid != null;
@@ -330,8 +331,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             failoverMgr = (GridFailoverManager)comp;
         else if (comp instanceof GridCollisionManager)
             colMgr = (GridCollisionManager)comp;
-        else if (comp instanceof GridAuthenticationManager)
-            authMgr = (GridAuthenticationManager)comp;
+        else if (comp instanceof GridSecurityManager)
+            authMgr = (GridSecurityManager)comp;
         else if (comp instanceof GridSecureSessionManager)
             sesMgr = (GridSecureSessionManager)comp;
         else if (comp instanceof GridLoadBalancerManager)
@@ -374,8 +375,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             segProc = (GridSegmentationProcessor)comp;
         else if (comp instanceof GridAffinityProcessor)
             affProc = (GridAffinityProcessor)comp;
-        else if (comp instanceof GridRestProcessorAdapter)
-            restProc = (GridRestProcessorAdapter)comp;
+        else if (comp instanceof GridRestProcessor)
+            restProc = (GridRestProcessor)comp;
         else if (comp instanceof GridDataLoaderProcessor)
             dataLdrProc = (GridDataLoaderProcessor)comp;
         else if (comp instanceof GridGgfsProcessorAdapter)
@@ -553,7 +554,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridAuthenticationManager auth() {
+    @Override public GridSecurityManager security() {
         return authMgr;
     }
 
@@ -588,7 +589,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridRestProcessorAdapter rest() {
+    @Override public GridRestProcessor rest() {
         return restProc;
     }
 

@@ -971,6 +971,8 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             // Remove entries and fire events outside the locks.
             for (GridCacheEntryEx<K, V> entry : locked) {
                 if (entry.obsolete()) {
+                    entry.onMarkedObsolete();
+
                     cache.removeEntry(entry);
 
                     if (plcEnabled)

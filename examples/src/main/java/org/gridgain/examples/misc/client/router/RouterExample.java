@@ -52,12 +52,6 @@ public class RouterExample {
     // Run few nodes and uncomment the following line to use one of nodes as a TCP router.
     // private static final int ROUTER_TCP_PORT = GridConfiguration.DFLT_TCP_PORT;
 
-    /** Port number from config/router/router-jetty.xml. */
-    private static final int ROUTER_HTTP_PORT = 8180;
-
-    // Run few nodes and uncomment the following line to use one of nodes as a HTTP router.
-    // private static final int ROUTER_HTTP_PORT = 8080;
-
     /**
      * Executes example.
      *
@@ -72,12 +66,6 @@ public class RouterExample {
             System.out.println(">>> TCP client created, current grid topology: " + tcpClient.compute().nodes());
 
             runExample(tcpClient);
-        }
-
-        try (GridClient httpClient = createHttpClient()) {
-            System.out.println(">>> HTTP client created, current grid topology: " + httpClient.compute().nodes());
-
-            runExample(httpClient);
         }
     }
 
@@ -109,24 +97,6 @@ public class RouterExample {
 
         // Point client to a local TCP router.
         cfg.setRouters(Collections.singletonList(ROUTER_ADDRESS + ':' + ROUTER_TCP_PORT));
-
-        return GridClientFactory.start(cfg);
-    }
-
-    /**
-     * This method will create a client configured to work with locally started router
-     * on HTTP REST protocol.
-     *
-     * @return Client instance.
-     * @throws GridClientException If client could not be created.
-     */
-    private static GridClient createHttpClient() throws GridClientException {
-        GridClientConfiguration cfg = new GridClientConfiguration();
-
-        cfg.setProtocol(GridClientProtocol.HTTP);
-
-        // Point client to a local HTTP router.
-        cfg.setRouters(Collections.singletonList(ROUTER_ADDRESS + ":" + ROUTER_HTTP_PORT));
 
         return GridClientFactory.start(cfg);
     }

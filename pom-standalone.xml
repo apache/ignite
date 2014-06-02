@@ -11,9 +11,6 @@
 -->
 <!--
     POM file.
-
-    Note that GridGain also provides repository for its Maven artifacts.
-    Contact GridGain team at info@gridgain.com to obtain login credentials.
 -->
 <project
     xmlns="http://maven.apache.org/POM/4.0.0"
@@ -46,7 +43,6 @@
         <module>examples</module>
         <module>modules/scalar</module>
         <module>modules/visor-console</module>
-        <module>modules/jdbc-driver</module>
         <module>modules/jdk8-backport</module>
         <module>modules/tools</module>
         <module>modules/spring</module>
@@ -56,7 +52,8 @@
         <module>modules/urideploy</module>
         <module>modules/indexing</module>
         <module>modules/ssh</module>
-        <module>modules/rest</module>
+        <module>modules/rest-tcp</module>
+        <module>modules/rest-http</module>
         <module>modules/email</module>
         <module>modules/jta</module>
         <module>modules/aws</module>
@@ -191,15 +188,11 @@
                 <version>2.9.1</version>
                 <executions>
                     <execution>
-                        <id>aggregate</id>
+                        <id>module-javadoc</id>
                         <goals>
-                            <goal>aggregate-jar</goal>
+                            <goal>jar</goal>
                         </goals>
                         <phase>package</phase>
-                        <configuration>
-                            <finalName>gridgain</finalName>
-                            <excludePackageNames>org.gridgain.examples</excludePackageNames>
-                        </configuration>
                     </execution>
 
                     <execution>
@@ -248,12 +241,16 @@
                                     <packages>org.gridgain.grid.cache:org.gridgain.grid.cache.datastructures:org.gridgain.grid.cache.cloner:org.gridgain.grid.cache.store:org.gridgain.grid.cache.store.hibernate:org.gridgain.grid.cache.store.jdbc:org.gridgain.grid.cache.query:org.gridgain.grid.cache.affinity:org.gridgain.grid.cache.affinity.consistenthash:org.gridgain.grid.cache.affinity.rendezvous:org.gridgain.grid.cache.affinity.fair:org.gridgain.grid.cache.eviction:org.gridgain.grid.cache.eviction.fifo:org.gridgain.grid.cache.eviction.ggfs:org.gridgain.grid.cache.eviction.lru:org.gridgain.grid.cache.eviction.random:org.gridgain.grid.cache.jta:org.gridgain.grid.cache.jta.jndi:org.gridgain.grid.cache.jta.reflect:org.gridgain.grid.cache.websession:org.gridgain.grid.cache.hibernate:org.gridgain.grid.dataload</packages>
                                 </group>
                                 <group>
-                                    <title>GGFS - In-Memory File System</title>
+                                    <title>Hadoop Accelerator APIs</title>
                                     <packages>org.gridgain.grid.ggfs:org.gridgain.grid.ggfs.hadoop:org.gridgain.grid.ggfs.hadoop.v1:org.gridgain.grid.ggfs.hadoop.v2:org.gridgain.grid.ggfs.mapreduce:org.gridgain.grid.ggfs.mapreduce.records</packages>
                                 </group>
                                 <group>
                                     <title>Streaming APIs</title>
                                     <packages>org.gridgain.grid.streamer:org.gridgain.grid.streamer.router:org.gridgain.grid.streamer.window:org.gridgain.grid.streamer.index:org.gridgain.grid.streamer.index.hash:org.gridgain.grid.streamer.index.tree</packages>
+                                </group>
+                                <group>
+                                    <title>Security APIs</title>
+                                    <packages>org.gridgain.grid.security</packages>
                                 </group>
                                 <group>
                                     <title>JDBC Driver</title>
@@ -286,10 +283,6 @@
                                 <group>
                                     <title>SPI: Swap Space</title>
                                     <packages>org.gridgain.grid.spi.swapspace:org.gridgain.grid.spi.swapspace.file:org.gridgain.grid.spi.swapspace.noop</packages>
-                                </group>
-                                <group>
-                                    <title>SPI: Metrics</title>
-                                    <packages>org.gridgain.grid.spi.metrics:org.gridgain.grid.spi.metrics.jdk</packages>
                                 </group>
                                 <group>
                                     <title>SPI: Discovery</title>
@@ -562,25 +555,6 @@
                         <phase>package</phase>
                         <configuration>
                             <target>
-                                <mkdir dir="target/release-package/libs/ext"/>
-
-                                <replace file="target/release-package/examples/pom.xml"
-                                         token="%ANT_AUGMENTED_GGJAR%"
-                                         value="gridgain-${gridgain.edition}-${gridgain.version}.jar"/>
-
-                                <replace file="target/release-package/examples/pom-java8.xml"
-                                         token="%ANT_AUGMENTED_GGJAR%"
-                                         value="gridgain-${gridgain.edition}-${gridgain.version}.jar"/>
-
-                                <replaceregexp byline="true">
-                                    <regexp pattern="ANT_AUGMENTED_GGJAR=.*"/>
-                                    <substitution expression="ANT_AUGMENTED_GGJAR=gridgain-${gridgain.edition}-${gridgain.version}.jar"/>
-                                    <fileset dir="target/release-package/bin">
-                                        <include name="**/*.sh"/>
-                                        <include name="**/*.bat"/>
-                                    </fileset>
-                                </replaceregexp>
-
                                 <replace token="@sh.file.version" value="${gridgain.version}">
                                     <fileset dir="target/release-package/bin">
                                         <include name="**/*.sh"/>
@@ -592,6 +566,22 @@
                                         <include name="**/*.bat"/>
                                     </fileset>
                                 </replace>
+
+                                <replaceregexp byline="true">
+                                    <regexp pattern='ENABLE_ASSERTIONS=.*'/>
+                                    <substitution expression="ENABLE_ASSERTIONS=&quot;0&quot;"/>
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.sh"/>
+                                    </fileset>
+                                </replaceregexp>
+
+                                <replaceregexp byline="true">
+                                    <regexp pattern='ENABLE_ASSERTIONS=.*'/>
+                                    <substitution expression="ENABLE_ASSERTIONS=0"/>
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.bat"/>
+                                    </fileset>
+                                </replaceregexp>
 
                                 <replace token="@xml.file.version" value="${gridgain.version}">
                                     <fileset dir="target/release-package">
@@ -639,41 +629,10 @@
                             <goal>copy-dependencies</goal>
                         </goals>
                         <configuration>
+                            <excludeGroupIds>org.gridgain</excludeGroupIds>
                             <outputDirectory>target/libs</outputDirectory>
                             <includeScope>runtime</includeScope>
-                            <excludeGroupIds>org.gridgain,org.apache.ant,org.apache.tomcat,jboss,org.apache.hadoop,org.apache.avro</excludeGroupIds>
                             <excludeTransitive>true</excludeTransitive>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-hadoop2-libs</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>target/libs/hadoop2</outputDirectory>
-                            <includeScope>runtime</includeScope>
-                            <includeGroupIds>org.apache.hadoop,org.apache.avro</includeGroupIds>
-                            <excludeTransitive>true</excludeTransitive>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-hadoop1-libs</id>
-                        <phase>prepare-package</phase>
-                        <inherited>false</inherited>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>target/libs/hadoop1</outputDirectory>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>org.apache.hadoop</groupId>
-                                    <artifactId>hadoop-core</artifactId>
-                                    <version>1.0.4</version>
-                                </artifactItem>
-                            </artifactItems>
                         </configuration>
                     </execution>
                 </executions>
@@ -693,7 +652,7 @@
                         </goals>
                         <configuration>
                             <descriptors>
-                                <descriptor>assembly/dependencies.xml</descriptor>
+                                <descriptor>assembly/dependencies-${gridgain.edition}.xml</descriptor>
                             </descriptors>
                             <outputDirectory>${basedir}</outputDirectory>
                             <finalName>libs</finalName>
@@ -703,16 +662,34 @@
                     </execution>
 
                     <execution>
-                        <id>jar</id>
+                        <id>dependencies-optional</id>
                         <phase>prepare-package</phase>
                         <goals>
                             <goal>single</goal>
                         </goals>
                         <configuration>
                             <descriptors>
-                                <descriptor>assembly/jar.xml</descriptor>
+                                <descriptor>assembly/dependencies-optional-${gridgain.edition}.xml</descriptor>
                             </descriptors>
-                            <finalName>gridgain</finalName>
+                            <outputDirectory>${basedir}/libs</outputDirectory>
+                            <finalName>optional</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>dependencies-visor-console</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>assembly/dependencies-visor-console.xml</descriptor>
+                            </descriptors>
+                            <outputDirectory>${basedir}/libs</outputDirectory>
+                            <finalName>gridgain-visor-console</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                             <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                         </configuration>
@@ -742,18 +719,13 @@
                 <version>2.2.1</version>
                 <executions>
                     <execution>
-                        <id>aggregate</id>
+                        <id>source</id>
                         <goals>
-                            <goal>aggregate</goal>
+                            <goal>jar-no-fork</goal>
                         </goals>
                         <phase>package</phase>
                         <configuration>
-                            <finalName>gridgain</finalName>
                             <excludeResources>true</excludeResources>
-                            <excludes>
-                                <exclude>**/org/gridgain/examples/**</exclude>
-                                <exclude>**/org/gridgain/scalar/examples/**</exclude>
-                            </excludes>
                         </configuration>
                     </execution>
                 </executions>
@@ -772,6 +744,10 @@
                             <filesets>
                                 <fileset>
                                     <directory>libs</directory>
+                                </fileset>
+
+                                <fileset>
+                                    <directory>bin/include/gridgain-visor-console</directory>
                                 </fileset>
                             </filesets>
                         </configuration>

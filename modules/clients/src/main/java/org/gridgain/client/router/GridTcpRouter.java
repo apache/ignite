@@ -21,9 +21,6 @@ import java.util.*;
  * as grid rest server and establish required connection to grid nodes
  * to serve them.
  * <p>
- * This router works only with TCP rest protocol, for routing of http protocol
- * use {@link GridHttpRouter}.
- * <p>
  * Below is an example on how to start TCP router with non-default configuration.
  * <pre name="code" class="java">
  * GridTcpRouterConfiguration cfg =
