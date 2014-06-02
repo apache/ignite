@@ -48,9 +48,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
     private static final String HTTP_PROTO_CLS =
         "org.gridgain.grid.kernal.processors.rest.protocols.http.jetty.GridJettyRestProtocol";
 
-    /** */
-    private static final byte[] EMPTY_ID = new byte[0];
-
     /** Protocols. */
     private final Collection<GridRestProtocol> protos = new ArrayList<>();
 
@@ -625,8 +622,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
             startProtocol(proto);
         }
         catch (ClassNotFoundException ignored) {
-            U.quietAndWarn(log, "Failed to initialize HTTP REST protocol. Consider adding gridgain-rest-http " +
-                "module to classpath.");
+            U.quietAndWarn(log, "Failed to initialize HTTP REST protocol (consider adding gridgain-rest-http " +
+                "module to classpath).");
         }
         catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
             throw new GridException("Failed to initialize HTTP REST protocol.", e);

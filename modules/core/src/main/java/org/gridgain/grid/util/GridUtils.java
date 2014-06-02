@@ -8301,8 +8301,8 @@ public abstract class GridUtils {
             marsh = (GridClientMarshaller)cons.newInstance();
         }
         catch (ClassNotFoundException ignored) {
-            U.quietAndWarn(log, "Failed to create Protobuf marshaller for REST (C++ and .NET clients won't work). " +
-                "Consider adding gridgain-protobuf module to classpath.");
+            U.quietAndWarn(log, "Failed to create Protobuf marshaller for REST C++ and .NET clients " +
+                "(consider adding gridgain-protobuf module to classpath).");
         }
         catch (InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e) {
             U.error(log, "Failed to create Protobuf marshaller for REST.", e);
