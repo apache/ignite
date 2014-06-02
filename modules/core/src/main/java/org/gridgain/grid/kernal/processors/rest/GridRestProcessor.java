@@ -238,6 +238,63 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public void start() throws GridException {
+        if (isRestEnabled()) {
+            // Register handlers.
+            addHandler(new GridCacheCommandHandler(ctx));
+            addHandler(new GridTaskCommandHandler(ctx));
+            addHandler(new GridTopologyCommandHandler(ctx));
+            addHandler(new GridVersionCommandHandler(ctx));
+            addHandler(new GridLogCommandHandler(ctx));
+
+            // Start protocols.
+            startTcpProtocol();
+            startHttpProtocol();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart() throws GridException {
+        if (isRestEnabled()) {
+            startLatch.countDown();
+
+            if (log.isDebugEnabled())
+                log.debug("REST processor started.");
+        }
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("BusyWait")
+    @Override public void onKernalStop(boolean cancel) {
+        if (isRestEnabled()) {
+            busyLock.writeLock();
+
+            boolean interrupted = Thread.interrupted();
+
+            while (workersCnt.sum() != 0) {
+                try {
+                    Thread.sleep(200);
+                }
+                catch (InterruptedException ignored) {
+                    interrupted = true;
+                }
+            }
+
+            if (interrupted)
+                Thread.currentThread().interrupt();
+
+            for (GridRestProtocol proto : protos)
+                proto.stop();
+
+            // Safety.
+            startLatch.countDown();
+
+            if (log.isDebugEnabled())
+                log.debug("REST processor stopped.");
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void addAttributes(Map<String, Object> attrs)  throws GridException {
         for (GridRestProtocol proto : protos) {
             for (GridBiTuple<String, Object> p : proto.getProperties()) {
@@ -525,63 +582,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
      */
     private boolean isRestEnabled() {
         return !ctx.config().isDaemon() && ctx.config().isRestEnabled();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void start() throws GridException {
-        if (isRestEnabled()) {
-            // Register handlers.
-            addHandler(new GridCacheCommandHandler(ctx));
-            addHandler(new GridTaskCommandHandler(ctx));
-            addHandler(new GridTopologyCommandHandler(ctx));
-            addHandler(new GridVersionCommandHandler(ctx));
-            addHandler(new GridLogCommandHandler(ctx));
-
-            // Start protocols.
-            startProtocol(TCP_PROTO_CLS, "TCP", "gridgain-rest-tcp");
-            startProtocol(HTTP_PROTO_CLS, "HTTP", "gridgain-rest-http");
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStart() throws GridException {
-        if (isRestEnabled()) {
-            startLatch.countDown();
-
-            if (log.isDebugEnabled())
-                log.debug("REST processor started.");
-        }
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("BusyWait")
-    @Override public void onKernalStop(boolean cancel) {
-        if (isRestEnabled()) {
-            busyLock.writeLock();
-
-            boolean interrupted = Thread.interrupted();
-
-            while (workersCnt.sum() != 0) {
-                try {
-                    Thread.sleep(200);
-                }
-                catch (InterruptedException ignored) {
-                    interrupted = true;
-                }
-            }
-
-            if (interrupted)
-                Thread.currentThread().interrupt();
-
-            for (GridRestProtocol proto : protos)
-                proto.stop();
-
-            // Safety.
-            startLatch.countDown();
-
-            if (log.isDebugEnabled())
-                log.debug("REST processor stopped.");
-        }
     }
 
     /**

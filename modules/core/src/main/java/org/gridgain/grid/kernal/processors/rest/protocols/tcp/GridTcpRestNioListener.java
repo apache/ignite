@@ -223,7 +223,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
                                 wrapper.messageSize(bytes.length + 40);
                             }
-                            catch (IOException e) {
+                            catch (IOException | GridException e) {
                                 U.error(log, "Failed to marshal response: " + res, e);
 
                                 ses.close();

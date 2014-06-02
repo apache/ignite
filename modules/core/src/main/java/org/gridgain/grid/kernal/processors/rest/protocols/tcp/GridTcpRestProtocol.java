@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
 import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.protobuf.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
@@ -21,9 +20,9 @@ import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.nio.ssl.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
@@ -45,7 +44,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     private final GridMarshaller jdkMarshaller = new GridJdkMarshaller();
 
     /** Protobuf marshaller. */
-    private final GridClientMarshaller protobufMarshaller = new GridClientProtobufMarshaller();
+    private final GridClientMarshaller protobufMarshaller;
 
     /** Message reader. */
     private final GridNioMessageReader msgReader = new GridNioMessageReader() {
@@ -99,6 +98,8 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     /** @param ctx Context. */
     public GridTcpRestProtocol(GridKernalContext ctx) {
         super(ctx);
+
+        protobufMarshaller = U.createProtobufMarshaller(log);
     }
 
     /**
@@ -113,12 +114,17 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
      *
      * @param ses Current session.
      * @return Current session's marshaller.
+     * @throws GridException If marshaller can't be found.
      */
-    GridClientMarshaller marshaller(GridNioSession ses) {
+    GridClientMarshaller marshaller(GridNioSession ses) throws GridException {
         GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
 
         if (marsh == null) {
             U.warn(log, "No marshaller defined for NIO session, using PROTOBUF as default [ses=" + ses + ']');
+
+            if (protobufMarshaller == null)
+                throw new GridException("Failed to use Protobuf marshaller (session will be closed). " +
+                    "Is gridgain-protobuf module added to classpath?");
 
             marsh = protobufMarshaller;
 
