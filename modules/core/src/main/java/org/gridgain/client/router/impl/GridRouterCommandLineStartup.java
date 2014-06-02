@@ -17,6 +17,7 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.lang.reflect.*;
 import java.net.*;
 import java.text.*;
 import java.util.*;
@@ -29,12 +30,15 @@ import static org.gridgain.grid.kernal.GridProductImpl.*;
  * Loader class for router.
  */
 public class GridRouterCommandLineStartup {
+    /** Router implementation class name. */
+    private static final String ROUTER_IMPL_CLS = "org.gridgain.client.router.impl.GridTcpRouterImpl";
+
     /** Logger. */
     @SuppressWarnings("FieldCanBeLocal")
     private GridLogger log;
 
     /** TCP router. */
-    private GridTcpRouterImpl tcpRouter;
+    private GridLifecycleAware tcpRouter;
 
     /**
      * Search given context for required configuration and starts router.
@@ -55,15 +59,17 @@ public class GridRouterCommandLineStartup {
         if (tcpCfg == null)
             U.warn(log, "TCP router startup skipped (configuration not found).");
         else {
-            tcpRouter = new GridTcpRouterImpl(tcpCfg);
+            tcpRouter = createRouter(tcpCfg);
 
-            try {
-                tcpRouter.start();
-            }
-            catch (GridException e) {
-                U.error(log, "Failed to start TCP router on port " + tcpCfg.getPort() + ": " + e.getMessage(), e);
+            if (tcpRouter != null) {
+                try {
+                    tcpRouter.start();
+                }
+                catch (GridException e) {
+                    U.error(log, "Failed to start TCP router on port " + tcpCfg.getPort() + ": " + e.getMessage(), e);
 
-                tcpRouter = null;
+                    tcpRouter = null;
+                }
             }
         }
     }
@@ -72,8 +78,40 @@ public class GridRouterCommandLineStartup {
      * Stops router.
      */
     public void stop() {
-        if (tcpRouter != null)
-            tcpRouter.stop();
+        if (tcpRouter != null) {
+            try {
+                tcpRouter.stop();
+            }
+            catch (GridException e) {
+                U.error(log, "Error while stopping the router.", e);
+            }
+        }
+    }
+
+    /**
+     * Creates TCP router if it exists on classpath.
+     *
+     * @param tcpCfg Configuration.
+     * @return Router.
+     */
+    private GridLifecycleAware createRouter(GridTcpRouterConfiguration tcpCfg) {
+        GridLifecycleAware router = null;
+
+        try {
+            Class<?> cls = Class.forName(ROUTER_IMPL_CLS);
+
+            Constructor<?> cons = cls.getConstructor(GridTcpRouterConfiguration.class);
+
+            router = (GridLifecycleAware)cons.newInstance(tcpCfg);
+        }
+        catch (ClassNotFoundException ignored) {
+            U.error(log, "Failed to create TCP router (consider adding gridgain-clients module to classpath).");
+        }
+        catch (InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e) {
+            U.error(log, "Failed to create TCP router.", e);
+        }
+
+        return router;
     }
 
     /**

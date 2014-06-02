@@ -11,14 +11,13 @@ import java.net.*;
 import java.util.*;
 
 /**
- * This class defines runtime configuration for TCP router. This configuration is passed to
- * {@link GridRouterFactory#startTcpRouter(GridTcpRouterConfiguration)} method.
+ * This class defines runtime configuration for TCP router.
  * <p>
  * Note that you should only set values
  * that differ from defaults, as router will automatically pick default values
  * for all values that are not set.
  * <p>
- * For more information about router configuration and startup refer to {@link GridRouterFactory}
+ * For more information about router configuration and startup refer to {@code GridRouterFactory}
  * documentation.
  */
 public class GridTcpRouterConfiguration {
