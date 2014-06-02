@@ -119,10 +119,8 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         job.setJarByClass(getClass());
 
-        GridHadoopProcessorAdapter hadoop = ((GridKernal)grid(0)).context().hadoop();
-
-        GridFuture<?> fut = hadoop.submit(new GridHadoopJobId(UUID.randomUUID(), 1),
-            new GridHadoopDefaultJobInfo(job.getConfiguration()));
+        GridFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 1),
+                new GridHadoopDefaultJobInfo(job.getConfiguration()));
 
         fut.get();
 
@@ -162,19 +160,17 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         job.setJarByClass(getClass());
 
-        GridHadoopProcessorAdapter hadoop = ((GridKernal)grid(0)).context().hadoop();
-
         GridHadoopJobId jobId = new GridHadoopJobId(UUID.randomUUID(), 2);
 
-        GridFuture<?> fut = hadoop.submit(jobId,
-            new GridHadoopDefaultJobInfo(job.getConfiguration()));
+        GridFuture<?> fut = grid(0).hadoop().submit(jobId,
+                new GridHadoopDefaultJobInfo(job.getConfiguration()));
 
         fut.get();
 
         assertEquals(lineCnt, totalLineCnt.get());
 
         for (int g = 0; g < gridCount(); g++)
-            ((GridKernal)grid(g)).context().hadoop().finishFuture(jobId).get();
+            grid(g).hadoop().finishFuture(jobId).get();
     }
 
     /**
@@ -202,13 +198,12 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         job.setJarByClass(getClass());
 
-        GridHadoopProcessorAdapter hadoop = ((GridKernal)grid(0)).context().hadoop();
-
-        final GridFuture<?> fut = hadoop.submit(new GridHadoopJobId(UUID.randomUUID(), 3),
-            new GridHadoopDefaultJobInfo(job.getConfiguration()));
+        final GridFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 3),
+                new GridHadoopDefaultJobInfo(job.getConfiguration()));
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
+            @Override
+            public Object call() throws Exception {
                 fut.get();
 
                 return null;
@@ -274,11 +269,9 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
     public void testTaskCancelling() throws Exception {
         Configuration cfg = prepareJobForCancelling();
 
-        GridHadoopProcessorAdapter hadoop = ((GridKernal) grid(0)).context().hadoop();
-
         GridHadoopJobId jobId = new GridHadoopJobId(UUID.randomUUID(), 1);
 
-        final GridFuture<?> fut = hadoop.submit(jobId, new GridHadoopDefaultJobInfo(cfg));
+        final GridFuture<?> fut = grid(0).hadoop().submit(jobId, new GridHadoopDefaultJobInfo(cfg));
 
         int time = 0;
 
@@ -308,9 +301,14 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
     public void testJobKill() throws Exception {
         Configuration cfg = prepareJobForCancelling();
 
-        GridHadoopProcessorAdapter hadoop = ((GridKernal) grid(0)).context().hadoop();
+        GridHadoop hadoop = grid(0).hadoop();
 
         GridHadoopJobId jobId = new GridHadoopJobId(UUID.randomUUID(), 1);
+
+        //Kill unknown job.
+        boolean killRes = hadoop.kill(jobId);
+
+        assertFalse(killRes);
 
         final GridFuture<?> fut = hadoop.submit(jobId, new GridHadoopDefaultJobInfo(cfg));
 
@@ -322,7 +320,8 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
             assertTrue(time++ < 100);
         }
 
-        boolean killRes = hadoop.kill(jobId);
+        //Kill really ran job.
+        killRes = hadoop.kill(jobId);
 
         assertTrue(killRes);
 
@@ -335,6 +334,11 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         }, GridException.class, null);
 
         assertEquals(executedTasks.get(), cancelledTasks.get());
+
+        //Kill the same job again.
+        killRes = hadoop.kill(jobId);
+
+        assertFalse(killRes);
     }
 
     private static class CancellingTestMapper extends Mapper<Object, Text, Text, IntWritable> {
