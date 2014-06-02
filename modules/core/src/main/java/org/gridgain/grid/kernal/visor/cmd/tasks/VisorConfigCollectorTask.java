@@ -241,7 +241,7 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
         }
 
         private T2<String, Map<String, Object>>[] collectSpiInfo(GridSpi[] spis) {
-            GridBiTuple[] res = new GridBiTuple[spis.length];
+            T2[] res = new T2[spis.length];
 
             for (int i = 0; i < spis.length; i++)
                 res[i] = collectSpiInfo(spis[i]);
