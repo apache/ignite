@@ -179,7 +179,7 @@ class GridHttpRouterJettyHandler extends AbstractHandler {
                 node.availableAddresses(GridClientProtocol.HTTP) : Collections.<InetSocketAddress>emptyList();
         }
         else {
-            return F.flat(
+            return F.flatCollections(
                 F.transform(client.compute().nodes(), new GridClosure<GridClientNode, Collection<InetSocketAddress>>() {
                     @Override public Collection<InetSocketAddress> apply(GridClientNode e) {
                         return e.availableAddresses(GridClientProtocol.HTTP);

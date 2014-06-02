@@ -271,7 +271,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
         for (K key : keys)
             colcol.add(nodes(key, topVer));
 
-        return F.view(F.flat(colcol), F.remoteNodes(cctx.localNodeId()));
+        return F.view(F.flatCollections(colcol), F.remoteNodes(cctx.localNodeId()));
     }
 
     /**

@@ -7926,7 +7926,7 @@ public abstract class GridUtils {
         for (String addr : addrs) {
             InetSocketAddress sockAddr = new InetSocketAddress(addr, port);
 
-            if (!sockAddr.isUnresolved() && !sockAddr.getAddress().isLoopbackAddress()) {
+            if (!sockAddr.isUnresolved()) {
                 try {
                     Collection<InetSocketAddress> extAddrs0 = addrRslvr.getExternalAddresses(sockAddr);
 
