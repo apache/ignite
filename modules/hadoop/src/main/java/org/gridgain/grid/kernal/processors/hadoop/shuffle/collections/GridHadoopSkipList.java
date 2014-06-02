@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -99,7 +100,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
      * @param rnd Random.
      * @return Next level.
      */
-    static int nextLevel(Random rnd) {
+    static int randomLevel(Random rnd) {
         int x = rnd.nextInt();
 
         int level = 0;
@@ -149,13 +150,20 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
 
         /** {@inheritDoc} */
         @Override public void write(Object key, Object val) throws GridException {
-            // TODO
+            A.notNull(val, "val");
+
+            add(key, val);
         }
 
         /** {@inheritDoc} */
         @Override public Key addKey(DataInput in, @Nullable Key reuse) throws GridException {
-            // TODO
-            return null;
+            KeyImpl k = reuse == null ? new KeyImpl() : (KeyImpl)reuse;
+
+            k.tmpKey = keySer.read(in, k.tmpKey);
+
+            k.meta = add(k.tmpKey, null);
+
+            return k;
         }
 
         /**
@@ -192,7 +200,13 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
             return keyPtr;
         }
 
-        private long doAdd(Object key, @Nullable Object val) throws GridException {
+        /**
+         * @param key Key.
+         * @param val Value.
+         * @return Meta pointer.
+         * @throws GridException If failed.
+         */
+        private long add(Object key, @Nullable Object val) throws GridException {
             long valPtr = 0;
             long keyPtr = 0;
 
@@ -214,20 +228,22 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
                 while (meta == 0 && level != 0) // If we can go down here we have to.
                     meta = nextMeta(prevMeta, --level);
 
-                if (meta == 0) { // We've found nothing, create new meta.
+                if (meta == 0) { // We've found nothing, try to add new meta.
                     assert level == 0 : level;
 
-                    keyPtr = writeKey(key);
+                    if (keyPtr == 0) { // Write key and create meta.
+                        keyPtr = writeKey(key);
 
-                    newMetaLevel = nextLevel(rnd);
-                    newMeta = createMeta(keyPtr, valPtr, newMetaLevel);
+                        newMetaLevel = randomLevel(rnd);
+                        newMeta = createMeta(keyPtr, valPtr, newMetaLevel);
+                    }
 
-                    if (casNextMeta(prevMeta, newMetaLevel, 0, newMeta)) { // We just added new key.
+                    if (casNextMeta(prevMeta, 0, meta, newMeta)) { // We just added new key.
                         laceUp(newMeta, newMetaLevel);
 
                         return newMeta;
                     }
-                    else {
+                    else { // Add failed, need to check out what was added by another thread.
                         meta = nextMeta(prevMeta, 0);
 
                         continue;
@@ -259,10 +275,8 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
                     prevMeta = meta;
                     meta = nextMeta(meta, level);
                 }
-                else if (--level < 0) { // Going down.
-                    // No such key.
-                    meta = 0;
-                }
+                else if (level != 0)
+                    level--; // Go down.
             }
         }
 
@@ -274,6 +288,46 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
             for (int i = 1; i < level; i++) {
 
 
+            }
+        }
+
+        /**
+         * Key.
+         */
+        public class KeyImpl implements Key {
+            /** */
+            private long meta;
+
+            /** */
+            private Object tmpKey;
+
+            /**
+             * @return Meta pointer for the key.
+             */
+            public long address() {
+                return meta;
+            }
+
+            /**
+             * @param val Value.
+             */
+            @Override public void add(Value val) {
+                int size = val.size();
+
+                long valPtr = allocate(size + 12);
+
+                val.copyTo(valPtr + 12);
+
+                valueSize(valPtr, size);
+
+                long nextVal;
+
+                do {
+                    nextVal = value(meta);
+
+                    nextValue(valPtr, nextVal);
+                }
+                while(!casValue(meta, nextVal, valPtr));
             }
         }
     }

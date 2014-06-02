@@ -284,7 +284,7 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
             return (int)(out.buffer().pointer() - writeStart);
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public Key addKey(DataInput in, @Nullable Key reuse) throws GridException {
             throw new UnsupportedOperationException();
         }

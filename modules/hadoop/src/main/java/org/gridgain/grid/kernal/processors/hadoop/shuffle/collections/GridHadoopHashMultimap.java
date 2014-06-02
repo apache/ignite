@@ -120,6 +120,8 @@ public class GridHadoopHashMultimap extends GridHadoopHashMultimapBase {
 
         /** {@inheritDoc} */
         @Override public void write(Object key, Object val) throws GridException {
+            A.notNull(val, "val");
+
             int keyHash = U.hash(key.hashCode());
 
             // Write value.
