@@ -157,7 +157,8 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         // Set ID placeholder for the case it wouldn't be available due to remote execution.
         taskRestRes.setId('~' + ctx.localNodeId().toString());
 
-        final boolean locExec = req0.destinationId() == null || req0.destinationId().equals(ctx.localNodeId());
+        final boolean locExec = req0.destinationId() == null || req0.destinationId().equals(ctx.localNodeId()) ||
+            ctx.discovery().node(req0.destinationId()) == null;
 
         switch (req.command()) {
             case EXE: {

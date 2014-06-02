@@ -3,6 +3,7 @@ package org.gridgain.client.router;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -66,7 +67,7 @@ public class GridTcpRouterConfiguration {
     private GridLogger log;
 
     /** Credentials. */
-    private Object creds;
+    private GridSecurityCredentialsProvider credsProvider;
 
     /**
      * Gets TCP host or IP address for router to bind to.
@@ -173,15 +174,15 @@ public class GridTcpRouterConfiguration {
     }
 
     /**
-     * Gets credentials for grid access.
+     * Gets credentials provider for grid access.
      * <p>
      * This credentials will be used only for initial connection and topology discovery
      * by the router, not for client's request authorization.
      *
      * @return Credentials.
      */
-    @Nullable public Object getCredentials() {
-        return creds;
+    @Nullable public GridSecurityCredentialsProvider getSecurityCredentialsProvider() {
+        return credsProvider;
     }
 
     /**
@@ -274,12 +275,12 @@ public class GridTcpRouterConfiguration {
     }
 
     /**
-     * Sets credentials for grid access.
+     * Sets credentials provider for grid access.
      *
-     * @param creds Credentials.
+     * @param credsProvider Credentials provider.
      */
-    public void setCredentials(Object creds) {
-        this.creds = creds;
+    public void setSecurityCredentialsProvider(GridSecurityCredentialsProvider credsProvider) {
+        this.credsProvider = credsProvider;
     }
 
     /** {@inheritDoc} */

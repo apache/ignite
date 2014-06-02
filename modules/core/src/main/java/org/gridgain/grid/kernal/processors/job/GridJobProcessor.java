@@ -1263,7 +1263,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     topic,
                     msgId,
                     jobRes,
-                    SYSTEM_POOL,
+                    req.isInternal() ? MANAGEMENT_POOL : SYSTEM_POOL,
                     timeout,
                     false);
             }
@@ -1271,7 +1271,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 ctx.task().processJobExecuteResponse(ctx.localNodeId(), jobRes);
             else
                 // Send response to common topic as unordered message.
-                ctx.io().send(sndNode, TOPIC_TASK, jobRes, SYSTEM_POOL);
+                ctx.io().send(sndNode, TOPIC_TASK, jobRes, req.isInternal() ? MANAGEMENT_POOL : SYSTEM_POOL);
         }
         catch (GridException e) {
             // The only option here is to log, as we must assume that resending will fail too.

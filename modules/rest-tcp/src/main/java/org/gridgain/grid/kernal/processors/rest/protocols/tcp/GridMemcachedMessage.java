@@ -468,4 +468,9 @@ public class GridMemcachedMessage implements GridClientMessage {
             opCode == 0x0C ||
             opCode == 0x0D;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridMemcachedMessage.class, this);
+    }
 }
