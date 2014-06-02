@@ -18,8 +18,7 @@ import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.TRANSACTIONAL;
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
@@ -29,9 +28,6 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest {
     /** REST port. */
     protected static final int REST_PORT = 11212;
-
-    /** Hadoop system cache name. */
-    protected static final String hadoopSysCacheName = "hadoop-system-cache";
 
     /** GGFS name. */
     protected static final String ggfsName = "ggfs";
@@ -89,20 +85,11 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
 
         cfg.setCommunicationSpi(commSpi);
 
-        GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
-
-        cacheCfg.setCacheMode(REPLICATED);
-        cacheCfg.setAtomicWriteOrderMode(PRIMARY);
-        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setName(hadoopSysCacheName);
-
         if (ggfsEnabled()) {
-            cfg.setCacheConfiguration(cacheCfg, metaCacheConfiguration(), dataCacheConfiguration());
+            cfg.setCacheConfiguration(metaCacheConfiguration(), dataCacheConfiguration());
 
             cfg.setGgfsConfiguration(ggfsConfiguration());
         }
-        else
-            cfg.setCacheConfiguration(cacheCfg);
 
         if (restEnabled()) {
             cfg.setRestEnabled(true);
@@ -117,11 +104,7 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
      * @return Hadoop configuration.
      */
     public GridHadoopConfiguration hadoopConfiguration(String gridName) {
-        GridHadoopConfiguration hadoopCfg = new GridHadoopConfiguration();
-
-        hadoopCfg.setSystemCacheName(hadoopSysCacheName);
-
-        return hadoopCfg;
+        return new GridHadoopConfiguration();
     }
 
     /**

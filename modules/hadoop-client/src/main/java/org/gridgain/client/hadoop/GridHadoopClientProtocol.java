@@ -52,7 +52,7 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     private long lastVer = -1;
 
     /** Last received status. */
-    private JobStatus lastStatus;
+    private GridHadoopJobStatus lastStatus;
 
     /**
      * Constructor.
@@ -289,17 +289,17 @@ public class GridHadoopClientProtocol implements ClientProtocol {
         // IMPORTANT! This method will only work in single-threaded environment. It is valid at the moment because
         // GridHadoopClientProtocolProvider creates new instance of this class for every new job and Job class
         // serializes invocations of submitJob() and getJobStatus() methods. However, if any of these conditions will
-        // change in future and either protocol will server statuses for several jobs or status update will not be
+        // change in future and either protocol will serve statuses for several jobs or status update will not be
         // serialized anymore, then we have to fallback to concurrent approach (e.g. using ConcurrentHashMap).
         // (vozerov)
         if (lastVer < status.version()) {
             lastVer = status.version();
 
-            lastStatus = GridHadoopUtils.status(status, conf);
+            lastStatus = status;
         }
         else
             assert lastStatus != null;
 
-        return lastStatus;
+        return GridHadoopUtils.status(lastStatus, conf);
     }
 }
