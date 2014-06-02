@@ -11,26 +11,20 @@
 
 package org.gridgain.visor.commands.events
 
+import java.util.UUID
+
 import org.gridgain.grid._
-import org.gridgain.grid.events._
 import org.gridgain.grid.events.GridEventType._
-import org.gridgain.grid.kernal.GridEx
-import org.gridgain.grid.kernal.processors.task.GridInternal
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCollectEventsTask
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCollectEventsTask.VisorCollectEventsArgs
 import org.gridgain.grid.util.{GridUtils => U}
-import org.gridgain.grid.util.scala.impl
-
-import java.util.UUID
+import org.gridgain.visor._
+import org.gridgain.visor.commands._
+import org.gridgain.visor.visor._
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable._
 import scala.language.implicitConversions
-
-import org.gridgain.scalar.scalar._
-import org.gridgain.visor._
-import org.gridgain.visor.commands.{VisorConsoleUtils => CU, _}
-import org.gridgain.visor.visor._
 
 /**
  * ==Overview==
@@ -292,18 +286,7 @@ class VisorEventsCommand {
 
             val evts = try
                 grid.forNode(node).compute().execute(classOf[VisorCollectEventsTask],
-                    new VisorCollectEventsArgs(nid, tpFilter, tmFilter)).get match {
-                    case x if x.get1() != null =>
-                        scold(x.get())
-
-                        return
-                    case x if x.get2() == null || x.get2().isEmpty =>
-                        println("No events found.")
-
-                        return
-
-                    case x => x.get2()
-                }
+                    new VisorCollectEventsArgs(nid, tpFilter, tmFilter)).get
             catch {
                 case e: GridException =>
                     scold(e.getMessage)
@@ -311,7 +294,13 @@ class VisorEventsCommand {
                     return
             }
 
-            val sortedOpt = sort(evts, argValue("s", argLst), hasArgName("r", argLst))
+            if (evts == null || evts.isEmpty) {
+                println("No events found.")
+
+                return
+            }
+
+            val sortedOpt = sort(evts.toList, argValue("s", argLst), hasArgName("r", argLst))
 
             if (!sortedOpt.isDefined)
                 return
@@ -411,17 +400,15 @@ class VisorEventsCommand {
      * @param reverse If `true` sorting is reversed.
      * @return Sorted events.
      */
-    private def sort(evts: Array[VisorCollectEventsTask.VisorEventData], arg: Option[String], reverse: Boolean) = {
+    private def sort(evts: List[VisorCollectEventsTask.VisorEventData], arg: Option[String], reverse: Boolean) = {
         assert(evts != null)
 
-        val list = evts.toList
-
         if (arg.isEmpty)
-            Some(list)
+            Some(evts)
         else
             arg.get.trim match {
-                case "e" => Some(if (reverse) list.sortBy(_.name).reverse else list.sortBy(_.name))
-                case "t" => Some(if (reverse) list.sortBy(_.timestamp).reverse else list.sortBy(_.timestamp))
+                case "e" => Some(if (reverse) evts.sortBy(_.name).reverse else evts.sortBy(_.name))
+                case "t" => Some(if (reverse) evts.sortBy(_.timestamp).reverse else evts.sortBy(_.timestamp))
                 case a: String =>
                     scold("Invalid sorting argument: " + a)
 
@@ -429,151 +416,6 @@ class VisorEventsCommand {
             }
     }
 }
-
-/** Descriptor for `GridEvent`. */
-private case class VisorEventData(
-    `type`: Int,
-    ts: Long,
-    name: String,
-    shortDisplay: String,
-    mnemonic: String
-)
-
-/**
- * Arguments for `VisorConsoleCollectEventsTask`.
- *
- * @param nodeId Node Id where events should be collected.
- * @param typeArg Arguments for type filter.
- * @param timeArg Arguments for time filter.
- */
-private case class VisorConsoleCollectEventsTaskArgs(
-    @impl nodeId: UUID,
-    typeArg: Option[String],
-    timeArg: Option[String]
-) extends VisorConsoleOneNodeTaskArgs
-
-/**
- * Task that runs on specified node and returns events data.
- */
-@GridInternal
-private class VisorConsoleCollectEventsTask
-    extends VisorConsoleOneNodeTask[VisorConsoleCollectEventsTaskArgs, Either[Array[VisorEventData], String]] {
-    /**
-     * Creates predicate that filters events by type.
-     *
-     * @param types Comma separate list of event type mnemonics.
-     * @return Event type filter.
-     */
-    private def typeFilter(types: Option[String]): Either[EventFilter, String] = {
-        if (types.isEmpty)
-            Left(_ => true)
-        else {
-            var arr: List[Int] = Nil
-
-            types.get split "," foreach {
-                case "ch" => arr ++= EVTS_CHECKPOINT.toList
-                case "de" => arr ++= EVTS_DEPLOYMENT.toList
-                case "jo" => arr ++= EVTS_JOB_EXECUTION.toList
-                case "ta" => arr ++= EVTS_TASK_EXECUTION.toList
-                case "ca" => arr ++= EVTS_CACHE.toList
-                case "cp" => arr ++= EVTS_CACHE_PRELOAD.toList
-                case "sw" => arr ++= EVTS_SWAPSPACE.toList
-                case "di" => arr ++= EVTS_DISCOVERY.toList
-                case "au" => arr ++= EVTS_AUTHENTICATION.toList
-                case t => return Right("Unknown event type: " + t)
-            }
-
-            Left(if (arr.nonEmpty) (e: GridEvent) => arr.contains(e.`type`) else _ => true)
-        }
-    }
-
-    /**
-     * Creates predicate that filters events by timestamp.
-     *
-     * @param arg Command argument.
-     * @return Predicate.
-     */
-    private def timeFilter(arg: Option[String]): Either[EventFilter, String] = {
-        if (arg.isEmpty)
-            Left(_ => true)
-        else {
-            var n = 0
-
-            val s = arg.get
-
-            try
-                n = s.substring(0, s.length - 1).toInt
-            catch {
-                case e: NumberFormatException =>
-                    return Right("Time frame size is not numeric in: " + s)
-            }
-
-            if (n <= 0) {
-                Right("Time frame size is not positive in: " + s)
-            }
-            else {
-                val m = s.last match {
-                    case 's' => 1000
-                    case 'm' => 1000 * 60
-                    case 'h' => 1000 * 60 * 60
-                    case 'd' => 1000 * 60 * 60 * 24
-                    case _ => 0
-
-                }
-                if (m > 0)
-                    Left(_.timestamp >= System.currentTimeMillis - n * m)
-                else
-                    Right("Invalid time frame suffix in: " + s)
-            }
-        }
-    }
-
-    /**
-     * Gets command's mnemonic for given event.
-     *
-     * @param e Event to get mnemonic for.
-     */
-    private def mnemonic(e: GridEvent): String = {
-        assert(e != null)
-
-        e match {
-            case di: GridDiscoveryEvent => "di"
-            case ch: GridCheckpointEvent => "ch"
-            case de: GridDeploymentEvent => "de"
-            case jo: GridJobEvent => "jo"
-            case ta: GridTaskEvent => "ta"
-            case ca: GridCacheEvent => "ca"
-            case sw: GridSwapSpaceEvent => "sw"
-            case cp: GridCachePreloadingEvent => "cp"
-            case au: GridAuthenticationEvent => "au"
-
-            // Should never happen.
-            case _ => throw new GridRuntimeException("Unknown event type: " + e)
-        }
-    }
-
-    protected def run(g: GridEx, arg: VisorConsoleCollectEventsTaskArgs): Either[Array[VisorEventData], String] = {
-        typeFilter(arg.typeArg) match {
-            case Right(msg) => Right(msg)
-
-            case Left(typeF) => timeFilter(arg.timeArg) match {
-                case Right(msg) => Right(msg)
-                case Left(timeF) =>
-                    val filter = (e: GridEvent) => typeF.apply(e) && timeF.apply(e) && (e match {
-                        case te: GridTaskEvent => !CU.containsInTaskName(te.taskName(), te.taskClassName(), "visor")
-                        case je: GridJobEvent => !CU.containsInTaskName(je.taskName(), je.taskName(), "visor")
-                        case de: GridDeploymentEvent => !de.alias().toLowerCase.contains("visor")
-                        case _ => true
-                    })
-
-                    Left(g.events().localQuery(filter)
-                        .map(e => VisorEventData(e.`type`, e.timestamp(), e.name(), e.shortDisplay(), mnemonic(e)))
-                        .toArray)
-            }
-        }
-    }
-}
-
 
 /**
  * Companion object that does initialization of the command.

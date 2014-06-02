@@ -25,7 +25,7 @@ import java.util.*;
  */
 @GridInternal
 public class VisorCollectEventsTask extends VisorOneNodeTask<VisorCollectEventsTask.VisorCollectEventsArgs,
-    GridBiTuple<String, VisorCollectEventsTask.VisorEventData[]>> {
+    Iterable<VisorCollectEventsTask.VisorEventData>> {
     /**
      * Argument for task returns events data.
      */
@@ -36,6 +36,7 @@ public class VisorCollectEventsTask extends VisorOneNodeTask<VisorCollectEventsT
 
         /** Arguments for type filter. */
         @Nullable private final int[] typeArg;
+
         /** Arguments for time filter. */
         @Nullable private final Long timeArg;
 
@@ -68,7 +69,7 @@ public class VisorCollectEventsTask extends VisorOneNodeTask<VisorCollectEventsT
         }
     }
 
-    /** Descriptor for `GridEvent`. */
+    /** Descriptor for {@link GridEvent}. */
     @SuppressWarnings("PublicInnerClass")
     public static class VisorEventData implements Serializable {
         /** */
@@ -137,7 +138,7 @@ public class VisorCollectEventsTask extends VisorOneNodeTask<VisorCollectEventsT
      * Job for task returns events data.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorCollectEventsJob extends VisorJob<VisorCollectEventsArgs, GridBiTuple<String, VisorEventData[]>> {
+    public static class VisorCollectEventsJob extends VisorJob<VisorCollectEventsArgs, Iterable<VisorEventData>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -155,23 +156,114 @@ public class VisorCollectEventsTask extends VisorOneNodeTask<VisorCollectEventsT
                 acc.add(value);
         }
 
+        /**
+         * Tests whether or not this task has specified substring in its name.
+         *
+         * @param taskName Task name to check.
+         * @param taskClsName Task class name to check.
+         * @param s Substring to check.
+         */
+        private boolean containsInTaskName(String taskName, String taskClsName, String s) {
+            assert taskName != null;
+            assert taskClsName != null;
 
-        @Override protected GridBiTuple<String, VisorEventData[]> run(final VisorCollectEventsArgs arg) throws GridException {
+            if (taskName.equals(taskClsName)) {
+                int idx = taskName.lastIndexOf('.');
+
+                return ((idx >= 0) ? taskName.substring(idx + 1) : taskName).toLowerCase().contains(s);
+            }
+
+            return taskName.toLowerCase().contains(s);
+        }
+
+        /**
+         * Filter events containing visor in it's name.
+         *
+         * @param e Event
+         * @return {@code true} if not contains {@code visor} in task name.
+         */
+        private boolean filterVisor(GridEvent e) {
+            if (e instanceof GridTaskEvent) {
+                GridTaskEvent te = (GridTaskEvent)e;
+
+                return !containsInTaskName(te.taskName(), te.taskClassName(), "visor");
+            }
+
+            if (e instanceof GridJobEvent) {
+                GridJobEvent je = (GridJobEvent)e;
+
+                return !containsInTaskName(je.taskName(), je.taskName(), "visor");
+            }
+
+            if (e instanceof GridDeploymentEvent) {
+                GridDeploymentEvent de = (GridDeploymentEvent)e;
+
+                return !de.alias().toLowerCase().contains("visor");
+            }
+
+            return true;
+        }
+
+        /**
+         * Gets command's mnemonic for given event.
+         *
+         * @param e Event to get mnemonic for.
+         */
+        private String mnemonic(GridEvent e) {
+            assert e != null;
+
+            if (e.getClass().equals(GridDiscoveryEvent.class))
+                return "di";
+
+            if (e.getClass().equals(GridCheckpointEvent.class))
+                return "ch";
+
+            if (e.getClass().equals(GridDeploymentEvent.class))
+                return "de";
+
+            if (e.getClass().equals(GridJobEvent.class))
+                return "jo";
+
+            if (e.getClass().equals(GridTaskEvent.class))
+                return "ta";
+
+            if (e.getClass().equals(GridCacheEvent.class))
+                return "ca";
+
+            if (e.getClass().equals(GridSwapSpaceEvent.class))
+                return "sw";
+
+            if (e.getClass().equals(GridCachePreloadingEvent.class))
+                return "cp";
+
+            if (e.getClass().equals(GridAuthenticationEvent.class))
+                return "au";
+
+            // Should never happen.
+            return null;
+        }
+
+        @Override protected Iterable<VisorEventData> run(final VisorCollectEventsArgs arg) throws GridException {
             final long startEvtTime = arg.timeArgument() == null ? 0L : System.currentTimeMillis() - arg.timeArgument();
 
-            Collection<GridEvent> evt = g.events().localQuery(new GridPredicate<GridEvent>() {
+            Collection<GridEvent> evts = g.events().localQuery(new GridPredicate<GridEvent>() {
                   @Override public boolean apply(GridEvent event) {
-                      return (arg.typeArgument() == null || F.contains(arg.typeArgument(), event.type())) &&
-                          event.timestamp() >= startEvtTime;
-
+                  return (arg.typeArgument() == null || F.contains(arg.typeArgument(), event.type())) &&
+                      event.timestamp() >= startEvtTime && filterVisor(event);
                   }
               }
             );
 
+            Collection<VisorEventData> res = new ArrayList<>(evts.size());
 
+            for (GridEvent e : evts) {
+                String m = mnemonic(e);
 
+                if (m != null)
+                    res.add(new VisorEventData(e.name(), e.shortDisplay(), m, e.type(), e.timestamp()));
+            }
 
-            return null; // TODO: CODE: implement.
+            return res;
         }
     }
 

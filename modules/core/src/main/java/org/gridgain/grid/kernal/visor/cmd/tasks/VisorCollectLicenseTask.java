@@ -13,7 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
-import org.gridgain.grid.product.*;
+import org.gridgain.grid.kernal.visor.cmd.dto.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
@@ -24,13 +24,13 @@ import java.util.*;
  */
 @GridInternal
 public class VisorCollectLicenseTask extends VisorMultiNodeTask<VisorMultiNodeArg,
-    Iterable<T2<UUID, GridProductLicense>>, GridProductLicense> {
+    Iterable<T2<UUID, VisorLicense>>, VisorLicense> {
 
     /**
      * Collect license from nodes job.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorCollectLicenseJob extends VisorJob<VisorMultiNodeArg, GridProductLicense> {
+    public static class VisorCollectLicenseJob extends VisorJob<VisorMultiNodeArg, VisorLicense> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -38,8 +38,8 @@ public class VisorCollectLicenseTask extends VisorMultiNodeTask<VisorMultiNodeAr
             super(arg);
         }
 
-        @Override protected GridProductLicense run(VisorMultiNodeArg arg) throws GridException {
-            return g.product().license();
+        @Override protected VisorLicense run(VisorMultiNodeArg arg) throws GridException {
+            return VisorLicense.create(g);
         }
     }
 
@@ -48,11 +48,11 @@ public class VisorCollectLicenseTask extends VisorMultiNodeTask<VisorMultiNodeAr
     }
 
     @Nullable @Override
-    public Iterable<T2<UUID, GridProductLicense>> reduce(List<GridComputeJobResult> results) throws GridException {
-        Collection<T2<UUID, GridProductLicense>> licenses = new ArrayList<>(results.size());
+    public Iterable<T2<UUID, VisorLicense>> reduce(List<GridComputeJobResult> results) throws GridException {
+        Collection<T2<UUID, VisorLicense>> licenses = new ArrayList<>(results.size());
 
         for (GridComputeJobResult r : results) {
-            GridProductLicense license = r.getException() != null ? null : (GridProductLicense) r.getData();
+            VisorLicense license = r.getException() != null ? null : (VisorLicense) r.getData();
 
             licenses.add(new T2<>(r.getNode().id(), license));
         }

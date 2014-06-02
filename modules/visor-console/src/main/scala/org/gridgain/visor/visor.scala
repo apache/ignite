@@ -1405,7 +1405,7 @@ object visor extends VisorTag {
 
                 // Add no-op logger to remove no-appender warning.
                 val log4jTup =
-                    if (classOf[G].getClassLoader.getResource("org/apache/log4j/Appender.class") == null)
+                    if (classOf[G].getClassLoader.getResource("org/apache/log4j/Appender.class") != null)
                         U.addLog4jNoOpLogger()
                     else
                         null

@@ -11,51 +11,21 @@
 
 package org.gridgain.visor.commands.license
 
+import java.io._
+import java.util.UUID
+
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.visor.cmd.VisorMultiNodeArg
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorReplaceLicenseTask.VisorReplaceLicenseArg
-import org.gridgain.grid.kernal.visor.cmd.tasks.{VisorReplaceLicenseTask, VisorCollectLicenseTask}
-import org.gridgain.grid.lang.GridRunnable
-import org.gridgain.grid.resources.GridInstanceResource
-
-import java.io._
-import java.net.URL
-import java.util.UUID
-
-import scala.collection.JavaConversions._
-import scala.io.Source
-import scala.language.implicitConversions
-
+import org.gridgain.grid.kernal.visor.cmd.tasks.{VisorCollectLicenseTask, VisorReplaceLicenseTask}
 import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
 
-/**
- * License updater closure.
- */
-private class LicenseUpdater(oldLicId: UUID, newLicLines: List[String]) extends GridRunnable {
-    /**Injected grid */
-    @GridInstanceResource
-    private val g: Grid = null
-
-    override def run() {
-        val lic = g.product().license()
-
-        if (lic != null && lic.id == oldLicId) {
-            val file = new File(new URL(g.configuration().getLicenseUrl).toURI)
-
-            val writer = new BufferedWriter(new FileWriter(file, false))
-
-            newLicLines.foreach(l => {
-                writer.write(l)
-                writer.newLine()
-            })
-
-            writer.close()
-        }
-    }
-}
+import scala.collection.JavaConversions._
+import scala.io.Source
+import scala.language.implicitConversions
 
 /**
  * ==Overview==
@@ -161,7 +131,7 @@ class VisorLicenseCommand {
                         licT += ("User organization", safe(l.userOrganization(), "<n/a>"))
                         licT += ("User organization URL", safe(l.userWww(), "<n/a>"))
                         licT += ("User organization e-mail", safe(l.userEmail(), "<n/a>"))
-                        licT += ("License note", safe(l.licenseNote(), "<n/a>"))
+                        licT += ("License note", safe(l.note(), "<n/a>"))
                         licT += ("Expire date", Option(l.expireDate()).fold("No restriction")(d => formatDate(d)))
                         licT += ("Maximum number of nodes", if (l.maxNodes() > 0) l.maxNodes() else "No restriction")
                         licT += ("Maximum number of computers", if (l.maxComputers() > 0) l.maxComputers() else "No restriction")
