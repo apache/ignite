@@ -37,11 +37,11 @@ public class VisorRunGcTask extends VisorMultiNodeTask<VisorRunGcTask.VisorRunGc
         /**
          * Create task argument with specified nodes Ids.
          *
-         * @param ids Nodes Ids.
+         * @param nids Nodes Ids.
          * @param dgc Run DGC procedure on all caches.
          */
-        public VisorRunGcArg(Set<UUID> ids, boolean dgc) {
-            super(ids);
+        public VisorRunGcArg(Set<UUID> nids, boolean dgc) {
+            super(nids);
 
             this.dgc = dgc;
         }

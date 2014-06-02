@@ -36,8 +36,8 @@ public class VisorReplaceLicenseTask extends VisorMultiNodeTask<VisorReplaceLice
 
         private final String[] licenseLine;
 
-        public VisorReplaceLicenseArg(Set<UUID> ids, UUID id, String[] line) {
-            super(ids);
+        public VisorReplaceLicenseArg(Set<UUID> nids, UUID id, String[] line) {
+            super(nids);
 
             licenseId = id;
             licenseLine = line;

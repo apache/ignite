@@ -36,8 +36,8 @@ public class VisorAckTask extends VisorMultiNodeTask<VisorAckTask.VisorAckArg, V
         /**
          * @param msg - generating message function.
          */
-        public VisorAckArg(Set<UUID> nodeIds, String msg) {
-            super(nodeIds);
+        public VisorAckArg(Set<UUID> nids, String msg) {
+            super(nids);
 
             this.msg = msg;
         }

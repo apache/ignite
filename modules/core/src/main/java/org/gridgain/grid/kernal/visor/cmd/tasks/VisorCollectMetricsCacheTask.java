@@ -43,8 +43,8 @@ public class VisorCollectMetricsCacheTask extends VisorMultiNodeTask<VisorCollec
         /** Name of cache to collect metrics. */
         @Nullable private final String cacheName;
 
-        public VisorCollectMetricsCacheArg(Set<UUID> ids, boolean all, @Nullable String cacheName) {
-            super(ids);
+        public VisorCollectMetricsCacheArg(Set<UUID> nids, boolean all, @Nullable String cacheName) {
+            super(nids);
 
             this.all = all;
             this.cacheName = cacheName;

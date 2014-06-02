@@ -25,10 +25,10 @@ public class VisorMultiNodeArg implements Serializable {
     /**
      * Create task argument with specified nodes Ids.
      *
-     * @param ids Nodes Ids.
+     * @param nids Nodes Ids.
      */
-    public VisorMultiNodeArg(Set<UUID> ids) {
-        nodeIds = ids;
+    public VisorMultiNodeArg(Set<UUID> nids) {
+        nodeIds = nids;
     }
 
     /**
