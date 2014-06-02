@@ -55,12 +55,6 @@
 
         <dependency>
             <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-rest-tcp</artifactId>
-            <version>${gridgain.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.gridgain</groupId>
             <artifactId>gridgain-scalar</artifactId>
             <version>${gridgain.version}</version>
         </dependency>
