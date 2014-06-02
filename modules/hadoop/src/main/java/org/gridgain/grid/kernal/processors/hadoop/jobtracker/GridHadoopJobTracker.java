@@ -58,6 +58,18 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     /** Component busy lock. */
     private GridSpinReadWriteLock busyLock;
 
+    /** Closure to check result of async transform of system cache. */
+    private CI1<GridFuture<?>> failsLogger = new CI1<GridFuture<?>>() {
+        @Override public void apply(GridFuture<?> gridFuture) {
+            try {
+                gridFuture.get();
+            }
+            catch (GridException e) {
+                U.error(log, "Failed to transform system cache.", e);
+            }
+        }
+    };
+
     /** {@inheritDoc} */
     @Override public void start(GridHadoopContext ctx) throws GridException {
         super.start(ctx);
@@ -340,7 +352,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                     entry.timeToLive(ctx.configuration().getFinishedJobInfoTtl());
 
-                    entry.transformAsync(new UpdatePhaseClosure(PHASE_COMPLETE));
+                    entry.transformAsync(new UpdatePhaseClosure(PHASE_COMPLETE)).listenAsync(failsLogger);
 
                     break;
                 }
@@ -352,25 +364,12 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     }
 
     /**
-     * Transforms, async wait and check future.
      * @param jobId Job id.
-     * @param closure Closure of operation.
+     * @param c Closure of operation.
      */
-    private void transform(GridHadoopJobId jobId, GridClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> closure) {
-        GridFuture<?> fut = jobMetaPrj.transformAsync(jobId, closure);
-
-        fut.listenAsync(new CI1<GridFuture<?>>() {
-            @Override public void apply(GridFuture<?> gridFuture) {
-                try {
-                    gridFuture.get();
-                }
-                catch (GridException e) {
-                    log.error("transform() returned failed future.", e);
-                }
-            }
-        });
+    private void transform(GridHadoopJobId jobId, GridClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> c) {
+        jobMetaPrj.transformAsync(jobId, c).listenAsync(failsLogger);
     }
-
 
     /**
      * Callback from task executor called when process is ready to received shuffle messages.

@@ -23,7 +23,7 @@ import java.text.*;
  */
 public abstract class GridHadoopV1Task extends GridHadoopTask {
     /** Indicates that this task is to be cancelled. */
-    private boolean isCancelled;
+    private boolean cancelled;
 
     /**
      * Constructor.
@@ -63,7 +63,7 @@ public abstract class GridHadoopV1Task extends GridHadoopTask {
         return new GridHadoopOutputCollector(jobConf, taskCtx, directWrite, fileName, attempt) {
             /** {@inheritDoc} */
             @Override public void collect(Object key, Object val) throws IOException {
-                if (isCancelled)
+                if (cancelled)
                     throw new GridHadoopTaskCancelledException("Map task cancelled.");
 
                 super.collect(key, val);
@@ -73,11 +73,11 @@ public abstract class GridHadoopV1Task extends GridHadoopTask {
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-        isCancelled = true;
+        cancelled = true;
     }
 
     /** Returns true if task is cancelled. */
     public boolean isCancelled() {
-        return isCancelled;
+        return cancelled;
     }
 }

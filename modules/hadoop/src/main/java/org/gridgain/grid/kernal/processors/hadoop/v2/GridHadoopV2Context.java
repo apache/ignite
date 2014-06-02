@@ -50,7 +50,7 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
     private final TaskAttemptID taskAttemptID;
 
     /** Indicates that this task is to be cancelled. */
-    private volatile boolean isCancelled;
+    private volatile boolean cancelled;
 
     /**
      * @param cfg Hadoop configuration of the job.
@@ -75,7 +75,7 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
 
     /** {@inheritDoc} */
     @Override public boolean nextKeyValue() throws IOException, InterruptedException {
-        if (isCancelled)
+        if (cancelled)
             throw new GridHadoopTaskCancelledException("Task cancelled.");
 
         return reader.nextKeyValue();
@@ -98,7 +98,7 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void write(Object key, Object val) throws IOException, InterruptedException {
-        if (isCancelled)
+        if (cancelled)
             throw new GridHadoopTaskCancelledException("Task cancelled.");
 
         if (writer != null)
@@ -397,7 +397,7 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
 
     /** {@inheritDoc} */
     @Override public boolean nextKey() throws IOException, InterruptedException {
-        if (isCancelled)
+        if (cancelled)
             throw new GridHadoopTaskCancelledException("Task cancelled.");
 
         return input.next();
@@ -474,6 +474,6 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
      * Cancels the task by stop the IO.
      */
     public void cancel() {
-        isCancelled = true;
+        cancelled = true;
     }
 }
