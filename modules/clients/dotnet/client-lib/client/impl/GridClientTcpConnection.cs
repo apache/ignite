@@ -81,10 +81,16 @@ namespace GridGain.Client.Impl {
         private readonly TcpClient tcp;
 
         /** <summary>Output stream.</summary> */
-        private readonly Stream stream;
+        private readonly Stream outStream;
 
+        /** <summary>Input stream.</summary> */
+        private readonly Stream inStream;
+
+        /** <summary>SSL stream flag.</summary> */
+        private readonly bool isSslStream;
+        
         /** <summary>Last stream reading failed with timeout.</summary> */
-        private bool lastReadTimedOut = false;
+        internal bool lastReadTimedOut = false;
 
         /** <summary>Timestamp of last packet send event.</summary> */
         private DateTime lastPacketSndTime;
@@ -100,6 +106,12 @@ namespace GridGain.Client.Impl {
 
         /** <summary>Reader thread.</summary> */
         private readonly Thread rdr;
+
+        /** <summary>Writer thread.</summary> */
+        private readonly Thread writer;
+
+        /** <summary>Queue to pass messages to writer.</summary> */
+        private BlockingCollection<MemoryStream> q = new BlockingCollection<MemoryStream>();
 
         /**
          * <summary>
@@ -141,6 +153,7 @@ namespace GridGain.Client.Impl {
 
                     tcp.ReceiveTimeout = connectTimeout;
                     tcp.SendTimeout = connectTimeout;
+                    tcp.NoDelay = true;
 
                     // Open connection.
                     tcp.Connect(srvAddr);
@@ -156,14 +169,23 @@ namespace GridGain.Client.Impl {
                 }
             } while (!tcp.Connected);
 
-            if (sslCtx == null)
-                stream = tcp.GetStream();
-            else {
-                stream = sslCtx.CreateStream(tcp);
+            if (sslCtx == null) {
+                isSslStream = false;
 
-                lock (stream) {
+                outStream = new BufferedStream(tcp.GetStream(), Math.Min(tcp.SendBufferSize, 32768));
+                inStream = new BufferedStream(tcp.GetStream(), Math.Min(tcp.ReceiveBufferSize, 32768));
+            }
+            else {
+                isSslStream = true;
+
+                Stream sslStream = sslCtx.CreateStream(tcp);
+
+                outStream = new BufferedStream(sslStream, Math.Min(tcp.SendBufferSize, 32768));
+                inStream = new BufferedStream(sslStream, Math.Min(tcp.ReceiveBufferSize, 32768));
+
+                lock (outStream) {
                     // Flush client authentication packets (if any).
-                    stream.Flush();
+                    outStream.Flush();
                 }
             }
 
@@ -172,11 +194,17 @@ namespace GridGain.Client.Impl {
 
             rdr = new Thread(readPackets);
 
-            rdr.Name = "grid-tcp-connection--client#" + clientId + "--addr#" + srvAddr;
+            rdr.Name = "grid-tcp-connection-rdr--client#" + clientId + "--addr#" + srvAddr;
 
             //Dbg.WriteLine("Start thread: " + rdr.Name);
 
             rdr.Start();
+
+            writer = new Thread(writePackets);
+
+            writer.Name = "grid-tcp-connection-writer--client#" + clientId + "--addr#" + srvAddr;
+
+            writer.Start();
         }
 
         /**
@@ -221,10 +249,8 @@ namespace GridGain.Client.Impl {
                     return false;
 
                 // Skip, if there are several pending requests.
-                lock (pendingReqs) {
-                    if (pendingReqs.Count != 0)
-                        return false;
-                }
+                if (pendingReqs.Count != 0)
+                    return false;
 
                 // Mark connection as closed.
                 closed = true;
@@ -245,28 +271,22 @@ namespace GridGain.Client.Impl {
             Dbg.Assert(closed);
             Dbg.Assert(!Thread.CurrentThread.Equals(rdr));
 
-
             rdr.Interrupt();
-            rdr.Join();
+            writer.Interrupt();
 
-            lock (stream) {
+            rdr.Join();
+            writer.Join();
+
+            lock (outStream) {
                 // It's unclear from documentation why this call is needed,
                 // but without it we get IOException on the server.
                 U.DoSilent<Exception>(() => tcp.Client.Disconnect(false), null);
 
-                U.DoSilent<Exception>(() => stream.Close(), null);
+                U.DoSilent<Exception>(() => outStream.Close(), null);
                 U.DoSilent<Exception>(() => tcp.Close(), null);
             }
 
-            IList<GridClientFuture> reqs;
-
-            lock (pendingReqs) {
-                reqs = new List<GridClientFuture>(pendingReqs.Values);
-
-                pendingReqs.Clear();
-            }
-
-            foreach (GridClientFuture fut in reqs)
+            foreach (GridClientFuture fut in pendingReqs.Values)
                 fut.Fail(() => {
                     throw new GridClientClosedException("Failed to perform request" +
                         " (connection was closed before response was received): " + ServerAddress);
@@ -339,9 +359,7 @@ namespace GridGain.Client.Impl {
                 fut.Message.SessionToken = sesTok;
 
                 // Add request to pending queue.
-                lock (pendingReqs) {
-                    pendingReqs.Add(reqId, fut);
-                }
+                pendingReqs.Add(reqId, fut);
             }
             finally {
                 closeLock.ReleaseReaderLock();
@@ -357,14 +375,10 @@ namespace GridGain.Client.Impl {
          * <param name="msg">Incoming response message.</param>
          */
         private void handleResponse(GridClientResponse msg) {
-            Dbg.Assert(Thread.CurrentThread.Equals(rdr));
-
             GridClientTcpRequestFuture fut;
 
-            lock (pendingReqs) {
-                if (!pendingReqs.TryGetValue(msg.RequestId, out fut))
-                    return;
-            }
+            if (!pendingReqs.TryGetValue(msg.RequestId, out fut))
+                return;
 
             // Update authentication session token.
             if (msg.SessionToken != null)
@@ -377,9 +391,8 @@ namespace GridGain.Client.Impl {
 
                     sendCredentials(msg.RequestId);
                 }
-                else {
+                else
                     finishRequest(fut, msg);
-                }
             }
             else if (fut.State == GridClientTcpRequestFuture.AUTHORISING) {
                 if (msg.Status == GridClientResponseStatus.Success) {
@@ -390,15 +403,13 @@ namespace GridGain.Client.Impl {
 
                     sendPacket(fut.Message);
                 }
-                else {
+                else
                     // Let the request fail straight way.
                     finishRequest(fut, msg);
-                }
             }
-            else { // State == RETRY
+            else  // State == RETRY
                 // Finish request with whatever server responded.
                 finishRequest(fut, msg);
-            }
         }
 
         /**
@@ -459,9 +470,7 @@ namespace GridGain.Client.Impl {
                     break;
             }
 
-            lock (pendingReqs) {
-                pendingReqs.Remove(resp.RequestId);
-            }
+            pendingReqs.Remove(resp.RequestId);
         }
 
         /**
@@ -473,28 +482,36 @@ namespace GridGain.Client.Impl {
          */
         private void sendPacket(GridClientRequest msg) {
             try {
-                byte[] data = marshaller.Marshal(msg);
-                byte[] size = U.ToBytes(40 + data.Length);
-                byte[] head = new byte[1 + size.Length + 40 + data.Length];
+                MemoryStream buf = new MemoryStream(1024);
 
-                // Prepare packet.
-                head[0] = (byte)0x90;
-                Array.Copy(size, 0, head, 1, 4);
-                Array.Copy(GridClientUtils.ToBytes(msg.RequestId), 0, head, 5, 8);
-                Array.Copy(GridClientUtils.ToBytes(msg.ClientId), 0, head, 13, 16);
-                Array.Copy(GridClientUtils.ToBytes(msg.DestNodeId), 0, head, 29, 16);
-                Array.Copy(data, 0, head, 45, data.Length);
+                // Header.
+                buf.WriteByte((byte)0x90);
 
-                // Enqueue packet to send.
-                lock (stream) {
-                    stream.Write(head, 0, head.Length);
-                    stream.Flush();
-                }
+                // Reserve place for size.
+                buf.WriteByte((byte)0);
+                buf.WriteByte((byte)0);
+                buf.WriteByte((byte)0);
+                buf.WriteByte((byte)0);
 
-                lastPacketSndTime = U.Now;
+                buf.Write(GridClientUtils.ToBytes(msg.RequestId), 0, 8);
+                buf.Write(GridClientUtils.ToBytes(msg.ClientId), 0, 16);
+                buf.Write(GridClientUtils.ToBytes(msg.DestNodeId), 0, 16);
+
+                marshaller.Marshal(msg, buf);
+
+                int len = (int)buf.Length;
+
+                buf.Seek(1, SeekOrigin.Begin);
+
+                buf.Write(U.ToBytes(len - 1 - 4), 0, 4);
+
+                buf.Position = len;
+
+                q.Add(buf);
             }
-            catch (IOException e) {
-                // In case of IOException we should shutdown the whole client since connection is broken.
+            catch (Exception e) {
+                // In case of Exception we should shutdown the whole client since connection is broken
+                // and future for this reques will never be completed.
                 Close(false);
 
                 throw new GridClientConnectionResetException("Failed to send message over network (will try to " +
@@ -503,7 +520,12 @@ namespace GridGain.Client.Impl {
         }
 
         /** <inheritdoc/> */
-        override public IGridClientFuture<Boolean> CachePutAll<K, V>(String cacheName, ISet<GridClientCacheFlag> cacheFlags, IDictionary<K, V> entries, Guid destNodeId) {
+        override public IGridClientFuture<Boolean> CachePutAll<K, V>(
+            String cacheName, 
+            ISet<GridClientCacheFlag> cacheFlags, 
+            IDictionary<K, V> entries, 
+            Guid destNodeId
+        ) {
             Dbg.Assert(entries != null);
 
             GridClientCacheRequest req = new GridClientCacheRequest(CacheOp.PutAll, destNodeId);
@@ -516,7 +538,12 @@ namespace GridGain.Client.Impl {
         }
 
         /** <inheritdoc/> */
-        override public IGridClientFuture<IDictionary<K, V>> CacheGetAll<K, V>(String cacheName, ISet<GridClientCacheFlag> cacheFlags, IEnumerable<K> keys, Guid destNodeId) {
+        override public IGridClientFuture<IDictionary<K, V>> CacheGetAll<K, V>(
+            String cacheName, 
+            ISet<GridClientCacheFlag> cacheFlags, 
+            IEnumerable<K> keys, 
+            Guid destNodeId
+        ) {
             Dbg.Assert(keys != null);
 
             GridClientCacheRequest req = new GridClientCacheRequest(CacheOp.GetAll, destNodeId);
@@ -545,7 +572,12 @@ namespace GridGain.Client.Impl {
         }
 
         /** <inheritdoc/> */
-        override public IGridClientFuture<Boolean> CacheRemove<K>(String cacheName, ISet<GridClientCacheFlag> cacheFlags, K key, Guid destNodeId) {
+        override public IGridClientFuture<Boolean> CacheRemove<K>(
+            String cacheName, 
+            ISet<GridClientCacheFlag> cacheFlags, 
+            K key, 
+            Guid destNodeId
+        ) {
             GridClientCacheRequest req = new GridClientCacheRequest(CacheOp.Rmv, destNodeId);
 
             req.CacheName = cacheName;
@@ -556,7 +588,12 @@ namespace GridGain.Client.Impl {
         }
 
         /** <inheritdoc/> */
-        override public IGridClientFuture<Boolean> CacheRemoveAll<K>(String cacheName, ISet<GridClientCacheFlag> cacheFlags, IEnumerable<K> keys, Guid destNodeId) {
+        override public IGridClientFuture<Boolean> CacheRemoveAll<K>(
+            String cacheName, 
+            ISet<GridClientCacheFlag> cacheFlags, 
+            IEnumerable<K> keys, 
+            Guid destNodeId
+        ) {
             Dbg.Assert(keys != null);
 
             GridClientCacheRequest req = new GridClientCacheRequest(CacheOp.RmvAll, destNodeId);
@@ -569,7 +606,12 @@ namespace GridGain.Client.Impl {
         }
 
         /** <inheritdoc/> */
-        override public IGridClientFuture<Boolean> CacheReplace<K, V>(String cacheName, ISet<GridClientCacheFlag> cacheFlags, K key, V val, Guid destNodeId) {
+        override public IGridClientFuture<Boolean> CacheReplace<K, V>(
+            String cacheName, 
+            ISet<GridClientCacheFlag> cacheFlags, 
+            K key, V val, 
+            Guid destNodeId
+        ) {
             Dbg.Assert(key != null);
             Dbg.Assert(val != null);
 
@@ -584,7 +626,13 @@ namespace GridGain.Client.Impl {
         }
 
         /** <inheritdoc/> */
-        override public IGridClientFuture<Boolean> CacheAppend<K, V>(String cacheName, ISet<GridClientCacheFlag> cacheFlags, K key, V val, Guid destNodeId) {
+        override public IGridClientFuture<Boolean> CacheAppend<K, V>(
+            String cacheName, 
+            ISet<GridClientCacheFlag> cacheFlags, 
+            K key, 
+            V val, 
+            Guid destNodeId
+        ) {
             Dbg.Assert(key != null);
             Dbg.Assert(val != null);
 
@@ -614,7 +662,14 @@ namespace GridGain.Client.Impl {
         }
 
         /** <inheritdoc /> */
-        override public IGridClientFuture<Boolean> CacheCompareAndSet<K, V>(String cacheName, ISet<GridClientCacheFlag> cacheFlags, K key, V val1, V val2, Guid destNodeId) {
+        override public IGridClientFuture<Boolean> CacheCompareAndSet<K, V>(
+            String cacheName, 
+            ISet<GridClientCacheFlag> cacheFlags, 
+            K key, 
+            V val1, 
+            V val2, 
+            Guid destNodeId
+        ) {
             Dbg.Assert(key != null);
 
             GridClientCacheRequest msg = new GridClientCacheRequest(CacheOp.Cas, destNodeId);
@@ -846,10 +901,58 @@ namespace GridGain.Client.Impl {
             return node;
         }
 
+        /** <summary>Writer thread.</summary> */
+        private void writePackets() {
+            try {
+                bool take = true;
+
+                while (true) {
+                    MemoryStream msg;
+
+                    if (take) {
+                        msg = q.Take();
+
+                        take = false;
+                    }
+                    else
+                        q.TryTake(out msg);
+
+                    if (msg == null) {
+                        take = true;
+
+                        lock (outStream) {
+                            outStream.Flush();
+                        }
+
+                        continue;
+                    }
+
+                    lock (outStream) {
+                        msg.WriteTo(outStream);
+                    }
+                }
+            }
+            catch (IOException e) {
+                if (!closed)
+                    Dbg.WriteLine("Failed to write data to socket (will close connection)" +
+                        " [addr=" + ServerAddress + ", e=" + e.Message + "]");
+            }
+            catch (Exception e) {
+                if (!closed)
+                    Dbg.WriteLine("Unexpected throwable in connection writer thread (will close connection)" +
+                        " [addr={0}, e={1}]", ServerAddress, e);
+            }
+            finally {
+                U.Async(() => Close(false));
+            }
+        }
+
         /** <summary>Reader thread.</summary> */
         private void readPackets() {
             try {
                 bool running = true;
+                byte[] lenByte = new byte[4];
+                byte[] head = new byte[40];
 
                 while (running) {
                     // Note that only this thread removes futures from map.
@@ -860,22 +963,40 @@ namespace GridGain.Client.Impl {
                         if (!waitCompletion)
                             break;
 
-                        lock (pendingReqs) {
-                            if (pendingReqs.Count == 0)
-                                break;
-                        }
+                        if (pendingReqs.Count == 0)
+                            break;
                     }
 
                     // Header.
                     int symbol;
 
                     try {
-                        symbol = readByte();
-                    }
-                    catch (TimeoutException) {
-                        checkPing();
+                        if (lastReadTimedOut) {
+                            lastReadTimedOut = false;
 
-                        continue;
+                            if (isSslStream)
+                                // Recover SSL stream state after socket exception.
+                                skipSslDataRecordHeader();
+                        }
+
+                        symbol = inStream.ReadByte();
+                    }
+                    catch (Exception e) {
+                        if (e.InnerException is SocketException)
+                            e = e.InnerException;
+
+                        var sockEx = e as SocketException;
+
+                        if (sockEx != null && sockEx.ErrorCode == 10060) {
+                            checkPing();
+
+                            lastReadTimedOut = true;
+
+                            continue;
+                        }
+
+                        // All other exceptions are interpreted as stream ends.
+                        throw;
                     }
 
                     // Connection closed.
@@ -894,81 +1015,42 @@ namespace GridGain.Client.Impl {
                         break;
                     }
 
-                    // Packet.
-                    MemoryStream buf = new MemoryStream();
+                    U.ReadFully(inStream, lenByte, 0, 4);
 
-                    int len = 0;
+                    int len = U.BytesToInt32(lenByte, 0);
 
-                    while (true) {
-                        try {
-                            symbol = readByte();
-                        }
-                        catch (TimeoutException) {
-                            checkPing();
+                    if (len == 0) {
+                        // Ping received.
+                        lastPingRcvTime = U.Now;
 
-                            continue;
-                        }
-
-                        if (symbol == -1) {
-                            running = false;
-
-                            break;
-                        }
-
-                        byte b = (byte)symbol;
-
-                        buf.WriteByte(b);
-
-                        if (len == 0) {
-                            if (buf.Length == 4) {
-                                len = U.BytesToInt32(buf.ToArray(), 0);
-
-                                // Reset buffer.
-                                buf.SetLength(0);
-
-                                if (len == 0) {
-                                    // Ping received.
-                                    lastPingRcvTime = U.Now;
-
-                                    break;
-                                }
-                            }
-                        }
-                        else {
-                            if (buf.Length == len) {
-                                if (len < 40) {
-                                    Dbg.WriteLine("Invalid packet received [len=" + len + ", buf=" + buf + "]");
-
-                                    break;
-                                }
-
-                                buf.Position = 0; // Rewind buffer.
-
-                                byte[] head = new byte[40];
-                                byte[] packet = new byte[len - head.Length];
-
-                                buf.Read(head, 0, head.Length);
-                                buf.Read(packet, 0, packet.Length);
-
-                                GridClientResponse msg = marshaller.Unmarshal<GridClientResponse>(packet);
-
-                                msg.RequestId = U.BytesToInt64(head, 0);
-                                msg.ClientId = U.BytesToGuid(head, 8);
-                                msg.DestNodeId = U.BytesToGuid(head, 24);
-
-                                // Reset buffer.
-                                buf.SetLength(0);
-
-                                len = 0;
-
-                                lastPacketRcvTime = U.Now;
-
-                                handleResponse(msg);
-
-                                break;
-                            }
-                        }
+                        continue;
                     }
+
+                    if (len < 40) {
+                        Dbg.WriteLine("Invalid packet received [len=" + len + "]");
+                        
+                        break;
+                    }
+
+                    U.ReadFully(inStream, head, 0, 40);
+
+                    long reqId = U.BytesToInt64(head, 0);
+                    Guid clientId = U.BytesToGuid(head, 8);
+                    Guid destNodeId = U.BytesToGuid(head, 24);
+
+                    byte[] msgBytes = new byte[len - 40];
+
+                    U.ReadFully(inStream, msgBytes, 0, msgBytes.Length);
+
+                    GridClientResponse msg = marshaller.Unmarshal<GridClientResponse>(msgBytes);
+
+                    msg.RequestId = reqId;
+                    msg.ClientId = clientId;
+                    msg.DestNodeId = destNodeId;
+
+                    lastPacketRcvTime = U.Now;
+
+                    handleResponse(msg);
                 }
             }
             catch (IOException e) {
@@ -985,41 +1067,30 @@ namespace GridGain.Client.Impl {
             }
         }
 
-
         /**
          * <summary>
-         * Reads a byte from the stream.</summary>
+         * Checks last ping send time and last ping receive time.</summary>
          *
-         * <returns>The byte from the stream or -1 input stream ends.</returns>
-         * <exception cref="TimeoutException">If read socket operation is timed out.</exception>
+         * <exception cref="IOException">If</exception>
          */
-        private int readByte() {
-            try {
-                if (lastReadTimedOut) {
-                    lastReadTimedOut = false;
+        private void checkPing() {
+            DateTime now = U.Now;
 
-                    if (stream is SslStream)
-                        // Recover SSL stream state after socket exception.
-                        skipSslDataRecordHeader();
+            DateTime lastRcvTime = lastPacketRcvTime > lastPingRcvTime ? lastPacketRcvTime : lastPingRcvTime;
+
+            if (now - lastPingSndTime > PING_SND_TIME) {
+                lock (outStream) {
+                    outStream.Write(PING_PACKET, 0, PING_PACKET.Length);
+                    outStream.Flush();
                 }
 
-                return stream.ReadByte();
+                lastPingSndTime = now;
             }
-            catch (Exception e) {
-                if (e.InnerException is SocketException)
-                    e = e.InnerException;
 
-                var sockEx = e as SocketException;
-
-                if (sockEx != null && sockEx.ErrorCode == 10060) {
-                    lastReadTimedOut = true;
-
-                    throw new TimeoutException(e.Message, e);
-                }
-
-                // All other exceptions are interpreted as stream ends.
-                throw;
-            }
+            if (now - lastRcvTime > PING_RES_TIMEOUT)
+                throw new IOException("Did not receive any packets within ping response interval (connection is " +
+                    "considered to be half-opened) [lastPingSendTime=" + lastPingSndTime + ", lastReceiveTime=" +
+                    lastRcvTime + ", addr=" + ServerAddress + ']');
         }
 
         /**
@@ -1046,7 +1117,7 @@ namespace GridGain.Client.Impl {
             byte[] data = new byte[5];
 
             for (int pos = 0; pos < 5; ) {
-                int read = stream.Read(data, pos, 5 - pos);
+                int read = tcp.GetStream().Read(data, pos, 5 - pos);
 
                 if (read == 0)
                     return; // EOF.
@@ -1062,34 +1133,6 @@ namespace GridGain.Client.Impl {
 
             if (data[2] != (byte)0 && data[2] != (byte)1)
                 throw new IOException("Unsupported SSL type: " + data[2]);
-
-            //Dbg.WriteLine("The next SSL chunk size: " + (data[3] * 256 + data[4]));
-        }
-
-        /**
-         * <summary>
-         * Checks last ping send time and last ping receive time.</summary>
-         *
-         * <exception cref="IOException">If</exception>
-         */
-        private void checkPing() {
-            DateTime now = U.Now;
-
-            DateTime lastRcvTime = lastPacketRcvTime > lastPingRcvTime ? lastPacketRcvTime : lastPingRcvTime;
-
-            if (now - lastPingSndTime > PING_SND_TIME) {
-                lock (stream) {
-                    stream.Write(PING_PACKET, 0, PING_PACKET.Length);
-                    stream.Flush();
-                }
-
-                lastPingSndTime = now;
-            }
-
-            if (now - lastRcvTime > PING_RES_TIMEOUT)
-                throw new IOException("Did not receive any packets within ping response interval (connection is " +
-                    "considered to be half-opened) [lastPingSendTime=" + lastPingSndTime + ", lastReceiveTime=" +
-                    lastRcvTime + ", addr=" + ServerAddress + ']');
         }
     }
 

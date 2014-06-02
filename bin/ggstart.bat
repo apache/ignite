@@ -91,7 +91,7 @@ set ANT_AUGMENTED_GGJAR=gridgain.jar
 ::
 call "%GRIDGAIN_HOME%\os\bin\include\setenv.bat"
 
-set CP=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\%ANT_AUGMENTED_GGJAR%
+set CP=%GRIDGAIN_LIBS%
 
 ::
 :: Parse command line parameters.
@@ -120,7 +120,7 @@ set RESTART_SUCCESS_OPT=-DGRIDGAIN_SUCCESS_FILE=%RESTART_SUCCESS_FILE%
 ::
 :: Find available port for JMX
 ::
-for /F "tokens=*" %%A in ('""%JAVA_HOME%\bin\java" -cp "%GRIDGAIN_HOME%\%ANT_AUGMENTED_GGJAR%" org.gridgain.grid.util.portscanner.GridJmxPortFinder"') do (
+for /F "tokens=*" %%A in ('""%JAVA_HOME%\bin\java" -cp "%GRIDGAIN_HOME%\libs\*" org.gridgain.grid.util.portscanner.GridJmxPortFinder"') do (
     set JMX_PORT=%%A
 )
 

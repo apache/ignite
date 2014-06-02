@@ -22,6 +22,7 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.marshaller.optimized.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.segmentation.*;
 import org.gridgain.grid.spi.authentication.*;
 import org.gridgain.grid.spi.authentication.noop.*;
@@ -165,6 +166,21 @@ public class GridConfiguration {
     /** Default size of management thread pool. */
     public static final int DFLT_MGMT_THREAD_CNT = 4;
 
+    /** Default max queue capacity of GGFS thread pool. */
+    public static final int DFLT_GGFS_THREADPOOL_QUEUE_CAP = 16;
+
+    /** Default size of REST thread pool. */
+    public static final int DFLT_REST_CORE_THREAD_CNT = DFLT_PUBLIC_CORE_THREAD_CNT;
+
+    /** Default max size of REST thread pool. */
+    public static final int DFLT_REST_MAX_THREAD_CNT = DFLT_PUBLIC_CORE_THREAD_CNT;
+
+    /** Default keep alive time for REST thread pool. */
+    public static final long DFLT_REST_KEEP_ALIVE_TIME = 0;
+
+    /** Default max queue capacity of REST thread pool. */
+    public static final int DFLT_REST_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
+
     /** Default segmentation policy. */
     public static final GridSegmentationPolicy DFLT_SEG_PLC = STOP;
 
@@ -225,6 +241,9 @@ public class GridConfiguration {
     /** GGFS executor service. */
     private ExecutorService ggfsSvc;
 
+    /** REST requests executor service. */
+    private ExecutorService restExecSvc;
+
     /** Peer class loading executor service shutdown flag. */
     private boolean p2pSvcShutdown = true;
 
@@ -239,6 +258,9 @@ public class GridConfiguration {
 
     /** GGFS executor service shutdown flag. */
     private boolean ggfsSvcShutdown = true;
+
+    /** REST executor service shutdown flag. */
+    private boolean restSvcShutdown = true;
 
     /** Lifecycle email notification. */
     private boolean lifeCycleEmailNtf = true;
@@ -484,6 +506,9 @@ public class GridConfiguration {
     /** Data center ID. */
     private byte dataCenterId;
 
+    /** Security credentials. */
+    private GridSecurityCredentialsProvider securityCred;
+
     /** Hadoop configuration. */
     private GridHadoopConfiguration hadoopCfg;
 
@@ -582,6 +607,9 @@ public class GridConfiguration {
         restTcpSslCtxFactory = cfg.getRestTcpSslContextFactory();
         restTcpSslEnabled = cfg.isRestTcpSslEnabled();
         restTcpSslClientAuth = cfg.isRestTcpSslClientAuth();
+        restExecSvc = cfg.getRestExecutorService();
+        restSvcShutdown = cfg.getRestExecutorServiceShutdown();
+        securityCred = cfg.getSecurityCredentialsProvider();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
@@ -1123,6 +1151,7 @@ public class GridConfiguration {
      * <ul>
      *     <li>Core pool size - number of processors available in system</li>
      *     <li>Max pool size - number of processors available in system</li>
+     *     <li>Queue capacity - {@link #DFLT_GGFS_THREADPOOL_QUEUE_CAP}</li>
      * </ul>
      *
      * @return Thread pool implementation to be used for GGFS outgoing message sending.
@@ -2594,6 +2623,58 @@ public class GridConfiguration {
     }
 
     /**
+     * Should return an instance of fully configured thread pool to be used for
+     * processing of client messages (REST requests).
+     * <p>
+     * If not provided, new executor service will be created using the following
+     * configuration:
+     * <ul>
+     *     <li>Core pool size - {@link #DFLT_REST_CORE_THREAD_CNT}</li>
+     *     <li>Max pool size - {@link #DFLT_REST_MAX_THREAD_CNT}</li>
+     *     <li>Queue capacity - {@link #DFLT_REST_THREADPOOL_QUEUE_CAP}</li>
+     * </ul>
+     *
+     * @return Thread pool implementation to be used for processing of client
+     *      messages.
+     */
+    public ExecutorService getRestExecutorService() {
+        return restExecSvc;
+    }
+
+    /**
+     * Sets thread pool to use for processing of client messages (REST requests).
+     *
+     * @param restExecSvc Thread pool to use for processing of client messages.
+     * @see GridConfiguration#getRestExecutorService()
+     */
+    public void setRestExecutorService(ExecutorService restExecSvc) {
+        this.restExecSvc = restExecSvc;
+    }
+
+    /**
+     * Sets REST executor service shutdown flag.
+     *
+     * @param restSvcShutdown REST executor service shutdown flag.
+     * @see GridConfiguration#getRestExecutorService()
+     */
+    public void setRestExecutorServiceShutdown(boolean restSvcShutdown) {
+        this.restSvcShutdown = restSvcShutdown;
+    }
+
+    /**
+     * Shutdown flag for REST executor service.
+     * <p>
+     * If not provided, default value {@code true} will be used which will shutdown
+     * executor service when GridGain stops regardless whether it was started before GridGain
+     * or by GridGain.
+     *
+     * @return REST executor service shutdown flag.
+     */
+    public boolean getRestExecutorServiceShutdown() {
+        return restSvcShutdown;
+    }
+
+    /**
      * Sets system-wide local address or host for all GridGain components to bind to. If provided it will
      * override all default local bind settings within GridGain or any of its SPIs.
      *
@@ -2872,6 +2953,24 @@ public class GridConfiguration {
      */
     public void setHadoopConfiguration(GridHadoopConfiguration hadoopCfg) {
         this.hadoopCfg = hadoopCfg;
+    }
+
+    /**
+     * Gets security credentials.
+     *
+     * @return Security credentials.
+     */
+    public GridSecurityCredentialsProvider getSecurityCredentialsProvider() {
+        return securityCred;
+    }
+
+    /**
+     * Sets security credentials.
+     *
+     * @param securityCred Security credentials.
+     */
+    public void setSecurityCredentialsProvider(GridSecurityCredentialsProvider securityCred) {
+        this.securityCred = securityCred;
     }
 
     /** {@inheritDoc} */

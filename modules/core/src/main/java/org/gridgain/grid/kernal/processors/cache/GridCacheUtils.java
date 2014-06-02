@@ -1350,7 +1350,7 @@ public class GridCacheUtils {
      * @throws GridException If attribute values are different and fail flag is true.
      */
     public static void checkAttributeMismatch(GridLogger log, String cfgName, GridNode rmt, String attrName,
-        String attrMsg, Object locVal, Object rmtVal, boolean fail) throws GridException {
+        String attrMsg, @Nullable Object locVal, @Nullable Object rmtVal, boolean fail) throws GridException {
         assert rmt != null;
         assert attrName != null;
         assert attrMsg != null;

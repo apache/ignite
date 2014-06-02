@@ -67,6 +67,7 @@ import java.util.*;
 import java.util.Map.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.logging.*;
 
 import static org.gridgain.grid.GridConfiguration.*;
 import static org.gridgain.grid.GridGainState.*;
@@ -657,8 +658,12 @@ public class GridGainEx {
 
         GridBiTuple<Object, Object> t = null;
 
+        Collection<Handler> savedHnds = null;
+
         if (isLog4jUsed)
             t = U.addLog4jNoOpLogger();
+        else
+            savedHnds = U.addJavaNoOpLogger();
 
         GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> cfgMap;
 
@@ -668,6 +673,9 @@ public class GridGainEx {
         finally {
             if (isLog4jUsed && t != null)
                 U.removeLog4jNoOpLogger(t);
+
+            if (!isLog4jUsed)
+                U.removeJavaNoOpLogger(savedHnds);
         }
 
         List<GridNamedInstance> grids = new ArrayList<>(cfgMap.size());
@@ -1086,6 +1094,15 @@ public class GridGainEx {
         /** GGFS executor service shutdown flag. */
         private boolean ggfsSvcShutdown;
 
+        /** REST requests executor service. */
+        private ExecutorService restExecSvc;
+
+        /** Auto REST service flag. */
+        private boolean isAutoRestSvc;
+
+        /** REST executor service shutdown flag. */
+        private boolean restSvcShutdown;
+
         /** DR executor service. */
         private ExecutorService drExecSvc;
 
@@ -1229,17 +1246,13 @@ public class GridGainEx {
             String ggHome = cfg.getGridGainHome();
 
             // Set GridGain home.
-            if (ggHome == null) {
+            if (ggHome == null)
                 ggHome = U.getGridGainHome();
-
-                U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
-            }
-            else {
+            else
                 // If user provided GRIDGAIN_HOME - set it as a system property.
                 U.setGridGainHome(ggHome);
 
-                U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
-            }
+            U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
 
             /*
              * Set up all defaults and perform all checks.
@@ -1301,6 +1314,7 @@ public class GridGainEx {
             myCfg.setNetworkSendRetryDelay(cfg.getNetworkSendRetryDelay());
             myCfg.setNetworkSendRetryCount(cfg.getNetworkSendRetryCount());
             myCfg.setDataCenterId(cfg.getDataCenterId());
+            myCfg.setSecurityCredentialsProvider(cfg.getSecurityCredentialsProvider());
 
             String ntfStr = X.getSystemOrEnv(GG_LIFECYCLE_EMAIL_NOTIFY);
 
@@ -1443,11 +1457,30 @@ public class GridGainEx {
                     new LinkedBlockingQueue<Runnable>());
             }
 
+            restExecSvc = cfg.getRestExecutorService();
+
+            if (restExecSvc != null && !cfg.isRestEnabled()) {
+                U.warn(log, "REST executor service is configured, but REST is disabled in configuration " +
+                    "(safely ignoring).");
+            }
+            else if (restExecSvc == null && cfg.isRestEnabled()) {
+                isAutoRestSvc = true;
+
+                restExecSvc = new GridThreadPoolExecutor(
+                    "rest-" + cfg.getGridName(),
+                    DFLT_REST_CORE_THREAD_CNT,
+                    DFLT_REST_MAX_THREAD_CNT,
+                    DFLT_REST_KEEP_ALIVE_TIME,
+                    new LinkedBlockingQueue<Runnable>(DFLT_REST_THREADPOOL_QUEUE_CAP)
+                );
+            }
+
             execSvcShutdown = cfg.getExecutorServiceShutdown();
             sysSvcShutdown = cfg.getSystemExecutorServiceShutdown();
             mgmtSvcShutdown = cfg.getManagementExecutorServiceShutdown();
             p2pSvcShutdown = cfg.getPeerClassLoadingExecutorServiceShutdown();
             ggfsSvcShutdown = cfg.getGgfsExecutorServiceShutdown();
+            restSvcShutdown = cfg.getRestExecutorServiceShutdown();
 
             if (marsh == null) {
                 if (!U.isHotSpot()) {
@@ -1487,11 +1520,13 @@ public class GridGainEx {
             myCfg.setManagementExecutorService(mgmtExecSvc);
             myCfg.setPeerClassLoadingExecutorService(p2pExecSvc);
             myCfg.setGgfsExecutorService(ggfsExecSvc);
+            myCfg.setRestExecutorService(restExecSvc);
             myCfg.setExecutorServiceShutdown(execSvcShutdown);
             myCfg.setSystemExecutorServiceShutdown(sysSvcShutdown);
             myCfg.setManagementExecutorServiceShutdown(mgmtSvcShutdown);
             myCfg.setPeerClassLoadingExecutorServiceShutdown(p2pSvcShutdown);
             myCfg.setGgfsExecutorServiceShutdown(ggfsSvcShutdown);
+            myCfg.setRestExecutorServiceShutdown(restSvcShutdown);
             myCfg.setNodeId(nodeId);
 
             GridGgfsConfiguration[] ggfsCfgs = cfg.getGgfsConfiguration();
@@ -1936,7 +1971,7 @@ public class GridGainEx {
                 return cfgLog;
             }
             catch (Exception e) {
-                throw new GridException("Failed to create GridLog4jLogger.", e);
+                throw new GridException("Failed to create logger.", e);
             }
         }
 
@@ -2065,6 +2100,12 @@ public class GridGainEx {
                 U.shutdownNow(getClass(), ggfsExecSvc, log);
 
                 ggfsExecSvc = null;
+            }
+
+            if (isAutoRestSvc || restSvcShutdown) {
+                U.shutdownNow(getClass(), restExecSvc, log);
+
+                restExecSvc = null;
             }
 
             if (drExecSvc != null) {

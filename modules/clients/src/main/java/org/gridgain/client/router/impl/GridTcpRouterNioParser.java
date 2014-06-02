@@ -14,8 +14,8 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.nio.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.nio.*;

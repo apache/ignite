@@ -76,29 +76,7 @@
         </property>
 
         <!-- Specify credentials for grid connection. -->
-        <property name="credentials" value="s3cret"/>
-    </bean>
-
-    <!-- Configuration of Http router. -->
-    <bean id="http.router.cfg" class="org.gridgain.client.router.GridHttpRouterConfiguration"
-          scope="singleton">
-
-        <property name="logger" ref="router.log"/>
-
-        <!-- GRIDGAIN_JETTY_PORT=12200 -->
-        <property name="jettyConfigurationPath" value="${CLIENTS_MODULE_PATH}/src/test/resources/jetty/router-jetty.xml"/>
-
-        <!-- Specify list of remote grid nodes to connect. -->
-        <property name="servers">
-            <list>
-                <value>127.0.0.1:11080</value>
-            </list>
-        </property>
-
-        <!-- Specify credentials for grid connection. -->
-        <property name="credentials" value="s3cret"/>
-
-        <property name="connectionsPerRoute" value="10"/>
+        <!--<property name="credentials" value="s3cret"/>-->
     </bean>
 
     <!--

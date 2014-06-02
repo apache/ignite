@@ -378,6 +378,9 @@ public class GridCacheConfiguration {
     /** */
     private GridDrSenderCacheConfiguration drSndCacheCfg;
 
+    /** */
+    private GridCacheInterceptor<?, ?> interceptor;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public GridCacheConfiguration() {
         /* No-op. */
@@ -421,6 +424,7 @@ public class GridCacheConfiguration {
         evictSyncConcurrencyLvl = cc.getEvictSynchronizedConcurrencyLevel();
         evictSyncTimeout = cc.getEvictSynchronizedTimeout();
         indexingSpiName = cc.getIndexingSpiName();
+        interceptor = cc.getInterceptor();
         invalidate = cc.isInvalidate();
         offHeapMaxMem = cc.getOffHeapMaxMemory();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
@@ -755,6 +759,7 @@ public class GridCacheConfiguration {
      *
      * @return Eviction filter or {@code null}.
      */
+    @SuppressWarnings("unchecked")
     public <K, V> GridCacheEvictionFilter<K, V> getEvictionFilter() {
         return (GridCacheEvictionFilter<K, V>)evictFilter;
     }
@@ -1947,6 +1952,25 @@ public class GridCacheConfiguration {
      */
     public void setDrReceiverConfiguration(GridDrReceiverCacheConfiguration drRcvCacheCfg) {
         this.drRcvCacheCfg = drRcvCacheCfg;
+    }
+
+    /**
+     * Gets cache interceptor.
+     *
+     * @return Cache interceptor.
+     */
+    @SuppressWarnings({"unchecked"})
+    @Nullable public <K, V> GridCacheInterceptor<K, V> getInterceptor() {
+        return (GridCacheInterceptor<K, V>)interceptor;
+    }
+
+    /**
+     * Sets cache interceptor.
+     *
+     * @param interceptor Cache interceptor.
+     */
+    public <K, V> void setInterceptor(GridCacheInterceptor<K, V> interceptor) {
+        this.interceptor = interceptor;
     }
 
     /** {@inheritDoc} */

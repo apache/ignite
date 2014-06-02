@@ -18,6 +18,7 @@ import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -351,6 +352,9 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         @Nullable T arg,
         boolean sys) {
         assert sesId != null;
+
+        ctx.security().authorize(taskCls == null ? taskName : taskCls.getName(), GridSecurityPermission.TASK_EXECUTE,
+            null);
 
         // Get values from thread-local context.
         Map<GridTaskThreadContextKey, Object> map = thCtx.get();
