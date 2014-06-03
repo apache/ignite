@@ -10,10 +10,14 @@
 package org.gridgain.grid.kernal.ggfs.hadoop;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
+
+import java.io.*;
+import java.net.*;
 
 import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
 
@@ -35,6 +39,36 @@ public class GridGgfsHadoopEndpoint {
 
     /** Port. */
     private final int port;
+
+    /**
+     * Normalize GGFS URI.
+     *
+     * @param uri URI.
+     * @return Normalized URI.
+     * @throws IOException If failed.
+     */
+    public static URI normalize(URI uri) throws IOException {
+        try {
+            if (!F.eq(GridGgfs.GGFS_SCHEME, uri.getScheme()))
+                throw new IOException("Failed to normalize UIR because it has non GGFS scheme: " + uri);
+
+            GridGgfsHadoopEndpoint endpoint = new GridGgfsHadoopEndpoint(uri.getAuthority());
+
+            StringBuilder sb = new StringBuilder();
+
+            if (endpoint.ggfs() != null)
+                sb.append(endpoint.ggfs());
+
+            if (endpoint.grid() != null)
+                sb.append(":").append(endpoint.grid());
+
+            return new URI(uri.getScheme(), sb.length() != 0 ? sb.toString() : null, endpoint.host(), endpoint.port(),
+                uri.getPath(), uri.getQuery(), uri.getFragment());
+        }
+        catch (URISyntaxException | GridException e) {
+            throw new IOException("Failed to normalize URI: " + uri, e);
+        }
+    }
 
     /**
      * Constructor.

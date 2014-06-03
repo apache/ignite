@@ -199,7 +199,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
         cfg.setGgfsConfiguration(ggfsConfiguration(gridName));
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
-        cfg.setLocalHost(U.getLocalHost().getHostAddress());
+        cfg.setLocalHost("127.0.0.1");
         cfg.setCommunicationSpi(communicationSpi());
 
         return cfg;
