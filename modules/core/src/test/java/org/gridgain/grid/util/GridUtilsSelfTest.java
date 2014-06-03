@@ -27,11 +27,16 @@ import java.net.*;
 import java.nio.*;
 import java.util.*;
 
+import static org.junit.Assert.*;
+
 /**
  * Grid utils tests.
  */
 @GridCommonTest(group = "Utils")
 public class GridUtilsSelfTest extends GridCommonAbstractTest {
+    /** */
+    public static final int[] EMPTY = new int[0];
+
     /**
      * @return 120 character length string.
      */
@@ -546,6 +551,108 @@ public class GridUtilsSelfTest extends GridCommonAbstractTest {
 
         assert U.getAnnotation(A3.class, Ann1.class) == null;
         assert U.getAnnotation(A3.class, Ann2.class) != null;
+    }
+
+    /**
+     *
+     */
+    public void testUnique() {
+        int[][][] arrays = new int[][][]{
+            new int[][]{EMPTY, EMPTY, EMPTY},
+            new int[][]{new int[]{1, 2, 3}, EMPTY, new int[]{1, 2, 3}},
+            new int[][]{new int[]{1, 2, 3}, new int[]{1, 2, 3}, new int[]{1, 2, 3}},
+            new int[][]{new int[]{1, 2, 3}, new int[]{1, 3}, new int[]{1, 2, 3}},
+            new int[][]{new int[]{1, 2, 30, 40, 50}, new int[]{2, 40}, new int[]{1, 2, 30, 40, 50}},
+            new int[][]{new int[]{-100, -13, 1, 2, 5, 30, 40, 50}, new int[]{1, 2, 6, 100, 113},
+                new int[]{-100, -13, 1, 2, 5, 6, 30, 40, 50, 100, 113}}
+        };
+
+        for (int[][] a : arrays) {
+            assertArrayEquals(a[2], U.unique(a[0], a[0].length, a[1], a[1].length));
+
+            assertArrayEquals(a[2], U.unique(a[1], a[1].length, a[0], a[0].length));
+        }
+
+        assertArrayEquals(new int[]{1, 2, 3, 4}, U.unique(new int[]{1, 2, 3, 8}, 3, new int[]{2, 4, 5}, 2));
+        assertArrayEquals(new int[]{2, 4}, U.unique(new int[]{1, 2, 3, 8}, 0, new int[]{2, 4, 5}, 2));
+        assertArrayEquals(new int[]{1, 2, 4, 5}, U.unique(new int[]{1, 2, 3, 8}, 2, new int[]{2, 4, 5, 6}, 3));
+        assertArrayEquals(new int[]{1, 2}, U.unique(new int[]{1, 2, 3, 8}, 2, new int[]{2, 4, 5, 6}, 0));
+    }
+
+    /**
+     *
+     */
+    public void testDifference() {
+        int[][][] arrays = new int[][][]{
+            new int[][]{EMPTY, EMPTY, EMPTY},
+            new int[][]{new int[]{1, 2, 3}, EMPTY, new int[]{1, 2, 3}},
+            new int[][]{EMPTY, new int[]{1, 2, 3}, EMPTY},
+            new int[][]{new int[]{1, 2, 3}, new int[]{1, 2, 3}, EMPTY},
+            new int[][]{new int[]{-100, -50, 1, 2, 3}, new int[]{-50, -1, 1, 3}, new int[]{-100, 2}},
+            new int[][]{new int[]{-100, 1, 2, 30, 40, 50}, new int[]{2, 40}, new int[]{-100, 1, 30, 50}},
+            new int[][]{new int[]{-1, 1, 2, 30, 40, 50}, new int[]{1, 2, 100, 113}, new int[]{-1, 30, 40, 50}}
+        };
+
+        for (int[][] a : arrays)
+            assertArrayEquals(a[2], U.difference(a[0], a[0].length, a[1], a[1].length));
+
+        assertArrayEquals(new int[]{1, 2}, U.difference(new int[]{1, 2, 30, 40, 50}, 3, new int[]{30, 40}, 2));
+        assertArrayEquals(EMPTY, U.difference(new int[]{1, 2, 30, 40, 50}, 0, new int[]{30, 40}, 2));
+        assertArrayEquals(new int[]{1, 2, 40}, U.difference(new int[]{1, 2, 30, 40, 50}, 4, new int[]{30, 40}, 1));
+        assertArrayEquals(new int[]{1, 2, 30, 40}, U.difference(new int[]{1, 2, 30, 40, 50}, 4, new int[]{30, 40}, 0));
+    }
+
+    /**
+     *
+     */
+    public void testCopyIfExceeded() {
+        int[][] arrays = new int[][]{new int[]{13, 14, 17, 11}, new int[]{13}, EMPTY};
+
+        for (int[] a : arrays) {
+            int[] b = Arrays.copyOf(a, a.length);
+
+            assertEquals(a, U.copyIfExceeded(a, a.length));
+            assertArrayEquals(b, U.copyIfExceeded(a, a.length));
+
+            for (int j = 0; j < a.length - 1; j++)
+                assertArrayEquals(Arrays.copyOf(b, j), U.copyIfExceeded(a, j));
+        }
+    }
+
+    /**
+     *
+     */
+    public void testIsIncreasingArray() {
+        assertTrue(U.isIncreasingArray(EMPTY, 0));
+        assertTrue(U.isIncreasingArray(new int[]{Integer.MIN_VALUE, -10, 1, 13, Integer.MAX_VALUE}, 5));
+        assertTrue(U.isIncreasingArray(new int[]{1, 2, 3, -1, 5}, 0));
+        assertTrue(U.isIncreasingArray(new int[]{1, 2, 3, -1, 5}, 3));
+        assertFalse(U.isIncreasingArray(new int[]{1, 2, 3, -1, 5}, 4));
+        assertFalse(U.isIncreasingArray(new int[]{1, 2, 3, -1, 5}, 5));
+        assertFalse(U.isIncreasingArray(new int[]{1, 2, 3, 3, 5}, 4));
+        assertTrue(U.isIncreasingArray(new int[]{1, -1}, 1));
+        assertFalse(U.isIncreasingArray(new int[]{1, -1}, 2));
+        assertTrue(U.isIncreasingArray(new int[]{13, 13, 13}, 1));
+        assertFalse(U.isIncreasingArray(new int[]{13, 13, 13}, 2));
+        assertFalse(U.isIncreasingArray(new int[]{13, 13, 13}, 3));
+    }
+
+    /**
+     *
+     */
+    public void testIsNonDecreasingArray() {
+        assertTrue(U.isNonDecreasingArray(EMPTY, 0));
+        assertTrue(U.isNonDecreasingArray(new int[]{Integer.MIN_VALUE, -10, 1, 13, Integer.MAX_VALUE}, 5));
+        assertTrue(U.isNonDecreasingArray(new int[]{1, 2, 3, -1, 5}, 0));
+        assertTrue(U.isNonDecreasingArray(new int[]{1, 2, 3, -1, 5}, 3));
+        assertFalse(U.isNonDecreasingArray(new int[]{1, 2, 3, -1, 5}, 4));
+        assertFalse(U.isNonDecreasingArray(new int[]{1, 2, 3, -1, 5}, 5));
+        assertTrue(U.isNonDecreasingArray(new int[]{1, 2, 3, 3, 5}, 4));
+        assertTrue(U.isNonDecreasingArray(new int[]{1, -1}, 1));
+        assertFalse(U.isNonDecreasingArray(new int[]{1, -1}, 2));
+        assertTrue(U.isNonDecreasingArray(new int[]{13, 13, 13}, 1));
+        assertTrue(U.isNonDecreasingArray(new int[]{13, 13, 13}, 2));
+        assertTrue(U.isNonDecreasingArray(new int[]{13, 13, 13}, 3));
     }
 
     /**

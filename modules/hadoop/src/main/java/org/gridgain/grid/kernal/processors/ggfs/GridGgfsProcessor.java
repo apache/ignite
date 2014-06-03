@@ -12,8 +12,6 @@ package org.gridgain.grid.kernal.processors.ggfs;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.eviction.*;
-import org.gridgain.grid.cache.eviction.ggfs.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.mapreduce.*;
@@ -275,32 +273,6 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
         }
 
         attrs.put(ATTR_GGFS, attrVals.toArray(new GridGgfsAttributes[attrVals.size()]));
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isGgfsBlockKey(Object key) {
-        return key instanceof GridGgfsBlockKey;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void preProcessCacheConfiguration(GridCacheConfiguration cfg) {
-        GridCacheEvictionPolicy evictPlc = cfg.getEvictionPolicy();
-
-        if (evictPlc instanceof GridCacheGgfsPerBlockLruEvictionPolicy && cfg.getEvictionFilter() == null)
-            cfg.setEvictionFilter(new GridCacheGgfsEvictionFilter());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void validateCacheConfiguration(GridCacheConfiguration cfg) throws GridException {
-        GridCacheEvictionPolicy evictPlc =  cfg.getEvictionPolicy();
-
-        if (evictPlc != null && evictPlc instanceof GridCacheGgfsPerBlockLruEvictionPolicy) {
-            GridCacheEvictionFilter evictFilter = cfg.getEvictionFilter();
-
-            if (evictFilter != null && !(evictFilter instanceof GridCacheGgfsEvictionFilter))
-                throw new GridException("Eviction filter cannot be set explicitly when using " +
-                    "GridCacheGgfsPerBlockLruEvictionPolicy:" + cfg.getName());
-        }
     }
 
     /**

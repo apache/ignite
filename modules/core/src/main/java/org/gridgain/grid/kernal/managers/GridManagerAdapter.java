@@ -435,11 +435,6 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                         ctx.swap().remove(spaceName, key, null, ldr);
                     }
 
-                    @Override public boolean authenticateNode(UUID nodeId, Map<String, Object> attrs)
-                        throws GridException {
-                        return ctx.auth().authenticateNode(nodeId, attrs);
-                    }
-
                     @Override public GridNodeValidationResult validateNode(GridNode node) {
                         for (GridComponent comp : ctx) {
                             GridNodeValidationResult err = comp.validateNode(node);

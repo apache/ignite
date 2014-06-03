@@ -112,13 +112,6 @@ public class GridClientFailedInitSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testHttpClient() throws Exception {
-        doTestClient(HTTP);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testTcpRouter() throws Exception {
         doTestRouter(TCP);
     }
@@ -222,20 +215,6 @@ public class GridClientFailedInitSelfTest extends GridCommonAbstractTest {
         tcpCfg.setServers(Collections.singleton(HOST + ":" + BINARY_PORT));
 
         GridRouterFactory.startTcpRouter(tcpCfg);
-
-        GridHttpRouterConfiguration httpCfg = new GridHttpRouterConfiguration();
-
-        httpCfg.setJettyConfigurationPath(ROUTER_JETTY_CFG);
-        httpCfg.setServers(Collections.singleton(HOST + ":" + JETTY_PORT));
-
-        System.setProperty(GG_JETTY_PORT, Integer.toString(ROUTER_JETTY_PORT));
-
-        try {
-            GridRouterFactory.startHttpRouter(httpCfg);
-        }
-        finally {
-            System.clearProperty(GG_JETTY_PORT);
-        }
     }
 
     /**

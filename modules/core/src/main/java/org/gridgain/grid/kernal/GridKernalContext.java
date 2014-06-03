@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.managers.authentication.*;
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.grid.kernal.managers.collision.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -84,24 +84,6 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      * @return Grid product.
      */
     public GridProduct product();
-
-    /**
-     * Ges version string of the GridGain instance. This method is for information
-     * purpose only.
-     *
-     * @return GridGain version string (excluding the build number).
-     * @see #build()
-     */
-    public String version();
-
-    /**
-     * Gets build number of this GridGain instance. This method is for information
-     * purpose only.
-     *
-     * @return GridGain instance build number.
-     * @see #version()
-     */
-    public String build();
 
     /**
      * Gets list of compatible versions.
@@ -261,7 +243,7 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      *
      * @return REST processor.
      */
-    public GridRestProcessorAdapter rest();
+    public GridRestProcessor rest();
 
     /**
      * Gets segmentation processor.
@@ -283,6 +265,13 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      * @return File system processor.
      */
     public GridGgfsProcessorAdapter ggfs();
+
+    /**
+     * Gets GGFS utils processor.
+     *
+     * @return GGFS utils processor.
+     */
+    public GridGgfsHelper ggfsHelper();
 
     /**
      * Gets stream processor.
@@ -373,7 +362,7 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      *
      * @return Authentication manager.
      */
-    public GridAuthenticationManager auth();
+    public GridSecurityManager security();
 
     /**
      * Gets secure session manager.

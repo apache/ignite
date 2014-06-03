@@ -725,6 +725,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         GridCachePartialUpdateException err = null;
 
+        boolean intercept = ctx.config().getInterceptor() != null;
+
         for (K key : keys) {
             Object val = valsIter != null ? valsIter.next() : null;
 
@@ -746,7 +748,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         ttl,
                         true,
                         true,
-                        filter);
+                        filter,
+                        intercept);
 
                     if (res == null) {
                         if (op == TRANSFORM && val instanceof GridCacheTransformComputeClosure) {
@@ -822,6 +825,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
             Iterator<?> valsIter = vals != null ? vals.iterator() : null;
 
+            boolean intercept = ctx.config().getInterceptor() != null;
+
             for (int i = 0; i < size; i++) {
                 GridCacheEntryEx<K, V> entry = locked.get(i);
 
@@ -849,16 +854,29 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         continue;
                     }
 
-                    filtered.add(entry);
-
                     if (op == TRANSFORM) {
-                        V old = entry.innerGet(null, true, true, false, true, true, true, CU.<K, V>empty());
+                        V old = entry.innerGet(null,
+                            true,
+                            true,
+                            false,
+                            true,
+                            true,
+                            true,
+                            CU.<K, V>empty());
 
                         GridClosure<V, V> transform = (GridClosure<V, V>)val;
 
                         V updated = transform.apply(old);
 
                         if (updated == null) {
+                            if (intercept) {
+                                GridBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
+                                    entry.key(), old);
+
+                                if (ctx.cancelRemove(interceptorRes))
+                                    continue;
+                            }
+
                             // Update previous batch.
                             if (putMap != null) {
                                 err = updatePartialBatch(
@@ -880,6 +898,13 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             rmvKeys.add(entry.key());
                         }
                         else {
+                            if (intercept) {
+                                updated = (V)ctx.config().getInterceptor().onBeforePut(entry.key(), old, updated);
+
+                                if (updated == null)
+                                    continue;
+                            }
+
                             // Update previous batch.
                             if (rmvKeys != null) {
                                 err = updatePartialBatch(
@@ -901,6 +926,22 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         }
                     }
                     else if (op == UPDATE) {
+                        if (intercept) {
+                            V old = entry.innerGet(null,
+                                true,
+                                true,
+                                false,
+                                true,
+                                true,
+                                true,
+                                CU.<K, V>empty());
+
+                            val = ctx.config().getInterceptor().onBeforePut(entry.key(), old, val);
+
+                            if (val == null)
+                                continue;
+                        }
+
                         if (putMap == null)
                             putMap = new LinkedHashMap<>(size, 1.0f);
 
@@ -909,11 +950,30 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                     else {
                         assert op == DELETE;
 
+                        if (intercept) {
+                            V old = entry.innerGet(null,
+                                true,
+                                true,
+                                false,
+                                true,
+                                true,
+                                true,
+                                CU.<K, V>empty());
+
+                            GridBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
+                                entry.key(), old);
+
+                            if (ctx.cancelRemove(interceptorRes))
+                                continue;
+                        }
+
                         if (rmvKeys == null)
                             rmvKeys = new ArrayList<>(size);
 
                         rmvKeys.add(entry.key());
                     }
+
+                    filtered.add(entry);
                 }
                 catch (GridException e) {
                     if (err == null)
@@ -958,7 +1018,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * @return Partial update exception.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private GridCachePartialUpdateException updatePartialBatch(List<GridCacheEntryEx<K, V>> entries,
+    @Nullable private GridCachePartialUpdateException updatePartialBatch(List<GridCacheEntryEx<K, V>> entries,
         final GridCacheVersion ver,
         @Nullable Map<K, V> putMap,
         @Nullable Collection<K> rmvKeys,
@@ -991,6 +1051,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             return err;
         }
 
+        boolean intercept = ctx.config().getInterceptor() != null;
+
         for (int i = 0; i < entries.size(); i++) {
             GridCacheEntryEx<K, V> entry = entries.get(i);
 
@@ -1005,7 +1067,15 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
                 assert writeVal != null || op == DELETE : "null write value found.";
 
-                entry.innerUpdateLocal(ver, op, writeVal, false, false, 0, true, true, null);
+                GridBiTuple<Boolean, V> t =
+                    entry.innerUpdateLocal(ver, op, writeVal, false, false, 0, true, true, null, false);
+
+                if (intercept) {
+                    if (op == UPDATE)
+                        ctx.config().getInterceptor().onAfterPut(entry.key(), writeVal);
+                    else
+                        ctx.config().getInterceptor().onAfterRemove(entry.key(), t.get2());
+                }
             }
             catch (GridCacheEntryRemovedException ignore) {
                 assert false : "Entry cannot become obsolete while holding lock.";
@@ -1107,7 +1177,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         boolean invalidate,
         boolean syncCommit,
         boolean syncRollback,
-        boolean swapEnabled,
+        boolean swapOrOffheapEnabled,
         boolean storeEnabled,
         int txSize,
         @Nullable Object grpLockKey,

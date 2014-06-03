@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.managers.authentication.*;
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.grid.kernal.managers.collision.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -111,7 +111,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringExclude
-    private GridAuthenticationManager authMgr;
+    private GridSecurityManager authMgr;
 
     /** */
     @GridToStringExclude
@@ -184,7 +184,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringInclude
-    private GridRestProcessorAdapter restProc;
+    private GridRestProcessor restProc;
 
     /** */
     @GridToStringInclude
@@ -193,6 +193,10 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** */
     @GridToStringInclude
     private GridGgfsProcessorAdapter ggfsProc;
+
+    /** */
+    @GridToStringInclude
+    private GridGgfsHelper ggfsHelper;
 
     /** */
     @GridToStringInclude
@@ -237,12 +241,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     private GridProduct product;
 
     /** */
-    private String buildDate;
-
-    /** */
-    private String ver;
-
-    /** */
     private GridConfiguration cfg;
 
     /** */
@@ -276,6 +274,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
      * @param gw Kernal gateway.
      * @param ent Release enterprise flag.
      */
+    @SuppressWarnings("TypeMayBeWeakened")
     protected GridKernalContextImpl(GridLoggerProxy log, GridEx grid, GridConfiguration cfg, GridKernalGateway gw,
         boolean ent) {
         assert grid != null;
@@ -332,8 +331,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             failoverMgr = (GridFailoverManager)comp;
         else if (comp instanceof GridCollisionManager)
             colMgr = (GridCollisionManager)comp;
-        else if (comp instanceof GridAuthenticationManager)
-            authMgr = (GridAuthenticationManager)comp;
+        else if (comp instanceof GridSecurityManager)
+            authMgr = (GridSecurityManager)comp;
         else if (comp instanceof GridSecureSessionManager)
             sesMgr = (GridSecureSessionManager)comp;
         else if (comp instanceof GridLoadBalancerManager)
@@ -376,8 +375,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             segProc = (GridSegmentationProcessor)comp;
         else if (comp instanceof GridAffinityProcessor)
             affProc = (GridAffinityProcessor)comp;
-        else if (comp instanceof GridRestProcessorAdapter)
-            restProc = (GridRestProcessorAdapter)comp;
+        else if (comp instanceof GridRestProcessor)
+            restProc = (GridRestProcessor)comp;
         else if (comp instanceof GridDataLoaderProcessor)
             dataLdrProc = (GridDataLoaderProcessor)comp;
         else if (comp instanceof GridGgfsProcessorAdapter)
@@ -400,32 +399,16 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
         comps.add(comp);
     }
 
-    /** {@inheritDoc} */
-    @Override public String version() {
-        return ver;
-    }
-
     /**
-     * Sets version.
-     *
-     * @param ver Version.
+     * @param helper Helper to add.
      */
-    public void version(String ver) {
-        this.ver = ver;
-    }
+    public void addHelper(Object helper) {
+        assert helper != null;
 
-    /** {@inheritDoc} */
-    @Override public String build() {
-        return buildDate;
-    }
-
-    /**
-     * Sets build date.
-     *
-     * @param buildDate Build date.
-     */
-    public void build(String buildDate) {
-        this.buildDate = buildDate;
+        if (helper instanceof GridGgfsHelper)
+            ggfsHelper = (GridGgfsHelper)helper;
+        else
+            assert false : "Unknown helper class: " + helper.getClass();
     }
 
     /** {@inheritDoc} */
@@ -571,7 +554,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridAuthenticationManager auth() {
+    @Override public GridSecurityManager security() {
         return authMgr;
     }
 
@@ -606,7 +589,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridRestProcessorAdapter rest() {
+    @Override public GridRestProcessor rest() {
         return restProc;
     }
 
@@ -624,6 +607,11 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** {@inheritDoc} */
     @Override public GridGgfsProcessorAdapter ggfs() {
         return ggfsProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridGgfsHelper ggfsHelper() {
+        return ggfsHelper;
     }
 
     /** {@inheritDoc} */

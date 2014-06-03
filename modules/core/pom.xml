@@ -35,26 +35,11 @@
         </dependency>
 
         <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.4</version>
-        </dependency>
-
-        <dependency>
             <groupId>mx4j</groupId>
             <artifactId>mx4j-tools</artifactId>
             <version>3.0.1</version>
             <scope>test</scope>
         </dependency>
-
-        <!--
-        <dependency>
-            <groupId>org.ow2.jotm</groupId>
-            <artifactId>jotm-core</artifactId>
-            <version>2.1.9</version>
-            <scope>test</scope>
-        </dependency>
-        -->
 
         <dependency>
             <groupId>commons-dbcp</groupId>
@@ -213,10 +198,37 @@
                                 </replaceregexp>
 
                                 <replaceregexp file="target/classes/gridgain.properties" byline="true">
+                                    <regexp pattern="gridgain.compatible.vers=.*"/>
+                                    <substitution expression="gridgain.compatible.vers=${gridgain.compatible.vers}"/>
+                                </replaceregexp>
+
+                                <replaceregexp file="target/classes/gridgain.properties" byline="true">
                                     <regexp pattern="gridgain.update.status.url=.*"/>
                                     <substitution expression="gridgain.update.status.url=?v=${gridgain.version}"/>
                                 </replaceregexp>
                             </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.4</version>
+                <executions>
+                    <execution>
+                        <id>jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>../../assembly/jar-with-dependencies.xml</descriptor>
+                            </descriptors>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <finalName>gridgain-${gridgain.version}</finalName>
                         </configuration>
                     </execution>
                 </executions>
