@@ -70,7 +70,8 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         try {
             startGrids(2);
-        } catch (GridException e) {
+        }
+        catch (GridException e) {
             StringWriter errors = new StringWriter();
 
             e.printStackTrace(new PrintWriter(errors));
@@ -78,7 +79,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
             String stackTrace = errors.toString();
 
             assertTrue(
-                "Catched exception wasn't contain specified string.",
+                "Caught exception does not contain specified string.",
                 stackTrace.contains("Local and remote nodes have different release types")
             );
 
@@ -100,7 +101,8 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         try {
             startGrids(2);
-        } catch (GridException e) {
+        }
+        catch (GridException e) {
             StringWriter errors = new StringWriter();
 
             e.printStackTrace(new PrintWriter(errors));

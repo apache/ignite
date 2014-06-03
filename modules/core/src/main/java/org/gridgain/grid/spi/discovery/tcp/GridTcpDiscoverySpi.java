@@ -3435,9 +3435,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                         // OS and ENT nodes cannot join one topology.
                         if (locBuildVer.contains(entFlag) && rmtBuildVer.contains(osFlag) ||
                             locBuildVer.contains(osFlag) && rmtBuildVer.contains(entFlag)) {
-                            String errMsg = "Local and remote nodes have different release types " +
-                                "(node will not join, all nodes in topology should have either " +
-                                "'Enterprise' or 'Open Source' release types) " +
+                            String errMsg = "Topology cannot contain nodes of both enterprise and open source " +
+                                "versions (node will not join, all nodes in topology should be of either " +
+                                "enterprise or open source version) " +
                                 "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
                                 ", locNodeAddrs=" + U.addressesAsString(locNode) +
                                 ", rmtNodeAddrs=" + U.addressesAsString(node) +
@@ -3450,9 +3450,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                                 log.debug(errMsg);
 
                             try {
-                                String sndMsg = "Local and remote nodes have different release types " +
-                                    "(node will not join, all nodes in topology should have either " +
-                                    "'Enterprise' or 'Open Source' release types) " +
+                                String sndMsg = "Topology cannot contain nodes of both enterprise and open source " +
+                                    "versions (node will not join, all nodes in topology should be of either " +
+                                    "enterprise or open source version) " +
                                     "[locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
                                     ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
                                     ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
@@ -3474,9 +3474,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                         // OS nodes don't support rolling updates.
                         if (locBuildVer.contains(osFlag) && rmtBuildVer.contains(osFlag) &&
                             !locBuildVer.equals(rmtBuildVer)) {
-                            String errMsg = "Local node and remote nodes have different versions " +
-                                "(node will not join, 'Open Source' releases do not support rolling updates " +
-                                "so versions must be identical) " +
+                            String errMsg = "Local node and remote node have different version numbers " +
+                                "(node will not join, open source version does not support rolling updates, " +
+                                "so versions must be exactly the same) " +
                                 "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
                                 ", locNodeAddrs=" + U.addressesAsString(locNode) +
                                 ", rmtNodeAddrs=" + U.addressesAsString(node) +
@@ -3489,9 +3489,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                                 log.debug(errMsg);
 
                             try {
-                                String sndMsg = "Local node and remote nodes have different versions " +
-                                    "(node will not join, 'Open Source' releases do not support rolling updates " +
-                                    "so versions must be identical) " +
+                                String sndMsg = "Local node and remote node have different version numbers " +
+                                    "(node will not join, open source version does not support rolling updates, " +
+                                    "so versions must be exactly the same) " +
                                     "[locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
                                     ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
                                     ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +

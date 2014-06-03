@@ -1129,21 +1129,29 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      * @param cfg Grid configuration.
      */
     private void warnNotSupportedFeaturesForOs(GridConfiguration cfg) {
+        Collection<String> msgs = new ArrayList<>();
+
         if (!F.isEmpty(cfg.getSegmentationResolvers()))
-            U.warn(log, "Network segmentation resolvers was configured but this feature is not available " +
-                "in open source edition (this configuration options will not take effect).");
+            msgs.add("Segmentation resolvers");
 
         if (cfg.getDrReceiverHubConfiguration() != null || cfg.getDrSenderHubConfiguration() != null)
-            U.warn(log, "Data replication was configured but this feature is not available in open source edition " +
-                "(this configuration options will not take effect).");
+            msgs.add("Data replication");
 
         if (cfg.getSecureSessionSpi() != null && !(cfg.getSecureSessionSpi() instanceof GridNoopSecureSessionSpi))
-            U.warn(log, "Secure session SPI was configured but this feature is not available in open source edition " +
-                "(this configuration options will not take effect).");
+            msgs.add("Secure session SPI");
 
         if (cfg.getAuthenticationSpi() != null && !(cfg.getAuthenticationSpi() instanceof GridNoopAuthenticationSpi))
-            U.warn(log, "Authentication SPI was configured but this feature is not available in open source edition " +
-                "(this configuration options will not take effect).");
+            msgs.add("Authentication SPI");
+
+        if (!F.isEmpty(msgs)) {
+            U.quietAndInfo(log, "The following configuration settings are not supported in open source edition " +
+                "and will be ignored (consider downloading enterprise edition from http://www.gridgain.com):");
+
+            for (String s : msgs)
+                U.quietAndInfo(log, "  ^-- " + s);
+
+            U.quietAndInfo(log, "");
+        }
     }
 
     /**
