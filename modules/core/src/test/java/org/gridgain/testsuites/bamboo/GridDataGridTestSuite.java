@@ -282,6 +282,7 @@ public class GridDataGridTestSuite extends TestSuite {
 
         // Full API.
         suite.addTest(GridCacheFullApiSelfTestSuite.suite());
+        suite.addTestSuite(GridCacheMixedModeSelfTest.class);
 
         // Cache metrics.
         suite.addTest(GridCacheMetricsSelfTestSuite.suite());

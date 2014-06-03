@@ -79,6 +79,9 @@ public class GridCacheFullApiSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCacheAtomicClientOnlyMultiNodeP2PDisabledFullApiSelfTest.class);
 
+        suite.addTestSuite(GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicNearOnlyMultiNodeP2PDisabledFullApiSelfTest.class);
+
         suite.addTestSuite(GridCacheNearReloadAllSelfTest.class);
         suite.addTestSuite(GridCacheColocatedReloadAllSelfTest.class);
         suite.addTestSuite(GridCacheAtomicReloadAllSelfTest.class);
