@@ -9,10 +9,11 @@
 
 package org.gridgain.grid.kernal.visor.gui.dto;
 
-import org.gridgain.grid.util.typedef.F;
+import org.gridgain.grid.util.typedef.*;
 
 import java.io.*;
-import java.util.ArrayList;
+import java.util.*;
+
 import static org.gridgain.grid.kernal.visor.gui.dto.VisorGgfsProfiler.*;
 
 /**
@@ -21,13 +22,17 @@ import static org.gridgain.grid.kernal.visor.gui.dto.VisorGgfsProfiler.*;
  * <a href="http://en.wikipedia.org/wiki/Coefficient_of_variation">
  * Uniformity calculated as coefficient of variation.
  * </a>
+ *
+ * Count read frequency for each file and compare with ideal uniform distribution.
  */
 public class VisorGgfsProfilerUniformityCounters implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Analyzed file size in bytes. */
     private long fileSize = 0;
 
+    /** Current block size to calculate uniformity. */
     private long blockSize = UNIFORMITY_DFLT_BLOCK_SIZE;
 
     private ArrayList<Integer> counters = new ArrayList<>();
@@ -97,6 +102,7 @@ public class VisorGgfsProfilerUniformityCounters implements Serializable {
         fileSize = newFileSize;
     }
 
+    /** TODO GG-8358 */
     private void capacity(int c) {
         counters.ensureCapacity(c);
 
@@ -104,6 +110,7 @@ public class VisorGgfsProfilerUniformityCounters implements Serializable {
             counters.add(0);
     }
 
+    /** TODO GG-8358 */
     public void increment(long pos, long len) {
         int blockFrom = (int)(pos / blockSize);
         int blockTo = (int)((pos + len) / blockSize) + 1;
@@ -114,6 +121,7 @@ public class VisorGgfsProfilerUniformityCounters implements Serializable {
             counters.set(i, counters.get(i) + 1);
     }
 
+    /** TODO GG-8358 */
     public void aggregate(VisorGgfsProfilerUniformityCounters other) {
         if (fileSize < other.fileSize)
             compact(other.fileSize);
