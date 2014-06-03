@@ -2258,18 +2258,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     new InetSocketAddress(addr.getAddress(), DFLT_PORT);
 
             res.add(addr);
-
-            if (addrRslvr != null) {
-                try {
-                    Collection<InetSocketAddress> extAddrs = addrRslvr.getExternalAddresses(addr);
-
-                    if (extAddrs != null)
-                        res.addAll(extAddrs);
-                }
-                catch (GridException e) {
-                    throw new GridSpiException("Failed to resolve internal address to external addresses: " + addr, e);
-                }
-            }
         }
 
         return res;
