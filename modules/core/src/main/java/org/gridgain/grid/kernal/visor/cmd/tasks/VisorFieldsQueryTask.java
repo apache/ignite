@@ -248,8 +248,7 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
         }
     }
 
-    @Override
-    protected VisorJob<VisorFieldsQueryArg, T2<? extends Exception, VisorFieldsQueryResultEx>> job(VisorFieldsQueryArg arg) {
+    @Override protected VisorFieldsQueryJob job(VisorFieldsQueryArg arg) {
         return new VisorFieldsQueryJob(arg);
     }
 }

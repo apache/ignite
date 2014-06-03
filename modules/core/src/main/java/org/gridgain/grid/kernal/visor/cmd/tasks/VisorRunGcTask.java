@@ -32,45 +32,36 @@ public class VisorRunGcTask extends VisorMultiNodeTask<VisorRunGcTask.VisorRunGc
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** Whether to run DGC on all caches. */
         private final boolean dgc;
 
         /**
          * Create task argument with specified nodes Ids.
          *
          * @param nids Nodes Ids.
-         * @param dgc Run DGC procedure on all caches.
+         * @param dgc Whether to run DGC on all caches.
          */
         public VisorRunGcArg(Set<UUID> nids, boolean dgc) {
             super(nids);
 
             this.dgc = dgc;
         }
-
-        /**
-         * @return Dgc.
-         */
-        public boolean dgc() {
-            return dgc;
-        }
     }
 
+    /** Result of GC task. */
     @SuppressWarnings("PublicInnerClass")
     public static class VisorRunGcTaskResult extends HashMap<UUID, VisorBeforeAfterResult> {
         /** */
         private static final long serialVersionUID = 0L;
     }
 
+    /** Job that perform GC on node. */
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorRunGcJob
-        extends VisorJob<VisorRunGcArg, VisorBeforeAfterResult> {
+    public static class VisorRunGcJob extends VisorJob<VisorRunGcArg, VisorBeforeAfterResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /**
-         * Create job with specified argument.
-         *
-         * @param arg Job argument.
-         */
+        /** Create job with given argument. */
         protected VisorRunGcJob(VisorRunGcArg arg) {
             super(arg);
         }
@@ -83,7 +74,7 @@ public class VisorRunGcTask extends VisorMultiNodeTask<VisorRunGcTask.VisorRunGc
 
             System.gc();
 
-            if (arg.dgc())
+            if (arg.dgc)
                 for (GridCache<?, ?> cache : g.cachesx(null))
                     cache.dgc();
 
@@ -97,7 +88,7 @@ public class VisorRunGcTask extends VisorMultiNodeTask<VisorRunGcTask.VisorRunGc
         }
     }
 
-    @Override protected VisorJob<VisorRunGcArg, VisorBeforeAfterResult> job(VisorRunGcArg arg) {
+    @Override protected VisorRunGcJob job(VisorRunGcArg arg) {
         return new VisorRunGcJob(arg);
     }
 

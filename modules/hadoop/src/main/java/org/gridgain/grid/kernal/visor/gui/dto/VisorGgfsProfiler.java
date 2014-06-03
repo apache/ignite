@@ -18,7 +18,10 @@ import java.util.*;
  * Various global constants for GGFS profiler.
  */
 public class VisorGgfsProfiler {
+    /** Default file block size to calculate uniformity. */
     public static final int UNIFORMITY_DFLT_BLOCK_SIZE = 4096;
+
+    /** Default number of blocks to split file for uniformity calculations. */
     public static final int UNIFORMITY_BLOCKS = 100;
 
     /**

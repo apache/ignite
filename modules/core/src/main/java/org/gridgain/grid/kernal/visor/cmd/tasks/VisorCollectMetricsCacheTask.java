@@ -19,11 +19,10 @@ import org.gridgain.grid.kernal.visor.cmd.dto.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
- * Task that runs on all nodes and returns cache metrics.
+ * Task that cache metrics from all nodes.
  */
 @GridInternal
 public class VisorCollectMetricsCacheTask extends VisorMultiNodeTask<VisorCollectMetricsCacheTask.VisorCollectMetricsCacheArg,
@@ -49,36 +48,23 @@ public class VisorCollectMetricsCacheTask extends VisorMultiNodeTask<VisorCollec
             this.all = all;
             this.cacheName = cacheName;
         }
-
-        /**
-         * @return Collect metrics from all caches.
-         */
-        public boolean all() {
-            return all;
-        }
-
-        /**
-         * @return Name of cache to collect metrics.
-         */
-        public String cacheName() {
-            return cacheName;
-        }
     }
 
     /**
-     * Aggregated cache metrics.
+     * Job that collect cache metrics from node.
      */
     @SuppressWarnings("PublicInnerClass")
     public static class VisorCacheMetricsJob extends VisorJob<VisorCollectMetricsCacheArg, Collection<VisorCacheMetrics>> {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** Create job with given argument. */
         public VisorCacheMetricsJob(VisorCollectMetricsCacheArg arg) {
             super(arg);
         }
 
         @Override protected Collection<VisorCacheMetrics> run(VisorCollectMetricsCacheArg arg) throws GridException {
-            Collection<? extends GridCache<?, ?>> caches = arg.all() ? g.cachesx(null) : F.asList(g.cachex(arg.cacheName()));
+            Collection<? extends GridCache<?, ?>> caches = arg.all ? g.cachesx(null) : F.asList(g.cachex(arg.cacheName));
 
             if (caches != null) {
                 Collection<VisorCacheMetrics> res = new ArrayList<>(caches.size());
@@ -113,7 +99,6 @@ public class VisorCollectMetricsCacheTask extends VisorMultiNodeTask<VisorCollec
             return null;
         }
     }
-
 
     @Override protected VisorCacheMetricsJob job(VisorCollectMetricsCacheArg arg) {
         return new VisorCacheMetricsJob(arg);

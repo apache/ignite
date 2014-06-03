@@ -25,16 +25,16 @@ import java.util.*;
 @GridInternal
 public class VisorCollectLicenseTask extends VisorMultiNodeTask<VisorMultiNodeArg,
     Iterable<T2<UUID, VisorLicense>>, VisorLicense> {
-
     /**
-     * Collect license from nodes job.
+     * Job that collect license from nodes.
      */
     @SuppressWarnings("PublicInnerClass")
     public static class VisorCollectLicenseJob extends VisorJob<VisorMultiNodeArg, VisorLicense> {
         /** */
         private static final long serialVersionUID = 0L;
 
-        protected VisorCollectLicenseJob(VisorMultiNodeArg arg) {
+        /** Create job with given argument. */
+        public VisorCollectLicenseJob(VisorMultiNodeArg arg) {
             super(arg);
         }
 
@@ -47,8 +47,7 @@ public class VisorCollectLicenseTask extends VisorMultiNodeTask<VisorMultiNodeAr
         return new VisorCollectLicenseJob(arg);
     }
 
-    @Nullable @Override
-    public Iterable<T2<UUID, VisorLicense>> reduce(List<GridComputeJobResult> results) throws GridException {
+    @Nullable @Override public Iterable<T2<UUID, VisorLicense>> reduce(List<GridComputeJobResult> results) throws GridException {
         Collection<T2<UUID, VisorLicense>> licenses = new ArrayList<>(results.size());
 
         for (GridComputeJobResult r : results) {

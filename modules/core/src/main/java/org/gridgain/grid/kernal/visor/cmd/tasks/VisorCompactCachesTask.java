@@ -17,27 +17,23 @@ import org.gridgain.grid.kernal.visor.cmd.*;
 import java.util.*;
 
 /**
- * Compacts caches.
+ * Task that compacts caches.
  */
 @GridInternal
 public class VisorCompactCachesTask extends VisorOneNodeTask<VisorOneNodeNamesArg, VisorNamedBeforeAfterTaskResult> {
+    /** Job that compact caches on node. */
     @SuppressWarnings("PublicInnerClass")
     public static class VisorCompactCachesJob
         extends VisorOneNodeJob<VisorOneNodeNamesArg, VisorNamedBeforeAfterTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /**
-         * Create job with specified argument.
-         *
-         * @param arg Job argument.
-         */
-        protected VisorCompactCachesJob(VisorOneNodeNamesArg arg) {
+        /** Create job with given argument. */
+        public VisorCompactCachesJob(VisorOneNodeNamesArg arg) {
             super(arg);
         }
 
-        @Override
-        protected VisorNamedBeforeAfterTaskResult run(VisorOneNodeNamesArg arg) throws GridException {
+        @Override protected VisorNamedBeforeAfterTaskResult run(VisorOneNodeNamesArg arg) throws GridException {
             final VisorNamedBeforeAfterTaskResult res = new VisorNamedBeforeAfterTaskResult();
 
             for(GridCache cache : g.cachesx(null)) {
@@ -61,8 +57,7 @@ public class VisorCompactCachesTask extends VisorOneNodeTask<VisorOneNodeNamesAr
         }
     }
 
-    @Override
-    protected VisorJob<VisorOneNodeNamesArg, VisorNamedBeforeAfterTaskResult> job(VisorOneNodeNamesArg arg) {
+    @Override protected VisorCompactCachesJob job(VisorOneNodeNamesArg arg) {
         return new VisorCompactCachesJob(arg);
     }
 }

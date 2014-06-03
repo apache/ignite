@@ -23,13 +23,16 @@ import java.util.*;
  * Contains utility methods for Visor query fields tasks and jobs.
  */
 public class VisorFieldsQueryUtils {
-    /** How long to store future. */
-    public static final Integer RMV_DELAY = 5 * 60 * 1000; // 5 minutes.
+    /** How long to store future with query in node local map: 5 minutes. */
+    public static final Integer RMV_DELAY = 5 * 60 * 1000;
 
-    public static final String SQL_QRY_NAME = "VISOR_FIELDS_QUERY";
+    /** Prefix for node local key for SQL queries. */
+    public static final String SQL_QRY_NAME = "VISOR_SQL_QUERY";
 
+    /** Prefix for node local key for SCAN queries. */
     public static final String SCAN_QRY_NAME = "VISOR_SCAN_QUERY";
 
+    /** Columns for SCAN queries. */
     public static final VisorFieldsQueryColumn[] SCAN_COL_NAMES = new VisorFieldsQueryColumn[] {
         new VisorFieldsQueryColumn("", "Key Class"), new VisorFieldsQueryColumn("", "Key"),
         new VisorFieldsQueryColumn("", "Value Class"), new VisorFieldsQueryColumn("", "Value")

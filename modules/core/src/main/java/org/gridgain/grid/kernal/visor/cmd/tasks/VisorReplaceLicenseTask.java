@@ -22,6 +22,7 @@ import java.util.*;
 
 /**
  * Update license from nodes task.
+ * TODO GG-8358 WHY WE HAVE two simailar task?
  */
 @GridInternal
 public class VisorReplaceLicenseTask extends VisorMultiNodeTask<VisorReplaceLicenseTask.VisorReplaceLicenseArg,

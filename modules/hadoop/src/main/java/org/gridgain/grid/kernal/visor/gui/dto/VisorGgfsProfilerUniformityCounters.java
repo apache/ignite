@@ -27,7 +27,9 @@ public class VisorGgfsProfilerUniformityCounters implements Serializable {
     private static final long serialVersionUID = 0L;
 
     private long fileSize = 0;
+
     private long blockSize = UNIFORMITY_DFLT_BLOCK_SIZE;
+
     private ArrayList<Integer> counters = new ArrayList<>();
 
     private long calcBlockSize(long fileSize) {

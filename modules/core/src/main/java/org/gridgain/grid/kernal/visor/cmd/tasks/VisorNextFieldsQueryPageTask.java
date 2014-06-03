@@ -115,9 +115,7 @@ public class VisorNextFieldsQueryPageTask extends VisorOneNodeTask<VisorNextFiel
         }
     }
 
-    @Override
-    protected VisorJob<VisorNextFieldsQueryPageArg, VisorFieldsQueryResult> job(
-        VisorNextFieldsQueryPageArg arg) {
+    @Override protected VisorNextFieldsQueryPageJob job(VisorNextFieldsQueryPageArg arg) {
         return new VisorNextFieldsQueryPageJob(arg);
     }
 }

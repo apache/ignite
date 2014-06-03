@@ -62,8 +62,7 @@ public class VisorSwapBackupsCachesTask extends VisorOneNodeTask<VisorOneNodeNam
         }
     }
 
-    @Override
-    protected VisorJob<VisorOneNodeNamesArg, VisorNamedBeforeAfterTaskResult> job(VisorOneNodeNamesArg arg) {
+    @Override protected VisorSwapBackupsCachesJob job(VisorOneNodeNamesArg arg) {
         return new VisorSwapBackupsCachesJob(arg);
     }
 }

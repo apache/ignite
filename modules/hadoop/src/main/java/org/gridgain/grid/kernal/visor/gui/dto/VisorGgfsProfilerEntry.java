@@ -29,6 +29,7 @@ public class VisorGgfsProfilerEntry implements Serializable {
         }
     }
 
+    /** Timestamp comparator. */
     public static final VisorGgfsProfilerEntryTimestampComparator ENTRY_TIMESTAMP_COMPARATOR
         = new VisorGgfsProfilerEntryTimestampComparator();
 
@@ -74,6 +75,7 @@ public class VisorGgfsProfilerEntry implements Serializable {
     /** Write speed in bytes per second or `-1` if speed not available. */
     private final long writeSpeed;
 
+    /** Create data transfer object with given parameters. */
     public VisorGgfsProfilerEntry(
         String path,
         long timestamp,
