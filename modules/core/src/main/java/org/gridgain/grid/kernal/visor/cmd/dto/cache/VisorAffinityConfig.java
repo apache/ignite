@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.visor.cmd.dto.cache;
 import java.io.*;
 
 /**
- * Affinity configuration data.
+ * Data transfer object for affinity configuration properties.
  */
 public class VisorAffinityConfig implements Serializable {
     /** */
@@ -36,8 +36,15 @@ public class VisorAffinityConfig implements Serializable {
     /** Cache partitioned affinity exclude neighbors. */
     private final Boolean excludeNeighbors;
 
-    public VisorAffinityConfig(String affinity, String affinityMapper, int partitionedBackups, Integer partitions,
-        Integer dfltReplicas, Boolean excludeNeighbors) {
+    /** Create data transfer object with given parameters. */
+    public VisorAffinityConfig(
+        String affinity,
+        String affinityMapper,
+        int partitionedBackups,
+        Integer partitions,
+        Integer dfltReplicas,
+        Boolean excludeNeighbors
+    ) {
         this.affinity = affinity;
         this.affinityMapper = affinityMapper;
         this.partitionedBackups = partitionedBackups;

@@ -21,10 +21,10 @@ import java.util.*;
  * Task for swapping backup cache entries.
  */
 @GridInternal
-public class VisorSwapBackupsCachesTask extends VisorOneNodeTask<VisorOneNodeCachesArg, VisorCachesTaskResult> {
+public class VisorSwapBackupsCachesTask extends VisorOneNodeTask<VisorOneNodeNamesArg, VisorCachesTaskResult> {
     @SuppressWarnings("PublicInnerClass")
     public static class VisorSwapBackupsCachesJob
-        extends VisorOneNodeJob<VisorOneNodeCachesArg, VisorCachesTaskResult> {
+        extends VisorOneNodeJob<VisorOneNodeNamesArg, VisorCachesTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -33,18 +33,18 @@ public class VisorSwapBackupsCachesTask extends VisorOneNodeTask<VisorOneNodeCac
          *
          * @param arg Job argument.
          */
-        protected VisorSwapBackupsCachesJob(VisorOneNodeCachesArg arg) {
+        protected VisorSwapBackupsCachesJob(VisorOneNodeNamesArg arg) {
             super(arg);
         }
 
         @Override
-        protected VisorCachesTaskResult run(VisorOneNodeCachesArg arg) throws GridException {
+        protected VisorCachesTaskResult run(VisorOneNodeNamesArg arg) throws GridException {
             VisorCachesTaskResult total = new VisorCachesTaskResult();
 
             for (GridCache c: g.cachesx(null)) {
                 String cacheName = c.name();
 
-                if (arg.cacheNames().contains(cacheName)) {
+                if (arg.names().contains(cacheName)) {
                     final Set<GridCacheEntry> entries = c.entrySet();
 
                     long before = entries.size(), after = before;
@@ -63,7 +63,7 @@ public class VisorSwapBackupsCachesTask extends VisorOneNodeTask<VisorOneNodeCac
     }
 
     @Override
-    protected VisorJob<VisorOneNodeCachesArg, VisorCachesTaskResult> job(VisorOneNodeCachesArg arg) {
+    protected VisorJob<VisorOneNodeNamesArg, VisorCachesTaskResult> job(VisorOneNodeNamesArg arg) {
         return new VisorSwapBackupsCachesJob(arg);
     }
 }

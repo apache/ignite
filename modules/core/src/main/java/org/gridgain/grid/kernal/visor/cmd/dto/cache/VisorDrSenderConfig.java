@@ -15,7 +15,7 @@ import org.gridgain.grid.dr.hub.sender.*;
 import java.io.*;
 
 /**
- * Visor counterpart for {@link GridDrSenderCacheConfiguration}.
+ * Data transfer object for DR sender cache configuration properties.
  */
 public class VisorDrSenderConfig implements Serializable {
     /** */
@@ -42,10 +42,16 @@ public class VisorDrSenderConfig implements Serializable {
     /** Amount of worker threads responsible for full state transfer. */
     private final int stateTransferThreadsCount;
 
-    public VisorDrSenderConfig(GridDrSenderCacheMode mode, int batchSendSize, long batchSendFrequency,
+    /** Create data transfer object with given parameters. */
+    public VisorDrSenderConfig(
+        GridDrSenderCacheMode mode,
+        int batchSendSize,
+        long batchSendFrequency,
         int maxBatches,
-        GridDrSenderHubLoadBalancingMode senderHubLoadBalancingMode, long stateTransferThrottle,
-        int stateTransferThreadsCount) {
+        GridDrSenderHubLoadBalancingMode senderHubLoadBalancingMode,
+        long stateTransferThrottle,
+        int stateTransferThreadsCount
+    ) {
         this.mode = mode;
         this.batchSendSize = batchSendSize;
         this.batchSendFrequency = batchSendFrequency;

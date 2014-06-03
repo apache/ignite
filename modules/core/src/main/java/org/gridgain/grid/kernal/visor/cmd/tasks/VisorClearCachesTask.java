@@ -21,12 +21,12 @@ import java.util.*;
  */
 @GridInternal
 public class VisorClearCachesTask extends
-    VisorOneNodeTask<VisorOneNodeCachesArg, VisorCachesTaskResult> {
+    VisorOneNodeTask<VisorOneNodeNamesArg, VisorCachesTaskResult> {
     /**
      * Job for {@link VisorClearCachesTask} task that clear specified caches.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorClearCachesJob extends VisorOneNodeJob<VisorOneNodeCachesArg, VisorCachesTaskResult> {
+    public static class VisorClearCachesJob extends VisorOneNodeJob<VisorOneNodeNamesArg, VisorCachesTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -35,18 +35,18 @@ public class VisorClearCachesTask extends
          *
          * @param arg Job argument.
          */
-        public VisorClearCachesJob(VisorOneNodeCachesArg arg) {
+        public VisorClearCachesJob(VisorOneNodeNamesArg arg) {
             super(arg);
         }
 
         @Override
-        protected VisorCachesTaskResult run(VisorOneNodeCachesArg arg) throws GridException {
+        protected VisorCachesTaskResult run(VisorOneNodeNamesArg arg) throws GridException {
             VisorCachesTaskResult res = new VisorCachesTaskResult();
 
             for(GridCache cache : g.cachesx(null)) {
                 String cacheName = cache.name();
 
-                if (arg.cacheNames().contains(cacheName)) {
+                if (arg.names().contains(cacheName)) {
                     Set keys = cache.keySet();
 
                     long before = keys.size(), after = before;
@@ -65,7 +65,7 @@ public class VisorClearCachesTask extends
     }
 
     @Override
-    protected VisorJob<VisorOneNodeCachesArg, VisorCachesTaskResult> job(VisorOneNodeCachesArg arg) {
+    protected VisorJob<VisorOneNodeNamesArg, VisorCachesTaskResult> job(VisorOneNodeNamesArg arg) {
         return new VisorClearCachesJob(arg);
     }
 }

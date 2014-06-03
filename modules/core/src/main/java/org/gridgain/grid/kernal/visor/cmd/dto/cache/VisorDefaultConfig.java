@@ -14,7 +14,7 @@ import org.gridgain.grid.cache.*;
 import java.io.*;
 
 /**
- * Default cache configuration data.
+ * Data transfer object for default cache configuration properties.
  */
 public class VisorDefaultConfig implements Serializable {
     /** */
@@ -35,8 +35,14 @@ public class VisorDefaultConfig implements Serializable {
     /** Default query timeout. */
     private final long queryTimeout;
 
-    public VisorDefaultConfig(GridCacheTxIsolation txIsolation,
-        GridCacheTxConcurrency txConcurrency, long txTimeout, long txLockTimeout, long queryTimeout) {
+    /** Create data transfer object with given parameters. */
+    public VisorDefaultConfig(
+        GridCacheTxIsolation txIsolation,
+        GridCacheTxConcurrency txConcurrency,
+        long txTimeout,
+        long txLockTimeout,
+        long queryTimeout
+    ) {
         this.txIsolation = txIsolation;
         this.txConcurrency = txConcurrency;
         this.txTimeout = txTimeout;

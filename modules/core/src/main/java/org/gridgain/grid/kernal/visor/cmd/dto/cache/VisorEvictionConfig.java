@@ -14,7 +14,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * Eviction configuration data.
+ * Data transfer object for eviction configuration properties.
  */
 public class VisorEvictionConfig implements Serializable {
     /** */
@@ -24,10 +24,10 @@ public class VisorEvictionConfig implements Serializable {
     @Nullable private final String plc;
 
     /** Cache eviction policy max size. */
-    private final Integer plcMaxSize;
+    @Nullable private final Integer plcMaxSize;
 
     /** Eviction filter to specify which entries should not be evicted. */
-    private final String filter;
+    @Nullable private final String filter;
 
     /** Synchronous eviction concurrency level. */
     private final int syncConcurrencyLvl;
@@ -47,9 +47,16 @@ public class VisorEvictionConfig implements Serializable {
     /** Eviction max overflow ratio. */
     private final float maxOverflowRatio;
 
-    public VisorEvictionConfig(@Nullable String plc, Integer plcMaxSize, String filter, int syncConcurrencyLvl,
+    public VisorEvictionConfig(
+        @Nullable String plc,
+        @Nullable Integer plcMaxSize,
+        @Nullable String filter,
+        int syncConcurrencyLvl,
         long syncTimeout,
-        int syncKeyBufSize, boolean evictSynchronized, boolean nearSynchronized, float maxOverflowRatio) {
+        int syncKeyBufSize,
+        boolean evictSynchronized,
+        boolean nearSynchronized,
+        float maxOverflowRatio) {
         this.plc = plc;
         this.plcMaxSize = plcMaxSize;
         this.filter = filter;
@@ -71,14 +78,14 @@ public class VisorEvictionConfig implements Serializable {
     /**
      * @return Cache eviction policy max size.
      */
-    public Integer policyMaxSize() {
+    @Nullable public Integer policyMaxSize() {
         return plcMaxSize;
     }
 
     /**
      * @return Eviction filter to specify which entries should not be evicted.
      */
-    public String filter() {
+    @Nullable public String filter() {
         return filter;
     }
 

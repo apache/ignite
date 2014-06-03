@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.visor.cmd.dto.cache;
 import java.io.*;
 
 /**
- * Write-behind cache configuration data.
+ * Data transfer object for write-behind cache configuration properties.
  */
 public class VisorWriteBehindConfig implements Serializable {
     /** */
@@ -33,7 +33,14 @@ public class VisorWriteBehindConfig implements Serializable {
     /** Number of threads that will perform cache flushing. */
     private final int flushThreadCnt;
 
-    public VisorWriteBehindConfig(boolean enabled, int batchSize, long flushFrequency, int flushSize, int flushThreadCnt) {
+    /** Create data transfer object with given parameters. */
+    public VisorWriteBehindConfig(
+        boolean enabled,
+        int batchSize,
+        long flushFrequency,
+        int flushSize,
+        int flushThreadCnt
+    ) {
         this.enabled = enabled;
         this.batchSize = batchSize;
         this.flushFrequency = flushFrequency;

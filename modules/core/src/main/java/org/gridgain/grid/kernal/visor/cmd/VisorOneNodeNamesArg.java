@@ -12,28 +12,31 @@ package org.gridgain.grid.kernal.visor.cmd;
 import java.util.*;
 
 /**
- * Arguments for cache tasks.
+ * Arguments for tasks that require set of names.
  */
-public class VisorOneNodeCachesArg extends VisorOneNodeArg {
+public class VisorOneNodeNamesArg extends VisorOneNodeArg {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Names of caches to clear. */
-    private final Set<String> cacheNames;
+    /** Names to process in task. */
+    private final Set<String> names;
 
     /**
-     * @param nodeId Node Id.
+     * Create arguments with given parameters.
+     *
+     * @param nid Node Id.
+     * @param names Set of names.
      */
-    public VisorOneNodeCachesArg(UUID nodeId, Set<String> cacheNames) {
-        super(nodeId);
+    public VisorOneNodeNamesArg(UUID nid, Set<String> names) {
+        super(nid);
 
-        this.cacheNames = cacheNames;
+        this.names = names;
     }
 
     /**
-     * @return Names of caches to clear.
+     * @return Names to process.
      */
-    public Set<String> cacheNames() {
-        return cacheNames;
+    public Set<String> names() {
+        return names;
     }
 }

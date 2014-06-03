@@ -11,7 +11,7 @@
 package org.gridgain.visor.commands.cache
 
 import org.gridgain.grid.GridNode
-import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeCachesArg
+import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeNamesArg
 import org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils._
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorClearCachesTask
 
@@ -119,7 +119,7 @@ class VisorCacheClearCommand {
                 .compute()
                 .withName("visor-cclear-task")
                 .withNoFailover()
-                .execute(classOf[VisorClearCachesTask], new VisorOneNodeCachesArg(node.id(), cacheSet))
+                .execute(classOf[VisorClearCachesTask], new VisorOneNodeNamesArg(node.id(), cacheSet))
                 .get.get(cacheName)
 
             t += (nodeId8(node.id()), res.before() - res.after(), res.before(), res.after())

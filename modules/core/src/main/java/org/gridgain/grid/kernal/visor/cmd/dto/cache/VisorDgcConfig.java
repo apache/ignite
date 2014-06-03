@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.visor.cmd.dto.cache;
 import java.io.*;
 
 /**
- * DGC configuration data.
+ * Data transfer object for DGC configuration properties.
  */
 public class VisorDgcConfig implements Serializable {
     /** */
@@ -27,6 +27,7 @@ public class VisorDgcConfig implements Serializable {
     /** Timeout for considering lock to be suspicious. */
     private final long suspectLockTimeout;
 
+    /** Create data transfer object with given parameters.  */
     public VisorDgcConfig(long freq, boolean rmvLocks, long suspectLockTimeout) {
         this.freq = freq;
         this.rmvLocks = rmvLocks;

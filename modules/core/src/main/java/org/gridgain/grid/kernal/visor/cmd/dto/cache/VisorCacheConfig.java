@@ -15,7 +15,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * Cache configuration.
+ * Data transfer object for cache configuration properties.
  */
 public class VisorCacheConfig implements Serializable {
     /** */
@@ -129,7 +129,9 @@ public class VisorCacheConfig implements Serializable {
     /** Data center replication receive configuration. */
     @Nullable private final VisorDrReceiverConfig drReceiveConfig;
 
-    public VisorCacheConfig(String name,
+    /** Create data transfer object with given parameters. */
+    public VisorCacheConfig(
+        String name,
         GridCacheMode mode,
         GridCacheDistributionMode distributionMode,
         GridCacheAtomicityMode atomicityMode,

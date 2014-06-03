@@ -14,7 +14,7 @@ import org.gridgain.grid.cache.*;
 import java.io.*;
 
 /**
- * Preload configuration data.
+ * Data transfer object for cache preload configuration properties.
  */
 public class VisorPreloadConfig implements Serializable {
     /** */
@@ -38,8 +38,15 @@ public class VisorPreloadConfig implements Serializable {
     /** Preload timeout. */
     private final long timeout;
 
-    public VisorPreloadConfig(GridCachePreloadMode mode, int poolSize, int batchSize, long partitionedDelay,
-        long throttle, long timeout) {
+    /** Create data transfer object with given parameters. */
+    public VisorPreloadConfig(
+        GridCachePreloadMode mode,
+        int poolSize,
+        int batchSize,
+        long partitionedDelay,
+        long throttle,
+        long timeout
+    ) {
         this.mode = mode;
         this.poolSize = poolSize;
         this.batchSize = batchSize;

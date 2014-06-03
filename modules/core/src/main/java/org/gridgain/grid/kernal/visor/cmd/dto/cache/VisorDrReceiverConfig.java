@@ -14,7 +14,7 @@ import org.gridgain.grid.dr.cache.receiver.*;
 import java.io.*;
 
 /**
- * Visor counterpart for {@link GridDrReceiverCacheConfiguration}.
+ * Data transfer object for DR receiver cache configuration properties.
  */
 public class VisorDrReceiverConfig implements Serializable {
     /** */
@@ -26,8 +26,8 @@ public class VisorDrReceiverConfig implements Serializable {
     /** Conflict resolver mode. */
     private final GridDrReceiverCacheConflictResolverMode conflictResolverMode;
 
-    public VisorDrReceiverConfig(String conflictResolver,
-        GridDrReceiverCacheConflictResolverMode conflictResolverMode) {
+    /** Create data transfer object with given parameters. */
+    public VisorDrReceiverConfig(String conflictResolver, GridDrReceiverCacheConflictResolverMode conflictResolverMode) {
         this.conflictResolver = conflictResolver;
         this.conflictResolverMode = conflictResolverMode;
     }

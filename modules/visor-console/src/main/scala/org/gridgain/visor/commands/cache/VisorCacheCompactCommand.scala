@@ -12,7 +12,7 @@
 package org.gridgain.visor.commands.cache
 
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeCachesArg
+import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeNamesArg
 import org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils._
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCompactCachesTask
 
@@ -120,7 +120,7 @@ class VisorCacheCompactCommand {
                 .compute()
                 .withName("visor-ccompact-task")
                 .withNoFailover()
-                .execute(classOf[VisorCompactCachesTask], new VisorOneNodeCachesArg(node.id(), cacheSet))
+                .execute(classOf[VisorCompactCachesTask], new VisorOneNodeNamesArg(node.id(), cacheSet))
                 .get.get(cacheName)
 
             t += (nodeId8(node.id()), r.before() - r.after(), r.before(), r.after())

@@ -14,7 +14,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * Store configuration data.
+ * Data transfer object for cache store configuration properties.
  */
 public class VisorStoreConfig implements Serializable {
     /** */
@@ -26,6 +26,7 @@ public class VisorStoreConfig implements Serializable {
     /** Should value bytes be stored. */
     private final boolean valueBytes;
 
+    /** Create data transfer object with given parameters. */
     public VisorStoreConfig(@Nullable String store, boolean valueBytes) {
         this.store = store;
         this.valueBytes = valueBytes;

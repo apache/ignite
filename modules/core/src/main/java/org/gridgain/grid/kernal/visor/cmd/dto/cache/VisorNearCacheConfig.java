@@ -14,7 +14,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * Near cache configuration data.
+ * Data transfer object for near cache configuration properties.
  */
 public class VisorNearCacheConfig implements Serializable {
     /** */
@@ -29,6 +29,7 @@ public class VisorNearCacheConfig implements Serializable {
     /** Near cache eviction policy. */
     @Nullable private final String nearEvictPlc;
 
+    /** Create data transfer object with given parameters. */
     public VisorNearCacheConfig(boolean nearEnabled, int nearStartSize, @Nullable String nearEvictPlc) {
         this.nearEnabled = nearEnabled;
         this.nearStartSize = nearStartSize;

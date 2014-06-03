@@ -22,6 +22,8 @@ public class VisorOneNodeNameArg extends VisorOneNodeArg {
     private final String name;
 
     /**
+     * Create argument with given parameters.
+     *
      * @param nodeId Node Id.
      * @param name Argument value.
      */
