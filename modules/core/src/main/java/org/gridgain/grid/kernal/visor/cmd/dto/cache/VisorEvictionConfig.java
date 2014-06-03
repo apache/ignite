@@ -21,13 +21,13 @@ public class VisorEvictionConfig implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Eviction policy. */
-    @Nullable private final String plc;
+    private final String plc;
 
     /** Cache eviction policy max size. */
-    @Nullable private final Integer plcMaxSize;
+    private final Integer plcMaxSize;
 
     /** Eviction filter to specify which entries should not be evicted. */
-    @Nullable private final String filter;
+    private final String filter;
 
     /** Synchronous eviction concurrency level. */
     private final int syncConcurrencyLvl;

@@ -23,13 +23,13 @@ public class VisorGgfsConfig implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** GGFS instance name. */
-    @Nullable private final String name;
+    private final String name;
 
     /** Cache name to store GGFS meta information. */
-    @Nullable private final String metaCacheName;
+    private final String metaCacheName;
 
     /** Cache name to store GGFS data. */
-    @Nullable private final String dataCacheName;
+    private final String dataCacheName;
 
     /** File's data block size. */
     private final int blockSize;
@@ -47,16 +47,16 @@ public class VisorGgfsConfig implements Serializable {
     private final int perNodeParallelBatchCount;
 
     /** URI of the secondary Hadoop file system. */
-    @Nullable private final String secondaryHadoopFileSystemUri;
+    private final String secondaryHadoopFileSystemUri;
 
     /** Path for the secondary hadoop file system config. */
-    @Nullable private final String secondaryHadoopFileSystemConfigPath;
+    private final String secondaryHadoopFileSystemConfigPath;
 
     /** GGFS instance mode. */
     private final GridGgfsMode defaultMode;
 
     /** Map of paths to GGFS modes. */
-    @Nullable private final Map<String, GridGgfsMode> pathModes;
+    private final Map<String, GridGgfsMode> pathModes;
 
     /** Dual mode PUT operations executor service. */
     private final String dualModePutExecutorService;
@@ -86,7 +86,7 @@ public class VisorGgfsConfig implements Serializable {
     private final long fragmentizerThrottlingDelay;
 
     /** IPC endpoint config (in JSON format) to publish GGFS over. */
-    @Nullable private final String ipcEndpointCfg;
+    private final String ipcEndpointCfg;
 
     /** IPC endpoint enabled flag. */
     private final boolean ipcEndpointEnabled;
@@ -164,21 +164,21 @@ public class VisorGgfsConfig implements Serializable {
     /**
      * @return GGFS instance name.
      */
-    public String name() {
+    @Nullable public String name() {
         return name;
     }
 
     /**
      * @return Cache name to store GGFS meta information.
      */
-    public String metaCacheName() {
+    @Nullable public String metaCacheName() {
         return metaCacheName;
     }
 
     /**
      * @return Cache name to store GGFS data.
      */
-    public String dataCacheName() {
+    @Nullable public String dataCacheName() {
         return dataCacheName;
     }
 
@@ -220,14 +220,14 @@ public class VisorGgfsConfig implements Serializable {
     /**
      * @return URI of the secondary Hadoop file system.
      */
-    public String secondaryHadoopFileSystemUri() {
+    @Nullable public String secondaryHadoopFileSystemUri() {
         return secondaryHadoopFileSystemUri;
     }
 
     /**
      * @return Path for the secondary hadoop file system config.
      */
-    public String secondaryHadoopFileSystemConfigPath() {
+    @Nullable public String secondaryHadoopFileSystemConfigPath() {
         return secondaryHadoopFileSystemConfigPath;
     }
 
@@ -311,7 +311,7 @@ public class VisorGgfsConfig implements Serializable {
     /**
      * @return IPC endpoint config (in JSON format) to publish GGFS over.
      */
-    public String ipcEndpointConfig() {
+    @Nullable public String ipcEndpointConfig() {
         return ipcEndpointCfg;
     }
 

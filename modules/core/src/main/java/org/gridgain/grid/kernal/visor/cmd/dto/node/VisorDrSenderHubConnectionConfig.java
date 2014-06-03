@@ -28,7 +28,7 @@ public class VisorDrSenderHubConnectionConfig implements Serializable {
     private final String[] receiverHubAddresses;
 
     /** Local network interface name to which this replica hub will be bound to. */
-    @Nullable private final String localOutboundHost;
+    private final String localOutboundHost;
 
     /** Replica hub selection strategy. */
     private final GridDrReceiverHubLoadBalancingMode receiverHubLoadBalancingMode;
@@ -68,7 +68,7 @@ public class VisorDrSenderHubConnectionConfig implements Serializable {
     /**
      * @return Local network interface name to which this replica hub will be bound to.
      */
-    public String localOutboundHost() {
+    @Nullable public String localOutboundHost() {
         return localOutboundHost;
     }
 

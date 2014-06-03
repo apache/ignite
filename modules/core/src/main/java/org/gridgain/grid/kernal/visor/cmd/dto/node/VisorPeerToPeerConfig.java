@@ -27,7 +27,7 @@ public class VisorPeerToPeerConfig implements Serializable {
     private final int p2pMissedResCacheSize;
 
     /** List of packages from the system classpath that need to be loaded from task originating node. */
-    @Nullable private final String p2pLocClsPathExcl;
+    private final String p2pLocClsPathExcl;
 
     /** Create data transfer object with given parameters. */
     public VisorPeerToPeerConfig(boolean p2pEnabled, int p2pMissedResCacheSize, @Nullable String p2pLocClsPathExcl) {

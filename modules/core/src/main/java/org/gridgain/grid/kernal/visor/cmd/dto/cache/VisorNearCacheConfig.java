@@ -27,7 +27,7 @@ public class VisorNearCacheConfig implements Serializable {
     private final int nearStartSize;
 
     /** Near cache eviction policy. */
-    @Nullable private final String nearEvictPlc;
+    private final String nearEvictPlc;
 
     /** Create data transfer object with given parameters. */
     public VisorNearCacheConfig(boolean nearEnabled, int nearStartSize, @Nullable String nearEvictPlc) {

@@ -36,16 +36,16 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
         private static final long serialVersionUID = 0L;
 
         /** Arguments for type filter. */
-        @Nullable private final int[] typeArg;
+        private final int[] typeArg;
 
         /** Arguments for time filter. */
-        @Nullable private final Long timeArg;
+        private final Long timeArg;
 
         /** Task or job events with task name contains. */
-        @Nullable private final String taskName;
+        private final String taskName;
 
         /** Task or job events with session. */
-        @Nullable private final GridUuid taskSessionId;
+        private final GridUuid taskSessionId;
 
         /**
          * Create task arguments for {@link VisorCollectEventsTask}.

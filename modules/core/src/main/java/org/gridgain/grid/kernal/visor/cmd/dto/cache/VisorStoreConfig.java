@@ -21,7 +21,7 @@ public class VisorStoreConfig implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Cache store. */
-    @Nullable private final String store;
+    private final String store;
 
     /** Should value bytes be stored. */
     private final boolean valueBytes;

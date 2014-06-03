@@ -70,10 +70,10 @@ public class VisorCacheConfig implements Serializable {
     private final int startSize;
 
     /** Cloner. */
-    @Nullable private final String cloner;
+    private final String cloner;
 
     /** Tx manager lookup. */
-    @Nullable private final String txMgrLookup;
+    private final String txMgrLookup;
 
     /** Flag to enable/disable transaction serializable isolation level. */
     private final boolean txSerializableEnabled;
@@ -124,10 +124,10 @@ public class VisorCacheConfig implements Serializable {
     private final VisorWriteBehindConfig writeBehind;
 
     /** Data center replication send configuration. * */
-    @Nullable private final VisorDrSenderConfig drSendConfig;
+    private final VisorDrSenderConfig drSendConfig;
 
     /** Data center replication receive configuration. */
-    @Nullable private final VisorDrReceiverConfig drReceiveConfig;
+    private final VisorDrReceiverConfig drReceiveConfig;
 
     /** Create data transfer object with given parameters. */
     public VisorCacheConfig(
@@ -390,14 +390,14 @@ public class VisorCacheConfig implements Serializable {
     /**
      * @return Data center replication send configuration. *
      */
-    public VisorDrSenderConfig drSendConfig() {
+    @Nullable public VisorDrSenderConfig drSendConfig() {
         return drSendConfig;
     }
 
     /**
      * @return Data center replication receive configuration.
      */
-    public VisorDrReceiverConfig drReceiveConfig() {
+    @Nullable public VisorDrReceiverConfig drReceiveConfig() {
         return drReceiveConfig;
     }
 

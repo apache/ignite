@@ -52,7 +52,7 @@ public class VisorBasicConfig implements Serializable {
     private final long netTimeout;
 
     /** Node license URL */
-    @Nullable private final String licenseUrl;
+    private final String licenseUrl;
 
     /** Logger used on node. */
     private final String log;
@@ -203,7 +203,7 @@ public class VisorBasicConfig implements Serializable {
     /**
      * @return Node license URL
      */
-    public String licenseUrl() {
+    @Nullable public String licenseUrl() {
         return licenseUrl;
     }
 

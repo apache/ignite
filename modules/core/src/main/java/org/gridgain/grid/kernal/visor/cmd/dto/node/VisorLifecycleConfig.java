@@ -21,7 +21,7 @@ public class VisorLifecycleConfig implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Lifecycle beans. */
-    @Nullable private final String beans;
+    private final String beans;
 
     /** Whether or not email notifications should be used on node start and stop. */
     private final boolean ntf;
