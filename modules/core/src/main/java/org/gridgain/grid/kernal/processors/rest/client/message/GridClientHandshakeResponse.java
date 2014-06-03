@@ -72,6 +72,11 @@ public class GridClientHandshakeResponse extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
+    @Override public int typeId() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return getClass().getSimpleName() + " [resCode=" + resCode + ']';
     }

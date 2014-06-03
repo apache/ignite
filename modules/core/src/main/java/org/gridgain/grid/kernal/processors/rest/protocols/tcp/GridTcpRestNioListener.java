@@ -9,9 +9,11 @@
 
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
+import org.gridgain.client.*;
 import org.gridgain.client.marshaller.*;
 import org.gridgain.client.marshaller.jdk.*;
 import org.gridgain.client.marshaller.optimized.*;
+import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
@@ -84,6 +86,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
      * @param hnd Rest handler.
      * @param ctx Context.
      */
+    @SuppressWarnings("IfMayBeConditional")
     public GridTcpRestNioListener(GridLogger log, GridTcpRestProtocol proto, GridRestProtocolHandler hnd,
         GridKernalContext ctx) {
         memcachedLsnr = new GridTcpMemcachedNioListener(log, hnd, ctx);
@@ -97,6 +100,27 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         tmpMap.put(U.JDK_CLIENT_PROTO_ID, new GridClientJdkMarshaller());
 
         addProtobufMarshaller(tmpMap);
+
+        GridRestConfiguration restCfg = ctx.config().getRestConfiguration();
+
+        Map<Integer, Class<? extends GridPortableObject>> typesMap;
+
+        if (restCfg != null && restCfg.getPortableTypesMap() != null)
+            typesMap = new HashMap<>(restCfg.getPortableTypesMap());
+        else
+            typesMap = new HashMap<>();
+
+        typesMap.put(GridClientAuthenticationRequest.PORTABLE_TYPE_ID, GridClientAuthenticationRequest.class);
+        typesMap.put(GridClientCacheRequest.PORTABLE_TYPE_ID, GridClientCacheRequest.class);
+        typesMap.put(GridClientLogRequest.PORTABLE_TYPE_ID, GridClientLogRequest.class);
+        typesMap.put(GridClientNodeBean.PORTABLE_TYPE_ID, GridClientNodeBean.class);
+        typesMap.put(GridClientNodeMetricsBean.PORTABLE_TYPE_ID, GridClientNodeMetricsBean.class);
+        typesMap.put(GridClientResponse.PORTABLE_TYPE_ID, GridClientResponse.class);
+        typesMap.put(GridClientTaskRequest.PORTABLE_TYPE_ID, GridClientTaskRequest.class);
+        typesMap.put(GridClientTaskResultBean.PORTABLE_TYPE_ID, GridClientTaskResultBean.class);
+        typesMap.put(GridClientTopologyRequest.PORTABLE_TYPE_ID, GridClientTopologyRequest.class);
+
+        tmpMap.put(U.PORTABLE_OBJECT_PROTO_ID, new GridClientPortableMarshaller(typesMap));
 
         // Special case for Optimized marshaller, which may throw exception.
         // This may happen, for example, if some Unsafe methods are unavailable.
@@ -244,6 +268,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
     /**
      * Creates a REST request object from client TCP binary packet.
      *
+     * @param ses NIO session.
      * @param msg Request message.
      * @return REST request object.
      */

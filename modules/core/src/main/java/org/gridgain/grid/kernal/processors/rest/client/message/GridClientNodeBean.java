@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.client.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -17,9 +18,12 @@ import java.util.*;
 /**
  * Node bean.
  */
-public class GridClientNodeBean implements Externalizable {
+public class GridClientNodeBean implements Externalizable, GridPortableObject {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    public static final int PORTABLE_TYPE_ID = GridClientAbstractMessage.nextSystemTypeId();
 
     /** Node ID */
     private UUID nodeId;
@@ -306,6 +310,55 @@ public class GridClientNodeBean implements Externalizable {
         GridClientNodeBean other = (GridClientNodeBean)obj;
 
         return nodeId == null ? other.nodeId == null : nodeId.equals(other.nodeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int typeId() {
+        return PORTABLE_TYPE_ID;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writePortable(GridPortableWriter writer) throws IOException {
+        writer.writeInt("tcpPort", tcpPort);
+        writer.writeInt("jettyPort", jettyPort);
+        writer.writeInt("replicaCnt", replicaCnt);
+
+        writer.writeString("dfltCacheMode", dfltCacheMode);
+
+        writer.writeMap("attrs", attrs);
+        writer.writeMap("caches", caches);
+
+        writer.writeCollection("tcpAddrs", tcpAddrs);
+        writer.writeCollection("tcpHostNames", tcpHostNames);
+        writer.writeCollection("jettyAddrs", jettyAddrs);
+        writer.writeCollection("jettyHostNames", jettyHostNames);
+
+        writer.writeUuid("nodeId", nodeId);
+
+        writer.writeObject("consistentId", consistentId);
+        writer.writeObject("metrics", metrics);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readPortable(GridPortableReader reader) throws IOException {
+        tcpPort = reader.readInt("tcpPort");
+        jettyPort = reader.readInt("jettyPort");
+        replicaCnt = reader.readInt("replicaCnt");
+
+        dfltCacheMode = reader.readString("dfltCacheMode");
+
+        attrs = reader.readMap("attrs");
+        caches = reader.readMap("caches");
+
+        tcpAddrs = reader.readCollection("tcpAddrs");
+        tcpHostNames = reader.readCollection("tcpHostNames");
+        jettyAddrs = reader.readCollection("jettyAddrs");
+        jettyHostNames = reader.readCollection("jettyHostNames");
+
+        nodeId = reader.readUuid("nodeId");
+
+        consistentId = reader.readObject("consistentId");
+        metrics = reader.readObject("metrics");
     }
 
     /** {@inheritDoc} */

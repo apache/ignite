@@ -508,6 +508,9 @@ public class GridConfiguration {
     /** Security credentials. */
     private GridSecurityCredentialsProvider securityCred;
 
+    /** REST access configuration. */
+    private GridRestConfiguration restCfg;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -2948,6 +2951,20 @@ public class GridConfiguration {
      */
     public void setSecurityCredentialsProvider(GridSecurityCredentialsProvider securityCred) {
         this.securityCred = securityCred;
+    }
+
+    /**
+     * @return REST access configuration.
+     */
+    @Nullable public GridRestConfiguration getRestConfiguration() {
+        return restCfg;
+    }
+
+    /**
+     * @param restCfg REST access configuration.
+     */
+    public void setRestConfiguration(GridRestConfiguration restCfg) {
+        this.restCfg = restCfg;
     }
 
     /** {@inheritDoc} */

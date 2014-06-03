@@ -9,14 +9,19 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.client.*;
+
 import java.io.*;
 
 /**
  * Node metrics bean.
  */
-public class GridClientNodeMetricsBean implements Externalizable {
+public class GridClientNodeMetricsBean implements Externalizable, GridPortableObject {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    public static final int PORTABLE_TYPE_ID = GridClientAbstractMessage.nextSystemTypeId();
 
     /** */
     private long lastUpdateTime = -1;
@@ -1336,6 +1341,21 @@ public class GridClientNodeMetricsBean implements Externalizable {
             append(", rcvdBytesCnt=").append(rcvdBytesCnt).
             append("]").
             toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int typeId() {
+        return PORTABLE_TYPE_ID;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writePortable(GridPortableWriter writer) throws IOException {
+        // TODO 8491.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readPortable(GridPortableReader reader) throws IOException {
+        // TODO 8491.
     }
 
     /** {@inheritDoc} */

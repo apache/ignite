@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.client.*;
+
 import java.io.*;
 
 /**
@@ -17,6 +19,9 @@ import java.io.*;
 public class GridClientAuthenticationRequest extends GridClientAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    public static final int PORTABLE_TYPE_ID = nextSystemTypeId();
 
     /** Credentials. */
     private Object cred;
@@ -47,5 +52,24 @@ public class GridClientAuthenticationRequest extends GridClientAbstractMessage {
         super.readExternal(in);
 
         cred = in.readObject();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int typeId() {
+        return PORTABLE_TYPE_ID;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writePortable(GridPortableWriter writer) throws IOException {
+        super.writePortable(writer);
+
+        writer.writeObject("cred", cred);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readPortable(GridPortableReader reader) throws IOException {
+        super.readPortable(reader);
+
+        cred = reader.readObject("cred");
     }
 }

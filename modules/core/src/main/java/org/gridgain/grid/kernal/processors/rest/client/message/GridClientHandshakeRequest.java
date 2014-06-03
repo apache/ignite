@@ -164,6 +164,11 @@ public class GridClientHandshakeRequest extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
+    @Override public int typeId() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return getClass().getSimpleName() + " [verArr=" + Arrays.toString(verArr) +
             ", protoId=" + protoId + ']';

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.client.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -19,6 +20,9 @@ import java.io.*;
 public class GridClientTaskRequest extends GridClientAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    public static final int PORTABLE_TYPE_ID = nextSystemTypeId();
 
     /** Task name. */
     private String taskName;
@@ -72,6 +76,29 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
     @Override public int hashCode() {
         return (taskName == null ? 0 : taskName.hashCode()) +
             31 * (arg == null ? 0 : arg.hashCode());
+    }
+
+    /** {@inheritDoc} */
+    @Override public int typeId() {
+        return PORTABLE_TYPE_ID;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writePortable(GridPortableWriter writer) throws IOException {
+        super.writePortable(writer);
+
+        writer.writeString("taskName", taskName);
+
+        writer.writeObject("arg", arg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readPortable(GridPortableReader reader) throws IOException {
+        super.readPortable(reader);
+
+        taskName = reader.readString("taskName");
+
+        arg = reader.readObject("arg");
     }
 
     /** {@inheritDoc} */

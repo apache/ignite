@@ -23,6 +23,11 @@ public class GridClientPingPacket extends GridClientAbstractMessage {
     public static final byte[] PING_PACKET = new byte[] {(byte)0x90, 0x00, 0x00, 0x00, 0x00};
 
     /** {@inheritDoc} */
+    @Override public int typeId() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return getClass().getName();
     }
