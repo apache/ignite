@@ -46,11 +46,11 @@
             <version>3.2.2.RELEASE</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-urideploy</artifactId>
-            <version>${gridgain.version}</version>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.gridgain</groupId>-->
+            <!--<artifactId>gridgain-urideploy</artifactId>-->
+            <!--<version>${gridgain.version}</version>-->
+        <!--</dependency>-->
     </dependencies>
 
     <build>
