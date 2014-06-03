@@ -35,12 +35,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-rest-tcp</artifactId>
-            <version>${gridgain.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
             <version>4.0.9.Final</version>
@@ -82,6 +76,13 @@
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-rest-http</artifactId>
+            <version>${gridgain.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-protobuf</artifactId>
             <version>${gridgain.version}</version>
             <scope>test</scope>
         </dependency>
