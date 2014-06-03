@@ -21,8 +21,8 @@ import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCollectEventsTask.VisorColl
 import org.gridgain.grid.util.typedef.X
 import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.visor._
-import org.gridgain.visor.commands.tasks.State._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
+import org.gridgain.visor.visor._
 
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
@@ -41,6 +41,8 @@ private object State extends Enumeration {
     val FAILED = Value("Failed")
     val UNDEFINED = Value("<undefined>")
 }
+
+import org.gridgain.visor.commands.tasks.State._
 
 /**
  * Task execution data.

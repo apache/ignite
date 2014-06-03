@@ -75,7 +75,7 @@ public class VisorRunGcTask extends VisorMultiNodeTask<VisorRunGcTask.VisorRunGc
             System.gc();
 
             if (arg.dgc)
-                for (GridCache<?, ?> cache : g.cachesx(null))
+                for (GridCache<?, ?> cache : g.cachesx())
                     cache.dgc();
 
             return new VisorBeforeAfterResult(before, freeHeap(locNode));
