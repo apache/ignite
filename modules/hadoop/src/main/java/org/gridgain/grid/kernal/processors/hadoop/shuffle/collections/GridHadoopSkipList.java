@@ -28,7 +28,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
     private final Comparator cmp;
 
     /** Top level. */
-    private final AtomicInteger topLevel = new AtomicInteger();
+    private final AtomicInteger topLevel = new AtomicInteger(-1);
 
     /** Heads for all the lists. */
     private final AtomicLongArray heads = new AtomicLongArray(32);
@@ -102,10 +102,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
      * @return Next meta pointer.
      */
     private long nextMeta(long meta, int level) {
-        if (meta == 0)
-            return heads.get(level);
-
-        return mem.readLongVolatile(meta + 16 + 8 * level);
+        return meta == 0 ? heads.get(level) : mem.readLongVolatile(meta + 16 + 8 * level);
     }
 
     /**
@@ -116,10 +113,8 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
      * @return {@code true} If operation succeeded.
      */
     private boolean casNextMeta(long meta, int level, long oldNext, long newNext) {
-        if (meta == 0)
-            return heads.compareAndSet(level, oldNext, newNext);
-
-        return mem.casLong(meta + 16 + 8 * level, oldNext, newNext);
+        return meta == 0 ? heads.compareAndSet(level, oldNext, newNext) :
+            mem.casLong(meta + 16 + 8 * level, oldNext, newNext);
     }
 
     /**
@@ -220,18 +215,15 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
          * @param key Key.
          * @param val Value.
          * @param level Level.
-         * @param nextMeta Next meta.
          * @return Meta pointer.
          */
-        private long createMeta(long key, long val, int level, long nextMeta) {
+        private long createMeta(long key, long val, int level) {
             int size = 24 + 8 * level;
 
             long meta = allocate(size);
 
             key(meta, key);
             value(meta, val);
-
-            nextMeta(meta, nextMeta);
 
             for (int i = 24; i < size; i += 8) // Fill with 0.
                 mem.writeLong(meta + i, 0L);
@@ -254,12 +246,31 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
         }
 
         /**
+         * @param prevMeta Previous meta.
+         * @param meta Next meta.
+         */
+        private void stackPush(long prevMeta, long meta) {
+            stack.add(prevMeta);
+            stack.add(meta);
+        }
+
+        /**
+         * @return Upper meta from the stack.
+         */
+        private long upperMeta() {
+            return stack.isEmpty() ? -1L : stack.last();
+        }
+
+        /**
          * @param key Key.
          * @param val Value.
          * @return Meta pointer.
          * @throws GridException If failed.
          */
+        @SuppressWarnings("unchecked")
         private long add(Object key, @Nullable Object val) throws GridException {
+            stack.clear();
+
             long valPtr = 0;
 
             if (val != null) { // Write value.
@@ -273,46 +284,46 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
             long newMeta = 0;
             int newMetaLevel = -1;
 
-            int top = topLevel.get();
             long prevMeta = 0;
-            long meta = heads.get(top);
+            int level = topLevel.get();
+            long meta = level < 0 ? 0 : heads.get(level);
 
-            for (int level = top;;) {
-                while (meta == 0 && level > 0) // If we can go down here we have to.
-                    meta = nextMeta(prevMeta, --level);
-
-                if (meta == 0 || level < 0) { // We've found nothing, try to add new meta.
-                    if (keyPtr == 0) { // Write key and create meta.
+            for (int cmpRes;;) {
+                if (level < 0) { // We did not find our key, trying to add new meta.
+                    if (keyPtr == 0) { // Write key and create meta only once.
                         keyPtr = writeKey(key);
 
                         newMetaLevel = randomLevel(rnd);
-                        newMeta = createMeta(keyPtr, valPtr, newMetaLevel, meta);
+                        newMeta = createMeta(keyPtr, valPtr, newMetaLevel);
                     }
 
-                    if (casNextMeta(prevMeta, 0, meta, newMeta)) { // We just added new key.
-                        laceUp(newMeta, newMetaLevel);
+                    nextMeta(newMeta, meta);
+
+                    if (casNextMeta(prevMeta, 0, meta, newMeta)) { // The new key was added successfully.
+                        laceUp(prevMeta, newMeta, newMetaLevel);
 
                         return newMeta;
                     }
-                    else { // Add failed, need to check out what was added by another thread.
-                        meta = nextMeta(prevMeta, 0);
-
-                        continue;
-                    }
+                    else // Add failed, need to check out what was added by another thread.
+                        meta = nextMeta(prevMeta, level = 0);
                 }
 
+                assert meta != 0;
+
+//                if (meta != upperMeta()) { // TODO
                 Object k = keyReader.readKey(meta);
 
-                int res = cmp.compare(key, k);
+                cmpRes = cmp.compare(key, k);
+//                }
 
-                if (res == 0) { // Key found.
-                    if (newMeta != 0)  // Deallocate.
+                if (cmpRes == 0) { // Key found.
+                    if (newMeta != 0)  // Deallocate if we've allocated something.
                         localDeallocate(keyPtr);
 
-                    if (valPtr == 0) // Only key.
+                    if (valPtr == 0) // Only key needs to be added.
                         return meta;
 
-                    for(;;) { // Add value for the key found.
+                    for (;;) { // Add value for the key found.
                         long nextVal = value(meta);
 
                         nextValue(valPtr, nextVal);
@@ -322,22 +333,42 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
                     }
                 }
 
-                if (res > 0) { // Go right.
+                assert cmpRes != 0;
+
+                if (cmpRes > 0) { // Go right.
                     prevMeta = meta;
                     meta = nextMeta(meta, level);
+
+                    if (meta != 0) // If nothing to the right then go down.
+                        continue;
                 }
-                else
-                    --level; // Go down.
+
+                while (--level >= 0) { // Go down.
+                    stackPush(prevMeta, meta); // Remember the path.
+
+                    meta = nextMeta(prevMeta, level);
+
+                    if (meta != 0) // Else go deeper.
+                        break;
+                }
             }
         }
 
         /**
-         * @param newMeta New meta pointer.
-         * @param level Level.
+         * Adds appropriate index links between metas.
+         *
+         * @param prevMeta Previous meta.
+         * @param newMeta Just added meta.
+         * @param newMetaLevel New level.
          */
-        private void laceUp(long newMeta, int level) {
-            for (int i = 1; i < level; i++) {
+        private void laceUp(long prevMeta, long newMeta, int newMetaLevel) {
+            if (stack.isEmpty()) //
 
+            for (int i = 0; i < newMetaLevel; i+= 2) {
+                if (stack.isEmpty()) {
+
+
+                }
 
             }
         }
