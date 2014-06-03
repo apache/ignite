@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.visor.cmd.dto.node;
 import java.io.*;
 
 /**
- * Metrics configuration data.
+ * Data transfer object for node metrics configuration properties.
  */
 public class VisorMetricsConfig implements Serializable {
     /** */
@@ -27,6 +27,7 @@ public class VisorMetricsConfig implements Serializable {
     /** Frequency of metrics log printout. */
     private final long logFreq;
 
+    /** Create data transfer object with given parameters. */
     public VisorMetricsConfig(long expTime, int historySize, long logFreq) {
         this.expTime = expTime;
         this.historySize = historySize;

@@ -17,7 +17,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Node configuration data.
+ * Data transfer object for node configuration data.
  */
 public class VisorGridConfig implements Serializable {
     /** */
@@ -82,15 +82,29 @@ public class VisorGridConfig implements Serializable {
     /** System properties. */
     private final Properties sysProps;
 
-    public VisorGridConfig(GridProductLicense license, VisorBasicConfig basic, VisorMetricsConfig metrics,
-        VisorSpisConfig spis, VisorPeerToPeerConfig p2p, VisorEmailConfig email,
+    /** Create data transfer object with given parameters. */
+    public VisorGridConfig(
+        GridProductLicense license,
+        VisorBasicConfig basic,
+        VisorMetricsConfig metrics,
+        VisorSpisConfig spis,
+        VisorPeerToPeerConfig p2p,
+        VisorEmailConfig email,
         VisorLifecycleConfig lifecycle,
-        VisorExecServiceConfig execSvc, VisorSegmentationConfig seg, String inclProps, int[] inclEvtTypes,
-        VisorRestConfig rest, Map<String, ?> userAttrs, Iterable<VisorCacheConfig> caches,
+        VisorExecServiceConfig execSvc,
+        VisorSegmentationConfig seg,
+        String inclProps,
+        int[] inclEvtTypes,
+        VisorRestConfig rest,
+        Map<String, ?> userAttrs,
+        Iterable<VisorCacheConfig> caches,
         Iterable<VisorGgfsConfig> ggfss,
         Iterable<VisorStreamerConfig> streamers,
-        VisorDrSenderHubConfig drSenderHub, VisorDrReceiverHubConfig drReceiverHub,
-        Map<String, String> env, Properties sysProps) {
+        VisorDrSenderHubConfig drSenderHub,
+        VisorDrReceiverHubConfig drReceiverHub,
+        Map<String, String> env,
+        Properties sysProps
+    ) {
         this.license = license;
         this.basic = basic;
         this.metrics = metrics;

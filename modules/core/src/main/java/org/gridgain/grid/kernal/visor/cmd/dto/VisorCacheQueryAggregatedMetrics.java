@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.visor.cmd.dto;
 import java.io.*;
 
 /**
- * Aggregated cache metrics.
+ * Data transfer object for aggregated cache query metrics.
  */
 public class VisorCacheQueryAggregatedMetrics implements Serializable {
     /** */

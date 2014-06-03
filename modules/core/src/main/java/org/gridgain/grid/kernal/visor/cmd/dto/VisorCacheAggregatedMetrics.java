@@ -13,7 +13,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Aggregated cache metrics.
+ * Data transfer object for aggregated cache metrics.
  */
 public class VisorCacheAggregatedMetrics implements Serializable {
     /** */
@@ -82,6 +82,7 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**  */
     private Collection<VisorCacheMetrics> metrics = new ArrayList<>();
 
+    /** Create data transfer object with given parameters. */
     public VisorCacheAggregatedMetrics(String cacheName) {
         this.cacheName = cacheName;
     }

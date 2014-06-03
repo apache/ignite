@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.visor.cmd.dto.node;
 import java.io.*;
 
 /**
- * Email configuration data.
+ * Data transfer object for node email configuration properties.
  */
 public class VisorEmailConfig implements Serializable {
     /** */
@@ -39,6 +39,7 @@ public class VisorEmailConfig implements Serializable {
     /** Whether or not to use TLS for SMTP. */
     private final boolean smtpStartTls;
 
+    /** Create data transfer object with given parameters. */
     public VisorEmailConfig(String smtpHost, int smtpPort, String smtpUsername, String adminEmails,
         String smtpFromEmail, boolean smtpSsl, boolean smtpStartTls) {
         this.smtpHost = smtpHost;

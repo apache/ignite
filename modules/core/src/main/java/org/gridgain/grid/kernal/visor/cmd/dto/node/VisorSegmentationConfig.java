@@ -15,7 +15,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * Segmentation configuration data.
+ * Data transfer object for node segmentation configuration properties.
  */
 public class VisorSegmentationConfig implements Serializable {
     /** */
@@ -36,9 +36,14 @@ public class VisorSegmentationConfig implements Serializable {
     /**Whether or not all resolvers should succeed for node to be in correct segment. */
     private final boolean passRequired;
 
-    public VisorSegmentationConfig(GridSegmentationPolicy plc, @Nullable String resolvers, long checkFreq,
+    /** Create data transfer object with given parameters. */
+    public VisorSegmentationConfig(
+        GridSegmentationPolicy plc,
+        @Nullable String resolvers,
+        long checkFreq,
         boolean waitOnStart,
-        boolean passRequired) {
+        boolean passRequired
+    ) {
         this.plc = plc;
         this.resolvers = resolvers;
         this.checkFreq = checkFreq;

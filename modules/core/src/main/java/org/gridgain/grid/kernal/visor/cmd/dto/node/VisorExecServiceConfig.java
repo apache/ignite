@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.visor.cmd.dto.node;
 import java.io.*;
 
 /**
- * Executors configuration data.
+ * Data transfer object for node executors configuration properties.
  */
 public class VisorExecServiceConfig implements Serializable {
     /** */
@@ -33,9 +33,15 @@ public class VisorExecServiceConfig implements Serializable {
     /**Whether or not GridGain will stop peer-to-peer executor service on node shutdown. */
     private final boolean p2pExecSvcShutdown;
 
-    public VisorExecServiceConfig(String execSvc, boolean execSvcShutdown, String sysExecSvc,
+    /** Create data transfer object with given parameters. */
+    public VisorExecServiceConfig(
+        String execSvc,
+        boolean execSvcShutdown,
+        String sysExecSvc,
         boolean sysExecSvcShutdown,
-        String p2pExecSvc, boolean p2pExecSvcShutdown) {
+        String p2pExecSvc,
+        boolean p2pExecSvcShutdown
+    ) {
         this.execSvc = execSvc;
         this.execSvcShutdown = execSvcShutdown;
 

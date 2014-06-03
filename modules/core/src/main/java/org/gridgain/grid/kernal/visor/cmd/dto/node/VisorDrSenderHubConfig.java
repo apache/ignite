@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.visor.cmd.dto.node;
 import java.io.*;
 
 /**
- * Store configuration data.
+ * Data transfer object for DR sender hub configuration properties.
  */
 public class VisorDrSenderHubConfig implements Serializable {
     /** */
@@ -45,9 +45,18 @@ public class VisorDrSenderHubConfig implements Serializable {
     /** Cache names this sender hub works with. */
     private final String[] cacheNames;
 
-    public VisorDrSenderHubConfig(Iterable<VisorDrSenderHubConnectionConfig> connectionConfiguration,
-        int maxFailedConnectAttempts, int maxErrors, long healthCheckFrequency, long systemRequestTimeout,
-        long readTimeout, int maxQueueSize, long reconnectOnFailureTimeout, String[] cacheNames) {
+    /** Create data transfer object with given parameters. */
+    public VisorDrSenderHubConfig(
+        Iterable<VisorDrSenderHubConnectionConfig> connectionConfiguration,
+        int maxFailedConnectAttempts,
+        int maxErrors,
+        long healthCheckFrequency,
+        long systemRequestTimeout,
+        long readTimeout,
+        int maxQueueSize,
+        long reconnectOnFailureTimeout,
+        String[] cacheNames
+    ) {
         this.connectionConfiguration = connectionConfiguration;
         this.maxFailedConnectAttempts = maxFailedConnectAttempts;
         this.maxErrors = maxErrors;

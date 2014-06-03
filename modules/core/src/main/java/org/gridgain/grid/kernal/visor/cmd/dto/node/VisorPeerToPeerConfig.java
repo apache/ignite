@@ -14,7 +14,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * P2P configuration data.
+ * Data transfer object for node P2P configuration properties.
  */
 public class VisorPeerToPeerConfig implements Serializable {
     /** */
@@ -29,6 +29,7 @@ public class VisorPeerToPeerConfig implements Serializable {
     /** List of packages from the system classpath that need to be loaded from task originating node. */
     @Nullable private final String p2pLocClsPathExcl;
 
+    /** Create data transfer object with given parameters. */
     public VisorPeerToPeerConfig(boolean p2pEnabled, int p2pMissedResCacheSize, @Nullable String p2pLocClsPathExcl) {
         this.p2pEnabled = p2pEnabled;
         this.p2pMissedResCacheSize = p2pMissedResCacheSize;

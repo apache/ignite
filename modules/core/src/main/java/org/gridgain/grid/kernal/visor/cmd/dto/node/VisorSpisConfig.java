@@ -15,7 +15,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * SPIs configuration data.
+ * Data transfer object for node SPIs configuration properties.
  */
 public class VisorSpisConfig implements Serializable {
     /** */
@@ -57,7 +57,9 @@ public class VisorSpisConfig implements Serializable {
     /** Indexing SPIs. */
     private final T2<String, Map<String, Object>>[] indexingSpi;
 
-    public VisorSpisConfig(T2<String, Map<String, Object>> discoSpi,
+    /** Create data transfer object with given parameters. */
+    public VisorSpisConfig(
+        T2<String, Map<String, Object>> discoSpi,
         T2<String, Map<String, Object>> commSpi,
         T2<String, Map<String, Object>> evtSpi,
         T2<String, Map<String, Object>> colSpi,

@@ -14,7 +14,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * Lifecycle configuration data.
+ * Data transfer object for node lifecycle configuration properties.
  */
 public class VisorLifecycleConfig implements Serializable {
     /** */
@@ -26,6 +26,7 @@ public class VisorLifecycleConfig implements Serializable {
     /** Whether or not email notifications should be used on node start and stop. */
     private final boolean ntf;
 
+    /** Create data transfer object with given parameters. */
     public VisorLifecycleConfig(@Nullable String beans, boolean ntf) {
         this.beans = beans;
         this.ntf = ntf;

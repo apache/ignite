@@ -15,7 +15,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Basic configuration data.
+ * Data transfer object for node basic configuration properties.
  */
 public class VisorBasicConfig implements Serializable {
     /** */
@@ -84,7 +84,9 @@ public class VisorBasicConfig implements Serializable {
     /** Whether update checker is enabled. */
     private final boolean updateNtf;
 
-    public VisorBasicConfig(String gridName,
+    /** Create data transfer object with given parameters. */
+    public VisorBasicConfig(
+        String gridName,
         String ggHome,
         String locHost,
         UUID nodeId,

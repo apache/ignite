@@ -9,32 +9,38 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto;
 
-import org.gridgain.grid.kernal.visor.cmd.tasks.*;
-
 import java.util.*;
 
 /**
- * Result of {@link VisorFieldsQueryTask}.
+ * Result for cache query tasks.
  */
 public class VisorFieldsQueryResultEx extends VisorFieldsQueryResult {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Node where query executed. */
     private final UUID resNodeId;
 
+    /** Query ID to store in node local. */
     private final String qryId;
 
+    /** Query columns descriptors.  */
     private final VisorFieldsQueryColumn[] colNames;
 
     /**
      * @param resNodeId Node where query executed.
      * @param qryId Query ID for future extraction in nextPage() access.
      * @param colNames Column type and names.
-     * @param rows First page of rows fetched from query.
-     * @param hasMore `True` if there is more data could be fetched.
+     * @param rows Rows fetched from query.
+     * @param hasMore Whether query has more rows to fetch.
      */
-    public VisorFieldsQueryResultEx(UUID resNodeId, String qryId, VisorFieldsQueryColumn[] colNames,
-        List<Object[]> rows, Boolean hasMore) {
+    public VisorFieldsQueryResultEx(
+        UUID resNodeId,
+        String qryId,
+        VisorFieldsQueryColumn[] colNames,
+        List<Object[]> rows,
+        Boolean hasMore
+    ) {
         super(rows, hasMore);
 
         this.resNodeId = resNodeId;

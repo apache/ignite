@@ -9,12 +9,10 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
-import org.gridgain.grid.dr.hub.receiver.*;
-
 import java.io.*;
 
 /**
- * Visor counterpart for {@link GridDrReceiverHubConfiguration}.
+ * Data transfer object for DR receiver hub configuration properties.
  */
 public class VisorDrReceiverHubConfig implements Serializable {
     /** */
@@ -56,9 +54,21 @@ public class VisorDrReceiverHubConfig implements Serializable {
     /** Per node parallel load operations. */
     private final int perNodeParallelLoadOperations;
 
-    public VisorDrReceiverHubConfig(String localInboundHost, int localInboundPort, int selectorCount, int workerThreads,
-        int messageQueueLimit, boolean tcpNodelay, boolean directBuffer, long idleTimeout, long writeTimeout,
-        long flushFrequency, int perNodeBufferSize, int perNodeParallelLoadOperations) {
+    /** Create data transfer object with given parameters. */
+    public VisorDrReceiverHubConfig(
+        String localInboundHost,
+        int localInboundPort,
+        int selectorCount,
+        int workerThreads,
+        int messageQueueLimit,
+        boolean tcpNodelay,
+        boolean directBuffer,
+        long idleTimeout,
+        long writeTimeout,
+        long flushFrequency,
+        int perNodeBufferSize,
+        int perNodeParallelLoadOperations
+    ) {
         this.localInboundHost = localInboundHost;
         this.localInboundPort = localInboundPort;
         this.selectorCount = selectorCount;

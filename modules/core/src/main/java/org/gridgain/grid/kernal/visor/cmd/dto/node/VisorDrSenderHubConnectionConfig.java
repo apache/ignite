@@ -15,7 +15,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * Visor counterpart for `GridDrSenderHubConnectionConfiguration`.
+ * Data transfer object for DR sender hub connection configuration properties.
  */
 public class VisorDrSenderHubConnectionConfig implements Serializable {
     /** */
@@ -36,9 +36,14 @@ public class VisorDrSenderHubConnectionConfig implements Serializable {
     /** IDs of data centers updates from which will not be replicated to this remote data center. */
     private final byte[] ignoredDataCenterIds;
 
-    public VisorDrSenderHubConnectionConfig(Byte dataCenterId, String[] receiverHubAddresses,
-        @Nullable String localOutboundHost, GridDrReceiverHubLoadBalancingMode receiverHubLoadBalancingMode,
-        byte[] ignoredDataCenterIds) {
+    /** Create data transfer object with given parameters. */
+    public VisorDrSenderHubConnectionConfig(
+        Byte dataCenterId,
+        String[] receiverHubAddresses,
+        @Nullable String localOutboundHost,
+        GridDrReceiverHubLoadBalancingMode receiverHubLoadBalancingMode,
+        byte[] ignoredDataCenterIds
+    ) {
         this.dataCenterId = dataCenterId;
         this.receiverHubAddresses = receiverHubAddresses;
         this.localOutboundHost = localOutboundHost;
@@ -58,5 +63,26 @@ public class VisorDrSenderHubConnectionConfig implements Serializable {
      */
     public String[] receiverHubAddresses() {
         return receiverHubAddresses;
+    }
+
+    /**
+     * @return Local network interface name to which this replica hub will be bound to.
+     */
+    public String localOutboundHost() {
+        return localOutboundHost;
+    }
+
+    /**
+     * @return Replica hub selection strategy.
+     */
+    public GridDrReceiverHubLoadBalancingMode receiverHubLoadBalancingMode() {
+        return receiverHubLoadBalancingMode;
+    }
+
+    /**
+     * @return IDs of data centers updates from which will not be replicated to this remote data center.
+     */
+    public byte[] ignoredDataCenterIds() {
+        return ignoredDataCenterIds;
     }
 }

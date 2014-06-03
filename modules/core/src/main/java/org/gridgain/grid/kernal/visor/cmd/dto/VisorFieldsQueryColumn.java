@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.visor.cmd.dto;
 import java.io.Serializable;
 
 /**
- * Visor query column type description.
+ * Data transfer object for query column type description.
  */
 public class VisorFieldsQueryColumn implements Serializable {
     /** */
@@ -24,6 +24,7 @@ public class VisorFieldsQueryColumn implements Serializable {
     /** Field name. */
     private final String field;
 
+    /** Create data transfer object with given parameters. */
     public VisorFieldsQueryColumn(String type, String field) {
         this.type = type;
         this.field = field;

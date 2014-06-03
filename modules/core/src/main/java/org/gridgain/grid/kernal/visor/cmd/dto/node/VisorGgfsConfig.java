@@ -16,7 +16,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Store configuration data.
+ * Data transfer object for GGFS configuration properties.
  */
 public class VisorGgfsConfig implements Serializable {
     /** */
@@ -103,16 +103,35 @@ public class VisorGgfsConfig implements Serializable {
     /** Trash purge await timeout. */
     private final long trashPurgeTimeout;
 
-    public VisorGgfsConfig(@Nullable String name, @Nullable String metaCacheName, @Nullable String dataCacheName,
-        int blockSize, int prefetchBlocks, int streamBufferSize, int perNodeBatchSize,
-        int perNodeParallelBatchCount, @Nullable String secondaryHadoopFileSystemUri,
-        @Nullable String secondaryHadoopFileSystemConfigPath, GridGgfsMode defaultMode,
-        @Nullable Map<String, GridGgfsMode> pathModes, String dualModePutExecutorService,
-        boolean dualModePutExecutorServiceShutdown, long dualModeMaxPendingPutsSize, long maxTaskRangeLength,
-        int fragmentizerConcurrentFiles, float fragmentizerLocWritesRatio, boolean fragmentizerEnabled,
-        long fragmentizerThrottlingBlockLen, long fragmentizerThrottlingDelay,
-        @Nullable String ipcEndpointCfg, boolean ipcEndpointEnabled, long maxSpace, int mgmtPort,
-        int seqReadsBeforePrefetch, long trashPurgeTimeout) {
+    /** Create data transfer object with given parameters. */
+    public VisorGgfsConfig(
+        @Nullable String name,
+        @Nullable String metaCacheName,
+        @Nullable String dataCacheName,
+        int blockSize,
+        int prefetchBlocks,
+        int streamBufferSize,
+        int perNodeBatchSize,
+        int perNodeParallelBatchCount,
+        @Nullable String secondaryHadoopFileSystemUri,
+        @Nullable String secondaryHadoopFileSystemConfigPath,
+        GridGgfsMode defaultMode,
+        @Nullable Map<String, GridGgfsMode> pathModes,
+        String dualModePutExecutorService,
+        boolean dualModePutExecutorServiceShutdown,
+        long dualModeMaxPendingPutsSize,
+        long maxTaskRangeLength,
+        int fragmentizerConcurrentFiles,
+        float fragmentizerLocWritesRatio,
+        boolean fragmentizerEnabled,
+        long fragmentizerThrottlingBlockLen,
+        long fragmentizerThrottlingDelay,
+        @Nullable String ipcEndpointCfg,
+        boolean ipcEndpointEnabled,
+        long maxSpace, int mgmtPort,
+        int seqReadsBeforePrefetch,
+        long trashPurgeTimeout
+    ) {
         this.name = name;
         this.metaCacheName = metaCacheName;
         this.dataCacheName = dataCacheName;

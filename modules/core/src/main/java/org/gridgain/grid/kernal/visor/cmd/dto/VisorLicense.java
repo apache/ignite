@@ -16,7 +16,7 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- * Data transfer object for grid license.
+ * Data transfer object for grid license properties.
  */
 public class VisorLicense implements Serializable {
     /** */

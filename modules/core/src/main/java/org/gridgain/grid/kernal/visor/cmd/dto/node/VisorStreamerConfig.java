@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.visor.cmd.dto.node;
 import java.io.*;
 
 /**
- * Store configuration data.
+ * Data transfer object for streamer configuration properties.
  */
 public class VisorStreamerConfig implements Serializable {
     /** */
@@ -36,8 +36,15 @@ public class VisorStreamerConfig implements Serializable {
     /** Flag indicating whether streamer executor service should be shut down on GridGain stop. */
     private final boolean executorServiceShutdown;
 
-    public VisorStreamerConfig(String name, String router, boolean atLeastOnce,
-        int maxFailoverAttempts, int maxConcurrentSessions, boolean executorServiceShutdown) {
+    /** Create data transfer object with given parameters. */
+    public VisorStreamerConfig(
+        String name,
+        String router,
+        boolean atLeastOnce,
+        int maxFailoverAttempts,
+        int maxConcurrentSessions,
+        boolean executorServiceShutdown
+    ) {
         this.name = name;
         this.router = router;
         this.atLeastOnce = atLeastOnce;

@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.visor.cmd.dto;
 import java.io.*;
 
 /**
- * Cache query metrics.
+ * Data transfer object for cache query metrics.
  */
 public class VisorCacheQueryMetrics implements Serializable {
     /** */
@@ -33,6 +33,7 @@ public class VisorCacheQueryMetrics implements Serializable {
     /** Total number of times a query execution failed. */
     private final int fails;
 
+    /** Create data transfer object with given parameters. */
     public VisorCacheQueryMetrics(long minTime, long maxTime, double avgTime, int execs, int fails) {
         this.minTime = minTime;
         this.maxTime = maxTime;

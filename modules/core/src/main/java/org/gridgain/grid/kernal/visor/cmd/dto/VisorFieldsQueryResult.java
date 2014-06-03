@@ -9,25 +9,27 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto;
 
-import org.gridgain.grid.kernal.visor.cmd.tasks.*;
-
 import java.io.*;
 import java.util.*;
 
 /**
- * Result of {@link VisorNextFieldsQueryPageTask}.
+ * Result for cache query tasks.
  */
 public class VisorFieldsQueryResult implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Rows fetched from query. */
     private final List<Object[]> rows;
 
+    /** Whether query has more rows to fetch. */
     private final Boolean hasMore;
 
     /**
-     * @param rows First page of rows fetched from query.
-     * @param hasMore `True` if there is more data could be fetched.
+     * Create task result with given parameters
+     *
+     * @param rows Rows fetched from query.
+     * @param hasMore Whether query has more rows to fetch.
      */
     public VisorFieldsQueryResult(List<Object[]> rows, Boolean hasMore) {
         this.rows = rows;
@@ -35,14 +37,14 @@ public class VisorFieldsQueryResult implements Serializable {
     }
 
     /**
-     * @return Rows.
+     * @return Rows fetched from query.
      */
     public List<Object[]> rows() {
         return rows;
     }
 
     /**
-     * @return Has more.
+     * @return Whether query has more rows to fetch.
      */
     public Boolean hasMore() {
         return hasMore;

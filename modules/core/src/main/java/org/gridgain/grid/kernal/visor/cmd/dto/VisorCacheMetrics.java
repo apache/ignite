@@ -13,7 +13,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Cache metrics.
+ * Data transfer object for cache metrics.
  */
 public class VisorCacheMetrics implements Serializable {
     /** */
@@ -61,10 +61,23 @@ public class VisorCacheMetrics implements Serializable {
     /** Gets query metrics for cache. */
     private final VisorCacheQueryMetrics qryMetrics;
 
-    public VisorCacheMetrics(String cacheName, UUID nodeId, int cpus, double heapUsed, double cpuLoad,
+    /** Create data transfer object with given parameters. */
+    public VisorCacheMetrics(
+        String cacheName,
+        UUID nodeId,
+        int cpus,
+        double heapUsed,
+        double cpuLoad,
         long upTime,
-        int size, long lastRead, long lastWrite, int hits, int misses, int reads, int writes,
-        VisorCacheQueryMetrics qryMetrics) {
+        int size,
+        long lastRead,
+        long lastWrite,
+        int hits,
+        int misses,
+        int reads,
+        int writes,
+        VisorCacheQueryMetrics qryMetrics
+    ) {
         this.cacheName = cacheName;
         this.nodeId = nodeId;
         this.cpus = cpus;
