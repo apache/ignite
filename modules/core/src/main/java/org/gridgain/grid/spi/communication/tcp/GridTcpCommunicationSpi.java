@@ -1613,8 +1613,8 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
         Collection<InetSocketAddress> extAddrs = node.attribute(createSpiAttributeName(ATTR_EXT_ADDRS));
 
-        boolean isRmtAddrsExist = (F.isEmpty(rmtAddrs0) || boundPort == null);
-        boolean isExtAddrsExist = F.isEmpty(extAddrs);
+        boolean isRmtAddrsExist = (!F.isEmpty(rmtAddrs0) && boundPort != null);
+        boolean isExtAddrsExist = !F.isEmpty(extAddrs);
 
         if (isRmtAddrsExist && isExtAddrsExist)
             throw new GridException("Failed to send message to the destination node. Node doesn't have any " +

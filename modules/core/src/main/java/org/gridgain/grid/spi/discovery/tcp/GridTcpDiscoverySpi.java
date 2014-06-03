@@ -980,7 +980,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
                 U.resolveAddresses(addrRslvr, F.flat(Arrays.asList(addrs.get1(), addrs.get2())), locNode.discoveryPort());
 
-            nodeAttrs.put(createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
+            if (extAddrs != null)
+                nodeAttrs.put(createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
         }
         catch (GridException e) {
             throw new GridSpiException("Failed to resolve local host to addresses: " + locHost, e);
