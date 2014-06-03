@@ -63,7 +63,7 @@ public class VisorAckTask extends VisorMultiNodeTask<VisorAckTask.VisorAckArg, V
         }
 
         @Override protected Void run(VisorAckArg arg) throws GridException {
-            System.out.println("<visor>: ack: " + (arg.msg == null ? g.localNode().id() : arg.msg)); // TODO
+            System.out.println("<visor>: ack: " + (arg.msg == null ? g.localNode().id() : arg.msg));
 
             return null;
         }

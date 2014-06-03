@@ -17,7 +17,7 @@ import org.gridgain.grid.resources.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Basde class for Visor jobs.
+ * Base class for Visor jobs.
  */
 public abstract class VisorJob<A, R> extends GridComputeJobAdapter {
     /**

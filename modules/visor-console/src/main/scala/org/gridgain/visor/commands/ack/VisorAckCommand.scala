@@ -15,7 +15,7 @@ import org.gridgain.grid._
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorAckTask
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorAckTask.VisorAckArg
 
-import java.util.{UUID, HashSet => JavaHashSet}
+import java.util.{HashSet => JavaHashSet}
 
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions

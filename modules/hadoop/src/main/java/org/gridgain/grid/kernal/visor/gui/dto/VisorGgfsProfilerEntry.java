@@ -30,8 +30,8 @@ public class VisorGgfsProfilerEntry implements Serializable {
     }
 
     /** Timestamp comparator. */
-    public static final VisorGgfsProfilerEntryTimestampComparator ENTRY_TIMESTAMP_COMPARATOR
-        = new VisorGgfsProfilerEntryTimestampComparator();
+    public static final VisorGgfsProfilerEntryTimestampComparator ENTRY_TIMESTAMP_COMPARATOR =
+            new VisorGgfsProfilerEntryTimestampComparator();
 
     /** Path to file. */
     private final String path;
@@ -64,7 +64,7 @@ public class VisorGgfsProfilerEntry implements Serializable {
     private final long userWriteTime;
 
     /** Calculated uniformity. */
-    private double uniformity;
+    private double uniformity = -1;
 
     /** Counters for uniformity calculation.  */
     private final VisorGgfsProfilerUniformityCounters counters;
@@ -87,7 +87,6 @@ public class VisorGgfsProfilerEntry implements Serializable {
         long bytesWritten,
         long writeTime,
         long userWriteTime,
-//        double uniformity,
         VisorGgfsProfilerUniformityCounters counters
     ) {
         assert counters != null;
@@ -102,7 +101,6 @@ public class VisorGgfsProfilerEntry implements Serializable {
         this.bytesWritten = bytesWritten;
         this.writeTime = writeTime;
         this.userWriteTime = userWriteTime;
-        this.uniformity = -1;
         this.counters = counters;
 
         this.readSpeed = speed(bytesRead, readTime);

@@ -248,8 +248,8 @@ public class VisorCollectEventsTask extends VisorOneNodeTask<VisorCollectEventsT
 
             Collection<GridEvent> evts = g.events().localQuery(new GridPredicate<GridEvent>() {
                   @Override public boolean apply(GridEvent event) {
-                  return (arg.typeArgument() == null || F.contains(arg.typeArgument(), event.type())) &&
-                      event.timestamp() >= startEvtTime && filterVisor(event);
+                    return (arg.typeArgument() == null || F.contains(arg.typeArgument(), event.type())) &&
+                        event.timestamp() >= startEvtTime && filterVisor(event);
                   }
               }
             );

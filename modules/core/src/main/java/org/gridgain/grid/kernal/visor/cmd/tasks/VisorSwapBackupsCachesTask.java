@@ -21,7 +21,8 @@ import java.util.*;
  * Task for swapping backup cache entries.
  */
 @GridInternal
-public class VisorSwapBackupsCachesTask extends VisorOneNodeTask<VisorOneNodeNamesArg, VisorNamedBeforeAfterTaskResult> {
+public class VisorSwapBackupsCachesTask extends
+    VisorOneNodeTask<VisorOneNodeNamesArg, VisorNamedBeforeAfterTaskResult> {
     @SuppressWarnings("PublicInnerClass")
     public static class VisorSwapBackupsCachesJob
         extends VisorOneNodeJob<VisorOneNodeNamesArg, VisorNamedBeforeAfterTaskResult> {

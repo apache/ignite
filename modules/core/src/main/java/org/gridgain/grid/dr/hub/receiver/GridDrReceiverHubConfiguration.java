@@ -10,14 +10,13 @@
 package org.gridgain.grid.dr.hub.receiver;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Data center replication receiver hub configuration.
  */
-public class GridDrReceiverHubConfiguration extends GridDrSenderHubConfiguration {
+public class GridDrReceiverHubConfiguration {
     /** Default server port. */
     public static final int DFLT_LOCAL_PORT = 49000;
 

@@ -49,9 +49,8 @@ public class VisorGgfsProfilerUniformityCounters implements Serializable {
 
             blockSize = calcBlockSize(fileSize);
         }
-        else if (newFileSize > fileSize) { // If newFileSize is bigger then current fileSize then adjust counters and blockSize.
+        else if (newFileSize > fileSize) // If newFileSize is bigger then current fileSize then adjust counters and blockSize.
             compact(newFileSize);
-        }
     }
 
     /**
@@ -149,7 +148,6 @@ public class VisorGgfsProfilerUniformityCounters implements Serializable {
             int n = F.sumInt(counters);
 
             double mean = 1.0 / sz;
-
 
             // Calc standard deviation for block read frequency: SQRT(SUM(Freq_i - Mean)^2 / K)
             // where Mean = 1 / K

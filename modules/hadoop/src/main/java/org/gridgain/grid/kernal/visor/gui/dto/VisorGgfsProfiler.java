@@ -33,9 +33,8 @@ public class VisorGgfsProfiler {
     public static VisorGgfsProfilerEntry aggregateGgfsProfilerEntries(List<VisorGgfsProfilerEntry> entries) {
         assert !F.isEmpty(entries);
 
-        if (entries.size() == 1) {
+        if (entries.size() == 1)
             return entries.get(0); // No need to aggregate.
-        }
         else {
             String path = entries.get(0).path();
 
@@ -59,7 +58,7 @@ public class VisorGgfsProfiler {
                 // Take last size.
                 size = entry.size();
 
-                // Take last size.
+                // Take last mode.
                 mode = entry.mode();
 
                 // Aggregate metrics.

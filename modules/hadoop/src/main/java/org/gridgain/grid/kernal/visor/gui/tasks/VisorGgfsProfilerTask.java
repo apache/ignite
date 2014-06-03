@@ -83,8 +83,8 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorOneNodeNameArg,
         }
     }
 
-    private static final VisorGgfsProfilerParsedLineComparator PARSED_LINE_BY_TS_COMPARATOR
-        = new VisorGgfsProfilerParsedLineComparator();
+    private static final VisorGgfsProfilerParsedLineComparator PARSED_LINE_BY_TS_COMPARATOR =
+            new VisorGgfsProfilerParsedLineComparator();
 
     /**
      * Job that do actual profiler work.
