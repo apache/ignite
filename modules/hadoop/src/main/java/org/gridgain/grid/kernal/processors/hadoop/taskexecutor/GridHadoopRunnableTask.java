@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
@@ -45,6 +46,12 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
 
     /** */
     private GridHadoopMultimap local;
+
+    /** */
+    private volatile GridHadoopTask task;
+
+    /** Set if task is to cancelling. */
+    private volatile boolean cancelled;
 
     /**
      * @param job Job.
@@ -93,6 +100,9 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
                 runTask(new GridHadoopTaskInfo(info.nodeId(), COMBINE, info.jobId(), info.taskNumber(), info.attempt(),
                     null), runCombiner);
         }
+        catch (GridHadoopTaskCancelledException e) {
+            state = GridHadoopTaskState.CANCELED;
+        }
         catch (Throwable e) {
             state = GridHadoopTaskState.FAILED;
             err = e;
@@ -108,13 +118,6 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
                 local.close();
         }
 
-        if (err != null) {
-            if (err instanceof GridException)
-                throw (GridException)err;
-            else
-                throw new GridException("Task execution failed.", err);
-        }
-
         return null;
     }
 
@@ -124,15 +127,31 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
      * @throws GridException If failed.
      */
     private void runTask(GridHadoopTaskInfo info, boolean localCombiner) throws GridException {
+        if (cancelled)
+            throw new GridHadoopTaskCancelledException("Task cancelled.");
+
         try (GridHadoopTaskOutput out = createOutput(info, localCombiner);
              GridHadoopTaskInput in = createInput(info, localCombiner)) {
 
             GridHadoopTaskContext ctx = new GridHadoopTaskContext(job, in, out);
 
-            GridHadoopTask task = job.createTask(info);
+            task = job.createTask(info);
+
+            if (cancelled)
+                throw new GridHadoopTaskCancelledException("Task cancelled.");
 
             task.run(ctx);
         }
+    }
+
+    /**
+     * Cancel the executed task.
+     */
+    public void cancel() {
+        cancelled = true;
+
+        if (task != null)
+            task.cancel();
     }
 
     /**

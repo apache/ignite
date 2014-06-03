@@ -9,9 +9,10 @@
 
 namespace GridGain.Client.Util {
     using System;
-    using System.Threading;
     using System.Collections;
     using System.Collections.Generic;
+    using System.IO;
+    using System.Threading;
 
     using A = GridGain.Client.Util.GridClientArgumentCheck;
     using GridGain.Client.Impl;
@@ -23,7 +24,7 @@ namespace GridGain.Client.Util {
         //   orig: 2ec84557-f7c4-4a2e-aea8-251eb13acff3
         //          3 2 1 0  5 4  7 6  8 9  a b c d e f
         // parsed: 5745c82e-c4f7-2e4a-aea8-251eb13acff3
-        private static readonly byte[] JAVA_GUID_CONV = new byte[] { 3, 2, 1, 0, 5, 4, 7, 6, 8, 9, 10, 11, 12, 13, 14, 15 };
+        public static readonly byte[] JAVA_GUID_CONV = new byte[] { 3, 2, 1, 0, 5, 4, 7, 6, 8, 9, 10, 11, 12, 13, 14, 15 };
 
         /** <summary>Background task execution threads counter.</summary> */
         private static long asyncThreadsCounter;
@@ -492,6 +493,26 @@ namespace GridGain.Client.Util {
                 return source;
 
             return new GridClientNullDictionary<TKey, TVal>(source);
+        }
+
+        /**
+         * <summary>
+         * Reads exact amount of bytes from stream to provided buffer.</summary>
+         *
+         * <param name="input">Input.</param>
+         * <param name="buf">Buffer.</param>
+         * <param name="offs">Offset.</param>
+         * <param name="len">Length.</param>
+         */
+        public static void ReadFully(Stream input, byte[] buf, int offs, int len) {
+            for (int i = 0; i < len; ) {
+                int next = input.Read(buf, offs + i, len - i);
+
+                if (next == 0)
+                    throw new EndOfStreamException();
+
+                i += next;
+            }
         }
     }
 }

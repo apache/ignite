@@ -16,7 +16,7 @@ import java.io.*;
 /**
  * Hadoop task.
  */
-public abstract class GridHadoopTask implements Externalizable {
+public abstract class GridHadoopTask {
     /** */
     private GridHadoopTaskInfo taskInfo;
 
@@ -56,17 +56,8 @@ public abstract class GridHadoopTask implements Externalizable {
      */
     public abstract void run(GridHadoopTaskContext taskCtx) throws GridException;
 
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        taskInfo.writeExternal(out);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        assert taskInfo == null;
-
-        taskInfo = new GridHadoopTaskInfo();
-
-        taskInfo.readExternal(in);
-    }
+    /**
+     * Interrupts task execution.
+     */
+    public abstract void cancel();
 }

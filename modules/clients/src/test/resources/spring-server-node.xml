@@ -177,7 +177,7 @@
 
         <!--
             Use passcode authentication SPI.
-        -->
+        - ->
         <property name="authenticationSpi">
             <bean class="org.gridgain.grid.spi.authentication.passcode.GridPasscodeAuthenticationSpi">
                 <property name="passcodes">
@@ -189,7 +189,7 @@
             </bean>
         </property>
 
-        <!--
+        <!- -
             Use remember me secure session SPI.
         -->
         <property name="secureSessionSpi">

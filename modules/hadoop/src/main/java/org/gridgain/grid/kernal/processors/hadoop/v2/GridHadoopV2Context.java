@@ -10,22 +10,18 @@
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.conf.*;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapreduce.*;
-import org.apache.hadoop.mapreduce.InputFormat;
-import org.apache.hadoop.mapreduce.InputSplit;
-import org.apache.hadoop.mapreduce.JobID;
-import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.counters.*;
-import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
-import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+import org.apache.hadoop.mapreduce.lib.input.*;
+import org.apache.hadoop.mapreduce.lib.output.*;
 import org.apache.hadoop.mapreduce.lib.partition.*;
 import org.apache.hadoop.security.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.*;
 
 import java.io.*;
 import java.net.*;
@@ -53,6 +49,9 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
     /** Unique identifier for a task attempt. */
     private final TaskAttemptID taskAttemptID;
 
+    /** Indicates that this task is to be cancelled. */
+    private volatile boolean cancelled;
+
     /**
      * @param cfg Hadoop configuration of the job.
      * @param ctx Context for IO operations.
@@ -76,8 +75,8 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
 
     /** {@inheritDoc} */
     @Override public boolean nextKeyValue() throws IOException, InterruptedException {
-        if (Thread.currentThread().isInterrupted())
-            throw new InterruptedException();
+        if (cancelled)
+            throw new GridHadoopTaskCancelledException("Task cancelled.");
 
         return reader.nextKeyValue();
     }
@@ -99,6 +98,9 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void write(Object key, Object val) throws IOException, InterruptedException {
+        if (cancelled)
+            throw new GridHadoopTaskCancelledException("Task cancelled.");
+
         if (writer != null)
             writer.write(key, val);
         else {
@@ -395,8 +397,8 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
 
     /** {@inheritDoc} */
     @Override public boolean nextKey() throws IOException, InterruptedException {
-        if (Thread.currentThread().isInterrupted())
-            throw new InterruptedException();
+        if (cancelled)
+            throw new GridHadoopTaskCancelledException("Task cancelled.");
 
         return input.next();
     }
@@ -466,5 +468,12 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
             paths[i] = new Path(strs[i]);
 
         return paths;
+    }
+
+    /**
+     * Cancels the task by stop the IO.
+     */
+    public void cancel() {
+        cancelled = true;
     }
 }

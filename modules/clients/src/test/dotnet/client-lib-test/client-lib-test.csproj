@@ -82,8 +82,6 @@
     <Compile Include="client\balancer\GridClientRandomBalancerTest.cs" />
     <Compile Include="client\GridClientRouterTcpTest.cs" />
     <Compile Include="client\GridClientRouterTcpSslTest.cs" />
-    <Compile Include="client\GridClientRouterHttpSslTest.cs" />
-    <Compile Include="client\GridClientRouterHttpTest.cs" />
     <Compile Include="client\GridClientPartitionAffinityTest.cs" />
     <Compile Include="client\GridClientHttpSslTest.cs" />
     <Compile Include="client\GridClientHttpTest.cs" />

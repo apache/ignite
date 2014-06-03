@@ -61,13 +61,6 @@ public enum GridComponentType {
         "gridgain-ssh"
     ),
 
-    /** REST access. */
-    REST(
-        "org.gridgain.grid.kernal.processors.rest.GridNoopRestProcessor",
-        "org.gridgain.grid.kernal.processors.rest.GridRestProcessor",
-        "gridgain-rest"
-    ),
-
     /** Email sending. */
     EMAIL(
         "org.gridgain.grid.kernal.processors.email.GridNoopEmailProcessor",

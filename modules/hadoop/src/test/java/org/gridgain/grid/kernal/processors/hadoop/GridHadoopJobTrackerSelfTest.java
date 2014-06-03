@@ -99,10 +99,6 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
      */
     public void testSimpleTaskSubmit() throws Exception {
         try {
-            GridKernal kernal = (GridKernal)grid(0);
-
-            GridHadoopProcessorAdapter hadoop = kernal.context().hadoop();
-
             UUID globalId = UUID.randomUUID();
 
             Configuration cfg = new Configuration();
@@ -113,7 +109,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
 
             GridHadoopJobId jobId = new GridHadoopJobId(globalId, 1);
 
-            hadoop.submit(jobId, new GridHadoopDefaultJobInfo(cfg));
+            grid(0).hadoop().submit(jobId, new GridHadoopDefaultJobInfo(cfg));
 
             checkStatus(jobId, false);
 
@@ -174,10 +170,6 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
      */
     private void checkTaskWithCombiner(boolean singleCombiner) throws Exception {
         try {
-            GridKernal kernal = (GridKernal)grid(0);
-
-            GridHadoopProcessorAdapter hadoop = kernal.context().hadoop();
-
             UUID globalId = UUID.randomUUID();
 
             Configuration cfg = new Configuration();
@@ -192,7 +184,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
 
             GridHadoopJobId jobId = new GridHadoopJobId(globalId, 1);
 
-            hadoop.submit(jobId, new GridHadoopDefaultJobInfo(cfg));
+            grid(0).hadoop().submit(jobId, new GridHadoopDefaultJobInfo(cfg));
 
             checkStatus(jobId, false);
 
@@ -264,7 +256,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
         for (int i = 0; i < gridCount(); i++) {
             GridKernal kernal = (GridKernal)grid(i);
 
-            GridHadoopProcessorAdapter hadoop = kernal.context().hadoop();
+            GridHadoop hadoop = kernal.hadoop();
 
             GridHadoopJobStatus stat = hadoop.status(jobId);
 
@@ -343,6 +335,11 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
          *
          */
         public HadoopTestTask() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel() {
             // No-op.
         }
 

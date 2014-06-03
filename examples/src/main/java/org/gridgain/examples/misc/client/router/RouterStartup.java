@@ -10,11 +10,8 @@
 package org.gridgain.examples.misc.client.router;
 
 import org.gridgain.client.router.*;
-import org.gridgain.client.ssl.*;
-import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 
-import javax.net.ssl.*;
 import javax.swing.*;
 
 /**
@@ -22,7 +19,7 @@ import javax.swing.*;
  * <p>
  * Refer to {@link GridRouterFactory} documentation for more details on
  * how to manage routers' lifecycle. Also see {@link GridTcpRouterConfiguration}
- * and {@link GridHttpRouterConfiguration} for more configuration options.
+ * for more configuration options.
  * <p>
  * Note that to start the example, {@code GRIDGAIN_HOME} system property or environment variable
  * must be set.
@@ -40,8 +37,6 @@ public class RouterStartup {
     public static void main(String[] args) throws GridException {
         try {
             GridRouterFactory.startTcpRouter(tcpRouterConfiguration());
-
-            GridRouterFactory.startHttpRouter(httpRouterConfiguration());
 
             // Wait until Ok is pressed.
             JOptionPane.showMessageDialog(
@@ -68,20 +63,6 @@ public class RouterStartup {
         GridTcpRouterConfiguration cfg = new GridTcpRouterConfiguration();
 
         cfg.setNoDelay(TCP_NODELAY);
-
-        return cfg;
-    }
-
-    /**
-     * Creates a default HTTP router configuration.
-     *
-     * @return HTTP router configuration
-     */
-    private static GridHttpRouterConfiguration httpRouterConfiguration() {
-        GridHttpRouterConfiguration cfg = new GridHttpRouterConfiguration();
-
-        // Uncomment the following line to provide custom Jetty configuration.
-        //cfg.setJettyConfigurationPath("config/my-router-jetty.xml");
 
         return cfg;
     }

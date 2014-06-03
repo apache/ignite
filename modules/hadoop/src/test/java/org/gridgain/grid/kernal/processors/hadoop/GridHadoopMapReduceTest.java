@@ -89,9 +89,7 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
 
             job.setJarByClass(GridHadoopWordCount2.class);
 
-            GridHadoopProcessorAdapter hadoop = ((GridKernal) grid(0)).context().hadoop();
-
-            GridFuture<?> fut = hadoop.submit(new GridHadoopJobId(UUID.randomUUID(), 1),
+            GridFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 1),
                     new GridHadoopDefaultJobInfo(job.getConfiguration()));
 
             fut.get();

@@ -71,7 +71,8 @@ public abstract class GridHadoopProcessorAdapter extends GridProcessorAdapter {
      * Kills job.
      *
      * @param jobId Job ID.
-     * @return {@code True} if job kill was triggered by this call.
+     * @return {@code True} if job was killed.
+     * @throws GridException If failed.
      */
     public abstract boolean kill(GridHadoopJobId jobId) throws GridException;
 }

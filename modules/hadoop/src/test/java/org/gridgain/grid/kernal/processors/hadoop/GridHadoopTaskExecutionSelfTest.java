@@ -19,7 +19,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
@@ -120,10 +120,8 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         job.setJarByClass(getClass());
 
-        GridHadoopProcessorAdapter hadoop = ((GridKernal)grid(0)).context().hadoop();
-
-        GridFuture<?> fut = hadoop.submit(new GridHadoopJobId(UUID.randomUUID(), 1),
-            new GridHadoopDefaultJobInfo(job.getConfiguration()));
+        GridFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 1),
+                new GridHadoopDefaultJobInfo(job.getConfiguration()));
 
         fut.get();
 
@@ -163,29 +161,24 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         job.setJarByClass(getClass());
 
-        GridHadoopProcessorAdapter hadoop = ((GridKernal)grid(0)).context().hadoop();
-
         GridHadoopJobId jobId = new GridHadoopJobId(UUID.randomUUID(), 2);
 
-        GridFuture<?> fut = hadoop.submit(jobId,
-            new GridHadoopDefaultJobInfo(job.getConfiguration()));
+        GridFuture<?> fut = grid(0).hadoop().submit(jobId,
+                new GridHadoopDefaultJobInfo(job.getConfiguration()));
 
         fut.get();
 
         assertEquals(lineCnt, totalLineCnt.get());
 
         for (int g = 0; g < gridCount(); g++)
-            ((GridKernal)grid(g)).context().hadoop().finishFuture(jobId).get();
+            grid(g).hadoop().finishFuture(jobId).get();
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testMapperException() throws Exception {
-        int lineCnt = 1000;
-        String fileName = "/testFile";
-
-        prepareFile(fileName, lineCnt);
+        prepareFile("/testFile", 1000);
 
         Configuration cfg = new Configuration();
 
@@ -206,10 +199,8 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         job.setJarByClass(getClass());
 
-        GridHadoopProcessorAdapter hadoop = ((GridKernal)grid(0)).context().hadoop();
-
-        final GridFuture<?> fut = hadoop.submit(new GridHadoopJobId(UUID.randomUUID(), 3),
-            new GridHadoopDefaultJobInfo(job.getConfiguration()));
+        final GridFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 3),
+                new GridHadoopDefaultJobInfo(job.getConfiguration()));
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -232,20 +223,19 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
             PrintWriter w = new PrintWriter(new OutputStreamWriter(os));
 
             for (int i = 0; i < lineCnt; i++)
-                w.println("Hello, Hadoop map-reduce!");
+                w.print("Hello, Hadoop map-reduce!\n");
 
             w.flush();
         }
     }
 
     /**
-     * @throws Exception If failed.
+     * Prepare job with mappers to cancel.
+     * @return Fully configured job.
+     * @throws Exception If fails.
      */
-    public void testTaskCancelling() throws Exception {
-        int lineCnt = 10000;
-        String fileName = "/testFile";
-
-        prepareFile(fileName, lineCnt);
+    private Configuration prepareJobForCancelling() throws Exception {
+        prepareFile("/testFile", 10000);
 
         executedTasks.set(0);
         cancelledTasks.set(0);
@@ -270,13 +260,28 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         job.setJarByClass(getClass());
 
-        GridHadoopProcessorAdapter hadoop = ((GridKernal) grid(0)).context().hadoop();
+        return job.getConfiguration();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTaskCancelling() throws Exception {
+        Configuration cfg = prepareJobForCancelling();
 
         GridHadoopJobId jobId = new GridHadoopJobId(UUID.randomUUID(), 1);
 
-        final GridFuture<?> fut = hadoop.submit(jobId, new GridHadoopDefaultJobInfo(job.getConfiguration()));
+        final GridFuture<?> fut = grid(0).hadoop().submit(jobId, new GridHadoopDefaultJobInfo(cfg));
 
-        U.sleep(2000);
+        if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return executedTasks.get() == 32;
+            }
+        }, 20000)) {
+            U.dumpThreads(log);
+
+            assertTrue(false);
+        }
 
         // Fail mapper with id "1", cancels others
         failMapperId = 1;
@@ -289,8 +294,55 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
             }
         }, GridException.class, null);
 
-
         assertEquals(executedTasks.get(), cancelledTasks.get() + 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testJobKill() throws Exception {
+        Configuration cfg = prepareJobForCancelling();
+
+        GridHadoop hadoop = grid(0).hadoop();
+
+        GridHadoopJobId jobId = new GridHadoopJobId(UUID.randomUUID(), 1);
+
+        //Kill unknown job.
+        boolean killRes = hadoop.kill(jobId);
+
+        assertFalse(killRes);
+
+        final GridFuture<?> fut = hadoop.submit(jobId, new GridHadoopDefaultJobInfo(cfg));
+
+        if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return executedTasks.get() == 32;
+            }
+        }, 20000)) {
+            U.dumpThreads(log);
+
+            assertTrue(false);
+        }
+
+        //Kill really ran job.
+        killRes = hadoop.kill(jobId);
+
+        assertTrue(killRes);
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                fut.get();
+
+                return null;
+            }
+        }, GridException.class, null);
+
+        assertEquals(executedTasks.get(), cancelledTasks.get());
+
+        //Kill the same job again.
+        killRes = hadoop.kill(jobId);
+
+        assertTrue(killRes);
     }
 
     private static class CancellingTestMapper extends Mapper<Object, Text, Text, IntWritable> {
@@ -302,22 +354,23 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         }
 
         /** {@inheritDoc} */
-        @Override protected void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+        @Override public void run(Context context) throws IOException, InterruptedException {
             try {
-                while (true) {
-                    if (mapperId == failMapperId)
-                        throw new IOException();
-
-                    Thread.sleep(100);
-                }
+                super.run(context);
             }
-            catch (InterruptedException e) {
+            catch (GridHadoopTaskCancelledException e) {
                 cancelledTasks.incrementAndGet();
-
-                Thread.currentThread().interrupt();
 
                 throw e;
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+            if (mapperId == failMapperId)
+                throw new IOException();
+
+            Thread.sleep(1000);
         }
     }
 

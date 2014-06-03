@@ -61,7 +61,7 @@ public interface GridHadoop {
      * Kills job.
      *
      * @param jobId Job ID.
-     * @return {@code True} if job kill was triggered by this call.
+     * @return {@code True} if job was killed.
      * @throws GridException If failed.
      */
     public boolean kill(GridHadoopJobId jobId) throws GridException;

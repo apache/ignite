@@ -158,15 +158,7 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean kill(GridHadoopJobId jobId) throws GridException {
-        GridFuture<?> fut = finishFuture(jobId);
-
-        if (fut != null) {
-            fut.cancel();
-
-            return true;
-        }
-        else
-            return false;
+        return hctx.jobTracker().killJob(jobId);
     }
 
     /**

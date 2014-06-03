@@ -29,12 +29,6 @@
            http://maven.apache.org/xsd/component-1.1.2.xsd">
     <files>
         <file>
-            <source>target/gridgain.jar</source>
-            <outputDirectory>/</outputDirectory>
-            <destName>gridgain-${gridgain.edition}-${gridgain.version}.jar</destName>
-        </file>
-
-        <file>
             <source>apache-2.0.txt</source>
             <outputDirectory>/</outputDirectory>
         </file>
@@ -50,21 +44,9 @@
         </file>
 
         <file>
-            <source>examples/pom-standalone.xml</source>
+            <source>examples/pom-standalone-${gridgain.edition}.xml</source>
             <outputDirectory>/examples</outputDirectory>
             <destName>pom.xml</destName>
-        </file>
-
-        <file>
-            <source>examples/pom-standalone.xml</source>
-            <outputDirectory>/examples</outputDirectory>
-            <destName>pom.xml</destName>
-        </file>
-
-        <file>
-            <source>examples/pom-standalone-java8.xml</source>
-            <outputDirectory>/examples</outputDirectory>
-            <destName>pom-java8.xml</destName>
         </file>
     </files>
 
@@ -75,6 +57,7 @@
             <includes>
                 <include>**/*.bat</include>
                 <include>**/*.exe</include>
+                <include>**/*.jar</include>
             </includes>
         </fileSet>
 
@@ -156,6 +139,11 @@
 
         <fileSet>
             <directory>libs</directory>
+            <outputDirectory>/libs</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>assembly/libs</directory>
             <outputDirectory>/libs</outputDirectory>
         </fileSet>
     </fileSets>

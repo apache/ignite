@@ -36,7 +36,7 @@
     </formats>
 
     <componentDescriptors>
-        <componentDescriptor>assembly/release-base.xml</componentDescriptor>
+        <componentDescriptor>release-base.xml</componentDescriptor>
     </componentDescriptors>
 
     <files>

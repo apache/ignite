@@ -11,7 +11,9 @@ package org.gridgain.grid.spi.discovery;
 
 import mx4j.tools.adaptor.http.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.config.*;
@@ -387,9 +389,19 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
                     }
                 });
 
+                spi.setAuthenticator(new GridDiscoverySpiNodeAuthenticator() {
+                    @Override public GridSecurityContext authenticateNode(GridNode n, GridSecurityCredentials cred) {
+                        GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(
+                            GridSecuritySubjectType.REMOTE_NODE, n.id());
+
+                        subj.permissions(new Allow());
+
+                        return new GridSecurityContext(subj);
+                    }
+                });
+
 
                 spi.spiStart(getTestGridName() + i);
-
 
                 spis.add(spi);
 
@@ -465,6 +477,26 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
         }
         finally {
             U.close(out, null);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class Allow implements GridSecurityPermissionSet {
+        /** {@inheritDoc} */
+        @Override public boolean defaultAllowAll() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Collection<GridSecurityPermission>> taskPermissions() {
+            return Collections.emptyMap();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Collection<GridSecurityPermission>> cachePermissions() {
+            return Collections.emptyMap();
         }
     }
 

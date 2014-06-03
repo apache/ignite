@@ -88,9 +88,7 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
 
         job.setJarByClass(getClass());
 
-        GridHadoopProcessorAdapter hadoop = ((GridKernal)grid(0)).context().hadoop();
-
-        GridFuture<?> fut = hadoop.submit(new GridHadoopJobId(UUID.randomUUID(), 1),
+        GridFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 1),
             new GridHadoopDefaultJobInfo(job.getConfiguration()));
 
         fut.get();
@@ -126,9 +124,7 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
 
         job.setJarByClass(getClass());
 
-        GridHadoopProcessorAdapter hadoop = ((GridKernal)grid(0)).context().hadoop();
-
-        GridFuture<?> fut = hadoop.submit(new GridHadoopJobId(UUID.randomUUID(), 1),
+        GridFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 1),
             new GridHadoopDefaultJobInfo(job.getConfiguration()));
 
         try {

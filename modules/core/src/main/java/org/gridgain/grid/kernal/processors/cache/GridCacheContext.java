@@ -36,6 +36,7 @@ import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
@@ -526,6 +527,14 @@ public class GridCacheContext<K, V> implements Externalizable {
         String name = namex();
 
         return name == null ? "default" : name;
+    }
+
+    /**
+     * @param op Operation to check.
+     * @throws GridSecurityException If security check failed.
+     */
+    public void checkSecurity(GridSecurityPermission op) throws GridSecurityException {
+        ctx.security().authorize(name(), op, null);
     }
 
     /**
@@ -1659,6 +1668,28 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert deferredDelete();
 
         cache.onDeferredDelete(entry, ver);
+    }
+
+    /**
+     * @param interceptorRes Result of {@link GridCacheInterceptor#onBeforeRemove} callback.
+     * @return {@code True} if interceptor cancels remove.
+     */
+    public boolean cancelRemove(@Nullable GridBiTuple<Boolean, ?> interceptorRes) {
+        if (interceptorRes != null) {
+            if (interceptorRes.get1() == null) {
+                U.warn(log, "GridCacheInterceptor must not return null as cancellation flag value from " +
+                    "'onBeforeRemove' method.");
+
+                return false;
+            }
+            else
+                return interceptorRes.get1();
+        }
+        else {
+            U.warn(log, "GridCacheInterceptor must not return null from 'onBeforeRemove' method.");
+
+            return false;
+        }
     }
 
     /**

@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.hadoop.v1;
 import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -52,12 +53,16 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
         GridHadoopTaskInput input = taskCtx.input();
 
         try {
-            GridHadoopOutputCollector collector = new GridHadoopOutputCollector(jobConf, taskCtx,
-                reduce || !jobImpl.hasReducer(), fileName(), jobImpl.attemptId(info()));
+            GridHadoopOutputCollector collector = getCollector (jobConf, taskCtx, reduce || !jobImpl.hasReducer(),
+                    fileName(), jobImpl.attemptId(info()));
 
             try {
-                while (input.next())
+                while (input.next()) {
+                    if (isCancelled())
+                        throw new GridHadoopTaskCancelledException("Reduce task cancelled.");
+
                     reducer.reduce(input.key(), input.values(), collector, Reporter.NULL);
+                }
             }
             finally {
                 U.closeQuiet(reducer);
