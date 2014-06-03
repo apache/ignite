@@ -14,7 +14,8 @@ import java.lang.annotation.*;
 /**
  * Indicates that annotated task should always be loaded with local deployment,
  * ignoring grid source node configuration. Also jobs within such a task will
- * always be executed in the management thread pool on remote nodes.
+ * always be executed in the management thread pool on remote nodes and won't
+ * generate job events.
  *
  * This annotation intended for internal use only.
  */
