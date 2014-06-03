@@ -19,7 +19,9 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.util.lang.GridAbsPredicate;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.U;
 import org.gridgain.testframework.*;
 
 import java.io.*;
@@ -271,12 +273,14 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         final GridFuture<?> fut = grid(0).hadoop().submit(jobId, new GridHadoopDefaultJobInfo(cfg));
 
-        int time = 0;
+        if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return executedTasks.get() == 32;
+            }
+        }, 20000)) {
+            U.dumpThreads(log);
 
-        while(executedTasks.get() != 32) {
-            Thread.sleep(100);
-
-            assertTrue(time++ < 100);
+            assertTrue(false);
         }
 
         // Fail mapper with id "1", cancels others
@@ -310,12 +314,14 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         final GridFuture<?> fut = hadoop.submit(jobId, new GridHadoopDefaultJobInfo(cfg));
 
-        int time = 0;
+        if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return executedTasks.get() == 32;
+            }
+        }, 20000)) {
+            U.dumpThreads(log);
 
-        while(executedTasks.get() != 32) {
-            Thread.sleep(100);
-
-            assertTrue(time++ < 100);
+            assertTrue(false);
         }
 
         //Kill really ran job.
