@@ -14,7 +14,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * Node REST configuration.
+ * Create data transfer object for node REST configuration properties.
  */
 public class VisorRestConfig implements Serializable {
     /** */
@@ -47,9 +47,18 @@ public class VisorRestConfig implements Serializable {
     /** Context factory for SSL. */
     private final String tcpSslContextFactory;
 
-    public VisorRestConfig(boolean restEnabled, boolean tcpSslEnabled, String[] accessibleFolders,
-        String jettyPath, String jettyHost, Integer jettyPort, String tcpHost, Integer tcpPort,
-        String tcpSslContextFactory) {
+    /** Create data transfer object with given parameters. */
+    public VisorRestConfig(
+        boolean restEnabled,
+        boolean tcpSslEnabled,
+        String[] accessibleFolders,
+        String jettyPath,
+        String jettyHost,
+        Integer jettyPort,
+        String tcpHost,
+        Integer tcpPort,
+        String tcpSslContextFactory
+    ) {
         this.restEnabled = restEnabled;
         this.tcpSslEnabled = tcpSslEnabled;
         this.accessibleFolders = accessibleFolders;
