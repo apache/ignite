@@ -171,6 +171,9 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     /** Default value for connection buffer size (value is <tt>0</tt>). */
     public static final int DFLT_CONN_BUF_SIZE = 0;
 
+    /** Default socket send and receive buffer size. */
+    public static final int DFLT_SOCK_BUF_SIZE = 32 * 1024;
+
     /** Default connection timeout (value is <tt>1000</tt>ms). */
     public static final long DFLT_CONN_TIMEOUT = 1000;
 
@@ -379,10 +382,10 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     private int reconCnt = DFLT_RECONNECT_CNT;
 
     /** Socket send buffer. */
-    private int sockSndBuf;
+    private int sockSndBuf = DFLT_SOCK_BUF_SIZE;
 
     /** Socket receive buffer. */
-    private int sockRcvBuf;
+    private int sockRcvBuf = DFLT_SOCK_BUF_SIZE;
 
     /** Message queue limit. */
     private int msgQueueLimit = DFLT_MSG_QUEUE_LIMIT;
@@ -875,8 +878,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     /**
      * Sets send buffer size for sockets created or accepted by this SPI.
      * <p>
-     * If not provided, default is {@code 0} which leaves the buffer unchanged
-     * after socket creation (OS defaults).
+     * If not provided, default is {@link #DFLT_SOCK_BUF_SIZE}.
      *
      * @param sockSndBuf Socket send buffer size.
      */
