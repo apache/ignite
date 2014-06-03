@@ -102,5 +102,12 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-tools</artifactId>
+            <version>${gridgain.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>
