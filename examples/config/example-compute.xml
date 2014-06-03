@@ -41,6 +41,10 @@
             <util:constant static-field="org.gridgain.grid.events.GridEventType.EVTS_TASK_EXECUTION"/>
         </property>
 
+        <property name="smtpHost" value="127.0.0.1"/>
+
+        <property name="adminEmails" value="info@aaa.com"/>
+
         <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
         <property name="discoverySpi">
             <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
