@@ -10,27 +10,28 @@
 package org.gridgain.grid.kernal.visor.cmd.tasks;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
+import org.gridgain.grid.kernal.visor.cmd.dto.event.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
  * Task that runs on specified node and returns events data.
  */
 @GridInternal
-public class VisorCollectEventsTask extends VisorOneNodeTask<VisorCollectEventsTask.VisorCollectEventsArgs,
-    Iterable<VisorCollectEventsTask.VisorEventData>> {
+public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEventsTask.VisorCollectEventsArgs,
+    Iterable<? extends VisorGridEvent>, Collection<? extends VisorGridEvent>> {
     /**
      * Argument for task returns events data.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorCollectEventsArgs extends VisorOneNodeArg {
+    public static class VisorCollectEventsArgs extends VisorMultiNodeArg {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -40,18 +41,58 @@ public class VisorCollectEventsTask extends VisorOneNodeTask<VisorCollectEventsT
         /** Arguments for time filter. */
         @Nullable private final Long timeArg;
 
+        /** Task or job events with task name contains. */
+        @Nullable private final String taskName;
+
+        /** Task or job events with session. */
+        @Nullable private final GridUuid taskSessionId;
+
         /**
-         * Arguments for {@link VisorCollectEventsTask}.
-         *
+         * Create task arguments for {@link VisorCollectEventsTask}.
+         * @param nids Nodes Id where events should be collected.
+         * @param typeArg Arguments for type filter.
+         * @param timeArg Arguments for time filter.
+         * @param taskName Arguments for task name filter.
+         * @param taskSessionId Arguments for task session filter.
+         */
+        public VisorCollectEventsArgs(Set<UUID> nids, @Nullable int[] typeArg, @Nullable Long timeArg,
+            @Nullable String taskName, @Nullable GridUuid taskSessionId) {
+            super(nids);
+
+            this.typeArg = typeArg;
+            this.timeArg = timeArg;
+            this.taskName = taskName;
+            this.taskSessionId = taskSessionId;
+        }
+
+        /**
+         * Create task arguments for {@link VisorCollectEventsTask} filtered events.
          * @param nodeId Node Id where events should be collected.
          * @param typeArg Arguments for type filter.
          * @param timeArg Arguments for time filter.
          */
-        public VisorCollectEventsArgs(UUID nodeId, @Nullable int[] typeArg, @Nullable Long timeArg) {
-            super(nodeId);
+        public static VisorCollectEventsArgs createEventsArg(UUID nodeId, @Nullable int[] typeArg, @Nullable Long timeArg) {
+            return new VisorCollectEventsArgs(F.asSet(nodeId),
+                typeArg,
+                timeArg,
+                "visor",
+                null);
+        }
 
-            this.typeArg = typeArg;
-            this.timeArg = timeArg;
+        /**
+         * Create task arguments for {@link VisorCollectEventsTask} filtered task and job events.
+         * @param ids Nodes Id where events should be collected.
+         * @param timeArg Arguments for time filter.
+         * @param taskName Arguments for task name filter.
+         * @param taskSessionId Arguments for task session filter.
+         */
+        public static VisorCollectEventsArgs createTasksArg(Set<UUID> ids, @Nullable Long timeArg,
+            @Nullable String taskName, @Nullable GridUuid taskSessionId) {
+            return new VisorCollectEventsArgs(ids,
+                VisorTaskUtils.concat(GridEventType.EVTS_JOB_EXECUTION, GridEventType.EVTS_TASK_EXECUTION),
+                timeArg,
+                taskName,
+                taskSessionId);
         }
 
         /**
@@ -67,70 +108,19 @@ public class VisorCollectEventsTask extends VisorOneNodeTask<VisorCollectEventsT
         public Long timeArgument() {
             return timeArg;
         }
-    }
 
-    /** Descriptor for {@link GridEvent}. */
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorEventData implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final String name;
-
-        /** */
-        private final String shortDisplay;
-
-        /** */
-        private final String mnemonic;
-
-        /** */
-        private final int type;
-
-        /** */
-        private final long timestamp;
-
-        public VisorEventData(String name, String shortDisplay, String mnemonic, Integer type, long timestamp) {
-            this.type = type;
-            this.timestamp = timestamp;
-            this.name = name;
-            this.shortDisplay = shortDisplay;
-            this.mnemonic = mnemonic;
+        /**
+         * @return Task or job events with task name contains.
+         */
+        public String taskName() {
+            return taskName;
         }
 
         /**
-         * @return Name.
+         * @return Task or job events with session.
          */
-        public String name() {
-            return name;
-        }
-
-        /**
-         * @return Short display.
-         */
-        public String shortDisplay() {
-            return shortDisplay;
-        }
-
-        /**
-         * @return Mnemonic.
-         */
-        public String mnemonic() {
-            return mnemonic;
-        }
-
-        /**
-         * @return Type.
-         */
-        public int type() {
-            return type;
-        }
-
-        /**
-         * @return Timestamp.
-         */
-        public long timestamp() {
-            return timestamp;
+        public GridUuid taskSessionId() {
+            return taskSessionId;
         }
     }
 
@@ -138,7 +128,7 @@ public class VisorCollectEventsTask extends VisorOneNodeTask<VisorCollectEventsT
      * Job for task returns events data.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorCollectEventsJob extends VisorJob<VisorCollectEventsArgs, Iterable<VisorEventData>> {
+    public static class VisorCollectEventsJob extends VisorJob<VisorCollectEventsArgs, Collection<? extends VisorGridEvent>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -182,85 +172,97 @@ public class VisorCollectEventsTask extends VisorOneNodeTask<VisorCollectEventsT
          * @param e Event
          * @return {@code true} if not contains {@code visor} in task name.
          */
-        private boolean filterVisor(GridEvent e) {
-            if (e instanceof GridTaskEvent) {
+        private boolean filterByTaskName(GridEvent e, String taskName) {
+            if (e.getClass().equals(GridTaskEvent.class)) {
                 GridTaskEvent te = (GridTaskEvent)e;
 
-                return !containsInTaskName(te.taskName(), te.taskClassName(), "visor");
+                return !containsInTaskName(te.taskName(), te.taskClassName(), taskName);
             }
 
-            if (e instanceof GridJobEvent) {
+            if (e.getClass().equals(GridJobEvent.class)) {
                 GridJobEvent je = (GridJobEvent)e;
 
-                return !containsInTaskName(je.taskName(), je.taskName(), "visor");
+                return !containsInTaskName(je.taskName(), je.taskName(), taskName);
             }
 
-            if (e instanceof GridDeploymentEvent) {
+            if (e.getClass().equals(GridDeploymentEvent.class)) {
                 GridDeploymentEvent de = (GridDeploymentEvent)e;
 
-                return !de.alias().toLowerCase().contains("visor");
+                return !de.alias().toLowerCase().contains(taskName);
             }
 
             return true;
         }
 
         /**
-         * Gets command's mnemonic for given event.
+         * Filter events containing visor in it's name.
          *
-         * @param e Event to get mnemonic for.
+         * @param e Event
+         * @return {@code true} if not contains {@code visor} in task name.
          */
-        private String mnemonic(GridEvent e) {
-            assert e != null;
+        private boolean filterByTaskSessionId(GridEvent e, GridUuid taskSessionId) {
+            if (e.getClass().equals(GridTaskEvent.class)) {
+                GridTaskEvent te = (GridTaskEvent)e;
 
-            if (e.getClass().equals(GridDiscoveryEvent.class))
-                return "di";
+                return te.taskSessionId().equals(taskSessionId);
+            }
 
-            if (e.getClass().equals(GridCheckpointEvent.class))
-                return "ch";
+            if (e.getClass().equals(GridJobEvent.class)) {
+                GridJobEvent je = (GridJobEvent)e;
 
-            if (e.getClass().equals(GridDeploymentEvent.class))
-                return "de";
+                return je.taskSessionId().equals(taskSessionId);
+            }
 
-            if (e.getClass().equals(GridJobEvent.class))
-                return "jo";
-
-            if (e.getClass().equals(GridTaskEvent.class))
-                return "ta";
-
-            if (e.getClass().equals(GridCacheEvent.class))
-                return "ca";
-
-            if (e.getClass().equals(GridSwapSpaceEvent.class))
-                return "sw";
-
-            if (e.getClass().equals(GridCachePreloadingEvent.class))
-                return "cp";
-
-            if (e.getClass().equals(GridAuthenticationEvent.class))
-                return "au";
-
-            // Should never happen.
-            return null;
+            return true;
         }
 
-        @Override protected Iterable<VisorEventData> run(final VisorCollectEventsArgs arg) throws GridException {
+        @Override protected Collection<? extends VisorGridEvent> run(final VisorCollectEventsArgs arg) throws GridException {
             final long startEvtTime = arg.timeArgument() == null ? 0L : System.currentTimeMillis() - arg.timeArgument();
 
             Collection<GridEvent> evts = g.events().localQuery(new GridPredicate<GridEvent>() {
                   @Override public boolean apply(GridEvent event) {
-                    return (arg.typeArgument() == null || F.contains(arg.typeArgument(), event.type())) &&
-                        event.timestamp() >= startEvtTime && filterVisor(event);
+                  return (arg.typeArgument() == null || F.contains(arg.typeArgument(), event.type())) &&
+                      event.timestamp() >= startEvtTime &&
+                      (arg.taskName() == null || filterByTaskName(event, arg.taskName())) &&
+                      (arg.taskSessionId() == null || filterByTaskSessionId(event, arg.taskSessionId()));
                   }
               }
             );
 
-            Collection<VisorEventData> res = new ArrayList<>(evts.size());
+            Collection<VisorGridEvent> res = new ArrayList<>(evts.size());
 
             for (GridEvent e : evts) {
-                String m = mnemonic(e);
+                int tid = e.type();
+                GridUuid id = e.id();
+                String name = e.name();
+                UUID nid = e.node().id();
+                long t = e.timestamp();
+                String msg = e.message();
+                String shortDisplay = e.shortDisplay();
 
-                if (m != null)
-                    res.add(new VisorEventData(e.name(), e.shortDisplay(), m, e.type(), e.timestamp()));
+                if (e instanceof GridTaskEvent) {
+                    GridTaskEvent te = (GridTaskEvent)e;
+
+                    res.add(new VisorGridTaskEvent(tid, id, name, nid, t, msg, shortDisplay,
+                        te.taskName(), te.taskClassName(), te.taskSessionId(), te.internal()));
+                }
+                else if (e instanceof GridJobEvent) {
+                    GridJobEvent je = (GridJobEvent)e;
+
+                    res.add(new VisorGridJobEvent(tid, id, name, nid, t, msg, shortDisplay,
+                        je.taskName(), je.taskClassName(), je.taskSessionId(), je.jobId()));
+                }
+                else if (e instanceof GridDeploymentEvent) {
+                    GridDeploymentEvent de = (GridDeploymentEvent)e;
+
+                    res.add(new VisorGridDeploymentEvent(tid, id, name, nid, t, msg, shortDisplay, de.alias()));
+                }
+                else if (e instanceof GridLicenseEvent) {
+                    GridLicenseEvent le = (GridLicenseEvent)e;
+
+                    res.add(new VisorGridLicenseEvent(tid, id, name, nid, t, msg, shortDisplay, le.licenseId()));
+                } else
+                    res.add(new VisorGridEvent(tid, id, name, nid, t, msg, shortDisplay));
             }
 
             return res;
@@ -269,5 +271,18 @@ public class VisorCollectEventsTask extends VisorOneNodeTask<VisorCollectEventsT
 
     @Override protected VisorCollectEventsJob job(VisorCollectEventsArgs arg) {
         return new VisorCollectEventsJob(arg);
+    }
+
+    @Nullable @Override public Iterable<? extends VisorGridEvent> reduce(
+        List<GridComputeJobResult> results) throws GridException {
+
+        Collection<VisorGridEvent> allEvents = new ArrayList<>();
+
+        for (GridComputeJobResult r : results) {
+            if (r.getException() == null)
+                allEvents.addAll((Collection<VisorGridEvent>) r.getData());
+        }
+
+        return allEvents.isEmpty() ? null : allEvents;
     }
 }

@@ -15,6 +15,7 @@ import java.util.UUID
 
 import org.gridgain.grid._
 import org.gridgain.grid.events.GridEventType._
+import org.gridgain.grid.kernal.visor.cmd.dto.event.VisorGridEvent
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCollectEventsTask
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCollectEventsTask.VisorCollectEventsArgs
 import org.gridgain.grid.util.{GridUtils => U}
@@ -192,6 +193,27 @@ class VisorEventsCommand {
     }
 
     /**
+     * Gets command's mnemonic for given event.
+     *
+     * @param e Event to get mnemonic for.
+     */
+    private def mnemonic(e: VisorGridEvent): String = {
+        assert(e != null)
+
+        e.typeId() match {
+            case t if EVTS_DISCOVERY_ALL.contains(t) => "di"
+            case t if EVTS_CHECKPOINT.contains(t) => "ch"
+            case t if EVTS_DEPLOYMENT.contains(t) => "de"
+            case t if EVTS_JOB_EXECUTION.contains(t)=> "jo"
+            case t if EVTS_TASK_EXECUTION.contains(t) => "ta"
+            case t if EVTS_CACHE.contains(t) => "ca"
+            case t if EVTS_SWAPSPACE.contains(t) => "sw"
+            case t if EVTS_CACHE_PRELOAD.contains(t) => "cp"
+            case t if EVTS_AUTHENTICATION.contains(t) => "au"
+        }
+    }
+
+    /**
      * ===Command===
      * Queries events from specified node filtered by type and/or time frame.
      *
@@ -286,7 +308,7 @@ class VisorEventsCommand {
 
             val evts = try
                 grid.forNode(node).compute().execute(classOf[VisorCollectEventsTask],
-                    new VisorCollectEventsArgs(nid, tpFilter, tmFilter)).get
+                    VisorCollectEventsArgs.createEventsArg(nid, tpFilter, tmFilter)).get
             catch {
                 case e: GridException =>
                     scold(e.getMessage)
@@ -339,13 +361,13 @@ class VisorEventsCommand {
             var sum = Map[Int, (String, Int, Long, Long)]()
 
             evts.foreach(evt => {
-                val info = sum.getOrElse(evt.`type`, (null, 0, Long.MinValue, Long.MaxValue))
+                val info = sum.getOrElse(evt.typeId(), (null, 0, Long.MinValue, Long.MaxValue))
 
-                sum += (evt.`type` -> (
-                    "(" + evt.mnemonic + ") " + evt.name,
+                sum += (evt.typeId -> (
+                    "(" + mnemonic(evt) + ") " + evt.name(),
                     info._2 + 1,
-                    if (evt.timestamp > info._3) evt.timestamp else info._3,
-                    if (evt.timestamp < info._4) evt.timestamp else info._4)
+                    if (evt.timestamp() > info._3) evt.timestamp() else info._3,
+                    if (evt.timestamp() < info._4) evt.timestamp() else info._4)
                 )
             })
 
@@ -385,7 +407,7 @@ class VisorEventsCommand {
             all #= ("Timestamp", "Description")
 
             sorted.take(cnt).foreach(evt =>
-                all += (formatDateTime(evt.timestamp), U.compact(evt.shortDisplay))
+                all += (formatDateTime(evt.timestamp()), U.compact(evt.shortDisplay))
             )
 
             all.render()
@@ -400,7 +422,7 @@ class VisorEventsCommand {
      * @param reverse If `true` sorting is reversed.
      * @return Sorted events.
      */
-    private def sort(evts: List[VisorCollectEventsTask.VisorEventData], arg: Option[String], reverse: Boolean) = {
+    private def sort(evts: List[_ <: VisorGridEvent], arg: Option[String], reverse: Boolean) = {
         assert(evts != null)
 
         if (arg.isEmpty)
