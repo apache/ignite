@@ -12,9 +12,9 @@ package org.gridgain.grid.kernal.visor.cmd;
 import java.util.*;
 
 /**
- * TODO: Add class description.
+ * Map of named task results with before and after state.
  */
-public class VisorCachesTaskResult extends HashMap<String, VisorBeforeAfterResult> {
+public class VisorNamedBeforeAfterTaskResult extends HashMap<String, VisorBeforeAfterResult> {
     /** */
     private static final long serialVersionUID = 0L;
 }

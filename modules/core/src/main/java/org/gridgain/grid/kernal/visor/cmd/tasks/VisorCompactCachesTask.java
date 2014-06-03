@@ -20,10 +20,10 @@ import java.util.*;
  * Compacts caches.
  */
 @GridInternal
-public class VisorCompactCachesTask extends VisorOneNodeTask<VisorOneNodeNamesArg, VisorCachesTaskResult> {
+public class VisorCompactCachesTask extends VisorOneNodeTask<VisorOneNodeNamesArg, VisorNamedBeforeAfterTaskResult> {
     @SuppressWarnings("PublicInnerClass")
     public static class VisorCompactCachesJob
-        extends VisorOneNodeJob<VisorOneNodeNamesArg, VisorCachesTaskResult> {
+        extends VisorOneNodeJob<VisorOneNodeNamesArg, VisorNamedBeforeAfterTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -37,8 +37,8 @@ public class VisorCompactCachesTask extends VisorOneNodeTask<VisorOneNodeNamesAr
         }
 
         @Override
-        protected VisorCachesTaskResult run(VisorOneNodeNamesArg arg) throws GridException {
-            final VisorCachesTaskResult res = new VisorCachesTaskResult();
+        protected VisorNamedBeforeAfterTaskResult run(VisorOneNodeNamesArg arg) throws GridException {
+            final VisorNamedBeforeAfterTaskResult res = new VisorNamedBeforeAfterTaskResult();
 
             for(GridCache cache : g.cachesx(null)) {
                 String cacheName = cache.name();
@@ -62,7 +62,7 @@ public class VisorCompactCachesTask extends VisorOneNodeTask<VisorOneNodeNamesAr
     }
 
     @Override
-    protected VisorJob<VisorOneNodeNamesArg, VisorCachesTaskResult> job(VisorOneNodeNamesArg arg) {
+    protected VisorJob<VisorOneNodeNamesArg, VisorNamedBeforeAfterTaskResult> job(VisorOneNodeNamesArg arg) {
         return new VisorCompactCachesJob(arg);
     }
 }
