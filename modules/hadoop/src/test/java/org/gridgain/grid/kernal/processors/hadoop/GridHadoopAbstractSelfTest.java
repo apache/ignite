@@ -30,7 +30,7 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
     protected static final int REST_PORT = 11212;
 
     /** GGFS name. */
-    protected static final String ggfsName = "ggfs";
+    protected static final String ggfsName = null;
 
     /** GGFS name. */
     protected static final String ggfsMetaCacheName = "meta";
@@ -95,6 +95,8 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
             cfg.setRestEnabled(true);
             cfg.setRestTcpPort(restPort++);
         }
+
+        cfg.setLocalHost("127.0.0.1");
 
         return cfg;
     }
