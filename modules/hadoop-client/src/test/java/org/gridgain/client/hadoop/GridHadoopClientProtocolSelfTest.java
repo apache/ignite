@@ -109,7 +109,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     @Override public GridHadoopConfiguration hadoopConfiguration(String gridName) {
         GridHadoopConfiguration cfg = super.hadoopConfiguration(gridName);
 
-        cfg.setExternalExecution(true);
+        cfg.setExternalExecution(false);
 
         return cfg;
     }
