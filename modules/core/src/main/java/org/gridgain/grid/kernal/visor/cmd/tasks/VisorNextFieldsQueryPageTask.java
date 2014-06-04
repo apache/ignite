@@ -52,8 +52,7 @@ public class VisorNextFieldsQueryPageTask extends VisorOneNodeTask<VisorNextFiel
         }
     }
 
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorNextFieldsQueryPageJob
+    private static class VisorNextFieldsQueryPageJob
         extends VisorOneNodeJob<VisorNextFieldsQueryPageArg, VisorFieldsQueryResult> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -63,12 +62,12 @@ public class VisorNextFieldsQueryPageTask extends VisorOneNodeTask<VisorNextFiel
          *
          * @param arg Job argument.
          */
-        protected VisorNextFieldsQueryPageJob(VisorNextFieldsQueryPageArg arg) {
+        private VisorNextFieldsQueryPageJob(VisorNextFieldsQueryPageArg arg) {
             super(arg);
         }
 
-        @Override
-        protected VisorFieldsQueryResult run(VisorNextFieldsQueryPageArg arg) throws GridException {
+        /** {@inheritDoc} */
+        @Override protected VisorFieldsQueryResult run(VisorNextFieldsQueryPageArg arg) throws GridException {
             return arg.qryId.startsWith(SCAN_QRY_NAME) ? nextScanPage(arg) : nextSqlPage(arg);
         }
 
@@ -115,6 +114,7 @@ public class VisorNextFieldsQueryPageTask extends VisorOneNodeTask<VisorNextFiel
         }
     }
 
+    /** {@inheritDoc} */
     @Override protected VisorNextFieldsQueryPageJob job(VisorNextFieldsQueryPageArg arg) {
         return new VisorNextFieldsQueryPageJob(arg);
     }

@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto;
 
+import org.gridgain.grid.util.typedef.internal.*;
+
 import java.io.*;
 import java.util.*;
 
@@ -48,5 +50,10 @@ public class VisorFieldsQueryResult implements Serializable {
      */
     public Boolean hasMore() {
         return hasMore;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorFieldsQueryResult.class, this);
     }
 }

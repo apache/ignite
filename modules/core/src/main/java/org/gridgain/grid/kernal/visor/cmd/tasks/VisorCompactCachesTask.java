@@ -23,17 +23,17 @@ import java.util.*;
 @GridInternal
 public class VisorCompactCachesTask extends VisorOneNodeTask<VisorOneNodeNamesArg, Map<String, T2<Integer, Integer>>> {
     /** Job that compact caches on node. */
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorCompactCachesJob
+    private static class VisorCompactCachesJob
         extends VisorOneNodeJob<VisorOneNodeNamesArg, Map<String, T2<Integer, Integer>>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Create job with given argument. */
-        public VisorCompactCachesJob(VisorOneNodeNamesArg arg) {
+        private VisorCompactCachesJob(VisorOneNodeNamesArg arg) {
             super(arg);
         }
 
+        /** {@inheritDoc} */
         @Override protected Map<String, T2<Integer, Integer>> run(VisorOneNodeNamesArg arg) throws GridException {
             final Map<String, T2<Integer, Integer>> res = new HashMap<>();
 
@@ -58,6 +58,7 @@ public class VisorCompactCachesTask extends VisorOneNodeTask<VisorOneNodeNamesAr
         }
     }
 
+    /** {@inheritDoc} */
     @Override protected VisorCompactCachesJob job(VisorOneNodeNamesArg arg) {
         return new VisorCompactCachesJob(arg);
     }

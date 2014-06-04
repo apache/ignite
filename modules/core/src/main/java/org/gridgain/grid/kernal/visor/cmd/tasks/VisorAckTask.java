@@ -51,17 +51,17 @@ public class VisorAckTask extends VisorMultiNodeTask<VisorAckTask.VisorAckArg, V
     }
 
     /**
-     *
+     * Ack job to run on node.
      */
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorAckJob extends VisorJob<VisorAckArg, Void> {
+    private static class VisorAckJob extends VisorJob<VisorAckArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
-        public VisorAckJob(VisorAckArg arg) {
+        private VisorAckJob(VisorAckArg arg) {
             super(arg);
         }
 
+        /** {@inheritDoc} */
         @Override protected Void run(VisorAckArg arg) throws GridException {
             System.out.println("<visor>: ack: " + (arg.msg == null ? g.localNode().id() : arg.msg));
 
@@ -69,6 +69,7 @@ public class VisorAckTask extends VisorMultiNodeTask<VisorAckTask.VisorAckArg, V
         }
     }
 
+    /** {@inheritDoc} */
     @Override protected VisorAckJob job(VisorAckArg arg) {
         return new VisorAckJob(arg);
     }

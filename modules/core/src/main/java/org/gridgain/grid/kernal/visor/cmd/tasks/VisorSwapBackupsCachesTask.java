@@ -38,8 +38,8 @@ public class VisorSwapBackupsCachesTask extends
             super(arg);
         }
 
-        @Override
-        protected Map<String, T2<Integer, Integer>> run(VisorOneNodeNamesArg arg) throws GridException {
+        /** {@inheritDoc} */
+        @Override protected Map<String, T2<Integer, Integer>> run(VisorOneNodeNamesArg arg) throws GridException {
             Map<String, T2<Integer, Integer>> total = new HashMap<>();
 
             for (GridCache c: g.cachesx()) {
@@ -63,6 +63,7 @@ public class VisorSwapBackupsCachesTask extends
         }
     }
 
+    /** {@inheritDoc} */
     @Override protected VisorSwapBackupsCachesJob job(VisorOneNodeNamesArg arg) {
         return new VisorSwapBackupsCachesJob(arg);
     }

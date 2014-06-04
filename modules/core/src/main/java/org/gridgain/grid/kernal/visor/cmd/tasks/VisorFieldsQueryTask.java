@@ -54,11 +54,11 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
         private final Integer pageSize;
 
         /**
-         * @param nodeId Node Id.
-         * @param proj
-         * @param cacheName
-         * @param qryTxt
-         * @param pageSize
+         * @param nodeId Node Id for task execute.
+         * @param proj - nodes ids for collect entry.
+         * @param cacheName - cache name.
+         * @param qryTxt - query.
+         * @param pageSize - returned result batch size.
          */
         public VisorFieldsQueryArg(UUID nodeId, Collection<UUID> proj, String cacheName, String qryTxt, Integer pageSize) {
             super(nodeId);
@@ -147,8 +147,7 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
         }
     }
 
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorFieldsQueryJob
+    private static class VisorFieldsQueryJob
         extends VisorOneNodeJob<VisorFieldsQueryArg, T2<? extends Exception, VisorFieldsQueryResultEx>> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -162,8 +161,9 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
             super(arg);
         }
 
-        @Override
-        protected T2<? extends Exception, VisorFieldsQueryResultEx> run(VisorFieldsQueryArg arg) throws GridException {
+        /** {@inheritDoc} */
+        @Override protected T2<? extends Exception, VisorFieldsQueryResultEx> run(VisorFieldsQueryArg arg)
+            throws GridException {
             try {
                 Boolean scan = arg.queryTxt().toUpperCase().startsWith("SCAN");
 
@@ -248,6 +248,7 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
         }
     }
 
+    /** {@inheritDoc} */
     @Override protected VisorFieldsQueryJob job(VisorFieldsQueryArg arg) {
         return new VisorFieldsQueryJob(arg);
     }

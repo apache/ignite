@@ -38,6 +38,11 @@ public class VisorFieldsQueryUtils {
         new VisorFieldsQueryColumn("", "Value Class"), new VisorFieldsQueryColumn("", "Value")
     };
 
+    /**
+     *
+     * @param o - Object.
+     * @return String representation of object class.
+     */
     private static String typeOf(Object o) {
         if (o != null) {
             Class<?> clazz = o.getClass();
@@ -49,6 +54,11 @@ public class VisorFieldsQueryUtils {
             return "n/a";
     }
 
+    /**
+     *
+     * @param o Object.
+     * @return String representation of value.
+     */
     private static String valueOf(Object o) {
         if (o == null)
             return "null";
@@ -61,8 +71,13 @@ public class VisorFieldsQueryUtils {
         return o.toString();
     }
 
+    /**
+     *
+     * @param arr Object array.
+     * @param maxSz Maximum string size.
+     * @return Fixed size string.
+     */
     private static String mkString(Object[] arr, int maxSz) {
-        String end = "...";
         String sep = ", ";
 
         StringBuilder sb = new StringBuilder();
@@ -82,6 +97,8 @@ public class VisorFieldsQueryUtils {
         }
 
         if (sb.length() >= maxSz) {
+            String end = "...";
+
             sb.setLength(maxSz - end.length());
 
             sb.append(end);
@@ -160,17 +177,15 @@ public class VisorFieldsQueryUtils {
         while (next != null && cnt < pageSize) {
             Object[] row = new Object[next.size()];
 
-            for (int i =0; i < next.size(); i++) {
+            for (int i = 0; i < next.size(); i++) {
                 Object o = next.get(i);
 
                 if (o == null)
                     row[i] = null;
                 else if (isKnownType(o))
                     row[i] = o;
-                else if (o.getClass().isArray())
-                    row[i] = "binary";
                 else
-                    row[i] = o.toString(); // We can not pass unknown classes to Visor.
+                    row[i] = o.getClass().isArray() ? "binary" : o.toString();
             }
 
             rows.add(row);

@@ -28,21 +28,22 @@ public class VisorCollectLicenseTask extends VisorMultiNodeTask<VisorMultiNodeAr
     /**
      * Job that collect license from nodes.
      */
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorCollectLicenseJob extends VisorJob<VisorMultiNodeArg, VisorLicense> {
+    private static class VisorCollectLicenseJob extends VisorJob<VisorMultiNodeArg, VisorLicense> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Create job with given argument. */
-        public VisorCollectLicenseJob(VisorMultiNodeArg arg) {
+        private VisorCollectLicenseJob(VisorMultiNodeArg arg) {
             super(arg);
         }
 
+        /** {@inheritDoc} */
         @Nullable @Override protected VisorLicense run(VisorMultiNodeArg arg) throws GridException {
             return VisorLicense.from(g);
         }
     }
 
+    /** {@inheritDoc} */
     @Override protected VisorCollectLicenseJob job(VisorMultiNodeArg arg) {
         return new VisorCollectLicenseJob(arg);
     }

@@ -127,8 +127,7 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
     /**
      * Job for task returns events data.
      */
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorCollectEventsJob extends VisorJob<VisorCollectEventsArgs, Collection<? extends VisorGridEvent>> {
+    private static class VisorCollectEventsJob extends VisorJob<VisorCollectEventsArgs, Collection<? extends VisorGridEvent>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -137,13 +136,8 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
          *
          * @param arg Job argument.
          */
-        protected VisorCollectEventsJob(VisorCollectEventsArgs arg) {
+        private VisorCollectEventsJob(VisorCollectEventsArgs arg) {
             super(arg);
-        }
-
-        private void addArray(Collection<Integer> acc, int[] values) {
-            for(Integer value : values)
-                acc.add(value);
         }
 
         /**
@@ -216,6 +210,7 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
             return true;
         }
 
+        /** {@inheritDoc} */
         @Override protected Collection<? extends VisorGridEvent> run(final VisorCollectEventsArgs arg) throws GridException {
             final long startEvtTime = arg.timeArgument() == null ? 0L : System.currentTimeMillis() - arg.timeArgument();
 
@@ -269,6 +264,7 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
         }
     }
 
+    /** {@inheritDoc} */
     @Override protected VisorCollectEventsJob job(VisorCollectEventsArgs arg) {
         return new VisorCollectEventsJob(arg);
     }

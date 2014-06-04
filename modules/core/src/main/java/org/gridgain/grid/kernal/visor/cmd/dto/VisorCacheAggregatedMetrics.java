@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto;
 
+import org.gridgain.grid.util.typedef.internal.*;
+
 import java.io.*;
 import java.util.*;
 
@@ -351,5 +353,10 @@ public class VisorCacheAggregatedMetrics implements Serializable {
      */
     public Collection<VisorCacheMetrics> metrics() {
         return metrics;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorCacheAggregatedMetrics.class, this);
     }
 }

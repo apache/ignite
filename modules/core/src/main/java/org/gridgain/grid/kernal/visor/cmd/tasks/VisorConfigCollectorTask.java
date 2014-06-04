@@ -46,24 +46,24 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
         return (sysProp != null && !sysProp.isEmpty()) ? Integer.getInteger(sysProp) : dflt;
     }
 
-
     /**
      * Grid configuration data collect job.
      */
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorConfigurationJob extends VisorOneNodeJob<VisorOneNodeArg, VisorGridConfig> {
+    private static class VisorConfigurationJob extends VisorOneNodeJob<VisorOneNodeArg, VisorGridConfig> {
         /** */
         private static final long serialVersionUID = 0L;
 
-        public VisorConfigurationJob(VisorOneNodeArg arg) {
+        private VisorConfigurationJob(VisorOneNodeArg arg) {
             super(arg);
         }
 
+        /** {@inheritDoc} */
         @Override protected VisorGridConfig run(VisorOneNodeArg arg) {
             return VisorGridConfig.from(g);
         }
     }
 
+    /** {@inheritDoc} */
     @Override protected VisorConfigurationJob job(VisorOneNodeArg arg) {
         return new VisorConfigurationJob(arg);
     }

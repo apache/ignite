@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto;
 
+import org.gridgain.grid.util.typedef.internal.*;
+
 import java.util.*;
 
 /**
@@ -67,5 +69,10 @@ public class VisorFieldsQueryResultEx extends VisorFieldsQueryResult {
      */
     public VisorFieldsQueryColumn[] columnNames() {
         return colNames;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorFieldsQueryResultEx.class, this);
     }
 }

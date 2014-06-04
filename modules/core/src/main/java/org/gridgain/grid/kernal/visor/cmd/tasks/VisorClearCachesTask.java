@@ -25,8 +25,7 @@ public class VisorClearCachesTask extends VisorOneNodeTask<VisorOneNodeNamesArg,
     /**
      * Job that clear specified caches.
      */
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorClearCachesJob extends VisorOneNodeJob<VisorOneNodeNamesArg, Map<String, T2<Integer, Integer>>> {
+    private static class VisorClearCachesJob extends VisorOneNodeJob<VisorOneNodeNamesArg, Map<String, T2<Integer, Integer>>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -35,10 +34,11 @@ public class VisorClearCachesTask extends VisorOneNodeTask<VisorOneNodeNamesArg,
          *
          * @param arg Job argument.
          */
-        public VisorClearCachesJob(VisorOneNodeNamesArg arg) {
+        private VisorClearCachesJob(VisorOneNodeNamesArg arg) {
             super(arg);
         }
 
+        /** {@inheritDoc} */
         @Override protected Map<String, T2<Integer, Integer>> run(VisorOneNodeNamesArg arg) throws GridException {
             Map<String, T2<Integer, Integer>> res = new HashMap<>();
 
@@ -63,6 +63,7 @@ public class VisorClearCachesTask extends VisorOneNodeTask<VisorOneNodeNamesArg,
         }
     }
 
+    /** {@inheritDoc} */
     @Override protected VisorClearCachesJob job(VisorOneNodeNamesArg arg) {
         return new VisorClearCachesJob(arg);
     }

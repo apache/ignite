@@ -50,18 +50,17 @@ public class VisorRunGcTask extends VisorMultiNodeTask<VisorRunGcTask.VisorRunGc
     }
 
     /** Job that perform GC on node. */
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorRunGcJob extends VisorJob<VisorRunGcArg, T2<Long, Long>> {
+    private static class VisorRunGcJob extends VisorJob<VisorRunGcArg, T2<Long, Long>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Create job with given argument. */
-        protected VisorRunGcJob(VisorRunGcArg arg) {
+        private VisorRunGcJob(VisorRunGcArg arg) {
             super(arg);
         }
 
-        @Override
-        protected T2<Long, Long> run(VisorRunGcArg arg) throws GridException {
+        /** {@inheritDoc} */
+        @Override protected T2<Long, Long> run(VisorRunGcArg arg) throws GridException {
             GridNode locNode = g.localNode();
 
             long before = freeHeap(locNode);
@@ -82,6 +81,7 @@ public class VisorRunGcTask extends VisorMultiNodeTask<VisorRunGcTask.VisorRunGc
         }
     }
 
+    /** {@inheritDoc} */
     @Override protected VisorRunGcJob job(VisorRunGcArg arg) {
         return new VisorRunGcJob(arg);
     }
