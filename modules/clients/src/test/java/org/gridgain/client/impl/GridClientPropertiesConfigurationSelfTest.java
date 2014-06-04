@@ -12,8 +12,8 @@ package org.gridgain.client.impl;
 import org.apache.commons.io.*;
 import org.gridgain.client.*;
 import org.gridgain.client.balancer.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.springframework.context.support.*;
 

@@ -15,13 +15,12 @@ import org.gridgain.client.marshaller.jdk.*;
 import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.security.*;
+import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
-
-import static org.apache.commons.lang.StringUtils.*;
 
 /**
  * Java client configuration.
@@ -656,10 +655,10 @@ public class GridClientConfiguration {
 
         setBalancer(resolveBalancer(balancer));
 
-        if (!isEmpty(connectTimeout))
+        if (!F.isEmpty(connectTimeout))
             setConnectTimeout(Integer.parseInt(connectTimeout));
 
-        if (!isEmpty(cred)) {
+        if (!F.isEmpty(cred)) {
             int idx = cred.indexOf(':');
 
             if (idx >= 0 && idx < cred.length() - 1) {
@@ -672,38 +671,38 @@ public class GridClientConfiguration {
             }
         }
 
-        if (!isEmpty(autoFetchMetrics))
+        if (!F.isEmpty(autoFetchMetrics))
             setAutoFetchMetrics(Boolean.parseBoolean(autoFetchMetrics));
 
-        if (!isEmpty(autoFetchAttrs))
+        if (!F.isEmpty(autoFetchAttrs))
             setAutoFetchAttributes(Boolean.parseBoolean(autoFetchAttrs));
 
-        if (!isEmpty(maxConnIdleTime))
+        if (!F.isEmpty(maxConnIdleTime))
             setMaxConnectionIdleTime(Integer.parseInt(maxConnIdleTime));
 
-        if (!isEmpty(proto))
+        if (!F.isEmpty(proto))
             setProtocol(GridClientProtocol.valueOf(proto));
 
-        if (!isEmpty(srvrs))
+        if (!F.isEmpty(srvrs))
             setServers(Arrays.asList(srvrs.replaceAll("\\s+", "").split(",")));
 
-        if (!isEmpty(tcpNoDelay))
+        if (!F.isEmpty(tcpNoDelay))
             setTcpNoDelay(Boolean.parseBoolean(tcpNoDelay));
 
-        if (!isEmpty(topRefreshFreq))
+        if (!F.isEmpty(topRefreshFreq))
             setTopologyRefreshFrequency(Long.parseLong(topRefreshFreq));
 
         //
         // SSL configuration section
         //
 
-        if (!isEmpty(sslEnabled) && Boolean.parseBoolean(sslEnabled)) {
+        if (!F.isEmpty(sslEnabled) && Boolean.parseBoolean(sslEnabled)) {
             GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
 
-            factory.setProtocol(isEmpty(sslProto) ? "TLS" : sslProto);
-            factory.setKeyAlgorithm(isEmpty(sslKeyAlg) ? "SunX509" : sslKeyAlg);
+            factory.setProtocol(F.isEmpty(sslProto) ? "TLS" : sslProto);
+            factory.setKeyAlgorithm(F.isEmpty(sslKeyAlg) ? "SunX509" : sslKeyAlg);
 
-            if (isEmpty(keyStorePath))
+            if (F.isEmpty(keyStorePath))
                 throw new IllegalArgumentException("SSL key store location is not specified.");
 
             factory.setKeyStoreFilePath(keyStorePath);
@@ -711,9 +710,9 @@ public class GridClientConfiguration {
             if (keyStorePwd != null)
                 factory.setKeyStorePassword(keyStorePwd.toCharArray());
 
-            factory.setKeyStoreType(isEmpty(keyStoreType) ? "jks" : keyStoreType);
+            factory.setKeyStoreType(F.isEmpty(keyStoreType) ? "jks" : keyStoreType);
 
-            if (isEmpty(trustStorePath))
+            if (F.isEmpty(trustStorePath))
                 factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
             else {
                 factory.setTrustStoreFilePath(trustStorePath);
@@ -721,7 +720,7 @@ public class GridClientConfiguration {
                 if (trustStorePwd != null)
                     factory.setTrustStorePassword(trustStorePwd.toCharArray());
 
-                factory.setTrustStoreType(isEmpty(trustStoreType) ? "jks" : trustStoreType);
+                factory.setTrustStoreType(F.isEmpty(trustStoreType) ? "jks" : trustStoreType);
             }
 
             setSslContextFactory(factory);
@@ -731,12 +730,12 @@ public class GridClientConfiguration {
         // Data configuration section
         //
 
-        if (!isEmpty(dataCfgs)) {
+        if (!F.isEmpty(dataCfgs)) {
             String[] names = dataCfgs.replaceAll("\\s+", "").split(",");
             Collection<GridClientDataConfiguration> list = new ArrayList<>();
 
             for (String cfgName : names) {
-                if (isEmpty(cfgName))
+                if (F.isEmpty(cfgName))
                     continue;
 
                 String name = in.getProperty(prefix + "data." + cfgName + ".name");
@@ -745,7 +744,7 @@ public class GridClientConfiguration {
 
                 GridClientDataConfiguration dataCfg = new GridClientDataConfiguration();
 
-                dataCfg.setName(isEmpty(name) ? null : name);
+                dataCfg.setName(F.isEmpty(name) ? null : name);
                 dataCfg.setBalancer(resolveBalancer(bal));
                 dataCfg.setAffinity(resolveAffinity(aff));
 
@@ -764,7 +763,7 @@ public class GridClientConfiguration {
      * @throws GridClientException If loading failed.
      */
     private static GridClientLoadBalancer resolveBalancer(String balancer) throws GridClientException {
-        if (isEmpty(balancer) || "random".equals(balancer))
+        if (F.isEmpty(balancer) || "random".equals(balancer))
             return new GridClientRandomBalancer();
 
         if ("roundrobin".equals(balancer))
@@ -781,7 +780,7 @@ public class GridClientConfiguration {
      * @throws GridClientException If loading failed.
      */
     private static GridClientDataAffinity resolveAffinity(String affinity) throws GridClientException {
-        if (isEmpty(affinity))
+        if (F.isEmpty(affinity))
             return null;
 
         if ("partitioned".equals(affinity))
