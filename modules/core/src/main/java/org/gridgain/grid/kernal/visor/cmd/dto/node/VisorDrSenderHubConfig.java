@@ -9,7 +9,11 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
+import org.gridgain.grid.dr.hub.sender.*;
+import org.gridgain.grid.util.typedef.internal.*;
+
 import java.io.*;
+import java.util.*;
 
 /**
  * Data transfer object for DR sender hub configuration properties.
@@ -19,53 +23,60 @@ public class VisorDrSenderHubConfig implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Data center connection configurations. */
-    private final Iterable<VisorDrSenderHubConnectionConfig> connectionConfiguration;
+    private Iterable<VisorDrSenderHubConnectionConfig> connectionConfiguration;
 
     /** Maximum failed connect attempts. When all replica nodes reaches this limit replica become offline. */
-    private final int maxFailedConnectAttempts;
+    private int maxFailedConnectAttempts;
 
     /** Maximum amount of errors received from the replica. When replica node reaches this limit, it is disconnected. */
-    private final int maxErrors;
+    private int maxErrors;
 
     /** Get health check frequency in milliseconds. */
-    private final long healthCheckFrequency;
+    private long maxHealthCheckFrequency;
 
     /** System request timeout in milliseconds. */
-    private final long systemRequestTimeout;
+    private long systemRequestTimeout;
 
     /** Read timeout in milliseconds. */
-    private final long readTimeout;
+    private long readTimeout;
 
     /** Maximum wait queue size. */
-    private final int maxQueueSize;
+    private int maxQueueSize;
 
     /** Timeout after which node can be reconnected in case it was previously disconnected due to a failure. */
-    private final long reconnectOnFailureTimeout;
+    private long reconnectOnFailureTimeout;
 
     /** Cache names this sender hub works with. */
-    private final String[] cacheNames;
+    private String[] cacheNames;
 
-    /** Create data transfer object with given parameters. */
-    public VisorDrSenderHubConfig(
-        Iterable<VisorDrSenderHubConnectionConfig> connectionConfiguration,
-        int maxFailedConnectAttempts,
-        int maxErrors,
-        long healthCheckFrequency,
-        long systemRequestTimeout,
-        long readTimeout,
-        int maxQueueSize,
-        long reconnectOnFailureTimeout,
-        String[] cacheNames
-    ) {
-        this.connectionConfiguration = connectionConfiguration;
-        this.maxFailedConnectAttempts = maxFailedConnectAttempts;
-        this.maxErrors = maxErrors;
-        this.healthCheckFrequency = healthCheckFrequency;
-        this.systemRequestTimeout = systemRequestTimeout;
-        this.readTimeout = readTimeout;
-        this.maxQueueSize = maxQueueSize;
-        this.reconnectOnFailureTimeout = reconnectOnFailureTimeout;
-        this.cacheNames = cacheNames;
+    /**
+     * Construct data transfer object for DR sender hub configuration properties.
+     *
+     * @param sndCfg Data transfer object for DR sender hub configuration properties.
+     * @return DR sender hub configuration properties.
+     */
+    public static VisorDrSenderHubConfig from(GridDrSenderHubConfiguration sndCfg) {
+        if (sndCfg == null)
+            return null;
+
+        Collection<VisorDrSenderHubConnectionConfig> rmtCfgs = new ArrayList<>();
+
+        for (GridDrSenderHubConnectionConfiguration rmtCfg : sndCfg.getConnectionConfiguration())
+            rmtCfgs.add(VisorDrSenderHubConnectionConfig.from(rmtCfg));
+
+        VisorDrSenderHubConfig cfg = new VisorDrSenderHubConfig();
+
+        cfg.connectionConfiguration(rmtCfgs);
+        cfg.maxFailedConnectAttempts(sndCfg.getMaxFailedConnectAttempts());
+        cfg.maxErrors(sndCfg.getMaxErrors());
+        cfg.maxHealthCheckFrequency(sndCfg.getHealthCheckFrequency());
+        cfg.systemRequestTimeout(sndCfg.getSystemRequestTimeout());
+        cfg.readTimeout(sndCfg.getReadTimeout());
+        cfg.maxQueueSize(sndCfg.getMaxQueueSize());
+        cfg.reconnectOnFailureTimeout(sndCfg.getReconnectOnFailureTimeout());
+        cfg.cacheNames(sndCfg.getCacheNames());
+
+        return cfg;
     }
 
     /**
@@ -76,10 +87,25 @@ public class VisorDrSenderHubConfig implements Serializable {
     }
 
     /**
+     * @param connConfiguration New data center connection configurations.
+     */
+    public void connectionConfiguration(Iterable<VisorDrSenderHubConnectionConfig> connConfiguration) {
+        connectionConfiguration = connConfiguration;
+    }
+
+    /**
      * @return Maximum failed connect attempts. When all replica nodes reaches this limit replica become offline.
      */
     public int maxFailedConnectAttempts() {
         return maxFailedConnectAttempts;
+    }
+
+    /**
+     * @param maxFailedConnectAttempts New maximum failed connect attempts. When all replica nodes reaches this limit
+     * replica become offline.
+     */
+    public void maxFailedConnectAttempts(int maxFailedConnectAttempts) {
+        this.maxFailedConnectAttempts = maxFailedConnectAttempts;
     }
 
     /**
@@ -91,10 +117,25 @@ public class VisorDrSenderHubConfig implements Serializable {
     }
 
     /**
+     * @param maxErrors New maximum amount of errors received from the replica. When replica node reaches this limit, it
+     * is disconnected.
+     */
+    public void maxErrors(int maxErrors) {
+        this.maxErrors = maxErrors;
+    }
+
+    /**
      * @return Get health check frequency in milliseconds.
      */
-    public long healthCheckFrequency() {
-        return healthCheckFrequency;
+    public long maxHealthCheckFrequency() {
+        return maxHealthCheckFrequency;
+    }
+
+    /**
+     * @param healthCheckFreq New get health check frequency in milliseconds.
+     */
+    public void maxHealthCheckFrequency(long healthCheckFreq) {
+        maxHealthCheckFrequency = healthCheckFreq;
     }
 
     /**
@@ -105,10 +146,24 @@ public class VisorDrSenderHubConfig implements Serializable {
     }
 
     /**
+     * @param sysReqTimeout New system request timeout in milliseconds.
+     */
+    public void systemRequestTimeout(long sysReqTimeout) {
+        systemRequestTimeout = sysReqTimeout;
+    }
+
+    /**
      * @return Read timeout in milliseconds.
      */
     public long readTimeout() {
         return readTimeout;
+    }
+
+    /**
+     * @param readTimeout New read timeout in milliseconds.
+     */
+    public void readTimeout(long readTimeout) {
+        this.readTimeout = readTimeout;
     }
 
     /**
@@ -119,6 +174,13 @@ public class VisorDrSenderHubConfig implements Serializable {
     }
 
     /**
+     * @param maxQueueSize New maximum wait queue size.
+     */
+    public void maxQueueSize(int maxQueueSize) {
+        this.maxQueueSize = maxQueueSize;
+    }
+
+    /**
      * @return Timeout after which node can be reconnected in case it was previously disconnected due to a failure.
      */
     public long reconnectOnFailureTimeout() {
@@ -126,9 +188,29 @@ public class VisorDrSenderHubConfig implements Serializable {
     }
 
     /**
+     * @param reconnectOnFailureTimeout New timeout after which node can be reconnected in case it was previously
+     * disconnected due to a failure.
+     */
+    public void reconnectOnFailureTimeout(long reconnectOnFailureTimeout) {
+        this.reconnectOnFailureTimeout = reconnectOnFailureTimeout;
+    }
+
+    /**
      * @return Cache names this sender hub works with.
      */
     public String[] cacheNames() {
         return cacheNames;
+    }
+
+    /**
+     * @param cacheNames New cache names this sender hub works with.
+     */
+    public void cacheNames(String[] cacheNames) {
+        this.cacheNames = cacheNames;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorDrSenderHubConfig.class, this);
     }
 }

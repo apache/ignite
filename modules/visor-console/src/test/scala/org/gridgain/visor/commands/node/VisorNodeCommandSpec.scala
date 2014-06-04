@@ -12,7 +12,7 @@
 package org.gridgain.visor.commands.node
 
 import org.gridgain.visor._
-import VisorNodeCommand._
+import org.gridgain.visor.commands.node.VisorNodeCommand._
 
 /**
  * Unit test for 'node' command.
@@ -21,16 +21,16 @@ class VisorNodeCommandSpec extends VisorRuntimeBaseSpec(1) {
     behavior of "A 'node' visor command"
 
     it should "properly execute with valid node ID" in {
-        visor node("-id8=@n1")
+        visor.node("-id8=@n1")
     }
 
     it should "print the error message for invalid node ID" in {
-        visor node("-id8=zeee")
+        visor.node("-id8=zeee")
     }
 
     it should "print error message when not connected" in {
         closeVisorQuiet()
 
-        visor node("") // Arguments are ignored.
+        visor.node("") // Arguments are ignored.
     }
 }

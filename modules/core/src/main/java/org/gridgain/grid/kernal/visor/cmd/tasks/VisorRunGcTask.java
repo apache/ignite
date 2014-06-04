@@ -14,6 +14,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
+import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -23,7 +24,7 @@ import java.util.*;
  */
 @GridInternal
 public class VisorRunGcTask extends VisorMultiNodeTask<VisorRunGcTask.VisorRunGcArg,
-    VisorRunGcTask.VisorRunGcTaskResult, VisorBeforeAfterResult> {
+    Map<UUID, T2<Long, Long>>, T2<Long, Long>> {
     /**
      * Arguments for {@link VisorRunGcTask}.
      */
@@ -48,16 +49,9 @@ public class VisorRunGcTask extends VisorMultiNodeTask<VisorRunGcTask.VisorRunGc
         }
     }
 
-    /** Result of GC task. */
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorRunGcTaskResult extends HashMap<UUID, VisorBeforeAfterResult> {
-        /** */
-        private static final long serialVersionUID = 0L;
-    }
-
     /** Job that perform GC on node. */
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorRunGcJob extends VisorJob<VisorRunGcArg, VisorBeforeAfterResult> {
+    public static class VisorRunGcJob extends VisorJob<VisorRunGcArg, T2<Long, Long>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -67,7 +61,7 @@ public class VisorRunGcTask extends VisorMultiNodeTask<VisorRunGcTask.VisorRunGc
         }
 
         @Override
-        protected VisorBeforeAfterResult run(VisorRunGcArg arg) throws GridException {
+        protected T2<Long, Long> run(VisorRunGcArg arg) throws GridException {
             GridNode locNode = g.localNode();
 
             long before = freeHeap(locNode);
@@ -78,7 +72,7 @@ public class VisorRunGcTask extends VisorMultiNodeTask<VisorRunGcTask.VisorRunGc
                 for (GridCache<?, ?> cache : g.cachesx())
                     cache.dgc();
 
-            return new VisorBeforeAfterResult(before, freeHeap(locNode));
+            return new T2<>(before, freeHeap(locNode));
         }
 
         private long freeHeap(GridNode node) {
@@ -92,11 +86,12 @@ public class VisorRunGcTask extends VisorMultiNodeTask<VisorRunGcTask.VisorRunGc
         return new VisorRunGcJob(arg);
     }
 
-    @Nullable @Override public VisorRunGcTaskResult reduce(List<GridComputeJobResult> results) throws GridException {
-        VisorRunGcTaskResult total = new VisorRunGcTaskResult();
+    /** {@inheritDoc} */
+    @Nullable @Override public Map<UUID, T2<Long, Long>> reduce(List<GridComputeJobResult> results) throws GridException {
+        Map<UUID, T2<Long, Long>> total = new HashMap<>();
 
         for (GridComputeJobResult res: results) {
-            VisorBeforeAfterResult jobRes = res.getData();
+            T2<Long, Long> jobRes = res.getData();
 
             total.put(res.getNode().id(), jobRes);
         }

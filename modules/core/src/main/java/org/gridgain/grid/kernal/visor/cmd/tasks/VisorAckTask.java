@@ -73,6 +73,7 @@ public class VisorAckTask extends VisorMultiNodeTask<VisorAckTask.VisorAckArg, V
         return new VisorAckJob(arg);
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public Void reduce(List<GridComputeJobResult> results) throws GridException {
         return null;
     }

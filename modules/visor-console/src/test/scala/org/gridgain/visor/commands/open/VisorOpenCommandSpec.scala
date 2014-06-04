@@ -20,12 +20,12 @@ class VisorOpenCommandSpec extends VisorRuntimeBaseSpec(3) {
     behavior of "A 'open' visor command"
 
     it should "properly connect using default configuration" in {
-        visor mlist()
+        visor.mlist()
     }
 
     it should "print error message when already connected" in {
         openVisor()
 
-        visor close()
+        visor.close()
     }
 }

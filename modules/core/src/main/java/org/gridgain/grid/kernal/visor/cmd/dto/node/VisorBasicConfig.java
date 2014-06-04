@@ -9,10 +9,17 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
+import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
+
+import static java.lang.System.*;
+import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.*;
 
 /**
  * Data transfer object for node basic configuration properties.
@@ -22,133 +29,143 @@ public class VisorBasicConfig implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Grid name. */
-    private final String gridName;
+    private String gridName;
 
     /** GRIDGAIN_HOME determined at startup. */
-    private final String ggHome;
+    private String ggHome;
 
     /** Local host value used. */
-    private final String locHost;
+    private String locHost;
 
     /** Node id. */
-    private final UUID nodeId;
+    private UUID nodeId;
 
     /** Marshaller used. */
-    private final String marsh;
+    private String marsh;
 
-    /** Deploy Mode. */
-    private final Object deployMode;
+    /** Deployment Mode. */
+    private Object deployMode;
 
     /** Whether this node daemon or not. */
-    private final boolean daemon;
+    private boolean daemon;
 
     /** Whether remote JMX is enabled. */
-    private final boolean jmxRemote;
+    private boolean jmxRemote;
 
     /** Is node restart enabled. */
-    private final boolean restart;
+    private boolean restart;
 
     /** Network timeout. */
-    private final long netTimeout;
+    private long netTimeout;
 
     /** Node license URL */
-    private final String licenseUrl;
+    private String licenseUrl;
 
     /** Logger used on node. */
-    private final String log;
+    private String log;
 
     /** Discovery startup delay. */
-    private final long discoStartupDelay;
+    private long discoStartupDelay;
 
     /** MBean server name */
-    private final String mBeanSrv;
+    private String mBeanSrv;
 
     /** Whether ASCII logo is disabled. */
-    private final boolean noAscii;
+    private boolean noAscii;
 
     /** Whether no discovery order is allowed. */
-    private final boolean noDiscoOrder;
+    private boolean noDiscoOrder;
 
     /** Whether shutdown hook is disabled. */
-    private final boolean noShutdownHook;
+    private boolean noShutdownHook;
 
     /** Name of command line program. */
-    private final String progName;
+    private String progName;
 
     /** Whether node is in quiet mode. */
-    private final boolean quiet;
+    private boolean quiet;
 
     /** Success file name. */
-    private final String successFile;
+    private String successFile;
 
     /** Whether update checker is enabled. */
-    private final boolean updateNtf;
+    private boolean updateNtf;
 
-    /** Create data transfer object with given parameters. */
-    public VisorBasicConfig(
-        String gridName,
-        String ggHome,
-        String locHost,
-        UUID nodeId,
-        String marsh,
-        Object deployMode,
-        boolean daemon,
-        boolean jmxRemote,
-        boolean restart,
-        long netTimeout,
-        @Nullable String licenseUrl,
-        String log,
-        long discoStartupDelay,
-        String mBeanSrv,
-        boolean noAscii,
-        boolean noDiscoOrder,
-        boolean noShutdownHook,
-        String progName,
-        boolean quiet,
-        String successFile,
-        boolean updateNtf) {
-        this.gridName = gridName;
-        this.ggHome = ggHome;
-        this.locHost = locHost;
-        this.nodeId = nodeId;
-        this.marsh = marsh;
-        this.deployMode = deployMode;
-        this.daemon = daemon;
-        this.jmxRemote = jmxRemote;
-        this.restart = restart;
-        this.netTimeout = netTimeout;
-        this.licenseUrl = licenseUrl;
-        this.log = log;
-        this.discoStartupDelay = discoStartupDelay;
-        this.mBeanSrv = mBeanSrv;
-        this.noAscii = noAscii;
-        this.noDiscoOrder = noDiscoOrder;
-        this.noShutdownHook = noShutdownHook;
-        this.progName = progName;
-        this.quiet = quiet;
-        this.successFile = successFile;
-        this.updateNtf = updateNtf;
+    /**
+     * Construct data transfer object for node email configuration properties.
+     *
+     * @param g Grid.
+     * @param c Grid configuration.
+     * @return node email configuration properties.
+     */
+    public static VisorBasicConfig from(GridEx g, GridConfiguration c) {
+        VisorBasicConfig cfg = new VisorBasicConfig();
+
+        cfg.gridName(c.getGridName());
+        cfg.ggHome(getProperty(GG_HOME, c.getGridGainHome()));
+        cfg.localHost(getProperty(GG_LOCAL_HOST, c.getLocalHost()));
+        cfg.nodeId(g.localNode().id());
+        cfg.marshaller(compactClass(c.getMarshaller()));
+        cfg.deploymentMode(compactObject(c.getDeploymentMode()));
+        cfg.daemon(boolValue(GG_DAEMON, c.isDaemon()));
+        cfg.jmxRemote(g.isJmxRemoteEnabled());
+        cfg.restart(g.isRestartEnabled());
+        cfg.networkTimeout(c.getNetworkTimeout());
+        cfg.licenseUrl(c.getLicenseUrl());
+        cfg.logger(compactClass(c.getGridLogger()));
+        cfg.discoStartupDelay(c.getDiscoveryStartupDelay());
+        cfg.mBeanServer(compactClass(c.getMBeanServer()));
+        cfg.noAscii(boolValue(GG_NO_ASCII, false));
+        cfg.noDiscoOrder(boolValue(GG_NO_DISCO_ORDER, false));
+        cfg.noShutdownHook(boolValue(GG_NO_SHUTDOWN_HOOK, false));
+        cfg.programName(getProperty(GG_PROG_NAME));
+        cfg.quiet(boolValue(GG_QUIET, true));
+        cfg.successFile(getProperty(GG_SUCCESS_FILE));
+        cfg.updateNotifier(boolValue(GG_UPDATE_NOTIFIER, true));
+
+        return cfg;
     }
 
     /**
      * @return Grid name.
      */
-    public String gridName() {
+    @Nullable public String gridName() {
         return gridName;
+    }
+
+    /**
+     * @param gridName New grid name.
+     */
+    public void gridName(@Nullable String gridName) {
+        this.gridName = gridName;
     }
 
     /**
      * @return GRIDGAIN_HOME determined at startup.
      */
-    public String ggHome() {
+    @Nullable public String ggHome() {
         return ggHome;
+    }
+
+    /**
+     * @param ggHome New gRIDGAIN_HOME determined at startup.
+     */
+    public void ggHome(@Nullable String ggHome) {
+        this.ggHome = ggHome;
     }
 
     /**
      * @return Local host value used.
      */
-    public String localHost() {
+    @Nullable public String localHost() {
         return locHost;
+    }
+
+    /**
+     * @param locHost New local host value used.
+     */
+    public void localHost(@Nullable String locHost) {
+        this.locHost = locHost;
     }
 
     /**
@@ -159,6 +176,13 @@ public class VisorBasicConfig implements Serializable {
     }
 
     /**
+     * @param nodeId New node id.
+     */
+    public void nodeId(UUID nodeId) {
+        this.nodeId = nodeId;
+    }
+
+    /**
      * @return Marshaller used.
      */
     public String marshaller() {
@@ -166,10 +190,24 @@ public class VisorBasicConfig implements Serializable {
     }
 
     /**
-     * @return Deploy Mode.
+     * @param marsh New marshaller used.
      */
-    public Object deployMode() {
+    public void marshaller(String marsh) {
+        this.marsh = marsh;
+    }
+
+    /**
+     * @return Deployment Mode.
+     */
+    public Object deploymentMode() {
         return deployMode;
+    }
+
+    /**
+     * @param deployMode New Deployment Mode.
+     */
+    public void deploymentMode(Object deployMode) {
+        this.deployMode = deployMode;
     }
 
     /**
@@ -180,10 +218,24 @@ public class VisorBasicConfig implements Serializable {
     }
 
     /**
+     * @param daemon New whether this node daemon or not.
+     */
+    public void daemon(boolean daemon) {
+        this.daemon = daemon;
+    }
+
+    /**
      * @return Whether remote JMX is enabled.
      */
     public boolean jmxRemote() {
         return jmxRemote;
+    }
+
+    /**
+     * @param jmxRemote New whether remote JMX is enabled.
+     */
+    public void jmxRemote(boolean jmxRemote) {
+        this.jmxRemote = jmxRemote;
     }
 
     /**
@@ -194,10 +246,24 @@ public class VisorBasicConfig implements Serializable {
     }
 
     /**
+     * @param restart New is node restart enabled.
+     */
+    public void restart(boolean restart) {
+        this.restart = restart;
+    }
+
+    /**
      * @return Network timeout.
      */
     public long networkTimeout() {
         return netTimeout;
+    }
+
+    /**
+     * @param netTimeout New network timeout.
+     */
+    public void networkTimeout(long netTimeout) {
+        this.netTimeout = netTimeout;
     }
 
     /**
@@ -208,10 +274,24 @@ public class VisorBasicConfig implements Serializable {
     }
 
     /**
+     * @param licenseUrl New node license URL
+     */
+    public void licenseUrl(@Nullable String licenseUrl) {
+        this.licenseUrl = licenseUrl;
+    }
+
+    /**
      * @return Logger used on node.
      */
     public String logger() {
         return log;
+    }
+
+    /**
+     * @param log New logger used on node.
+     */
+    public void logger(String log) {
+        this.log = log;
     }
 
     /**
@@ -222,10 +302,24 @@ public class VisorBasicConfig implements Serializable {
     }
 
     /**
+     * @param discoStartupDelay New discovery startup delay.
+     */
+    public void discoStartupDelay(long discoStartupDelay) {
+        this.discoStartupDelay = discoStartupDelay;
+    }
+
+    /**
      * @return MBean server name
      */
-    public String mBeanServer() {
+    @Nullable public String mBeanServer() {
         return mBeanSrv;
+    }
+
+    /**
+     * @param mBeanSrv New mBean server name
+     */
+    public void mBeanServer(@Nullable String mBeanSrv) {
+        this.mBeanSrv = mBeanSrv;
     }
 
     /**
@@ -236,10 +330,24 @@ public class VisorBasicConfig implements Serializable {
     }
 
     /**
+     * @param noAscii New whether ASCII logo is disabled.
+     */
+    public void noAscii(boolean noAscii) {
+        this.noAscii = noAscii;
+    }
+
+    /**
      * @return Whether no discovery order is allowed.
      */
     public boolean noDiscoOrder() {
         return noDiscoOrder;
+    }
+
+    /**
+     * @param noDiscoOrder New whether no discovery order is allowed.
+     */
+    public void noDiscoOrder(boolean noDiscoOrder) {
+        this.noDiscoOrder = noDiscoOrder;
     }
 
     /**
@@ -250,10 +358,24 @@ public class VisorBasicConfig implements Serializable {
     }
 
     /**
+     * @param noShutdownHook New whether shutdown hook is disabled.
+     */
+    public void noShutdownHook(boolean noShutdownHook) {
+        this.noShutdownHook = noShutdownHook;
+    }
+
+    /**
      * @return Name of command line program.
      */
-    public String program() {
+    public String programName() {
         return progName;
+    }
+
+    /**
+     * @param progName New name of command line program.
+     */
+    public void programName(String progName) {
+        this.progName = progName;
     }
 
     /**
@@ -264,6 +386,13 @@ public class VisorBasicConfig implements Serializable {
     }
 
     /**
+     * @param quiet New whether node is in quiet mode.
+     */
+    public void quiet(boolean quiet) {
+        this.quiet = quiet;
+    }
+
+    /**
      * @return Success file name.
      */
     public String successFile() {
@@ -271,9 +400,28 @@ public class VisorBasicConfig implements Serializable {
     }
 
     /**
+     * @param successFile New success file name.
+     */
+    public void successFile(String successFile) {
+        this.successFile = successFile;
+    }
+
+    /**
      * @return Whether update checker is enabled.
      */
     public boolean updateNotifier() {
         return updateNtf;
+    }
+
+    /**
+     * @param updateNtf New whether update checker is enabled.
+     */
+    public void updateNotifier(boolean updateNtf) {
+        this.updateNtf = updateNtf;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorBasicConfig.class, this);
     }
 }

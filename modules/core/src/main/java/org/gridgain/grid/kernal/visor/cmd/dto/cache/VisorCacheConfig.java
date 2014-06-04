@@ -10,9 +10,13 @@
 package org.gridgain.grid.kernal.visor.cmd.dto.cache;
 
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.util.*;
+
+import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.*;
 
 /**
  * Data transfer object for cache configuration properties.
@@ -22,201 +26,206 @@ public class VisorCacheConfig implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Cache name. */
-    private final String name;
+    private String name;
 
     /** Cache mode. */
-    private final GridCacheMode mode;
+    private GridCacheMode mode;
 
     /** Distribution mode. */
-    private final GridCacheDistributionMode distributionMode;
+    private GridCacheDistributionMode distributionMode;
 
     /** Cache atomicity mode */
-    private final GridCacheAtomicityMode atomicityMode;
+    private GridCacheAtomicityMode atomicityMode;
 
     /** Cache atomic sequence reserve size */
-    private final int atomicSequenceReserveSize;
+    private int atomicSequenceReserveSize;
 
-    /** Cache atomicity write ordering mode.  */
-    private final GridCacheAtomicWriteOrderMode atomicWriteOrderMode;
-
-    /** TTL value. */
-    private final long ttl;
+    /** Cache atomicity write ordering mode. */
+    private GridCacheAtomicWriteOrderMode atomicWriteOrderMode;
 
     /** Eager ttl flag */
-    private final boolean eagerTtl;
+    private boolean eagerTtl;
 
     /** Refresh ahead ratio. */
-    private final double refreshAheadRatio;
+    private double refreshAheadRatio;
 
     /** Write synchronization mode. */
-    private final GridCacheWriteSynchronizationMode writeSynchronizationMode;
+    private GridCacheWriteSynchronizationMode writeSynchronizationMode;
 
     /** Sequence reserve size. */
-    private final int seqReserveSize;
+    private int seqReserveSize;
 
     /** Swap enabled flag. */
-    private final boolean swapEnabled;
+    private boolean swapEnabled;
 
-    /** Flag indicating whether GridGain should attempt to index value and/or key instances stored in cache.*/
-    private final boolean queryIndexEnabled;
+    /** Flag indicating whether GridGain should attempt to index value and/or key instances stored in cache. */
+    private boolean queryIndexEnabled;
 
-    /** Tx batch update. */
-    private final boolean txBatchUpdate;
+    /** Flag indicating whether to persist once on commit, or after every operation. */
+    private boolean batchUpdateOnCommit;
 
     /** Invalidate. */
-    private final boolean invalidate;
+    private boolean invalidate;
 
     /** Start size. */
-    private final int startSize;
+    private int startSize;
 
     /** Cloner. */
-    private final String cloner;
+    private String cloner;
 
     /** Tx manager lookup. */
-    private final String txMgrLookup;
+    private String txMgrLookup;
 
     /** Flag to enable/disable transaction serializable isolation level. */
-    private final boolean txSerializableEnabled;
+    private boolean txSerializableEnabled;
 
     /** Off-heap max memory. */
-    private final long offHeapMaxMemory;
+    private long offHeapMaxMemory;
 
     /** Max query iterator count */
-    private final int maxQueryIteratorCnt;
+    private int maxQueryIteratorCnt;
 
     /** Max concurrent async operations */
-    private final int maxConcurrentAsyncOps;
+    private int maxConcurrentAsyncOps;
 
     /** Pessimistic tx logger size */
-    private final int pessimisticTxLogSize;
+    private int pessimisticTxLogSize;
 
     /** Pessimistic tx logger linger. */
-    private final int pessimisticTxLogLinger;
+    private int pessimisticTxLogLinger;
 
     /** Memory mode. */
-    private final GridCacheMemoryMode memoryMode;
+    private GridCacheMemoryMode memoryMode;
 
     /** Name of SPI to use for indexing. */
-    private final String indexingSpiName;
+    private String indexingSpiName;
 
     /** Cache affinity config. */
-    private final VisorAffinityConfig affinity;
+    private VisorAffinityConfig affinity;
 
     /** Preload config. */
-    private final VisorPreloadConfig preload;
+    private VisorPreloadConfig preload;
 
     /** Eviction config. */
-    private final VisorEvictionConfig evict;
+    private VisorEvictionConfig evict;
 
     /** Near cache config. */
-    private final VisorNearCacheConfig near;
+    private VisorNearCacheConfig near;
 
     /** Default config */
-    private final VisorDefaultConfig dflt;
+    private VisorDefaultConfig dflt;
 
     /** Dgc config */
-    private final VisorDgcConfig dgc;
+    private VisorDgcConfig dgc;
 
     /** Store config */
-    private final VisorStoreConfig store;
+    private VisorStoreConfig store;
 
     /** Write behind config */
-    private final VisorWriteBehindConfig writeBehind;
+    private VisorWriteBehindConfig writeBehind;
 
     /** Data center replication send configuration. * */
-    private final VisorDrSenderConfig drSendConfig;
+    private VisorDrSenderConfig drSendConfig;
 
     /** Data center replication receive configuration. */
-    private final VisorDrReceiverConfig drReceiveConfig;
+    private VisorDrReceiverConfig drReceiveConfig;
 
-    /** Create data transfer object with given parameters. */
-    public VisorCacheConfig(
-        String name,
-        GridCacheMode mode,
-        GridCacheDistributionMode distributionMode,
-        GridCacheAtomicityMode atomicityMode,
-        int atomicSequenceReserveSize,
-        GridCacheAtomicWriteOrderMode atomicWriteOrderMode,
-        long ttl,
-        boolean eagerTtl,
-        double refreshAheadRatio,
-        GridCacheWriteSynchronizationMode writeSynchronizationMode,
-        int seqReserveSize,
-        boolean swapEnabled,
-        boolean queryIndexEnabled,
-        boolean txBatchUpdate,
-        boolean invalidate,
-        int startSize,
-        @Nullable String cloner,
-        @Nullable String txMgrLookup,
-        boolean txSerializableEnabled,
-        long offHeapMaxMemory,
-        int maxQueryIteratorCnt,
-        int maxConcurrentAsyncOps,
-        int pessimisticTxLogSize,
-        int pessimisticTxLogLinger,
-        GridCacheMemoryMode memoryMode,
-        String indexingSpiName,
-        VisorAffinityConfig affinity,
-        VisorPreloadConfig preload,
-        VisorEvictionConfig evict,
-        VisorNearCacheConfig near,
-        VisorDefaultConfig dflt,
-        VisorDgcConfig dgc,
-        VisorStoreConfig store,
-        VisorWriteBehindConfig writeBehind,
-        @Nullable VisorDrSenderConfig drSendConfig,
-        @Nullable VisorDrReceiverConfig drReceiveConfig) {
-        this.name = name;
-        this.mode = mode;
-        this.distributionMode = distributionMode;
-        this.atomicityMode = atomicityMode;
-        this.atomicSequenceReserveSize = atomicSequenceReserveSize;
-        this.atomicWriteOrderMode = atomicWriteOrderMode;
-        this.ttl = ttl;
-        this.eagerTtl = eagerTtl;
-        this.refreshAheadRatio = refreshAheadRatio;
-        this.seqReserveSize = seqReserveSize;
-        this.writeSynchronizationMode = writeSynchronizationMode;
-        this.swapEnabled = swapEnabled;
-        this.queryIndexEnabled = queryIndexEnabled;
-        this.txBatchUpdate = txBatchUpdate;
-        this.invalidate = invalidate;
-        this.startSize = startSize;
-        this.cloner = cloner;
-        this.txMgrLookup = txMgrLookup;
-        this.txSerializableEnabled = txSerializableEnabled;
-        this.offHeapMaxMemory = offHeapMaxMemory;
-        this.maxQueryIteratorCnt = maxQueryIteratorCnt;
-        this.maxConcurrentAsyncOps = maxConcurrentAsyncOps;
-        this.pessimisticTxLogSize = pessimisticTxLogSize;
-        this.pessimisticTxLogLinger = pessimisticTxLogLinger;
-        this.memoryMode = memoryMode;
-        this.indexingSpiName = indexingSpiName;
-        this.affinity = affinity;
-        this.preload = preload;
-        this.evict = evict;
-        this.near = near;
-        this.dflt = dflt;
-        this.dgc = dgc;
-        this.store = store;
-        this.writeBehind = writeBehind;
-        this.drSendConfig = drSendConfig;
-        this.drReceiveConfig = drReceiveConfig;
+    /**
+     * Construct data transfer object for cache configuration properties.
+     *
+     * @param ccfg Cache configuration.
+     * @return cache configuration properties.
+     */
+    public static VisorCacheConfig from(GridCacheConfiguration ccfg) {
+        VisorCacheConfig cfg = new VisorCacheConfig();
+
+        cfg.name(ccfg.getName());
+        cfg.mode(ccfg.getCacheMode());
+        cfg.distributionMode(ccfg.getDistributionMode());
+        cfg.atomicityMode(ccfg.getAtomicityMode());
+        cfg.atomicSequenceReserveSize(ccfg.getAtomicSequenceReserveSize());
+        cfg.atomicWriteOrderMode(ccfg.getAtomicWriteOrderMode());
+        cfg.atomicSequenceReserveSize(ccfg.getAtomicSequenceReserveSize());
+        cfg.eagerTtl(ccfg.isEagerTtl());
+        cfg.refreshAheadRatio(ccfg.getRefreshAheadRatio());
+        cfg.writeSynchronizationMode(ccfg.getWriteSynchronizationMode());
+        cfg.swapEnabled(ccfg.isSwapEnabled());
+        cfg.queryIndexEnabled(ccfg.isQueryIndexEnabled());
+        cfg.batchUpdateOnCommit(ccfg.isBatchUpdateOnCommit());
+        cfg.invalidate(ccfg.isInvalidate());
+        cfg.startSize(ccfg.getStartSize());
+        cfg.cloner(compactClass(ccfg.getCloner()));
+        cfg.txManagerLookup(ccfg.getTransactionManagerLookupClassName());
+        cfg.txSerializableEnabled(ccfg.isTxSerializableEnabled());
+        cfg.offsetHeapMaxMemory(ccfg.getOffHeapMaxMemory());
+        cfg.maxQueryIteratorCount(ccfg.getMaximumQueryIteratorCount());
+        cfg.maxConcurrentAsyncOperations(ccfg.getMaxConcurrentAsyncOperations());
+        cfg.pessimisticTxLoggerSize(ccfg.getPessimisticTxLogSize());
+        cfg.pessimisticTxLoggerLinger(ccfg.getPessimisticTxLogLinger());
+        cfg.memoryMode(ccfg.getMemoryMode());
+        cfg.indexingSpiName(ccfg.getIndexingSpiName());
+        cfg.affinityConfig(VisorAffinityConfig.from(ccfg));
+        cfg.preloadConfig(VisorPreloadConfig.from(ccfg));
+        cfg.evictConfig(VisorEvictionConfig.from(ccfg));
+        cfg.nearConfig(VisorNearCacheConfig.from(ccfg));
+        cfg.defaultConfig(VisorDefaultConfig.from(ccfg));
+        cfg.dgcConfig(VisorDgcConfig.from(ccfg));
+        cfg.storeConfig(VisorStoreConfig.from(ccfg));
+        cfg.VisorWriteBehindConfig(VisorWriteBehindConfig.from(ccfg));
+
+        if (ccfg.getDrReceiverConfiguration() != null)
+            cfg.drReceiveConfig(VisorDrReceiverConfig.from(ccfg.getDrReceiverConfiguration()));
+
+        if (ccfg.getDrSenderConfiguration() != null)
+            cfg.drSendConfig(VisorDrSenderConfig.from(ccfg.getDrSenderConfiguration()));
+
+        return cfg;
     }
 
     /**
-     * @return Name.
+     * Construct data transfer object for cache configurations properties.
+     *
+     * @param caches cache configurations.
+     * @return cache configurations properties.
      */
-    public String name() {
+    public static Iterable<VisorCacheConfig> list(GridCacheConfiguration[] caches) {
+        if (caches == null)
+            return null;
+
+        final Collection<VisorCacheConfig> cfgs = new ArrayList<>(caches.length);
+
+        for (GridCacheConfiguration cache : caches)
+            cfgs.add(from(cache));
+
+        return cfgs;
+    }
+
+    /**
+     * @return Cache name.
+     */
+    @Nullable public String name() {
         return name;
     }
 
     /**
-     * @return Mode.
+     * @param name New cache name.
+     */
+    public void name(@Nullable String name) {
+        this.name = name;
+    }
+
+    /**
+     * @return Cache mode.
      */
     public GridCacheMode mode() {
         return mode;
+    }
+
+    /**
+     * @param mode New cache mode.
+     */
+    public void mode(GridCacheMode mode) {
+        this.mode = mode;
     }
 
     /**
@@ -227,10 +236,24 @@ public class VisorCacheConfig implements Serializable {
     }
 
     /**
+     * @param distributionMode New distribution mode.
+     */
+    public void distributionMode(GridCacheDistributionMode distributionMode) {
+        this.distributionMode = distributionMode;
+    }
+
+    /**
      * @return Cache atomicity mode
      */
     public GridCacheAtomicityMode atomicityMode() {
         return atomicityMode;
+    }
+
+    /**
+     * @param atomicityMode New cache atomicity mode
+     */
+    public void atomicityMode(GridCacheAtomicityMode atomicityMode) {
+        this.atomicityMode = atomicityMode;
     }
 
     /**
@@ -241,6 +264,13 @@ public class VisorCacheConfig implements Serializable {
     }
 
     /**
+     * @param atomicSeqReserveSize New cache atomic sequence reserve size
+     */
+    public void atomicSequenceReserveSize(int atomicSeqReserveSize) {
+        atomicSequenceReserveSize = atomicSeqReserveSize;
+    }
+
+    /**
      * @return Cache atomicity write ordering mode.
      */
     public GridCacheAtomicWriteOrderMode atomicWriteOrderMode() {
@@ -248,17 +278,24 @@ public class VisorCacheConfig implements Serializable {
     }
 
     /**
-     * @return Ttl.
+     * @param atomicWriteOrderMode New cache atomicity write ordering mode.
      */
-    public long ttl() {
-        return ttl;
+    public void atomicWriteOrderMode(GridCacheAtomicWriteOrderMode atomicWriteOrderMode) {
+        this.atomicWriteOrderMode = atomicWriteOrderMode;
     }
 
     /**
-     * @return Eager ttl flag.
+     * @return Eager ttl flag
      */
     public boolean eagerTtl() {
         return eagerTtl;
+    }
+
+    /**
+     * @param eagerTtl New eager ttl flag
+     */
+    public void eagerTtl(boolean eagerTtl) {
+        this.eagerTtl = eagerTtl;
     }
 
     /**
@@ -269,10 +306,24 @@ public class VisorCacheConfig implements Serializable {
     }
 
     /**
+     * @param refreshAheadRatio New refresh ahead ratio.
+     */
+    public void refreshAheadRatio(double refreshAheadRatio) {
+        this.refreshAheadRatio = refreshAheadRatio;
+    }
+
+    /**
      * @return Write synchronization mode.
      */
     public GridCacheWriteSynchronizationMode writeSynchronizationMode() {
         return writeSynchronizationMode;
+    }
+
+    /**
+     * @param writeSynchronizationMode New write synchronization mode.
+     */
+    public void writeSynchronizationMode(GridCacheWriteSynchronizationMode writeSynchronizationMode) {
+        this.writeSynchronizationMode = writeSynchronizationMode;
     }
 
     /**
@@ -283,24 +334,53 @@ public class VisorCacheConfig implements Serializable {
     }
 
     /**
-     * @return Swap enabled.
+     * @param seqReserveSize New sequence reserve size.
+     */
+    public void sequenceReserveSize(int seqReserveSize) {
+        this.seqReserveSize = seqReserveSize;
+    }
+
+    /**
+     * @return Swap enabled flag.
      */
     public boolean swapEnabled() {
         return swapEnabled;
     }
 
     /**
-     * @return Query index enabled.
+     * @param swapEnabled New swap enabled flag.
+     */
+    public void swapEnabled(boolean swapEnabled) {
+        this.swapEnabled = swapEnabled;
+    }
+
+    /**
+     * @return Flag indicating whether GridGain should attempt to index value and/or key instances stored in cache.
      */
     public boolean queryIndexEnabled() {
         return queryIndexEnabled;
     }
 
     /**
-     * @return Tx batch update.
+     * @param qryIdxEnabled New flag indicating whether GridGain should attempt to index value and/or key instances
+     * stored in cache.
      */
-    public boolean txBatchUpdate() {
-        return txBatchUpdate;
+    public void queryIndexEnabled(boolean qryIdxEnabled) {
+        queryIndexEnabled = qryIdxEnabled;
+    }
+
+    /**
+     * @return Flag indicating whether to persist once on commit, or after every operation.
+     */
+    public boolean batchUpdateOnCommit() {
+        return batchUpdateOnCommit;
+    }
+
+    /**
+     * @param batchUpdateOnCommit New batch update on commit.
+     */
+    public void batchUpdateOnCommit(boolean batchUpdateOnCommit) {
+        this.batchUpdateOnCommit = batchUpdateOnCommit;
     }
 
     /**
@@ -311,10 +391,24 @@ public class VisorCacheConfig implements Serializable {
     }
 
     /**
+     * @param invalidate New invalidate.
+     */
+    public void invalidate(boolean invalidate) {
+        this.invalidate = invalidate;
+    }
+
+    /**
      * @return Start size.
      */
     public int startSize() {
         return startSize;
+    }
+
+    /**
+     * @param startSize New start size.
+     */
+    public void startSize(int startSize) {
+        this.startSize = startSize;
     }
 
     /**
@@ -325,6 +419,13 @@ public class VisorCacheConfig implements Serializable {
     }
 
     /**
+     * @param cloner New cloner.
+     */
+    public void cloner(@Nullable String cloner) {
+        this.cloner = cloner;
+    }
+
+    /**
      * @return Tx manager lookup.
      */
     @Nullable public String txManagerLookup() {
@@ -332,73 +433,24 @@ public class VisorCacheConfig implements Serializable {
     }
 
     /**
-     * @return Tx serializable enabled.
+     * @param txMgrLookup New tx manager lookup.
+     */
+    public void txManagerLookup(@Nullable String txMgrLookup) {
+        this.txMgrLookup = txMgrLookup;
+    }
+
+    /**
+     * @return Flag to enable/disable transaction serializable isolation level.
      */
     public boolean txSerializableEnabled() {
         return txSerializableEnabled;
     }
 
     /**
-     * @return Affinity config.
+     * @param txSerEnabled New flag to enable/disable transaction serializable isolation level.
      */
-    public VisorAffinityConfig affinity() {
-        return affinity;
-    }
-
-    /**
-     * @return Preload config.
-     */
-    public VisorPreloadConfig preload() {
-        return preload;
-    }
-
-    /**
-     * @return Evict config.
-     */
-    public VisorEvictionConfig evict() {
-        return evict;
-    }
-
-    /**
-     * @return Near cache config.
-     */
-    public VisorNearCacheConfig near() {
-        return near;
-    }
-
-    /**
-     * @return Default config.
-     */
-    public VisorDefaultConfig defaultConfig() {
-        return dflt;
-    }
-
-    /**
-     * @return Dgc config.
-     */
-    public VisorDgcConfig dgc() {
-        return dgc;
-    }
-
-    /**
-     * @return Store config.
-     */
-    public VisorStoreConfig store() {
-        return store;
-    }
-
-    /**
-     * @return Data center replication send configuration. *
-     */
-    @Nullable public VisorDrSenderConfig drSendConfig() {
-        return drSendConfig;
-    }
-
-    /**
-     * @return Data center replication receive configuration.
-     */
-    @Nullable public VisorDrReceiverConfig drReceiveConfig() {
-        return drReceiveConfig;
+    public void txSerializableEnabled(boolean txSerEnabled) {
+        txSerializableEnabled = txSerEnabled;
     }
 
     /**
@@ -409,31 +461,52 @@ public class VisorCacheConfig implements Serializable {
     }
 
     /**
-     * @return Max query iterator count.
+     * @param offHeapMaxMemory New off-heap max memory.
+     */
+    public void offsetHeapMaxMemory(long offHeapMaxMemory) {
+        this.offHeapMaxMemory = offHeapMaxMemory;
+    }
+
+    /**
+     * @return Max query iterator count
      */
     public int maxQueryIteratorCount() {
         return maxQueryIteratorCnt;
     }
 
     /**
-     * @return Max concurrent async operations.
+     * @param maxQryIterCnt New max query iterator count
+     */
+    public void maxQueryIteratorCount(int maxQryIterCnt) {
+        maxQueryIteratorCnt = maxQryIterCnt;
+    }
+
+    /**
+     * @return Max concurrent async operations
      */
     public int maxConcurrentAsyncOperations() {
         return maxConcurrentAsyncOps;
     }
 
     /**
-     * @return Write behind config.
+     * @param maxConcurrentAsyncOps New max concurrent async operations
      */
-    public VisorWriteBehindConfig writeBehind() {
-        return writeBehind;
+    public void maxConcurrentAsyncOperations(int maxConcurrentAsyncOps) {
+        this.maxConcurrentAsyncOps = maxConcurrentAsyncOps;
     }
 
     /**
-     * @return Pessimistic tx logger size.
+     * @return Pessimistic tx logger size
      */
     public int pessimisticTxLoggerSize() {
         return pessimisticTxLogSize;
+    }
+
+    /**
+     * @param pessimisticTxLogSize New pessimistic tx logger size
+     */
+    public void pessimisticTxLoggerSize(int pessimisticTxLogSize) {
+        this.pessimisticTxLogSize = pessimisticTxLogSize;
     }
 
     /**
@@ -444,6 +517,13 @@ public class VisorCacheConfig implements Serializable {
     }
 
     /**
+     * @param pessimisticTxLogLinger New pessimistic tx logger linger.
+     */
+    public void pessimisticTxLoggerLinger(int pessimisticTxLogLinger) {
+        this.pessimisticTxLogLinger = pessimisticTxLogLinger;
+    }
+
+    /**
      * @return Memory mode.
      */
     public GridCacheMemoryMode memoryMode() {
@@ -451,9 +531,169 @@ public class VisorCacheConfig implements Serializable {
     }
 
     /**
-     * @return Indexing spi name.
+     * @param memoryMode New memory mode.
+     */
+    public void memoryMode(GridCacheMemoryMode memoryMode) {
+        this.memoryMode = memoryMode;
+    }
+
+    /**
+     * @return Name of SPI to use for indexing.
      */
     public String indexingSpiName() {
         return indexingSpiName;
     }
+
+    /**
+     * @param indexingSpiName New name of SPI to use for indexing.
+     */
+    public void indexingSpiName(String indexingSpiName) {
+        this.indexingSpiName = indexingSpiName;
+    }
+
+    /**
+     * @return Cache affinity config.
+     */
+    public VisorAffinityConfig affinityConfig() {
+        return affinity;
+    }
+
+    /**
+     * @param affinity New cache affinity config.
+     */
+    public void affinityConfig(VisorAffinityConfig affinity) {
+        this.affinity = affinity;
+    }
+
+    /**
+     * @return Preload config.
+     */
+    public VisorPreloadConfig preloadConfig() {
+        return preload;
+    }
+
+    /**
+     * @param preload New preload config.
+     */
+    public void preloadConfig(VisorPreloadConfig preload) {
+        this.preload = preload;
+    }
+
+    /**
+     * @return Eviction config.
+     */
+    public VisorEvictionConfig evictConfig() {
+        return evict;
+    }
+
+    /**
+     * @param evict New eviction config.
+     */
+    public void evictConfig(VisorEvictionConfig evict) {
+        this.evict = evict;
+    }
+
+    /**
+     * @return Near cache config.
+     */
+    public VisorNearCacheConfig nearConfig() {
+        return near;
+    }
+
+    /**
+     * @param near New near cache config.
+     */
+    public void nearConfig(VisorNearCacheConfig near) {
+        this.near = near;
+    }
+
+    /**
+     * @return Dgc config
+     */
+    public VisorDefaultConfig defaultConfig() {
+        return dflt;
+    }
+
+    /**
+     * @param dflt New default config
+     */
+    public void defaultConfig(VisorDefaultConfig dflt) {
+        this.dflt = dflt;
+    }
+
+    /**
+     * @return Dgc config
+     */
+    public VisorDgcConfig dgcConfig() {
+        return dgc;
+    }
+
+    /**
+     * @param dgc New dgc config
+     */
+    public void dgcConfig(VisorDgcConfig dgc) {
+        this.dgc = dgc;
+    }
+
+    /**
+     * @return Store config
+     */
+    public VisorStoreConfig storeConfig() {
+        return store;
+    }
+
+    /**
+     * @param store New store config
+     */
+    public void storeConfig(VisorStoreConfig store) {
+        this.store = store;
+    }
+
+    /**
+     * @return Write behind config
+     */
+    public VisorWriteBehindConfig writeBehind() {
+        return writeBehind;
+    }
+
+    /**
+     * @param writeBehind New write behind config
+     */
+    public void VisorWriteBehindConfig(VisorWriteBehindConfig writeBehind) {
+        this.writeBehind = writeBehind;
+    }
+
+    /**
+     * @return Data center replication send configuration. *
+     */
+    @Nullable public VisorDrSenderConfig drSendConfig() {
+        return drSendConfig;
+    }
+
+    /**
+     * @param drSndCfg New data center replication send configuration. *
+     */
+    public void drSendConfig(@Nullable VisorDrSenderConfig drSndCfg) {
+        drSendConfig = drSndCfg;
+    }
+
+    /**
+     * @return Data center replication receive configuration.
+     */
+    @Nullable public VisorDrReceiverConfig drReceiveConfig() {
+        return drReceiveConfig;
+    }
+
+    /**
+     * @param drRcvCfg New data center replication receive configuration.
+     */
+    public void drReceiveConfig(@Nullable VisorDrReceiverConfig drRcvCfg) {
+        drReceiveConfig = drRcvCfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorCacheConfig.class, this);
+    }
+
 }

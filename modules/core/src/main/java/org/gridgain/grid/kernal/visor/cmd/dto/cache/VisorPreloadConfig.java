@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.visor.cmd.dto.cache;
 
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 
@@ -21,38 +22,40 @@ public class VisorPreloadConfig implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Cache preload mode. */
-    private final GridCachePreloadMode mode;
+    private GridCachePreloadMode mode;
 
-    /** Preload pool size. */
-    private final int poolSize;
+    /** Preload thread pool size. */
+    private int threadPoolSize;
 
     /** Cache preload batch size. */
-    private final int batchSize;
+    private int batchSize;
 
     /** Preloading partitioned delay. */
-    private final long partitionedDelay;
+    private long partitionedDelay;
 
     /** Time in milliseconds to wait between preload messages. */
-    private final long throttle;
+    private long throttle;
 
     /** Preload timeout. */
-    private final long timeout;
+    private long timeout;
 
-    /** Create data transfer object with given parameters. */
-    public VisorPreloadConfig(
-        GridCachePreloadMode mode,
-        int poolSize,
-        int batchSize,
-        long partitionedDelay,
-        long throttle,
-        long timeout
-    ) {
-        this.mode = mode;
-        this.poolSize = poolSize;
-        this.batchSize = batchSize;
-        this.partitionedDelay = partitionedDelay;
-        this.throttle = throttle;
-        this.timeout = timeout;
+    /**
+     * Construct data transfer object for near cache configuration properties.
+     *
+     * @param ccfg Cache configuration.
+     * @return Near cache configuration properties
+     */
+    public static VisorPreloadConfig from(GridCacheConfiguration ccfg) {
+        VisorPreloadConfig cfg = new VisorPreloadConfig();
+
+        cfg.mode(ccfg.getPreloadMode());
+        cfg.batchSize(ccfg.getPreloadBatchSize());
+        cfg.threadPoolSize(ccfg.getPreloadThreadPoolSize());
+        cfg.partitionedDelay(ccfg.getPreloadPartitionedDelay());
+        cfg.throttle(ccfg.getPreloadThrottle());
+        cfg.timeout(ccfg.getPreloadTimeout());
+
+        return cfg;
     }
 
     /**
@@ -63,10 +66,24 @@ public class VisorPreloadConfig implements Serializable {
     }
 
     /**
-     * @return Preload pool size.
+     * @param mode New cache preload mode.
      */
-    public int poolSize() {
-        return poolSize;
+    public void mode(GridCachePreloadMode mode) {
+        this.mode = mode;
+    }
+
+    /**
+     * @return Preload thread pool size.
+     */
+    public int threadPoolSize() {
+        return threadPoolSize;
+    }
+
+    /**
+     * @param threadPoolSize New preload thread pool size.
+     */
+    public void threadPoolSize(int threadPoolSize) {
+        this.threadPoolSize = threadPoolSize;
     }
 
     /**
@@ -77,10 +94,24 @@ public class VisorPreloadConfig implements Serializable {
     }
 
     /**
-     * @return Partitioned delay.
+     * @param batchSize New cache preload batch size.
+     */
+    public void batchSize(int batchSize) {
+        this.batchSize = batchSize;
+    }
+
+    /**
+     * @return Preloading partitioned delay.
      */
     public long partitionedDelay() {
         return partitionedDelay;
+    }
+
+    /**
+     * @param partitionedDelay New preloading partitioned delay.
+     */
+    public void partitionedDelay(long partitionedDelay) {
+        this.partitionedDelay = partitionedDelay;
     }
 
     /**
@@ -91,9 +122,28 @@ public class VisorPreloadConfig implements Serializable {
     }
 
     /**
+     * @param throttle New time in milliseconds to wait between preload messages.
+     */
+    public void throttle(long throttle) {
+        this.throttle = throttle;
+    }
+
+    /**
      * @return Preload timeout.
      */
     public long timeout() {
         return timeout;
+    }
+
+    /**
+     * @param timeout New preload timeout.
+     */
+    public void timeout(long timeout) {
+        this.timeout = timeout;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorPreloadConfig.class, this);
     }
 }

@@ -19,7 +19,7 @@ import org.gridgain.grid.kernal.GridComponentType._
 import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.gridgain.grid.kernal.processors.spring.GridSpringProcessor
 import org.gridgain.grid.kernal.processors.task.GridInternal
-import org.gridgain.grid.lang.{GridBiTuple, GridCallable, GridPredicate}
+import org.gridgain.grid.lang.{GridCallable, GridPredicate}
 import org.gridgain.grid.resources.GridInstanceResource
 import org.gridgain.grid.spi.communication.tcp.GridTcpCommunicationSpi
 import org.gridgain.grid.thread._
@@ -31,7 +31,7 @@ import org.gridgain.grid.util.typedef._
 import java.io._
 import java.net._
 import java.text._
-import java.util._
+import java.util.{Set => JavaSet, _}
 import java.util.concurrent._
 
 import scala.collection.immutable
@@ -1177,20 +1177,6 @@ object visor extends VisorTag {
     }
 
     /**
-     * ==Alias==
-     * Prints visor status. This is an alias for `status` command.
-     *
-     * ==Example==
-     * <ex>! -q</ex>
-     * Prints visor status without ASCII logo.
-     *
-     * @param args Optional "-q" flag to disable ASCII logo printout.
-     */
-    def !(args: String) {
-        status(args)
-    }
-
-    /**
      * ==Command==
      * Prints visor status (with ASCII logo).
      *
@@ -1200,18 +1186,6 @@ object visor extends VisorTag {
      */
     def status() {
         status("")
-    }
-
-    /**
-     * ==Alias==
-     * Prints visor status. This is an alias for `status` command.
-     *
-     * ==Example==
-     * <ex>status</ex>
-     * Prints visor status.
-     */
-    def `!`() {
-        status(null)
     }
 
     /**
@@ -1319,32 +1293,6 @@ object visor extends VisorTag {
      */
     def help() {
         help("")
-    }
-
-    /**
-     * ==Alias==
-     * Prints help. This is an alias for `help` command.
-     *
-     * ==Example==
-     * <ex>help open</ex>
-     * Prints help for 'open' command.
-     *
-     * @param args List of commands to print help for. If `null` or empty - prints generic help.
-     */
-    def ?(args: String = "") {
-        help(args)
-    }
-
-    /**
-     * ==Alias==
-     * Prints help. This is an alias for `help` command.
-     *
-     * ==Example==
-     * <ex>help</ex>
-     * Prints help.
-     */
-    def `?`() {
-        help()
     }
 
     /**
@@ -1727,6 +1675,9 @@ object visor extends VisorTag {
         else
             formatDouble(v) + " %"
     }
+
+    /** Convert scala `Iterable` to `java.util.Set`. */
+    def toJavaSet[T](it: Iterable[T]): JavaSet[T] = new java.util.HashSet[T](asJavaCollection(it))
 
     /**
      * Asks user to select a node from the list.
@@ -2476,7 +2427,7 @@ object visor extends VisorTag {
 
         nl()
 
-        `?`()
+        help()
     }
 
     lazy val commands = cmdLst.map(_.name) ++ cmdLst.map(_.aliases).flatten

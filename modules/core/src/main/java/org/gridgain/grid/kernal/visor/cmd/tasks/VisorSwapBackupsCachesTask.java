@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.kernal.visor.cmd.tasks;
 
-import org.gridgain.grid.GridException;
-import org.gridgain.grid.cache.GridCache;
-import org.gridgain.grid.cache.GridCacheEntry;
-import org.gridgain.grid.kernal.processors.task.GridInternal;
+import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
+import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
 
@@ -22,10 +22,10 @@ import java.util.*;
  */
 @GridInternal
 public class VisorSwapBackupsCachesTask extends
-    VisorOneNodeTask<VisorOneNodeNamesArg, VisorNamedBeforeAfterTaskResult> {
+    VisorOneNodeTask<VisorOneNodeNamesArg, Map<String, T2<Integer, Integer>>> {
     @SuppressWarnings("PublicInnerClass")
     public static class VisorSwapBackupsCachesJob
-        extends VisorOneNodeJob<VisorOneNodeNamesArg, VisorNamedBeforeAfterTaskResult> {
+        extends VisorOneNodeJob<VisorOneNodeNamesArg, Map<String, T2<Integer, Integer>>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -39,23 +39,23 @@ public class VisorSwapBackupsCachesTask extends
         }
 
         @Override
-        protected VisorNamedBeforeAfterTaskResult run(VisorOneNodeNamesArg arg) throws GridException {
-            VisorNamedBeforeAfterTaskResult total = new VisorNamedBeforeAfterTaskResult();
+        protected Map<String, T2<Integer, Integer>> run(VisorOneNodeNamesArg arg) throws GridException {
+            Map<String, T2<Integer, Integer>> total = new HashMap<>();
 
             for (GridCache c: g.cachesx()) {
                 String cacheName = c.name();
 
                 if (arg.names().contains(cacheName)) {
-                    final Set<GridCacheEntry> entries = c.entrySet();
+                    Set<GridCacheEntry> entries = c.entrySet();
 
-                    long before = entries.size(), after = before;
+                    int before = entries.size(), after = before;
 
                     for (GridCacheEntry entry: entries) {
                         if (entry.backup() && entry.evict())
                             after--;
                     }
 
-                    total.put(cacheName, new VisorBeforeAfterResult(before, after));
+                    total.put(cacheName, new T2<>(before, after));
                 }
             }
 

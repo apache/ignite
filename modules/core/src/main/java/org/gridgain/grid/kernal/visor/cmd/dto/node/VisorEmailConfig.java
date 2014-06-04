@@ -9,7 +9,14 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
+import org.gridgain.grid.*;
+import org.gridgain.grid.util.typedef.internal.*;
+
 import java.io.*;
+import static java.lang.System.*;
+
+import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.*;
 
 /**
  * Data transfer object for node email configuration properties.
@@ -19,57 +26,86 @@ public class VisorEmailConfig implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** SMTP host. */
-    private final String smtpHost;
+    private String smtpHost;
 
     /** SMTP port. */
-    private final int smtpPort;
+    private int smtpPort;
 
     /** SMTP user name. */
-    private final String smtpUsername;
+    private String smtpUsername;
 
     /** SMTP admin emails. */
-    private final String adminEmails;
+    private String adminEmails;
 
     /** From email address. */
-    private final String smtpFromEmail;
+    private String smtpFromEmail;
 
     /** Whether or not to use SSL for SMTP. */
-    private final boolean smtpSsl;
+    private boolean smtpSsl;
 
     /** Whether or not to use TLS for SMTP. */
-    private final boolean smtpStartTls;
+    private boolean smtpStartTls;
 
-    /** Create data transfer object with given parameters. */
-    public VisorEmailConfig(String smtpHost, int smtpPort, String smtpUsername, String adminEmails,
-        String smtpFromEmail, boolean smtpSsl, boolean smtpStartTls) {
-        this.smtpHost = smtpHost;
-        this.smtpPort = smtpPort;
-        this.smtpUsername = smtpUsername;
-        this.adminEmails = adminEmails;
-        this.smtpFromEmail = smtpFromEmail;
-        this.smtpSsl = smtpSsl;
-        this.smtpStartTls = smtpStartTls;
+    /**
+     * Construct data transfer object for node email configuration properties.
+     *
+     * @param c Grid configuration.
+     * @return node email configuration properties.
+     */
+    public static VisorEmailConfig from(GridConfiguration c) {
+        VisorEmailConfig cfg = new VisorEmailConfig();
+
+        cfg.smtpHost(getProperty(GG_SMTP_HOST, c.getSmtpHost()));
+        cfg.smtpPort(intValue(GG_SMTP_PORT, c.getSmtpPort()));
+        cfg.smtpUsername(getProperty(GG_SMTP_USERNAME, c.getSmtpUsername()));
+        cfg.adminEmails(getProperty(GG_ADMIN_EMAILS, compactArray(c.getAdminEmails())));
+        cfg.smtpFromEmail(getProperty(GG_SMTP_FROM, c.getSmtpFromEmail()));
+        cfg.smtpSsl(boolValue(GG_SMTP_SSL, c.isSmtpSsl()));
+        cfg.smtpStartTls(boolValue(GG_SMTP_STARTTLS, c.isSmtpStartTls()));
+
+        return cfg;
     }
 
     /**
-     * @return Smtp host.
+     * @return SMTP host.
      */
     public String smtpHost() {
         return smtpHost;
     }
 
     /**
-     * @return Smtp port.
+     * @param smtpHost New SMTP host.
+     */
+    public void smtpHost(String smtpHost) {
+        this.smtpHost = smtpHost;
+    }
+
+    /**
+     * @return SMTP port.
      */
     public int smtpPort() {
         return smtpPort;
     }
 
     /**
-     * @return Smtp user name.
+     * @param smtpPort New SMTP port.
+     */
+    public void smtpPort(int smtpPort) {
+        this.smtpPort = smtpPort;
+    }
+
+    /**
+     * @return SMTP user name.
      */
     public String smtpUsername() {
         return smtpUsername;
+    }
+
+    /**
+     * @param smtpUsername New SMTP user name.
+     */
+    public void smtpUsername(String smtpUsername) {
+        this.smtpUsername = smtpUsername;
     }
 
     /**
@@ -80,10 +116,24 @@ public class VisorEmailConfig implements Serializable {
     }
 
     /**
+     * @param adminEmails New SMTP admin emails.
+     */
+    public void adminEmails(String adminEmails) {
+        this.adminEmails = adminEmails;
+    }
+
+    /**
      * @return From email address.
      */
     public String smtpFromEmail() {
         return smtpFromEmail;
+    }
+
+    /**
+     * @param smtpFromEmail New from email address.
+     */
+    public void smtpFromEmail(String smtpFromEmail) {
+        this.smtpFromEmail = smtpFromEmail;
     }
 
     /**
@@ -94,9 +144,28 @@ public class VisorEmailConfig implements Serializable {
     }
 
     /**
+     * @param smtpSsl New whether or not to use SSL for SMTP.
+     */
+    public void smtpSsl(boolean smtpSsl) {
+        this.smtpSsl = smtpSsl;
+    }
+
+    /**
      * @return Whether or not to use TLS for SMTP.
      */
     public boolean smtpStartTls() {
         return smtpStartTls;
+    }
+
+    /**
+     * @param smtpStartTls New whether or not to use TLS for SMTP.
+     */
+    public void smtpStartTls(boolean smtpStartTls) {
+        this.smtpStartTls = smtpStartTls;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorEmailConfig.class, this);
     }
 }

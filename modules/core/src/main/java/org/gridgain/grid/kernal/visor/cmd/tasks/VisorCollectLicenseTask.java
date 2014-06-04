@@ -38,8 +38,8 @@ public class VisorCollectLicenseTask extends VisorMultiNodeTask<VisorMultiNodeAr
             super(arg);
         }
 
-        @Override protected VisorLicense run(VisorMultiNodeArg arg) throws GridException {
-            return VisorLicense.create(g);
+        @Nullable @Override protected VisorLicense run(VisorMultiNodeArg arg) throws GridException {
+            return VisorLicense.from(g);
         }
     }
 
@@ -47,6 +47,7 @@ public class VisorCollectLicenseTask extends VisorMultiNodeTask<VisorMultiNodeAr
         return new VisorCollectLicenseJob(arg);
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public Iterable<T2<UUID, VisorLicense>> reduce(List<GridComputeJobResult> results) throws GridException {
         Collection<T2<UUID, VisorLicense>> licenses = new ArrayList<>(results.size());
 

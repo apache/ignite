@@ -9,7 +9,14 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
+import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.streamer.*;
+import org.jetbrains.annotations.*;
+
 import java.io.*;
+import java.util.*;
+
+import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.*;
 
 /**
  * Data transfer object for streamer configuration properties.
@@ -19,52 +26,87 @@ public class VisorStreamerConfig implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Streamer name. */
-    private final String name;
+    private String name;
 
     /** Events router. */
-    private final String router;
+    private String router;
 
     /** Flag indicating whether event should be processed at least once. */
-    private final boolean atLeastOnce;
+    private boolean atLeastOnce;
 
     /** Maximum number of failover attempts to try. */
-    private final int maxFailoverAttempts;
+    private int maxFailoverAttempts;
 
     /** Maximum number of concurrent events to be processed. */
-    private final int maxConcurrentSessions;
+    private int maxConcurrentSessions;
 
     /** Flag indicating whether streamer executor service should be shut down on GridGain stop. */
-    private final boolean executorServiceShutdown;
+    private boolean executorServiceShutdown;
 
-    /** Create data transfer object with given parameters. */
-    public VisorStreamerConfig(
-        String name,
-        String router,
-        boolean atLeastOnce,
-        int maxFailoverAttempts,
-        int maxConcurrentSessions,
-        boolean executorServiceShutdown
-    ) {
-        this.name = name;
-        this.router = router;
-        this.atLeastOnce = atLeastOnce;
-        this.maxFailoverAttempts = maxFailoverAttempts;
-        this.maxConcurrentSessions = maxConcurrentSessions;
-        this.executorServiceShutdown = executorServiceShutdown;
+    /**
+     * Construct data transfer object for streamer configuration properties.
+     *
+     * @param scfg Streamer configuration.
+     * @return streamer configuration properties.
+     */
+    public static VisorStreamerConfig from(GridStreamerConfiguration scfg) {
+        VisorStreamerConfig cfg = new VisorStreamerConfig();
+
+        cfg.name(scfg.getName());
+        cfg.router(compactClass(scfg.getRouter()));
+        cfg.atLeastOnce(scfg.isAtLeastOnce());
+        cfg.maximumFailoverAttempts(scfg.getMaximumFailoverAttempts());
+        cfg.maximumConcurrentSessions(scfg.getMaximumConcurrentSessions());
+        cfg.executorServiceShutdown(scfg.isExecutorServiceShutdown());
+
+        return cfg;
+    }
+
+
+    /**
+     * Construct data transfer object for streamer configurations properties.
+     *
+     * @param streamers streamer configurations.
+     * @return streamer configurations properties.
+     */
+    public static Iterable<VisorStreamerConfig> list(GridStreamerConfiguration[] streamers) {
+        if (streamers == null)
+            return null;
+
+        final Collection<VisorStreamerConfig> cfgs = new ArrayList<>(streamers.length);
+
+        for (GridStreamerConfiguration streamer : streamers)
+            cfgs.add(from(streamer));
+
+        return cfgs;
     }
 
     /**
      * @return Streamer name.
      */
-    public String name() {
+    @Nullable public String name() {
         return name;
+    }
+
+    /**
+     * @param name New streamer name.
+     */
+    public void name(@Nullable String name) {
+        this.name = name;
     }
 
     /**
      * @return Events router.
      */
-    public String router() {
+    @Nullable public String router() {
         return router;
+    }
+
+    /**
+     * @param router New events router.
+     */
+    public void router(@Nullable String router) {
+        this.router = router;
     }
 
     /**
@@ -75,17 +117,38 @@ public class VisorStreamerConfig implements Serializable {
     }
 
     /**
+     * @param atLeastOnce New flag indicating whether event should be processed at least once.
+     */
+    public void atLeastOnce(boolean atLeastOnce) {
+        this.atLeastOnce = atLeastOnce;
+    }
+
+    /**
      * @return Maximum number of failover attempts to try.
      */
-    public int maxFailoverAttempts() {
+    public int maximumFailoverAttempts() {
         return maxFailoverAttempts;
+    }
+
+    /**
+     * @param maxFailoverAttempts New maximum number of failover attempts to try.
+     */
+    public void maximumFailoverAttempts(int maxFailoverAttempts) {
+        this.maxFailoverAttempts = maxFailoverAttempts;
     }
 
     /**
      * @return Maximum number of concurrent events to be processed.
      */
-    public int maxConcurrentSessions() {
+    public int maximumConcurrentSessions() {
         return maxConcurrentSessions;
+    }
+
+    /**
+     * @param maxConcurrentSessions New maximum number of concurrent events to be processed.
+     */
+    public void maximumConcurrentSessions(int maxConcurrentSessions) {
+        this.maxConcurrentSessions = maxConcurrentSessions;
     }
 
     /**
@@ -93,5 +156,13 @@ public class VisorStreamerConfig implements Serializable {
      */
     public boolean executorServiceShutdown() {
         return executorServiceShutdown;
+    }
+
+    /**
+     * @param executorSrvcShutdown New flag indicating whether streamer executor service should be shut down on GridGain
+     * stop.
+     */
+    public void executorServiceShutdown(boolean executorSrvcShutdown) {
+        executorServiceShutdown = executorSrvcShutdown;
     }
 }

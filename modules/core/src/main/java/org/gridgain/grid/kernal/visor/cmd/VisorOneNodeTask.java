@@ -62,6 +62,7 @@ public abstract class VisorOneNodeTask<A extends VisorOneNodeArg, R> implements 
         throw res.getException();
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public R reduce(List<GridComputeJobResult> results) throws GridException {
         assert results.size() == 1;
 

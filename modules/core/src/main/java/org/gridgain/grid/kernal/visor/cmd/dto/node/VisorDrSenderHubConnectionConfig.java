@@ -10,6 +10,8 @@
 package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
 import org.gridgain.grid.dr.hub.receiver.*;
+import org.gridgain.grid.dr.hub.sender.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -22,33 +24,39 @@ public class VisorDrSenderHubConnectionConfig implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** ID of remote data center this replica works with. */
-    private final Byte dataCenterId;
+    private Byte dataCenterId;
 
     /** Addresses of remote receiver hubs. */
-    private final String[] receiverHubAddresses;
+    private String[] receiverHubAddresses;
 
     /** Local network interface name to which this replica hub will be bound to. */
-    private final String localOutboundHost;
+    private String localOutboundHost;
 
     /** Replica hub selection strategy. */
-    private final GridDrReceiverHubLoadBalancingMode receiverHubLoadBalancingMode;
+    private GridDrReceiverHubLoadBalancingMode receiverHubLoadBalancingMode;
 
     /** IDs of data centers updates from which will not be replicated to this remote data center. */
-    private final byte[] ignoredDataCenterIds;
+    private byte[] ignoredDataCenterIds;
 
-    /** Create data transfer object with given parameters. */
-    public VisorDrSenderHubConnectionConfig(
-        Byte dataCenterId,
-        String[] receiverHubAddresses,
-        @Nullable String localOutboundHost,
-        GridDrReceiverHubLoadBalancingMode receiverHubLoadBalancingMode,
-        byte[] ignoredDataCenterIds
-    ) {
-        this.dataCenterId = dataCenterId;
-        this.receiverHubAddresses = receiverHubAddresses;
-        this.localOutboundHost = localOutboundHost;
-        this.receiverHubLoadBalancingMode = receiverHubLoadBalancingMode;
-        this.ignoredDataCenterIds = ignoredDataCenterIds;
+    /**
+     * Construct data transfer object for DR sender hub connection configuration properties.
+     *
+     * @param rmtCfg Data center replication sender hub connection configuration.
+     * @return DR sender hub connection configuration properties.
+     */
+    public static VisorDrSenderHubConnectionConfig from(GridDrSenderHubConnectionConfiguration rmtCfg) {
+        if (rmtCfg == null)
+            return null;
+
+        VisorDrSenderHubConnectionConfig cfg = new VisorDrSenderHubConnectionConfig();
+
+        cfg.dataCenterId(rmtCfg.getDataCenterId());
+        cfg.receiverHubAddresses(rmtCfg.getReceiverHubAddresses());
+        cfg.localOutboundHost(rmtCfg.getLocalOutboundHost());
+        cfg.receiverHubLoadBalancingMode(rmtCfg.getReceiverHubLoadBalancingMode());
+        cfg.ignoredDataCenterIds(rmtCfg.getIgnoredDataCenterIds());
+
+        return cfg;
     }
 
     /**
@@ -59,10 +67,24 @@ public class VisorDrSenderHubConnectionConfig implements Serializable {
     }
 
     /**
+     * @param dataCenterId New iD of remote data center this replica works with.
+     */
+    public void dataCenterId(Byte dataCenterId) {
+        this.dataCenterId = dataCenterId;
+    }
+
+    /**
      * @return Addresses of remote receiver hubs.
      */
     public String[] receiverHubAddresses() {
         return receiverHubAddresses;
+    }
+
+    /**
+     * @param receiverHubAddrs New addresses of remote receiver hubs.
+     */
+    public void receiverHubAddresses(String[] receiverHubAddrs) {
+        receiverHubAddresses = receiverHubAddrs;
     }
 
     /**
@@ -73,6 +95,13 @@ public class VisorDrSenderHubConnectionConfig implements Serializable {
     }
 
     /**
+     * @param locOutboundHost New local network interface name to which this replica hub will be bound to.
+     */
+    public void localOutboundHost(@Nullable String locOutboundHost) {
+        localOutboundHost = locOutboundHost;
+    }
+
+    /**
      * @return Replica hub selection strategy.
      */
     public GridDrReceiverHubLoadBalancingMode receiverHubLoadBalancingMode() {
@@ -80,9 +109,29 @@ public class VisorDrSenderHubConnectionConfig implements Serializable {
     }
 
     /**
+     * @param receiverHubLoadBalancingMode New replica hub selection strategy.
+     */
+    public void receiverHubLoadBalancingMode(GridDrReceiverHubLoadBalancingMode receiverHubLoadBalancingMode) {
+        this.receiverHubLoadBalancingMode = receiverHubLoadBalancingMode;
+    }
+
+    /**
      * @return IDs of data centers updates from which will not be replicated to this remote data center.
      */
     public byte[] ignoredDataCenterIds() {
         return ignoredDataCenterIds;
+    }
+
+    /**
+     * @param ignoredDataCenterIds New iDs of data centers updates from which will not be replicated to
+     * this remote data  center.
+     */
+    public void ignoredDataCenterIds(byte[] ignoredDataCenterIds) {
+        this.ignoredDataCenterIds = ignoredDataCenterIds;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorDrSenderHubConnectionConfig.class, this);
     }
 }

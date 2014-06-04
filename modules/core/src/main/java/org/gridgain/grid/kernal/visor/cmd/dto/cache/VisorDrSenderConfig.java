@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.visor.cmd.dto.cache;
 
 import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.dr.hub.sender.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 
@@ -22,43 +23,44 @@ public class VisorDrSenderConfig implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Data center replication mode. */
-    private final GridDrSenderCacheMode mode;
+    private GridDrSenderCacheMode mode;
 
     /** Data center replication batch send size. */
-    private final int batchSendSize;
+    private int batchSendSize;
 
     /** Data center replication batch send frequency. */
-    private final long batchSendFrequency;
+    private long batchSendFrequency;
 
     /** Maximum amount of pending entries waiting to be sent to the sender hub. */
-    private final int maxBatches;
+    private int maxBatches;
 
     /** Data center replication sender hub load balancing mode. */
-    private final GridDrSenderHubLoadBalancingMode senderHubLoadBalancingMode;
+    private GridDrSenderHubLoadBalancingMode senderHubLoadBalancingMode;
 
     /** Time in milliseconds to wait between full state transfer batches creation. */
-    private final long stateTransferThrottle;
+    private long stateTransferThrottle;
 
     /** Amount of worker threads responsible for full state transfer. */
-    private final int stateTransferThreadsCount;
+    private int stateTransferThreadsCount;
 
-    /** Create data transfer object with given parameters. */
-    public VisorDrSenderConfig(
-        GridDrSenderCacheMode mode,
-        int batchSendSize,
-        long batchSendFrequency,
-        int maxBatches,
-        GridDrSenderHubLoadBalancingMode senderHubLoadBalancingMode,
-        long stateTransferThrottle,
-        int stateTransferThreadsCount
-    ) {
-        this.mode = mode;
-        this.batchSendSize = batchSendSize;
-        this.batchSendFrequency = batchSendFrequency;
-        this.maxBatches = maxBatches;
-        this.senderHubLoadBalancingMode = senderHubLoadBalancingMode;
-        this.stateTransferThrottle = stateTransferThrottle;
-        this.stateTransferThreadsCount = stateTransferThreadsCount;
+    /**
+     * Construct data transfer object for DR sender cache configuration properties.
+     *
+     * @param sndCfg Data center replication sender cache configuration.
+     * @return DR sender cache configuration properties.
+     */
+    public static VisorDrSenderConfig from(GridDrSenderCacheConfiguration sndCfg) {
+        VisorDrSenderConfig cfg = new VisorDrSenderConfig();
+
+        cfg.mode(sndCfg.getMode());
+        cfg.batchSendSize(sndCfg.getBatchSendSize());
+        cfg.batchSendFrequency(sndCfg.getBatchSendFrequency());
+        cfg.maxBatches(sndCfg.getMaxBatches());
+        cfg.senderHubLoadBalancingMode(sndCfg.getSenderHubLoadBalancingMode());
+        cfg.stateTransferThrottle(sndCfg.getStateTransferThrottle());
+        cfg.stateTransferThreadsCount(sndCfg.getStateTransferThreadsCount());
+
+        return cfg;
     }
 
     /**
@@ -69,10 +71,24 @@ public class VisorDrSenderConfig implements Serializable {
     }
 
     /**
+     * @param mode New data center replication mode.
+     */
+    public void mode(GridDrSenderCacheMode mode) {
+        this.mode = mode;
+    }
+
+    /**
      * @return Data center replication batch send size.
      */
     public int batchSendSize() {
         return batchSendSize;
+    }
+
+    /**
+     * @param batchSndSize New data center replication batch send size.
+     */
+    public void batchSendSize(int batchSndSize) {
+        batchSendSize = batchSndSize;
     }
 
     /**
@@ -83,10 +99,24 @@ public class VisorDrSenderConfig implements Serializable {
     }
 
     /**
+     * @param batchSndFreq New data center replication batch send frequency.
+     */
+    public void batchSendFrequency(long batchSndFreq) {
+        batchSendFrequency = batchSndFreq;
+    }
+
+    /**
      * @return Maximum amount of pending entries waiting to be sent to the sender hub.
      */
     public int maxBatches() {
         return maxBatches;
+    }
+
+    /**
+     * @param maxBatches New maximum amount of pending entries waiting to be sent to the sender hub.
+     */
+    public void maxBatches(int maxBatches) {
+        this.maxBatches = maxBatches;
     }
 
     /**
@@ -97,6 +127,13 @@ public class VisorDrSenderConfig implements Serializable {
     }
 
     /**
+     * @param sndHubLoadBalancingMode New data center replication sender hub load balancing mode.
+     */
+    public void senderHubLoadBalancingMode(GridDrSenderHubLoadBalancingMode sndHubLoadBalancingMode) {
+        senderHubLoadBalancingMode = sndHubLoadBalancingMode;
+    }
+
+    /**
      * @return Time in milliseconds to wait between full state transfer batches creation.
      */
     public long stateTransferThrottle() {
@@ -104,9 +141,28 @@ public class VisorDrSenderConfig implements Serializable {
     }
 
     /**
+     * @param stateTransferThrottle New time in milliseconds to wait between full state transfer batches creation.
+     */
+    public void stateTransferThrottle(long stateTransferThrottle) {
+        this.stateTransferThrottle = stateTransferThrottle;
+    }
+
+    /**
      * @return Amount of worker threads responsible for full state transfer.
      */
     public int stateTransferThreadsCount() {
         return stateTransferThreadsCount;
+    }
+
+    /**
+     * @param stateTransferThreadsCnt New amount of worker threads responsible for full state transfer.
+     */
+    public void stateTransferThreadsCount(int stateTransferThreadsCnt) {
+        stateTransferThreadsCount = stateTransferThreadsCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorDrSenderConfig.class, this);
     }
 }

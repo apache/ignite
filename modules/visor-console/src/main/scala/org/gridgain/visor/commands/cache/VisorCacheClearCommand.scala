@@ -122,7 +122,7 @@ class VisorCacheClearCommand {
                 .execute(classOf[VisorClearCachesTask], new VisorOneNodeNamesArg(node.id(), cacheSet))
                 .get.get(cacheName)
 
-            t += (nodeId8(node.id()), res.before() - res.after(), res.before(), res.after())
+            t += (nodeId8(node.id()), res.get1() - res.get2(), res.get1(), res.get2())
         })
 
         println("Cleared cache with name: " + escapeName(cacheName))

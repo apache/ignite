@@ -273,6 +273,7 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
         return new VisorCollectEventsJob(arg);
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public Iterable<? extends VisorGridEvent> reduce(
         List<GridComputeJobResult> results) throws GridException {
 

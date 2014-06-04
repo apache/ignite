@@ -10,8 +10,11 @@
 package org.gridgain.grid.kernal.visor.cmd.dto.cache;
 
 import org.gridgain.grid.dr.cache.receiver.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
+
+import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.*;
 
 /**
  * Data transfer object for DR receiver cache configuration properties.
@@ -21,15 +24,24 @@ public class VisorDrReceiverConfig implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Conflict resolver */
-    private final String conflictResolver;
+    private String conflictResolver;
 
     /** Conflict resolver mode. */
-    private final GridDrReceiverCacheConflictResolverMode conflictResolverMode;
+    private GridDrReceiverCacheConflictResolverMode conflictResolverMode;
 
-    /** Create data transfer object with given parameters. */
-    public VisorDrReceiverConfig(String conflictResolver, GridDrReceiverCacheConflictResolverMode conflictResolverMode) {
-        this.conflictResolver = conflictResolver;
-        this.conflictResolverMode = conflictResolverMode;
+    /**
+     * Construct data transfer object for DR receiver cache configuration properties.
+     *
+     * @param rcvCfg Data center replication receiver cache configuration.
+     * @return DR receiver cache configuration properties.
+     */
+    public static VisorDrReceiverConfig from(GridDrReceiverCacheConfiguration rcvCfg) {
+        VisorDrReceiverConfig cfg = new VisorDrReceiverConfig();
+
+        cfg.conflictResolver(compactClass(rcvCfg.getConflictResolver()));
+        cfg.conflictResolverMode(rcvCfg.getConflictResolverMode());
+
+        return cfg;
     }
 
     /**
@@ -40,9 +52,28 @@ public class VisorDrReceiverConfig implements Serializable {
     }
 
     /**
+     * @param conflictRslvr New conflict resolver
+     */
+    public void conflictResolver(String conflictRslvr) {
+        conflictResolver = conflictRslvr;
+    }
+
+    /**
      * @return Conflict resolver mode.
      */
     public GridDrReceiverCacheConflictResolverMode conflictResolverMode() {
         return conflictResolverMode;
+    }
+
+    /**
+     * @param conflictRslvrMode New conflict resolver mode.
+     */
+    public void conflictResolverMode(GridDrReceiverCacheConflictResolverMode conflictRslvrMode) {
+        conflictResolverMode = conflictRslvrMode;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorDrReceiverConfig.class, this);
     }
 }

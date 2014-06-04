@@ -9,10 +9,11 @@
 
 package org.gridgain.grid.kernal.visor.cmd.tasks;
 
-import org.gridgain.grid.GridException;
-import org.gridgain.grid.cache.GridCache;
-import org.gridgain.grid.kernal.processors.task.GridInternal;
+import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
+import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
 
@@ -20,12 +21,12 @@ import java.util.*;
  * Task that clears specified caches on specified node.
  */
 @GridInternal
-public class VisorClearCachesTask extends VisorOneNodeTask<VisorOneNodeNamesArg, VisorNamedBeforeAfterTaskResult> {
+public class VisorClearCachesTask extends VisorOneNodeTask<VisorOneNodeNamesArg, Map<String, T2<Integer, Integer>>> {
     /**
      * Job that clear specified caches.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorClearCachesJob extends VisorOneNodeJob<VisorOneNodeNamesArg, VisorNamedBeforeAfterTaskResult> {
+    public static class VisorClearCachesJob extends VisorOneNodeJob<VisorOneNodeNamesArg, Map<String, T2<Integer, Integer>>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -38,8 +39,8 @@ public class VisorClearCachesTask extends VisorOneNodeTask<VisorOneNodeNamesArg,
             super(arg);
         }
 
-        @Override protected VisorNamedBeforeAfterTaskResult run(VisorOneNodeNamesArg arg) throws GridException {
-            VisorNamedBeforeAfterTaskResult res = new VisorNamedBeforeAfterTaskResult();
+        @Override protected Map<String, T2<Integer, Integer>> run(VisorOneNodeNamesArg arg) throws GridException {
+            Map<String, T2<Integer, Integer>> res = new HashMap<>();
 
             for(GridCache cache : g.cachesx()) {
                 String cacheName = cache.name();
@@ -47,14 +48,14 @@ public class VisorClearCachesTask extends VisorOneNodeTask<VisorOneNodeNamesArg,
                 if (arg.names().contains(cacheName)) {
                     Set keys = cache.keySet();
 
-                    long before = keys.size(), after = before;
+                    int before = keys.size(), after = before;
 
                     for (Object key : keys) {
                         if (cache.clear(key))
                             after--;
                     }
 
-                    res.put(cacheName, new VisorBeforeAfterResult(before, after));
+                    res.put(cacheName, new T2<>(before, after));
                 }
             }
 

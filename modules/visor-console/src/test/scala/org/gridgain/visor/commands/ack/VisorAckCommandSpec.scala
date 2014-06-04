@@ -12,7 +12,7 @@
 package org.gridgain.visor.commands.ack
 
 import org.gridgain.visor._
-import VisorAckCommand._
+import org.gridgain.visor.commands.ack.VisorAckCommand._
 
 /**
  * Unit test for 'ack' command.
@@ -25,7 +25,7 @@ class VisorAckCommandSpec extends VisorRuntimeBaseSpec(2) {
     }
 
     it should "properly execute with arguments" in {
-        visor ack("Broadcasting!")
+        visor ack "Broadcasting!"
     }
 
     it should "print error message when not connected" in {

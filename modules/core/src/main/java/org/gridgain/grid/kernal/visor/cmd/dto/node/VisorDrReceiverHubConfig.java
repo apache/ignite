@@ -9,6 +9,9 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
+import org.gridgain.grid.dr.hub.receiver.*;
+import org.gridgain.grid.util.typedef.internal.*;
+
 import java.io.*;
 
 /**
@@ -19,68 +22,67 @@ public class VisorDrReceiverHubConfig implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Local host name receiving hub server is bound to. */
-    private final String localInboundHost;
+    private String localInboundHost;
 
     /** Local port receiving hub is bound to. */
-    private final int localInboundPort;
+    private int localInboundPort;
 
     /** Number of selector threads in receiver hub's TCP server. */
-    private final int selectorCount;
+    private int selectorCount;
 
     /** Number of threads responsible for sender hub requests processing. */
-    private final int workerThreads;
+    private int workerThreads;
 
     /** Message queue limit for incoming and outgoing messages. */
-    private final int messageQueueLimit;
+    private int messageQueueLimit;
 
     /** Whether to use TCP_NODELAY mode. */
-    private final boolean tcpNodelay;
+    private boolean tcpNodelay;
 
     /** Whether to use direct buffer when processing sender hub requests. */
-    private final boolean directBuffer;
+    private boolean directBuffer;
 
     /** Idle timeout for sender hub socket connection. */
-    private final long idleTimeout;
+    private long idleTimeout;
 
     /** Write timeout for sender hub socket connection. */
-    private final long writeTimeout;
+    private long writeTimeout;
 
     /** DR data loader flush frequency. */
-    private final long flushFrequency;
+    private long flushFrequency;
 
     /** DR data loader per node buffer size. */
-    private final int perNodeBufferSize;
+    private int perNodeBufferSize;
 
     /** Per node parallel load operations. */
-    private final int perNodeParallelLoadOperations;
+    private int perNodeParallelLoadOperations;
 
-    /** Create data transfer object with given parameters. */
-    public VisorDrReceiverHubConfig(
-        String localInboundHost,
-        int localInboundPort,
-        int selectorCount,
-        int workerThreads,
-        int messageQueueLimit,
-        boolean tcpNodelay,
-        boolean directBuffer,
-        long idleTimeout,
-        long writeTimeout,
-        long flushFrequency,
-        int perNodeBufferSize,
-        int perNodeParallelLoadOperations
-    ) {
-        this.localInboundHost = localInboundHost;
-        this.localInboundPort = localInboundPort;
-        this.selectorCount = selectorCount;
-        this.workerThreads = workerThreads;
-        this.messageQueueLimit = messageQueueLimit;
-        this.tcpNodelay = tcpNodelay;
-        this.directBuffer = directBuffer;
-        this.idleTimeout = idleTimeout;
-        this.writeTimeout = writeTimeout;
-        this.flushFrequency = flushFrequency;
-        this.perNodeBufferSize = perNodeBufferSize;
-        this.perNodeParallelLoadOperations = perNodeParallelLoadOperations;
+    /**
+     * Construct data transfer object for DR receiver hub configuration properties.
+     *
+     * @param rcvHubCfg Data center replication receiver hub configuration.
+     * @return DR receiver hub configuration properties.
+     */
+    public static VisorDrReceiverHubConfig from(GridDrReceiverHubConfiguration rcvHubCfg) {
+        if (rcvHubCfg == null)
+            return null;
+
+        VisorDrReceiverHubConfig cfg = new VisorDrReceiverHubConfig();
+
+        cfg.localInboundHost(rcvHubCfg.getLocalInboundHost());
+        cfg.localInboundPort(rcvHubCfg.getLocalInboundPort());
+        cfg.selectorCount(rcvHubCfg.getSelectorCount());
+        cfg.workerThreads(rcvHubCfg.getWorkerThreads());
+        cfg.messageQueueLimit(rcvHubCfg.getMessageQueueLimit());
+        cfg.tcpNodelay(rcvHubCfg.isTcpNodelay());
+        cfg.directBuffer(rcvHubCfg.isDirectBuffer());
+        cfg.idleTimeout(rcvHubCfg.getIdleTimeout());
+        cfg.writeTimeout(rcvHubCfg.getWriteTimeout());
+        cfg.flushFrequency(rcvHubCfg.getFlushFrequency());
+        cfg.perNodeBufferSize(rcvHubCfg.getPerNodeBufferSize());
+        cfg.perNodeParallelLoadOperations(rcvHubCfg.getPerNodeParallelLoadOperations());
+
+        return cfg;
     }
 
     /**
@@ -91,10 +93,24 @@ public class VisorDrReceiverHubConfig implements Serializable {
     }
 
     /**
+     * @param locInboundHost New local host name receiving hub server is bound to.
+     */
+    public void localInboundHost(String locInboundHost) {
+        localInboundHost = locInboundHost;
+    }
+
+    /**
      * @return Local port receiving hub is bound to.
      */
     public int localInboundPort() {
         return localInboundPort;
+    }
+
+    /**
+     * @param locInboundPort New local port receiving hub is bound to.
+     */
+    public void localInboundPort(int locInboundPort) {
+        localInboundPort = locInboundPort;
     }
 
     /**
@@ -105,10 +121,24 @@ public class VisorDrReceiverHubConfig implements Serializable {
     }
 
     /**
+     * @param selectorCnt New number of selector threads in receiver hub's TCP server.
+     */
+    public void selectorCount(int selectorCnt) {
+        selectorCount = selectorCnt;
+    }
+
+    /**
      * @return Number of threads responsible for sender hub requests processing.
      */
     public int workerThreads() {
         return workerThreads;
+    }
+
+    /**
+     * @param workerThreads New number of threads responsible for sender hub requests processing.
+     */
+    public void workerThreads(int workerThreads) {
+        this.workerThreads = workerThreads;
     }
 
     /**
@@ -119,10 +149,24 @@ public class VisorDrReceiverHubConfig implements Serializable {
     }
 
     /**
+     * @param msgQueueLimit New message queue limit for incoming and outgoing messages.
+     */
+    public void messageQueueLimit(int msgQueueLimit) {
+        messageQueueLimit = msgQueueLimit;
+    }
+
+    /**
      * @return Whether to use TCP_NODELAY mode.
      */
     public boolean tcpNodelay() {
         return tcpNodelay;
+    }
+
+    /**
+     * @param tcpNodelay New whether to use TCP_NODELAY mode.
+     */
+    public void tcpNodelay(boolean tcpNodelay) {
+        this.tcpNodelay = tcpNodelay;
     }
 
     /**
@@ -133,10 +177,24 @@ public class VisorDrReceiverHubConfig implements Serializable {
     }
 
     /**
+     * @param directBuf New whether to use direct buffer when processing sender hub requests.
+     */
+    public void directBuffer(boolean directBuf) {
+        directBuffer = directBuf;
+    }
+
+    /**
      * @return Idle timeout for sender hub socket connection.
      */
     public long idleTimeout() {
         return idleTimeout;
+    }
+
+    /**
+     * @param idleTimeout New idle timeout for sender hub socket connection.
+     */
+    public void idleTimeout(long idleTimeout) {
+        this.idleTimeout = idleTimeout;
     }
 
     /**
@@ -147,10 +205,24 @@ public class VisorDrReceiverHubConfig implements Serializable {
     }
 
     /**
+     * @param writeTimeout New write timeout for sender hub socket connection.
+     */
+    public void writeTimeout(long writeTimeout) {
+        this.writeTimeout = writeTimeout;
+    }
+
+    /**
      * @return DR data loader flush frequency.
      */
     public long flushFrequency() {
         return flushFrequency;
+    }
+
+    /**
+     * @param flushFreq New dR data loader flush frequency.
+     */
+    public void flushFrequency(long flushFreq) {
+        flushFrequency = flushFreq;
     }
 
     /**
@@ -161,9 +233,28 @@ public class VisorDrReceiverHubConfig implements Serializable {
     }
 
     /**
+     * @param perNodeBufSize New dR data loader per node buffer size.
+     */
+    public void perNodeBufferSize(int perNodeBufSize) {
+        perNodeBufferSize = perNodeBufSize;
+    }
+
+    /**
      * @return Per node parallel load operations.
      */
     public int perNodeParallelLoadOperations() {
         return perNodeParallelLoadOperations;
+    }
+
+    /**
+     * @param perNodeParallelLoadOperations New per node parallel load operations.
+     */
+    public void perNodeParallelLoadOperations(int perNodeParallelLoadOperations) {
+        this.perNodeParallelLoadOperations = perNodeParallelLoadOperations;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorDrReceiverHubConfig.class, this);
     }
 }

@@ -123,7 +123,7 @@ class VisorCacheCompactCommand {
                 .execute(classOf[VisorCompactCachesTask], new VisorOneNodeNamesArg(node.id(), cacheSet))
                 .get.get(cacheName)
 
-            t += (nodeId8(node.id()), r.before() - r.after(), r.before(), r.after())
+            t += (nodeId8(node.id()), r.get1() - r.get2(), r.get1(), r.get2())
         })
 
         println("Compacts entries in cache: " + escapeName(cacheName))

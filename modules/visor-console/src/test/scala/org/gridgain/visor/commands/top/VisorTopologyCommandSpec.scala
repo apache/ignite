@@ -12,7 +12,7 @@
 package org.gridgain.visor.commands.top
 
 import org.gridgain.visor._
-import VisorTopologyCommand._
+import org.gridgain.visor.commands.top.VisorTopologyCommand._
 
 /**
  * Unit test for topology commands.

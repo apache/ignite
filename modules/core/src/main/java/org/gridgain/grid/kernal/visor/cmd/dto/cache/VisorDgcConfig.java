@@ -9,6 +9,9 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto.cache;
 
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.util.typedef.internal.*;
+
 import java.io.*;
 
 /**
@@ -19,19 +22,28 @@ public class VisorDgcConfig implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** DGC check frequency. */
-    private final long freq;
+    private long freq;
 
     /** DGC remove locks flag. */
-    private final boolean rmvLocks;
+    private boolean rmvLocks;
 
     /** Timeout for considering lock to be suspicious. */
-    private final long suspectLockTimeout;
+    private long suspectLockTimeout;
 
-    /** Create data transfer object with given parameters.  */
-    public VisorDgcConfig(long freq, boolean rmvLocks, long suspectLockTimeout) {
-        this.freq = freq;
-        this.rmvLocks = rmvLocks;
-        this.suspectLockTimeout = suspectLockTimeout;
+    /**
+     * Construct data transfer object for DGC configuration properties.
+     *
+     * @param ccfg Cache configuration.
+     * @return DGC configuration properties.
+     */
+    public static VisorDgcConfig from(GridCacheConfiguration ccfg) {
+        VisorDgcConfig cfg = new VisorDgcConfig();
+
+        cfg.frequency(ccfg.getDgcFrequency());
+        cfg.removedLocks(ccfg.isDgcRemoveLocks());
+        cfg.suspectLockTimeout(ccfg.getDgcSuspectLockTimeout());
+
+        return cfg;
     }
 
     /**
@@ -42,6 +54,13 @@ public class VisorDgcConfig implements Serializable {
     }
 
     /**
+     * @param freq New dGC check frequency.
+     */
+    public void frequency(long freq) {
+        this.freq = freq;
+    }
+
+    /**
      * @return DGC remove locks flag.
      */
     public boolean removedLocks() {
@@ -49,9 +68,28 @@ public class VisorDgcConfig implements Serializable {
     }
 
     /**
+     * @param rmvLocks New dGC remove locks flag.
+     */
+    public void removedLocks(boolean rmvLocks) {
+        this.rmvLocks = rmvLocks;
+    }
+
+    /**
      * @return Timeout for considering lock to be suspicious.
      */
     public long suspectLockTimeout() {
         return suspectLockTimeout;
+    }
+
+    /**
+     * @param suspectLockTimeout New timeout for considering lock to be suspicious.
+     */
+    public void suspectLockTimeout(long suspectLockTimeout) {
+        this.suspectLockTimeout = suspectLockTimeout;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorDgcConfig.class, this);
     }
 }

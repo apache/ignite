@@ -11,6 +11,8 @@ package org.gridgain.grid.kernal.visor.cmd.dto;
 
 import org.gridgain.grid.kernal.GridEx;
 import org.gridgain.grid.product.GridProductLicense;
+import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.Serializable;
 import java.util.*;
@@ -38,146 +40,107 @@ public class VisorLicense implements Serializable {
     public static final String MONGO_PRODUCT = "mongo";
 
     /** License ID. */
-    private final UUID id;
+    private UUID id;
 
     /** License version. */
-    private final String version;
+    private String version;
 
     /** GridGain version regular expression. */
-    private final String versionRegexp;
+    private String versionRegexp;
 
     /** Issue organization. */
-    private final String issueOrganization;
+    private String issueOrganization;
 
     /** User name. */
-    private final String userName;
+    private String userName;
 
     /** User organization. */
-    private final String userOrganization;
+    private String userOrganization;
 
     /** User web URL. */
-    private final String userWww;
+    private String userWww;
 
     /** User email. */
-    private final String userEmail;
+    private String userEmail;
 
     /** License note. */
-    private final String note;
+    private String note;
 
     /** Expiration date. */
-    private final Date expireDate;
+    private Date expireDate;
 
     /** Issue date. */
-    private final Date issueDate;
+    private Date issueDate;
 
     /** Maintenance Time. */
-    private final int maintenanceTime;
+    private int maintenanceTime;
 
     /** Maximum nodes. */
-    private final int maxNodes;
+    private int maxNodes;
 
     /** Maximum computers. */
-    private final int maxComputers;
+    private int maxComputers;
 
     /** Maximum CPUs. */
-    private final int maxCpus;
+    private int maxCpus;
 
     /** Maximum up-time. */
-    private final long maxUpTime;
+    private long maxUpTime;
 
     /** Maximum grace period in minutes. */
-    private final long gracePeriod;
+    private long gracePeriod;
 
     /** Attribute name. */
-    private final String attributeName;
+    private String attributeName;
 
     /** Attribute value. */
-    private final String attributeValue;
+    private String attributeValue;
 
     /** Disabled sub-systems. */
-    private final String disabledSubsystems;
+    private String disabledSubsystems;
 
     /** Grace period left in minutes if bursting or `-1` otherwise. */
-    private final long gracePeriodLeft;
+    private long gracePeriodLeft;
 
-    /** Create license with given parameters. */
-    public VisorLicense(
-        UUID id,
-        String version,
-        String versionRegexp,
-        String issueOrganization,
-        String userName,
-        String userOrganization,
-        String userWww,
-        String userEmail,
-        String note,
-        Date expireDate,
-        Date issueDate,
-        int maintenanceTime,
-        int maxNodes,
-        int maxComputers,
-        int maxCpus,
-        long maxUpTime,
-        long gracePeriod,
-        String attributeName,
-        String attributeValue,
-        String disabledSubsystems,
-        long gracePeriodLeft
-    ) {
-        this.id = id;
-        this.version = version;
-        this.versionRegexp = versionRegexp;
-        this.issueOrganization = issueOrganization;
-        this.userName = userName;
-        this.userOrganization = userOrganization;
-        this.userWww = userWww;
-        this.userEmail = userEmail;
-        this.note = note;
-        this.expireDate = expireDate;
-        this.issueDate = issueDate;
-        this.maintenanceTime = maintenanceTime;
-        this.maxNodes = maxNodes;
-        this.maxComputers = maxComputers;
-        this.maxCpus = maxCpus;
-        this.maxUpTime = maxUpTime;
-        this.gracePeriod = gracePeriod;
-        this.attributeName = attributeName;
-        this.attributeValue = attributeValue;
-        this.disabledSubsystems = disabledSubsystems;
-        this.gracePeriodLeft = gracePeriodLeft;
-    }
-
-    /** Create data transfer object for given license. */
-    public static VisorLicense create(GridEx g) {
+    /**
+     * Construct data transfer object for grid license properties.
+     *
+     * @param g Grid.
+     * @return grid license properties.
+     */
+    @Nullable public static VisorLicense from(GridEx g) {
         assert g != null;
 
         GridProductLicense lic = g.product().license();
 
-        assert lic != null;
+        if (lic == null)
+            return null;
 
-        return new VisorLicense(
-            lic.id(),
-            lic.version(),
-            lic.versionRegexp(),
-            lic.issueOrganization(),
-            lic.userName(),
-            lic.userOrganization(),
-            lic.userWww(),
-            lic.userEmail(),
-            lic.licenseNote(),
-            lic.expireDate(),
-            lic.issueDate(),
-            lic.maintenanceTime(),
-            lic.maxNodes(),
-            lic.maxComputers(),
-            lic.maxCpus(),
-            lic.maxUpTime(),
-            lic.gracePeriod(),
-            lic.attributeName(),
-            lic.attributeValue(),
-            lic.disabledSubsystems(),
-            g.licenseGracePeriodLeft()
-        );
+        VisorLicense l = new VisorLicense();
+
+        l.id(lic.id());
+        l.version(lic.version());
+        l.versionRegexp(lic.versionRegexp());
+        l.issueOrganization(lic.issueOrganization());
+        l.userName(lic.userName());
+        l.userOrganization(lic.userOrganization());
+        l.userWww(lic.userWww());
+        l.userEmail(lic.userEmail());
+        l.note(lic.licenseNote());
+        l.expireDate(lic.expireDate());
+        l.issueDate(lic.issueDate());
+        l.maintenanceTime(lic.maintenanceTime());
+        l.maxNodes(lic.maxNodes());
+        l.maxComputers(lic.maxComputers());
+        l.maxComputers(lic.maxCpus());
+        l.maxUpTime(lic.maxUpTime());
+        l.gracePeriod(lic.gracePeriod());
+        l.attributeName(lic.attributeName());
+        l.attributeValue(lic.attributeValue());
+        l.disabledSubsystems(lic.disabledSubsystems());
+        l.gracePeriodLeft(g.licenseGracePeriodLeft());
+
+        return l;
     }
 
     /**
@@ -188,10 +151,24 @@ public class VisorLicense implements Serializable {
     }
 
     /**
+     * @param id New license ID.
+     */
+    public void id(UUID id) {
+        this.id = id;
+    }
+
+    /**
      * @return License version.
      */
     public String version() {
         return version;
+    }
+
+    /**
+     * @param ver New license version.
+     */
+    public void version(String ver) {
+        version = ver;
     }
 
     /**
@@ -202,10 +179,24 @@ public class VisorLicense implements Serializable {
     }
 
     /**
+     * @param verRegexp New gridGain version regular expression.
+     */
+    public void versionRegexp(String verRegexp) {
+        versionRegexp = verRegexp;
+    }
+
+    /**
      * @return Issue organization.
      */
     public String issueOrganization() {
         return issueOrganization;
+    }
+
+    /**
+     * @param issueOrganization New issue organization.
+     */
+    public void issueOrganization(String issueOrganization) {
+        this.issueOrganization = issueOrganization;
     }
 
     /**
@@ -216,10 +207,24 @@ public class VisorLicense implements Serializable {
     }
 
     /**
+     * @param userName New user name.
+     */
+    public void userName(String userName) {
+        this.userName = userName;
+    }
+
+    /**
      * @return User organization.
      */
     public String userOrganization() {
         return userOrganization;
+    }
+
+    /**
+     * @param userOrganization New user organization.
+     */
+    public void userOrganization(String userOrganization) {
+        this.userOrganization = userOrganization;
     }
 
     /**
@@ -230,10 +235,24 @@ public class VisorLicense implements Serializable {
     }
 
     /**
+     * @param userWww New user web URL.
+     */
+    public void userWww(String userWww) {
+        this.userWww = userWww;
+    }
+
+    /**
      * @return User email.
      */
     public String userEmail() {
         return userEmail;
+    }
+
+    /**
+     * @param userEmail New user email.
+     */
+    public void userEmail(String userEmail) {
+        this.userEmail = userEmail;
     }
 
     /**
@@ -244,17 +263,38 @@ public class VisorLicense implements Serializable {
     }
 
     /**
+     * @param note New license note.
+     */
+    public void note(String note) {
+        this.note = note;
+    }
+
+    /**
      * @return Expiration date.
      */
-    public Date expireDate() {
-        return expireDate;
+    @Nullable public Date expireDate() {
+        return expireDate == null ? null : (Date)expireDate.clone();
+    }
+
+    /**
+     * @param expireDate New expiration date.
+     */
+    public void expireDate(@Nullable Date expireDate) {
+        this.expireDate = expireDate == null ? null : (Date)expireDate.clone();
     }
 
     /**
      * @return Issue date.
      */
     public Date issueDate() {
-        return issueDate;
+        return (Date)issueDate.clone();
+    }
+
+    /**
+     * @param issueDate New issue date.
+     */
+    public void issueDate(Date issueDate) {
+        this.issueDate = (Date)issueDate.clone();
     }
 
     /**
@@ -265,10 +305,24 @@ public class VisorLicense implements Serializable {
     }
 
     /**
+     * @param maintenanceTime New maintenance Time.
+     */
+    public void maintenanceTime(int maintenanceTime) {
+        this.maintenanceTime = maintenanceTime;
+    }
+
+    /**
      * @return Maximum nodes.
      */
     public int maxNodes() {
         return maxNodes;
+    }
+
+    /**
+     * @param maxNodes New maximum nodes.
+     */
+    public void maxNodes(int maxNodes) {
+        this.maxNodes = maxNodes;
     }
 
     /**
@@ -279,10 +333,24 @@ public class VisorLicense implements Serializable {
     }
 
     /**
+     * @param maxComputers New maximum computers.
+     */
+    public void maxComputers(int maxComputers) {
+        this.maxComputers = maxComputers;
+    }
+
+    /**
      * @return Maximum CPUs.
      */
     public int maxCpus() {
         return maxCpus;
+    }
+
+    /**
+     * @param maxCpus New maximum CPUs.
+     */
+    public void maxCpus(int maxCpus) {
+        this.maxCpus = maxCpus;
     }
 
     /**
@@ -293,6 +361,13 @@ public class VisorLicense implements Serializable {
     }
 
     /**
+     * @param maxUpTime New maximum up-time.
+     */
+    public void maxUpTime(long maxUpTime) {
+        this.maxUpTime = maxUpTime;
+    }
+
+    /**
      * @return Maximum grace period in minutes.
      */
     public long gracePeriod() {
@@ -300,24 +375,52 @@ public class VisorLicense implements Serializable {
     }
 
     /**
+     * @param gracePeriod New maximum grace period in minutes.
+     */
+    public void gracePeriod(long gracePeriod) {
+        this.gracePeriod = gracePeriod;
+    }
+
+    /**
      * @return Attribute name.
      */
-    public String attributeName() {
+    @Nullable public String attributeName() {
         return attributeName;
+    }
+
+    /**
+     * @param attributeName New attribute name.
+     */
+    public void attributeName(@Nullable String attributeName) {
+        this.attributeName = attributeName;
     }
 
     /**
      * @return Attribute value.
      */
-    public String attributeValue() {
+    @Nullable public String attributeValue() {
         return attributeValue;
+    }
+
+    /**
+     * @param attributeVal New attribute value.
+     */
+    public void attributeValue(@Nullable String attributeVal) {
+        attributeValue = attributeVal;
     }
 
     /**
      * @return Disabled sub-systems.
      */
-    public String disabledSubsystems() {
+    @Nullable public String disabledSubsystems() {
         return disabledSubsystems;
+    }
+
+    /**
+     * @param disabledSubsystems New disabled sub-systems.
+     */
+    public void disabledSubsystems(@Nullable String disabledSubsystems) {
+        this.disabledSubsystems = disabledSubsystems;
     }
 
     /**
@@ -325,5 +428,17 @@ public class VisorLicense implements Serializable {
      */
     public long gracePeriodLeft() {
         return gracePeriodLeft;
+    }
+
+    /**
+     * @param gracePeriodLeft New grace period left in minutes if bursting or `-1` otherwise.
+     */
+    public void gracePeriodLeft(long gracePeriodLeft) {
+        this.gracePeriodLeft = gracePeriodLeft;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorLicense.class, this);
     }
 }

@@ -11,10 +11,9 @@
 
 package org.gridgain.visor.commands.deploy
 
-import org.scalatest._
-
 import org.gridgain.visor._
 import org.gridgain.visor.commands.deploy.VisorDeployCommand._
+import org.scalatest._
 
 /**
  * Unit test for 'deploy' command.

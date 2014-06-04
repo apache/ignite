@@ -11,22 +11,20 @@
 
 package org.gridgain.visor.commands.gc
 
-import java.util
+import java.lang.{Long => JavaLong}
 import java.util.UUID
 
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorRunGcTask
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorRunGcTask.VisorRunGcArg
-import org.gridgain.grid.util
+import org.gridgain.scalar.scalar._
+import org.gridgain.visor._
+import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
+import org.gridgain.visor.visor._
 
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
-
-import org.gridgain.scalar.scalar._
-import org.gridgain.visor._
-import org.gridgain.visor.commands.VisorConsoleCommand
-import org.gridgain.visor.visor._
 
 /**
  * ==Overview==
@@ -133,14 +131,30 @@ class VisorGcCommand {
                     case e: IllegalArgumentException => scold("Invalid node 'id': " + id.get).^^
                 }
 
-            val nodesIds = new java.util.HashSet(Option(node).fold(grid.nodes())(Set(_)).map(_.id()))
-
             try {
-                grid.forNodeIds(nodesIds)
-                    .compute()
-                    .withNoFailover()
-                    .execute(classOf[VisorRunGcTask], new VisorRunGcArg(nodesIds, dgc))
-                    .get
+                val t = VisorTextTable()
+
+                t #= ("Node ID8(@)", "Heap Before (MB)", "Heap After (MB)", "Heap Delta (%)")
+
+                val prj = grid.forRemotes()
+
+                val nids = toJavaSet(prj.nodes().map(_.id()))
+
+                prj.compute().withNoFailover().execute(classOf[VisorRunGcTask], new VisorRunGcArg(nids, dgc)).
+                    get.foreach { case (nid, stat) =>
+                    val roundHb = math.round(stat.get1() / (1024L * 1024L))
+                    val gc = math.round(stat.get2() / (1024L * 1024L))
+
+                    val sign = if (roundHa > roundHb) "+" else ""
+
+                    val deltaPercent = math.round(roundHa * 100d / roundHb - 100)
+
+                    t += (nodeId8(nid), roundHb, roundHa, sign + deltaPercent)
+                }
+
+                println("Garbage collector procedure results:")
+
+                t.render()
             }
             catch {
                 case e: GridEmptyProjectionException => scold("Topology is empty.")

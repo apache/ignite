@@ -9,9 +9,13 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
+import org.gridgain.grid.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+
+import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.*;
 
 /**
  * Data transfer object for node P2P configuration properties.
@@ -21,19 +25,28 @@ public class VisorPeerToPeerConfig implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Whether peer-to-peer class loading is enabled. */
-    private final boolean p2pEnabled;
+    private boolean p2pEnabled;
 
     /** Missed resource cache size. */
-    private final int p2pMissedResCacheSize;
+    private int p2pMissedResCacheSize;
 
     /** List of packages from the system classpath that need to be loaded from task originating node. */
-    private final String p2pLocClsPathExcl;
+    private String p2pLocClsPathExcl;
 
-    /** Create data transfer object with given parameters. */
-    public VisorPeerToPeerConfig(boolean p2pEnabled, int p2pMissedResCacheSize, @Nullable String p2pLocClsPathExcl) {
-        this.p2pEnabled = p2pEnabled;
-        this.p2pMissedResCacheSize = p2pMissedResCacheSize;
-        this.p2pLocClsPathExcl = p2pLocClsPathExcl;
+    /**
+     * Construct data transfer object for node P2P configuration properties.
+     *
+     * @param c Grid configuration.
+     * @return node P2P configuration properties.
+     */
+    public static VisorPeerToPeerConfig from(GridConfiguration c) {
+        VisorPeerToPeerConfig cfg = new VisorPeerToPeerConfig();
+
+        cfg.p2pEnabled(c.isPeerClassLoadingEnabled());
+        cfg.p2pMissedResponseCacheSize(c.getPeerClassLoadingMissedResourcesCacheSize());
+        cfg.p2pLocalClassPathExclude(compactArray(c.getPeerClassLoadingLocalClassPathExclude()));
+
+        return cfg;
     }
 
     /**
@@ -44,6 +57,13 @@ public class VisorPeerToPeerConfig implements Serializable {
     }
 
     /**
+     * @param p2pEnabled New whether peer-to-peer class loading is enabled.
+     */
+    public void p2pEnabled(boolean p2pEnabled) {
+        this.p2pEnabled = p2pEnabled;
+    }
+
+    /**
      * @return Missed resource cache size.
      */
     public int p2pMissedResponseCacheSize() {
@@ -51,9 +71,29 @@ public class VisorPeerToPeerConfig implements Serializable {
     }
 
     /**
+     * @param p2pMissedResCacheSize New missed resource cache size.
+     */
+    public void p2pMissedResponseCacheSize(int p2pMissedResCacheSize) {
+        this.p2pMissedResCacheSize = p2pMissedResCacheSize;
+    }
+
+    /**
      * @return List of packages from the system classpath that need to be loaded from task originating node.
      */
-    @Nullable public String p2pLocaleClassPathExcl() {
+    @Nullable public String p2pLocalClassPathExclude() {
         return p2pLocClsPathExcl;
+    }
+
+    /**
+     * @param p2pLocClsPathExcl New list of packages from the system classpath that need to be loaded from task
+     * originating node.
+     */
+    public void p2pLocalClassPathExclude(@Nullable String p2pLocClsPathExcl) {
+        this.p2pLocClsPathExcl = p2pLocClsPathExcl;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorPeerToPeerConfig.class, this);
     }
 }

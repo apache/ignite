@@ -9,10 +9,11 @@
 
 package org.gridgain.grid.kernal.visor.cmd.tasks;
 
-import org.gridgain.grid.GridException;
+import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.processors.task.GridInternal;
+import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
+import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
 
@@ -20,11 +21,11 @@ import java.util.*;
  * Task that compacts caches.
  */
 @GridInternal
-public class VisorCompactCachesTask extends VisorOneNodeTask<VisorOneNodeNamesArg, VisorNamedBeforeAfterTaskResult> {
+public class VisorCompactCachesTask extends VisorOneNodeTask<VisorOneNodeNamesArg, Map<String, T2<Integer, Integer>>> {
     /** Job that compact caches on node. */
     @SuppressWarnings("PublicInnerClass")
     public static class VisorCompactCachesJob
-        extends VisorOneNodeJob<VisorOneNodeNamesArg, VisorNamedBeforeAfterTaskResult> {
+        extends VisorOneNodeJob<VisorOneNodeNamesArg, Map<String, T2<Integer, Integer>>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -33,8 +34,8 @@ public class VisorCompactCachesTask extends VisorOneNodeTask<VisorOneNodeNamesAr
             super(arg);
         }
 
-        @Override protected VisorNamedBeforeAfterTaskResult run(VisorOneNodeNamesArg arg) throws GridException {
-            final VisorNamedBeforeAfterTaskResult res = new VisorNamedBeforeAfterTaskResult();
+        @Override protected Map<String, T2<Integer, Integer>> run(VisorOneNodeNamesArg arg) throws GridException {
+            final Map<String, T2<Integer, Integer>> res = new HashMap<>();
 
             for(GridCache cache : g.cachesx()) {
                 String cacheName = cache.name();
@@ -42,14 +43,14 @@ public class VisorCompactCachesTask extends VisorOneNodeTask<VisorOneNodeNamesAr
                 if (arg.names().contains(cacheName)) {
                     final Set keys = cache.keySet();
 
-                    long before = keys.size(), after = before;
+                    int before = keys.size(), after = before;
 
                     for (Object key : keys) {
                         if (cache.compact(key))
                             after--;
                     }
 
-                    res.put(cacheName, new VisorBeforeAfterResult(before, after));
+                    res.put(cacheName, new T2<>(before, after));
                 }
             }
 

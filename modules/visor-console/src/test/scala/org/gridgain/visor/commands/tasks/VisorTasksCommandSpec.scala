@@ -11,19 +11,17 @@
 
 package org.gridgain.visor.commands.tasks
 
-import org.gridgain.grid.{GridGain => G, GridConfiguration}
-import org.gridgain.grid.compute.{GridComputeJob, GridComputeJobAdapter, GridComputeJobResult, GridComputeTaskSplitAdapter}
-import org.gridgain.grid.events.GridEventType._
-
 import java.util
 
-import scala.collection._
-import scala.collection.JavaConversions._
-
-import org.scalatest._
-
+import org.gridgain.grid.compute.{GridComputeJob, GridComputeJobAdapter, GridComputeJobResult, GridComputeTaskSplitAdapter}
+import org.gridgain.grid.events.GridEventType._
+import org.gridgain.grid.{GridConfiguration, GridGain => G}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.tasks.VisorTasksCommand._
+import org.scalatest._
+
+import scala.collection.JavaConversions._
+import scala.collection._
 
 /**
  * Unit test for 'tasks' command.

@@ -9,9 +9,15 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
+import org.gridgain.grid.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+
+import static java.lang.System.*;
+import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.*;
 
 /**
  * Create data transfer object for node REST configuration properties.
@@ -47,27 +53,26 @@ public class VisorRestConfig implements Serializable {
     /** Context factory for SSL. */
     private String tcpSslContextFactory;
 
-    /** Create data transfer object with given parameters. */
-    public VisorRestConfig(
-        boolean restEnabled,
-        boolean tcpSslEnabled,
-        @Nullable String[] accessibleFolders,
-        @Nullable String jettyPath,
-        @Nullable String jettyHost,
-        @Nullable Integer jettyPort,
-        @Nullable String tcpHost,
-        @Nullable Integer tcpPort,
-        @Nullable String tcpSslContextFactory
-    ) {
-        this.restEnabled = restEnabled;
-        this.tcpSslEnabled = tcpSslEnabled;
-        this.accessibleFolders = accessibleFolders;
-        this.jettyPath = jettyPath;
-        this.jettyHost = jettyHost;
-        this.jettyPort = jettyPort;
-        this.tcpHost = tcpHost;
-        this.tcpPort = tcpPort;
-        this.tcpSslContextFactory = tcpSslContextFactory;
+    /**
+     * Construct data transfer object for REST configuration properties.
+     *
+     * @param c Grid configuration.
+     * @return REST configuration properties.
+     */
+    public static VisorRestConfig from(GridConfiguration c) {
+        VisorRestConfig cfg = new VisorRestConfig();
+
+        cfg.restEnabled(c.isRestEnabled());
+        cfg.tcpSslEnabled(c.isRestTcpSslEnabled());
+        cfg.accessibleFolders(c.getRestAccessibleFolders());
+        cfg.jettyPath(c.getRestJettyPath());
+        cfg.jettyHost(getProperty(GG_JETTY_HOST));
+        cfg.jettyPort(intValue(GG_JETTY_PORT, null));
+        cfg.tcpHost(c.getRestTcpHost());
+        cfg.tcpPort(c.getRestTcpPort());
+        cfg.tcpSslContextFactory(compactClass(c.getRestTcpSslContextFactory()));
+
+        return cfg;
     }
 
     /**
@@ -195,4 +200,10 @@ public class VisorRestConfig implements Serializable {
     public void tcpSslContextFactory(String tcpSslCtxFactory) {
         tcpSslContextFactory = tcpSslCtxFactory;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorRestConfig.class, this);
+    }
+
 }

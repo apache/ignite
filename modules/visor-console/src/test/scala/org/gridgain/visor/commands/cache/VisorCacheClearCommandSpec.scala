@@ -11,17 +11,17 @@
 
 package org.gridgain.visor.commands.cache
 
-import org.gridgain.grid.{GridGain => G}
-import org.gridgain.grid._
-import cache._
-import GridCacheMode._
-import GridCacheAtomicityMode._
+import org.gridgain.grid.cache.GridCacheAtomicityMode._
+import org.gridgain.grid.cache.GridCacheMode._
+import org.gridgain.grid.cache._
 import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
-import org.jetbrains.annotations.Nullable
-import collection.JavaConversions._
+import org.gridgain.grid.{GridGain => G, _}
 import org.gridgain.visor._
-import VisorCacheCommand._
+import org.gridgain.visor.commands.cache.VisorCacheCommand._
+import org.jetbrains.annotations.Nullable
+
+import scala.collection.JavaConversions._
 
 /**
  *

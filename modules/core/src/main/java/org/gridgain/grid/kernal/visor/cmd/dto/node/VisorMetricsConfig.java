@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
+import org.gridgain.grid.*;
+
 import java.io.*;
 
 /**
@@ -18,27 +20,43 @@ public class VisorMetricsConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Metrics expire time. */
-    private final long expTime;
+    /** Metrics expired time. */
+    private long expTime;
 
     /** Number of node metrics stored in memory. */
-    private final int historySize;
+    private int historySize;
 
     /** Frequency of metrics log printout. */
-    private final long logFreq;
+    private long logFreq;
 
-    /** Create data transfer object with given parameters. */
-    public VisorMetricsConfig(long expTime, int historySize, long logFreq) {
-        this.expTime = expTime;
-        this.historySize = historySize;
-        this.logFreq = logFreq;
+    /**
+     * Construct data transfer object for node metrics configuration properties.
+     *
+     * @param c Grid configuration.
+     * @return node metrics configuration properties.
+     */
+    public static VisorMetricsConfig from(GridConfiguration c) {
+        VisorMetricsConfig cfg = new VisorMetricsConfig();
+
+        cfg.expireTime(c.getMetricsExpireTime());
+        cfg.historySize(c.getMetricsHistorySize());
+        cfg.loggerFrequency(c.getMetricsLogFrequency());
+
+        return cfg;
     }
 
     /**
-     * @return Metrics expire time.
+     * @return Metrics expired time.
      */
     public long expireTime() {
         return expTime;
+    }
+
+    /**
+     * @param expTime New metrics expire time.
+     */
+    public void expireTime(long expTime) {
+        this.expTime = expTime;
     }
 
     /**
@@ -49,9 +67,23 @@ public class VisorMetricsConfig implements Serializable {
     }
 
     /**
+     * @param historySize New number of node metrics stored in memory.
+     */
+    public void historySize(int historySize) {
+        this.historySize = historySize;
+    }
+
+    /**
      * @return Frequency of metrics log printout.
      */
     public long loggerFrequency() {
         return logFreq;
+    }
+
+    /**
+     * @param logFreq New frequency of metrics log printout.
+     */
+    public void loggerFrequency(long logFreq) {
+        this.logFreq = logFreq;
     }
 }

@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.visor.cmd.dto.cache;
 
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 
@@ -21,33 +22,40 @@ public class VisorDefaultConfig implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Default transaction isolation. */
-    private final GridCacheTxIsolation txIsolation;
+    private GridCacheTxIsolation txIsolation;
 
     /** Default transaction concurrency. */
-    private final GridCacheTxConcurrency txConcurrency;
+    private GridCacheTxConcurrency txConcurrency;
+
+    /** TTL value. */
+    private long ttl;
 
     /** Default transaction concurrency. */
-    private final long txTimeout;
+    private long txTimeout;
 
     /** Default transaction timeout. */
-    private final long txLockTimeout;
+    private long txLockTimeout;
 
     /** Default query timeout. */
-    private final long queryTimeout;
+    private long queryTimeout;
 
-    /** Create data transfer object with given parameters. */
-    public VisorDefaultConfig(
-        GridCacheTxIsolation txIsolation,
-        GridCacheTxConcurrency txConcurrency,
-        long txTimeout,
-        long txLockTimeout,
-        long queryTimeout
-    ) {
-        this.txIsolation = txIsolation;
-        this.txConcurrency = txConcurrency;
-        this.txTimeout = txTimeout;
-        this.txLockTimeout = txLockTimeout;
-        this.queryTimeout = queryTimeout;
+    /**
+     * Construct data transfer object for default cache configuration properties.
+     *
+     * @param ccfg Cache configuration.
+     * @return Default cache configuration properties.
+     */
+    public static VisorDefaultConfig from(GridCacheConfiguration ccfg) {
+        VisorDefaultConfig cfg = new VisorDefaultConfig();
+
+        cfg.txIsolation(ccfg.getDefaultTxIsolation());
+        cfg.txConcurrency(ccfg.getDefaultTxConcurrency());
+        cfg.timeToLive(ccfg.getDefaultTimeToLive());
+        cfg.txTimeout(ccfg.getDefaultTxTimeout());
+        cfg.txLockTimeout(ccfg.getDefaultLockTimeout());
+        cfg.queryTimeout(ccfg.getDefaultQueryTimeout());
+
+        return cfg;
     }
 
     /**
@@ -58,10 +66,38 @@ public class VisorDefaultConfig implements Serializable {
     }
 
     /**
+     * @param txIsolation New default transaction isolation.
+     */
+    public void txIsolation(GridCacheTxIsolation txIsolation) {
+        this.txIsolation = txIsolation;
+    }
+
+    /**
      * @return Default transaction concurrency.
      */
     public GridCacheTxConcurrency txConcurrency() {
         return txConcurrency;
+    }
+
+    /**
+     * @param txConcurrency New default transaction concurrency.
+     */
+    public void txConcurrency(GridCacheTxConcurrency txConcurrency) {
+        this.txConcurrency = txConcurrency;
+    }
+
+    /**
+     * @return TTL value.
+     */
+    public long timeToLive() {
+        return ttl;
+    }
+
+    /**
+     * @param ttl New tTL value.
+     */
+    public void timeToLive(long ttl) {
+        this.ttl = ttl;
     }
 
     /**
@@ -72,6 +108,13 @@ public class VisorDefaultConfig implements Serializable {
     }
 
     /**
+     * @param txTimeout New default transaction concurrency.
+     */
+    public void txTimeout(long txTimeout) {
+        this.txTimeout = txTimeout;
+    }
+
+    /**
      * @return Default transaction timeout.
      */
     public long txLockTimeout() {
@@ -79,9 +122,28 @@ public class VisorDefaultConfig implements Serializable {
     }
 
     /**
+     * @param txLockTimeout New default transaction timeout.
+     */
+    public void txLockTimeout(long txLockTimeout) {
+        this.txLockTimeout = txLockTimeout;
+    }
+
+    /**
      * @return Default query timeout.
      */
     public long queryTimeout() {
         return queryTimeout;
+    }
+
+    /**
+     * @param qryTimeout New default query timeout.
+     */
+    public void queryTimeout(long qryTimeout) {
+        queryTimeout = qryTimeout;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorDefaultConfig.class, this);
     }
 }

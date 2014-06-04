@@ -9,10 +9,14 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.segmentation.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+
+import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.*;
 
 /**
  * Data transfer object for node segmentation configuration properties.
@@ -21,34 +25,37 @@ public class VisorSegmentationConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /**Segmentation policy. */
-    private final GridSegmentationPolicy plc;
+    /** Segmentation policy. */
+    private GridSegmentationPolicy plc;
 
-    /**Segmentation resolvers. */
-    @Nullable private final String resolvers;
+    /** Segmentation resolvers. */
+    @Nullable private String resolvers;
 
-    /**Frequency of network segment check by discovery manager. */
-    private final long checkFreq;
+    /** Frequency of network segment check by discovery manager. */
+    private long checkFreq;
 
-    /**Whether or not node should wait for correct segment on start. */
-    private final boolean waitOnStart;
+    /** Whether or not node should wait for correct segment on start. */
+    private boolean waitOnStart;
 
-    /**Whether or not all resolvers should succeed for node to be in correct segment. */
-    private final boolean passRequired;
+    /** Whether or not all resolvers should succeed for node to be in correct segment. */
+    private boolean passRequired;
 
-    /** Create data transfer object with given parameters. */
-    public VisorSegmentationConfig(
-        GridSegmentationPolicy plc,
-        @Nullable String resolvers,
-        long checkFreq,
-        boolean waitOnStart,
-        boolean passRequired
-    ) {
-        this.plc = plc;
-        this.resolvers = resolvers;
-        this.checkFreq = checkFreq;
-        this.waitOnStart = waitOnStart;
-        this.passRequired = passRequired;
+    /**
+     * Construct data transfer object for segmentation configuration properties.
+     *
+     * @param c Grid configuration.
+     * @return segmentation configuration properties.
+     */
+    public static VisorSegmentationConfig from(GridConfiguration c) {
+        VisorSegmentationConfig cfg = new VisorSegmentationConfig();
+
+        cfg.policy(c.getSegmentationPolicy());
+        cfg.resolvers(compactArray(c.getSegmentationResolvers()));
+        cfg.checkFrequency(c.getSegmentCheckFrequency());
+        cfg.waitOnStart(c.isWaitForSegmentOnStart());
+        cfg.passRequired(c.isAllSegmentationResolversPassRequired());
+
+        return cfg;
     }
 
     /**
@@ -59,10 +66,24 @@ public class VisorSegmentationConfig implements Serializable {
     }
 
     /**
+     * @param plc New segmentation policy.
+     */
+    public void policy(GridSegmentationPolicy plc) {
+        this.plc = plc;
+    }
+
+    /**
      * @return Segmentation resolvers.
      */
     @Nullable public String resolvers() {
         return resolvers;
+    }
+
+    /**
+     * @param resolvers New segmentation resolvers.
+     */
+    public void resolvers(@Nullable String resolvers) {
+        this.resolvers = resolvers;
     }
 
     /**
@@ -73,6 +94,13 @@ public class VisorSegmentationConfig implements Serializable {
     }
 
     /**
+     * @param checkFreq New frequency of network segment check by discovery manager.
+     */
+    public void checkFrequency(long checkFreq) {
+        this.checkFreq = checkFreq;
+    }
+
+    /**
      * @return Whether or not node should wait for correct segment on start.
      */
     public boolean waitOnStart() {
@@ -80,9 +108,28 @@ public class VisorSegmentationConfig implements Serializable {
     }
 
     /**
+     * @param waitOnStart New whether or not node should wait for correct segment on start.
+     */
+    public void waitOnStart(boolean waitOnStart) {
+        this.waitOnStart = waitOnStart;
+    }
+
+    /**
      * @return Whether or not all resolvers should succeed for node to be in correct segment.
      */
-    public boolean allResolversPassRequired() {
+    public boolean passRequired() {
         return passRequired;
+    }
+
+    /**
+     * @param passRequired New whether or not all resolvers should succeed for node to be in correct segment.
+     */
+    public void passRequired(boolean passRequired) {
+        this.passRequired = passRequired;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorSegmentationConfig.class, this);
     }
 }

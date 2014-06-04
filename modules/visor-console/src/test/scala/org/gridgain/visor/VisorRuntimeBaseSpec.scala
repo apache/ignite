@@ -11,7 +11,6 @@
 package org.gridgain.visor
 
 import org.gridgain.grid.{GridGain => G, _}
-
 import org.scalatest._
 
 /**

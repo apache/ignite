@@ -10,10 +10,13 @@
 package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
+
+import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.*;
 
 /**
  * Data transfer object for GGFS configuration properties.
@@ -23,142 +26,142 @@ public class VisorGgfsConfig implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** GGFS instance name. */
-    private final String name;
+    private String name;
 
     /** Cache name to store GGFS meta information. */
-    private final String metaCacheName;
+    private String metaCacheName;
 
     /** Cache name to store GGFS data. */
-    private final String dataCacheName;
+    private String dataCacheName;
 
     /** File's data block size. */
-    private final int blockSize;
+    private int blockSize;
 
     /** Number of pre-fetched blocks if specific file's chunk is requested. */
-    private final int prefetchBlocks;
+    private int prefetchBlocks;
 
     /** Read/write buffer size for GGFS stream operations in bytes. */
-    private final int streamBufferSize;
+    private int streamBufferSize;
 
     /** Number of file blocks buffered on local node before sending batch to remote node. */
-    private final int perNodeBatchSize;
+    private int perNodeBatchSize;
 
     /** Number of batches that can be concurrently sent to remote node. */
-    private final int perNodeParallelBatchCount;
+    private int perNodeParallelBatchCount;
 
     /** URI of the secondary Hadoop file system. */
-    private final String secondaryHadoopFileSystemUri;
+    private String secondaryHadoopFileSystemUri;
 
     /** Path for the secondary hadoop file system config. */
-    private final String secondaryHadoopFileSystemConfigPath;
+    private String secondaryHadoopFileSystemConfigPath;
 
     /** GGFS instance mode. */
-    private final GridGgfsMode defaultMode;
+    private GridGgfsMode defaultMode;
 
     /** Map of paths to GGFS modes. */
-    private final Map<String, GridGgfsMode> pathModes;
+    private Map<String, GridGgfsMode> pathModes;
 
     /** Dual mode PUT operations executor service. */
-    private final String dualModePutExecutorService;
+    private String dualModePutExecutorService;
 
     /** Dual mode PUT operations executor service shutdown flag. */
-    private final boolean dualModePutExecutorServiceShutdown;
+    private boolean dualModePutExecutorServiceShutdown;
 
     /** Maximum amount of data in pending puts. */
-    private final long dualModeMaxPendingPutsSize;
+    private long dualModeMaxPendingPutsSize;
 
     /** Maximum range length. */
-    private final long maxTaskRangeLength;
+    private long maxTaskRangeLength;
 
     /** Fragmentizer concurrent files. */
-    private final int fragmentizerConcurrentFiles;
+    private int fragmentizerConcurrentFiles;
 
     /** Fragmentizer local writes ratio. */
-    private final float fragmentizerLocWritesRatio;
+    private float fragmentizerLocWritesRatio;
 
     /** Fragmentizer enabled flag. */
-    private final boolean fragmentizerEnabled;
+    private boolean fragmentizerEnabled;
 
     /** Fragmentizer throttling block length. */
-    private final long fragmentizerThrottlingBlockLen;
+    private long fragmentizerThrottlingBlockLen;
 
     /** Fragmentizer throttling delay. */
-    private final long fragmentizerThrottlingDelay;
+    private long fragmentizerThrottlingDelay;
 
     /** IPC endpoint config (in JSON format) to publish GGFS over. */
-    private final String ipcEndpointCfg;
+    private String ipcEndpointCfg;
 
     /** IPC endpoint enabled flag. */
-    private final boolean ipcEndpointEnabled;
+    private boolean ipcEndpointEnabled;
 
     /** Maximum space. */
-    private final long maxSpace;
+    private long maxSpace;
 
     /** Management port. */
-    private final int mgmtPort;
+    private int mgmtPort;
 
     /** Amount of sequential block reads before prefetch is triggered. */
-    private final int seqReadsBeforePrefetch;
+    private int seqReadsBeforePrefetch;
 
     /** Trash purge await timeout. */
-    private final long trashPurgeTimeout;
+    private long trashPurgeTimeout;
 
-    /** Create data transfer object with given parameters. */
-    public VisorGgfsConfig(
-        @Nullable String name,
-        @Nullable String metaCacheName,
-        @Nullable String dataCacheName,
-        int blockSize,
-        int prefetchBlocks,
-        int streamBufferSize,
-        int perNodeBatchSize,
-        int perNodeParallelBatchCount,
-        @Nullable String secondaryHadoopFileSystemUri,
-        @Nullable String secondaryHadoopFileSystemConfigPath,
-        GridGgfsMode defaultMode,
-        @Nullable Map<String, GridGgfsMode> pathModes,
-        String dualModePutExecutorService,
-        boolean dualModePutExecutorServiceShutdown,
-        long dualModeMaxPendingPutsSize,
-        long maxTaskRangeLength,
-        int fragmentizerConcurrentFiles,
-        float fragmentizerLocWritesRatio,
-        boolean fragmentizerEnabled,
-        long fragmentizerThrottlingBlockLen,
-        long fragmentizerThrottlingDelay,
-        @Nullable String ipcEndpointCfg,
-        boolean ipcEndpointEnabled,
-        long maxSpace, int mgmtPort,
-        int seqReadsBeforePrefetch,
-        long trashPurgeTimeout
-    ) {
-        this.name = name;
-        this.metaCacheName = metaCacheName;
-        this.dataCacheName = dataCacheName;
-        this.blockSize = blockSize;
-        this.prefetchBlocks = prefetchBlocks;
-        this.streamBufferSize = streamBufferSize;
-        this.perNodeBatchSize = perNodeBatchSize;
-        this.perNodeParallelBatchCount = perNodeParallelBatchCount;
-        this.secondaryHadoopFileSystemUri = secondaryHadoopFileSystemUri;
-        this.secondaryHadoopFileSystemConfigPath = secondaryHadoopFileSystemConfigPath;
-        this.defaultMode = defaultMode;
-        this.pathModes = pathModes;
-        this.dualModePutExecutorService = dualModePutExecutorService;
-        this.dualModePutExecutorServiceShutdown = dualModePutExecutorServiceShutdown;
-        this.dualModeMaxPendingPutsSize = dualModeMaxPendingPutsSize;
-        this.maxTaskRangeLength = maxTaskRangeLength;
-        this.fragmentizerConcurrentFiles = fragmentizerConcurrentFiles;
-        this.fragmentizerLocWritesRatio = fragmentizerLocWritesRatio;
-        this.fragmentizerEnabled = fragmentizerEnabled;
-        this.fragmentizerThrottlingBlockLen = fragmentizerThrottlingBlockLen;
-        this.fragmentizerThrottlingDelay = fragmentizerThrottlingDelay;
-        this.ipcEndpointCfg = ipcEndpointCfg;
-        this.ipcEndpointEnabled = ipcEndpointEnabled;
-        this.maxSpace = maxSpace;
-        this.mgmtPort = mgmtPort;
-        this.seqReadsBeforePrefetch = seqReadsBeforePrefetch;
-        this.trashPurgeTimeout = trashPurgeTimeout;
+    /**
+     * Construct data transfer object for ggfs configuration properties.
+     *
+     * @param ggfs ggfs configuration.
+     * @return ggfs configuration properties.
+     */
+    public static VisorGgfsConfig from(GridGgfsConfiguration ggfs) {
+        VisorGgfsConfig cfg = new VisorGgfsConfig();
+
+        cfg.name(ggfs.getName());
+        cfg.metaCacheName(ggfs.getMetaCacheName());
+        cfg.dataCacheName(ggfs.getDataCacheName());
+        cfg.blockSize(ggfs.getBlockSize());
+        cfg.prefetchBlocks(ggfs.getPrefetchBlocks());
+        cfg.streamBufferSize(ggfs.getStreamBufferSize());
+        cfg.perNodeBatchSize(ggfs.getPerNodeBatchSize());
+        cfg.perNodeParallelBatchCount(ggfs.getPerNodeParallelBatchCount());
+        cfg.secondaryHadoopFileSystemUri(ggfs.getSecondaryHadoopFileSystemUri());
+        cfg.secondaryHadoopFileSystemConfigPath(ggfs.getSecondaryHadoopFileSystemConfigPath());
+        cfg.defaultMode(ggfs.getDefaultMode());
+        cfg.pathModes(ggfs.getPathModes());
+        cfg.dualModePutExecutorService(compactClass(ggfs.getDualModePutExecutorService()));
+        cfg.dualModePutExecutorServiceShutdown(ggfs.getDualModePutExecutorServiceShutdown());
+        cfg.dualModeMaxPendingPutsSize(ggfs.getDualModeMaxPendingPutsSize());
+        cfg.maxTaskRangeLength(ggfs.getMaximumTaskRangeLength());
+        cfg.fragmentizerConcurrentFiles(ggfs.getFragmentizerConcurrentFiles());
+        cfg.fragmentizerLocalWritesRatio(ggfs.getFragmentizerLocalWritesRatio());
+        cfg.fragmentizerEnabled(ggfs.isFragmentizerEnabled());
+        cfg.fragmentizerThrottlingBlockLength(ggfs.getFragmentizerThrottlingBlockLength());
+        cfg.fragmentizerThrottlingDelay(ggfs.getFragmentizerThrottlingDelay());
+        cfg.ipcEndpointConfiguration(ggfs.getIpcEndpointConfiguration());
+        cfg.ipcEndpointEnabled(ggfs.isIpcEndpointEnabled());
+        cfg.maxSpace(ggfs.getMaxSpaceSize());
+        cfg.managementPort(ggfs.getManagementPort());
+        cfg.sequenceReadsBeforePrefetch(ggfs.getSequentialReadsBeforePrefetch());
+        cfg.trashPurgeTimeout(ggfs.getTrashPurgeTimeout());
+
+        return cfg;
+    }
+
+    /**
+     * Construct data transfer object for ggfs configurations properties.
+     *
+     * @param ggfss ggfs configurations.
+     * @return ggfs configurations properties.
+     */
+    public static Iterable<VisorGgfsConfig> list(GridGgfsConfiguration[] ggfss) {
+        if (ggfss == null)
+            return null;
+
+        final Collection<VisorGgfsConfig> cfgs = new ArrayList<>(ggfss.length);
+
+        for (GridGgfsConfiguration ggfs : ggfss)
+            cfgs.add(from(ggfs));
+
+        return cfgs;
     }
 
     /**
@@ -169,10 +172,24 @@ public class VisorGgfsConfig implements Serializable {
     }
 
     /**
+     * @param name New gGFS instance name.
+     */
+    public void name(@Nullable String name) {
+        this.name = name;
+    }
+
+    /**
      * @return Cache name to store GGFS meta information.
      */
     @Nullable public String metaCacheName() {
         return metaCacheName;
+    }
+
+    /**
+     * @param metaCacheName New cache name to store GGFS meta information.
+     */
+    public void metaCacheName(@Nullable String metaCacheName) {
+        this.metaCacheName = metaCacheName;
     }
 
     /**
@@ -183,10 +200,24 @@ public class VisorGgfsConfig implements Serializable {
     }
 
     /**
+     * @param dataCacheName New cache name to store GGFS data.
+     */
+    public void dataCacheName(@Nullable String dataCacheName) {
+        this.dataCacheName = dataCacheName;
+    }
+
+    /**
      * @return File's data block size.
      */
     public int blockSize() {
         return blockSize;
+    }
+
+    /**
+     * @param blockSize New file's data block size.
+     */
+    public void blockSize(int blockSize) {
+        this.blockSize = blockSize;
     }
 
     /**
@@ -197,10 +228,24 @@ public class VisorGgfsConfig implements Serializable {
     }
 
     /**
+     * @param prefetchBlocks New number of pre-fetched blocks if specific file's chunk is requested.
+     */
+    public void prefetchBlocks(int prefetchBlocks) {
+        this.prefetchBlocks = prefetchBlocks;
+    }
+
+    /**
      * @return Read/write buffer size for GGFS stream operations in bytes.
      */
     public int streamBufferSize() {
         return streamBufferSize;
+    }
+
+    /**
+     * @param streamBufSize New read/write buffer size for GGFS stream operations in bytes.
+     */
+    public void streamBufferSize(int streamBufSize) {
+        streamBufferSize = streamBufSize;
     }
 
     /**
@@ -211,10 +256,24 @@ public class VisorGgfsConfig implements Serializable {
     }
 
     /**
+     * @param perNodeBatchSize New number of file blocks buffered on local node before sending batch to remote node.
+     */
+    public void perNodeBatchSize(int perNodeBatchSize) {
+        this.perNodeBatchSize = perNodeBatchSize;
+    }
+
+    /**
      * @return Number of batches that can be concurrently sent to remote node.
      */
     public int perNodeParallelBatchCount() {
         return perNodeParallelBatchCount;
+    }
+
+    /**
+     * @param perNodeParallelBatchCnt New number of batches that can be concurrently sent to remote node.
+     */
+    public void perNodeParallelBatchCount(int perNodeParallelBatchCnt) {
+        perNodeParallelBatchCount = perNodeParallelBatchCnt;
     }
 
     /**
@@ -225,10 +284,24 @@ public class VisorGgfsConfig implements Serializable {
     }
 
     /**
+     * @param secondaryHadoopFileSysUri New URI of the secondary Hadoop file system.
+     */
+    public void secondaryHadoopFileSystemUri(@Nullable String secondaryHadoopFileSysUri) {
+        secondaryHadoopFileSystemUri = secondaryHadoopFileSysUri;
+    }
+
+    /**
      * @return Path for the secondary hadoop file system config.
      */
     @Nullable public String secondaryHadoopFileSystemConfigPath() {
         return secondaryHadoopFileSystemConfigPath;
+    }
+
+    /**
+     * @param secondaryHadoopFileSysCfgPath New path for the secondary hadoop file system config.
+     */
+    public void secondaryHadoopFileSystemConfigPath(@Nullable String secondaryHadoopFileSysCfgPath) {
+        secondaryHadoopFileSystemConfigPath = secondaryHadoopFileSysCfgPath;
     }
 
     /**
@@ -239,10 +312,24 @@ public class VisorGgfsConfig implements Serializable {
     }
 
     /**
+     * @param dfltMode New gGFS instance mode.
+     */
+    public void defaultMode(GridGgfsMode dfltMode) {
+        defaultMode = dfltMode;
+    }
+
+    /**
      * @return Map of paths to GGFS modes.
      */
     @Nullable public Map<String, GridGgfsMode> pathModes() {
         return pathModes;
+    }
+
+    /**
+     * @param pathModes New map of paths to GGFS modes.
+     */
+    public void pathModes(@Nullable Map<String, GridGgfsMode> pathModes) {
+        this.pathModes = pathModes;
     }
 
     /**
@@ -253,10 +340,24 @@ public class VisorGgfsConfig implements Serializable {
     }
 
     /**
+     * @param dualModePutExecutorSrvc New dual mode PUT operations executor service.
+     */
+    public void dualModePutExecutorService(String dualModePutExecutorSrvc) {
+        dualModePutExecutorService = dualModePutExecutorSrvc;
+    }
+
+    /**
      * @return Dual mode PUT operations executor service shutdown flag.
      */
     public boolean dualModePutExecutorServiceShutdown() {
         return dualModePutExecutorServiceShutdown;
+    }
+
+    /**
+     * @param dualModePutExecutorSrvcShutdown New dual mode PUT operations executor service shutdown flag.
+     */
+    public void dualModePutExecutorServiceShutdown(boolean dualModePutExecutorSrvcShutdown) {
+        dualModePutExecutorServiceShutdown = dualModePutExecutorSrvcShutdown;
     }
 
     /**
@@ -267,10 +368,24 @@ public class VisorGgfsConfig implements Serializable {
     }
 
     /**
+     * @param dualModeMaxPendingPutsSize New maximum amount of data in pending puts.
+     */
+    public void dualModeMaxPendingPutsSize(long dualModeMaxPendingPutsSize) {
+        this.dualModeMaxPendingPutsSize = dualModeMaxPendingPutsSize;
+    }
+
+    /**
      * @return Maximum range length.
      */
     public long maxTaskRangeLength() {
         return maxTaskRangeLength;
+    }
+
+    /**
+     * @param maxTaskRangeLen New maximum range length.
+     */
+    public void maxTaskRangeLength(long maxTaskRangeLen) {
+        maxTaskRangeLength = maxTaskRangeLen;
     }
 
     /**
@@ -281,10 +396,24 @@ public class VisorGgfsConfig implements Serializable {
     }
 
     /**
+     * @param fragmentizerConcurrentFiles New fragmentizer concurrent files.
+     */
+    public void fragmentizerConcurrentFiles(int fragmentizerConcurrentFiles) {
+        this.fragmentizerConcurrentFiles = fragmentizerConcurrentFiles;
+    }
+
+    /**
      * @return Fragmentizer local writes ratio.
      */
     public float fragmentizerLocalWritesRatio() {
         return fragmentizerLocWritesRatio;
+    }
+
+    /**
+     * @param fragmentizerLocWritesRatio New fragmentizer local writes ratio.
+     */
+    public void fragmentizerLocalWritesRatio(float fragmentizerLocWritesRatio) {
+        this.fragmentizerLocWritesRatio = fragmentizerLocWritesRatio;
     }
 
     /**
@@ -295,10 +424,24 @@ public class VisorGgfsConfig implements Serializable {
     }
 
     /**
+     * @param fragmentizerEnabled New fragmentizer enabled flag.
+     */
+    public void fragmentizerEnabled(boolean fragmentizerEnabled) {
+        this.fragmentizerEnabled = fragmentizerEnabled;
+    }
+
+    /**
      * @return Fragmentizer throttling block length.
      */
     public long fragmentizerThrottlingBlockLength() {
         return fragmentizerThrottlingBlockLen;
+    }
+
+    /**
+     * @param fragmentizerThrottlingBlockLen New fragmentizer throttling block length.
+     */
+    public void fragmentizerThrottlingBlockLength(long fragmentizerThrottlingBlockLen) {
+        this.fragmentizerThrottlingBlockLen = fragmentizerThrottlingBlockLen;
     }
 
     /**
@@ -309,10 +452,24 @@ public class VisorGgfsConfig implements Serializable {
     }
 
     /**
+     * @param fragmentizerThrottlingDelay New fragmentizer throttling delay.
+     */
+    public void fragmentizerThrottlingDelay(long fragmentizerThrottlingDelay) {
+        this.fragmentizerThrottlingDelay = fragmentizerThrottlingDelay;
+    }
+
+    /**
      * @return IPC endpoint config (in JSON format) to publish GGFS over.
      */
-    @Nullable public String ipcEndpointConfig() {
+    @Nullable public String ipcEndpointConfiguration() {
         return ipcEndpointCfg;
+    }
+
+    /**
+     * @param ipcEndpointCfg New IPC endpoint config (in JSON format) to publish GGFS over.
+     */
+    public void ipcEndpointConfiguration(@Nullable String ipcEndpointCfg) {
+        this.ipcEndpointCfg = ipcEndpointCfg;
     }
 
     /**
@@ -323,6 +480,13 @@ public class VisorGgfsConfig implements Serializable {
     }
 
     /**
+     * @param ipcEndpointEnabled New iPC endpoint enabled flag.
+     */
+    public void ipcEndpointEnabled(boolean ipcEndpointEnabled) {
+        this.ipcEndpointEnabled = ipcEndpointEnabled;
+    }
+
+    /**
      * @return Maximum space.
      */
     public long maxSpace() {
@@ -330,10 +494,24 @@ public class VisorGgfsConfig implements Serializable {
     }
 
     /**
+     * @param maxSpace New maximum space.
+     */
+    public void maxSpace(long maxSpace) {
+        this.maxSpace = maxSpace;
+    }
+
+    /**
      * @return Management port.
      */
-    public int mgmtPort() {
+    public int managementPort() {
         return mgmtPort;
+    }
+
+    /**
+     * @param mgmtPort New management port.
+     */
+    public void managementPort(int mgmtPort) {
+        this.mgmtPort = mgmtPort;
     }
 
     /**
@@ -344,9 +522,29 @@ public class VisorGgfsConfig implements Serializable {
     }
 
     /**
+     * @param seqReadsBeforePrefetch New amount of sequential block reads before prefetch is triggered.
+     */
+    public void sequenceReadsBeforePrefetch(int seqReadsBeforePrefetch) {
+        this.seqReadsBeforePrefetch = seqReadsBeforePrefetch;
+    }
+
+    /**
      * @return Trash purge await timeout.
      */
     public long trashPurgeTimeout() {
         return trashPurgeTimeout;
     }
+
+    /**
+     * @param trashPurgeTimeout New trash purge await timeout.
+     */
+    public void trashPurgeTimeout(long trashPurgeTimeout) {
+        this.trashPurgeTimeout = trashPurgeTimeout;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorGgfsConfig.class, this);
+    }
+
 }

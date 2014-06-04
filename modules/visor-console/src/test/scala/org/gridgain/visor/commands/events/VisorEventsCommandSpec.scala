@@ -11,9 +11,9 @@
 
 package org.gridgain.visor.commands.events
 
-import org.gridgain.visor._
-import VisorEventsCommand._
 import org.gridgain.grid._
+import org.gridgain.visor._
+import org.gridgain.visor.commands.events.VisorEventsCommand._
 
 /**
  * Unit test for 'events' command.
@@ -39,18 +39,18 @@ class VisorEventsCommandSpec extends VisorRuntimeBaseSpec(1) {
     it should "print error message when not connected" in {
         closeVisorQuiet()
 
-        visor events()
+        visor.events()
     }
 
     it should "display all events from remote node" in {
-        visor events("-id8=@n0")
+        visor.events("-id8=@n0")
     }
 
     it should "display top 3 events from remote node" in {
-        visor events("-id8=@n0 -c=3")
+        visor.events("-id8=@n0 -c=3")
     }
 
     it should "print error message with invalid count" in {
-        visor events("-id8=@n0 -c=x")
+        visor.events("-id8=@n0 -c=x")
     }
 }

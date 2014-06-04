@@ -9,9 +9,14 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto.cache;
 
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+
+import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.*;
 
 /**
  * Data transfer object for near cache configuration properties.
@@ -21,19 +26,28 @@ public class VisorNearCacheConfig implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Flag to enable/disable near cache eviction policy. */
-    private final boolean nearEnabled;
+    private boolean nearEnabled;
 
     /** Near cache start size. */
-    private final int nearStartSize;
+    private int nearStartSize;
 
     /** Near cache eviction policy. */
-    private final String nearEvictPlc;
+    private String nearEvictPlc;
 
-    /** Create data transfer object with given parameters. */
-    public VisorNearCacheConfig(boolean nearEnabled, int nearStartSize, @Nullable String nearEvictPlc) {
-        this.nearEnabled = nearEnabled;
-        this.nearStartSize = nearStartSize;
-        this.nearEvictPlc = nearEvictPlc;
+    /**
+     * Construct data transfer object for near cache configuration properties.
+     *
+     * @param ccfg Cache configuration.
+     * @return Near cache configuration properties
+     */
+    public static VisorNearCacheConfig from(GridCacheConfiguration ccfg) {
+        VisorNearCacheConfig cfg = new VisorNearCacheConfig();
+
+        cfg.nearEnabled(GridCacheUtils.isNearEnabled(ccfg));
+        cfg.nearStartSize(ccfg.getNearStartSize());
+        cfg.nearEvictPolicy(compactClass(ccfg.getNearEvictionPolicy()));
+
+        return cfg;
     }
 
     /**
@@ -44,6 +58,13 @@ public class VisorNearCacheConfig implements Serializable {
     }
 
     /**
+     * @param nearEnabled New flag to enable/disable near cache eviction policy.
+     */
+    public void nearEnabled(boolean nearEnabled) {
+        this.nearEnabled = nearEnabled;
+    }
+
+    /**
      * @return Near cache start size.
      */
     public int nearStartSize() {
@@ -51,9 +72,28 @@ public class VisorNearCacheConfig implements Serializable {
     }
 
     /**
+     * @param nearStartSize New near cache start size.
+     */
+    public void nearStartSize(int nearStartSize) {
+        this.nearStartSize = nearStartSize;
+    }
+
+    /**
      * @return Near cache eviction policy.
      */
     @Nullable public String nearEvictPolicy() {
         return nearEvictPlc;
+    }
+
+    /**
+     * @param nearEvictPlc New near cache eviction policy.
+     */
+    public void nearEvictPolicy(String nearEvictPlc) {
+        this.nearEvictPlc = nearEvictPlc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorNearCacheConfig.class, this);
     }
 }
