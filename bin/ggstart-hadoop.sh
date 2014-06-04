@@ -27,7 +27,7 @@ if [ "$HADOOP_HOME" == "" ]; then
 fi
 
 if [ "$HADOOP_HOME" == "" ]; then
-    echo HADOOP_HOME variable is not set
+    echo ERROR: HADOOP_HOME variable is not set.
     exit 1
 fi
 
@@ -39,7 +39,7 @@ echo
 # Setting all hadoop modules if it's not set by /etc/default/hadoop
 #
 if [ "$HADOOP_COMMON_HOME" == "" ]; then
-    HADOOP_COMMON_HOME=$HADOOP_HOME/share/hadoop/common
+    export HADOOP_COMMON_HOME=$HADOOP_HOME/share/hadoop/common
 fi
 
 if [ "$HADOOP_HDFS_HOME" == "" ]; then
@@ -84,4 +84,4 @@ CP=${CP}${SEP}$file
 
 export GRIDGAIN_HADOOP_CLASSPATH=$CP
 
-$(dirname $0)/ggstart.sh
+$(dirname $0)/ggstart.sh $@
