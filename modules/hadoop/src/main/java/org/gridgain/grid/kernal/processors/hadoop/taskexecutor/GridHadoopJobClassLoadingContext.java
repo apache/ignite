@@ -15,6 +15,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -204,7 +205,7 @@ public class GridHadoopJobClassLoadingContext {
     /**
      *
      */
-    private static class ClassLoaderWrapper extends ClassLoader {
+    private static class ClassLoaderWrapper extends ClassLoader implements GridInternalClassLoader {
         /** */
         private URLClassLoader delegate;
 
@@ -226,27 +227,30 @@ public class GridHadoopJobClassLoadingContext {
 
         /** {@inheritDoc} */
         @Override public Class<?> loadClass(String name) throws ClassNotFoundException {
-            try {
-                return delegate.loadClass(name);
+            if (delegate != null) {
+                try {
+                    return delegate.loadClass(name);
+                } catch (ClassNotFoundException ignore) {
+                    return super.loadClass(name);
+                }
             }
-            catch (ClassNotFoundException ignore) {
+            else
                 return super.loadClass(name);
-            }
         }
 
         /** {@inheritDoc} */
         @Override public InputStream getResourceAsStream(String name) {
-            return delegate.getResourceAsStream(name);
+            return delegate != null ? delegate.getResourceAsStream(name) : super.getResourceAsStream(name);
         }
 
         /** {@inheritDoc} */
         @Override public URL findResource(final String name) {
-            return delegate.findResource(name);
+            return delegate != null ? delegate.findResource(name) : super.findResource(name);
         }
 
         /** {@inheritDoc} */
         @Override public Enumeration<URL> findResources(final String name) throws IOException {
-            return delegate.findResources(name);
+            return delegate != null ? delegate.findResources(name) : super.findResources(name);
         }
     }
 }
