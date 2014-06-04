@@ -292,11 +292,6 @@ public class GridHadoopV2Job implements GridHadoopJob {
         return jobInfo.configuration().get(name);
     }
 
-    @Override
-    public Comparator keyComparator() {
-        return null; // TODO
-    }
-
     /**
      * @param type Task type.
      * @return Hadoop task type.

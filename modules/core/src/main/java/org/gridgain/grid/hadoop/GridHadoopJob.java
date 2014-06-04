@@ -91,11 +91,4 @@ public interface GridHadoopJob {
      * @return Value or {@code null} if none.
      */
     @Nullable public String property(String name);
-
-    /**
-     * Gets comparator to be used to compare keys for combiner and reducer.
-     *
-     * @return Key comparator.
-     */
-    Comparator keyComparator();
 }

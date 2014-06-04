@@ -39,11 +39,14 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
     /**
      * @param job Job.
      * @param mem Memory.
+     * @param cmp Comparator for keys.
      */
-    public GridHadoopSkipList(GridHadoopJob job, GridUnsafeMemory mem) {
+    public GridHadoopSkipList(GridHadoopJob job, GridUnsafeMemory mem, Comparator cmp) {
         super(job, mem);
 
-        cmp = job.keyComparator();
+        assert cmp != null;
+
+        this.cmp = cmp;
     }
 
     /** {@inheritDoc} */
@@ -57,7 +60,9 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
             long lastVisited = ignoreLastVisited ? 0 : lastVisitedValue(meta);
 
             if (valPtr != lastVisited) {
-                v.onKey(key(meta), keySize(meta));
+                long k = key(meta);
+
+                v.onKey(k + 4, keySize(k));
 
                 lastVisitedValue(meta, valPtr); // Set it to the first value in chain.
 
@@ -219,7 +224,16 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
          * @return Key.
          */
         public Object readKey(long meta) {
-            return readValue(key(meta));
+            assert meta > 0 : meta;
+
+            long k = key(meta);
+
+            try {
+                return read(k + 4, keySize(k));
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
         }
     }
 
@@ -303,13 +317,6 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
         }
 
         /**
-         * @return Upper meta from the stack.
-         */
-        private long upperMeta() {
-            return stack.isEmpty() ? -1L : stack.last();
-        }
-
-        /**
          * @param key Key.
          * @param val Value.
          * @return Meta pointer.
@@ -325,6 +332,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
                 valPtr = write(12, val, valSer);
                 int valSize = writtenSize() - 12;
 
+                nextValue(valPtr, 0);
                 valueSize(valPtr, valSize);
             }
 
@@ -336,7 +344,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
             int level = topLevel.get();
             long meta = level < 0 ? 0 : heads.get(level);
 
-            for (int cmpRes = 0;;) {
+            for (;;) {
                 if (level < 0) { // We did not find our key, trying to add new meta.
                     if (keyPtr == 0) { // Write key and create meta only once.
                         keyPtr = writeKey(key);
@@ -356,8 +364,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
                         meta = nextMeta(prevMeta, level = 0);
                 }
 
-                if (meta != upperMeta()) // If meta is the same as the upper one, we already know the comparison result.
-                    cmpRes = cmp(key, meta);
+                int cmpRes = cmp(key, meta);
 
                 if (cmpRes == 0) { // Key found.
                     if (newMeta != 0)  // Deallocate if we've allocated something.
@@ -391,7 +398,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
 
                     long nextMeta = nextMeta(prevMeta, level);
 
-                    if (nextMeta != meta) { // Else go deeper.
+                    if (nextMeta != meta) { // If the meta is the same as on upper level go deeper.
                         meta = nextMeta;
 
                         break;
@@ -433,20 +440,22 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
 
                     meta = nextMeta(prevMeta, level); // Reread meta.
 
+                    assert meta != 0;
+
                     for (;;) {
                         assert meta != 0;
 
                         int cmpRes = cmp(key, meta);
 
-                        assert cmpRes != 0; // Two different metas with equal keys.
-
                         if (cmpRes > 0) {  // Go right.
                             prevMeta = meta;
                             meta = nextMeta(prevMeta, level);
 
-                            if (meta != oldMeta) // Old meta already known to be greater than our key or is 0.
+                            if (meta != 0 && meta != oldMeta) // Old meta already known to be greater than our key or is 0.
                                 continue;
                         }
+
+                        assert cmpRes != 0; // Two different metas with equal keys must be impossible.
 
                         break; // Retry cas.
                     }

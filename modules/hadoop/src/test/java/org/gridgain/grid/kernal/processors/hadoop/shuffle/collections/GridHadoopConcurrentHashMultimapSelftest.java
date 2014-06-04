@@ -14,6 +14,7 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;
@@ -166,10 +167,15 @@ public class GridHadoopConcurrentHashMultimapSelftest extends GridCommonAbstract
         in.close();
     }
 
+    /**
+     * @throws Exception if failed.
+     */
     public void testMultiThreaded() throws Exception {
         GridUnsafeMemory mem = new GridUnsafeMemory(0);
 
         X.println("___ Started");
+
+        Random rnd = new GridRandom();
 
         for (int i = 0; i < 20; i++) {
             Job job = Job.getInstance();
@@ -224,7 +230,7 @@ public class GridHadoopConcurrentHashMultimapSelftest extends GridCommonAbstract
 
                     return null;
                 }
-            }, 17);
+            }, 3 + rnd.nextInt(27));
 
             X.println("___ Check: " + m.capacity());
 
