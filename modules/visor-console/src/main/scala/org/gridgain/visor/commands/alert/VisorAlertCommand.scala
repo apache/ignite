@@ -469,8 +469,6 @@ class VisorAlertCommand {
 
         val lic = grid.product().license()
 
-        assert(lic != null)
-
         val stat = stats(a.id)
 
         assert(stat != null)
@@ -492,9 +490,15 @@ class VisorAlertCommand {
             "First send: " + (if (stat.firstSnd == 0) "n/a" else formatDateTime(stat.firstSnd)) + NL +
             "Last send: " + (if (stat.lastSnd == 0) "n/a" else formatDateTime(stat.lastSnd)) + NL +
             "----" + NL +
-            "Grid name: " + grid.name + NL +
-            "License ID: "  +  lic.id.toString.toUpperCase + NL +
-            "Licesned to: " + lic.userOrganization + NL +
+            "Grid name: " + grid.name + NL
+
+        if (lic != null) {
+            body +=
+                "License ID: " + lic.id.toString.toUpperCase + NL +
+                "Licensed to: " + lic.userOrganization + NL
+        }
+
+        body +=
             "----" + NL +
             NL +
             "NOTE:" + NL +
