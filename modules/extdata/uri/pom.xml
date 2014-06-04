@@ -45,16 +45,30 @@
             <artifactId>spring-beans</artifactId>
             <version>3.2.2.RELEASE</version>
         </dependency>
-
-        <!--<dependency>-->
-            <!--<groupId>org.gridgain</groupId>-->
-            <!--<artifactId>gridgain-urideploy</artifactId>-->
-            <!--<version>${gridgain.version}</version>-->
-        <!--</dependency>-->
     </dependencies>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <filesets>
+                                <fileset>
+                                    <directory>deploy</directory>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
