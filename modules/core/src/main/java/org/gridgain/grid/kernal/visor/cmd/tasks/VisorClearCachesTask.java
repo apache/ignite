@@ -33,7 +33,7 @@ public class VisorClearCachesTask extends VisorOneNodeTask<Set<String>, Map<Stri
         /**
          * Create job.
          *
-         * @param arg Job argument.
+         * @param arg Cache names to clear.
          */
         private VisorClearCachesJob(Set<String> arg) {
             super(arg);

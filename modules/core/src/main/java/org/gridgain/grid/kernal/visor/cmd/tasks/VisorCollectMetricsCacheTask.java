@@ -35,7 +35,11 @@ public class VisorCollectMetricsCacheTask extends VisorMultiNodeTask<T2<Boolean,
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** Create job with given argument. */
+        /**
+         * Create job with given argument.
+         *
+         * @param arg Whether to collect metrics for all caches or for specified cache name only.
+         */
         private VisorCacheMetricsJob(T2<Boolean, String> arg) {
             super(arg);
         }

@@ -24,8 +24,7 @@ import java.util.*;
  * Collect license from nodes task.
  */
 @GridInternal
-public class VisorCollectLicenseTask extends VisorMultiNodeTask<Void,
-    Iterable<T2<UUID, VisorLicense>>, VisorLicense> {
+public class VisorCollectLicenseTask extends VisorMultiNodeTask<Void, Iterable<T2<UUID, VisorLicense>>, VisorLicense> {
     /**
      * Job that collect license from nodes.
      */
@@ -33,7 +32,11 @@ public class VisorCollectLicenseTask extends VisorMultiNodeTask<Void,
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** Create job with given argument. */
+        /**
+         * Create job with given argument.
+         *
+         * @param arg Formal job argument.
+         */
         private VisorCollectLicenseJob(Void arg) {
             super(arg);
         }
