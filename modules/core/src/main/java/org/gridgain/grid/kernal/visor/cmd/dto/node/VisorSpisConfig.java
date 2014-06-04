@@ -65,7 +65,7 @@ public class VisorSpisConfig implements Serializable {
 
     /**
      * Collects SPI information based on GridSpiConfiguration-annotated methods.
-     * Methods with `Deprecated` annotation are skipped.
+     * Methods with {@code Deprecated} annotation are skipped.
      *
      * @param spi SPI to collect information on.
      * @return Tuple where first component is SPI name and

@@ -243,7 +243,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         }
 
         /**
-         * Aggregate information from parsed lines grouped by `streamId`.
+         * Aggregate information from parsed lines grouped by {@code streamId}.
          */
         private VisorGgfsProfilerEntry aggregateParsedLines(List<VisorGgfsProfilerParsedLine> lines) {
             String path = "";

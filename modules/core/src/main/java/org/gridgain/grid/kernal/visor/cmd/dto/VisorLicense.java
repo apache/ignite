@@ -99,7 +99,7 @@ public class VisorLicense implements Serializable {
     /** Disabled sub-systems. */
     private String disabledSubsystems;
 
-    /** Grace period left in minutes if bursting or `-1` otherwise. */
+    /** Grace period left in minutes if bursting or {@code -1} otherwise. */
     private long gracePeriodLeft;
 
     /**
@@ -422,14 +422,14 @@ public class VisorLicense implements Serializable {
     }
 
     /**
-     * @return Grace period left in minutes if bursting or `-1` otherwise.
+     * @return Grace period left in minutes if bursting or {@code -1} otherwise.
      */
     public long gracePeriodLeft() {
         return gracePeriodLeft;
     }
 
     /**
-     * @param gracePeriodLeft New grace period left in minutes if bursting or `-1` otherwise.
+     * @param gracePeriodLeft New grace period left in minutes if bursting or {@code -1} otherwise.
      */
     public void gracePeriodLeft(long gracePeriodLeft) {
         this.gracePeriodLeft = gracePeriodLeft;

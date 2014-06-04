@@ -142,7 +142,7 @@ public class VisorFieldsQueryUtils {
      * Checks is given object is one of known types.
      *
      * @param obj Object instance to check.
-     * @return `true` if it is one of known types.
+     * @return {@code true} if it is one of known types.
      */
     private static Boolean isKnownType(Object obj) {
         return obj instanceof String||

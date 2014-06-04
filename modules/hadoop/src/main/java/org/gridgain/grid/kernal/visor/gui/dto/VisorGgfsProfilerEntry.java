@@ -70,10 +70,10 @@ public class VisorGgfsProfilerEntry implements Serializable {
     /** Counters for uniformity calculation.  */
     private final VisorGgfsProfilerUniformityCounters counters;
 
-    /** Read speed in bytes per second or `-1` if speed not available. */
+    /** Read speed in bytes per second or {@code -1} if speed not available. */
     private final long readSpeed;
 
-    /** Write speed in bytes per second or `-1` if speed not available. */
+    /** Write speed in bytes per second or {@code -1} if speed not available. */
     private final long writeSpeed;
 
     /** Create data transfer object with given parameters. */
@@ -113,7 +113,7 @@ public class VisorGgfsProfilerEntry implements Serializable {
      *
      * @param bytes How many bytes were processed.
      * @param time How long processing take (in nanoseconds).
-     * @return Speed of processing in bytes per second or `-1` if speed not available.
+     * @return Speed of processing in bytes per second or {@code -1} if speed not available.
      */
     private static long speed(long bytes, long time) {
         if (time > 0) {
@@ -214,14 +214,14 @@ public class VisorGgfsProfilerEntry implements Serializable {
     }
 
     /**
-     * @return Read speed in bytes per second or `-1` if speed not available.
+     * @return Read speed in bytes per second or {@code -1} if speed not available.
      */
     public long readSpeed() {
         return readSpeed;
     }
 
     /**
-     * @return Write speed in bytes per second or `-1` if speed not available.
+     * @return Write speed in bytes per second or {@code -1} if speed not available.
      */
     public long writeSpeed() {
         return writeSpeed;

@@ -152,9 +152,9 @@ public class VisorTaskUtils {
     /**
      * Returns boolean value from system property or provided function.
      *
-     * @param propName System property host.
-     * @param dflt Function that returns `Boolean`.
-     * @return `Boolean` value
+     * @param propName System property name.
+     * @param dflt Function that returns {@code Integer}.
+     * @return {@code Integer} value
      */
     public static Integer intValue(String propName, Integer dflt) {
         String sysProp = getProperty(propName);
@@ -166,8 +166,8 @@ public class VisorTaskUtils {
      * Returns boolean value from system property or provided function.
      *
      * @param propName System property host.
-     * @param dflt Function that returns `Boolean`.
-     * @return `Boolean` value
+     * @param dflt Function that returns {@code Boolean}.
+     * @return {@code Boolean} value
      */
     public static boolean boolValue(String propName, boolean dflt) {
         String sysProp = getProperty(propName);

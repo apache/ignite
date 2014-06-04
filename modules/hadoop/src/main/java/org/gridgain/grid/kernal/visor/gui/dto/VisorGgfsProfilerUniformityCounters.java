@@ -59,7 +59,7 @@ public class VisorGgfsProfilerUniformityCounters implements Serializable {
     }
 
     /**
-     * Perform compacting counters if `newBlockSize` is great more than twice then compact previous counters.
+     * Perform compacting counters if {@code newBlockSize} is great more than twice then compact previous counters.
      *
      * @param newFileSize New file size to check.
      */
@@ -141,7 +141,7 @@ public class VisorGgfsProfilerUniformityCounters implements Serializable {
      * Calculate uniformity as standard deviation.
      * See: http://en.wikipedia.org/wiki/Standard_deviation.
      *
-     * @return Uniformity value as number in `0..1` range.
+     * @return Uniformity value as number in {@code 0..1} range.
      */
     public double calc() {
         if (counters.isEmpty())
