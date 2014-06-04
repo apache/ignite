@@ -49,9 +49,6 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
     /** Initialization retry interval. */
     private static final int INIT_RETRY_INTERVAL = 1000;
 
-    /** */
-    private static final long TCP_IDLE_CONN_TIMEOUT = 10_000;
-
     /** NIO server. */
     private GridNioServer srv;
 
@@ -163,7 +160,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
 
         if (cfg.getProtocol() == GridClientProtocol.TCP) {
             try {
-                GridLogger gridLog = new GridJavaLogger();
+                GridLogger gridLog = new GridJavaLogger(false);
 
                 GridNioFilter[] filters;
 
@@ -205,7 +202,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
                     .directMode(true)
                     .socketReceiveBufferSize(0)
                     .socketSendBufferSize(0)
-                    .idleTimeout(TCP_IDLE_CONN_TIMEOUT)
+                    .idleTimeout(Long.MAX_VALUE)
                     .gridName("gridClient")
                     .messageWriter(msgWriter)
                     .build();
@@ -643,14 +640,16 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
 
         /** {@inheritDoc} */
         @Override public void onSessionWriteTimeout(GridNioSession ses) {
-            log.warning("Closing NIO session because of write timeout.");
+            if (log.isLoggable(Level.FINE))
+                log.fine("Closing NIO session because of write timeout.");
 
             ses.close();
         }
 
         /** {@inheritDoc} */
         @Override public void onSessionIdleTimeout(GridNioSession ses) {
-            log.warning("Closing NIO session because of idle timeout.");
+            if (log.isLoggable(Level.FINE))
+                log.fine("Closing NIO session because of idle timeout.");
 
             ses.close();
         }
