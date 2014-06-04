@@ -24,7 +24,7 @@ import static org.gridgain.grid.kernal.visor.gui.tasks.VisorHadoopTaskUtilsEnt.*
  * Remove all GGFS profiler logs.
  */
 @GridInternal
-public class VisorGgfsProfilerClearTask extends VisorComputeTask<String, T2<Integer, Integer>> {
+public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<String, T2<Integer, Integer>> {
     /**
      * Job to clear profiler logs.
      */

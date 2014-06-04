@@ -15,13 +15,11 @@ import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.util.typedef.*;
 
-import java.util.*;
-
 /**
  * Task to set GGFS instance sampling state.
  */
 @GridInternal
-public class VisorSetGgfsSamplingStateTask extends VisorComputeTask<T2<String, Boolean>, Void> {
+public class VisorSetGgfsSamplingStateTask extends VisorOneNodeTask<T2<String, Boolean>, Void> {
     /**
      * Job that perform parsing of GGFS profiler logs.
      */

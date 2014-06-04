@@ -27,7 +27,7 @@ import java.util.*;
  * Task that parse hadoop profiler logs.
  */
 @GridInternal
-public class VisorGgfsProfilerTask extends VisorComputeTask<String, Collection<VisorGgfsProfilerEntry>> {
+public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<VisorGgfsProfilerEntry>> {
     /**
      * Holder class for parsed data.
      */

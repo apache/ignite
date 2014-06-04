@@ -21,7 +21,7 @@ import java.util.*;
  * Ack task to run on node.
  */
 @GridInternal
-public class VisorAckTask extends VisorComputeTask<String, Void, Void> {
+public class VisorAckTask extends VisorMultiNodeTask<String, Void, Void> {
     /**
      * Ack job to run on node.
      */

@@ -16,7 +16,6 @@ import java.util.{UUID, HashSet => JavaHashSet}
 
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorRunGcTask
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorRunGcTask.VisorRunGcArg
 import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
@@ -25,6 +24,7 @@ import org.gridgain.visor.visor._
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
+import org.gridgain.grid.util.typedef.T2
 
 /**
  * ==Overview==
@@ -141,7 +141,7 @@ class VisorGcCommand {
                 val nids = new JavaHashSet(prj.nodes().map(_.id()))
 
                 prj.compute().withNoFailover().execute(classOf[VisorRunGcTask],
-                    new VisorRunGcArg(nids, new JavaBoolean(dgc))).get.foreach { case (nid, stat) =>
+                    new T2(nids, new JavaBoolean(dgc))).get.foreach { case (nid, stat) =>
                     val roundHb = math.round(stat.get1() / (1024L * 1024L))
                     val roundHa = math.round(stat.get2() / (1024L * 1024L))
 

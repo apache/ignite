@@ -26,7 +26,7 @@ import java.util.*;
  * Task that cache metrics from all nodes.
  */
 @GridInternal
-public class VisorCollectMetricsCacheTask extends VisorComputeTask<VisorCollectMetricsCacheTask.VisorCollectMetricsCacheArg,
+public class VisorCollectMetricsCacheTask extends VisorMultiNodeTask<VisorCollectMetricsCacheTask.VisorCollectMetricsCacheArg,
     Iterable<VisorCacheAggregatedMetrics>, Collection<VisorCacheMetrics>> {
     /**
      * Arguments for {@link VisorCollectMetricsCacheTask}.

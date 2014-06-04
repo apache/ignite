@@ -23,7 +23,7 @@ import java.util.*;
  * Collect license from nodes task.
  */
 @GridInternal
-public class VisorCollectLicenseTask extends VisorComputeTask<Void,
+public class VisorCollectLicenseTask extends VisorMultiNodeTask<Void,
     Iterable<T2<UUID, VisorLicense>>, VisorLicense> {
     /**
      * Job that collect license from nodes.

@@ -31,8 +31,8 @@ import static org.gridgain.grid.kernal.visor.cmd.tasks.VisorFieldsQueryUtils.*;
  * Task for execute SCAN or SQL query and get first page of results.
  */
 @GridInternal
-public class VisorFieldsQueryTask extends VisorComputeTask<VisorFieldsQueryTask.VisorFieldsQueryArg,
-    T2<? extends Exception, VisorFieldsQueryResultEx>, T2<? extends Exception, VisorFieldsQueryResultEx>> {
+public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.VisorFieldsQueryArg,
+    T2<? extends Exception, VisorFieldsQueryResultEx>> {
     /**
      * Arguments for {@link VisorFieldsQueryTask}.
      */

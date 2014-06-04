@@ -21,8 +21,7 @@ import java.util.*;
  * Task for swapping backup cache entries.
  */
 @GridInternal
-public class VisorSwapBackupsCachesTask extends
-    VisorComputeTask<Set<String>, Map<String, T2<Integer, Integer>>, Map<String, T2<Integer, Integer>>> {
+public class VisorSwapBackupsCachesTask extends VisorOneNodeTask<Set<String>, Map<String, T2<Integer, Integer>> > {
     @SuppressWarnings("PublicInnerClass")
     public static class VisorSwapBackupsCachesJob extends VisorJob<Set<String>, Map<String, T2<Integer, Integer>>> {
         /** */

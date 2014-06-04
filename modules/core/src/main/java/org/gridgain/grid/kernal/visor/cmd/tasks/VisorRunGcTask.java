@@ -17,55 +17,32 @@ import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
  * Task to run gc on nodes.
  */
 @GridInternal
-public class VisorRunGcTask extends VisorComputeTask<VisorRunGcTask.VisorRunGcArg,
-    Map<UUID, T2<Long, Long>>, T2<Long, Long>> {
-    /**
-     * Arguments for {@link VisorRunGcTask}.
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorRunGcArg implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Whether to run DGC on all caches. */
-        private final boolean dgc;
-
-        /**
-         * Create task argument with specified nodes Ids.
-         *
-         * @param dgc Whether to run DGC on all caches.
-         */
-        public VisorRunGcArg(boolean dgc) {
-            this.dgc = dgc;
-        }
-    }
-
+public class VisorRunGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, T2<Long, Long>>, T2<Long, Long>> {
     /** Job that perform GC on node. */
-    private static class VisorRunGcJob extends VisorJob<VisorRunGcArg, T2<Long, Long>> {
+    private static class VisorRunGcJob extends VisorJob<Boolean, T2<Long, Long>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Create job with given argument. */
-        private VisorRunGcJob(VisorRunGcArg arg) {
+        private VisorRunGcJob(Boolean arg) {
             super(arg);
         }
 
         /** {@inheritDoc} */
-        @Override protected T2<Long, Long> run(VisorRunGcArg arg) throws GridException {
+        @Override protected T2<Long, Long> run(Boolean arg) throws GridException {
             GridNode locNode = g.localNode();
 
             long before = freeHeap(locNode);
 
             System.gc();
 
-            if (arg.dgc)
+            if (arg)
                 for (GridCache<?, ?> cache : g.cachesx())
                     cache.dgc();
 
@@ -80,7 +57,7 @@ public class VisorRunGcTask extends VisorComputeTask<VisorRunGcTask.VisorRunGcAr
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorRunGcJob job(VisorRunGcArg arg) {
+    @Override protected VisorRunGcJob job(Boolean arg) {
         return new VisorRunGcJob(arg);
     }
 

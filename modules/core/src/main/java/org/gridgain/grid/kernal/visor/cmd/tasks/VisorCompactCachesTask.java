@@ -21,7 +21,7 @@ import java.util.*;
  * Task that compacts caches.
  */
 @GridInternal
-public class VisorCompactCachesTask extends VisorComputeTask<Set<String>, Map<String, T2<Integer, Integer>>, Map<String, T2<Integer, Integer>>> {
+public class VisorCompactCachesTask extends VisorOneNodeTask<Set<String>, Map<String, T2<Integer, Integer>>> {
     /** Job that compact caches on node. */
     private static class VisorCompactCachesJob extends VisorJob<Set<String>, Map<String, T2<Integer, Integer>>> {
         /** */

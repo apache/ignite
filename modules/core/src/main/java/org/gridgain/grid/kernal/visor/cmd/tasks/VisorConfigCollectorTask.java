@@ -19,7 +19,7 @@ import static java.lang.System.*;
  * Grid configuration data collect task.
  */
 @GridInternal
-public class VisorConfigCollectorTask extends VisorComputeTask<Void, VisorGridConfig, VisorGridConfig> {
+public class VisorConfigCollectorTask extends VisorOneNodeTask<Void, VisorGridConfig> {
     /**
      * Returns boolean value from system property or provided function.
      *

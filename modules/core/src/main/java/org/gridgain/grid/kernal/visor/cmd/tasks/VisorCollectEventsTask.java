@@ -26,7 +26,7 @@ import java.util.*;
  * Task that runs on specified node and returns events data.
  */
 @GridInternal
-public class VisorCollectEventsTask extends VisorComputeTask<VisorCollectEventsTask.VisorCollectEventsArgs,
+public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEventsTask.VisorCollectEventsArgs,
     Iterable<? extends VisorGridEvent>, Collection<? extends VisorGridEvent>> {
     /**
      * Argument for task returns events data.

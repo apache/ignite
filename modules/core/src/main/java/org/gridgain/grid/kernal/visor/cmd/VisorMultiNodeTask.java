@@ -22,7 +22,7 @@ import java.util.*;
  * @param <A> Task argument type.
  * @param <R> Task result type.
  */
-public abstract class VisorComputeTask<A, R, J> implements GridComputeTask<T2<Set<UUID>, A>, R> {
+public abstract class VisorMultiNodeTask<A, R, J> implements GridComputeTask<T2<Set<UUID>, A>, R> {
     /** Task argument. */
     protected A taskArg;
 
@@ -53,17 +53,5 @@ public abstract class VisorComputeTask<A, R, J> implements GridComputeTask<T2<Se
         List<GridComputeJobResult> rcvd) throws GridException {
         // All Visor tasks should handle exceptions in reduce method.
         return GridComputeJobResultPolicy.WAIT;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public R reduce(List<GridComputeJobResult> results) throws GridException {
-        assert results.size() == 1;
-
-        GridComputeJobResult res = F.first(results);
-
-        if (res.getException() == null)
-            return res.getData();
-
-        throw res.getException();
     }
 }
