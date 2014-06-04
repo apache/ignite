@@ -1677,6 +1677,8 @@ object visor extends VisorTag {
     /** Convert to task argument. */
     def emptyTaskArgument[A](nid: UUID): T2[JSet[UUID], Void] = new T2(Collections.singleton(nid), null)
 
+    def emptyTaskArgument[A](nids: Iterable[UUID]): T2[JSet[UUID], Void] = new T2(new JHashSet(nids), null)
+
     /** Convert to task argument. */
     def toTaskArgument[A](nid: UUID, arg: A): T2[JSet[UUID], A] = new T2(Collections.singleton(nid), arg)
 

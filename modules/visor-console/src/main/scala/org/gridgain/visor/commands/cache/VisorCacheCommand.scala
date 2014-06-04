@@ -11,25 +11,23 @@
 
 package org.gridgain.visor.commands.cache
 
-import org.gridgain.grid._
-import org.gridgain.grid.kernal.visor.cmd.dto.{VisorCacheMetrics, VisorCacheAggregatedMetrics}
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCollectMetricsCacheTask
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCollectMetricsCacheTask.VisorCollectMetricsCacheArg
-import org.gridgain.grid.util.typedef._
-
+import java.lang.{Boolean => JavaBoolean}
 import java.util.UUID
+
+import org.gridgain.grid._
+import org.gridgain.grid.kernal.visor.cmd.dto.{VisorCacheAggregatedMetrics, VisorCacheMetrics}
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCollectMetricsCacheTask
+import org.gridgain.grid.util.typedef._
+import org.gridgain.scalar.scalar._
+import org.gridgain.visor._
+import org.gridgain.visor.commands.cache.VisorCacheCommand._
+import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
+import org.gridgain.visor.visor._
+import org.jetbrains.annotations._
 
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
-
-import org.jetbrains.annotations._
-
-import org.gridgain.scalar.scalar._
-import org.gridgain.visor._
-import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import org.gridgain.visor.commands.cache.VisorCacheCommand._
-import org.gridgain.visor.visor._
 
 /**
  * ==Overview==
@@ -456,10 +454,10 @@ class VisorCacheCommand {
         try {
             val prj = node.fold(grid.forRemotes())(grid.forNode(_))
 
-            val nids = new java.util.HashSet(prj.nodes().map(_.id()))
+            val nids = prj.nodes().map(_.id())
 
-            prj.compute().execute(classOf[VisorCollectMetricsCacheTask],
-                new VisorCollectMetricsCacheArg(nids, name.isEmpty, name.orNull)).get().toList
+            prj.compute().execute(classOf[VisorCollectMetricsCacheTask], toTaskArgument(nids,
+                new T2(new JavaBoolean(name.isEmpty), name.orNull))).get.toList
         }
         catch {
             case e: GridException => Nil

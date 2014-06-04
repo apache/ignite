@@ -308,7 +308,7 @@ class VisorEventsCommand {
 
             val evts = try
                 grid.forNode(node).compute().execute(classOf[VisorCollectEventsTask],
-                    VisorCollectEventsArgs.createEventsArg(nid, tpFilter, tmFilter)).get
+                    toTaskArgument(nid, VisorCollectEventsArgs.createEventsArg(tpFilter, tmFilter))).get
             catch {
                 case e: GridException =>
                     scold(e.getMessage)

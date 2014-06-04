@@ -24,7 +24,6 @@ import org.gridgain.visor.visor._
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
-import org.gridgain.grid.util.typedef.T2
 
 /**
  * ==Overview==
@@ -138,10 +137,10 @@ class VisorGcCommand {
 
                 val prj = grid.forRemotes()
 
-                val nids = new JavaHashSet(prj.nodes().map(_.id()))
+                val nids = prj.nodes().map(_.id())
 
                 prj.compute().withNoFailover().execute(classOf[VisorRunGcTask],
-                    new T2(nids, new JavaBoolean(dgc))).get.foreach { case (nid, stat) =>
+                    toTaskArgument(nids, new JavaBoolean(dgc))).get.foreach { case (nid, stat) =>
                     val roundHb = math.round(stat.get1() / (1024L * 1024L))
                     val roundHa = math.round(stat.get2() / (1024L * 1024L))
 

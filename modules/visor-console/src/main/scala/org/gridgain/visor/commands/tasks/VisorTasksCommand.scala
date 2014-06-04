@@ -591,10 +591,8 @@ class VisorTasksCommand {
             try {
                 val prj = grid.forRemotes()
 
-                val nids = new java.util.HashSet(prj.nodes().map(_.id()))
-
                 val evts = prj.compute().execute(classOf[VisorCollectEventsTask],
-                    VisorCollectEventsArgs.createTasksArg(nids, p, "visor", null)).get
+                    toTaskArgument(prj.nodes.map(_.id()), VisorCollectEventsArgs.createTasksArg(p, "visor", null))).get
 
                 val (tLst, eLst) = mkData(evts)
 
@@ -801,10 +799,8 @@ class VisorTasksCommand {
             try {
                 val prj = grid.forRemotes()
 
-                val nids = new java.util.HashSet(prj.nodes().map(_.id()))
-
-                val evts = prj.compute().execute(classOf[VisorCollectEventsTask],
-                    VisorCollectEventsArgs.createTasksArg(nids, null, taskName, null)).get
+                val evts = prj.compute().execute(classOf[VisorCollectEventsTask], toTaskArgument(prj.nodes.map(_.id()),
+                    VisorCollectEventsArgs.createTasksArg(null, taskName, null))).get
 
                 val (tLst, eLst) = mkData(evts)
 
@@ -980,10 +976,8 @@ class VisorTasksCommand {
             try {
                 val prj = grid.forRemotes()
 
-                val nids = new java.util.HashSet(prj.nodes().map(_.id()))
-
-                val evts = prj.compute().execute(classOf[VisorCollectEventsTask],
-                        VisorCollectEventsArgs.createTasksArg(nids, null, null, uuid)).get
+                val evts = prj.compute().execute(classOf[VisorCollectEventsTask], toTaskArgument(prj.nodes.map(_.id()),
+                    VisorCollectEventsArgs.createTasksArg(null, null, uuid))).get
 
                 val (tLst, eLst) = mkData(evts)
 
@@ -1100,10 +1094,8 @@ class VisorTasksCommand {
             try {
                 val prj = grid.forRemotes()
 
-                val nids = new java.util.HashSet(prj.nodes().map(_.id()))
-
-                val evts = prj.compute().execute(classOf[VisorCollectEventsTask],
-                    VisorCollectEventsArgs.createTasksArg(nids, f, "visor", null)).get
+                val evts = prj.compute().execute(classOf[VisorCollectEventsTask], toTaskArgument(prj.nodes.map(_.id()),
+                    VisorCollectEventsArgs.createTasksArg(f, "visor", null))).get
 
                 val eLst = mkData(evts)._2
 
@@ -1214,10 +1206,8 @@ class VisorTasksCommand {
             try {
                 val prj = grid.forRemotes()
 
-                val nids = new java.util.HashSet(prj.nodes().map(_.id()))
-
-                val evts = prj.compute().execute(classOf[VisorCollectEventsTask],
-                    VisorCollectEventsArgs.createTasksArg(nids, f, "visor", null)).get
+                val evts = prj.compute().execute(classOf[VisorCollectEventsTask], toTaskArgument(prj.nodes.map(_.id()),
+                    VisorCollectEventsArgs.createTasksArg(f, "visor", null))).get
 
                 val eLst = mkData(evts)._2
 

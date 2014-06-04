@@ -15,8 +15,8 @@ import java.io._
 import java.util.UUID
 
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorReplaceLicenseTask.VisorReplaceLicenseArg
-import org.gridgain.grid.kernal.visor.cmd.tasks.{VisorCollectLicenseTask, VisorReplaceLicenseTask}
+import org.gridgain.grid.kernal.visor.cmd.tasks.{VisorCollectLicenseTask, VisorUpdateLicenseTask}
+import org.gridgain.grid.util.typedef.T2
 import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
@@ -98,7 +98,7 @@ class VisorLicenseCommand {
 
                 val lics = try
                     grid.forNodes(nodes).compute().execute(classOf[VisorCollectLicenseTask],
-                        new Void(new java.util.HashSet(nodes.map(_.id())))).get
+                        emptyTaskArgument(nodes.map(_.id()))).get
                 catch {
                     case _: GridException =>
                         warn("Failed to obtain license from grid.")
@@ -177,9 +177,8 @@ class VisorLicenseCommand {
                 val nodes = grid.nodes()
 
                 val res = grid.forNodes(nodes).compute().withNoFailover().
-                    execute(classOf[VisorReplaceLicenseTask],
-                        new VisorReplaceLicenseArg(new java.util.HashSet(nodes.map(_.id)), UUID.fromString(licId),
-                            Source.fromFile(licPath).getLines().toArray)).get
+                    execute(classOf[VisorUpdateLicenseTask], toTaskArgument(nodes.map(_.id),
+                        new T2(UUID.fromString(licId), Source.fromFile(licPath).mkString))).get
 
                 println("All licenses have been updated.")
 
