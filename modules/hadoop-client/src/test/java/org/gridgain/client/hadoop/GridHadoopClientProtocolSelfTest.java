@@ -45,10 +45,12 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     private static final String JOB_NAME = "myJob";
 
     /** Map lock file. */
-    private static File mapLockFile = new File(System.getProperty("java.io.tmpdir"), "gg-lock-map.file");
+    private static File mapLockFile = new File(U.isWindows() ? System.getProperty("java.io.tmpdir") : "/tmp",
+        "gg-lock-map.file");
 
     /** Reduce lock file. */
-    private static File reduceLockFile = new File(System.getProperty("java.io.tmpdir"), "gg-lock-reduce.file");
+    private static File reduceLockFile = new File(U.isWindows() ? System.getProperty("java.io.tmpdir") : "/tmp",
+        "gg-lock-reduce.file");
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
