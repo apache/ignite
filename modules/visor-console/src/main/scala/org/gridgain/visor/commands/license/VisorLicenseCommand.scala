@@ -176,9 +176,11 @@ class VisorLicenseCommand {
             try {
                 val nodes = grid.nodes()
 
-                val res = grid.forNodes(nodes).compute().withNoFailover().
-                    execute(classOf[VisorUpdateLicenseTask], toTaskArgument(nodes.map(_.id),
+                nodes.foreach(n => {
+                    grid.forNode(n).compute().withNoFailover().
+                        execute(classOf[VisorUpdateLicenseTask], toTaskArgument(n.id,
                         new T2(UUID.fromString(licId), Source.fromFile(licPath).mkString))).get
+                })
 
                 println("All licenses have been updated.")
 
