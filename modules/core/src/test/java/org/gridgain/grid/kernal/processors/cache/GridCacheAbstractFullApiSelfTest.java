@@ -4300,7 +4300,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         entry = c.entry(key);
 
-        assert entry.get() != null;
+        assertEquals((Integer)10, entry.get());
 
         assertEquals(0, entry.timeToLive());
         assertEquals(0, entry.expirationTime());

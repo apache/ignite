@@ -63,6 +63,12 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     /** Request ID counter. */
     private AtomicLong reqIdCntr = new AtomicLong(1);
 
+    /** Timestamp of last sent message. */
+    private volatile long lastMsgSndTime;
+
+    /** Timestamp of last received message. */
+    private volatile long lastMsgRcvTime;
+
     /**
      * Ping receive time.
      * {@code 0} until first ping send and {@link Long#MAX_VALUE} while response isn't received.
@@ -189,7 +195,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
                     log.warning("Failed to send ping message: " + e);
                 }
             }
-        }, pingInterval, pingInterval, TimeUnit.MILLISECONDS);
+        }, 500, 500, TimeUnit.MILLISECONDS);
 
         createTs = System.currentTimeMillis();
     }
@@ -255,7 +261,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             return true;
 
         // Timestamp of the last sent or received message.
-        long lastMsgTime = Math.max(Math.max(ses.lastSendTime(), ses.lastReceiveTime()), createTs);
+        long lastMsgTime = Math.max(Math.max(lastMsgSndTime, lastMsgRcvTime), createTs);
 
         if (lastMsgTime + idleTimeout < System.currentTimeMillis() && pendingReqs.isEmpty()) {
             // In case of new request came between empty check and setting closing flag
@@ -312,6 +318,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      *     otherwise keep original value.
      * @return Response object.
      * @throws GridClientConnectionResetException If request failed.
+     * @throws GridClientClosedException If client closed.
      */
     private <R> GridClientFutureAdapter<R> makeRequest(GridClientMessage msg, final TcpClientFuture<R> fut,
         boolean routeMode) throws GridClientConnectionResetException, GridClientClosedException {
@@ -372,6 +379,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
             GridNioFuture<?> sndFut = ses.send(wrapper);
 
+            lastMsgSndTime = U.currentTimeMillis();
+
             if (routeMode) {
                 sndFut.listenAsync(new CI1<GridNioFuture<?>>() {
                     @Override public void apply(GridNioFuture<?> sndFut) {
@@ -415,6 +424,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      */
     @SuppressWarnings({"unchecked", "TooBroadScope"})
     void handleResponse(GridClientMessageWrapper req) {
+        lastMsgRcvTime = U.currentTimeMillis();
+
         TcpClientFuture fut = pendingReqs.get(req.requestId());
 
         if (fut == null) {

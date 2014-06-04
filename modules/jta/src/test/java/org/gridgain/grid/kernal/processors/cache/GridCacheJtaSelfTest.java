@@ -127,6 +127,8 @@ public class GridCacheJtaSelfTest extends GridCacheAbstractSelfTest {
             if (jtaTx.getStatus() == Status.STATUS_ACTIVE)
                 jtaTx.rollback();
         }
+
+        assertEquals((Integer)1, cache().get("key"));
     }
 
     /**
@@ -167,5 +169,8 @@ public class GridCacheJtaSelfTest extends GridCacheAbstractSelfTest {
             if (jtaTx.getStatus() == Status.STATUS_ACTIVE)
                 jtaTx.rollback();
         }
+
+        assertEquals(1, (int)cache1.get("key"));
+        assertEquals(1, (int)cache2.get("key"));
     }
 }
