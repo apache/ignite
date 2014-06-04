@@ -207,7 +207,7 @@ public class GridHadoopJobClassLoadingContext {
      */
     private static class ClassLoaderWrapper extends ClassLoader implements GridInternalClassLoader {
         /** */
-        private URLClassLoader delegate;
+        private volatile URLClassLoader delegate;
 
         /**
          * Makes classes available for GC.
