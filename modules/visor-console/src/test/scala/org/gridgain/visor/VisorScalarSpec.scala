@@ -43,7 +43,7 @@ class VisorScalarSpec extends FlatSpec with ShouldMatchers {
     it should "properly open and close with named Scalar" in {
         val cfg = new GridConfiguration
 
-        cfg.setGridName("grid-visor")
+        cfg.setGridName("grid-scalar")
 
         scalar.start(cfg)
 
