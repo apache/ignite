@@ -48,6 +48,12 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/java</directory>
+            </resource>
+        </resources>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -78,6 +84,12 @@
                         <groupId>org.gridgain</groupId>
                         <artifactId>gridgain-tools</artifactId>
                         <version>${gridgain.version}</version>
+                    </dependency>
+
+                    <dependency>
+                        <groupId>javax.mail</groupId>
+                        <artifactId>mail</artifactId>
+                        <version>1.4.7</version>
                     </dependency>
                 </dependencies>
                 <executions>
