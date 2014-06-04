@@ -11,9 +11,8 @@ package org.gridgain.grid.kernal.ggfs.hadoop;
 
 import org.apache.commons.logging.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.ggfs.common.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.logger.jcl.*;
+import org.gridgain.grid.kernal.ggfs.common.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.ipc.*;
 import org.gridgain.grid.util.ipc.shmem.*;
@@ -230,7 +229,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
 
         try {
             endpoint = GridIpcEndpointFactory.connectEndpoint(
-                endpointAddr, new GridLoggerProxy(new GridJclLogger(log), null, null, ""));
+                endpointAddr, new GridLoggerProxy(new GridGgfsHadoopJclLogger(log), null, null, ""));
 
             out = new GridGgfsDataOutputStream(new BufferedOutputStream(endpoint.outputStream()));
 
