@@ -1004,6 +1004,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                     "License ID: " + lic.id().toString().toUpperCase() + NL +
                     "Licensed to: " + lic.userOrganization() + NL;
             }
+            else
+                assert !ENT;
 
             body +=
                 "----" + NL +
@@ -1965,6 +1967,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                         "License ID: " + lic.id().toString().toUpperCase() + NL +
                         "Licensed to: " + lic.userOrganization() + NL;
                 }
+                else
+                    assert !ENT;
 
                 body +=
                     "----" + NL +
