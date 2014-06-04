@@ -982,32 +982,40 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             String body =
                 "GridGain node started with the following parameters:" + NL +
-                    NL +
-                    "----" + NL +
-                    "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH + NL +
-                    "Grid name: " + gridName + NL +
-                    "Node ID: " + nid + NL +
-                    "Node order: " + localNode().order() + NL +
-                    "Node addresses: " + U.addressesAsString(localNode()) + NL +
-                    "Local ports: " + sb + NL +
-                    "OS name: " + U.osString() + NL +
-                    "OS user: " + System.getProperty("user.name") + NL +
-                    "CPU(s): " + localNode().metrics().getTotalCpus() + NL +
-                    "Heap: " + U.heapSize(localNode(), 2) + "GB" + NL +
-                    "JVM name: " + U.jvmName() + NL +
-                    "JVM vendor: " + U.jvmVendor() + NL +
-                    "JVM version: " + U.jvmVersion() + NL +
-                    "VM name: " + rtBean.getName() + NL +
-                    "License ID: "  +  lic.id().toString().toUpperCase() + NL +
-                    "Licensed to: " + lic.userOrganization() + NL +
-                    "----" + NL +
-                    NL +
-                    "NOTE:" + NL +
-                    "This message is sent automatically to all configured admin emails." + NL +
-                    "To change this behavior use 'lifeCycleEmailNotify' grid configuration property." +
-                    NL + NL +
-                    "| " + SITE + NL +
-                    "| support@gridgain.com" + NL;
+                NL +
+                "----" + NL +
+                "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH + NL +
+                "Grid name: " + gridName + NL +
+                "Node ID: " + nid + NL +
+                "Node order: " + localNode().order() + NL +
+                "Node addresses: " + U.addressesAsString(localNode()) + NL +
+                "Local ports: " + sb + NL +
+                "OS name: " + U.osString() + NL +
+                "OS user: " + System.getProperty("user.name") + NL +
+                "CPU(s): " + localNode().metrics().getTotalCpus() + NL +
+                "Heap: " + U.heapSize(localNode(), 2) + "GB" + NL +
+                "JVM name: " + U.jvmName() + NL +
+                "JVM vendor: " + U.jvmVendor() + NL +
+                "JVM version: " + U.jvmVersion() + NL +
+                "VM name: " + rtBean.getName() + NL;
+
+            if (lic != null) {
+                body +=
+                    "License ID: " + lic.id().toString().toUpperCase() + NL +
+                    "Licensed to: " + lic.userOrganization() + NL;
+            }
+            else
+                assert !ENT;
+
+            body +=
+                "----" + NL +
+                NL +
+                "NOTE:" + NL +
+                "This message is sent automatically to all configured admin emails." + NL +
+                "To change this behavior use 'lifeCycleEmailNotify' grid configuration property." +
+                NL + NL +
+                "| " + SITE + NL +
+                "| support@gridgain.com" + NL;
 
             sendAdminEmailAsync("GridGain node started: " + nid8, body, false);
         }
@@ -1944,23 +1952,30 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                     " stopped " + errOk + ":";
                 String subj = "GridGain node stopped " + errOk + ": " + nid8;
 
-                GridProductLicense lic = ctx.license().license();
+                GridProductLicense lic = ctx.license() != null ? ctx.license().license() : null;
 
                 String body =
-                    headline + NL +
-                        NL +
-                        "----" + NL +
-                        "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH + NL +
-                        "Grid name: " + gridName + NL +
-                        "Node ID: " + nid + NL +
-                        "Node uptime: " + X.timeSpan2HMSM(U.currentTimeMillis() - startTime) + NL +
-                        "License ID: "  +  lic.id().toString().toUpperCase() + NL +
-                        "Licensed to: " + lic.userOrganization() + NL +
-                        "----" + NL +
-                        NL +
-                        "NOTE:" + NL +
-                        "This message is sent automatically to all configured admin emails." + NL +
-                        "To change this behavior use 'lifeCycleEmailNotify' grid configuration property.";
+                    headline + NL + NL +
+                    "----" + NL +
+                    "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH + NL +
+                    "Grid name: " + gridName + NL +
+                    "Node ID: " + nid + NL +
+                    "Node uptime: " + X.timeSpan2HMSM(U.currentTimeMillis() - startTime) + NL;
+
+                if (lic != null) {
+                    body +=
+                        "License ID: " + lic.id().toString().toUpperCase() + NL +
+                        "Licensed to: " + lic.userOrganization() + NL;
+                }
+                else
+                    assert !ENT;
+
+                body +=
+                    "----" + NL +
+                    NL +
+                    "NOTE:" + NL +
+                    "This message is sent automatically to all configured admin emails." + NL +
+                    "To change this behavior use 'lifeCycleEmailNotify' grid configuration property.";
 
                 if (errOnStop)
                     body +=
@@ -1976,14 +1991,16 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                         "| " + SITE + NL +
                         "| support@gridgain.com" + NL;
 
-                try {
-                    email.sendNow(subj,
-                        body,
-                        false,
-                        Arrays.asList(cfg.getAdminEmails()));
-                }
-                catch (GridException e) {
-                    U.error(log, "Failed to send lifecycle email notification.", e);
+                if (email != null) {
+                    try {
+                        email.sendNow(subj,
+                            body,
+                            false,
+                            Arrays.asList(cfg.getAdminEmails()));
+                    }
+                    catch (GridException e) {
+                        U.error(log, "Failed to send lifecycle email notification.", e);
+                    }
                 }
             }
         }
