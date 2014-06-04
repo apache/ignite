@@ -104,13 +104,13 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** TODO GG-8358 */
+        /** Future with query results. */
         private final GridCacheQueryFuture<R> fut;
 
-        /** TODO GG-8358 */
+        /** Next record from future. */
         private final R next;
 
-        /** TODO GG-8358 */
+        /** Flag indicating that this furure was read from last check. */
         private Boolean accessed;
 
         public VisorFutureResultSetHolder(GridCacheQueryFuture<R> fut, R next, Boolean accessed) {
@@ -120,21 +120,21 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
         }
 
         /**
-         * @return Future.
+         * @return Future with query results.
          */
         public GridCacheQueryFuture<R> future() {
             return fut;
         }
 
         /**
-         * @return Next.
+         * @return Next record from future.
          */
         public R next() {
             return next;
         }
 
         /**
-         * @return Accessed.
+         * @return Flag indicating that this furure was read from last check..
          */
         public Boolean accessed() {
             return accessed;
