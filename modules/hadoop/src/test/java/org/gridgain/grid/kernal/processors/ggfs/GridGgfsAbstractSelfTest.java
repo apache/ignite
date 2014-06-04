@@ -57,7 +57,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
     protected static final int SEQ_READS_BEFORE_PREFETCH = 2;
 
     /** Primary file system URI. */
-    protected static final String PRIMARY_URI = "ggfs:///";
+    protected static final String PRIMARY_URI = "ggfs://ggfs:grid@/";
 
     /** Primary file system configuration path. */
     protected static final String PRIMARY_CFG = "modules/core/src/test/config/hadoop/core-site-loopback.xml";

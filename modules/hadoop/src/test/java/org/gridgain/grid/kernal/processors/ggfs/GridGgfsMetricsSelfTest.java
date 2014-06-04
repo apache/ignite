@@ -35,7 +35,7 @@ public class GridGgfsMetricsSelfTest extends GridCommonAbstractTest {
     private static final String GGFS_SECONDARY = "ggfs-secondary";
 
     /** Secondary file system URI. */
-    private static final String SECONDARY_URI = "ggfs://127.0.0.1:11500/";
+    private static final String SECONDARY_URI = "ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/";
 
     /** Secondary file system configuration path. */
     private static final String SECONDARY_CFG = "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml";
@@ -143,6 +143,8 @@ public class GridGgfsMetricsSelfTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setGgfsConfiguration(ggfsCfg);
 
+        cfg.setLocalHost("127.0.0.1");
+
         return cfg;
     }
 
@@ -192,6 +194,8 @@ public class GridGgfsMetricsSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setGgfsConfiguration(ggfsCfg);
+
+        cfg.setLocalHost("127.0.0.1");
 
         Grid g = G.start(cfg);
 
