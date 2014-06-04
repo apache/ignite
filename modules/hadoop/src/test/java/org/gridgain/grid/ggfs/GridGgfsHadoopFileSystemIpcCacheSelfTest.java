@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.*;
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
 
 /**
  * IPC cache test.
@@ -170,7 +169,7 @@ public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridCommonAbstract
         assertEquals(1, ((AtomicInteger)activeCntField.get(io)).get());
 
         // Ensure that when IO is used by multiple file systems and one of them is closed, IO is not stopped.
-        FileSystem fs2 = FileSystem.get(new URI("ggfs:///abc"), cfg);
+        FileSystem fs2 = FileSystem.get(new URI("ggfs://ggfs:" + getTestGridName(0) + "@/abc"), cfg);
 
         assertEquals(1, cache.size());
         assertEquals(2, ((AtomicInteger)activeCntField.get(io)).get());
