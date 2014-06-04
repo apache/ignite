@@ -860,8 +860,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     /**
      * Sets receive buffer size for sockets created or accepted by this SPI.
      * <p>
-     * If not provided, default is {@code 0} which leaves buffer unchanged after
-     * socket creation (OS defaults).
+     * If not provided, default is {@link #DFLT_SOCK_BUF_SIZE}.
      *
      * @param sockRcvBuf Socket receive buffer size.
      */
