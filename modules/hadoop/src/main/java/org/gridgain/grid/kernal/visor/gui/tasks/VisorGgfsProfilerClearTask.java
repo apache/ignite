@@ -14,6 +14,7 @@ import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.nio.file.*;
@@ -84,6 +85,11 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<String, T2<Inte
             }
 
             return new T2<>(deleted, notDeleted);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(VisorGgfsProfilerClearJob.class, this);
         }
     }
 

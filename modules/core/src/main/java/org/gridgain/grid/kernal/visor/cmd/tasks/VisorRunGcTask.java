@@ -15,6 +15,7 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -53,6 +54,11 @@ public class VisorRunGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, T2<Lon
             final GridNodeMetrics m = node.metrics();
 
             return m.getHeapMemoryMaximum() - m.getHeapMemoryUsed();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(VisorRunGcJob.class, this);
         }
     }
 

@@ -14,6 +14,7 @@ import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.kernal.visor.gui.dto.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import static org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopLogger.*;
 import static org.gridgain.grid.kernal.visor.gui.tasks.VisorHadoopTaskUtilsEnt.*;
@@ -315,8 +316,8 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             }
 
             // Return only fully parsed data with path.
-            if (!path.isEmpty())
-                return new VisorGgfsProfilerEntry(
+            return path.isEmpty() ? null :
+                new VisorGgfsProfilerEntry(
                     path,
                     ts,
                     mode,
@@ -328,8 +329,6 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
                     writeTime,
                     userWriteTime,
                     counters);
-            else
-                return null;
         }
 
         /**
@@ -441,6 +440,11 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             }
 
             return parsedFiles;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(VisorGgfsProfilerJob.class, this);
         }
     }
 

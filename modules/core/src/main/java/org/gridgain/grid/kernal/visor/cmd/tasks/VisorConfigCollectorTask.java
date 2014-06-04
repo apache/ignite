@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.visor.cmd.tasks;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.kernal.visor.cmd.dto.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import static java.lang.System.*;
 
@@ -60,6 +61,11 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<Void, VisorGridCo
         /** {@inheritDoc} */
         @Override protected VisorGridConfig run(Void arg) {
             return VisorGridConfig.from(g);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(VisorConfigurationJob.class, this);
         }
     }
 

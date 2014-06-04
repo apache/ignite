@@ -17,6 +17,7 @@ import org.gridgain.grid.kernal.visor.cmd.dto.*;
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorFieldsQueryTask.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 
@@ -88,6 +89,11 @@ public class VisorNextFieldsQueryPageTask extends VisorOneNodeTask<T2<String, In
                 storage.remove(arg.get1());
 
             return new VisorFieldsQueryResult(rows.get1(), hasMore);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(VisorNextFieldsQueryPageJob.class, this);
         }
     }
 

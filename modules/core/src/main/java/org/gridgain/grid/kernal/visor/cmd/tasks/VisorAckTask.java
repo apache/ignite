@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -38,6 +39,11 @@ public class VisorAckTask extends VisorMultiNodeTask<String, Void, Void> {
             System.out.println("<visor>: ack: " + (arg == null ? g.localNode().id() : arg));
 
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(VisorAckJob.class, this);
         }
     }
 

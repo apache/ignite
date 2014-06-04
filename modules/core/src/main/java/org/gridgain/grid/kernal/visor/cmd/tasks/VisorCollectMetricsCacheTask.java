@@ -27,43 +27,23 @@ import java.util.*;
  * Task that cache metrics from all nodes.
  */
 @GridInternal
-public class VisorCollectMetricsCacheTask extends VisorMultiNodeTask<VisorCollectMetricsCacheTask.VisorCollectMetricsCacheArg,
+public class VisorCollectMetricsCacheTask extends VisorMultiNodeTask<T2<Boolean, String>,
     Iterable<VisorCacheAggregatedMetrics>, Collection<VisorCacheMetrics>> {
-    /**
-     * Arguments for {@link VisorCollectMetricsCacheTask}.
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorCollectMetricsCacheArg implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Collect metrics from all caches. */
-        private final boolean all;
-
-        /** Name of cache to collect metrics. */
-        private final String cacheName;
-
-        public VisorCollectMetricsCacheArg(boolean all, @Nullable String cacheName) {
-            this.all = all;
-            this.cacheName = cacheName;
-        }
-    }
-
     /**
      * Job that collect cache metrics from node.
      */
-    private static class VisorCacheMetricsJob extends VisorJob<VisorCollectMetricsCacheArg, Collection<VisorCacheMetrics>> {
+    private static class VisorCacheMetricsJob extends VisorJob<T2<Boolean, String>, Collection<VisorCacheMetrics>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Create job with given argument. */
-        private VisorCacheMetricsJob(VisorCollectMetricsCacheArg arg) {
+        private VisorCacheMetricsJob(T2<Boolean, String> arg) {
             super(arg);
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<VisorCacheMetrics> run(VisorCollectMetricsCacheArg arg) throws GridException {
-            Collection<? extends GridCache<?, ?>> caches = arg.all ? g.cachesx() : F.asList(g.cachex(arg.cacheName));
+        @Override protected Collection<VisorCacheMetrics> run(T2<Boolean, String> arg) throws GridException {
+            Collection<? extends GridCache<?, ?>> caches = arg.get1() ? g.cachesx() : F.asList(g.cachex(arg.get2()));
 
             if (caches != null) {
                 Collection<VisorCacheMetrics> res = new ArrayList<>(caches.size());
@@ -105,7 +85,7 @@ public class VisorCollectMetricsCacheTask extends VisorMultiNodeTask<VisorCollec
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorCacheMetricsJob job(VisorCollectMetricsCacheArg arg) {
+    @Override protected VisorCacheMetricsJob job(T2<Boolean, String> arg) {
         return new VisorCacheMetricsJob(arg);
     }
 

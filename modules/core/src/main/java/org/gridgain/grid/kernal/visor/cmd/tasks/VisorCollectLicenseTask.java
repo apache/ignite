@@ -15,6 +15,7 @@ import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.kernal.visor.cmd.dto.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -40,6 +41,11 @@ public class VisorCollectLicenseTask extends VisorMultiNodeTask<Void,
         /** {@inheritDoc} */
         @Nullable @Override protected VisorLicense run(Void arg) throws GridException {
             return VisorLicense.from(g);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(VisorCollectLicenseJob.class, this);
         }
     }
 

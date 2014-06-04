@@ -14,6 +14,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 
@@ -22,8 +23,10 @@ import java.util.*;
  */
 @GridInternal
 public class VisorSwapBackupsCachesTask extends VisorOneNodeTask<Set<String>, Map<String, T2<Integer, Integer>> > {
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorSwapBackupsCachesJob extends VisorJob<Set<String>, Map<String, T2<Integer, Integer>>> {
+    /**
+     * Job that swap backups.
+     */
+    private static class VisorSwapBackupsCachesJob extends VisorJob<Set<String>, Map<String, T2<Integer, Integer>>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -32,7 +35,7 @@ public class VisorSwapBackupsCachesTask extends VisorOneNodeTask<Set<String>, Ma
          *
          * @param names Job argument.
          */
-        protected VisorSwapBackupsCachesJob(Set<String> names) {
+        private VisorSwapBackupsCachesJob(Set<String> names) {
             super(names);
         }
 
@@ -58,6 +61,11 @@ public class VisorSwapBackupsCachesTask extends VisorOneNodeTask<Set<String>, Ma
             }
 
             return total;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(VisorSwapBackupsCachesJob.class, this);
         }
     }
 

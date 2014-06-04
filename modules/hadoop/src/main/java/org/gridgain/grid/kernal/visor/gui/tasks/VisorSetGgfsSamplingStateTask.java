@@ -14,6 +14,7 @@ import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Task to set GGFS instance sampling state.
@@ -46,6 +47,11 @@ public class VisorSetGgfsSamplingStateTask extends VisorOneNodeTask<T2<String, B
             catch (IllegalArgumentException iae) {
                 throw new GridException("Failed to set sampling state for GGFS: " + arg.get1(), iae);
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(VisorSetGgfsSamplingStateJob.class, this);
         }
     }
 
