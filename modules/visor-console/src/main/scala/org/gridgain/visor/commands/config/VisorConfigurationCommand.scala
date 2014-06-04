@@ -284,7 +284,6 @@ class VisorConfigurationCommand {
             metricsT += ("Metrics history size", cfg.metrics().historySize())
             metricsT += ("Metrics log frequency", cfg.metrics().loggerFrequency())
 
-
             metricsT.render()
 
             println("\nSPIs:")

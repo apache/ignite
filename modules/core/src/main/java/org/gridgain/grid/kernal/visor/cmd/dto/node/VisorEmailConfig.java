@@ -13,8 +13,8 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
-import static java.lang.System.*;
 
+import static java.lang.System.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.*;
 

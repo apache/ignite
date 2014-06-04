@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto;
 
-import org.gridgain.grid.kernal.GridEx;
-import org.gridgain.grid.product.GridProductLicense;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import java.io.Serializable;
+import java.io.*;
 import java.util.*;
 
 /**

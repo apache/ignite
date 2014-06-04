@@ -163,7 +163,6 @@ class VisorEventsCommand {
         }
     }
 
-
     private[this] def timeFilter(timeArg: Option[String]): java.lang.Long = {
         if (timeArg.isEmpty)
             null

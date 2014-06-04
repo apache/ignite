@@ -59,7 +59,6 @@ public class VisorStreamerConfig implements Serializable {
         return cfg;
     }
 
-
     /**
      * Construct data transfer object for streamer configurations properties.
      *

@@ -13,7 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.io.Serializable;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -43,7 +43,6 @@ public class VisorGridEvent implements Serializable {
 
     /** Shortened version of {@code toString()} result. Suitable for humans to read. */
     private final String shortDisplay;
-
 
     /**
      * Create event with given parameters.

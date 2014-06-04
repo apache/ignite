@@ -47,7 +47,6 @@ public class VisorTaskUtils {
         return c;
     }
 
-
     /**
      * Returns compact class host.
      *

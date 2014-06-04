@@ -151,7 +151,6 @@ public class VisorSpisConfig implements Serializable {
         return cfg;
     }
 
-
     /**
      * @return Discovery SPI.
      */
