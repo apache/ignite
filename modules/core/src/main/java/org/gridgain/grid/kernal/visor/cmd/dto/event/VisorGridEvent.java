@@ -44,7 +44,6 @@ public class VisorGridEvent implements Serializable {
     /** Shortened version of {@code toString()} result. Suitable for humans to read. */
     private final String shortDisplay;
 
-
     /**
      * Create event with given parameters.
      *

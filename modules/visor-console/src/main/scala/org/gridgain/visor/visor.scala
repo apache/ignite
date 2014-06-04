@@ -1961,7 +1961,6 @@ object visor extends VisorTag {
         shutdownCbs = shutdownCbs :+ f
     }
 
-
     /**
      * Adds close callback. Added function will be called every time
      * command `close` is called.

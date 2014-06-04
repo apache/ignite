@@ -270,7 +270,6 @@ class VisorDeployCommand {
         warn("Type 'help deploy' to see how to use this command.")
     }
 
-
     /**
      * Catch point for missing arguments case.
      */
