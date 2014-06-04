@@ -34,13 +34,6 @@ public interface GridPortableReader {
 
     /**
      * @param fieldName Field name.
-     * @return Byte array.
-     * @throws IOException In case of error.
-     */
-    public byte[] readBytes(String fieldName) throws IOException;
-
-    /**
-     * @param fieldName Field name.
      * @return Integer value.
      * @throws IOException In case of error.
      */
@@ -55,10 +48,38 @@ public interface GridPortableReader {
 
     /**
      * @param fieldName Field name.
+     * @return Float value.
+     * @throws IOException In case of error.
+     */
+    public float readFloat(String fieldName) throws IOException;
+
+    /**
+     * @param fieldName Field name.
+     * @return Double value.
+     * @throws IOException In case of error.
+     */
+    public double readDouble(String fieldName) throws IOException;
+
+    /**
+     * @param fieldName Field name.
+     * @return Short value.
+     * @throws IOException In case of error.
+     */
+    public short readShort(String fieldName) throws IOException;
+
+    /**
+     * @param fieldName Field name.
+     * @return Char value.
+     * @throws IOException In case of error.
+     */
+    public char readChar(String fieldName) throws IOException;
+
+    /**
+     * @param fieldName Field name.
      * @return String value.
      * @throws IOException In case of error.
      */
-    public String readString(String fieldName) throws IOException;
+    @Nullable public String readString(String fieldName) throws IOException;
 
     /**
      * @param fieldName Field name.
@@ -88,4 +109,11 @@ public interface GridPortableReader {
      * @throws IOException In case of error.
      */
     @Nullable public UUID readUuid(String fieldName) throws IOException;
+
+    /**
+     * @param fieldName Field name.
+     * @return Byte array.
+     * @throws IOException In case of error.
+     */
+    @Nullable public byte[] readByteArray(String fieldName) throws IOException;
 }

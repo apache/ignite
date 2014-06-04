@@ -86,7 +86,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
     private ExecutorService exec;
 
     /** */
-    private GridClient client;
+    protected GridClient client;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

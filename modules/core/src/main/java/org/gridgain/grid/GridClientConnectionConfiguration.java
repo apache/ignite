@@ -19,7 +19,7 @@ import java.util.concurrent.*;
 /**
  * REST access configuration.
  */
-public class GridRestConfiguration {
+public class GridClientConnectionConfiguration {
     /** Default TCP server port. */
     public static final int DFLT_TCP_PORT = 11211;
 

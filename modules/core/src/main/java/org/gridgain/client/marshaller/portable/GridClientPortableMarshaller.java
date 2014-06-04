@@ -11,6 +11,7 @@ package org.gridgain.client.marshaller.portable;
 
 import org.gridgain.client.*;
 import org.gridgain.client.marshaller.*;
+import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
@@ -87,7 +88,10 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
     public static final byte TYPE_MAP = 19;
 
     /** */
-    public static final byte TYPE_USER_OBJECT = 20;
+    public static final byte TYPE_UUID = 20;
+
+    /** */
+    public static final byte TYPE_USER_OBJECT = 21;
 
     /** */
     private static final Charset UTF_8 = Charset.forName("UTF-8");
@@ -107,8 +111,21 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
     /**
      * @param typesMap Map associating portable type identifiers with java classes..
      */
-    public GridClientPortableMarshaller(Map<Integer, Class<? extends GridPortableObject>> typesMap) {
-        this.typesMap = typesMap;
+    public GridClientPortableMarshaller(@Nullable Map<Integer, Class<? extends GridPortableObject>> typesMap) {
+        this.typesMap = new HashMap<>();
+
+        if (typesMap != null)
+            this.typesMap.putAll(typesMap);
+
+        this.typesMap.put(GridClientAuthenticationRequest.PORTABLE_TYPE_ID, GridClientAuthenticationRequest.class);
+        this.typesMap.put(GridClientCacheRequest.PORTABLE_TYPE_ID, GridClientCacheRequest.class);
+        this.typesMap.put(GridClientLogRequest.PORTABLE_TYPE_ID, GridClientLogRequest.class);
+        this.typesMap.put(GridClientNodeBean.PORTABLE_TYPE_ID, GridClientNodeBean.class);
+        this.typesMap.put(GridClientNodeMetricsBean.PORTABLE_TYPE_ID, GridClientNodeMetricsBean.class);
+        this.typesMap.put(GridClientResponse.PORTABLE_TYPE_ID, GridClientResponse.class);
+        this.typesMap.put(GridClientTaskRequest.PORTABLE_TYPE_ID, GridClientTaskRequest.class);
+        this.typesMap.put(GridClientTaskResultBean.PORTABLE_TYPE_ID, GridClientTaskResultBean.class);
+        this.typesMap.put(GridClientTopologyRequest.PORTABLE_TYPE_ID, GridClientTopologyRequest.class);
     }
 
     /** {@inheritDoc} */
@@ -124,13 +141,18 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
             Class<? extends GridPortableObject> cls = typesMap.get(portable.typeId());
 
             if (cls == null) // TODO 8491.
-                throw new IllegalArgumentException("No Java class for portable type " + portable.typeId());
+                throw new IllegalArgumentException("No Java class for portable type " +
+                    "[obj=" + obj + ", typeId=" + portable.typeId() + ']');
 
-            MetadataCollectingWriter writer = new MetadataCollectingWriter();
+            GridPortableMetadataCollectingWriter writer = new GridPortableMetadataCollectingWriter();
 
-            portable.writePortable(writer);
+            Map<Integer, List<String>> fieldsMap = writer.writeAndCollect(portable);
 
-            metadata = new GridPortableClassMetadata(portable.typeId(), cls, writer.fields());
+            List<String> fields = fieldsMap.get(portable.typeId());
+
+            assert fields != null : "Failed to get fields for " + portable;
+
+            metadata = new GridPortableClassMetadata(portable.typeId(), cls, fields);
 
             metadataMap.put(portable.typeId(), metadata);
         }
@@ -212,6 +234,50 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
         }
 
         /**
+         * @param val Value to write.
+         */
+        void writeFloat(float val) {
+            ensureCapacity(4);
+
+            UNSAFE.putFloat(bytes, OFFSET + cnt, val);
+
+            cnt += 4;
+        }
+
+        /**
+         * @param val Value to write.
+         */
+        void writeDouble(double val) {
+            ensureCapacity(8);
+
+            UNSAFE.putDouble(bytes, OFFSET + cnt, val);
+
+            cnt += 8;
+        }
+
+        /**
+         * @param val Value to write.
+         */
+        void writeShort(short val) {
+            ensureCapacity(2);
+
+            UNSAFE.putShort(bytes, OFFSET + cnt, val);
+
+            cnt += 2;
+        }
+
+        /**
+         * @param val Value to write.
+         */
+        void writeChar(char val) {
+            ensureCapacity(2);
+
+            UNSAFE.putChar(bytes, OFFSET + cnt, val);
+
+            cnt += 2;
+        }
+
+        /**
          * @param bytes Bytes to write.
          */
         void writeBytes(byte[] bytes) {
@@ -222,7 +288,9 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
             cnt += bytes.length;
         }
 
-        /** {@inheritDoc} */
+        /**
+         * @param size Number of bytes to write.
+         */
         void ensureCapacity(int size) {
             if (cnt + size > bytes.length)
                 bytes = Arrays.copyOf(bytes, bytes.length * 2 + size);
@@ -254,16 +322,32 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
         }
 
         /**
-         * @return Byte value.
+         * @param cnt Number of bytes to read.
+         * @throws IOException If there are no to read.
          */
-        byte readByte() {
+        void checkAvailable(int cnt) throws IOException {
+            if (pos + cnt > bytes.length)
+                throw new IOException("Can not read requested amount of bytes, end of stream is reached " +
+                    "[total=" + bytes.length + ", pos=" + pos + ", readCnt=" + cnt + ']');
+        }
+
+        /**
+         * @return Byte value.
+         * @throws IOException In case or error.
+         */
+        byte readByte() throws IOException {
+            checkAvailable(1);
+
             return bytes[pos++];
         }
 
         /**
          * @return Boolean value.
+         * @throws IOException In case or error.
          */
-        boolean readBoolean() {
+        boolean readBoolean() throws IOException {
+            checkAvailable(1);
+
             int val = bytes[pos++];
 
             return val != 0;
@@ -271,8 +355,11 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
 
         /**
          * @return Integer value.
+         * @throws IOException In case or error.
          */
-        int readInt() {
+        int readInt() throws IOException {
+            checkAvailable(4);
+
             int res = UNSAFE.getInt(bytes, OFFSET + pos);
 
             pos += 4;
@@ -282,13 +369,87 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
 
         /**
          * @return Long value.
+         * @throws IOException In case or error.
          */
-        long readLong() {
+        long readLong() throws IOException {
+            checkAvailable(8);
+
             long res = UNSAFE.getLong(bytes, OFFSET + pos);
 
             pos += 8;
 
             return res;
+        }
+
+        /**
+         * @return Float value.
+         * @throws IOException In case or error.
+         */
+        float readFloat() throws IOException {
+            checkAvailable(4);
+
+            float res = UNSAFE.getFloat(bytes, OFFSET + pos);
+
+            pos += 4;
+
+            return res;
+        }
+
+        /**
+         * @return Double value.
+         * @throws IOException In case or error.
+         */
+        double readDouble() throws IOException {
+            checkAvailable(8);
+
+            double res = UNSAFE.getDouble(bytes, OFFSET + pos);
+
+            pos += 8;
+
+            return res;
+        }
+
+        /**
+         * @return Double value.
+         * @throws IOException In case or error.
+         */
+        short readShort() throws IOException {
+            checkAvailable(1);
+
+            short res = UNSAFE.getShort(bytes, OFFSET + pos);
+
+            pos += 2;
+
+            return res;
+        }
+
+        /**
+         * @return Double value.
+         * @throws IOException In case or error.
+         */
+        char readChar() throws IOException {
+            checkAvailable(2);
+
+            char res = UNSAFE.getChar(bytes, OFFSET + pos);
+
+            pos += 2;
+
+            return res;
+        }
+
+        /**
+         * @param len Number of bytes to read.
+         * @return Bytes.
+         * @throws IOException In case of error.
+         */
+        byte[] readBytes(int len) throws IOException {
+            checkAvailable(len);
+
+            byte[] bytes = Arrays.copyOfRange(this.bytes, pos, pos + len);
+
+            skip(len);
+
+            return bytes;
         }
 
         /**
@@ -310,58 +471,6 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
          */
         int position() {
             return pos;
-        }
-    }
-
-    /**
-     *
-     */
-    private static class MetadataCollectingWriter implements GridPortableWriter {
-        /** */
-        private List<String> fields = new ArrayList<>();
-
-        /** {@inheritDoc} */
-        @Override public void writeByte(String fieldName, byte val) {
-            onWrite(fieldName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeInt(String fieldName, int val) {
-            onWrite(fieldName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeLong(String fieldName, long val) {
-            onWrite(fieldName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeString(String fieldName, String val) {
-            onWrite(fieldName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T> void writeObject(String fieldName, T obj) {
-            onWrite(fieldName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public <K, V> void writeMap(String fieldName, Map<K, V> map) {
-            onWrite(fieldName);
-        }
-
-        /**
-         * @param fieldName Field name.
-         */
-        private void onWrite(String fieldName) {
-            fields.add(fieldName);
-        }
-
-        /**
-         * @return Field count.
-         */
-        List<String> fields() {
-            return fields;
         }
     }
 
@@ -399,36 +508,64 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
 
         /** {@inheritDoc} */
         @Override public void writeByte(String fieldName, byte val) {
-            startField(fieldName);
+            onWrite(fieldName);
 
             out.writeByte(val);
         }
 
         /** {@inheritDoc} */
         @Override public void writeInt(String fieldName, int val) {
-            startField(fieldName);
+            onWrite(fieldName);
 
             out.writeInt(val);
         }
 
         /** {@inheritDoc} */
         @Override public void writeLong(String fieldName, long val) {
-            startField(fieldName);
+            onWrite(fieldName);
 
             out.writeLong(val);
         }
 
         /** {@inheritDoc} */
         @Override public void writeString(String fieldName, String val) {
-            startField(fieldName);
+            onWrite(fieldName);
 
-            writeStringValue(val);
+            writeString(val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeFloat(String fieldName, float val) throws IOException {
+            onWrite(fieldName);
+
+            out.writeFloat(val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeDouble(String fieldName, double val) throws IOException {
+            onWrite(fieldName);
+
+            out.writeDouble(val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeShort(String fieldName, short val) throws IOException {
+            onWrite(fieldName);
+
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeChar(String fieldName, char val) throws IOException {
+            onWrite(fieldName);
+
+
         }
 
         /**
          * @param val String.
          */
-        private void writeStringValue(@Nullable String val) {
+        private void writeString(@Nullable String val) {
             if (val != null) {
                 byte[] bytes = val.getBytes(UTF_8);
 
@@ -440,15 +577,91 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> void writeMap(String fieldName, Map<K, V> map) throws IOException {
-            startField(fieldName);
+        @Override public void writeBoolean(String fieldName, boolean val) throws IOException {
+            onWrite(fieldName);
 
+            out.writeBoolean(val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeByteArray(String fieldName, @Nullable byte[] val) throws IOException {
+            onWrite(fieldName);
+
+            writeByteArray(val);
+        }
+
+        /**
+         * @param val Value to write.
+         */
+        private void writeByteArray(@Nullable byte[] val) {
+            if (val != null) {
+                out.writeInt(val.length);
+
+                out.writeBytes(val);
+            }
+            else
+                out.writeInt(-1);
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T> void writeCollection(String fieldName, @Nullable Collection<T> col) throws IOException {
+            onWrite(fieldName);
+
+            writeCollection(col);
+        }
+
+        /**
+         * @param col Collection.
+         * @throws IOException In case of error.
+         */
+        private void writeCollection(@Nullable Collection<?> col) throws IOException {
+            if (col != null) {
+                out.writeInt(col.size());
+
+                for (Object obj : col)
+                    writeObject(obj);
+            }
+            else
+                out.writeInt(-1);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeUuid(String fieldName, @Nullable UUID uuid) throws IOException {
+            onWrite(fieldName);
+
+            writeUuid(uuid);
+        }
+
+        /**
+         * @param uuid UUID.
+         */
+        private void writeUuid(@Nullable UUID uuid) {
+            out.writeBoolean(uuid != null);
+
+            if (uuid != null) {
+                out.writeLong(uuid.getMostSignificantBits());
+                out.writeLong(uuid.getLeastSignificantBits());
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public <K, V> void writeMap(String fieldName, Map<K, V> map) throws IOException {
+            onWrite(fieldName);
+
+            writeMap(map);
+        }
+
+        /**
+         * @param map Map.
+         * @throws IOException In case of error.
+         */
+        private <K, V> void writeMap(Map<K, V> map) throws IOException {
             if (map != null) {
                 out.writeInt(map.size());
 
                 for (Map.Entry<K, V> e : map.entrySet()) {
-                    writeObjectValue(e.getKey());
-                    writeObjectValue(e.getValue());
+                    writeObject(e.getKey());
+                    writeObject(e.getValue());
                 }
             }
             else
@@ -457,19 +670,23 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
 
         /** {@inheritDoc} */
         @Override public <T> void writeObject(String fieldName, T obj) throws IOException {
-            startField(fieldName);
+            onWrite(fieldName);
 
-            writeObjectValue(obj);
+            writeObject(obj);
         }
 
         /**
          * @param obj Object to write.
          * @throws IOException In case of error.
          */
-        private <T> void writeObjectValue(T obj) throws IOException {
+        private <T> void writeObject(T obj) throws IOException {
             if (obj instanceof Byte) {
                 out.writeByte(TYPE_BYTE);
                 out.writeByte((Byte)obj);
+            }
+            else if (obj instanceof Boolean) {
+                out.writeByte(TYPE_BOOLEAN);
+                out.writeBoolean((Boolean)obj);
             }
             else if (obj instanceof Integer) {
                 out.writeByte(TYPE_INT);
@@ -479,18 +696,56 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
                 out.writeByte(TYPE_LONG);
                 out.writeLong((Long)obj);
             }
+            else if (obj instanceof Float) {
+                out.writeByte(TYPE_FLOAT);
+                out.writeFloat((Float)obj);
+            }
+            else if (obj instanceof Double) {
+                out.writeByte(TYPE_DOUBLE);
+                out.writeDouble((Double)obj);
+            }
             else if (obj instanceof String) {
                 out.writeByte(TYPE_STRING);
 
-                writeStringValue((String)obj);
+                writeString((String)obj);
+            }
+            else if (obj instanceof Short) {
+                out.writeByte(TYPE_SHORT);
+
+                out.writeShort((Short)obj);
+            }
+            else if (obj instanceof Character) {
+                out.writeByte(TYPE_CHAR);
+
+                out.writeChar((Character)obj);
+            }
+            else if (obj instanceof UUID) {
+                out.writeByte(TYPE_UUID);
+
+                writeUuid((UUID)obj);
             }
             else if (obj instanceof GridPortableObject) {
                 out.writeByte(TYPE_USER_OBJECT);
 
                 writePortable((GridPortableObject)obj);
             }
+            else if (obj instanceof Collection) {
+                out.writeByte(TYPE_LIST);
+
+                writeCollection((Collection)obj);
+            }
+            else if (obj instanceof Map) {
+                out.writeByte(TYPE_MAP);
+
+                writeMap((Map)obj);
+            }
+            else if (obj instanceof byte[]) {
+                out.writeByte(TYPE_BYTE_ARRAY);
+
+                writeByteArray((byte[])obj);
+            }
             else if (obj == null)
-                out.writeInt(TYPE_NULL);
+                out.writeByte(TYPE_NULL);
             else
                 throw new IOException("Unsupported object: " + obj);
         }
@@ -498,7 +753,7 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
         /**
          * @param fieldName Field name.
          */
-        private void startField(String fieldName) {
+        private void onWrite(String fieldName) {
             // No-op.
         }
     }
@@ -544,34 +799,58 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
         }
 
         /** {@inheritDoc} */
-        @Override public byte readByte(String fieldName) {
+        @Override public byte readByte(String fieldName) throws IOException {
+            onRead(fieldName);
+
             return in.readByte();
         }
 
         /** {@inheritDoc} */
-        @Override public int readInt(String fieldName) {
+        @Override public int readInt(String fieldName) throws IOException {
+            onRead(fieldName);
+
             return in.readInt();
         }
 
         /** {@inheritDoc} */
-        @Override public long readLong(String fieldName) {
+        @Override public long readLong(String fieldName) throws IOException {
+            onRead(fieldName);
+
             return in.readLong();
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("ConstantConditions")
-        @Override public String readString(String fieldName) {
-            return readStringValue();
+        @Nullable @Override public String readString(String fieldName) throws IOException {
+            onRead(fieldName);
+
+            return readString();
+        }
+
+        /** {@inheritDoc} */
+        @Override public float readFloat(String fieldName) throws IOException {
+            onRead(fieldName);
+
+            return in.readFloat();
+        }
+
+        /** {@inheritDoc} */
+        @Override public double readDouble(String fieldName) throws IOException {
+            onRead(fieldName);
+
+            return in.readDouble();
         }
 
         /**
          * @return String.
+         * @throws IOException In case of error.
          */
-        @Nullable private String readStringValue() {
+        @Nullable private String readString() throws IOException {
             int len = in.readInt();
 
             if (len == -1)
                 return null;
+
+            in.checkAvailable(len);
 
             String res = new String(in.bytes(), in.position(), len, UTF_8);
 
@@ -581,15 +860,130 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean readBoolean(String fieldName) throws IOException {
+            onRead(fieldName);
+
+            return in.readBoolean();
+        }
+
+        /** {@inheritDoc} */
+        @Override public short readShort(String fieldName) throws IOException {
+            onRead(fieldName);
+
+            return in.readShort();
+        }
+
+        /** {@inheritDoc} */
+        @Override public char readChar(String fieldName) throws IOException {
+            onRead(fieldName);
+
+            return in.readChar();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public byte[] readByteArray(String fieldName) throws IOException {
+            onRead(fieldName);
+
+            return readByteArray();
+        }
+
+        /**
+         * @return Byte array.
+         * @throws IOException If failed.
+         */
+        @Nullable private byte[] readByteArray() throws IOException {
+            int len = in.readInt();
+
+            if (len == -1)
+                return null;
+
+            return in.readBytes(len);
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <T> Collection<T> readCollection(String fieldName) throws IOException {
+            onRead(fieldName);
+
+            return readCollection();
+        }
+
+        /**
+         * @return Collection.
+         * @throws IOException In case of error.
+         */
+        @Nullable private <T> Collection<T> readCollection() throws IOException {
+            int size = in.readInt();
+
+            if (size == -1)
+                return null;
+
+            Collection<T> col = new ArrayList<>(size);
+
+            for (int i = 0; i < size; i++)
+                col.add((T) readObject());
+
+            return col;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public UUID readUuid(String fieldName) throws IOException {
+            onRead(fieldName);
+
+            return readUuid();
+        }
+
+        /**
+         * @return UUID.
+         * @throws IOException In case of error.
+         */
+        @Nullable private UUID readUuid() throws IOException {
+            if (!in.readBoolean())
+                return null;
+
+            return new UUID(in.readLong(), in.readLong());
+        }
+
+        /** {@inheritDoc} */
         @Override public <T> T readObject(String fieldName) throws IOException {
-            return readObjectValue();
+            onRead(fieldName);
+
+            return readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <K, V> Map<K, V> readMap(String fieldName) throws IOException {
+            onRead(fieldName);
+
+            return readMap();
+        }
+
+        /**
+         * @return Map.
+         * @throws IOException In case of error.
+         */
+        @Nullable private <K, V> Map<K, V> readMap() throws IOException {
+            int size = in.readInt();
+
+            if (size == -1)
+                return null;
+
+            Map<K, V> map = new HashMap<>(size, 1.0f);
+
+            for (int i = 0; i < size; i++) {
+                K key = readObject();
+                V val = readObject();
+
+                map.put(key, val);
+            }
+
+            return map;
         }
 
         /**
          * @return Object.
          * @throws IOException In case of error.
          */
-        @Nullable private <T> T readObjectValue() throws IOException {
+        @Nullable private <T> T readObject() throws IOException {
             byte type = in.readByte();
 
             Object res;
@@ -605,6 +999,11 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
 
                     break;
 
+                case TYPE_BOOLEAN:
+                    res = in.readBoolean();
+
+                    break;
+
                 case TYPE_INT:
                     res = in.readInt();
 
@@ -615,8 +1014,48 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
 
                     break;
 
+                case TYPE_FLOAT:
+                    res = in.readFloat();
+
+                    break;
+
+                case TYPE_DOUBLE:
+                    res = in.readDouble();
+
+                    break;
+
+                case TYPE_SHORT:
+                    res = in.readShort();
+
+                    break;
+
+                case TYPE_CHAR:
+                    res = in.readChar();
+
+                    break;
+
                 case TYPE_STRING:
-                    res = readStringValue();
+                    res = readString();
+
+                    break;
+
+                case TYPE_UUID:
+                    res = readUuid();
+
+                    break;
+
+                case TYPE_LIST:
+                    res = readCollection();
+
+                    break;
+
+                case TYPE_MAP:
+                    res = readMap();
+
+                    break;
+
+                case TYPE_BYTE_ARRAY:
+                    res = readByteArray();
 
                     break;
 
@@ -632,23 +1071,11 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
             return (T)res;
         }
 
-        /** {@inheritDoc} */
-        @Override public <K, V> Map<K, V> readMap(String fieldName) throws IOException {
-            int size = in.readInt();
-
-            if (size == -1)
-                return null;
-
-            Map<K, V> map = new HashMap<>(size, 1.0f);
-
-            for (int i = 0; i < size; i++) {
-                K key = readObjectValue();
-                V val = readObjectValue();
-
-                map.put(key, val);
-            }
-
-            return map;
+        /**
+         * @param fieldName Field name.
+         */
+        private void onRead(String fieldName) {
+            // No-op.
         }
     }
 }

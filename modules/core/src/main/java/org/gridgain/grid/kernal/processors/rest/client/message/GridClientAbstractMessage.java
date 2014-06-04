@@ -100,11 +100,11 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
 
     /** {@inheritDoc} */
     @Override public void writePortable(GridPortableWriter writer) throws IOException {
-        writer.writeBytes("sesTok", sesTok);
+        writer.writeByteArray("sesTok", sesTok);
     }
 
     /** {@inheritDoc} */
     @Override public void readPortable(GridPortableReader reader) throws IOException {
-        sesTok = reader.readBytes("sesTok");
+        sesTok = reader.readByteArray("sesTok");
     }
 }

@@ -229,6 +229,8 @@ public class GridClientCacheRequest<K, V> extends GridClientAbstractMessage {
 
     /** {@inheritDoc} */
     @Override public void writePortable(GridPortableWriter writer) throws IOException {
+        super.writePortable(writer);
+
         writer.writeInt("op", op.ordinal());
 
         writer.writeString("cacheName", cacheName);
@@ -244,6 +246,8 @@ public class GridClientCacheRequest<K, V> extends GridClientAbstractMessage {
 
     /** {@inheritDoc} */
     @Override public void readPortable(GridPortableReader reader) throws IOException {
+        super.readPortable(reader);
+
         op = GridCacheOperation.fromOrdinal(reader.readInt("op"));
 
         cacheName = reader.readString("cacheName");

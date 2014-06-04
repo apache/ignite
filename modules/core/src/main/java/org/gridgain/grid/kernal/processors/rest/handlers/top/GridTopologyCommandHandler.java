@@ -256,6 +256,15 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
 
             attrs.remove(ATTR_CACHE);
             attrs.remove(ATTR_VER_CONVERTERS);
+            attrs.remove(ATTR_SECURITY_SUBJECT);
+            attrs.remove(ATTR_SECURITY_CREDENTIALS);
+
+            for (Map.Entry<String, Object> e : attrs.entrySet()) {
+                if (e.getValue() != null) {
+                  if (e.getValue().getClass().isEnum() || e.getValue() instanceof InetAddress)
+                      e.setValue(e.getValue().toString());
+                }
+            }
 
             nodeBean.setAttributes(attrs);
         }

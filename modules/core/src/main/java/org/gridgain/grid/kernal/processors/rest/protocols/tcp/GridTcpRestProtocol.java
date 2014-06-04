@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
+import org.gridgain.client.*;
 import org.gridgain.client.marshaller.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
@@ -27,6 +28,7 @@ import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
 import java.io.*;
+import java.lang.reflect.*;
 import java.net.*;
 import java.nio.*;
 import java.util.*;
@@ -146,6 +148,9 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
         GridConfiguration cfg = ctx.config();
 
+        if (cfg.getClientConnectionConfiguration() != null)
+            validatePortableTypes(cfg.getClientConnectionConfiguration());
+
         GridNioServerListener<GridClientMessage> lsnr = new GridTcpRestNioListener(log, this, hnd, ctx);
 
         GridNioParser parser = new GridTcpRestDirectParser(this, msgReader);
@@ -188,6 +193,42 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
             U.warn(log, "Failed to start " + name() + " protocol on port " + port + ": " + e.getMessage(),
                 "Failed to start " + name() + " protocol on port " + port + ". " +
                     "Check restTcpHost configuration property.");
+        }
+    }
+
+    /**
+     * @param cfg Configuration.
+     * @throws GridException If validation fails.
+     */
+    private void validatePortableTypes(GridClientConnectionConfiguration cfg) throws GridException {
+        if (cfg.getPortableTypesMap() == null)
+            return;
+
+        for (Map.Entry<Integer, Class<? extends GridPortableObject>> entry : cfg.getPortableTypesMap().entrySet()) {
+            Integer typeId = entry.getKey();
+            Class<? extends GridPortableObject> cls = entry.getValue();
+
+            if (typeId < 0)
+                throw new GridException("Negative portable types identifiers reserved for system use " +
+                    "[typeId=" + typeId + ", cls=" + cls + ']');
+
+            Constructor<?> ctor;
+
+            try {
+                ctor = cls.getConstructor();
+            }
+            catch (NoSuchMethodException e) {
+                throw new GridException("Portable object class must define public no-arg constructor " +
+                    "[typeId=" + typeId + ", cls=" + cls + ']', e);
+            }
+
+            try {
+                ctor.newInstance();
+            }
+            catch (Exception e) {
+                throw new GridException("Can not instantiate portable object instance using public no-arg constructor "
+                    + "[typeId=" + typeId + ", cls=" + cls + ']', e);
+            }
         }
     }
 

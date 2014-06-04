@@ -1662,6 +1662,8 @@ public class GridGainEx {
             myCfg.setRestTcpSslContextFactory(cfg.getRestTcpSslContextFactory());
             myCfg.setRestTcpSslEnabled(cfg.isRestTcpSslEnabled());
 
+            myCfg.setClientConnectionConfiguration(cfg.getClientConnectionConfiguration());
+
             // Replication configuration.
             myCfg.setDrSenderHubConfiguration(cfg.getDrSenderHubConfiguration());
             myCfg.setDrReceiverHubConfiguration(cfg.getDrReceiverHubConfiguration());

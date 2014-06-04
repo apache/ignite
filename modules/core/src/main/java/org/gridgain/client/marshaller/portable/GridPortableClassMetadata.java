@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Portable class metadata.
  */
-public class GridPortableClassMetadata {
+class GridPortableClassMetadata {
     /** */
     private int typeId;
 
@@ -31,7 +31,7 @@ public class GridPortableClassMetadata {
      * @param cls Target java class.
      * @param fields Field names.
      */
-    public GridPortableClassMetadata(int typeId, Class<? extends GridPortableObject> cls, List<String> fields) {
+    GridPortableClassMetadata(int typeId, Class<? extends GridPortableObject> cls, List<String> fields) {
         this.typeId = typeId;
         this.cls = cls;
         this.fields = fields;

@@ -37,7 +37,21 @@ public interface GridPortableWriter {
      * @param val Value to write.
      * @throws IOException In case of error.
      */
-    public void writeBytes(String fieldName, @Nullable byte[] val) throws IOException;
+    public void writeByteArray(String fieldName, @Nullable byte[] val) throws IOException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws IOException In case of error.
+     */
+    public void writeShort(String fieldName, short val) throws IOException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws IOException In case of error.
+     */
+    public void writeChar(String fieldName, char val) throws IOException;
 
     /**
      * @param fieldName Field name.
@@ -52,6 +66,20 @@ public interface GridPortableWriter {
      * @throws IOException In case of error.
      */
     public void writeLong(String fieldName, long val) throws IOException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws IOException In case of error.
+     */
+    public void writeFloat(String fieldName, float val) throws IOException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws IOException In case of error.
+     */
+    public void writeDouble(String fieldName, double val) throws IOException;
 
     /**
      * @param fieldName Field name.
@@ -79,7 +107,7 @@ public interface GridPortableWriter {
      * @param col Collection to write.
      * @throws IOException In case of error.
      */
-    public <T> void writeCollection(String fieldName, @Nullable Collection<?> col) throws IOException;
+    public <T> void writeCollection(String fieldName, @Nullable Collection<T> col) throws IOException;
 
     /**
      * @param fieldName Field name.

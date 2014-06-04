@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
-import org.gridgain.client.*;
 import org.gridgain.client.marshaller.*;
 import org.gridgain.client.marshaller.jdk.*;
 import org.gridgain.client.marshaller.optimized.*;
@@ -101,26 +100,10 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
         addProtobufMarshaller(tmpMap);
 
-        GridRestConfiguration restCfg = ctx.config().getRestConfiguration();
+        GridClientConnectionConfiguration clientCfg = ctx.config().getClientConnectionConfiguration();
 
-        Map<Integer, Class<? extends GridPortableObject>> typesMap;
-
-        if (restCfg != null && restCfg.getPortableTypesMap() != null)
-            typesMap = new HashMap<>(restCfg.getPortableTypesMap());
-        else
-            typesMap = new HashMap<>();
-
-        typesMap.put(GridClientAuthenticationRequest.PORTABLE_TYPE_ID, GridClientAuthenticationRequest.class);
-        typesMap.put(GridClientCacheRequest.PORTABLE_TYPE_ID, GridClientCacheRequest.class);
-        typesMap.put(GridClientLogRequest.PORTABLE_TYPE_ID, GridClientLogRequest.class);
-        typesMap.put(GridClientNodeBean.PORTABLE_TYPE_ID, GridClientNodeBean.class);
-        typesMap.put(GridClientNodeMetricsBean.PORTABLE_TYPE_ID, GridClientNodeMetricsBean.class);
-        typesMap.put(GridClientResponse.PORTABLE_TYPE_ID, GridClientResponse.class);
-        typesMap.put(GridClientTaskRequest.PORTABLE_TYPE_ID, GridClientTaskRequest.class);
-        typesMap.put(GridClientTaskResultBean.PORTABLE_TYPE_ID, GridClientTaskResultBean.class);
-        typesMap.put(GridClientTopologyRequest.PORTABLE_TYPE_ID, GridClientTopologyRequest.class);
-
-        tmpMap.put(U.PORTABLE_OBJECT_PROTO_ID, new GridClientPortableMarshaller(typesMap));
+        tmpMap.put(U.PORTABLE_OBJECT_PROTO_ID,
+            new GridClientPortableMarshaller(clientCfg != null ? clientCfg.getPortableTypesMap() : null));
 
         // Special case for Optimized marshaller, which may throw exception.
         // This may happen, for example, if some Unsafe methods are unavailable.

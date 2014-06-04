@@ -508,8 +508,8 @@ public class GridConfiguration {
     /** Security credentials. */
     private GridSecurityCredentialsProvider securityCred;
 
-    /** REST access configuration. */
-    private GridRestConfiguration restCfg;
+    /** Client access configuration. */
+    private GridClientConnectionConfiguration clientCfg;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -549,6 +549,7 @@ public class GridConfiguration {
         daemon = cfg.isDaemon();
         cacheCfg = cfg.getCacheConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
+        clientCfg = cfg.getClientConnectionConfiguration();
         clockSyncFreq = cfg.getClockSyncFrequency();
         clockSyncSamples = cfg.getClockSyncSamples();
         dataCenterId = cfg.getDataCenterId();
@@ -2954,17 +2955,17 @@ public class GridConfiguration {
     }
 
     /**
-     * @return REST access configuration.
+     * @return Client connection configuration.
      */
-    @Nullable public GridRestConfiguration getRestConfiguration() {
-        return restCfg;
+    @Nullable public GridClientConnectionConfiguration getClientConnectionConfiguration() {
+        return clientCfg;
     }
 
     /**
-     * @param restCfg REST access configuration.
+     * @param clientCfg Client connection configuration.
      */
-    public void setRestConfiguration(GridRestConfiguration restCfg) {
-        this.restCfg = restCfg;
+    public void setClientConnectionConfiguration(GridClientConnectionConfiguration clientCfg) {
+        this.clientCfg = clientCfg;
     }
 
     /** {@inheritDoc} */
