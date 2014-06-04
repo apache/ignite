@@ -249,8 +249,6 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
         @Nullable byte[] outBuf, int outOff, int outLen) {
         GridGgfsInputStreamAdapter stream = delegate.target();
 
-        assert (outBuf != null && len == outLen) || outBuf == null;
-
         try {
             byte[] res = null;
 
