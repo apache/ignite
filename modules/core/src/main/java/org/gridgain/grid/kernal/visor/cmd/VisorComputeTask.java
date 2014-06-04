@@ -22,7 +22,7 @@ import java.util.*;
  * @param <A> Task argument type.
  * @param <R> Task result type.
  */
-public abstract class VisorComputeTask<A, R> implements GridComputeTask<T2<Set<UUID>, A>, R> {
+public abstract class VisorComputeTask<A, R, J> implements GridComputeTask<T2<Set<UUID>, A>, R> {
     /** Task argument. */
     protected A taskArg;
 
@@ -32,7 +32,7 @@ public abstract class VisorComputeTask<A, R> implements GridComputeTask<T2<Set<U
      * @param arg Task arg.
      * @return New job.
      */
-    protected abstract VisorJob<A, R> job(A arg);
+    protected abstract VisorJob<A, J> job(A arg);
 
     @Nullable @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
         @Nullable T2<Set<UUID>, A> arg) throws GridException {

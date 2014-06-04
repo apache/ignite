@@ -17,19 +17,20 @@ import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
  * Task to run gc on nodes.
  */
 @GridInternal
-public class VisorRunGcTask extends VisorMultiNodeTask<VisorRunGcTask.VisorRunGcArg,
+public class VisorRunGcTask extends VisorComputeTask<VisorRunGcTask.VisorRunGcArg,
     Map<UUID, T2<Long, Long>>, T2<Long, Long>> {
     /**
      * Arguments for {@link VisorRunGcTask}.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorRunGcArg extends VisorMultiNodeArg {
+    public static class VisorRunGcArg implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -39,12 +40,9 @@ public class VisorRunGcTask extends VisorMultiNodeTask<VisorRunGcTask.VisorRunGc
         /**
          * Create task argument with specified nodes Ids.
          *
-         * @param nids Nodes Ids.
          * @param dgc Whether to run DGC on all caches.
          */
-        public VisorRunGcArg(Set<UUID> nids, boolean dgc) {
-            super(nids);
-
+        public VisorRunGcArg(boolean dgc) {
             this.dgc = dgc;
         }
     }

@@ -26,7 +26,7 @@ import static org.gridgain.grid.kernal.visor.cmd.tasks.VisorFieldsQueryUtils.*;
  *  Task for collecting next page previously executed SQL or SCAN query.
  */
 @GridInternal
-public class VisorNextFieldsQueryPageTask extends VisorComputeTask<T2<String, Integer>, VisorFieldsQueryResult> {
+public class VisorNextFieldsQueryPageTask extends VisorComputeTask<T2<String, Integer>, VisorFieldsQueryResult, VisorFieldsQueryResult> {
     /**
      * Job for collecting next page previously executed SQL or SCAN query.
      */

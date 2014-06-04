@@ -13,7 +13,6 @@ package org.gridgain.visor.commands.ack
 
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorAckTask
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorAckTask.VisorAckArg
 
 import java.util.{HashSet => JavaHashSet}
 
@@ -23,6 +22,7 @@ import scala.language.implicitConversions
 import org.gridgain.visor._
 import org.gridgain.visor.commands.VisorConsoleCommand
 import org.gridgain.visor.visor._
+import org.gridgain.grid.util.typedef.T2
 
 /**
  * ==Overview==
@@ -100,13 +100,13 @@ class VisorAckCommand {
             adviseToConnect()
         else
             try {
-                val nodeIds = new JavaHashSet(grid.nodes().map(_.id()))
+                val nodeIds = grid.nodes().map(_.id())
 
                 grid.forNodeIds(nodeIds)
                     .compute()
                     .withName("visor-ack")
                     .withNoFailover()
-                    .execute(classOf[VisorAckTask], new VisorAckArg(nodeIds, msg))
+                    .execute(classOf[VisorAckTask], toTaskArgument(nodeIds, msg))
             }
             catch {
                 case _: GridEmptyProjectionException => scold("Topology is empty.")

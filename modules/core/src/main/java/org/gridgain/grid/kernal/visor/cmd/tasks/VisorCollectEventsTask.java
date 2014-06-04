@@ -19,19 +19,20 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
  * Task that runs on specified node and returns events data.
  */
 @GridInternal
-public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEventsTask.VisorCollectEventsArgs,
+public class VisorCollectEventsTask extends VisorComputeTask<VisorCollectEventsTask.VisorCollectEventsArgs,
     Iterable<? extends VisorGridEvent>, Collection<? extends VisorGridEvent>> {
     /**
      * Argument for task returns events data.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorCollectEventsArgs extends VisorMultiNodeArg {
+    public static class VisorCollectEventsArgs implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -49,16 +50,13 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
 
         /**
          * Create task arguments for {@link VisorCollectEventsTask}.
-         * @param nids Nodes Id where events should be collected.
          * @param typeArg Arguments for type filter.
          * @param timeArg Arguments for time filter.
          * @param taskName Arguments for task name filter.
          * @param taskSessionId Arguments for task session filter.
          */
-        public VisorCollectEventsArgs(Set<UUID> nids, @Nullable int[] typeArg, @Nullable Long timeArg,
+        public VisorCollectEventsArgs(@Nullable int[] typeArg, @Nullable Long timeArg,
             @Nullable String taskName, @Nullable GridUuid taskSessionId) {
-            super(nids);
-
             this.typeArg = typeArg;
             this.timeArg = timeArg;
             this.taskName = taskName;
@@ -67,12 +65,11 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
 
         /**
          * Create task arguments for {@link VisorCollectEventsTask} filtered events.
-         * @param nodeId Node Id where events should be collected.
          * @param typeArg Arguments for type filter.
          * @param timeArg Arguments for time filter.
          */
-        public static VisorCollectEventsArgs createEventsArg(UUID nodeId, @Nullable int[] typeArg, @Nullable Long timeArg) {
-            return new VisorCollectEventsArgs(F.asSet(nodeId),
+        public static VisorCollectEventsArgs createEventsArg(@Nullable int[] typeArg, @Nullable Long timeArg) {
+            return new VisorCollectEventsArgs(
                 typeArg,
                 timeArg,
                 "visor",
@@ -81,14 +78,13 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
 
         /**
          * Create task arguments for {@link VisorCollectEventsTask} filtered task and job events.
-         * @param ids Nodes Id where events should be collected.
          * @param timeArg Arguments for time filter.
          * @param taskName Arguments for task name filter.
          * @param taskSessionId Arguments for task session filter.
          */
-        public static VisorCollectEventsArgs createTasksArg(Set<UUID> ids, @Nullable Long timeArg,
+        public static VisorCollectEventsArgs createTasksArg(@Nullable Long timeArg,
             @Nullable String taskName, @Nullable GridUuid taskSessionId) {
-            return new VisorCollectEventsArgs(ids,
+            return new VisorCollectEventsArgs(
                 VisorTaskUtils.concat(GridEventType.EVTS_JOB_EXECUTION, GridEventType.EVTS_TASK_EXECUTION),
                 timeArg,
                 taskName,

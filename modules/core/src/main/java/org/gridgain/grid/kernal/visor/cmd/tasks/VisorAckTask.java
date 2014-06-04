@@ -21,56 +21,28 @@ import java.util.*;
  * Ack task to run on node.
  */
 @GridInternal
-public class VisorAckTask extends VisorMultiNodeTask<VisorAckTask.VisorAckArg, Void, Void> {
-    /**
-     * Ack task argument to run on node.
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorAckArg extends VisorMultiNodeArg {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final String msg;
-
-        /**
-         * @param msg - generating message function.
-         */
-        public VisorAckArg(Set<UUID> nids, String msg) {
-            super(nids);
-
-            this.msg = msg;
-        }
-
-        /**
-         * @return Message.
-         */
-        public String message() {
-            return msg;
-        }
-    }
-
+public class VisorAckTask extends VisorComputeTask<String, Void, Void> {
     /**
      * Ack job to run on node.
      */
-    private static class VisorAckJob extends VisorJob<VisorAckArg, Void> {
+    private static class VisorAckJob extends VisorJob<String, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
-        private VisorAckJob(VisorAckArg arg) {
+        private VisorAckJob(String arg) {
             super(arg);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(VisorAckArg arg) throws GridException {
-            System.out.println("<visor>: ack: " + (arg.msg == null ? g.localNode().id() : arg.msg));
+        @Override protected Void run(String arg) throws GridException {
+            System.out.println("<visor>: ack: " + (arg == null ? g.localNode().id() : arg));
 
             return null;
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorAckJob job(VisorAckArg arg) {
+    @Override protected VisorAckJob job(String arg) {
         return new VisorAckJob(arg);
     }
 

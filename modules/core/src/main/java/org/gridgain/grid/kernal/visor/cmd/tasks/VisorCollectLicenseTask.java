@@ -23,28 +23,28 @@ import java.util.*;
  * Collect license from nodes task.
  */
 @GridInternal
-public class VisorCollectLicenseTask extends VisorMultiNodeTask<VisorMultiNodeArg,
+public class VisorCollectLicenseTask extends VisorComputeTask<Void,
     Iterable<T2<UUID, VisorLicense>>, VisorLicense> {
     /**
      * Job that collect license from nodes.
      */
-    private static class VisorCollectLicenseJob extends VisorJob<VisorMultiNodeArg, VisorLicense> {
+    private static class VisorCollectLicenseJob extends VisorJob<Void, VisorLicense> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Create job with given argument. */
-        private VisorCollectLicenseJob(VisorMultiNodeArg arg) {
+        private VisorCollectLicenseJob(Void arg) {
             super(arg);
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override protected VisorLicense run(VisorMultiNodeArg arg) throws GridException {
+        @Nullable @Override protected VisorLicense run(Void arg) throws GridException {
             return VisorLicense.from(g);
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorCollectLicenseJob job(VisorMultiNodeArg arg) {
+    @Override protected VisorCollectLicenseJob job(Void arg) {
         return new VisorCollectLicenseJob(arg);
     }
 

@@ -21,7 +21,8 @@ import java.util.*;
  * Task that clears specified caches on specified node.
  */
 @GridInternal
-public class VisorClearCachesTask extends VisorComputeTask<Set<String>, Map<String, T2<Integer, Integer>>> {
+public class VisorClearCachesTask extends VisorComputeTask<Set<String>, Map<String, T2<Integer, Integer>>,
+    Map<String, T2<Integer, Integer>>> {
     /**
      * Job that clear specified caches.
      */

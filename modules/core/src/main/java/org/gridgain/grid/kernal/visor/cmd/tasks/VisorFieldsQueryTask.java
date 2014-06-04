@@ -32,7 +32,7 @@ import static org.gridgain.grid.kernal.visor.cmd.tasks.VisorFieldsQueryUtils.*;
  */
 @GridInternal
 public class VisorFieldsQueryTask extends VisorComputeTask<VisorFieldsQueryTask.VisorFieldsQueryArg,
-    T2<? extends Exception, VisorFieldsQueryResultEx>> {
+    T2<? extends Exception, VisorFieldsQueryResultEx>, T2<? extends Exception, VisorFieldsQueryResultEx>> {
     /**
      * Arguments for {@link VisorFieldsQueryTask}.
      */

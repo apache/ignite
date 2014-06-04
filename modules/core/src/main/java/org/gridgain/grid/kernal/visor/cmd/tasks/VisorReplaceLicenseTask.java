@@ -25,11 +25,11 @@ import java.util.*;
  * TODO GG-8358 WHY WE HAVE two simailar task?
  */
 @GridInternal
-public class VisorReplaceLicenseTask extends VisorMultiNodeTask<VisorReplaceLicenseTask.VisorReplaceLicenseArg,
+public class VisorReplaceLicenseTask extends VisorComputeTask<VisorReplaceLicenseTask.VisorReplaceLicenseArg,
     Iterable<VisorReplaceLicenseTask.VisorReplaceLicenseResult>, VisorReplaceLicenseTask.VisorReplaceLicenseState> {
 
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorReplaceLicenseArg extends VisorMultiNodeArg {
+    public static class VisorReplaceLicenseArg implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -37,9 +37,7 @@ public class VisorReplaceLicenseTask extends VisorMultiNodeTask<VisorReplaceLice
 
         private final String[] licenseLine;
 
-        public VisorReplaceLicenseArg(Set<UUID> nids, UUID id, String[] line) {
-            super(nids);
-
+        public VisorReplaceLicenseArg(UUID id, String[] line) {
             licenseId = id;
             licenseLine = line;
         }

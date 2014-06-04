@@ -15,7 +15,7 @@ import java.io._
 import java.util.UUID
 
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.visor.cmd.VisorMultiNodeArg
+import org.gridgain.grid.kernal.visor.cmd.Void
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorReplaceLicenseTask.VisorReplaceLicenseArg
 import org.gridgain.grid.kernal.visor.cmd.tasks.{VisorCollectLicenseTask, VisorReplaceLicenseTask}
 import org.gridgain.scalar.scalar._
@@ -99,7 +99,7 @@ class VisorLicenseCommand {
 
                 val lics = try
                     grid.forNodes(nodes).compute().execute(classOf[VisorCollectLicenseTask],
-                        new VisorMultiNodeArg(new java.util.HashSet(nodes.map(_.id())))).get
+                        new Void(new java.util.HashSet(nodes.map(_.id())))).get
                 catch {
                     case _: GridException =>
                         warn("Failed to obtain license from grid.")

@@ -19,19 +19,20 @@ import org.gridgain.grid.kernal.visor.cmd.dto.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
  * Task that cache metrics from all nodes.
  */
 @GridInternal
-public class VisorCollectMetricsCacheTask extends VisorMultiNodeTask<VisorCollectMetricsCacheTask.VisorCollectMetricsCacheArg,
+public class VisorCollectMetricsCacheTask extends VisorComputeTask<VisorCollectMetricsCacheTask.VisorCollectMetricsCacheArg,
     Iterable<VisorCacheAggregatedMetrics>, Collection<VisorCacheMetrics>> {
     /**
      * Arguments for {@link VisorCollectMetricsCacheTask}.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorCollectMetricsCacheArg extends VisorMultiNodeArg {
+    public static class VisorCollectMetricsCacheArg implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -41,9 +42,7 @@ public class VisorCollectMetricsCacheTask extends VisorMultiNodeTask<VisorCollec
         /** Name of cache to collect metrics. */
         private final String cacheName;
 
-        public VisorCollectMetricsCacheArg(Set<UUID> nids, boolean all, @Nullable String cacheName) {
-            super(nids);
-
+        public VisorCollectMetricsCacheArg(boolean all, @Nullable String cacheName) {
             this.all = all;
             this.cacheName = cacheName;
         }
