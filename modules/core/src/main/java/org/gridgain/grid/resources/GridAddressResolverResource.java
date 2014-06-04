@@ -15,7 +15,7 @@ import java.lang.annotation.*;
  * Annotates a field or a setter method for injection of address resolver.
  * Address resolver is provided via {@link org.gridgain.grid.GridConfiguration#getAddressResolver()}.
  * <p>
- * Local node ID can be injected into instances of {@link org.gridgain.grid.spi.GridSpi}.
+ * Address resolver can be injected into instances of {@link org.gridgain.grid.spi.GridSpi}.
  * <p>
  * Here is how injection would typically happen:
  * <pre name="code" class="java">

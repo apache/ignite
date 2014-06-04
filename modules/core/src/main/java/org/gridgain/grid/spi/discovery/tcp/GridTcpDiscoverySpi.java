@@ -978,7 +978,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
         try {
             Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
-                U.resolveAddresses(addrRslvr, F.flat(Arrays.asList(addrs.get1(), addrs.get2())), locNode.discoveryPort());
+                U.resolveAddresses(addrRslvr, F.flat(Arrays.asList(addrs.get1(), addrs.get2())),
+                    locNode.discoveryPort());
 
             if (extAddrs != null)
                 nodeAttrs.put(createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
@@ -1520,9 +1521,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                     if (subj == null)
                         throw new GridSpiException("Authentication failed for local node: " + locNode.id());
-                    else if (!(subj instanceof Serializable))
-                        throw new GridSpiException("Authentication failed for local node " +
-                            "(sbuject is not Serializable): " + locNode.id());
 
                     Map<String, Object> attrs = new HashMap<>(locNode.attributes());
 

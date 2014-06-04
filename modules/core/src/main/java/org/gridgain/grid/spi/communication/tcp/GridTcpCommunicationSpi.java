@@ -1611,13 +1611,12 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
         Collection<String> rmtAddrs0 = node.attribute(createSpiAttributeName(ATTR_ADDRS));
         Collection<String> rmtHostNames0 = node.attribute(createSpiAttributeName(ATTR_HOST_NAMES));
         Integer boundPort = node.attribute(createSpiAttributeName(ATTR_PORT));
-
         Collection<InetSocketAddress> extAddrs = node.attribute(createSpiAttributeName(ATTR_EXT_ADDRS));
 
         boolean isRmtAddrsExist = (!F.isEmpty(rmtAddrs0) && boundPort != null);
         boolean isExtAddrsExist = !F.isEmpty(extAddrs);
 
-        if (isRmtAddrsExist && isExtAddrsExist)
+        if (!isRmtAddrsExist && !isExtAddrsExist)
             throw new GridException("Failed to send message to the destination node. Node doesn't have any " +
                 "TCP communication addresses or mapped external addresses. Check configuration and make sure " +
                 "that you use the same communication SPI on all nodes. Remote node id: " + node.id());
