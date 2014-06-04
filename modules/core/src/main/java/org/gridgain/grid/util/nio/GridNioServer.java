@@ -1298,8 +1298,10 @@ public class GridNioServer<T> {
                 ByteBuffer readBuf = null;
 
                 if (directMode) {
-                    writeBuf = directBuf ? ByteBuffer.allocateDirect(8 << 10) : ByteBuffer.allocate(8 << 10);
-                    readBuf = directBuf ? ByteBuffer.allocateDirect(8 << 10) : ByteBuffer.allocate(8 << 10);
+                    writeBuf = directBuf ? ByteBuffer.allocateDirect(sock.getSendBufferSize()) :
+                        ByteBuffer.allocate(sock.getSendBufferSize());
+                    readBuf = directBuf ? ByteBuffer.allocateDirect(sock.getReceiveBufferSize()) :
+                        ByteBuffer.allocate(sock.getReceiveBufferSize());
 
                     writeBuf.order(order);
                     readBuf.order(order);
