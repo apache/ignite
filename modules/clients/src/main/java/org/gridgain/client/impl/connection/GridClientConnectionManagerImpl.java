@@ -49,9 +49,6 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
     /** Initialization retry interval. */
     private static final int INIT_RETRY_INTERVAL = 1000;
 
-    /** */
-    private static final long TCP_IDLE_CONN_TIMEOUT = 10_000;
-
     /** NIO server. */
     private GridNioServer srv;
 
@@ -205,7 +202,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
                     .directMode(true)
                     .socketReceiveBufferSize(0)
                     .socketSendBufferSize(0)
-                    .idleTimeout(TCP_IDLE_CONN_TIMEOUT)
+                    .idleTimeout(Long.MAX_VALUE)
                     .gridName("gridClient")
                     .messageWriter(msgWriter)
                     .build();
