@@ -30,6 +30,11 @@ public class VisorAckTask extends VisorMultiNodeTask<String, Void, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /**
+         * Create job with given argument.
+         *
+         * @param arg Message to ack in node console.
+         */
         private VisorAckJob(String arg) {
             super(arg);
         }
