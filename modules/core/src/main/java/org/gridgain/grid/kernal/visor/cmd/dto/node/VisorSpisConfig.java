@@ -129,10 +129,8 @@ public class VisorSpisConfig implements Serializable {
     }
 
     /**
-     * Construct data transfer object for SPIs configuration properties.
-     *
      * @param c Grid configuration.
-     * @return SPIs configuration properties.
+     * @return Data transfer object for node SPIs configuration properties.
      */
     public static VisorSpisConfig from(GridConfiguration c) {
         VisorSpisConfig cfg = new VisorSpisConfig();

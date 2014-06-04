@@ -103,10 +103,8 @@ public class VisorLicense implements Serializable {
     private long gracePeriodLeft;
 
     /**
-     * Construct data transfer object for grid license properties.
-     *
      * @param g Grid.
-     * @return grid license properties.
+     * @return Data transfer object for grid license properties.
      */
     @Nullable public static VisorLicense from(GridEx g) {
         assert g != null;

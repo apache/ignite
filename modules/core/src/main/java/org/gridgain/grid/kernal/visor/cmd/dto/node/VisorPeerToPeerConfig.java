@@ -34,10 +34,8 @@ public class VisorPeerToPeerConfig implements Serializable {
     private String p2pLocClsPathExcl;
 
     /**
-     * Construct data transfer object for node P2P configuration properties.
-     *
      * @param c Grid configuration.
-     * @return node P2P configuration properties.
+     * @return Data transfer object for node P2P configuration properties.
      */
     public static VisorPeerToPeerConfig from(GridConfiguration c) {
         VisorPeerToPeerConfig cfg = new VisorPeerToPeerConfig();

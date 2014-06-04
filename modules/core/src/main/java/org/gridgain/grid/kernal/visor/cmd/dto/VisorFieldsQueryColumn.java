@@ -26,7 +26,12 @@ public class VisorFieldsQueryColumn implements Serializable {
     /** Field name. */
     private final String field;
 
-    /** Create data transfer object with given parameters. */
+    /**
+     * Create data transfer object with given parameters.
+     *
+     * @param type Column type.
+     * @param field Field name.
+     */
     public VisorFieldsQueryColumn(String type, String field) {
         this.type = type;
         this.field = field;

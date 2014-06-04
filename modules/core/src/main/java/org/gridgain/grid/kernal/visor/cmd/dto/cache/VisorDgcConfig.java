@@ -31,10 +31,8 @@ public class VisorDgcConfig implements Serializable {
     private long suspectLockTimeout;
 
     /**
-     * Construct data transfer object for DGC configuration properties.
-     *
      * @param ccfg Cache configuration.
-     * @return DGC configuration properties.
+     * @return Data transfer object for DGC configuration properties.
      */
     public static VisorDgcConfig from(GridCacheConfiguration ccfg) {
         VisorDgcConfig cfg = new VisorDgcConfig();

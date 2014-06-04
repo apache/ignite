@@ -39,10 +39,8 @@ public class VisorDrSenderHubConnectionConfig implements Serializable {
     private byte[] ignoredDataCenterIds;
 
     /**
-     * Construct data transfer object for DR sender hub connection configuration properties.
-     *
      * @param rmtCfg Data center replication sender hub connection configuration.
-     * @return DR sender hub connection configuration properties.
+     * @return Data transfer object for DR sender hub connection configuration properties.
      */
     public static VisorDrSenderHubConnectionConfig from(GridDrSenderHubConnectionConfiguration rmtCfg) {
         if (rmtCfg == null)

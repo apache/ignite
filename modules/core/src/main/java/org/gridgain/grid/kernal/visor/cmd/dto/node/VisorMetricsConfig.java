@@ -30,10 +30,8 @@ public class VisorMetricsConfig implements Serializable {
     private long logFreq;
 
     /**
-     * Construct data transfer object for node metrics configuration properties.
-     *
      * @param c Grid configuration.
-     * @return node metrics configuration properties.
+     * @return Data transfer object for node metrics configuration properties.
      */
     public static VisorMetricsConfig from(GridConfiguration c) {
         VisorMetricsConfig cfg = new VisorMetricsConfig();

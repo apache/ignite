@@ -20,6 +20,7 @@ import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.kernal.visor.cmd.dto.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.sql.*;
@@ -147,8 +148,8 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
     /**
      * Job for execute SCAN or SQL query and get first page of results.
      */
-    private static class VisorFieldsQueryJob
-        extends VisorJob<VisorFieldsQueryArg, T2<? extends Exception, VisorFieldsQueryResultEx>> {
+    private static class VisorFieldsQueryJob extends
+        VisorJob<VisorFieldsQueryArg, T2<? extends Exception, VisorFieldsQueryResultEx>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -253,6 +254,11 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
                     }
                 }
             });
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(VisorFieldsQueryJob.class, this);
         }
     }
 

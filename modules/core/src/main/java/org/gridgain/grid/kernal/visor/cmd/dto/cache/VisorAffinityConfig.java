@@ -45,10 +45,8 @@ public class VisorAffinityConfig implements Serializable {
     private Boolean excludeNeighbors;
 
     /**
-     * Construct data transfer object for affinity configuration properties.
-     *
      * @param ccfg Cache configuration.
-     * @return Affinity configuration properties.
+     * @return Data transfer object for affinity configuration properties.
      */
     public static VisorAffinityConfig from(GridCacheConfiguration ccfg) {
         GridCacheAffinityFunction aff = ccfg.getAffinity();

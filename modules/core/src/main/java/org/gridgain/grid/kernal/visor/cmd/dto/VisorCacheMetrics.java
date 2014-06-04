@@ -27,7 +27,7 @@ public class VisorCacheMetrics implements Serializable {
     /** Node id. */
     private final UUID nodeId;
 
-    /** The number of CPUs available to the Java Virtual Machine. */
+    /** Number of CPUs available to the JVM. */
     private final int cpus;
 
     /** Percent of heap memory used. */
@@ -63,7 +63,24 @@ public class VisorCacheMetrics implements Serializable {
     /** Gets query metrics for cache. */
     private final VisorCacheQueryMetrics qryMetrics;
 
-    /** Create data transfer object with given parameters. */
+    /**
+     * Create data transfer object with given parameters.
+     *
+     * @param cacheName Cache name.
+     * @param nodeId Node id.
+     * @param cpus Number of CPUs available to the JVM
+     * @param heapUsed Percent of heap memory used.
+     * @param cpuLoad Percent of estimated CPU usage.
+     * @param upTime Uptime of the JVM in milliseconds.
+     * @param size Number of elements in the cache.
+     * @param lastRead Last read time of the owning cache.
+     * @param lastWrite Last write time of the owning cache.
+     * @param hits Hits of the owning cache.
+     * @param misses Misses of the owning cache.
+     * @param reads Total number of reads of the owning cache.
+     * @param writes Total number of writes of the owning cache.
+     * @param qryMetrics Gets query metrics for cache.
+     */
     public VisorCacheMetrics(
         String cacheName,
         UUID nodeId,
@@ -111,7 +128,7 @@ public class VisorCacheMetrics implements Serializable {
     }
 
     /**
-     * @return The number of CPUs available to the Java Virtual Machine.
+     * @return Number of CPUs available to the JVM.
      */
     public int cpus() {
         return cpus;

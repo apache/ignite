@@ -17,7 +17,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * TODO: Add class description.
+ * Base class for Visor tasks intended to query data from a single node.
  */
 public abstract class VisorOneNodeTask<A, R> extends VisorMultiNodeTask<A, R, R> {
     /** {@inheritDoc} */

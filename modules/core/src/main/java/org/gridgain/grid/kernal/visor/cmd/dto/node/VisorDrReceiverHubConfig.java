@@ -58,10 +58,8 @@ public class VisorDrReceiverHubConfig implements Serializable {
     private int perNodeParallelLoadOperations;
 
     /**
-     * Construct data transfer object for DR receiver hub configuration properties.
-     *
      * @param rcvHubCfg Data center replication receiver hub configuration.
-     * @return DR receiver hub configuration properties.
+     * @return Data transfer object for DR receiver hub configuration properties.
      */
     public static VisorDrReceiverHubConfig from(GridDrReceiverHubConfiguration rcvHubCfg) {
         if (rcvHubCfg == null)

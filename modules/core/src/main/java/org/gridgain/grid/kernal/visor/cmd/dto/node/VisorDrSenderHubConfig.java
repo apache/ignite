@@ -50,10 +50,8 @@ public class VisorDrSenderHubConfig implements Serializable {
     private String[] cacheNames;
 
     /**
-     * Construct data transfer object for DR sender hub configuration properties.
-     *
      * @param sndCfg Data transfer object for DR sender hub configuration properties.
-     * @return DR sender hub configuration properties.
+     * @return Data transfer object for DR sender hub configuration properties.
      */
     public static VisorDrSenderHubConfig from(GridDrSenderHubConfiguration sndCfg) {
         if (sndCfg == null)

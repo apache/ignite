@@ -131,10 +131,8 @@ public class VisorCacheConfig implements Serializable {
     private VisorDrReceiverConfig drReceiveConfig;
 
     /**
-     * Construct data transfer object for cache configuration properties.
-     *
      * @param ccfg Cache configuration.
-     * @return cache configuration properties.
+     * @return Data transfer object for cache configuration properties.
      */
     public static VisorCacheConfig from(GridCacheConfiguration ccfg) {
         VisorCacheConfig cfg = new VisorCacheConfig();
@@ -183,10 +181,8 @@ public class VisorCacheConfig implements Serializable {
     }
 
     /**
-     * Construct data transfer object for cache configurations properties.
-     *
-     * @param caches cache configurations.
-     * @return cache configurations properties.
+     * @param caches Cache configurations.
+     * @return Data transfer object for cache configurations properties.
      */
     public static Iterable<VisorCacheConfig> list(GridCacheConfiguration[] caches) {
         if (caches == null)

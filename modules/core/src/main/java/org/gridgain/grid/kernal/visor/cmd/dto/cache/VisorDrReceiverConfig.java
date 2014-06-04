@@ -30,10 +30,8 @@ public class VisorDrReceiverConfig implements Serializable {
     private GridDrReceiverCacheConflictResolverMode conflictResolverMode;
 
     /**
-     * Construct data transfer object for DR receiver cache configuration properties.
-     *
      * @param rcvCfg Data center replication receiver cache configuration.
-     * @return DR receiver cache configuration properties.
+     * @return Data transfer object for DR receiver cache configuration properties.
      */
     public static VisorDrReceiverConfig from(GridDrReceiverCacheConfiguration rcvCfg) {
         VisorDrReceiverConfig cfg = new VisorDrReceiverConfig();

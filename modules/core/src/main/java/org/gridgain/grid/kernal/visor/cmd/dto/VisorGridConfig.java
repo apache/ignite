@@ -89,10 +89,8 @@ public class VisorGridConfig implements Serializable {
     private Properties sysProps;
 
     /**
-     * Construct data transfer object for node configuration data.
-     *
      * @param g Grid.
-     * @return node configuration data.
+     * @return Data transfer object for node configuration data.
      */
     public static VisorGridConfig from(GridEx g) {
         assert g != null;

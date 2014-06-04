@@ -37,10 +37,8 @@ public class VisorWriteBehindConfig implements Serializable {
     private int flushThreadCnt;
 
     /**
-     * Construct data transfer object for write-behind cache configuration properties.
-     *
      * @param ccfg Cache configuration.
-     * @return Write-behind cache configuration properties.
+     * @return Data transfer object for write-behind cache configuration properties.
      */
     public static VisorWriteBehindConfig from(GridCacheConfiguration ccfg) {
         VisorWriteBehindConfig cfg = new VisorWriteBehindConfig();

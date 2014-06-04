@@ -41,10 +41,8 @@ public class VisorSegmentationConfig implements Serializable {
     private boolean passRequired;
 
     /**
-     * Construct data transfer object for segmentation configuration properties.
-     *
      * @param c Grid configuration.
-     * @return segmentation configuration properties.
+     * @return Data transfer object for node segmentation configuration properties.
      */
     public static VisorSegmentationConfig from(GridConfiguration c) {
         VisorSegmentationConfig cfg = new VisorSegmentationConfig();

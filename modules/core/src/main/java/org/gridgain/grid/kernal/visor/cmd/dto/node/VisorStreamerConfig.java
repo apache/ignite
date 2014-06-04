@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
-import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.streamer.*;
 import org.jetbrains.annotations.*;
 
@@ -44,10 +43,8 @@ public class VisorStreamerConfig implements Serializable {
     private boolean executorServiceShutdown;
 
     /**
-     * Construct data transfer object for streamer configuration properties.
-     *
      * @param scfg Streamer configuration.
-     * @return streamer configuration properties.
+     * @return Data transfer object for streamer configuration properties.
      */
     public static VisorStreamerConfig from(GridStreamerConfiguration scfg) {
         VisorStreamerConfig cfg = new VisorStreamerConfig();

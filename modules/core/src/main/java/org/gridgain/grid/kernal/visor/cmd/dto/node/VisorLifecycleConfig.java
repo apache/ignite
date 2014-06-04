@@ -32,10 +32,8 @@ public class VisorLifecycleConfig implements Serializable {
     private boolean ntf;
 
     /**
-     * Construct data transfer object for node lifecycle configuration properties.
-     *
      * @param c Grid configuration.
-     * @return node lifecycle configuration properties.
+     * @return Data transfer object for node lifecycle configuration properties.
      */
     public static VisorLifecycleConfig from(GridConfiguration c) {
         VisorLifecycleConfig cfg = new VisorLifecycleConfig();

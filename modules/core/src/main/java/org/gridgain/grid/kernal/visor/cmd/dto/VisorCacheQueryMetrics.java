@@ -35,7 +35,15 @@ public class VisorCacheQueryMetrics implements Serializable {
     /** Total number of times a query execution failed. */
     private final int fails;
 
-    /** Create data transfer object with given parameters. */
+    /**
+     * Create data transfer object with given parameters.
+     *
+     * @param minTime Minimum execution time of query.
+     * @param maxTime Maximum execution time of query.
+     * @param avgTime Average execution time of query.
+     * @param execs Number of executions.
+     * @param fails Total number of times a query execution failed.
+     */
     public VisorCacheQueryMetrics(long minTime, long maxTime, double avgTime, int execs, int fails) {
         this.minTime = minTime;
         this.maxTime = maxTime;

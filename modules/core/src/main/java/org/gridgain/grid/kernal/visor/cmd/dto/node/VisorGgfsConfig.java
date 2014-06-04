@@ -107,10 +107,8 @@ public class VisorGgfsConfig implements Serializable {
     private long trashPurgeTimeout;
 
     /**
-     * Construct data transfer object for ggfs configuration properties.
-     *
-     * @param ggfs ggfs configuration.
-     * @return ggfs configuration properties.
+     * @param ggfs GGFS configuration.
+     * @return Data transfer object for GGFS configuration properties.
      */
     public static VisorGgfsConfig from(GridGgfsConfiguration ggfs) {
         VisorGgfsConfig cfg = new VisorGgfsConfig();

@@ -56,10 +56,8 @@ public class VisorEvictionConfig implements Serializable {
     private float maxOverflowRatio;
 
     /**
-     * Construct data transfer object for eviction configuration properties.
-     *
-     * @param ccfg cache configuration.
-     * @return eviction configuration properties.
+     * @param ccfg Cache configuration.
+     * @return Data transfer object for eviction configuration properties.
      */
     public static VisorEvictionConfig from(GridCacheConfiguration ccfg) {
         VisorEvictionConfig cfg = new VisorEvictionConfig();

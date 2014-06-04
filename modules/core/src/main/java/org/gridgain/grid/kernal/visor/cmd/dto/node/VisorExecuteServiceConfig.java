@@ -42,10 +42,8 @@ public class VisorExecuteServiceConfig implements Serializable {
     private boolean p2pExecSvcShutdown;
 
     /**
-     * Construct data transfer object for node executors configuration properties.
-     *
      * @param c Grid configuration.
-     * @return node executors configuration properties.
+     * @return Data transfer object for node executors configuration properties.
      */
     public static VisorExecuteServiceConfig from(GridConfiguration c) {
         VisorExecuteServiceConfig cfg = new VisorExecuteServiceConfig();

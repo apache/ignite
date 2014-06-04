@@ -35,10 +35,8 @@ public class VisorNearCacheConfig implements Serializable {
     private String nearEvictPlc;
 
     /**
-     * Construct data transfer object for near cache configuration properties.
-     *
      * @param ccfg Cache configuration.
-     * @return Near cache configuration properties
+     * @return Data transfer object for near cache configuration properties.
      */
     public static VisorNearCacheConfig from(GridCacheConfiguration ccfg) {
         VisorNearCacheConfig cfg = new VisorNearCacheConfig();

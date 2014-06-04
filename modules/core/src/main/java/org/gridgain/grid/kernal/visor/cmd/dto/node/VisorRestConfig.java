@@ -54,10 +54,8 @@ public class VisorRestConfig implements Serializable {
     private String tcpSslContextFactory;
 
     /**
-     * Construct data transfer object for REST configuration properties.
-     *
      * @param c Grid configuration.
-     * @return REST configuration properties.
+     * @return Create data transfer object for node REST configuration properties.
      */
     public static VisorRestConfig from(GridConfiguration c) {
         VisorRestConfig cfg = new VisorRestConfig();

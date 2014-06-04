@@ -84,7 +84,11 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**  */
     private Collection<VisorCacheMetrics> metrics = new ArrayList<>();
 
-    /** Create data transfer object with given parameters. */
+    /**
+     * Create data transfer object with given parameters.
+     *
+     * @param cacheName Cache name.
+     */
     public VisorCacheAggregatedMetrics(String cacheName) {
         this.cacheName = cacheName;
     }

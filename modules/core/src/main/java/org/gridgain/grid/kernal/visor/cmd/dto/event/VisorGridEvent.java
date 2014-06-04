@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.visor.cmd.dto.event;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.Serializable;
 import java.util.*;
@@ -46,7 +47,8 @@ public class VisorGridEvent implements Serializable {
 
     /**
      * Create event with given parameters.
-     *  @param typeId Event type.
+     *
+     * @param typeId Event type.
      * @param id Event id.
      * @param name Event name.
      * @param nid Event node ID.
@@ -112,5 +114,10 @@ public class VisorGridEvent implements Serializable {
      */
     public String shortDisplay() {
         return shortDisplay;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorGridEvent.class, this);
     }
 }

@@ -92,11 +92,9 @@ public class VisorBasicConfig implements Serializable {
     private boolean updateNtf;
 
     /**
-     * Construct data transfer object for node email configuration properties.
-     *
      * @param g Grid.
      * @param c Grid configuration.
-     * @return node email configuration properties.
+     * @return Data transfer object for node basic configuration properties.
      */
     public static VisorBasicConfig from(GridEx g, GridConfiguration c) {
         VisorBasicConfig cfg = new VisorBasicConfig();

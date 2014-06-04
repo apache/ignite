@@ -47,10 +47,8 @@ public class VisorEmailConfig implements Serializable {
     private boolean smtpStartTls;
 
     /**
-     * Construct data transfer object for node email configuration properties.
-     *
      * @param c Grid configuration.
-     * @return node email configuration properties.
+     * @return Data transfer object for node email configuration properties.
      */
     public static VisorEmailConfig from(GridConfiguration c) {
         VisorEmailConfig cfg = new VisorEmailConfig();

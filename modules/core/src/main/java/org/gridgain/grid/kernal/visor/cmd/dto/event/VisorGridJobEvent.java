@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.visor.cmd.dto.event;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 
@@ -33,7 +34,21 @@ public class VisorGridJobEvent extends VisorGridEvent {
     /** Job ID. */
     private final GridUuid jobId;
 
-    /** Create event with given parameters. */
+    /**
+     * Create event with given parameters.
+     *
+     * @param typeId Event type.
+     * @param id Event id.
+     * @param name Event name.
+     * @param nid Event node ID.
+     * @param timestamp Event timestamp.
+     * @param message Event message.
+     * @param shortDisplay Shortened version of {@code toString()} result.
+     * @param taskName Name of the task that triggered the event.
+     * @param taskClassName Name of task class that triggered the event.
+     * @param taskSessionId Task session ID of the task that triggered the event.
+     * @param jobId Job ID.
+     */
     public VisorGridJobEvent(
         int typeId,
         GridUuid id,
@@ -81,5 +96,10 @@ public class VisorGridJobEvent extends VisorGridEvent {
      */
     public GridUuid jobId() {
         return jobId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorGridJobEvent.class, this);
     }
 }

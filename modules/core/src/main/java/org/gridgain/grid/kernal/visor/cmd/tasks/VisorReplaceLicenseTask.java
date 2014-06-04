@@ -14,6 +14,7 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.product.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -92,12 +93,11 @@ public class VisorReplaceLicenseTask extends VisorMultiNodeTask<VisorReplaceLice
         }
     }
 
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorReplaceLicenseJob extends VisorJob<VisorReplaceLicenseArg, VisorReplaceLicenseState> {
+    private static class VisorReplaceLicenseJob extends VisorJob<VisorReplaceLicenseArg, VisorReplaceLicenseState> {
         /** */
         private static final long serialVersionUID = 0L;
 
-        protected VisorReplaceLicenseJob(VisorReplaceLicenseArg arg) {
+        private VisorReplaceLicenseJob(VisorReplaceLicenseArg arg) {
             super(arg);
         }
 
@@ -124,6 +124,11 @@ public class VisorReplaceLicenseTask extends VisorMultiNodeTask<VisorReplaceLice
             }
 
             return VisorReplaceLicenseState.SKIPPED;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(VisorReplaceLicenseJob.class, this);
         }
     }
 

@@ -31,10 +31,8 @@ public class VisorStoreConfig implements Serializable {
     private boolean valueBytes;
 
     /**
-     * Construct data transfer object for cache store configuration properties.
-     *
      * @param ccfg Cache configuration.
-     * @return Cache store configuration properties.
+     * @return Data transfer object for cache store configuration properties.
      */
     public static VisorStoreConfig from(GridCacheConfiguration ccfg) {
         VisorStoreConfig cfg = new VisorStoreConfig();

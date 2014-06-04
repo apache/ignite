@@ -40,10 +40,8 @@ public class VisorDefaultConfig implements Serializable {
     private long queryTimeout;
 
     /**
-     * Construct data transfer object for default cache configuration properties.
-     *
      * @param ccfg Cache configuration.
-     * @return Default cache configuration properties.
+     * @return Data transfer object for default cache configuration properties.
      */
     public static VisorDefaultConfig from(GridCacheConfiguration ccfg) {
         VisorDefaultConfig cfg = new VisorDefaultConfig();

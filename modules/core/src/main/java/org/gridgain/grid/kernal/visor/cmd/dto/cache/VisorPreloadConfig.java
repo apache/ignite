@@ -40,10 +40,8 @@ public class VisorPreloadConfig implements Serializable {
     private long timeout;
 
     /**
-     * Construct data transfer object for near cache configuration properties.
-     *
      * @param ccfg Cache configuration.
-     * @return Near cache configuration properties
+     * @return Data transfer object for preload configuration properties.
      */
     public static VisorPreloadConfig from(GridCacheConfiguration ccfg) {
         VisorPreloadConfig cfg = new VisorPreloadConfig();

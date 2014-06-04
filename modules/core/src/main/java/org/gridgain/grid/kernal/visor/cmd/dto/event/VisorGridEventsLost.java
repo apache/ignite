@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto.event;
 
-import org.gridgain.grid.GridUuid;
-import org.gridgain.grid.util.typedef.internal.U;
+import org.gridgain.grid.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
-import static org.gridgain.grid.events.GridEventType.EVT_VISOR_EVENTS_LOST;
+import java.util.*;
 
-import java.util.UUID;
+import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Special event for events lost situations.
@@ -24,6 +24,8 @@ public class VisorGridEventsLost extends VisorGridEvent {
     private static final long serialVersionUID = 0L;
 
     /**
+     * Create event with given parameters.
+     *
      * @param nid Node where events were lost.
      */
     public VisorGridEventsLost(UUID nid) {

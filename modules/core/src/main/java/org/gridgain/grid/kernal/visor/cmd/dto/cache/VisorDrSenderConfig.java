@@ -44,10 +44,8 @@ public class VisorDrSenderConfig implements Serializable {
     private int stateTransferThreadsCount;
 
     /**
-     * Construct data transfer object for DR sender cache configuration properties.
-     *
      * @param sndCfg Data center replication sender cache configuration.
-     * @return DR sender cache configuration properties.
+     * @return Data transfer object for DR sender cache configuration properties.
      */
     public static VisorDrSenderConfig from(GridDrSenderCacheConfiguration sndCfg) {
         VisorDrSenderConfig cfg = new VisorDrSenderConfig();

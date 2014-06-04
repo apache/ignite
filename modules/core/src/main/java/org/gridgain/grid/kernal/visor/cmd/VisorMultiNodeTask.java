@@ -17,7 +17,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Base class for Visor tasks intended to query data from a single node.
+ * Base class for Visor tasks intended to query data from a multiple node.
  *
  * @param <A> Task argument type.
  * @param <R> Task result type.
