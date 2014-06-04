@@ -210,8 +210,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
     /**
      * Gets receive buffer size for sockets created or accepted by this SPI.
      * <p>
-     * If not provided, default is {@code 0} which leaves the buffer unchanged
-     * after socket creation (OS defaults).
+     * If not provided, default is {@link GridTcpCommunicationSpi#DFLT_SOCK_BUF_SIZE}.
      *
      * @return Socket receive buffer size.
      */
@@ -221,8 +220,7 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
     /**
      * Gets send buffer size for sockets created or accepted by this SPI.
      * <p>
-     * If not provided, default is {@code 0} which leaves the buffer unchanged
-     * after socket creation (OS defaults).
+     * If not provided, default is {@link GridTcpCommunicationSpi#DFLT_SOCK_BUF_SIZE}.
      *
      * @return Socket send buffer size.
      */
