@@ -64,7 +64,7 @@ public class VisorCollectMetricsCacheTask extends VisorMultiNodeTask<VisorCollec
         }
 
         @Override protected Collection<VisorCacheMetrics> run(VisorCollectMetricsCacheArg arg) throws GridException {
-            Collection<? extends GridCache<?, ?>> caches = arg.all ? g.cachesx(null) : F.asList(g.cachex(arg.cacheName));
+            Collection<? extends GridCache<?, ?>> caches = arg.all ? g.cachesx() : F.asList(g.cachex(arg.cacheName));
 
             if (caches != null) {
                 Collection<VisorCacheMetrics> res = new ArrayList<>(caches.size());

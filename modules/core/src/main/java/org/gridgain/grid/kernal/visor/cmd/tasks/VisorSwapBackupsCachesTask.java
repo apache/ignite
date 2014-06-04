@@ -42,7 +42,7 @@ public class VisorSwapBackupsCachesTask extends
         protected VisorNamedBeforeAfterTaskResult run(VisorOneNodeNamesArg arg) throws GridException {
             VisorNamedBeforeAfterTaskResult total = new VisorNamedBeforeAfterTaskResult();
 
-            for (GridCache c: g.cachesx(null)) {
+            for (GridCache c: g.cachesx()) {
                 String cacheName = c.name();
 
                 if (arg.names().contains(cacheName)) {

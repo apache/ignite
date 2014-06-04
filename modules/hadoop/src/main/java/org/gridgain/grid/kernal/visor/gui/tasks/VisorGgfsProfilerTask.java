@@ -10,8 +10,8 @@
 package org.gridgain.grid.kernal.visor.gui.tasks;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.ggfs.GridGgfsMode;
-import org.gridgain.grid.kernal.processors.task.GridInternal;
+import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.kernal.visor.gui.dto.*;
 
@@ -28,22 +28,66 @@ import java.util.*;
  */
 @GridInternal
 public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorOneNodeNameArg, Collection<VisorGgfsProfilerEntry>> {
-    /** Holder class for parsed data. */
+    /**
+     * Holder class for parsed data.
+     */
     private static class VisorGgfsProfilerParsedLine {
+        /** Timestamp. */
         private final long ts;
+
+        /** Log entry type. */
         private final int entryType;
+
+        /** File path. */
         private final String path;
+
+        /** File GGFS mode. */
         private final GridGgfsMode mode;
+
+        /** Stream ID. */
         private final long streamId;
+
+        /** Data length. */
         private final long dataLen;
+
+        /** Append flag. */
         private final boolean append;
+
+        /** File overwritre flag. */
         private final boolean overwrite;
+
+        /** TODO GG-8358 */
         private final long pos;
+
+        /** TODO GG-8358 */
         private final int readLen;
+
+        /** TODO GG-8358 */
         private final long userTime;
+
+        /** TODO GG-8358 */
         private final long sysTime;
+
+        /** TODO GG-8358 */
         private final long totalBytes;
 
+        /**
+         * Create holder for log line.
+         *
+         * @param ts TODO GG-8358
+         * @param entryType
+         * @param path
+         * @param mode
+         * @param streamId
+         * @param dataLen
+         * @param append
+         * @param overwrite
+         * @param pos
+         * @param readLen
+         * @param userTime
+         * @param sysTime
+         * @param totalBytes
+         */
         public VisorGgfsProfilerParsedLine(
             long ts,
             int entryType,
@@ -75,22 +119,22 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorOneNodeNameArg,
         }
     }
 
-    private static class VisorGgfsProfilerParsedLineComparator implements Comparator<VisorGgfsProfilerParsedLine> {
-        @Override public int compare(VisorGgfsProfilerParsedLine a, VisorGgfsProfilerParsedLine b) {
-            return a.ts < b.ts ? -1
-                : a.ts > b.ts ? 1
-                : 0;
-        }
-    }
-
-    private static final VisorGgfsProfilerParsedLineComparator PARSED_LINE_BY_TS_COMPARATOR =
-            new VisorGgfsProfilerParsedLineComparator();
+    /**
+     * Comparator to sort parsed log lines by timestamp.
+     */
+    private static final Comparator<VisorGgfsProfilerParsedLine> PARSED_LINE_BY_TS_COMPARATOR =
+        new Comparator<VisorGgfsProfilerParsedLine>() {
+            @Override public int compare(VisorGgfsProfilerParsedLine a, VisorGgfsProfilerParsedLine b) {
+                return a.ts < b.ts ? -1
+                    : a.ts > b.ts ? 1
+                    : 0;
+            }
+    };
 
     /**
      * Job that do actual profiler work.
      */
-    @SuppressWarnings("PublicInnerClass")
-    class VisorGgfsProfilerJob extends VisorOneNodeJob<VisorOneNodeNameArg, Collection<VisorGgfsProfilerEntry>> {
+    private class VisorGgfsProfilerJob extends VisorOneNodeJob<VisorOneNodeNameArg, Collection<VisorGgfsProfilerEntry>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -99,6 +143,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorOneNodeNameArg,
             super(arg);
         }
 
+        /** {@inheritDoc} */
         @Override protected Collection<VisorGgfsProfilerEntry> run(VisorOneNodeNameArg arg) throws GridException {
             try {
                 Path logsDir = resolveGgfsProfilerLogsDir(g.ggfs(arg.name()));
@@ -287,6 +332,11 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorOneNodeNameArg,
                 return null;
         }
 
+        /**
+         * @param p Path to log file to parse.
+         * @return Collection of parsed and aggregated entries.
+         * @throws IOException if failed to read log file.
+         */
         private Collection<VisorGgfsProfilerEntry> parseFile(Path p) throws IOException {
             ArrayList<VisorGgfsProfilerParsedLine> parsedLines = new ArrayList<>(512);
 
@@ -394,6 +444,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorOneNodeNameArg,
         }
     }
 
+    /** {@inheritDoc} */
     @Override protected VisorGgfsProfilerJob job(VisorOneNodeNameArg arg) {
         return new VisorGgfsProfilerJob(arg);
     }

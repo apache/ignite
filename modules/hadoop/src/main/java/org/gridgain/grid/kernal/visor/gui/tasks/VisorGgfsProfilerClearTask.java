@@ -9,15 +9,15 @@
 
 package org.gridgain.grid.kernal.visor.gui.tasks;
 
-import org.gridgain.grid.GridException;
-import org.gridgain.grid.ggfs.GridGgfs;
-import org.gridgain.grid.kernal.processors.task.GridInternal;
+import org.gridgain.grid.*;
+import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
-
-import static org.gridgain.grid.kernal.visor.gui.tasks.VisorHadoopTaskUtilsEnt.resolveGgfsProfilerLogsDir;
 
 import java.io.*;
 import java.nio.file.*;
+
+import static org.gridgain.grid.kernal.visor.gui.tasks.VisorHadoopTaskUtilsEnt.*;
 
 /**
  * Remove all GGFS profiler logs.
@@ -57,17 +57,24 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<VisorOneNodeNam
         }
     }
 
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorGgfsProfilerClearJob
-        extends VisorOneNodeJob<VisorOneNodeNameArg, VisorGgfsProfilerClearTaskResult> {
+    /**
+     * Job to clear profiler logs.
+     */
+    private static class VisorGgfsProfilerClearJob extends VisorOneNodeJob<VisorOneNodeNameArg,
+        VisorGgfsProfilerClearTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** Create job with given argument. */
+        /**
+         * Create job with given argument.
+         *
+         * @param arg Job argument.
+         */
         public VisorGgfsProfilerClearJob(VisorOneNodeNameArg arg) {
             super(arg);
         }
 
+        /** {@inheritDoc} */
         @Override protected VisorGgfsProfilerClearTaskResult run(VisorOneNodeNameArg arg) throws GridException {
             int deleted = 0;
             int notDeleted = 0;
@@ -113,6 +120,7 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<VisorOneNodeNam
         }
     }
 
+    /** {@inheritDoc} */
     @Override protected VisorGgfsProfilerClearJob job(VisorOneNodeNameArg arg) {
         return new VisorGgfsProfilerClearJob(arg);
     }

@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.visor.gui.dto;
 
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
@@ -224,5 +225,10 @@ public class VisorGgfsProfilerEntry implements Serializable {
      */
     public long writeSpeed() {
         return writeSpeed;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorGgfsProfilerEntry.class, this);
     }
 }

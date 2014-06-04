@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.visor.gui.dto;
 
-import org.gridgain.grid.ggfs.GridGgfsMode;
+import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;

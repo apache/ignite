@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.kernal.visor.gui.tasks;
 
-import org.gridgain.grid.GridException;
-import org.gridgain.grid.kernal.processors.ggfs.GridGgfsEx;
-import org.gridgain.grid.kernal.processors.task.GridInternal;
+import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.processors.ggfs.*;
+import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
 
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Task to set GGFS instance sampling state.
@@ -51,14 +51,15 @@ public class VisorSetGgfsSamplingStateTask
         }
     }
 
-    /** Job that perform parsing of GGFS profiler logs. */
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorSetGgfsSamplingStateJob extends VisorOneNodeJob<VisorSetGgfsSamplingStateArg, Void> {
+    /**
+     * Job that perform parsing of GGFS profiler logs.
+     */
+    private static class VisorSetGgfsSamplingStateJob extends VisorOneNodeJob<VisorSetGgfsSamplingStateArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
-         * Create job with specified argument.
+         * Create job with given argument.
          *
          * @param arg Job argument.
          */
@@ -66,6 +67,7 @@ public class VisorSetGgfsSamplingStateTask
             super(arg);
         }
 
+        /** {@inheritDoc} */
         @Override protected Void run(VisorSetGgfsSamplingStateArg arg) throws GridException {
             try {
                 ((GridGgfsEx) g.ggfs(arg.ggfsName)).globalSampling(arg.state);
@@ -78,6 +80,7 @@ public class VisorSetGgfsSamplingStateTask
         }
     }
 
+    /** {@inheritDoc} */
     @Override protected VisorSetGgfsSamplingStateJob job(VisorSetGgfsSamplingStateArg arg) {
         return new VisorSetGgfsSamplingStateJob(arg);
     }

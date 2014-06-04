@@ -36,7 +36,7 @@ public class VisorCompactCachesTask extends VisorOneNodeTask<VisorOneNodeNamesAr
         @Override protected VisorNamedBeforeAfterTaskResult run(VisorOneNodeNamesArg arg) throws GridException {
             final VisorNamedBeforeAfterTaskResult res = new VisorNamedBeforeAfterTaskResult();
 
-            for(GridCache cache : g.cachesx(null)) {
+            for(GridCache cache : g.cachesx()) {
                 String cacheName = cache.name();
 
                 if (arg.names().contains(cacheName)) {

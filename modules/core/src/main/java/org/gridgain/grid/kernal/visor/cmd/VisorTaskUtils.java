@@ -30,9 +30,10 @@ public class VisorTaskUtils {
 
     /**
      * Concat two arrays in one.
-     * @param a first array.
-     * @param b second array.
-     * @return summary array.
+     *
+     * @param a First array.
+     * @param b Second array.
+     * @return Summary array.
      */
     public static int[] concat(int[] a, int[] b) {
         int[] c = Arrays.copyOf(a, a.length + b.length);

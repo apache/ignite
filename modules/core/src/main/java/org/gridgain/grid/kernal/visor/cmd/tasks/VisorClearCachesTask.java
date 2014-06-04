@@ -41,7 +41,7 @@ public class VisorClearCachesTask extends VisorOneNodeTask<VisorOneNodeNamesArg,
         @Override protected VisorNamedBeforeAfterTaskResult run(VisorOneNodeNamesArg arg) throws GridException {
             VisorNamedBeforeAfterTaskResult res = new VisorNamedBeforeAfterTaskResult();
 
-            for(GridCache cache : g.cachesx(null)) {
+            for(GridCache cache : g.cachesx()) {
                 String cacheName = cache.name();
 
                 if (arg.names().contains(cacheName)) {
