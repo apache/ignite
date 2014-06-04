@@ -27,7 +27,7 @@ import java.util.*;
  * Task that parse hadoop profiler logs.
  */
 @GridInternal
-public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorOneNodeNameArg, Collection<VisorGgfsProfilerEntry>> {
+public class VisorGgfsProfilerTask extends VisorComputeTask<String, Collection<VisorGgfsProfilerEntry>> {
     /**
      * Holder class for parsed data.
      */
@@ -134,27 +134,27 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorOneNodeNameArg,
     /**
      * Job that do actual profiler work.
      */
-    private class VisorGgfsProfilerJob extends VisorOneNodeJob<VisorOneNodeNameArg, Collection<VisorGgfsProfilerEntry>> {
+    private class VisorGgfsProfilerJob extends VisorJob<String, Collection<VisorGgfsProfilerEntry>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Create job with given argument. */
-        public VisorGgfsProfilerJob(VisorOneNodeNameArg arg) {
+        public VisorGgfsProfilerJob(String arg) {
             super(arg);
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<VisorGgfsProfilerEntry> run(VisorOneNodeNameArg arg) throws GridException {
+        @Override protected Collection<VisorGgfsProfilerEntry> run(String arg) throws GridException {
             try {
-                Path logsDir = resolveGgfsProfilerLogsDir(g.ggfs(arg.name()));
+                Path logsDir = resolveGgfsProfilerLogsDir(g.ggfs(arg));
 
                 if (logsDir != null)
-                    return parse(logsDir, arg.name());
+                    return parse(logsDir, arg);
                 else
                     return Collections.emptyList();
             }
             catch (IOException | IllegalArgumentException e) {
-                throw new GridException("Failed to parse profiler logs for GGFS: " + arg.name(), e);
+                throw new GridException("Failed to parse profiler logs for GGFS: " + arg, e);
             }
         }
 
@@ -445,7 +445,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<VisorOneNodeNameArg,
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorGgfsProfilerJob job(VisorOneNodeNameArg arg) {
+    @Override protected VisorGgfsProfilerJob job(String arg) {
         return new VisorGgfsProfilerJob(arg);
     }
 }

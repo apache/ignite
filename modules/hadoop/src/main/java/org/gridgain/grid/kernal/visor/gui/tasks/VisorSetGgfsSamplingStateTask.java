@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
+import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
 
@@ -20,41 +21,11 @@ import java.util.*;
  * Task to set GGFS instance sampling state.
  */
 @GridInternal
-public class VisorSetGgfsSamplingStateTask
-    extends VisorOneNodeTask<VisorSetGgfsSamplingStateTask.VisorSetGgfsSamplingStateArg, Void> {
-    /**
-     * Arguments for {@link VisorSetGgfsSamplingStateTask}.
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorSetGgfsSamplingStateArg extends VisorOneNodeArg {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final String ggfsName;
-
-        /** */
-        private final Boolean state;
-
-        /**
-         * @param nodeId Node Id.
-         * @param ggfsName GGFS instance name.
-         * @param state If {@code true} then enable GGFS sampling.
-         *              If {@code false} then disable GGFS sampling.
-         *              If {@code null} then clear sampling flag.
-         */
-        public VisorSetGgfsSamplingStateArg(UUID nodeId, String ggfsName, Boolean state) {
-            super(nodeId);
-
-            this.ggfsName = ggfsName;
-            this.state = state;
-        }
-    }
-
+public class VisorSetGgfsSamplingStateTask extends VisorComputeTask<T2<String, Boolean>, Void> {
     /**
      * Job that perform parsing of GGFS profiler logs.
      */
-    private static class VisorSetGgfsSamplingStateJob extends VisorOneNodeJob<VisorSetGgfsSamplingStateArg, Void> {
+    private static class VisorSetGgfsSamplingStateJob extends VisorJob<T2<String, Boolean>, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -63,25 +34,25 @@ public class VisorSetGgfsSamplingStateTask
          *
          * @param arg Job argument.
          */
-        public VisorSetGgfsSamplingStateJob(VisorSetGgfsSamplingStateArg arg) {
+        public VisorSetGgfsSamplingStateJob(T2<String, Boolean> arg) {
             super(arg);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(VisorSetGgfsSamplingStateArg arg) throws GridException {
+        @Override protected Void run(T2<String, Boolean> arg) throws GridException {
             try {
-                ((GridGgfsEx) g.ggfs(arg.ggfsName)).globalSampling(arg.state);
+                ((GridGgfsEx) g.ggfs(arg.get1())).globalSampling(arg.get2());
 
                 return null;
             }
             catch (IllegalArgumentException iae) {
-                throw new GridException("Failed to set sampling state for GGFS: " + arg.ggfsName, iae);
+                throw new GridException("Failed to set sampling state for GGFS: " + arg.get1(), iae);
             }
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorSetGgfsSamplingStateJob job(VisorSetGgfsSamplingStateArg arg) {
+    @Override protected VisorSetGgfsSamplingStateJob job(T2<String, Boolean> arg) {
         return new VisorSetGgfsSamplingStateJob(arg);
     }
 }

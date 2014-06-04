@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
+import org.gridgain.grid.util.typedef.*;
 
 import java.io.*;
 import java.nio.file.*;
@@ -23,45 +24,11 @@ import static org.gridgain.grid.kernal.visor.gui.tasks.VisorHadoopTaskUtilsEnt.*
  * Remove all GGFS profiler logs.
  */
 @GridInternal
-public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<VisorOneNodeNameArg,
-    VisorGgfsProfilerClearTask.VisorGgfsProfilerClearTaskResult> {
-    /** GGFS profiler task result. */
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorGgfsProfilerClearTaskResult implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final int deleted;
-
-        /** */
-        private final int notDeleted;
-
-        public VisorGgfsProfilerClearTaskResult(int deleted, int failed) {
-            this.deleted = deleted;
-            this.notDeleted = failed;
-        }
-
-        /**
-         * @return Number of deleted log files.
-         */
-        public int deleted() {
-            return deleted;
-        }
-
-        /**
-         * @return Number of log files that were not deleted.
-         */
-        public int notDeleted() {
-            return notDeleted;
-        }
-    }
-
+public class VisorGgfsProfilerClearTask extends VisorComputeTask<String, T2<Integer, Integer>> {
     /**
      * Job to clear profiler logs.
      */
-    private static class VisorGgfsProfilerClearJob extends VisorOneNodeJob<VisorOneNodeNameArg,
-        VisorGgfsProfilerClearTaskResult> {
+    private static class VisorGgfsProfilerClearJob extends VisorJob<String, T2<Integer, Integer>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -70,23 +37,23 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<VisorOneNodeNam
          *
          * @param arg Job argument.
          */
-        public VisorGgfsProfilerClearJob(VisorOneNodeNameArg arg) {
+        private VisorGgfsProfilerClearJob(String arg) {
             super(arg);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorGgfsProfilerClearTaskResult run(VisorOneNodeNameArg arg) throws GridException {
+        @Override protected T2<Integer, Integer> run(String arg) throws GridException {
             int deleted = 0;
             int notDeleted = 0;
 
             try {
-                GridGgfs ggfs = g.ggfs(arg.name());
+                GridGgfs ggfs = g.ggfs(arg);
 
                 Path logsDir = resolveGgfsProfilerLogsDir(ggfs);
 
                 if (logsDir != null) {
                     PathMatcher matcher = FileSystems.getDefault().getPathMatcher(
-                        "glob:ggfs-log-" + arg.name() + "-*.csv");
+                        "glob:ggfs-log-" + arg + "-*.csv");
 
                     try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(logsDir)) {
                         for (Path p : dirStream) {
@@ -113,15 +80,15 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<VisorOneNodeNam
                 }
             }
             catch (IOException | IllegalArgumentException ioe) {
-                throw new GridException("Failed to clear profiler logs for GGFS: " + arg.name(), ioe);
+                throw new GridException("Failed to clear profiler logs for GGFS: " + arg, ioe);
             }
 
-            return new VisorGgfsProfilerClearTaskResult(deleted, notDeleted);
+            return new T2<>(deleted, notDeleted);
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorGgfsProfilerClearJob job(VisorOneNodeNameArg arg) {
+    @Override protected VisorGgfsProfilerClearJob job(String arg) {
         return new VisorGgfsProfilerClearJob(arg);
     }
 }
