@@ -20,6 +20,13 @@ import org.jetbrains.annotations.*;
  * Base class for Visor jobs.
  */
 public abstract class VisorJob<A, R> extends GridComputeJobAdapter {
+    @GridInstanceResource
+    protected GridEx g;
+
+    /** */
+    @GridLoggerResource
+    protected GridLogger log;
+
     /**
      * Create job with specified argument.
      *
@@ -28,14 +35,6 @@ public abstract class VisorJob<A, R> extends GridComputeJobAdapter {
     protected VisorJob(A arg) {
         super(arg);
     }
-
-    @GridInstanceResource
-    protected GridEx g;
-
-    /** */
-    @GridLoggerResource
-    protected GridLogger log;
-
 
     @Nullable @Override public Object execute() throws GridException {
         A arg = argument(0);

@@ -22,30 +22,29 @@ import java.util.*;
  */
 @GridInternal
 public class VisorSwapBackupsCachesTask extends
-    VisorOneNodeTask<VisorOneNodeNamesArg, Map<String, T2<Integer, Integer>>> {
+    VisorComputeTask<Set<String>, Map<String, T2<Integer, Integer>>> {
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorSwapBackupsCachesJob
-        extends VisorOneNodeJob<VisorOneNodeNamesArg, Map<String, T2<Integer, Integer>>> {
+    public static class VisorSwapBackupsCachesJob extends VisorJob<Set<String>, Map<String, T2<Integer, Integer>>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
          * Create job with specified argument.
          *
-         * @param arg Job argument.
+         * @param names Job argument.
          */
-        protected VisorSwapBackupsCachesJob(VisorOneNodeNamesArg arg) {
-            super(arg);
+        protected VisorSwapBackupsCachesJob(Set<String> names) {
+            super(names);
         }
 
         /** {@inheritDoc} */
-        @Override protected Map<String, T2<Integer, Integer>> run(VisorOneNodeNamesArg arg) throws GridException {
+        @Override protected Map<String, T2<Integer, Integer>> run(Set<String> names) throws GridException {
             Map<String, T2<Integer, Integer>> total = new HashMap<>();
 
             for (GridCache c: g.cachesx()) {
                 String cacheName = c.name();
 
-                if (arg.names().contains(cacheName)) {
+                if (names.contains(cacheName)) {
                     Set<GridCacheEntry> entries = c.entrySet();
 
                     int before = entries.size(), after = before;
@@ -64,7 +63,7 @@ public class VisorSwapBackupsCachesTask extends
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorSwapBackupsCachesJob job(VisorOneNodeNamesArg arg) {
-        return new VisorSwapBackupsCachesJob(arg);
+    @Override protected VisorSwapBackupsCachesJob job(Set<String> names) {
+        return new VisorSwapBackupsCachesJob(names);
     }
 }

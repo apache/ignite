@@ -21,26 +21,25 @@ import java.util.*;
  * Task that compacts caches.
  */
 @GridInternal
-public class VisorCompactCachesTask extends VisorOneNodeTask<VisorOneNodeNamesArg, Map<String, T2<Integer, Integer>>> {
+public class VisorCompactCachesTask extends VisorComputeTask<Set<String>, Map<String, T2<Integer, Integer>>> {
     /** Job that compact caches on node. */
-    private static class VisorCompactCachesJob
-        extends VisorOneNodeJob<VisorOneNodeNamesArg, Map<String, T2<Integer, Integer>>> {
+    private static class VisorCompactCachesJob extends VisorJob<Set<String>, Map<String, T2<Integer, Integer>>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Create job with given argument. */
-        private VisorCompactCachesJob(VisorOneNodeNamesArg arg) {
-            super(arg);
+        private VisorCompactCachesJob(Set<String> names) {
+            super(names);
         }
 
         /** {@inheritDoc} */
-        @Override protected Map<String, T2<Integer, Integer>> run(VisorOneNodeNamesArg arg) throws GridException {
+        @Override protected Map<String, T2<Integer, Integer>> run(Set<String> names) throws GridException {
             final Map<String, T2<Integer, Integer>> res = new HashMap<>();
 
             for(GridCache cache : g.cachesx()) {
                 String cacheName = cache.name();
 
-                if (arg.names().contains(cacheName)) {
+                if (names.contains(cacheName)) {
                     final Set keys = cache.keySet();
 
                     int before = keys.size(), after = before;
@@ -59,7 +58,7 @@ public class VisorCompactCachesTask extends VisorOneNodeTask<VisorOneNodeNamesAr
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorCompactCachesJob job(VisorOneNodeNamesArg arg) {
-        return new VisorCompactCachesJob(arg);
+    @Override protected VisorCompactCachesJob job(Set<String> names) {
+        return new VisorCompactCachesJob(names);
     }
 }

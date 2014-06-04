@@ -28,41 +28,38 @@ import java.util.*;
 import static org.gridgain.grid.kernal.visor.cmd.tasks.VisorFieldsQueryUtils.*;
 
 /**
- * Executes SCAN or SQL query and get first page of results.
+ * Task for execute SCAN or SQL query and get first page of results.
  */
 @GridInternal
-public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.VisorFieldsQueryArg,
+public class VisorFieldsQueryTask extends VisorComputeTask<VisorFieldsQueryTask.VisorFieldsQueryArg,
     T2<? extends Exception, VisorFieldsQueryResultEx>> {
     /**
      * Arguments for {@link VisorFieldsQueryTask}.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorFieldsQueryArg extends VisorOneNodeArg {
+    public static class VisorFieldsQueryArg implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** */
+        /** Node ids for query. */
         private final Collection<UUID> proj;
 
-        /** */
+        /** Cache name for query. */
         private final String cacheName;
 
-        /** */
+        /** Query text. */
         private final String qryTxt;
 
-        /** */
+        /** Result batch size. */
         private final Integer pageSize;
 
         /**
-         * @param nodeId Node Id for task execute.
-         * @param proj - nodes ids for collect entry.
-         * @param cacheName - cache name.
-         * @param qryTxt - query.
-         * @param pageSize - returned result batch size.
+         * @param proj Node ids for query.
+         * @param cacheName Cache name for query.
+         * @param qryTxt Query text.
+         * @param pageSize Result batch size.
          */
-        public VisorFieldsQueryArg(UUID nodeId, Collection<UUID> proj, String cacheName, String qryTxt, Integer pageSize) {
-            super(nodeId);
-
+        public VisorFieldsQueryArg(Collection<UUID> proj, String cacheName, String qryTxt, Integer pageSize) {
             this.proj = proj;
             this.cacheName = cacheName;
             this.qryTxt = qryTxt;
@@ -147,8 +144,11 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
         }
     }
 
+    /**
+     * Job for execute SCAN or SQL query and get first page of results.
+     */
     private static class VisorFieldsQueryJob
-        extends VisorOneNodeJob<VisorFieldsQueryArg, T2<? extends Exception, VisorFieldsQueryResultEx>> {
+        extends VisorJob<VisorFieldsQueryArg, T2<? extends Exception, VisorFieldsQueryResultEx>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -173,9 +173,9 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
 
                 if (scan) {
                     GridCacheQueryFuture<Map.Entry<Object, Object>> fut = c.queries().createScanQuery(null)
-                            .pageSize(arg.pageSize())
-                            .projection(g.forNodeIds(arg.proj()))
-                            .execute();
+                        .pageSize(arg.pageSize())
+                        .projection(g.forNodeIds(arg.proj()))
+                        .execute();
 
                     T2<List<Object[]>, Map.Entry<Object, Object>> rows =
                         fetchScanQueryRows(fut, null, arg.pageSize());
@@ -191,21 +191,23 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
                         SCAN_COL_NAMES, rows.get1(), next != null));
                 }
                 else {
-                    GridCacheQueryFuture<List<?>> fut = ((GridCacheQueriesEx<?, ?>) c.queries()).createSqlFieldsQuery(arg.queryTxt(), true)
-                            .pageSize(arg.pageSize())
-                            .projection(g.forNodeIds(arg.proj()))
-                            .execute();
+                    GridCacheQueryFuture<List<?>> fut = ((GridCacheQueriesEx<?, ?>)c.queries())
+                        .createSqlFieldsQuery(arg.queryTxt(), true)
+                        .pageSize(arg.pageSize())
+                        .projection(g.forNodeIds(arg.proj()))
+                        .execute();
 
                     List<Object> firstRow = (List<Object>)fut.next();
 
-                    List<GridIndexingFieldMetadata> meta = ((GridCacheQueryMetadataAware) fut).metadata().get();
+                    List<GridIndexingFieldMetadata> meta = ((GridCacheQueryMetadataAware)fut).metadata().get();
 
                     if (meta == null)
-                        return new T2<Exception, VisorFieldsQueryResultEx>(new SQLException("Fail to execute query. No metadata available."), null);
+                        return new T2<Exception, VisorFieldsQueryResultEx>(
+                            new SQLException("Fail to execute query. No metadata available."), null);
                     else {
                         VisorFieldsQueryColumn[] names = new VisorFieldsQueryColumn[meta.size()];
 
-                        for (int i = 0; i < meta.size(); i ++) {
+                        for (int i = 0; i < meta.size(); i++) {
                             GridIndexingFieldMetadata col = meta.get(i);
 
                             names[i] = new VisorFieldsQueryColumn(col.typeName(), col.fieldName());
@@ -223,9 +225,15 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
                     }
                 }
             }
-            catch (Exception e) { return new T2<>(e, null); }
+            catch (Exception e) {
+                return new T2<>(e, null);
+            }
         }
 
+        /**
+         *
+         * @param id Uniq query result id.
+         */
         private void scheduleQueryRemoval(final String id) {
             ((GridKernal)g).context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(RMV_DELAY) {
                 @Override public void onTimeout() {

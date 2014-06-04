@@ -19,7 +19,7 @@ import static java.lang.System.*;
  * Grid configuration data collect task.
  */
 @GridInternal
-public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, VisorGridConfig> {
+public class VisorConfigCollectorTask extends VisorComputeTask<Void, VisorGridConfig> {
     /**
      * Returns boolean value from system property or provided function.
      *
@@ -49,22 +49,22 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<VisorOneNodeArg, 
     /**
      * Grid configuration data collect job.
      */
-    private static class VisorConfigurationJob extends VisorOneNodeJob<VisorOneNodeArg, VisorGridConfig> {
+    private static class VisorConfigurationJob extends VisorJob<Void, VisorGridConfig> {
         /** */
         private static final long serialVersionUID = 0L;
 
-        private VisorConfigurationJob(VisorOneNodeArg arg) {
-            super(arg);
+        private VisorConfigurationJob() {
+            super(null);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorGridConfig run(VisorOneNodeArg arg) {
+        @Override protected VisorGridConfig run(Void arg) {
             return VisorGridConfig.from(g);
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorConfigurationJob job(VisorOneNodeArg arg) {
-        return new VisorConfigurationJob(arg);
+    @Override protected VisorConfigurationJob job(Void arg) {
+        return new VisorConfigurationJob();
     }
 }
