@@ -149,7 +149,7 @@ public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridCommonAbstract
         cfg.setBoolean(String.format(GridGgfsHadoopUtils.PARAM_GGFS_ENDPOINT_NO_EMBED, ""), true);
 
         // Ensure that existing IO is reused.
-        FileSystem fs1 = FileSystem.get(new URI("ggfs:///"), cfg);
+        FileSystem fs1 = FileSystem.get(new URI("ggfs://ggfs:" + getTestGridName(0) + "@/"), cfg);
 
         assertEquals(1, cache.size());
 
