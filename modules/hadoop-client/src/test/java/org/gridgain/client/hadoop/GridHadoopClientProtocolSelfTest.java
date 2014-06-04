@@ -105,15 +105,6 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         super.afterTest();
     }
 
-    /** {@inheritDoc} */
-    @Override public GridHadoopConfiguration hadoopConfiguration(String gridName) {
-        GridHadoopConfiguration cfg = super.hadoopConfiguration(gridName);
-
-        cfg.setExternalExecution(true);
-
-        return cfg;
-    }
-
     /**
      * Test next job ID generation.
      *
