@@ -34,7 +34,7 @@ class VisorTasksCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAl
         G.start(config("grid-1"))
         G.start(config("grid-2"))
 
-        visor.open(config("grid-1"), "n/a")
+        visor.open(config("grid-visor"), "n/a")
 
         try {
             val compute = visor.grid.compute()
