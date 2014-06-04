@@ -187,31 +187,13 @@ public abstract class GridHadoopHashMultimapBase extends GridHadoopMultimapBase 
 
         /** {@inheritDoc} */
         @Override public Iterator<?> values() {
-            return new Iterator<Object>() {
-                /** */
-                private long valPtr = value(metaPtr);
-
-                @Override public boolean hasNext() {
-                    return valPtr != 0;
-                }
-
-                @Override public Object next() {
-                    Object res = valReader.readValue(valPtr);
-
-                    valPtr = nextValue(valPtr);
-
-                    return res;
-                }
-
-                @Override public void remove() {
-                    throw new UnsupportedOperationException();
-                }
-            };
+            return new ValueIterator(value(metaPtr), valReader);
         }
 
         /** {@inheritDoc} */
-        @Override public void close() {
-            // No-op.
+        @Override public void close() throws GridException {
+            keyReader.close();
+            valReader.close();
         }
     }
 }

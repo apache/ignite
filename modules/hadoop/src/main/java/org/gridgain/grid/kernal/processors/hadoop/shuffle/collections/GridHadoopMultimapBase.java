@@ -101,7 +101,7 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
     /**
      * Reader for key and value.
      */
-    protected class ReaderBase {
+    protected class ReaderBase implements AutoCloseable {
         /** */
         private Object tmp;
 
@@ -146,6 +146,11 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
             tmp = ser.read(in, tmp);
 
             return tmp;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws GridException {
+            ser.close();
         }
     }
 
@@ -295,6 +300,45 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
 
             keySer.close();
             valSer.close();
+        }
+    }
+
+    /**
+     * Iterator over values.
+     */
+    protected class ValueIterator implements Iterator<Object> {
+        /** */
+        private long valPtr;
+
+        /** */
+        private ReaderBase valReader;
+
+        /**
+         * @param valPtr Value page pointer.
+         * @param valReader Value reader.
+         */
+        protected ValueIterator(long valPtr, ReaderBase valReader) {
+            this.valPtr = valPtr;
+            this.valReader = valReader;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            return valPtr != 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object next() {
+            Object res = valReader.readValue(valPtr);
+
+            valPtr = nextValue(valPtr);
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void remove() {
+            throw new UnsupportedOperationException();
         }
     }
 }

@@ -33,6 +33,13 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
     /** Heads for all the lists. */
     private final AtomicLongArray heads = new AtomicLongArray(32);
 
+    /** */
+    private final AtomicBoolean visitGuard = new AtomicBoolean();
+
+    /**
+     * @param job Job.
+     * @param mem Memory.
+     */
     public GridHadoopSkipList(GridHadoopJob job, GridUnsafeMemory mem) {
         super(job, mem);
 
@@ -41,7 +48,31 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
 
     /** {@inheritDoc} */
     @Override public boolean visit(boolean ignoreLastVisited, Visitor v) throws GridException {
-        return false; // TODO
+        if (!visitGuard.compareAndSet(false, true))
+            return false;
+
+        for (long meta = heads.get(0); meta != 0L; meta = nextMeta(meta, 0)) {
+            long valPtr = value(meta);
+
+            long lastVisited = ignoreLastVisited ? 0 : lastVisitedValue(meta);
+
+            if (valPtr != lastVisited) {
+                v.onKey(key(meta), keySize(meta));
+
+                lastVisitedValue(meta, valPtr); // Set it to the first value in chain.
+
+                do {
+                    v.onValue(valPtr + 12, valueSize(valPtr));
+
+                    valPtr = nextValue(valPtr);
+                }
+                while (valPtr != lastVisited);
+            }
+        }
+
+        visitGuard.lazySet(false);
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -51,7 +82,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
 
     /** {@inheritDoc} */
     @Override public GridHadoopTaskInput input() throws GridException {
-        return null; // TODO
+        return new Input();
     }
 
     /**
@@ -98,11 +129,27 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
 
     /**
      * @param meta Meta pointer.
+     * @return Last visited value pointer.
+     */
+    private long lastVisitedValue(long meta) {
+        return mem.readLong(meta + 16);
+    }
+
+    /**
+     * @param meta Meta pointer.
+     * @param valPtr Last visited value pointer.
+     */
+    private void lastVisitedValue(long meta, long valPtr) {
+        mem.writeLong(meta + 16, valPtr);
+    }
+
+    /**
+     * @param meta Meta pointer.
      * @param level Level.
      * @return Next meta pointer.
      */
     private long nextMeta(long meta, int level) {
-        return meta == 0 ? heads.get(level) : mem.readLongVolatile(meta + 16 + 8 * level);
+        return meta == 0 ? heads.get(level) : mem.readLongVolatile(meta + 24 + 8 * level);
     }
 
     /**
@@ -114,7 +161,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
      */
     private boolean casNextMeta(long meta, int level, long oldNext, long newNext) {
         return meta == 0 ? heads.compareAndSet(level, oldNext, newNext) :
-            mem.casLong(meta + 16 + 8 * level, oldNext, newNext);
+            mem.casLong(meta + 24 + 8 * level, oldNext, newNext);
     }
 
     /**
@@ -122,7 +169,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
      * @param nextMeta Next meta.
      */
     private void nextMeta(long meta, long nextMeta) {
-        mem.writeLong(meta + 16, nextMeta);
+        mem.writeLong(meta + 24, nextMeta);
     }
 
     /**
@@ -218,14 +265,15 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
          * @return Meta pointer.
          */
         private long createMeta(long key, long val, int level) {
-            int size = 24 + 8 * level;
+            int size = 32 + 8 * level;
 
             long meta = allocate(size);
 
             key(meta, key);
             value(meta, val);
+            lastVisitedValue(meta, 0L);
 
-            for (int i = 24; i < size; i += 8) // Fill with 0.
+            for (int i = 32; i < size; i += 8) // Fill with 0.
                 mem.writeLong(meta + i, 0L);
 
             return meta;
@@ -267,9 +315,9 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
          * @return Meta pointer.
          * @throws GridException If failed.
          */
-        @SuppressWarnings("unchecked")
         private long add(Object key, @Nullable Object val) throws GridException {
-            stack.clear();
+            assert key != null;
+            assert stack.isEmpty();
 
             long valPtr = 0;
 
@@ -288,7 +336,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
             int level = topLevel.get();
             long meta = level < 0 ? 0 : heads.get(level);
 
-            for (int cmpRes;;) {
+            for (int cmpRes = 0;;) {
                 if (level < 0) { // We did not find our key, trying to add new meta.
                     if (keyPtr == 0) { // Write key and create meta only once.
                         keyPtr = writeKey(key);
@@ -300,7 +348,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
                     nextMeta(newMeta, meta);
 
                     if (casNextMeta(prevMeta, 0, meta, newMeta)) { // The new key was added successfully.
-                        laceUp(prevMeta, newMeta, newMetaLevel);
+                        laceUp(key, newMeta, newMetaLevel);
 
                         return newMeta;
                     }
@@ -308,13 +356,8 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
                         meta = nextMeta(prevMeta, level = 0);
                 }
 
-                assert meta != 0;
-
-//                if (meta != upperMeta()) { // TODO
-                Object k = keyReader.readKey(meta);
-
-                cmpRes = cmp.compare(key, k);
-//                }
+                if (meta != upperMeta()) // If meta is the same as the upper one, we already know the comparison result.
+                    cmpRes = cmp(key, meta);
 
                 if (cmpRes == 0) { // Key found.
                     if (newMeta != 0)  // Deallocate if we've allocated something.
@@ -346,30 +389,68 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
                 while (--level >= 0) { // Go down.
                     stackPush(prevMeta, meta); // Remember the path.
 
-                    meta = nextMeta(prevMeta, level);
+                    long nextMeta = nextMeta(prevMeta, level);
 
-                    if (meta != 0) // Else go deeper.
+                    if (nextMeta != meta) { // Else go deeper.
+                        meta = nextMeta;
+
                         break;
+                    }
                 }
             }
         }
 
         /**
+         * @param key Key.
+         * @param meta Meta pointer.
+         * @return Comparison result.
+         */
+        @SuppressWarnings("unchecked")
+        private int cmp(Object key, long meta) {
+            assert meta != 0;
+
+            return cmp.compare(key, keyReader.readKey(meta));
+        }
+
+        /**
          * Adds appropriate index links between metas.
          *
-         * @param prevMeta Previous meta.
          * @param newMeta Just added meta.
          * @param newMetaLevel New level.
          */
-        private void laceUp(long prevMeta, long newMeta, int newMetaLevel) {
-            if (stack.isEmpty()) //
+        private void laceUp(Object key, long newMeta, int newMetaLevel) {
+            for (int level = 1; level < newMetaLevel; level++) { // Go from the bottom up.
+                long prevMeta = 0;
+                long meta = 0;
 
-            for (int i = 0; i < newMetaLevel; i+= 2) {
-                if (stack.isEmpty()) {
-
-
+                if (!stack.isEmpty()) {
+                    meta = stack.remove();
+                    prevMeta = stack.remove();
                 }
 
+                while (!casNextMeta(prevMeta, level, meta, newMeta)) {
+                    long oldMeta = meta;
+
+                    meta = nextMeta(prevMeta, level); // Reread meta.
+
+                    for (;;) {
+                        assert meta != 0;
+
+                        int cmpRes = cmp(key, meta);
+
+                        assert cmpRes != 0; // Two different metas with equal keys.
+
+                        if (cmpRes > 0) {  // Go right.
+                            prevMeta = meta;
+                            meta = nextMeta(prevMeta, level);
+
+                            if (meta != oldMeta) // Old meta already known to be greater than our key or is 0.
+                                continue;
+                        }
+
+                        break; // Retry cas.
+                    }
+                }
             }
         }
 
@@ -411,6 +492,51 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
                 }
                 while(!casValue(meta, nextVal, valPtr));
             }
+        }
+    }
+
+    /**
+     * Task input.
+     */
+    private class Input implements GridHadoopTaskInput {
+        /** */
+        private long metaPtr;
+
+        /** */
+        private Reader keyReader;
+
+        /** */
+        private Reader valReader;
+
+        /**
+         * @throws GridException If failed.
+         */
+        public Input() throws GridException {
+            keyReader = new Reader(job.keySerialization());
+            valReader = new Reader(job.valueSerialization());
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean next() {
+            metaPtr = nextMeta(metaPtr, 0);
+
+            return metaPtr != 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object key() {
+            return keyReader.readKey(metaPtr);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Iterator<?> values() {
+            return new ValueIterator(value(metaPtr), valReader);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws GridException {
+            keyReader.close();
+            valReader.close();
         }
     }
 }

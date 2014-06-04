@@ -169,9 +169,11 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
         assert s != State.REHASHING;
 
         return new Input() {
-            @Override public void close() {
+            @Override public void close() throws GridException {
                 if (inputs.decrementAndGet() < 0)
                     throw new IllegalStateException();
+
+                super.close();
             }
         };
     }
