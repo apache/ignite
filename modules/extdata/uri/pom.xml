@@ -101,6 +101,9 @@
                         <phase>package</phase>
                         <configuration>
                             <target>
+                                <copy file="${settings.localRepository}/javax/mail/mail/1.4.7/mail-1.4.7.jar"
+                                      todir="${basedir}/target/classes/lib"/>
+
                                 <taskdef name="gar"
                                     classname="org.gridgain.grid.util.antgar.GridDeploymentGarAntTask"/>
 
