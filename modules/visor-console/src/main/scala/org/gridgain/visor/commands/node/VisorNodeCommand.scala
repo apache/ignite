@@ -42,7 +42,7 @@ import org.gridgain.visor.visor._
  *
  * ====Specification====
  * {{{
- *     node "{id8=<node-id8>|id=<node-id>} {-a}"
+ *     node "{-id8=<node-id8>|-id=<node-id>} {-a}"
  *     node
  * }}}
  *
@@ -71,10 +71,10 @@ import org.gridgain.visor.visor._
  */
 class VisorNodeCommand {
     /** */
-    private val KB = 1024
+    private val KB = 1024L
 
     /** */
-    private val MB = KB * 1024
+    private val MB = KB * 1024L
 
     /**
      * Prints error message and advise.
@@ -181,7 +181,7 @@ class VisorNodeCommand {
                             t += ("OS user", node.attribute(ATTR_USER_NAME))
                             t += ("Deployment mode", node.attribute(ATTR_DEPLOYMENT_MODE))
                             t += ("Language runtime", node.attribute(ATTR_LANG_RUNTIME))
-                            t += ("GridGain build#", node.attribute(ATTR_BUILD_VER))
+                            t += ("GridGain version", node.attribute(ATTR_BUILD_VER))
                             t += ("JRE information", node.attribute(ATTR_JIT_NAME))
                             t += ("Non-loopback IPs", node.attribute(ATTR_IPS))
                             t += ("Enabled MACs", node.attribute(ATTR_MACS))
@@ -289,7 +289,7 @@ object VisorNodeCommand {
         name = "node",
         shortInfo = "Prints node statistics.",
         spec = List(
-            "node {id8=<node-id8>|id=<node-id>} {-a}",
+            "node {-id8=<node-id8>|-id=<node-id>} {-a}",
             "node"
         ),
         args = List(

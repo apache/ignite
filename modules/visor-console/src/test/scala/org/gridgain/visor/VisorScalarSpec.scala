@@ -48,12 +48,16 @@ class VisorScalarSpec extends FlatSpec with ShouldMatchers {
         scalar.start(cfg)
 
         try {
+            cfg.setGridName("grid-visor")
+
             visor.open(cfg, "n/a")
             visor.status()
             visor.close()
         }
         finally {
-            scalar.stop("grid-visor", true)
+            visor.close()
+
+            scalar.stop("grid-scalar", true)
         }
     }
 
