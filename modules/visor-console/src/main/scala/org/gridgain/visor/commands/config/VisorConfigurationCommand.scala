@@ -14,7 +14,6 @@ package org.gridgain.visor.commands.config
 import java.lang.System._
 
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeArg
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorConfigCollectorTask
 import org.gridgain.grid.util.typedef.T2
 import org.gridgain.grid.util.{GridUtils => U}
@@ -205,7 +204,7 @@ class VisorConfigurationCommand {
                 grid.forNode(node)
                     .compute()
                     .withNoFailover()
-                    .execute(classOf[VisorConfigCollectorTask], new VisorOneNodeArg(node.id()))
+                    .execute(classOf[VisorConfigCollectorTask], emptyTaskArgument(node.id()))
                     .get
             catch {
                 case e: GridException =>

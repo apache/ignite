@@ -11,23 +11,15 @@
 
 package org.gridgain.visor.commands.cache
 
-import java.util
-
 import org.gridgain.grid.GridNode
 import org.gridgain.grid.kernal.visor.cmd.dto.VisorFieldsQueryResult
-import org.gridgain.grid.kernal.visor.cmd.tasks.{VisorNextFieldsQueryPageTask, VisorFieldsQueryTask}
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorFieldsQueryTask.VisorFieldsQueryArg
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorNextFieldsQueryPageTask.VisorNextFieldsQueryPageArg
-import org.gridgain.grid.util.{GridUtils => U}
-
-import java.util.{Map => JavaMap}
-
-import scala.collection.JavaConversions._
-
+import org.gridgain.grid.kernal.visor.cmd.tasks.{VisorFieldsQueryTask, VisorNextFieldsQueryPageTask}
+import org.gridgain.grid.util.typedef.T2
 import org.gridgain.visor.commands._
 import org.gridgain.visor.visor._
 
-import scala.util
+import scala.collection.JavaConversions._
 
 /**
  * ==Overview==
@@ -163,7 +155,7 @@ class VisorCacheScanCommand {
                     .withName("visor-cscan-task")
                     .withNoFailover()
                     .execute(classOf[VisorFieldsQueryTask],
-                        new VisorFieldsQueryArg(nid, proj, cacheName, "SCAN", pageSize))
+                        toTaskArgument(nid, new VisorFieldsQueryArg(proj, cacheName, "SCAN", pageSize)))
                     .get match {
                     case x if x.get1() != null =>
                         error(x.get1())
@@ -206,11 +198,11 @@ class VisorCacheScanCommand {
             ask("\nFetch more objects (y/n) [y]:", "y") match {
                 case "y" | "Y" =>
                     try {
-                        res = qryPrj
-                            .compute()
+                        res = qryPrj.compute()
                             .withName("visor-cscan-fetch-task")
                             .withNoFailover()
-                            .execute(classOf[VisorNextFieldsQueryPageTask], new VisorNextFieldsQueryPageArg(nid, fullRes.queryId(), pageSize))
+                            .execute(classOf[VisorNextFieldsQueryPageTask],
+                                toTaskArgument(nid, new T2[String, Integer](fullRes.queryId(), pageSize)))
                             .get
 
                         render()

@@ -11,38 +11,36 @@
 
 package org.gridgain.visor
 
-import org.gridgain.grid.{GridException => GE, GridGain => G, _}
-import org.gridgain.grid.events._
+import java.io._
+import java.net._
+import java.text._
+import java.util.concurrent._
+import java.util.{HashSet => JHashSet, Set => JSet, _}
+
 import org.gridgain.grid.events.GridEventType._
-import org.gridgain.grid.kernal.{GridEx, GridProductImpl}
+import org.gridgain.grid.events._
 import org.gridgain.grid.kernal.GridComponentType._
 import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.gridgain.grid.kernal.processors.spring.GridSpringProcessor
 import org.gridgain.grid.kernal.processors.task.GridInternal
+import org.gridgain.grid.kernal.{GridEx, GridProductImpl}
 import org.gridgain.grid.lang.{GridCallable, GridPredicate}
 import org.gridgain.grid.resources.GridInstanceResource
 import org.gridgain.grid.spi.communication.tcp.GridTcpCommunicationSpi
 import org.gridgain.grid.thread._
-import org.gridgain.grid.util.{GridConfigurationFinder, GridUtils => U}
 import org.gridgain.grid.util.lang.{GridFunc => F}
 import org.gridgain.grid.util.scala.impl
 import org.gridgain.grid.util.typedef._
-
-import java.io._
-import java.net._
-import java.text._
-import java.util.{Set => JavaSet, _}
-import java.util.concurrent._
-
-import scala.collection.immutable
-import scala.collection.JavaConversions._
-import scala.language.{implicitConversions, reflectiveCalls}
-
-import org.jetbrains.annotations.Nullable
-
+import org.gridgain.grid.util.{GridConfigurationFinder, GridUtils => U}
+import org.gridgain.grid.{GridException => GE, GridGain => G, _}
 import org.gridgain.scalar._
 import org.gridgain.scalar.scalar._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
+import org.jetbrains.annotations.Nullable
+
+import scala.collection.JavaConversions._
+import scala.collection.immutable
+import scala.language.{implicitConversions, reflectiveCalls}
 
 /**
  * Holder for command help information.
@@ -1676,8 +1674,14 @@ object visor extends VisorTag {
             formatDouble(v) + " %"
     }
 
-    /** Convert scala `Iterable` to `java.util.Set`. */
-    def toJavaSet[T](it: Iterable[T]): JavaSet[T] = new java.util.HashSet[T](asJavaCollection(it))
+    /** Convert to task argument. */
+    def emptyTaskArgument[A](nid: UUID): T2[JSet[UUID], Void] = new T2(Collections.singleton(nid), null)
+
+    /** Convert to task argument. */
+    def toTaskArgument[A](nid: UUID, arg: A): T2[JSet[UUID], A] = new T2(Collections.singleton(nid), arg)
+
+    /** Convert to task argument. */
+    def toTaskArgument[A](nids: Iterable[UUID], arg: A): T2[JSet[UUID], A] = new T2(new JHashSet(nids), arg)
 
     /**
      * Asks user to select a node from the list.

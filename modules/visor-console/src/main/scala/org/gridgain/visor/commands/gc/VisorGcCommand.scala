@@ -11,8 +11,8 @@
 
 package org.gridgain.visor.commands.gc
 
-import java.lang.{Long => JavaLong}
-import java.util.UUID
+import java.lang.{Boolean => JavaBoolean}
+import java.util.{UUID, HashSet => JavaHashSet}
 
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorRunGcTask
@@ -138,10 +138,10 @@ class VisorGcCommand {
 
                 val prj = grid.forRemotes()
 
-                val nids = toJavaSet(prj.nodes().map(_.id()))
+                val nids = new JavaHashSet(prj.nodes().map(_.id()))
 
-                prj.compute().withNoFailover().execute(classOf[VisorRunGcTask], new VisorRunGcArg(nids, dgc)).
-                    get.foreach { case (nid, stat) =>
+                prj.compute().withNoFailover().execute(classOf[VisorRunGcTask],
+                    new VisorRunGcArg(nids, new JavaBoolean(dgc))).get.foreach { case (nid, stat) =>
                     val roundHb = math.round(stat.get1() / (1024L * 1024L))
                     val roundHa = math.round(stat.get2() / (1024L * 1024L))
 

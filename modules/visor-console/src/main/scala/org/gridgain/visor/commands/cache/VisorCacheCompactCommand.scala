@@ -11,20 +11,18 @@
 
 package org.gridgain.visor.commands.cache
 
+import java.util.{Collections, HashSet => JavaHashSet}
+
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeNamesArg
 import org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils._
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCompactCachesTask
-
-import java.util.{HashSet => JavaHashSet}
+import org.gridgain.scalar.scalar._
+import org.gridgain.visor.commands.VisorTextTable
+import org.gridgain.visor.visor._
 
 import scala.collection.JavaConversions._
 import scala.language.reflectiveCalls
 import scala.util.control.Breaks._
-
-import org.gridgain.scalar.scalar._
-import org.gridgain.visor.commands.VisorTextTable
-import org.gridgain.visor.visor._
 
 /**
  * ==Overview==
@@ -113,14 +111,14 @@ class VisorCacheCompactCommand {
 
         t #= ("Node ID8(@)", "Entries Compacted", "Cache Size Before", "Cache Size After")
 
-        val cacheSet = new JavaHashSet(Seq(cacheName))
+        val cacheSet = Collections.singleton(cacheName)
 
         prj.nodes().foreach(node => {
             val r = grid.forNode(node)
                 .compute()
                 .withName("visor-ccompact-task")
                 .withNoFailover()
-                .execute(classOf[VisorCompactCachesTask], new VisorOneNodeNamesArg(node.id(), cacheSet))
+                .execute(classOf[VisorCompactCachesTask], toTaskArgument(node.id(), cacheSet))
                 .get.get(cacheName)
 
             t += (nodeId8(node.id()), r.get1() - r.get2(), r.get1(), r.get2())

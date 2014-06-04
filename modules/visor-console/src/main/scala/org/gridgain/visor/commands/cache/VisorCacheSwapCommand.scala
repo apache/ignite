@@ -10,20 +10,18 @@
  */
 package org.gridgain.visor.commands.cache
 
+import java.util.{Collections, HashSet => JavaHashSet}
+
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeNamesArg
 import org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils._
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorSwapBackupsCachesTask
-
-import java.util.{HashSet => JavaHashSet}
+import org.gridgain.scalar.scalar._
+import org.gridgain.visor.commands.VisorTextTable
+import org.gridgain.visor.visor._
 
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
-
-import org.gridgain.scalar.scalar._
-import org.gridgain.visor.commands.VisorTextTable
-import org.gridgain.visor.visor._
 
 /**
  * ==Overview==
@@ -112,14 +110,14 @@ class VisorCacheSwapCommand {
 
         t #= ("Node ID8(@)", "Entries Swapped", "Cache Size Before", "Cache Size After")
 
-        val cacheSet = new JavaHashSet(Seq(cacheName))
+        val cacheSet = Collections.singleton(cacheName)
 
         prj.nodes().foreach(node => {
             val r = grid.forNode(node)
                 .compute()
                 .withName("visor-cswap-task")
                 .withNoFailover()
-                .execute(classOf[VisorSwapBackupsCachesTask], new VisorOneNodeNamesArg(node.id(), cacheSet))
+                .execute(classOf[VisorSwapBackupsCachesTask], toTaskArgument(node.id(), cacheSet))
                 .get.get(cacheName)
 
             t += (nodeId8(node.id()), r.get1() - r.get2(), r.get1(), r.get2())
