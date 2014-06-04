@@ -146,7 +146,7 @@ public class VisorBasicConfig implements Serializable {
     }
 
     /**
-     * @param ggHome New gRIDGAIN_HOME determined at startup.
+     * @param ggHome New GRIDGAIN_HOME determined at startup.
      */
     public void ggHome(@Nullable String ggHome) {
         this.ggHome = ggHome;

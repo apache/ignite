@@ -50,7 +50,6 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
         private final GridUuid taskSessionId;
 
         /**
-         * Create task arguments for {@link VisorCollectEventsTask}.
          * @param typeArg Arguments for type filter.
          * @param timeArg Arguments for time filter.
          * @param taskName Arguments for task name filter.
@@ -65,7 +64,6 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
         }
 
         /**
-         * Create task arguments for {@link VisorCollectEventsTask} filtered events.
          * @param typeArg Arguments for type filter.
          * @param timeArg Arguments for time filter.
          */
@@ -78,7 +76,6 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
         }
 
         /**
-         * Create task arguments for {@link VisorCollectEventsTask} filtered task and job events.
          * @param timeArg Arguments for time filter.
          * @param taskName Arguments for task name filter.
          * @param taskSessionId Arguments for task session filter.
@@ -124,7 +121,8 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
     /**
      * Job for task returns events data.
      */
-    private static class VisorCollectEventsJob extends VisorJob<VisorCollectEventsArgs, Collection<? extends VisorGridEvent>> {
+    private static class VisorCollectEventsJob extends VisorJob<VisorCollectEventsArgs,
+        Collection<? extends VisorGridEvent>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -208,7 +206,8 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends VisorGridEvent> run(final VisorCollectEventsArgs arg) throws GridException {
+        @Override protected Collection<? extends VisorGridEvent> run(final VisorCollectEventsArgs arg)
+            throws GridException {
             final long startEvtTime = arg.timeArgument() == null ? 0L : System.currentTimeMillis() - arg.timeArgument();
 
             Collection<GridEvent> evts = g.events().localQuery(new GridPredicate<GridEvent>() {

@@ -27,13 +27,12 @@ public abstract class VisorMultiNodeTask<A, R, J> implements GridComputeTask<T2<
     protected A taskArg;
 
     /**
-     * Create task job.
-     *
      * @param arg Task arg.
      * @return New job.
      */
     protected abstract VisorJob<A, J> job(A arg);
 
+    /** {@inheritDoc} */
     @Nullable @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
         @Nullable T2<Set<UUID>, A> arg) throws GridException {
         assert arg != null;
@@ -49,6 +48,7 @@ public abstract class VisorMultiNodeTask<A, R, J> implements GridComputeTask<T2<
         return map;
     }
 
+    /** {@inheritDoc} */
     @Override public GridComputeJobResultPolicy result(GridComputeJobResult res,
         List<GridComputeJobResult> rcvd) throws GridException {
         // All Visor tasks should handle exceptions in reduce method.

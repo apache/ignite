@@ -104,10 +104,13 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** TODO GG-8358 */
         private final GridCacheQueryFuture<R> fut;
 
+        /** TODO GG-8358 */
         private final R next;
 
+        /** TODO GG-8358 */
         private Boolean accessed;
 
         public VisorFutureResultSetHolder(GridCacheQueryFuture<R> fut, R next, Boolean accessed) {

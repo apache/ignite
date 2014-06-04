@@ -19,9 +19,7 @@ import static java.lang.System.*;
  * Contains utility methods for Visor tasks and jobs.
  */
 public class VisorTaskUtils {
-    /**
-     * Default substitute for {@code null} names.
-     * */
+    /** Default substitute for {@code null} names. */
     private static final String DFLT_EMPTY_NAME = "<default>";
 
     /**

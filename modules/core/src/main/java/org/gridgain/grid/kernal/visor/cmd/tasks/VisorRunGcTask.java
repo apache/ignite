@@ -50,6 +50,7 @@ public class VisorRunGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, T2<Lon
             return new T2<>(before, freeHeap(locNode));
         }
 
+        /** TODO GG-8358 */
         private long freeHeap(GridNode node) {
             final GridNodeMetrics m = node.metrics();
 

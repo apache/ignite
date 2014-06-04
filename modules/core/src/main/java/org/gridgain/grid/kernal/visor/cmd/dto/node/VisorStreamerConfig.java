@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.visor.cmd.dto.node;
 
 import org.gridgain.grid.streamer.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -155,10 +156,15 @@ public class VisorStreamerConfig implements Serializable {
     }
 
     /**
-     * @param executorSrvcShutdown New flag indicating whether streamer executor service should be shut down on GridGain
-     * stop.
+     * @param executorSrvcShutdown New flag indicating whether streamer executor service should be shutdown
+     *      on GridGain stop.
      */
     public void executorServiceShutdown(boolean executorSrvcShutdown) {
         executorServiceShutdown = executorSrvcShutdown;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorStreamerConfig.class, this);
     }
 }

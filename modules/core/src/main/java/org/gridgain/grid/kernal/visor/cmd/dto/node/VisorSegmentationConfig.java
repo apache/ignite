@@ -29,7 +29,7 @@ public class VisorSegmentationConfig implements Serializable {
     private GridSegmentationPolicy plc;
 
     /** Segmentation resolvers. */
-    @Nullable private String resolvers;
+    private String resolvers;
 
     /** Frequency of network segment check by discovery manager. */
     private long checkFreq;

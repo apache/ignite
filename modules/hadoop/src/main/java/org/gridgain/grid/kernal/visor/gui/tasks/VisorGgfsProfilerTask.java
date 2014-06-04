@@ -166,6 +166,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             return ix < ss.length && "1".equals(ss[ix]);
         }
 
+        /** TODO GG-8358 */
         private int parseInt(String[] ss, int ix, int dflt) {
             if (ss.length <= ix)
                 return dflt;
@@ -176,6 +177,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             }
         }
 
+        /** TODO GG-8358 */
         private long parseLong(String[] ss, int ix, long dflt) {
             if (ss.length <= ix)
                 return dflt;
@@ -186,6 +188,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             }
         }
 
+        /** TODO GG-8358 */
         private String parseString(String[] ss, int ix) {
             if (ss.length <= ix)
                 return "";

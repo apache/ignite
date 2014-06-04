@@ -203,5 +203,4 @@ public class VisorRestConfig implements Serializable {
     @Override public String toString() {
         return S.toString(VisorRestConfig.class, this);
     }
-
 }

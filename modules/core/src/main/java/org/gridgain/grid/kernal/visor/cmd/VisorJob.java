@@ -23,7 +23,6 @@ public abstract class VisorJob<A, R> extends GridComputeJobAdapter {
     @GridInstanceResource
     protected GridEx g;
 
-    /** */
     @GridLoggerResource
     protected GridLogger log;
 
@@ -36,6 +35,7 @@ public abstract class VisorJob<A, R> extends GridComputeJobAdapter {
         super(arg);
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public Object execute() throws GridException {
         A arg = argument(0);
 
