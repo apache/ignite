@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.visor.cmd.dto;
 
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.io.Serializable;
+import java.io.*;
 
 /**
  * Data transfer object for query column type description.
