@@ -8,15 +8,13 @@
  */
 package org.gridgain.client.impl;
 
-import io.netty.util.internal.logging.*;
 import org.gridgain.client.*;
 import org.gridgain.client.balancer.*;
 import org.gridgain.client.impl.connection.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.client.util.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.typedef.F;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -44,27 +42,10 @@ public class GridClientImpl implements GridClient {
         boolean isLog4jUsed = U.gridClassLoader().getResource("org/apache/log4j/Appender.class") != null;
 
         try {
-            GridBiTuple<Object, Object> t = null;
-            Collection<Handler> savedHnds = null;
-
             if (isLog4jUsed)
-                t = U.addLog4jNoOpLogger();
+                U.addLog4jNoOpLogger();
             else
-                savedHnds = U.addJavaNoOpLogger();
-
-            try {
-                InternalLoggerFactory.setDefaultFactory(new JdkLoggerFactory());
-            }
-            catch (Exception e) {
-                log.warning("Failed to set Jdk logging for Netty: " + e.getMessage());
-            }
-            finally {
-                if (isLog4jUsed && t != null)
-                    U.removeLog4jNoOpLogger(t);
-
-                if (!isLog4jUsed)
-                    U.removeJavaNoOpLogger(savedHnds);
-            }
+                U.addJavaNoOpLogger();
         }
         catch (GridException ignored) {
             // Our log4j warning suppression failed, leave it as is.

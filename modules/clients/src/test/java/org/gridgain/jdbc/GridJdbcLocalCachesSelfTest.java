@@ -84,7 +84,7 @@ public class GridJdbcLocalCachesSelfTest extends GridCommonAbstractTest {
         assert cache2.putx("key1", 3);
         assert cache2.putx("key2", 4);
 
-        Class.forName("org.gridgain.jdbc.GridJdbcDriver");
+        Class.forName("GridJdbcDriver");
     }
 
     /** {@inheritDoc} */
