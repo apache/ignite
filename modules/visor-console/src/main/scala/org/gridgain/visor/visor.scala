@@ -496,9 +496,9 @@ object visor extends VisorTag {
             "log" ->
                 "Prints log status.",
             "log -l -f=/home/user/visor-log" ->
-                "Starts logging to file located at '/home/user/visor-log'.",
+                "Starts logging to file 'visor-log' located at '/home/user'.",
             "log -l -f=log/visor-log" ->
-                "Starts logging to file located at 'GRIDGAIN_HOME/log/visor-log'.",
+                "Starts logging to file 'visor-log' located at 'GRIDGAIN_HOME/log'.",
             "log -l -p=20" ->
                 "Starts logging with querying events period of 20 seconds.",
             "log -l -t=30" ->
@@ -2142,17 +2142,17 @@ object visor extends VisorTag {
      *
      * ==Examples==
      * <ex>log -l -f=/home/user/visor-log</ex>
-     * Starts logging to file located at '/home/user/visor-log'.
-     *
+     * Starts logging to file `visor-log` located at `/home/user`.
+     * <br>
      * <ex>log -l -f=log/visor-log</ex>
-     * Starts logging to file located at 'GRIDGAIN_HOME/log/visor-log'.
-     *
+     * Starts logging to file `visor-log` located at `GRIDGAIN_HOME/log`.
+     * <br>
      * <ex>log -l -p=20</ex>
      * Starts logging with querying events period of 20 seconds.
-     *
+     * <br>
      * <ex>log -l -t=30</ex>
      * Starts logging with topology snapshot logging period of 30 seconds.
-     *
+     * <br>
      * <ex>log -s</ex>
      * Stops logging.
      *
@@ -2228,7 +2228,7 @@ object visor extends VisorTag {
 
         val path = pathOpt.getOrElse(DFLT_LOG_PATH)
 
-        logFile = U.resolveWorkDirectory(path, false)
+        logFile = new File(U.resolveWorkDirectory(new File(path).getParent, false), new File(path).getName)
 
         var freq = 0L
 
