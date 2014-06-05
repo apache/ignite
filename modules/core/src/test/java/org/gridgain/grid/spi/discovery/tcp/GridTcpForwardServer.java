@@ -32,7 +32,12 @@ public final class GridTcpForwardServer implements AutoCloseable {
      * @param toAddr Destination address.
      * @param toPort Destination port.
      */
-    public GridTcpForwardServer(final InetAddress fromAddr, final int fromPort, final InetAddress toAddr, final int toPort) {
+    public GridTcpForwardServer(
+        final InetAddress fromAddr,
+        final int fromPort,
+        final InetAddress toAddr,
+        final int toPort
+    ) {
         mainThread = new Thread(new Runnable() {
             @Override public void run() {
                 ServerSocket inputSock = null;

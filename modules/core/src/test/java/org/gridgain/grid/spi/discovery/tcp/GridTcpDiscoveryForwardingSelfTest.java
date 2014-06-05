@@ -20,7 +20,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Test for {@link org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi}.
+ * Test for {@link GridTcpDiscoverySpi}.
  */
 public class GridTcpDiscoveryForwardingSelfTest extends GridCommonAbstractTest {
     /** */
@@ -88,10 +88,12 @@ public class GridTcpDiscoveryForwardingSelfTest extends GridCommonAbstractTest {
         try (
             GridTcpForwardServer tcpForwardSrv1 = new GridTcpForwardServer(locHost, extPort1, locHost, localPort1);
             GridTcpForwardServer tcpForwardSrv2 = new GridTcpForwardServer(locHost, extPort2, locHost, localPort2);
+
             Grid g1 = startGrid(0);
             Grid g2 = startGrid(1)
         ) {
-            assertEquals(2, getTopologySize(2));
+            assertEquals(2, grid(0).nodes().size());
+            assertEquals(2, grid(1).nodes().size());
 
             Collection<Integer> t = g1.compute().broadcast(new Callable<Integer>() {
                 @Override public Integer call() throws Exception {
@@ -101,34 +103,5 @@ public class GridTcpDiscoveryForwardingSelfTest extends GridCommonAbstractTest {
 
             assertEquals(F.asList(13, 13), t);
         }
-    }
-
-    /**
-     * @param cnt Nodes count.
-     * @return Size of topology with waiting about 10 seconds or while size does not equals to {@code cnt}.
-     *      In first case result will be equals to topology size discovered for first node.
-     * @throws Exception If any error occurs.
-     */
-    @SuppressWarnings("BusyWait")
-    private int getTopologySize(int cnt) throws Exception {
-        assert cnt > 0;
-
-        for (int j = 0; j < 10; j++) {
-            boolean isOk = true;
-
-            for (int i = 0; i < cnt; i++)
-                if (cnt != grid(i).nodes().size()) {
-                    isOk = false;
-
-                    break;
-                }
-
-            if (isOk)
-                return cnt;
-
-            Thread.sleep(1000);
-        }
-
-        return grid(0).nodes().size();
     }
 }
