@@ -1033,8 +1033,8 @@ object visor extends VisorTag {
     }
 
     // Formatters.
-    private val dblFmt = new DecimalFormat("#0.00")
-    private val intFmt = new DecimalFormat("#0")
+    private val dblFmt = new DecimalFormat("#0.00", DEC_FMT_SYMS)
+    private val intFmt = new DecimalFormat("#0", DEC_FMT_SYMS)
 
     /**
      * Formats double value with `#0.00` formatter.
