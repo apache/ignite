@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.util;
 
-import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
@@ -83,12 +82,10 @@ public final class GridClassLoaderCache {
 
             try {
                 // Check if context loader is wider than direct object class loader.
-                if (!(ctxClsLdr instanceof GridInternalClassLoader)) {
-                    Class<?> c = Class.forName(cls.getName(), true, ctxClsLdr);
+                Class<?> c = Class.forName(cls.getName(), true, ctxClsLdr);
 
-                    if (c == cls)
-                        return ctxClsLdr;
-                }
+                if (c == cls)
+                    return ctxClsLdr;
             }
             catch (ClassNotFoundException ignored) {
                 // No-op.

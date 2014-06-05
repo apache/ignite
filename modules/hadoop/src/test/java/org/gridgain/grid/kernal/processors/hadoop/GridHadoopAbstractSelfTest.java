@@ -96,6 +96,9 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
             cfg.setRestTcpPort(restPort++);
         }
 
+        cfg.setLocalHost("127.0.0.1");
+        cfg.setPeerClassLoadingEnabled(false);
+
         return cfg;
     }
 
