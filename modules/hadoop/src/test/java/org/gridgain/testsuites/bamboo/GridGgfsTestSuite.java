@@ -63,6 +63,8 @@ public class GridGgfsTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoggerStateSelfTest.class));
         suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoggerSelfTest.class));
 
+        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemHandshakeSelfTest.class));
+
         suite.addTest(new TestSuite(GridGgfsPrimarySelfTest.class));
         suite.addTest(new TestSuite(GridGgfsPrimaryOffheapTieredSelfTest.class));
         suite.addTest(new TestSuite(GridGgfsPrimaryOffheapValuesSelfTest.class));

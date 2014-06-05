@@ -2324,7 +2324,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
     }
 
     /**
-     * Craete configuration for test.
+     * Create configuration for test.
      *
      * @param authority Authority.
      * @param skipEmbed Whether to skip embedded mode.
