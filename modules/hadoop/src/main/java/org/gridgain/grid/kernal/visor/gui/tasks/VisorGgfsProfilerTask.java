@@ -51,17 +51,11 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         /** Data length. */
         private final long dataLen;
 
-        /** Append flag. Available only for OPEN_OUT event. */
-        private final boolean append;
-
         /** Overwrite flag. Available only for OPEN_OUT event. */
         private final boolean overwrite;
 
         /** Position of data being randomly read or seek. Available only for RANDOM_READ or SEEK events. */
         private final long pos;
-
-        /** Length of data being randomly read. Available only for RANDOM_READ event. */
-        private final int readLen;
 
         /** User time. Available only for CLOSE_IN/CLOSE_OUT events. */
         private final long userTime;
@@ -82,10 +76,8 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             GridGgfsMode mode,
             long streamId,
             long dataLen,
-            boolean append,
             boolean overwrite,
             long pos,
-            int readLen,
             long userTime,
             long sysTime,
             long totalBytes
@@ -96,10 +88,8 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             this.mode = mode;
             this.streamId = streamId;
             this.dataLen = dataLen;
-            this.append = append;
             this.overwrite = overwrite;
             this.pos = pos;
-            this.readLen = readLen;
             this.userTime = userTime;
             this.sysTime = sysTime;
             this.totalBytes = totalBytes;
@@ -121,12 +111,12 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
     /**
      * Job that do actual profiler work.
      */
-    private class VisorGgfsProfilerJob extends VisorJob<String, Collection<VisorGgfsProfilerEntry>> {
+    private static class VisorGgfsProfilerJob extends VisorJob<String, Collection<VisorGgfsProfilerEntry>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Create job with given argument. */
-        public VisorGgfsProfilerJob(String arg) {
+        private VisorGgfsProfilerJob(String arg) {
             super(arg);
         }
 
@@ -251,10 +241,8 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
                         parseGgfsMode(ss, LOG_COL_GGFS_MODE),
                         streamId,
                         parseLong(ss, LOG_COL_DATA_LEN, 0),
-                        parseBoolean(ss, LOG_COL_APPEND),
                         parseBoolean(ss, LOG_COL_OVERWRITE),
                         parseLong(ss, LOG_COL_POS, 0),
-                        parseInt(ss, LOG_COL_READ_LEN, 0),
                         parseLong(ss, LOG_COL_USER_TIME, 0),
                         parseLong(ss, LOG_COL_SYSTEM_TIME, 0),
                         parseLong(ss, LOG_COL_TOTAL_BYTES, 0)
@@ -359,7 +347,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
          * @throws IOException if failed to read log file.
          */
         private Collection<VisorGgfsProfilerEntry> parseFile(Path p) throws IOException {
-            ArrayList<VisorGgfsProfilerParsedLine> parsedLines = new ArrayList<>(512);
+            List<VisorGgfsProfilerParsedLine> parsedLines = new ArrayList<>(512);
 
             try (BufferedReader br = Files.newBufferedReader(p, Charset.forName("UTF-8"))) {
                 String line = br.readLine(); // Skip first line with columns header.
@@ -401,7 +389,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             }
 
             // Aggregate each group.
-            List<VisorGgfsProfilerEntry> entries = new ArrayList<>(byStreamId.size());
+            Collection<VisorGgfsProfilerEntry> entries = new ArrayList<>(byStreamId.size());
 
             for (List<VisorGgfsProfilerParsedLine> lines : byStreamId.values()) {
                 VisorGgfsProfilerEntry entry = aggregateParsedLines(lines);
@@ -426,7 +414,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             }
 
             // Aggregate by files.
-            List<VisorGgfsProfilerEntry> res = new ArrayList<>(byPath.size());
+            Collection<VisorGgfsProfilerEntry> res = new ArrayList<>(byPath.size());
 
             for (List<VisorGgfsProfilerEntry> lst : byPath.values())
                 res.add(VisorGgfsProfiler.aggregateGgfsProfilerEntries(lst));
@@ -441,7 +429,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
          * @return List of line with aggregated information by files.
          */
         private Collection<VisorGgfsProfilerEntry> parse(Path logDir, String ggfsName) throws IOException {
-            ArrayList<VisorGgfsProfilerEntry> parsedFiles = new ArrayList<>(512);
+            Collection<VisorGgfsProfilerEntry> parsedFiles = new ArrayList<>(512);
 
             try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(logDir)) {
                 PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:ggfs-log-" + ggfsName + "-*.csv");

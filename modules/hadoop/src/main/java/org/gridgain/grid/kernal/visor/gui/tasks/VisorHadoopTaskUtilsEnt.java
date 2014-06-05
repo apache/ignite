@@ -37,10 +37,8 @@ public class VisorHadoopTaskUtilsEnt extends VisorTaskUtils {
     public static final int LOG_COL_GGFS_MODE = 5;
     public static final int LOG_COL_STREAM_ID = 6;
     public static final int LOG_COL_DATA_LEN = 8;
-    public static final int LOG_COL_APPEND = 9;
     public static final int LOG_COL_OVERWRITE = 10;
     public static final int LOG_COL_POS = 13;
-    public static final int LOG_COL_READ_LEN = 14;
     public static final int LOG_COL_USER_TIME = 17;
     public static final int LOG_COL_SYSTEM_TIME = 18;
     public static final int LOG_COL_TOTAL_BYTES = 19;
@@ -73,9 +71,6 @@ public class VisorHadoopTaskUtilsEnt extends VisorTaskUtils {
 
         URL logsDirUrl = U.resolveGridGainUrl(logsDir != null ? logsDir : DFLT_GGFS_LOG_DIR);
 
-        if (logsDirUrl != null)
-            return new File(logsDirUrl.getPath()).toPath();
-        else
-            return null;
+        return logsDirUrl != null ? new File(logsDirUrl.getPath()).toPath() : null;
     }
 }
