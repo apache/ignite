@@ -29,6 +29,25 @@ import java.util.*;
 @GridInternal
 public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEventsTask.VisorCollectEventsArgs,
     Iterable<? extends VisorGridEvent>, Collection<? extends VisorGridEvent>> {
+    /** {@inheritDoc} */
+    @Override protected VisorCollectEventsJob job(VisorCollectEventsArgs arg) {
+        return new VisorCollectEventsJob(arg);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Iterable<? extends VisorGridEvent> reduce(
+        List<GridComputeJobResult> results) throws GridException {
+
+        Collection<VisorGridEvent> allEvents = new ArrayList<>();
+
+        for (GridComputeJobResult r : results) {
+            if (r.getException() == null)
+                allEvents.addAll((Collection<VisorGridEvent>) r.getData());
+        }
+
+        return allEvents.isEmpty() ? null : allEvents;
+    }
+
     /**
      * Argument for task returns events data.
      */
@@ -263,24 +282,5 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
         @Override public String toString() {
             return S.toString(VisorCollectEventsJob.class, this);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected VisorCollectEventsJob job(VisorCollectEventsArgs arg) {
-        return new VisorCollectEventsJob(arg);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Iterable<? extends VisorGridEvent> reduce(
-        List<GridComputeJobResult> results) throws GridException {
-
-        Collection<VisorGridEvent> allEvents = new ArrayList<>();
-
-        for (GridComputeJobResult r : results) {
-            if (r.getException() == null)
-                allEvents.addAll((Collection<VisorGridEvent>) r.getData());
-        }
-
-        return allEvents.isEmpty() ? null : allEvents;
     }
 }

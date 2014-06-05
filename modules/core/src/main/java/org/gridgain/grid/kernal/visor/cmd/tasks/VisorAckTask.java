@@ -23,6 +23,16 @@ import java.util.*;
  */
 @GridInternal
 public class VisorAckTask extends VisorMultiNodeTask<String, Void, Void> {
+    /** {@inheritDoc} */
+    @Override protected VisorAckJob job(String arg) {
+        return new VisorAckJob(arg);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Void reduce(List<GridComputeJobResult> results) throws GridException {
+        return null;
+    }
+
     /**
      * Ack job to run on node.
      */
@@ -50,15 +60,5 @@ public class VisorAckTask extends VisorMultiNodeTask<String, Void, Void> {
         @Override public String toString() {
             return S.toString(VisorAckJob.class, this);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected VisorAckJob job(String arg) {
-        return new VisorAckJob(arg);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Void reduce(List<GridComputeJobResult> results) throws GridException {
-        return null;
     }
 }

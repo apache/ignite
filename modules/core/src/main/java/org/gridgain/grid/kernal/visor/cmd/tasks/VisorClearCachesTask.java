@@ -23,6 +23,11 @@ import java.util.*;
  */
 @GridInternal
 public class VisorClearCachesTask extends VisorOneNodeTask<Set<String>, Map<String, T2<Integer, Integer>>> {
+    /** {@inheritDoc} */
+    @Override protected VisorClearCachesJob job(Set<String> arg) {
+        return new VisorClearCachesJob(arg);
+    }
+
     /**
      * Job that clear specified caches.
      */
@@ -67,10 +72,5 @@ public class VisorClearCachesTask extends VisorOneNodeTask<Set<String>, Map<Stri
         @Override public String toString() {
             return S.toString(VisorClearCachesJob.class, this);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected VisorClearCachesJob job(Set<String> arg) {
-        return new VisorClearCachesJob(arg);
     }
 }

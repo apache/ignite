@@ -25,6 +25,24 @@ import java.util.*;
  */
 @GridInternal
 public class VisorCollectLicenseTask extends VisorMultiNodeTask<Void, Iterable<T2<UUID, VisorLicense>>, VisorLicense> {
+    /** {@inheritDoc} */
+    @Override protected VisorCollectLicenseJob job(Void arg) {
+        return new VisorCollectLicenseJob(arg);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Iterable<T2<UUID, VisorLicense>> reduce(List<GridComputeJobResult> results) throws GridException {
+        Collection<T2<UUID, VisorLicense>> licenses = new ArrayList<>(results.size());
+
+        for (GridComputeJobResult r : results) {
+            VisorLicense license = r.getException() != null ? null : (VisorLicense) r.getData();
+
+            licenses.add(new T2<>(r.getNode().id(), license));
+        }
+
+        return licenses;
+    }
+
     /**
      * Job that collect license from nodes.
      */
@@ -50,23 +68,5 @@ public class VisorCollectLicenseTask extends VisorMultiNodeTask<Void, Iterable<T
         @Override public String toString() {
             return S.toString(VisorCollectLicenseJob.class, this);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected VisorCollectLicenseJob job(Void arg) {
-        return new VisorCollectLicenseJob(arg);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Iterable<T2<UUID, VisorLicense>> reduce(List<GridComputeJobResult> results) throws GridException {
-        Collection<T2<UUID, VisorLicense>> licenses = new ArrayList<>(results.size());
-
-        for (GridComputeJobResult r : results) {
-            VisorLicense license = r.getException() != null ? null : (VisorLicense) r.getData();
-
-            licenses.add(new T2<>(r.getNode().id(), license));
-        }
-
-        return licenses;
     }
 }

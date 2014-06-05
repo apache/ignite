@@ -34,6 +34,11 @@ import static org.gridgain.grid.kernal.visor.cmd.tasks.VisorFieldsQueryUtils.*;
 @GridInternal
 public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.VisorFieldsQueryArg,
     T2<? extends Exception, VisorFieldsQueryResultEx>> {
+    /** {@inheritDoc} */
+    @Override protected VisorFieldsQueryJob job(VisorFieldsQueryArg arg) {
+        return new VisorFieldsQueryJob(arg);
+    }
+
     /**
      * Arguments for {@link VisorFieldsQueryTask}.
      */
@@ -263,10 +268,5 @@ public class VisorFieldsQueryTask extends VisorOneNodeTask<VisorFieldsQueryTask.
         @Override public String toString() {
             return S.toString(VisorFieldsQueryJob.class, this);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected VisorFieldsQueryJob job(VisorFieldsQueryArg arg) {
-        return new VisorFieldsQueryJob(arg);
     }
 }

@@ -25,6 +25,24 @@ import java.util.*;
  */
 @GridInternal
 public class VisorRunGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, T2<Long, Long>>, T2<Long, Long>> {
+    /** {@inheritDoc} */
+    @Override protected VisorRunGcJob job(Boolean arg) {
+        return new VisorRunGcJob(arg);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Map<UUID, T2<Long, Long>> reduce(List<GridComputeJobResult> results) throws GridException {
+        Map<UUID, T2<Long, Long>> total = new HashMap<>();
+
+        for (GridComputeJobResult res: results) {
+            T2<Long, Long> jobRes = res.getData();
+
+            total.put(res.getNode().id(), jobRes);
+        }
+
+        return total;
+    }
+
     /** Job that perform GC on node. */
     private static class VisorRunGcJob extends VisorJob<Boolean, T2<Long, Long>> {
         /** */
@@ -50,7 +68,10 @@ public class VisorRunGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, T2<Lon
             return new T2<>(before, freeHeap(locNode));
         }
 
-        /** TODO GG-8358 */
+        /**
+         * @param node Node.
+         * @return Current free heap.
+         */
         private long freeHeap(GridNode node) {
             final GridNodeMetrics m = node.metrics();
 
@@ -61,23 +82,5 @@ public class VisorRunGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, T2<Lon
         @Override public String toString() {
             return S.toString(VisorRunGcJob.class, this);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected VisorRunGcJob job(Boolean arg) {
-        return new VisorRunGcJob(arg);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Map<UUID, T2<Long, Long>> reduce(List<GridComputeJobResult> results) throws GridException {
-        Map<UUID, T2<Long, Long>> total = new HashMap<>();
-
-        for (GridComputeJobResult res: results) {
-            T2<Long, Long> jobRes = res.getData();
-
-            total.put(res.getNode().id(), jobRes);
-        }
-
-        return total;
     }
 }

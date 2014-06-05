@@ -23,6 +23,11 @@ import java.util.*;
  */
 @GridInternal
 public class VisorSwapBackupsCachesTask extends VisorOneNodeTask<Set<String>, Map<String, T2<Integer, Integer>> > {
+    /** {@inheritDoc} */
+    @Override protected VisorSwapBackupsCachesJob job(Set<String> names) {
+        return new VisorSwapBackupsCachesJob(names);
+    }
+
     /**
      * Job that swap backups.
      */
@@ -67,10 +72,5 @@ public class VisorSwapBackupsCachesTask extends VisorOneNodeTask<Set<String>, Ma
         @Override public String toString() {
             return S.toString(VisorSwapBackupsCachesJob.class, this);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected VisorSwapBackupsCachesJob job(Set<String> names) {
-        return new VisorSwapBackupsCachesJob(names);
     }
 }

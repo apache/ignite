@@ -28,6 +28,11 @@ import static org.gridgain.grid.kernal.visor.cmd.tasks.VisorFieldsQueryUtils.*;
  */
 @GridInternal
 public class VisorNextFieldsQueryPageTask extends VisorOneNodeTask<T2<String, Integer>, VisorFieldsQueryResult> {
+    /** {@inheritDoc} */
+    @Override protected VisorNextFieldsQueryPageJob job(T2<String, Integer> arg) {
+        return new VisorNextFieldsQueryPageJob(arg);
+    }
+
     /**
      * Job for collecting next page previously executed SQL or SCAN query.
      */
@@ -95,10 +100,5 @@ public class VisorNextFieldsQueryPageTask extends VisorOneNodeTask<T2<String, In
         @Override public String toString() {
             return S.toString(VisorNextFieldsQueryPageJob.class, this);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected VisorNextFieldsQueryPageJob job(T2<String, Integer> arg) {
-        return new VisorNextFieldsQueryPageJob(arg);
     }
 }

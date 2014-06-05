@@ -23,6 +23,11 @@ import java.util.*;
  */
 @GridInternal
 public class VisorCompactCachesTask extends VisorOneNodeTask<Set<String>, Map<String, T2<Integer, Integer>>> {
+    /** {@inheritDoc} */
+    @Override protected VisorCompactCachesJob job(Set<String> names) {
+        return new VisorCompactCachesJob(names);
+    }
+
     /** Job that compact caches on node. */
     private static class VisorCompactCachesJob extends VisorJob<Set<String>, Map<String, T2<Integer, Integer>>> {
         /** */
@@ -61,10 +66,5 @@ public class VisorCompactCachesTask extends VisorOneNodeTask<Set<String>, Map<St
         @Override public String toString() {
             return S.toString(VisorCompactCachesJob.class, this);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected VisorCompactCachesJob job(Set<String> names) {
-        return new VisorCompactCachesJob(names);
     }
 }

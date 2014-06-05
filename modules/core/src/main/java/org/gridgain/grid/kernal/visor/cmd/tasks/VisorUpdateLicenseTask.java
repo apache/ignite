@@ -23,6 +23,11 @@ import java.util.*;
  */
 @GridInternal
 public class VisorUpdateLicenseTask extends VisorOneNodeTask<T2<UUID, String>, T2<GridProductLicenseException, UUID>> {
+    /** {@inheritDoc} */
+    @Override protected VisorUpdateLicenseJob job(T2<UUID, String> arg) {
+        return new VisorUpdateLicenseJob(arg);
+    }
+
     private static class VisorUpdateLicenseJob
         extends VisorJob<T2<UUID, String>, T2<GridProductLicenseException, UUID>> {
         /** */
@@ -66,10 +71,5 @@ public class VisorUpdateLicenseTask extends VisorOneNodeTask<T2<UUID, String>, T
         @Override public String toString() {
             return S.toString(VisorUpdateLicenseJob.class, this);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected VisorUpdateLicenseJob job(T2<UUID, String> arg) {
-        return new VisorUpdateLicenseJob(arg);
     }
 }

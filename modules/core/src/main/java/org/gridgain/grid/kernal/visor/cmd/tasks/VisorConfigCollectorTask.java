@@ -47,6 +47,11 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<Void, VisorGridCo
         return (sysProp != null && !sysProp.isEmpty()) ? Integer.getInteger(sysProp) : dflt;
     }
 
+    /** {@inheritDoc} */
+    @Override protected VisorConfigurationJob job(Void arg) {
+        return new VisorConfigurationJob();
+    }
+
     /**
      * Grid configuration data collect job.
      */
@@ -67,10 +72,5 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<Void, VisorGridCo
         @Override public String toString() {
             return S.toString(VisorConfigurationJob.class, this);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected VisorConfigurationJob job(Void arg) {
-        return new VisorConfigurationJob();
     }
 }
