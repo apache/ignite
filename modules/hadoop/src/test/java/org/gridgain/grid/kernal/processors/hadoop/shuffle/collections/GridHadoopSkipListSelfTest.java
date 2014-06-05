@@ -76,7 +76,7 @@ public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
 
         Random rnd = new Random();
 
-        int mapSize = 16 << rnd.nextInt(4);
+        int mapSize = 16 << rnd.nextInt(6);
 
         Job job = Job.getInstance();
 
@@ -231,7 +231,7 @@ public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
                 @Override public Object call() throws Exception {
                     X.println("___ TH in");
 
-                    Random rnd = ThreadLocalRandom.current();
+                    Random rnd = new GridRandom();
 
                     IntWritable key = new IntWritable();
                     IntWritable val = new IntWritable();
@@ -267,7 +267,7 @@ public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, 3 + rnd.nextInt(1));
+            }, 3 + rnd.nextInt(27));
 
             GridHadoopTaskInput in = m.input();
 

@@ -324,7 +324,8 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
          */
         private long add(Object key, @Nullable Object val) throws GridException {
             assert key != null;
-            assert stack.isEmpty();
+
+            stack.clear();
 
             long valPtr = 0;
 
@@ -360,8 +361,11 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
 
                         return newMeta;
                     }
-                    else // Add failed, need to check out what was added by another thread.
+                    else { // Add failed, need to check out what was added by another thread.
                         meta = nextMeta(prevMeta, level = 0);
+
+                        stack.pop(2); // Drop last remembered frame.
+                    }
                 }
 
                 int cmpRes = cmp(key, meta);
@@ -401,6 +405,8 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
                     if (nextMeta != meta) { // If the meta is the same as on upper level go deeper.
                         meta = nextMeta;
 
+                        assert meta != 0 : stack + " " + level;
+
                         break;
                     }
                 }
@@ -426,7 +432,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
          * @param newMetaLevel New level.
          */
         private void laceUp(Object key, long newMeta, int newMetaLevel) {
-            for (int level = 1; level < newMetaLevel; level++) { // Go from the bottom up.
+            for (int level = 1; level <= newMetaLevel; level++) { // Go from the bottom up.
                 long prevMeta = 0;
                 long meta = 0;
 
@@ -460,6 +466,16 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
                         break; // Retry cas.
                     }
                 }
+            }
+
+            if (!stack.isEmpty())
+                return; // Our level already lower than top.
+
+            for (;;) { // Raise top level.
+                int top = topLevel.get();
+
+                if (newMetaLevel <= top || topLevel.compareAndSet(top, newMetaLevel))
+                    break;
             }
         }
 

@@ -474,4 +474,19 @@ public class GridLongList implements Externalizable {
 
         return this;
     }
+
+    /**
+     * Removes given number of elements from the end. If the given number of elements is higher than
+     * list size, then list will be cleared.
+     *
+     * @param cnt Count to pop from the end.
+     */
+    public void pop(int cnt) {
+        assert cnt >= 0 : cnt;
+
+        if (idx < cnt)
+            idx = 0;
+        else
+            idx -= cnt;
+    }
 }

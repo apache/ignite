@@ -194,7 +194,7 @@ public class GridHadoopConcurrentHashMultimapSelftest extends GridCommonAbstract
                 @Override public Object call() throws Exception {
                     X.println("___ TH in");
 
-                    Random rnd = ThreadLocalRandom.current();
+                    Random rnd = new GridRandom();
 
                     IntWritable key = new IntWritable();
                     IntWritable val = new IntWritable();
