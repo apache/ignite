@@ -1347,6 +1347,9 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      */
     @GridInternal
     private static class BlockSetCallable implements Callable<Void>, Externalizable {
+        /** */
+        private static final long serialVersionUID = -8892474927216478231L;
+
         /** Injected grid instance. */
         @GridInstanceResource
         private Grid grid;
@@ -1407,6 +1410,9 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      */
     @GridInternal
     private static class RemoveSetDataCallable implements Callable<Void>, Externalizable {
+        /** */
+        private static final long serialVersionUID = 5053205121218843148L;
+
         /** Injected grid instance. */
         @GridInstanceResource
         private Grid grid;
