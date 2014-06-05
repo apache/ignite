@@ -15,7 +15,7 @@ import java.lang.{Boolean => JavaBoolean}
 import java.util.{UUID, HashSet => JavaHashSet}
 
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorRunGcTask
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorGcTask
 import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
@@ -133,13 +133,13 @@ class VisorGcCommand {
             try {
                 val t = VisorTextTable()
 
-                t #= ("Node ID8(@)", "Heap Before (MB)", "Heap After (MB)", "Heap Delta (%)")
+                t #= ("Node ID8(@)", "Free Heap Before", "Free Heap After", "Free Heap Delta")
 
                 val prj = grid.forRemotes()
 
                 val nids = prj.nodes().map(_.id())
 
-                prj.compute().withNoFailover().execute(classOf[VisorRunGcTask],
+                prj.compute().withNoFailover().execute(classOf[VisorGcTask],
                     toTaskArgument(nids, new JavaBoolean(dgc))).get.foreach { case (nid, stat) =>
                     val roundHb = math.round(stat.get1() / (1024L * 1024L))
                     val roundHa = math.round(stat.get2() / (1024L * 1024L))
@@ -148,7 +148,7 @@ class VisorGcCommand {
 
                     val deltaPercent = math.round(roundHa * 100d / roundHb - 100)
 
-                    t += (nodeId8(nid), roundHb, roundHa, sign + deltaPercent)
+                    t += (nodeId8(nid), roundHb + "mb", roundHa + "mb", sign + deltaPercent + "%")
                 }
 
                 println("Garbage collector procedure results:")

@@ -68,7 +68,7 @@ public class VisorStreamerConfig implements Serializable {
      */
     public static Iterable<VisorStreamerConfig> list(GridStreamerConfiguration[] streamers) {
         if (streamers == null)
-            return null;
+            return Collections.emptyList();
 
         final Collection<VisorStreamerConfig> cfgs = new ArrayList<>(streamers.length);
 

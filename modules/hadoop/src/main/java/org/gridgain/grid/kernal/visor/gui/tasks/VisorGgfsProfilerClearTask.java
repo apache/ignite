@@ -13,7 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
-import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -25,11 +25,11 @@ import static org.gridgain.grid.kernal.visor.gui.tasks.VisorHadoopTaskUtilsEnt.*
  * Remove all GGFS profiler logs.
  */
 @GridInternal
-public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<String, T2<Integer, Integer>> {
+public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<String, GridBiTuple<Integer, Integer>> {
     /**
      * Job to clear profiler logs.
      */
-    private static class VisorGgfsProfilerClearJob extends VisorJob<String, T2<Integer, Integer>> {
+    private static class VisorGgfsProfilerClearJob extends VisorJob<String, GridBiTuple<Integer, Integer>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -43,7 +43,7 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<String, T2<Inte
         }
 
         /** {@inheritDoc} */
-        @Override protected T2<Integer, Integer> run(String arg) throws GridException {
+        @Override protected GridBiTuple<Integer, Integer> run(String arg) throws GridException {
             int deleted = 0;
             int notDeleted = 0;
 
@@ -84,7 +84,7 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<String, T2<Inte
                 throw new GridException("Failed to clear profiler logs for GGFS: " + arg, ioe);
             }
 
-            return new T2<>(deleted, notDeleted);
+            return new GridBiTuple<>(deleted, notDeleted);
         }
 
         /** {@inheritDoc} */

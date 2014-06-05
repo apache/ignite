@@ -11,23 +11,20 @@
 
 package org.gridgain.visor.commands.node
 
+import java.util.UUID
+
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.gridgain.grid.util.typedef.X
-
-import java.text._
-import java.util.UUID
-
-import scala.collection.JavaConversions._
-import scala.language.{implicitConversions, reflectiveCalls}
-import scala.util.control.Breaks._
-
-import org.jetbrains.annotations._
-
 import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
+import org.jetbrains.annotations._
+
+import scala.collection.JavaConversions._
+import scala.language.{implicitConversions, reflectiveCalls}
+import scala.util.control.Breaks._
 
 /**
  * ==Overview==
@@ -42,7 +39,7 @@ import org.gridgain.visor.visor._
  *
  * ====Specification====
  * {{{
- *     node "{id8=<node-id8>|id=<node-id>} {-a}"
+ *     node "{-id8=<node-id8>|-id=<node-id>} {-a}"
  *     node
  * }}}
  *
@@ -71,10 +68,10 @@ import org.gridgain.visor.visor._
  */
 class VisorNodeCommand {
     /** */
-    private val KB = 1024
+    private val KB = 1024L
 
     /** */
-    private val MB = KB * 1024
+    private val MB = KB * 1024L
 
     /**
      * Prints error message and advise.
@@ -167,9 +164,6 @@ class VisorNodeCommand {
 
                         val m = node.metrics
 
-                        val nmFmt = new DecimalFormat("#")
-                        val kbFmt = new DecimalFormat("###,###,###,###,###")
-
                         val gridName: String = node.attribute(ATTR_GRID_NAME)
 
                         if (all) {
@@ -181,7 +175,7 @@ class VisorNodeCommand {
                             t += ("OS user", node.attribute(ATTR_USER_NAME))
                             t += ("Deployment mode", node.attribute(ATTR_DEPLOYMENT_MODE))
                             t += ("Language runtime", node.attribute(ATTR_LANG_RUNTIME))
-                            t += ("GridGain build#", node.attribute(ATTR_BUILD_VER))
+                            t += ("GridGain version", node.attribute(ATTR_BUILD_VER))
                             t += ("JRE information", node.attribute(ATTR_JIT_NAME))
                             t += ("Non-loopback IPs", node.attribute(ATTR_IPS))
                             t += ("Enabled MACs", node.attribute(ATTR_MACS))
@@ -189,45 +183,45 @@ class VisorNodeCommand {
                             t += ("JVM start time", formatDateTime(m.getStartTime))
                             t += ("Node start time", formatDateTime(m.getNodeStartTime))
                             t += ("Up time", X.timeSpan2HMSM(m.getUpTime))
-                            t += ("CPUs", nmFmt.format(m.getTotalCpus))
+                            t += ("CPUs", formatNumber(m.getTotalCpus))
                             t += ("Last metric update", formatDateTime(m.getLastUpdateTime))
-                            t += ("Maximum active jobs", nmFmt.format(m.getMaximumActiveJobs))
-                            t += ("Current active jobs", nmFmt.format(m.getCurrentActiveJobs))
+                            t += ("Maximum active jobs", formatNumber(m.getMaximumActiveJobs))
+                            t += ("Current active jobs", formatNumber(m.getCurrentActiveJobs))
                             t += ("Average active jobs", formatDouble(m.getAverageActiveJobs))
-                            t += ("Maximum waiting jobs", nmFmt.format(m.getMaximumWaitingJobs))
-                            t += ("Current waiting jobs", nmFmt.format(m.getCurrentWaitingJobs))
+                            t += ("Maximum waiting jobs", formatNumber(m.getMaximumWaitingJobs))
+                            t += ("Current waiting jobs", formatNumber(m.getCurrentWaitingJobs))
                             t += ("Average waiting jobs", formatDouble(m.getAverageWaitingJobs))
-                            t += ("Maximum rejected jobs", nmFmt.format(m.getMaximumRejectedJobs))
-                            t += ("Current rejected jobs", nmFmt.format(m.getCurrentRejectedJobs))
+                            t += ("Maximum rejected jobs", formatNumber(m.getMaximumRejectedJobs))
+                            t += ("Current rejected jobs", formatNumber(m.getCurrentRejectedJobs))
                             t += ("Average rejected jobs", formatDouble(m.getAverageRejectedJobs))
-                            t += ("Maximum cancelled jobs", nmFmt.format(m.getMaximumCancelledJobs))
-                            t += ("Current cancelled jobs", nmFmt.format(m.getCurrentCancelledJobs))
+                            t += ("Maximum cancelled jobs", formatNumber(m.getMaximumCancelledJobs))
+                            t += ("Current cancelled jobs", formatNumber(m.getCurrentCancelledJobs))
                             t += ("Average cancelled jobs", formatDouble(m.getAverageCancelledJobs))
-                            t += ("Total rejected jobs", nmFmt.format(m.getTotalRejectedJobs))
-                            t += ("Total executed jobs", nmFmt.format(m.getTotalExecutedJobs))
-                            t += ("Total cancelled jobs", nmFmt.format(m.getTotalCancelledJobs))
-                            t += ("Maximum job wait time", nmFmt.format(m.getMaximumJobWaitTime) + "ms")
-                            t += ("Current job wait time", nmFmt.format(m.getCurrentJobWaitTime) + "ms")
+                            t += ("Total rejected jobs", formatNumber(m.getTotalRejectedJobs))
+                            t += ("Total executed jobs", formatNumber(m.getTotalExecutedJobs))
+                            t += ("Total cancelled jobs", formatNumber(m.getTotalCancelledJobs))
+                            t += ("Maximum job wait time", formatNumber(m.getMaximumJobWaitTime) + "ms")
+                            t += ("Current job wait time", formatNumber(m.getCurrentJobWaitTime) + "ms")
                             t += ("Average job wait time", formatDouble(m.getAverageJobWaitTime) + "ms")
-                            t += ("Maximum job execute time", nmFmt.format(m.getMaximumJobExecuteTime) + "ms")
-                            t += ("Curent job execute time", nmFmt.format(m.getCurrentJobExecuteTime) + "ms")
+                            t += ("Maximum job execute time", formatNumber(m.getMaximumJobExecuteTime) + "ms")
+                            t += ("Curent job execute time", formatNumber(m.getCurrentJobExecuteTime) + "ms")
                             t += ("Average job execute time", formatDouble(m.getAverageJobExecuteTime) + "ms")
-                            t += ("Total busy time", nmFmt.format(m.getTotalBusyTime) + "ms")
+                            t += ("Total busy time", formatNumber(m.getTotalBusyTime) + "ms")
                             t += ("Busy time %", formatDouble(m.getBusyTimePercentage * 100) + "%")
                             t += ("Current CPU load %", formatDouble(m.getCurrentCpuLoad * 100) + "%")
                             t += ("Average CPU load %", formatDouble(m.getAverageCpuLoad * 100) + "%")
-                            t += ("Heap memory initialized", kbFmt.format(m.getHeapMemoryInitialized / MB) + "mb")
-                            t += ("Heap memory used", kbFmt.format(m.getHeapMemoryUsed / MB) + "mb")
-                            t += ("Heap memory committed", kbFmt.format(m.getHeapMemoryCommitted / MB) + "mb")
-                            t += ("Heap memory maximum", kbFmt.format(m.getHeapMemoryMaximum / MB) + "mb")
-                            t += ("Non-heap memory initialized", kbFmt.format(m.getNonHeapMemoryInitialized / MB) + "mb")
-                            t += ("Non-heap memory used", kbFmt.format(m.getNonHeapMemoryUsed / MB) + "mb")
-                            t += ("Non-heap memory committed", kbFmt.format(m.getNonHeapMemoryCommitted / MB) + "mb")
-                            t += ("Non-heap memory maximum", kbFmt.format(m.getNonHeapMemoryMaximum / MB) + "mb")
-                            t += ("Current thread count", nmFmt.format(m.getCurrentThreadCount))
-                            t += ("Maximum thread count", nmFmt.format(m.getMaximumThreadCount))
-                            t += ("Total started thread count", nmFmt.format(m.getTotalStartedThreadCount))
-                            t += ("Current daemon thread count", nmFmt.format(m.getCurrentDaemonThreadCount))
+                            t += ("Heap memory initialized", formatMemory(m.getHeapMemoryInitialized / MB) + "mb")
+                            t += ("Heap memory used", formatMemory(m.getHeapMemoryUsed / MB) + "mb")
+                            t += ("Heap memory committed", formatMemory(m.getHeapMemoryCommitted / MB) + "mb")
+                            t += ("Heap memory maximum", formatMemory(m.getHeapMemoryMaximum / MB) + "mb")
+                            t += ("Non-heap memory initialized", formatMemory(m.getNonHeapMemoryInitialized / MB) + "mb")
+                            t += ("Non-heap memory used", formatMemory(m.getNonHeapMemoryUsed / MB) + "mb")
+                            t += ("Non-heap memory committed", formatMemory(m.getNonHeapMemoryCommitted / MB) + "mb")
+                            t += ("Non-heap memory maximum", formatMemory(m.getNonHeapMemoryMaximum / MB) + "mb")
+                            t += ("Current thread count", formatNumber(m.getCurrentThreadCount))
+                            t += ("Maximum thread count", formatNumber(m.getMaximumThreadCount))
+                            t += ("Total started thread count", formatNumber(m.getTotalStartedThreadCount))
+                            t += ("Current daemon thread count", formatNumber(m.getCurrentDaemonThreadCount))
                         }
                         else {
                             t += ("OS info", "" +
@@ -245,24 +239,24 @@ class VisorNodeCommand {
                             t += ("Node start time", formatDateTime(m.getNodeStartTime))
                             t += ("Up time", X.timeSpan2HMSM(m.getUpTime))
                             t += ("Last metric update", formatDateTime(m.getLastUpdateTime))
-                            t += ("CPUs", nmFmt.format(m.getTotalCpus))
-                            t += ("Thread count", nmFmt.format(m.getCurrentThreadCount))
-                            t += ("Cur/avg active jobs", nmFmt.format(m.getCurrentActiveJobs) +
+                            t += ("CPUs", formatNumber(m.getTotalCpus))
+                            t += ("Thread count", formatNumber(m.getCurrentThreadCount))
+                            t += ("Cur/avg active jobs", formatNumber(m.getCurrentActiveJobs) +
                                 "/" + formatDouble(m.getAverageActiveJobs))
-                            t += ("Cur/avg waiting jobs", nmFmt.format(m.getCurrentWaitingJobs) +
+                            t += ("Cur/avg waiting jobs", formatNumber(m.getCurrentWaitingJobs) +
                                 "/" + formatDouble(m.getAverageWaitingJobs))
-                            t += ("Cur/avg rejected jobs", nmFmt.format(m.getCurrentRejectedJobs) +
+                            t += ("Cur/avg rejected jobs", formatNumber(m.getCurrentRejectedJobs) +
                                 "/" + formatDouble(m.getAverageRejectedJobs))
-                            t += ("Cur/avg cancelled jobs", nmFmt.format(m.getCurrentCancelledJobs) +
+                            t += ("Cur/avg cancelled jobs", formatNumber(m.getCurrentCancelledJobs) +
                                 "/" + formatDouble(m.getAverageCancelledJobs))
-                            t += ("Cur/avg job wait time", nmFmt.format(m.getCurrentJobWaitTime) +
+                            t += ("Cur/avg job wait time", formatNumber(m.getCurrentJobWaitTime) +
                                 "/" + formatDouble(m.getAverageJobWaitTime) + "ms")
-                            t += ("Cur/avg job execute time", nmFmt.format(m.getCurrentJobExecuteTime) +
+                            t += ("Cur/avg job execute time", formatNumber(m.getCurrentJobExecuteTime) +
                                 "/" + formatDouble(m.getAverageJobExecuteTime) + "ms")
                             t += ("Cur/avg CPU load %", formatDouble(m.getCurrentCpuLoad * 100) +
                                 "/" + formatDouble(m.getAverageCpuLoad * 100) + "%")
-                            t += ("Heap memory used/max", kbFmt.format(m.getHeapMemoryUsed / MB) +
-                                "/" +  kbFmt.format(m.getHeapMemoryMaximum / MB) + "mb")
+                            t += ("Heap memory used/max", formatMemory(m.getHeapMemoryUsed / MB) +
+                                "/" +  formatMemory(m.getHeapMemoryMaximum / MB) + "mb")
                         }
 
                         println("Time of the snapshot: " + formatDateTime(System.currentTimeMillis))
@@ -289,7 +283,7 @@ object VisorNodeCommand {
         name = "node",
         shortInfo = "Prints node statistics.",
         spec = List(
-            "node {id8=<node-id8>|id=<node-id>} {-a}",
+            "node {-id8=<node-id8>|-id=<node-id>} {-a}",
             "node"
         ),
         args = List(

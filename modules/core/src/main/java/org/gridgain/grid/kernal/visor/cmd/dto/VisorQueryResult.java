@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Result for cache query tasks.
  */
-public class VisorFieldsQueryResult implements Serializable {
+public class VisorQueryResult implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -33,7 +33,7 @@ public class VisorFieldsQueryResult implements Serializable {
      * @param rows Rows fetched from query.
      * @param hasMore Whether query has more rows to fetch.
      */
-    public VisorFieldsQueryResult(List<Object[]> rows, Boolean hasMore) {
+    public VisorQueryResult(List<Object[]> rows, Boolean hasMore) {
         this.rows = rows;
         this.hasMore = hasMore;
     }
@@ -54,6 +54,6 @@ public class VisorFieldsQueryResult implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorFieldsQueryResult.class, this);
+        return S.toString(VisorQueryResult.class, this);
     }
 }

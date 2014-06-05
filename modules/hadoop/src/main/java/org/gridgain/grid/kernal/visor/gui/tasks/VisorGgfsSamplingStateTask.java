@@ -13,18 +13,18 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
-import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Task to set GGFS instance sampling state.
  */
 @GridInternal
-public class VisorSetGgfsSamplingStateTask extends VisorOneNodeTask<T2<String, Boolean>, Void> {
+public class VisorGgfsSamplingStateTask extends VisorOneNodeTask<GridBiTuple<String, Boolean>, Void> {
     /**
      * Job that perform parsing of GGFS profiler logs.
      */
-    private static class VisorSetGgfsSamplingStateJob extends VisorJob<T2<String, Boolean>, Void> {
+    private static class VisorGgfsSamplingStateJob extends VisorJob<GridBiTuple<String, Boolean>, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -33,12 +33,12 @@ public class VisorSetGgfsSamplingStateTask extends VisorOneNodeTask<T2<String, B
          *
          * @param arg Job argument.
          */
-        public VisorSetGgfsSamplingStateJob(T2<String, Boolean> arg) {
+        public VisorGgfsSamplingStateJob(GridBiTuple<String, Boolean> arg) {
             super(arg);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(T2<String, Boolean> arg) throws GridException {
+        @Override protected Void run(GridBiTuple<String, Boolean> arg) throws GridException {
             try {
                 ((GridGgfsEx) g.ggfs(arg.get1())).globalSampling(arg.get2());
 
@@ -51,12 +51,12 @@ public class VisorSetGgfsSamplingStateTask extends VisorOneNodeTask<T2<String, B
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorSetGgfsSamplingStateJob.class, this);
+            return S.toString(VisorGgfsSamplingStateJob.class, this);
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorSetGgfsSamplingStateJob job(T2<String, Boolean> arg) {
-        return new VisorSetGgfsSamplingStateJob(arg);
+    @Override protected VisorGgfsSamplingStateJob job(GridBiTuple<String, Boolean> arg) {
+        return new VisorGgfsSamplingStateJob(arg);
     }
 }

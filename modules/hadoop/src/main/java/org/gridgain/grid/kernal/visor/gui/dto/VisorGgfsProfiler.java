@@ -38,6 +38,8 @@ public class VisorGgfsProfiler {
         else {
             String path = entries.get(0).path();
 
+            Collections.sort(entries, VisorGgfsProfilerEntry.ENTRY_TIMESTAMP_COMPARATOR);
+
             long timestamp = 0;
             long size = 0;
             long bytesRead = 0;
@@ -48,8 +50,6 @@ public class VisorGgfsProfiler {
             long userWriteTime = 0;
             GridGgfsMode mode = null;
             VisorGgfsProfilerUniformityCounters counters = new VisorGgfsProfilerUniformityCounters();
-
-            Collections.sort(entries, VisorGgfsProfilerEntry.ENTRY_TIMESTAMP_COMPARATOR);
 
             for (VisorGgfsProfilerEntry entry : entries) {
                 // Take last timestamp.

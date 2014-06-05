@@ -12,8 +12,8 @@ package org.gridgain.grid.kernal.visor.cmd.tasks;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.product.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
@@ -22,9 +22,15 @@ import java.util.*;
  * Task to upload license.
  */
 @GridInternal
-public class VisorUpdateLicenseTask extends VisorOneNodeTask<T2<UUID, String>, T2<GridProductLicenseException, UUID>> {
-    private static class VisorUpdateLicenseJob
-        extends VisorJob<T2<UUID, String>, T2<GridProductLicenseException, UUID>> {
+public class VisorLicenseUpdateTask extends VisorOneNodeTask<GridBiTuple<UUID, String>,
+    GridBiTuple<GridProductLicenseException, UUID>> {
+    /** {@inheritDoc} */
+    @Override protected VisorLicenseUpdateJob job(GridBiTuple<UUID, String> arg) {
+        return new VisorLicenseUpdateJob(arg);
+    }
+
+    private static class VisorLicenseUpdateJob
+        extends VisorJob<GridBiTuple<UUID, String>, GridBiTuple<GridProductLicenseException, UUID>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -33,43 +39,40 @@ public class VisorUpdateLicenseTask extends VisorOneNodeTask<T2<UUID, String>, T
          *
          * @param arg Job argument.
          */
-        private VisorUpdateLicenseJob(T2<UUID, String> arg) {
+        private VisorLicenseUpdateJob(GridBiTuple<UUID, String> arg) {
             super(arg);
         }
 
         /** {@inheritDoc} */
-        @Override protected T2<GridProductLicenseException, UUID> run(T2<UUID, String> arg) throws GridException {
+        @Override protected GridBiTuple<GridProductLicenseException, UUID> run(GridBiTuple<UUID, String> arg)
+            throws GridException {
             try {
                 if (arg.get1() != null) {
                     GridProductLicense lic = g.product().license();
 
                     if (lic == null)
-                        return new T2<>(new GridProductLicenseException("Missing licence to compare id", null), null);
+                        return new GridBiTuple<>(
+                            new GridProductLicenseException("Missing licence to compare id", null), null);
 
                     if (!lic.id().equals(arg.get1()))
-                        return new T2<>(null, lic.id());
+                        return new GridBiTuple<>(null, lic.id());
                 }
 
                 g.product().updateLicense(arg.get2());
 
-                return new T2<>(null, g.product().license().id());
+                return new GridBiTuple<>(null, g.product().license().id());
             }
             catch (GridProductLicenseException e) {
-                return new T2<>(e, null);
+                return new GridBiTuple<>(e, null);
             }
             catch (Exception e) {
-                return new T2<>(new GridProductLicenseException("Failed to load licence", null, e), null);
+                return new GridBiTuple<>(new GridProductLicenseException("Failed to load licence", null, e), null);
             }
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorUpdateLicenseJob.class, this);
+            return S.toString(VisorLicenseUpdateJob.class, this);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected VisorUpdateLicenseJob job(T2<UUID, String> arg) {
-        return new VisorUpdateLicenseJob(arg);
     }
 }

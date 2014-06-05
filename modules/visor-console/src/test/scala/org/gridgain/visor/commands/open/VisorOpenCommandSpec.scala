@@ -11,6 +11,7 @@
 
 package org.gridgain.visor.commands.open
 
+import org.gridgain.grid.GridException
 import org.gridgain.visor._
 
 /**
@@ -24,8 +25,10 @@ class VisorOpenCommandSpec extends VisorRuntimeBaseSpec(3) {
     }
 
     it should "print error message when already connected" in {
-        openVisor()
-
-        visor.close()
+        try
+            openVisor()
+        catch {
+            case ignored: GridException =>
+        }
     }
 }

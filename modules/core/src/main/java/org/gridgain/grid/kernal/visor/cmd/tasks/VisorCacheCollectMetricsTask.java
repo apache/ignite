@@ -16,6 +16,7 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.kernal.visor.cmd.dto.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -26,69 +27,10 @@ import java.util.*;
  * Task that cache metrics from all nodes.
  */
 @GridInternal
-public class VisorCollectMetricsCacheTask extends VisorMultiNodeTask<T2<Boolean, String>,
+public class VisorCacheCollectMetricsTask extends VisorMultiNodeTask<GridBiTuple<Boolean, String>,
     Iterable<VisorCacheAggregatedMetrics>, Collection<VisorCacheMetrics>> {
-    /**
-     * Job that collect cache metrics from node.
-     */
-    private static class VisorCacheMetricsJob extends VisorJob<T2<Boolean, String>, Collection<VisorCacheMetrics>> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * Create job with given argument.
-         *
-         * @param arg Whether to collect metrics for all caches or for specified cache name only.
-         */
-        private VisorCacheMetricsJob(T2<Boolean, String> arg) {
-            super(arg);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Collection<VisorCacheMetrics> run(T2<Boolean, String> arg) throws GridException {
-            Collection<? extends GridCache<?, ?>> caches = arg.get1() ? g.cachesx() : F.asList(g.cachex(arg.get2()));
-
-            if (caches != null) {
-                Collection<VisorCacheMetrics> res = new ArrayList<>(caches.size());
-
-                for (GridCache<?, ?> c : caches) {
-                    GridNodeMetrics m = g.localNode().metrics();
-                    GridCacheMetrics cm = c.metrics();
-                    GridCacheQueryMetrics qm = c.queries().metrics();
-
-                    res.add(new VisorCacheMetrics(
-                        c.name(),
-                        g.localNode().id(),
-                        m.getTotalCpus(),
-                        (double)m.getHeapMemoryUsed() / m.getHeapMemoryMaximum() * 100.0,
-                        m.getCurrentCpuLoad() * 100.0,
-                        m.getUpTime(),
-                        caches.size(),
-                        cm.readTime(),
-                        cm.writeTime(),
-                        cm.hits(),
-                        cm.misses(),
-                        cm.reads(),
-                        cm.writes(),
-                        new VisorCacheQueryMetrics(qm.minimumTime(), qm.maximumTime(), qm.averageTime(),
-                            qm.executions(), qm.fails())
-                    ));
-                }
-
-                return res;
-            }
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(VisorCacheMetricsJob.class, this);
-        }
-    }
-
     /** {@inheritDoc} */
-    @Override protected VisorCacheMetricsJob job(T2<Boolean, String> arg) {
+    @Override protected VisorCacheMetricsJob job(GridBiTuple<Boolean, String> arg) {
         return new VisorCacheMetricsJob(arg);
     }
 
@@ -163,5 +105,64 @@ public class VisorCollectMetricsCacheTask extends VisorMultiNodeTask<T2<Boolean,
         }
 
         return aggrMetrics;
+    }
+
+    /**
+     * Job that collect cache metrics from node.
+     */
+    private static class VisorCacheMetricsJob extends VisorJob<GridBiTuple<Boolean, String>, Collection<VisorCacheMetrics>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * Create job with given argument.
+         *
+         * @param arg Whether to collect metrics for all caches or for specified cache name only.
+         */
+        private VisorCacheMetricsJob(GridBiTuple<Boolean, String> arg) {
+            super(arg);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Collection<VisorCacheMetrics> run(GridBiTuple<Boolean, String> arg) throws GridException {
+            Collection<? extends GridCache<?, ?>> caches = arg.get1() ? g.cachesx() : F.asList(g.cachex(arg.get2()));
+
+            if (caches != null) {
+                Collection<VisorCacheMetrics> res = new ArrayList<>(caches.size());
+
+                for (GridCache<?, ?> c : caches) {
+                    GridNodeMetrics m = g.localNode().metrics();
+                    GridCacheMetrics cm = c.metrics();
+                    GridCacheQueryMetrics qm = c.queries().metrics();
+
+                    res.add(new VisorCacheMetrics(
+                        c.name(),
+                        g.localNode().id(),
+                        m.getTotalCpus(),
+                        (double)m.getHeapMemoryUsed() / m.getHeapMemoryMaximum() * 100.0,
+                        m.getCurrentCpuLoad() * 100.0,
+                        m.getUpTime(),
+                        caches.size(),
+                        cm.readTime(),
+                        cm.writeTime(),
+                        cm.hits(),
+                        cm.misses(),
+                        cm.reads(),
+                        cm.writes(),
+                        new VisorCacheQueryMetrics(qm.minimumTime(), qm.maximumTime(), qm.averageTime(),
+                            qm.executions(), qm.fails())
+                    ));
+                }
+
+                return res;
+            }
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(VisorCacheMetricsJob.class, this);
+        }
     }
 }

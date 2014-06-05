@@ -14,7 +14,7 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.kernal.visor.cmd.dto.*;
-import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -24,11 +24,30 @@ import java.util.*;
  * Collect license from nodes task.
  */
 @GridInternal
-public class VisorCollectLicenseTask extends VisorMultiNodeTask<Void, Iterable<T2<UUID, VisorLicense>>, VisorLicense> {
+public class VisorLicenseCollectTask extends
+    VisorMultiNodeTask<Void, Iterable<GridBiTuple<UUID, VisorLicense>>, VisorLicense> {
+    /** {@inheritDoc} */
+    @Override protected VisorLicenseCollectJob job(Void arg) {
+        return new VisorLicenseCollectJob(arg);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Iterable<GridBiTuple<UUID, VisorLicense>> reduce(List<GridComputeJobResult> results) throws GridException {
+        Collection<GridBiTuple<UUID, VisorLicense>> licenses = new ArrayList<>(results.size());
+
+        for (GridComputeJobResult r : results) {
+            VisorLicense license = r.getException() != null ? null : (VisorLicense) r.getData();
+
+            licenses.add(new GridBiTuple<>(r.getNode().id(), license));
+        }
+
+        return licenses;
+    }
+
     /**
      * Job that collect license from nodes.
      */
-    private static class VisorCollectLicenseJob extends VisorJob<Void, VisorLicense> {
+    private static class VisorLicenseCollectJob extends VisorJob<Void, VisorLicense> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -37,7 +56,7 @@ public class VisorCollectLicenseTask extends VisorMultiNodeTask<Void, Iterable<T
          *
          * @param arg Formal job argument.
          */
-        private VisorCollectLicenseJob(Void arg) {
+        private VisorLicenseCollectJob(Void arg) {
             super(arg);
         }
 
@@ -48,25 +67,7 @@ public class VisorCollectLicenseTask extends VisorMultiNodeTask<Void, Iterable<T
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorCollectLicenseJob.class, this);
+            return S.toString(VisorLicenseCollectJob.class, this);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected VisorCollectLicenseJob job(Void arg) {
-        return new VisorCollectLicenseJob(arg);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Iterable<T2<UUID, VisorLicense>> reduce(List<GridComputeJobResult> results) throws GridException {
-        Collection<T2<UUID, VisorLicense>> licenses = new ArrayList<>(results.size());
-
-        for (GridComputeJobResult r : results) {
-            VisorLicense license = r.getException() != null ? null : (VisorLicense) r.getData();
-
-            licenses.add(new T2<>(r.getNode().id(), license));
-        }
-
-        return licenses;
     }
 }

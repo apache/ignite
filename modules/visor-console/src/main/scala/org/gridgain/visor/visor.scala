@@ -24,7 +24,7 @@ import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.gridgain.grid.kernal.processors.spring.GridSpringProcessor
 import org.gridgain.grid.kernal.processors.task.GridInternal
 import org.gridgain.grid.kernal.{GridEx, GridProductImpl}
-import org.gridgain.grid.lang.{GridCallable, GridPredicate}
+import org.gridgain.grid.lang.{GridBiTuple, GridCallable, GridPredicate}
 import org.gridgain.grid.resources.GridInstanceResource
 import org.gridgain.grid.spi.communication.tcp.GridTcpCommunicationSpi
 import org.gridgain.grid.thread._
@@ -162,14 +162,21 @@ object visor extends VisorTag {
     /** */
     @volatile private var conTs: Long = 0
 
+    private final val LOC = Locale.US
+
     /** Date time format. */
-    private final val dtFmt = new SimpleDateFormat("MM/dd/yy, HH:mm:ss", Locale.US)
+    private final val dtFmt = new SimpleDateFormat("MM/dd/yy, HH:mm:ss", LOC)
 
     /** Date format. */
-    private final val dFmt = new SimpleDateFormat("MM/dd/yy", Locale.US)
+    private final val dFmt = new SimpleDateFormat("MM/dd/yy", LOC)
+
+    private final val DEC_FMT_SYMS = new DecimalFormatSymbols(LOC)
+
+    /** Number format. */
+    private final val nmFmt = new DecimalFormat("#", DEC_FMT_SYMS)
 
     /** KB format. */
-    private final val kbFmt = new DecimalFormat("###,###,###,###,###")
+    private final val kbFmt = new DecimalFormat("###,###,###,###,###", DEC_FMT_SYMS)
 
     /** */
     private val mem = new ConcurrentHashMap[String, String]()
@@ -1026,8 +1033,8 @@ object visor extends VisorTag {
     }
 
     // Formatters.
-    private val dblFmt = new DecimalFormat("#0.00")
-    private val intFmt = new DecimalFormat("#0")
+    private val dblFmt = new DecimalFormat("#0.00", DEC_FMT_SYMS)
+    private val intFmt = new DecimalFormat("#0", DEC_FMT_SYMS)
 
     /**
      * Formats double value with `#0.00` formatter.
@@ -1082,6 +1089,22 @@ object visor extends VisorTag {
      */
     def formatDate(date: Date): String =
         dFmt.format(date)
+
+    /**
+     * Returns string representation of the memory.
+     *
+     * @param n Memory size.
+     */
+    def formatMemory(n: Long): String =
+        kbFmt.format(n)
+
+    /**
+     * Returns string representation of the number.
+     *
+     * @param n Number.
+     */
+    def formatNumber(n: Long): String =
+        nmFmt.format(n)
 
     /**
      * Tests whether or not visor is connected.
@@ -1675,15 +1698,15 @@ object visor extends VisorTag {
     }
 
     /** Convert to task argument. */
-    def emptyTaskArgument[A](nid: UUID): T2[JSet[UUID], Void] = new T2(Collections.singleton(nid), null)
+    def emptyTaskArgument[A](nid: UUID): GridBiTuple[JSet[UUID], Void] = new T2(Collections.singleton(nid), null)
 
-    def emptyTaskArgument[A](nids: Iterable[UUID]): T2[JSet[UUID], Void] = new T2(new JHashSet(nids), null)
-
-    /** Convert to task argument. */
-    def toTaskArgument[A](nid: UUID, arg: A): T2[JSet[UUID], A] = new T2(Collections.singleton(nid), arg)
+    def emptyTaskArgument[A](nids: Iterable[UUID]): GridBiTuple[JSet[UUID], Void] = new T2(new JHashSet(nids), null)
 
     /** Convert to task argument. */
-    def toTaskArgument[A](nids: Iterable[UUID], arg: A): T2[JSet[UUID], A] = new T2(new JHashSet(nids), arg)
+    def toTaskArgument[A](nid: UUID, arg: A): GridBiTuple[JSet[UUID], A] = new T2(Collections.singleton(nid), arg)
+
+    /** Convert to task argument. */
+    def toTaskArgument[A](nids: Iterable[UUID], arg: A): GridBiTuple[JSet[UUID], A] = new T2(new JHashSet(nids), arg)
 
     /**
      * Asks user to select a node from the list.

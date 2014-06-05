@@ -22,17 +22,13 @@ public class VisorGgfsProfilerEntry implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    public static class VisorGgfsProfilerEntryTimestampComparator implements Comparator<VisorGgfsProfilerEntry> {
-        @Override public int compare(VisorGgfsProfilerEntry a, VisorGgfsProfilerEntry b) {
-            return a.timestamp < b.timestamp ? -1
-                : a.timestamp > b.timestamp ? 1
-                : 0;
-        }
-    }
-
     /** Timestamp comparator. */
-    public static final VisorGgfsProfilerEntryTimestampComparator ENTRY_TIMESTAMP_COMPARATOR =
-            new VisorGgfsProfilerEntryTimestampComparator();
+    public static final Comparator<VisorGgfsProfilerEntry> ENTRY_TIMESTAMP_COMPARATOR =
+        new Comparator<VisorGgfsProfilerEntry>() {
+            @Override public int compare(VisorGgfsProfilerEntry a, VisorGgfsProfilerEntry b) {
+                return Long.compare(a.timestamp, b.timestamp);
+        }
+    };
 
     /** Path to file. */
     private final String path;
@@ -104,8 +100,8 @@ public class VisorGgfsProfilerEntry implements Serializable {
         this.userWriteTime = userWriteTime;
         this.counters = counters;
 
-        this.readSpeed = speed(bytesRead, readTime);
-        this.writeSpeed = speed(bytesWritten, writeTime);
+        readSpeed = speed(bytesRead, readTime);
+        writeSpeed = speed(bytesWritten, writeTime);
     }
 
     /**

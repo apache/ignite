@@ -14,7 +14,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
-import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -24,33 +24,56 @@ import java.util.*;
  * Task to run gc on nodes.
  */
 @GridInternal
-public class VisorRunGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, T2<Long, Long>>, T2<Long, Long>> {
+public class VisorGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, GridBiTuple<Long, Long>>,
+    GridBiTuple<Long, Long>> {
+    /** {@inheritDoc} */
+    @Override protected VisorGcJob job(Boolean arg) {
+        return new VisorGcJob(arg);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Map<UUID, GridBiTuple<Long, Long>> reduce(List<GridComputeJobResult> results)
+        throws GridException {
+        Map<UUID, GridBiTuple<Long, Long>> total = new HashMap<>();
+
+        for (GridComputeJobResult res: results) {
+            GridBiTuple<Long, Long> jobRes = res.getData();
+
+            total.put(res.getNode().id(), jobRes);
+        }
+
+        return total;
+    }
+
     /** Job that perform GC on node. */
-    private static class VisorRunGcJob extends VisorJob<Boolean, T2<Long, Long>> {
+    private static class VisorGcJob extends VisorJob<Boolean, GridBiTuple<Long, Long>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Create job with given argument. */
-        private VisorRunGcJob(Boolean arg) {
+        private VisorGcJob(Boolean arg) {
             super(arg);
         }
 
         /** {@inheritDoc} */
-        @Override protected T2<Long, Long> run(Boolean arg) throws GridException {
+        @Override protected GridBiTuple<Long, Long> run(Boolean dgc) throws GridException {
             GridNode locNode = g.localNode();
 
             long before = freeHeap(locNode);
 
             System.gc();
 
-            if (arg)
+            if (dgc)
                 for (GridCache<?, ?> cache : g.cachesx())
                     cache.dgc();
 
-            return new T2<>(before, freeHeap(locNode));
+            return new GridBiTuple<>(before, freeHeap(locNode));
         }
 
-        /** TODO GG-8358 */
+        /**
+         * @param node Node.
+         * @return Current free heap.
+         */
         private long freeHeap(GridNode node) {
             final GridNodeMetrics m = node.metrics();
 
@@ -59,25 +82,7 @@ public class VisorRunGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, T2<Lon
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorRunGcJob.class, this);
+            return S.toString(VisorGcJob.class, this);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected VisorRunGcJob job(Boolean arg) {
-        return new VisorRunGcJob(arg);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Map<UUID, T2<Long, Long>> reduce(List<GridComputeJobResult> results) throws GridException {
-        Map<UUID, T2<Long, Long>> total = new HashMap<>();
-
-        for (GridComputeJobResult res: results) {
-            T2<Long, Long> jobRes = res.getData();
-
-            total.put(res.getNode().id(), jobRes);
-        }
-
-        return total;
     }
 }

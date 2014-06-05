@@ -12,10 +12,10 @@
 package org.gridgain.visor.commands.cache
 
 import org.gridgain.grid.GridNode
-import org.gridgain.grid.kernal.visor.cmd.dto.VisorFieldsQueryResult
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorFieldsQueryTask.VisorFieldsQueryArg
-import org.gridgain.grid.kernal.visor.cmd.tasks.{VisorFieldsQueryTask, VisorNextFieldsQueryPageTask}
-import org.gridgain.grid.util.typedef.T2
+import org.gridgain.grid.kernal.visor.cmd.dto.VisorQueryResult
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorQueryTask.VisorQueryArg
+import org.gridgain.grid.kernal.visor.cmd.tasks.{VisorQueryNextPageTask, VisorQueryTask}
+import org.gridgain.grid.lang.GridBiTuple
 import org.gridgain.visor.commands._
 import org.gridgain.visor.visor._
 
@@ -154,8 +154,8 @@ class VisorCacheScanCommand {
                     .compute()
                     .withName("visor-cscan-task")
                     .withNoFailover()
-                    .execute(classOf[VisorFieldsQueryTask],
-                        toTaskArgument(nid, new VisorFieldsQueryArg(proj, cacheName, "SCAN", pageSize)))
+                    .execute(classOf[VisorQueryTask],
+                        toTaskArgument(nid, new VisorQueryArg(proj, cacheName, "SCAN", pageSize)))
                     .get match {
                     case x if x.get1() != null =>
                         error(x.get1())
@@ -172,7 +172,7 @@ class VisorCacheScanCommand {
 
         def escapeCacheName(name: String) = if (name == null) "<default>" else name
 
-        var res: VisorFieldsQueryResult = fullRes
+        var res: VisorQueryResult = fullRes
 
         if (res.rows.isEmpty) {
             println("Cache: " + escapeCacheName(cacheName) + " is empty")
@@ -201,8 +201,8 @@ class VisorCacheScanCommand {
                         res = qryPrj.compute()
                             .withName("visor-cscan-fetch-task")
                             .withNoFailover()
-                            .execute(classOf[VisorNextFieldsQueryPageTask],
-                                toTaskArgument(nid, new T2[String, Integer](fullRes.queryId(), pageSize)))
+                            .execute(classOf[VisorQueryNextPageTask],
+                                toTaskArgument(nid, new GridBiTuple[String, Integer](fullRes.queryId(), pageSize)))
                             .get
 
                         render()

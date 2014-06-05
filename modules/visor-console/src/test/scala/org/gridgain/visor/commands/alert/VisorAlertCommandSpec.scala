@@ -96,6 +96,8 @@ class VisorAlertCommandSpec extends VisorRuntimeBaseSpec(1) {
     behavior of "An 'alert' visor command"
 
     it should "print not connected error message" in {
+        visor.close()
+
         checkOut(visor.alert("-r -t=5 -cc=gte4"), "Visor is disconnected.")
 
         checkOut(visor.alert(), "No alerts are registered.")

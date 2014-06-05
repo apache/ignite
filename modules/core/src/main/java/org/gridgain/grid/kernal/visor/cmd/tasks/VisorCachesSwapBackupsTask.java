@@ -13,7 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
-import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
@@ -22,11 +22,18 @@ import java.util.*;
  * Task for swapping backup cache entries.
  */
 @GridInternal
-public class VisorSwapBackupsCachesTask extends VisorOneNodeTask<Set<String>, Map<String, T2<Integer, Integer>> > {
+public class VisorCachesSwapBackupsTask extends VisorOneNodeTask<Set<String>, Map<String,
+    GridBiTuple<Integer, Integer>>> {
+    /** {@inheritDoc} */
+    @Override protected VisorCachesSwapBackupsJob job(Set<String> names) {
+        return new VisorCachesSwapBackupsJob(names);
+    }
+
     /**
      * Job that swap backups.
      */
-    private static class VisorSwapBackupsCachesJob extends VisorJob<Set<String>, Map<String, T2<Integer, Integer>>> {
+    private static class VisorCachesSwapBackupsJob extends VisorJob<Set<String>, Map<String,
+        GridBiTuple<Integer, Integer>>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -35,13 +42,13 @@ public class VisorSwapBackupsCachesTask extends VisorOneNodeTask<Set<String>, Ma
          *
          * @param names Job argument.
          */
-        private VisorSwapBackupsCachesJob(Set<String> names) {
+        private VisorCachesSwapBackupsJob(Set<String> names) {
             super(names);
         }
 
         /** {@inheritDoc} */
-        @Override protected Map<String, T2<Integer, Integer>> run(Set<String> names) throws GridException {
-            Map<String, T2<Integer, Integer>> total = new HashMap<>();
+        @Override protected Map<String, GridBiTuple<Integer, Integer>> run(Set<String> names) throws GridException {
+            Map<String, GridBiTuple<Integer, Integer>> total = new HashMap<>();
 
             for (GridCache c: g.cachesx()) {
                 String cacheName = c.name();
@@ -56,7 +63,7 @@ public class VisorSwapBackupsCachesTask extends VisorOneNodeTask<Set<String>, Ma
                             after--;
                     }
 
-                    total.put(cacheName, new T2<>(before, after));
+                    total.put(cacheName, new GridBiTuple<>(before, after));
                 }
             }
 
@@ -65,12 +72,7 @@ public class VisorSwapBackupsCachesTask extends VisorOneNodeTask<Set<String>, Ma
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorSwapBackupsCachesJob.class, this);
+            return S.toString(VisorCachesSwapBackupsJob.class, this);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected VisorSwapBackupsCachesJob job(Set<String> names) {
-        return new VisorSwapBackupsCachesJob(names);
     }
 }

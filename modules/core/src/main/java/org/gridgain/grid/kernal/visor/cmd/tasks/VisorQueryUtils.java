@@ -12,17 +12,17 @@ package org.gridgain.grid.kernal.visor.cmd.tasks;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.visor.cmd.dto.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
 
 import java.math.*;
 import java.net.*;
 import java.util.*;
 
 /**
- * Contains utility methods for Visor query fields tasks and jobs.
+ * Contains utility methods for Visor query tasks and jobs.
  */
-public class VisorFieldsQueryUtils {
+public class VisorQueryUtils {
     /** How long to store future with query in node local map: 5 minutes. */
     public static final Integer RMV_DELAY = 5 * 60 * 1000;
 
@@ -115,7 +115,7 @@ public class VisorFieldsQueryUtils {
      * @param pageSize Number of rows to fetch.
      * @return Fetched rows and last processed element.
      */
-    public static T2<List<Object[]>, Map.Entry<Object, Object>> fetchScanQueryRows(
+    public static GridBiTuple<List<Object[]>, Map.Entry<Object, Object>> fetchScanQueryRows(
         GridCacheQueryFuture<Map.Entry<Object, Object>> fut, Map.Entry<Object, Object> savedNext, int pageSize
     ) throws GridException {
         List<Object[]> rows = new ArrayList<>();
@@ -135,7 +135,7 @@ public class VisorFieldsQueryUtils {
             next = fut.next();
         }
 
-        return new T2<>(rows, next);
+        return new GridBiTuple<>(rows, next);
     }
 
     /**
@@ -166,7 +166,7 @@ public class VisorFieldsQueryUtils {
      * @param pageSize Number of rows to fetch.
      * @return Fetched rows and last processed element.
      */
-    public static T2<List<Object[]>, List<?>> fetchSqlQueryRows(GridCacheQueryFuture<List<?>> fut,
+    public static GridBiTuple<List<Object[]>, List<?>> fetchSqlQueryRows(GridCacheQueryFuture<List<?>> fut,
         List<?> savedNext, int pageSize) throws GridException {
         List<Object[]> rows = new ArrayList<>();
 
@@ -194,6 +194,6 @@ public class VisorFieldsQueryUtils {
             next = fut.next();
         }
 
-        return new T2<List<Object[]>, List<?>>(rows, next);
+        return new GridBiTuple<List<Object[]>, List<?>>(rows, next);
     }
 }
