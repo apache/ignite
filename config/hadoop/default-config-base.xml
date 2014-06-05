@@ -100,12 +100,6 @@
             </list>
         </property>
 
-        <property name="hadoopConfiguration">
-            <bean class="org.gridgain.grid.hadoop.GridHadoopConfiguration">
-                <property name="systemCacheName" value="hadoop-sys"/>
-            </bean>
-        </property>
-
         <!--
             Disable events.
         -->
