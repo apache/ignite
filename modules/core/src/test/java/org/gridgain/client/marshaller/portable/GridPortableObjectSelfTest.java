@@ -26,6 +26,9 @@ public class GridPortableObjectSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int TYPE2 = 2;
 
+    /** */
+    private static final int TYPE3 = 3;
+
     /**
      *
      */
@@ -76,6 +79,9 @@ public class GridPortableObjectSelfTest extends GridCommonAbstractTest {
         /** */
         private long b;
 
+        /** */
+        private Type3 c;
+
         /** {@inheritDoc} */
         @Override public int typeId() {
             return TYPE2;
@@ -85,13 +91,52 @@ public class GridPortableObjectSelfTest extends GridCommonAbstractTest {
         @Override public void writePortable(GridPortableWriter writer) throws IOException {
             writer.writeByte("a", a);
             writer.writeLong("b", b);
+            writer.writeObject("c", c);
         }
 
         /** {@inheritDoc} */
         @Override public void readPortable(GridPortableReader reader) throws IOException {
             a = reader.readByte("a");
             b = reader.readLong("b");
+            c = reader.readObject("c");
         }
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("PublicInnerClass")
+    public static class Type3 implements GridPortableObject {
+        /** */
+        private Type2 a;
+
+        /** {@inheritDoc} */
+        @Override public int typeId() {
+            return TYPE3;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writePortable(GridPortableWriter writer) throws IOException {
+            writer.writeObject("a", a);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readPortable(GridPortableReader reader) throws IOException {
+            a = reader.readObject("a");
+        }
+    }
+
+    /**
+     * @return Types map.
+     */
+    private Map<Integer, Class<? extends GridPortableObject>> typesMap() {
+        Map<Integer, Class<? extends GridPortableObject>> typesMap = new HashMap<>();
+
+        typesMap.put(TYPE1, Type1.class);
+        typesMap.put(TYPE2, Type2.class);
+        typesMap.put(TYPE3, Type3.class);
+
+        return typesMap;
     }
 
     /**
@@ -116,12 +161,7 @@ public class GridPortableObjectSelfTest extends GridCommonAbstractTest {
         t1.c = t2;
         t1.b.put(10, t2);
 
-        Map<Integer, Class<? extends GridPortableObject>> typesMap = new HashMap<>();
-
-        typesMap.put(TYPE1, t1.getClass());
-        typesMap.put(TYPE2, t2.getClass());
-
-        GridClientPortableMarshaller marshaller = new GridClientPortableMarshaller(typesMap);
+        GridClientPortableMarshaller marshaller = new GridClientPortableMarshaller(typesMap());
 
         byte[] bytes = marshaller.marshal(t1);
 
@@ -145,6 +185,25 @@ public class GridPortableObjectSelfTest extends GridCommonAbstractTest {
 
         assertEquals(t2.a, t2ReadMap.a);
         assertEquals(t2.b, t2ReadMap.b);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReferences() throws Exception {
+        Type2 t2 = new Type2();
+        Type3 t3 = new Type3();
+
+        t2.c = t3;
+        t3.a = t2;
+
+        GridClientPortableMarshaller marshaller = new GridClientPortableMarshaller(typesMap());
+
+        byte[] bytes = marshaller.marshal(t2);
+
+        Type2 t2Read = marshaller.unmarshal(bytes);
+
+        assertSame(t2Read, t2Read.c.a);
     }
 
     /**

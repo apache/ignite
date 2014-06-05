@@ -94,6 +94,15 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
     public static final byte TYPE_USER_OBJECT = 21;
 
     /** */
+    public static final byte OBJECT_TYPE_OBJECT = 0;
+
+    /** */
+    public static final byte OBJECT_TYPE_REF = 1;
+
+    /** */
+    public static final byte OBJECT_TYPE_NULL = 2;
+
+    /** */
     private static final Charset UTF_8 = Charset.forName("UTF-8");
 
     /** */
@@ -481,6 +490,9 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
         /** */
         private final ByteArrayOutputStream out;
 
+        /** */
+        private final GridHandleTable handles = new GridHandleTable(10, 3);
+
         /**
          *
          */
@@ -493,9 +505,24 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
          * @throws IOException In case of error.
          */
         private void writePortable(GridPortableObject portable) throws IOException {
-            out.writeInt(portable.typeId());
+            if (portable != null) {
+                int handle = handles.lookup(portable);
 
-            portable.writePortable(this);
+                if (handle >= 0) {
+                    out.writeByte(OBJECT_TYPE_REF);
+
+                    out.writeInt(handle);
+                }
+                else {
+                    out.writeByte(OBJECT_TYPE_OBJECT);
+
+                    out.writeInt(portable.typeId());
+
+                    portable.writePortable(this);
+                }
+            }
+            else
+                out.writeByte(OBJECT_TYPE_NULL);
         }
 
         /**
@@ -616,13 +643,24 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
          */
         private void writeCollection(@Nullable Collection<?> col) throws IOException {
             if (col != null) {
-                out.writeInt(col.size());
+                int handle = handles.lookup(col);
 
-                for (Object obj : col)
-                    writeObject(obj);
+                if (handle >= 0) {
+                    out.writeByte(OBJECT_TYPE_REF);
+
+                    out.writeInt(handle);
+                }
+                else {
+                    out.writeByte(OBJECT_TYPE_OBJECT);
+
+                    out.writeInt(col.size());
+
+                    for (Object obj : col)
+                        writeObject(obj);
+                }
             }
             else
-                out.writeInt(-1);
+                out.writeByte(OBJECT_TYPE_NULL);
         }
 
         /** {@inheritDoc} */
@@ -657,15 +695,26 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
          */
         private <K, V> void writeMap(Map<K, V> map) throws IOException {
             if (map != null) {
-                out.writeInt(map.size());
+                int handle = handles.lookup(map);
 
-                for (Map.Entry<K, V> e : map.entrySet()) {
-                    writeObject(e.getKey());
-                    writeObject(e.getValue());
+                if (handle >= 0) {
+                    out.writeByte(OBJECT_TYPE_REF);
+
+                    out.writeInt(handle);
+                }
+                else {
+                    out.writeByte(OBJECT_TYPE_OBJECT);
+
+                    out.writeInt(map.size());
+
+                    for (Map.Entry<K, V> e : map.entrySet()) {
+                        writeObject(e.getKey());
+                        writeObject(e.getValue());
+                    }
                 }
             }
             else
-                out.writeInt(-1);
+                out.writeByte(OBJECT_TYPE_NULL);
         }
 
         /** {@inheritDoc} */
@@ -974,6 +1023,9 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
         /** */
         private final ByteArrayInputStream in;
 
+        /** */
+        private final ReadHandleTable handles = new ReadHandleTable(10);
+
         /**
          * @param bytes Bytes.
          */
@@ -985,26 +1037,48 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
          * @return Portable object.
          * @throws IOException In case of error.
          */
-        private GridPortableObject readPortable() throws IOException {
-            int typeId = in.readInt();
+        @Nullable private GridPortableObject readPortable() throws IOException {
+            byte type = in.readByte();
 
-            Class<? extends GridPortableObject> cls = typesMap.get(typeId);
+            if (type == OBJECT_TYPE_OBJECT) {
+                int typeId = in.readInt();
 
-            if (cls == null)
-                throw new IOException("Unknown portable typeId: " + typeId);
+                Class<? extends GridPortableObject> cls = typesMap.get(typeId);
 
-            GridPortableObject portable;
+                if (cls == null)
+                    throw new IOException("Unknown portable typeId: " + typeId);
 
-            try {
-                portable = cls.newInstance();
+                GridPortableObject portable;
+
+                try {
+                    portable = cls.newInstance();
+                }
+                catch (InstantiationException | IllegalAccessException e) {
+                    throw new IOException("Failed to instantiate portable object: " + cls, e);
+                }
+
+                handles.assign(portable);
+
+                portable.readPortable(this);
+
+                return portable;
             }
-            catch (InstantiationException | IllegalAccessException e) {
-                throw new IOException("Failed to instantiate portable object: " + cls, e);
+            else if (type == OBJECT_TYPE_REF) {
+                int handle = in.readInt();
+
+                assert handle >= 0 : handle;
+
+                Object obj = handles.lookup(handle);
+
+                assert obj != null : "No object for handle " + handle;
+                assert obj instanceof GridPortableObject : obj;
+
+                return (GridPortableObject)obj;
             }
-
-            portable.readPortable(this);
-
-            return portable;
+            else if (type == OBJECT_TYPE_NULL)
+                return null;
+            else
+                throw new IOException("Invalid object type: " + type);
         }
 
         /** {@inheritDoc} */
@@ -1121,17 +1195,39 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
          * @throws IOException In case of error.
          */
         @Nullable private <T> Collection<T> readCollection() throws IOException {
-            int size = in.readInt();
+            byte type = in.readByte();
 
-            if (size == -1)
+            if (type == OBJECT_TYPE_OBJECT) {
+                int size = in.readInt();
+
+                if (size == -1)
+                    return null;
+
+                Collection<T> col = new ArrayList<>(size);
+
+                handles.assign(col);
+
+                for (int i = 0; i < size; i++)
+                    col.add((T) readObject());
+
+                return col;
+            }
+            else if (type == OBJECT_TYPE_REF) {
+                int handle = in.readInt();
+
+                assert handle >= 0 : handle;
+
+                Object obj = handles.lookup(handle);
+
+                assert obj != null : "No object for handle " + handle;
+                assert obj instanceof Collection : obj;
+
+                return (Collection<T>)obj;
+            }
+            else if (type == OBJECT_TYPE_NULL)
                 return null;
-
-            Collection<T> col = new ArrayList<>(size);
-
-            for (int i = 0; i < size; i++)
-                col.add((T) readObject());
-
-            return col;
+            else
+                throw new IOException("Invalid object type: " + type);
         }
 
         /** {@inheritDoc} */
@@ -1171,21 +1267,43 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
          * @throws IOException In case of error.
          */
         @Nullable private <K, V> Map<K, V> readMap() throws IOException {
-            int size = in.readInt();
+            byte type = in.readByte();
 
-            if (size == -1)
-                return null;
+            if (type == OBJECT_TYPE_OBJECT) {
+                int size = in.readInt();
 
-            Map<K, V> map = new HashMap<>(size, 1.0f);
+                if (size == -1)
+                    return null;
 
-            for (int i = 0; i < size; i++) {
-                K key = readObject();
-                V val = readObject();
+                Map<K, V> map = new HashMap<>(size, 1.0f);
 
-                map.put(key, val);
+                handles.assign(map);
+
+                for (int i = 0; i < size; i++) {
+                    K key = readObject();
+                    V val = readObject();
+
+                    map.put(key, val);
+                }
+
+                return map;
             }
+            else if (type == OBJECT_TYPE_REF) {
+                int handle = in.readInt();
 
-            return map;
+                assert handle >= 0 : handle;
+
+                Object obj = handles.lookup(handle);
+
+                assert obj != null : "No object for handle " + handle;
+                assert obj instanceof Map : obj;
+
+                return (Map<K, V>)obj;
+            }
+            else if (type == OBJECT_TYPE_NULL)
+                return null;
+            else
+                throw new IOException("Invalid object type: " + type);
         }
 
         /** {@inheritDoc} */
@@ -1496,6 +1614,66 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
         @SuppressWarnings("UnusedParameters")
         private void onRead(String fieldName) {
             // No-op.
+        }
+    }
+
+    /**
+     * Lightweight identity hash table which maps objects to integer handles,
+     * assigned in ascending order.
+     */
+    private static class ReadHandleTable {
+        /** Array mapping handle -> object/exception (depending on status). */
+        private Object[] entries;
+
+        /** Number of handles in table. */
+        private int size;
+
+        /**
+         * Creates handle table with the given initial capacity.
+         *
+         * @param initCap Initial capacity.
+         */
+        ReadHandleTable(int initCap) {
+            entries = new Object[initCap];
+        }
+
+        /**
+         * Assigns next available handle to given object, and returns assigned
+         * handle.
+         *
+         * @param obj Object.
+         * @return Handle.
+         */
+        int assign(Object obj) {
+            if (size >= entries.length)
+                grow();
+
+            entries[size] = obj;
+
+            return size++;
+        }
+
+        /**
+         * Looks up and returns object associated with the given handle.
+         *
+         * @param handle Handle.
+         * @return Object.
+         */
+        Object lookup(int handle) {
+            return entries[handle];
+        }
+
+        /**
+         * Expands capacity of internal arrays.
+         */
+        private void grow() {
+            int newCap = (entries.length << 1) + 1;
+
+            Object[] newEntries = new Object[newCap];
+
+            System.arraycopy(entries, 0, newEntries, 0, size);
+
+            entries = newEntries;
         }
     }
 }

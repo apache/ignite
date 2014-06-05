@@ -10,6 +10,7 @@
 package org.gridgain.client.marshaller.portable;
 
 import org.gridgain.client.*;
+import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -25,12 +26,17 @@ class GridPortableMetadataCollectingWriter implements GridPortableWriter {
     /** */
     private List<String> fields;
 
+    /** */
+    private GridHandleTable handles;
+
     /**
      * @param portable Portable object.
      * @return Information about type fields.
      * @throws IOException In case of error.
      */
     Map<Integer, List<String>> writeAndCollect(GridPortableObject portable) throws IOException {
+        handles = new GridHandleTable(10, 3);
+
         fieldsMap = new HashMap<>();
 
         fields = new ArrayList<>();
@@ -115,6 +121,9 @@ class GridPortableMetadataCollectingWriter implements GridPortableWriter {
      * @throws IOException In case of error.
      */
     private <K, V> void writeMap(Map<K, V> map) throws IOException {
+        if (map == null || handles.lookup(map) >= 0)
+            return;
+
         for (Map.Entry<K, V> e : map.entrySet()) {
             writeObject(e.getKey());
             writeObject(e.getValue());
@@ -169,6 +178,9 @@ class GridPortableMetadataCollectingWriter implements GridPortableWriter {
      * @throws IOException In case of error.
      */
     private <T> void writeCollection(Collection<T> col) throws IOException {
+        if (col == null || handles.lookup(col) >= 0)
+            return;
+
         for (T obj : col)
             writeObject(obj);
     }
@@ -178,6 +190,9 @@ class GridPortableMetadataCollectingWriter implements GridPortableWriter {
      * @throws IOException In case of error.
      */
     private void writePortable(GridPortableObject portable) throws IOException {
+        if (portable == null || handles.lookup(portable) >= 0)
+            return;
+
         List<String> curFields = new ArrayList<>(fields);
 
         fields = new ArrayList<>();
