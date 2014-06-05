@@ -14,39 +14,11 @@ import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.kernal.visor.cmd.dto.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import static java.lang.System.*;
-
 /**
  * Grid configuration data collect task.
  */
 @GridInternal
 public class VisorConfigCollectorTask extends VisorOneNodeTask<Void, VisorGridConfig> {
-    /**
-     * Returns boolean value from system property or provided function.
-     *
-     * @param propName System property name.
-     * @param dflt Function that returns {@code Boolean}.
-     * @return {@code Boolean} value
-     */
-    private static boolean boolValue(String propName, boolean dflt) {
-        String sysProp = getProperty(propName);
-
-        return (sysProp != null && !sysProp.isEmpty()) ? Boolean.getBoolean(sysProp) : dflt;
-    }
-
-    /**
-     * Returns boolean value from system property or provided function.
-     *
-     * @param propName System property name.
-     * @param dflt Function that returns {@code Integer}.
-     * @return {@code Integer} value
-     */
-    private static Integer intValue(String propName, Integer dflt) {
-        String sysProp = getProperty(propName);
-
-        return (sysProp != null && !sysProp.isEmpty()) ? Integer.getInteger(sysProp) : dflt;
-    }
-
     /** {@inheritDoc} */
     @Override protected VisorConfigurationJob job(Void arg) {
         return new VisorConfigurationJob();
