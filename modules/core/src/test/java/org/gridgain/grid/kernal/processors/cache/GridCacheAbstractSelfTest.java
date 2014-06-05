@@ -283,7 +283,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @return {@code true} if near cache should be enabled.
      */
-    protected final boolean nearEnabled() {
+    protected boolean nearEnabled() {
         return distributionMode() == NEAR_ONLY || distributionMode() == NEAR_PARTITIONED;
     }
 

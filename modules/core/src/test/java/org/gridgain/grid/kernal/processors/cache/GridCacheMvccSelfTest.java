@@ -142,8 +142,8 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         assert cands.size() == 3;
 
-        // Check order.
-        checkOrder(cands, ver1, ver3, ver5);
+        // No reordering happens.
+        checkOrder(cands, ver1, ver5, ver3);
 
         entry.doneRemote(ver3);
 
@@ -158,7 +158,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         assert cands.size() == 4;
 
         // Check order.
-        checkOrder(cands, ver1, ver3, ver2, ver5);
+        checkOrder(cands, ver1, ver5, ver3, ver2);
 
         entry.orderCompleted(
             new GridCacheVersion(1, 0, 2, 0, 0),
@@ -172,8 +172,8 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         assert cands.size() == 4;
 
-        // Check that order didn't change.
-        checkOrder(cands, ver1, ver2, ver3, ver5);
+        // Done ver 2.
+        checkOrder(cands, ver1, ver2, ver5, ver3);
 
         checkRemote(entry.candidate(ver1), ver1, false, false);
         checkRemote(entry.candidate(ver2), ver2, true, false);
@@ -193,7 +193,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         assert cands.size() == 5;
 
         // Check order.
-        checkOrder(cands, ver1, ver2, ver3, ver5, ver4);
+        checkOrder(cands, ver1, ver2, ver5, ver3, ver4);
 
         entry.orderCompleted(ver3, Arrays.asList(ver2, ver5), Collections.<GridCacheVersion>emptyList());
 
@@ -526,7 +526,8 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         GridCacheMvccCandidate<String> doomed = entry.addRemote(node2, 6, ver6, 0, false, true);
 
-        checkOrder(entry.remoteMvccSnapshot(), ver1, ver2, ver3, ver4, ver5, ver6, ver7, ver8);
+        // No reordering happens.
+        checkOrder(entry.remoteMvccSnapshot(), ver1, ver2, ver3, ver4, ver5, ver7, ver8, ver6);
 
         List<GridCacheVersion> committed = Arrays.asList(ver4, ver7);
         List<GridCacheVersion> rolledback = Arrays.asList(ver6);
@@ -1034,7 +1035,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         assert cands.size() == 3;
 
         // Check order.
-        checkOrder(entry.remoteMvccSnapshot(), ver1, ver3, ver5);
+        checkOrder(entry.remoteMvccSnapshot(), ver1, ver5, ver3);
         checkOrder(entry.localCandidates(), ver2, ver4);
 
         entry.orderCompleted(
@@ -1043,7 +1044,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
             Collections.<GridCacheVersion>emptyList()
         );
 
-        // Check that order didn't change.
+        // Done ver3.
         checkOrder(entry.remoteMvccSnapshot(), ver1, ver3, ver5);
         checkOrder(entry.localCandidates(), ver2, ver4);
 
