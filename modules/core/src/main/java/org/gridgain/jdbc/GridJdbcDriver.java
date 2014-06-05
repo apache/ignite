@@ -193,7 +193,7 @@ import java.util.logging.*;
  * <h1 class="header">Example</h1>
  * <pre name="code" class="java">
  * // Register JDBC driver.
- * Class.forName("org.gridgain.jdbc.GridJdbcDriver");
+ * Class.forName("GridJdbcDriver");
  *
  * // Open JDBC connection.
  * Connection conn = DriverManager.getConnection("jdbc:gridgain://localhost/cache");

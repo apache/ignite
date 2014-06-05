@@ -22,7 +22,7 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="
         http://www.springframework.org/schema/beans
-        http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
     <!--
         Optional description.
     -->
@@ -33,7 +33,7 @@
     <!--
         Configuration below demonstrates how to setup caches within grid nodes.
     -->
-    <bean id="grid.client.cfg" class="org.gridgain.client.GridClientConfiguration" scope="singleton">
+    <bean id="grid.client.cfg" class="org.gridgain.client.GridClientConfiguration">
         <!-- Data configurations. -->
         <property name="dataConfigurations">
             <list>

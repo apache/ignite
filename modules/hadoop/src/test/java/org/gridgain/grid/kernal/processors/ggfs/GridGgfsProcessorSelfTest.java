@@ -29,9 +29,9 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static java.nio.charset.StandardCharsets.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static io.netty.util.CharsetUtil.*;
 
 /**
  * Tests for {@link GridGgfsProcessor}.

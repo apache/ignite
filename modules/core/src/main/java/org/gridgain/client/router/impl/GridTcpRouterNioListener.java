@@ -9,7 +9,6 @@
 
 package org.gridgain.client.router.impl;
 
-import org.apache.commons.lang.*;
 import org.gridgain.client.*;
 import org.gridgain.client.marshaller.*;
 import org.gridgain.client.marshaller.jdk.*;
@@ -32,6 +31,9 @@ import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
  * and delegates their delivery to underlying client.
  */
 class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessage> {
+    /** Empty byte array. */
+    private static final byte[] EMPTY_ARR = new byte[0];
+
     /** Logger. */
     private final GridLogger log;
 
@@ -155,7 +157,7 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
                         U.warn(log, "Attempt to marshal a message with a stub " +
                             "(will output empty result): " + obj);
 
-                        return ArrayUtils.EMPTY_BYTE_ARRAY;
+                        return EMPTY_ARR;
                     }
 
                     @Override public <T> T unmarshal(byte[] bytes) {

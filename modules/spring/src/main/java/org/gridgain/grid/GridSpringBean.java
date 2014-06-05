@@ -46,9 +46,9 @@ import java.util.*;
  * <h1 class="header">Spring Configuration Example</h1>
  * Here is a typical example of describing it in Spring file:
  * <pre name="code" class="xml">
- * &lt;bean id="mySpringBean" class="org.gridgain.grid.GridSpringBean" scope="singleton"&gt;
+ * &lt;bean id="mySpringBean" class="org.gridgain.grid.GridSpringBean"&gt;
  *     &lt;property name="configuration"&gt;
- *         &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton"&gt;
+ *         &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration"&gt;
  *             &lt;property name="gridName" value="mySpringGrid"/&gt;
  *         &lt;/bean&gt;
  *     &lt;/property&gt;
@@ -56,7 +56,7 @@ import java.util.*;
  * </pre>
  * Or use default configuration:
  * <pre name="code" class="xml">
- * &lt;bean id="mySpringBean" class="org.gridgain.grid.GridSpringBean" scope="singleton"/&gt;
+ * &lt;bean id="mySpringBean" class="org.gridgain.grid.GridSpringBean"/&gt;
  * </pre>
  * <h1 class="header">Java Example</h1>
  * Here is how you may access this bean from code:
