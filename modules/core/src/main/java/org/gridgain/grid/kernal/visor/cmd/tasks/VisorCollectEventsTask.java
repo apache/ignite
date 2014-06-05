@@ -74,8 +74,8 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
          * @param taskName Arguments for task name filter.
          * @param taskSessionId Arguments for task session filter.
          */
-        public VisorCollectEventsArgs(@Nullable int[] typeArg, @Nullable Long timeArg,
-            @Nullable String taskName, @Nullable GridUuid taskSessionId) {
+        public VisorCollectEventsArgs(@Nullable int[] typeArg, @Nullable Long timeArg, @Nullable String taskName,
+            @Nullable GridUuid taskSessionId) {
             this.typeArg = typeArg;
             this.timeArg = timeArg;
             this.taskName = taskName;
@@ -87,11 +87,7 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
          * @param timeArg Arguments for time filter.
          */
         public static VisorCollectEventsArgs createEventsArg(@Nullable int[] typeArg, @Nullable Long timeArg) {
-            return new VisorCollectEventsArgs(
-                typeArg,
-                timeArg,
-                "visor",
-                null);
+            return new VisorCollectEventsArgs(typeArg, timeArg, "visor", null);
         }
 
         /**
@@ -99,13 +95,11 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
          * @param taskName Arguments for task name filter.
          * @param taskSessionId Arguments for task session filter.
          */
-        public static VisorCollectEventsArgs createTasksArg(@Nullable Long timeArg,
-            @Nullable String taskName, @Nullable GridUuid taskSessionId) {
+        public static VisorCollectEventsArgs createTasksArg(@Nullable Long timeArg, @Nullable String taskName,
+            @Nullable GridUuid taskSessionId) {
             return new VisorCollectEventsArgs(
                 VisorTaskUtils.concat(GridEventType.EVTS_JOB_EXECUTION, GridEventType.EVTS_TASK_EXECUTION),
-                timeArg,
-                taskName,
-                taskSessionId);
+                timeArg, taskName, taskSessionId);
         }
 
         /**
@@ -230,14 +224,13 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
             final long startEvtTime = arg.timeArgument() == null ? 0L : System.currentTimeMillis() - arg.timeArgument();
 
             Collection<GridEvent> evts = g.events().localQuery(new GridPredicate<GridEvent>() {
-                  @Override public boolean apply(GridEvent event) {
-                  return (arg.typeArgument() == null || F.contains(arg.typeArgument(), event.type())) &&
-                      event.timestamp() >= startEvtTime &&
-                      (arg.taskName() == null || filterByTaskName(event, arg.taskName())) &&
-                      (arg.taskSessionId() == null || filterByTaskSessionId(event, arg.taskSessionId()));
-                  }
-              }
-            );
+                @Override public boolean apply(GridEvent event) {
+                    return (arg.typeArgument() == null || F.contains(arg.typeArgument(), event.type())) &&
+                        event.timestamp() >= startEvtTime &&
+                        (arg.taskName() == null || filterByTaskName(event, arg.taskName())) &&
+                        (arg.taskSessionId() == null || filterByTaskSessionId(event, arg.taskSessionId()));
+                }
+            });
 
             Collection<VisorGridEvent> res = new ArrayList<>(evts.size());
 
