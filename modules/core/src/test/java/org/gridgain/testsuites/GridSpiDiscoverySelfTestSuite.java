@@ -47,6 +47,8 @@ public class GridSpiDiscoverySelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridTcpDiscoveryMarshallerCheckSelfTest.class));
         suite.addTest(new TestSuite(GridTcpDiscoverySnapshotHistoryTest.class));
 
+        suite.addTest(new TestSuite(GridTcpDiscoveryForwardingSelfTest.class));
+
         return suite;
     }
 }
