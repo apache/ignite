@@ -81,7 +81,7 @@ public class GridJdbcConnectionSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(2);
 
-        Class.forName("org.gridgain.jdbc.GridJdbcDriver");
+        Class.forName("GridJdbcDriver");
     }
 
     /** {@inheritDoc} */

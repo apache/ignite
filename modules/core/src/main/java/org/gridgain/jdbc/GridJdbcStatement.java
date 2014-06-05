@@ -72,8 +72,8 @@ class GridJdbcStatement implements Statement {
 
         try {
             byte[] packet = conn.client().compute().execute(TASK_NAME,
-                JU.marshalArgument(JU.taskArgument(conn.nodeId(), conn.cacheName(),
-                    sql, timeout, args, fetchSize, maxRows)));
+                JU.marshalArgument(JU.taskArgument(conn.nodeId(), conn.cacheName(), sql, timeout, args, fetchSize,
+                    maxRows)));
 
             byte status = packet[0];
             byte[] data = new byte[packet.length - 1];

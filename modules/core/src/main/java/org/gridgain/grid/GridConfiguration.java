@@ -551,6 +551,7 @@ public class GridConfiguration {
         cacheCfg = cfg.getCacheConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
         clientCfg = cfg.getClientConnectionConfiguration();
+        clientMsgInterceptor = cfg.getClientMessageInterceptor();
         clockSyncFreq = cfg.getClockSyncFrequency();
         clockSyncSamples = cfg.getClockSyncSamples();
         dataCenterId = cfg.getDataCenterId();
@@ -631,7 +632,6 @@ public class GridConfiguration {
         timeSrvPortRange = cfg.getTimeServerPortRange();
         userAttrs = cfg.getUserAttributes();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
-        clientMsgInterceptor = cfg.getClientMessageInterceptor();
     }
 
     /**

@@ -47,7 +47,7 @@ import java.util.*;
  * example below configures a grid instance with additional user attributes
  * (see {@link GridNode#attributes()}) and specifies a grid name:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton"&gt;
+ * &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration"&gt;
  *     ...
  *     &lt;property name="gridName" value="grid"/&gt;
  *     &lt;property name="userAttributes"&gt;
