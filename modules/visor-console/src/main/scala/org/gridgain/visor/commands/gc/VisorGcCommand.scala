@@ -133,7 +133,7 @@ class VisorGcCommand {
             try {
                 val t = VisorTextTable()
 
-                t #= ("Node ID8(@)", "Heap Before (MB)", "Heap After (MB)", "Heap Delta (%)")
+                t #= ("Node ID8(@)", "Free Heap Before", "Free Heap After", "Free Heap Delta")
 
                 val prj = grid.forRemotes()
 
@@ -148,7 +148,7 @@ class VisorGcCommand {
 
                     val deltaPercent = math.round(roundHa * 100d / roundHb - 100)
 
-                    t += (nodeId8(nid), roundHb, roundHa, sign + deltaPercent)
+                    t += (nodeId8(nid), roundHb + "mb", roundHa + "mb", sign + deltaPercent + "%")
                 }
 
                 println("Garbage collector procedure results:")

@@ -162,14 +162,21 @@ object visor extends VisorTag {
     /** */
     @volatile private var conTs: Long = 0
 
+    private final val LOC = Locale.US
+
     /** Date time format. */
-    private final val dtFmt = new SimpleDateFormat("MM/dd/yy, HH:mm:ss", Locale.US)
+    private final val dtFmt = new SimpleDateFormat("MM/dd/yy, HH:mm:ss", LOC)
 
     /** Date format. */
-    private final val dFmt = new SimpleDateFormat("MM/dd/yy", Locale.US)
+    private final val dFmt = new SimpleDateFormat("MM/dd/yy", LOC)
+
+    private final val DEC_FMT_SYMS = new DecimalFormatSymbols(LOC)
+
+    /** Number format. */
+    private final val nmFmt = new DecimalFormat("#", DEC_FMT_SYMS)
 
     /** KB format. */
-    private final val kbFmt = new DecimalFormat("###,###,###,###,###")
+    private final val kbFmt = new DecimalFormat("###,###,###,###,###", DEC_FMT_SYMS)
 
     /** */
     private val mem = new ConcurrentHashMap[String, String]()
@@ -1082,6 +1089,22 @@ object visor extends VisorTag {
      */
     def formatDate(date: Date): String =
         dFmt.format(date)
+
+    /**
+     * Returns string representation of the memory.
+     *
+     * @param n Memory size.
+     */
+    def formatMemory(n: Long): String =
+        kbFmt.format(n)
+
+    /**
+     * Returns string representation of the number.
+     *
+     * @param n Number.
+     */
+    def formatNumber(n: Long): String =
+        nmFmt.format(n)
 
     /**
      * Tests whether or not visor is connected.
