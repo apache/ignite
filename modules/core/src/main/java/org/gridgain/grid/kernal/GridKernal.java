@@ -1259,8 +1259,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         add(attrs, ATTR_DATA_CENTER_ID, cfg.getDataCenterId());
 
         try {
-            boolean securityEnabled = cfg.getAuthenticationSpi() != null &&
-                cfg.getAuthenticationSpi().getClass() != GridNoopAuthenticationSpi.class;
+            boolean securityEnabled = U.securityEnabled(cfg);
 
             GridSecurityCredentialsProvider provider = cfg.getSecurityCredentialsProvider();
 

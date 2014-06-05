@@ -203,18 +203,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param gridCfg Grid configuration.
      * @param cfg Configuration to check for possible performance issues.
      */
-    private void suggestOptimizations(GridConfiguration gridCfg, GridCacheConfiguration cfg) {
-        // Skip over GGFS caches.
-        if (gridCfg.getGgfsConfiguration() != null) {
-            for (GridGgfsConfiguration c : gridCfg.getGgfsConfiguration()) {
-                if (F.eq(c.getMetaCacheName(), cfg.getName()) || F.eq(c.getDataCacheName(), cfg.getName()))
-                    return;
-            }
-        }
-
+    private void suggestOptimizations(GridCacheConfiguration cfg) {
         GridPerformanceSuggestions perf = ctx.performance();
 
         String msg = "Disable eviction policy (remove from configuration)";
@@ -604,6 +595,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 sysCaches.add(CU.cacheNameForDrSystemCache(cacheName));
         }
 
+        if (U.securityEnabled(ctx.config()))
+            sysCaches.add(CU.SECURITY_SYS_CACHE_NAME);
+
         GridCacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
 
         for (int i = 0; i < cfgs.length; i++) {
@@ -612,7 +606,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             // Initialize defaults.
             initialize(cfg);
 
-            suggestOptimizations(ctx.config(), cfg);
+            // Skip suggestions for system caches.
+            if (!sysCaches.contains(cfg.getName()))
+                suggestOptimizations(cfg);
 
             validate(ctx.config(), cfg);
 

@@ -23,6 +23,7 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.*;
+import org.gridgain.grid.spi.authentication.noop.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.mbean.*;
@@ -617,6 +618,17 @@ public abstract class GridUtils {
         GridDiscoverySpiOrderSupport ann = U.getAnnotation(discoSpi.getClass(), GridDiscoverySpiOrderSupport.class);
 
         return ann != null && ann.value();
+    }
+
+    /**
+     * Checks whether authentication SPI other than noop authentication SPI is configured.
+     *
+     * @param cfg Configuration to check.
+     * @return {@code True} if authentication SPI is configured.
+     */
+    public static boolean securityEnabled(GridConfiguration cfg) {
+        return cfg.getAuthenticationSpi() != null &&
+            cfg.getAuthenticationSpi().getClass() != GridNoopAuthenticationSpi.class;
     }
 
     /**

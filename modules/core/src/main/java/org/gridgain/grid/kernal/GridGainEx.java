@@ -1813,27 +1813,40 @@ public class GridGainEx {
 
                     if (ccfg.getDrSenderConfiguration() != null)
                         drSysCaches.add(CU.cacheNameForDrSystemCache(ccfg.getName()));
+
+                    if (CU.isSecuritySystemCache(ccfg.getName()))
+                        throw new GridException("Cache name cannot start with \"" + CU.SECURITY_SYS_CACHE_NAME +
+                            "\" because this prefix is reserved for internal purposes.");
                 }
 
-                GridCacheConfiguration[] clone = new GridCacheConfiguration[cacheCfgs.length + drSysCaches.size()];
+                GridCacheConfiguration[] clone = new GridCacheConfiguration[cacheCfgs.length +
+                    drSysCaches.size() +
+                    (U.securityEnabled(cfg) ? 1 : 0)];
 
                 int cloneIdx = 0;
 
                 for (String drSysCache : drSysCaches)
                     clone[cloneIdx++] = drSystemCache(drSysCache);
 
+                if (U.securityEnabled(cfg))
+                    clone[cloneIdx++] = securitySystemCache();
+
                 for (GridCacheConfiguration ccfg : cacheCfgs)
                     clone[cloneIdx++] = new GridCacheConfiguration(ccfg);
 
                 myCfg.setCacheConfiguration(clone);
             }
-            else if (!drSysCaches.isEmpty()) {
-                GridCacheConfiguration[] ccfgs = new GridCacheConfiguration[drSysCaches.size()];
+            else if (!drSysCaches.isEmpty() || U.securityEnabled(cfg)) {
+                GridCacheConfiguration[] ccfgs = new GridCacheConfiguration[drSysCaches.size() +
+                    (U.securityEnabled(cfg) ? 1 : 0)];
 
                 int idx = 0;
 
                 for (String drSysCache : drSysCaches)
                     ccfgs[idx++] = drSystemCache(drSysCache);
+
+                if (U.securityEnabled(cfg))
+                    ccfgs[idx] = securitySystemCache();
 
                 myCfg.setCacheConfiguration(ccfgs);
             }
@@ -1962,6 +1975,23 @@ public class GridGainEx {
             GridCacheConfiguration cache = new GridCacheConfiguration();
 
             cache.setName(cacheName);
+            cache.setCacheMode(REPLICATED);
+            cache.setAtomicityMode(TRANSACTIONAL);
+            cache.setSwapEnabled(false);
+            cache.setWriteSynchronizationMode(FULL_SYNC);
+
+            return cache;
+        }
+
+        /**
+         * Creates security system cache configuration.
+         *
+         * @return Security system cache configuration.
+         */
+        private GridCacheConfiguration securitySystemCache() {
+            GridCacheConfiguration cache = new GridCacheConfiguration();
+
+            cache.setName(CU.SECURITY_SYS_CACHE_NAME);
             cache.setCacheMode(REPLICATED);
             cache.setAtomicityMode(TRANSACTIONAL);
             cache.setSwapEnabled(false);
