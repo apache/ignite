@@ -15,7 +15,6 @@ import org.gridgain.client.impl.*;
 import org.gridgain.client.util.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.security.*;
-import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
@@ -371,14 +370,28 @@ public class GridClientHttpConnection extends GridClientConnection {
                 if (data.length() > 0)
                     data.append('&');
 
-                if (!F.isEmpty(cred.getLogin()))
-                    data.append("gridgain.login=").append(URLEncoder.encode(cred.getLogin(), "UTF-8"));
+                Object login = cred.getLogin();
+
+                if (login != null) {
+                    if (!(login instanceof String))
+                        throw new IllegalArgumentException("Http connection supports only string login" +
+                            ", while received: " + login);
+
+                    data.append("gridgain.login=").append(URLEncoder.encode((String)login, "UTF-8"));
+                }
 
                 if (data.length() > 0)
                     data.append('&');
 
-                if (!F.isEmpty(cred.getPassword()))
-                    data.append("gridgain.password=").append(URLEncoder.encode(cred.getPassword(), "UTF-8"));
+                Object pwd = cred.getPassword();
+
+                if (pwd != null) {
+                    if (!(pwd instanceof String))
+                        throw new IllegalArgumentException("Http connection supports only string password" +
+                            ", while received: " + login);
+
+                    data.append("gridgain.password=").append(URLEncoder.encode((String)pwd, "UTF-8"));
+                }
             }
             else
                 throw new IllegalArgumentException("Http connection supports only string arguments in requests" +
