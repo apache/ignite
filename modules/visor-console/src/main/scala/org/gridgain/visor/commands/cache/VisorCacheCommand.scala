@@ -16,7 +16,7 @@ import java.util.UUID
 
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.visor.cmd.dto.{VisorCacheAggregatedMetrics, VisorCacheMetrics}
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCollectMetricsCacheTask
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCacheCollectMetricsTask
 import org.gridgain.grid.lang.GridBiTuple
 import org.gridgain.grid.util.typedef._
 import org.gridgain.scalar.scalar._
@@ -457,7 +457,7 @@ class VisorCacheCommand {
 
             val nids = prj.nodes().map(_.id())
 
-            prj.compute().execute(classOf[VisorCollectMetricsCacheTask], toTaskArgument(nids,
+            prj.compute().execute(classOf[VisorCacheCollectMetricsTask], toTaskArgument(nids,
                 new GridBiTuple(new JavaBoolean(name.isEmpty), name.orNull))).get.toList
         }
         catch {

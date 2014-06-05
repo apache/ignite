@@ -102,15 +102,24 @@ public class VisorGgfsProfilerUniformityCounters implements Serializable {
         fileSize = newFileSize;
     }
 
-    /** TODO GG-8358 */
-    private void capacity(int c) {
-        counters.ensureCapacity(c);
+    /**
+     * Ensure counters capacity and initial state.
+     *
+     * @param minCapacity Desired minimum capacity.
+     */
+    private void capacity(int minCapacity) {
+        counters.ensureCapacity(minCapacity);
 
-        while(counters.size() < c)
+        while(counters.size() < minCapacity)
             counters.add(0);
     }
 
-    /** TODO GG-8358 */
+    /**
+     * Increment counters by given pos and length.
+     *
+     * @param pos Position in file.
+     * @param len Read data length.
+     */
     public void increment(long pos, long len) {
         int blockFrom = (int)(pos / blockSize);
         int blockTo = (int)((pos + len) / blockSize) + 1;
@@ -121,7 +130,11 @@ public class VisorGgfsProfilerUniformityCounters implements Serializable {
             counters.set(i, counters.get(i) + 1);
     }
 
-    /** TODO GG-8358 */
+    /**
+     * Add given counters.
+     *
+     * @param other Counters to add.
+     */
     public void aggregate(VisorGgfsProfilerUniformityCounters other) {
         if (fileSize < other.fileSize)
             compact(other.fileSize);

@@ -20,18 +20,18 @@ import org.gridgain.grid.util.typedef.internal.*;
 @GridInternal
 public class VisorConfigCollectorTask extends VisorOneNodeTask<Void, VisorGridConfig> {
     /** {@inheritDoc} */
-    @Override protected VisorConfigurationJob job(Void arg) {
-        return new VisorConfigurationJob();
+    @Override protected VisorConfigCollectorJob job(Void arg) {
+        return new VisorConfigCollectorJob();
     }
 
     /**
      * Grid configuration data collect job.
      */
-    private static class VisorConfigurationJob extends VisorJob<Void, VisorGridConfig> {
+    private static class VisorConfigCollectorJob extends VisorJob<Void, VisorGridConfig> {
         /** */
         private static final long serialVersionUID = 0L;
 
-        private VisorConfigurationJob() {
+        private VisorConfigCollectorJob() {
             super(null);
         }
 
@@ -42,7 +42,7 @@ public class VisorConfigCollectorTask extends VisorOneNodeTask<Void, VisorGridCo
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorConfigurationJob.class, this);
+            return S.toString(VisorConfigCollectorJob.class, this);
         }
     }
 }

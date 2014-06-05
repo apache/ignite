@@ -15,7 +15,7 @@ import java.io._
 import java.util.UUID
 
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.visor.cmd.tasks.{VisorCollectLicenseTask, VisorUpdateLicenseTask}
+import org.gridgain.grid.kernal.visor.cmd.tasks.{VisorLicenseCollectTask, VisorLicenseUpdateTask}
 import org.gridgain.grid.lang.GridBiTuple
 import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
@@ -97,7 +97,7 @@ class VisorLicenseCommand {
                 val nodes = grid.nodes()
 
                 val lics = try
-                    grid.forNodes(nodes).compute().execute(classOf[VisorCollectLicenseTask],
+                    grid.forNodes(nodes).compute().execute(classOf[VisorLicenseCollectTask],
                         emptyTaskArgument(nodes.map(_.id()))).get
                 catch {
                     case _: GridException =>
@@ -178,7 +178,7 @@ class VisorLicenseCommand {
 
                 nodes.foreach(n => {
                     grid.forNode(n).compute().withNoFailover().
-                        execute(classOf[VisorUpdateLicenseTask], toTaskArgument(n.id,
+                        execute(classOf[VisorLicenseUpdateTask], toTaskArgument(n.id,
                         new GridBiTuple(UUID.fromString(licId), Source.fromFile(licPath).mkString))).get
                 })
 

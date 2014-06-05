@@ -22,17 +22,17 @@ import java.util.*;
  * Task for swapping backup cache entries.
  */
 @GridInternal
-public class VisorSwapBackupsCachesTask extends VisorOneNodeTask<Set<String>, Map<String,
+public class VisorCachesSwapBackupsTask extends VisorOneNodeTask<Set<String>, Map<String,
     GridBiTuple<Integer, Integer>>> {
     /** {@inheritDoc} */
-    @Override protected VisorSwapBackupsCachesJob job(Set<String> names) {
-        return new VisorSwapBackupsCachesJob(names);
+    @Override protected VisorCachesSwapBackupsJob job(Set<String> names) {
+        return new VisorCachesSwapBackupsJob(names);
     }
 
     /**
      * Job that swap backups.
      */
-    private static class VisorSwapBackupsCachesJob extends VisorJob<Set<String>, Map<String,
+    private static class VisorCachesSwapBackupsJob extends VisorJob<Set<String>, Map<String,
         GridBiTuple<Integer, Integer>>> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -42,7 +42,7 @@ public class VisorSwapBackupsCachesTask extends VisorOneNodeTask<Set<String>, Ma
          *
          * @param names Job argument.
          */
-        private VisorSwapBackupsCachesJob(Set<String> names) {
+        private VisorCachesSwapBackupsJob(Set<String> names) {
             super(names);
         }
 
@@ -72,7 +72,7 @@ public class VisorSwapBackupsCachesTask extends VisorOneNodeTask<Set<String>, Ma
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorSwapBackupsCachesJob.class, this);
+            return S.toString(VisorCachesSwapBackupsJob.class, this);
         }
     }
 }

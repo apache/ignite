@@ -51,45 +51,31 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         /** Data length. */
         private final long dataLen;
 
-        /** Append flag. */
+        /** Append flag. Available only for OPEN_OUT event. */
         private final boolean append;
 
-        /** File overwritre flag. */
+        /** Overwrite flag. Available only for OPEN_OUT event. */
         private final boolean overwrite;
 
-        /** TODO GG-8358 */
+        /** Position of data being randomly read or seek. Available only for RANDOM_READ or SEEK events. */
         private final long pos;
 
-        /** TODO GG-8358 */
+        /** Length of data being randomly read. Available only for RANDOM_READ event. */
         private final int readLen;
 
-        /** TODO GG-8358 */
+        /** User time. Available only for CLOSE_IN/CLOSE_OUT events. */
         private final long userTime;
 
-        /** TODO GG-8358 */
+        /** System time (either read or write). Available only for CLOSE_IN/CLOSE_OUT events. */
         private final long sysTime;
 
-        /** TODO GG-8358 */
+        /** Total amount of read or written bytes. Available only for CLOSE_IN/CLOSE_OUT events.*/
         private final long totalBytes;
 
         /**
          * Create holder for log line.
-         *
-         * @param ts TODO GG-8358
-         * @param entryType
-         * @param path
-         * @param mode
-         * @param streamId
-         * @param dataLen
-         * @param append
-         * @param overwrite
-         * @param pos
-         * @param readLen
-         * @param userTime
-         * @param sysTime
-         * @param totalBytes
          */
-        public VisorGgfsProfilerParsedLine(
+        private VisorGgfsProfilerParsedLine(
             long ts,
             int entryType,
             String path,
@@ -161,12 +147,24 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
 
         /**
          * Parse boolean.
+         *
+         * @param ss Array of source strings.
+         * @param ix Index of array item to parse.
+         * @return Parsed boolean.
          */
         private boolean parseBoolean(String[] ss, int ix) {
             return ix < ss.length && "1".equals(ss[ix]);
         }
 
-        /** TODO GG-8358 */
+        /**
+         * Parse integer.
+         *
+         * @param ss Array of source strings.
+         * @param ix Index of array item to parse.
+         * @param dflt Default value if string is empty or index is out of array bounds.
+         * @return Parsed integer.
+         * @exception NumberFormatException  if the string does not contain a parsable integer.
+         */
         private int parseInt(String[] ss, int ix, int dflt) {
             if (ss.length <= ix)
                 return dflt;
@@ -177,7 +175,15 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             }
         }
 
-        /** TODO GG-8358 */
+        /**
+         * Parse long.
+         *
+         * @param ss Array of source strings.
+         * @param ix Index of array item to parse.
+         * @param dflt Default value if string is empty or index is out of array bounds.
+         * @return Parsed integer.
+         * @exception NumberFormatException if the string does not contain a parsable long.
+         */
         private long parseLong(String[] ss, int ix, long dflt) {
             if (ss.length <= ix)
                 return dflt;
@@ -188,7 +194,13 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             }
         }
 
-        /** TODO GG-8358 */
+        /**
+         * Parse string.
+         *
+         * @param ss Array of source strings.
+         * @param ix Index of array item to parse.
+         * @return Parsed string.
+         */
         private String parseString(String[] ss, int ix) {
             if (ss.length <= ix)
                 return "";
@@ -199,6 +211,13 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             }
         }
 
+        /**
+         * Parse GGFS mode from string.
+         *
+         * @param ss Array of source strings.
+         * @param ix Index of array item to parse.
+         * @return Parsed GGFS mode or {@code null} if string is empty.
+         */
         private GridGgfsMode parseGgfsMode(String[] ss, int ix) {
             if (ss.length <= ix)
                 return null;
@@ -249,6 +268,10 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
          * Aggregate information from parsed lines grouped by {@code streamId}.
          */
         private VisorGgfsProfilerEntry aggregateParsedLines(List<VisorGgfsProfilerParsedLine> lines) {
+            VisorGgfsProfilerUniformityCounters counters = new VisorGgfsProfilerUniformityCounters();
+
+            Collections.sort(lines, PARSED_LINE_BY_TS_COMPARATOR);
+
             String path = "";
             long ts = 0;
             long size = 0;
@@ -259,10 +282,6 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             long writeTime = 0;
             long userWriteTime = 0;
             GridGgfsMode mode = null;
-
-            VisorGgfsProfilerUniformityCounters counters = new VisorGgfsProfilerUniformityCounters();
-
-            Collections.sort(lines, PARSED_LINE_BY_TS_COMPARATOR);
 
             for (VisorGgfsProfilerParsedLine line : lines) {
                 if (!line.path.isEmpty())

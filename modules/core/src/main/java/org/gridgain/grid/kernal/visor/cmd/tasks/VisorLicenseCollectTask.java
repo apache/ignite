@@ -24,10 +24,11 @@ import java.util.*;
  * Collect license from nodes task.
  */
 @GridInternal
-public class VisorCollectLicenseTask extends VisorMultiNodeTask<Void, Iterable<GridBiTuple<UUID, VisorLicense>>, VisorLicense> {
+public class VisorLicenseCollectTask extends
+    VisorMultiNodeTask<Void, Iterable<GridBiTuple<UUID, VisorLicense>>, VisorLicense> {
     /** {@inheritDoc} */
-    @Override protected VisorCollectLicenseJob job(Void arg) {
-        return new VisorCollectLicenseJob(arg);
+    @Override protected VisorLicenseCollectJob job(Void arg) {
+        return new VisorLicenseCollectJob(arg);
     }
 
     /** {@inheritDoc} */
@@ -46,7 +47,7 @@ public class VisorCollectLicenseTask extends VisorMultiNodeTask<Void, Iterable<G
     /**
      * Job that collect license from nodes.
      */
-    private static class VisorCollectLicenseJob extends VisorJob<Void, VisorLicense> {
+    private static class VisorLicenseCollectJob extends VisorJob<Void, VisorLicense> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -55,7 +56,7 @@ public class VisorCollectLicenseTask extends VisorMultiNodeTask<Void, Iterable<G
          *
          * @param arg Formal job argument.
          */
-        private VisorCollectLicenseJob(Void arg) {
+        private VisorLicenseCollectJob(Void arg) {
             super(arg);
         }
 
@@ -66,7 +67,7 @@ public class VisorCollectLicenseTask extends VisorMultiNodeTask<Void, Iterable<G
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorCollectLicenseJob.class, this);
+            return S.toString(VisorLicenseCollectJob.class, this);
         }
     }
 }

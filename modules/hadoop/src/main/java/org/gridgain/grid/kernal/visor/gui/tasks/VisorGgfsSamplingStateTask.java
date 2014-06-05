@@ -20,11 +20,11 @@ import org.gridgain.grid.util.typedef.internal.*;
  * Task to set GGFS instance sampling state.
  */
 @GridInternal
-public class VisorSetGgfsSamplingStateTask extends VisorOneNodeTask<GridBiTuple<String, Boolean>, Void> {
+public class VisorGgfsSamplingStateTask extends VisorOneNodeTask<GridBiTuple<String, Boolean>, Void> {
     /**
      * Job that perform parsing of GGFS profiler logs.
      */
-    private static class VisorSetGgfsSamplingStateJob extends VisorJob<GridBiTuple<String, Boolean>, Void> {
+    private static class VisorGgfsSamplingStateJob extends VisorJob<GridBiTuple<String, Boolean>, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -33,7 +33,7 @@ public class VisorSetGgfsSamplingStateTask extends VisorOneNodeTask<GridBiTuple<
          *
          * @param arg Job argument.
          */
-        public VisorSetGgfsSamplingStateJob(GridBiTuple<String, Boolean> arg) {
+        public VisorGgfsSamplingStateJob(GridBiTuple<String, Boolean> arg) {
             super(arg);
         }
 
@@ -51,12 +51,12 @@ public class VisorSetGgfsSamplingStateTask extends VisorOneNodeTask<GridBiTuple<
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorSetGgfsSamplingStateJob.class, this);
+            return S.toString(VisorGgfsSamplingStateJob.class, this);
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorSetGgfsSamplingStateJob job(GridBiTuple<String, Boolean> arg) {
-        return new VisorSetGgfsSamplingStateJob(arg);
+    @Override protected VisorGgfsSamplingStateJob job(GridBiTuple<String, Boolean> arg) {
+        return new VisorGgfsSamplingStateJob(arg);
     }
 }

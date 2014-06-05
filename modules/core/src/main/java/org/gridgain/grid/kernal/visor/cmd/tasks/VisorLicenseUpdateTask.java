@@ -22,14 +22,14 @@ import java.util.*;
  * Task to upload license.
  */
 @GridInternal
-public class VisorUpdateLicenseTask extends VisorOneNodeTask<GridBiTuple<UUID, String>,
+public class VisorLicenseUpdateTask extends VisorOneNodeTask<GridBiTuple<UUID, String>,
     GridBiTuple<GridProductLicenseException, UUID>> {
     /** {@inheritDoc} */
-    @Override protected VisorUpdateLicenseJob job(GridBiTuple<UUID, String> arg) {
-        return new VisorUpdateLicenseJob(arg);
+    @Override protected VisorLicenseUpdateJob job(GridBiTuple<UUID, String> arg) {
+        return new VisorLicenseUpdateJob(arg);
     }
 
-    private static class VisorUpdateLicenseJob
+    private static class VisorLicenseUpdateJob
         extends VisorJob<GridBiTuple<UUID, String>, GridBiTuple<GridProductLicenseException, UUID>> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -39,7 +39,7 @@ public class VisorUpdateLicenseTask extends VisorOneNodeTask<GridBiTuple<UUID, S
          *
          * @param arg Job argument.
          */
-        private VisorUpdateLicenseJob(GridBiTuple<UUID, String> arg) {
+        private VisorLicenseUpdateJob(GridBiTuple<UUID, String> arg) {
             super(arg);
         }
 
@@ -72,7 +72,7 @@ public class VisorUpdateLicenseTask extends VisorOneNodeTask<GridBiTuple<UUID, S
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorUpdateLicenseJob.class, this);
+            return S.toString(VisorLicenseUpdateJob.class, this);
         }
     }
 }

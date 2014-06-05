@@ -24,11 +24,11 @@ import java.util.*;
  * Task to run gc on nodes.
  */
 @GridInternal
-public class VisorRunGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, GridBiTuple<Long, Long>>,
+public class VisorGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, GridBiTuple<Long, Long>>,
     GridBiTuple<Long, Long>> {
     /** {@inheritDoc} */
-    @Override protected VisorRunGcJob job(Boolean arg) {
-        return new VisorRunGcJob(arg);
+    @Override protected VisorGcJob job(Boolean arg) {
+        return new VisorGcJob(arg);
     }
 
     /** {@inheritDoc} */
@@ -46,24 +46,24 @@ public class VisorRunGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, GridBi
     }
 
     /** Job that perform GC on node. */
-    private static class VisorRunGcJob extends VisorJob<Boolean, GridBiTuple<Long, Long>> {
+    private static class VisorGcJob extends VisorJob<Boolean, GridBiTuple<Long, Long>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Create job with given argument. */
-        private VisorRunGcJob(Boolean arg) {
+        private VisorGcJob(Boolean arg) {
             super(arg);
         }
 
         /** {@inheritDoc} */
-        @Override protected GridBiTuple<Long, Long> run(Boolean arg) throws GridException {
+        @Override protected GridBiTuple<Long, Long> run(Boolean dgc) throws GridException {
             GridNode locNode = g.localNode();
 
             long before = freeHeap(locNode);
 
             System.gc();
 
-            if (arg)
+            if (dgc)
                 for (GridCache<?, ?> cache : g.cachesx())
                     cache.dgc();
 
@@ -82,7 +82,7 @@ public class VisorRunGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, GridBi
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorRunGcJob.class, this);
+            return S.toString(VisorGcJob.class, this);
         }
     }
 }

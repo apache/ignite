@@ -27,11 +27,11 @@ import java.util.*;
  * Task that runs on specified node and returns events data.
  */
 @GridInternal
-public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEventsTask.VisorCollectEventsArgs,
+public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollectTask.VisorEventsCollectArgs,
     Iterable<? extends VisorGridEvent>, Collection<? extends VisorGridEvent>> {
     /** {@inheritDoc} */
-    @Override protected VisorCollectEventsJob job(VisorCollectEventsArgs arg) {
-        return new VisorCollectEventsJob(arg);
+    @Override protected VisorEventsCollectJob job(VisorEventsCollectArgs arg) {
+        return new VisorEventsCollectJob(arg);
     }
 
     /** {@inheritDoc} */
@@ -52,7 +52,7 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
      * Argument for task returns events data.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorCollectEventsArgs implements Serializable {
+    public static class VisorEventsCollectArgs implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -74,7 +74,7 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
          * @param taskName Arguments for task name filter.
          * @param taskSessionId Arguments for task session filter.
          */
-        public VisorCollectEventsArgs(@Nullable int[] typeArg, @Nullable Long timeArg, @Nullable String taskName,
+        public VisorEventsCollectArgs(@Nullable int[] typeArg, @Nullable Long timeArg, @Nullable String taskName,
             @Nullable GridUuid taskSessionId) {
             this.typeArg = typeArg;
             this.timeArg = timeArg;
@@ -86,8 +86,8 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
          * @param typeArg Arguments for type filter.
          * @param timeArg Arguments for time filter.
          */
-        public static VisorCollectEventsArgs createEventsArg(@Nullable int[] typeArg, @Nullable Long timeArg) {
-            return new VisorCollectEventsArgs(typeArg, timeArg, "visor", null);
+        public static VisorEventsCollectArgs createEventsArg(@Nullable int[] typeArg, @Nullable Long timeArg) {
+            return new VisorEventsCollectArgs(typeArg, timeArg, "visor", null);
         }
 
         /**
@@ -95,9 +95,9 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
          * @param taskName Arguments for task name filter.
          * @param taskSessionId Arguments for task session filter.
          */
-        public static VisorCollectEventsArgs createTasksArg(@Nullable Long timeArg, @Nullable String taskName,
+        public static VisorEventsCollectArgs createTasksArg(@Nullable Long timeArg, @Nullable String taskName,
             @Nullable GridUuid taskSessionId) {
-            return new VisorCollectEventsArgs(
+            return new VisorEventsCollectArgs(
                 VisorTaskUtils.concat(GridEventType.EVTS_JOB_EXECUTION, GridEventType.EVTS_TASK_EXECUTION),
                 timeArg, taskName, taskSessionId);
         }
@@ -129,12 +129,17 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
         public GridUuid taskSessionId() {
             return taskSessionId;
         }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(VisorEventsCollectArgs.class, this);
+        }
     }
 
     /**
      * Job for task returns events data.
      */
-    private static class VisorCollectEventsJob extends VisorJob<VisorCollectEventsArgs,
+    private static class VisorEventsCollectJob extends VisorJob<VisorEventsCollectArgs,
         Collection<? extends VisorGridEvent>> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -144,7 +149,7 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
          *
          * @param arg Job argument.
          */
-        private VisorCollectEventsJob(VisorCollectEventsArgs arg) {
+        private VisorEventsCollectJob(VisorEventsCollectArgs arg) {
             super(arg);
         }
 
@@ -219,7 +224,7 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends VisorGridEvent> run(final VisorCollectEventsArgs arg)
+        @Override protected Collection<? extends VisorGridEvent> run(final VisorEventsCollectArgs arg)
             throws GridException {
             final long startEvtTime = arg.timeArgument() == null ? 0L : System.currentTimeMillis() - arg.timeArgument();
 
@@ -273,7 +278,7 @@ public class VisorCollectEventsTask extends VisorMultiNodeTask<VisorCollectEvent
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorCollectEventsJob.class, this);
+            return S.toString(VisorEventsCollectJob.class, this);
         }
     }
 }

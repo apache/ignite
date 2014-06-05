@@ -27,7 +27,7 @@ import java.util.*;
  * Task that cache metrics from all nodes.
  */
 @GridInternal
-public class VisorCollectMetricsCacheTask extends VisorMultiNodeTask<GridBiTuple<Boolean, String>,
+public class VisorCacheCollectMetricsTask extends VisorMultiNodeTask<GridBiTuple<Boolean, String>,
     Iterable<VisorCacheAggregatedMetrics>, Collection<VisorCacheMetrics>> {
     /** {@inheritDoc} */
     @Override protected VisorCacheMetricsJob job(GridBiTuple<Boolean, String> arg) {

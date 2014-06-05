@@ -15,7 +15,7 @@ import java.lang.{Boolean => JavaBoolean}
 import java.util.{UUID, HashSet => JavaHashSet}
 
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorRunGcTask
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorGcTask
 import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
@@ -139,7 +139,7 @@ class VisorGcCommand {
 
                 val nids = prj.nodes().map(_.id())
 
-                prj.compute().withNoFailover().execute(classOf[VisorRunGcTask],
+                prj.compute().withNoFailover().execute(classOf[VisorGcTask],
                     toTaskArgument(nids, new JavaBoolean(dgc))).get.foreach { case (nid, stat) =>
                     val roundHb = math.round(stat.get1() / (1024L * 1024L))
                     val roundHa = math.round(stat.get2() / (1024L * 1024L))

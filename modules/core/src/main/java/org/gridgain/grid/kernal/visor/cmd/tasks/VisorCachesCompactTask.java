@@ -19,45 +19,39 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.util.*;
 
 /**
- * Task that clears specified caches on specified node.
+ * Task that compacts caches.
  */
 @GridInternal
-public class VisorClearCachesTask extends VisorOneNodeTask<Set<String>, Map<String, GridBiTuple<Integer, Integer>>> {
+public class VisorCachesCompactTask extends VisorOneNodeTask<Set<String>, Map<String, GridBiTuple<Integer, Integer>>> {
     /** {@inheritDoc} */
-    @Override protected VisorClearCachesJob job(Set<String> arg) {
-        return new VisorClearCachesJob(arg);
+    @Override protected VisorCachesCompactJob job(Set<String> names) {
+        return new VisorCachesCompactJob(names);
     }
 
-    /**
-     * Job that clear specified caches.
-     */
-    private static class VisorClearCachesJob extends VisorJob<Set<String>, Map<String, GridBiTuple<Integer, Integer>>> {
+    /** Job that compact caches on node. */
+    private static class VisorCachesCompactJob extends VisorJob<Set<String>, Map<String, GridBiTuple<Integer, Integer>>> {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /**
-         * Create job.
-         *
-         * @param arg Cache names to clear.
-         */
-        private VisorClearCachesJob(Set<String> arg) {
-            super(arg);
+        /** Create job with given argument. */
+        private VisorCachesCompactJob(Set<String> names) {
+            super(names);
         }
 
         /** {@inheritDoc} */
-        @Override protected Map<String, GridBiTuple<Integer, Integer>> run(Set<String> arg) throws GridException {
-            Map<String, GridBiTuple<Integer, Integer>> res = new HashMap<>();
+        @Override protected Map<String, GridBiTuple<Integer, Integer>> run(Set<String> names) throws GridException {
+            final Map<String, GridBiTuple<Integer, Integer>> res = new HashMap<>();
 
             for(GridCache cache : g.cachesx()) {
                 String cacheName = cache.name();
 
-                if (arg.contains(cacheName)) {
-                    Set keys = cache.keySet();
+                if (names.contains(cacheName)) {
+                    final Set keys = cache.keySet();
 
                     int before = keys.size(), after = before;
 
                     for (Object key : keys) {
-                        if (cache.clear(key))
+                        if (cache.compact(key))
                             after--;
                     }
 
@@ -70,7 +64,7 @@ public class VisorClearCachesTask extends VisorOneNodeTask<Set<String>, Map<Stri
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorClearCachesJob.class, this);
+            return S.toString(VisorCachesCompactJob.class, this);
         }
     }
 }
