@@ -414,7 +414,7 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
          * @throws IOException In case or error.
          */
         short readShort() throws IOException {
-            checkAvailable(1);
+            checkAvailable(2);
 
             short res = UNSAFE.getShort(bytes, OFFSET + pos);
 
@@ -552,14 +552,14 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
         @Override public void writeShort(String fieldName, short val) throws IOException {
             onWrite(fieldName);
 
-
+            out.writeShort(val);
         }
 
         /** {@inheritDoc} */
         @Override public void writeChar(String fieldName, char val) throws IOException {
             onWrite(fieldName);
 
-
+            out.writeChar(val);
         }
 
         /**
