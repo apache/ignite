@@ -29,7 +29,7 @@ public class GridUriDeploymentClassLoaderSelfTest extends GridUriDeploymentAbstr
         ClassLoader ldr = getGarClassLoader();
 
         // Load class from nested JAR file
-        assert ldr.loadClass("org.aopalliance.aop.Advice") != null;
+        assert ldr.loadClass("javax.mail.Service") != null;
     }
 
     /**
