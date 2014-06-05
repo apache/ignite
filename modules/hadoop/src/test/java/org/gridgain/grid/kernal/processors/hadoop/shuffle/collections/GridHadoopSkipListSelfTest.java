@@ -38,9 +38,9 @@ public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
     public void testLevel() {
         Random rnd = new GridRandom();
 
-        int[] levelsCnts = new int[31];
+        int[] levelsCnts = new int[32];
 
-        int all = 10000;
+        int all = 1000;
 
         for (int i = 0; i < all; i++) {
             int level = GridHadoopSkipList.randomLevel(rnd);
@@ -51,7 +51,7 @@ public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
         X.println("Distribution: " + Arrays.toString(levelsCnts));
 
         for (int level = 0; level < levelsCnts.length; level++) {
-            int exp = all >>> (level + 1);
+            int exp = (level + 1) == levelsCnts.length ? 0 : all >>> (level + 1);
 
             double precission = 0.72 / Math.max(32 >>> level, 1);
 

@@ -33,9 +33,9 @@ public interface GridHadoopJob {
     public GridHadoopJobInfo info();
 
     /**
-     * Gets collection of input blocks.
+     * Gets collection of input splits for this job.
      *
-     * @return Input blocks.
+     * @return Input splits.
      */
     public Collection<GridHadoopInputSplit> input() throws GridException;
 

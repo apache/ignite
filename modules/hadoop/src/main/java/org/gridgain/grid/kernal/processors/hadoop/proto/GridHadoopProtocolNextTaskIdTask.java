@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.hadoop.proto;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.*;
 
 /**
  * Task to get the next job ID.

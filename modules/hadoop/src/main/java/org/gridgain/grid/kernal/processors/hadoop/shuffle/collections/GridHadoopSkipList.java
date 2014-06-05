@@ -175,6 +175,8 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
      * @param nextMeta Next meta.
      */
     private void nextMeta(long meta, int level, long nextMeta) {
+        assert meta != 0;
+
         mem.writeLong(meta + 24 + 8 * level, nextMeta);
     }
 
