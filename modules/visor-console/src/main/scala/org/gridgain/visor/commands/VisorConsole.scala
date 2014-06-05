@@ -52,7 +52,7 @@ import vvm.VisorVvmCommand
  */
 object VisorConsole extends App {
     /** Ant-augmented version number. */
-    private final val VISOR_VER = GridProductImpl.EDITION + "-" + GridProductImpl.VER
+    private final val VISOR_VER = GridProductImpl.VER
     /** Ant-augmented release date. */
     private final val VISOR_RELEASE_DATE = GridProductImpl.RELEASE_DATE
     /** Ant-augmented copyright blurb. */

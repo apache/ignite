@@ -166,11 +166,6 @@
                                 </tstamp>
 
                                 <replaceregexp file="target/classes/gridgain.properties" byline="true">
-                                    <regexp pattern="gridgain.edition=.*"/>
-                                    <substitution expression="gridgain.edition=${gridgain.edition}"/>
-                                </replaceregexp>
-
-                                <replaceregexp file="target/classes/gridgain.properties" byline="true">
                                     <regexp pattern="gridgain.version=.*"/>
                                     <substitution expression="gridgain.version=${gridgain.version}"/>
                                 </replaceregexp>
