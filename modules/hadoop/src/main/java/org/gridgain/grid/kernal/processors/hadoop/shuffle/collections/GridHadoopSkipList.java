@@ -468,7 +468,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
                             prevMeta = meta;
                             meta = nextMeta(prevMeta, level);
 
-                            if (meta != 0 && meta != oldMeta) // Old meta already known to be greater than our key or is 0.
+                            if (meta != oldMeta) // Old meta already known to be greater than ours or is 0.
                                 continue;
                         }
 
