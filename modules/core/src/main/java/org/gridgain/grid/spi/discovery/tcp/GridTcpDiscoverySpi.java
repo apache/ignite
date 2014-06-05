@@ -992,7 +992,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
         locNode.local(true);
 
-        locNodeAddrs = getNodeAddresses(locNode, null);
+        locNodeAddrs = getNodeAddresses(locNode);
 
         if (log.isDebugEnabled())
             log.debug("Local node initialized: " + locNode);
@@ -1404,7 +1404,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         if (node.id().equals(locNodeId))
             return true;
 
-        for (InetSocketAddress addr : getNodeAddresses(node, null) ) {
+        for (InetSocketAddress addr : getNodeAddresses(node) ) {
             try {
                 // ID returned by the node should be the same as ID of the parameter for ping to succeed.
                 return node.id().equals(pingNode(addr));
@@ -2297,25 +2297,35 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
     /**
      * @param node Node.
+     * @return {@link LinkedHashSet} of internal and external addresses of provided node.
+     *      Internal addresses placed before external addresses.
+     */
+    @SuppressWarnings("TypeMayBeWeakened")
+    private LinkedHashSet<InetSocketAddress> getNodeAddresses(GridTcpDiscoveryNode node) {
+        LinkedHashSet<InetSocketAddress> res = new LinkedHashSet<>(node.socketAddresses());
+
+        Collection<InetSocketAddress> extAddrs = node.attribute(createSpiAttributeName(ATTR_EXT_ADDRS));
+
+        if (extAddrs != null)
+            res.addAll(extAddrs);
+
+        return res;
+    }
+
+    /**
+     * @param node Node.
      * @param sameHost Same host flag.
      * @return {@link LinkedHashSet} of internal and external addresses of provided node.
      *      Internal addresses placed before external addresses.
-     *      If {@code sameHost} is not {@code null} then internal addresses
-     *      will be sorted with {@code inetAddressesComparator(sameHost)}.
+     *      Internal addresses will be sorted with {@code inetAddressesComparator(sameHost)}.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    private LinkedHashSet<InetSocketAddress> getNodeAddresses(GridTcpDiscoveryNode node, @Nullable Boolean sameHost) {
-        LinkedHashSet<InetSocketAddress> res;
+    private LinkedHashSet<InetSocketAddress> getNodeAddresses(GridTcpDiscoveryNode node, boolean sameHost) {
+        ArrayList<InetSocketAddress> addrs = new ArrayList<>(node.socketAddresses());
 
-        if (sameHost == null)
-            res = new LinkedHashSet<>(node.socketAddresses());
-        else {
-            ArrayList<InetSocketAddress> addrs = new ArrayList<>(node.socketAddresses());
+        Collections.sort(addrs, inetAddressesComparator(sameHost));
 
-            Collections.sort(addrs, inetAddressesComparator(sameHost));
-
-            res = new LinkedHashSet<>(addrs);
-        }
+        LinkedHashSet<InetSocketAddress> res = new LinkedHashSet<>(addrs);
 
         Collection<InetSocketAddress> extAddrs = node.attribute(createSpiAttributeName(ATTR_EXT_ADDRS));
 
@@ -2693,7 +2703,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                         ring.allNodes(),
                         new C1<GridTcpDiscoveryNode, Collection<InetSocketAddress>>() {
                             @Override public Collection<InetSocketAddress> apply(GridTcpDiscoveryNode node) {
-                                return getNodeAddresses(node, null);
+                                return getNodeAddresses(node);
                             }
                         }
                     )
@@ -3613,7 +3623,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             throws GridSpiException {
             GridSpiException ex = null;
 
-            for (InetSocketAddress addr : getNodeAddresses(node, null)) {
+            for (InetSocketAddress addr : getNodeAddresses(node)) {
                 try {
                     sendMessageDirectly(msg, addr);
 
