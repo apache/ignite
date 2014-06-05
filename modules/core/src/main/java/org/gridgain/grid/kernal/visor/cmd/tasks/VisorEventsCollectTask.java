@@ -183,19 +183,19 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
             if (e.getClass().equals(GridTaskEvent.class)) {
                 GridTaskEvent te = (GridTaskEvent)e;
 
-                return !containsInTaskName(te.taskName(), te.taskClassName(), taskName);
+                return containsInTaskName(te.taskName(), te.taskClassName(), taskName);
             }
 
             if (e.getClass().equals(GridJobEvent.class)) {
                 GridJobEvent je = (GridJobEvent)e;
 
-                return !containsInTaskName(je.taskName(), je.taskName(), taskName);
+                return containsInTaskName(je.taskName(), je.taskName(), taskName);
             }
 
             if (e.getClass().equals(GridDeploymentEvent.class)) {
                 GridDeploymentEvent de = (GridDeploymentEvent)e;
 
-                return !de.alias().toLowerCase().contains(taskName);
+                return de.alias().toLowerCase().contains(taskName);
             }
 
             return true;
@@ -229,9 +229,50 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
             final long startEvtTime = arg.timeArgument() == null ? 0L : System.currentTimeMillis() - arg.timeArgument();
 
             Collection<GridEvent> evts = g.events().localQuery(new GridPredicate<GridEvent>() {
+                private Map<String, Boolean> internalTasks = new HashMap<>();
+
+                /**
+                 * Detects internal task or job.
+                 *
+                 * @param e Event
+                 * @return {@code true} if internal.
+                 */
+                private boolean internal(GridEvent e) {
+                    if (e.getClass().equals(GridTaskEvent.class)) {
+                        GridTaskEvent te = (GridTaskEvent)e;
+
+                        internalTasks.put(te.taskClassName(), te.internal());
+
+                        return te.internal();
+                    }
+
+                    if (e.getClass().equals(GridJobEvent.class)) {
+                        GridJobEvent je = (GridJobEvent)e;
+
+                        Boolean internal = internalTasks.get(je.taskClassName());
+
+                        if (internal != null)
+                            return internal;
+
+                        try {
+                            internal = U.hasAnnotation(Class.forName(je.taskClassName()), GridInternal.class);
+                        }
+                        catch (Exception ignored) {
+                            internal = true;
+                        }
+
+                        internalTasks.put(je.taskClassName(), internal);
+
+                        return internal;
+                    }
+
+                    return true;
+                }
+
                 @Override public boolean apply(GridEvent event) {
                     return (arg.typeArgument() == null || F.contains(arg.typeArgument(), event.type())) &&
                         event.timestamp() >= startEvtTime &&
+                        !internal(event) &&
                         (arg.taskName() == null || filterByTaskName(event, arg.taskName())) &&
                         (arg.taskSessionId() == null || filterByTaskSessionId(event, arg.taskSessionId()));
                 }

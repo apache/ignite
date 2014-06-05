@@ -51,7 +51,7 @@ public class VisorGridConfig implements Serializable {
     private VisorLifecycleConfig lifecycle;
 
     /** Executors service configuration. */
-    private VisorExecuteServiceConfig execSvc;
+    private VisorExecutorServiceConfig execSvc;
 
     /** Segmentation. */
     private VisorSegmentationConfig seg;
@@ -106,7 +106,7 @@ public class VisorGridConfig implements Serializable {
         cfg.p2p(VisorPeerToPeerConfig.from(c));
         cfg.email(VisorEmailConfig.from(c));
         cfg.lifecycle(VisorLifecycleConfig.from(c));
-        cfg.executeService(VisorExecuteServiceConfig.from(c));
+        cfg.executeService(VisorExecutorServiceConfig.from(c));
         cfg.segmentation(VisorSegmentationConfig.from(c));
         cfg.includeProperties(compactArray(c.getIncludeProperties()));
         cfg.includeEventTypes(c.getIncludeEventTypes());
@@ -224,14 +224,14 @@ public class VisorGridConfig implements Serializable {
     /**
      * @return Executors service configuration.
      */
-    public VisorExecuteServiceConfig executeService() {
+    public VisorExecutorServiceConfig executeService() {
         return execSvc;
     }
 
     /**
      * @param execSvc New executors service configuration.
      */
-    public void executeService(VisorExecuteServiceConfig execSvc) {
+    public void executeService(VisorExecutorServiceConfig execSvc) {
         this.execSvc = execSvc;
     }
 

@@ -91,6 +91,9 @@ public class VisorBasicConfig implements Serializable {
     /** Whether update checker is enabled. */
     private boolean updateNtf;
 
+    /** Security credentials. */
+    private String securityCred;
+
     /**
      * @param g Grid.
      * @param c Grid configuration.
@@ -120,6 +123,7 @@ public class VisorBasicConfig implements Serializable {
         cfg.quiet(boolValue(GG_QUIET, true));
         cfg.successFile(getProperty(GG_SUCCESS_FILE));
         cfg.updateNotifier(boolValue(GG_UPDATE_NOTIFIER, true));
+        cfg.securityCredentialsProvider(compactClass(c.getSecurityCredentialsProvider()));
 
         return cfg;
     }
@@ -416,6 +420,20 @@ public class VisorBasicConfig implements Serializable {
      */
     public void updateNotifier(boolean updateNtf) {
         this.updateNtf = updateNtf;
+    }
+
+    /**
+     * @return Security credentials.
+     */
+    @Nullable public String securityCredentialsProvider() {
+        return securityCred;
+    }
+
+    /**
+     * @param securityCred New security credentials.
+     */
+    public void securityCredentialsProvider(@Nullable String securityCred) {
+        this.securityCred = securityCred;
     }
 
     /** {@inheritDoc} */

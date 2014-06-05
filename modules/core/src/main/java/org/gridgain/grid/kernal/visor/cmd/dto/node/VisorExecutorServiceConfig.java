@@ -19,7 +19,7 @@ import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.*;
 /**
  * Data transfer object for node executors configuration properties.
  */
-public class VisorExecuteServiceConfig implements Serializable {
+public class VisorExecutorServiceConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,21 +41,30 @@ public class VisorExecuteServiceConfig implements Serializable {
     /** Whether or not GridGain will stop peer-to-peer executor service on node shutdown. */
     private boolean p2pExecSvcShutdown;
 
+    /** REST requests executor service. */
+    private String restExecSvc;
+
+    /** REST executor service shutdown flag. */
+    private boolean restSvcShutdown;
+
     /**
      * @param c Grid configuration.
      * @return Data transfer object for node executors configuration properties.
      */
-    public static VisorExecuteServiceConfig from(GridConfiguration c) {
-        VisorExecuteServiceConfig cfg = new VisorExecuteServiceConfig();
+    public static VisorExecutorServiceConfig from(GridConfiguration c) {
+        VisorExecutorServiceConfig cfg = new VisorExecutorServiceConfig();
 
         cfg.executeService(compactClass(c.getExecutorService()));
         cfg.executeServiceShutdown(c.getExecutorServiceShutdown());
 
-        cfg.systemExecuteService(compactClass(c.getSystemExecutorService()));
-        cfg.systemExecuteServiceShutdown(c.getSystemExecutorServiceShutdown());
+        cfg.systemExecutorService(compactClass(c.getSystemExecutorService()));
+        cfg.systemExecutorServiceShutdown(c.getSystemExecutorServiceShutdown());
 
-        cfg.p2pExecuteService(compactClass(c.getPeerClassLoadingExecutorService()));
-        cfg.p2pExecuteServiceShutdown(c.getSystemExecutorServiceShutdown());
+        cfg.p2pExecutorService(compactClass(c.getPeerClassLoadingExecutorService()));
+        cfg.p2pExecutorServiceShutdown(c.getSystemExecutorServiceShutdown());
+
+        cfg.restExecutorService(compactClass(c.getRestExecutorService()));
+        cfg.restExecutorServiceShutdown(c.getRestExecutorServiceShutdown());
 
         return cfg;
     }
@@ -91,61 +100,89 @@ public class VisorExecuteServiceConfig implements Serializable {
     /**
      * @return System executor service.
      */
-    public String systemExecuteService() {
+    public String systemExecutorService() {
         return sysExecSvc;
     }
 
     /**
      * @param sysExecSvc New system executor service.
      */
-    public void systemExecuteService(String sysExecSvc) {
+    public void systemExecutorService(String sysExecSvc) {
         this.sysExecSvc = sysExecSvc;
     }
 
     /**
      * @return Whether or not GridGain will stop system executor service on node shutdown.
      */
-    public boolean systemExecuteServiceShutdown() {
+    public boolean systemExecutorServiceShutdown() {
         return sysExecSvcShutdown;
     }
 
     /**
      * @param sysExecSvcShutdown New whether or not GridGain will stop system executor service on node shutdown.
      */
-    public void systemExecuteServiceShutdown(boolean sysExecSvcShutdown) {
+    public void systemExecutorServiceShutdown(boolean sysExecSvcShutdown) {
         this.sysExecSvcShutdown = sysExecSvcShutdown;
     }
 
     /**
      * @return Peer-to-peer executor service.
      */
-    public String p2pExecuteService() {
+    public String p2pExecutorService() {
         return p2pExecSvc;
     }
 
     /**
      * @param p2pExecSvc New peer-to-peer executor service.
      */
-    public void p2pExecuteService(String p2pExecSvc) {
+    public void p2pExecutorService(String p2pExecSvc) {
         this.p2pExecSvc = p2pExecSvc;
     }
 
     /**
      * @return Whether or not GridGain will stop peer-to-peer executor service on node shutdown.
      */
-    public boolean p2pExecuteServiceShutdown() {
+    public boolean p2pExecutorServiceShutdown() {
         return p2pExecSvcShutdown;
     }
 
     /**
      * @param p2pExecSvcShutdown New whether or not GridGain will stop peer-to-peer executor service on node shutdown.
      */
-    public void p2pExecuteServiceShutdown(boolean p2pExecSvcShutdown) {
+    public void p2pExecutorServiceShutdown(boolean p2pExecSvcShutdown) {
         this.p2pExecSvcShutdown = p2pExecSvcShutdown;
+    }
+
+    /**
+     * @return REST requests executor service.
+     */
+    public String restExecutorService() {
+        return restExecSvc;
+    }
+
+    /**
+     * @param restExecSvc New REST requests executor service.
+     */
+    public void restExecutorService(String restExecSvc) {
+        this.restExecSvc = restExecSvc;
+    }
+
+    /**
+     * @return REST executor service shutdown flag.
+     */
+    public boolean restExecutorServiceShutdown() {
+        return restSvcShutdown;
+    }
+
+    /**
+     * @param restSvcShutdown New REST executor service shutdown flag.
+     */
+    public void restExecutorServiceShutdown(boolean restSvcShutdown) {
+        this.restSvcShutdown = restSvcShutdown;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorExecuteServiceConfig.class, this);
+        return S.toString(VisorExecutorServiceConfig.class, this);
     }
 }

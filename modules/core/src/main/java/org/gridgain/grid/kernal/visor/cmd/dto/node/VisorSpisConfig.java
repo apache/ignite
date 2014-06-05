@@ -144,7 +144,7 @@ public class VisorSpisConfig implements Serializable {
         cfg.deploymentSpi(collectSpiInfo(c.getDeploymentSpi()));
         cfg.checkpointSpis(collectSpiInfo(c.getCheckpointSpi()));
         cfg.failoverSpis(collectSpiInfo(c.getFailoverSpi()));
-        cfg.loadBalancingSpi(collectSpiInfo(c.getLoadBalancingSpi()));
+        cfg.loadBalancingSpis(collectSpiInfo(c.getLoadBalancingSpi()));
         cfg.swapSpaceSpi(collectSpiInfo(c.getSwapSpaceSpi()));
         cfg.indexingSpis(collectSpiInfo(c.getIndexingSpi()));
 
@@ -287,7 +287,7 @@ public class VisorSpisConfig implements Serializable {
     /**
      * @param loadBalancingSpis New load balancing SPIs.
      */
-    public void loadBalancingSpi(GridBiTuple<String, Map<String, Object>>[] loadBalancingSpis) {
+    public void loadBalancingSpis(GridBiTuple<String, Map<String, Object>>[] loadBalancingSpis) {
         this.loadBalancingSpis = loadBalancingSpis;
     }
 

@@ -100,6 +100,12 @@ public class VisorCacheConfig implements Serializable {
     /** Name of SPI to use for indexing. */
     private String indexingSpiName;
 
+    /** Name of class implementing GridCacheTmLookup. */
+    private String tmLookupClsName;
+
+    /** Cache interceptor. */
+    private String interceptor;
+
     /** Cache affinity config. */
     private VisorAffinityConfig affinity;
 
@@ -162,6 +168,9 @@ public class VisorCacheConfig implements Serializable {
         cfg.pessimisticTxLoggerLinger(ccfg.getPessimisticTxLogLinger());
         cfg.memoryMode(ccfg.getMemoryMode());
         cfg.indexingSpiName(ccfg.getIndexingSpiName());
+        cfg.interceptor(compactClass(ccfg.getInterceptor()));
+        cfg.transactionManagerLookupClassName(ccfg.getTransactionManagerLookupClassName());
+
         cfg.affinityConfig(VisorAffinityConfig.from(ccfg));
         cfg.preloadConfig(VisorPreloadConfig.from(ccfg));
         cfg.evictConfig(VisorEvictionConfig.from(ccfg));
@@ -548,6 +557,34 @@ public class VisorCacheConfig implements Serializable {
     }
 
     /**
+     * @return Cache interceptor.
+     */
+    @Nullable public String interceptor() {
+        return interceptor;
+    }
+
+    /**
+     * @param interceptor New cache interceptor.
+     */
+    public void interceptor(@Nullable String interceptor) {
+        this.interceptor = interceptor;
+    }
+
+    /**
+     * @return Name of class implementing GridCacheTmLookup.
+     */
+    @Nullable public String transactionManagerLookupClassName() {
+        return tmLookupClsName;
+    }
+
+    /**
+     * @param tmLookupClsName New name of class implementing GridCacheTmLookup.
+     */
+    public void transactionManagerLookupClassName(@Nullable String tmLookupClsName) {
+        this.tmLookupClsName = tmLookupClsName;
+    }
+
+    /**
      * @return Cache affinity config.
      */
     public VisorAffinityConfig affinityConfig() {
@@ -691,5 +728,4 @@ public class VisorCacheConfig implements Serializable {
     @Override public String toString() {
         return S.toString(VisorCacheConfig.class, this);
     }
-
 }
