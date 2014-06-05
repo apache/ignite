@@ -1478,7 +1478,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                         throw new GridSpiException("Authentication failed for local node: " + locNode.id());
                     else if (!(subj instanceof Serializable))
                         throw new GridSpiException("Authentication failed for local node " +
-                            "(sbuject is not Serializable): " + locNode.id());
+                            "(subject is not Serializable): " + locNode.id());
 
                     Map<String, Object> attrs = new HashMap<>(locNode.attributes());
 
