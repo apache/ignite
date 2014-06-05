@@ -524,6 +524,7 @@ public class GridConfiguration {
      *
      * @param cfg Grid configuration to copy from.
      */
+    @SuppressWarnings("deprecation")
     public GridConfiguration(GridConfiguration cfg) {
         assert cfg != null;
 
