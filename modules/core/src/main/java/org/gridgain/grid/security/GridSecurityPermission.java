@@ -29,7 +29,13 @@ public enum GridSecurityPermission {
     TASK_EXECUTE,
 
     /** Task {@code cancel} permission. */
-    TASK_CANCEL;
+    TASK_CANCEL,
+
+    /** Events {@code enable} permission. */
+    EVENTS_ENABLE,
+
+    /** Events {@code disable} permission. */
+    EVENTS_DISABLE;
 
     /** Enumerated values. */
     private static final GridSecurityPermission[] VALS = values();

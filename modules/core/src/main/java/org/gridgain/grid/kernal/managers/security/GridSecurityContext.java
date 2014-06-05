@@ -39,6 +39,9 @@ public class GridSecurityContext implements Externalizable {
     /** String task permissions. */
     private Map<String, Collection<GridSecurityPermission>> wildcardCachePermissions = new LinkedHashMap<>();
 
+    /** System-wide permissions. */
+    private Collection<GridSecurityPermission> sysPermissions;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -71,6 +74,9 @@ public class GridSecurityContext implements Externalizable {
      */
     public boolean taskOperationAllowed(String taskClsName, GridSecurityPermission perm) {
         assert perm == GridSecurityPermission.TASK_EXECUTE || perm == GridSecurityPermission.TASK_CANCEL;
+
+        if (visorTask(taskClsName))
+            return visorTaskAllowed(taskClsName);
 
         Collection<GridSecurityPermission> p = strictTaskPermissions.get(taskClsName);
 
@@ -117,6 +123,40 @@ public class GridSecurityContext implements Externalizable {
     }
 
     /**
+     * Checks whether system-wide permission is allowed (excluding Visor task operations).
+     *
+     * @param perm Permission to check.
+     * @return {@code True} if system operation is allowed.
+     */
+    public boolean systemOperationAllowed(GridSecurityPermission perm) {
+        if (sysPermissions == null)
+            return subj.permissions().defaultAllowAll();
+
+        return sysPermissions.contains(perm);
+    }
+
+    /**
+     * Checks if task is Visor task.
+     *
+     * @param taskName Task name.
+     * @return {@code True} if task is Visor task.
+     */
+    private boolean visorTask(String taskName) {
+        return false; // TODO.
+    }
+
+    /**
+     * Checks if Visor task is allowed for execution.
+     *
+     * @param taskName Task name.
+     * @return {@code True} if execution is allowed.
+     */
+    private boolean visorTaskAllowed(String taskName) {
+        // TODO.
+        return subj.permissions().defaultAllowAll();
+    }
+
+    /**
      * Init rules.
      */
     private void initRules() {
@@ -149,6 +189,8 @@ public class GridSecurityContext implements Externalizable {
             else
                 strictCachePermissions.put(ptrn, vals);
         }
+
+        sysPermissions = permSet.systemPermissions();
     }
 
     /** {@inheritDoc} */
