@@ -236,7 +236,7 @@ public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
                     IntWritable key = new IntWritable();
                     IntWritable val = new IntWritable();
 
-                    GridHadoopConcurrentHashMultimap.Adder a = m.startAdding();
+                    GridHadoopMultimap.Adder a = m.startAdding();
 
                     for (int i = 0; i < 50000; i++) {
                         int k = rnd.nextInt(32000);
@@ -271,8 +271,14 @@ public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
 
             GridHadoopTaskInput in = m.input();
 
+            int prevKey = Integer.MIN_VALUE;
+
             while (in.next()) {
-                IntWritable key = (IntWritable) in.key();
+                IntWritable key = (IntWritable)in.key();
+
+                assertTrue(key.get() > prevKey);
+
+                prevKey = key.get();
 
                 Iterator<?> valsIter = in.values();
 

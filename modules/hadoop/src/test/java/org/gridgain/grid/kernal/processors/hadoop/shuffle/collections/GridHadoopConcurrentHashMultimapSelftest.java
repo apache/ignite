@@ -199,7 +199,7 @@ public class GridHadoopConcurrentHashMultimapSelftest extends GridCommonAbstract
                     IntWritable key = new IntWritable();
                     IntWritable val = new IntWritable();
 
-                    GridHadoopConcurrentHashMultimap.Adder a = m.startAdding();
+                    GridHadoopMultimap.Adder a = m.startAdding();
 
                     for (int i = 0; i < 50000; i++) {
                         int k = rnd.nextInt(32000);

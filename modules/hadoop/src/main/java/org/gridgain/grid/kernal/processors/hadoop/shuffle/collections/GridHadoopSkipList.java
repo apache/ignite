@@ -171,10 +171,11 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
 
     /**
      * @param meta Meta pointer.
+     * @param level Level.
      * @param nextMeta Next meta.
      */
-    private void nextMeta(long meta, long nextMeta) {
-        mem.writeLong(meta + 24, nextMeta);
+    private void nextMeta(long meta, int level, long nextMeta) {
+        mem.writeLong(meta + 24 + 8 * level, nextMeta);
     }
 
     /**
@@ -317,6 +318,13 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
         }
 
         /**
+         * Drops last remembered frame from the stack.
+         */
+        private void stackPop() {
+            stack.pop(2);
+        }
+
+        /**
          * @param key Key.
          * @param val Value.
          * @return Meta pointer.
@@ -354,9 +362,9 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
                         newMeta = createMeta(keyPtr, valPtr, newMetaLevel);
                     }
 
-                    nextMeta(newMeta, meta);
+                    nextMeta(newMeta, 0, meta); // Set next to new meta before publishing.
 
-                    if (casNextMeta(prevMeta, 0, meta, newMeta)) { // The new key was added successfully.
+                    if (casNextMeta(prevMeta, 0, meta, newMeta)) { // New key was added successfully.
                         laceUp(key, newMeta, newMetaLevel);
 
                         return newMeta;
@@ -364,7 +372,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
                     else { // Add failed, need to check out what was added by another thread.
                         meta = nextMeta(prevMeta, level = 0);
 
-                        stack.pop(2); // Drop last remembered frame.
+                        stackPop();
                     }
                 }
 
@@ -405,7 +413,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
                     if (nextMeta != meta) { // If the meta is the same as on upper level go deeper.
                         meta = nextMeta;
 
-                        assert meta != 0 : stack + " " + level;
+                        assert meta != 0;
 
                         break;
                     }
@@ -436,24 +444,25 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
                 long prevMeta = 0;
                 long meta = 0;
 
-                if (!stack.isEmpty()) {
+                if (!stack.isEmpty()) { // Get the path back.
                     meta = stack.remove();
                     prevMeta = stack.remove();
                 }
 
-                while (!casNextMeta(prevMeta, level, meta, newMeta)) {
+                for (;;) {
+                    nextMeta(newMeta, level, meta);
+
+                    if (casNextMeta(prevMeta, level, meta, newMeta))
+                        break;
+
                     long oldMeta = meta;
 
                     meta = nextMeta(prevMeta, level); // Reread meta.
 
-                    assert meta != 0;
-
                     for (;;) {
-                        assert meta != 0;
-
                         int cmpRes = cmp(key, meta);
 
-                        if (cmpRes > 0) {  // Go right.
+                        if (cmpRes > 0) { // Go right.
                             prevMeta = meta;
                             meta = nextMeta(prevMeta, level);
 
