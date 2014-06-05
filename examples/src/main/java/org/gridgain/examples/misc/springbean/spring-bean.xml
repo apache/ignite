@@ -16,16 +16,14 @@
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:util="http://www.springframework.org/schema/util"
        xsi:schemaLocation="
-        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
-        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.5.xsd">
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
     <description>Main Spring file for grid configuration.</description>
 
     <!-- Example of bean definition with given configuration. -->
-    <bean id="mySpringBean" class="org.gridgain.grid.GridSpringBean" scope="singleton">
+    <bean id="mySpringBean" class="org.gridgain.grid.GridSpringBean">
         <property name="configuration">
-            <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
+            <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
                 <property name="gridName" value="mySpringGrid"/>
             </bean>
         </property>

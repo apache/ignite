@@ -26,15 +26,14 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
-        http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
 
     <description>Main Spring file for router configuration.</description>
 
     <!--
         Configuration of TCP router.
     -->
-    <bean id="tcp.router.cfg" class="org.gridgain.client.router.GridTcpRouterConfiguration"
-          scope="singleton">
+    <bean id="tcp.router.cfg" class="org.gridgain.client.router.GridTcpRouterConfiguration">
 
         <property name="logger" ref="router.log" />
     </bean>
