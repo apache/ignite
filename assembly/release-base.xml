@@ -76,12 +76,11 @@
         </fileSet>
 
         <fileSet>
-            <directory>modules/clients/src/main/java</directory>
+            <directory>modules/clients</directory>
             <outputDirectory>/clients/java</outputDirectory>
             <includes>
                 <include>config/**</include>
                 <include>readme.pdf</include>
-                <include>readme.txt</include>
             </includes>
         </fileSet>
 
