@@ -24,7 +24,7 @@ import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.gridgain.grid.kernal.processors.spring.GridSpringProcessor
 import org.gridgain.grid.kernal.processors.task.GridInternal
 import org.gridgain.grid.kernal.{GridEx, GridProductImpl}
-import org.gridgain.grid.lang.{GridCallable, GridPredicate}
+import org.gridgain.grid.lang.{GridBiTuple, GridCallable, GridPredicate}
 import org.gridgain.grid.resources.GridInstanceResource
 import org.gridgain.grid.spi.communication.tcp.GridTcpCommunicationSpi
 import org.gridgain.grid.thread._
@@ -1698,15 +1698,15 @@ object visor extends VisorTag {
     }
 
     /** Convert to task argument. */
-    def emptyTaskArgument[A](nid: UUID): T2[JSet[UUID], Void] = new T2(Collections.singleton(nid), null)
+    def emptyTaskArgument[A](nid: UUID): GridBiTuple[JSet[UUID], Void] = new T2(Collections.singleton(nid), null)
 
-    def emptyTaskArgument[A](nids: Iterable[UUID]): T2[JSet[UUID], Void] = new T2(new JHashSet(nids), null)
-
-    /** Convert to task argument. */
-    def toTaskArgument[A](nid: UUID, arg: A): T2[JSet[UUID], A] = new T2(Collections.singleton(nid), arg)
+    def emptyTaskArgument[A](nids: Iterable[UUID]): GridBiTuple[JSet[UUID], Void] = new T2(new JHashSet(nids), null)
 
     /** Convert to task argument. */
-    def toTaskArgument[A](nids: Iterable[UUID], arg: A): T2[JSet[UUID], A] = new T2(new JHashSet(nids), arg)
+    def toTaskArgument[A](nid: UUID, arg: A): GridBiTuple[JSet[UUID], A] = new T2(Collections.singleton(nid), arg)
+
+    /** Convert to task argument. */
+    def toTaskArgument[A](nids: Iterable[UUID], arg: A): GridBiTuple[JSet[UUID], A] = new T2(new JHashSet(nids), arg)
 
     /**
      * Asks user to select a node from the list.

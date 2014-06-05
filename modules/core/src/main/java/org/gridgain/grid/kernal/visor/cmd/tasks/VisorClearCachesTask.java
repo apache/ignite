@@ -13,7 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
-import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
@@ -22,7 +22,7 @@ import java.util.*;
  * Task that clears specified caches on specified node.
  */
 @GridInternal
-public class VisorClearCachesTask extends VisorOneNodeTask<Set<String>, Map<String, T2<Integer, Integer>>> {
+public class VisorClearCachesTask extends VisorOneNodeTask<Set<String>, Map<String, GridBiTuple<Integer, Integer>>> {
     /** {@inheritDoc} */
     @Override protected VisorClearCachesJob job(Set<String> arg) {
         return new VisorClearCachesJob(arg);
@@ -31,7 +31,7 @@ public class VisorClearCachesTask extends VisorOneNodeTask<Set<String>, Map<Stri
     /**
      * Job that clear specified caches.
      */
-    private static class VisorClearCachesJob extends VisorJob<Set<String>, Map<String, T2<Integer, Integer>>> {
+    private static class VisorClearCachesJob extends VisorJob<Set<String>, Map<String, GridBiTuple<Integer, Integer>>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -45,8 +45,8 @@ public class VisorClearCachesTask extends VisorOneNodeTask<Set<String>, Map<Stri
         }
 
         /** {@inheritDoc} */
-        @Override protected Map<String, T2<Integer, Integer>> run(Set<String> arg) throws GridException {
-            Map<String, T2<Integer, Integer>> res = new HashMap<>();
+        @Override protected Map<String, GridBiTuple<Integer, Integer>> run(Set<String> arg) throws GridException {
+            Map<String, GridBiTuple<Integer, Integer>> res = new HashMap<>();
 
             for(GridCache cache : g.cachesx()) {
                 String cacheName = cache.name();
@@ -61,7 +61,7 @@ public class VisorClearCachesTask extends VisorOneNodeTask<Set<String>, Map<Stri
                             after--;
                     }
 
-                    res.put(cacheName, new T2<>(before, after));
+                    res.put(cacheName, new GridBiTuple<>(before, after));
                 }
             }
 

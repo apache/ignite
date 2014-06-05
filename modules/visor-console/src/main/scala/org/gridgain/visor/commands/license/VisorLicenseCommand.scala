@@ -16,7 +16,7 @@ import java.util.UUID
 
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.visor.cmd.tasks.{VisorCollectLicenseTask, VisorUpdateLicenseTask}
-import org.gridgain.grid.util.typedef.T2
+import org.gridgain.grid.lang.GridBiTuple
 import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
@@ -179,7 +179,7 @@ class VisorLicenseCommand {
                 nodes.foreach(n => {
                     grid.forNode(n).compute().withNoFailover().
                         execute(classOf[VisorUpdateLicenseTask], toTaskArgument(n.id,
-                        new T2(UUID.fromString(licId), Source.fromFile(licPath).mkString))).get
+                        new GridBiTuple(UUID.fromString(licId), Source.fromFile(licPath).mkString))).get
                 })
 
                 println("All licenses have been updated.")

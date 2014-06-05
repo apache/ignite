@@ -308,42 +308,42 @@ public class VisorGridConfig implements Serializable {
     /**
      * @return Caches.
      */
-    @Nullable public Iterable<VisorCacheConfig> caches() {
+    public Iterable<VisorCacheConfig> caches() {
         return caches;
     }
 
     /**
      * @param caches New caches.
      */
-    public void caches(@Nullable Iterable<VisorCacheConfig> caches) {
+    public void caches(Iterable<VisorCacheConfig> caches) {
         this.caches = caches;
     }
 
     /**
      * @return Ggfss.
      */
-    @Nullable public Iterable<VisorGgfsConfig> ggfss() {
+    public Iterable<VisorGgfsConfig> ggfss() {
         return ggfss;
     }
 
     /**
      * @param ggfss New ggfss.
      */
-    public void ggfss(@Nullable Iterable<VisorGgfsConfig> ggfss) {
+    public void ggfss(Iterable<VisorGgfsConfig> ggfss) {
         this.ggfss = ggfss;
     }
 
     /**
      * @return Streamers.
      */
-    @Nullable public Iterable<VisorStreamerConfig> streamers() {
+    public Iterable<VisorStreamerConfig> streamers() {
         return streamers;
     }
 
     /**
      * @param streamers New streamers.
      */
-    public void streamers(@Nullable Iterable<VisorStreamerConfig> streamers) {
+    public void streamers(Iterable<VisorStreamerConfig> streamers) {
         this.streamers = streamers;
     }
 

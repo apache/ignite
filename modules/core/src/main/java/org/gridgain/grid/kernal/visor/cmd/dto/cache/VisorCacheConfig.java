@@ -186,7 +186,7 @@ public class VisorCacheConfig implements Serializable {
      */
     public static Iterable<VisorCacheConfig> list(GridCacheConfiguration[] caches) {
         if (caches == null)
-            return null;
+            return Collections.emptyList();
 
         final Collection<VisorCacheConfig> cfgs = new ArrayList<>(caches.length);
 

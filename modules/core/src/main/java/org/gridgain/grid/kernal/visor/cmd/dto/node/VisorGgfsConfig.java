@@ -152,7 +152,7 @@ public class VisorGgfsConfig implements Serializable {
      */
     public static Iterable<VisorGgfsConfig> list(GridGgfsConfiguration[] ggfss) {
         if (ggfss == null)
-            return null;
+            return Collections.emptyList();
 
         final Collection<VisorGgfsConfig> cfgs = new ArrayList<>(ggfss.length);
 

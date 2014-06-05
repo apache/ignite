@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Result for cache query tasks.
  */
-public class VisorFieldsQueryResultEx extends VisorFieldsQueryResult {
+public class VisorQueryResultEx extends VisorQueryResult {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -36,7 +36,7 @@ public class VisorFieldsQueryResultEx extends VisorFieldsQueryResult {
      * @param rows Rows fetched from query.
      * @param hasMore Whether query has more rows to fetch.
      */
-    public VisorFieldsQueryResultEx(
+    public VisorQueryResultEx(
         UUID resNodeId,
         String qryId,
         VisorFieldsQueryColumn[] colNames,
@@ -73,6 +73,6 @@ public class VisorFieldsQueryResultEx extends VisorFieldsQueryResult {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorFieldsQueryResultEx.class, this);
+        return S.toString(VisorQueryResultEx.class, this);
     }
 }
