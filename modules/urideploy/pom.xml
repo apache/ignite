@@ -89,13 +89,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ant</groupId>
-            <artifactId>ant</artifactId>
-            <version>1.8.1</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
             <version>3.0.1</version>
@@ -107,6 +100,13 @@
             <artifactId>gridgain-core</artifactId>
             <version>${gridgain.version}</version>
             <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-tools</artifactId>
+            <version>${gridgain.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -16,8 +16,8 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.client.util.GridClientUtils.applyFilter;
-import static org.gridgain.grid.kernal.GridNodeAttributes.ATTR_DAEMON;
+import static org.gridgain.client.util.GridClientUtils.*;
+import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
  * Compute projection implementation.
