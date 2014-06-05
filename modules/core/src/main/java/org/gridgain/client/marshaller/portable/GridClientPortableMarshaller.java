@@ -141,7 +141,7 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
             Class<? extends GridPortableObject> cls = typesMap.get(portable.typeId());
 
             if (cls == null) // TODO 8491.
-                throw new IllegalArgumentException("No Java class for portable type " +
+                throw new IOException("No Java class for portable type " +
                     "[obj=" + obj + ", typeId=" + portable.typeId() + ']');
 
             GridPortableMetadataCollectingWriter writer = new GridPortableMetadataCollectingWriter();
@@ -744,15 +744,224 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
 
                 writeByteArray((byte[])obj);
             }
+            else if (obj instanceof boolean[]) {
+                out.writeByte(TYPE_BOOLEAN_ARRAY);
+
+                writeBooleanArray((boolean[]) obj);
+            }
+            else if (obj instanceof short[]) {
+                out.writeByte(TYPE_SHORT_ARRAY);
+
+                writeShortArray((short[]) obj);
+            }
+            else if (obj instanceof char[]) {
+                out.writeByte(TYPE_CHAR_ARRAY);
+
+                writeCharArray((char[]) obj);
+            }
+            else if (obj instanceof int[]) {
+                out.writeByte(TYPE_INT_ARRAY);
+
+                writeIntArray((int[]) obj);
+            }
+            else if (obj instanceof long[]) {
+                out.writeByte(TYPE_LONG_ARRAY);
+
+                writeLongArray((long[]) obj);
+            }
+            else if (obj instanceof float[]) {
+                out.writeByte(TYPE_FLOAT_ARRAY);
+
+                writeFloatArray((float[]) obj);
+            }
+            else if (obj instanceof double[]) {
+                out.writeByte(TYPE_DOUBLE_ARRAY);
+
+                writeDoubleArray((double[]) obj);
+            }
             else if (obj == null)
                 out.writeByte(TYPE_NULL);
             else
                 throw new IOException("Unsupported object: " + obj);
         }
 
+        /** {@inheritDoc} */
+        @Override public void writeBooleanArray(String fieldName, @Nullable boolean[] val) throws IOException {
+            onWrite(fieldName);
+
+            writeBooleanArray(val);
+        }
+
+        /**
+         * @param val Value to write.
+         */
+        @SuppressWarnings("ForLoopReplaceableByForEach")
+        private void writeBooleanArray(@Nullable boolean[] val) {
+            if (val != null) {
+                out.writeInt(val.length);
+
+                out.ensureCapacity(val.length);
+
+                for (int i = 0; i < val.length; i++)
+                    out.writeBoolean(val[i]);
+            }
+            else
+                out.writeInt(-1);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeShortArray(String fieldName, @Nullable short[] val) throws IOException {
+            onWrite(fieldName);
+
+            writeShortArray(val);
+        }
+
+        /**
+         * @param val Value to write.
+         */
+        @SuppressWarnings("ForLoopReplaceableByForEach")
+        private void writeShortArray(@Nullable short[] val) {
+            if (val != null) {
+                out.writeInt(val.length);
+
+                out.ensureCapacity(val.length * 2);
+
+                for (int i = 0; i < val.length; i++)
+                    out.writeShort(val[i]);
+            }
+            else
+                out.writeInt(-1);
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("ForLoopReplaceableByForEach")
+        @Override public void writeCharArray(String fieldName, @Nullable char[] val) throws IOException {
+            onWrite(fieldName);
+
+            writeCharArray(val);
+        }
+
+        /**
+         * @param val Value to write.
+         */
+        @SuppressWarnings("ForLoopReplaceableByForEach")
+        private void writeCharArray(@Nullable char[] val) {
+            if (val != null) {
+                out.writeInt(val.length);
+
+                out.ensureCapacity(val.length * 2);
+
+                for (int i = 0; i < val.length; i++)
+                    out.writeChar(val[i]);
+            }
+            else
+                out.writeInt(-1);
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("ForLoopReplaceableByForEach")
+        @Override public void writeIntArray(String fieldName, int[] val) throws IOException {
+            onWrite(fieldName);
+
+            writeIntArray(val);
+        }
+
+        /**
+         * @param val Value to write.
+         */
+        @SuppressWarnings("ForLoopReplaceableByForEach")
+        private void writeIntArray(int[] val) {
+            if (val != null) {
+                out.writeInt(val.length);
+
+                out.ensureCapacity(val.length * 4);
+
+                for (int i = 0; i < val.length; i++)
+                    out.writeInt(val[i]);
+            }
+            else
+                out.writeInt(-1);
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("ForLoopReplaceableByForEach")
+        @Override public void writeLongArray(String fieldName, long[] val) throws IOException {
+            onWrite(fieldName);
+
+            writeLongArray(val);
+        }
+
+        /**
+         * @param val Value to write.
+         */
+        @SuppressWarnings("ForLoopReplaceableByForEach")
+        private void writeLongArray(long[] val) {
+            if (val != null) {
+                out.writeInt(val.length);
+
+                out.ensureCapacity(val.length * 8);
+
+                for (int i = 0; i < val.length; i++)
+                    out.writeLong(val[i]);
+            }
+            else
+                out.writeInt(-1);
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("ForLoopReplaceableByForEach")
+        @Override public void writeFloatArray(String fieldName, float[] val) throws IOException {
+            onWrite(fieldName);
+
+            writeFloatArray(val);
+        }
+
+        /**
+         * @param val Value to write.
+         */
+        @SuppressWarnings("ForLoopReplaceableByForEach")
+        private void writeFloatArray(float[] val) {
+            if (val != null) {
+                out.writeInt(val.length);
+
+                out.ensureCapacity(val.length * 4);
+
+                for (int i = 0; i < val.length; i++)
+                    out.writeFloat(val[i]);
+            }
+            else
+                out.writeInt(-1);
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("ForLoopReplaceableByForEach")
+        @Override public void writeDoubleArray(String fieldName, double[] val) throws IOException {
+            onWrite(fieldName);
+
+            writeDoubleArray(val);
+        }
+
+        /**
+         * @param val Value to write.
+         */
+        @SuppressWarnings("ForLoopReplaceableByForEach")
+        private void writeDoubleArray(double[] val) {
+            if (val != null) {
+                out.writeInt(val.length);
+
+                out.ensureCapacity(val.length * 8);
+
+                for (int i = 0; i < val.length; i++)
+                    out.writeDouble(val[i]);
+            }
+            else
+                out.writeInt(-1);
+        }
+
         /**
          * @param fieldName Field name.
          */
+        @SuppressWarnings("UnusedParameters")
         private void onWrite(String fieldName) {
             // No-op.
         }
@@ -979,6 +1188,181 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
             return map;
         }
 
+        /** {@inheritDoc} */
+        @Nullable @Override public boolean[] readBooleanArray(String fieldName) throws IOException {
+            onRead(fieldName);
+
+            return readBooleanArray();
+        }
+
+        /**
+         * @return Short array.
+         * @throws IOException In case of error.
+         */
+        @Nullable private boolean[] readBooleanArray() throws IOException {
+            int len = in.readInt();
+
+            if (len == -1)
+                return null;
+
+            boolean[] res = new boolean[len];
+
+            for (int i = 0; i < len; i++)
+                res[i] = in.readBoolean();
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public short[] readShortArray(String fieldName) throws IOException {
+            onRead(fieldName);
+
+            return readShortArray();
+        }
+
+        /**
+         * @return Short array.
+         * @throws IOException In case of error.
+         */
+        @Nullable private short[] readShortArray() throws IOException {
+            int len = in.readInt();
+
+            if (len == -1)
+                return null;
+
+            short[] res = new short[len];
+
+            for (int i = 0; i < len; i++)
+                res[i] = in.readShort();
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public int[] readIntArray(String fieldName) throws IOException {
+            onRead(fieldName);
+
+            return readIntArray();
+        }
+
+        /**
+         * @return Integer array.
+         * @throws IOException In case of error.
+         */
+        @Nullable private int[] readIntArray() throws IOException {
+            int len = in.readInt();
+
+            if (len == -1)
+                return null;
+
+            int[] res = new int[len];
+
+            for (int i = 0; i < len; i++)
+                res[i] = in.readInt();
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public char[] readCharArray(String fieldName) throws IOException {
+            onRead(fieldName);
+
+            return readCharArray();
+        }
+
+        /**
+         * @return Char array.
+         * @throws IOException In case of error.
+         */
+        @Nullable private char[] readCharArray() throws IOException {
+            int len = in.readInt();
+
+            if (len == -1)
+                return null;
+
+            char[] res = new char[len];
+
+            for (int i = 0; i < len; i++)
+                res[i] = in.readChar();
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public long[] readLongArray(String fieldName) throws IOException {
+            onRead(fieldName);
+
+            return readLongArray();
+        }
+
+        /**
+         * @return Long array.
+         * @throws IOException In case of error.
+         */
+        @Nullable private long[] readLongArray() throws IOException {
+            int len = in.readInt();
+
+            if (len == -1)
+                return null;
+
+            long[] res = new long[len];
+
+            for (int i = 0; i < len; i++)
+                res[i] = in.readLong();
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public float[] readFloatArray(String fieldName) throws IOException {
+            onRead(fieldName);
+
+            return readFloatArray();
+        }
+
+        /**
+         * @return Float array.
+         * @throws IOException In case of error.
+         */
+        @Nullable private float[] readFloatArray() throws IOException {
+            int len = in.readInt();
+
+            if (len == -1)
+                return null;
+
+            float[] res = new float[len];
+
+            for (int i = 0; i < len; i++)
+                res[i] = in.readFloat();
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public double[] readDoubleArray(String fieldName) throws IOException {
+            onRead(fieldName);
+
+            return readDoubleArray();
+        }
+
+        /**
+         * @return Double array.
+         * @throws IOException In case of error.
+         */
+        @Nullable private double[] readDoubleArray() throws IOException {
+            int len = in.readInt();
+
+            if (len == -1)
+                return null;
+
+            double[] res = new double[len];
+
+            for (int i = 0; i < len; i++)
+                res[i] = in.readDouble();
+
+            return res;
+        }
+
         /**
          * @return Object.
          * @throws IOException In case of error.
@@ -1059,6 +1443,41 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
 
                     break;
 
+                case TYPE_BOOLEAN_ARRAY:
+                    res = readBooleanArray();
+
+                    break;
+
+                case TYPE_SHORT_ARRAY:
+                    res = readShortArray();
+
+                    break;
+
+                case TYPE_CHAR_ARRAY:
+                    res = readCharArray();
+
+                    break;
+
+                case TYPE_INT_ARRAY:
+                    res = readIntArray();
+
+                    break;
+
+                case TYPE_LONG_ARRAY:
+                    res = readLongArray();
+
+                    break;
+
+                case TYPE_FLOAT_ARRAY:
+                    res = readFloatArray();
+
+                    break;
+
+                case TYPE_DOUBLE_ARRAY:
+                    res = readDoubleArray();
+
+                    break;
+
                 case TYPE_USER_OBJECT:
                     res = readPortable();
 
@@ -1074,6 +1493,7 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
         /**
          * @param fieldName Field name.
          */
+        @SuppressWarnings("UnusedParameters")
         private void onRead(String fieldName) {
             // No-op.
         }

@@ -146,17 +146,18 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     @Override public void start(final GridRestProtocolHandler hnd) throws GridException {
         assert hnd != null;
 
-        GridConfiguration cfg = ctx.config();
+        GridClientConnectionConfiguration cfg = ctx.config().getClientConnectionConfiguration();
 
-        if (cfg.getClientConnectionConfiguration() != null)
-            validatePortableTypes(cfg.getClientConnectionConfiguration());
+        assert cfg != null;
+
+        validatePortableTypes(cfg);
 
         GridNioServerListener<GridClientMessage> lsnr = new GridTcpRestNioListener(log, this, hnd, ctx);
 
         GridNioParser parser = new GridTcpRestDirectParser(this, msgReader);
 
         try {
-            host = resolveRestTcpHost(cfg);
+            host = resolveRestTcpHost(ctx.config());
 
             SSLContext sslCtx = null;
 
@@ -252,7 +253,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
      * @throws IOException If failed to resolve REST host.
      */
     private InetAddress resolveRestTcpHost(GridConfiguration cfg) throws IOException {
-        String host = cfg.getRestTcpHost();
+        String host = cfg.getClientConnectionConfiguration().getRestTcpHost();
 
         if (host == null)
             host = cfg.getLocalHost();
@@ -273,7 +274,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
      *      server was unable to start.
      */
     private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<GridClientMessage> lsnr,
-        GridNioParser parser, @Nullable SSLContext sslCtx, GridConfiguration cfg) {
+        GridNioParser parser, @Nullable SSLContext sslCtx, GridClientConnectionConfiguration cfg) {
         try {
             GridNioFilter codec = new GridNioCodecFilter(parser, log, true);
 

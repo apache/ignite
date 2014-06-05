@@ -101,21 +101,49 @@ public class GridClientConnectionConfiguration {
     /** REST executor service shutdown flag. */
     private boolean restSvcShutdown = true;
 
+    /** Client message interceptor. */
+    private GridClientMessageInterceptor clientMsgInterceptor;
+
     /** */
     private Map<Integer, Class<? extends GridPortableObject>> portableTypesMap;
 
     /**
-     * @return Map associating portable type identifiers with java classes.
+     * Creates client connection configuration with all default values.
      */
-    @Nullable public Map<Integer, Class<? extends GridPortableObject>> getPortableTypesMap() {
-        return portableTypesMap;
+    public GridClientConnectionConfiguration() {
+        // No-op.
     }
 
     /**
-     * @param portableTypesMap Map associating portable type identifiers with java classes.
+     * Creates client connection configuration by copying all properties from
+     * given configuration.
+     *
+     * @param cfg Client configuration.
      */
-    public void setPortableTypesMap(Map<Integer, Class<? extends GridPortableObject>> portableTypesMap) {
-        this.portableTypesMap = portableTypesMap;
+    public GridClientConnectionConfiguration(GridClientConnectionConfiguration cfg) {
+        assert cfg != null;
+
+        clientMsgInterceptor = cfg.getClientMessageInterceptor();
+        restAccessibleFolders = cfg.getRestAccessibleFolders();
+        restExecSvc = cfg.getRestExecutorService();
+        restSvcShutdown = cfg.isRestExecutorServiceShutdown();
+        restIdleTimeout = cfg.getRestIdleTimeout();
+        jettyPath = cfg.getRestJettyPath();
+        restPortRange = cfg.getRestPortRange();
+        restSecretKey = cfg.getRestSecretKey();
+        restTcpDirectBuf = cfg.isRestTcpDirectBuffer();
+        restTcpHost = cfg.getRestTcpHost();
+        restTcpNoDelay = cfg.isRestTcpNoDelay();
+        restTcpPort = cfg.getRestTcpPort();
+        restTcpRcvBufSize = cfg.getRestTcpReceiveBufferSize();
+        restTcpSelectorCnt = cfg.getRestTcpSelectorCount();
+        restTcpSndBufSize = cfg.getRestTcpSendBufferSize();
+        restTcpSndQueueLimit = cfg.getRestTcpSendQueueLimit();
+        restTcpSslClientAuth = cfg.isRestTcpSslClientAuth();
+        restTcpSslCtxFactory = cfg.getRestTcpSslContextFactory();
+        restTcpSslEnabled = cfg.isRestTcpSslEnabled();
+        if (cfg.getPortableTypesMap() != null)
+            portableTypesMap = new HashMap<>(cfg.getPortableTypesMap());
     }
 
     /**
@@ -509,7 +537,53 @@ public class GridClientConnectionConfiguration {
      *
      * @return REST executor service shutdown flag.
      */
-    public boolean getRestExecutorServiceShutdown() {
+    public boolean isRestExecutorServiceShutdown() {
         return restSvcShutdown;
+    }
+
+    /**
+     * Gets interceptor for objects, moving to and from remote clients.
+     * If this method returns {@code null} then no interception will be applied.
+     * <p>
+     * Setting interceptor allows to transform all objects exchanged via REST protocol.
+     * For example if you use custom serialisation on client you can write interceptor
+     * to transform binary representations received from client to Java objects and later
+     * access them from java code directly.
+     * <p>
+     * Default value is {@code null}.
+     *
+     * @see GridClientMessageInterceptor
+     * @return Interceptor.
+     */
+    @Nullable public GridClientMessageInterceptor getClientMessageInterceptor() {
+        return clientMsgInterceptor;
+    }
+
+    /**
+     * Sets client message interceptor.
+     * <p>
+     * Setting interceptor allows to transform all objects exchanged via REST protocol.
+     * For example if you use custom serialisation on client you can write interceptor
+     * to transform binary representations received from client to Java objects and later
+     * access them from java code directly.
+     *
+     * @param interceptor Interceptor.
+     */
+    public void setClientMessageInterceptor(GridClientMessageInterceptor interceptor) {
+        clientMsgInterceptor = interceptor;
+    }
+
+    /**
+     * @return Map associating portable type identifiers with java classes.
+     */
+    @Nullable public Map<Integer, Class<? extends GridPortableObject>> getPortableTypesMap() {
+        return portableTypesMap;
+    }
+
+    /**
+     * @param portableTypesMap Map associating portable type identifiers with java classes.
+     */
+    public void setPortableTypesMap(Map<Integer, Class<? extends GridPortableObject>> portableTypesMap) {
+        this.portableTypesMap = portableTypesMap;
     }
 }

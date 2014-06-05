@@ -148,14 +148,20 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
         GridConfiguration c = super.getConfiguration(gridName);
 
         c.setLocalHost(HOST);
-        c.setRestTcpPort(REST_TCP_PORT_BASE);
-        c.setRestEnabled(true);
+
+        assert c.getClientConnectionConfiguration() == null;
+
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+
+        clientCfg.setRestTcpPort(REST_TCP_PORT_BASE);
 
         if (useSsl()) {
-            c.setRestTcpSslEnabled(true);
+            clientCfg.setRestTcpSslEnabled(true);
 
-            c.setRestTcpSslContextFactory(sslContextFactory());
+            clientCfg.setRestTcpSslContextFactory(sslContextFactory());
         }
+
+        c.setClientConnectionConfiguration(clientCfg);
 
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 

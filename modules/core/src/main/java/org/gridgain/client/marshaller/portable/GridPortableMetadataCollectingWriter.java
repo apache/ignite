@@ -129,6 +129,41 @@ class GridPortableMetadataCollectingWriter implements GridPortableWriter {
             writeCollection(col);
     }
 
+    /** {@inheritDoc} */
+    @Override public void writeBooleanArray(String fieldName, @Nullable boolean[] val) throws IOException {
+        onWrite(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeShortArray(String fieldName, @Nullable short[] val) throws IOException {
+        onWrite(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeCharArray(String fieldName, @Nullable char[] val) throws IOException {
+        onWrite(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeIntArray(String fieldName, int[] val) throws IOException {
+        onWrite(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeLongArray(String fieldName, long[] val) throws IOException {
+        onWrite(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeFloatArray(String fieldName, float[] val) throws IOException {
+        onWrite(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeDoubleArray(String fieldName, double[] val) throws IOException {
+        onWrite(fieldName);
+    }
+
     /**
      * @param col Collection.
      * @throws IOException In case of error.

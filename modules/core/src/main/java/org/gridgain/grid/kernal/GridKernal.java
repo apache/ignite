@@ -1257,7 +1257,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         add(attrs, ATTR_RESTART_ENABLED, Boolean.toString(isRestartEnabled()));
 
         // Save port range, port numbers will be stored by rest processor at runtime.
-        add(attrs, ATTR_REST_PORT_RANGE, cfg.getRestPortRange());
+        if (cfg.getClientConnectionConfiguration() != null)
+            add(attrs, ATTR_REST_PORT_RANGE, cfg.getClientConnectionConfiguration().getRestPortRange());
 
         // Add data center ID.
         add(attrs, ATTR_DATA_CENTER_ID, cfg.getDataCenterId());
@@ -1377,8 +1378,13 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         sysExecSvcMBean = registerExecutorMBean(cfg.getSystemExecutorService(), "GridSystemExecutor");
         mgmtExecSvcMBean = registerExecutorMBean(cfg.getManagementExecutorService(), "GridManagementExecutor");
         p2PExecSvcMBean = registerExecutorMBean(cfg.getPeerClassLoadingExecutorService(), "GridClassLoadingExecutor");
-        restExecSvcMBean = cfg.getRestExecutorService() != null ?
-            registerExecutorMBean(cfg.getRestExecutorService(), "GridRestExecutor") : null;
+
+        GridClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
+
+        if (clientCfg != null) {
+            restExecSvcMBean = clientCfg.getRestExecutorService() != null ?
+                registerExecutorMBean(clientCfg.getRestExecutorService(), "GridRestExecutor") : null;
+        }
     }
 
     /**
@@ -1510,7 +1516,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     private boolean isRestEnabled() {
         assert cfg != null;
 
-        return cfg.isRestEnabled();
+        return cfg.getClientConnectionConfiguration() != null;
     }
 
     /**
@@ -2319,8 +2325,11 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         if (!F.isEmpty(cfg.getSegmentationResolvers()))
             F.copy(objs, cfg.getSegmentationResolvers());
 
-        F.copy(objs, cfg.getClientMessageInterceptor(), cfg.getRestTcpSslContextFactory(),
-            cfg.getMarshaller(), cfg.getGridLogger(), cfg.getMBeanServer());
+        if (cfg.getClientConnectionConfiguration() != null)
+            F.copy(objs, cfg.getClientConnectionConfiguration().getClientMessageInterceptor(),
+                cfg.getClientConnectionConfiguration().getRestTcpSslContextFactory());
+
+        F.copy(objs, cfg.getMarshaller(), cfg.getGridLogger(), cfg.getMBeanServer());
 
         return objs;
     }

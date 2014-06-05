@@ -25,11 +25,9 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
-        GridClientConnectionConfiguration ccfg = new GridClientConnectionConfiguration();
+        assert cfg.getClientConnectionConfiguration() != null;
 
-        ccfg.setPortableTypesMap(typesMap());
-
-        cfg.setClientConnectionConfiguration(ccfg);
+        cfg.getClientConnectionConfiguration().setPortableTypesMap(typesMap());
 
         cfg.setMarshaller(new GridOptimizedMarshaller(false));
 
@@ -259,6 +257,9 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
             // No-op.
         }
 
+        /**
+         * @param a Value1.
+         */
         public TestValue2(String a) {
             super(a);
         }

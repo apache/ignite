@@ -116,4 +116,53 @@ public interface GridPortableReader {
      * @throws IOException In case of error.
      */
     @Nullable public byte[] readByteArray(String fieldName) throws IOException;
+
+    /**
+     * @param fieldName Field name.
+     * @return Boolean array.
+     * @throws IOException In case of error.
+     */
+    @Nullable public boolean[] readBooleanArray(String fieldName) throws IOException;
+
+    /**
+     * @param fieldName Field name.
+     * @return Short array.
+     * @throws IOException In case of error.
+     */
+    @Nullable public short[] readShortArray(String fieldName) throws IOException;
+
+    /**
+     * @param fieldName Field name.
+     * @return Integer array.
+     * @throws IOException In case of error.
+     */
+    @Nullable public int[] readIntArray(String fieldName) throws IOException;
+
+    /**
+     * @param fieldName Field name.
+     * @return Char array.
+     * @throws IOException In case of error.
+     */
+    @Nullable public char[] readCharArray(String fieldName) throws IOException;
+
+    /**
+     * @param fieldName Field name.
+     * @return Long array.
+     * @throws IOException In case of error.
+     */
+    @Nullable public long[] readLongArray(String fieldName) throws IOException;
+
+    /**
+     * @param fieldName Field name.
+     * @return Float array.
+     * @throws IOException In case of error.
+     */
+    @Nullable public float[] readFloatArray(String fieldName) throws IOException;
+
+    /**
+     * @param fieldName Field name.
+     * @return Byte array.
+     * @throws IOException In case of error.
+     */
+    @Nullable public double[] readDoubleArray(String fieldName) throws IOException;
 }

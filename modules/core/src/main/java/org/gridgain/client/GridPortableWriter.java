@@ -30,6 +30,13 @@ public interface GridPortableWriter {
      * @param val Value to write.
      * @throws IOException In case of error.
      */
+    public void writeBooleanArray(String fieldName, @Nullable boolean[] val) throws IOException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws IOException In case of error.
+     */
     public void writeByte(String fieldName, byte val) throws IOException;
 
     /**
@@ -51,7 +58,21 @@ public interface GridPortableWriter {
      * @param val Value to write.
      * @throws IOException In case of error.
      */
+    public void writeShortArray(String fieldName, @Nullable short[] val) throws IOException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws IOException In case of error.
+     */
     public void writeChar(String fieldName, char val) throws IOException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws IOException In case of error.
+     */
+    public void writeCharArray(String fieldName, @Nullable char[] val) throws IOException;
 
     /**
      * @param fieldName Field name.
@@ -65,7 +86,21 @@ public interface GridPortableWriter {
      * @param val Value to write.
      * @throws IOException In case of error.
      */
+    public void writeIntArray(String fieldName, @Nullable int[] val) throws IOException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws IOException In case of error.
+     */
     public void writeLong(String fieldName, long val) throws IOException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws IOException In case of error.
+     */
+    public void writeLongArray(String fieldName, @Nullable long[] val) throws IOException;
 
     /**
      * @param fieldName Field name.
@@ -79,7 +114,21 @@ public interface GridPortableWriter {
      * @param val Value to write.
      * @throws IOException In case of error.
      */
+    public void writeFloatArray(String fieldName, @Nullable float[] val) throws IOException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws IOException In case of error.
+     */
     public void writeDouble(String fieldName, double val) throws IOException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws IOException In case of error.
+     */
+    public void writeDoubleArray(String fieldName, double[] val) throws IOException;
 
     /**
      * @param fieldName Field name.
