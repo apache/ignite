@@ -73,7 +73,7 @@ public class GridClientHandshakeResponse extends GridClientAbstractMessage {
 
     /** {@inheritDoc} */
     @Override public int typeId() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // Handshake response is not marshaled.
     }
 
     /** {@inheritDoc} */

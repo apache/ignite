@@ -85,7 +85,6 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
      * @param hnd Rest handler.
      * @param ctx Context.
      */
-    @SuppressWarnings("IfMayBeConditional")
     public GridTcpRestNioListener(GridLogger log, GridTcpRestProtocol proto, GridRestProtocolHandler hnd,
         GridKernalContext ctx) {
         memcachedLsnr = new GridTcpMemcachedNioListener(log, hnd, ctx);
@@ -100,10 +99,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
         addProtobufMarshaller(tmpMap);
 
-        GridClientConnectionConfiguration clientCfg = ctx.config().getClientConnectionConfiguration();
-
         tmpMap.put(U.PORTABLE_OBJECT_PROTO_ID,
-            new GridClientPortableMarshaller(clientCfg != null ? clientCfg.getPortableTypesMap() : null));
+            new GridClientPortableMarshaller(ctx.config().getClientConnectionConfiguration().getPortableTypesMap()));
 
         // Special case for Optimized marshaller, which may throw exception.
         // This may happen, for example, if some Unsafe methods are unavailable.

@@ -18,9 +18,6 @@ public class GridRouterRequest extends GridClientAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    public static final int PORTABLE_TYPE_ID = GridClientAbstractMessage.nextSystemTypeId();
-
     /** Raw message. */
     private final byte[] body;
 
@@ -46,7 +43,7 @@ public class GridRouterRequest extends GridClientAbstractMessage {
 
     /** {@inheritDoc} */
     @Override public int typeId() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // Router request is not marshaled.
     }
 
     /** {@inheritDoc} */

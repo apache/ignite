@@ -24,7 +24,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Marshaller supporting {@link GridPortableObject}.
+ * Client marshaller supporting {@link GridPortableObject}.
  */
 public class GridClientPortableMarshaller implements GridClientMarshaller {
     /** */
@@ -131,7 +131,7 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
     /** {@inheritDoc} */
     @Override public byte[] marshal(Object obj) throws IOException {
         if (!(obj instanceof GridPortableObject))
-            throw new IllegalArgumentException();
+            throw new IOException("Serialization for given object is not supported: " + obj);
 
         GridPortableObject portable = (GridPortableObject)obj;
 

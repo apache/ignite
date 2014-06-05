@@ -24,7 +24,7 @@ public class GridClientPingPacket extends GridClientAbstractMessage {
 
     /** {@inheritDoc} */
     @Override public int typeId() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // Ping message is not marshaled.
     }
 
     /** {@inheritDoc} */

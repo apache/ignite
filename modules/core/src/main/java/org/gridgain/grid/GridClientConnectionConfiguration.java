@@ -41,9 +41,6 @@ public class GridClientConnectionConfiguration {
     /** Default max size of REST thread pool. */
     public static final int DFLT_REST_MAX_THREAD_CNT = GridConfiguration.DFLT_PUBLIC_CORE_THREAD_CNT;
 
-    /** Default keep alive time for REST thread pool. */
-    public static final long DFLT_REST_KEEP_ALIVE_TIME = 0;
-
     /** Default max queue capacity of REST thread pool. */
     public static final int DFLT_REST_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
 

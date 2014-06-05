@@ -26,7 +26,7 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
     private static AtomicInteger typeId = new AtomicInteger();
 
     /**
-     * @return Portable type identified to internal client messages classes.
+     * @return Portable type identifier for internal client messages classes.
      */
     static int nextSystemTypeId() {
         return typeId.decrementAndGet();
