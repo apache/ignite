@@ -94,7 +94,7 @@ public class GgfsFileSystemNodeStartup {
 
         GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
 
-        ggfsCfg.setName("GGFS");
+        ggfsCfg.setName("ggfs");
         ggfsCfg.setMetaCacheName("ggfs-meta");
         ggfsCfg.setDataCacheName("ggfs-data");
         ggfsCfg.setBlockSize(128 * 1024);

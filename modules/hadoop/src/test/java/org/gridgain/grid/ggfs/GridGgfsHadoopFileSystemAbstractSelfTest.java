@@ -50,13 +50,13 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 @SuppressWarnings("all")
 public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommonAbstractTest {
     /** Primary file system authority. */
-    private static final String PRIMARY_AUTHORITY = "ggfs:grid1@";
+    private static final String PRIMARY_AUTHORITY = "ggfs:grid0@";
 
     /** Primary file systme URI. */
     private static final String PRIMARY_URI = "ggfs://" + PRIMARY_AUTHORITY + "/";
 
     /** Secondary file system authority. */
-    private static final String SECONDARY_AUTHORITY = "ggfs_secondary@127.0.0.1:11500";
+    private static final String SECONDARY_AUTHORITY = "ggfs_secondary:grid_secondary@127.0.0.1:11500";
 
     /** Secondary file systme URI. */
     private static final String SECONDARY_URI = "ggfs://" + SECONDARY_AUTHORITY + "/";
@@ -2324,7 +2324,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
     }
 
     /**
-     * Craete configuration for test.
+     * Create configuration for test.
      *
      * @param authority Authority.
      * @param skipEmbed Whether to skip embedded mode.

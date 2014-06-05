@@ -19,7 +19,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.util.typedef.*;
 
@@ -83,8 +82,8 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
 
         job.setNumReduceTasks(1);
 
-        FileInputFormat.setInputPaths(job, new Path("ggfs:///" + testInputFile));
-        FileOutputFormat.setOutputPath(job, new Path("ggfs:///output"));
+        FileInputFormat.setInputPaths(job, new Path("ggfs://:" + getTestGridName(0) + "@/" + testInputFile));
+        FileOutputFormat.setOutputPath(job, new Path("ggfs://:" + getTestGridName(0) + "@/output"));
 
         job.setJarByClass(getClass());
 
@@ -119,8 +118,8 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
 
         job.setNumReduceTasks(1);
 
-        FileInputFormat.setInputPaths(job, new Path("ggfs:///" + testInputFile));
-        FileOutputFormat.setOutputPath(job, new Path("ggfs:///output"));
+        FileInputFormat.setInputPaths(job, new Path("ggfs://:" + getTestGridName(0) + "@/" + testInputFile));
+        FileOutputFormat.setOutputPath(job, new Path("ggfs://:" + getTestGridName(0) + "@/output"));
 
         job.setJarByClass(getClass());
 

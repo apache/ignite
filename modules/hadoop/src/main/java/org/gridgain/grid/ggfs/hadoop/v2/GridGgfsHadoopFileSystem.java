@@ -127,7 +127,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
      * @throws IOException If initialization failed.
      */
     public GridGgfsHadoopFileSystem(URI name, Configuration cfg) throws URISyntaxException, IOException {
-        super(name, GGFS_SCHEME, false, -1);
+        super(GridGgfsHadoopEndpoint.normalize(name), GGFS_SCHEME, false, -1);
 
         uri = name;
 

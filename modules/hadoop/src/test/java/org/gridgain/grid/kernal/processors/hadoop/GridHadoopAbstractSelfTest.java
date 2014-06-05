@@ -30,7 +30,7 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
     protected static final int REST_PORT = 11212;
 
     /** GGFS name. */
-    protected static final String ggfsName = "ggfs";
+    protected static final String ggfsName = null;
 
     /** GGFS name. */
     protected static final String ggfsMetaCacheName = "meta";

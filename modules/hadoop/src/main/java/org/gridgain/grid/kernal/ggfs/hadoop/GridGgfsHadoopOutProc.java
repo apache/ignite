@@ -64,6 +64,12 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     private static final GridPlainClosure<GridPlainFuture<GridGgfsMessage>,
         Collection<GridGgfsBlockLocation>> BLOCK_LOCATION_COL_RES = createClosure();
 
+    /** Grid name. */
+    private final String grid;
+
+    /** GGFS name. */
+    private final String ggfs;
+
     /** Client log. */
     private final Log log;
 
@@ -78,22 +84,26 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
      *
      * @param host Host.
      * @param port Port.
+     * @param grid Grid name.
+     * @param ggfs GGFS name.
      * @param log Client logger.
      * @throws IOException If failed.
      */
-    public GridGgfsHadoopOutProc(String host, int port, Log log) throws IOException {
-        this(host, port, false, log);
+    public GridGgfsHadoopOutProc(String host, int port, String grid, String ggfs, Log log) throws IOException {
+        this(host, port, grid, ggfs, false, log);
     }
 
     /**
      * Constructor for shmem endpoint.
      *
      * @param port Port.
+     * @param grid Grid name.
+     * @param ggfs GGFS name.
      * @param log Client logger.
      * @throws IOException If failed.
      */
-    public GridGgfsHadoopOutProc(int port, Log log) throws IOException {
-        this(null, port, true, log);
+    public GridGgfsHadoopOutProc(int port, String grid, String ggfs, Log log) throws IOException {
+        this(null, port, grid, ggfs, true, log);
     }
 
     /**
@@ -101,16 +111,21 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
      *
      * @param host Host.
      * @param port Port.
+     * @param grid Grid name.
+     * @param ggfs GGFS name.
      * @param shmem Shared memory flag.
      * @param log Client logger.
      * @throws IOException If failed.
      */
-    private GridGgfsHadoopOutProc(String host, int port, boolean shmem, Log log) throws IOException {
+    private GridGgfsHadoopOutProc(String host, int port, String grid, String ggfs, boolean shmem, Log log)
+        throws IOException {
         assert host != null && !shmem || host == null && shmem :
             "Invalid arguments [host=" + host + ", port=" + port + ", shmem=" + shmem + ']';
 
         String endpoint = host != null ? host + ":" + port : "shmem:" + port;
 
+        this.grid = grid;
+        this.ggfs = ggfs;
         this.log = log;
 
         io = GridGgfsHadoopIpcIo.get(log, endpoint);
@@ -122,6 +137,8 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     @Override public GridGgfsHandshakeResponse handshake(String logDir) throws GridException {
         final GridGgfsHandshakeRequest req = new GridGgfsHandshakeRequest();
 
+        req.gridName(grid);
+        req.ggfsName(ggfs);
         req.logDirectory(logDir);
 
         return io.send(req).chain(HANDSHAKE_RES).get();

@@ -93,7 +93,7 @@ public class GridGgfsModesSelfTest extends GridCommonAbstractTest {
         ggfsCfg.setPathModes(pathModes);
 
         if (setSecondaryFsUri)
-            ggfsCfg.setSecondaryHadoopFileSystemUri("ggfs://127.0.0.1:11500/");
+            ggfsCfg.setSecondaryHadoopFileSystemUri("ggfs://ggfs-secondary:ggfs-grid-secondary@127.0.0.1:11500/");
 
         if (setSecondaryFsCfg)
             ggfsCfg.setSecondaryHadoopFileSystemConfigPath(
