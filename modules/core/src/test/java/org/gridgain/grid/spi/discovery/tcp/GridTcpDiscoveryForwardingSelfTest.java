@@ -17,6 +17,7 @@ import org.gridgain.testframework.junits.common.*;
 
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Test for {@link org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi}.
@@ -38,7 +39,7 @@ public class GridTcpDiscoveryForwardingSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"IfMayBeConditional", "deprecation"})
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
-        ipFinder.setAddresses(Arrays.asList("127.0.0.1:" + extPort1));
+        ipFinder.setAddresses(Arrays.asList("127.0.0.1:" + extPort1, "127.0.0.1:" + extPort2));
 
         GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
 
@@ -91,6 +92,14 @@ public class GridTcpDiscoveryForwardingSelfTest extends GridCommonAbstractTest {
             Grid g2 = startGrid(1)
         ) {
             assertEquals(2, getTopologySize(2));
+
+            Collection<Integer> t = g1.compute().broadcast(new Callable<Integer>() {
+                @Override public Integer call() throws Exception {
+                    return 13;
+                }
+            }).get();
+
+            assertEquals(F.asList(13, 13), t);
         }
     }
 

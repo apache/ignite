@@ -45,8 +45,10 @@ public final class GridTcpForwardServer implements AutoCloseable {
                     boolean closed = false;
 
                     while (!closed) {
+                        Socket inputCon = null;
+
                         try {
-                            Socket inputCon = inputSock.accept();
+                            inputCon = inputSock.accept();
 
                             outputCon = new Socket(toAddr, toPort);
 
@@ -68,6 +70,7 @@ public final class GridTcpForwardServer implements AutoCloseable {
                         }
                         finally {
                             U.closeQuiet(outputCon);
+                            U.closeQuiet(inputCon);
                         }
                     }
                 }
