@@ -426,7 +426,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         if (log.isDebugEnabled())
             log.debug("Processing discovery event [locNodeId=" + ctx.localNodeId() + ", evt=" + evt + ']');
 
-        ctx.localNodeId()
+        boolean checkSetup = evt.eventNode().order() < ctx.localNodeOrder();
 
 //        evt.eventNode().order()
 
@@ -434,13 +434,19 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         if (ctx.jobUpdateLeader()) {
             // Iteration over all local entries is correct since system cache is REPLICATED.
             for (GridHadoopJobMetadata meta : jobMetaPrj.values()) {
+                GridHadoopJobId jobId = meta.jobId();
+
+                GridHadoopMapReducePlan plan = meta.mapReducePlan();
+
+                GridHadoopJobPhase phase = meta.phase();
+
                 try {
-                    GridHadoopMapReducePlan plan = meta.mapReducePlan();
+                    if (checkSetup && phase == PHASE_SETUP && !activeJobs.containsKey(jobId)) {
+                        // Failover setup task.
+                        GridHadoopJob job = ctx.jobFactory().createJob(jobId, meta.jobInfo());
 
-                    GridHadoopJobPhase phase = meta.phase();
-
-                    if (phase == PHASE_SETUP) {
-                        //
+                        ctx.taskExecutor().run(job, Collections.singleton(new GridHadoopTaskInfo(ctx.localNodeId(),
+                            GridHadoopTaskType.SETUP, job.id(), 0, 0, null)));
                     }
                     else if (phase == PHASE_MAP || phase == PHASE_REDUCE) {
                         // Must check all nodes, even that are not event node ID due to

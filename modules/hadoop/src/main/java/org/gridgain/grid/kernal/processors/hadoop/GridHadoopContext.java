@@ -100,10 +100,10 @@ public class GridHadoopContext {
      *
      * @return Local node order.
      */
-    public GridNode localNodeOrder() {
+    public long localNodeOrder() {
         assert ctx.discovery() != null;
 
-        return ctx.discovery().localNode();
+        return ctx.discovery().localNode().order();
     }
 
     /**

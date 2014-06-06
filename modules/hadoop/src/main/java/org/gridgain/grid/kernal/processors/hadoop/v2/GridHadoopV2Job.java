@@ -67,7 +67,6 @@ public class GridHadoopV2Job implements GridHadoopJob {
         JobConf cfg = jobInfo.configuration();
 
         ctx = new JobContextImpl(cfg, hadoopJobID);
-
         useNewMapper = cfg.getUseNewMapper();
         useNewReducer = cfg.getUseNewReducer();
         useNewCombiner = cfg.getCombinerClass() == null;
@@ -233,6 +232,9 @@ public class GridHadoopV2Job implements GridHadoopJob {
         boolean isAbort = taskInfo.type() == GridHadoopTaskType.ABORT;
 
         switch (taskInfo.type()) {
+            case SETUP:
+                return useNewMapper ? new GridHadoopV2SetupTask(taskInfo) : new GridHadoopV1SetupTask(taskInfo);
+
             case MAP:
                 return useNewMapper ? new GridHadoopV2MapTask(taskInfo) : new GridHadoopV1MapTask(taskInfo);
 
