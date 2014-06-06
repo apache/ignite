@@ -11,17 +11,17 @@
 
 package org.gridgain.visor.commands.cache
 
-import org.gridgain.grid.{GridGain => G}
-import org.gridgain.grid._
-import cache._
-import GridCacheMode._
-import GridCacheAtomicityMode._
+import org.gridgain.grid.cache.GridCacheAtomicityMode._
+import org.gridgain.grid.cache.GridCacheMode._
+import org.gridgain.grid.cache._
 import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
-import org.jetbrains.annotations.Nullable
-import collection.JavaConversions._
+import org.gridgain.grid.{GridGain => G, _}
 import org.gridgain.visor._
-import VisorCacheCommand._
+import org.gridgain.visor.commands.cache.VisorCacheCommand._
+import org.jetbrains.annotations.Nullable
+
+import scala.collection.JavaConversions._
 
 /**
  *
@@ -73,15 +73,11 @@ class VisorCacheClearCommandSpec extends VisorRuntimeBaseSpec(2) {
 
         G.grid("node-1").cache[Int, Int](null).lock(1, 0)
 
-        visor.open("-e -g=node-1", false)
-
         VisorCacheClearCommand().clear(Nil, None)
 
         G.grid("node-1").cache[Int, Int](null).unlock(1)
 
         VisorCacheClearCommand().clear(Nil, None)
-
-        visor.close()
     }
 
     it should "show correct result for named cache" in {
@@ -89,15 +85,11 @@ class VisorCacheClearCommandSpec extends VisorRuntimeBaseSpec(2) {
 
         G.grid("node-1").cache[Int, Int]("cache").lock(1, 0)
 
-        visor.open("-e -g=node-1", false)
-
         visor.cache("-clear -c=cache")
 
         G.grid("node-1").cache[Int, Int]("cache").unlock(1)
 
         visor.cache("-clear -c=cache")
-
-        visor.close()
     }
 
     it should "show correct help" in {
@@ -107,10 +99,6 @@ class VisorCacheClearCommandSpec extends VisorRuntimeBaseSpec(2) {
     }
 
     it should "show empty projection error message" in {
-        visor.open("-e -g=node-1", false)
-
         visor.cache("-clear -c=wrong")
-
-        visor.close()
     }
 }
