@@ -23,6 +23,9 @@ import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
  * Submit job task.
  */
 public class GridHadoopProtocolSubmitJobTask extends GridHadoopProtocolTaskAdapter<GridHadoopJobStatus> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override public GridHadoopJobStatus run(GridComputeJobContext jobCtx, GridHadoop hadoop,
         GridHadoopProtocolTaskArguments args) throws GridException {

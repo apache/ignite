@@ -18,6 +18,9 @@ import org.gridgain.grid.util.typedef.internal.*;
  * Task finished message. Sent when local task finishes execution.
  */
 public class GridHadoopTaskFinishedMessage implements GridHadoopMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Finished task info. */
     private GridHadoopTaskInfo taskInfo;
 

@@ -43,7 +43,7 @@ public class GridHadoopTasksV2Test extends GridHadoopTasksAllVersionsTest {
 
         Configuration conf = job.getConfiguration();
 
-        conf.set("fs.default.name", GGFS_SCHEME);
+        conf.set("fs.default.name", ggfsScheme());
         conf.set("fs.ggfs.impl", "org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem");
         conf.set("fs.AbstractFileSystem.ggfs.impl", "org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem");
 

@@ -44,8 +44,7 @@ public class GridGainSpring {
     }
 
     /**
-     * Starts grid with given configuration. Note that this method is no-op if grid with the name
-     * provided in given configuration is already started.
+     * Starts grid with given configuration.
      *
      * @param cfg Grid configuration. This cannot be {@code null}.
      * @param springCtx Optional Spring application context, possibly {@code null}.

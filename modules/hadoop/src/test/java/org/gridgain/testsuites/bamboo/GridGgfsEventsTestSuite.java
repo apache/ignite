@@ -96,7 +96,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
         @Override protected GridGgfsConfiguration getGgfsConfiguration() {
             GridGgfsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
-            ggfsCfg.setSecondaryHadoopFileSystemUri("ggfs://127.0.0.1:11500/");
+            ggfsCfg.setSecondaryHadoopFileSystemUri("ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/");
             ggfsCfg.setSecondaryHadoopFileSystemConfigPath(
                 "modules/core/src/test/config/hadoop/core-site-secondary.xml");
 
@@ -193,7 +193,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
         @Override protected GridGgfsConfiguration getGgfsConfiguration() {
             GridGgfsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
-            ggfsCfg.setSecondaryHadoopFileSystemUri("ggfs://127.0.0.1:11500/");
+            ggfsCfg.setSecondaryHadoopFileSystemUri("ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/");
             ggfsCfg.setSecondaryHadoopFileSystemConfigPath(
                 "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml");
 

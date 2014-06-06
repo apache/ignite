@@ -51,6 +51,9 @@ public abstract class GridHadoopProtocolTaskAdapter<R> implements GridComputeTas
      * Job wrapper.
      */
     private class Job implements GridComputeJob {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         @GridInstanceResource
         private Grid grid;
 

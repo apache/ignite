@@ -109,7 +109,8 @@ public class GridGgfsGroupDataBlockKeyMapperHashSelfTest extends GridCommonAbstr
      * @param totalParts Total partitions.
      */
     private void checkPartition(int prevPart, int part, int totalParts) {
-        assert U.safeAbs(prevPart - part) == 1 || (part == 0 && prevPart == totalParts - 1);
+        assert U.safeAbs(prevPart - part) == 1 || (part == 0 && prevPart == totalParts - 1) :
+            "Total=" + totalParts + ", prevPart=" + prevPart + ", part=" + part + ']';
     }
 }
 

@@ -17,6 +17,9 @@ import java.io.*;
  * Hadoop job status.
  */
 public class GridHadoopJobStatus implements Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Job ID. */
     private GridHadoopJobId jobId;
 

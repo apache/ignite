@@ -71,7 +71,7 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
             jobConf.setInt("fs.local.block.size", 65000);
 
             // File system coordinates.
-            jobConf.set("fs.default.name", GGFS_SCHEME);
+            jobConf.set("fs.default.name", ggfsScheme());
             jobConf.set("fs.ggfs.impl", "org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem");
             jobConf.set("fs.AbstractFileSystem.ggfs.impl", "org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem");
 
@@ -84,8 +84,8 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
             job.setOutputKeyClass(Text.class);
             job.setOutputValueClass(IntWritable.class);
 
-            FileInputFormat.setInputPaths(job, new Path(GGFS_SCHEME + inFile.toString()));
-            FileOutputFormat.setOutputPath(job, new Path(GGFS_SCHEME + PATH_OUTPUT));
+            FileInputFormat.setInputPaths(job, new Path(ggfsScheme() + inFile.toString()));
+            FileOutputFormat.setOutputPath(job, new Path(ggfsScheme() + PATH_OUTPUT));
 
             job.setJarByClass(GridHadoopWordCount2.class);
 

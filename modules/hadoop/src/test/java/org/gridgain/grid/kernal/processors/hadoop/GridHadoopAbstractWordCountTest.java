@@ -20,9 +20,6 @@ import java.util.*;
  * Abstract class for tests based on WordCount test job.
  */
 public abstract class GridHadoopAbstractWordCountTest extends GridHadoopAbstractSelfTest {
-    /** GGFS scheme. */
-    protected static final String GGFS_SCHEME = "ggfs:///";
-
     /** Input path. */
     protected static final String PATH_INPUT = "/input";
 
@@ -50,6 +47,13 @@ public abstract class GridHadoopAbstractWordCountTest extends GridHadoopAbstract
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
+    }
+
+    /**
+     * @return GGFS scheme for test.
+     */
+    protected String ggfsScheme() {
+        return "ggfs://:" + getTestGridName(0) + "@/";
     }
 
     /**
