@@ -232,6 +232,7 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
                 private Map<String, Boolean> internalTasks = new HashMap<>();
 
                 /**
+                 * TODO-8003 Remove after fix.
                  * Detects internal task or job.
                  *
                  * @param e Event
