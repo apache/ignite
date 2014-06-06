@@ -19,6 +19,9 @@ import java.util.*;
  * Client message wrapper for direct marshalling.
  */
 public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter {
+    /** */
+    private static final long serialVersionUID = 5284375300887454697L;
+
     /** Client request header. */
     public static final byte REQ_HEADER = (byte)0x90;
 

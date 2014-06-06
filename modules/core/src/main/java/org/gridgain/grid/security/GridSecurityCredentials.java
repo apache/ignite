@@ -38,6 +38,9 @@ import java.io.*;
  * to pass in any additional information required for authentication.
  */
 public class GridSecurityCredentials implements Externalizable {
+    /** */
+    private static final long serialVersionUID = -2655741071578326256L;
+
     /** Login. */
     private String login;
 
