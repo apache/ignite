@@ -17,6 +17,9 @@
 #
 # Check HADOOP_HOME
 #
+
+HADOOP_COMMON_HOME=
+
 if [ "$HADOOP_HOME" == "" ]; then
     #Try get all variables from /etc/default
     HADOOP_DEFAULTS=/etc/default/hadoop
@@ -32,7 +35,7 @@ if [ "$HADOOP_HOME" == "" ]; then
 fi
 
 echo
-echo "Found Hadoop in $HADOOP_HOME"
+echo "INFO: Hadoop has found in $HADOOP_HOME"
 echo
 
 #

@@ -63,7 +63,10 @@ fi
 
 if [ "$GRIDGAIN_HADOOP_CLASSPATH" != "" ]; then
     GG_JAR=$(ls ${GRIDGAIN_HOME}/libs/gridgain-*.jar)
+    GG_JAR=$(readlink -m $GG_JAR)
+
     GGH_JAR=$(ls ${GRIDGAIN_HOME}/libs/gridgain-hadoop/gridgain-hadoop-*.jar)
+    GGH_JAR=$(readlink -m $GGH_JAR)
 
     COMMON_HOME_LIB=$HADOOP_COMMON_HOME/lib
 
