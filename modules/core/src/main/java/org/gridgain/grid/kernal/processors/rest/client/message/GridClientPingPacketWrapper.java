@@ -18,6 +18,9 @@ import java.nio.*;
  * Ping packet wrapper for direct marshalling.
  */
 public class GridClientPingPacketWrapper extends GridTcpCommunicationMessageAdapter {
+    /** */
+    private static final long serialVersionUID = -3956036611004055629L;
+
     /** Ping message size (always zero). */
     private int size;
 
