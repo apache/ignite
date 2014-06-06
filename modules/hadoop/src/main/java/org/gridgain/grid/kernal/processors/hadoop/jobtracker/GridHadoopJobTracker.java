@@ -673,6 +673,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @return Setup task wrapped in collection.
      */
     private Collection<GridHadoopTaskInfo> setupTask(GridHadoopJob job, GridHadoopJobMetadata meta) {
+        U.debug("SETUP TASK [job=" + job.id() + ", meta=" + meta + ']');
+
         assert !activeJobs.containsKey(job.id());
 
         initState(job, meta);
@@ -1082,6 +1084,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         /** {@inheritDoc} */
         @Override public GridHadoopJobMetadata apply(GridHadoopJobMetadata meta) {
+            U.debug("UPDATE PHASE: " + meta);
+
             GridHadoopJobMetadata cp = new GridHadoopJobMetadata(meta);
 
             cp.phase(phase);
@@ -1125,6 +1129,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         /** {@inheritDoc} */
         @Override public GridHadoopJobMetadata apply(GridHadoopJobMetadata meta) {
+            U.debug("REMOVE MAPPER: " + meta);
+
             GridHadoopJobMetadata cp = new GridHadoopJobMetadata(meta);
 
             Collection<GridHadoopInputSplit> splitsCp = new HashSet<>(cp.pendingSplits());
@@ -1181,6 +1187,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         /** {@inheritDoc} */
         @Override public GridHadoopJobMetadata apply(GridHadoopJobMetadata meta) {
+            U.debug("REMOVE REDUCER: " + meta);
+
             GridHadoopJobMetadata cp = new GridHadoopJobMetadata(meta);
 
             Collection<Integer> rdcCp = new HashSet<>(cp.pendingReducers());
@@ -1198,8 +1206,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         }
     }
 
-    private static class InitializeReducersClosure
-        implements GridClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> {
+    private static class InitializeReducersClosure implements GridClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1223,6 +1230,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         /** {@inheritDoc} */
         @Override public GridHadoopJobMetadata apply(GridHadoopJobMetadata meta) {
+            U.debug("INIT REDUCERS: " + meta);
+
             GridHadoopJobMetadata cp = new GridHadoopJobMetadata(meta);
 
             Map<Integer, GridHadoopProcessDescriptor> oldMap = meta.reducersAddresses();
