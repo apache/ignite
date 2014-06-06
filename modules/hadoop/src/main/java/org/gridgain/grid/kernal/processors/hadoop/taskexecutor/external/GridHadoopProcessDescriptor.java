@@ -18,6 +18,9 @@ import java.util.*;
  * Process descriptor used to identify process for which task is running.
  */
 public class GridHadoopProcessDescriptor implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Parent node ID. */
     private UUID parentNodeId;
 

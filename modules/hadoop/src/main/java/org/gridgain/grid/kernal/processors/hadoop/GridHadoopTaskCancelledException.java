@@ -15,6 +15,9 @@ import org.gridgain.grid.*;
  * Exception that throws when the task is cancelling.
  */
 public class GridHadoopTaskCancelledException extends GridRuntimeException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * @param msg Exception message.
      */

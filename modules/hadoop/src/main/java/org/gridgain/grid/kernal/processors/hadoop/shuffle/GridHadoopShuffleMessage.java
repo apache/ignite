@@ -24,6 +24,9 @@ import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
  */
 public class GridHadoopShuffleMessage implements GridHadoopMessage, Externalizable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private static final AtomicLong ids = new AtomicLong();
 
     /** */
