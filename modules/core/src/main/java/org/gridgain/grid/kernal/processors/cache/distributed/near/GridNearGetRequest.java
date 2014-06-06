@@ -64,6 +64,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
     private GridPredicate<GridCacheEntry<K, V>>[] filter;
 
     /** Subject ID. */
+    @GridDirectVersion(1)
     private UUID subjId;
 
     /**
@@ -210,6 +211,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
         _clone.filterBytes = filterBytes;
         _clone.topVer = topVer;
         _clone.filter = filter;
+        _clone.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -319,6 +321,12 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
             case 8:
                 if (!commState.putCacheVersion(ver))
+                    return false;
+
+                commState.idx++;
+
+            case 9:
+                if (!commState.putUuid(subjId))
                     return false;
 
                 commState.idx++;
@@ -451,6 +459,16 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                     return false;
 
                 ver = ver0;
+
+                commState.idx++;
+
+            case 9:
+                UUID subjId0 = commState.getUuid();
+
+                if (subjId0 == UUID_NOT_READ)
+                    return false;
+
+                subjId = subjId0;
 
                 commState.idx++;
 

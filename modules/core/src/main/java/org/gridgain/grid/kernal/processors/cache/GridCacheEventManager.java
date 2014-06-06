@@ -121,6 +121,12 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
         @Nullable V newVal, boolean hasNewVal, @Nullable V oldVal, boolean hasOldVal, UUID subjId) {
         assert key != null;
 
+        if (type == EVT_CACHE_OBJECT_PUT)
+            assert subjId != null;
+
+        if (type == EVT_CACHE_OBJECT_READ)
+            assert subjId != null;
+
         if (!cctx.events().isRecordable(type))
             LT.warn(log, null, "Added event without checking if event is recordable: " + U.gridEventName(type));
 

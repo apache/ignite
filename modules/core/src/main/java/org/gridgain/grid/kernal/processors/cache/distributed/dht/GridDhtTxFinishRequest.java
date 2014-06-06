@@ -293,25 +293,25 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         }
 
         switch (commState.idx) {
-            case 18:
+            case 19:
                 if (!commState.putEnum(isolation))
                     return false;
 
                 commState.idx++;
 
-            case 19:
+            case 20:
                 if (!commState.putGridUuid(miniId))
                     return false;
 
                 commState.idx++;
 
-            case 20:
+            case 21:
                 if (!commState.putUuid(nearNodeId))
                     return false;
 
                 commState.idx++;
 
-            case 21:
+            case 22:
                 if (nearWritesBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(nearWritesBytes.size()))
@@ -338,13 +338,13 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 22:
+            case 23:
                 if (!commState.putBoolean(onePhaseCommit))
                     return false;
 
                 commState.idx++;
 
-            case 23:
+            case 24:
                 if (pendingVers != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(pendingVers.size()))
@@ -371,19 +371,19 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 24:
+            case 25:
                 if (!commState.putBoolean(sysInvalidate))
                     return false;
 
                 commState.idx++;
 
-            case 25:
+            case 26:
                 if (!commState.putLong(topVer))
                     return false;
 
                 commState.idx++;
 
-            case 26:
+            case 27:
                 if (!commState.putCacheVersion(writeVer))
                     return false;
 
@@ -403,7 +403,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
             return false;
 
         switch (commState.idx) {
-            case 18:
+            case 19:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -413,7 +413,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 19:
+            case 20:
                 GridUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
@@ -423,7 +423,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 20:
+            case 21:
                 UUID nearNodeId0 = commState.getUuid();
 
                 if (nearNodeId0 == UUID_NOT_READ)
@@ -433,7 +433,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 21:
+            case 22:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -462,7 +462,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 22:
+            case 23:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -470,7 +470,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 23:
+            case 24:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -499,7 +499,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 24:
+            case 25:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -507,7 +507,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 25:
+            case 26:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -515,7 +515,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 26:
+            case 27:
                 GridCacheVersion writeVer0 = commState.getCacheVersion();
 
                 if (writeVer0 == CACHE_VER_NOT_READ)

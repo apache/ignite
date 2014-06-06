@@ -78,6 +78,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     private byte[] grpLockKeyBytes;
 
     /** Subject ID. */
+    @GridDirectVersion(1)
     private UUID subjId;
 
     /**
@@ -320,6 +321,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         _clone.txSize = txSize;
         _clone.grpLockKey = grpLockKey;
         _clone.grpLockKeyBytes = grpLockKeyBytes;
+        _clone.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -443,6 +445,12 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                     if (!commState.putInt(-1))
                         return false;
                 }
+
+                commState.idx++;
+
+            case 18:
+                if (!commState.putUuid(subjId))
+                    return false;
 
                 commState.idx++;
 
@@ -595,6 +603,16 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 commState.readSize = -1;
                 commState.readItems = 0;
+
+                commState.idx++;
+
+            case 18:
+                UUID subjId0 = commState.getUuid();
+
+                if (subjId0 == UUID_NOT_READ)
+                    return false;
+
+                subjId = subjId0;
 
                 commState.idx++;
 

@@ -515,6 +515,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         _clone.filterBytes = filterBytes;
         _clone.hasPrimary = hasPrimary;
         _clone.forceTransformBackups = forceTransformBackups;
+        _clone.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -709,6 +710,12 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
             case 17:
                 if (!commState.putBoolean(forceTransformBackups))
+                    return false;
+
+                commState.idx++;
+
+            case 18:
+                if (!commState.putUuid(subjId))
                     return false;
 
                 commState.idx++;
@@ -948,6 +955,16 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                     return false;
 
                 forceTransformBackups = commState.getBoolean();
+
+                commState.idx++;
+
+            case 18:
+                UUID subjId0 = commState.getUuid();
+
+                if (subjId0 == UUID_NOT_READ)
+                    return false;
+
+                subjId = subjId0;
 
                 commState.idx++;
 
