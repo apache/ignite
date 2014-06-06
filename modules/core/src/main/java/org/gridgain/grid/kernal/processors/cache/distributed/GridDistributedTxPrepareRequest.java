@@ -103,10 +103,6 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /** */
     private byte[] txNodesBytes;
 
-    /** Subject ID. */
-    @GridDirectVersion(1)
-    private UUID subjId;
-
     /**
      * Required by {@link Externalizable}.
      */
@@ -128,8 +124,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
         Collection<GridCacheTxEntry<K, V>> writes,
         Object grpLockKey,
         boolean partLock,
-        Map<UUID, Collection<UUID>> txNodes,
-        @Nullable UUID subjId
+        Map<UUID, Collection<UUID>> txNodes
     ) {
         super(tx.xidVersion(), 0);
 
@@ -146,7 +141,6 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
         this.grpLockKey = grpLockKey;
         this.partLock = partLock;
         this.txNodes = txNodes;
-        this.subjId = subjId;
     }
 
     /**
@@ -181,13 +175,6 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
      */
     public long threadId() {
         return threadId;
-    }
-
-    /**
-     * @return Subject ID.
-     */
-    @Nullable public UUID subjectId() {
-        return subjId;
     }
 
     /**
@@ -427,7 +414,6 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
         _clone.txSize = txSize;
         _clone.txNodes = txNodes;
         _clone.txNodesBytes = txNodesBytes;
-        _clone.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -563,12 +549,6 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                     if (!commState.putInt(-1))
                         return false;
                 }
-
-                commState.idx++;
-
-            case 20:
-                if (!commState.putUuid(subjId))
-                    return false;
 
                 commState.idx++;
 
@@ -741,16 +721,6 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
                 commState.readSize = -1;
                 commState.readItems = 0;
-
-                commState.idx++;
-
-            case 20:
-                UUID subjId0 = commState.getUuid();
-
-                if (subjId0 == UUID_NOT_READ)
-                    return false;
-
-                subjId = subjId0;
 
                 commState.idx++;
 

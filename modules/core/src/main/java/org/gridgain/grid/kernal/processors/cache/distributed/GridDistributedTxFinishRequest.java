@@ -77,10 +77,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     /** Group lock key bytes. */
     private byte[] grpLockKeyBytes;
 
-    /** Subject ID. */
-    @GridDirectVersion(1)
-    private UUID subjId;
-
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -119,8 +115,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         Collection<GridCacheTxEntry<K, V>> writeEntries,
         Collection<GridCacheTxEntry<K, V>> recoveryWrites,
         boolean reply,
-        @Nullable Object grpLockKey,
-        @Nullable UUID subjId
+        @Nullable Object grpLockKey
     ) {
         super(xidVer, writeEntries == null ? 0 : writeEntries.size());
         assert xidVer != null;
@@ -136,7 +131,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         this.recoveryWrites = recoveryWrites;
         this.reply = reply;
         this.grpLockKey = grpLockKey;
-        this.subjId = subjId;
 
         completedVersions(committedVers, rolledbackVers);
     }
@@ -153,13 +147,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
      */
     public long threadId() {
         return threadId;
-    }
-
-    /**
-     * @return Subject ID.
-     */
-    @Nullable public UUID subjectId() {
-        return subjId;
     }
 
     /**
@@ -321,7 +308,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         _clone.txSize = txSize;
         _clone.grpLockKey = grpLockKey;
         _clone.grpLockKeyBytes = grpLockKeyBytes;
-        _clone.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -445,12 +431,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                     if (!commState.putInt(-1))
                         return false;
                 }
-
-                commState.idx++;
-
-            case 18:
-                if (!commState.putUuid(subjId))
-                    return false;
 
                 commState.idx++;
 
@@ -603,16 +583,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 commState.readSize = -1;
                 commState.readItems = 0;
-
-                commState.idx++;
-
-            case 18:
-                UUID subjId0 = commState.getUuid();
-
-                if (subjId0 == UUID_NOT_READ)
-                    return false;
-
-                subjId = subjId0;
 
                 commState.idx++;
 

@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.util.direct.*;
@@ -35,6 +36,10 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
     /** Topology version. */
     private long topVer;
+
+    /** Subject ID. */
+    @GridDirectVersion(1)
+    private UUID subjId;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -76,10 +81,11 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
         boolean reply,
         @Nullable UUID subjId) {
         super(xidVer, futId, null, threadId, commit, invalidate, baseVer, committedVers, rolledbackVers, txSize,
-            writeEntries, recoverEntries, reply, null, subjId);
+            writeEntries, recoverEntries, reply, null);
 
         this.explicitLock = explicitLock;
         this.topVer = topVer;
+        this.subjId = subjId;
     }
 
     /**
@@ -101,6 +107,13 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
      */
     public void miniId(GridUuid miniId) {
         this.miniId = miniId;
+    }
+
+    /**
+     * @return Subject ID.
+     */
+    @Nullable public UUID subjectId() {
+        return subjId;
     }
 
     /**
@@ -129,6 +142,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
         _clone.miniId = miniId;
         _clone.explicitLock = explicitLock;
         _clone.topVer = topVer;
+        _clone.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -147,20 +161,26 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
         }
 
         switch (commState.idx) {
-            case 19:
+            case 18:
                 if (!commState.putBoolean(explicitLock))
                     return false;
 
                 commState.idx++;
 
-            case 20:
+            case 19:
                 if (!commState.putGridUuid(miniId))
                     return false;
 
                 commState.idx++;
 
-            case 21:
+            case 20:
                 if (!commState.putLong(topVer))
+                    return false;
+
+                commState.idx++;
+
+            case 21:
+                if (!commState.putUuid(subjId))
                     return false;
 
                 commState.idx++;
@@ -179,7 +199,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
             return false;
 
         switch (commState.idx) {
-            case 19:
+            case 18:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -187,7 +207,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
                 commState.idx++;
 
-            case 20:
+            case 19:
                 GridUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
@@ -197,11 +217,21 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
                 commState.idx++;
 
-            case 21:
+            case 20:
                 if (buf.remaining() < 8)
                     return false;
 
                 topVer = commState.getLong();
+
+                commState.idx++;
+
+            case 21:
+                UUID subjId0 = commState.getUuid();
+
+                if (subjId0 == UUID_NOT_READ)
+                    return false;
+
+                subjId = subjId0;
 
                 commState.idx++;
 

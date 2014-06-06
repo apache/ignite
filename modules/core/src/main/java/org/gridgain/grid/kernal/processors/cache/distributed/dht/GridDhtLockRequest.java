@@ -59,6 +59,10 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     /** Topology version. */
     private long topVer;
 
+    /** Subject ID. */
+    @GridDirectVersion(1)
+    private UUID subjId;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -106,7 +110,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         @Nullable UUID subjId
     ) {
         super(nodeId, nearXidVer, threadId, futId, lockVer, isInTx, isRead, isolation, isInvalidate, timeout,
-            dhtCnt == 0 ? nearCnt : dhtCnt, txSize, grpLockKey, partLock, subjId);
+            dhtCnt == 0 ? nearCnt : dhtCnt, txSize, grpLockKey, partLock);
 
         this.topVer = topVer;
 
@@ -117,6 +121,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         assert miniId != null;
 
         this.miniId = miniId;
+        this.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -129,6 +134,13 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
      */
     public UUID nearNodeId() {
         return nodeId();
+    }
+
+    /**
+     * @return Subject ID.
+     */
+    public UUID subjectId() {
+        return subjId;
     }
 
     /**
@@ -275,6 +287,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         _clone.owned = owned;
         _clone.ownedBytes = ownedBytes;
         _clone.topVer = topVer;
+        _clone.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -293,19 +306,19 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         }
 
         switch (commState.idx) {
-            case 24:
+            case 23:
                 if (!commState.putBitSet(invalidateEntries))
                     return false;
 
                 commState.idx++;
 
-            case 25:
+            case 24:
                 if (!commState.putGridUuid(miniId))
                     return false;
 
                 commState.idx++;
 
-            case 26:
+            case 25:
                 if (nearKeyBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(nearKeyBytes.size()))
@@ -332,14 +345,20 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
                 commState.idx++;
 
-            case 27:
+            case 26:
                 if (!commState.putByteArray(ownedBytes))
                     return false;
 
                 commState.idx++;
 
-            case 28:
+            case 27:
                 if (!commState.putLong(topVer))
+                    return false;
+
+                commState.idx++;
+
+            case 28:
+                if (!commState.putUuid(subjId))
                     return false;
 
                 commState.idx++;
@@ -358,7 +377,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
             return false;
 
         switch (commState.idx) {
-            case 24:
+            case 23:
                 BitSet invalidateEntries0 = commState.getBitSet();
 
                 if (invalidateEntries0 == BIT_SET_NOT_READ)
@@ -368,7 +387,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
                 commState.idx++;
 
-            case 25:
+            case 24:
                 GridUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
@@ -378,7 +397,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
                 commState.idx++;
 
-            case 26:
+            case 25:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -407,7 +426,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
                 commState.idx++;
 
-            case 27:
+            case 26:
                 byte[] ownedBytes0 = commState.getByteArray();
 
                 if (ownedBytes0 == BYTE_ARR_NOT_READ)
@@ -417,11 +436,21 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
                 commState.idx++;
 
-            case 28:
+            case 27:
                 if (buf.remaining() < 8)
                     return false;
 
                 topVer = commState.getLong();
+
+                commState.idx++;
+
+            case 28:
+                UUID subjId0 = commState.getUuid();
+
+                if (subjId0 == UUID_NOT_READ)
+                    return false;
+
+                subjId = subjId0;
 
                 commState.idx++;
 

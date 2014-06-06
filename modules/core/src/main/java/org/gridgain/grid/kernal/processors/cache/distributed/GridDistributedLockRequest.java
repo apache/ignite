@@ -96,10 +96,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     @GridToStringInclude
     private GridCacheVersion[] drVersByIdx;
 
-    /** Subject ID. */
-    @GridDirectVersion(1)
-    private UUID subjId;
-
     /**
      * Empty constructor.
      */
@@ -138,8 +134,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         int keyCnt,
         int txSize,
         @Nullable Object grpLockKey,
-        boolean partLock,
-        @Nullable UUID subjId
+        boolean partLock
     ) {
         super(lockVer, keyCnt);
 
@@ -159,7 +154,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         this.txSize = txSize;
         this.grpLockKey = grpLockKey;
         this.partLock = partLock;
-        this.subjId = subjId;
 
         retVals = new boolean[keyCnt];
     }
@@ -170,13 +164,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
      */
     public UUID nodeId() {
         return nodeId;
-    }
-
-    /**
-     * @return Subject ID.
-     */
-    public UUID subjectId() {
-        return subjId;
     }
 
     /**
@@ -461,7 +448,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         _clone.grpLockKeyBytes = grpLockKeyBytes;
         _clone.partLock = partLock;
         _clone.drVersByIdx = drVersByIdx;
-        _clone.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -614,12 +600,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
             case 22:
                 if (!commState.putByteArray(writeEntriesBytes))
-                    return false;
-
-                commState.idx++;
-
-            case 23:
-                if (!commState.putUuid(subjId))
                     return false;
 
                 commState.idx++;
@@ -819,16 +799,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                     return false;
 
                 writeEntriesBytes = writeEntriesBytes0;
-
-                commState.idx++;
-
-            case 23:
-                UUID subjId0 = commState.getUuid();
-
-                if (subjId0 == UUID_NOT_READ)
-                    return false;
-
-                subjId = subjId0;
 
                 commState.idx++;
 
