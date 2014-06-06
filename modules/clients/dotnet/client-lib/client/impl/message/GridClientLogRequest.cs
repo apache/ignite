@@ -13,6 +13,8 @@ namespace GridGain.Client.Impl.Message {
 
     /** <summary>Request for a log file.</summary> */
     internal class GridClientLogRequest : GridClientRequest {
+        public const int PORTABLE_TYPE_ID = -3;
+        
         /** 
          * <summary>
          * Constructs log request.</summary>
@@ -41,6 +43,29 @@ namespace GridGain.Client.Impl.Message {
         public int To {
             get;
             set;
+        }
+
+        public override int TypeId
+        {
+            get { return PORTABLE_TYPE_ID; }
+        }
+
+        public override void WritePortable(IGridPortableWriter writer) {
+            base.WritePortable(writer);
+
+            writer.WriteString("path", Path);
+
+            writer.WriteInt("from", From);
+            writer.WriteInt("to", To);
+        }
+
+        public override void ReadPortable(IGridPortableReader reader) {
+            base.ReadPortable(reader);
+
+            Path = reader.ReadString("path");
+
+            From = reader.ReadInt("from");
+            To = reader.ReadInt("to");
         }
     }
 }

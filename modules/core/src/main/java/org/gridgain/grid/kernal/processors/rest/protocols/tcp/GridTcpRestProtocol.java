@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
 import org.gridgain.client.marshaller.*;
+import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
@@ -45,8 +46,8 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     /** JDK marshaller. */
     private final GridMarshaller jdkMarshaller = new GridJdkMarshaller();
 
-    /** Protobuf marshaller. */
-    private final GridClientMarshaller protobufMarshaller;
+    /** */
+    private final GridClientPortableMarshaller portableMarshaller;
 
     /** Message reader. */
     private final GridNioMessageReader msgReader = new GridNioMessageReader() {
@@ -101,7 +102,8 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     public GridTcpRestProtocol(GridKernalContext ctx) {
         super(ctx);
 
-        protobufMarshaller = U.createProtobufMarshaller(log);
+        portableMarshaller = new GridClientPortableMarshaller(
+            ctx.config().getClientConnectionConfiguration().getPortableTypesMap());
     }
 
     /**
@@ -109,6 +111,13 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
      */
     GridMarshaller jdkMarshaller() {
         return jdkMarshaller;
+    }
+
+    /**
+     * @return Client portable marshaller.
+     */
+    GridClientPortableMarshaller portableMarshaller() {
+        return portableMarshaller;
     }
 
     /**
@@ -122,13 +131,9 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
         GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
 
         if (marsh == null) {
-            U.warn(log, "No marshaller defined for NIO session, using PROTOBUF as default [ses=" + ses + ']');
+            U.warn(log, "No marshaller defined for NIO session, using portable as default [ses=" + ses + ']');
 
-            if (protobufMarshaller == null)
-                throw new GridException("Failed to use Protobuf marshaller (session will be closed). " +
-                    "Is gridgain-protobuf module added to classpath?");
-
-            marsh = protobufMarshaller;
+            marsh = portableMarshaller;
 
             ses.addMeta(MARSHALLER.ordinal(), marsh);
         }

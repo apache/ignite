@@ -261,8 +261,8 @@ namespace GridGain.Client.Impl.Marshaller {
             if (node.Attributes != null)
                 builder.SetAttributes(WrapMap(node.Attributes));
 
-            if (node.Metrics != null)
-                builder.SetMetrics(WrapMetrics(node.Metrics));
+            //if (node.Metrics != null)
+                //builder.SetMetrics(WrapMetrics(node.Metrics));
 
             return builder.Build();
         }

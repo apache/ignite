@@ -21,7 +21,7 @@ public class GridClientNodeMetricsBean implements Externalizable, GridPortableOb
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final int PORTABLE_TYPE_ID = GridClientAbstractMessage.nextSystemTypeId();
+    public static final int PORTABLE_TYPE_ID = -5;
 
     /** */
     private long lastUpdateTime = -1;

@@ -69,6 +69,9 @@
     <Compile Include="client\balancer\IGridClientLoadBalancer.cs" />
     <Compile Include="client\balancer\GridClientLoadBalancer.cs" />
     <Compile Include="client\balancer\GridClientRoundRobinBalancer.cs" />
+    <Compile Include="client\IGridPortableReader.cs" />
+    <Compile Include="client\IGridPortableWriter.cs" />
+    <Compile Include="client\IGridPortableObject.cs" />
     <Compile Include="client\GridClientCacheFlag.cs" />
     <Compile Include="client\GridClientAuthenticationException.cs" />
     <Compile Include="client\hasher\GridClientJavaHelper.cs" />
@@ -76,6 +79,8 @@
     <Compile Include="client\impl\GridClientDataMetrics.cs" />
     <Compile Include="client\IGridClientDataMetrics.cs" />
     <Compile Include="client\impl\GridClientNodeMetrics.cs" />
+    <Compile Include="client\impl\marshaller\GridClientPortableMarshaller.cs" />
+    <Compile Include="client\impl\message\GridClientNodeMetricsBean.cs" />
     <Compile Include="client\util\GridClientArgumentCheck.cs" />
     <Compile Include="client\IGridClient.cs" />
     <Compile Include="client\GridClientCacheMode.cs" />

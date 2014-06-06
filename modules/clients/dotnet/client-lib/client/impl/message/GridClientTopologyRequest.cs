@@ -13,13 +13,15 @@ namespace GridGain.Client.Impl.Message {
 
     /** <summary><c>Topology</c> command request.</summary> */
     internal class GridClientTopologyRequest : GridClientRequest {
+        public const int PORTABLE_TYPE_ID = -9;
+        
         /**
          * <summary>
          * Constructs topology request.</summary>
-         * 
+         *
          * <param name="destNodeId">Node ID to route request to.</param>
          */
-        public GridClientTopologyRequest(Guid destNodeId) : base(destNodeId) { 
+        public GridClientTopologyRequest(Guid destNodeId) : base(destNodeId) {
         }
 
         /** <summary>Include metrics flag.</summary> */
@@ -44,6 +46,32 @@ namespace GridGain.Client.Impl.Message {
         public String NodeIP {
             get;
             set;
+        }
+
+        public override int TypeId {
+            get { return PORTABLE_TYPE_ID; }
+        }
+
+        public override void WritePortable(IGridPortableWriter writer) {
+            base.WritePortable(writer);
+
+            writer.WriteGuid("nodeId", NodeId);
+
+            writer.WriteString("nodeIp", NodeIP);
+
+            writer.WriteBoolean("includeMetrics", IncludeMetrics);
+            writer.WriteBoolean("includeAttrs", IncludeAttributes);
+        }
+
+        public override void ReadPortable(IGridPortableReader reader) {
+            base.ReadPortable(reader);
+
+            NodeId = reader.ReadGuid("nodeId");
+
+            NodeIP = reader.ReadString("nodeIp");
+
+            IncludeMetrics = reader.ReadBoolean("includeMetrics");
+            IncludeAttributes = reader.ReadBoolean("includeAttrs");
         }
     }
 }

@@ -11,7 +11,9 @@ namespace GridGain.Client.Impl.Message {
     using System;
 
     /** <summary>Task result.</summary> */
-    internal class GridClientTaskResultBean {
+    internal class GridClientTaskResultBean : IGridPortableObject {
+        public const int PORTABLE_TYPE_ID = -8;
+        
         /** <summary>Synthetic ID containing task ID and result holding node ID.</summary> */
         public String TaskId {
             get;
@@ -34,6 +36,24 @@ namespace GridGain.Client.Impl.Message {
         public String Error {
             get;
             set;
+        }
+
+        public int TypeId {
+            get { return PORTABLE_TYPE_ID;  } 
+        }
+        
+        public void WritePortable(IGridPortableWriter writer) {
+            writer.WriteString("id", TaskId);
+            writer.WriteBoolean("finished", IsFinished);
+            writer.WriteObject("res", Result);
+            writer.WriteString("error", Error);
+        }
+
+        public void ReadPortable(IGridPortableReader reader) {
+            TaskId = reader.ReadString("id");
+            IsFinished = reader.ReadBoolean("finished");
+            Result = reader.ReadObject<Object>("res");
+            Error = reader.ReadString("error");
         }
     }
 }

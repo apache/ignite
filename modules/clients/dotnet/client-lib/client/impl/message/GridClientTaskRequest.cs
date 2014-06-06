@@ -9,13 +9,13 @@
 
 namespace GridGain.Client.Impl.Message {
     using System;
-    using System.Collections;
-    using System.Text;
 
     using U = GridGain.Client.Util.GridClientUtils;
 
     /** <summary><c>Task</c> command request.</summary> */
     internal class GridClientTaskRequest : GridClientRequest {
+        public const int PORTABLE_TYPE_ID = -7;
+        
         /**
          * <summary>
          * Constructs task command request.</summary>
@@ -35,6 +35,26 @@ namespace GridGain.Client.Impl.Message {
         public Object Argument {
             get;
             set;
+        }
+
+        public override int TypeId {
+            get { return PORTABLE_TYPE_ID; }
+        }
+
+        public override void WritePortable(IGridPortableWriter writer) {
+            base.WritePortable(writer);
+
+            writer.WriteString("taskName", TaskName);
+
+            writer.WriteObject("arg", Argument);
+        }
+
+        public override void ReadPortable(IGridPortableReader reader) {
+            base.ReadPortable(reader);
+
+            TaskName = reader.ReadString("taskName");
+
+            Argument = reader.ReadObject<Object>("arg");
         }
     }
 }

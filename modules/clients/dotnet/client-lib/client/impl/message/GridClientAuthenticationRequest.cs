@@ -12,6 +12,8 @@ namespace GridGain.Client.Impl.Message {
 
     /** <summary>Client authentication request.</summary> */
     internal class GridClientAuthenticationRequest : GridClientRequest {
+        public const int PORTABLE_TYPE_ID = -1;
+
         /** 
          * <summary>
          * Constructs authentication request.</summary> 
@@ -25,6 +27,23 @@ namespace GridGain.Client.Impl.Message {
         public Object Credentials {
             get;
             set;
+        }
+
+        public override int TypeId {
+            get { return PORTABLE_TYPE_ID; }
+        }
+
+        public override void WritePortable(IGridPortableWriter writer)
+        {
+            base.WritePortable(writer);
+
+            writer.WriteObject("cred", Credentials);
+        }
+
+        public override void ReadPortable(IGridPortableReader reader) {
+            base.ReadPortable(reader);
+
+            Credentials = reader.ReadObject<Object>("cred");
         }
     }
 }

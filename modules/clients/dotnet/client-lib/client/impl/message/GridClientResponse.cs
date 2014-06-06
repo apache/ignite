@@ -11,7 +11,9 @@ namespace GridGain.Client.Impl.Message {
     using System;
 
     /** <summary>Bean representing client operation result.</summary> */
-    internal class GridClientResponse {
+    internal class GridClientResponse : IGridPortableObject {
+        public const int PORTABLE_TYPE_ID = -6;
+        
         /**
          * <summary>
          * Tries to find enum value by operation code.</summary>
@@ -67,6 +69,30 @@ namespace GridGain.Client.Impl.Message {
         public Object Result {
             get;
             set;
+        }
+
+        public int TypeId {
+            get { return PORTABLE_TYPE_ID; } 
+        }
+        
+        public void WritePortable(IGridPortableWriter writer) {
+            writer.WriteBytes("sesTok", SessionToken);
+
+            writer.WriteInt("successStatus", (int)Status);
+
+            writer.WriteString("errorMsg", ErrorMessage);
+
+            writer.WriteObject("res", Result);
+        }
+
+        public void ReadPortable(IGridPortableReader reader) {
+            SessionToken = reader.ReadBytes("sesTok");
+
+            Status = (GridClientResponseStatus)reader.ReadInt("successStatus");
+
+            ErrorMessage = reader.ReadString("errorMsg");
+
+            Result = reader.ReadObject<Object>("res");
         }
     }
 }

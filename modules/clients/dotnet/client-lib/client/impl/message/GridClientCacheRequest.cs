@@ -7,6 +7,8 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
+using System.Collections.Generic;
+
 namespace GridGain.Client.Impl.Message {
     using System;
     using System.Text;
@@ -16,6 +18,8 @@ namespace GridGain.Client.Impl.Message {
 
     /** <summary>Generic cache request.</summary> */
     internal class GridClientCacheRequest : GridClientRequest {
+        public const int PORTABLE_TYPE_ID = -2;
+        
         /**
          * <summary>
          * Tries to find enum value by operation code.</summary>
@@ -77,7 +81,7 @@ namespace GridGain.Client.Impl.Message {
         }
 
         /** <summary>Keys and values for put all, get all, remove all operations.</summary> */
-        public IDictionary Values {
+        public IDictionary<Object, Object> Values {
             get;
             set;
         }
@@ -89,13 +93,49 @@ namespace GridGain.Client.Impl.Message {
             }
 
             set {
-                var vals = new Hashtable();
+                var vals = new Dictionary<object, object>();
 
                 foreach (Object k in value)
                     vals.Add(k, null);
 
                 Values = vals;
             }
+        }
+
+        public override int TypeId {
+            get { return PORTABLE_TYPE_ID; }
+        }
+
+        public override void WritePortable(IGridPortableWriter writer) {
+            base.WritePortable(writer);
+
+            writer.WriteInt("op", (int)Operation);
+
+            writer.WriteString("cacheName", CacheName);
+
+            writer.WriteObject("key", Key);
+            writer.WriteObject("val", Value);
+            writer.WriteObject("val2", Value2);
+
+            writer.WriteMap("vals", Values);
+
+            writer.WriteInt("flags", CacheFlags);
+        }
+
+        public override void ReadPortable(IGridPortableReader reader) {
+            base.ReadPortable(reader);
+
+            Operation = (GridClientCacheRequestOperation)reader.ReadInt("op");
+
+            CacheName = reader.ReadString("cacheName");
+
+            Key = reader.ReadObject<Object>("key");
+            Value = reader.ReadObject<Object>("val");
+            Value2 = reader.ReadObject<Object>("val2");
+
+            Values = reader.ReadMap<Object, Object>("vals");
+
+            CacheFlags = reader.ReadInt("flags");
         }
     }
 }
