@@ -24,7 +24,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Test for {@link org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi} and {@link GridTcpCommunicationSpi}.
+ * Test for {@link GridTcpDiscoverySpi} and {@link GridTcpCommunicationSpi}.
  */
 public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     /** */
