@@ -698,6 +698,9 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
      * Hadoop process.
      */
     private static class HadoopProcess extends ReentrantLock {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Job ID. */
         private GridHadoopJobId jobId;
 
@@ -844,6 +847,9 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
      *
      */
     private class GridHadoopProcessFuture extends GridFutureAdapter<GridBiTuple<Process, GridHadoopProcessDescriptor>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Child process ID. */
         private UUID childProcId;
 

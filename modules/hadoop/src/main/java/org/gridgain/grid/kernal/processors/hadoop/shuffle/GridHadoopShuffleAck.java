@@ -20,6 +20,9 @@ import java.io.*;
  */
 public class GridHadoopShuffleAck implements GridHadoopMessage, Externalizable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private long msgId;
 
     /** */

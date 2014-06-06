@@ -23,6 +23,9 @@ import org.jetbrains.annotations.*;
  * The wrapper for native hadoop input splits.
  */
 public class GridHadoopSplitWrapper implements GridHadoopInputSplit {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Hosts where split is located. */
     private String[] hosts;
 

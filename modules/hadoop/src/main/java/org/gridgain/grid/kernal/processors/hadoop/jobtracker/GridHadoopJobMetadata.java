@@ -23,6 +23,9 @@ import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;
  * Hadoop job metadata. Internal object used for distributed job state tracking.
  */
 public class GridHadoopJobMetadata implements Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Job ID. */
     private GridHadoopJobId jobId;
 

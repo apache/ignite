@@ -18,6 +18,9 @@ import java.util.*;
  * Map-reduce plan.
  */
 public class GridHadoopDefaultMapReducePlan implements GridHadoopMapReducePlan {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Mappers map. */
     private Map<UUID, Collection<GridHadoopInputSplit>> mappers;
 

@@ -23,6 +23,9 @@ import org.jetbrains.annotations.*;
  */
 public class GridHadoopFileBlock implements GridHadoopInputSplit {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     protected String[] hosts;
 
     /** */

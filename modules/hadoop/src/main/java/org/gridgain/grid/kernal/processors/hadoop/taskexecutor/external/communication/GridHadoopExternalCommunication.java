@@ -1391,6 +1391,9 @@ public class GridHadoopExternalCommunication {
      */
     @SuppressWarnings("PublicInnerClass")
     public static class ProcessHandshakeMessage implements GridHadoopMessage, Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Node ID. */
         private GridHadoopProcessDescriptor procDesc;
 

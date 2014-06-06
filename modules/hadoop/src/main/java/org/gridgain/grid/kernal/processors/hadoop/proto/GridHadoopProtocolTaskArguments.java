@@ -18,6 +18,9 @@ import java.io.*;
  * Task arguments.
  */
 public class GridHadoopProtocolTaskArguments implements Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Arguments. */
     private Object[] args;
 
