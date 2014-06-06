@@ -206,7 +206,8 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                 }
             }
             else
-                assert proc != null : "Missing started process for task execution request: " + job.id() + ", tasks=" + tasks;
+                assert proc != null : "Missing started process for task execution request: " + job.id() +
+                    ", tasks=" + tasks;
 
             final HadoopProcess proc0 = proc;
 

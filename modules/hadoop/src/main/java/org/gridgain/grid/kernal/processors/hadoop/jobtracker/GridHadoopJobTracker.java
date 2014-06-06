@@ -434,8 +434,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         boolean checkSetup = evt.eventNode().order() < ctx.localNodeOrder();
 
-//        evt.eventNode().order()
-
         // Check only if this node is responsible for job status updates.
         if (ctx.jobUpdateLeader()) {
             // Iteration over all local entries is correct since system cache is REPLICATED.
