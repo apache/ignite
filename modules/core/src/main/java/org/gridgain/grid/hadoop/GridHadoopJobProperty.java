@@ -64,7 +64,7 @@ public enum GridHadoopJobProperty {
      * If set to {@code true} then input for combiner will not be sorted by key.
      * Internally hash-map will be used instead of sorted one, so {@link Object#equals(Object)}
      * and {@link Object#hashCode()} methods of key must be implemented consistently with
-     * comparator for that type.
+     * comparator for that type. Grouping comparator is not supported if this setting is {@code true}.
      * <p>
      * By default is {@code false}.
      */
@@ -74,7 +74,7 @@ public enum GridHadoopJobProperty {
      * If set to {@code true} then input for reducer will not be sorted by key.
      * Internally hash-map will be used instead of sorted one, so {@link Object#equals(Object)}
      * and {@link Object#hashCode()} methods of key must be implemented consistently with
-     * comparator for that type.
+     * comparator for that type. Grouping comparator is not supported if this setting is {@code true}.
      * <p>
      * By default is {@code false}.
      */

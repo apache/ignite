@@ -152,10 +152,8 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
         return true;
     }
 
-    /**
-     * @return New input for task.
-     */
-    @Override public GridHadoopTaskInput input() throws GridException {
+    /** {@inheritDoc} */
+    @Override public GridHadoopTaskInput input(Comparator<Object> ignore) throws GridException {
         inputs.incrementAndGet();
 
         if (!adders.isEmpty())

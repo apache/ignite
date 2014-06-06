@@ -33,7 +33,7 @@ public abstract class GridHadoopHashMultimapBase extends GridHadoopMultimapBase 
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopTaskInput input() throws GridException {
+    @Override public GridHadoopTaskInput input(Comparator<Object> ignore) throws GridException {
         return new Input();
     }
 

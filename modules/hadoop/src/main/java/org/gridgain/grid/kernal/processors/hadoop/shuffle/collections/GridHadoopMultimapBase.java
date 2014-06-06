@@ -136,6 +136,15 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
         }
 
         /**
+         * Resets temporary object to the given one.
+         *
+         * @param tmp Temporary object for reuse.
+         */
+        public void resetReusedObject(Object tmp) {
+            this.tmp = tmp;
+        }
+
+        /**
          * @param ptr Pointer.
          * @param size Object size.
          * @return Object.
@@ -329,6 +338,9 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
 
         /** {@inheritDoc} */
         @Override public Object next() {
+            if (!hasNext())
+                throw new NoSuchElementException();
+
             Object res = valReader.readValue(valPtr);
 
             valPtr = nextValue(valPtr);

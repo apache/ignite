@@ -486,10 +486,11 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
      * @return Input.
      * @throws GridException If failed.
      */
+    @SuppressWarnings("unchecked")
     public GridHadoopTaskInput input(GridHadoopTaskInfo taskInfo) throws GridException {
         switch (taskInfo.type()) {
             case COMBINE:
-                return combinerMap.input();
+                return combinerMap.input((Comparator<Object>)job.combineGroupComparator());
 
             case REDUCE:
                 int reducer = taskInfo.taskNumber();
@@ -497,7 +498,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
                 GridHadoopMultimap m = maps.get(reducer);
 
                 if (m != null)
-                    return m.input();
+                    return m.input((Comparator<Object>)job.reduceGroupComparator());
 
                 return new GridHadoopTaskInput() { // Empty input.
                     @Override public boolean next() {

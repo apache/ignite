@@ -86,8 +86,13 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopTaskInput input() throws GridException {
-        return new Input();
+    @Override public GridHadoopTaskInput input(Comparator<Object> groupCmp) throws GridException {
+        Input in = new Input();
+
+        if (groupCmp != null && groupCmp.getClass() != cmp.getClass())
+            return new GroupedInput(groupCmp, in);
+
+        return in;
     }
 
     /**
@@ -573,6 +578,122 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
         @Override public void close() throws GridException {
             keyReader.close();
             valReader.close();
+        }
+    }
+
+    /**
+     * Grouped input using grouping comparator.
+     */
+    private class GroupedInput implements GridHadoopTaskInput {
+        /** */
+        private Comparator<Object> groupCmp;
+
+        /** */
+        private Input in;
+
+        /** */
+        private Object prevKey;
+
+        /** */
+        private boolean alreadyNextKey;
+
+        /**
+         * @param groupCmp Grouping comparator.
+         * @param in Input.
+         */
+        private GroupedInput(Comparator<Object> groupCmp, Input in) {
+            this.groupCmp = groupCmp;
+            this.in = in;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean next() {
+            if (alreadyNextKey) { // Previous values iterator already switched input to the next key.
+                alreadyNextKey = false;
+
+                return true;
+            }
+
+            while (in.next()) {
+                if (prevKey == null) { // The first call.
+                    prevKey = in.key();
+
+                    assert prevKey != null;
+
+                    in.keyReader.resetReusedObject(null); // We need to have two instances of key object to compare.
+
+                    return true;
+                }
+                else {
+                    Object key = in.key();
+
+                    assert key != null;
+
+                    // We need to compare keys here because iterator from the previous key was not read fully.
+                    if (groupCmp.compare(prevKey, key) != 0) { // Keys from different groups.
+                        in.keyReader.resetReusedObject(prevKey); // Switch reused keys.
+
+                        prevKey = key;
+
+                        return true;
+                    }
+                    // Else go forward.
+                }
+            }
+
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object key() {
+            return prevKey;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Iterator<?> values() {
+            return new Iterator<Object>() {
+                /** */
+                Iterator<?> cur = in.values();
+
+                @Override public boolean hasNext() {
+                    for (;;) {
+                        if (cur.hasNext())
+                            return true;
+
+                        if (alreadyNextKey || !in.next())
+                            return false;
+
+                        Object key = in.key();
+
+                        assert key != null;
+
+                        if (groupCmp.compare(prevKey, key) == 0) // Keys from the same group.
+                            cur = in.values();
+                        else {
+                            in.keyReader.resetReusedObject(prevKey); // Switch reused keys.
+
+                            prevKey = key;
+
+                            alreadyNextKey = true;
+
+                            return false;
+                        }
+                    }
+                }
+
+                @Override public Object next() {
+                    return cur.next();
+                }
+
+                @Override public void remove() {
+                    throw new UnsupportedOperationException();
+                }
+            };
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws GridException {
+            in.close();
         }
     }
 }
