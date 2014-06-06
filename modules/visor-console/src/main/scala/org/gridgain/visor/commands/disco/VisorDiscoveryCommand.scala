@@ -11,18 +11,22 @@
 
 package org.gridgain.visor.commands.disco
 
+import org.gridgain.grid._
+import org.gridgain.grid.events._
+import org.gridgain.grid.events.GridEventType._
+import org.gridgain.grid.util.typedef.X
+
+import java.util.UUID
+
+import scala.collection.JavaConversions._
+import scala.collection.immutable._
+import scala.language.{implicitConversions, reflectiveCalls}
+import scala.util.control.Breaks._
+
+import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import visor._
-import org.gridgain.grid._
-import org.gridgain.scalar.scalar._
-import events._
-import org.gridgain.grid.util.typedef.X
-import GridEventType._
-import collection.immutable._
-import collection.JavaConversions._
-import java.util.UUID
-import scala.util.control.Breaks._
+import org.gridgain.visor.visor._
 
 /**
  * ==Overview==
@@ -129,7 +133,7 @@ class VisorDiscoveryCommand {
                 val nodes = grid.nodes()
 
                 if (nodes.isEmpty)
-                    scold("Topology is empty.") ^^
+                    scold("Topology is empty.").^^
 
                 val oldest = grid.nodes().maxBy(_.metrics().getUpTime)
 
@@ -141,24 +145,24 @@ class VisorDiscoveryCommand {
                     try
                         cnt = cntOpt.get.toInt
                     catch {
-                        case e: NumberFormatException => scold("Invalid count: " + cntOpt.get) ^^
+                        case e: NumberFormatException => scold("Invalid count: " + cntOpt.get).^^
                     }
 
                 println("Querying oldest node in grid: " + nodeId8Addr(oldest.id))
 
-                var evts: List[DiscoEvent] = null
+                var evts: List[VisorDiscoEvent] = null
 
                 try
                     evts = events(oldest, f.get, hasArgFlag("r", argLst))
                 catch {
-                    case e: GridException =>  scold(e.getMessage) ^^
+                    case e: GridException =>  scold(e.getMessage).^^
                 }
 
                 if (evts.isEmpty)
                     scold(
                         "No discovery events found.",
                         "Make sure events are not disabled and Event Storage SPI is properly configured."
-                    ) ^^
+                    ).^^
 
                 nl()
 
@@ -247,7 +251,7 @@ class VisorDiscoveryCommand {
      * @param reverse Reverse order.
      * @return Events.
      */
-    private def events(node: GridNode, f: TimeFilter, reverse: Boolean): List[DiscoEvent] = {
+    private def events(node: GridNode, f: TimeFilter, reverse: Boolean): List[VisorDiscoEvent] = {
         assert(node != null)
         assert(f != null)
         assert(!node.isDaemon)
@@ -270,7 +274,7 @@ class VisorDiscoveryCommand {
                 else
                     de.eventNode().metrics().getUpTime
 
-            DiscoEvent(
+            VisorDiscoEvent(
                 ts = de.timestamp(),
                 nodeId = de.eventNode().id(),
                 ip = de.eventNode().addresses.head,
@@ -281,7 +285,7 @@ class VisorDiscoveryCommand {
 
         // Add made up event for the oldest node since it doesn't
         // have an event about itself.
-        evts = evts :+ DiscoEvent(
+        evts = evts :+ VisorDiscoEvent(
             ts = node.metrics().getStartTime,
             nodeId = node.id(),
             ip = node.addresses.headOption getOrElse "<n/a>",
@@ -299,9 +303,9 @@ class VisorDiscoveryCommand {
      * @param evt Discovery event for which status is requested.
      * @return Status of the node.
      */
-    private def status(evts: List[DiscoEvent], evt: DiscoEvent): String = {
+    private def status(evts: List[VisorDiscoEvent], evt: VisorDiscoEvent): String = {
         assert(evts != null)
-        assert(!evts.isEmpty)
+        assert(evts.nonEmpty)
         assert(evt != null)
 
         val lastEvt = evts.filter(_.nodeId == evt.nodeId).sortBy(_.ts).last
@@ -325,7 +329,7 @@ class VisorDiscoveryCommand {
 
 /**
  */
-private case class DiscoEvent(
+private case class VisorDiscoEvent(
     evtName: String,
     nodeId: UUID,
     ip: String,
