@@ -627,6 +627,21 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
+        @Override public Comparator<?> sortComparator() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Comparator<?> reduceGroupComparator() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Comparator<?> combineGroupComparator() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo) {
             return null;
         }
