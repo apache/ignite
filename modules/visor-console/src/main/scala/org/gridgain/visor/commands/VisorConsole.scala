@@ -50,13 +50,16 @@ import vvm.VisorVvmCommand
  * Command line Visor.
  */
 object VisorConsole extends App {
-    /** Ant-augmented version number. */
+    /** Version number. */
     private final val VISOR_VER = GridProductImpl.VER
-    /** Ant-augmented release date. */
+
+    /** Release date. */
     private final val VISOR_RELEASE_DATE = GridProductImpl.RELEASE_DATE
-    /** Ant-augmented copyright blurb. */
+
+    /** Copyright. */
     private final val VISOR_COPYRIGHT = GridProductImpl.COPYRIGHT
 
+    /** Release date (another format). */
     private final val releaseDate = new SimpleDateFormat("ddMMyyyy").parse(VISOR_RELEASE_DATE)
 
     // Pre-initialize built-in commands.
