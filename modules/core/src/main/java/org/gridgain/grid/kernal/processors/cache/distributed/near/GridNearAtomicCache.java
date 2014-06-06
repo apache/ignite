@@ -17,6 +17,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.product.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
@@ -204,6 +205,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         -1,
                         -1,
                         null,
+                        false,
                         false);
 
                     if (updRes.removeVersion() != null)
@@ -243,6 +245,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         assert ver != null;
 
         Collection<K> backupKeys = req.keys();
+
+        boolean intercept = req.forceTransformBackups() && ctx.config().getInterceptor() != null;
 
         for (int i = 0; i < req.nearSize(); i++) {
             K key = req.nearKey(i);
@@ -293,7 +297,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             -1,
                             -1,
                             null,
-                            false);
+                            false,
+                            intercept);
 
                         if (updRes.removeVersion() != null)
                             ctx.onDeferredDelete(entry, updRes.removeVersion());
@@ -321,6 +326,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter
     ) {
         ctx.denyOnFlag(LOCAL);
+        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
@@ -591,13 +597,13 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         boolean invalidate,
         boolean syncCommit,
         boolean syncRollback,
-        boolean swapEnabled,
+        boolean swapOrOffheapEnabled,
         boolean storeEnabled,
         int txSize,
         @Nullable Object grpLockKey,
         boolean partLock) {
         return dht.newTx(implicit, implicitSingle, concurrency, isolation, timeout, invalidate, syncCommit,
-            syncRollback, swapEnabled, storeEnabled, txSize, grpLockKey, partLock);
+            syncRollback, swapOrOffheapEnabled, storeEnabled, txSize, grpLockKey, partLock);
     }
 
     /** {@inheritDoc} */

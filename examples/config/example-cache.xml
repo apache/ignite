@@ -25,10 +25,10 @@
        xmlns:util="http://www.springframework.org/schema/util"
        xsi:schemaLocation="
         http://www.springframework.org/schema/beans
-        http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+        http://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/util
-        http://www.springframework.org/schema/util/spring-util-2.0.xsd">
-    <bean id="grid.cfg" scope="singleton" class="org.gridgain.grid.GridConfiguration">
+        http://www.springframework.org/schema/util/spring-util.xsd">
+    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
         <!-- Set to local host address just for examples. -->
         <property name="localHost" value="127.0.0.1"/>
 
@@ -82,12 +82,12 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                 </bean>
 
-                  <!-- Local cache example configuration (Atomic mode). -->
-                  <bean parent="cache-template">
-                      <property name="name" value="local"/>
-                      <property name="cacheMode" value="LOCAL"/>
-                      <property name="atomicityMode" value="ATOMIC"/>
-                  </bean>
+                <!-- Local cache example configuration (Atomic mode). -->
+                <bean parent="cache-template">
+                    <property name="name" value="local"/>
+                    <property name="cacheMode" value="LOCAL"/>
+                    <property name="atomicityMode" value="ATOMIC"/>
+                </bean>
 
                 <!-- Local cache example configuration (Transactional mode). -->
                 <bean parent="cache-template">
@@ -141,4 +141,3 @@
         <property name="queryIndexEnabled" value="true"/>
     </bean>
 </beans>
-

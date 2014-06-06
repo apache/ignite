@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.mapreduce.*;
@@ -21,6 +19,9 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
+/**
+ * GGFS processor adapter.
+ */
 public abstract class GridGgfsProcessorAdapter extends GridProcessorAdapter {
     /**
      * Constructor.
@@ -55,7 +56,7 @@ public abstract class GridGgfsProcessorAdapter extends GridProcessorAdapter {
     public abstract Collection<GridIpcServerEndpoint> endpoints(@Nullable String name);
 
     /**
-     * Create compute job for the given GGFs job.
+     * Create compute job for the given GGFS job.
      *
      * @param job GGFS job.
      * @param ggfsName GGFS name.
@@ -67,27 +68,4 @@ public abstract class GridGgfsProcessorAdapter extends GridProcessorAdapter {
      */
     @Nullable public abstract GridComputeJob createJob(GridGgfsJob job, @Nullable String ggfsName, GridGgfsPath path,
         long start, long length, GridGgfsRecordResolver recRslv);
-
-    /**
-     * Check whether object is os type {@code GridGgfsBlockKey}
-     *
-     * @param key Key.
-     * @return {@code True} if GGFS block key.
-     */
-    public abstract boolean isGgfsBlockKey(Object key);
-
-    /**
-     * Pre-process cache configuration.
-     *
-     * @param cfg Cache configuration.
-     */
-    public abstract void preProcessCacheConfiguration(GridCacheConfiguration cfg);
-
-    /**
-     * Validate cache configuration for GGFS.
-     *
-     * @param cfg Cache configuration.
-     * @throws GridException If validation failed.
-     */
-    public abstract void validateCacheConfiguration(GridCacheConfiguration cfg) throws GridException;
 }

@@ -11,9 +11,6 @@
 -->
 <!--
     POM file.
-
-    Note that GridGain also provides repository for its Maven artifacts.
-    Contact GridGain team at info@gridgain.com to obtain login credentials.
 -->
 <project
     xmlns="http://maven.apache.org/POM/4.0.0"
@@ -46,509 +43,32 @@
         <module>examples</module>
         <module>modules/scalar</module>
         <module>modules/visor-console</module>
-        <module>modules/jdbc-driver</module>
         <module>modules/jdk8-backport</module>
         <module>modules/tools</module>
+        <module>modules/spring</module>
+        <module>modules/hibernate</module>
+        <module>modules/web</module>
+        <module>modules/aop</module>
+        <module>modules/urideploy</module>
+        <module>modules/indexing</module>
+        <module>modules/ssh</module>
+        <module>modules/protobuf</module>
+        <module>modules/rest-http</module>
+        <module>modules/email</module>
+        <module>modules/jta</module>
+        <module>modules/aws</module>
+        <module>modules/schedule</module>
+        <module>modules/log4j</module>
+        <module>modules/slf4j</module>
+        <module>modules/jcl</module>
     </modules>
 
     <dependencies>
         <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <version>3.0.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.aspectj</groupId>
-            <artifactId>aspectjrt</artifactId>
-            <version>1.7.2</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.aspectj</groupId>
-            <artifactId>aspectjweaver</artifactId>
-            <version>1.7.2</version>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-beanutils</groupId>
-            <artifactId>commons-beanutils</artifactId>
-            <version>1.8.3</version>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-cli</groupId>
-            <artifactId>commons-cli</artifactId>
-            <version>1.2</version>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-            <version>1.6</version>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-collections</groupId>
-            <artifactId>commons-collections</artifactId>
-            <version>3.2.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-configuration</groupId>
-            <artifactId>commons-configuration</artifactId>
-            <version>1.8</version>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.4</version>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-lang</groupId>
-            <artifactId>commons-lang</artifactId>
-            <version>2.6</version>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-logging</groupId>
-            <artifactId>commons-logging</artifactId>
-            <version>1.1.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-net</groupId>
-            <artifactId>commons-net</artifactId>
-            <version>3.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.2.3</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpcore</artifactId>
-            <version>4.2.3</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpmime</artifactId>
-            <version>4.2.3</version>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-httpclient</groupId>
-            <artifactId>commons-httpclient</artifactId>
-            <version>3.0.1</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>junit</groupId>
-                    <artifactId>junit</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-annotations</artifactId>
-            <version>2.0.3-alpha</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-auth</artifactId>
-            <version>2.0.3-alpha</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-common</artifactId>
-            <version>2.0.3-alpha</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-hdfs</artifactId>
-            <version>2.0.3-alpha</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-mapreduce-client-common</artifactId>
-            <version>2.0.3-alpha</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-mapreduce-client-core</artifactId>
-            <version>2.0.3-alpha</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.avro</groupId>
-            <artifactId>avro</artifactId>
-            <version>1.6.3</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.hibernate.javax.persistence</groupId>
-            <artifactId>hibernate-jpa-2.0-api</artifactId>
-            <version>1.0.1.Final</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jboss.logging</groupId>
-            <artifactId>jboss-logging</artifactId>
-            <version>3.1.0.GA</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-core</artifactId>
-            <version>4.2.6.Final</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.hibernate.common</groupId>
-            <artifactId>hibernate-commons-annotations</artifactId>
-            <version>4.0.2.Final</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-continuation</artifactId>
-            <version>9.0.5.v20130815</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-http</artifactId>
-            <version>9.0.5.v20130815</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-io</artifactId>
-            <version>9.0.5.v20130815</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-server</artifactId>
-            <version>9.0.5.v20130815</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-util</artifactId>
-            <version>9.0.5.v20130815</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-xml</artifactId>
-            <version>9.0.5.v20130815</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-compiler</artifactId>
-            <version>2.10.3</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-            <version>2.10.3</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-reflect</artifactId>
-            <version>2.10.3</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.6.4</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>1.6.4</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-aop</artifactId>
-            <version>3.2.2.RELEASE</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-beans</artifactId>
-            <version>3.2.2.RELEASE</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context</artifactId>
-            <version>3.2.2.RELEASE</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>3.2.2.RELEASE</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-expression</artifactId>
-            <version>3.2.2.RELEASE</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-tx</artifactId>
-            <version>3.2.2.RELEASE</version>
-        </dependency>
-
-        <dependency>
-            <groupId>javax.activation</groupId>
-            <artifactId>activation</artifactId>
-            <version>1.1.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.intellij</groupId>
-            <artifactId>annotations</artifactId>
-            <version>9.0.4</version>
-        </dependency>
-
-        <dependency>
-            <groupId>antlr</groupId>
-            <artifactId>antlr</artifactId>
-            <version>2.7.7</version>
-        </dependency>
-
-        <dependency>
-            <groupId>bcel</groupId>
-            <artifactId>bcel</artifactId>
-            <version>5.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>cglib</groupId>
-            <artifactId>cglib-nodep</artifactId>
-            <version>2.2.2</version>
-        </dependency>
-
-        <dependency>
-            <groupId>concurrent</groupId>
-            <artifactId>concurrent</artifactId>
-            <version>1.3.4</version>
-        </dependency>
-
-        <dependency>
-            <groupId>dom4j</groupId>
-            <artifactId>dom4j</artifactId>
-            <version>1.6.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>net.sf.ezmorph</groupId>
-            <artifactId>ezmorph</artifactId>
-            <version>1.0.6</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.sun.grizzly</groupId>
-            <artifactId>grizzly-utils</artifactId>
-            <version>1.9.43</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.javassist</groupId>
-            <artifactId>javassist</artifactId>
-            <version>3.15.0-GA</version>
-        </dependency>
-
-        <dependency>
-            <groupId>jboss</groupId>
-            <artifactId>jboss-serialization</artifactId>
-            <version>4.2.2.GA</version>
-        </dependency>
-
-        <dependency>
-            <groupId>jboss</groupId>
-            <artifactId>jboss-common</artifactId>
-            <version>4.2.2.GA</version>
-        </dependency>
-
-        <dependency>
-            <groupId>jboss</groupId>
-            <artifactId>jboss-system</artifactId>
-            <version>4.2.2.GA</version>
-        </dependency>
-
-        <dependency>
-            <groupId>jboss</groupId>
-            <artifactId>jboss-jmx</artifactId>
-            <version>4.2.2.GA</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.jcraft</groupId>
-            <artifactId>jsch</artifactId>
-            <version>0.1.50</version>
-        </dependency>
-
-        <dependency>
-            <groupId>net.sf.json-lib</groupId>
-            <artifactId>json-lib</artifactId>
-            <version>2.4</version>
-            <classifier>jdk15</classifier>
-        </dependency>
-
-        <dependency>
-            <groupId>javax.transaction</groupId>
-            <artifactId>jta</artifactId>
-            <version>1.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-all</artifactId>
-            <version>4.0.9.Final</version>
-        </dependency>
-
-        <dependency>
-            <groupId>oro</groupId>
-            <artifactId>oro</artifactId>
-            <version>2.0.8</version>
-        </dependency>
-
-        <dependency>
-            <groupId>javax.mail</groupId>
-            <artifactId>mail</artifactId>
-            <version>1.4.7</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk</artifactId>
-            <version>1.3.21.1</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <version>1.3.175</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.vividsolutions</groupId>
-            <artifactId>jts</artifactId>
-            <version>1.13</version>
-        </dependency>
-
-        <dependency>
-            <groupId>net.sf.jtidy</groupId>
-            <artifactId>jtidy</artifactId>
-            <version>r938</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.pcollections</groupId>
-            <artifactId>pcollections</artifactId>
-            <version>2.1.2</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.beust</groupId>
-            <artifactId>jcommander</artifactId>
-            <version>1.30</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.enterprisedt</groupId>
-            <artifactId>edtFTPj</artifactId>
-            <version>1.5.3</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ant</groupId>
-            <artifactId>ant</artifactId>
-            <version>1.8.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>aopalliance</groupId>
-            <artifactId>aopalliance</artifactId>
-            <version>1.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.tomcat</groupId>
-            <artifactId>catalina</artifactId>
-            <version>6.0.24</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
-            <version>2.4.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>it.sauronsoftware.cron4j</groupId>
-            <artifactId>cron4j</artifactId>
-            <version>2.2.5</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-core</artifactId>
-            <version>3.5.0</version>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -565,24 +85,98 @@
                     <artifactId>jmxri</artifactId>
                 </exclusion>
             </exclusions>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>com.github.romix</groupId>
-            <artifactId>java-concurrent-hash-trie-map</artifactId>
-            <version>0.2.0</version>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>2.6</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>14.0.1</version>
+            <groupId>commons-collections</groupId>
+            <artifactId>commons-collections</artifactId>
+            <version>3.2.1</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>jline</artifactId>
-            <version>2.10.3</version>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.4</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-http</artifactId>
+            <version>9.0.5.v20130815</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <version>9.0.5.v20130815</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-util</artifactId>
+            <version>9.0.5.v20130815</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>3.2.2.RELEASE</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-aop</artifactId>
+            <version>3.2.2.RELEASE</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-beans</artifactId>
+            <version>3.2.2.RELEASE</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>3.2.2.RELEASE</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-expression</artifactId>
+            <version>3.2.2.RELEASE</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-tx</artifactId>
+            <version>3.2.2.RELEASE</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.beust</groupId>
+            <artifactId>jcommander</artifactId>
+            <version>1.30</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -594,15 +188,11 @@
                 <version>2.9.1</version>
                 <executions>
                     <execution>
-                        <id>aggregate</id>
+                        <id>module-javadoc</id>
                         <goals>
-                            <goal>aggregate-jar</goal>
+                            <goal>jar</goal>
                         </goals>
                         <phase>package</phase>
-                        <configuration>
-                            <finalName>gridgain</finalName>
-                            <excludePackageNames>org.gridgain.examples</excludePackageNames>
-                        </configuration>
                     </execution>
 
                     <execution>
@@ -628,7 +218,7 @@
                                 <link>http://hadoop.apache.org/docs/current/api/</link>
                             </links>
                             <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
-                            <excludePackageNames>*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.util:*.dr:*.compute.gridify.aop:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt</excludePackageNames>
+                            <excludePackageNames>com.*:org.jetbrains.*:org.pcollections:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.util:*.dr:*.compute.gridify.aop:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt</excludePackageNames>
                             <groups>
                                 <group>
                                     <title>Common Grid APIs</title>
@@ -651,12 +241,16 @@
                                     <packages>org.gridgain.grid.cache:org.gridgain.grid.cache.datastructures:org.gridgain.grid.cache.cloner:org.gridgain.grid.cache.store:org.gridgain.grid.cache.store.hibernate:org.gridgain.grid.cache.store.jdbc:org.gridgain.grid.cache.query:org.gridgain.grid.cache.affinity:org.gridgain.grid.cache.affinity.consistenthash:org.gridgain.grid.cache.affinity.rendezvous:org.gridgain.grid.cache.affinity.fair:org.gridgain.grid.cache.eviction:org.gridgain.grid.cache.eviction.fifo:org.gridgain.grid.cache.eviction.ggfs:org.gridgain.grid.cache.eviction.lru:org.gridgain.grid.cache.eviction.random:org.gridgain.grid.cache.jta:org.gridgain.grid.cache.jta.jndi:org.gridgain.grid.cache.jta.reflect:org.gridgain.grid.cache.websession:org.gridgain.grid.cache.hibernate:org.gridgain.grid.dataload</packages>
                                 </group>
                                 <group>
-                                    <title>GGFS - In-Memory File System</title>
+                                    <title>Hadoop Accelerator APIs</title>
                                     <packages>org.gridgain.grid.ggfs:org.gridgain.grid.ggfs.hadoop:org.gridgain.grid.ggfs.hadoop.v1:org.gridgain.grid.ggfs.hadoop.v2:org.gridgain.grid.ggfs.mapreduce:org.gridgain.grid.ggfs.mapreduce.records</packages>
                                 </group>
                                 <group>
                                     <title>Streaming APIs</title>
                                     <packages>org.gridgain.grid.streamer:org.gridgain.grid.streamer.router:org.gridgain.grid.streamer.window:org.gridgain.grid.streamer.index:org.gridgain.grid.streamer.index.hash:org.gridgain.grid.streamer.index.tree</packages>
+                                </group>
+                                <group>
+                                    <title>Security APIs</title>
+                                    <packages>org.gridgain.grid.security</packages>
                                 </group>
                                 <group>
                                     <title>JDBC Driver</title>
@@ -689,10 +283,6 @@
                                 <group>
                                     <title>SPI: Swap Space</title>
                                     <packages>org.gridgain.grid.spi.swapspace:org.gridgain.grid.spi.swapspace.file:org.gridgain.grid.spi.swapspace.noop</packages>
-                                </group>
-                                <group>
-                                    <title>SPI: Metrics</title>
-                                    <packages>org.gridgain.grid.spi.metrics:org.gridgain.grid.spi.metrics.jdk</packages>
                                 </group>
                                 <group>
                                     <title>SPI: Discovery</title>
@@ -816,7 +406,7 @@
                             </links>
                             <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
                             <subpackages>org.gridgain.client</subpackages>
-                            <additionalparam>-exclude org.gridgain.client.impl:org.gridgain.client.util:org.gridgain.client.marshaller:org.gridgain.client.router.impl</additionalparam>
+                            <additionalparam>-exclude org.gridgain.client.impl:org.gridgain.client.util:org.gridgain.client.router.impl</additionalparam>
                             <groups>
                                 <group>
                                     <title>Client APIs</title>
@@ -825,6 +415,10 @@
                                 <group>
                                     <title>Router APIs</title>
                                     <packages>org.gridgain.client.router</packages>
+                                </group>
+                                <group>
+                                    <title>Marshallers</title>
+                                    <packages>org.gridgain.client.marshaller:org.gridgain.client.marshaller.jdk:org.gridgain.client.marshaller.optimized:org.gridgain.client.marshaller.protobuf</packages>
                                 </group>
                             </groups>
                             <header>
@@ -941,9 +535,25 @@
                                     maxmemory="1g">
                                     <classpath>
                                         <path location="${project.basedir}/modules/core/target/classes"/>
+                                        <path location="${project.basedir}/modules/aop/target/classes"/>
+                                        <path location="${project.basedir}/modules/aws/target/classes"/>
+                                        <path location="${project.basedir}/modules/email/target/classes"/>
+                                        <path location="${project.basedir}/modules/hadoop/target/classes"/>
+                                        <path location="${project.basedir}/modules/hibernate/target/classes"/>
+                                        <path location="${project.basedir}/modules/indexing/target/classes"/>
+                                        <path location="${project.basedir}/modules/jcl/target/classes"/>
+                                        <path location="${project.basedir}/modules/jta/target/classes"/>
+                                        <path location="${project.basedir}/modules/log4j/target/classes"/>
+                                        <path location="${project.basedir}/modules/protobuf/target/classes"/>
+                                        <path location="${project.basedir}/modules/rest-http/target/classes"/>
+                                        <path location="${project.basedir}/modules/schedule/target/classes"/>
+                                        <path location="${project.basedir}/modules/slf4j/target/classes"/>
+                                        <path location="${project.basedir}/modules/spring/target/classes"/>
+                                        <path location="${project.basedir}/modules/ssh/target/classes"/>
+                                        <path location="${project.basedir}/modules/urideploy/target/classes"/>
+                                        <path location="${project.basedir}/modules/web/target/classes"/>
                                         <path location="${project.basedir}/modules/scalar/target/classes"/>
                                         <path location="${project.basedir}/modules/visor-console/target/classes"/>
-                                        <path location="${project.basedir}/modules/jdbc-driver/target/classes"/>
                                         <path refid="maven.plugin.classpath"/>
                                     </classpath>
                                     <arg value="${project.basedir}/modules/core/target/classes"/>
@@ -961,25 +571,6 @@
                         <phase>package</phase>
                         <configuration>
                             <target>
-                                <mkdir dir="target/release-package/libs/ext"/>
-
-                                <replace file="target/release-package/examples/pom.xml"
-                                         token="%ANT_AUGMENTED_GGJAR%"
-                                         value="gridgain-${gridgain.edition}-${gridgain.version}.jar"/>
-
-                                <replace file="target/release-package/examples/pom-java8.xml"
-                                         token="%ANT_AUGMENTED_GGJAR%"
-                                         value="gridgain-${gridgain.edition}-${gridgain.version}.jar"/>
-
-                                <replaceregexp byline="true">
-                                    <regexp pattern="ANT_AUGMENTED_GGJAR=.*"/>
-                                    <substitution expression="ANT_AUGMENTED_GGJAR=gridgain-${gridgain.edition}-${gridgain.version}.jar"/>
-                                    <fileset dir="target/release-package/bin">
-                                        <include name="**/*.sh"/>
-                                        <include name="**/*.bat"/>
-                                    </fileset>
-                                </replaceregexp>
-
                                 <replace token="@sh.file.version" value="${gridgain.version}">
                                     <fileset dir="target/release-package/bin">
                                         <include name="**/*.sh"/>
@@ -991,6 +582,22 @@
                                         <include name="**/*.bat"/>
                                     </fileset>
                                 </replace>
+
+                                <replaceregexp byline="true">
+                                    <regexp pattern='ENABLE_ASSERTIONS=.*'/>
+                                    <substitution expression="ENABLE_ASSERTIONS=&quot;0&quot;"/>
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.sh"/>
+                                    </fileset>
+                                </replaceregexp>
+
+                                <replaceregexp byline="true">
+                                    <regexp pattern='ENABLE_ASSERTIONS=.*'/>
+                                    <substitution expression="ENABLE_ASSERTIONS=0"/>
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.bat"/>
+                                    </fileset>
+                                </replaceregexp>
 
                                 <replace token="@xml.file.version" value="${gridgain.version}">
                                     <fileset dir="target/release-package">
@@ -1029,17 +636,29 @@
             </plugin>
 
             <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-libs</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <excludeGroupIds>org.gridgain</excludeGroupIds>
+                            <outputDirectory>target/libs</outputDirectory>
+                            <includeScope>runtime</includeScope>
+                            <excludeTransitive>true</excludeTransitive>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>2.4</version>
                 <inherited>false</inherited>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-core</artifactId>
-                        <version>1.0.4</version>
-                    </dependency>
-                </dependencies>
                 <executions>
                     <execution>
                         <id>dependencies</id>
@@ -1049,7 +668,7 @@
                         </goals>
                         <configuration>
                             <descriptors>
-                                <descriptor>assembly/dependencies.xml</descriptor>
+                                <descriptor>assembly/dependencies-${gridgain.edition}.xml</descriptor>
                             </descriptors>
                             <outputDirectory>${basedir}</outputDirectory>
                             <finalName>libs</finalName>
@@ -1059,16 +678,34 @@
                     </execution>
 
                     <execution>
-                        <id>jar</id>
+                        <id>dependencies-optional</id>
                         <phase>prepare-package</phase>
                         <goals>
                             <goal>single</goal>
                         </goals>
                         <configuration>
                             <descriptors>
-                                <descriptor>assembly/jar.xml</descriptor>
+                                <descriptor>assembly/dependencies-optional-${gridgain.edition}.xml</descriptor>
                             </descriptors>
-                            <finalName>gridgain</finalName>
+                            <outputDirectory>${basedir}/libs</outputDirectory>
+                            <finalName>optional</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>dependencies-visor-console</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>assembly/dependencies-visor-console.xml</descriptor>
+                            </descriptors>
+                            <outputDirectory>${basedir}/bin/include</outputDirectory>
+                            <finalName>gridgain-visor-console</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                             <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                         </configuration>
@@ -1098,18 +735,13 @@
                 <version>2.2.1</version>
                 <executions>
                     <execution>
-                        <id>aggregate</id>
+                        <id>source</id>
                         <goals>
-                            <goal>aggregate</goal>
+                            <goal>jar-no-fork</goal>
                         </goals>
                         <phase>package</phase>
                         <configuration>
-                            <finalName>gridgain</finalName>
                             <excludeResources>true</excludeResources>
-                            <excludes>
-                                <exclude>**/org/gridgain/examples/**</exclude>
-                                <exclude>**/org/gridgain/scalar/examples/**</exclude>
-                            </excludes>
                         </configuration>
                     </execution>
                 </executions>
@@ -1128,6 +760,10 @@
                             <filesets>
                                 <fileset>
                                     <directory>libs</directory>
+                                </fileset>
+
+                                <fileset>
+                                    <directory>bin/include/gridgain-visor-console</directory>
                                 </fileset>
                             </filesets>
                         </configuration>

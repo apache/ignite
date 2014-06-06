@@ -10,7 +10,6 @@
 package org.gridgain.grid.cache.datastructures;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.util.lang.*;
 
 import java.util.*;
 
@@ -20,14 +19,6 @@ import java.util.*;
  * Cache set implements {@link Set} interface and provides all methods from collections.
  * Note that all {@link Collection} methods in the set may throw {@link GridRuntimeException} in case of failure
  * or if set was removed.
- * <p>
- * During set iteration elements are loaded from remote cache nodes, if iteration is stopped before last element
- * is received it is necessary to close iterator to release all associated resources. {@link Iterator} interface
- * does not provide API for iteration stopping and cache set provides method {@link #iteratorEx} which
- * returns {@link GridCloseableIterator}, it supports iterator closing and also implements {@link AutoCloseable}.
- * For iteration over cache set method {@link #iteratorEx} should be always used instead of {@link #iterator}.
- * For safety reasons (to avoid resource leaks) method {@link GridCacheSet#iterator()}
- * throws {@link UnsupportedOperationException}.
  * <h1 class="header">Collocated vs Non-collocated</h1>
  * Set items can be placed on one node or distributed throughout grid nodes
  * (governed by {@code collocated} parameter). {@code Non-collocated} mode is provided only
@@ -37,26 +28,6 @@ import java.util.*;
  * @see GridCacheDataStructures#removeSet(String)
  */
 public interface GridCacheSet<T> extends Set<T> {
-    /**
-     * Cache set iterator should be explicitly closed if iteration is stopped before last element is received,
-     * {@link Iterator} interface does not support closing and for safety reason (to avoid resource leaks) this
-     * method throws {@link UnsupportedOperationException}. For iteration over GridCacheSet method
-     * {@link #iteratorEx} should be used.
-     *
-     * @deprecated Deprecated, use {@link #iteratorEx} instead.
-     * @throws UnsupportedOperationException always.
-     */
-    @Deprecated
-    @Override public Iterator<T> iterator() throws UnsupportedOperationException;
-
-    /**
-     * Gets closeable iterator over GridCacheSet. Note, if iteration is stopped before last element is received
-     * itertor should be closed using {@link GridCloseableIterator#close} to avoid resource leaks.
-     *
-     * @return Closeable iterator.
-     */
-    public GridCloseableIterator<T> iteratorEx();
-
     /**
      * Gets set name.
      *

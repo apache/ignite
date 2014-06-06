@@ -29,12 +29,6 @@
            http://maven.apache.org/xsd/component-1.1.2.xsd">
     <files>
         <file>
-            <source>target/gridgain.jar</source>
-            <outputDirectory>/</outputDirectory>
-            <destName>gridgain-${gridgain.edition}-${gridgain.version}.jar</destName>
-        </file>
-
-        <file>
             <source>apache-2.0.txt</source>
             <outputDirectory>/</outputDirectory>
         </file>
@@ -50,27 +44,9 @@
         </file>
 
         <file>
-            <source>examples/pom-standalone.xml</source>
+            <source>examples/pom-standalone-${gridgain.edition}.xml</source>
             <outputDirectory>/examples</outputDirectory>
             <destName>pom.xml</destName>
-        </file>
-
-        <file>
-            <source>examples/pom-standalone.xml</source>
-            <outputDirectory>/examples</outputDirectory>
-            <destName>pom.xml</destName>
-        </file>
-
-        <file>
-            <source>examples/pom-standalone-java8.xml</source>
-            <outputDirectory>/examples</outputDirectory>
-            <destName>pom-java8.xml</destName>
-        </file>
-
-        <file>
-            <source>examples/clients/dotnet/GridClientApiExample.csprojrel</source>
-            <outputDirectory>/examples/clients/dotnet</outputDirectory>
-            <destName>GridClientApiExample.csproj</destName>
         </file>
     </files>
 
@@ -81,6 +57,7 @@
             <includes>
                 <include>**/*.bat</include>
                 <include>**/*.exe</include>
+                <include>**/*.jar</include>
             </includes>
         </fileSet>
 
@@ -99,12 +76,11 @@
         </fileSet>
 
         <fileSet>
-            <directory>modules/clients/src/main/java</directory>
+            <directory>modules/clients</directory>
             <outputDirectory>/clients/java</outputDirectory>
             <includes>
                 <include>config/**</include>
                 <include>readme.pdf</include>
-                <include>readme.txt</include>
             </includes>
         </fileSet>
 
@@ -124,20 +100,6 @@
         <fileSet>
             <directory>modules/clients/dotnet/client-lib/libs</directory>
             <outputDirectory>/clients/dotnet</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>examples</directory>
-            <outputDirectory>/examples</outputDirectory>
-            <includes>
-                <include>clients/**</include>
-                <include>libs/**</include>
-            </includes>
-            <excludes>
-                <exclude>**/*.md</exclude>
-                <exclude>clients/dotnet/GridClientApiExample-public-key.txt</exclude>
-                <exclude>clients/dotnet/GridClientApiExample.csproj*</exclude>
-            </excludes>
         </fileSet>
 
         <fileSet>
@@ -176,6 +138,11 @@
 
         <fileSet>
             <directory>libs</directory>
+            <outputDirectory>/libs</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>assembly/libs</directory>
             <outputDirectory>/libs</outputDirectory>
         </fileSet>
     </fileSets>

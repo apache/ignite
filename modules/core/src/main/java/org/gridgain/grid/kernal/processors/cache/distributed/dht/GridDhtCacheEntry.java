@@ -93,7 +93,9 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected void onMarkedObsolete() {
+    @Override public void onMarkedObsolete() {
+        assert !Thread.holdsLock(this);
+
         // Remove this entry from partition mapping.
         cctx.dht().topology().onRemoved(this);
     }

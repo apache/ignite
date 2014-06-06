@@ -11,25 +11,26 @@ package org.gridgain.grid.spi.discovery.tcp;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.internal.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.jdbc.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.*;
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.s3.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.sharedfs.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.spi.discovery.tcp.messages.*;
 import org.gridgain.grid.spi.discovery.tcp.metricsstore.*;
 import org.gridgain.grid.spi.discovery.tcp.metricsstore.jdbc.*;
-import org.gridgain.grid.spi.discovery.tcp.metricsstore.s3.*;
 import org.gridgain.grid.spi.discovery.tcp.metricsstore.sharedfs.*;
 import org.gridgain.grid.spi.discovery.tcp.metricsstore.vm.*;
 import org.gridgain.grid.util.tostring.*;
@@ -73,7 +74,7 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatu
  * See the following IP finder implementations for details on configuration:
  * <ul>
  * <li>{@link GridTcpDiscoverySharedFsIpFinder}</li>
- * <li>{@link GridTcpDiscoveryS3IpFinder}</li>
+ * <li>{@code GridTcpDiscoveryS3IpFinder}</li>
  * <li>{@link GridTcpDiscoveryJdbcIpFinder}</li>
  * <li>{@link GridTcpDiscoveryVmIpFinder}</li>
  * <li>{@link GridTcpDiscoveryMulticastIpFinder} - default</li>
@@ -85,7 +86,7 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatu
  * See the following metrics store implementations for details on configuration:
  * <ul>
  * <li>{@link GridTcpDiscoverySharedFsMetricsStore}</li>
- * <li>{@link GridTcpDiscoveryS3MetricsStore}</li>
+ * <li>{@code GridTcpDiscoveryS3MetricsStore}</li>
  * <li>{@link GridTcpDiscoveryJdbcMetricsStore}</li>
  * <li>{@link GridTcpDiscoveryVmMetricsStore}</li>
  * </ul>
@@ -275,6 +276,10 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     /** Marshaller. */
     private final GridMarshaller marsh = new GridJdkMarshaller();
 
+    /** Grid marshaller. */
+    @GridMarshallerResource
+    private GridMarshaller gridMarsh;
+
     /**
      * Local node (although, it may be reassigned on segmentation, it may be non-volatile,
      * since all internal threads are restarted).
@@ -381,6 +386,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     /** Context initialization latch. */
     @GridToStringExclude
     private final CountDownLatch ctxInitLatch = new CountDownLatch(1);
+
+    /** Node authenticator. */
+    private GridDiscoverySpiNodeAuthenticator nodeAuth;
 
     /** Mutex. */
     private final Object mux = new Object();
@@ -1434,6 +1442,11 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         spiStart0(true);
     }
 
+    /** {@inheritDoc} */
+    @Override public void setAuthenticator(GridDiscoverySpiNodeAuthenticator nodeAuth) {
+        this.nodeAuth = nodeAuth;
+    }
+
     /**
      * Tries to join this node to topology.
      *
@@ -1446,10 +1459,37 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             spiState = CONNECTING;
         }
 
+        GridSecurityCredentials locCred = (GridSecurityCredentials)locNode.getAttributes()
+            .get(GridNodeAttributes.ATTR_SECURITY_CREDENTIALS);
+
+        // Marshal credentials for backward compatibility and security.
+        marshalCredentials(locNode);
+
         while (true) {
             if (!sendJoinRequestMessage()) {
                 if (log.isDebugEnabled())
                     log.debug("Join request message has not been sent (local node is the first in the topology).");
+
+                // Authenticate local node.
+                try {
+                    GridSecurityContext subj = nodeAuth.authenticateNode(locNode, locCred);
+
+                    if (subj == null)
+                        throw new GridSpiException("Authentication failed for local node: " + locNode.id());
+                    else if (!(subj instanceof Serializable))
+                        throw new GridSpiException("Authentication failed for local node " +
+                            "(subject is not Serializable): " + locNode.id());
+
+                    Map<String, Object> attrs = new HashMap<>(locNode.attributes());
+
+                    attrs.put(GridNodeAttributes.ATTR_SECURITY_SUBJECT, gridMarsh.marshal(subj));
+                    attrs.remove(GridNodeAttributes.ATTR_SECURITY_CREDENTIALS);
+
+                    locNode.setAttributes(attrs);
+                }
+                catch (GridException e) {
+                    throw new GridSpiException("Failed to authenticate local node (will shutdown local node).", e);
+                }
 
                 locNode.order(1);
                 locNode.internalOrder(1);
@@ -1790,6 +1830,48 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             "Failed to send message to address [addr=" + addr + ", msg=" + msg + ']',
             U.exceptionWithSuppressed("Failed to send message to address " +
                 "[addr=" + addr + ", msg=" + msg + ']', errs));
+    }
+
+    /**
+     * Marshalls credentials with discovery SPI marshaller (will replace attribute value).
+     *
+     * @param node Node to marshall credentials for.
+     * @throws GridSpiException If marshalling failed.
+     */
+    private void marshalCredentials(GridTcpDiscoveryNode node) throws GridSpiException {
+        try {
+            // Use security-unsafe getter.
+            Map<String, Object> attrs = new HashMap<>(node.getAttributes());
+
+            attrs.put(GridNodeAttributes.ATTR_SECURITY_CREDENTIALS,
+                marsh.marshal(attrs.get(GridNodeAttributes.ATTR_SECURITY_CREDENTIALS)));
+
+            node.setAttributes(attrs);
+        }
+        catch (GridException e) {
+            throw new GridSpiException("Failed to marshal node security credentials: " + node.id(), e);
+        }
+    }
+
+    /**
+     * Unmarshalls credentials with discovery SPI marshaller (will not replace attribute value).
+     *
+     * @param node Node to unmarshall credentials for.
+     * @return Security credentials.
+     * @throws GridSpiException If unmarshal fails.
+     */
+    private GridSecurityCredentials unmarshalCredentials(GridTcpDiscoveryNode node) throws GridSpiException {
+        try {
+            byte[] credBytes = (byte[])node.getAttributes().get(GridNodeAttributes.ATTR_SECURITY_CREDENTIALS);
+
+            if (credBytes == null)
+                return null;
+
+            return marsh.unmarshal(credBytes, null);
+        }
+        catch (GridException e) {
+            throw new GridSpiException("Failed to unmarshal node security credentials: " + node.id(), e);
+        }
     }
 
     /**
@@ -3229,7 +3311,11 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 else {
                     // Authenticate node first.
                     try {
-                        if (!getSpiContext().authenticateNode(node.id(), node.attributes())) {
+                        GridSecurityCredentials cred = unmarshalCredentials(node);
+
+                        GridSecurityContext subj = nodeAuth.authenticateNode(node, cred);
+
+                        if (subj == null) {
                             // Node has not pass authentication.
                             LT.warn(log, null,
                                 "Authentication failed [nodeId=" + node.id() +
@@ -3253,6 +3339,41 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                             // Ignore join request.
                             return;
+                        }
+                        else {
+                            if (!(subj instanceof Serializable)) {
+                                // Node has not pass authentication.
+                                LT.warn(log, null,
+                                    "Authentication subject is not Serializable [nodeId=" + node.id() +
+                                        ", addrs=" + U.addressesAsString(node) + ']',
+                                    "Authentication subject is not Serializable [nodeId=" + U.id8(node.id()) +
+                                        ", addrs=" +
+                                        U.addressesAsString(node) + ']');
+
+                                // Always output in debug.
+                                if (log.isDebugEnabled())
+                                    log.debug("Authentication subject is not serializable [nodeId=" + node.id() +
+                                        ", addrs=" + U.addressesAsString(node));
+
+                                try {
+                                    trySendMessageDirectly(node, new GridTcpDiscoveryAuthFailedMessage(locNodeId, locHost));
+                                }
+                                catch (GridSpiException e) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to send unauthenticated message to node " +
+                                            "[node=" + node + ", err=" + e.getMessage() + ']');
+                                }
+
+                                // Ignore join request.
+                                return;
+                            }
+
+                            // Stick in authentication subject to node (use security-safe attributes for copy).
+                            Map<String, Object> attrs = new HashMap<>(node.attributes());
+
+                            attrs.put(GridNodeAttributes.ATTR_SECURITY_SUBJECT, gridMarsh.marshal(subj));
+
+                            node.setAttributes(attrs);
                         }
                     }
                     catch (GridException e) {
@@ -3509,6 +3630,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                                 // Make all preceding nodes and local node visible.
                                 n.visible(true);
                             }
+
+                            locNode.setAttributes(node.attributes());
 
                             locNode.visible(true);
 

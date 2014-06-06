@@ -13,6 +13,7 @@ import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.marshaller.optimized.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
@@ -22,9 +23,6 @@ import java.util.*;
  * {@link GridClientMarshaller} interface.
  */
 public class GridClientOptimizedMarshaller implements GridClientMarshaller {
-    /** Unique marshaller protocol ID. */
-    public static final Byte PROTOCOL_ID = 1;
-
     /** Optimized marshaller. */
     private final GridOptimizedMarshaller opMarsh;
 
@@ -84,6 +82,6 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
 
     /** {@inheritDoc} */
     @Override public byte getProtocolId() {
-        return PROTOCOL_ID;
+        return U.OPTIMIZED_CLIENT_PROTO_ID;
     }
 }

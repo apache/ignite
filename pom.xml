@@ -21,14 +21,6 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <properties>
-        <gridgain.edition>platform</gridgain.edition>
-        <gridgain.compatible.vers></gridgain.compatible.vers>
-        <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
-        <doxygen.exec>doxygen</doxygen.exec>
-        <git.exec>git</git.exec>
-    </properties>
-
     <artifactId>gridgain</artifactId>
     <packaging>pom</packaging>
 
@@ -39,17 +31,29 @@
     </parent>
 
     <modules>
-        <module>modules/core</module>
-        <module>modules/hadoop</module>
         <module>modules/extdata/p2p</module>
         <module>modules/extdata/uri</module>
+        <module>modules/core</module>
+        <module>modules/hadoop</module>
         <module>modules/clients</module>
-        <module>examples</module>
-        <module>modules/scalar</module>
-        <module>modules/visor-console</module>
-        <module>modules/jdbc-driver</module>
         <module>modules/jdk8-backport</module>
         <module>modules/tools</module>
+        <module>modules/spring</module>
+        <module>modules/hibernate</module>
+        <module>modules/web</module>
+        <module>modules/aop</module>
+        <module>modules/urideploy</module>
+        <module>modules/indexing</module>
+        <module>modules/ssh</module>
+        <module>modules/protobuf</module>
+        <module>modules/rest-http</module>
+        <module>modules/email</module>
+        <module>modules/jta</module>
+        <module>modules/aws</module>
+        <module>modules/schedule</module>
+        <module>modules/log4j</module>
+        <module>modules/slf4j</module>
+        <module>modules/jcl</module>
     </modules>
 
     <build>
@@ -59,4 +63,26 @@
             </testResource>
         </testResources>
     </build>
+
+    <profiles>
+        <profile>
+            <id>scala</id>
+            <activation>
+                <property>
+                    <name>!noScala</name>
+                </property>
+            </activation>
+            <modules>
+                <module>modules/scalar</module>
+                <module>modules/visor-console</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>examples</id>
+            <modules>
+                <module>examples</module>
+            </modules>
+        </profile>
+    </profiles>
 </project>

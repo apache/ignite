@@ -136,7 +136,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             GridRestCommand cmd = req0.command();
 
             if (key == null && KEY_REQUIRED_REQUESTS.contains(cmd))
-                throw new GridException(missingParameter("key"));
+                throw new GridException(GridRestCommandHandlerAdapter.missingParameter("key"));
 
             final Long ttl = req0.ttl();
 
@@ -153,7 +153,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     Set<Object> keys = req0.values().keySet();
 
                     if (F.isEmpty(keys))
-                        throw new GridException(missingParameter("keys"));
+                        throw new GridException(GridRestCommandHandlerAdapter.missingParameter("keys"));
 
                     // HashSet wrapping for correct serialization
                     keys = new HashSet<>(keys);
@@ -167,7 +167,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     final Object val = req0.value();
 
                     if (val == null)
-                        throw new GridException(missingParameter("val"));
+                        throw new GridException(GridRestCommandHandlerAdapter.missingParameter("val"));
 
                     fut = executeCommand(req.destinationId(), cacheName, flags, key, new PutCommand(key, ttl, val));
 
@@ -178,7 +178,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     final Object val = req0.value();
 
                     if (val == null)
-                        throw new GridException(missingParameter("val"));
+                        throw new GridException(GridRestCommandHandlerAdapter.missingParameter("val"));
 
                     fut = executeCommand(req.destinationId(), cacheName, flags, key, new AddCommand(key, ttl, val));
 
@@ -189,7 +189,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     Map<Object, Object> map = req0.values();
 
                     if (F.isEmpty(map))
-                        throw new GridException(missingParameter("values"));
+                        throw new GridException(GridRestCommandHandlerAdapter.missingParameter("values"));
 
                     for (Map.Entry<Object, Object> e : map.entrySet()) {
                         if (e.getKey() == null)
@@ -228,7 +228,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     final Object val = req0.value();
 
                     if (val == null)
-                        throw new GridException(missingParameter("val"));
+                        throw new GridException(GridRestCommandHandlerAdapter.missingParameter("val"));
 
                     fut = executeCommand(req.destinationId(), cacheName, flags, key, new ReplaceCommand(key, ttl, val));
 
@@ -380,7 +380,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         Long delta = req.delta();
 
         if (delta == null)
-            throw new GridException(missingParameter("delta"));
+            throw new GridException(GridRestCommandHandlerAdapter.missingParameter("delta"));
 
         final GridCacheAtomicLong l = cache.dataStructures().atomicLong(key, init != null ? init : 0, true);
 
@@ -415,7 +415,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         final Object val = req.value();
 
         if (val == null)
-            throw new GridException(missingParameter("val"));
+            throw new GridException(GridRestCommandHandlerAdapter.missingParameter("val"));
 
         return ctx.closure().callLocalSafe(new Callable<Object>() {
             @Override public Object call() throws Exception {

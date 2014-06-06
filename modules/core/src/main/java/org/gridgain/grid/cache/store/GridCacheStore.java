@@ -11,7 +11,6 @@ package org.gridgain.grid.cache.store;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.hibernate.*;
 import org.gridgain.grid.cache.store.jdbc.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
@@ -34,7 +33,7 @@ import java.util.*;
  * <p>
  * Provided implementations may be used for test purposes:
  * <ul>
- *     <li>{@link GridCacheHibernateBlobStore}</li>
+ *     <li>{@code GridCacheHibernateBlobStore}</li>
  *     <li>{@link GridCacheJdbcBlobStore}</li>
  * </ul>
  * <p>

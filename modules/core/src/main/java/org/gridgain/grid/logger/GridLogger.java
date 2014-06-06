@@ -144,4 +144,11 @@ public interface GridLogger {
      * @return Whether {@code info} and {@code debug} levels are turned off.
      */
     public boolean isQuiet();
+
+    /**
+     * Gets name of the file being logged to if one is configured or {@code null} otherwise.
+     *
+     * @return Name of the file being logged to if one is configured or {@code null} otherwise.
+     */
+    @Nullable public String fileName();
 }

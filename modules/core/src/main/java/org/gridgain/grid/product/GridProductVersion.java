@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.product;
 
-import org.apache.commons.codec.*;
-import org.apache.commons.codec.binary.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -253,14 +251,14 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
                 byte[] revHash = null;
 
                 if (match.group(8) != null)
-                    revHash = Hex.decodeHex(match.group(8).toCharArray());
+                    revHash = U.decodeHex(match.group(8).toCharArray());
 
                 return new GridProductVersion(major, minor, maintenance, revTs, revHash);
             }
             catch (IllegalStateException | IndexOutOfBoundsException ignored) {
                 return VERSION_UNKNOWN;
             }
-            catch (NumberFormatException | DecoderException ignored) {
+            catch (NumberFormatException | GridException ignored) {
                 // Safety, should never happen.
                 return VERSION_UNKNOWN;
             }

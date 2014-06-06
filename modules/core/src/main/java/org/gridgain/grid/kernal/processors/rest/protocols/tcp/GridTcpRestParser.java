@@ -9,15 +9,14 @@
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
 import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.protobuf.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.nio.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -35,20 +34,22 @@ public class GridTcpRestParser implements GridNioParser {
     /** UTF-8 charset. */
     private static final Charset UTF_8 = Charset.forName("UTF-8");
 
-    /** Logger. */
-    private final GridLogger log;
-
     /** JDK marshaller. */
     private final GridMarshaller jdkMarshaller = new GridJdkMarshaller();
 
     /** Protobuf marshaller. */
-    private final GridClientMarshaller protobufMarshaller = new GridClientProtobufMarshaller();
+    private final GridClientMarshaller protobufMarshaller;
+
+    /** Logger. */
+    private final GridLogger log;
 
     /**
      * @param log Logger.
      */
     public GridTcpRestParser(GridLogger log) {
         this.log = log;
+
+        protobufMarshaller = U.createProtobufMarshaller(log);
     }
 
     /** {@inheritDoc} */
@@ -742,12 +743,17 @@ public class GridTcpRestParser implements GridNioParser {
      *
      * @param ses Current session.
      * @return Current session's marshaller.
+     * @throws GridException If marshaller can't be found.
      */
-    protected GridClientMarshaller marshaller(GridNioSession ses) {
+    protected GridClientMarshaller marshaller(GridNioSession ses) throws GridException {
         GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
 
         if (marsh == null) {
-            U.warn(log, "No marshaller defined for NIO session, using PROTOBUF as default [ses=" + ses + ']');
+            U.warn(log, "No marshaller defined for NIO session, using Protobuf as default [ses=" + ses + ']');
+
+            if (protobufMarshaller == null)
+                throw new GridException("Failed to use Protobuf marshaller (session will be closed). " +
+                    "Is gridgain-protobuf module added to classpath?");
 
             marsh = protobufMarshaller;
 

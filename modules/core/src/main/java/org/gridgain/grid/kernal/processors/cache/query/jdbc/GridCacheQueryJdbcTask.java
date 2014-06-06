@@ -30,6 +30,7 @@ import java.net.*;
 import java.sql.*;
 import java.util.*;
 import java.util.Date;
+import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.compute.GridComputeJobResultPolicy.*;
@@ -46,6 +47,9 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
 
     /** How long to store future (10 minutes). */
     private static final int RMV_DELAY = 10 * 60;
+
+    /** Scheduler. */
+    private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(1);
 
     /** {@inheritDoc} */
     @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, byte[] arg) throws GridException {
@@ -273,11 +277,10 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
          * Schedules removal of stored future.
          *
          * @param id Future ID.
-         * @throws GridException In case of error.
          */
-        private void scheduleRemoval(final UUID id) throws GridException {
-            grid.scheduler().scheduleLocal(new CAX() {
-                @Override public void applyx() throws GridException {
+        private void scheduleRemoval(final UUID id) {
+            SCHEDULER.schedule(new CAX() {
+                @Override public void applyx() {
                     GridTuple3<GridCacheQueryFuture<List<?>>, Integer, Boolean> t =
                         grid.<UUID, GridTuple3<GridCacheQueryFuture<List<?>>, Integer, Boolean>>nodeLocalMap().get(id);
 
@@ -294,7 +297,7 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
                             grid.nodeLocalMap().remove(id);
                     }
                 }
-            }, "{" + RMV_DELAY + ", 1} * * * * *");
+            }, RMV_DELAY, TimeUnit.SECONDS);
         }
 
         /**

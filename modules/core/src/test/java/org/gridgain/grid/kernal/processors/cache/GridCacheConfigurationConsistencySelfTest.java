@@ -787,6 +787,29 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testDifferentInterceptors() throws Exception {
+        cacheMode = PARTITIONED;
+
+        checkSecondGridStartFails(
+            new C1<GridCacheConfiguration, Void>() {
+                /** {@inheritDoc} */
+                @Override public Void apply(GridCacheConfiguration cfg) {
+                    cfg.setInterceptor(new GridCacheInterceptorAdapter() {/*No-op.*/});
+                    return null;
+                }
+            },
+            new C1<GridCacheConfiguration, Void>() {
+                /** {@inheritDoc} */
+                @Override public Void apply(GridCacheConfiguration cfg) {
+                    return null;
+                }
+            }
+        );
+    }
+
+    /**
      * @param initCache1 Closure.
      * @param initCache2 Closure.
      * @throws Exception If failed.

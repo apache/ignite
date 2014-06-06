@@ -2840,8 +2840,6 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setRestEnabled(true);
-
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 
         disco.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));

@@ -80,8 +80,8 @@ set ANT_AUGMENTED_GGJAR=gridgain.jar
 ::
 call "%GRIDGAIN_HOME%\os\bin\include\setenv.bat"
 
-set CP=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\%ANT_AUGMENTED_GGJAR%
-set CP=%CP%;%GRIDGAIN_HOME%\os\modules\visor-console\libs\*
+set CP=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\bin\include\gridgain-visor-console\*
+
 ::
 :: Parse command line parameters.
 ::

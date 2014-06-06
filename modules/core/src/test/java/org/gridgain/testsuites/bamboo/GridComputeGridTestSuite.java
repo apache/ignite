@@ -29,7 +29,6 @@ public class GridComputeGridTestSuite {
         TestSuite suite = new TestSuite("Gridgain Compute Grid Test Suite");
 
         suite.addTest(GridTaskSessionSelfTestSuite.suite());
-        suite.addTest(GridResourceSelfTestSuite.suite());
         suite.addTest(GridTimeoutProcessorSelfTestSuite.suite());
         suite.addTest(GridJobMetricsSelfTestSuite.suite());
         suite.addTest(GridContinuousTaskSelfTestSuite.suite());
@@ -78,7 +77,6 @@ public class GridComputeGridTestSuite {
         suite.addTestSuite(GridCheckpointTaskSelfTest.class);
         suite.addTestSuite(GridProjectionMetricsSelfTest.class);
         suite.addTestSuite(GridTaskNameAnnotationSelfTest.class);
-        suite.addTestSuite(GridTaskUriDeploymentDeadlockSelfTest.class);
         suite.addTestSuite(GridJobCheckpointCleanupSelfTest.class);
         suite.addTestSuite(GridEventStorageSelfTest.class);
         suite.addTestSuite(GridOrderedMessageCancelSelfTest.class);

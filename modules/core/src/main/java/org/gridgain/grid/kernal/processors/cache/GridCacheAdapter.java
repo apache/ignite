@@ -32,6 +32,7 @@ import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -112,12 +113,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** Cache metrics. */
     protected volatile GridCacheMetricsAdapter metrics;
-
-    /** */
-    private final ThreadLocal<GridCacheXAResource> xaRsrc = new ThreadLocal<>();
-
-    /** */
-    private TransactionManager jtaTm;
 
     /** Before lock callback. */
     protected GridBiClosure<Collection<K>, Boolean, GridFuture<Object>> beforePessimisticLock;
@@ -510,7 +505,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @param invalidate Invalidation flag.
      * @param syncCommit Synchronous commit flag.
      * @param syncRollback Synchronous rollback flag.
-     * @param swapEnabled If {@code true} then swap storage will be used.
+     * @param swapOrOffheapEnabled If {@code true} then swap storage will be used.
      * @param storeEnabled if {@code true} then read/write through will be used.
      * @param txSize Expected transaction size.
      * @param grpLockKey Group lock key if this is a group-lock transaction.
@@ -526,7 +521,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         boolean invalidate,
         boolean syncCommit,
         boolean syncRollback,
-        boolean swapEnabled,
+        boolean swapOrOffheapEnabled,
         boolean storeEnabled,
         int txSize,
         @Nullable Object grpLockKey,
@@ -1217,7 +1212,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
             try {
                 if (e != null)
-                    e.clear(obsoleteVer, ctx.isSwapEnabled(), readers, null);
+                    e.clear(obsoleteVer, readers, null);
             }
             catch (GridException ex) {
                 U.error(log, "Failed to clear entry (will continue to clear other entries): " + e,
@@ -1239,7 +1234,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         GridCacheEntryEx<K, V> e = peekEx(key);
 
         try {
-            return e != null && e.clear(obsoleteVer, ctx.isSwapEnabled(), false, filter);
+            return e != null && e.clear(obsoleteVer, false, filter);
         }
         catch (GridException ex) {
             U.error(log, "Failed to clear entry: " + e, ex);
@@ -1617,22 +1612,91 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Nullable @Override public V get(K key) throws GridException {
-        return get(key, null);
+        V val = get(key, null);
+
+        if (ctx.config().getInterceptor() != null)
+            val = (V)ctx.config().getInterceptor().onGet(key, val);
+
+        return val;
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<V> getAsync(K key) {
-        return getAsync(key, null);
+    @Override public GridFuture<V> getAsync(final K key) {
+        GridFuture<V> fut = getAsync(key, null);
+
+        if (ctx.config().getInterceptor() != null)
+            return fut.chain(new CX1<GridFuture<V>, V>() {
+                @Override public V applyx(GridFuture<V> f) throws GridException {
+                    return (V)ctx.config().getInterceptor().onGet(key, f.get());
+                }
+            });
+
+        return fut;
     }
 
     /** {@inheritDoc} */
     @Override public Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws GridException {
-        return getAll(keys, null);
+        Map<K, V> map = getAll(keys, null);
+
+        if (ctx.config().getInterceptor() != null)
+            map = interceptGet(keys, map);
+
+        return map;
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys) {
-        return getAllAsync(keys, null);
+    @Override public GridFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys) {
+        GridFuture<Map<K, V>> fut = getAllAsync(keys, null);
+
+        if (ctx.config().getInterceptor() != null)
+            return fut.chain(new CX1<GridFuture<Map<K, V>>, Map<K, V>>() {
+                @Override public Map<K, V> applyx(GridFuture<Map<K, V>> f) throws GridException {
+                    return interceptGet(keys, f.get());
+                }
+            });
+
+        return fut;
+    }
+
+    /**
+     * Applies cache interceptor on result of 'get' operation.
+     *
+     * @param keys All requested keys.
+     * @param map Result map.
+     * @return Map with values returned by cache interceptor..
+     */
+    @SuppressWarnings("IfMayBeConditional")
+    private Map<K, V> interceptGet(@Nullable Collection<? extends K> keys, Map<K, V> map) {
+        if (F.isEmpty(keys))
+            return map;
+
+        GridCacheInterceptor<K, V> interceptor = cacheCfg.getInterceptor();
+
+        assert interceptor != null;
+
+        Map<K, V> res = new HashMap<>(keys.size());
+
+        for (Map.Entry<K, V> e : map.entrySet()) {
+            V val = interceptor.onGet(e.getKey(), e.getValue());
+
+            if (val != null)
+                res.put(e.getKey(), val);
+        }
+
+        if (map.size() != keys.size()) { // Not all requested keys were in cache.
+            for (K key : keys) {
+                if (key != null) {
+                    if (!map.containsKey(key)) {
+                        V val = interceptor.onGet(key, null);
+
+                        if (val != null)
+                            res.put(key, val);
+                    }
+                }
+            }
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -1650,6 +1714,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     public GridFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached, boolean checkTx,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>... filter) {
+        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
+
         ctx.denyOnFlag(LOCAL);
 
         // Entry must be passed for one key only.
@@ -3072,7 +3138,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 ctx.hasFlag(INVALIDATE),
                 ctx.syncCommit(),
                 ctx.syncRollback(),
-                ctx.isSwapEnabled(),
+                ctx.isSwapOrOffheapEnabled(),
                 ctx.isStoreEnabled(),
                 txSize,
                 /** group lock keys */null,
@@ -3134,7 +3200,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 ctx.hasFlag(INVALIDATE),
                 ctx.syncCommit(),
                 ctx.syncRollback(),
-                ctx.isSwapEnabled(),
+                ctx.isSwapOrOffheapEnabled(),
                 ctx.isStoreEnabled(),
                 txSize,
                 grpLockKey,
@@ -3172,65 +3238,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /**
      * Checks if cache is working in JTA transaction and enlist cache as XAResource if necessary.
      *
-     * @throws GridException In case of lookup error.
+     * @throws GridException In case of error.
      */
     protected void checkJta() throws GridException {
-        if (jtaTm == null) {
-            if (cacheCfg.getTransactionManagerLookup() != null) {
-                jtaTm = cacheCfg.getTransactionManagerLookup().getTm();
-            }
-        }
-
-        if (jtaTm != null) {
-            GridCacheXAResource rsrc = xaRsrc.get();
-
-            if (rsrc == null || rsrc.isFinished()) {
-                try {
-                    Transaction jtaTx = jtaTm.getTransaction();
-
-                    if (jtaTx != null) {
-                        GridCacheTx tx = ctx.tm().userTx();
-
-                        if (tx == null) {
-                            // Start with default concurrency and isolation.
-                            GridCacheConfiguration cfg = ctx.config();
-
-                            tx = ctx.tm().onCreated(
-                                newTx(
-                                    false,
-                                    false,
-                                    cfg.getDefaultTxConcurrency(),
-                                    cfg.getDefaultTxIsolation(),
-                                    cfg.getDefaultTxTimeout(),
-                                    cfg.isInvalidate() || ctx.hasFlag(INVALIDATE),
-                                    ctx.syncCommit(),
-                                    ctx.syncRollback(),
-                                    ctx.isSwapEnabled(),
-                                    ctx.isStoreEnabled(),
-                                    0,
-                                    /** group lock keys */null,
-                                    /** partition lock */false
-                                )
-                            );
-                        }
-
-                        rsrc = new GridCacheXAResource((GridCacheTxEx)tx, ctx);
-
-                        if (!jtaTx.enlistResource(rsrc)) {
-                            throw new GridException("Failed to enlist XA resource to JTA user transaction.");
-                        }
-
-                        xaRsrc.set(rsrc);
-                    }
-                }
-                catch (SystemException e) {
-                    throw new GridException("Failed to obtain JTA transaction.", e);
-                }
-                catch (RollbackException e) {
-                    throw new GridException("Failed to enlist XAResource to JTA transaction.", e);
-                }
-            }
-        }
+        ctx.jta().checkJta();
     }
 
     /** {@inheritDoc} */
@@ -3804,12 +3815,12 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public void dgc() {
-        ctx.dgc().dgc();
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void dgc(long suspectLockTimeout, boolean global, boolean rmvLocks) {
-        ctx.dgc().dgc(suspectLockTimeout, global, rmvLocks);
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -3881,7 +3892,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         try {
             return ctx.dr().listStateTransfers();
         }
-        catch (GridException e) {
+        catch (GridException ignored) {
             throw new IllegalStateException("Failed to list state transfers because grid is stopping.");
         }
     }

@@ -15,7 +15,7 @@ import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.dr.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.managers.*;
-import org.gridgain.grid.kernal.managers.authentication.*;
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.grid.kernal.managers.collision.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -36,7 +36,6 @@ import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.email.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.job.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.kernal.processors.license.*;
@@ -44,7 +43,6 @@ import org.gridgain.grid.kernal.processors.offheap.*;
 import org.gridgain.grid.kernal.processors.port.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.kernal.processors.rest.*;
-import org.gridgain.grid.kernal.processors.schedule.*;
 import org.gridgain.grid.kernal.processors.segmentation.*;
 import org.gridgain.grid.kernal.processors.session.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
@@ -57,7 +55,9 @@ import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
+import org.gridgain.grid.spi.authentication.noop.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
@@ -66,7 +66,6 @@ import org.gridgain.grid.util.nodestart.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
-import org.springframework.context.*;
 
 import javax.management.*;
 import java.io.*;
@@ -150,11 +149,14 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     /** */
     private ObjectName p2PExecSvcMBean;
 
+    /** */
+    private ObjectName restExecSvcMBean;
+
     /** Kernal start timestamp. */
     private long startTime = U.currentTimeMillis();
 
     /** Spring context, potentially {@code null}. */
-    private ApplicationContext springCtx;
+    private GridSpringResourceContext rsrcCtx;
 
     /** */
     private Timer updateNtfTimer;
@@ -176,6 +178,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** Scheduler. */
     private GridScheduler scheduler;
+
+    /** Grid security instance. */
+    private GridSecurity security;
 
     /** DR pool. */
     private ExecutorService drPool;
@@ -200,12 +205,12 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /**
-     * @param springCtx Optional Spring application context.
+     * @param rsrcCtx Optional Spring application context.
      */
-    public GridKernal(@Nullable ApplicationContext springCtx) {
+    public GridKernal(@Nullable GridSpringResourceContext rsrcCtx) {
         super(null, null, (GridPredicate<GridNode>)null);
 
-        this.springCtx = springCtx;
+        this.rsrcCtx = rsrcCtx;
 
         String[] compatibleVers = COMPATIBLE_VERS.split(",");
 
@@ -254,7 +259,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** {@inheritDoc} */
     @Override public String getFullVersion() {
-        return COMPOUND_VERSION + '-' + ctx.build();
+        return COMPOUND_VER + '-' + BUILD_TSTAMP_STR;
     }
 
     /** {@inheritDoc} */
@@ -475,6 +480,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /**
      * @param cfg Grid configuration to use.
+     * @param drPool Dr executor service.
      * @param errHnd Error handler to use for notification about startup problems.
      * @throws GridException Thrown in case of any errors.
      */
@@ -530,10 +536,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
 
-        String build = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD * 1000));
-
         // Ack various information.
-        ackAsciiLogo(build);
+        ackAsciiLogo();
         ackConfigUrl();
         ackDaemon();
         ackOsInfo();
@@ -552,15 +556,21 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         boolean notifyEnabled = !"false".equalsIgnoreCase(X.getSystemOrEnv(GG_UPDATE_NOTIFIER));
 
-        final GridUpdateNotifier verChecker;
+        GridUpdateNotifier verChecker0 = null;
 
         if (notifyEnabled) {
-            verChecker = new GridUpdateNotifier(gridName, EDITION, VER, SITE, false);
+            try {
+                verChecker0 = new GridUpdateNotifier(gridName, EDITION, VER, SITE, false);
 
-            verChecker.checkForNewVersion(cfg.getExecutorService(), log);
+                verChecker0.checkForNewVersion(cfg.getExecutorService(), log);
+            }
+            catch (GridException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to create GridUpdateNotifier: " + e);
+            }
         }
-        else
-            verChecker = null;
+
+        final GridUpdateNotifier verChecker = verChecker0;
 
         // Ack 3-rd party licenses location.
         if (log.isInfoEnabled() && cfg.getGridGainHome() != null)
@@ -580,11 +590,11 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         // Ack configuration.
         ackSpis();
 
-        Map<String, Object> attrs = createNodeAttributes(cfg, build);
+        Map<String, Object> attrs = createNodeAttributes(cfg, BUILD_TSTAMP_STR);
 
         // Spin out SPIs & managers.
         try {
-            GridKernalContextImpl ctx = new GridKernalContextImpl(this, cfg, gw, ENT);
+            GridKernalContextImpl ctx = new GridKernalContextImpl(log, this, cfg, gw, ENT);
 
             nodeLoc = new GridNodeLocalMapImpl(ctx);
 
@@ -595,12 +605,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             // by all other managers and processors.
             GridResourceProcessor rsrcProc = new GridResourceProcessor(ctx);
 
-            rsrcProc.setSpringContext(springCtx);
-
-            // Set node version.
-            ctx.version(COMPOUND_VERSION);
-
-            ctx.build(build);
+            rsrcProc.setSpringContext(rsrcCtx);
 
             ctx.product(new GridProductImpl(ctx, verChecker));
 
@@ -624,6 +629,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             GridVersionProcessor verProc = createComponent(GridVersionProcessor.class, ctx);
 
+            addHelper(ctx, GGFS_HELPER.create(F.isEmpty(cfg.getGgfsConfiguration())));
+
             // Start version converter processor before all other
             // components so they can register converters.
             startProcessor(ctx, verProc, attrs);
@@ -636,7 +643,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startProcessor(ctx, new GridClosureProcessor(ctx), attrs);
 
             // Start some other processors (order & place is important).
-            startProcessor(ctx, new GridEmailProcessor(ctx), attrs);
+            startProcessor(ctx, (GridProcessor)EMAIL.create(ctx, cfg.getSmtpHost() == null), attrs);
             startProcessor(ctx, new GridPortProcessor(ctx), attrs);
             startProcessor(ctx, new GridJobMetricsProcessor(ctx), attrs);
 
@@ -646,7 +653,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             // Start SPI managers.
             // NOTE: that order matters as there are dependencies between managers.
-            startManager(ctx, createComponent(GridAuthenticationManager.class, ctx), attrs);
+            startManager(ctx, createComponent(GridSecurityManager.class, ctx), attrs);
             startManager(ctx, createComponent(GridSecureSessionManager.class, ctx), attrs);
             startManager(ctx, new GridIoManager(ctx), attrs);
             startManager(ctx, new GridCheckpointManager(ctx), attrs);
@@ -663,10 +670,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
-            GridGgfsProcessorAdapter ggfsProc =  COMP_GGFS.create(ctx, F.isEmpty(cfg.getGgfsConfiguration()));
-
-            ctx.add(ggfsProc);
-
             startProcessor(ctx, new GridClockSyncProcessor(ctx), attrs);
             startProcessor(ctx, createComponent(GridLicenseProcessor.class, ctx), attrs);
             startProcessor(ctx, new GridAffinityProcessor(ctx), attrs);
@@ -675,17 +678,20 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startProcessor(ctx, new GridTaskSessionProcessor(ctx), attrs);
             startProcessor(ctx, new GridJobProcessor(ctx), attrs);
             startProcessor(ctx, new GridTaskProcessor(ctx), attrs);
-            startProcessor(ctx, new GridScheduleProcessor(ctx), attrs);
+            startProcessor(ctx, (GridProcessor)SCHEDULE.createOptional(ctx), attrs);
             startProcessor(ctx, new GridRestProcessor(ctx), attrs);
             startProcessor(ctx, new GridDataLoaderProcessor(ctx), attrs);
             startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
-            startProcessor(ctx, ggfsProc, attrs, false);
+            startProcessor(ctx, (GridProcessor)GGFS.create(ctx, F.isEmpty(cfg.getGgfsConfiguration())), attrs);
             startProcessor(ctx, new GridContinuousProcessor(ctx), attrs);
             startProcessor(ctx, createComponent(GridDrProcessor.class, ctx), attrs);
 
             // Put version converters to attributes after
             // all components are started.
             verProc.addConvertersToAttributes(attrs);
+
+            if (ctx.isEnterprise())
+                security = new GridSecurityImpl(ctx.security(), ctx.secureSession());
 
             gw.writeLock();
 
@@ -934,8 +940,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                         }
 
                         String msg = NL +
-                            "Metrics for local node (to disable printout set configuration " +
-                            "property 'metricsLogFrequency' to 0) [locNodeId=" + ctx.localNodeId() + ']' + NL +
+                            "Metrics for local node (to disable set 'metricsLogFrequency' to 0)" + NL +
                             "    ^-- H/N/C [hosts=" + hosts + ", nodes=" + nodes + ", CPUs=" + cpus + "]" + NL +
                             "    ^-- CPU [cur=" + dblFmt.format(cpuLoadPct) + "%, avg=" +
                                 dblFmt.format(avgCpuLoadPct) + "%, GC=" + dblFmt.format(gcPct) + "%]" + NL +
@@ -977,32 +982,40 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             String body =
                 "GridGain node started with the following parameters:" + NL +
-                    NL +
-                    "----" + NL +
-                    "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH + NL +
-                    "Grid name: " + gridName + NL +
-                    "Node ID: " + nid + NL +
-                    "Node order: " + localNode().order() + NL +
-                    "Node addresses: " + U.addressesAsString(localNode()) + NL +
-                    "Local ports: " + sb + NL +
-                    "OS name: " + U.osString() + NL +
-                    "OS user: " + System.getProperty("user.name") + NL +
-                    "CPU(s): " + localNode().metrics().getTotalCpus() + NL +
-                    "Heap: " + U.heapSize(localNode(), 2) + "GB" + NL +
-                    "JVM name: " + U.jvmName() + NL +
-                    "JVM vendor: " + U.jvmVendor() + NL +
-                    "JVM version: " + U.jvmVersion() + NL +
-                    "VM name: " + rtBean.getName() + NL +
-                    "License ID: "  +  lic.id().toString().toUpperCase() + NL +
-                    "Licensed to: " + lic.userOrganization() + NL +
-                    "----" + NL +
-                    NL +
-                    "NOTE:" + NL +
-                    "This message is sent automatically to all configured admin emails." + NL +
-                    "To change this behavior use 'lifeCycleEmailNotify' grid configuration property." +
-                    NL + NL +
-                    "| " + SITE + NL +
-                    "| support@gridgain.com" + NL;
+                NL +
+                "----" + NL +
+                "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH + NL +
+                "Grid name: " + gridName + NL +
+                "Node ID: " + nid + NL +
+                "Node order: " + localNode().order() + NL +
+                "Node addresses: " + U.addressesAsString(localNode()) + NL +
+                "Local ports: " + sb + NL +
+                "OS name: " + U.osString() + NL +
+                "OS user: " + System.getProperty("user.name") + NL +
+                "CPU(s): " + localNode().metrics().getTotalCpus() + NL +
+                "Heap: " + U.heapSize(localNode(), 2) + "GB" + NL +
+                "JVM name: " + U.jvmName() + NL +
+                "JVM vendor: " + U.jvmVendor() + NL +
+                "JVM version: " + U.jvmVersion() + NL +
+                "VM name: " + rtBean.getName() + NL;
+
+            if (lic != null) {
+                body +=
+                    "License ID: " + lic.id().toString().toUpperCase() + NL +
+                    "Licensed to: " + lic.userOrganization() + NL;
+            }
+            else
+                assert !ENT;
+
+            body +=
+                "----" + NL +
+                NL +
+                "NOTE:" + NL +
+                "This message is sent automatically to all configured admin emails." + NL +
+                "To change this behavior use 'lifeCycleEmailNotify' grid configuration property." +
+                NL + NL +
+                "| " + SITE + NL +
+                "| support@gridgain.com" + NL;
 
             sendAdminEmailAsync("GridGain node started: " + nid8, body, false);
         }
@@ -1195,11 +1208,10 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         // Stick in some system level attributes
         add(attrs, ATTR_JIT_NAME, U.getCompilerMx() == null ? "" : U.getCompilerMx().getName());
-        add(attrs, ATTR_BUILD_VER, COMPOUND_VERSION);
+        add(attrs, ATTR_BUILD_VER, COMPOUND_VER);
         add(attrs, ATTR_BUILD_DATE, build);
         add(attrs, ATTR_COMPATIBLE_VERS, (Serializable)compatibleVersions());
         add(attrs, ATTR_MARSHALLER, cfg.getMarshaller().getClass().getName());
-        add(attrs, ATTR_LIBRARIES, GridLibraryConsistencyCheck.libraries());
         add(attrs, ATTR_USER_NAME, System.getProperty("user.name"));
         add(attrs, ATTR_GRID_NAME, gridName);
 
@@ -1249,6 +1261,29 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         // Add data center ID.
         add(attrs, ATTR_DATA_CENTER_ID, cfg.getDataCenterId());
+
+        try {
+            boolean securityEnabled = cfg.getAuthenticationSpi() != null &&
+                cfg.getAuthenticationSpi().getClass() != GridNoopAuthenticationSpi.class;
+
+            GridSecurityCredentialsProvider provider = cfg.getSecurityCredentialsProvider();
+
+            if (provider != null) {
+                GridSecurityCredentials cred = provider.credentials();
+
+                if (cred != null)
+                    add(attrs, ATTR_SECURITY_CREDENTIALS, cred);
+                else if (securityEnabled)
+                    throw new GridException("Failed to start node (authentication SPI is configured, " +
+                        "by security credentials provider returned null).");
+            }
+            else if (securityEnabled)
+                throw new GridException("Failed to start node (authentication SPI is configured, " +
+                    "but security credentials provider is not set. Fix the configuration and restart the node).");
+        }
+        catch (GridException e) {
+            throw new GridException("Failed to create node security credentials", e);
+        }
 
         // Stick in SPI versions and classes attributes.
         addAttributes(attrs, cfg.getCollisionSpi());
@@ -1342,6 +1377,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         sysExecSvcMBean = registerExecutorMBean(cfg.getSystemExecutorService(), "GridSystemExecutor");
         mgmtExecSvcMBean = registerExecutorMBean(cfg.getManagementExecutorService(), "GridManagementExecutor");
         p2PExecSvcMBean = registerExecutorMBean(cfg.getPeerClassLoadingExecutorService(), "GridClassLoadingExecutor");
+        restExecSvcMBean = cfg.getRestExecutorService() != null ?
+            registerExecutorMBean(cfg.getRestExecutorService(), "GridRestExecutor") : null;
     }
 
     /**
@@ -1351,6 +1388,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      * @throws GridException If registration failed.
      */
     private ObjectName registerExecutorMBean(ExecutorService exec, String name) throws GridException {
+        assert exec != null;
+
         try {
             ObjectName res = U.registerMBean(
                 cfg.getMBeanServer(),
@@ -1432,20 +1471,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      */
     private void startProcessor(GridKernalContextImpl ctx, GridProcessor proc, Map<String, Object> attrs)
         throws GridException {
-        startProcessor(ctx, proc, attrs, true);
-    }
-
-    /**
-     * @param ctx Kernal context.
-     * @param proc Processor to start.
-     * @param attrs Attributes.
-     * @param add Whether to add processro to context ({@code false} if already added).
-     * @throws GridException Thrown in case of any error.
-     */
-    private void startProcessor(GridKernalContextImpl ctx, GridProcessor proc, Map<String, Object> attrs, boolean add)
-        throws GridException {
-        if (add)
-            ctx.add(proc);
+        ctx.add(proc);
 
         try {
             proc.start();
@@ -1455,6 +1481,16 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         catch (GridException e) {
             throw new GridException("Failed to start processor: " + proc, e);
         }
+    }
+
+    /**
+     * Add helper.
+     *
+     * @param ctx Context.
+     * @param helper Helper.
+     */
+    private void addHelper(GridKernalContextImpl ctx, Object helper) {
+        ctx.addHelper(helper);
     }
 
     /**
@@ -1551,17 +1587,14 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /**
      * Acks ASCII-logo. Thanks to http://patorjk.com/software/taag
-     *
-     * @param build Build.
      */
-    private void ackAsciiLogo(String build) {
+    private void ackAsciiLogo() {
         assert log != null;
 
         String fileName = log.fileName();
 
         if (System.getProperty(GG_NO_ASCII) == null) {
-            String rev = REV_HASH.length() > 8 ? REV_HASH.substring(0, 8) : REV_HASH;
-            String ver = "ver. " + COMPOUND_VERSION + '#' + build + "-sha1:" + rev;
+            String ver = "ver. " + ACK_VER;
 
             // Big thanks to: http://patorjk.com/software/taag
             // Font name "Small Slant"
@@ -1614,7 +1647,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         if (log.isInfoEnabled()) {
             log.info("");
 
-            String ack = "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH;
+            String ack = "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH;
 
             String dash = U.dash(ack.length());
 
@@ -1766,6 +1799,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                 notifyLifecycleBeansEx(GridLifecycleEventType.BEFORE_GRID_STOP);
             }
 
+            GridEmailProcessorAdapter email = ctx.email();
+
             List<GridComponent> comps = ctx.components();
 
             // Callback component in reverse order while kernal is still functional
@@ -1823,7 +1858,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                     unregisterMBean(mgmtExecSvcMBean) &
                     unregisterMBean(p2PExecSvcMBean) &
                     unregisterMBean(kernalMBean) &
-                    unregisterMBean(locNodeMBean)))
+                    unregisterMBean(locNodeMBean) &
+                    unregisterMBean(restExecSvcMBean)
+            ))
                 errOnStop = false;
 
             // Stop components in reverse order.
@@ -1874,7 +1911,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             if (log.isInfoEnabled())
                 if (!errOnStop) {
-                    String ack = "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH +
+                    String ack = "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH +
                         " stopped OK";
 
                     String dash = U.dash(ack.length());
@@ -1889,7 +1926,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                         NL);
                 }
                 else {
-                    String ack = "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH +
+                    String ack = "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH +
                         " stopped with ERRORS";
 
                     String dash = U.dash(ack.length());
@@ -1911,26 +1948,34 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             if (isSmtpEnabled() && isAdminEmailsSet() && cfg.isLifeCycleEmailNotification()) {
                 String errOk = errOnStop ? "with ERRORS" : "OK";
 
-                String headline = "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + " stopped " + errOk + ":";
+                String headline = "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR +
+                    " stopped " + errOk + ":";
                 String subj = "GridGain node stopped " + errOk + ": " + nid8;
 
-                GridProductLicense lic = ctx.license().license();
+                GridProductLicense lic = ctx.license() != null ? ctx.license().license() : null;
 
                 String body =
-                    headline + NL +
-                        NL +
-                        "----" + NL +
-                        "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH + NL +
-                        "Grid name: " + gridName + NL +
-                        "Node ID: " + nid + NL +
-                        "Node uptime: " + X.timeSpan2HMSM(U.currentTimeMillis() - startTime) + NL +
-                        "License ID: "  +  lic.id().toString().toUpperCase() + NL +
-                        "Licensed to: " + lic.userOrganization() + NL +
-                        "----" + NL +
-                        NL +
-                        "NOTE:" + NL +
-                        "This message is sent automatically to all configured admin emails." + NL +
-                        "To change this behavior use 'lifeCycleEmailNotify' grid configuration property.";
+                    headline + NL + NL +
+                    "----" + NL +
+                    "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH + NL +
+                    "Grid name: " + gridName + NL +
+                    "Node ID: " + nid + NL +
+                    "Node uptime: " + X.timeSpan2HMSM(U.currentTimeMillis() - startTime) + NL;
+
+                if (lic != null) {
+                    body +=
+                        "License ID: " + lic.id().toString().toUpperCase() + NL +
+                        "Licensed to: " + lic.userOrganization() + NL;
+                }
+                else
+                    assert !ENT;
+
+                body +=
+                    "----" + NL +
+                    NL +
+                    "NOTE:" + NL +
+                    "This message is sent automatically to all configured admin emails." + NL +
+                    "To change this behavior use 'lifeCycleEmailNotify' grid configuration property.";
 
                 if (errOnStop)
                     body +=
@@ -1946,28 +1991,16 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                         "| " + SITE + NL +
                         "| support@gridgain.com" + NL;
 
-                // We can't use email processor at this point.
-                // So we use "raw" method of sending.
-                try {
-                    U.sendEmail(
-                        // Static SMTP configuration data.
-                        cfg.getSmtpHost(),
-                        cfg.getSmtpPort(),
-                        cfg.isSmtpSsl(),
-                        cfg.isSmtpStartTls(),
-                        cfg.getSmtpUsername(),
-                        cfg.getSmtpPassword(),
-                        cfg.getSmtpFromEmail(),
-
-                        // Per-email data.
-                        subj,
-                        body,
-                        false,
-                        Arrays.asList(cfg.getAdminEmails())
-                    );
-                }
-                catch (GridException e) {
-                    U.error(log, "Failed to send lifecycle email notification.", e);
+                if (email != null) {
+                    try {
+                        email.sendNow(subj,
+                            body,
+                            false,
+                            Arrays.asList(cfg.getAdminEmails()));
+                    }
+                    catch (GridException e) {
+                        U.error(log, "Failed to send lifecycle email notification.", e);
+                    }
                 }
             }
         }
@@ -2191,7 +2224,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         assert log != null;
 
         if (log.isInfoEnabled())
-            log.info("Security status [authentication=" + onOff(ctx.auth().securityEnabled()) + ", " +
+            log.info("Security status [authentication=" + onOff(ctx.security().securityEnabled()) + ", " +
                 "secure-session=" + onOff(ctx.secureSession().securityEnabled()) + ']');
     }
 
@@ -2495,6 +2528,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         guard();
 
         try {
+            GridSshProcessor sshProcessor = GridComponentType.SSH.create(false);
+
             Map<String, Collection<GridRemoteStartSpecification>> specsMap = specifications(hosts, dflts);
 
             Map<String, ConcurrentLinkedQueue<GridNodeCallable>> runMap = new HashMap<>();
@@ -2550,7 +2585,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                     assert spec.host().equals(host);
 
                     for (int i = startIdx; i <= spec.nodes(); i++) {
-                        nodeRuns.add(new GridNodeCallable(spec, timeout));
+                        nodeRuns.add(sshProcessor.nodeStartCallable(spec, timeout));
 
                         nodeCallCnt++;
                     }
@@ -2930,6 +2965,14 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     /** {@inheritDoc} */
     @Override public GridScheduler scheduler() {
         return scheduler;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridSecurity security() {
+        if (!ctx.isEnterprise())
+            throw new UnsupportedOperationException("Security interface available in Enterprise edition only.");
+
+        return security;
     }
 
     /** {@inheritDoc} */

@@ -14,14 +14,12 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.cloner.*;
 import org.gridgain.grid.cache.eviction.*;
-import org.gridgain.grid.cache.jta.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
-import javax.transaction.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -139,21 +137,6 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /**
      */
-    private static class TestTxLookup extends TestLifecycleAware implements GridCacheTmLookup {
-        /**
-         */
-        TestTxLookup() {
-            super(CACHE_NAME);
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public TransactionManager getTm() throws GridException {
-            return null;
-        }
-    }
-
-    /**
-     */
     private static class TestEvictionPolicy extends TestLifecycleAware implements GridCacheEvictionPolicy {
         /**
          */
@@ -217,6 +200,41 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
     }
 
+    /**
+     */
+    private static class TestInterceptor extends TestLifecycleAware implements GridCacheInterceptor {
+        /**
+         */
+        private TestInterceptor() {
+            super(CACHE_NAME);
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object onGet(Object key, @Nullable Object val) {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object onBeforePut(Object key, @Nullable Object oldVal, Object newVal) {
+            return newVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onAfterPut(Object key, Object val) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked") @Nullable @Override public GridBiTuple onBeforeRemove(Object key, @Nullable Object val) {
+            return new GridBiTuple(false, val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onAfterRemove(Object key, Object val) {
+            // No-op.
+        }
+    }
+
     /** {@inheritDoc} */
     @Override protected final GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
@@ -247,12 +265,6 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
         lifecycleAwares.add(affinity);
 
-        TestTxLookup txLookup = new TestTxLookup();
-
-        ccfg.setTransactionManagerLookup(txLookup);
-
-        lifecycleAwares.add(txLookup);
-
         TestEvictionPolicy evictionPlc = new TestEvictionPolicy();
 
         ccfg.setEvictionPolicy(evictionPlc);
@@ -282,6 +294,12 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         ccfg.setAffinityMapper(mapper);
 
         lifecycleAwares.add(mapper);
+
+        TestInterceptor interceptor = new TestInterceptor();
+
+        lifecycleAwares.add(interceptor);
+
+        ccfg.setInterceptor(interceptor);
 
         cfg.setCacheConfiguration(ccfg);
 

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.ggfs;
 
-import org.apache.commons.io.*;
+import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -80,7 +80,7 @@ public final class GridGgfsPath implements Comparable<GridGgfsPath>, Externaliza
     public GridGgfsPath(GridGgfsPath parentPath, String childPath) {
         A.notNull(parentPath, "parentPath");
 
-        String path = FilenameUtils.concat(parentPath.path, childPath);
+        String path = GridFilenameUtils.concat(parentPath.path, childPath);
 
         if (F.isEmpty(path))
             throw new IllegalArgumentException("Failed to parse path" +
@@ -98,12 +98,12 @@ public final class GridGgfsPath implements Comparable<GridGgfsPath>, Externaliza
     private static String normalizePath(String path) {
         assert path != null;
 
-        String normalizedPath = FilenameUtils.normalizeNoEndSeparator(path, true);
+        String normalizedPath = GridFilenameUtils.normalizeNoEndSeparator(path, true);
 
         if (F.isEmpty(normalizedPath))
             throw new IllegalArgumentException("Failed to normalize path: " + path);
 
-        if (!SLASH.equals(FilenameUtils.getPrefix(normalizedPath)))
+        if (!SLASH.equals(GridFilenameUtils.getPrefix(normalizedPath)))
             throw new IllegalArgumentException("Path should be absolute: " + path);
 
         assert !normalizedPath.isEmpty() : "Expects normalized path is not empty.";
@@ -119,7 +119,7 @@ public final class GridGgfsPath implements Comparable<GridGgfsPath>, Externaliza
      * @return The final component of this path.
      */
     public String name() {
-        return FilenameUtils.getName(path);
+        return GridFilenameUtils.getName(path);
     }
 
     /**
@@ -156,7 +156,7 @@ public final class GridGgfsPath implements Comparable<GridGgfsPath>, Externaliza
         if (path.length() == 1)
             return null; // Current path is root.
 
-        path = FilenameUtils.getFullPathNoEndSeparator(path);
+        path = GridFilenameUtils.getFullPathNoEndSeparator(path);
 
         return new GridGgfsPath(path);
     }
