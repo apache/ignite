@@ -25,9 +25,9 @@
        xmlns:util="http://www.springframework.org/schema/util"
        xsi:schemaLocation="
        http://www.springframework.org/schema/beans
-       http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+       http://www.springframework.org/schema/beans/spring-beans.xsd
        http://www.springframework.org/schema/util
-       http://www.springframework.org/schema/util/spring-util-2.0.xsd">
+       http://www.springframework.org/schema/util/spring-util.xsd">
 
     <!--
         Optional description.
@@ -51,7 +51,7 @@
         Note that for job stealing to work, you must always use both,
         GridJobStealingCollisionSpi and GridJobStealingFailoverSPI.
     -->
-    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
+    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
         <property name="gridName" value="sslnode"/>
 
         <!-- Set to local host address. -->

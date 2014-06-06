@@ -17,7 +17,6 @@ import org.gridgain.testframework.junits.common.*;
 
 import java.nio.channels.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 import static org.gridgain.client.GridClientTestRestServer.*;
 

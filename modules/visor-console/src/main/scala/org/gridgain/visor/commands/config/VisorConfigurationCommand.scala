@@ -491,54 +491,77 @@ private class GridConfigurationCallable extends GridCallable[Config] {
 
         Config(
             // License
-            license = License(
-                `type` = "Enterprise",
-                id = safe(l.id, "<n/a>"),
-                ver = safe(l.version, "<n/a>"),
-                verRegexp = safe(l.versionRegexp, "<n/a>"),
-                issueDate =
-                    if (l.issueDate != null)
-                        formatDate(l.issueDate)
-                    else
+            license =
+                if (l != null)
+                    License(
+                        `type` = "Enterprise",
+                        id = safe(l.id, "<n/a>"),
+                        ver = safe(l.version, "<n/a>"),
+                        verRegexp = safe(l.versionRegexp, "<n/a>"),
+                        issueDate =
+                            if (l.issueDate != null)
+                                formatDate(l.issueDate)
+                            else
+                                "<n/a>",
+                        issueOrg = safe(l.issueOrganization, "<n/a>"),
+                        userName = safe(l.userName, "<n/a>"),
+                        userOrg = safe(l.userOrganization, "<n/a>"),
+                        userWww = safe(l.userWww, "<n/a>"),
+                        userEmail = safe(l.userEmail, "<n/a>"),
+                        note = safe(l.licenseNote, "<n/a>"),
+                        expDate =
+                            if (l.expireDate != null)
+                                formatDate(l.expireDate)
+                            else
+                                "No restriction",
+                        maxNodes =
+                            if (l.maxNodes > 0)
+                                l.maxNodes.toString
+                            else
+                                "No restriction",
+                        maxComp =
+                            if (l.maxComputers > 0)
+                                l.maxComputers.toString
+                            else
+                                "No restriction",
+                        maxCpus =
+                            if (l.maxCpus > 0)
+                                l.maxCpus.toString
+                            else
+                                "No restriction",
+                        maxUpTime =
+                            if (l.maxUpTime > 0)
+                                l.maxUpTime + " min."
+                            else
+                                "No restriction",
+                        gracePeriod =
+                            if (l.gracePeriod > 0)
+                                l.maxUpTime + " min."
+                            else
+                                "No grace/burst period",
+                        disSubs = safe(l.disabledSubsystems, "No disabled subsystems")
+                    )
+                else
+                    License(
+                        "Open Source",
                         "<n/a>",
-                issueOrg = safe(l.issueOrganization, "<n/a>"),
-                userName = safe(l.userName, "<n/a>"),
-                userOrg = safe(l.userOrganization, "<n/a>"),
-                userWww = safe(l.userWww, "<n/a>"),
-                userEmail = safe(l.userEmail, "<n/a>"),
-                note = safe(l.licenseNote, "<n/a>"),
-                expDate =
-                    if (l.expireDate != null)
-                        formatDate(l.expireDate)
-                    else
+                        "<n/a>",
+                        "<n/a>",
+                        "<n/a>",
+                        "<n/a>",
+                        "<n/a>",
+                        "<n/a>",
+                        "<n/a>",
+                        "<n/a>",
+                        "<n/a>",
                         "No restriction",
-                maxNodes =
-                    if (l.maxNodes > 0)
-                        l.maxNodes.toString
-                    else
                         "No restriction",
-                maxComp =
-                    if (l.maxComputers > 0)
-                        l.maxComputers.toString
-                    else
                         "No restriction",
-                maxCpus =
-                    if (l.maxCpus > 0)
-                        l.maxCpus.toString
-                    else
                         "No restriction",
-                maxUpTime =
-                    if (l.maxUpTime > 0)
-                        l.maxUpTime + " min."
-                    else
                         "No restriction",
-                gracePeriod =
-                    if (l.gracePeriod > 0)
-                        l.maxUpTime + " min."
-                    else
                         "No grace/burst period",
-                disSubs = safe(l.disabledSubsystems, "No disabled subsystems")
-            ),
+                        "No disabled subsystems"
+                    ),
 
             // Basic
             basic1 = BasicConfig1(
