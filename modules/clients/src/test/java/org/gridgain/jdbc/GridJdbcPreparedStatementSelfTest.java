@@ -94,7 +94,7 @@ public class GridJdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
         cache.put(1, o);
         cache.put(2, new TestObject(2));
 
-        Class.forName("GridJdbcDriver");
+        Class.forName("org.gridgain.jdbc.GridJdbcDriver");
     }
 
     /** {@inheritDoc} */
