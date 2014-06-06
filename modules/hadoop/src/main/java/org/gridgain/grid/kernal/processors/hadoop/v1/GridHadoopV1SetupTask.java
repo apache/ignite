@@ -36,6 +36,8 @@ public class GridHadoopV1SetupTask extends GridHadoopV1Task {
         JobContext jobCtx = jobImpl.hadoopJobContext();
 
         try {
+            jobCtx.getJobConf().getOutputFormat().checkOutputSpecs(null, jobCtx.getJobConf());
+
             OutputCommitter committer = jobCtx.getJobConf().getOutputCommitter();
 
             committer.setupJob(jobCtx);

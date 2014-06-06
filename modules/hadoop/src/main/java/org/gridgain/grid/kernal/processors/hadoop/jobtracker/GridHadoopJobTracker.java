@@ -432,10 +432,10 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         if (log.isDebugEnabled())
             log.debug("Processing discovery event [locNodeId=" + ctx.localNodeId() + ", evt=" + evt + ']');
 
-        boolean checkSetup = evt.eventNode().order() < ctx.localNodeOrder();
-
         // Check only if this node is responsible for job status updates.
         if (ctx.jobUpdateLeader()) {
+            boolean checkSetup = evt.eventNode().order() < ctx.localNodeOrder();
+
             // Iteration over all local entries is correct since system cache is REPLICATED.
             for (GridHadoopJobMetadata meta : jobMetaPrj.values()) {
                 GridHadoopJobId jobId = meta.jobId();
@@ -673,8 +673,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @return Setup task wrapped in collection.
      */
     private Collection<GridHadoopTaskInfo> setupTask(GridHadoopJob job, GridHadoopJobMetadata meta) {
-        if (!activeJobs.containsKey(job.id()))
-            initState(job, meta);
+        assert !activeJobs.containsKey(job.id());
+
+        initState(job, meta);
 
         return Collections.singleton(new GridHadoopTaskInfo(ctx.localNodeId(), SETUP, job.id(), 0, 0, null));
     }

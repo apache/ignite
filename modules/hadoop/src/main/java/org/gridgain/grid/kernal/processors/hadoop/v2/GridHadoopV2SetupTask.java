@@ -36,6 +36,8 @@ public class GridHadoopV2SetupTask extends GridHadoopV2Task {
         try {
             OutputFormat outputFormat = U.newInstance(jobCtx.getOutputFormatClass());
 
+            outputFormat.checkOutputSpecs(jobCtx);
+
             OutputCommitter committer = outputFormat.getOutputCommitter(hadoopContext());
 
             committer.setupJob(jobCtx);
