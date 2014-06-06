@@ -123,7 +123,7 @@ public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
 
     private void check(GridHadoopMultimap m, Multimap<Integer, Integer> mm, final Multimap<Integer, Integer> vis)
         throws Exception {
-        final GridHadoopTaskInput in = m.input();
+        final GridHadoopTaskInput in = m.input(null);
 
         Map<Integer, Collection<Integer>> mmm = mm.asMap();
 
@@ -269,7 +269,7 @@ public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
                 }
             }, 3 + rnd.nextInt(27));
 
-            GridHadoopTaskInput in = m.input();
+            GridHadoopTaskInput in = m.input(null);
 
             int prevKey = Integer.MIN_VALUE;
 

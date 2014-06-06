@@ -331,6 +331,13 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
             this.valReader = valReader;
         }
 
+        /**
+         * @param valPtr Head value pointer.
+         */
+        public void head(long valPtr) {
+            this.valPtr = valPtr;
+        }
+
         /** {@inheritDoc} */
         @Override public boolean hasNext() {
             return valPtr != 0;

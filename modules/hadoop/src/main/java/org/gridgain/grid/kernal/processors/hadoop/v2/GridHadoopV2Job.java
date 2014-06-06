@@ -302,7 +302,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public Comparator<Object> combineGroupComparator() {
-        return null; // TODO
+        return null; // TODO implement for Hadoop 2.4
     }
 
     /** {@inheritDoc} */

@@ -595,7 +595,10 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
         private Object prevKey;
 
         /** */
-        private boolean alreadyNextKey;
+        private Object nextKey;
+
+        /** */
+        private GridLongList vals = new GridLongList();
 
         /**
          * @param groupCmp Grouping comparator.
@@ -608,40 +611,42 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
 
         /** {@inheritDoc} */
         @Override public boolean next() {
-            if (alreadyNextKey) { // Previous values iterator already switched input to the next key.
-                alreadyNextKey = false;
+            if (prevKey == null) { // First call.
+                if (!in.next())
+                    return false;
 
-                return true;
+                prevKey = in.key();
+
+                assert prevKey != null;
+
+                in.keyReader.resetReusedObject(null); // We need 2 instances of key object for comparison.
+
+                vals.add(value(in.metaPtr));
+            }
+            else {
+                if (in.metaPtr == 0) // We reached the end of the input.
+                    return false;
+
+                vals.clear();
+
+                vals.add(value(in.metaPtr));
+
+                in.keyReader.resetReusedObject(prevKey); // Switch key instances.
+
+                prevKey = nextKey;
             }
 
-            while (in.next()) {
-                if (prevKey == null) { // The first call.
-                    prevKey = in.key();
-
-                    assert prevKey != null;
-
-                    in.keyReader.resetReusedObject(null); // We need to have two instances of key object to compare.
-
-                    return true;
+            while (in.next()) { // Fill with head value pointers with equal keys.
+                if (groupCmp.compare(prevKey, nextKey = in.key()) == 0) {
+                    vals.add(value(in.metaPtr));
                 }
-                else {
-                    Object key = in.key();
-
-                    assert key != null;
-
-                    // We need to compare keys here because iterator from the previous key was not read fully.
-                    if (groupCmp.compare(prevKey, key) != 0) { // Keys from different groups.
-                        in.keyReader.resetReusedObject(prevKey); // Switch reused keys.
-
-                        prevKey = key;
-
-                        return true;
-                    }
-                    // Else go forward.
-                }
+                else
+                    break;
             }
 
-            return false;
+            assert !vals.isEmpty();
+
+            return true;
         }
 
         /** {@inheritDoc} */
@@ -651,42 +656,33 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
 
         /** {@inheritDoc} */
         @Override public Iterator<?> values() {
+            assert !vals.isEmpty();
+
+            final ValueIterator valIter = new ValueIterator(vals.get(0), in.valReader);
+
             return new Iterator<Object>() {
                 /** */
-                Iterator<?> cur = in.values();
+                int idx;
 
                 @Override public boolean hasNext() {
-                    for (;;) {
-                        if (cur.hasNext())
-                            return true;
-
-                        if (alreadyNextKey || !in.next())
+                    if (!valIter.hasNext()) {
+                        if (++idx == vals.size())
                             return false;
 
-                        Object key = in.key();
+                        valIter.head(vals.get(idx));
 
-                        assert key != null;
-
-                        if (groupCmp.compare(prevKey, key) == 0) // Keys from the same group.
-                            cur = in.values();
-                        else {
-                            in.keyReader.resetReusedObject(prevKey); // Switch reused keys.
-
-                            prevKey = key;
-
-                            alreadyNextKey = true;
-
-                            return false;
-                        }
+                        assert valIter.hasNext();
                     }
+
+                    return true;
                 }
 
                 @Override public Object next() {
-                    return cur.next();
+                    return valIter.next();
                 }
 
                 @Override public void remove() {
-                    throw new UnsupportedOperationException();
+                    valIter.remove();
                 }
             };
         }
