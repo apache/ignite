@@ -42,6 +42,7 @@
                 <include>org.gridgain:gridgain-core</include>
             </includes>
             <sources>
+                <includeModuleDirectory>false</includeModuleDirectory>
                 <fileSets>
                     <fileSet>
                         <directory>target/classes</directory>
