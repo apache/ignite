@@ -9,66 +9,80 @@
 
 package org.gridgain.grid.spi;
 
-import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.net.*;
-import java.util.concurrent.*;
 
 /**
  * Class implements forwarding between two addresses.
  */
 public final class GridTcpForwarder implements AutoCloseable {
     /** */
+    private final GridLogger log;
+
+    /** */
     private final Thread mainThread;
 
     /** */
-    private CountDownLatch latch;
+    private final ServerSocket inputSock;
 
     /**
      * @param fromAddr Source address.
      * @param fromPort Source port.
      * @param toAddr Destination address.
      * @param toPort Destination port.
+     * @param log Logger.
+     * @throws IOException if an I/O error occurs when opening the socket.
      */
     public GridTcpForwarder(
         final InetAddress fromAddr,
         final int fromPort,
         final InetAddress toAddr,
-        final int toPort
-    ) {
+        final int toPort,
+        final GridLogger log
+    ) throws IOException {
+        inputSock = new ServerSocket(fromPort, 0, fromAddr);
+
+        this.log = log;
+
         mainThread = new Thread(new Runnable() {
             @Override public void run() {
-                ServerSocket inputSock = null;
-
-                Socket outputCon = null;
-
                 try {
-                    inputSock = new ServerSocket(fromPort, 0, fromAddr);
-
                     boolean closed = false;
 
                     while (!closed) {
                         Socket inputCon = null;
+                        Socket outputCon = null;
+
+                        Thread forwardThread1 = null;
+                        Thread forwardThread2 = null;
 
                         try {
                             inputCon = inputSock.accept();
 
                             outputCon = new Socket(toAddr, toPort);
 
-                            latch = new CountDownLatch(2);
+                            forwardThread1 = new ForwardThread(
+                                "ForwardThread [" + fromAddr + ":" + fromPort + "->" + toAddr + ":" + toPort + "]",
+                                inputCon.getInputStream(), outputCon.getOutputStream()
+                            );
 
-                            new ForwardThread("[" + fromAddr + ":" + fromPort + "->" + toAddr + ":" + toPort + "]",
-                                inputCon.getInputStream(), outputCon.getOutputStream()).start();
+                            forwardThread2 = new ForwardThread(
+                                "ForwardThread [" + toAddr + ":" + toPort + "->" + fromAddr + ":" + fromPort + "]",
+                                outputCon.getInputStream(), inputCon.getOutputStream()
+                            );
 
-                            new ForwardThread("[" + toAddr + ":" + toPort + "->" + fromAddr + ":" + fromPort + "]",
-                                outputCon.getInputStream(), inputCon.getOutputStream()).start();
+                            forwardThread1.start();
+                            forwardThread2.start();
 
-                            latch.await();
+                            U.join(forwardThread1, log);
+                            U.join(forwardThread2, log);
                         }
                         catch (IOException ignore) {
-                            // Ignore and try to reconnect if IOException,
+                            if (inputSock.isClosed())
+                                closed = true;
                         }
                         catch (Throwable ignored) {
                             closed = true;
@@ -76,26 +90,30 @@ public final class GridTcpForwarder implements AutoCloseable {
                         finally {
                             U.closeQuiet(outputCon);
                             U.closeQuiet(inputCon);
+
+                            U.interrupt(forwardThread1);
+                            U.interrupt(forwardThread2);
+
+                            U.join(forwardThread1, log);
+                            U.join(forwardThread2, log);
                         }
                     }
                 }
-                catch (IOException ignore) {
-                    X.error("Failed to bind to input socket [fromAddr=" + fromAddr + ", fromPort=" + fromPort + "]");
-                }
                 finally {
                     U.closeQuiet(inputSock);
-                    U.closeQuiet(outputCon);
                 }
             }
-        });
+        }, "GridTcpForwarder [" + fromAddr + ":" + fromPort + "->" + toAddr + ":" + toPort + "]");
 
         mainThread.start();
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
-        if (!mainThread.isInterrupted())
-            mainThread.interrupt();
+        U.closeQuiet(inputSock);
+
+        U.interrupt(mainThread);
+        U.join(mainThread, log);
     }
 
     /**
@@ -114,7 +132,7 @@ public final class GridTcpForwarder implements AutoCloseable {
          * @param outputStream Output stream.
          */
         private ForwardThread(String name, InputStream inputStream, OutputStream outputStream) {
-            super(ForwardThread.class.getName() + " " + name);
+            super(name);
 
             this.inputStream = inputStream;
             this.outputStream = outputStream;
@@ -136,10 +154,7 @@ public final class GridTcpForwarder implements AutoCloseable {
                 }
             }
             catch (IOException e) {
-                X.error("IOException while forwarding data [threadName=" + getName() + "]", e);
-            }
-            finally {
-                latch.countDown();
+                log.error("IOException while forwarding data [threadName=" + getName() + "]", e);
             }
         }
     }
