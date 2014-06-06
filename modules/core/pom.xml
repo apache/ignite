@@ -144,13 +144,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <version>1.7</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.gridgain</groupId>
-                        <artifactId>gridgain-tools</artifactId>
-                        <version>${gridgain.version}</version>
-                    </dependency>
-                </dependencies>
                 <executions>
                     <execution>
                         <id>properties-augmentation</id>

@@ -43,7 +43,6 @@ public class GridGgfsTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheGgfsPerBlockLruEvictionPolicySelfTest.class));
 
         suite.addTest(new TestSuite(GridGgfsStreamsSelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsStreamsSelfTest.class));
         suite.addTest(new TestSuite(GridGgfsModesSelfTest.class));
         suite.addTest(new TestSuite(GridIpcServerEndpointDeserializerSelfTest.class));
         suite.addTest(new TestSuite(GridGgfsMetricsSelfTest.class));
@@ -64,6 +63,8 @@ public class GridGgfsTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoggerStateSelfTest.class));
         suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoggerSelfTest.class));
 
+        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemHandshakeSelfTest.class));
+
         suite.addTest(new TestSuite(GridGgfsPrimarySelfTest.class));
         suite.addTest(new TestSuite(GridGgfsPrimaryOffheapTieredSelfTest.class));
         suite.addTest(new TestSuite(GridGgfsPrimaryOffheapValuesSelfTest.class));
@@ -79,8 +80,6 @@ public class GridGgfsTestSuite extends TestSuite {
         suite.addTestSuite(GridGgfsFragmentizerSelfTest.class);
         suite.addTestSuite(GridGgfsFragmentizerTopologySelfTest.class);
         suite.addTestSuite(GridGgfsFileMapSelfTest.class);
-
-        suite.addTestSuite(GridGgfsIpcEndpointTcpSelfTest.class);
 
         suite.addTestSuite(GridGgfsByteDelimiterRecordResolverSelfTest.class);
         suite.addTestSuite(GridGgfsStringDelimiterRecordResolverSelfTest.class);

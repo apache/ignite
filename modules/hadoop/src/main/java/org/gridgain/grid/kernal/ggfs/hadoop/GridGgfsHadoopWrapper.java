@@ -376,7 +376,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
                 GridGgfsHadoopEx hadoop = null;
 
                 try {
-                    hadoop = new GridGgfsHadoopOutProc(endpoint.port(), log);
+                    hadoop = new GridGgfsHadoopOutProc(endpoint.port(), endpoint.grid(), endpoint.ggfs(), log);
 
                     curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
                 }
@@ -400,7 +400,8 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
                 GridGgfsHadoopEx hadoop = null;
 
                 try {
-                    hadoop = new GridGgfsHadoopOutProc(LOCALHOST, endpoint.port(), log);
+                    hadoop = new GridGgfsHadoopOutProc(LOCALHOST, endpoint.port(), endpoint.grid(), endpoint.ggfs(),
+                        log);
 
                     curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
                 }
@@ -421,7 +422,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
             GridGgfsHadoopEx hadoop = null;
 
             try {
-                hadoop = new GridGgfsHadoopOutProc(LOCALHOST, endpoint.port(), log);
+                hadoop = new GridGgfsHadoopOutProc(LOCALHOST, endpoint.port(), endpoint.grid(), endpoint.ggfs(), log);
 
                 curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
             }

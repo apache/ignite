@@ -55,7 +55,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
 
         GridGgfsPath inFile = new GridGgfsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
 
-        URI inFileUri = URI.create(GGFS_SCHEME + inFile.toString());
+        URI inFileUri = URI.create(ggfsScheme() + inFile.toString());
 
         try (PrintWriter pw = new PrintWriter(ggfs.create(inFile, true))) {
             pw.println("hello0 world0");
@@ -71,7 +71,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
         GridHadoopFileBlock fileBlock2 = new GridHadoopFileBlock(HOSTS, inFileUri, fileBlock1.length(),
                 ggfs.info(inFile).length() - fileBlock1.length());
 
-        GridHadoopJob gridJob = getHadoopJob(GGFS_SCHEME + inFile.toString(), GGFS_SCHEME + PATH_OUTPUT);
+        GridHadoopJob gridJob = getHadoopJob(ggfsScheme() + inFile.toString(), ggfsScheme() + PATH_OUTPUT);
 
         GridHadoopTestTaskContext ctx = new GridHadoopTestTaskContext(gridJob);
 
@@ -134,7 +134,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
      * @throws Exception If fails.
      */
     public void testReduceTask() throws Exception {
-        GridHadoopJob gridJob = getHadoopJob(GGFS_SCHEME + PATH_INPUT, GGFS_SCHEME + PATH_OUTPUT);
+        GridHadoopJob gridJob = getHadoopJob(ggfsScheme() + PATH_INPUT, ggfsScheme() + PATH_OUTPUT);
 
         runTaskWithInput(gridJob, GridHadoopTaskType.REDUCE, 0, "word1", "5", "word2", "10");
         runTaskWithInput(gridJob, GridHadoopTaskType.REDUCE, 1, "word3", "7", "word4", "15");
@@ -214,7 +214,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
 
         GridGgfsPath inFile = new GridGgfsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
 
-        URI inFileUri = URI.create(GGFS_SCHEME + inFile.toString());
+        URI inFileUri = URI.create(ggfsScheme() + inFile.toString());
 
         generateTestFile(inFile.toString(), "red", 100, "blue", 200, "green", 150, "yellow", 70);
 
@@ -226,7 +226,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
         GridHadoopFileBlock fileBlock1 = new GridHadoopFileBlock(HOSTS, inFileUri, 0, l);
         GridHadoopFileBlock fileBlock2 = new GridHadoopFileBlock(HOSTS, inFileUri, l, fileLen - l);
 
-        GridHadoopJob gridJob = getHadoopJob(inFileUri.toString(), GGFS_SCHEME + PATH_OUTPUT);
+        GridHadoopJob gridJob = getHadoopJob(inFileUri.toString(), ggfsScheme() + PATH_OUTPUT);
 
         GridHadoopTestTaskContext combine1Ctx = runMapCombineTask(fileBlock1, gridJob);
 

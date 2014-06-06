@@ -84,7 +84,7 @@ public class GridGgfsHadoopFileSystemSecondaryModeSelfTest extends GridCommonAbs
         ggfsCfg.setPathModes(pathModes);
         ggfsCfg.setIpcEndpointConfiguration("{type:'tcp', port:10500}");
         ggfsCfg.setManagementPort(-1);
-        ggfsCfg.setSecondaryHadoopFileSystemUri("ggfs://127.0.0.1:11500/");
+        ggfsCfg.setSecondaryHadoopFileSystemUri("ggfs://ggfs-secondary:ggfs-grid-secondary@127.0.0.1:11500/");
         ggfsCfg.setSecondaryHadoopFileSystemConfigPath(
             "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml");
 
@@ -119,13 +119,15 @@ public class GridGgfsHadoopFileSystemSecondaryModeSelfTest extends GridCommonAbs
         cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
         cfg.setGgfsConfiguration(ggfsCfg);
 
+        cfg.setLocalHost("127.0.0.1");
+
         G.start(cfg);
 
         Configuration fsCfg = new Configuration();
 
         fsCfg.addResource(U.resolveGridGainUrl("modules/core/src/test/config/hadoop/core-site-loopback.xml"));
 
-        fs = (GridGgfsHadoopFileSystem)FileSystem.get(new URI("ggfs:///"), fsCfg);
+        fs = (GridGgfsHadoopFileSystem)FileSystem.get(new URI("ggfs://ggfs:ggfs-grid@/"), fsCfg);
     }
 
     /**
@@ -173,6 +175,8 @@ public class GridGgfsHadoopFileSystemSecondaryModeSelfTest extends GridCommonAbs
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
         cfg.setGgfsConfiguration(ggfsCfg);
+
+        cfg.setLocalHost("127.0.0.1");
 
         G.start(cfg);
     }

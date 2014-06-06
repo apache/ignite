@@ -27,6 +27,7 @@ public class GridHadoopClientTestSuite extends TestSuite {
         suite.addTest(GridHadoopTestSuite.suite());
 
         suite.addTestSuite(GridHadoopClientProtocolSelfTest.class);
+        suite.addTestSuite(GridHadoopClientProtocolEmbeddedSelfTest.class);
 
         return suite;
     }

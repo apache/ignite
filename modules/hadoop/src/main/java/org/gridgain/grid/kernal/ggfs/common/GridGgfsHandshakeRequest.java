@@ -9,12 +9,20 @@
 
 package org.gridgain.grid.kernal.ggfs.common;
 
+import org.gridgain.grid.util.typedef.internal.*;
+
 import static org.gridgain.grid.kernal.ggfs.common.GridGgfsIpcCommand.*;
 
 /**
  * Handshake request.
  */
 public class GridGgfsHandshakeRequest extends GridGgfsMessage {
+    /** Expected Grid name. */
+    private String gridName;
+
+    /** Expected GGFS name. */
+    private String ggfsName;
+
     /** Logger directory. */
     private String logDir;
 
@@ -29,6 +37,34 @@ public class GridGgfsHandshakeRequest extends GridGgfsMessage {
     }
 
     /**
+     * @return Grid name.
+     */
+    public String gridName() {
+        return gridName;
+    }
+
+    /**
+     * @param gridName Grid name.
+     */
+    public void gridName(String gridName) {
+        this.gridName = gridName;
+    }
+
+    /**
+     * @return GGFS name.
+     */
+    public String ggfsName() {
+        return ggfsName;
+    }
+
+    /**
+     * @param ggfsName GGFS name.
+     */
+    public void ggfsName(String ggfsName) {
+        this.ggfsName = ggfsName;
+    }
+
+    /**
      * @return Log directory.
      */
     public String logDirectory() {
@@ -40,5 +76,10 @@ public class GridGgfsHandshakeRequest extends GridGgfsMessage {
      */
     public void logDirectory(String logDir) {
         this.logDir = logDir;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridGgfsHandshakeRequest.class, this);
     }
 }

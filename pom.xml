@@ -31,6 +31,8 @@
     </parent>
 
     <modules>
+        <module>modules/extdata/p2p</module>
+        <module>modules/extdata/uri</module>
         <module>modules/core</module>
         <module>modules/hadoop</module>
         <module>modules/hadoop-client</module>
@@ -74,14 +76,6 @@
             <modules>
                 <module>modules/scalar</module>
                 <module>modules/visor-console</module>
-            </modules>
-        </profile>
-
-        <profile>
-            <id>extdata</id>
-            <modules>
-                <module>modules/extdata/p2p</module>
-                <module>modules/extdata/uri</module>
             </modules>
         </profile>
 

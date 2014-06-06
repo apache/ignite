@@ -17,7 +17,6 @@ import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.mapreduce.lib.output.*;
 import org.apache.hadoop.mapreduce.protocol.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -45,10 +44,12 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     private static final String JOB_NAME = "myJob";
 
     /** Map lock file. */
-    private static File mapLockFile = new File(System.getProperty("java.io.tmpdir"), "gg-lock-map.file");
+    private static File mapLockFile = new File(U.isWindows() ? System.getProperty("java.io.tmpdir") : "/tmp",
+        "gg-lock-map.file");
 
     /** Reduce lock file. */
-    private static File reduceLockFile = new File(System.getProperty("java.io.tmpdir"), "gg-lock-reduce.file");
+    private static File reduceLockFile = new File(U.isWindows() ? System.getProperty("java.io.tmpdir") : "/tmp",
+        "gg-lock-reduce.file");
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -103,15 +104,6 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         reduceLockFile.delete();
 
         super.afterTest();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridHadoopConfiguration hadoopConfiguration(String gridName) {
-        GridHadoopConfiguration cfg = super.hadoopConfiguration(gridName);
-
-        cfg.setExternalExecution(true);
-
-        return cfg;
     }
 
     /**
@@ -332,7 +324,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         conf.set(MRConfig.FRAMEWORK_NAME, GridHadoopClientProtocol.FRAMEWORK_NAME);
         conf.set(MRConfig.MASTER_ADDRESS, "127.0.0.1:" + port);
 
-        conf.set("fs.default.name", "ggfs:///");
+        conf.set("fs.default.name", "ggfs://:" + getTestGridName(0) + "@/");
         conf.set("fs.ggfs.impl", "org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem");
         conf.set("fs.AbstractFileSystem.ggfs.impl", "org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem");
 

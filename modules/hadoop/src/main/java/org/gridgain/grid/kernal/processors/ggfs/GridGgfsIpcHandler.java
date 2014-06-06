@@ -193,8 +193,17 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
      *
      * @param req Handshake request.
      * @return Response message.
+     * @throws GridException In case of handshake failure.
      */
-    private GridGgfsMessage processHandshakeRequest(GridGgfsHandshakeRequest req) {
+    private GridGgfsMessage processHandshakeRequest(GridGgfsHandshakeRequest req) throws GridException {
+        if (!F.eq(ctx.gridName(), req.gridName()))
+            throw new GridException("Failed to perform handshake because actual Grid name differs from expected " +
+                "[expected=" + req.gridName() + ", actual=" + ctx.gridName() + ']');
+
+        if (!F.eq(ggfs.name(), req.ggfsName()))
+            throw new GridException("Failed to perform handshake because actual GGFS name differs from expected " +
+                "[expected=" + req.ggfsName() + ", actual=" + ggfs.name() + ']');
+
         GridGgfsControlResponse res = new GridGgfsControlResponse();
 
         ggfs.clientLogDirectory(req.logDirectory());

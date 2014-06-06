@@ -266,10 +266,12 @@ public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ConstantConditions")
     public void testLogDirectory() throws Exception {
         startUp();
 
-        assertEquals(Paths.get(U.getGridGainHome()).normalize().toString(), ggfs.clientLogDirectory());
+        assertEquals(Paths.get(U.getGridGainHome()).normalize().toString(),
+            ggfs.clientLogDirectory());
     }
 
     /**
@@ -284,11 +286,11 @@ public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridCommonAbstr
         fsCfg.addResource(U.resolveGridGainUrl("modules/core/src/test/config/hadoop/core-site-loopback.xml"));
 
         if (logging)
-            fsCfg.setBoolean(String.format(PARAM_GGFS_LOG_ENABLED, ""), logging);
+            fsCfg.setBoolean(String.format(PARAM_GGFS_LOG_ENABLED, "ggfs:ggfs-grid@"), logging);
 
-        fsCfg.setStrings(String.format(PARAM_GGFS_LOG_DIR, ""), U.getGridGainHome());
+        fsCfg.setStrings(String.format(PARAM_GGFS_LOG_DIR, "ggfs:ggfs-grid@"), U.getGridGainHome());
 
-        return (GridGgfsHadoopFileSystem)FileSystem.get(new URI("ggfs:///"), fsCfg);
+        return (GridGgfsHadoopFileSystem)FileSystem.get(new URI("ggfs://ggfs:ggfs-grid@/"), fsCfg);
     }
 
     /**

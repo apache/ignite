@@ -175,11 +175,14 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
     }
 
     /**
-     * Validates hadoop configuration for correctness.
+     * Validates Grid and Hadoop configuration for correctness.
      *
-     * @param cfg Hadoop configuration.
+     * @param hadoopCfg Hadoop configuration.
+     * @throws GridException If failed.
      */
-    private void validate(GridHadoopConfiguration cfg) {
-
+    private void validate(GridHadoopConfiguration hadoopCfg) throws GridException {
+        if (ctx.config().isPeerClassLoadingEnabled())
+            throw new GridException("Peer class loading cannot be used with Hadoop (disable it using " +
+                "GridConfiguration.setPeerClassLoadingEnabled()).");
     }
 }
