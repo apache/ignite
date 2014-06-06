@@ -16,7 +16,6 @@ import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.dr.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.managers.*;
-import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.grid.kernal.managers.collision.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -27,6 +26,7 @@ import org.gridgain.grid.kernal.managers.failover.*;
 import org.gridgain.grid.kernal.managers.indexing.*;
 import org.gridgain.grid.kernal.managers.loadbalancer.*;
 import org.gridgain.grid.kernal.managers.securesession.*;
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.managers.swapspace.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.affinity.*;
@@ -60,7 +60,6 @@ import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.spi.authentication.noop.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
@@ -211,7 +210,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      * @param springCtx Optional Spring application context.
      */
     public GridKernal(@Nullable ApplicationContext springCtx) {
-        super(null, null, (GridPredicate<GridNode>)null);
+        super(null, null, null, (GridPredicate<GridNode>)null);
 
         this.springCtx = springCtx;
 
@@ -2992,7 +2991,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         ctx.gateway().readLock();
 
         try {
-            return new GridProjectionAdapter(this, ctx, Collections.singleton(cfg.getNodeId()));
+            return new GridProjectionAdapter(this, ctx, null, Collections.singleton(cfg.getNodeId()));
         }
         finally {
             ctx.gateway().readUnlock();

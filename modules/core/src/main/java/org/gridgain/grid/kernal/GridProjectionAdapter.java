@@ -27,7 +27,7 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 /**
  *
  */
-public class GridProjectionAdapter extends GridMetadataAwareAdapter implements GridProjection, Externalizable {
+public class GridProjectionAdapter extends GridMetadataAwareAdapter implements GridProjectionEx, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -50,6 +50,9 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     private String gridName;
 
     /** */
+    private UUID subjId;
+
+    /** */
     private GridPredicate<GridNode> p;
 
     /** */
@@ -68,12 +71,13 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
      * @param p Predicate.
      */
     protected GridProjectionAdapter(@Nullable GridProjection parent, @Nullable GridKernalContext ctx,
-        @Nullable GridPredicate<GridNode> p) {
+        @Nullable UUID subjId, @Nullable GridPredicate<GridNode> p) {
         this.parent = parent;
 
         if (ctx != null)
             setKernalContext(ctx);
 
+        this.subjId = subjId;
         this.p = p;
 
         ids = null;
@@ -85,7 +89,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
      * @param ids Node IDs.
      */
     protected GridProjectionAdapter(@Nullable GridProjection parent, @Nullable GridKernalContext ctx,
-        Set<UUID> ids) {
+        @Nullable UUID subjId, Set<UUID> ids) {
         this.parent = parent;
 
         if (ctx != null)
@@ -93,6 +97,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
 
         assert ids != null;
 
+        this.subjId = subjId;
         this.ids = ids;
 
         p = F.nodeForNodeIds(ids);
@@ -161,7 +166,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
         if (compute == null) {
             assert ctx != null;
 
-            compute = new GridComputeImpl(ctx, this);
+            compute = new GridComputeImpl(ctx, this, subjId);
         }
 
         return compute;
@@ -278,7 +283,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
         guard();
 
         try {
-            return new GridProjectionAdapter(this, ctx, this.p != null ? F.and(p, this.p) : p);
+            return new GridProjectionAdapter(this, ctx, subjId, this.p != null ? F.and(p, this.p) : p);
         }
         finally {
             unguard();
@@ -314,7 +319,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
                     nodeIds.add(node.id());
             }
 
-            return new GridProjectionAdapter(this, ctx, nodeIds);
+            return new GridProjectionAdapter(this, ctx, subjId, nodeIds);
         }
         finally {
             unguard();
@@ -334,7 +339,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
                 if (contains(n))
                     nodeIds.add(n.id());
 
-            return new GridProjectionAdapter(this, ctx, nodeIds);
+            return new GridProjectionAdapter(this, ctx, subjId, nodeIds);
         }
         finally {
             unguard();
@@ -364,7 +369,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
                     nodeIds.add(id);
             }
 
-            return new GridProjectionAdapter(this, ctx, nodeIds);
+            return new GridProjectionAdapter(this, ctx, subjId, nodeIds);
         }
         finally {
             unguard();
@@ -385,7 +390,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
                     nodeIds.add(id);
             }
 
-            return new GridProjectionAdapter(this, ctx, nodeIds);
+            return new GridProjectionAdapter(this, ctx, subjId, nodeIds);
         }
         finally {
             unguard();
@@ -416,7 +421,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
                         nodeIds.add(id);
                 }
 
-                return new GridProjectionAdapter(this, ctx, nodeIds);
+                return new GridProjectionAdapter(this, ctx, subjId, nodeIds);
             }
             finally {
                 unguard();
@@ -449,7 +454,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
                         nodeIds.add(id);
                 }
 
-                return new GridProjectionAdapter(this, ctx, nodeIds);
+                return new GridProjectionAdapter(this, ctx, subjId, nodeIds);
             }
             finally {
                 unguard();
@@ -490,6 +495,21 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
         return ids != null ? forNodeId(F.rand(ids)) : forNode(F.rand(nodes()));
     }
 
+    /** {@inheritDoc} */
+    @Override public GridProjectionEx forSubjectId(UUID subjId) {
+        assert subjId != null;
+
+        guard();
+
+        try {
+            return ids != null ? new GridProjectionAdapter(this, ctx, subjId, ids) :
+                new GridProjectionAdapter(this, ctx, subjId, p);
+        }
+        finally {
+            unguard();
+        }
+    }
+
     /**
      * @param n Node.
      * @return Whether node belongs to this projection.
@@ -519,6 +539,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, gridName);
+        U.writeUuid(out, subjId);
 
         out.writeBoolean(ids != null);
 
@@ -531,6 +552,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         gridName = U.readString(in);
+        subjId = U.readUuid(in);
 
         if (in.readBoolean())
             ids = (Set<UUID>)in.readObject();
@@ -548,8 +570,8 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
         try {
             GridKernal g = GridGainEx.gridx(gridName);
 
-            return ids != null ? new GridProjectionAdapter(g, g.context(), ids) :
-                p != null ? new GridProjectionAdapter(g, g.context(), p) : g;
+            return ids != null ? new GridProjectionAdapter(g, g.context(), subjId, ids) :
+                p != null ? new GridProjectionAdapter(g, g.context(), subjId, p) : g;
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

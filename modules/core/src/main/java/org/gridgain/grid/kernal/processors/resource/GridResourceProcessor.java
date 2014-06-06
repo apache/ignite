@@ -70,7 +70,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         GridUserResource.class);
 
     /** Grid instance injector. */
-    private GridResourceBasicInjector<Grid> gridInjector;
+    private GridResourceBasicInjector<GridEx> gridInjector;
 
     /** GridGain home folder injector. */
     private GridResourceBasicInjector<String> ggHomeInjector;
