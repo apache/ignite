@@ -48,6 +48,11 @@ public class GridHadoopUtils {
     public static GridHadoopJobStatus status(GridHadoopJobMetadata meta) {
         GridHadoopDefaultJobInfo jobInfo = (GridHadoopDefaultJobInfo)meta.jobInfo();
 
+         if (meta.failCause() != null) {
+             U.debug("FAILURE: " + meta.failCause());
+             meta.failCause().printStackTrace();
+         }
+
         return new GridHadoopJobStatus(
             meta.jobId(),
             meta.phase() == PHASE_COMPLETE ? meta.failCause() == null ? STATE_SUCCEEDED : STATE_FAILED : STATE_RUNNING,
