@@ -22,7 +22,7 @@ import java.io.*;
 /**
  * Hadoop output collector.
  */
-public class GridHadoopOutputCollector implements OutputCollector {
+public class GridHadoopV1OutputCollector implements OutputCollector {
     /** Job configuration. */
     private final JobConf jobConf;
 
@@ -43,7 +43,7 @@ public class GridHadoopOutputCollector implements OutputCollector {
      * @param fileName File name.
      * @throws IOException In case of IO exception.
      */
-    GridHadoopOutputCollector(JobConf jobConf, GridHadoopTaskContext taskCtx, boolean directWrite,
+    GridHadoopV1OutputCollector(JobConf jobConf, GridHadoopTaskContext taskCtx, boolean directWrite,
         @Nullable String fileName, TaskAttemptID attempt) throws IOException {
         this.jobConf = jobConf;
         this.taskCtx = taskCtx;
@@ -62,7 +62,7 @@ public class GridHadoopOutputCollector implements OutputCollector {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void   collect(Object key, Object val) throws IOException {
+    @Override public void collect(Object key, Object val) throws IOException {
         if (writer != null)
             writer.write(key, val);
         else {
@@ -86,12 +86,41 @@ public class GridHadoopOutputCollector implements OutputCollector {
     }
 
     /**
-     * Commit data.
+     * Setup task.
      *
-     * @throws IOException In case of IO exception.
+     * @throws IOException If failed.
+     */
+    public void setup() throws IOException {
+        if (writer != null)
+            jobConf.getOutputCommitter().setupTask(new TaskAttemptContextImpl(jobConf, attempt));
+    }
+
+    /**
+     * Commit task.
+     *
+     * @throws IOException In failed.
      */
     public void commit() throws IOException {
-        if (writer != null)
-            jobConf.getOutputCommitter().commitTask(new TaskAttemptContextImpl(jobConf, attempt));
+        if (writer != null) {
+            OutputCommitter outputCommitter = jobConf.getOutputCommitter();
+
+            TaskAttemptContextImpl taskCtx = new TaskAttemptContextImpl(jobConf, attempt);
+
+            if (outputCommitter.needsTaskCommit(taskCtx))
+                outputCommitter.commitTask(taskCtx);
+        }
+    }
+
+    /**
+     * Abort task.
+     */
+    public void abort() {
+        try {
+            if (writer != null)
+                jobConf.getOutputCommitter().abortTask(new TaskAttemptContextImpl(jobConf, attempt));
+        }
+        catch (IOException ignore) {
+            // No-op.
+        }
     }
 }

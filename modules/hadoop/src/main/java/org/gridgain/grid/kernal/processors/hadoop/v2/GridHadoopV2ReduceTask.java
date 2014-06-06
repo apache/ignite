@@ -15,8 +15,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.io.*;
-
 /**
  * Hadoop reduce task implementation for v2 API.
  */
@@ -40,10 +38,13 @@ public class GridHadoopV2ReduceTask extends GridHadoopV2Task {
     @SuppressWarnings({"ConstantConditions", "unchecked"})
     @Override public void run0(GridHadoopV2Job jobImpl, JobContext jobCtx, GridHadoopTaskContext taskCtx)
         throws GridException {
+        OutputFormat outputFormat = null;
+        Exception err = null;
+
         try {
             Reducer reducer = U.newInstance(reduce ? jobCtx.getReducerClass() : jobCtx.getCombinerClass());
 
-            OutputFormat outputFormat = reduce || !jobImpl.hasReducer() ? prepareWriter(jobCtx) : null;
+            outputFormat = reduce || !jobImpl.hasReducer() ? prepareWriter(jobCtx) : null;
 
             try {
                 reducer.run(new WrappedReducer().getReducerContext(hadoopContext()));
@@ -54,13 +55,21 @@ public class GridHadoopV2ReduceTask extends GridHadoopV2Task {
 
             commit(outputFormat);
         }
-        catch (ClassNotFoundException | IOException e) {
-            throw new GridException(e);
-        }
         catch (InterruptedException e) {
+            err = e;
+
             Thread.currentThread().interrupt();
 
             throw new GridInterruptedException(e);
+        }
+        catch (Exception e) {
+            err = e;
+
+            throw new GridException(e);
+        }
+        finally {
+            if (err != null)
+                abort(outputFormat);
         }
     }
 }

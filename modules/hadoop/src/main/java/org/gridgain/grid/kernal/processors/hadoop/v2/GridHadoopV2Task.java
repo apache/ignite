@@ -76,6 +76,8 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
 
             assert outputFormat != null;
 
+            outputFormat.getOutputCommitter(hadoopCtx).setupTask(hadoopCtx);
+
             RecordWriter writer = outputFormat.getRecordWriter(hadoopCtx);
 
             hadoopCtx.writer(writer);
@@ -101,24 +103,60 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
     }
 
     /**
-     * Commit data.
+     * Setup task.
+     *
+     * @param outputFormat Output format.
+     * @throws IOException In case of IO exception.
+     * @throws InterruptedException In case of interrupt.
+     */
+    protected void setup(@Nullable OutputFormat outputFormat) throws IOException, InterruptedException {
+        if (hadoopCtx.writer() != null) {
+            assert outputFormat != null;
+
+            outputFormat.getOutputCommitter(hadoopCtx).setupTask(hadoopCtx);
+        }
+    }
+
+    /**
+     * Commit task.
      *
      * @param outputFormat Output format.
      * @throws GridException In case of Grid exception.
      * @throws IOException In case of IO exception.
      * @throws InterruptedException In case of interrupt.
      */
-    protected void commit(@Nullable OutputFormat outputFormat)
-        throws GridException, IOException, InterruptedException {
+    protected void commit(@Nullable OutputFormat outputFormat) throws GridException, IOException, InterruptedException {
         if (hadoopCtx.writer() != null) {
             assert outputFormat != null;
 
             OutputCommitter outputCommitter = outputFormat.getOutputCommitter(hadoopCtx);
 
-            outputCommitter.commitTask(hadoopCtx);
+            if (outputCommitter.needsTaskCommit(hadoopCtx))
+                outputCommitter.commitTask(hadoopCtx);
         }
         else
             assert outputFormat == null;
+    }
+
+    /**
+     * Abort task.
+     *
+     * @param outputFormat Output format.
+     */
+    protected void abort(@Nullable OutputFormat outputFormat) {
+        if (hadoopCtx.writer() != null) {
+            assert outputFormat != null;
+
+            try {
+                outputFormat.getOutputCommitter(hadoopCtx).abortTask(hadoopCtx);
+            }
+            catch (IOException ignore) {
+                // Ignore.
+            }
+            catch (InterruptedException ignore) {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     /** {@inheritDoc} */

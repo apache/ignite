@@ -17,8 +17,6 @@ import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.io.*;
-
 /**
  * Hadoop map task implementation for v1 API.
  */
@@ -63,9 +61,11 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
 
         Reporter reporter = Reporter.NULL;
 
+        GridHadoopV1OutputCollector collector = null;
+
         try {
-            GridHadoopOutputCollector collector = getCollector(jobConf, taskCtx, !jobImpl.hasCombinerOrReducer(),
-                    fileName(), jobImpl.attemptId(info()));
+            collector = collector(jobConf, taskCtx, !jobImpl.hasCombinerOrReducer(), fileName(),
+                jobImpl.attemptId(info()));
 
             RecordReader reader = inFormat.getRecordReader(nativeSplit, jobConf, reporter);
 
@@ -92,7 +92,10 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
 
             collector.commit();
         }
-        catch (IOException e) {
+        catch (Exception e) {
+            if (collector != null)
+                collector.abort();
+
             throw new GridException(e);
         }
     }
