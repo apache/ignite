@@ -150,7 +150,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             }
 
             try {
-                processNearAtomicUpdateResponse(ver, key, val, valBytes, res.nearTtl(), req.nodeId());
+                processNearAtomicUpdateResponse(ver, key, val, valBytes, res.nearTtl(), req.nodeId(), req.subjectId());
             }
             catch (GridException e) {
                 res.addFailedKey(key, new GridException("Failed to update key in near cache: " + key, e));
@@ -173,7 +173,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         @Nullable V val,
         @Nullable byte[] valBytes,
         Long ttl,
-        UUID nodeId
+        UUID nodeId,
+        UUID subjId
     ) throws GridException {
         try {
             while (true) {
@@ -207,7 +208,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         null,
                         false,
                         false,
-                        null); // TODO security
+                        subjId);
 
                     if (updRes.removeVersion() != null)
                         ctx.onDeferredDelete(entry, updRes.removeVersion());
@@ -300,7 +301,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             null,
                             false,
                             intercept,
-                            null); // TODO security
+                            req.subjectId());
 
                         if (updRes.removeVersion() != null)
                             ctx.onDeferredDelete(entry, updRes.removeVersion());
@@ -325,6 +326,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         boolean forcePrimary,
         boolean skipTx,
         @Nullable GridCacheEntryEx<K, V> entry,
+        @Nullable UUID subjId,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter
     ) {
         ctx.denyOnFlag(LOCAL);
@@ -333,7 +335,9 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
-        return loadAsync(null, keys, false, forcePrimary, filter);
+        subjId = ctx.subjectIdPerCall(subjId);
+
+        return loadAsync(null, keys, false, forcePrimary, filter, subjId);
     }
 
     /** {@inheritDoc} */

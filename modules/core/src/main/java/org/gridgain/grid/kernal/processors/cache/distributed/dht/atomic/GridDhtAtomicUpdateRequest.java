@@ -126,6 +126,10 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     @GridDirectVersion(2)
     private List<byte[]> nearTransformClosBytes;
 
+    /** Subject ID. */
+    @GridDirectVersion(3)
+    private UUID subjId;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -143,6 +147,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param topVer Topology version.
      * @param ttl Time to live.
      * @param forceTransformBackups Force transform backups flag.
+     * @param subjId Subject ID.
      */
     public GridDhtAtomicUpdateRequest(
         UUID nodeId,
@@ -151,7 +156,8 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         GridCacheWriteSynchronizationMode syncMode,
         long topVer,
         long ttl,
-        boolean forceTransformBackups
+        boolean forceTransformBackups,
+        UUID subjId
     ) {
         this.nodeId = nodeId;
         this.futVer = futVer;
@@ -160,6 +166,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         this.ttl = ttl;
         this.topVer = topVer;
         this.forceTransformBackups = forceTransformBackups;
+        this.subjId = subjId;
 
         keys = new ArrayList<>();
         keyBytes = new ArrayList<>();
@@ -285,6 +292,13 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      */
     public UUID nodeId() {
         return nodeId;
+    }
+
+    /**
+     * @return Subject ID.
+     */
+    public UUID subjectId() {
+        return subjId;
     }
 
     /**

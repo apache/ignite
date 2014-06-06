@@ -1100,6 +1100,27 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * Gets subject ID per call.
+     *
+     * @param subjId Optional already existing subject ID.
+     * @return Subject ID per call.
+     */
+    public UUID subjectIdPerCall(@Nullable UUID subjId) {
+        if (subjId != null)
+            return subjId;
+
+        GridCacheProjectionImpl<K, V> prj = projectionPerCall();
+
+        if (prj != null)
+            subjId = prj.subjectId();
+
+        if (subjId == null)
+            subjId = ctx.localNodeId();
+
+        return subjId;
+    }
+
+    /**
      *
      * @param flag Flag to check.
      * @return {@code true} if the given flag is set.

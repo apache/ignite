@@ -109,6 +109,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         boolean forcePrimary,
         boolean skipTx,
         @Nullable final GridCacheEntryEx<K, V> entry,
+        @Nullable UUID subjId,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         ctx.denyOnFlag(LOCAL);
@@ -127,7 +128,9 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             });
         }
 
-        return loadAsync(null, keys, false, forcePrimary, filter);
+        subjId = ctx.subjectIdPerCall(subjId);
+
+        return loadAsync(null, keys, false, forcePrimary, filter, subjId);
     }
 
     /**
@@ -140,7 +143,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
         assert tx != null;
 
-        GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx, keys, false, false, tx, filter);
+        GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx, keys, false, false, tx, filter, CU.subjectId(tx));
 
         // init() will register future for responses if it has remote mappings.
         fut.init();
@@ -644,6 +647,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation, long timeout, boolean invalidate,
         boolean syncCommit, boolean syncRollback, boolean swapEnabled, boolean storeEnabled, int txSize,
         @Nullable Object grpLockKey, boolean partLock) {
+        // Use null as subject ID for transactions if subject per call is not set.
         GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
 
         UUID subjId = prj == null ? null : prj.subjectId();

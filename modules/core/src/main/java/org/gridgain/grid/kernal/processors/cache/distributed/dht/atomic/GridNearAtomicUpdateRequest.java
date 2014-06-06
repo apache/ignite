@@ -105,6 +105,10 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     @GridDirectVersion(2)
     private boolean forceTransformBackups;
 
+    /** Subject ID. */
+    @GridDirectVersion(3)
+    private UUID subjId;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -137,7 +141,8 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         boolean retval,
         boolean forceTransformBackups,
         long ttl,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable UUID subjId
     ) {
         this.nodeId = nodeId;
         this.futVer = futVer;
@@ -151,6 +156,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         this.forceTransformBackups = forceTransformBackups;
         this.ttl = ttl;
         this.filter = filter;
+        this.subjId = subjId;
 
         keys = new ArrayList<>();
         vals = new ArrayList<>();
@@ -173,6 +179,13 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
      */
     public void nodeId(UUID nodeId) {
         this.nodeId = nodeId;
+    }
+
+    /**
+     * @return Subject ID.
+     */
+    public UUID subjectId() {
+        return subjId;
     }
 
     /**

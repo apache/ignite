@@ -411,7 +411,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * This method is used internally. Use
-     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, long, GridPredicate[])}
+     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, long, GridPredicate[], UUID)}
      * method instead to retrieve DHT value.
      *
      * @param keys {@inheritDoc}
@@ -425,9 +425,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         boolean forcePrimary,
         boolean skipTx,
         @Nullable GridCacheEntryEx<K, V> entry,
+        @Nullable UUID subjId,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
-        return getAllAsync(keys, null, /*don't check local tx. */false, filter);
+        return getAllAsync(keys, null, /*don't check local tx. */false, subjId, filter);
     }
 
     /** {@inheritDoc} */
@@ -446,9 +447,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param filter {@inheritDoc}
      * @return {@inheritDoc}
      */
-    GridFuture<Map<K, V>> getDhtAllAsync(@Nullable Collection<? extends K> keys,
+    GridFuture<Map<K, V>> getDhtAllAsync(@Nullable Collection<? extends K> keys, @Nullable UUID subjId,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
-        return getAllAsync(keys, null, /*don't check local tx. */false, filter);
+        return getAllAsync(keys, null, /*don't check local tx. */false, subjId, filter);
     }
 
     /**
@@ -461,10 +462,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @return DHT future.
      */
     public GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> getDhtAsync(UUID reader, long msgId,
-        LinkedHashMap<? extends K, Boolean> keys, boolean reload, long topVer,
+        LinkedHashMap<? extends K, Boolean> keys, boolean reload, long topVer, @Nullable UUID subjId,
         GridPredicate<GridCacheEntry<K, V>>[] filter) {
         GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx, msgId, reader, keys, reload, /*tx*/null,
-            topVer, filter);
+            topVer, filter, subjId);
 
         fut.init();
 
@@ -479,7 +480,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         assert isAffinityNode(cacheCfg);
 
         GridFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
-            getDhtAsync(nodeId, req.messageId(), req.keys(), req.reload(), req.topologyVersion(), req.filter());
+            getDhtAsync(nodeId, req.messageId(), req.keys(), req.reload(), req.topologyVersion(), req.subjectId(),
+                req.filter());
 
         fut.listenAsync(new CI1<GridFuture<Collection<GridCacheEntryInfo<K, V>>>>() {
             @Override public void apply(GridFuture<Collection<GridCacheEntryInfo<K, V>>> f) {

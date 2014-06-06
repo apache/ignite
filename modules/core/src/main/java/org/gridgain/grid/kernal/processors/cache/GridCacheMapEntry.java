@@ -608,7 +608,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable protected V readThrough(@Nullable GridCacheTxEx<K, V> tx, K key, boolean reload,
-        GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+        GridPredicate<GridCacheEntry<K, V>>[] filter, UUID subjId) throws GridException {
         return cctx.store().loadFromStore(tx, key);
     }
 
@@ -801,7 +801,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 }
             }
 
-            ret = readThrough(tx0, key, false, filter);
+            ret = readThrough(tx0, key, false, filter, subjId);
 
             loadedFromStore = true;
         }
@@ -873,7 +873,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         // Check before load.
         if (cctx.isAll(this, filter)) {
-            V ret = readThrough(null, key, true, filter);
+            V ret = readThrough(null, key, true, filter, null);
 
             boolean touch = false;
 
@@ -1289,7 +1289,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             old = needVal ? rawGetOrUnmarshalUnlocked() : val;
 
             if (needVal && old == null) {
-                old = readThrough(null, key, false, CU.<K, V>empty());
+                old = readThrough(null, key, false, CU.<K, V>empty(), subjId);
 
                 update(old, null, 0, 0, ver);
             }
@@ -1556,7 +1556,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             old = needVal ? rawGetOrUnmarshalUnlocked() : val;
 
             if (needVal && old == null) {
-                old = readThrough(null, key, false, CU.<K, V>empty());
+                old = readThrough(null, key, false, CU.<K, V>empty(), subjId);
 
                 update(old, null, 0, 0, ver);
 

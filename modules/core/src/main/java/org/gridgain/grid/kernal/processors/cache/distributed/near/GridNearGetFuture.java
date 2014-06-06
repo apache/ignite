@@ -80,6 +80,9 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     /** Remap count. */
     private AtomicInteger remapCnt = new AtomicInteger();
 
+    /** Subject ID. */
+    private UUID subjId;
+
     /**
      * Initializes max remap count.
      */
@@ -122,7 +125,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         boolean reload,
         boolean forcePrimary,
         @Nullable GridCacheTxLocalEx<K, V> tx,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filters
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filters,
+        @Nullable UUID subjId
     ) {
         super(cctx.kernalContext(), CU.<K, V>mapsReducer(keys.size()));
 
@@ -135,6 +139,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         this.forcePrimary = forcePrimary;
         this.filters = filters;
         this.tx = tx;
+        this.subjId = subjId;
 
         futId = GridUuid.randomUuid();
 
@@ -294,7 +299,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             // If this is the primary or backup node for the keys.
             if (n.isLocal()) {
                 final GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
-                    dht().getDhtAsync(n.id(), -1, mappedKeys, reload, topVer, filters);
+                    dht().getDhtAsync(n.id(), -1, mappedKeys, reload, topVer, subjId, filters);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -342,7 +347,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 MiniFuture fut = new MiniFuture(n, mappedKeys, saved, topVer);
 
                 GridCacheMessage<K, V> req = new GridNearGetRequest<>(futId, fut.futureId(), ver, mappedKeys,
-                    reload, topVer, filters);
+                    reload, topVer, filters, subjId);
 
                 add(fut); // Append new future.
 
@@ -386,7 +391,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 // First we peek into near cache.
                 if (isNear)
                     v = entry.innerGet(tx, /*swap*/false, /*read-through*/false, /*fail-fast*/true, /*unmarshal*/true,
-                        true/*metrics*/, true/*events*/, null, filters); // TODO security.
+                        true/*metrics*/, true/*events*/, subjId, filters);
 
                 GridNode primary = null;
 
@@ -401,7 +406,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                             boolean isNew = entry.isNewLocked() || !entry.valid(topVer);
 
                             v = entry.innerGet(tx, /*swap*/true, /*read-through*/false, /*fail-fast*/true,
-                                /*unmarshal*/true, /*update-metrics*/false, !isNear, null, filters); // TODO security.
+                                /*unmarshal*/true, /*update-metrics*/false, !isNear, subjId, filters);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null && isNew && entry.markObsoleteIfEmpty(ver))
@@ -548,7 +553,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                             info.ttl(),
                             info.expireTime(),
                             true,
-                            topVer);
+                            topVer,
+                            subjId);
                     }
                 }
                 catch (GridCacheEntryRemovedException ignore) {

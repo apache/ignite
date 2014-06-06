@@ -273,11 +273,16 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean forcePrimary,
         boolean skipTx,
         @Nullable final GridCacheEntryEx<K, V> entry,
+        @Nullable UUID subjId,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
+        subjId = ctx.subjectIdPerCall(subjId);
+
+        final UUID subjId0 = subjId;
+
         return asyncOp(new CO<GridFuture<Map<K, V>>>() {
             @Override public GridFuture<Map<K, V>> apply() {
-                return getAllAsync0(keys, false, forcePrimary, filter);
+                return getAllAsync0(keys, false, forcePrimary, filter, subjId0);
             }
         });
     }
@@ -603,6 +608,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     ) {
         ctx.checkSecurity(GridSecurityPermission.CACHE_PUT);
 
+        UUID subjId = ctx.subjectIdPerCall(null);
+
         final GridNearAtomicUpdateFuture<K, V> updateFut = new GridNearAtomicUpdateFuture<>(
             ctx,
             this,
@@ -617,7 +624,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             rawRetval,
             cached,
             ttl,
-            filter);
+            filter,
+            subjId);
 
         return asyncOp(new CO<GridFuture<Object>>() {
             @Override public GridFuture<Object> apply() {
@@ -648,7 +656,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         assert keys != null || drMap != null;
+
         ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
+
+        UUID subjId = ctx.subjectIdPerCall(null);
 
         final GridNearAtomicUpdateFuture<K, V> updateFut = new GridNearAtomicUpdateFuture<>(
             ctx,
@@ -663,7 +674,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             rawRetval,
             cached,
             0,
-            filter);
+            filter,
+            subjId);
 
         return asyncOp(new CO<GridFuture<Object>>() {
             @Override public GridFuture<Object> apply() {
@@ -684,7 +696,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @return Get future.
      */
     private GridFuture<Map<K, V>> getAllAsync0(@Nullable Collection<? extends K> keys, boolean reload,
-        boolean forcePrimary, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        boolean forcePrimary, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter, UUID subjId) {
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         if (F.isEmpty(keys))
@@ -713,7 +725,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             boolean isNew = entry.isNewLocked();
 
                             V v = entry.innerGet(null, /*swap*/true, /*read-through*/false, /*fail-fast*/true,
-                                /*unmarshal*/true, /**update-metrics*/true, true, null, filter); // TODO security
+                                /*unmarshal*/true, /**update-metrics*/true, true, subjId, filter);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null) {
@@ -763,8 +775,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         }
 
         // Either reload or not all values are available locally.
-        GridPartitionedGetFuture<K, V> fut = new GridPartitionedGetFuture<>(ctx, keys, reload, forcePrimary, null,
-            filter);
+        GridPartitionedGetFuture<K, V> fut = new GridPartitionedGetFuture<>(ctx, keys, reload, forcePrimary, filter,
+            subjId);
 
         fut.init();
 
@@ -1016,7 +1028,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         /*unmarshal*/true,
                         /*metrics*/true,
                         /*event*/true,
-                        null, // TODO security
+                        req.subjectId(),
                         CU.<K, V>empty());
 
                     GridClosure<V, V> transform = req.transformClosure(i);
@@ -1121,7 +1133,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             /*unmarshal*/true,
                             /*metrics*/true,
                             /*event*/true,
-                            null, // TODO security
+                            req.subjectId(),
                             CU.<K, V>empty());
 
                         updated = (V)ctx.config().getInterceptor().onBeforePut(entry.key(), old, updated);
@@ -1149,7 +1161,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             /*unmarshal*/true,
                             /*metrics*/true,
                             /*event*/true,
-                            null, // TODO security
+                            req.subjectId(),
                             CU.<K, V>empty());
 
                         GridBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
@@ -1299,7 +1311,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     newDrVer,
                     true,
                     intercept,
-                    null); // TODO security
+                    req.subjectId());
 
                 if (dhtFut == null && !F.isEmpty(filteredReaders)) {
                     dhtFut = createDhtFuture(ver, req, res, completionCb, true);
@@ -1528,7 +1540,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         null,
                         false,
                         false,
-                        null); // TODO security
+                        req.subjectId());
 
                     if (intercept) {
                         if (op == UPDATE)
@@ -1818,7 +1830,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             false,
             null,
             req.ttl(),
-            req.filter());
+            req.filter(),
+            req.subjectId());
 
         updateFut.map();
     }
@@ -1979,7 +1992,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             req.drVersion(i),
                             false,
                             intercept,
-                            null); // TODO security
+                            req.subjectId());
 
                         if (updRes.removeVersion() != null)
                             ctx.onDeferredDelete(entry, updRes.removeVersion());
