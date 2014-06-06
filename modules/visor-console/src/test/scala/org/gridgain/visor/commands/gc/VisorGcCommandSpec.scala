@@ -11,20 +11,19 @@
 
 package org.gridgain.visor.commands.gc
 
-import org.scalatest._
-import matchers._
 import org.gridgain.visor._
-import VisorGcCommand._
-import commands.top.VisorTopologyCommand._
+import org.gridgain.visor.commands.gc.VisorGcCommand._
+import org.gridgain.visor.commands.top.VisorTopologyCommand._
+import org.scalatest._
 
 /**
  * Unit test for 'gc' command.
  */
-class VisorGcCommandSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterAll {
+class VisorGcCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     behavior of "A 'gc' visor command"
 
     override def beforeAll() {
-        visor.open("-d", false)
+        visor.open("-d")
 
         visor.top()
     }
