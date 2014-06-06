@@ -58,8 +58,8 @@ public abstract class GridHadoopV1Task extends GridHadoopTask {
      * @return Collector.
      * @throws IOException In case of IO exception.
      */
-    protected GridHadoopOutputCollector getCollector(JobConf jobConf, GridHadoopTaskContext taskCtx, boolean directWrite,
-                                                   @Nullable String fileName, TaskAttemptID attempt) throws IOException {
+    protected GridHadoopOutputCollector getCollector(JobConf jobConf, GridHadoopTaskContext taskCtx,
+        boolean directWrite, @Nullable String fileName, TaskAttemptID attempt) throws IOException {
         return new GridHadoopOutputCollector(jobConf, taskCtx, directWrite, fileName, attempt) {
             /** {@inheritDoc} */
             @Override public void collect(Object key, Object val) throws IOException {

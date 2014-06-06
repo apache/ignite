@@ -17,35 +17,28 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * Hadoop cleanup task (commits or aborts job).
+ * Hadoop setup task (prepares job).
  */
-public class GridHadoopV2CleanupTask extends GridHadoopV2Task {
-    /** Abort flag. */
-    private boolean abort;
-
+public class GridHadoopV2SetupTask extends GridHadoopV2Task {
     /**
-     * @param taskInfo Task info.
-     * @param abort Abort flag.
+     * Constructor.
+     *
+     * @param taskInfo task info.
      */
-    public GridHadoopV2CleanupTask(GridHadoopTaskInfo taskInfo, boolean abort) {
+    public GridHadoopV2SetupTask(GridHadoopTaskInfo taskInfo) {
         super(taskInfo);
-
-        this.abort = abort;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
-    @Override public void run0(GridHadoopV2Job jobImpl, JobContext jobCtx, GridHadoopTaskContext taskCtx)
+    @Override protected void run0(GridHadoopV2Job job, JobContext jobCtx, GridHadoopTaskContext taskCtx)
         throws GridException {
         try {
             OutputFormat outputFormat = U.newInstance(jobCtx.getOutputFormatClass());
 
             OutputCommitter committer = outputFormat.getOutputCommitter(hadoopContext());
 
-            if (abort)
-                committer.abortJob(jobCtx, JobStatus.State.FAILED);
-            else
-                committer.commitJob(jobCtx);
+            committer.setupJob(jobCtx);
         }
         catch (ClassNotFoundException | IOException e) {
             throw new GridException(e);

@@ -33,13 +33,26 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
         super(taskInfo);
     }
 
-    /**
-     * Set hadoop context.
-     * @param ctx Hadoop context.
-     */
-    protected void hadoopContext(GridHadoopV2Context ctx) {
-        hadoopCtx = ctx;
+    /** {@inheritDoc} */
+    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
+        GridHadoopV2Job jobImpl = (GridHadoopV2Job)taskCtx.job();
+
+        JobContext jobCtx = jobImpl.hadoopJobContext();
+
+        hadoopCtx = new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx, jobImpl.attemptId(info()));
+
+        run0(jobImpl, jobCtx, taskCtx);
     }
+
+    /**
+     * Internal task routine.
+     *
+     * @param job Job.
+     * @param taskCtx Task context.
+     * @throws GridException
+     */
+    protected abstract void run0(GridHadoopV2Job job, JobContext jobCtx, GridHadoopTaskContext taskCtx)
+        throws GridException;
 
     /**
      * @return hadoop context.

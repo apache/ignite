@@ -32,11 +32,8 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
-        GridHadoopV2Job jobImpl = (GridHadoopV2Job)taskCtx.job();
-
-        JobContext jobCtx = jobImpl.hadoopJobContext();
-
+    @Override public void run0(GridHadoopV2Job jobImpl, JobContext jobCtx, GridHadoopTaskContext taskCtx)
+        throws GridException {
         Mapper mapper;
         InputFormat inFormat;
 
@@ -47,8 +44,6 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
         catch (ClassNotFoundException e) {
             throw new GridException(e);
         }
-
-        hadoopContext(new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx, jobImpl.attemptId(info())));
 
         GridHadoopInputSplit split = info().inputSplit();
 

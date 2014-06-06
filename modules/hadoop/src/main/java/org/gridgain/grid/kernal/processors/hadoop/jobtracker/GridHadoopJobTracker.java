@@ -161,6 +161,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param info Job info.
      * @return Job completion future.
      */
+    @SuppressWarnings("unchecked")
     public GridFuture<GridHadoopJobId> submit(GridHadoopJobId jobId, GridHadoopJobInfo info) {
         if (!busyLock.tryReadLock()) {
             return new GridFinishedFutureEx<>(new GridException("Failed to execute map-reduce job " +
@@ -308,6 +309,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param info Task info.
      * @param status Task status.
      */
+    @SuppressWarnings({"ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
     public void onTaskFinished(GridHadoopTaskInfo info, GridHadoopTaskStatus status) {
         if (!busyLock.tryReadLock())
             return;
@@ -389,6 +391,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param plan Map-reduce plan.
      * @return Collection of all input splits that should be processed.
      */
+    @SuppressWarnings("ConstantConditions")
     private Collection<GridHadoopInputSplit> allSplits(GridHadoopMapReducePlan plan) {
         Collection<GridHadoopInputSplit> res = new HashSet<>();
 
@@ -418,9 +421,14 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      *
      * @param evt Discovery event.
      */
+    @SuppressWarnings("ConstantConditions")
     private void processNodeLeft(GridDiscoveryEvent evt) {
         if (log.isDebugEnabled())
             log.debug("Processing discovery event [locNodeId=" + ctx.localNodeId() + ", evt=" + evt + ']');
+
+        ctx.localNodeId()
+
+//        evt.eventNode().order()
 
         // Check only if this node is responsible for job status updates.
         if (ctx.jobUpdateLeader()) {
@@ -431,7 +439,10 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                     GridHadoopJobPhase phase = meta.phase();
 
-                    if (phase == PHASE_MAP || phase == PHASE_REDUCE) {
+                    if (phase == PHASE_SETUP) {
+                        //
+                    }
+                    else if (phase == PHASE_MAP || phase == PHASE_REDUCE) {
                         // Must check all nodes, even that are not event node ID due to
                         // multiple node failure possibility.
                         Collection<GridHadoopInputSplit> cancelSplits = null;
@@ -464,8 +475,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         }
 
                         if (cancelSplits != null || cancelReducers != null)
-                            jobMetaPrj.transform(meta.jobId(), new CancelJobClosure(new GridException("One or more nodes " +
-                                "participating in map-reduce job execution failed."), cancelSplits, cancelReducers));
+                            jobMetaPrj.transform(meta.jobId(), new CancelJobClosure(new GridException("One or " +
+                                "more nodes participating in map-reduce job execution failed."), cancelSplits,
+                                cancelReducers));
                     }
                 }
                 catch (GridException e) {
@@ -606,6 +618,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     if (log.isDebugEnabled())
                         log.debug("Job execution is complete, will remove local state from active jobs " +
                             "[jobId=" + jobId + ", meta=" + meta +
+                            ", setupTime=" + meta.setupTime() +
                             ", mapTime=" + meta.mapTime() +
                             ", reduceTime=" + meta.reduceTime() +
                             ", totalTime=" + meta.totalTime() + ']');
