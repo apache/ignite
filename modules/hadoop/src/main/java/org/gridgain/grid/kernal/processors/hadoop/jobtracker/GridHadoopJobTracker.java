@@ -330,6 +330,12 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 "Missing local state for finished task [info=" + info + ", status=" + status + ']';
 
             switch (info.type()) {
+                case SETUP: {
+                    state.onSetupFinished(info, status);
+
+                    break;
+                }
+
                 case MAP: {
                     state.onMapFinished(info, status);
 
@@ -445,8 +451,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         // Failover setup task.
                         GridHadoopJob job = ctx.jobFactory().createJob(jobId, meta.jobInfo());
 
-                        ctx.taskExecutor().run(job, Collections.singleton(new GridHadoopTaskInfo(ctx.localNodeId(),
-                            GridHadoopTaskType.SETUP, job.id(), 0, 0, null)));
+                        ctx.taskExecutor().run(job, setupTask(job));
                     }
                     else if (phase == PHASE_MAP || phase == PHASE_REDUCE) {
                         // Must check all nodes, even that are not event node ID due to
@@ -529,6 +534,13 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             }
 
             switch (meta.phase()) {
+                case PHASE_SETUP: {
+                    if (ctx.jobUpdateLeader())
+                        ctx.taskExecutor().run(job, setupTask(job));
+
+                    break;
+                }
+
                 case PHASE_MAP: {
                     // Check if we should initiate new task on local node.
                     Collection<GridHadoopTaskInfo> tasks = mapperTasks(plan.mappers(locNodeId), job, meta);
@@ -653,6 +665,16 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     assert false;
             }
         }
+    }
+
+    /**
+     * Creates setup task based on job information.
+     *
+     * @param job Job instance.
+     * @return Setup task wrapped in collection.
+     */
+    private Collection<GridHadoopTaskInfo> setupTask(GridHadoopJob job) {
+        return Collections.singleton(new GridHadoopTaskInfo(ctx.localNodeId(), SETUP, job.id(), 0, 0, null));
     }
 
     /**
@@ -907,6 +929,19 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
          * @param taskInfo Task info.
          * @param status Task status.
          */
+        private void onSetupFinished(final GridHadoopTaskInfo taskInfo, GridHadoopTaskStatus status) {
+            final GridHadoopJobId jobId = taskInfo.jobId();
+
+            if (status.state() == FAILED || status.state() == CRASHED)
+                transform(jobId, new CancelJobClosure(status.failCause()));
+            else
+                transform(jobId, new UpdatePhaseClosure(PHASE_MAP));
+        }
+
+        /**
+         * @param taskInfo Task info.
+         * @param status Task status.
+         */
         private void onMapFinished(final GridHadoopTaskInfo taskInfo, GridHadoopTaskStatus status) {
             final GridHadoopJobId jobId = taskInfo.jobId();
 
@@ -1048,7 +1083,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             cp.phase(phase);
 
-            if (phase == PHASE_COMPLETE)
+            if (phase == PHASE_MAP)
+                cp.setupCompleteTimestamp(System.currentTimeMillis());
+            else if (phase == PHASE_COMPLETE)
                 cp.completeTimestamp(System.currentTimeMillis());
 
             return cp;
