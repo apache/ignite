@@ -451,7 +451,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         // Failover setup task.
                         GridHadoopJob job = ctx.jobFactory().createJob(jobId, meta.jobInfo());
 
-                        ctx.taskExecutor().run(job, setupTask(job));
+                        ctx.taskExecutor().run(job, setupTask(job, meta));
                     }
                     else if (phase == PHASE_MAP || phase == PHASE_REDUCE) {
                         // Must check all nodes, even that are not event node ID due to
@@ -536,7 +536,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             switch (meta.phase()) {
                 case PHASE_SETUP: {
                     if (ctx.jobUpdateLeader())
-                        ctx.taskExecutor().run(job, setupTask(job));
+                        ctx.taskExecutor().run(job, setupTask(job, meta));
 
                     break;
                 }
@@ -671,9 +671,13 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * Creates setup task based on job information.
      *
      * @param job Job instance.
+     * @param meta Job metadata.
      * @return Setup task wrapped in collection.
      */
-    private Collection<GridHadoopTaskInfo> setupTask(GridHadoopJob job) {
+    private Collection<GridHadoopTaskInfo> setupTask(GridHadoopJob job, GridHadoopJobMetadata meta) {
+        if (!activeJobs.containsKey(job.id()))
+            initState(job, meta);
+
         return Collections.singleton(new GridHadoopTaskInfo(ctx.localNodeId(), SETUP, job.id(), 0, 0, null));
     }
 

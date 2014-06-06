@@ -178,6 +178,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override public void run(final GridHadoopJob job, final Collection<GridHadoopTaskInfo> tasks) {
         if (!busyLock.tryReadLock()) {
             if (log.isDebugEnabled())
@@ -191,7 +192,8 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
             GridHadoopTaskType taskType = F.first(tasks).type();
 
-            if (taskType == GridHadoopTaskType.ABORT || taskType == GridHadoopTaskType.COMMIT) {
+            if (taskType == GridHadoopTaskType.SETUP || taskType == GridHadoopTaskType.ABORT ||
+                taskType == GridHadoopTaskType.COMMIT) {
                 if (proc == null || proc.terminated()) {
                     runningProcsByJobId.remove(job.id(), proc);
 
@@ -199,12 +201,12 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                     proc = startProcess(job, null);
 
                     if (log.isDebugEnabled())
-                        log.debug("Starting new process for finalizing task [jobId=" + job.id() +
+                        log.debug("Starting new process for maintenance task [jobId=" + job.id() +
                             ", proc=" + proc + ", taskType=" + taskType + ']');
                 }
             }
             else
-                assert proc != null : "Missing started process for task execution request: " + job.id();
+                assert proc != null : "Missing started process for task execution request: " + job.id() + ", tasks=" + tasks;
 
             final HadoopProcess proc0 = proc;
 
