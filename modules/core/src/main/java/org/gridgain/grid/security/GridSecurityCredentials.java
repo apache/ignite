@@ -37,6 +37,7 @@ import java.io.*;
  * specifying {@link #setUserObject(Object) userObject} as well, which can be used
  * to pass in any additional information required for authentication.
  */
+// TODO: 8491 (need be portable to make client security tests pass).
 public class GridSecurityCredentials implements Externalizable {
     /** Login. */
     private String login;

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid;
 
-import org.gridgain.client.*;
 import org.gridgain.client.ssl.*;
+import org.gridgain.grid.marshaller.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

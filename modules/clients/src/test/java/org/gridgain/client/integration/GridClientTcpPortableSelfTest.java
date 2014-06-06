@@ -13,6 +13,7 @@ import org.gridgain.client.*;
 import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.marshaller.optimized.*;
+import org.gridgain.grid.marshaller.portable.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 

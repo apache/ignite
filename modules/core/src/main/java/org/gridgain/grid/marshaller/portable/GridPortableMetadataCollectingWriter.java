@@ -7,9 +7,8 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.client.marshaller.portable;
+package org.gridgain.grid.marshaller.portable;
 
-import org.gridgain.client.*;
 import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
 

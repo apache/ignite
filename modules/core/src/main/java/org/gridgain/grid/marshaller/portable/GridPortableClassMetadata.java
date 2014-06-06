@@ -7,9 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.client.marshaller.portable;
-
-import org.gridgain.client.*;
+package org.gridgain.grid.marshaller.portable;
 
 import java.util.*;
 

@@ -7,9 +7,9 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.client.marshaller.portable;
+package org.gridgain.grid.marshaller.portable;
 
-import org.gridgain.client.*;
+import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -221,7 +221,7 @@ public class GridPortableObjectSelfTest extends GridCommonAbstractTest {
         assertEquals(2, fields.size());
 
         assertEquals(F.asList("a", "b", "c", "d"), fields.get(TYPE1));
-        assertEquals(F.asList("a", "b"), fields.get(TYPE2));
+        assertEquals(F.asList("a", "b", "c"), fields.get(TYPE2));
 
         t1 = new Type1();
 
