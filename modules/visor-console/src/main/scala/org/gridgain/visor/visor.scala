@@ -22,14 +22,13 @@ import org.gridgain.grid.events._
 import org.gridgain.grid.kernal.GridComponentType._
 import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.gridgain.grid.kernal.processors.spring.GridSpringProcessor
-import org.gridgain.grid.kernal.processors.task.GridInternal
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask.VisorEventsCollectArgs
 import org.gridgain.grid.kernal.{GridEx, GridProductImpl}
-import org.gridgain.grid.lang.{GridBiTuple, GridCallable, GridPredicate}
-import org.gridgain.grid.resources.GridInstanceResource
+import org.gridgain.grid.lang.{GridBiTuple, GridPredicate}
 import org.gridgain.grid.spi.communication.tcp.GridTcpCommunicationSpi
 import org.gridgain.grid.thread._
 import org.gridgain.grid.util.lang.{GridFunc => F}
-import org.gridgain.grid.util.scala.impl
 import org.gridgain.grid.util.typedef._
 import org.gridgain.grid.util.{GridConfigurationFinder, GridUtils => U}
 import org.gridgain.grid.{GridException => GE, GridGain => G, _}
@@ -2161,31 +2160,35 @@ object visor extends VisorTag {
     def log(args: String) {
         assert(args != null)
 
-        def scold(errMsgs: Any*) {
-            assert(errMsgs != null)
+        if (!isConnected)
+            adviseToConnect()
+        else {
+            def scold(errMsgs: Any*) {
+                assert(errMsgs != null)
 
-            warn(errMsgs: _*)
-            warn("Type 'help log' to see how to use this command.")
+                warn(errMsgs: _*)
+                warn("Type 'help log' to see how to use this command.")
+            }
+
+            val argLst = parseArgs(args)
+
+            if (hasArgFlag("s", argLst))
+                if (!logStarted)
+                    scold("Logging was not started.")
+                else
+                    stopLog()
+            else if (hasArgFlag("l", argLst))
+                if (logStarted)
+                    scold("Logging is already started.")
+                else
+                    try
+                        startLog(argValue("f", argLst), argValue("p", argLst), argValue("t", argLst))
+                    catch {
+                        case e: IllegalArgumentException => scold(e.getMessage)
+                    }
+            else
+                scold("Invalid arguments.")
         }
-
-        val argLst = parseArgs(args)
-
-        if (hasArgFlag("s", argLst))
-            if (!logStarted)
-                scold("Logging was not started.")
-            else
-                stopLog()
-        else if (hasArgFlag("l", argLst))
-            if (logStarted)
-                scold("Logging is already started.")
-            else
-                try
-                    startLog(argValue("f", argLst), argValue("p", argLst), argValue("t", argLst))
-                catch {
-                    case e: IllegalArgumentException => scold(e.getMessage)
-                }
-        else
-            scold("Invalid arguments.")
     }
 
     /**
@@ -2264,70 +2267,74 @@ object visor extends VisorTag {
 
         logTimer.schedule(new TimerTask() {
             /** Events to be logged by visor (additionally to discovery events). */
-            private final val LOG_EVTS = Seq(
+            private final val LOG_EVTS = Array(
                 EVT_JOB_TIMEDOUT,
                 EVT_JOB_FAILED,
                 EVT_JOB_FAILED_OVER,
                 EVT_JOB_REJECTED,
                 EVT_JOB_CANCELLED,
+
                 EVT_TASK_TIMEDOUT,
                 EVT_TASK_FAILED,
-                EVT_CLASS_DEPLOY_FAILED,
                 EVT_TASK_DEPLOY_FAILED,
                 EVT_TASK_DEPLOYED,
                 EVT_TASK_UNDEPLOYED,
+
                 EVT_LIC_CLEARED,
                 EVT_LIC_VIOLATION,
                 EVT_LIC_GRACE_EXPIRED,
+
                 EVT_CACHE_PRELOAD_STARTED,
-                EVT_CACHE_PRELOAD_STOPPED
+                EVT_CACHE_PRELOAD_STOPPED,
+                EVT_CLASS_DEPLOY_FAILED
             )
 
             override def run() {
                 val g = grid
 
                 if (g != null) {
-                    // Discovery events collected only locally.
-                    var evts = Collector.collect(LOG_EVTS ++ EVTS_DISCOVERY, g, key)
+                    try {
+                        // Discovery events collected only locally.
+                        val loc = g.forLocal().compute().withName("visor-log-collector").withNoFailover().
+                            execute(classOf[VisorEventsCollectTask], toTaskArgument(g.localNode().id(),
+                            VisorEventsCollectArgs.createLogArg(key, LOG_EVTS ++ EVTS_DISCOVERY))).get.toSeq
 
-                    if (!rmtLogDisabled)
-                        try {
-                            evts = evts ++ g.forRemotes()
-                                .compute()
-                                .withName("visor-log-collector")
-                                .withNoFailover()
-                                .broadcast(new CollectorClosure(LOG_EVTS, key))
-                                .get
-                                .flatten
+                        val evts = if (!rmtLogDisabled) {
+                            val prj = g.forRemotes()
+
+                            loc ++ prj.compute().withName("visor-log-collector").withNoFailover().
+                                execute(classOf[VisorEventsCollectTask], toTaskArgument(prj.nodes().map(_.id()),
+                                    VisorEventsCollectArgs.createLogArg(key, LOG_EVTS))).get.toSeq
                         }
-                        catch {
-                            case _: GridEmptyProjectionException => // Ignore.
-                            case _: Exception => logText("Failed to collect remote log.")
+                        else
+                            loc
+
+                        if (evts.nonEmpty) {
+                            var out: FileWriter = null
+
+                            try {
+                                out = new FileWriter(logFile, true)
+
+                                evts.toList.sortBy(_.timestamp).foreach(e => {
+                                    logImpl(
+                                        out,
+                                        formatDateTime(e.timestamp),
+                                        nodeId8Addr(e.nid()),
+                                        U.compact(e.shortDisplay())
+                                    )
+
+                                    if (EVTS_DISCOVERY.contains(e.typeId()))
+                                        snapshot()
+                                })
+                            }
+                            finally {
+                                U.close(out, null)
+                            }
                         }
-
-                    if (evts.nonEmpty) {
-                        var out: FileWriter = null
-
-                        try {
-                            out = new FileWriter(logFile, true)
-
-                            evts.toList.sortBy(_.timestamp).foreach((e: GridEvent) => {
-                                logImpl(
-                                    out,
-                                    formatDateTime(e.timestamp),
-                                    nodeId8Addr(e.node().id()),
-                                    U.compact(e.shortDisplay)
-                                )
-
-                                e match {
-                                    case _: GridDiscoveryEvent => snapshot()
-                                    case _ => ()
-                                }
-                            })
-                        }
-                        finally {
-                            U.close(out, null)
-                        }
+                    }
+                    catch {
+                        case _: GridEmptyProjectionException => // Ignore.
+                        case e: Exception => logText("Failed to collect log.")
                     }
                 }
             }
@@ -2490,51 +2497,5 @@ object visor extends VisorTag {
      */
     def nodeById8(id8: String) = {
         grid.nodes().filter(n => id8.equalsIgnoreCase(nid8(n)))
-    }
-}
-
-/**
- * Event collect utils
- */
-object Collector {
-    /**
-     * Collects local event from given grid instance.
-     *
-     * @param types Types of events to collect.
-     * @param g Grid instance.
-     * @param key Node local storage key.
-     */
-    def collect(types: Seq[Int], g: Grid, key: String): Seq[GridEvent] = {
-        assert(types != null)
-        assert(g != null)
-        assert(key != null)
-
-        val nl = g.nodeLocalMap[String, Long]()
-
-        val last: Long = nl.getOrElse(key, -1L)
-
-        val tenMinAgo = System.currentTimeMillis() - 10 * 60 * 1000
-
-        val evts = g.events().localQuery((evt: GridEvent) =>
-            types.contains(evt.`type`) && evt.localOrder > last && evt.timestamp() > tenMinAgo)
-
-        // Update latest order in node local, if not empty.
-        if (!evts.isEmpty)
-            nl.put(key, evts.maxBy(_.localOrder()).localOrder)
-
-        evts.toList.sortBy(_.timestamp)
-    }
-}
-
-/**
- * Remote events collector closure.
- */
-@GridInternal
-class CollectorClosure(types: Seq[Int], key: String) extends GridCallable[Seq[GridEvent]] {
-    @GridInstanceResource
-    private val g: Grid = null
-
-    @impl def call(): Seq[GridEvent] = {
-        Collector.collect(types, g, key)
     }
 }

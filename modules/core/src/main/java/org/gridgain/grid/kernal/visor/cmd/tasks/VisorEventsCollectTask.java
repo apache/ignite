@@ -35,7 +35,7 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Iterable<? extends VisorGridEvent> reduce(
+    @Override public Iterable<? extends VisorGridEvent> reduce(
         List<GridComputeJobResult> results) throws GridException {
 
         Collection<VisorGridEvent> allEvents = new ArrayList<>();
@@ -45,7 +45,7 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
                 allEvents.addAll((Collection<VisorGridEvent>) r.getData());
         }
 
-        return allEvents.isEmpty() ? null : allEvents;
+        return allEvents.isEmpty() ? Collections.<VisorGridEvent>emptyList() : allEvents;
     }
 
     /**
@@ -55,6 +55,9 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
     public static class VisorEventsCollectArgs implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
+
+        /** Node local storage key. */
+        private final String keyOrder;
 
         /** Arguments for type filter. */
         private final int[] typeArg;
@@ -69,13 +72,15 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
         private final GridUuid taskSessionId;
 
         /**
+         * @param keyOrder Arguments for node local storage key.
          * @param typeArg Arguments for type filter.
          * @param timeArg Arguments for time filter.
          * @param taskName Arguments for task name filter.
          * @param taskSessionId Arguments for task session filter.
          */
-        public VisorEventsCollectArgs(@Nullable int[] typeArg, @Nullable Long timeArg, @Nullable String taskName,
-            @Nullable GridUuid taskSessionId) {
+        public VisorEventsCollectArgs(@Nullable String keyOrder, @Nullable int[] typeArg, @Nullable Long timeArg,
+            @Nullable String taskName, @Nullable GridUuid taskSessionId) {
+            this.keyOrder = keyOrder;
             this.typeArg = typeArg;
             this.timeArg = timeArg;
             this.taskName = taskName;
@@ -87,7 +92,7 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
          * @param timeArg Arguments for time filter.
          */
         public static VisorEventsCollectArgs createEventsArg(@Nullable int[] typeArg, @Nullable Long timeArg) {
-            return new VisorEventsCollectArgs(typeArg, timeArg, "visor", null);
+            return new VisorEventsCollectArgs(null, typeArg, timeArg, null, null);
         }
 
         /**
@@ -97,9 +102,24 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
          */
         public static VisorEventsCollectArgs createTasksArg(@Nullable Long timeArg, @Nullable String taskName,
             @Nullable GridUuid taskSessionId) {
-            return new VisorEventsCollectArgs(
+            return new VisorEventsCollectArgs(null,
                 VisorTaskUtils.concat(GridEventType.EVTS_JOB_EXECUTION, GridEventType.EVTS_TASK_EXECUTION),
                 timeArg, taskName, taskSessionId);
+        }
+
+        /**
+         * @param keyOrder Arguments for node local storage key.
+         * @param typeArg Arguments for type filter.
+         */
+        public static VisorEventsCollectArgs createLogArg(@Nullable String keyOrder, @Nullable int[] typeArg) {
+            return new VisorEventsCollectArgs(keyOrder, typeArg, null, null, null);
+        }
+
+        /**
+         * @return Node local storage key.
+         */
+        @Nullable public String keyOrder() {
+            return keyOrder;
         }
 
         /**
@@ -129,6 +149,7 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
         public GridUuid taskSessionId() {
             return taskSessionId;
         }
+
 
         /** {@inheritDoc} */
         @Override public String toString() {
@@ -228,6 +249,11 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
             throws GridException {
             final long startEvtTime = arg.timeArgument() == null ? 0L : System.currentTimeMillis() - arg.timeArgument();
 
+            final GridNodeLocalMap<String, Long> nl = g.nodeLocalMap();
+
+            final Long startEvtOrder = arg.keyOrder() != null && nl.containsKey(arg.keyOrder()) ?
+                nl.get(arg.keyOrder()) : -1L;
+
             Collection<GridEvent> evts = g.events().localQuery(new GridPredicate<GridEvent>() {
                 private Map<String, Boolean> internalTasks = new HashMap<>();
 
@@ -271,7 +297,8 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
                 }
 
                 @Override public boolean apply(GridEvent event) {
-                    return (arg.typeArgument() == null || F.contains(arg.typeArgument(), event.type())) &&
+                    return event.localOrder() > startEvtOrder &&
+                        (arg.typeArgument() == null || F.contains(arg.typeArgument(), event.type())) &&
                         event.timestamp() >= startEvtTime &&
                         !internal(event) &&
                         (arg.taskName() == null || filterByTaskName(event, arg.taskName())) &&
@@ -281,6 +308,8 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
 
             Collection<VisorGridEvent> res = new ArrayList<>(evts.size());
 
+            Long maxOrder = startEvtOrder;
+
             for (GridEvent e : evts) {
                 int tid = e.type();
                 GridUuid id = e.id();
@@ -289,6 +318,8 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
                 long t = e.timestamp();
                 String msg = e.message();
                 String shortDisplay = e.shortDisplay();
+
+                maxOrder = Math.max(maxOrder, e.localOrder());
 
                 if (e instanceof GridTaskEvent) {
                     GridTaskEvent te = (GridTaskEvent)e;
@@ -314,6 +345,10 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
                 } else
                     res.add(new VisorGridEvent(tid, id, name, nid, t, msg, shortDisplay));
             }
+
+            // Update latest order in node local, if not empty.
+            if (arg.keyOrder() != null && !res.isEmpty())
+                nl.put(arg.keyOrder(), maxOrder);
 
             return res;
         }
