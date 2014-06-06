@@ -118,6 +118,7 @@
                 <directory>src/main/java</directory>
                 <excludes>
                     <exclude>**/*.java</exclude>
+                    <exclude>**/optimized-classnames.properties</exclude>
                 </excludes>
             </resource>
 
@@ -200,28 +201,6 @@
                                     <substitution expression="gridgain.update.status.url=?v=${gridgain.version}"/>
                                 </replaceregexp>
                             </target>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.4</version>
-                <executions>
-                    <execution>
-                        <id>jar</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>../../assembly/jar-with-dependencies.xml</descriptor>
-                            </descriptors>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <finalName>gridgain-${gridgain.version}</finalName>
                         </configuration>
                     </execution>
                 </executions>
