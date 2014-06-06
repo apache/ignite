@@ -58,6 +58,7 @@ public class GridHadoopUtils {
             meta.mapReducePlan().mappers(),
             meta.mapReducePlan().reducers(),
             meta.startTimestamp(),
+            meta.setupCompleteTimestamp(),
             meta.mapCompleteTimestamp(),
             meta.phase(),
             SPECULATIVE_CONCURRENCY,
@@ -98,12 +99,22 @@ public class GridHadoopUtils {
                 state = JobStatus.State.KILLED;
         }
 
+        float setupProgress;
         float mapProgress;
         float reduceProgress;
         float cleanupProgress;
 
         switch (status.jobPhase()) {
+            case PHASE_SETUP:
+                setupProgress = setupProgress(status);
+                mapProgress = 0.0f;
+                reduceProgress = 0.0f;
+                cleanupProgress = 0.0f;
+
+                break;
+
             case PHASE_MAP:
+                setupProgress = 1.0f;
                 mapProgress = mapProgress(status);
                 reduceProgress = 0.0f;
                 cleanupProgress = 0.0f;
@@ -111,6 +122,7 @@ public class GridHadoopUtils {
                 break;
 
             case PHASE_REDUCE:
+                setupProgress = 1.0f;
                 mapProgress = 1.0f;
                 reduceProgress = reduceProgress(status);
                 cleanupProgress = 0.0f;
@@ -118,7 +130,8 @@ public class GridHadoopUtils {
                 break;
 
             case PHASE_CANCELLING:
-                // Do not know where cancel occurred, hence calculate map/reduce progress.
+                // Do not know where cancel occurred => calculate setup/map/reduce progress.
+                setupProgress = setupProgress(status);
                 mapProgress = mapProgress(status);
                 reduceProgress = reduceProgress(status);
                 cleanupProgress = 0.0f;
@@ -128,14 +141,15 @@ public class GridHadoopUtils {
             default:
                 assert status.jobPhase() == PHASE_COMPLETE;
 
-                // Do not know whether this is complete on success or failure, hence calculate map/reduce progress.
+                // Do not know whether this is complete on success or failure => calculate setup/map/reduce progress.
+                setupProgress = setupProgress(status);
                 mapProgress = mapProgress(status);
                 reduceProgress = reduceProgress(status);
                 cleanupProgress = 1.0f;
         }
 
-        return new JobStatus(jobId, 1.0f, mapProgress, reduceProgress, cleanupProgress, state, JobPriority.NORMAL,
-            status.user(), status.jobName(), jobFile(conf, status.user(), jobId).toString(), "N/A");
+        return new JobStatus(jobId, setupProgress, mapProgress, reduceProgress, cleanupProgress, state,
+            JobPriority.NORMAL, status.user(), status.jobName(), jobFile(conf, status.user(), jobId).toString(), "N/A");
     }
 
     /**
@@ -163,13 +177,27 @@ public class GridHadoopUtils {
     }
 
     /**
+     * Calculate setup progress.
+     *
+     * @param status Status.
+     * @return Setup progress.
+     */
+    private static float setupProgress(GridHadoopJobStatus status) {
+        // Map phase was started => setup had been finished.
+        if (status.mapStartTime() > 0)
+            return 1.0f;
+
+        return progress(1, 0, 1, status.setupStartTime());
+    }
+
+    /**
      * Calculate map progress.
      *
      * @param status Status.
      * @return Map progress.
      */
     private static float mapProgress(GridHadoopJobStatus status) {
-        // Reduce phase wsa started => map had been finished.
+        // Reduce phase was started => map had been finished.
         if (status.reduceStartTime() > 0)
             return 1.0f;
 

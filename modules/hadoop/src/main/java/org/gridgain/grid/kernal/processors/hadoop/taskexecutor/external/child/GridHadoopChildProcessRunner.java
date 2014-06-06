@@ -160,6 +160,8 @@ public class GridHadoopChildProcessRunner {
 
                     GridHadoopTaskInfo info = F.first(req.tasks());
 
+                    // TODO: GG-8642: Is this logic still valid?
+
                     int size = info.type() == MAP ? concMappers : concReducers;
 
                     execSvc.setCorePoolSize(size);
