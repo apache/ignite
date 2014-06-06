@@ -562,6 +562,38 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridDhtAtomicCache.GridDhtAtomicUpdateRequestConverter612.class,
             GridDhtAtomicCache.FORCE_TRANSFORM_BACKUP_SINCE);
 
+        ctx.versionConverter().registerLocal(GridNearLockRequest.class,
+            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
+            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtLockRequest.class,
+            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
+            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridNearTxPrepareRequest.class,
+            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
+            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtTxPrepareRequest.class,
+            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
+            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridNearTxFinishRequest.class,
+            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
+            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtTxFinishRequest.class,
+            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
+            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridNearAtomicUpdateRequest.class,
+            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
+            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtAtomicUpdateRequest.class,
+            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
+            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
         GridDeploymentMode depMode = ctx.config().getDeploymentMode();
 
         if (!F.isEmpty(ctx.config().getCacheConfiguration())) {

@@ -17,7 +17,10 @@ import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
+import org.gridgain.grid.kernal.processors.version.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.product.*;
+import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -26,6 +29,7 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.nio.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -37,6 +41,9 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
  * DHT cache adapter.
  */
 public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdapter<K, V> {
+    /** */
+    public static final GridProductVersion SUBJECT_ID_EVENTS_SINCE_VER = GridProductVersion.fromString("6.1.7");
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -411,7 +418,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * This method is used internally. Use
-     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, long, GridPredicate[], UUID)}
+     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, long, UUID, GridPredicate[])}
      * method instead to retrieve DHT value.
      *
      * @param keys {@inheritDoc}
@@ -750,6 +757,47 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
          */
         private long topologyVersion() {
             return topVer;
+        }
+    }
+
+
+    /**
+     * GridDhtAtomicUpdateRequest converter for version 6.1.2
+     */
+    @SuppressWarnings("PublicInnerClass")
+    public static class GridSubjectIdAddedMessageConverter616 extends GridVersionConverter {
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
+            switch (commState.idx) {
+                case 0: {
+                    if (!commState.putUuid(GridTcpCommunicationMessageAdapter.UUID_NOT_READ))
+                        return false;
+
+                    commState.idx++;
+                }
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
+            switch (commState.idx) {
+                case 0: {
+                    UUID subjId0 = commState.getUuid();
+
+                    if (subjId0 == GridTcpCommunicationMessageAdapter.UUID_NOT_READ)
+                        return false;
+
+                    commState.idx++;
+                }
+            }
+
+            return true;
         }
     }
 }
