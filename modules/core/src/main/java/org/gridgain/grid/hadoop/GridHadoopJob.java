@@ -88,14 +88,14 @@ public interface GridHadoopJob {
      *
      * @return New group comparator.
      */
-    public Comparator<?> reduceGroupComparator();
+    @Nullable public Comparator<?> reduceGroupComparator();
 
     /**
      * Creates combiner key grouping comparator.
      *
      * @return New group comparator.
      */
-    public Comparator<?> combineGroupComparator();
+    @Nullable public Comparator<?> combineGroupComparator();
 
     /**
      * Creates task to be executed.
