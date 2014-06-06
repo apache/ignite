@@ -73,8 +73,8 @@ public class VisorCacheConfig implements Serializable {
     /** Cloner. */
     private String cloner;
 
-    /** Tx manager lookup. */
-    private String txMgrLookup;
+    /** Name of class implementing GridCacheTmLookup. */
+    private String tmLookupClsName;
 
     /** Flag to enable/disable transaction serializable isolation level. */
     private boolean txSerializableEnabled;
@@ -99,9 +99,6 @@ public class VisorCacheConfig implements Serializable {
 
     /** Name of SPI to use for indexing. */
     private String indexingSpiName;
-
-    /** Name of class implementing GridCacheTmLookup. */
-    private String tmLookupClsName;
 
     /** Cache interceptor. */
     private String interceptor;
@@ -159,7 +156,7 @@ public class VisorCacheConfig implements Serializable {
         cfg.invalidate(ccfg.isInvalidate());
         cfg.startSize(ccfg.getStartSize());
         cfg.cloner(compactClass(ccfg.getCloner()));
-        cfg.txManagerLookup(ccfg.getTransactionManagerLookupClassName());
+        cfg.transactionManagerLookupClassName(ccfg.getTransactionManagerLookupClassName());
         cfg.txSerializableEnabled(ccfg.isTxSerializableEnabled());
         cfg.offsetHeapMaxMemory(ccfg.getOffHeapMaxMemory());
         cfg.maxQueryIteratorCount(ccfg.getMaximumQueryIteratorCount());
@@ -169,8 +166,6 @@ public class VisorCacheConfig implements Serializable {
         cfg.memoryMode(ccfg.getMemoryMode());
         cfg.indexingSpiName(ccfg.getIndexingSpiName());
         cfg.interceptor(compactClass(ccfg.getInterceptor()));
-        cfg.transactionManagerLookupClassName(ccfg.getTransactionManagerLookupClassName());
-
         cfg.affinityConfig(VisorAffinityConfig.from(ccfg));
         cfg.preloadConfig(VisorPreloadConfig.from(ccfg));
         cfg.evictConfig(VisorEvictionConfig.from(ccfg));
@@ -431,17 +426,17 @@ public class VisorCacheConfig implements Serializable {
     }
 
     /**
-     * @return Tx manager lookup.
+     * @return Name of class implementing GridCacheTmLookup.
      */
-    @Nullable public String txManagerLookup() {
-        return txMgrLookup;
+    @Nullable public String transactionManagerLookupClassName() {
+        return tmLookupClsName;
     }
 
     /**
-     * @param txMgrLookup New tx manager lookup.
+     * @param tmLookupClsName New name of class implementing GridCacheTmLookup.
      */
-    public void txManagerLookup(@Nullable String txMgrLookup) {
-        this.txMgrLookup = txMgrLookup;
+    public void transactionManagerLookupClassName(@Nullable String tmLookupClsName) {
+        this.tmLookupClsName = tmLookupClsName;
     }
 
     /**
@@ -568,20 +563,6 @@ public class VisorCacheConfig implements Serializable {
      */
     public void interceptor(@Nullable String interceptor) {
         this.interceptor = interceptor;
-    }
-
-    /**
-     * @return Name of class implementing GridCacheTmLookup.
-     */
-    @Nullable public String transactionManagerLookupClassName() {
-        return tmLookupClsName;
-    }
-
-    /**
-     * @param tmLookupClsName New name of class implementing GridCacheTmLookup.
-     */
-    public void transactionManagerLookupClassName(@Nullable String tmLookupClsName) {
-        this.tmLookupClsName = tmLookupClsName;
     }
 
     /**

@@ -460,7 +460,7 @@ class VisorConfigurationCommand {
                 cacheT += ("Invalidate", bool2Str(cacheCfg.invalidate()))
                 cacheT += ("Start size", safe(cacheCfg.startSize(), DFLT))
                 cacheT += ("Cloner", safe(cacheCfg.cloner(), DFLT))
-                cacheT += ("Transaction manager lookup", safe(cacheCfg.txManagerLookup(), DFLT))
+                cacheT += ("Transaction manager lookup", safe(cacheCfg.transactionManagerLookupClassName(), DFLT))
                 cacheT += ("Affinity function", cacheCfg.affinityConfig().function())
                 cacheT += ("Affinity mapper", cacheCfg.affinityConfig.mapper())
                 cacheT += ("Preload mode", safe(cacheCfg.preloadConfig().mode(), DFLT))

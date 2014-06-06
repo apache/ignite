@@ -150,7 +150,6 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
             return taskSessionId;
         }
 
-
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(VisorEventsCollectArgs.class, this);
