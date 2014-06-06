@@ -108,10 +108,11 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         int keyCnt,
         int txSize,
         @Nullable Object grpLockKey,
-        boolean partLock
+        boolean partLock,
+        @Nullable UUID subjId
     ) {
         super(nodeId, lockVer, threadId, futId, lockVer, isInTx, isRead, isolation, isInvalidate, timeout, keyCnt,
-            txSize, grpLockKey, partLock);
+            txSize, grpLockKey, partLock, subjId);
 
         assert topVer > 0;
 

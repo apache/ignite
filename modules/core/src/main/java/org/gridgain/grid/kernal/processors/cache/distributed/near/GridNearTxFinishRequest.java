@@ -14,6 +14,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -72,9 +73,10 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
         int txSize,
         Collection<GridCacheTxEntry<K, V>> writeEntries,
         Collection<GridCacheTxEntry<K, V>> recoverEntries,
-        boolean reply) {
+        boolean reply,
+        @Nullable UUID subjId) {
         super(xidVer, futId, null, threadId, commit, invalidate, baseVer, committedVers, rolledbackVers, txSize,
-            writeEntries, recoverEntries, reply, null);
+            writeEntries, recoverEntries, reply, null, subjId);
 
         this.explicitLock = explicitLock;
         this.topVer = topVer;

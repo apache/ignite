@@ -16,6 +16,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -74,8 +75,8 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     public GridNearTxPrepareRequest(GridUuid futId, long topVer, GridCacheTxEx<K, V> tx,
         Collection<GridCacheTxEntry<K, V>> reads, Collection<GridCacheTxEntry<K, V>> writes, Object grpLockKey,
         boolean partLock, boolean syncCommit, boolean syncRollback,
-        Map<UUID, Collection<UUID>> txNodes, boolean last, Collection<UUID> lastBackups) {
-        super(tx, reads, writes, grpLockKey, partLock, txNodes);
+        Map<UUID, Collection<UUID>> txNodes, boolean last, Collection<UUID> lastBackups, @Nullable UUID subjId) {
+        super(tx, reads, writes, grpLockKey, partLock, txNodes, subjId);
 
         assert futId != null;
 

@@ -241,7 +241,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                     req.nearWrites(),
                     ctx,
                     req.txSize(),
-                    req.groupLockKey()
+                    req.groupLockKey(),
+                    req.subjectId()
                 );
 
                 if (!tx.empty()) {
@@ -336,7 +337,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         drVer,
                                         ctx,
                                         req.txSize(),
-                                        req.groupLockKey()
+                                        req.groupLockKey(),
+                                        req.subjectId()
                                     );
 
                                     if (req.groupLock())
@@ -501,7 +503,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     txEntry.drVersion(),
                                     ctx,
                                     req.txSize(),
-                                    req.groupLockKey());
+                                    req.groupLockKey(),
+                                    req.subjectId());
 
                                 if (tx.empty())
                                     return tx;
@@ -641,8 +644,12 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation, long timeout, boolean invalidate,
         boolean syncCommit, boolean syncRollback, boolean swapEnabled, boolean storeEnabled, int txSize,
         @Nullable Object grpLockKey, boolean partLock) {
+        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+
+        UUID subjId = prj == null ? null : prj.subjectId();
+
         return new GridNearTxLocal<>(ctx, implicit, implicitSingle, concurrency, isolation, timeout,
-            invalidate, syncCommit, syncRollback, swapEnabled, storeEnabled, txSize, grpLockKey, partLock);
+            invalidate, syncCommit, syncRollback, swapEnabled, storeEnabled, txSize, grpLockKey, partLock, subjId);
     }
 
     /** {@inheritDoc} */

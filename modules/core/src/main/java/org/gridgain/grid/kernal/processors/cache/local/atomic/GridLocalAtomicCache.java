@@ -575,6 +575,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             /*unmarshal*/true,
                             /**update-metrics*/true,
                             /**event*/true,
+                            null, // TODO security
                             filter);
 
                         if (v != null)
@@ -749,7 +750,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         true,
                         true,
                         filter,
-                        intercept);
+                        intercept,
+                        null); // TODO security.
 
                     if (res == null) {
                         if (op == TRANSFORM && val instanceof GridCacheTransformComputeClosure) {
@@ -862,7 +864,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             true,
                             true,
                             true,
-                            CU.<K, V>empty());
+                            null,
+                            CU.<K, V>empty()); // TODO security.
 
                         GridClosure<V, V> transform = (GridClosure<V, V>)val;
 
@@ -934,6 +937,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 true,
                                 true,
                                 true,
+                                null, // TODO security.
                                 CU.<K, V>empty());
 
                             val = ctx.config().getInterceptor().onBeforePut(entry.key(), old, val);
@@ -958,6 +962,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 true,
                                 true,
                                 true,
+                                null, // TODO security
                                 CU.<K, V>empty());
 
                             GridBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
@@ -1067,8 +1072,9 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
                 assert writeVal != null || op == DELETE : "null write value found.";
 
+                // TODO security.
                 GridBiTuple<Boolean, V> t =
-                    entry.innerUpdateLocal(ver, op, writeVal, false, false, 0, true, true, null, false);
+                    entry.innerUpdateLocal(ver, op, writeVal, false, false, 0, true, true, null, false, null);
 
                 if (intercept) {
                     if (op == UPDATE)

@@ -382,6 +382,13 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         return null;
     }
 
+    @Override public GridCacheProjectionEx<K, V> forSubjectId(UUID subjId) {
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, ctx, null, null,
+            null, subjId);
+
+        return new GridCacheProxyImpl<>(ctx, prj, prj);
+    }
+
     /** {@inheritDoc} */
     @Override public GridCacheProjection<K, V> flagsOn(@Nullable GridCacheFlag[] flags) {
         if (F.isEmpty(flags)) {
@@ -389,7 +396,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         }
 
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, ctx, null, null,
-            EnumSet.copyOf(F.asList(flags)));
+            EnumSet.copyOf(F.asList(flags)), null);
 
         return new GridCacheProxyImpl<>(ctx, prj, prj);
     }
@@ -432,7 +439,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         }
 
         GridCacheProjectionImpl<K1, V1> prj = new GridCacheProjectionImpl<>((GridCacheProjection<K1, V1>)this,
-            (GridCacheContext<K1, V1>)ctx, CU.<K1, V1>typeFilter(keyType, valType), /*filter*/null, /*flags*/null);
+            (GridCacheContext<K1, V1>)ctx, CU.<K1, V1>typeFilter(keyType, valType), /*filter*/null, /*flags*/null,
+            /*clientId*/null);
 
         return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, prj, prj);
     }
@@ -451,7 +459,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             }
         }
 
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, ctx, p, null, null);
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, ctx, p, null, null, null);
 
         return new GridCacheProxyImpl<>(ctx, prj, prj);
     }
@@ -470,7 +478,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             }
         }
 
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, ctx, null, filter, null);
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, ctx, null, filter, null, null);
 
         return new GridCacheProxyImpl<>(ctx, prj, prj);
     }
@@ -1028,13 +1036,13 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (doomed != null && ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
             // Event notification.
             ctx.events().addEvent(doomed.partition(), doomed.key(), locNodeId, (GridUuid)null, null,
-                EVT_CACHE_ENTRY_DESTROYED, null, false, null, false);
+                EVT_CACHE_ENTRY_DESTROYED, null, false, null, false, null);
 
         if (created != null) {
             // Event notification.
             if (ctx.events().isRecordable(EVT_CACHE_ENTRY_CREATED))
                 ctx.events().addEvent(created.partition(), created.key(), locNodeId, (GridUuid)null, null,
-                    EVT_CACHE_ENTRY_CREATED, null, false, null, false);
+                    EVT_CACHE_ENTRY_CREATED, null, false, null, false, null);
 
             if (touch)
                 ctx.evicts().touch(cur, topVer);
@@ -1125,7 +1133,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
                 // Event notification.
                 ctx.events().addEvent(entry.partition(), entry.key(), locNodeId, (GridUuid)null, null,
-                    EVT_CACHE_ENTRY_DESTROYED, null, false, null, false);
+                    EVT_CACHE_ENTRY_DESTROYED, null, false, null, false, null);
         }
         else if (log.isDebugEnabled())
             log.debug("Remove will not be done for key (obsolete entry got replaced or removed): " + key);
@@ -1773,9 +1781,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                             entry = entryEx(key);
 
                         try {
+                            // TODO security
                             V val = entry.innerGet(null, ctx.isSwapOrOffheapEnabled(),
                                 /*don't read-through*/false, /*fail-fast*/true, /*unmarshal*/true,
-                                /*update-metrics*/true, /*event*/true, filter);
+                                /*update-metrics*/true, /*event*/true, null, filter);
 
                             GridCacheVersion ver = entry.version();
 

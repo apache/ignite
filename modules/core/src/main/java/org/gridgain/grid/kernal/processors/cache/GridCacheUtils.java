@@ -1525,6 +1525,21 @@ public class GridCacheUtils {
     }
 
     /**
+     * Gets subject ID by transaction.
+     *
+     * @param tx Transaction.
+     * @return Subject ID.
+     */
+    public static <K, V> UUID subjectId(GridCacheTxEx<K, V> tx) {
+        if (tx == null)
+            return null;
+
+        UUID subjId = tx.subjectId();
+
+        return subjId != null ? subjId : tx.originatingNodeId();
+    }
+
+    /**
      * Invalidate entry in cache.
      *
      * @param cache Cache.

@@ -77,6 +77,9 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     /** Group lock key bytes. */
     private byte[] grpLockKeyBytes;
 
+    /** Subject ID. */
+    private UUID subjId;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -115,7 +118,8 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         Collection<GridCacheTxEntry<K, V>> writeEntries,
         Collection<GridCacheTxEntry<K, V>> recoveryWrites,
         boolean reply,
-        @Nullable Object grpLockKey
+        @Nullable Object grpLockKey,
+        @Nullable UUID subjId
     ) {
         super(xidVer, writeEntries == null ? 0 : writeEntries.size());
         assert xidVer != null;
@@ -131,6 +135,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         this.recoveryWrites = recoveryWrites;
         this.reply = reply;
         this.grpLockKey = grpLockKey;
+        this.subjId = subjId;
 
         completedVersions(committedVers, rolledbackVers);
     }
@@ -147,6 +152,13 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
      */
     public long threadId() {
         return threadId;
+    }
+
+    /**
+     * @return Subject ID.
+     */
+    @Nullable public UUID subjectId() {
+        return subjId;
     }
 
     /**

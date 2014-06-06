@@ -395,6 +395,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                                 /*unmarshal*/true,
                                 /**update-metrics*/true,
                                 /*event*/true,
+                                null, // TODO security.
                                 filters);
 
                             if (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED))

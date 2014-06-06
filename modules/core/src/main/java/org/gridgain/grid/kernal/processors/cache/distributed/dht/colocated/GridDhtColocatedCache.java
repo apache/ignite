@@ -85,8 +85,12 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     ) {
         assert !isNearEnabled(cacheCfg);
 
+        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+
+        UUID subjId = prj == null ? null : prj.subjectId();
+
         return new GridDhtColocatedTxLocal<>(implicit, implicitSingle, ctx, concurrency, isolation, timeout,
-            invalidate, syncCommit, syncRollback, swapEnabled, storeEnabled, txSize, grpLockKey, partLock);
+            invalidate, syncCommit, syncRollback, swapEnabled, storeEnabled, txSize, grpLockKey, partLock, subjId);
     }
 
     /** {@inheritDoc} */
@@ -265,6 +269,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         if (entry != null) {
                             boolean isNew = entry.isNewLocked();
 
+                            // TODO security.
+
                             V v = entry.innerGet(null,
                                 /*swap*/true,
                                 /*read-through*/false,
@@ -272,6 +278,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 /*unmarshal*/true,
                                 /**update-metrics*/true,
                                 /*event*/true,
+                                null,
                                 filter);
 
                             // Entry was not in memory or in swap, so we remove it from cache.

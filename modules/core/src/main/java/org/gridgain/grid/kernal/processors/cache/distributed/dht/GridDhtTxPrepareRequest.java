@@ -98,8 +98,9 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
         boolean partLock,
         Map<UUID, Collection<UUID>> txNodes,
         GridCacheVersion nearXidVer,
-        boolean last) {
-        super(tx, null, dhtWrites, grpLockKey, partLock, txNodes);
+        boolean last,
+        UUID subjId) {
+        super(tx, null, dhtWrites, grpLockKey, partLock, txNodes, subjId);
 
         assert futId != null;
         assert miniId != null;

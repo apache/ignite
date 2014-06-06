@@ -102,10 +102,11 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         int nearCnt,
         int txSize,
         @Nullable Object grpLockKey,
-        boolean partLock
+        boolean partLock,
+        @Nullable UUID subjId
     ) {
         super(nodeId, nearXidVer, threadId, futId, lockVer, isInTx, isRead, isolation, isInvalidate, timeout,
-            dhtCnt == 0 ? nearCnt : dhtCnt, txSize, grpLockKey, partLock);
+            dhtCnt == 0 ? nearCnt : dhtCnt, txSize, grpLockKey, partLock, subjId);
 
         this.topVer = topVer;
 

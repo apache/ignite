@@ -713,7 +713,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             boolean isNew = entry.isNewLocked();
 
                             V v = entry.innerGet(null, /*swap*/true, /*read-through*/false, /*fail-fast*/true,
-                                /*unmarshal*/true, /**update-metrics*/true, true, filter);
+                                /*unmarshal*/true, /**update-metrics*/true, true, null, filter); // TODO security
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null) {
@@ -1016,6 +1016,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         /*unmarshal*/true,
                         /*metrics*/true,
                         /*event*/true,
+                        null, // TODO security
                         CU.<K, V>empty());
 
                     GridClosure<V, V> transform = req.transformClosure(i);
@@ -1120,6 +1121,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             /*unmarshal*/true,
                             /*metrics*/true,
                             /*event*/true,
+                            null, // TODO security
                             CU.<K, V>empty());
 
                         updated = (V)ctx.config().getInterceptor().onBeforePut(entry.key(), old, updated);
@@ -1147,6 +1149,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             /*unmarshal*/true,
                             /*metrics*/true,
                             /*event*/true,
+                            null, // TODO security
                             CU.<K, V>empty());
 
                         GridBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
@@ -1295,7 +1298,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     newDrExpireTime,
                     newDrVer,
                     true,
-                    intercept);
+                    intercept,
+                    null); // TODO security
 
                 if (dhtFut == null && !F.isEmpty(filteredReaders)) {
                     dhtFut = createDhtFuture(ver, req, res, completionCb, true);
@@ -1523,7 +1527,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         -1L,
                         null,
                         false,
-                        false);
+                        false,
+                        null); // TODO security
 
                     if (intercept) {
                         if (op == UPDATE)
@@ -1973,7 +1978,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             req.drExpireTime(i),
                             req.drVersion(i),
                             false,
-                            intercept);
+                            intercept,
+                            null); // TODO security
 
                         if (updRes.removeVersion() != null)
                             ctx.onDeferredDelete(entry, updRes.removeVersion());

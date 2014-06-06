@@ -206,7 +206,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         -1,
                         null,
                         false,
-                        false);
+                        false,
+                        null); // TODO security
 
                     if (updRes.removeVersion() != null)
                         ctx.onDeferredDelete(entry, updRes.removeVersion());
@@ -298,7 +299,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             -1,
                             null,
                             false,
-                            intercept);
+                            intercept,
+                            null); // TODO security
 
                         if (updRes.removeVersion() != null)
                             ctx.onDeferredDelete(entry, updRes.removeVersion());

@@ -386,7 +386,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 // First we peek into near cache.
                 if (isNear)
                     v = entry.innerGet(tx, /*swap*/false, /*read-through*/false, /*fail-fast*/true, /*unmarshal*/true,
-                        true/*metrics*/, true/*events*/, filters);
+                        true/*metrics*/, true/*events*/, null, filters); // TODO security.
 
                 GridNode primary = null;
 
@@ -401,7 +401,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                             boolean isNew = entry.isNewLocked() || !entry.valid(topVer);
 
                             v = entry.innerGet(tx, /*swap*/true, /*read-through*/false, /*fail-fast*/true,
-                                /*unmarshal*/true, /*update-metrics*/false, !isNear, filters);
+                                /*unmarshal*/true, /*update-metrics*/false, !isNear, null, filters); // TODO security.
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null && isNew && entry.markObsoleteIfEmpty(ver))

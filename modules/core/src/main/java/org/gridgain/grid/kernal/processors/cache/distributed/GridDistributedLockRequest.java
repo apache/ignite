@@ -96,6 +96,9 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     @GridToStringInclude
     private GridCacheVersion[] drVersByIdx;
 
+    /** Subject ID. */
+    private UUID subjId;
+
     /**
      * Empty constructor.
      */
@@ -134,7 +137,8 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         int keyCnt,
         int txSize,
         @Nullable Object grpLockKey,
-        boolean partLock
+        boolean partLock,
+        @Nullable UUID subjId
     ) {
         super(lockVer, keyCnt);
 
@@ -154,6 +158,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         this.txSize = txSize;
         this.grpLockKey = grpLockKey;
         this.partLock = partLock;
+        this.subjId = subjId;
 
         retVals = new boolean[keyCnt];
     }
@@ -164,6 +169,13 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
      */
     public UUID nodeId() {
         return nodeId;
+    }
+
+    /**
+     * @return Subject ID.
+     */
+    public UUID subjectId() {
+        return subjId;
     }
 
     /**

@@ -118,10 +118,11 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         Collection<GridCacheTxEntry<K, V>> recoverWrites,
         boolean reply,
         boolean onePhaseCommit,
-        @Nullable Object grpLockKey
+        @Nullable Object grpLockKey,
+        @Nullable UUID subjId
     ) {
         super(xidVer, futId, commitVer, threadId, commit, invalidate, baseVer, committedVers, rolledbackVers, txSize,
-            writes, recoverWrites, reply, grpLockKey);
+            writes, recoverWrites, reply, grpLockKey, subjId);
 
         assert miniId != null;
         assert nearNodeId != null;

@@ -379,9 +379,11 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
                     }
                 }
 
+                // TODO security.
+
                 if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
                     cctx.events().addEvent(partition(), key, tx, null, EVT_CACHE_OBJECT_READ,
-                        val, val != null || valBytes != null, old, hasVal);
+                        val, val != null || valBytes != null, old, hasVal, null);
 
                 return ret;
             }

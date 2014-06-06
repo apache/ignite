@@ -103,6 +103,9 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /** */
     private byte[] txNodesBytes;
 
+    /** Subject ID. */
+    private UUID subjId;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -124,7 +127,9 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
         Collection<GridCacheTxEntry<K, V>> writes,
         Object grpLockKey,
         boolean partLock,
-        Map<UUID, Collection<UUID>> txNodes) {
+        Map<UUID, Collection<UUID>> txNodes,
+        @Nullable UUID subjId
+    ) {
         super(tx.xidVersion(), 0);
 
         commitVer = null;
@@ -140,6 +145,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
         this.grpLockKey = grpLockKey;
         this.partLock = partLock;
         this.txNodes = txNodes;
+        this.subjId = subjId;
     }
 
     /**
@@ -174,6 +180,13 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
      */
     public long threadId() {
         return threadId;
+    }
+
+    /**
+     * @return Subject ID.
+     */
+    @Nullable public UUID subjectId() {
+        return subjId;
     }
 
     /**
