@@ -100,7 +100,9 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
         msgs = new GridHadoopShuffleMessage[reducers];
 
         if (job.hasCombiner() && hasLocMappers) // We have combiner and local mappers.
-            combinerMap = new GridHadoopConcurrentHashMultimap(job, mem, get(job, COMBINER_HASHMAP_SIZE, 8 * 1024));
+            combinerMap = get(job, SHUFFLE_COMBINER_NO_SORTING, false) ?
+                new GridHadoopConcurrentHashMultimap(job, mem, get(job, COMBINER_HASHMAP_SIZE, 8 * 1024)):
+                new GridHadoopSkipList(job, mem, job.sortComparator());
     }
 
     /**
@@ -166,7 +168,9 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
         GridHadoopMultimap map = maps.get(idx);
 
         if (map == null) { // Create new map.
-            map = new GridHadoopConcurrentHashMultimap(job, mem, get(job, PARTITION_HASHMAP_SIZE, 8 * 1024));
+            map = get(job, SHUFFLE_REDUCER_NO_SORTING, false) ?
+                new GridHadoopConcurrentHashMultimap(job, mem, get(job, PARTITION_HASHMAP_SIZE, 8 * 1024)):
+                new GridHadoopSkipList(job, mem, job.sortComparator());
 
             if (!maps.compareAndSet(idx, null, map)) {
                 map.close();

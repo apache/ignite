@@ -58,7 +58,27 @@ public enum GridHadoopJobProperty {
      * <p>
      * By default is {@code 16 * 1024}.
      */
-    SHUFFLE_OFFHEAP_PAGE_SIZE;
+    SHUFFLE_OFFHEAP_PAGE_SIZE,
+
+    /**
+     * If set to {@code true} then input for combiner will not be sorted by key.
+     * Internally hash-map will be used instead of sorted one, so {@link Object#equals(Object)}
+     * and {@link Object#hashCode()} methods of key must be implemented consistently with
+     * comparator for that type.
+     * <p>
+     * By default is {@code false}.
+     */
+    SHUFFLE_COMBINER_NO_SORTING,
+
+    /**
+     * If set to {@code true} then input for reducer will not be sorted by key.
+     * Internally hash-map will be used instead of sorted one, so {@link Object#equals(Object)}
+     * and {@link Object#hashCode()} methods of key must be implemented consistently with
+     * comparator for that type.
+     * <p>
+     * By default is {@code false}.
+     */
+    SHUFFLE_REDUCER_NO_SORTING;
 
     /** */
     private final String ptyName;

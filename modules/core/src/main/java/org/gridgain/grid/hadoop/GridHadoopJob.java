@@ -77,6 +77,27 @@ public interface GridHadoopJob {
     public GridHadoopSerialization valueSerialization() throws GridException;
 
     /**
+     * Creates mapper output key sorting comparator.
+     *
+     * @return New sort comparator.
+     */
+    public Comparator<?> sortComparator();
+
+    /**
+     * Creates reducer key grouping comparator.
+     *
+     * @return New group comparator.
+     */
+    public Comparator<?> reduceGroupComparator();
+
+    /**
+     * Creates combiner key grouping comparator.
+     *
+     * @return New group comparator.
+     */
+    public Comparator<?> combineGroupComparator();
+
+    /**
      * Creates task to be executed.
      *
      * @param taskInfo Task info.

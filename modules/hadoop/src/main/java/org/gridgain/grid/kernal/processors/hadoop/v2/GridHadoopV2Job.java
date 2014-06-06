@@ -59,6 +59,9 @@ public class GridHadoopV2Job implements GridHadoopJob {
      * @param jobInfo Job info.
      */
     public GridHadoopV2Job(GridHadoopJobId jobId, GridHadoopDefaultJobInfo jobInfo) {
+        assert jobId != null;
+        assert jobInfo != null;
+
         this.jobId = jobId;
         this.jobInfo = jobInfo;
 
@@ -285,6 +288,21 @@ public class GridHadoopV2Job implements GridHadoopJob {
     /** {@inheritDoc} */
     @Override public GridHadoopSerialization valueSerialization() throws GridException {
         return getSerialization(ctx.getMapOutputValueClass());
+    }
+
+    /** {@inheritDoc} */
+    @Override public Comparator<?> sortComparator() {
+        return ctx.getSortComparator();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Comparator<?> reduceGroupComparator() {
+        return ctx.getGroupingComparator();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Comparator<Object> combineGroupComparator() {
+        return null; // TODO
     }
 
     /** {@inheritDoc} */
