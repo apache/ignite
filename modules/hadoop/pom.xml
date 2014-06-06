@@ -28,6 +28,14 @@
     <artifactId>gridgain-hadoop</artifactId>
 
     <dependencies>
+        <!-- // Do we need it?
+        <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-clients</artifactId>
+            <version>${gridgain.version}</version>
+        </dependency>
+        -->
+
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-core</artifactId>
