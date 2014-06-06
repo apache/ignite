@@ -19,6 +19,9 @@ import java.util.*;
  * Kill job task.
  */
 public class GridHadoopProtocolKillJobTask extends GridHadoopProtocolTaskAdapter<Boolean> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override public Boolean run(GridComputeJobContext jobCtx, GridHadoop hadoop,
         GridHadoopProtocolTaskArguments args) throws GridException {

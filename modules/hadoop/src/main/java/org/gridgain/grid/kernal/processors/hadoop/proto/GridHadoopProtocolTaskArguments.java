@@ -13,12 +13,14 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
-import java.util.*;
 
 /**
  * Task arguments.
  */
 public class GridHadoopProtocolTaskArguments implements Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Arguments. */
     private Object[] args;
 

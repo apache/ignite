@@ -1029,6 +1029,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * Update job phase transform closure.
      */
     private static class UpdatePhaseClosure implements GridClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Phase to update. */
         private GridHadoopJobPhase phase;
 
@@ -1056,6 +1059,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * Remove mapper transform closure.
      */
     private static class RemoveMappersClosure implements GridClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Mapper split to remove. */
         private Collection<GridHadoopInputSplit> splits;
 
@@ -1109,6 +1115,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * Remove reducer transform closure.
      */
     private static class RemoveReducerClosure implements GridClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Mapper split to remove. */
         private int rdc;
 
@@ -1151,6 +1160,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
     private static class InitializeReducersClosure
         implements GridClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Reducers. */
         private Collection<Integer> rdc;
 
@@ -1191,6 +1203,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * Remove reducer transform closure.
      */
     private static class CancelJobClosure implements GridClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Mapper split to remove. */
         private Collection<GridHadoopInputSplit> splits;
 

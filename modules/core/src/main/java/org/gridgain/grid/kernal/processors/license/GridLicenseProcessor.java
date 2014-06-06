@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.license;
 
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.product.*;
+import org.jetbrains.annotations.*;
 
 /**
  * License processor.
@@ -48,9 +49,9 @@ public interface GridLicenseProcessor extends GridProcessor {
     /**
      * Gets license descriptor.
      *
-     * @return License descriptor.
+     * @return License descriptor or {@code null} for open-source edition.
      */
-    public GridProductLicense license();
+    @Nullable public GridProductLicense license();
 
     /**
      * @return Grace period left in minutes if bursting or {@code -1} otherwise.

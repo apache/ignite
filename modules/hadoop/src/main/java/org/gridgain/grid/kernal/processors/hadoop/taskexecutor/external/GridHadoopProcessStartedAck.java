@@ -15,5 +15,6 @@ import org.gridgain.grid.kernal.processors.hadoop.message.*;
  * Process started message.
  */
 public class GridHadoopProcessStartedAck implements GridHadoopMessage {
-
+    /** */
+    private static final long serialVersionUID = 0L;
 }

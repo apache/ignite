@@ -20,6 +20,9 @@ import java.util.*;
  */
 public class GridHadoopTaskInfo implements Externalizable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private UUID nodeId;
 
     /** */

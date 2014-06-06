@@ -16,6 +16,9 @@ import org.gridgain.grid.kernal.processors.hadoop.message.*;
  * Child process initialization request.
  */
 public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Job ID. */
     private GridHadoopJobId jobId;
 

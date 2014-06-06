@@ -21,6 +21,9 @@ import java.util.*;
  * Job status task.
  */
 public class GridHadoopProtocolJobStatusTask extends GridHadoopProtocolTaskAdapter<GridHadoopJobStatus> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Default poll delay */
     private static final long DFLT_POLL_DELAY = 100L;
 

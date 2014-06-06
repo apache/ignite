@@ -20,6 +20,9 @@ import java.util.*;
  * Message sent from node to child process to start task(s) execution.
  */
 public class GridHadoopTaskExecutionRequest implements GridHadoopMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Job ID. */
     private GridHadoopJobId jobId;
 
