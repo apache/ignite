@@ -52,15 +52,15 @@ public interface GridSecurityManager extends GridManager {
      *
      * @return Collection of authenticated nodes.
      */
-    public Collection<GridSecuritySubject> authenticatedNodes() throws GridException;
+    public Collection<GridSecuritySubject> authenticatedSubjects() throws GridException;
 
     /**
      * Gets authenticated node subject.
      *
-     * @param nodeId Node ID.
+     * @param subjId Subject ID.
      * @return Security subject.
      */
-    public GridSecuritySubject authenticatedNode(UUID nodeId) throws GridException;
+    public GridSecuritySubject authenticatedSubject(UUID subjId) throws GridException;
 
     /**
      * Authorizes grid operation.
@@ -72,4 +72,11 @@ public interface GridSecurityManager extends GridManager {
      */
     public void authorize(String name, GridSecurityPermission perm, @Nullable GridSecurityContext securityCtx)
         throws GridSecurityException;
+
+    /**
+     * Callback invoked when subject session got expired.
+     *
+     * @param subjId Subject ID.
+     */
+    public void onSessionExpired(UUID subjId);
 }

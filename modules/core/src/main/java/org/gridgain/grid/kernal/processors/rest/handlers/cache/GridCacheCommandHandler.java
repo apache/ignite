@@ -337,7 +337,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             destId == null || destId.equals(ctx.localNodeId()) || replicatedCacheAvailable(cacheName);
 
         if (locExec) {
-            final GridCacheProjection<Object, Object> prj = localCache(cacheName).flagsOn(flags);
+            final GridCacheProjection<Object, Object> prj = localCache(cacheName).forSubjectId(clientId).flagsOn(flags);
 
             return op.apply(prj, ctx).chain(resultWrapper(prj, key));
         }
@@ -372,7 +372,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             ctx.cache().cache(cacheName) != null;
 
         if (locExec) {
-            final GridCache<Object, Object> cache = localCache(cacheName);
+            final GridCacheProjection<Object, Object> cache = localCache(cacheName).forSubjectId(clientId);
 
             return op.apply(cache, ctx).chain(resultWrapper(cache, key));
         }
@@ -563,8 +563,8 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @return Instance on the named cache.
      * @throws GridException If cache not found.
      */
-    protected GridCache<Object, Object> localCache(String cacheName) throws GridException {
-        GridCache<Object, Object> cache = ctx.cache().cache(cacheName);
+    protected GridCacheProjectionEx<Object, Object> localCache(String cacheName) throws GridException {
+        GridCacheProjectionEx<Object, Object> cache = (GridCacheProjectionEx<Object, Object>)ctx.cache().cache(cacheName);
 
         if (cache == null)
             throw new GridException(
