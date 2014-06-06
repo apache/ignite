@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.spi.discovery.tcp;
+package org.gridgain.grid.spi;
 
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -19,7 +19,7 @@ import java.util.concurrent.*;
 /**
  * Class implements forwarding between two addresses.
  */
-public final class GridTcpForwardServer implements AutoCloseable {
+public final class GridTcpForwarder implements AutoCloseable {
     /** */
     private final Thread mainThread;
 
@@ -32,7 +32,7 @@ public final class GridTcpForwardServer implements AutoCloseable {
      * @param toAddr Destination address.
      * @param toPort Destination port.
      */
-    public GridTcpForwardServer(
+    public GridTcpForwarder(
         final InetAddress fromAddr,
         final int fromPort,
         final InetAddress toAddr,

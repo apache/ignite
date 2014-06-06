@@ -7,11 +7,15 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.spi.discovery.tcp;
+package org.gridgain.grid.spi;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.marshaller.optimized.*;
+import org.gridgain.grid.spi.communication.tcp.*;
+import org.gridgain.grid.spi.discovery.tcp.*;
+import org.gridgain.grid.spi.discovery.tcp.internal.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -20,20 +24,32 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Test for {@link GridTcpDiscoverySpi}.
+ * Test for {@link org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi} and {@link GridTcpCommunicationSpi}.
  */
-public class GridTcpDiscoveryForwardingSelfTest extends GridCommonAbstractTest {
+public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final int localPort1 = 47500;
+    private static final int locPort1 = 47500;
 
     /** */
-    private static final int localPort2 = 48500;
+    private static final int locPort2 = 48500;
 
     /** */
     private static final int extPort1 = 10000;
 
     /** */
     private static final int extPort2 = 20000;
+
+    /** */
+    private static final int commLocPort1 = 47100;
+
+    /** */
+    private static final int commLocPort2 = 48100;
+
+    /** */
+    private static final int commExtPort1 = 10100;
+
+    /** */
+    private static final int commExtPort2 = 20100;
 
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "deprecation"})
@@ -45,14 +61,20 @@ public class GridTcpDiscoveryForwardingSelfTest extends GridCommonAbstractTest {
 
         final int locPort;
         final int extPort;
+        final int commExtPort;
+        final int commLocPort;
 
         if (getTestGridName(0).equals(gridName)) {
-            locPort = localPort1;
+            locPort = locPort1;
             extPort = extPort1;
+            commLocPort = commLocPort1;
+            commExtPort = commExtPort1;
         }
         else if (getTestGridName(1).equals(gridName)) {
-            locPort = localPort2;
+            locPort = locPort2;
             extPort = extPort2;
+            commLocPort = commLocPort2;
+            commExtPort = commExtPort2;
         }
         else
             throw new IllegalArgumentException("Unknown grid name");
@@ -68,10 +90,32 @@ public class GridTcpDiscoveryForwardingSelfTest extends GridCommonAbstractTest {
         cfg.setRestEnabled(false);
         cfg.setMarshaller(new GridOptimizedMarshaller(false));
 
+        GridTcpCommunicationSpi commSpi = new GridTcpCommunicationSpi() {
+            @Override protected GridCommunicationClient createTcpClient(GridNode node) throws GridException {
+                Map<String, Object> attrs = new HashMap<>(node.attributes());
+                attrs.remove(createSpiAttributeName(ATTR_PORT));
+
+                ((GridTcpDiscoveryNode)node).setAttributes(attrs);
+
+                return super.createTcpClient(node);
+            }
+        };
+
+        commSpi.setLocalAddress("127.0.0.1");
+        commSpi.setLocalPort(commLocPort);
+        commSpi.setLocalPortRange(1);
+        commSpi.setSharedMemoryPort(-1);
+
+        cfg.setCommunicationSpi(commSpi);
+
+        final Map<InetSocketAddress, ? extends Collection<InetSocketAddress>> mp = F.asMap(
+            new InetSocketAddress("127.0.0.1", locPort), F.asList(new InetSocketAddress("127.0.0.1", extPort)),
+            new InetSocketAddress("127.0.0.1", commLocPort), F.asList(new InetSocketAddress("127.0.0.1", commExtPort))
+        );
+
         cfg.setAddressResolver(new GridAddressResolver() {
             @Override public Collection<InetSocketAddress> getExternalAddresses(InetSocketAddress addr) {
-                return addr.equals(new InetSocketAddress("127.0.0.1", locPort)) ?
-                    F.asList(new InetSocketAddress("127.0.0.1", extPort)) : null;
+                return mp.get(addr);
             }
         });
 
@@ -86,8 +130,10 @@ public class GridTcpDiscoveryForwardingSelfTest extends GridCommonAbstractTest {
         InetAddress locHost = InetAddress.getByName("127.0.0.1");
 
         try (
-            GridTcpForwardServer tcpForwardSrv1 = new GridTcpForwardServer(locHost, extPort1, locHost, localPort1);
-            GridTcpForwardServer tcpForwardSrv2 = new GridTcpForwardServer(locHost, extPort2, locHost, localPort2);
+            GridTcpForwarder tcpForward1 = new GridTcpForwarder(locHost, extPort1, locHost, locPort1);
+            GridTcpForwarder tcpForward2 = new GridTcpForwarder(locHost, extPort2, locHost, locPort2);
+            GridTcpForwarder tcpForward3 = new GridTcpForwarder(locHost, commExtPort1, locHost, commLocPort1);
+            GridTcpForwarder tcpForward4 = new GridTcpForwarder(locHost, commExtPort2, locHost, commLocPort2);
 
             Grid g1 = startGrid(0);
             Grid g2 = startGrid(1)
