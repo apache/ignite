@@ -132,13 +132,21 @@ public class GridIpcServerTcpEndpoint implements GridIpcServerEndpoint {
 
     public void setupConfiguration(Map<String, String> endpointCfg) throws GridException {
         for (Map.Entry<String,String> e : endpointCfg.entrySet()) {
-            if (e.getKey().equals("type"))
-                continue;
+            switch (e.getKey()) {
+                case "type": continue;
 
-            if ("port".equals(e.getKey()))
-                setPort(Integer.parseInt(e.getValue()));
-            else
-                throw new GridException("Invalid property '" + e.getKey() + "' of " + getClass().getSimpleName());
+                case "port":
+                    setPort(Integer.parseInt(e.getValue())); break;
+
+                case "host":
+                    setHost(e.getValue()); break;
+
+                case "management":
+                    setManagement(Boolean.valueOf(e.getValue())); break;
+
+                default:
+                    throw new GridException("Invalid property '" + e.getKey() + "' of " + getClass().getSimpleName());
+            }
         }
     }
 }

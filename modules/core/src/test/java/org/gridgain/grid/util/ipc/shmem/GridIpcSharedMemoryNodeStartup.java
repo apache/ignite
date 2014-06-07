@@ -17,6 +17,9 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 
+import java.util.Map;
+import java.util.TreeMap;
+
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
@@ -41,7 +44,12 @@ public class GridIpcSharedMemoryNodeStartup {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        ggfsCfg.setIpcEndpointConfiguration(GridTestUtils.jsonToMap("{type:'shmem', port:10500}"));
+        Map<String, String> endpointCfg = new TreeMap<>();
+
+        endpointCfg.put("type", "shmem");
+        endpointCfg.put("port", "10500");
+
+        ggfsCfg.setIpcEndpointConfiguration(endpointCfg);
 
         ggfsCfg.setDataCacheName("partitioned");
         ggfsCfg.setMetaCacheName("partitioned");

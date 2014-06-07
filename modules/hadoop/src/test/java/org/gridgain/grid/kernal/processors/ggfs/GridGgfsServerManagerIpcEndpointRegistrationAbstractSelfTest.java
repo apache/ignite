@@ -155,7 +155,7 @@ public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTe
         ggfsConfiguration.setManagementPort(mgmtPort.getAndIncrement());
 
         if (endpointCfg != null)
-            ggfsConfiguration.setIpcEndpointConfiguration(GridTestUtils.jsonToMap(endpointCfg));
+            ggfsConfiguration.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(endpointCfg));
 
         return ggfsConfiguration;
     }

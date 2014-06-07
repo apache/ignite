@@ -165,7 +165,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
             ggfsCfg.setDataCacheName("partitioned");
             ggfsCfg.setMetaCacheName("replicated");
             ggfsCfg.setName("ggfs_secondary");
-            ggfsCfg.setIpcEndpointConfiguration(GridTestUtils.jsonToMap(SECONDARY_ENDPOINT_CFG));
+            ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(SECONDARY_ENDPOINT_CFG));
             ggfsCfg.setBlockSize(512 * 1024);
             ggfsCfg.setPrefetchBlocks(1);
 
@@ -322,7 +322,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
             cfg.setSecondaryHadoopFileSystemConfigPath(SECONDARY_CFG_PATH);
         }
 
-        cfg.setIpcEndpointConfiguration(GridTestUtils.jsonToMap(primaryIpcEndpointConfiguration(gridName)));
+        cfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(primaryIpcEndpointConfiguration(gridName)));
         cfg.setManagementPort(-1);
         cfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 

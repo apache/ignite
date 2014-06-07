@@ -441,17 +441,25 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
 
     public void setupConfiguration(Map<String, String> endpointCfg) throws GridException {
         for (Map.Entry<String,String> e : endpointCfg.entrySet()) {
-            if (e.getKey().equals("type"))
-                continue;
+            switch (e.getKey()) {
+                case "type": continue;
 
-            if ("port".equals(e.getKey()))
-                setPort(Integer.parseInt(e.getValue()));
-            else if ("size".equals(e.getKey()))
-                setSize(Integer.parseInt(e.getValue()));
-            else if ("tokenDirectoryPath".equals(e.getKey()))
-                setTokenDirectoryPath(e.getValue());
-            else
-                throw new GridException("Invalid property '" + e.getKey() + "' of " + getClass().getSimpleName());
+                case "port":
+                    setPort(Integer.parseInt(e.getValue())); break;
+
+                case "host":
+                case "management":
+                    break;
+
+                case "size":
+                    setSize(Integer.parseInt(e.getValue())); break;
+
+                case "tokenDirectoryPath":
+                    setTokenDirectoryPath(e.getValue()); break;
+
+                default:
+                    throw new GridException("Invalid property '" + e.getKey() + "' of " + getClass().getSimpleName());
+            }
         }
     }
 

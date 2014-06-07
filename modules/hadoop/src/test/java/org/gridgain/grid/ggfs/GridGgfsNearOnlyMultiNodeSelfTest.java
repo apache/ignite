@@ -74,7 +74,7 @@ public class GridGgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
         ggfsCfg.setMetaCacheName("partitioned");
         ggfsCfg.setName("ggfs");
 
-        ggfsCfg.setIpcEndpointConfiguration(GridTestUtils.jsonToMap(
+        ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(
             "{type:'shmem', port:" + (GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + cnt) + "}"));
 
         ggfsCfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.

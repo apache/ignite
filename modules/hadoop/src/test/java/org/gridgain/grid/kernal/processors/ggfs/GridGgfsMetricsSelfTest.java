@@ -162,7 +162,7 @@ public class GridGgfsMetricsSelfTest extends GridCommonAbstractTest {
         ggfsCfg.setName(GGFS_SECONDARY);
         ggfsCfg.setBlockSize(SECONDARY_BLOCK_SIZE);
         ggfsCfg.setDefaultMode(PRIMARY);
-        ggfsCfg.setIpcEndpointConfiguration(GridTestUtils.jsonToMap(SECONDARY_REST_CFG));
+        ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(SECONDARY_REST_CFG));
 
         GridCacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 

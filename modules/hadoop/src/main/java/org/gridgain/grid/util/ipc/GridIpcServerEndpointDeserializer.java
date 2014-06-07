@@ -33,6 +33,9 @@ public class GridIpcServerEndpointDeserializer {
 
         String endpointType = endpointCfg.get("type");
 
+        if (endpointType == null)
+            throw new GridException("Failed to create server endpoint (type is not specified)");
+
         switch (endpointType) {
             case "shmem": {
                 GridIpcSharedMemoryServerEndpoint endpoint = new GridIpcSharedMemoryServerEndpoint();

@@ -74,7 +74,7 @@ public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridCommonAbstr
         ggfsCfg.setName("ggfs");
         ggfsCfg.setBlockSize(512 * 1024);
         ggfsCfg.setDefaultMode(PRIMARY);
-        ggfsCfg.setIpcEndpointConfiguration(GridTestUtils.jsonToMap("{type:'tcp', port:10500}"));
+        ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap("{type:'tcp', port:10500}"));
 
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
 
