@@ -24,6 +24,21 @@ public class GridSecurityContext implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Visor tasks prefix. */
+    private static final String VISOR_TASK_PREFIX = "org.gridgain.visor.gui.model.impl.tasks.";
+
+    /** Cache query task name. */
+    public static final String VISOR_CACHE_QUERY_TASK_NAME =
+        "org.gridgain.visor.gui.model.impl.tasks.VisorFieldsQueryTask";
+
+    /** Cache load task name. */
+    public static final String VISOR_CACHE_LOAD_TASK_NAME =
+        "org.gridgain.visor.gui.model.impl.tasks.VisorLoadCachesTask";
+
+    /** Cache clear task name. */
+    public static final String VISOR_CACHE_CLEAR_TASK_NAME =
+        "org.gridgain.visor.gui.model.impl.tasks.VisorClearCachesTask";
+
     /** Security subject. */
     private GridSecuritySubject subj;
 
@@ -138,11 +153,11 @@ public class GridSecurityContext implements Externalizable {
     /**
      * Checks if task is Visor task.
      *
-     * @param taskName Task name.
+     * @param taskCls Task class name.
      * @return {@code True} if task is Visor task.
      */
-    private boolean visorTask(String taskName) {
-        return false; // TODO.
+    private boolean visorTask(String taskCls) {
+        return taskCls.startsWith(VISOR_TASK_PREFIX);
     }
 
     /**
@@ -152,8 +167,19 @@ public class GridSecurityContext implements Externalizable {
      * @return {@code True} if execution is allowed.
      */
     private boolean visorTaskAllowed(String taskName) {
-        // TODO.
-        return subj.permissions().defaultAllowAll();
+        if (sysPermissions == null)
+            return subj.permissions().defaultAllowAll();
+
+        switch (taskName) {
+            case VISOR_CACHE_QUERY_TASK_NAME:
+                return sysPermissions.contains(GridSecurityPermission.MANAGEMENT_CACHE_READ);
+            case VISOR_CACHE_LOAD_TASK_NAME:
+                return sysPermissions.contains(GridSecurityPermission.MANAGEMENT_CACHE_LOAD);
+            case VISOR_CACHE_CLEAR_TASK_NAME:
+                return sysPermissions.contains(GridSecurityPermission.MANAGEMENT_CACHE_CLEAR);
+            default:
+                return sysPermissions.contains(GridSecurityPermission.MANAGEMENT_INSPECT);
+        }
     }
 
     /**

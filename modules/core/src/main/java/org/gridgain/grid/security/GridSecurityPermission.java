@@ -35,7 +35,19 @@ public enum GridSecurityPermission {
     EVENTS_ENABLE,
 
     /** Events {@code disable} permission. */
-    EVENTS_DISABLE;
+    EVENTS_DISABLE,
+
+    /** Common visor tasks permission. */
+    MANAGEMENT_INSPECT,
+
+    /** Visor cache read (query) permission. */
+    MANAGEMENT_CACHE_READ,
+
+    /** Visor cache load permission. */
+    MANAGEMENT_CACHE_LOAD,
+
+    /** Visor cache clear permission. */
+    MANAGEMENT_CACHE_CLEAR;
 
     /** Enumerated values. */
     private static final GridSecurityPermission[] VALS = values();
