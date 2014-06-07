@@ -65,7 +65,7 @@ public class GridGgfsHadoopFileSystemClientSelfTest extends GridCommonAbstractTe
         ggfsCfg.setMetaCacheName("replicated");
         ggfsCfg.setName("ggfs");
         ggfsCfg.setBlockSize(512 * 1024);
-        ggfsCfg.setIpcEndpointConfiguration("{type:'tcp', port:" + DFLT_IPC_PORT + '}');
+        ggfsCfg.setIpcEndpointConfiguration(GridTestUtils.jsonToMap("{type:'tcp', port:" + DFLT_IPC_PORT + '}'));
 
         cfg.setCacheConfiguration(cacheConfiguration());
         cfg.setGgfsConfiguration(ggfsCfg);

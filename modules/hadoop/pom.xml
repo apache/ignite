@@ -81,6 +81,7 @@
             <artifactId>json-lib</artifactId>
             <version>2.4</version>
             <classifier>jdk15</classifier>
+            <scope>test</scope>
         </dependency>
 
         <dependency>

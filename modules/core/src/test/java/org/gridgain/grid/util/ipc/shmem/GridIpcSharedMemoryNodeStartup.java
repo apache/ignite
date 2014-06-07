@@ -11,11 +11,11 @@ package org.gridgain.grid.util.ipc.shmem;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.testframework.*;
 
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -41,7 +41,7 @@ public class GridIpcSharedMemoryNodeStartup {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        ggfsCfg.setIpcEndpointConfiguration("{type:'shmem', port:10500}");
+        ggfsCfg.setIpcEndpointConfiguration(GridTestUtils.jsonToMap("{type:'shmem', port:10500}"));
 
         ggfsCfg.setDataCacheName("partitioned");
         ggfsCfg.setMetaCacheName("partitioned");

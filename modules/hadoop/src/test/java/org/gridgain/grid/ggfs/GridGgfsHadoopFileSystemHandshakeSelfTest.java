@@ -224,7 +224,7 @@ public class GridGgfsHadoopFileSystemHandshakeSelfTest extends GridCommonAbstrac
         ggfsCfg.setName(dfltGgfsName ? null : GGFS_NAME);
         ggfsCfg.setPrefetchBlocks(1);
         ggfsCfg.setDefaultMode(PRIMARY);
-        ggfsCfg.setIpcEndpointConfiguration("{type:'tcp', port:" + DFLT_IPC_PORT + "}");
+        ggfsCfg.setIpcEndpointConfiguration(GridTestUtils.jsonToMap("{type:'tcp', port:" + DFLT_IPC_PORT + "}"));
         ggfsCfg.setManagementPort(-1);
         ggfsCfg.setBlockSize(512 * 1024);
 

@@ -10,6 +10,7 @@
 package org.gridgain.testframework;
 
 import junit.framework.*;
+import net.sf.json.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -1305,5 +1306,28 @@ public final class GridTestUtils {
         factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
 
         return factory;
+    }
+
+    public static Map<String,String> jsonToMap(String jsonString) throws GridException {
+        if (F.isEmpty(jsonString))
+            return null;
+
+        try {
+            Map<String,String> res = new TreeMap<>();
+
+            JSONObject jsonObj = JSONObject.fromObject(jsonString);
+
+            for (Object o : jsonObj.entrySet()) {
+                Map.Entry<String,String> e = (Map.Entry<String, String>) o;
+
+                res.put(e.getKey(), e.getValue());
+            }
+
+            return res;
+        }
+        catch (JSONException e) {
+            throw new GridException("Failed to parse server endpoint.", e);
+        }
+
     }
 }

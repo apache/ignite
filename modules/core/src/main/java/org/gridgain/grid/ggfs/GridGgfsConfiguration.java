@@ -110,7 +110,7 @@ public class GridGgfsConfiguration {
     private int perNodeParallelBatchCnt = DFLT_PER_NODE_PARALLEL_BATCH_CNT;
 
     /** IPC endpoint config (in JSON format) to publish GGFS over. */
-    private String ipcEndpointCfg;
+    private Map<String,String> ipcEndpointCfg;
 
     /** IPC endpoint enabled flag. */
     private boolean ipcEndpointEnabled = DFLT_IPC_ENDPOINT_ENABLED;
@@ -441,7 +441,7 @@ public class GridGgfsConfiguration {
      * @return IPC endpoint configuration in JSON format. In case the value is not set, defaults will be used. Default
      * type for Windows is "tcp", for all other platforms - "shmem". Default port is {@link #DFLT_IPC_PORT}.
      */
-    @Nullable public String getIpcEndpointConfiguration() {
+    @Nullable public Map<String,String> getIpcEndpointConfiguration() {
         return ipcEndpointCfg;
     }
 
@@ -450,7 +450,7 @@ public class GridGgfsConfiguration {
      *
      * @param ipcEndpointCfg IPC endpoint config (in JSON format).
      */
-    public void setIpcEndpointConfiguration(@Nullable String ipcEndpointCfg) {
+    public void setIpcEndpointConfiguration(@Nullable Map<String,String> ipcEndpointCfg) {
         this.ipcEndpointCfg = ipcEndpointCfg;
     }
 

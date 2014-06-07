@@ -21,6 +21,7 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.ipc.shmem.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
@@ -73,8 +74,8 @@ public class GridGgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
         ggfsCfg.setMetaCacheName("partitioned");
         ggfsCfg.setName("ggfs");
 
-        ggfsCfg.setIpcEndpointConfiguration("{type:'shmem', port:" + (GridIpcSharedMemoryServerEndpoint
-            .DFLT_IPC_PORT + cnt) + "}");
+        ggfsCfg.setIpcEndpointConfiguration(GridTestUtils.jsonToMap(
+            "{type:'shmem', port:" + (GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + cnt) + "}"));
 
         ggfsCfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 
