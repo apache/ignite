@@ -53,12 +53,14 @@ public class GridOsSecurityManager extends GridNoopManagerAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecurityContext authenticate(GridAuthenticationContext ctx) throws GridException {
-        GridSecuritySubjectAdapter s = new GridSecuritySubjectAdapter(ctx.subjectType(), ctx.subjectId());
+    @Override public GridSecurityContext authenticate(GridAuthenticationContext authCtx) throws GridException {
+        GridSecuritySubjectAdapter s = new GridSecuritySubjectAdapter(authCtx.subjectType(), authCtx.subjectId());
 
         s.permissions(ALLOW_ALL);
-        s.address(ctx.address());
-        s.login(ctx.credentials().getLogin());
+        s.address(authCtx.address());
+
+        if (authCtx.credentials() != null)
+            s.login(authCtx.credentials().getLogin());
 
         return new GridSecurityContext(s);
     }
