@@ -873,7 +873,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         // Check before load.
         if (cctx.isAll(this, filter)) {
-            V ret = readThrough(null, key, true, filter, null);
+            V ret = readThrough(null, key, true, filter, cctx.localNodeId());
 
             boolean touch = false;
 

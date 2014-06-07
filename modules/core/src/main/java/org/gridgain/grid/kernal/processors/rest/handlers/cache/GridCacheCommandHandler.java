@@ -331,7 +331,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         final GridCacheFlag[] flags,
         final Object key,
         final CacheProjectionCommand op) throws GridException {
-        assert clientId != null;
 
         final boolean locExec =
             destId == null || destId.equals(ctx.localNodeId()) || replicatedCacheAvailable(cacheName);

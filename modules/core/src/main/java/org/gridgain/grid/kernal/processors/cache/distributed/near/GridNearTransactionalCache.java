@@ -143,7 +143,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
         assert tx != null;
 
-        GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx, keys, false, false, tx, filter, CU.subjectId(tx));
+        GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx, keys, false, false, tx, filter,
+            CU.subjectId(tx, ctx));
 
         // init() will register future for responses if it has remote mappings.
         fut.init();

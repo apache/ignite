@@ -1530,9 +1530,9 @@ public class GridCacheUtils {
      * @param tx Transaction.
      * @return Subject ID.
      */
-    public static <K, V> UUID subjectId(GridCacheTxEx<K, V> tx) {
+    public static <K, V> UUID subjectId(GridCacheTxEx<K, V> tx, GridCacheContext<K, V> ctx) {
         if (tx == null)
-            return null;
+            return ctx.localNodeId();
 
         UUID subjId = tx.subjectId();
 
