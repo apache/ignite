@@ -1173,6 +1173,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public void clearAll() {
         ctx.denyOnFlag(READ);
+        ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
 
         List<GridCacheClearAllRunnable<K, V>> jobs = splitClearAll();
 
@@ -4028,6 +4029,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     public void clearAll0(Collection<? extends K> keys,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         ctx.denyOnFlag(READ);
+        ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
 
         if (F.isEmpty(keys)) {
             return;
@@ -4052,6 +4054,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         validateCacheKey(key);
 
         ctx.denyOnFlag(READ);
+        ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
 
         return clear(ctx.versions().next(), key, filter);
     }
