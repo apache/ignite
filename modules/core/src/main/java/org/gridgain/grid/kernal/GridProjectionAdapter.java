@@ -497,7 +497,8 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
 
     /** {@inheritDoc} */
     @Override public GridProjectionEx forSubjectId(UUID subjId) {
-        assert subjId != null;
+        if (subjId == null)
+            return this;
 
         guard();
 

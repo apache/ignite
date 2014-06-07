@@ -365,8 +365,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         final String cacheName,
         final Object key,
         final CacheCommand op) throws GridException {
-        assert clientId != null;
-
         final boolean locExec = destId == null || destId.equals(ctx.localNodeId()) ||
             ctx.cache().cache(cacheName) != null;
 
