@@ -20,7 +20,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <gridgain.version>6.1.6</gridgain.version>
+        <gridgain.version>6.1.7</gridgain.version>
         <gridgain.jar>%ANT_AUGMENTED_GGJAR%</gridgain.jar>
     </properties>
 
