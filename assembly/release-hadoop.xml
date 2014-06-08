@@ -39,30 +39,30 @@
         <componentDescriptor>release-base.xml</componentDescriptor>
     </componentDescriptors>
 
+    <files>
+        <file>
+            <source>docs/hadoop_readme.pdf</source>
+            <outputDirectory>/docs</outputDirectory>
+        </file>
+
+        <file>
+            <source>bin/gghadoop.bat</source>
+            <outputDirectory>/bin</outputDirectory>
+        </file>
+
+        <file>
+            <source>bin/gghadoop.sh</source>
+            <outputDirectory>/bin</outputDirectory>
+            <fileMode>0755</fileMode>
+        </file>
+    </files>
+
     <fileSets>
         <fileSet>
-            <directory>examples</directory>
-            <outputDirectory>/examples</outputDirectory>
-            <includes>
-                <include>config/**</include>
-                <include>src/**</include>
-            </includes>
+            <directory>libs</directory>
+            <outputDirectory>/libs</outputDirectory>
             <excludes>
-                <exclude>**/package.html</exclude>
-                <exclude>pom-standalone.xml</exclude>
-                <exclude>src/test/**</exclude>
-                <exclude>src/main/java/org/gridgain/examples/datagrid/**</exclude>
-                <exclude>src/**/client/interceptor/**</exclude>
-                <exclude>src/**/client/memcache/**</exclude>
-                <exclude>src/**/ClientCacheExample*</exclude>
-                <exclude>src/**/scala/**/ScalarCache*</exclude>
-                <exclude>src/**/scala/**/ScalarPopularNumbersRealTimeExample*</exclude>
-                <exclude>src/**/scala/**/ScalarSnowflakeSchemaExample*</exclude>
-                <exclude>src/main/java/org/gridgain/examples/streaming/**</exclude>
-                <exclude>config/example-cache*</exclude>
-                <exclude>config/hibernate/**</exclude>
-                <exclude>config/example-streamer*</exclude>
-                <exclude>config/servlet/**</exclude>
+                <exclude>optional/**</exclude>
             </excludes>
         </fileSet>
     </fileSets>
