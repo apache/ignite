@@ -11,18 +11,17 @@
 
 package org.gridgain.visor.commands.start
 
-import org.scalatest._
-import matchers._
 import org.gridgain.visor._
-import VisorStartCommand._
-import commands.top.VisorTopologyCommand._
+import org.gridgain.visor.commands.start.VisorStartCommand._
+import org.gridgain.visor.commands.top.VisorTopologyCommand._
+import org.scalatest._
 
 /**
  * Unit test for 'start' command.
  */
-class VisorStartCommandSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterAll {
+class VisorStartCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     override def beforeAll() {
-        visor.open("-d", false)
+        visor.open("-d")
     }
 
     override def afterAll() {

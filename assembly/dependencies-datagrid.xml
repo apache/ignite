@@ -68,23 +68,12 @@
                 </fileSets>
             </sources>
         </moduleSet>
-
-        <moduleSet>
-            <includes>
-                <include>org.gridgain:gridgain-core</include>
-            </includes>
-            <sources>
-                <includeModuleDirectory>false</includeModuleDirectory>
-                <fileSets>
-                    <fileSet>
-                        <directory>target</directory>
-                        <outputDirectory>/</outputDirectory>
-                        <includes>
-                            <include>gridgain-${gridgain.version}.jar</include>
-                        </includes>
-                    </fileSet>
-                </fileSets>
-            </sources>
-        </moduleSet>
     </moduleSets>
+
+    <files>
+        <file>
+            <source>target/gridgain-${gridgain.version}.jar</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+    </files>
 </assembly>

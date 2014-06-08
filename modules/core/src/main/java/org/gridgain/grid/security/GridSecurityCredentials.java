@@ -39,6 +39,9 @@ import java.io.*;
  */
 // TODO: 8491 (need be portable to make client security tests pass).
 public class GridSecurityCredentials implements Externalizable {
+    /** */
+    private static final long serialVersionUID = -2655741071578326256L;
+
     /** Login. */
     private String login;
 

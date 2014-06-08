@@ -29,6 +29,7 @@ import java.util.*;
  * <li>{@link GridMarshallerResource}</li>
  * <li>{@link GridSpringApplicationContextResource}</li>
  * <li>{@link GridSpringResource}</li>
+ * <li>{@link GridAddressResolverResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
  */

@@ -11,6 +11,7 @@
 
 package org.gridgain.visor.commands.open
 
+import org.gridgain.grid.GridException
 import org.gridgain.visor._
 
 /**
@@ -20,18 +21,14 @@ class VisorOpenCommandSpec extends VisorRuntimeBaseSpec(3) {
     behavior of "A 'open' visor command"
 
     it should "properly connect using default configuration" in {
-        visor open("-d", false)
-        visor mlist()
-        visor close()
+        visor.mlist()
     }
 
     it should "print error message when already connected" in {
-        visor open("-d", false)
-        visor open("-d", false)
-        visor close()
-    }
-
-    it should "print error message about wrong parameter combination" in {
-        visor open("-d -e", false)
+        try
+            openVisor()
+        catch {
+            case ignored: GridException =>
+        }
     }
 }
