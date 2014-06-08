@@ -15,10 +15,8 @@ import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.testframework.*;
 
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;

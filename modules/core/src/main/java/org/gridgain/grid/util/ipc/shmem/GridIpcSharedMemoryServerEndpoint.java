@@ -439,26 +439,44 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
         return S.toString(GridIpcSharedMemoryServerEndpoint.class, this);
     }
 
+    /**
+     * Sets configuration properties from the map.
+     *
+     * @param endpointCfg Map of properties.
+     * @throws GridException If invalid property name or value.
+     */
     public void setupConfiguration(Map<String, String> endpointCfg) throws GridException {
         for (Map.Entry<String,String> e : endpointCfg.entrySet()) {
-            switch (e.getKey()) {
-                case "type": continue;
+            try {
+                switch (e.getKey()) {
+                    case "type":
+                    case "host":
+                    case "management":
+                        //Ignore these properties
+                        break;
 
-                case "port":
-                    setPort(Integer.parseInt(e.getValue())); break;
+                    case "port":
+                        setPort(Integer.parseInt(e.getValue()));
+                        break;
 
-                case "host":
-                case "management":
-                    break;
+                    case "size":
+                        setSize(Integer.parseInt(e.getValue()));
+                        break;
 
-                case "size":
-                    setSize(Integer.parseInt(e.getValue())); break;
+                    case "tokenDirectoryPath":
+                        setTokenDirectoryPath(e.getValue());
+                        break;
 
-                case "tokenDirectoryPath":
-                    setTokenDirectoryPath(e.getValue()); break;
+                    default:
+                        throw new GridException("Invalid property '" + e.getKey() + "' of " + getClass().getSimpleName());
+                }
+            }
+            catch (Throwable t) {
+                if (t instanceof GridException)
+                    throw t;
 
-                default:
-                    throw new GridException("Invalid property '" + e.getKey() + "' of " + getClass().getSimpleName());
+                throw new GridException("Invalid value '" + e.getValue() + "' of the property '" + e.getKey() + "' in " +
+                        getClass().getSimpleName(), t);
             }
         }
     }

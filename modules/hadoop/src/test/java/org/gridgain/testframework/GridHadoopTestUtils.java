@@ -39,7 +39,7 @@ public class GridHadoopTestUtils {
 
         }
         catch (JSONException e) {
-            throw new GridException("Failed to parse server endpoint.", e);
+            throw new GridException(e);
         }
 
         return res;

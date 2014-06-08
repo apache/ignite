@@ -56,28 +56,6 @@ public class GridIpcServerEndpointDeserializerSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception In case of any exception.
      */
-    public void testDeserializeIfJsonIsEmpty() throws Exception {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return GridIpcServerEndpointDeserializer.deserialize(GridHadoopTestUtils.jsonToMap(""));
-            }
-        }, GridException.class, "Failed to parse server endpoint.");
-    }
-
-    /**
-     * @throws Exception In case of any exception.
-     */
-    public void testDeserializeIfJsonIsBadlyBroken() throws Exception {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return GridIpcServerEndpointDeserializer.deserialize(GridHadoopTestUtils.jsonToMap("{sdgfjdgsfj:dasfjdskjgf}"));
-            }
-        }, GridException.class, "Failed to parse server endpoint.");
-    }
-
-    /**
-     * @throws Exception In case of any exception.
-     */
     public void testDeserializeIfShmemAndNoTypeInfoInJson() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {

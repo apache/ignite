@@ -17,16 +17,16 @@ import org.gridgain.grid.util.ipc.shmem.*;
 import java.util.*;
 
 /**
- * Grid GridIpcServerEndpoint configuration JSON deserializer.
+ * Grid GridIpcServerEndpoint configuration deserializer.
  */
 public class GridIpcServerEndpointDeserializer {
     /**
-     * Deserializes JSON-formatted IPC server endpoint config into concrete
+     * Deserializes IPC server endpoint config into concrete
      * instance of {@link GridIpcServerEndpoint}.
      *
-     * @param endpointCfg JSON-formatted IPC server endpoint config.
+     * @param endpointCfg Map with properties of the IPC server endpoint config.
      * @return Deserialized instance of {@link GridIpcServerEndpoint}.
-     * @throws GridException If any problem with JSON parsing has happened.
+     * @throws GridException If any problem with configuration properties setting has happened.
      */
     public static GridIpcServerEndpoint deserialize(Map<String,String> endpointCfg) throws GridException {
         A.notNull(endpointCfg, "endpointCfg");
