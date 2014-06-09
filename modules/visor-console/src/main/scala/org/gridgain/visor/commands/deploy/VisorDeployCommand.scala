@@ -11,6 +11,8 @@
 
 package org.gridgain.visor.commands.deploy
 
+import org.gridgain.grid.util.{GridUtils => U}
+
 import java.io._
 import java.util.concurrent._
 
@@ -124,14 +126,22 @@ private case class VisorCopier(
      */
     private def ggHome(): String = {
         def exec(cmd: String): String = {
-            val ch = ses.openChannel("exec").asInstanceOf[ChannelExec]
-
-            ch.setCommand(cmd)
+            val ch = ses.openChannel("shell").asInstanceOf[ChannelShell]
 
             try {
                 ch.connect()
 
-                new BufferedReader(new InputStreamReader(ch.getInputStream)).readLine.trim
+                U.sleep(1000)
+
+                val writer = new PrintStream(ch.getOutputStream, true)
+
+                val reader = new BufferedReader(new InputStreamReader(ch.getInputStream))
+
+                writer.println(cmd)
+
+                reader.readLine()
+
+                reader.readLine()
             }
             catch {
                 case e: JSchException =>
@@ -139,9 +149,10 @@ private case class VisorCopier(
 
                     ""
             }
-            finally
+            finally {
                 if (ch.isConnected)
                     ch.disconnect()
+            }
         }
 
         // Try Linux and than Windows.
@@ -291,37 +302,33 @@ class VisorDeployCommand {
     def deploy(args: String) = breakable {
         assert(args != null)
 
-        if (!isConnected)
-            adviseToConnect()
-        else {
-            val argLst = parseArgs(args)
+        val argLst = parseArgs(args)
 
-            val dfltUname = argValue("u", argLst)
-            val dfltPasswd = argValue("p", argLst)
-            val key = argValue("k", argLst)
-            val src = argValue("s", argLst)
-            val dest = argValue("d", argLst)
+        val dfltUname = argValue("u", argLst)
+        val dfltPasswd = argValue("p", argLst)
+        val key = argValue("k", argLst)
+        val src = argValue("s", argLst)
+        val dest = argValue("d", argLst)
 
-            if (!src.isDefined)
-                scold("Source is not defined.").^^
+        if (!src.isDefined)
+            scold("Source is not defined.").^^
 
-            var hosts = Set.empty[VisorHost]
+        var hosts = Set.empty[VisorHost]
 
-            argLst.filter(_._1 == "h").map(_._2).foreach(h => {
-                try
-                    hosts ++= mkHosts(h, dfltUname, dfltPasswd, key.isDefined)
-                catch {
-                    case e: IllegalArgumentException => scold(e.getMessage).^^
-                }
-            })
-
-            val copiers = hosts.map(VisorCopier(_, key, src.get, dest getOrElse ""))
-
+        argLst.filter(_._1 == "h").map(_._2).foreach(h => {
             try
-                copiers.map(pool.submit(_)).foreach(_.get)
+                hosts ++= mkHosts(h, dfltUname, dfltPasswd, key.isDefined)
             catch {
-                case _: RejectedExecutionException => scold("Failed due to system error.").^^
+                case e: IllegalArgumentException => scold(e.getMessage).^^
             }
+        })
+
+        val copiers = hosts.map(VisorCopier(_, key, src.get, dest getOrElse ""))
+
+        try
+            copiers.map(pool.submit(_)).foreach(_.get)
+        catch {
+            case _: RejectedExecutionException => scold("Failed due to system error.").^^
         }
     }
 

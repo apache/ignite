@@ -213,7 +213,7 @@ object visor extends VisorTag {
     @volatile private var rmtLogDisabled = false
 
     /** Internal thread pool. */
-    @volatile var pool: ExecutorService = null
+    @volatile var pool: ExecutorService = new GridThreadPoolExecutor()
 
     /** Configuration file path, if any. */
     @volatile var cfgPath: String = null
@@ -1556,8 +1556,6 @@ object visor extends VisorTag {
         if (!grid.configuration().isPeerClassLoadingEnabled)
             warn("Peer class loading is disabled (custom closures in shell mode will not work).")
 
-        pool = new GridThreadPoolExecutor()
-
         grid.nodes().foreach(n => {
             setVarIfAbsent(nid8(n), "n")
 
@@ -2100,7 +2098,7 @@ object visor extends VisorTag {
                         Thread.currentThread.interrupt()
                 }
 
-                pool = null
+                pool = new GridThreadPoolExecutor()
             }
 
             // Call all close callbacks.
