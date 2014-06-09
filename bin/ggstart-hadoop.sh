@@ -35,7 +35,7 @@ if [ "$HADOOP_HOME" == "" ]; then
 fi
 
 echo
-echo "INFO: Hadoop has found in $HADOOP_HOME"
+echo "INFO: Hadoop was found in $HADOOP_HOME"
 echo
 
 #

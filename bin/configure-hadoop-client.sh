@@ -1,17 +1,17 @@
 #!/bin/bash
 #
-# Copyright (C) GridGain Systems. All Rights Reserved.
+# @sh.file.header
 #  _________        _____ __________________        _____
 #  __  ____/___________(_)______  /__  ____/______ ____(_)_______
 #  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
 #  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
 #  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
 #
-# Version: 6.1.8
+# Version: @sh.file.version
 #
 
 #
-# Add simbolyc links to gridgain libs into hadoop libs.
+# Adds simbolyc links to gridgain jars into hadoop libs folder.
 # Run this script to confure hadoop client to work with gridgain.
 #
 
@@ -71,5 +71,5 @@ COMMON_HOME_LIB=$HADOOP_COMMON_HOME/lib
 
 rm  ${COMMON_HOME_LIB}/gridgain* 2>/dev/null
 
-ln -s $GG_JAR ${COMMON_HOME_LIB}/gridgain.jar
-ln -s ${GGH_JAR} ${COMMON_HOME_LIB}/gridgain-hadoop.jar
+ln -s $GG_JAR ${COMMON_HOME_LIB}/$(basename $GG_JAR)
+ln -s $GGH_JAR ${COMMON_HOME_LIB}/$(basename $GGH_JAR)

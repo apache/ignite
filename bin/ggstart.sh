@@ -76,6 +76,7 @@ if [ -z "$JVM_OPTS" ] ; then
     JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts"
 fi
 
+# Hadoop needs class unloader
 if [ -z "GRIDGAIN_HADOOP_CLASSPATH" ]; then
     JVM_OPTS="$JVM_OPTS -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled"
 fi
