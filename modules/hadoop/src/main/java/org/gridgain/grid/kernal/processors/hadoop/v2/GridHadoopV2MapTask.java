@@ -17,8 +17,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.io.*;
-
 /**
  * Hadoop map task implementation for v2 API.
  */
@@ -32,11 +30,8 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
-        GridHadoopV2Job jobImpl = (GridHadoopV2Job)taskCtx.job();
-
-        JobContext jobCtx = jobImpl.hadoopJobContext();
-
+    @Override public void run0(GridHadoopV2Job jobImpl, JobContext jobCtx, GridHadoopTaskContext taskCtx)
+        throws GridException {
         Mapper mapper;
         InputFormat inFormat;
 
@@ -47,8 +42,6 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
         catch (ClassNotFoundException e) {
             throw new GridException(e);
         }
-
-        hadoopContext(new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx, jobImpl.attemptId(info())));
 
         GridHadoopInputSplit split = info().inputSplit();
 
@@ -66,6 +59,9 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
 
         assert nativeSplit != null;
 
+        OutputFormat outputFormat = null;
+        Exception err = null;
+
         try {
             RecordReader reader = inFormat.createRecordReader(nativeSplit, hadoopContext());
 
@@ -73,7 +69,7 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
 
             hadoopContext().reader(reader);
 
-            OutputFormat outputFormat = jobImpl.hasCombinerOrReducer() ? null : prepareWriter(jobCtx);
+            outputFormat = jobImpl.hasCombinerOrReducer() ? null : prepareWriter(jobCtx);
 
             try {
                 mapper.run(new WrappedMapper().getMapContext(hadoopContext()));
@@ -84,13 +80,21 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
 
             commit(outputFormat);
         }
-        catch (IOException e) {
-            throw new GridException(e);
-        }
         catch (InterruptedException e) {
+            err = e;
+
             Thread.currentThread().interrupt();
 
             throw new GridInterruptedException(e);
+        }
+        catch (Exception e) {
+            err = e;
+
+            throw new GridException(e);
+        }
+        finally {
+            if (err != null)
+                abort(outputFormat);
         }
     }
 }

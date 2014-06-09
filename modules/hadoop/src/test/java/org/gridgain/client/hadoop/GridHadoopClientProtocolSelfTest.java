@@ -43,6 +43,10 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     /** Job name. */
     private static final String JOB_NAME = "myJob";
 
+    /** Setup lock file. */
+    private static File setupLockFile = new File(U.isWindows() ? System.getProperty("java.io.tmpdir") : "/tmp",
+        "gg-lock-setup.file");
+
     /** Map lock file. */
     private static File mapLockFile = new File(U.isWindows() ? System.getProperty("java.io.tmpdir") : "/tmp",
         "gg-lock-map.file");
@@ -72,6 +76,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
         startGrids(gridCount());
 
+        setupLockFile.delete();
         mapLockFile.delete();
         reduceLockFile.delete();
     }
@@ -87,9 +92,11 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        setupLockFile.createNewFile();
         mapLockFile.createNewFile();
         reduceLockFile.createNewFile();
 
+        setupLockFile.deleteOnExit();
         mapLockFile.deleteOnExit();
         reduceLockFile.deleteOnExit();
 
@@ -100,6 +107,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     @Override protected void afterTest() throws Exception {
         grid(0).ggfs(GridHadoopAbstractSelfTest.ggfsName).format().get();
 
+        setupLockFile.delete();
         mapLockFile.delete();
         reduceLockFile.delete();
 
@@ -196,7 +204,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
             job.setNumReduceTasks(0);
 
         job.setInputFormatClass(TextInputFormat.class);
-        job.setOutputFormatClass(TextOutputFormat.class);
+        job.setOutputFormatClass(TestOutputFormat.class);
 
         FileInputFormat.setInputPaths(job, new Path(PATH_INPUT));
         FileOutputFormat.setOutputPath(job, new Path(PATH_OUTPUT));
@@ -205,19 +213,49 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
         JobID jobId = job.getJobID();
 
+        // Setup phase.
         JobStatus jobStatus = job.getStatus();
-        checkJobStatus(jobStatus, jobId, JOB_NAME, USR, JobStatus.State.RUNNING, 1.0f, 0.0f);
-        assert jobStatus.getMapProgress() >= 0.0f && jobStatus.getMapProgress() < 1.0f;
+        checkJobStatus(jobStatus, jobId, JOB_NAME, USR, JobStatus.State.RUNNING, 0.0f);
+        assert jobStatus.getSetupProgress() >= 0.0f && jobStatus.getSetupProgress() < 1.0f;
+        assert jobStatus.getMapProgress() == 0.0f;
         assert jobStatus.getReduceProgress() == 0.0f;
 
-        // Ensure that map progress increases.
         U.sleep(2100);
 
         JobStatus recentJobStatus = job.getStatus();
 
+        assert recentJobStatus.getSetupProgress() > jobStatus.getSetupProgress() :
+            "Old=" + jobStatus.getSetupProgress() + ", new=" + recentJobStatus.getSetupProgress();
+
+        // Transferring to map phase.
+        setupLockFile.delete();
+
+        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                try {
+                    return F.eq(1.0f, job.getStatus().getSetupProgress());
+                }
+                catch (Exception e) {
+                    throw new RuntimeException("Unexpected exception.", e);
+                }
+            }
+        }, 5000L);
+
+        // Map phase.
+        jobStatus = job.getStatus();
+        checkJobStatus(jobStatus, jobId, JOB_NAME, USR, JobStatus.State.RUNNING, 0.0f);
+        assert jobStatus.getSetupProgress() == 1.0f;
+        assert jobStatus.getMapProgress() >= 0.0f && jobStatus.getMapProgress() < 1.0f;
+        assert jobStatus.getReduceProgress() == 0.0f;
+
+        U.sleep(2100);
+
+        recentJobStatus = job.getStatus();
+
         assert recentJobStatus.getMapProgress() > jobStatus.getMapProgress() :
             "Old=" + jobStatus.getMapProgress() + ", new=" + recentJobStatus.getMapProgress();
 
+        // Transferring to reduce phase.
         mapLockFile.delete();
 
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -232,8 +270,10 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         }, 5000L);
 
         if (!noReducers) {
+            // Reduce phase.
             jobStatus = job.getStatus();
-            checkJobStatus(jobStatus, jobId, JOB_NAME, USR, JobStatus.State.RUNNING, 1.0f, 0.0f);
+            checkJobStatus(jobStatus, jobId, JOB_NAME, USR, JobStatus.State.RUNNING, 0.0f);
+            assert jobStatus.getSetupProgress() == 1.0f;
             assert jobStatus.getMapProgress() == 1.0f;
             assert jobStatus.getReduceProgress() >= 0.0f && jobStatus.getReduceProgress() < 1.0f;
 
@@ -251,7 +291,8 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         job.waitForCompletion(false);
 
         jobStatus = job.getStatus();
-        checkJobStatus(job.getStatus(), jobId, JOB_NAME, USR, JobStatus.State.SUCCEEDED, 1.0f, 1.0f);
+        checkJobStatus(job.getStatus(), jobId, JOB_NAME, USR, JobStatus.State.SUCCEEDED, 1.0f);
+        assert jobStatus.getSetupProgress() == 1.0f;
         assert jobStatus.getMapProgress() == 1.0f;
         assert jobStatus.getReduceProgress() == 1.0f;
 
@@ -298,19 +339,15 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
      * @param expJobName Expected job name.
      * @param expUser Expected user.
      * @param expState Expected state.
-     * @param expSetupProgress Expected setup progress.
      * @param expCleanupProgress Expected cleanup progress.
      * @throws Exception If failed.
      */
     private static void checkJobStatus(JobStatus status, JobID expJobId, String expJobName, String expUser,
-        JobStatus.State expState, float expSetupProgress, float expCleanupProgress) throws Exception {
+        JobStatus.State expState, float expCleanupProgress) throws Exception {
         assert F.eq(status.getJobID(), expJobId) : "Expected=" + expJobId + ", actual=" + status.getJobID();
         assert F.eq(status.getJobName(), expJobName) : "Expected=" + expJobName + ", actual=" + status.getJobName();
         assert F.eq(status.getUsername(), expUser) : "Expected=" + expUser + ", actual=" + status.getUsername();
         assert F.eq(status.getState(), expState) : "Expected=" + expState + ", actual=" + status.getState();
-
-        assert F.eq(status.getSetupProgress(), expSetupProgress) :
-            "Expected=" + expSetupProgress + ", actual=" + status.getSetupProgress();
         assert F.eq(status.getCleanupProgress(), expCleanupProgress) :
             "Expected=" + expCleanupProgress + ", actual=" + status.getCleanupProgress();
     }
@@ -368,6 +405,68 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
      */
     public static class TestCombiner extends Reducer<Text, IntWritable, Text, IntWritable> {
         // No-op.
+    }
+
+    public static class TestOutputFormat<K, V> extends TextOutputFormat<K, V> {
+        /** {@inheritDoc} */
+        @Override public synchronized OutputCommitter getOutputCommitter(TaskAttemptContext context)
+            throws IOException {
+            return new TestOutputCommitter(context, (FileOutputCommitter)super.getOutputCommitter(context));
+        }
+    }
+
+    /**
+     * Test output committer.
+     */
+    private static class TestOutputCommitter extends FileOutputCommitter {
+        /** Delegate. */
+        private final FileOutputCommitter delegate;
+
+        /**
+         * Constructor.
+         *
+         * @param context Task attempt context.
+         * @param delegate Delegate.
+         * @throws IOException If failed.
+         */
+        private TestOutputCommitter(TaskAttemptContext context, FileOutputCommitter delegate) throws IOException {
+            super(FileOutputFormat.getOutputPath(context), context);
+
+            this.delegate = delegate;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setupJob(JobContext jobContext) throws IOException {
+            try {
+                while (setupLockFile.exists())
+                    Thread.sleep(50);
+            }
+            catch (InterruptedException e) {
+                throw new IOException("Interrupted.");
+            }
+
+            delegate.setupJob(jobContext);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setupTask(TaskAttemptContext taskContext) throws IOException {
+            delegate.setupTask(taskContext);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean needsTaskCommit(TaskAttemptContext taskContext) throws IOException {
+            return delegate.needsTaskCommit(taskContext);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void commitTask(TaskAttemptContext taskContext) throws IOException {
+            delegate.commitTask(taskContext);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void abortTask(TaskAttemptContext taskContext) throws IOException {
+            delegate.abortTask(taskContext);
+        }
     }
 
     /**

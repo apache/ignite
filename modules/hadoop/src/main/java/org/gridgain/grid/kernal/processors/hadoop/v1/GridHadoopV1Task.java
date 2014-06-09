@@ -23,7 +23,7 @@ import java.text.*;
  */
 public abstract class GridHadoopV1Task extends GridHadoopTask {
     /** Indicates that this task is to be cancelled. */
-    private boolean cancelled;
+    private volatile boolean cancelled;
 
     /**
      * Constructor.
@@ -58,17 +58,22 @@ public abstract class GridHadoopV1Task extends GridHadoopTask {
      * @return Collector.
      * @throws IOException In case of IO exception.
      */
-    protected GridHadoopOutputCollector getCollector(JobConf jobConf, GridHadoopTaskContext taskCtx, boolean directWrite,
-                                                   @Nullable String fileName, TaskAttemptID attempt) throws IOException {
-        return new GridHadoopOutputCollector(jobConf, taskCtx, directWrite, fileName, attempt) {
+    protected GridHadoopV1OutputCollector collector(JobConf jobConf, GridHadoopTaskContext taskCtx,
+        boolean directWrite, @Nullable String fileName, TaskAttemptID attempt) throws IOException {
+        GridHadoopV1OutputCollector collector = new GridHadoopV1OutputCollector(jobConf, taskCtx, directWrite,
+            fileName, attempt) {
             /** {@inheritDoc} */
             @Override public void collect(Object key, Object val) throws IOException {
                 if (cancelled)
-                    throw new GridHadoopTaskCancelledException("Map task cancelled.");
+                    throw new GridHadoopTaskCancelledException("Task cancelled.");
 
                 super.collect(key, val);
             }
         };
+
+        collector.setup();
+
+        return collector;
     }
 
     /** {@inheritDoc} */

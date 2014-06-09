@@ -168,6 +168,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
      */
     private GridHadoopTaskInput createInput(GridHadoopTaskInfo info, boolean localCombiner) throws GridException {
         switch (info.type()) {
+            case SETUP:
             case MAP:
             case COMMIT:
             case ABORT:
@@ -207,6 +208,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
      */
     private GridHadoopTaskOutput createOutput(GridHadoopTaskInfo info, boolean localCombiner) throws GridException {
         switch (info.type()) {
+            case SETUP:
             case REDUCE:
             case COMMIT:
             case ABORT:

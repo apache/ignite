@@ -161,6 +161,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param info Job info.
      * @return Job completion future.
      */
+    @SuppressWarnings("unchecked")
     public GridFuture<GridHadoopJobId> submit(GridHadoopJobId jobId, GridHadoopJobInfo info) {
         if (!busyLock.tryReadLock()) {
             return new GridFinishedFutureEx<>(new GridException("Failed to execute map-reduce job " +
@@ -308,6 +309,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param info Task info.
      * @param status Task status.
      */
+    @SuppressWarnings({"ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
     public void onTaskFinished(GridHadoopTaskInfo info, GridHadoopTaskStatus status) {
         if (!busyLock.tryReadLock())
             return;
@@ -328,6 +330,12 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 "Missing local state for finished task [info=" + info + ", status=" + status + ']';
 
             switch (info.type()) {
+                case SETUP: {
+                    state.onSetupFinished(info, status);
+
+                    break;
+                }
+
                 case MAP: {
                     state.onMapFinished(info, status);
 
@@ -389,6 +397,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param plan Map-reduce plan.
      * @return Collection of all input splits that should be processed.
      */
+    @SuppressWarnings("ConstantConditions")
     private Collection<GridHadoopInputSplit> allSplits(GridHadoopMapReducePlan plan) {
         Collection<GridHadoopInputSplit> res = new HashSet<>();
 
@@ -418,20 +427,35 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      *
      * @param evt Discovery event.
      */
+    @SuppressWarnings("ConstantConditions")
     private void processNodeLeft(GridDiscoveryEvent evt) {
         if (log.isDebugEnabled())
             log.debug("Processing discovery event [locNodeId=" + ctx.localNodeId() + ", evt=" + evt + ']');
 
         // Check only if this node is responsible for job status updates.
         if (ctx.jobUpdateLeader()) {
+            boolean checkSetup = evt.eventNode().order() < ctx.localNodeOrder();
+
             // Iteration over all local entries is correct since system cache is REPLICATED.
             for (GridHadoopJobMetadata meta : jobMetaPrj.values()) {
+                GridHadoopJobId jobId = meta.jobId();
+
+                GridHadoopMapReducePlan plan = meta.mapReducePlan();
+
+                GridHadoopJobPhase phase = meta.phase();
+
                 try {
-                    GridHadoopMapReducePlan plan = meta.mapReducePlan();
+                    if (checkSetup && phase == PHASE_SETUP && !activeJobs.containsKey(jobId)) {
+                        // Failover setup task.
+                        GridHadoopJob job = ctx.jobFactory().createJob(jobId, meta.jobInfo());
 
-                    GridHadoopJobPhase phase = meta.phase();
+                        Collection<GridHadoopTaskInfo> setupTask = setupTask(job, meta);
 
-                    if (phase == PHASE_MAP || phase == PHASE_REDUCE) {
+                        assert setupTask != null;
+
+                        ctx.taskExecutor().run(job, setupTask);
+                    }
+                    else if (phase == PHASE_MAP || phase == PHASE_REDUCE) {
                         // Must check all nodes, even that are not event node ID due to
                         // multiple node failure possibility.
                         Collection<GridHadoopInputSplit> cancelSplits = null;
@@ -464,8 +488,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         }
 
                         if (cancelSplits != null || cancelReducers != null)
-                            jobMetaPrj.transform(meta.jobId(), new CancelJobClosure(new GridException("One or more nodes " +
-                                "participating in map-reduce job execution failed."), cancelSplits, cancelReducers));
+                            jobMetaPrj.transform(meta.jobId(), new CancelJobClosure(new GridException("One or " +
+                                "more nodes participating in map-reduce job execution failed."), cancelSplits,
+                                cancelReducers));
                     }
                 }
                 catch (GridException e) {
@@ -511,6 +536,17 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             }
 
             switch (meta.phase()) {
+                case PHASE_SETUP: {
+                    if (ctx.jobUpdateLeader()) {
+                        Collection<GridHadoopTaskInfo> setupTask = setupTask(job, meta);
+
+                        if (setupTask != null)
+                            ctx.taskExecutor().run(job, setupTask);
+                    }
+
+                    break;
+                }
+
                 case PHASE_MAP: {
                     // Check if we should initiate new task on local node.
                     Collection<GridHadoopTaskInfo> tasks = mapperTasks(plan.mappers(locNodeId), job, meta);
@@ -606,6 +642,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     if (log.isDebugEnabled())
                         log.debug("Job execution is complete, will remove local state from active jobs " +
                             "[jobId=" + jobId + ", meta=" + meta +
+                            ", setupTime=" + meta.setupTime() +
                             ", mapTime=" + meta.mapTime() +
                             ", reduceTime=" + meta.reduceTime() +
                             ", totalTime=" + meta.totalTime() + ']');
@@ -633,6 +670,23 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 default:
                     assert false;
             }
+        }
+    }
+
+    /**
+     * Creates setup task based on job information.
+     *
+     * @param job Job instance.
+     * @param meta Job metadata.
+     * @return Setup task wrapped in collection.
+     */
+    @Nullable private Collection<GridHadoopTaskInfo> setupTask(GridHadoopJob job, GridHadoopJobMetadata meta) {
+        if (activeJobs.containsKey(job.id()))
+            return null;
+        else {
+            initState(job, meta);
+
+            return Collections.singleton(new GridHadoopTaskInfo(ctx.localNodeId(), SETUP, job.id(), 0, 0, null));
         }
     }
 
@@ -888,6 +942,19 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
          * @param taskInfo Task info.
          * @param status Task status.
          */
+        private void onSetupFinished(final GridHadoopTaskInfo taskInfo, GridHadoopTaskStatus status) {
+            final GridHadoopJobId jobId = taskInfo.jobId();
+
+            if (status.state() == FAILED || status.state() == CRASHED)
+                transform(jobId, new CancelJobClosure(status.failCause()));
+            else
+                transform(jobId, new UpdatePhaseClosure(PHASE_MAP));
+        }
+
+        /**
+         * @param taskInfo Task info.
+         * @param status Task status.
+         */
         private void onMapFinished(final GridHadoopTaskInfo taskInfo, GridHadoopTaskStatus status) {
             final GridHadoopJobId jobId = taskInfo.jobId();
 
@@ -1029,7 +1096,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             cp.phase(phase);
 
-            if (phase == PHASE_COMPLETE)
+            if (phase == PHASE_MAP)
+                cp.setupCompleteTimestamp(System.currentTimeMillis());
+            else if (phase == PHASE_COMPLETE)
                 cp.completeTimestamp(System.currentTimeMillis());
 
             return cp;
@@ -1139,8 +1208,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         }
     }
 
-    private static class InitializeReducersClosure
-        implements GridClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> {
+    private static class InitializeReducersClosure implements GridClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> {
         /** */
         private static final long serialVersionUID = 0L;
 
