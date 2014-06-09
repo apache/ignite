@@ -147,7 +147,12 @@ public class GridSecurityContext implements Externalizable {
         if (sysPermissions == null)
             return subj.permissions().defaultAllowAll();
 
-        return sysPermissions.contains(perm);
+        boolean ret = sysPermissions.contains(perm);
+
+        if (!ret && (perm == GridSecurityPermission.EVENTS_ENABLE || perm == GridSecurityPermission.EVENTS_DISABLE))
+            ret |= sysPermissions.contains(GridSecurityPermission.ADMIN_VIEW);
+
+        return ret;
     }
 
     /**
@@ -172,13 +177,12 @@ public class GridSecurityContext implements Externalizable {
 
         switch (taskName) {
             case VISOR_CACHE_QUERY_TASK_NAME:
-                return sysPermissions.contains(GridSecurityPermission.MANAGEMENT_CACHE_READ);
+                return sysPermissions.contains(GridSecurityPermission.ADMIN_QUERY);
             case VISOR_CACHE_LOAD_TASK_NAME:
-                return sysPermissions.contains(GridSecurityPermission.MANAGEMENT_CACHE_LOAD);
             case VISOR_CACHE_CLEAR_TASK_NAME:
-                return sysPermissions.contains(GridSecurityPermission.MANAGEMENT_CACHE_CLEAR);
+                return sysPermissions.contains(GridSecurityPermission.ADMIN_CACHE);
             default:
-                return sysPermissions.contains(GridSecurityPermission.MANAGEMENT_INSPECT);
+                return sysPermissions.contains(GridSecurityPermission.ADMIN_VIEW);
         }
     }
 
