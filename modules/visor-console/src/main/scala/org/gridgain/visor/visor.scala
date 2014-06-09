@@ -395,7 +395,7 @@ object visor extends VisorTag {
         args = Seq(
             "-cpath=<path>" -> Seq(
                 "Spring configuration path.",
-                "Can be absolute, relative to GRIDGAIN_HOME or any well formed URL."
+                "Can be absolute, relative to Gridgain home folder or any well formed URL."
             ),
             "-d" -> Seq(
                 "Flag forces the command to connect to the default grid",
@@ -447,7 +447,7 @@ object visor extends VisorTag {
             "Logging starts by default when Visor starts.",
             " ",
             "Events are logged to a file. If path is not provided,",
-            "it will log into 'GRIDGAIN_HOME/work/visor/visor-log'.",
+            "it will log into '<Gridgain home folder>/work/visor/visor-log'.",
             " ",
             "File is always opened in append mode.",
             "If file doesn't exist, it will be created.",
@@ -476,7 +476,7 @@ object visor extends VisorTag {
             ),
             "-f=<path>" -> Seq(
                 "Provides path to the file.",
-                "Path can be absolute or relative to GRIDGAIN_HOME."
+                "Path can be absolute or relative to Gridgain home folder."
             ),
             "-p=<num>" -> Seq(
                 "Provides period of querying events (in seconds).",
@@ -497,7 +497,7 @@ object visor extends VisorTag {
             "log -l -f=/home/user/visor-log" ->
                 "Starts logging to file 'visor-log' located at '/home/user'.",
             "log -l -f=log/visor-log" ->
-                "Starts logging to file 'visor-log' located at 'GRIDGAIN_HOME/log'.",
+                "Starts logging to file 'visor-log' located at '<Gridgain home folder>/log'.",
             "log -l -p=20" ->
                 "Starts logging with querying events period of 20 seconds.",
             "log -l -t=30" ->
@@ -2144,7 +2144,7 @@ object visor extends VisorTag {
      * Starts logging to file `visor-log` located at `/home/user`.
      * <br>
      * <ex>log -l -f=log/visor-log</ex>
-     * Starts logging to file `visor-log` located at `GRIDGAIN_HOME/log`.
+     * Starts logging to file `visor-log` located at &lt`Gridgain home folder`&gt`/log`.
      * <br>
      * <ex>log -l -p=20</ex>
      * Starts logging with querying events period of 20 seconds.
