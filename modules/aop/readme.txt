@@ -4,11 +4,16 @@ GridGain AOP Module
 GridGain AOP module provides capability to turn any Java method to a distributed closure by
 adding @Gridify annotation to it.
 
-To enable AOP module for starting standalone nodes from bin scripts move
-'libs/optional/gridgain-aop' folder to 'libs' folder.
+To enable AOP module when starting a standalone node, move 'optional/gridgain-aop' folder to
+'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+be added to classpath in this case.
 
-To add AOP module to developed project add dependency on gridgain-aop lib
-in Maven 'pom.xml' file.
+Importing AOP Module In Maven Project
+-------------------------------------
+
+If you are using Maven to manage dependencies of your project, you can add AOP module
+dependency like this (replace '${gridgain.version}' with actual GridGain version you are
+interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
