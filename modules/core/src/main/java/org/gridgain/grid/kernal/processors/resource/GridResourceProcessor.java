@@ -97,6 +97,9 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     /** Logger injector. */
     private GridResourceBasicInjector<GridLogger> logInjector;
 
+    /** Address resolver injector. */
+    private GridResourceBasicInjector<GridAddressResolver> addrsRslvrInjector;
+
     /** Spring bean resources injector. */
     private GridResourceInjector springBeanInjector;
 
@@ -129,6 +132,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         execInjector = new GridResourceBasicInjector<Executor>(ctx.config().getExecutorService());
         nodeIdInjector = new GridResourceBasicInjector<>(ctx.config().getNodeId());
         logInjector = new GridResourceLoggerInjector(ctx.config().getGridLogger());
+        addrsRslvrInjector = new GridResourceBasicInjector<>(ctx.config().getAddressResolver());
     }
 
     /** {@inheritDoc} */
@@ -503,6 +507,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         ioc.inject(obj, GridSpringApplicationContextResource.class, springCtxInjector, null, null);
         ioc.inject(obj, GridSpringResource.class, springBeanInjector, null, null);
         ioc.inject(obj, GridLoggerResource.class, logInjector, null, null);
+        ioc.inject(obj, GridAddressResolverResource.class, addrsRslvrInjector, null, null);
     }
 
     /**
@@ -529,6 +534,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         ioc.inject(obj, GridMarshallerResource.class, nullInjector, null, null);
         ioc.inject(obj, GridSpringApplicationContextResource.class, nullInjector, null, null);
         ioc.inject(obj, GridSpringResource.class, nullInjector, null, null);
+        ioc.inject(obj, GridAddressResolverResource.class, nullInjector, null, null);
     }
 
     /**

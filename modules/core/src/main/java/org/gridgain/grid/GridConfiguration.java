@@ -384,6 +384,9 @@ public class GridConfiguration {
     /** Indexing SPI. */
     private GridIndexingSpi[] indexingSpi;
 
+    /** Address resolver. */
+    private GridAddressResolver addrRslvr;
+
     /** Cache configurations. */
     private GridCacheConfiguration[] cacheCfg;
 
@@ -541,6 +544,7 @@ public class GridConfiguration {
         /*
          * Order alphabetically for maintenance purposes.
          */
+        addrRslvr = cfg.getAddressResolver();
         adminEmails = cfg.getAdminEmails();
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         daemon = cfg.isDaemon();
@@ -2151,6 +2155,24 @@ public class GridConfiguration {
      */
     public GridIndexingSpi[] getIndexingSpi() {
         return indexingSpi;
+    }
+
+    /**
+     * Gets address resolver for addresses mapping determination.
+     *
+     * @return Address resolver.
+     */
+    public GridAddressResolver getAddressResolver() {
+        return addrRslvr;
+    }
+
+    /*
+     * Sets address resolver for addresses mapping determination.
+     *
+     * @param addrRslvr Address resolver.
+     */
+    public void setAddressResolver(GridAddressResolver addrRslvr) {
+        this.addrRslvr = addrRslvr;
     }
 
     /**
