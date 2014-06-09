@@ -453,7 +453,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                         assert setupTask != null;
 
-                        ctx.taskExecutor().run(job, setupTask(job, meta));
+                        ctx.taskExecutor().run(job, setupTask);
                     }
                     else if (phase == PHASE_MAP || phase == PHASE_REDUCE) {
                         // Must check all nodes, even that are not event node ID due to
