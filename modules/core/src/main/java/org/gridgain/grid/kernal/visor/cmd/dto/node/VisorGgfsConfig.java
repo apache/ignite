@@ -134,7 +134,7 @@ public class VisorGgfsConfig implements Serializable {
         cfg.fragmentizerEnabled(ggfs.isFragmentizerEnabled());
         cfg.fragmentizerThrottlingBlockLength(ggfs.getFragmentizerThrottlingBlockLength());
         cfg.fragmentizerThrottlingDelay(ggfs.getFragmentizerThrottlingDelay());
-        cfg.ipcEndpointConfiguration(ggfs.getIpcEndpointConfiguration());
+        cfg.ipcEndpointConfiguration("TODO"); // GG-8022 JSON WAS REMOVED ggfs.getIpcEndpointConfiguration());
         cfg.ipcEndpointEnabled(ggfs.isIpcEndpointEnabled());
         cfg.maxSpace(ggfs.getMaxSpaceSize());
         cfg.managementPort(ggfs.getManagementPort());
