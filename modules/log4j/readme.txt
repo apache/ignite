@@ -3,11 +3,16 @@ GridGain Log4J Module
 
 GridGain Log4J module provides GridLogger implementation based on Apache Log4J.
 
-To enable Log4J module for starting standalone nodes from bin scripts move
-'libs/optional/gridgain-log4j' folder to 'libs' folder.
+To enable Log4J module when starting a standalone node, move 'optional/gridgain-log4j' folder to
+'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+be added to classpath in this case.
 
-To add Log4J module to developed project add dependency on gridgain-log4j lib
-in Maven 'pom.xml' file.
+Importing Log4J Module In Maven Project
+-------------------------------------
+
+If you are using Maven to manage dependencies of your project, you can add Log4J module
+dependency like this (replace '${gridgain.version}' with actual GridGain version you are
+interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

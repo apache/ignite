@@ -3,11 +3,16 @@ GridGain SSH Module
 
 GridGain SSH module provides capabilities to start GridGain nodes on remote machines via SSH.
 
-To enable SSH module for starting standalone nodes from bin scripts move
-'libs/optional/gridgain-ssh' folder to 'libs' folder.
+To enable SSH module when starting a standalone node, move 'optional/gridgain-ssh' folder to
+'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+be added to classpath in this case.
 
-To add SSH module to developed project add dependency on gridgain-ssh lib
-in Maven 'pom.xml' file.
+Importing SSH Module In Maven Project
+-------------------------------------
+
+If you are using Maven to manage dependencies of your project, you can add SSH module
+dependency like this (replace '${gridgain.version}' with actual GridGain version you are
+interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

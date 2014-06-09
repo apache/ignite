@@ -3,11 +3,16 @@ GridGain JTA Module
 
 GridGain JTA module provides capabilities to integrate GridGain cache transactions with JTA.
 
-To enable JTA module for starting standalone nodes from bin scripts move
-'libs/optional/gridgain-jta' folder to 'libs' folder.
+To enable JTA module when starting a standalone node, move 'optional/gridgain-jta' folder to
+'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+be added to classpath in this case.
 
-To add JTA module to developed project add dependency on gridgain-jta lib
-in Maven 'pom.xml' file.
+Importing JTA Module In Maven Project
+-------------------------------------
+
+If you are using Maven to manage dependencies of your project, you can add JTA module
+dependency like this (replace '${gridgain.version}' with actual GridGain version you are
+interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

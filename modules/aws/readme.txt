@@ -4,11 +4,16 @@ GridGain AWS Module
 GridGain AOP module provides S3-based implementations of checkpoint SPI, IP finder and
 metrics store for TCP discovery.
 
-To enable AWS module for starting standalone nodes from bin scripts move
-'libs/optional/gridgain-aws' folder to 'libs' folder.
+To enable AWS module when starting a standalone node, move 'optional/gridgain-aws' folder to
+'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+be added to classpath in this case.
 
-To add AWS module to developed project add dependency on gridgain-aws lib
-in Maven 'pom.xml' file.
+Importing AWS Module In Maven Project
+-------------------------------------
+
+If you are using Maven to manage dependencies of your project, you can add AWS module
+dependency like this (replace '${gridgain.version}' with actual GridGain version you are
+interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

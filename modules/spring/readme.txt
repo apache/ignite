@@ -4,11 +4,16 @@ GridGain Spring Module
 GridGain Spring module provides resources injection capabilities and parser for Spring-based
 configuration XML files.
 
-To enable Spring module for starting standalone nodes from bin scripts move
-'libs/optional/gridgain-spring' folder to 'libs' folder.
+To enable Spring module when starting a standalone node, move 'optional/gridgain-spring' folder to
+'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+be added to classpath in this case.
 
-To add Spring module to developed project add dependency on gridgain-spring lib
-in Maven 'pom.xml' file.
+Importing Spring Module In Maven Project
+-------------------------------------
+
+If you are using Maven to manage dependencies of your project, you can add Spring module
+dependency like this (replace '${gridgain.version}' with actual GridGain version you are
+interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
