@@ -11,30 +11,29 @@
 
 package org.gridgain.visor.commands.vvm
 
-import org.scalatest._
-import matchers._
 import org.gridgain.visor._
-import VisorVvmCommand._
+import org.gridgain.visor.commands.vvm.VisorVvmCommand._
+import org.scalatest._
 
 /**
  * Unit test for 'vvm' command.
  */
-class VisorVvmCommandSpec extends FlatSpec with ShouldMatchers {
+class VisorVvmCommandSpec extends FlatSpec with Matchers {
     behavior of "A 'vvm' visor command"
 
     it should "print error message when not connected" in {
-        visor vvm()
+        visor.vvm()
     }
 
     it should "open VisualVM connected to all nodes skipping ones with disabled JMX" in {
-        visor open("-d")
-        visor vvm()
-        visor close()
+        visor.open("-d")
+        visor.vvm()
+        visor.close()
     }
 
     it should "open VisualVM connected to first node if it has JMX enabled" in {
-        visor open("-d")
-        visor vvm("-id8=@n1")
-        visor close()
+        visor.open("-d")
+        visor.vvm("-id8=@n1")
+        visor.close()
     }
 }

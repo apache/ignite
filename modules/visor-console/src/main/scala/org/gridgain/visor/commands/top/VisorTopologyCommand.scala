@@ -11,19 +11,21 @@
 
 package org.gridgain.visor.commands.top
 
-import java.net.{UnknownHostException, InetAddress}
-import collection.immutable._
-import collection.JavaConversions._
-import scala.util.control.Breaks._
+import org.gridgain.grid._
+import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.gridgain.grid.util.{GridUtils => U}
+import org.gridgain.grid.util.typedef._
+
+import java.net.{InetAddress, UnknownHostException}
+
+import scala.collection.JavaConversions._
+import scala.language.{implicitConversions, reflectiveCalls}
+import scala.util.control.Breaks._
+
+import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import visor._
-import org.gridgain.grid._
-import org.gridgain.scalar._
-import scalar._
-import org.gridgain.grid.util.typedef._
-import kernal.GridNodeAttributes._
+import org.gridgain.visor.visor._
 
 /**
  * ==Overview==
@@ -218,11 +220,11 @@ class VisorTopologyCommand {
 
         var nodes = grid.forPredicate(f).nodes()
 
-        if (!hosts.isEmpty)
+        if (hosts.nonEmpty)
             nodes = nodes.filter(n => {
                 val ips = n.addresses.toSet
 
-                !ips.intersect(hosts).isEmpty
+                ips.intersect(hosts).nonEmpty
             })
 
         if (nodes.isEmpty)

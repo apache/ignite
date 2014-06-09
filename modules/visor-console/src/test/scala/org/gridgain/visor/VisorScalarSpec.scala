@@ -11,29 +11,29 @@
 
 package org.gridgain.visor
 
-import org.scalatest._
-import org.gridgain.scalar._
 import org.gridgain.grid._
+import org.gridgain.scalar._
+import org.scalatest._
 
 /**
- * Test for interaction between visor and scalar.
+ * Test for interaction between visor.and scalar.
  */
 class VisorScalarSpec extends FlatSpec with ShouldMatchers {
     behavior of "A visor object"
 
     it should "properly open and close w/o Scalar" in {
-        visor open("-d", false)
-        visor status()
-        visor close()
+        visor.open("-d")
+        visor.status()
+        visor.close()
     }
 
     it should "properly open and close with Scalar" in {
         scalar start()
 
         try {
-            visor open("-d", false)
-            visor status()
-            visor close()
+            visor.open("-d")
+            visor.status()
+            visor.close()
         }
         finally {
             scalar stop()
@@ -43,17 +43,21 @@ class VisorScalarSpec extends FlatSpec with ShouldMatchers {
     it should "properly open and close with named Scalar" in {
         val cfg = new GridConfiguration
 
-        cfg.setGridName("grid-visor")
+        cfg.setGridName("grid-scalar")
 
-        scalar start(cfg)
+        scalar.start(cfg)
 
         try {
-            visor open("-e -g=grid-visor", false)
-            visor status()
-            visor close()
+            cfg.setGridName("grid-visor")
+
+            visor.open(cfg, "n/a")
+            visor.status()
+            visor.close()
         }
         finally {
-            scalar stop("grid-visor", true)
+            visor.close()
+
+            scalar.stop("grid-scalar", true)
         }
     }
 
@@ -61,29 +65,29 @@ class VisorScalarSpec extends FlatSpec with ShouldMatchers {
         scalar start()
 
         try {
-            visor open("-d", false)
-            scalar stop()
-            visor status()
+            visor.open("-d")
+            scalar.stop()
+            visor.status()
         }
         finally {
-            scalar stop()
+            scalar.stop()
         }
     }
 
-    it should "properly open and close with Scalar & Visor mixes" in {
+    it should "properly open and close with Scalar & visor.mixes" in {
         scalar start()
 
         try {
-            visor open("-d", false)
-            visor status()
-            visor close()
+            visor.open("-d")
+            visor.status()
+            visor.close()
 
-            visor open("-d", false)
-            visor status()
-            visor close()
+            visor.open("-d")
+            visor.status()
+            visor.close()
         }
         finally {
-            scalar stop()
+            scalar.stop()
         }
     }
 }

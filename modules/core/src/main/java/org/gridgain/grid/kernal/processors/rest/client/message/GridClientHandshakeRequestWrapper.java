@@ -18,6 +18,9 @@ import java.nio.*;
  * Client handshake wrapper for direct marshalling.
  */
 public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessageAdapter {
+    /** */
+    private static final long serialVersionUID = -5705048094821942662L;
+
     /** Signal char. */
     public static final byte HANDSHAKE_HEADER = (byte)0x91;
 

@@ -50,9 +50,6 @@ class GridUpdateNotifier {
     /** Grid version. */
     private final String ver;
 
-    /** Edition name. */
-    private final String edition;
-
     /** Site. */
     private final String url;
 
@@ -84,13 +81,12 @@ class GridUpdateNotifier {
      * Creates new notifier with default values.
      *
      * @param gridName gridName
-     * @param edition GridGain edition.
      * @param ver Compound GridGain version.
      * @param site Site.
      * @param reportOnlyNew Whether or not to report only new version.
      * @throws GridException If failed.
      */
-    GridUpdateNotifier(String gridName, String edition, String ver, String site, boolean reportOnlyNew)
+    GridUpdateNotifier(String gridName, String ver, String site, boolean reportOnlyNew)
         throws GridException {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -107,7 +103,6 @@ class GridUpdateNotifier {
             });
 
             this.ver = ver;
-            this.edition = edition;
 
             url = "http://" + site + "/update_status.php" + URL_SUFFIX;
 
@@ -312,7 +307,7 @@ class GridUpdateNotifier {
 
                 String name = meta.getAttribute("name");
 
-                if ((edition + "-version").equals(name)) {
+                if (("version").equals(name)) {
                     String content = meta.getAttribute("content");
 
                     if (content != null && !content.isEmpty())
