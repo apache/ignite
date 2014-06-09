@@ -9,50 +9,50 @@
 
 package org.gridgain.grid.util.ipc;
 
-import net.sf.json.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.ipc.loopback.*;
 import org.gridgain.grid.util.ipc.shmem.*;
 
+import java.util.*;
+
 /**
- * Grid GridIpcServerEndpoint configuration JSON deserializer.
+ * Grid GridIpcServerEndpoint configuration deserializer.
  */
 public class GridIpcServerEndpointDeserializer {
     /**
-     * Deserializes JSON-formatted IPC server endpoint config into concrete
+     * Deserializes IPC server endpoint config into concrete
      * instance of {@link GridIpcServerEndpoint}.
      *
-     * @param endpointCfg JSON-formatted IPC server endpoint config.
+     * @param endpointCfg Map with properties of the IPC server endpoint config.
      * @return Deserialized instance of {@link GridIpcServerEndpoint}.
-     * @throws GridException If any problem with JSON parsing has happened.
+     * @throws GridException If any problem with configuration properties setting has happened.
      */
-    public static GridIpcServerEndpoint deserialize(String endpointCfg) throws GridException {
+    public static GridIpcServerEndpoint deserialize(Map<String,String> endpointCfg) throws GridException {
         A.notNull(endpointCfg, "endpointCfg");
 
-        try {
-            JSONObject jsonObj = JSONObject.fromObject(endpointCfg);
+        String endpointType = endpointCfg.get("type");
 
-            String endpointType = jsonObj.getString("type");
+        if (endpointType == null)
+            throw new GridException("Failed to create server endpoint (type is not specified)");
 
-            Class endpointCls;
+        switch (endpointType) {
+            case "shmem": {
+                GridIpcSharedMemoryServerEndpoint endpoint = new GridIpcSharedMemoryServerEndpoint();
 
-            switch (endpointType) {
-                case "shmem":
-                    endpointCls = GridIpcSharedMemoryServerEndpoint.class; break;
-                case "tcp":
-                    endpointCls = GridIpcServerTcpEndpoint.class; break;
-                default:
-                    throw new GridException("Failed to create server endpoint (type is unknown): " + endpointType);
+                endpoint.setupConfiguration(endpointCfg);
+
+                return endpoint;
             }
+            case "tcp": {
+                GridIpcServerTcpEndpoint endpoint = new GridIpcServerTcpEndpoint();
 
-            // Remove 'type' entry cause there should not be such field in GridIpcServerEndpoint implementations.
-            jsonObj.discard("type");
+                endpoint.setupConfiguration(endpointCfg);
 
-            return (GridIpcServerEndpoint)JSONObject.toBean(jsonObj, endpointCls);
-        }
-        catch (JSONException e) {
-            throw new GridException("Failed to parse server endpoint.", e);
+                return endpoint;
+            }
+            default:
+                throw new GridException("Failed to create server endpoint (type is unknown): " + endpointType);
         }
     }
 }

@@ -23,6 +23,7 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.util.*;
 
 import static org.gridgain.grid.spi.GridPortProtocol.*;
 
@@ -40,7 +41,7 @@ public class GridGgfsServer {
     private final GridGgfsMarshaller marsh;
 
     /** Endpoint configuration. */
-    private final String endpointCfg;
+    private final Map<String,String> endpointCfg;
 
     /** Server endpoint. */
     private GridIpcServerEndpoint srvEndpoint;
@@ -63,7 +64,7 @@ public class GridGgfsServer {
      * @param endpointCfg Endpoint configuration to start.
      * @param mgmt Management flag - if true, server is intended to be started for Visor.
      */
-    public GridGgfsServer(GridGgfsContext ggfsCtx, String endpointCfg, boolean mgmt) {
+    public GridGgfsServer(GridGgfsContext ggfsCtx, Map<String,String> endpointCfg, boolean mgmt) {
         assert ggfsCtx != null;
         assert endpointCfg != null;
 
