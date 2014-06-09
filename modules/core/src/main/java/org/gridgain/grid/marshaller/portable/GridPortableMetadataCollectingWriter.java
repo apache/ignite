@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.marshaller.portable;
 
+import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
 
@@ -33,7 +34,7 @@ class GridPortableMetadataCollectingWriter implements GridPortableWriter {
      * @return Information about type fields.
      * @throws IOException In case of error.
      */
-    Map<Integer, List<String>> writeAndCollect(GridPortableObject portable) throws IOException {
+    Map<Integer, List<String>> writeAndCollect(GridPortableEx portable) throws IOException {
         handles = new GridHandleTable(10, 3);
 
         fieldsMap = new HashMap<>();
@@ -188,7 +189,7 @@ class GridPortableMetadataCollectingWriter implements GridPortableWriter {
      * @param portable Portable object.
      * @throws IOException In case of error.
      */
-    private void writePortable(GridPortableObject portable) throws IOException {
+    private void writePortable(GridPortableEx portable) throws IOException {
         if (portable == null || handles.lookup(portable) >= 0)
             return;
 
@@ -208,8 +209,8 @@ class GridPortableMetadataCollectingWriter implements GridPortableWriter {
      * @throws IOException In case of error.
      */
     private void writeObject(Object obj) throws IOException {
-        if (obj instanceof GridPortableObject)
-            writePortable((GridPortableObject)obj);
+        if (obj instanceof GridPortableEx)
+            writePortable((GridPortableEx)obj);
         else if (obj instanceof Map)
             writeMap((Map)obj);
         else if (obj instanceof Collection)

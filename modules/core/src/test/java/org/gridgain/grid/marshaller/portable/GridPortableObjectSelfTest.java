@@ -10,6 +10,7 @@
 package org.gridgain.grid.marshaller.portable;
 
 import org.gridgain.client.marshaller.portable.*;
+import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -33,7 +34,7 @@ public class GridPortableObjectSelfTest extends GridCommonAbstractTest {
      *
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class Type1 implements GridPortableObject {
+    public static class Type1 implements GridPortableEx {
         /** */
         private int a;
 
@@ -72,7 +73,7 @@ public class GridPortableObjectSelfTest extends GridCommonAbstractTest {
      *
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class Type2 implements GridPortableObject {
+    public static class Type2 implements GridPortableEx {
         /** */
         private byte a;
 
@@ -106,7 +107,7 @@ public class GridPortableObjectSelfTest extends GridCommonAbstractTest {
      *
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class Type3 implements GridPortableObject {
+    public static class Type3 implements GridPortableEx {
         /** */
         private Type2 a;
 
@@ -129,8 +130,8 @@ public class GridPortableObjectSelfTest extends GridCommonAbstractTest {
     /**
      * @return Types map.
      */
-    private Map<Integer, Class<? extends GridPortableObject>> typesMap() {
-        Map<Integer, Class<? extends GridPortableObject>> typesMap = new HashMap<>();
+    private Map<Integer, Class<? extends GridPortableEx>> typesMap() {
+        Map<Integer, Class<? extends GridPortableEx>> typesMap = new HashMap<>();
 
         typesMap.put(TYPE1, Type1.class);
         typesMap.put(TYPE2, Type2.class);

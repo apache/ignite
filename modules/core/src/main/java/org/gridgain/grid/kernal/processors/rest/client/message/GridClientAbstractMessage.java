@@ -8,7 +8,7 @@
  */
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
-import org.gridgain.grid.marshaller.portable.*;
+import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.*;
 /**
  * This class provides implementation for commit message fields and cannot be used directly.
  */
-public abstract class GridClientAbstractMessage implements GridClientMessage, Externalizable, GridPortableObject {
+public abstract class GridClientAbstractMessage implements GridClientMessage, Externalizable, GridPortableEx {
     /** */
     private static final long serialVersionUID = 0L;
 

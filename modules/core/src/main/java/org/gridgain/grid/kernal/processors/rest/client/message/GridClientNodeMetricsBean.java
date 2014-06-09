@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
-import org.gridgain.grid.marshaller.portable.*;
+import org.gridgain.grid.portable.*;
 
 import java.io.*;
 
 /**
  * Node metrics bean.
  */
-public class GridClientNodeMetricsBean implements Externalizable, GridPortableObject {
+public class GridClientNodeMetricsBean implements Externalizable, GridPortableEx {
     /** */
     private static final long serialVersionUID = 0L;
 
