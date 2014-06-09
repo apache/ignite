@@ -531,8 +531,8 @@ class VisorTasksCommand {
 
         evts.foreach {
             case te: VisorGridTaskEvent =>
-                val s = getSession(te.taskSessionId(), te.name())
-                val t = getTask(te.name())
+                val s = getSession(te.taskSessionId(), te.taskName())
+                val t = getTask(te.taskName())
 
                 t.execs = t.execs + s
 
