@@ -55,7 +55,7 @@ public class GridGgfsTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackEmbeddedSecondarySelfTest.class));
         suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackEmbeddedDualSyncSelfTest.class));
         suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackEmbeddedDualAsyncSelfTest.class));
-//
+
         suite.addTest(new TestSuite(GridGgfsHadoopFileSystemSecondaryModeSelfTest.class));
 
         suite.addTest(new TestSuite(GridGgfsHadoopFileSystemClientSelfTest.class));
