@@ -163,6 +163,8 @@ public class GridIpcSharedMemoryNativeLoader {
         if (lock != null) {
             try {
                 lock.release();
+
+                lock = null;
             }
             catch (IOException ignore) {
                 // No-op.
