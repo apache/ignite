@@ -84,6 +84,8 @@ public class GridGgfsProcessorValidationSelfTest extends GridCommonAbstractTest 
 
         cfg.setGgfsConfiguration(g1GgfsCfg1, g1GgfsCfg2);
 
+        cfg.setLocalHost("127.0.0.1");
+
         return cfg;
     }
 

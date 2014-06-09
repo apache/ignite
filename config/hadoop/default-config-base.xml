@@ -90,6 +90,13 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                 </bean>
+
+                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                    <property name="name" value="hadoop-sys"/>
+                    <property name="cacheMode" value="REPLICATED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+                </bean>
             </list>
         </property>
 

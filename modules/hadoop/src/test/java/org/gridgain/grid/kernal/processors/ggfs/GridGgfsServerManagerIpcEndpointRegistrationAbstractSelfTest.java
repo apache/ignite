@@ -21,6 +21,7 @@ import org.gridgain.grid.util.ipc.loopback.*;
 import org.gridgain.grid.util.ipc.shmem.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -145,7 +146,7 @@ public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTe
      * @param endpointCfg Optional REST endpoint configuration.
      * @return test-purposed GridGgfsConfiguration.
      */
-    protected GridGgfsConfiguration gridGgfsConfiguration(@Nullable String endpointCfg) {
+    protected GridGgfsConfiguration gridGgfsConfiguration(@Nullable String endpointCfg) throws GridException {
         GridGgfsConfiguration ggfsConfiguration = new GridGgfsConfiguration();
 
         ggfsConfiguration.setDataCacheName("partitioned");
@@ -154,7 +155,7 @@ public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTe
         ggfsConfiguration.setManagementPort(mgmtPort.getAndIncrement());
 
         if (endpointCfg != null)
-            ggfsConfiguration.setIpcEndpointConfiguration(endpointCfg);
+            ggfsConfiguration.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(endpointCfg));
 
         return ggfsConfiguration;
     }

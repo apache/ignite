@@ -437,6 +437,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (rslvrMode != DR_AUTO && drRcvCfg.getConflictResolver() == null)
                 throw new GridException("Conflict resolver must be not null with " + rslvrMode + " resolving policy");
         }
+
+        if (cc.getAtomicityMode() == ATOMIC)
+            assertParameter(cc.getTransactionManagerLookupClassName() == null,
+                "transaction manager can not be used with ATOMIC cache");
     }
 
     /**
@@ -583,6 +587,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 sysCaches.add(ggfsCfg.getDataCacheName());
             }
         }
+
+        if (GridComponentType.HADOOP.isInClassPath())
+            sysCaches.add(CU.SYS_CACHE_HADOOP_MR);
 
         for (GridCacheConfiguration ccfg : ctx.grid().configuration().getCacheConfiguration()) {
             if (ccfg.getDrSenderConfiguration() != null)
@@ -1638,6 +1645,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param <V> type of values.
      * @return Cache instance for given name.
      */
+    @SuppressWarnings("unchecked")
     public <K, V> GridCache<K, V> publicCache(@Nullable String name) {
         if (log.isDebugEnabled())
             log.debug("Getting public cache for name: " + name);
@@ -1722,6 +1730,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param near Near flag.
      * @throws GridException If registration failed.
      */
+    @SuppressWarnings("unchecked")
     private void registerMbean(Object o, @Nullable String cacheName, boolean near)
         throws GridException {
         assert o != null;
@@ -1848,6 +1857,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Created component.
      * @throws GridException If failed to create component.
      */
+    @SuppressWarnings("unchecked")
     private static <T> T createComponent(Class<T> cls) throws GridException {
         assert cls.isInterface() : cls;
         assert cls.getSimpleName().startsWith("Grid") : cls;

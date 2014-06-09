@@ -137,7 +137,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
             ggfsCfg.setDataCacheName("partitioned");
             ggfsCfg.setMetaCacheName("replicated");
             ggfsCfg.setName("ggfs_secondary");
-            ggfsCfg.setIpcEndpointConfiguration(secondaryIpcEndpointConfiguration());
+            ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(secondaryIpcEndpointConfiguration()));
             ggfsCfg.setManagementPort(-1);
             ggfsCfg.setBlockSize(512 * 1024);
             ggfsCfg.setPrefetchBlocks(1);
@@ -183,6 +183,11 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
     }
 
     /** {@inheritDoc} */
+    @Override public String getTestGridName() {
+        return "grid";
+    }
+
+    /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
@@ -194,7 +199,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
         cfg.setGgfsConfiguration(ggfsConfiguration(gridName));
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
-        cfg.setLocalHost(U.getLocalHost().getHostAddress());
+        cfg.setLocalHost("127.0.0.1");
         cfg.setCommunicationSpi(communicationSpi());
 
         return cfg;
@@ -235,7 +240,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
      * @param gridName Grid name.
      * @return GGFS configuration.
      */
-    protected GridGgfsConfiguration ggfsConfiguration(String gridName) {
+    protected GridGgfsConfiguration ggfsConfiguration(String gridName) throws GridException {
         GridGgfsConfiguration cfg = new GridGgfsConfiguration();
 
         cfg.setDataCacheName("partitioned");
@@ -250,7 +255,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
             cfg.setSecondaryHadoopFileSystemConfigPath(secondaryFileSystemConfigPath());
         }
 
-        cfg.setIpcEndpointConfiguration(primaryIpcEndpointConfiguration(gridName));
+        cfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(primaryIpcEndpointConfiguration(gridName)));
         cfg.setManagementPort(-1);
 
         cfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
@@ -1296,8 +1301,6 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
             GridGgfsBlockLocation location = F.first(locations);
 
             assertEquals(1, location.nodeIds().size());
-
-            assertEquals(grid(0).localNode().id(), F.first(location.nodeIds()));
         }
     }
 
@@ -1530,7 +1533,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
      * @throws Exception If failed.
      */
     public void testMultithreadedMkdirs() throws Exception {
-        final Path dir = new Path(new Path("ggfs://localhost/"), "/dir");
+        final Path dir = new Path(new Path("ggfs:///"), "/dir");
 
         fs.mkdir(dir, FsPermission.getDefault(), true);
 
@@ -1721,7 +1724,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
             startNodes(); // Start server again.
 
             // Check that client is again operational.
-            fs.mkdir(new Path("ggfs://localhost/dir1/dir2"), FsPermission.getDefault(), true);
+            fs.mkdir(new Path("ggfs:///dir1/dir2"), FsPermission.getDefault(), true);
 
             // However, the streams, opened before disconnect, should not be valid.
             GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -1778,7 +1781,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
 
                 try {
                     // Check that client is again operational.
-                    assertTrue(fs.mkdirs(new Path("ggfs://localhost/" + Thread.currentThread().getName())));
+                    assertTrue(fs.mkdirs(new Path("ggfs:///" + Thread.currentThread().getName())));
 
                     return true;
                 }

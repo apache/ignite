@@ -14,6 +14,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.net.*;
+import java.nio.file.*;
 import java.util.*;
 import java.util.regex.*;
 
@@ -161,9 +162,19 @@ public class GridIpcSharedMemoryNativeLoader {
         URL rsrc = clsLdr.getResource(rsrcPath);
 
         if (rsrc != null) {
-            return extract(errs,
-                rsrc,
-                new File(System.getProperty("java.io.tmpdir"), mapLibraryName()));
+            try {
+                File tempDir = Files.createTempDirectory("ggshmemlib").toFile();
+                tempDir.deleteOnExit();
+
+                return extract(errs,
+                        rsrc,
+                        new File(tempDir, mapLibraryName()));
+
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+                return false;
+            }
         }
         else
             errs.add(new IllegalStateException("Failed to find resource with specified class loader " +
@@ -211,7 +222,8 @@ public class GridIpcSharedMemoryNativeLoader {
         }
         catch (IOException | UnsatisfiedLinkError | InterruptedException e) {
             errs.add(e);
-        } finally {
+        }
+        finally {
             U.closeQuiet(os);
             U.closeQuiet(is);
 

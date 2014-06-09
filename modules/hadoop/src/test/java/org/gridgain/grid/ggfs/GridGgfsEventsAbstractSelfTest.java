@@ -77,7 +77,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
     /**
      * @return GGFS configuration for this test.
      */
-    protected GridGgfsConfiguration getGgfsConfiguration() {
+    protected GridGgfsConfiguration getGgfsConfiguration() throws GridException {
         GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
@@ -102,6 +102,8 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
         cfg.setGgfsConfiguration(getGgfsConfiguration());
 
         cfg.setCacheConfiguration(getCacheConfiguration(gridName));
+
+        cfg.setHadoopConfiguration(null);
 
         GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 
@@ -664,13 +666,12 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
         ggfs.create(file, true).close(); // Will generate same event set + delete and purge events.
 
-        GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                ggfs.create(file, false).close(); // Won't generate any event.
-
-                return true;
-            }
-        }, GridGgfsPathAlreadyExistsException.class);
+        try {
+            ggfs.create(file, false).close(); // Won't generate any event.
+        }
+        catch (Exception ignore) {
+            // No-op.
+        }
 
         assertTrue(latch.await(10, TimeUnit.SECONDS));
 
