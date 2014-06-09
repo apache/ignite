@@ -437,6 +437,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (rslvrMode != DR_AUTO && drRcvCfg.getConflictResolver() == null)
                 throw new GridException("Conflict resolver must be not null with " + rslvrMode + " resolving policy");
         }
+
+        if (cc.getAtomicityMode() == ATOMIC)
+            assertParameter(cc.getTransactionManagerLookupClassName() == null,
+                "transaction manager can not be used with ATOMIC cache");
     }
 
     /**

@@ -26,6 +26,7 @@ public class GridJtaTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheJtaSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedJtaSelfTest.class);
         suite.addTestSuite(GridTmLookupLifecycleAwareSelfTest.class);
+        suite.addTestSuite(GridCacheJtaConfigurationValidationSelfTest.class);
 
         return suite;
     }
