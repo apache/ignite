@@ -42,7 +42,7 @@ public class GridIpcSharedMemoryNodeStartup {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        Map<String, String> endpointCfg = new TreeMap<>();
+        Map<String, String> endpointCfg = new HashMap<>();
 
         endpointCfg.put("type", "shmem");
         endpointCfg.put("port", "10500");

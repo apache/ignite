@@ -46,7 +46,7 @@ public class GridGgfsServerManager extends GridGgfsManager {
 
         if (F.isEmpty(cfg)) {
             // Set default configuration.
-            cfg = new TreeMap<>();
+            cfg = new HashMap<>();
 
             cfg.put("type", U.isWindows() ? "tcp" : "shmem");
             cfg.put("port", String.valueOf(DFLT_IPC_PORT));
@@ -56,7 +56,7 @@ public class GridGgfsServerManager extends GridGgfsManager {
             bind(cfg, /*management*/false);
 
         if (ggfsCfg.getManagementPort() >= 0) {
-            cfg = new TreeMap<>();
+            cfg = new HashMap<>();
 
             cfg.put("type", "tcp");
             cfg.put("port", String.valueOf(ggfsCfg.getManagementPort()));

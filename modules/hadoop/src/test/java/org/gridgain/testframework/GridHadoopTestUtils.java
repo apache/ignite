@@ -26,7 +26,7 @@ public class GridHadoopTestUtils {
      * @throws GridException If fails.
      */
     public static Map<String,String> jsonToMap(String jsonStr) throws GridException {
-        Map<String,String> res = new TreeMap<>();
+        Map<String,String> res = new HashMap<>();
 
         try {
             JSONObject jsonObj = JSONObject.fromObject(jsonStr);

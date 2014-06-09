@@ -102,7 +102,7 @@ public class GgfsFileSystemNodeStartup {
         ggfsCfg.setPerNodeParallelBatchCount(16);
         ggfsCfg.setPrefetchBlocks(32);
 
-        Map<String, String> endpointCfg = new TreeMap<>();
+        Map<String, String> endpointCfg = new HashMap<>();
 
         if (GridUtils.isWindows())
             endpointCfg.put("type", "tcp");
