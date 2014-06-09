@@ -129,8 +129,9 @@ public class CacheQueryExample {
 
         // Create query which joins on 2 types to select people for a specific organization.
         GridCacheQuery<Map.Entry<GridCacheAffinityKey<UUID>, Person>> qry =
-            cache.queries().createSqlQuery(Person.class, "from Person, Organization " + "where Person.orgId = " +
-                "Organization.id and lower(Organization.name) = lower(?)");
+            cache.queries().createSqlQuery(Person.class, "from Person, Organization " +
+                "where Person.orgId = Organization.id " +
+                "and lower(Organization.name) = lower(?)");
 
         // Execute queries for find employees for different organizations.
         print("Following people are 'GridGain' employees: ", qry.execute("GridGain").get());
