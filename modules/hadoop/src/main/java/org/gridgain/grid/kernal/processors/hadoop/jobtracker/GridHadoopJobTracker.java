@@ -449,6 +449,10 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         // Failover setup task.
                         GridHadoopJob job = ctx.jobFactory().createJob(jobId, meta.jobInfo());
 
+                        Collection<GridHadoopTaskInfo> setupTask = setupTask(job, meta);
+
+                        assert setupTask != null;
+
                         ctx.taskExecutor().run(job, setupTask(job, meta));
                     }
                     else if (phase == PHASE_MAP || phase == PHASE_REDUCE) {
@@ -533,8 +537,12 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             switch (meta.phase()) {
                 case PHASE_SETUP: {
-                    if (ctx.jobUpdateLeader())
-                        ctx.taskExecutor().run(job, setupTask(job, meta));
+                    if (ctx.jobUpdateLeader()) {
+                        Collection<GridHadoopTaskInfo> setupTask = setupTask(job, meta);
+
+                        if (setupTask != null)
+                            ctx.taskExecutor().run(job, setupTask);
+                    }
 
                     break;
                 }
@@ -672,14 +680,14 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param meta Job metadata.
      * @return Setup task wrapped in collection.
      */
-    private Collection<GridHadoopTaskInfo> setupTask(GridHadoopJob job, GridHadoopJobMetadata meta) {
-        U.debug("SETUP TASK [job=" + job.id() + ", meta=" + meta + ']');
+    @Nullable private Collection<GridHadoopTaskInfo> setupTask(GridHadoopJob job, GridHadoopJobMetadata meta) {
+        if (activeJobs.containsKey(job.id()))
+            return null;
+        else {
+            initState(job, meta);
 
-        assert !activeJobs.containsKey(job.id());
-
-        initState(job, meta);
-
-        return Collections.singleton(new GridHadoopTaskInfo(ctx.localNodeId(), SETUP, job.id(), 0, 0, null));
+            return Collections.singleton(new GridHadoopTaskInfo(ctx.localNodeId(), SETUP, job.id(), 0, 0, null));
+        }
     }
 
     /**
@@ -1084,8 +1092,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         /** {@inheritDoc} */
         @Override public GridHadoopJobMetadata apply(GridHadoopJobMetadata meta) {
-            U.debug("UPDATE PHASE: " + meta);
-
             GridHadoopJobMetadata cp = new GridHadoopJobMetadata(meta);
 
             cp.phase(phase);
@@ -1129,8 +1135,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         /** {@inheritDoc} */
         @Override public GridHadoopJobMetadata apply(GridHadoopJobMetadata meta) {
-            U.debug("REMOVE MAPPER: " + meta);
-
             GridHadoopJobMetadata cp = new GridHadoopJobMetadata(meta);
 
             Collection<GridHadoopInputSplit> splitsCp = new HashSet<>(cp.pendingSplits());
@@ -1187,8 +1191,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         /** {@inheritDoc} */
         @Override public GridHadoopJobMetadata apply(GridHadoopJobMetadata meta) {
-            U.debug("REMOVE REDUCER: " + meta);
-
             GridHadoopJobMetadata cp = new GridHadoopJobMetadata(meta);
 
             Collection<Integer> rdcCp = new HashSet<>(cp.pendingReducers());
@@ -1230,8 +1232,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         /** {@inheritDoc} */
         @Override public GridHadoopJobMetadata apply(GridHadoopJobMetadata meta) {
-            U.debug("INIT REDUCERS: " + meta);
-
             GridHadoopJobMetadata cp = new GridHadoopJobMetadata(meta);
 
             Map<Integer, GridHadoopProcessDescriptor> oldMap = meta.reducersAddresses();
