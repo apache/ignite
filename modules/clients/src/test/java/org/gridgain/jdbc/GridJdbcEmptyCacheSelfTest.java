@@ -65,7 +65,7 @@ public class GridJdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid();
 
-        Class.forName("GridJdbcDriver");
+        Class.forName("org.gridgain.jdbc.GridJdbcDriver");
     }
 
     /** {@inheritDoc} */
