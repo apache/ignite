@@ -95,6 +95,9 @@ public class CacheQueryExample {
             // fields instead of whole key-value pairs.
             sqlFieldsQuery();
 
+            // Example for SQL-based fields queries that uses joins.
+            sqlFieldsQueryWithJoin();
+
             print("Cache query example finished.");
         }
     }
@@ -255,6 +258,28 @@ public class CacheQueryExample {
 
         // Print names.
         print("Names of all employees:", res);
+    }
+
+    /**
+     * Example for SQL-based fields queries that return only required
+     * fields instead of whole key-value pairs.
+     *
+     * @throws GridException In case of error.
+     */
+    private static void sqlFieldsQueryWithJoin() throws GridException {
+        GridCache<?, ?> cache = GridGain.grid().cache(CACHE_NAME);
+
+        // Create query to get names of all employees.
+        GridCacheQuery<List<?>> qry1 = cache.queries().createSqlFieldsQuery(
+            "select concat(firstName, ' ', lastName), Organization.name from Person, Organization where " +
+                "Person.orgId = Organization.id");
+
+        // Execute query to get collection of rows. In this particular
+        // case each row will have one element with full name of an employees.
+        Collection<List<?>> res = qry1.execute().get();
+
+        // Print persons' names and organizations' names.
+        print("Names of all employees and organizations they belong to:", res);
     }
 
     /**
