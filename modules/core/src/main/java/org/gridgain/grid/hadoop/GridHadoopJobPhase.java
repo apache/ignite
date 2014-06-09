@@ -13,6 +13,9 @@ package org.gridgain.grid.hadoop;
  * Job run phase.
  */
 public enum GridHadoopJobPhase {
+    /** Job is running setup task. */
+    PHASE_SETUP,
+
     /** Job is running map and combine tasks. */
     PHASE_MAP,
 

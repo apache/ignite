@@ -42,7 +42,7 @@ setGridGainHome
 #
 . "${GRIDGAIN_HOME}"/os/bin/include/setenv.sh
 
-CP="${GRIDGAIN_LIBS}"
+CP="${GRIDGAIN_LIBS}${SEP}${GRIDGAIN_HOME}/bin/include/gridgain-visor-console/*"
 
 #
 # JVM options. See http://java.sun.com/javase/technologies/hotspot/vmoptions.jsp for more details.

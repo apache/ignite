@@ -44,6 +44,9 @@ public class GridHadoopJobStatus implements Externalizable {
     /** Total reducers count. */
     private int totalReducerCnt;
 
+    /** Setup start timestamp. */
+    private long setupStartTs;
+
     /** Map start time. */
     private long mapStartTs;
 
@@ -77,6 +80,7 @@ public class GridHadoopJobStatus implements Externalizable {
      * @param pendingReducerCnt Pending reducers count.
      * @param totalMapCnt Total mappers count.
      * @param totalReducerCnt Total reducers count.
+     * @param setupStartTs Map start time.
      * @param mapStartTs Map start time.
      * @param reduceStartTs Reduce start time.
      * @param jobPhase Job phase.
@@ -84,8 +88,8 @@ public class GridHadoopJobStatus implements Externalizable {
      * @param ver Version.
      */
     public GridHadoopJobStatus(GridHadoopJobId jobId, GridHadoopJobState jobState, String jobName, String usr,
-        int pendingMapperCnt, int pendingReducerCnt, int totalMapCnt, int totalReducerCnt, long mapStartTs,
-        long reduceStartTs, GridHadoopJobPhase jobPhase, int concurrencyLvl, long ver) {
+        int pendingMapperCnt, int pendingReducerCnt, int totalMapCnt, int totalReducerCnt, long setupStartTs,
+        long mapStartTs, long reduceStartTs, GridHadoopJobPhase jobPhase, int concurrencyLvl, long ver) {
         this.jobId = jobId;
         this.jobState = jobState;
         this.jobName = jobName;
@@ -94,6 +98,7 @@ public class GridHadoopJobStatus implements Externalizable {
         this.pendingReducerCnt = pendingReducerCnt;
         this.totalMapperCnt = totalMapCnt;
         this.totalReducerCnt = totalReducerCnt;
+        this.setupStartTs = setupStartTs;
         this.mapStartTs = mapStartTs;
         this.reduceStartTs = reduceStartTs;
         this.jobPhase = jobPhase;
@@ -158,6 +163,13 @@ public class GridHadoopJobStatus implements Externalizable {
     }
 
     /**
+     * @return Setup start time.
+     */
+    public long setupStartTime() {
+        return setupStartTs;
+    }
+
+    /**
      * @return Map start time.
      */
     public long mapStartTime() {
@@ -207,6 +219,7 @@ public class GridHadoopJobStatus implements Externalizable {
         out.writeInt(pendingReducerCnt);
         out.writeInt(totalMapperCnt);
         out.writeInt(totalReducerCnt);
+        out.writeLong(setupStartTs);
         out.writeLong(mapStartTs);
         out.writeLong(reduceStartTs);
         out.writeObject(jobPhase);
@@ -224,6 +237,7 @@ public class GridHadoopJobStatus implements Externalizable {
         pendingReducerCnt = in.readInt();
         totalMapperCnt = in.readInt();
         totalReducerCnt = in.readInt();
+        setupStartTs = in.readLong();
         mapStartTs = in.readLong();
         reduceStartTs = in.readLong();
         jobPhase = (GridHadoopJobPhase)in.readObject();

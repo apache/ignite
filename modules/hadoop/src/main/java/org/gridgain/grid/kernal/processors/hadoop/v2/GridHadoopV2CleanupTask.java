@@ -34,32 +34,20 @@ public class GridHadoopV2CleanupTask extends GridHadoopV2Task {
     }
 
     /** {@inheritDoc} */
-    @Override public void run(GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
-        GridHadoopV2Job jobImpl = (GridHadoopV2Job)taskCtx.job();
-
-        JobContext jobCtx = jobImpl.hadoopJobContext();
-
-        OutputFormat outputFormat;
-
+    @SuppressWarnings("ConstantConditions")
+    @Override public void run0(GridHadoopV2Job jobImpl, JobContext jobCtx, GridHadoopTaskContext taskCtx)
+        throws GridException {
         try {
-            outputFormat = U.newInstance(jobCtx.getOutputFormatClass());
-        }
-        catch (ClassNotFoundException e) {
-            throw new GridException(e);
-        }
+            OutputFormat outputFormat = U.newInstance(jobCtx.getOutputFormatClass());
 
-        TaskAttemptContext hCtx = new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx,
-            jobImpl.attemptId(info()));
-
-        try {
-            OutputCommitter committer = outputFormat.getOutputCommitter(hCtx);
+            OutputCommitter committer = outputFormat.getOutputCommitter(hadoopContext());
 
             if (abort)
                 committer.abortJob(jobCtx, JobStatus.State.FAILED);
             else
                 committer.commitJob(jobCtx);
         }
-        catch (IOException e) {
+        catch (ClassNotFoundException | IOException e) {
             throw new GridException(e);
         }
         catch (InterruptedException e) {
