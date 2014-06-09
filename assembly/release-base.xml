@@ -54,7 +54,7 @@
                 <include>**/*.jar</include>
             </includes>
             <excludes>
-                <exclude>gghadoop.bat</exclude>
+                <exclude>*hadoop*.bat</exclude>
             </excludes>
         </fileSet>
 
@@ -66,7 +66,7 @@
                 <include>**/*.sh</include>
             </includes>
             <excludes>
-                <exclude>gghadoop.sh</exclude>
+                <exclude>*hadoop*.sh</exclude>
             </excludes>
         </fileSet>
 

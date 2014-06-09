@@ -44,17 +44,6 @@
             <source>docs/hadoop_readme.pdf</source>
             <outputDirectory>/docs</outputDirectory>
         </file>
-
-        <file>
-            <source>bin/gghadoop.bat</source>
-            <outputDirectory>/bin</outputDirectory>
-        </file>
-
-        <file>
-            <source>bin/gghadoop.sh</source>
-            <outputDirectory>/bin</outputDirectory>
-            <fileMode>0755</fileMode>
-        </file>
     </files>
 
     <fileSets>
@@ -64,6 +53,23 @@
             <excludes>
                 <exclude>optional/**</exclude>
             </excludes>
+        </fileSet>
+
+        <fileSet>
+            <directory>bin</directory>
+            <outputDirectory>/bin</outputDirectory>
+            <includes>
+                <include>*hadoop*.bat</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>bin</directory>
+            <outputDirectory>/bin</outputDirectory>
+            <fileMode>0755</fileMode>
+            <includes>
+                <include>*hadoop*.sh</include>
+            </includes>
         </fileSet>
     </fileSets>
 </assembly>

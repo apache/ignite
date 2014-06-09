@@ -410,7 +410,7 @@
                             <groups>
                                 <group>
                                     <title>Client APIs</title>
-                                    <packages>org.gridgain.client:org.gridgain.client.balancer:org.gridgain.client.ssl</packages>
+                                    <packages>org.gridgain.client:org.gridgain.client.balancer:org.gridgain.client.ssl:org.gridgain.client.hadoop</packages>
                                 </group>
                                 <group>
                                     <title>Router APIs</title>
