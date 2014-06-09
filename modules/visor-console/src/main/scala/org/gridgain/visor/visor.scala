@@ -2241,7 +2241,7 @@ object visor extends VisorTag {
                     try
                         startLog(argValue("f", argLst), argValue("p", argLst), argValue("t", argLst))
                     catch {
-                        case e: IllegalArgumentException => scold(e.getMessage)
+                        case e: Exception => scold(e.getMessage)
                     }
             else
                 scold("Invalid arguments.")
@@ -2288,7 +2288,18 @@ object visor extends VisorTag {
 
         val path = pathOpt.getOrElse(DFLT_LOG_PATH)
 
-        logFile = new File(U.resolveWorkDirectory(new File(path).getParent, false), new File(path).getName)
+        val folder = Option(new File(path).getParent).getOrElse("")
+        val fileName = new File(path).getName
+
+        logFile = new File(U.resolveWorkDirectory(folder, false), fileName)
+
+        if (logFile.exists() && logFile.isDirectory)
+            throw new IllegalArgumentException("Log path must be a valid file path, not a directory.")
+
+        logFile.createNewFile()
+
+        if (!logFile.canWrite)
+            throw new IllegalArgumentException("Don't have write permission in file.")
 
         var freq = 0L
 
