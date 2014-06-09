@@ -12,6 +12,7 @@
 
 #include "gridgain/impl/cmd/gridclientcommandexecutorprivate.hpp"
 #include "gridgain/impl/connection/gridclienttcpconnection.hpp"
+#include "gridgain/impl/marshaller/portable/gridportablemarshaller.hpp"
 
 /** Forward declaration. */
 class GridClientConnectionPool;
@@ -127,6 +128,9 @@ private:
 
     /** Connection pool. */
     boost::shared_ptr<GridClientConnectionPool> connPool;
+
+	/** */
+	GridPortableMarshaller marsh;
 };
 
 #endif

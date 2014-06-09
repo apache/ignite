@@ -43,8 +43,7 @@ void GridClientTcpCommandExecutor::executeLogCmd(const GridClientSocketAddress& 
  */
 void GridClientTcpCommandExecutor::executeTopologyCmd(const GridClientSocketAddress& host, GridTopologyRequestCommand& topCmd,
         GridClientMessageTopologyResult& rslt) {
-
-    executeCmd(host, topCmd, rslt);
+    // TODO: 8536.
 }
 
 /**
