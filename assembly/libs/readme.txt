@@ -21,7 +21,7 @@ gridgain-ssh lib in Maven 'pom.xml' file.
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-ssh</artifactId>
-            <version>6.1.8</version>
+            <version>${gridgain.version}</version>
         </dependency>
         ...
     </dependencies>
