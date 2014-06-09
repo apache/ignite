@@ -186,7 +186,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
         ggfsCfg.setName(ggfsName);
         ggfsCfg.setBlockSize(GGFS_BLOCK_SIZE);
         ggfsCfg.setDefaultMode(mode);
-        ggfsCfg.setIpcEndpointConfiguration(restCfg);
+        ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(restCfg));
         ggfsCfg.setSecondaryHadoopFileSystemUri(secondaryFsUri);
         ggfsCfg.setSecondaryHadoopFileSystemConfigPath(secondaryFsCfgPath);
         ggfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);

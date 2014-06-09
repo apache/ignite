@@ -77,7 +77,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
     /**
      * @return GGFS configuration for this test.
      */
-    protected GridGgfsConfiguration getGgfsConfiguration() {
+    protected GridGgfsConfiguration getGgfsConfiguration() throws GridException {
         GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");

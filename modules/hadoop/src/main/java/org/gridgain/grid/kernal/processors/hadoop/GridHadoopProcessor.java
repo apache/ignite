@@ -46,15 +46,15 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() throws GridException {
-        super.start();
+        if (ctx.isDaemon())
+            return;
 
         GridHadoopConfiguration cfg = ctx.config().getHadoopConfiguration();
 
-        if (ctx.isDaemon() || cfg == null)
-            return;
-
-        // Make copy.
-        cfg = new GridHadoopConfiguration(cfg);
+        if (cfg == null)
+            cfg = new GridHadoopConfiguration();
+        else
+            cfg = new GridHadoopConfiguration(cfg);
 
         initializeDefaults(cfg);
 
