@@ -22,7 +22,6 @@ import org.gridgain.grid.util.ipc.shmem.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -34,7 +33,7 @@ import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
 /**
  * Base test class for {@link GridGgfsServer} checking IPC endpoint registrations.
  */
-public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTest extends GridCommonAbstractTest {
+public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTest extends GridGgfsCommonAbstractTest {
     /** IP finder. */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
