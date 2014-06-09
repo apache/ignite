@@ -4,22 +4,25 @@ GridGain Hibernate Module
 GridGain Hibernate module provides Hibernate second-level cache (L2 cache) implementation based
 on GridGain In-Memory Data Grid.
 
-To enable Hibernate module move 'libs/optional/gridgain-hibernate' folder to 'libs' folder and
-add dependency on gridgain-hibernate lib in Maven 'pom.xml' file.
+To enable Hibernate module for starting standalone nodes from bin scripts move
+'libs/optional/gridgain-hibernate' folder to 'libs' folder.
+
+To add Hibernate module to developed project add dependency on gridgain-hibernate lib
+in Maven 'pom.xml' file.
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-                      http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  ...
-  <dependencies>
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                        http://maven.apache.org/xsd/maven-4.0.0.xsd">
     ...
-    <dependency>
-        <groupId>org.gridgain</groupId>
-        <artifactId>gridgain-hibernate</artifactId>
-        <version>6.1.8</version>
-    </dependency>
+    <dependencies>
+        ...
+        <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-hibernate</artifactId>
+            <version>6.1.8</version>
+        </dependency>
+        ...
+    </dependencies>
     ...
-  </dependencies>
-  ...
 </project>
