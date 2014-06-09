@@ -525,7 +525,7 @@
                         <goals>
                             <goal>run</goal>
                         </goals>
-                        <phase>prepare-package</phase>
+                        <phase>process-resources</phase>
                         <configuration>
                             <target>
                                 <java
@@ -660,6 +660,21 @@
                 <version>2.4</version>
                 <inherited>false</inherited>
                 <executions>
+                    <execution>
+                        <id>core-jar</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>assembly/core-jar.xml</descriptor>
+                            </descriptors>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <finalName>gridgain-${gridgain.version}</finalName>
+                        </configuration>
+                    </execution>
+
                     <execution>
                         <id>dependencies</id>
                         <phase>prepare-package</phase>

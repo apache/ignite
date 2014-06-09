@@ -1635,6 +1635,8 @@ public class GridGainEx {
             myCfg.setSwapSpaceSpi(swapspaceSpi);
             myCfg.setIndexingSpi(indexingSpi);
 
+            myCfg.setAddressResolver(cfg.getAddressResolver());
+
             // Set SMTP configuration.
             myCfg.setSmtpFromEmail(cfg.getSmtpFromEmail());
             myCfg.setSmtpHost(cfg.getSmtpHost());
