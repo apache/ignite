@@ -33,7 +33,7 @@ public class GridIpcSharedMemoryNativeLoader {
     private static final String LIB_NAME = LIB_NAME_BASE + "-" + GridProductImpl.VER;
 
     /** Lock file path. */
-    private static final File LOCK_FILE = new File(System.getProperty("java.io.tmpdir", "ggshmem.lock"));
+    private static final File LOCK_FILE = new File(System.getProperty("java.io.tmpdir"), "ggshmem.lock");
 
     /** Currently held file lock. */
     private static FileLock lock;
