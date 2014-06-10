@@ -17,6 +17,7 @@ import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -67,6 +68,10 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     /** {@code True} if this is last prepare request for node. */
     private boolean last;
 
+    /** Subject ID. */
+    @GridDirectVersion(1)
+    private UUID subjId;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -98,7 +103,8 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
         boolean partLock,
         Map<UUID, Collection<UUID>> txNodes,
         GridCacheVersion nearXidVer,
-        boolean last) {
+        boolean last,
+        UUID subjId) {
         super(tx, null, dhtWrites, grpLockKey, partLock, txNodes);
 
         assert futId != null;
@@ -110,6 +116,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
         this.miniId = miniId;
         this.nearXidVer = nearXidVer;
         this.last = last;
+        this.subjId = subjId;
 
         invalidateNearEntries = new BitSet(dhtWrites == null ? 0 : dhtWrites.size());
 
@@ -140,6 +147,13 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
      */
     public UUID nearNodeId() {
         return nearNodeId;
+    }
+
+    /**
+     * @return Subject ID.
+     */
+    @Nullable public UUID subjectId() {
+        return subjId;
     }
 
     /**
@@ -278,6 +292,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
         _clone.ownedBytes = ownedBytes;
         _clone.nearXidVer = nearXidVer;
         _clone.last = last;
+        _clone.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -367,6 +382,12 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
             case 28:
                 if (!commState.putLong(topVer))
+                    return false;
+
+                commState.idx++;
+
+            case 29:
+                if (!commState.putUuid(subjId))
                     return false;
 
                 commState.idx++;
@@ -487,6 +508,16 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
                     return false;
 
                 topVer = commState.getLong();
+
+                commState.idx++;
+
+            case 29:
+                UUID subjId0 = commState.getUuid();
+
+                if (subjId0 == UUID_NOT_READ)
+                    return false;
+
+                subjId = subjId0;
 
                 commState.idx++;
 

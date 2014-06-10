@@ -20,7 +20,7 @@ import java.util.concurrent.*;
 /**
  * Extended Grid interface which provides some additional methods required for kernal and Visor.
  */
-public interface GridEx extends Grid {
+public interface GridEx extends Grid, GridProjectionEx {
     /**
      * Gets the cache instance for the given name if one is configured or
      * <tt>null</tt> otherwise returning even non-public caches.
