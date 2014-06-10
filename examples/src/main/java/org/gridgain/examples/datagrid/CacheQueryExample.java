@@ -382,7 +382,7 @@ public class CacheQueryExample {
         @GridCacheQueryTextField
         private String resume;
 
-        /** Salary (create non-unique SQL index for this field). */
+        /** Salary (indexed). */
         @GridCacheQuerySqlField
         private double salary;
 
