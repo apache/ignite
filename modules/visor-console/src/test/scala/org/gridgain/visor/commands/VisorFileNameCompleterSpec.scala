@@ -11,10 +11,10 @@
 
 package org.gridgain.visor.commands
 
-import java.util
-import org.scalatest.matchers._
-import org.scalatest._
 import java.io.File
+import java.util
+
+import org.scalatest._
 
 /**
  * Test for visor's file name completer.

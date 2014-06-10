@@ -157,7 +157,8 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
         validatePortableTypes(cfg);
 
-        GridNioServerListener<GridClientMessage> lsnr = new GridTcpRestNioListener(log, this, hnd, ctx);
+        GridNioServerListener<GridClientMessage> lsnr =
+            new GridTcpRestNioListener(log, this, hnd, ctx, protobufMarshaller);
 
         GridNioParser parser = new GridTcpRestDirectParser(this, msgReader);
 

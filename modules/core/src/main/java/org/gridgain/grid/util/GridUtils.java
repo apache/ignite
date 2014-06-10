@@ -8110,6 +8110,44 @@ public abstract class GridUtils {
     }
 
     /**
+     * Resolves all not loopback addresses and collect results.
+     *
+     * @param addrRslvr Address resolver.
+     * @param addrs Addresses.
+     * @param port Port.
+     * @return Resolved socket addresses.
+     * @throws GridException If failed.
+     */
+    public static Collection<InetSocketAddress> resolveAddresses(
+        GridAddressResolver addrRslvr,
+        Iterable<String> addrs,
+        int port
+    ) throws GridException {
+        assert addrRslvr != null;
+
+        Collection<InetSocketAddress> extAddrs = new HashSet<>();
+
+        for (String addr : addrs) {
+            InetSocketAddress sockAddr = new InetSocketAddress(addr, port);
+
+            if (!sockAddr.isUnresolved()) {
+                try {
+                    Collection<InetSocketAddress> extAddrs0 = addrRslvr.getExternalAddresses(sockAddr);
+
+                    if (extAddrs0 != null)
+                        extAddrs.addAll(extAddrs0);
+                }
+                catch (GridException e) {
+                    throw new GridSpiException("Failed to get mapped external addresses " +
+                        "[addrRslvr=" + addrRslvr + ", addr=" + addr + ']', e);
+                }
+            }
+        }
+
+        return extAddrs;
+    }
+
+    /**
      * Returns string representation of node addresses.
      *
      * @param node Grid node.

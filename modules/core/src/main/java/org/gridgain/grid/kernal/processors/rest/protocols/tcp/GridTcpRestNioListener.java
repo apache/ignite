@@ -84,9 +84,10 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
      * @param proto Protocol.
      * @param hnd Rest handler.
      * @param ctx Context.
+     * @param protobufMarshaller Protobuf marshaller.
      */
     public GridTcpRestNioListener(GridLogger log, GridTcpRestProtocol proto, GridRestProtocolHandler hnd,
-        GridKernalContext ctx) {
+        GridKernalContext ctx, @Nullable GridClientMarshaller protobufMarshaller) {
         memcachedLsnr = new GridTcpMemcachedNioListener(log, hnd, ctx);
 
         this.log = log;
@@ -97,7 +98,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
         tmpMap.put(U.JDK_CLIENT_PROTO_ID, new GridClientJdkMarshaller());
 
-        addProtobufMarshaller(tmpMap);
+        if (protobufMarshaller != null)
+            tmpMap.put(U.PROTOBUF_CLIENT_PROTO_ID, protobufMarshaller);
 
         tmpMap.put(U.PORTABLE_OBJECT_PROTO_ID, proto.portableMarshaller());
 
@@ -116,16 +118,6 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         }
 
         suppMarshMap = Collections.unmodifiableMap(tmpMap);
-    }
-
-    /**
-     * @param map Marshallers map.
-     */
-    private void addProtobufMarshaller(Map<Byte, GridClientMarshaller> map) {
-        GridClientMarshaller marsh = U.createProtobufMarshaller(log);
-
-        if (marsh != null)
-            map.put(marsh.getProtocolId(), marsh);
     }
 
     /** {@inheritDoc} */

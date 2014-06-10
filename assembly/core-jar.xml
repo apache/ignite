@@ -35,11 +35,21 @@
 
     <includeBaseDirectory>false</includeBaseDirectory>
 
-    <dependencySets>
-        <dependencySet>
-            <useProjectArtifact>true</useProjectArtifact>
-            <useTransitiveDependencies>false</useTransitiveDependencies>
-            <unpack>true</unpack>
-        </dependencySet>
-    </dependencySets>
+    <moduleSets>
+        <moduleSet>
+            <includes>
+                <include>org.gridgain:jdk8-backport</include>
+                <include>org.gridgain:gridgain-core</include>
+            </includes>
+            <sources>
+                <includeModuleDirectory>false</includeModuleDirectory>
+                <fileSets>
+                    <fileSet>
+                        <directory>target/classes</directory>
+                        <outputDirectory>/</outputDirectory>
+                    </fileSet>
+                </fileSets>
+            </sources>
+        </moduleSet>
+    </moduleSets>
 </assembly>

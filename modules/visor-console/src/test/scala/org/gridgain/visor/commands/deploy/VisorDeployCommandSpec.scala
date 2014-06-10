@@ -11,15 +11,14 @@
 
 package org.gridgain.visor.commands.deploy
 
-import org.scalatest._
-import matchers._
 import org.gridgain.visor._
-import VisorDeployCommand._
+import org.gridgain.visor.commands.deploy.VisorDeployCommand._
+import org.scalatest._
 
 /**
  * Unit test for 'deploy' command.
  */
-class VisorDeployCommandSpec extends FlatSpec with ShouldMatchers {
+class VisorDeployCommandSpec extends FlatSpec with Matchers {
     behavior of "A 'deploy' visor command"
 
     it should "copy folder" in {

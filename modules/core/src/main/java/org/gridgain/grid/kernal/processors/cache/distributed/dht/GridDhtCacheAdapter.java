@@ -610,7 +610,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             GridDhtLocalPartition<K, V> part = ctx.topology().localPartition(partId,
                 ctx.discovery().topologyVersion(), false);
 
-            return part != null ? part.size() : 0;
+            return part != null ? part.publicSize() : 0;
         }
 
         /** {@inheritDoc} */
