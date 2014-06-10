@@ -20,7 +20,6 @@ import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -33,7 +32,7 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
  * Tests for GGFS per-block LR eviction policy.
  */
 @SuppressWarnings({"ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
-public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridCommonAbstractTest {
+public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsCommonAbstractTest {
     /** Primary GGFS name. */
     private static final String GGFS_PRIMARY = "ggfs-primary";
 

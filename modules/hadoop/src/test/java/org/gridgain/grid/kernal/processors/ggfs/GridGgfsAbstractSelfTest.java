@@ -19,7 +19,6 @@ import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -37,7 +36,7 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 /**
  * Test fo regular GGFs operations.
  */
-public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
+public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTest {
     /** GGFS block size. */
     protected static final int GGFS_BLOCK_SIZE = 512 * 1024;
 
