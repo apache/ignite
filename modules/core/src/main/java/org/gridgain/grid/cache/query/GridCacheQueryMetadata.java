@@ -20,7 +20,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridCacheQueryClass {
+public class GridCacheQueryMetadata {
     /** Type name, e.g. class name. */
     @GridToStringInclude
     private String type;
@@ -104,6 +104,6 @@ public class GridCacheQueryClass {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheQueryClass.class, this);
+        return S.toString(GridCacheQueryMetadata.class, this);
     }
 }

@@ -15,7 +15,7 @@ package org.gridgain.grid.cache.query;
  * @author @java.author
  * @version @java.version
  */
-public interface GridCacheQueryClassResolver {
+public interface GridCacheQueryMetadataResolver {
     public String resolveTypeName(Object key, Object val);
 
     public Class<?> resolveFieldType(String field, Object key, Object val);
