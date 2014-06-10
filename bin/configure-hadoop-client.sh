@@ -61,15 +61,11 @@ source "${GRIDGAIN_HOME_TMP}"/bin/include/functions.sh
 #
 setGridGainHome
 
-GG_JAR=$(ls ${GRIDGAIN_HOME}/libs/gridgain-*.jar)
-GG_JAR=$(readlink -m $GG_JAR)
-
-GGH_JAR=$(ls ${GRIDGAIN_HOME}/libs/gridgain-hadoop/gridgain-hadoop-*.jar)
-GGH_JAR=$(readlink -m $GGH_JAR)
-
 COMMON_HOME_LIB=$HADOOP_COMMON_HOME/lib
 
 rm  ${COMMON_HOME_LIB}/gridgain* 2>/dev/null
 
-ln -s $GG_JAR ${COMMON_HOME_LIB}/$(basename $GG_JAR)
-ln -s $GGH_JAR ${COMMON_HOME_LIB}/$(basename $GGH_JAR)
+for file in $(ls ${GRIDGAIN_HOME}/libs/gridgain-*.jar); do
+    GG_JAR=$(readlink -m $file)
+    ln -s $GG_JAR ${COMMON_HOME_LIB}/$(basename $GG_JAR)
+done

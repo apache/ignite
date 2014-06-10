@@ -62,36 +62,19 @@ if [ "${USER_LIBS}" != "" ]; then
 fi
 
 if [ "$GRIDGAIN_HADOOP_CLASSPATH" != "" ]; then
-    GG_JAR=$(ls ${GRIDGAIN_HOME}/libs/gridgain-*.jar)
-    GG_JAR=$(readlink -m $GG_JAR)
-
-    GGH_JAR=$(ls ${GRIDGAIN_HOME}/libs/gridgain-hadoop/gridgain-hadoop-*.jar)
-    GGH_JAR=$(readlink -m $GGH_JAR)
-
     COMMON_HOME_LIB=$HADOOP_COMMON_HOME/lib
 
-    for file in $COMMON_HOME_LIB/*
-    do
-        if [ -h $file ]; then
-            link=$(readlink -n -f $file)
+    for file in $(ls ${GRIDGAIN_HOME}/libs/gridgain-*.jar); do
+        GG_JAR=$(readlink -m $file)
 
-            if [ "$link" == "$GG_JAR" ]; then
-                GG_JAR_PRESENT=1
-            fi
+        LINK=$COMMON_HOME_LIB/$(basename $GG_JAR)
 
-            if [ "$link" == "$GGH_JAR" ]; then
-                GGH_JAR_PRESENT=1
-            fi
+        LINK=$(readlink -n -f $LINK)
+
+        if [ "$LINK" != "$GG_JAR" ]; then
+            echo "WARNING: Symbolic link to $GG_JAR doesn't present in $COMMON_HOME_LIB"
         fi
     done
-
-    if [ "$GG_JAR_PRESENT" == "" ]; then
-        echo "WARNING: Symbolic link to $GG_JAR doesn't present in $COMMON_HOME_LIB"
-    fi
-
-    if [ "$GGH_JAR_PRESENT" == "" ]; then
-        echo "WARNING: Symbolic link to $GGH_JAR doesn't present in $COMMON_HOME_LIB"
-    fi
 
     GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}$GRIDGAIN_HADOOP_CLASSPATH
 fi
