@@ -14,8 +14,6 @@ namespace GridGain.Client.Impl.Message {
 
     /** <summary><c>Task</c> command request.</summary> */
     internal class GridClientTaskRequest : GridClientRequest {
-        public const int PORTABLE_TYPE_ID = -7;
-        
         /**
          * <summary>
          * Constructs task command request.</summary>
@@ -37,10 +35,7 @@ namespace GridGain.Client.Impl.Message {
             set;
         }
 
-        public override int TypeId {
-            get { return PORTABLE_TYPE_ID; }
-        }
-
+        /** <inheritdoc /> */
         public override void WritePortable(IGridPortableWriter writer) {
             base.WritePortable(writer);
 
@@ -49,6 +44,7 @@ namespace GridGain.Client.Impl.Message {
             writer.WriteObject("arg", Argument);
         }
 
+        /** <inheritdoc /> */
         public override void ReadPortable(IGridPortableReader reader) {
             base.ReadPortable(reader);
 

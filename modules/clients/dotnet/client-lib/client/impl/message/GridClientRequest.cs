@@ -15,7 +15,7 @@ namespace GridGain.Client.Impl.Message {
      * This class provides implementation for commit message fields
      * and cannot be used directly.</summary>
      */
-    internal abstract class GridClientRequest : IGridPortableObject {
+    internal abstract class GridClientRequest : IGridPortableEx {
         /** <summary>Deny no-arg constructor for client requests.</summary> */
         private GridClientRequest() { 
         }

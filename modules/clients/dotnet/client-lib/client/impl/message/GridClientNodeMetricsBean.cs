@@ -9,9 +9,7 @@
 
 namespace GridGain.Client.Impl.Message {
     /** <summary>Node metrics bean.</summary> */
-    internal class GridClientNodeMetricsBean : IGridPortableObject {
-        public const int PORTABLE_TYPE_ID = -5;
-        
+    internal class GridClientNodeMetricsBean : IGridPortableEx {
         /** <summary>Constructs client node metrics bean.</summary> */
         public GridClientNodeMetricsBean() {
         }
@@ -171,11 +169,9 @@ namespace GridGain.Client.Impl.Message {
         /** */
         public long rcvdBytesCnt { get; set; }
 
-        public int TypeId {
-            get { return PORTABLE_TYPE_ID; }
-        }
-
-        public void WritePortable(IGridPortableWriter writer) {
+        /** <inheritdoc /> */
+        public override void WritePortable(IGridPortableWriter writer)
+        {
             writer.WriteLong("lastUpdateTime", lastUpdateTime);
             writer.WriteInt("maxActiveJobs", maxActiveJobs);
             writer.WriteInt("curActiveJobs", curActiveJobs);
@@ -230,7 +226,9 @@ namespace GridGain.Client.Impl.Message {
             writer.WriteLong("rcvdBytesCnt", rcvdBytesCnt);
         }
 
-        public void ReadPortable(IGridPortableReader reader) {
+        /** <inheritdoc /> */
+        public override void ReadPortable(IGridPortableReader reader)
+        {
             lastUpdateTime = reader.ReadLong("lastUpdateTime");
             maxActiveJobs = reader.ReadInt("maxActiveJobs");
             curActiveJobs = reader.ReadInt("curActiveJobs");

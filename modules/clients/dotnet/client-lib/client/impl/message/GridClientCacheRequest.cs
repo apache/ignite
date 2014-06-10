@@ -18,8 +18,6 @@ namespace GridGain.Client.Impl.Message {
 
     /** <summary>Generic cache request.</summary> */
     internal class GridClientCacheRequest : GridClientRequest {
-        public const int PORTABLE_TYPE_ID = -2;
-        
         /**
          * <summary>
          * Tries to find enum value by operation code.</summary>
@@ -102,10 +100,7 @@ namespace GridGain.Client.Impl.Message {
             }
         }
 
-        public override int TypeId {
-            get { return PORTABLE_TYPE_ID; }
-        }
-
+        /** <inheritdoc /> */
         public override void WritePortable(IGridPortableWriter writer) {
             base.WritePortable(writer);
 
@@ -122,6 +117,7 @@ namespace GridGain.Client.Impl.Message {
             writer.WriteInt("flags", CacheFlags);
         }
 
+        /** <inheritdoc /> */
         public override void ReadPortable(IGridPortableReader reader) {
             base.ReadPortable(reader);
 

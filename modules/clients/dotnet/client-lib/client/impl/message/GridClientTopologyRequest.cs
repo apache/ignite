@@ -13,8 +13,6 @@ namespace GridGain.Client.Impl.Message {
 
     /** <summary><c>Topology</c> command request.</summary> */
     internal class GridClientTopologyRequest : GridClientRequest {
-        public const int PORTABLE_TYPE_ID = -9;
-        
         /**
          * <summary>
          * Constructs topology request.</summary>
@@ -48,10 +46,7 @@ namespace GridGain.Client.Impl.Message {
             set;
         }
 
-        public override int TypeId {
-            get { return PORTABLE_TYPE_ID; }
-        }
-
+        /** <inheritdoc /> */
         public override void WritePortable(IGridPortableWriter writer) {
             base.WritePortable(writer);
 
@@ -63,6 +58,7 @@ namespace GridGain.Client.Impl.Message {
             writer.WriteBoolean("includeAttrs", IncludeAttributes);
         }
 
+        /** <inheritdoc /> */
         public override void ReadPortable(IGridPortableReader reader) {
             base.ReadPortable(reader);
 
