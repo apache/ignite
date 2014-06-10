@@ -54,6 +54,7 @@
         <module>modules/log4j</module>
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
+        <module>examples</module>
     </modules>
 
     <build>
@@ -78,13 +79,6 @@
             <modules>
                 <module>modules/scalar</module>
                 <module>modules/visor-console</module>
-            </modules>
-        </profile>
-
-        <profile>
-            <id>examples</id>
-            <modules>
-                <module>examples</module>
             </modules>
         </profile>
     </profiles>

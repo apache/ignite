@@ -12,14 +12,13 @@ package org.gridgain.grid.kernal.processors.ggfs;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.junits.common.*;
 
 import java.util.concurrent.*;
 
 /**
  * Tests for {@link GridGgfsGroupDataBlocksKeyMapper} hash.
  */
-public class GridGgfsGroupDataBlockKeyMapperHashSelfTest extends GridCommonAbstractTest {
+public class GridGgfsGroupDataBlockKeyMapperHashSelfTest extends GridGgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
