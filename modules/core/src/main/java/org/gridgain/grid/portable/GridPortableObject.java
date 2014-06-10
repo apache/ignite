@@ -9,16 +9,15 @@
 
 package org.gridgain.grid.portable;
 
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
 
 /**
- * Wrapper for serialized portable objects.
+ * Wrapper for serialized portable object.
  */
-public interface GridPortableObject extends Serializable {
+public interface GridPortableObject extends Serializable, Cloneable {
     /**
      * Gets portable object type ID.
      *
@@ -45,10 +44,19 @@ public interface GridPortableObject extends Serializable {
      *
      * @param fieldName Field name.
      * @return Field value.
-     * @throws GridPortableNoSuchFieldException If field doesn't exist.
-     * @throws GridException In case of any other error.
+     * @throws GridPortableInvalidFieldException If field doesn't exist.
+     * @throws GridPortableException In case of any other error.
      */
-    @Nullable public <F> F field(String fieldName) throws GridPortableNoSuchFieldException, GridException;
+    @Nullable public <F> F field(String fieldName) throws GridPortableException;
+
+    /**
+     * Gets fully deserialized instance of portable object.
+     *
+     * @return Fully deserialized instance of portable object.
+     * @throws GridPortableInvalidClassException If class doesn't exist.
+     * @throws GridPortableException In case of any other error.
+     */
+    public <T extends GridPortable> T deserialize() throws GridPortableException;
 
     /**
      * Creates a copy of this portable object and optionally changes field values
@@ -57,15 +65,17 @@ public interface GridPortableObject extends Serializable {
      *
      * @param fields Fields to modify in copy.
      * @return Copy of this portable object.
+     * @see #clone()
      */
     public GridPortableObject copy(@Nullable Map<String, Object> fields);
 
     /**
-     * Gets fully deserialized instance of portable object.
+     * Creates a copy of this portable object. If object needs to be modified,
+     * use {@link #copy(Map)} method.
      *
-     * @return Fully deserialized instance of portable object.
-     * @throws GridPortableNoSuchClassException If class doesn't exist.
-     * @throws GridException In case of any other error.
+     * @return Copy of this portable object.
+     * @see #copy(Map)
      */
-    public <T extends GridPortable> T deserialize() throws GridPortableNoSuchClassException, GridException;
+    @SuppressWarnings("CloneDoesntDeclareCloneNotSupportedException")
+    public GridPortableObject clone();
 }
