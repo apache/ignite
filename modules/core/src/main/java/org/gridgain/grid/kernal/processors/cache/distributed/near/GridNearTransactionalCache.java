@@ -109,6 +109,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         boolean forcePrimary,
         boolean skipTx,
         @Nullable final GridCacheEntryEx<K, V> entry,
+        @Nullable UUID subjId,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         ctx.denyOnFlag(LOCAL);
@@ -127,7 +128,9 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             });
         }
 
-        return loadAsync(null, keys, false, forcePrimary, filter);
+        subjId = ctx.subjectIdPerCall(subjId);
+
+        return loadAsync(null, keys, false, forcePrimary, filter, subjId);
     }
 
     /**
@@ -140,7 +143,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
         assert tx != null;
 
-        GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx, keys, false, false, tx, filter);
+        GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx, keys, false, false, tx, filter,
+            CU.subjectId(tx, ctx));
 
         // init() will register future for responses if it has remote mappings.
         fut.init();
@@ -241,7 +245,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                     req.nearWrites(),
                     ctx,
                     req.txSize(),
-                    req.groupLockKey()
+                    req.groupLockKey(),
+                    req.subjectId()
                 );
 
                 if (!tx.empty()) {
@@ -336,7 +341,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         drVer,
                                         ctx,
                                         req.txSize(),
-                                        req.groupLockKey()
+                                        req.groupLockKey(),
+                                        req.subjectId()
                                     );
 
                                     if (req.groupLock())
@@ -501,7 +507,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     txEntry.drVersion(),
                                     ctx,
                                     req.txSize(),
-                                    req.groupLockKey());
+                                    req.groupLockKey(),
+                                    req.subjectId());
 
                                 if (tx.empty())
                                     return tx;
@@ -641,8 +648,13 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation, long timeout, boolean invalidate,
         boolean syncCommit, boolean syncRollback, boolean swapOrOffheapEnabled, boolean storeEnabled, int txSize,
         @Nullable Object grpLockKey, boolean partLock) {
+        // Use null as subject ID for transactions if subject per call is not set.
+        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+
+        UUID subjId = prj == null ? null : prj.subjectId();
+
         return new GridNearTxLocal<>(ctx, implicit, implicitSingle, concurrency, isolation, timeout,
-            invalidate, syncCommit, syncRollback, swapOrOffheapEnabled, storeEnabled, txSize, grpLockKey, partLock);
+            invalidate, syncCommit, syncRollback, swapOrOffheapEnabled, storeEnabled, txSize, grpLockKey, partLock, subjId);
     }
 
     /** {@inheritDoc} */

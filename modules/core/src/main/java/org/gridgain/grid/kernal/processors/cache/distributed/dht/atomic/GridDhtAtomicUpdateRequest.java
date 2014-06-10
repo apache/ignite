@@ -126,6 +126,10 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     @GridDirectVersion(2)
     private List<byte[]> nearTransformClosBytes;
 
+    /** Subject ID. */
+    @GridDirectVersion(3)
+    private UUID subjId;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -143,6 +147,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param topVer Topology version.
      * @param ttl Time to live.
      * @param forceTransformBackups Force transform backups flag.
+     * @param subjId Subject ID.
      */
     public GridDhtAtomicUpdateRequest(
         UUID nodeId,
@@ -151,7 +156,8 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         GridCacheWriteSynchronizationMode syncMode,
         long topVer,
         long ttl,
-        boolean forceTransformBackups
+        boolean forceTransformBackups,
+        UUID subjId
     ) {
         this.nodeId = nodeId;
         this.futVer = futVer;
@@ -160,6 +166,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         this.ttl = ttl;
         this.topVer = topVer;
         this.forceTransformBackups = forceTransformBackups;
+        this.subjId = subjId;
 
         keys = new ArrayList<>();
         keyBytes = new ArrayList<>();
@@ -285,6 +292,13 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      */
     public UUID nodeId() {
         return nodeId;
+    }
+
+    /**
+     * @return Subject ID.
+     */
+    public UUID subjectId() {
+        return subjId;
     }
 
     /**
@@ -600,6 +614,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         _clone.transformClosBytes = transformClosBytes;
         _clone.nearTransformClos = nearTransformClos;
         _clone.nearTransformClosBytes = nearTransformClosBytes;
+        _clone.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -858,6 +873,12 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                     if (!commState.putInt(-1))
                         return false;
                 }
+
+                commState.idx++;
+
+            case 18:
+                if (!commState.putUuid(subjId))
+                    return false;
 
                 commState.idx++;
 
@@ -1159,6 +1180,16 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
                 commState.readSize = -1;
                 commState.readItems = 0;
+
+                commState.idx++;
+
+            case 18:
+                UUID subjId0 = commState.getUuid();
+
+                if (subjId0 == UUID_NOT_READ)
+                    return false;
+
+                subjId = subjId0;
 
                 commState.idx++;
         }
