@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.cache.query;
 
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -40,7 +39,7 @@ public class GridCacheQueryClass {
 
     /** Fields to create group indexes for. */
     @GridToStringInclude
-    private Map<String, GridBiTuple<String, Boolean>> grps;
+    private Collection<LinkedHashMap<String, Boolean>> grps;
 
     public String getType() {
         return type;
@@ -83,12 +82,12 @@ public class GridCacheQueryClass {
         this.descFlds = Arrays.asList(descFlds);
     }
 
-    public Map<String, GridBiTuple<String, Boolean>> getGroups() {
+    public Collection<LinkedHashMap<String, Boolean>> getGroups() {
         return grps;
     }
 
-    public void setGroups(Map<String, GridBiTuple<String, Boolean>> grps) {
-        this.grps = grps;
+    public void setGroups(LinkedHashMap<String, Boolean>... grps) {
+        this.grps = Arrays.asList(grps);
     }
 
     /** {@inheritDoc} */
