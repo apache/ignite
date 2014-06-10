@@ -45,9 +45,10 @@ public interface GridPortableObject extends Serializable {
      *
      * @param fieldName Field name.
      * @return Field value.
-     * @throws GridException If field doesn't exist.
+     * @throws GridPortableNoSuchFieldException If field doesn't exist.
+     * @throws GridException In case of any other error.
      */
-    @Nullable public <F> F field(String fieldName) throws GridException;
+    @Nullable public <F> F field(String fieldName) throws GridPortableNoSuchFieldException, GridException;
 
     /**
      * Creates a copy of this portable object and optionally changes field values
@@ -63,6 +64,8 @@ public interface GridPortableObject extends Serializable {
      * Gets fully deserialized instance of portable object.
      *
      * @return Fully deserialized instance of portable object.
+     * @throws GridPortableNoSuchClassException If class doesn't exist.
+     * @throws GridException In case of any other error.
      */
-    public <T extends GridPortable> T deserialize();
+    public <T extends GridPortable> T deserialize() throws GridPortableNoSuchClassException, GridException;
 }
