@@ -33,9 +33,6 @@ public class GridHadoopV2Context extends JobContextImpl implements MapContext, R
     /** Output writer to overriding of GridHadoopTaskContext output. */
     private RecordWriter writer;
 
-    /** Hadoop configuration of the job. */
-    //private final Configuration cfg;
-
     /** Output is provided by executor environment. */
     private final GridHadoopTaskOutput output;
 
