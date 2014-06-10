@@ -14,13 +14,13 @@ import org.apache.hadoop.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
+import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
 
 import java.net.*;
 import java.util.*;
@@ -32,7 +32,7 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 /**
  * Ensures correct modes resolution for SECONDARY paths.
  */
-public class GridGgfsHadoopFileSystemSecondaryModeSelfTest extends GridCommonAbstractTest {
+public class GridGgfsHadoopFileSystemSecondaryModeSelfTest extends GridGgfsCommonAbstractTest {
     /** Path to check. */
     private static final Path PATH = new Path("/dir");
 

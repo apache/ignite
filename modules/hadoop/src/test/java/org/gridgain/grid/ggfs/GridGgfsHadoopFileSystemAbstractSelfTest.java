@@ -17,6 +17,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
+import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.communication.*;
 import org.gridgain.grid.spi.communication.tcp.*;
@@ -28,7 +29,6 @@ import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -48,7 +48,7 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
  * Test hadoop file system implementation.
  */
 @SuppressWarnings("all")
-public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommonAbstractTest {
+public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsCommonAbstractTest {
     /** Primary file system authority. */
     private static final String PRIMARY_AUTHORITY = "ggfs:grid0@";
 
@@ -200,7 +200,6 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
             cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
             cfg.setGgfsConfiguration(ggfsCfg);
             cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
-            cfg.setLocalHost(U.getLocalHost().getHostAddress());
 
             cfg.setCommunicationSpi(communicationSpi());
 
@@ -267,7 +266,6 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
         cfg.setGgfsConfiguration(ggfsConfiguration(gridName));
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
-        cfg.setLocalHost(U.getLocalHost().getHostAddress());
         cfg.setCommunicationSpi(communicationSpi());
 
         return cfg;

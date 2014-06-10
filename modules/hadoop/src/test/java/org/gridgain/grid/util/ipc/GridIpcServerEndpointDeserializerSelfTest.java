@@ -11,17 +11,17 @@ package org.gridgain.grid.util.ipc;
 
 import net.sf.json.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.util.ipc.loopback.*;
 import org.gridgain.grid.util.ipc.shmem.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
 
 import java.util.concurrent.*;
 
 /**
  * Tests for {@code GridIpcServerEndpointDeserializer}.
  */
-public class GridIpcServerEndpointDeserializerSelfTest extends GridCommonAbstractTest {
+public class GridIpcServerEndpointDeserializerSelfTest extends GridGgfsCommonAbstractTest {
     /** */
     private GridIpcSharedMemoryServerEndpoint shmemSrvEndpoint;
 

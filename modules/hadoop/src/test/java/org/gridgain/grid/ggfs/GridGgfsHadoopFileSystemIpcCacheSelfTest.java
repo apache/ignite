@@ -14,6 +14,7 @@ import org.apache.hadoop.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
+import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.spi.communication.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -36,7 +37,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 /**
  * IPC cache test.
  */
-public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridCommonAbstractTest {
+public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridGgfsCommonAbstractTest {
     /** IP finder. */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 

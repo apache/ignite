@@ -20,7 +20,6 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
 import java.lang.reflect.*;
@@ -28,15 +27,15 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
-import static org.gridgain.grid.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT;
+import static org.gridgain.grid.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint.*;
 
 /**
  * Test interaction between a GGFS client and a GGFS server.
  */
-public class GridGgfsHadoopFileSystemClientSelfTest extends GridCommonAbstractTest {
+public class GridGgfsHadoopFileSystemClientSelfTest extends GridGgfsCommonAbstractTest {
     /** Logger. */
     private static final Log LOG = LogFactory.getLog(GridGgfsHadoopFileSystemClientSelfTest.class);
 

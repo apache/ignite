@@ -19,7 +19,6 @@ import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.testframework.junits.common.*;
 
 import static com.google.common.collect.ObjectArrays.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -34,7 +33,7 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
  * <p>
  * Tests starting with "testRemote" are checking {@link GridGgfsProcessor#checkGgfsOnRemoteNode(GridNode)}.
  */
-public class GridGgfsProcessorValidationSelfTest extends GridCommonAbstractTest {
+public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractTest {
     /** IP finder. */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
