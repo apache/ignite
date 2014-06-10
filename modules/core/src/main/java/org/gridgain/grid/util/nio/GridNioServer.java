@@ -164,7 +164,6 @@ public class GridNioServer<T> {
      * @param filters Filters for this server.
      * @throws GridException If failed.
      */
-
     private GridNioServer(
         InetAddress addr,
         int port,
