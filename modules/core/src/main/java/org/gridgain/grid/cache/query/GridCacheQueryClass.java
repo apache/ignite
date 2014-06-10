@@ -37,6 +37,10 @@ public class GridCacheQueryClass {
     @GridToStringInclude
     private Collection<String> descFlds;
 
+    /** Fields to index as text. */
+    @GridToStringInclude
+    private Collection<String> txtFlds;
+
     /** Fields to create group indexes for. */
     @GridToStringInclude
     private Collection<LinkedHashMap<String, Boolean>> grps;
@@ -80,6 +84,14 @@ public class GridCacheQueryClass {
 
     public void setDescendingFields(String... descFlds) {
         this.descFlds = Arrays.asList(descFlds);
+    }
+
+    public Collection<String> getTextFields() {
+        return txtFlds;
+    }
+
+    public void setTextFields(Collection<String> txtFlds) {
+        this.txtFlds = txtFlds;
     }
 
     public Collection<LinkedHashMap<String, Boolean>> getGroups() {
