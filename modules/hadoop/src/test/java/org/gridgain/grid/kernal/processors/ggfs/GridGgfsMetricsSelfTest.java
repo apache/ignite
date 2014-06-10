@@ -16,7 +16,7 @@ import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.testframework.junits.common.*;
+import org.gridgain.testframework.*;
 
 import java.util.*;
 
@@ -27,7 +27,7 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 /**
  * Test for GGFS metrics.
  */
-public class GridGgfsMetricsSelfTest extends GridCommonAbstractTest {
+public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
     /** Primary GGFS name. */
     private static final String GGFS_PRIMARY = "ggfs-primary";
 
@@ -161,7 +161,7 @@ public class GridGgfsMetricsSelfTest extends GridCommonAbstractTest {
         ggfsCfg.setName(GGFS_SECONDARY);
         ggfsCfg.setBlockSize(SECONDARY_BLOCK_SIZE);
         ggfsCfg.setDefaultMode(PRIMARY);
-        ggfsCfg.setIpcEndpointConfiguration(SECONDARY_REST_CFG);
+        ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(SECONDARY_REST_CFG));
 
         GridCacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 

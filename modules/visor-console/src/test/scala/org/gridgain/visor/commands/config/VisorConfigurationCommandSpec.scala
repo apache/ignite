@@ -11,12 +11,10 @@
 
 package org.gridgain.visor.commands.config
 
-import org.gridgain.visor._
-import VisorConfigurationCommand._
 import org.gridgain.grid._
-import org.gridgain.grid.events.GridEventType
-import GridEventType._
-import org.gridgain.grid.events.GridEventType
+import org.gridgain.grid.events.GridEventType._
+import org.gridgain.visor._
+import org.gridgain.visor.commands.config.VisorConfigurationCommand._
 
 /**
  * Unit test for 'config' command.
@@ -41,10 +39,6 @@ class VisorConfigurationCommandSpec extends VisorRuntimeBaseSpec(1) {
     behavior of "A 'config' visor command"
 
     it should "print configuration for first node" in {
-        visor.open("-d", false)
-
         visor.config("-id8=@n0")
-
-        visor.close()
     }
 }

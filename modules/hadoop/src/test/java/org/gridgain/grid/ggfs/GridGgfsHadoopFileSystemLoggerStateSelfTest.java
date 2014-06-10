@@ -13,14 +13,14 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
+import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.junits.common.*;
+import org.gridgain.testframework.*;
 
 import java.lang.reflect.*;
 import java.net.*;
@@ -34,7 +34,7 @@ import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
 /**
  * Ensures that sampling is really turned on/off.
  */
-public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridCommonAbstractTest {
+public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridGgfsCommonAbstractTest {
     /** GGFS. */
     private GridGgfsEx ggfs;
 
@@ -73,7 +73,7 @@ public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridCommonAbstr
         ggfsCfg.setName("ggfs");
         ggfsCfg.setBlockSize(512 * 1024);
         ggfsCfg.setDefaultMode(PRIMARY);
-        ggfsCfg.setIpcEndpointConfiguration("{type:'tcp', port:10500}");
+        ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap("{type:'tcp', port:10500}"));
 
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
 

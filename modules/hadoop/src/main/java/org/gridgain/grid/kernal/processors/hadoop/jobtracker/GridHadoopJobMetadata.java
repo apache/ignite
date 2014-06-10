@@ -52,7 +52,7 @@ public class GridHadoopJobMetadata implements Externalizable {
     private Map<Integer, GridHadoopProcessDescriptor> reducersAddrs;
 
     /** Job phase. */
-    private GridHadoopJobPhase phase = PHASE_MAP;
+    private GridHadoopJobPhase phase = PHASE_SETUP;
 
     /** Fail cause. */
     @GridToStringExclude
@@ -63,6 +63,9 @@ public class GridHadoopJobMetadata implements Externalizable {
 
     /** Start time. */
     private long startTs;
+
+    /** Setup phase complete time. */
+    private long setupCompleteTs;
 
     /** Map phase complete time. */
     private long mapCompleteTs;
@@ -107,6 +110,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         pendingReducers = src.pendingReducers;
         phase = src.phase;
         reducersAddrs = src.reducersAddrs;
+        setupCompleteTs = src.setupCompleteTs;
         startTs = src.startTs;
         taskNumMap = src.taskNumMap;
         ver = src.ver + 1;
@@ -195,6 +199,13 @@ public class GridHadoopJobMetadata implements Externalizable {
     }
 
     /**
+     * @return Setup complete time.
+     */
+    public long setupCompleteTimestamp() {
+        return setupCompleteTs;
+    }
+
+    /**
      * @return Map complete time.
      */
     public long mapCompleteTimestamp() {
@@ -206,6 +217,13 @@ public class GridHadoopJobMetadata implements Externalizable {
      */
     public long completeTimestamp() {
         return completeTs;
+    }
+
+    /**
+     * @param setupCompleteTs Setup complete timestamp.
+     */
+    public void setupCompleteTimestamp(long setupCompleteTs) {
+        this.setupCompleteTs = setupCompleteTs;
     }
 
     /**
@@ -223,10 +241,17 @@ public class GridHadoopJobMetadata implements Externalizable {
     }
 
     /**
+     * @return Setup time in milliseconds.
+     */
+    public long setupTime() {
+        return setupCompleteTs = startTs;
+    }
+
+    /**
      * @return Map time in milliseconds.
      */
     public long mapTime() {
-        return mapCompleteTs - startTs;
+        return mapCompleteTs - setupCompleteTs;
     }
 
     /**
@@ -246,6 +271,7 @@ public class GridHadoopJobMetadata implements Externalizable {
     /**
      * @param mrPlan Map-reduce plan.
      */
+    @SuppressWarnings("ConstantConditions")
     public void mapReducePlan(GridHadoopMapReducePlan mrPlan) {
         assert this.mrPlan == null : "Map-reduce plan can only be initialized once.";
 
@@ -340,12 +366,14 @@ public class GridHadoopJobMetadata implements Externalizable {
         out.writeObject(failCause);
         out.writeLong(ver);
         out.writeLong(startTs);
+        out.writeLong(setupCompleteTs);
         out.writeLong(mapCompleteTs);
         out.writeLong(completeTs);
         out.writeObject(reducersAddrs);
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         jobId = (GridHadoopJobId)in.readObject();
         jobInfo = (GridHadoopJobInfo)in.readObject();
@@ -358,6 +386,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         failCause = (Throwable)in.readObject();
         ver = in.readLong();
         startTs = in.readLong();
+        setupCompleteTs = in.readLong();
         mapCompleteTs = in.readLong();
         completeTs = in.readLong();
         reducersAddrs = (Map<Integer, GridHadoopProcessDescriptor>)in.readObject();

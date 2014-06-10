@@ -14,13 +14,13 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.spi.communication.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
 import java.net.*;
@@ -37,7 +37,7 @@ import static org.gridgain.grid.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint
 /**
  * Tests for GGFS file system handshake.
  */
-public class GridGgfsHadoopFileSystemHandshakeSelfTest extends GridCommonAbstractTest {
+public class GridGgfsHadoopFileSystemHandshakeSelfTest extends GridGgfsCommonAbstractTest {
     /** IP finder. */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
@@ -224,7 +224,7 @@ public class GridGgfsHadoopFileSystemHandshakeSelfTest extends GridCommonAbstrac
         ggfsCfg.setName(dfltGgfsName ? null : GGFS_NAME);
         ggfsCfg.setPrefetchBlocks(1);
         ggfsCfg.setDefaultMode(PRIMARY);
-        ggfsCfg.setIpcEndpointConfiguration("{type:'tcp', port:" + DFLT_IPC_PORT + "}");
+        ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap("{type:'tcp', port:" + DFLT_IPC_PORT + "}"));
         ggfsCfg.setManagementPort(-1);
         ggfsCfg.setBlockSize(512 * 1024);
 

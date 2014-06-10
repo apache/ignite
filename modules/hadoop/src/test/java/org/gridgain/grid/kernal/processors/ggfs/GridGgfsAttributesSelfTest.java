@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.commons.lang.builder.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.*;
@@ -21,7 +20,7 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 /**
  * {@link org.gridgain.grid.kernal.processors.ggfs.GridGgfsAttributes} test case.
  */
-public class GridGgfsAttributesSelfTest extends GridCommonAbstractTest {
+public class GridGgfsAttributesSelfTest extends GridGgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */

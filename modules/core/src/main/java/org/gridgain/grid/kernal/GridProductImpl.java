@@ -9,15 +9,12 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.text.*;
 import java.util.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * {@link GridProduct} implementation.
@@ -28,9 +25,6 @@ public class GridProductImpl implements GridProduct {
 
     /** Enterprise edition flag. */
     public static final boolean ENT;
-
-    /** Edition name. */
-    public static final String EDITION;
 
     /** GridGain version. */
     public static final String VER;
@@ -62,9 +56,6 @@ public class GridProductImpl implements GridProduct {
     /** */
     private final GridProductVersion ver;
 
-    /** */
-    private final GridProductEdition edition;
-
     /** Update notifier. */
     private final GridUpdateNotifier verChecker;
 
@@ -83,7 +74,6 @@ public class GridProductImpl implements GridProduct {
 
         ENT = ent0;
 
-        EDITION = GridProperties.get("gridgain.edition");
         VER = GridProperties.get("gridgain.version");
         BUILD_TSTAMP = Long.valueOf(GridProperties.get("gridgain.build"));
         REV_HASH = GridProperties.get("gridgain.revision");
@@ -91,7 +81,7 @@ public class GridProductImpl implements GridProduct {
 
         VER_BYTES = U.intToBytes(VER.hashCode());
 
-        COMPOUND_VER = EDITION + "-" + (ENT ? "ent" : "os") + "-" + VER;
+        COMPOUND_VER = VER + "-" + (ENT ? "ent" : "os");
 
         BUILD_TSTAMP_STR = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD_TSTAMP * 1000));
 
@@ -110,14 +100,7 @@ public class GridProductImpl implements GridProduct {
 
         String releaseType = ctx.isEnterprise() ? "ent" : "os";
 
-        ver = GridProductVersion.fromString(EDITION + "-" + releaseType + "-" + VER + '-' + BUILD_TSTAMP + '-' + REV_HASH);
-
-        edition = editionFromString(EDITION);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridProductEdition edition() {
-        return edition;
+        ver = GridProductVersion.fromString(VER + '-' + releaseType + '-' + BUILD_TSTAMP + '-' + REV_HASH);
     }
 
     /** {@inheritDoc} */
@@ -164,33 +147,5 @@ public class GridProductImpl implements GridProduct {
         finally {
             ctx.gateway().readUnlock();
         }
-    }
-
-    /**
-     * @param edition Edition name.
-     * @return Edition.
-     */
-    private static GridProductEdition editionFromString(String edition) {
-        switch (edition) {
-            case "hpc":
-                return HPC;
-
-            case "datagrid":
-                return DATA_GRID;
-
-            case "hadoop":
-                return HADOOP;
-
-            case "streaming":
-                return STREAMING;
-
-            case "mongo":
-                return MONGO;
-
-            case "platform":
-                return PLATFORM;
-        }
-
-        throw new GridRuntimeException("Failed to determine GridGain edition: " + edition);
     }
 }

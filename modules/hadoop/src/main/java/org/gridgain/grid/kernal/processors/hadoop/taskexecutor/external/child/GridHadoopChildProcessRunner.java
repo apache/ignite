@@ -160,6 +160,8 @@ public class GridHadoopChildProcessRunner {
 
                     GridHadoopTaskInfo info = F.first(req.tasks());
 
+                    assert info != null;
+
                     int size = info.type() == MAP ? concMappers : concReducers;
 
                     execSvc.setCorePoolSize(size);

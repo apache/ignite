@@ -102,7 +102,7 @@ public final class GridCommandLineStartup {
                 new Class<?>[] {aboutHndCls},
                 new InvocationHandler() {
                     @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
-                        GridAboutDialog.centerShow("GridGain Node", bannerUrl.toExternalForm(), EDITION + "-" + VER,
+                        GridAboutDialog.centerShow("GridGain Node", bannerUrl.toExternalForm(), VER,
                             releaseDate, COPYRIGHT, G.state() == STARTED ? G.grid().product().license() : null);
 
                         return null;

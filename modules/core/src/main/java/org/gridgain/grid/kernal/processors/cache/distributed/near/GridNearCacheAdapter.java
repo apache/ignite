@@ -365,7 +365,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         final long topVer = ctx.affinity().affinityTopologyVersion();
 
         Collection<GridCacheEntry<K, V>> entries =
-            F.flat(
+            F.flatCollections(
                 F.viewReadOnly(
                     dht().topology().currentLocalPartitions(),
                     new C1<GridDhtLocalPartition<K, V>, Collection<GridCacheEntry<K, V>>>() {

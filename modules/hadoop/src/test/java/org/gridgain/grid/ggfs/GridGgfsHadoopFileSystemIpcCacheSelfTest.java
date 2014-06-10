@@ -14,6 +14,7 @@ import org.apache.hadoop.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
+import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.spi.communication.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -21,6 +22,7 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.ipc.shmem.*;
+import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.lang.reflect.*;
@@ -35,7 +37,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 /**
  * IPC cache test.
  */
-public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridCommonAbstractTest {
+public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridGgfsCommonAbstractTest {
     /** IP finder. */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
@@ -64,8 +66,8 @@ public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridCommonAbstract
         ggfsCfg.setName("ggfs");
         ggfsCfg.setManagementPort(GridGgfsConfiguration.DFLT_MGMT_PORT + cnt);
 
-        ggfsCfg.setIpcEndpointConfiguration("{type:'shmem', port:" + (GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT +
-            cnt) + "}");
+        ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(
+            "{type:'shmem', port:" + (GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT +cnt) + "}"));
 
         ggfsCfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 

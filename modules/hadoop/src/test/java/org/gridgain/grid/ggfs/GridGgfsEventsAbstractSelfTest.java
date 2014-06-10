@@ -18,7 +18,6 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -77,7 +76,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
     /**
      * @return GGFS configuration for this test.
      */
-    protected GridGgfsConfiguration getGgfsConfiguration() {
+    protected GridGgfsConfiguration getGgfsConfiguration() throws GridException {
         GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");

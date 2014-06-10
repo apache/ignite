@@ -96,6 +96,17 @@ public class GridHadoopContext {
     }
 
     /**
+     * Gets local node order.
+     *
+     * @return Local node order.
+     */
+    public long localNodeOrder() {
+        assert ctx.discovery() != null;
+
+        return ctx.discovery().localNode().order();
+    }
+
+    /**
      * @return Hadoop-enabled nodes.
      */
     public Collection<GridNode> nodes() {

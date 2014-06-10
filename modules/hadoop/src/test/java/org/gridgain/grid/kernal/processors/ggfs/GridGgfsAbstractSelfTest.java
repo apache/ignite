@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.ggfs;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -19,7 +20,6 @@ import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -37,7 +37,7 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 /**
  * Test fo regular GGFs operations.
  */
-public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
+public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTest {
     /** GGFS block size. */
     protected static final int GGFS_BLOCK_SIZE = 512 * 1024;
 
@@ -186,7 +186,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
         ggfsCfg.setName(ggfsName);
         ggfsCfg.setBlockSize(GGFS_BLOCK_SIZE);
         ggfsCfg.setDefaultMode(mode);
-        ggfsCfg.setIpcEndpointConfiguration(restCfg);
+        ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(restCfg));
         ggfsCfg.setSecondaryHadoopFileSystemUri(secondaryFsUri);
         ggfsCfg.setSecondaryHadoopFileSystemConfigPath(secondaryFsCfgPath);
         ggfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);
@@ -760,12 +760,44 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ConstantConditions")
     public void testFormat() throws Exception {
-        create(ggfsSecondary, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE, FILE_NEW));
+        GridKernal grid = (GridKernal)G.grid("grid");
+        GridCache cache = grid.internalCache("dataCache");
+
+        if (dual)
+            create(ggfsSecondary, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE, FILE_NEW));
+
         create(ggfs, paths(DIR, SUBDIR), paths(FILE));
 
-        checkExist(ggfsSecondary, DIR, SUBDIR, FILE, DIR_NEW, SUBDIR_NEW, FILE_NEW);
+        try (GridGgfsOutputStream os = ggfs.append(FILE, false)) {
+            os.write(new byte[10 * 1024 * 1024]);
+        }
+
+        if (dual)
+            checkExist(ggfsSecondary, DIR, SUBDIR, FILE, DIR_NEW, SUBDIR_NEW, FILE_NEW);
+
         checkExist(ggfs, DIR, SUBDIR, FILE);
+
+        assert ggfs.info(FILE).length() == 10 * 1024 * 1024;
+
+        int size = cache.size();
+        int primarySize = cache.primarySize();
+        int primaryKeySetSize = cache.primaryKeySet().size();
+
+        int primaryPartSize = 0;
+
+        for (int p : cache.affinity().primaryPartitions(grid.localNode())) {
+            Set set = cache.entrySet(p);
+
+            if (set != null)
+                primaryPartSize += set.size();
+        }
+
+        assert size > 0;
+        assert primarySize > 0;
+        assert primarySize == primaryKeySetSize;
+        assert primarySize == primaryPartSize;
 
         ggfs.format().get();
 
@@ -778,6 +810,28 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
 
         // Ensure entries deletion in the primary file system.
         checkNotExist(ggfs, DIR, SUBDIR, FILE);
+
+        int sizeNew = cache.size();
+        int primarySizeNew = cache.primarySize();
+        int primaryKeySetSizeNew = cache.primaryKeySet().size();
+
+        int primaryPartSizeNew = 0;
+
+        for (int p : cache.affinity().primaryPartitions(grid.localNode())) {
+            Set set = cache.entrySet(p);
+
+            if (set != null) {
+                for (Object entry : set)
+                    System.out.println(entry);
+
+                primaryPartSizeNew += set.size();
+            }
+        }
+
+        assert sizeNew == 0;
+        assert primarySizeNew == 0;
+        assert primaryKeySetSizeNew == 0;
+        assert primaryPartSizeNew == 0;
     }
 
     /**

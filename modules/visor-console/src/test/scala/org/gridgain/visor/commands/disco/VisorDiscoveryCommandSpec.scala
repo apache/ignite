@@ -11,28 +11,22 @@
 
 package org.gridgain.visor.commands.disco
 
-import org.scalatest._
-import org.scalatest.matchers._
+import org.gridgain.grid.{GridGain => G, _}
 import org.gridgain.visor._
-import VisorDiscoveryCommand._
-import org.gridgain.grid.{GridGain => G}
-import org.gridgain.grid._
+import org.gridgain.visor.commands.disco.VisorDiscoveryCommand._
 
 /**
  * Unit test for 'disco' command.
  */
-class VisorDiscoveryCommandSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterAll {
+class VisorDiscoveryCommandSpec extends VisorRuntimeBaseSpec(4) {
     /**
      * Open visor and execute several tasks before all tests.
      */
-    override def beforeAll() {
-        GridGain.start(config("grid-1"))
-        GridGain.start(config("grid-2"))
-        GridGain.start(config("grid-3"))
-        GridGain.start(config("grid-4"))
+    override protected def beforeAll() {
+        super.beforeAll()
 
-        GridGain.stop("grid-1", false)
-        GridGain.stop("grid-2", false)
+        G.stop("node-1", false)
+        G.stop("node-2", false)
     }
 
     /**
@@ -41,7 +35,7 @@ class VisorDiscoveryCommandSpec extends FlatSpec with ShouldMatchers with Before
      * @param name Grid name.
      * @return Grid configuration.
      */
-    private def config(name: String): GridConfiguration = {
+    override def config(name: String): GridConfiguration = {
         val cfg = new GridConfiguration
 
         cfg.setGridName(name)
@@ -50,54 +44,35 @@ class VisorDiscoveryCommandSpec extends FlatSpec with ShouldMatchers with Before
         cfg
     }
 
-    /**
-     * Close visor after all tests.
-     */
-    override def afterAll() {
-        visor.close()
-
-        GridGain.stopAll(false)
-    }
-
     behavior of  "A 'disco' visor command"
 
     it should "advise to connect" in  {
+        closeVisorQuiet()
+
         visor.disco()
     }
 
     it should "show all discovery events" in  {
-        visor.open("-d", false)
         visor.disco()
-        visor.close()
     }
 
     it should "show all discovery events in reversed order" in  {
-        visor.open("-d", false)
         visor.disco("-r")
-        visor.close()
     }
 
     it should "show discovery events from last two minutes" in {
-        visor.open("-d", false)
         visor.disco("-t=2m")
-        visor.close()
     }
 
     it should "show discovery events from last two minutes in reversed order " in {
-        visor.open("-d", false)
         visor.disco("-t=2m -r")
-        visor.close()
     }
 
     it should "show top 3 discovery events" in  {
-        visor.open("-d", false)
         visor.disco("-c=3")
-        visor.close()
     }
 
     it should "print error message with invalid count" in {
-        visor.open("-d", false)
         visor.disco("-c=x")
-        visor.close()
     }
 }

@@ -16,8 +16,6 @@ import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.io.IOException;
-
 /**
  * Hadoop reduce task implementation for v1 API.
  */
@@ -52,9 +50,11 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
 
         GridHadoopTaskInput input = taskCtx.input();
 
+        GridHadoopV1OutputCollector collector = null;
+
         try {
-            GridHadoopOutputCollector collector = getCollector (jobConf, taskCtx, reduce || !jobImpl.hasReducer(),
-                    fileName(), jobImpl.attemptId(info()));
+            collector = collector(jobConf, taskCtx, reduce || !jobImpl.hasReducer(), fileName(),
+                jobImpl.attemptId(info()));
 
             try {
                 while (input.next()) {
@@ -72,7 +72,10 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
 
             collector.commit();
         }
-        catch (IOException e) {
+        catch (Exception e) {
+            if (collector != null)
+                collector.abort();
+
             throw new GridException(e);
         }
     }
