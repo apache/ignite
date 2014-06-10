@@ -1382,7 +1382,8 @@ object visor extends VisorTag {
 
                 val cfgs =
                     try {
-                        spring.loadConfigurations(url).get1()
+                        // Streamer and cache configurations should be excluded from config.
+                        spring.loadConfigurations(url, "streamerConfiguration", "cacheConfiguration").get1()
                     }
                     finally {
                         if (log4jTup != null)
