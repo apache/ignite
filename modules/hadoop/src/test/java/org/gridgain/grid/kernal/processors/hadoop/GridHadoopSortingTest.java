@@ -81,8 +81,12 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
 
         FileOutputFormat.setOutputPath(job, new Path(ggfsScheme() + PATH_INPUT));
 
+        X.printerrln("Data generation started.");
+
         grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 1),
-            new GridHadoopDefaultJobInfo(job.getConfiguration())).get(60000);
+            new GridHadoopDefaultJobInfo(job.getConfiguration())).get(180000);
+
+        X.printerrln("Data generation complete.");
 
         // Run main map-reduce job.
         job = Job.getInstance();
@@ -104,8 +108,12 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(NullWritable.class);
 
+        X.printerrln("Job started.");
+
         grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 2),
-            new GridHadoopDefaultJobInfo(job.getConfiguration())).get(60000);
+            new GridHadoopDefaultJobInfo(job.getConfiguration())).get(180000);
+
+        X.printerrln("Job complete.");
 
         // Check result.
         Path outDir = new Path(ggfsScheme() + PATH_OUTPUT);
@@ -148,7 +156,6 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
         /** {@inheritDoc} */
         @Override public RecordReader<Text, NullWritable> createRecordReader(final InputSplit split,
             TaskAttemptContext context) throws IOException, InterruptedException {
-
             return new RecordReader<Text, NullWritable>() {
                 /** */
                 int cnt;
