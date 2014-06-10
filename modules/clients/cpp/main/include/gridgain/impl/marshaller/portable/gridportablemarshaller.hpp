@@ -98,7 +98,6 @@ public:
         this->nodeIp = nodeIp;
     }
 
-
     int32_t typeId() const {
         return -1000;
     }
@@ -129,16 +128,85 @@ private:
      bool includeAttrs;
 };
 
-class GridPortableMarshaller {
+class PortableOutput {
 public:
-    void marshal(GridPortable &portable) {
-    }
+	PortableOutput(size_t initCapacity) : capacity(initCapacity), cnt(0) {
+		buffer = new int8_t[capacity];
+	}
+
+	void writeInt(int32_t val) {
+		ensureCapacity(4);
+
+		memcpy(buffer, &val, 4);
+
+		cnt += 4;
+	}
+
+	void writeBytes(const void* src, size_t size) {
+		ensureCapacity(size);
+
+		memcpy(buffer, src, size);
+
+		cnt += size;
+	}
+
+	void bytes(int8_t*& bytes, size_t &size) {
+		bytes = buffer;
+
+		size = cnt;
+	}
+
+private:
+	size_t capacity;
+
+	size_t cnt;
+
+	int8_t* buffer;
+
+	void ensureCapacity(int size) {
+		if (cnt + size > capacity) {
+			int8_t* newBuffer = new int8_t[capacity * 2 + size];
+			
+			memcpy(newBuffer, buffer, cnt);
+
+			delete[] buffer;
+
+			buffer = newBuffer;
+		}
+	}
 };
 
 class GridPortableWriterImpl : public GridPortableWriter {
 public:
+	GridPortableWriterImpl() : out(1024) {
+	}
+
     void writeInt(char* fieldName, int32_t val) {
-    }
+		out.writeInt(val);
+	}
+
+	void writeString(char* fieldName, const string &str) {
+		out.writeInt(str.length());
+		out.writeBytes(str.data(), str.length());
+	}
+	
+	void bytes(int8_t*& bytes, size_t &size) {
+		out.bytes(bytes, size);
+	}
+
+private:
+	PortableOutput out;
+};
+
+class GridPortableMarshaller {
+public:
+    void marshal(GridPortable &portable, int8_t*& bytes, size_t &size) {
+		GridPortableWriterImpl writer;
+
+		portable.writePortable(writer);
+
+		writer.bytes(bytes, size);
+	}
 };
 
 #endif
