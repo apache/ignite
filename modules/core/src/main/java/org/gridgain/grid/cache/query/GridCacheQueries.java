@@ -108,4 +108,7 @@ public interface GridCacheQueries<K, V> {
      * Resets accumulated metrics.
      */
     public void resetMetrics();
+
+    public void addMetadataAscFields(Collection<String> ascFields);
+    public void addMetadataDescFields(Collection<String> ascFields);
 }
