@@ -95,6 +95,9 @@ public class CacheQueryExample {
             // fields instead of whole key-value pairs.
             sqlFieldsQuery();
 
+            // Example for SQL-based fields queries that uses joins.
+            sqlFieldsQueryWithJoin();
+
             print("Cache query example finished.");
         }
     }
@@ -168,9 +171,10 @@ public class CacheQueryExample {
         GridCacheProjection<GridCacheAffinityKey<UUID>, Person> cache = GridGain.grid().cache(CACHE_NAME);
 
         // Calculate average of salary of all persons in GridGain.
-        GridCacheQuery<Map.Entry<GridCacheAffinityKey<UUID>, Person>> qry = cache.queries().createSqlQuery(Person
-            .class, "from Person, Organization " + "where Person.orgId = Organization.id and lower(Organization.name)" +
-            " = lower(?)");
+        GridCacheQuery<Map.Entry<GridCacheAffinityKey<UUID>, Person>> qry = cache.queries().createSqlQuery(
+            Person.class,
+            "from Person, Organization where Person.orgId = Organization.id and " +
+                "lower(Organization.name) = lower(?)");
 
         Collection<GridBiTuple<Double, Integer>> res = qry.execute(
             new GridReducer<Map.Entry<GridCacheAffinityKey<UUID>, Person>, GridBiTuple<Double, Integer>>() {
@@ -254,6 +258,28 @@ public class CacheQueryExample {
 
         // Print names.
         print("Names of all employees:", res);
+    }
+
+    /**
+     * Example for SQL-based fields queries that return only required
+     * fields instead of whole key-value pairs.
+     *
+     * @throws GridException In case of error.
+     */
+    private static void sqlFieldsQueryWithJoin() throws GridException {
+        GridCache<?, ?> cache = GridGain.grid().cache(CACHE_NAME);
+
+        // Create query to get names of all employees.
+        GridCacheQuery<List<?>> qry1 = cache.queries().createSqlFieldsQuery(
+            "select concat(firstName, ' ', lastName), Organization.name from Person, Organization where " +
+                "Person.orgId = Organization.id");
+
+        // Execute query to get collection of rows. In this particular
+        // case each row will have one element with full name of an employees.
+        Collection<List<?>> res = qry1.execute().get();
+
+        // Print persons' names and organizations' names.
+        print("Names of all employees and organizations they belong to:", res);
     }
 
     /**
@@ -399,18 +425,12 @@ public class CacheQueryExample {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            StringBuilder sb = new StringBuilder();
-
-            sb.append("Person ");
-            sb.append("[firstName=").append(firstName);
-            sb.append(", id=").append(id);
-            sb.append(", orgId=").append(orgId);
-            sb.append(", lastName=").append(lastName);
-            sb.append(", resume=").append(resume);
-            sb.append(", salary=").append(salary);
-            sb.append(']');
-
-            return sb.toString();
+            return "Person [firstName=" + firstName +
+                ", id=" + id +
+                ", orgId=" + orgId +
+                ", lastName=" + lastName +
+                ", resume=" + resume +
+                ", salary=" + salary + ']';
         }
     }
 
@@ -439,14 +459,7 @@ public class CacheQueryExample {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            StringBuilder sb = new StringBuilder();
-
-            sb.append("Organization ");
-            sb.append("[id=").append(id);
-            sb.append(", name=").append(name);
-            sb.append(']');
-
-            return sb.toString();
+            return "Organization [id=" + id + ", name=" + name + ']';
         }
     }
 }
