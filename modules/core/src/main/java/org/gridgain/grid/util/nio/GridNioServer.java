@@ -158,11 +158,13 @@ public class GridNioServer<T> {
      * @param sockRcvBuf Socket receive buffer.
      * @param sndQueueLimit Send queue limit.
      * @param directMode Whether direct mode is used.
+     * @param daemon Daemon flag to create threads.
      * @param metricsLsnr Metrics listener.
      * @param msgWriter Message writer.
      * @param filters Filters for this server.
      * @throws GridException If failed.
      */
+
     private GridNioServer(
         InetAddress addr,
         int port,
@@ -177,6 +179,7 @@ public class GridNioServer<T> {
         int sockRcvBuf,
         int sndQueueLimit,
         boolean directMode,
+        boolean daemon,
         GridNioMetricsListener metricsLsnr,
         GridNioMessageWriter msgWriter,
         GridNioFilter... filters
@@ -237,6 +240,8 @@ public class GridNioServer<T> {
             clientWorkers.add(worker);
 
             clientThreads[i] = new GridThread(worker);
+
+            clientThreads[i].setDaemon(daemon);
         }
 
         this.directMode = directMode;
@@ -1944,6 +1949,9 @@ public class GridNioServer<T> {
         /** Write timeout. */
         private long writeTimeout = -1;
 
+        /** Daemon flag. */
+        private boolean daemon;
+
         /**
          * Finishes building the instance.
          *
@@ -1965,6 +1973,7 @@ public class GridNioServer<T> {
                 sockRcvBufSize,
                 sndQueueLimit,
                 directMode,
+                daemon,
                 metricsLsnr,
                 msgWriter,
                 filters != null ? Arrays.copyOf(filters, filters.length) : EMPTY_FILTERS
@@ -2156,6 +2165,16 @@ public class GridNioServer<T> {
          */
         public Builder<T> writeTimeout(long writeTimeout) {
             this.writeTimeout = writeTimeout;
+
+            return this;
+        }
+
+        /**
+         * @param daemon Daemon flag to create threads.
+         * @return This for chaining.
+         */
+        public Builder<T> daemon(boolean daemon) {
+            this.daemon = daemon;
 
             return this;
         }

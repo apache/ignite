@@ -102,6 +102,7 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
                     cliCfg.setProtocol(TCP);
                     cliCfg.setServers(Collections.singletonList(addr));
                     cliCfg.setMarshaller(new GridClientOptimizedMarshaller());
+                    cliCfg.setDaemon(true);
 
                     try {
                         GridClient cli = GridClientFactory.start(cliCfg);
@@ -109,7 +110,8 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
                         fut0.onDone(cli);
 
                         return cli;
-                    } catch (GridClientException e) {
+                    }
+                    catch (GridClientException e) {
                         fut0.onDone(e);
 
                         throw new IOException("Failed to establish connection with GridGain node: " + addr, e);
