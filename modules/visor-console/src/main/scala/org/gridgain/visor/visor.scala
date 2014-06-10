@@ -2292,12 +2292,12 @@ object visor extends VisorTag {
         logFile = new File(U.resolveWorkDirectory(folder, false), fileName)
 
         if (logFile.exists() && logFile.isDirectory)
-            throw new IllegalArgumentException("Log path must be a valid file path, not a directory.")
+            throw new IllegalArgumentException("Specified path is a folder. Please input valid file path.")
 
         logFile.createNewFile()
 
         if (!logFile.canWrite)
-            throw new IllegalArgumentException("Don't have write permission in file.")
+            throw new IllegalArgumentException("Not enough permissions to write a log file.")
 
         var freq = 0L
 
