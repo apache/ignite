@@ -24,6 +24,14 @@ import java.util.*;
  */
 public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
     /**
+     * Creates projection for specified subject ID.
+     *
+     * @param subjId Client ID.
+     * @return Internal projection.
+     */
+    GridCacheProjectionEx<K, V> forSubjectId(UUID subjId);
+
+    /**
      * Gets predicate on which this projection is based on or {@code null}
      * if predicate is not defined.
      *

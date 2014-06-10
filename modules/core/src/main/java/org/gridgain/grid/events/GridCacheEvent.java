@@ -15,6 +15,8 @@ import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
+
 /**
  * In-memory database (cache) event.
  * <p>
@@ -110,6 +112,10 @@ public class GridCacheEvent extends GridEventAdapter {
     @GridToStringInclude
     private boolean near;
 
+    /** Subject ID. */
+    @GridToStringInclude
+    private UUID subjId;
+
     /**
      * Constructs cache event.
      *
@@ -132,7 +138,7 @@ public class GridCacheEvent extends GridEventAdapter {
      */
     public GridCacheEvent(String cacheName, GridNode node, @Nullable GridNode evtNode, String msg, int type, int part,
         boolean near, Object key, GridUuid xid, Object lockId, Object newVal, boolean hasNewVal,
-        Object oldVal, boolean hasOldVal) {
+        Object oldVal, boolean hasOldVal, UUID subjId) {
         super(node, msg, type);
         this.cacheName = cacheName;
         this.evtNode = evtNode;
@@ -145,6 +151,7 @@ public class GridCacheEvent extends GridEventAdapter {
         this.hasNewVal = hasNewVal;
         this.oldVal = oldVal;
         this.hasOldVal = hasOldVal;
+        this.subjId = subjId;
     }
 
     /**
@@ -251,6 +258,20 @@ public class GridCacheEvent extends GridEventAdapter {
      */
     public boolean hasNewValue() {
         return hasNewVal;
+    }
+
+    /**
+     * Gets security subject ID initiated this cache event, if available. This property is available only for
+     * {@link GridEventType#EVT_CACHE_OBJECT_PUT}, {@link GridEventType#EVT_CACHE_OBJECT_REMOVED} and
+     * {@link GridEventType#EVT_CACHE_OBJECT_READ} cache events.
+     * <p>
+     * Subject ID will be set either to nodeId initiated cache update or read or client ID initiated
+     * cache update or read.
+     *
+     * @return Subject ID.
+     */
+    @Nullable public UUID subjectId() {
+        return subjId;
     }
 
     /** {@inheritDoc} */

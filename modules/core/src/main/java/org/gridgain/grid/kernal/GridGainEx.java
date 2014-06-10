@@ -72,7 +72,9 @@ import java.util.logging.*;
 import static org.gridgain.grid.GridConfiguration.*;
 import static org.gridgain.grid.GridGainState.*;
 import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
 
@@ -1665,7 +1667,6 @@ public class GridGainEx {
             // Replication configuration.
             myCfg.setDrSenderHubConfiguration(cfg.getDrSenderHubConfiguration());
             myCfg.setDrReceiverHubConfiguration(cfg.getDrReceiverHubConfiguration());
-            myCfg.setHadoopConfiguration(cfg.getHadoopConfiguration());
 
             // Validate segmentation configuration.
             GridSegmentationPolicy segPlc = cfg.getSegmentationPolicy();
@@ -1779,10 +1780,14 @@ public class GridGainEx {
 
                     if (ccfg.getDrSenderConfiguration() != null)
                         drSysCaches.add(CU.cacheNameForDrSystemCache(ccfg.getName()));
+
+                    if (CU.isSecuritySystemCache(ccfg.getName()))
+                        throw new GridException("Cache name cannot start with \"" + CU.SECURITY_SYS_CACHE_NAME +
+                            "\" because this prefix is reserved for internal purposes.");
                 }
 
                 GridCacheConfiguration[] clone = new GridCacheConfiguration[cacheCfgs.length + drSysCaches.size() +
-                    (hasHadoop ? 1 : 0)];
+                    (hasHadoop ? 1 : 0) + (U.securityEnabled(cfg) ? 1 : 0)];
 
                 int cloneIdx = 0;
 
@@ -1792,14 +1797,18 @@ public class GridGainEx {
                 for (String drSysCache : drSysCaches)
                     clone[cloneIdx++] = CU.drSystemCache(drSysCache);
 
+                if (U.securityEnabled(cfg))
+                    clone[cloneIdx++] = securitySystemCache();
+
                 for (GridCacheConfiguration ccfg : cacheCfgs)
                     clone[cloneIdx++] = new GridCacheConfiguration(ccfg);
 
                 myCfg.setCacheConfiguration(clone);
             }
-            else if (!drSysCaches.isEmpty() || hasHadoop) {
+            else if (!drSysCaches.isEmpty() || hasHadoop || U.securityEnabled(cfg)) {
                 // Populate system caches/
-                GridCacheConfiguration[] ccfgs = new GridCacheConfiguration[drSysCaches.size() + (hasHadoop ? 1 : 0)];
+                GridCacheConfiguration[] ccfgs = new GridCacheConfiguration[drSysCaches.size() + (hasHadoop ? 1 : 0) +
+                    (U.securityEnabled(cfg) ? 1 : 0)];
 
                 int idx = 0;
 
@@ -1808,6 +1817,9 @@ public class GridGainEx {
 
                 for (String drSysCache : drSysCaches)
                     ccfgs[idx++] = CU.drSystemCache(drSysCache);
+
+                if (U.securityEnabled(cfg))
+                    ccfgs[idx] = securitySystemCache();
 
                 myCfg.setCacheConfiguration(ccfgs);
             }
@@ -1975,6 +1987,23 @@ public class GridGainEx {
             catch (Exception e) {
                 throw new GridException("Failed to create logger.", e);
             }
+        }
+
+        /**
+         * Creates security system cache configuration.
+         *
+         * @return Security system cache configuration.
+         */
+        private GridCacheConfiguration securitySystemCache() {
+            GridCacheConfiguration cache = new GridCacheConfiguration();
+
+            cache.setName(CU.SECURITY_SYS_CACHE_NAME);
+            cache.setCacheMode(REPLICATED);
+            cache.setAtomicityMode(TRANSACTIONAL);
+            cache.setSwapEnabled(false);
+            cache.setWriteSynchronizationMode(FULL_SYNC);
+
+            return cache;
         }
 
         /**

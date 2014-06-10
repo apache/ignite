@@ -25,7 +25,6 @@ import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
-import org.gridgain.grid.kernal.processors.cache.jta.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.task.*;
@@ -42,7 +41,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import javax.transaction.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -377,13 +375,21 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
+    @Override public GridCacheProjectionEx<K, V> forSubjectId(UUID subjId) {
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, ctx, null, null,
+            null, subjId);
+
+        return new GridCacheProxyImpl<>(ctx, prj, prj);
+    }
+
+    /** {@inheritDoc} */
     @Override public GridCacheProjection<K, V> flagsOn(@Nullable GridCacheFlag[] flags) {
         if (F.isEmpty(flags)) {
             return this;
         }
 
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, ctx, null, null,
-            EnumSet.copyOf(F.asList(flags)));
+            EnumSet.copyOf(F.asList(flags)), null);
 
         return new GridCacheProxyImpl<>(ctx, prj, prj);
     }
@@ -426,7 +432,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         }
 
         GridCacheProjectionImpl<K1, V1> prj = new GridCacheProjectionImpl<>((GridCacheProjection<K1, V1>)this,
-            (GridCacheContext<K1, V1>)ctx, CU.<K1, V1>typeFilter(keyType, valType), /*filter*/null, /*flags*/null);
+            (GridCacheContext<K1, V1>)ctx, CU.<K1, V1>typeFilter(keyType, valType), /*filter*/null, /*flags*/null,
+            /*clientId*/null);
 
         return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, prj, prj);
     }
@@ -445,7 +452,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             }
         }
 
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, ctx, p, null, null);
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, ctx, p, null, null, null);
 
         return new GridCacheProxyImpl<>(ctx, prj, prj);
     }
@@ -464,7 +471,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             }
         }
 
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, ctx, null, filter, null);
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, ctx, null, filter, null, null);
 
         return new GridCacheProxyImpl<>(ctx, prj, prj);
     }
@@ -1022,13 +1029,13 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (doomed != null && ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
             // Event notification.
             ctx.events().addEvent(doomed.partition(), doomed.key(), locNodeId, (GridUuid)null, null,
-                EVT_CACHE_ENTRY_DESTROYED, null, false, null, false);
+                EVT_CACHE_ENTRY_DESTROYED, null, false, null, false, null);
 
         if (created != null) {
             // Event notification.
             if (ctx.events().isRecordable(EVT_CACHE_ENTRY_CREATED))
                 ctx.events().addEvent(created.partition(), created.key(), locNodeId, (GridUuid)null, null,
-                    EVT_CACHE_ENTRY_CREATED, null, false, null, false);
+                    EVT_CACHE_ENTRY_CREATED, null, false, null, false, null);
 
             if (touch)
                 ctx.evicts().touch(cur, topVer);
@@ -1119,7 +1126,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
                 // Event notification.
                 ctx.events().addEvent(entry.partition(), entry.key(), locNodeId, (GridUuid)null, null,
-                    EVT_CACHE_ENTRY_DESTROYED, null, false, null, false);
+                    EVT_CACHE_ENTRY_DESTROYED, null, false, null, false, null);
         }
         else if (log.isDebugEnabled())
             log.debug("Remove will not be done for key (obsolete entry got replaced or removed): " + key);
@@ -1159,6 +1166,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public void clearAll() {
         ctx.denyOnFlag(READ);
+        ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
 
         List<GridCacheClearAllRunnable<K, V>> jobs = splitClearAll();
 
@@ -1320,21 +1328,21 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public V get(K key, @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
-        return getAllAsync(F.asList(key), /*force primary*/false, /*skip tx*/false, entry, filter).get().get(key);
+        return getAllAsync(F.asList(key), /*force primary*/false, /*skip tx*/false, entry, null, filter).get().get(key);
     }
 
     /** {@inheritDoc} */
     @Override public V getForcePrimary(K key) throws GridException {
         ctx.denyOnFlag(LOCAL);
 
-        return getAllAsync(F.asList(key), /*force primary*/true, /*skip tx*/false, null).get().get(key);
+        return getAllAsync(F.asList(key), /*force primary*/true, /*skip tx*/false, null, null).get().get(key);
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<V> getForcePrimaryAsync(final K key) {
         ctx.denyOnFlag(LOCAL);
 
-        return getAllAsync(Collections.singletonList(key), /*force primary*/true, /*skip tx*/false, null).chain(
+        return getAllAsync(Collections.singletonList(key), /*force primary*/true, /*skip tx*/false, null, null).chain(
             new CX1<GridFuture<Map<K, V>>, V>() {
                 @Override
                 public V applyx(GridFuture<Map<K, V>> e) throws GridException {
@@ -1345,12 +1353,12 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Nullable @Override public Map<K, V> getAllOutTx(List<K> keys) throws GridException {
-        return getAllAsync(keys, /*force primary*/false, /*skip tx*/true, null).get();
+        return getAllAsync(keys, /*force primary*/false, /*skip tx*/true, null, null).get();
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<Map<K, V>> getAllOutTxAsync(List<K> keys) {
-        return getAllAsync(keys, /*force primary*/false, /*skip tx*/true, null);
+        return getAllAsync(keys, /*force primary*/false, /*skip tx*/true, null, null);
     }
 
     /** {@inheritDoc} */
@@ -1396,7 +1404,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @return Future.
      */
     public GridFuture<Object> readThroughAllAsync(final Collection<? extends K> keys, boolean reload,
-        @Nullable final GridCacheTxEx<K, V> tx, GridPredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable final GridCacheTxEx<K, V> tx, GridPredicate<GridCacheEntry<K, V>>[] filter, @Nullable UUID subjId,
         final GridBiInClosure<K, V> vis) {
         return ctx.closures().callLocalSafe(new GPC<Object>() {
             @Nullable @Override public Object call() {
@@ -1421,7 +1429,9 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      */
     @Nullable public Map<K, V> reloadAll(@Nullable Collection<? extends K> keys, boolean ret,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
-        return reloadAllAsync(keys, ret, filter).get();
+        UUID subjId = ctx.subjectIdPerCall(null);
+
+        return reloadAllAsync(keys, ret, subjId, filter).get();
     }
 
     /**
@@ -1431,7 +1441,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @return Future.
      */
     public GridFuture<Map<K, V>> reloadAllAsync(@Nullable Collection<? extends K> keys, boolean ret,
-        @Nullable final GridPredicate<GridCacheEntry<K, V>>... filter) {
+        @Nullable UUID subjId, @Nullable final GridPredicate<GridCacheEntry<K, V>>... filter) {
         ctx.denyOnFlag(READ);
 
         final long topVer = ctx.affinity().affinityTopologyVersion();
@@ -1490,7 +1500,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 final Collection<K> loadedKeys = new GridConcurrentHashSet<>();
 
                 GridFuture<Object> readFut =
-                    readThroughAllAsync(absentKeys, true, null, filter, new CI2<K, V>() {
+                    readThroughAllAsync(absentKeys, true, null, filter, subjId, new CI2<K, V>() {
                         /** Version for all loaded entries. */
                         private GridCacheVersion nextVer = ctx.versions().next();
 
@@ -1705,14 +1715,17 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         boolean forcePrimary,
         boolean skipTx,
         @Nullable GridCacheEntryEx<K, V> entry,
+        @Nullable UUID subjId,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter
     ) {
-        return getAllAsync(keys, entry, !skipTx, filter);
+        subjId = ctx.subjectIdPerCall(subjId);
+
+        return getAllAsync(keys, entry, !skipTx, subjId, filter);
     }
 
     /** {@inheritDoc} */
     public GridFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys,
-        @Nullable GridCacheEntryEx<K, V> cached, boolean checkTx,
+        @Nullable GridCacheEntryEx<K, V> cached, boolean checkTx, @Nullable final UUID subjId,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>... filter) {
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
@@ -1769,7 +1782,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                         try {
                             V val = entry.innerGet(null, ctx.isSwapOrOffheapEnabled(),
                                 /*don't read-through*/false, /*fail-fast*/true, /*unmarshal*/true,
-                                /*update-metrics*/true, /*event*/true, filter);
+                                /*update-metrics*/true, /*event*/true, subjId, filter);
 
                             GridCacheVersion ver = entry.version();
 
@@ -1926,7 +1939,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                                 if (!redos.isEmpty())
                                     // Future recursion.
                                     return getAllAsync(redos, /*force primary*/false, /*skip tx*/false,
-                                        /*entry*/null, filter);
+                                        /*entry*/null, subjId, filter);
 
                                 // There were no misses.
                                 return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K,
@@ -3954,6 +3967,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     public void clearAll0(Collection<? extends K> keys,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         ctx.denyOnFlag(READ);
+        ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
 
         if (F.isEmpty(keys)) {
             return;
@@ -3978,6 +3992,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         validateCacheKey(key);
 
         ctx.denyOnFlag(READ);
+        ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
 
         return clear(ctx.versions().next(), key, filter);
     }
@@ -4354,7 +4369,9 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      */
     public GridFuture<?> reloadAllAsync(@Nullable Collection<? extends K> keys,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
-        return reloadAllAsync(keys, false, filter);
+        UUID subjId = ctx.subjectIdPerCall(null);
+
+        return reloadAllAsync(keys, false, subjId, filter);
     }
 
     /**
@@ -4410,7 +4427,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      */
     public GridFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys,
         @Nullable GridPredicate<GridCacheEntry<K, V>> filter) {
-        return getAllAsync(keys, /*force primary*/false, /*skip tx*/false, null, filter);
+        return getAllAsync(keys, /*force primary*/false, /*skip tx*/false, null, null, filter);
     }
 
     /**

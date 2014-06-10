@@ -841,7 +841,8 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                             mappedKeys.size(),
                                             inTx() ? tx.size() : mappedKeys.size(),
                                             inTx() ? tx.groupLockKey() : null,
-                                            inTx() && tx.partitionLock());
+                                            inTx() && tx.partitionLock(),
+                                            inTx() ? tx.subjectId() : null);
 
                                         mapping.request(req);
                                     }
@@ -1035,7 +1036,8 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                         if (record) {
                                             if (cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
                                                 cctx.events().addEvent(entry.partition(), entry.key(), tx, null,
-                                                    EVT_CACHE_OBJECT_READ, newVal, newVal != null, oldVal, hasBytes);
+                                                    EVT_CACHE_OBJECT_READ, newVal, newVal != null, oldVal, hasBytes,
+                                                    CU.subjectId(tx, cctx));
 
                                             cctx.cache().metrics0().onRead(oldVal != null);
                                         }
@@ -1386,7 +1388,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                 if (readRecordable)
                                     cctx.events().addEvent(entry.partition(), entry.key(), tx, null,
                                         EVT_CACHE_OBJECT_READ, newVal, newVal != null || newBytes != null,
-                                        oldVal, hasOldVal);
+                                        oldVal, hasOldVal, CU.subjectId(tx, cctx));
 
                                 cctx.cache().metrics0().onRead(false);
                             }

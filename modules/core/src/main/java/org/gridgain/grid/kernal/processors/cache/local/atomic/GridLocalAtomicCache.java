@@ -14,6 +14,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
@@ -518,6 +519,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         final boolean forcePrimary,
         boolean skipTx,
         @Nullable final GridCacheEntryEx<K, V> entry,
+        @Nullable UUID subjId,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         ctx.denyOnFlag(LOCAL);
@@ -550,6 +552,10 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         boolean swapOrOffheap,
         boolean storeEnabled,
         boolean clone) throws GridException {
+        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
+
+        UUID subjId = ctx.subjectIdPerCall(null);
+
         if (F.isEmpty(keys))
             return Collections.emptyMap();
 
@@ -575,6 +581,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             /*unmarshal*/true,
                             /**update-metrics*/true,
                             /**event*/true,
+                            subjId,
                             filter);
 
                         if (v != null)
@@ -616,7 +623,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             return map;
         }
 
-        return getAllAsync(keys, null, false, filter).get();
+        return getAllAsync(keys, null, false, subjId, filter).get();
     }
 
     /**
@@ -711,10 +718,17 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         boolean rawRetval,
         GridPredicate<GridCacheEntry<K, V>>[] filter,
         boolean storeEnabled) throws GridException {
+        if (op == DELETE)
+            ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
+        else
+            ctx.checkSecurity(GridSecurityPermission.CACHE_PUT);
+
         GridCacheVersion ver = ctx.versions().next();
 
+        UUID subjId = ctx.subjectIdPerCall(null);
+
         if (storeEnabled && keys.size() > 1) {
-            updateWithBatch(op, keys, vals, ver, filter);
+            updateWithBatch(op, keys, vals, ver, filter, subjId);
 
             return null;
         }
@@ -749,7 +763,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         true,
                         true,
                         filter,
-                        intercept);
+                        intercept,
+                        subjId);
 
                     if (res == null) {
                         if (op == TRANSFORM && val instanceof GridCacheTransformComputeClosure) {
@@ -802,6 +817,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * @param vals Values.
      * @param ver Cache version.
      * @param filter Optional filter.
+     * @param subjId Subject ID.
      * @throws GridCachePartialUpdateException If update failed.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
@@ -810,7 +826,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         Collection<? extends K> keys,
         @Nullable Collection<?> vals,
         GridCacheVersion ver,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter,
+        UUID subjId
     ) throws GridException {
         List<GridCacheEntryEx<K, V>> locked = lockEntries(keys);
 
@@ -862,6 +879,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             true,
                             true,
                             true,
+                            subjId,
                             CU.<K, V>empty());
 
                         GridClosure<V, V> transform = (GridClosure<V, V>)val;
@@ -884,7 +902,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                     ver,
                                     putMap,
                                     null,
-                                    err);
+                                    err,
+                                    subjId);
 
                                 putMap = null;
 
@@ -912,7 +931,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                     ver,
                                     null,
                                     rmvKeys,
-                                    err);
+                                    err,
+                                    subjId);
 
                                 rmvKeys = null;
 
@@ -934,6 +954,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 true,
                                 true,
                                 true,
+                                subjId,
                                 CU.<K, V>empty());
 
                             val = ctx.config().getInterceptor().onBeforePut(entry.key(), old, val);
@@ -958,6 +979,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 true,
                                 true,
                                 true,
+                                subjId,
                                 CU.<K, V>empty());
 
                             GridBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
@@ -996,7 +1018,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                     ver,
                     putMap,
                     rmvKeys,
-                    err);
+                    err,
+                    subjId);
             }
             else
                 assert filtered.isEmpty();
@@ -1015,6 +1038,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * @param putMap Values to put.
      * @param rmvKeys Keys to remove.
      * @param err Optional partial update exception.
+     * @param subjId Subject ID.
      * @return Partial update exception.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
@@ -1022,7 +1046,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         final GridCacheVersion ver,
         @Nullable Map<K, V> putMap,
         @Nullable Collection<K> rmvKeys,
-        @Nullable GridCachePartialUpdateException err) {
+        @Nullable GridCachePartialUpdateException err,
+        UUID subjId) {
         assert putMap == null ^ rmvKeys == null;
         GridCacheOperation op;
 
@@ -1068,7 +1093,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                 assert writeVal != null || op == DELETE : "null write value found.";
 
                 GridBiTuple<Boolean, V> t =
-                    entry.innerUpdateLocal(ver, op, writeVal, false, false, 0, true, true, null, false);
+                    entry.innerUpdateLocal(ver, op, writeVal, false, false, 0, true, true, null, false, subjId);
 
                 if (intercept) {
                     if (op == UPDATE)

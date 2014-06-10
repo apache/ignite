@@ -48,6 +48,9 @@ public class GridCacheUtils {
     /**  Hadoop syste cache name. */
     public static final String SYS_CACHE_HADOOP_MR = "gg-hadoop-mr-sys-cache";
 
+    /** Security system cache name. */
+    public static final String SECURITY_SYS_CACHE_NAME = "gg-security-sys-cache";
+
     /** Flag to turn off DHT cache for debugging purposes. */
     public static final boolean DHT_ENABLED = true;
 
@@ -1480,6 +1483,14 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param cacheName Cache name.
+     * @return {@code True} if this is security system cache.
+     */
+    public static boolean isSecuritySystemCache(String cacheName) {
+        return SECURITY_SYS_CACHE_NAME.equals(cacheName);
+    }
+
+    /**
      * Validates that cache key or cache value implements {@link Externalizable}
      *
      * @param log Logger used to log warning message.
@@ -1572,6 +1583,21 @@ public class GridCacheUtils {
 
             tx.commit();
         }
+    }
+
+    /**
+     * Gets subject ID by transaction.
+     *
+     * @param tx Transaction.
+     * @return Subject ID.
+     */
+    public static <K, V> UUID subjectId(GridCacheTxEx<K, V> tx, GridCacheContext<K, V> ctx) {
+        if (tx == null)
+            return ctx.localNodeId();
+
+        UUID subjId = tx.subjectId();
+
+        return subjId != null ? subjId : tx.originatingNodeId();
     }
 
     /**
