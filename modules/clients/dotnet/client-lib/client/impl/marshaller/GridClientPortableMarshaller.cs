@@ -233,7 +233,7 @@ namespace GridGain.Client.Impl.Marshaller {
 
                 output.WriteInt(portable.TypeId);
 
-                portable.WritePortable(this);
+                portable.wr(this);
             }
         }
 
