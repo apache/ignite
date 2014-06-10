@@ -13,6 +13,7 @@ import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.marshaller.portable.*;
+import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -20,7 +21,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Client marshaller supporting {@link GridPortableObject}.
+ * Client marshaller supporting {@link GridPortableEx}.
  */
 public class GridClientPortableMarshaller implements GridClientMarshaller {
     /** */
@@ -29,8 +30,8 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
     /**
      * @param typesMap Map associating portable type identifiers with java classes..
      */
-    public GridClientPortableMarshaller(@Nullable Map<Integer, Class<? extends GridPortableObject>> typesMap) {
-        Map<Integer, Class<? extends GridPortableObject>> types = new HashMap<>();
+    public GridClientPortableMarshaller(@Nullable Map<Integer, Class<? extends GridPortableEx>> typesMap) {
+        Map<Integer, Class<? extends GridPortableEx>> types = new HashMap<>();
 
         if (typesMap != null)
             types.putAll(typesMap);

@@ -7,19 +7,15 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.marshaller.portable;
+package org.gridgain.grid.portable;
 
 import java.io.*;
 
 /**
- * TODO 8491.
+ * Extension if {@link GridPortable} interface that allows
+ * to implement custom serialization/deserialization logic.
  */
-public interface GridPortableObject {
-    /**
-     * @return Type identified.
-     */
-    public int typeId();
-
+public interface GridPortableEx {
     /**
      * @param writer Portable object writer.
      * @throws IOException In case of error.

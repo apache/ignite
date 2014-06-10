@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
-import org.gridgain.grid.marshaller.portable.*;
+import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -17,7 +17,7 @@ import java.io.*;
 /**
  * Task result.
  */
-public class GridClientTaskResultBean implements Externalizable, GridPortableObject {
+public class GridClientTaskResultBean implements Externalizable, GridPortableEx {
     /** */
     private static final long serialVersionUID = 0L;
 

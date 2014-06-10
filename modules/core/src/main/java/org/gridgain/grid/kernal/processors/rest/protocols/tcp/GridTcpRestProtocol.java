@@ -19,7 +19,7 @@ import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
-import org.gridgain.grid.marshaller.portable.*;
+import org.gridgain.grid.portable.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.nio.*;
@@ -211,9 +211,9 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
         if (cfg.getPortableTypesMap() == null)
             return;
 
-        for (Map.Entry<Integer, Class<? extends GridPortableObject>> entry : cfg.getPortableTypesMap().entrySet()) {
+        for (Map.Entry<Integer, Class<? extends GridPortableEx>> entry : cfg.getPortableTypesMap().entrySet()) {
             Integer typeId = entry.getKey();
-            Class<? extends GridPortableObject> cls = entry.getValue();
+            Class<? extends GridPortableEx> cls = entry.getValue();
 
             if (typeId < 0)
                 throw new GridException("Negative portable types identifiers reserved for system use " +

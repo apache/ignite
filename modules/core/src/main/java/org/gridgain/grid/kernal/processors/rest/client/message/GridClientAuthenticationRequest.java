@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
-import org.gridgain.grid.marshaller.portable.*;
+import org.gridgain.grid.portable.*;
 
 import java.io.*;
 
