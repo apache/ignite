@@ -426,9 +426,9 @@ public class CacheQueryExample {
         /** {@inheritDoc} */
         @Override public String toString() {
             return "Person [firstName=" + firstName +
+                ", lastName=" + lastName +
                 ", id=" + id +
                 ", orgId=" + orgId +
-                ", lastName=" + lastName +
                 ", resume=" + resume +
                 ", salary=" + salary + ']';
         }
