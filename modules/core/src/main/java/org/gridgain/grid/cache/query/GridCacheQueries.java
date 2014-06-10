@@ -109,6 +109,5 @@ public interface GridCacheQueries<K, V> {
      */
     public void resetMetrics();
 
-    public void addMetadataAscFields(Collection<String> ascFields);
-    public void addMetadataDescFields(Collection<String> ascFields);
+    public void addIndex(String typeName, String fieldName, boolean asc);
 }
