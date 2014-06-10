@@ -90,16 +90,19 @@ private case class VisorCopier(
         try {
             ses.connect()
 
-            val ch = ses.openChannel("sftp").asInstanceOf[ChannelSftp]
+            var ch: ChannelSftp = null
 
             try {
-                ch.connect()
-
                 val ggh = ggHome()
 
                 if (ggh == "")
                     warn("GRIDGAIN_HOME is not set on " + host.name)
+
                 else {
+                    ch = ses.openChannel("sftp").asInstanceOf[ChannelSftp]
+
+                    ch.connect()
+
                     copy(ch, src, ggh + File.separatorChar + dest)
 
                     println("ok => " + host.name)
@@ -125,22 +128,60 @@ private case class VisorCopier(
      * @return `GRIDGAIN_HOME` value.
      */
     private def ggHome(): String = {
-        def exec(cmd: String): String = {
+        /**
+         * Non interactively execute command.
+         *
+         * @param cmd command.
+         * @return command results
+         */
+        def exec(cmd: String) = {
+            val ch = ses.openChannel("exec").asInstanceOf[ChannelExec]
+
+            try {
+                ch.setCommand(cmd)
+
+                ch.connect()
+
+                new BufferedReader(new InputStreamReader(ch.getInputStream)).readLine
+            }
+            catch {
+                case e: JSchException =>
+                    warn(e.getMessage)
+
+                    ""
+            }
+            finally {
+                if (ch.isConnected)
+                    ch.disconnect()
+            }
+        }
+
+        /**
+         * Interactively execute command.
+         *
+         * @param cmd command.
+         * @return command results.
+         */
+        def shell(cmd: String): String = {
             val ch = ses.openChannel("shell").asInstanceOf[ChannelShell]
 
             try {
                 ch.connect()
 
+                // Added to skip login message.
                 U.sleep(1000)
 
                 val writer = new PrintStream(ch.getOutputStream, true)
 
                 val reader = new BufferedReader(new InputStreamReader(ch.getInputStream))
 
+                // Send command.
                 writer.println(cmd)
 
+                // Read echo command.
                 reader.readLine()
 
+                // Read command result.
                 reader.readLine()
             }
             catch {
@@ -155,13 +196,24 @@ private case class VisorCopier(
             }
         }
 
-        // Try Linux and than Windows.
-        var ggh = exec("echo $GRIDGAIN_HOME")
+        /**
+         * Checks whether host is running Windows OS.
+         *
+         * @return Whether host is running Windows OS.
+         * @throws JSchException In case of SSH error.
+         */
+        def windows = {
+            try
+                exec("cmd.exe") != null
+            catch {
+                case ignored: IOException => false
+            }
+        }
 
-        if (ggh == "")
-            ggh = exec("echo %GRIDGAIN_HOME%")
-
-        ggh
+        if (windows)
+            exec("echo %GRIDGAIN_HOME%")
+        else
+            shell("echo $GRIDGAIN_HOME") // Use interactive shell under nix because need read env from .profile and etc.
     }
 
     /**
