@@ -14,6 +14,7 @@
 
 #include <gridgain/gridconf.hpp>
 #include <gridgain/gridclienttypedef.hpp>
+#include <gridgain/gridclientvariant.hpp>
 #include <gridgain/gridclientuuid.hpp>
 
 using namespace std;
@@ -26,6 +27,8 @@ public:
     virtual int32_t readInt(char* fieldName) = 0;
 
     virtual string readString(char* fieldName) = 0;
+
+    virtual GridClientVariant readVariant(char* fieldName) = 0;
 };
 
 #endif // GRIDPORTABLEREADER_HPP_INCLUDED

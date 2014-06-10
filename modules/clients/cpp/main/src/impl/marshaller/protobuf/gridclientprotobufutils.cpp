@@ -275,6 +275,9 @@ namespace {
             serialize(UUID, bytes);
         }
 
+        virtual void visit(const TGridPortablePtr) const {
+        }
+
         void serialize(const ObjectWrapperType& type, const TByteVector& bytes) const {
             objWrapper.set_type(type);
 

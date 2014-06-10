@@ -118,8 +118,17 @@ void GridClientTcpPacket::setData(const ObjectWrapper& protoMsg) {
     setPacketSize(ADDITIONAL_HEADERS_SIZE + data.size());
 }
 
+void GridClientTcpPacket::setData(std::vector<int8_t>& bytes) {
+    data = bytes;
+    setPacketSize(ADDITIONAL_HEADERS_SIZE + data.size());
+}
+
 void GridClientTcpPacket::setData(int8_t* start, int8_t* end) {
     data.assign(start, end);
+}
+
+std::vector<int8_t>* GridClientTcpPacket::getRawData() {
+    return &data;
 }
 
 ObjectWrapper GridClientTcpPacket::getData() const {

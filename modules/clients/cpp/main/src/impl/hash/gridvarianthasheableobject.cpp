@@ -122,6 +122,9 @@ public:
         uuid.convertToBytes(bytes);
     }
 
+    virtual void visit(const TGridPortablePtr) const {
+    }
+
 private:
     int32_t& hashCode_;
     std::vector<int8_t>& bytes;

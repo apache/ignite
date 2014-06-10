@@ -77,8 +77,24 @@ GridClientVariant::GridClientVariant(const std::vector<GridClientVariant>& v)  {
     pimpl.var = v;
 }
 
+GridClientVariant::GridClientVariant(GridPortable* v)  {
+    pimpl.var = TGridPortablePtr(v);
+}
+
 GridClientVariant::GridClientVariant(const GridClientUuid& val)  {
     pimpl.var = val;
+}
+
+void GridClientVariant::set(GridPortable* val) {
+    pimpl.var = TGridPortablePtr(val);
+}
+
+bool GridClientVariant::hasPortable() const {
+    return pimpl.var.which() == Impl::PORTABLE_TYPE;
+}
+
+GridPortable* GridClientVariant::getPortable() const {
+    return boost::get<TGridPortablePtr>(pimpl.var).get();
 }
 
 void GridClientVariant::set(bool pBool) {
@@ -261,6 +277,9 @@ string GridClientVariant::toString() const {
                 os << getUuid().uuid();
 
                 break;
+
+            case Impl::PORTABLE_TYPE:
+                return "a";
         }
 
         return os.str();
@@ -385,6 +404,10 @@ public:
     }
 
     void operator()(const GridClientUuid& val) const {
+        visitor.visit(val);
+    }
+
+    void operator()(const TGridPortablePtr val) const {
         visitor.visit(val);
     }
 

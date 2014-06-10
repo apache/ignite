@@ -14,6 +14,7 @@
 
 #include <gridgain/gridconf.hpp>
 #include <gridgain/gridclienttypedef.hpp>
+#include <gridgain/gridclientvariant.hpp>
 #include <gridgain/gridclientuuid.hpp>
 
 using namespace std;
@@ -25,7 +26,9 @@ class GRIDGAIN_API GridPortableWriter {
 public:
     virtual void writeInt(char* fieldName, int32_t val) = 0;
 
-    virtual void writeString(char* fieldName, const string &str) = 0;
+    virtual void writeString(char* fieldName, const string &val) = 0;
+
+    virtual void writeVariant(char* fieldName, const GridClientVariant &str) = 0;
 };
 
 #endif // GRIDPORTABLEWRITER_HPP_INCLUDED

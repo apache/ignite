@@ -26,8 +26,11 @@ class GridClientDataMetrics;
 class GridClientSocketAddress;
 class GridClientBoolFuture;
 class GridClientRouterBalancer;
+class GridPortable;
 template <class T> class GridClientFuture;
 template<class T> class GridClientPredicate;
+
+typedef std::shared_ptr<GridPortable> TGridPortablePtr;
 
 typedef GridClientPredicate<GridClientNode> TGridClientNodePredicate;
 

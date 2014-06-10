@@ -88,7 +88,11 @@ public:
 
     void setData(const ObjectWrapper& protoMsg);
 
+    void setData(std::vector<int8_t>& bytes);
+
     ObjectWrapper getData() const;
+
+    std::vector<int8_t>* getRawData();
 
     size_t getDataSize() const;
 

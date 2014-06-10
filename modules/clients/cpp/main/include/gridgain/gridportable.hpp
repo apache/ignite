@@ -37,6 +37,8 @@ public:
     virtual void writePortable(GridPortableWriter &writer) const = 0;
 
     virtual void readPortable(GridPortableReader &reader) = 0;
+
+    // virtual bool operator==(const GridPortable& other) const = 0;
 };
 
 #endif // GRIDPORTABLE_HPP_INCLUDED

@@ -16,6 +16,7 @@
 #include "gridgain/impl/cmd/gridclienttcpcommandexecutor.hpp"
 #include "gridgain/impl/connection/gridclienttcpconnection.hpp"
 #include "gridgain/impl/marshaller/protobuf/gridclientprotobufmarshaller.hpp"
+#include "gridgain/impl/marshaller/portable/gridportablemarshaller.hpp"
 #include "gridgain/impl/connection/gridclientconnectionpool.hpp"
 #include "gridgain/gridclientexception.hpp"
 #include "gridgain/impl/utils/gridclientlog.hpp"
@@ -43,7 +44,45 @@ void GridClientTcpCommandExecutor::executeLogCmd(const GridClientSocketAddress& 
  */
 void GridClientTcpCommandExecutor::executeTopologyCmd(const GridClientSocketAddress& host, GridTopologyRequestCommand& topCmd,
         GridClientMessageTopologyResult& rslt) {
-    // TODO: 8536.
+    std::shared_ptr<GridClientTcpConnection> conn = connPool->rentTcpConnection(host.host(), host.port());
+
+    GridClientTopologyRequest msg;
+
+    msg.setIncludeAttributes(topCmd.getIncludeAttributes());
+
+    msg.setIncludeMetrics(topCmd.getIncludeMetrics());
+
+    if (!topCmd.getNodeId().empty())
+        msg.setNodeId(topCmd.getNodeId());
+    else if (!topCmd.getNodeIp().empty())
+        msg.setNodeId(topCmd.getNodeIp());
+
+    vector<int8_t> data = marsh.marshal(msg);    
+    
+    GridClientTcpPacket tcpPacket;
+    GridClientTcpPacket tcpResponse;
+    ProtoRequest req;
+
+    tcpPacket.setData(data);
+    tcpPacket.setAdditionalHeaders(topCmd);
+
+    try {
+        sendPacket(conn, tcpPacket, tcpResponse);
+
+        connPool->turnBack(conn);
+    }
+    catch (GridClientException& e) {
+        GG_LOG_DEBUG("Failed to execute requestId [%lld] on [%s:%d]: %s",
+                topCmd.getRequestId(), host.host().c_str(), host.port(), e.what());
+
+        throw;
+    }
+
+    shared_ptr<GridClientResponse> ptr = marsh.unmarshal<GridClientResponse>();
+
+    GridClientResponse* res = ptr.get();
+
+    res->getResult();
 }
 
 /**

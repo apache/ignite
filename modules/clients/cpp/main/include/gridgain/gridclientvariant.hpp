@@ -16,6 +16,7 @@
 
 #include <gridgain/gridconf.hpp>
 #include <gridgain/gridclientuuid.hpp>
+#include <gridgain/gridportable.hpp>
 
 #include <boost/variant.hpp>
 
@@ -48,7 +49,7 @@ private:
     public:
         /** Boost typedef for holding multiple types. */
         typedef boost::variant<GridClientVariant::NullType, bool, int16_t, int32_t, int64_t, double,
-                float, std::string, std::wstring, std::vector<int8_t>, std::vector<GridClientVariant>, GridClientUuid> TVariantType;
+                float, std::string, std::wstring, std::vector<int8_t>, std::vector<GridClientVariant>, TGridPortablePtr, GridClientUuid> TVariantType;
 
         /** Boost variable. */
         TVariantType var;
@@ -65,7 +66,8 @@ private:
             WIDE_STRING_TYPE,
             BYTE_ARRAY_TYPE,
             VARIANT_VECTOR_TYPE,
-            UUID_TYPE
+            UUID_TYPE,
+            PORTABLE_TYPE
         };
     };
 
@@ -157,6 +159,8 @@ public:
      * Constructor with UUID argument.
      */
     GridClientVariant(const GridClientUuid& val);
+
+    GridClientVariant(GridPortable* val);
 
     /**
      * Copy constructor.
@@ -340,6 +344,12 @@ public:
      */
     std::string getString() const;
 
+    void set(GridPortable* val);
+
+    bool hasPortable() const;
+
+    GridPortable* getPortable() const;
+
     /**
      * Checks if this variant holds a wide string value.
      *
@@ -507,6 +517,8 @@ public:
 
     /** */
     virtual void visit(const GridClientUuid&) const = 0;
+
+    virtual void visit(const TGridPortablePtr) const = 0;
 };
 
 #endif //GRID_CLIENT_VARIANT_HPP_INCLUDED

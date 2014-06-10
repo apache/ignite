@@ -10,9 +10,17 @@
 #ifndef GRIDCLIENT_PORTABLE_MARSHALLER_HPP_INCLUDED
 #define GRIDCLIENT_PORTABLE_MARSHALLER_HPP_INCLUDED
 
+#include <vector>
+#include <iterator>
+
 #include "gridgain/gridportable.hpp"
 #include "gridgain/gridportablereader.hpp"
 #include "gridgain/gridportablewriter.hpp"
+#include "gridgain/impl/utils/gridclientbyteutils.hpp"
+
+using namespace std;
+
+const int8_t OBJECT_TYPE_OBJECT = 0;
 
 class GridClientPortableMessage : public GridPortable {
 public:
@@ -21,6 +29,48 @@ public:
 
     void readPortable(GridPortableReader &reader) {
     }
+};
+
+class GridClientResponse : public GridClientPortableMessage {
+public:
+    int32_t typeId() const {
+        return -1000;
+    }
+
+    void writePortable(GridPortableWriter &writer) const {
+        GridClientPortableMessage::writePortable(writer);
+
+        writer.writeInt("status", status);
+        writer.writeString("errorMsg", errorMsg);
+        writer.writeVariant("res", res);
+    }
+
+    void readPortable(GridPortableReader &reader) {
+        GridClientPortableMessage::readPortable(reader);
+
+        status = reader.readInt("status");
+        errorMsg = reader.readString("errorMsg");
+        res = reader.readVariant("res");
+    }
+
+    int32_t getStatus() {
+        return status;
+    }
+
+    std::string getErrorMessage() {
+        return errorMsg;
+    }
+
+    GridClientVariant getResult() {
+        return res;
+    }
+
+private:
+    int32_t status;
+
+    std::string errorMsg;
+
+    GridClientVariant res;
 };
 
 // TODO: 8536 reuse existing message classes.
@@ -130,56 +180,46 @@ private:
 
 class PortableOutput {
 public:
-	PortableOutput(size_t initCapacity) : capacity(initCapacity), cnt(0) {
-		buffer = new int8_t[capacity];
+	PortableOutput(size_t capacity) {
+        out.reserve(capacity);
 	}
 
+    void writeByte(int8_t val) {
+        out.push_back(val);
+    }
+
 	void writeInt(int32_t val) {
-		ensureCapacity(4);
+        int8_t* bytes = reinterpret_cast<int8_t*>(&val);
 
-		memcpy(buffer, &val, 4);
-
-		cnt += 4;
+        out.insert(out.end(), bytes, bytes + 4);
 	}
 
 	void writeBytes(const void* src, size_t size) {
-		ensureCapacity(size);
+        const int8_t* bytes = reinterpret_cast<const int8_t*>(src);
 
-		memcpy(buffer, src, size);
-
-		cnt += size;
+        out.insert(out.end(), bytes, bytes + size);
 	}
 
-	void bytes(int8_t*& bytes, size_t &size) {
-		bytes = buffer;
-
-		size = cnt;
+	vector<int8_t> bytes() {
+        return out;
 	}
 
 private:
-	size_t capacity;
-
-	size_t cnt;
-
-	int8_t* buffer;
-
-	void ensureCapacity(int size) {
-		if (cnt + size > capacity) {
-			int8_t* newBuffer = new int8_t[capacity * 2 + size];
-			
-			memcpy(newBuffer, buffer, cnt);
-
-			delete[] buffer;
-
-			buffer = newBuffer;
-		}
-	}
+    vector<int8_t> out;
 };
 
 class GridPortableWriterImpl : public GridPortableWriter {
 public:
 	GridPortableWriterImpl() : out(1024) {
 	}
+
+    void writePortable(GridPortable &portable) {
+        out.writeByte(OBJECT_TYPE_OBJECT);
+
+        out.writeByte(portable.typeId());
+
+        portable.writePortable(*this);
+    }
 
     void writeInt(char* fieldName, int32_t val) {
 		out.writeInt(val);
@@ -190,8 +230,12 @@ public:
 		out.writeBytes(str.data(), str.length());
 	}
 	
-	void bytes(int8_t*& bytes, size_t &size) {
-		out.bytes(bytes, size);
+    void writeVariant(char* fieldName, const GridClientVariant &str) {
+
+    }
+
+	vector<int8_t> bytes() {
+		return out.bytes();
 	}
 
 private:
@@ -200,13 +244,20 @@ private:
 
 class GridPortableMarshaller {
 public:
-    void marshal(GridPortable &portable, int8_t*& bytes, size_t &size) {
+    vector<int8_t> marshal(GridPortable &portable) {
 		GridPortableWriterImpl writer;
 
-		portable.writePortable(writer);
+		writer.writePortable(portable);
 
-		writer.bytes(bytes, size);
+		return writer.bytes();
 	}
+
+    template<typename T>
+    shared_ptr<T> unmarshal() {
+        shared_ptr<T> res(new T);
+
+        return res;
+    }
 };
 
 #endif
