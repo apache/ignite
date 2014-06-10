@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.marshaller.portable;
+package org.gridgain.grid.portable;
 
 import org.jetbrains.annotations.*;
 
@@ -15,7 +15,7 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * TODO 8491.
+ * Reader for portable objects.
  */
 public interface GridPortableReader {
     /**
@@ -86,7 +86,7 @@ public interface GridPortableReader {
      * @return Object.
      * @throws IOException In case of error.
      */
-    @Nullable public <T> T readObject(String fieldName) throws IOException;
+    @Nullable public <T extends GridPortable> T readObject(String fieldName) throws IOException;
 
     /**
      * @param fieldName Field name.

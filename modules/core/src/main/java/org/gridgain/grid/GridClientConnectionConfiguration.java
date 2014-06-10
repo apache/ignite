@@ -10,7 +10,7 @@
 package org.gridgain.grid;
 
 import org.gridgain.client.ssl.*;
-import org.gridgain.grid.marshaller.portable.*;
+import org.gridgain.grid.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -102,7 +102,7 @@ public class GridClientConnectionConfiguration {
     private GridClientMessageInterceptor clientMsgInterceptor;
 
     /** */
-    private Map<Integer, Class<? extends GridPortableObject>> portableTypesMap;
+    private Map<Integer, Class<? extends GridPortableEx>> portableTypesMap;
 
     /**
      * Creates client connection configuration with all default values.
@@ -573,14 +573,14 @@ public class GridClientConnectionConfiguration {
     /**
      * @return Map associating portable type identifiers with java classes.
      */
-    @Nullable public Map<Integer, Class<? extends GridPortableObject>> getPortableTypesMap() {
+    @Nullable public Map<Integer, Class<? extends GridPortableEx>> getPortableTypesMap() {
         return portableTypesMap;
     }
 
     /**
      * @param portableTypesMap Map associating portable type identifiers with java classes.
      */
-    public void setPortableTypesMap(Map<Integer, Class<? extends GridPortableObject>> portableTypesMap) {
+    public void setPortableTypesMap(Map<Integer, Class<? extends GridPortableEx>> portableTypesMap) {
         this.portableTypesMap = portableTypesMap;
     }
 }

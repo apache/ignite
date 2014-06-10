@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.marshaller.portable;
+package org.gridgain.grid.portable;
 
 import org.jetbrains.annotations.*;
 
@@ -15,7 +15,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * TODO 8491.
+ * Writer for portable object.
  */
 public interface GridPortableWriter {
     /**
@@ -142,7 +142,7 @@ public interface GridPortableWriter {
      * @param obj Value to write.
      * @throws IOException In case of error.
      */
-    public <T> void writeObject(String fieldName, @Nullable T obj) throws IOException;
+    public <T extends GridPortable> void writeObject(String fieldName, @Nullable T obj) throws IOException;
 
     /**
      * @param fieldName Field name.

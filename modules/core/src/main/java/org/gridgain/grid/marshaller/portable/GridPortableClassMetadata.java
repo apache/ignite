@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.marshaller.portable;
 
+import org.gridgain.grid.portable.*;
+
 import java.util.*;
 
 /**
@@ -19,7 +21,7 @@ class GridPortableClassMetadata {
     private int typeId;
 
     /** */
-    private Class<? extends GridPortableObject> cls;
+    private Class<? extends GridPortableEx> cls;
 
     /** */
     private List<String> fields;
@@ -29,7 +31,7 @@ class GridPortableClassMetadata {
      * @param cls Target java class.
      * @param fields Field names.
      */
-    GridPortableClassMetadata(int typeId, Class<? extends GridPortableObject> cls, List<String> fields) {
+    GridPortableClassMetadata(int typeId, Class<? extends GridPortableEx> cls, List<String> fields) {
         this.typeId = typeId;
         this.cls = cls;
         this.fields = fields;
@@ -45,7 +47,7 @@ class GridPortableClassMetadata {
     /**
      * @return Java class.
      */
-    public Class<? extends GridPortableObject> targetClass() {
+    public Class<? extends GridPortableEx> targetClass() {
         return cls;
     }
 

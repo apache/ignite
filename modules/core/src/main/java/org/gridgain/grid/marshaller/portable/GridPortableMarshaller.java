@@ -11,6 +11,7 @@ package org.gridgain.grid.marshaller.portable;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
@@ -110,7 +111,7 @@ public class GridPortableMarshaller implements GridMarshaller {
     private static final long OFFSET = UNSAFE.arrayBaseOffset(byte[].class);
 
     /** */
-    private final Map<Integer, Class<? extends GridPortableObject>> typesMap;
+    private final Map<Integer, Class<? extends GridPortableEx>> typesMap;
 
     /** */
     private final ConcurrentMap<Integer, GridPortableClassMetadata> metadataMap = new ConcurrentHashMap8<>();
@@ -118,7 +119,7 @@ public class GridPortableMarshaller implements GridMarshaller {
     /**
      * @param typesMap Map associating portable type identifiers with java classes..
      */
-    public GridPortableMarshaller(@Nullable Map<Integer, Class<? extends GridPortableObject>> typesMap) {
+    public GridPortableMarshaller(@Nullable Map<Integer, Class<? extends GridPortableEx>> typesMap) {
         this.typesMap = new HashMap<>();
 
         if (typesMap != null)
@@ -138,12 +139,12 @@ public class GridPortableMarshaller implements GridMarshaller {
     /** {@inheritDoc} */
     @Override public byte[] marshal(Object obj) throws GridException {
         try {
-            GridPortableObject portable = (GridPortableObject)obj; // TODO 8491 (can be any object).
+            GridPortableEx portable = (GridPortableEx)obj; // TODO 8491 (can be any object).
 
             GridPortableClassMetadata metadata = metadataMap.get(portable.typeId());
 
             if (metadata == null) {
-                Class<? extends GridPortableObject> cls = typesMap.get(portable.typeId());
+                Class<? extends GridPortableEx> cls = typesMap.get(portable.typeId());
 
                 if (cls == null) // TODO 8491 (support object without java classes).
                     throw new GridException("No Java class for portable type " +
@@ -504,7 +505,7 @@ public class GridPortableMarshaller implements GridMarshaller {
          * @param portable Portable object.
          * @throws IOException In case of error.
          */
-        private void writePortable(GridPortableObject portable) throws IOException {
+        private void writePortable(GridPortableEx portable) throws IOException {
             if (portable != null) {
                 int handle = handles.lookup(portable);
 
@@ -773,10 +774,10 @@ public class GridPortableMarshaller implements GridMarshaller {
 
                 writeUuid((UUID)obj);
             }
-            else if (obj instanceof GridPortableObject) {
+            else if (obj instanceof GridPortableEx) {
                 out.writeByte(TYPE_USER_OBJECT);
 
-                writePortable((GridPortableObject)obj);
+                writePortable((GridPortableEx)obj);
             }
             else if (obj instanceof Collection) {
                 out.writeByte(TYPE_LIST);
@@ -1037,18 +1038,18 @@ public class GridPortableMarshaller implements GridMarshaller {
          * @return Portable object.
          * @throws IOException In case of error.
          */
-        @Nullable private GridPortableObject readPortable() throws IOException {
+        @Nullable private GridPortableEx readPortable() throws IOException {
             byte type = in.readByte();
 
             if (type == OBJECT_TYPE_OBJECT) {
                 int typeId = in.readInt();
 
-                Class<? extends GridPortableObject> cls = typesMap.get(typeId);
+                Class<? extends GridPortableEx> cls = typesMap.get(typeId);
 
                 if (cls == null)
                     throw new IOException("Unknown portable typeId: " + typeId);
 
-                GridPortableObject portable;
+                GridPortableEx portable;
 
                 try {
                     portable = cls.newInstance();
@@ -1071,9 +1072,9 @@ public class GridPortableMarshaller implements GridMarshaller {
                 Object obj = handles.lookup(handle);
 
                 assert obj != null : "No object for handle " + handle;
-                assert obj instanceof GridPortableObject : obj;
+                assert obj instanceof GridPortableEx : obj;
 
-                return (GridPortableObject)obj;
+                return (GridPortableEx)obj;
             }
             else if (type == OBJECT_TYPE_NULL)
                 return null;
