@@ -74,5 +74,10 @@
             <directory>config/${gridgain.edition}</directory>
             <outputDirectory>/config</outputDirectory>
         </fileSet>
+
+        <fileSet>
+            <directory>assembly/libs</directory>
+            <outputDirectory>/libs</outputDirectory>
+        </fileSet>
     </fileSets>
 </component>

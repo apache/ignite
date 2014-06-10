@@ -39,7 +39,6 @@
         <moduleSet>
             <includes>
                 <include>org.gridgain:gridgain-spring</include>
-                <include>org.gridgain:gridgain-hadoop</include>
             </includes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
@@ -63,6 +62,29 @@
                         </includes>
                         <excludes>
                             <exclude>*-tests.jar</exclude>
+                        </excludes>
+                    </fileSet>
+                </fileSets>
+            </sources>
+        </moduleSet>
+
+        <moduleSet>
+            <includes>
+                <include>org.gridgain:gridgain-hadoop</include>
+            </includes>
+            <sources>
+                <includeModuleDirectory>false</includeModuleDirectory>
+                <fileSets>
+                    <fileSet>
+                        <directory>target</directory>
+                        <outputDirectory>/</outputDirectory>
+                        <includes>
+                            <include>*.jar</include>
+                        </includes>
+                        <excludes>
+                            <exclude>*-tests.jar</exclude>
+                            <exclude>*-javadoc.jar</exclude>
+                            <exclude>*-sources.jar</exclude>
                         </excludes>
                     </fileSet>
                 </fileSets>
