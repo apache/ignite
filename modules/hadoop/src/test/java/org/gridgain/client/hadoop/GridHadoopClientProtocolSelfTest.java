@@ -37,9 +37,6 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     /** Output path. */
     private static final String PATH_OUTPUT = "/output";
 
-    /** User. */
-    private static final String USR = "user";
-
     /** Job name. */
     private static final String JOB_NAME = "myJob";
 
@@ -188,7 +185,6 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
         final Job job = Job.getInstance(conf);
 
-        job.setUser(USR);
         job.setJobName(JOB_NAME);
 
         job.setOutputKeyClass(Text.class);
@@ -215,7 +211,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
         // Setup phase.
         JobStatus jobStatus = job.getStatus();
-        checkJobStatus(jobStatus, jobId, JOB_NAME, USR, JobStatus.State.RUNNING, 0.0f);
+        checkJobStatus(jobStatus, jobId, JOB_NAME, JobStatus.State.RUNNING, 0.0f);
         assert jobStatus.getSetupProgress() >= 0.0f && jobStatus.getSetupProgress() < 1.0f;
         assert jobStatus.getMapProgress() == 0.0f;
         assert jobStatus.getReduceProgress() == 0.0f;
@@ -243,7 +239,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
         // Map phase.
         jobStatus = job.getStatus();
-        checkJobStatus(jobStatus, jobId, JOB_NAME, USR, JobStatus.State.RUNNING, 0.0f);
+        checkJobStatus(jobStatus, jobId, JOB_NAME, JobStatus.State.RUNNING, 0.0f);
         assert jobStatus.getSetupProgress() == 1.0f;
         assert jobStatus.getMapProgress() >= 0.0f && jobStatus.getMapProgress() < 1.0f;
         assert jobStatus.getReduceProgress() == 0.0f;
@@ -272,7 +268,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         if (!noReducers) {
             // Reduce phase.
             jobStatus = job.getStatus();
-            checkJobStatus(jobStatus, jobId, JOB_NAME, USR, JobStatus.State.RUNNING, 0.0f);
+            checkJobStatus(jobStatus, jobId, JOB_NAME, JobStatus.State.RUNNING, 0.0f);
             assert jobStatus.getSetupProgress() == 1.0f;
             assert jobStatus.getMapProgress() == 1.0f;
             assert jobStatus.getReduceProgress() >= 0.0f && jobStatus.getReduceProgress() < 1.0f;
@@ -291,7 +287,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         job.waitForCompletion(false);
 
         jobStatus = job.getStatus();
-        checkJobStatus(job.getStatus(), jobId, JOB_NAME, USR, JobStatus.State.SUCCEEDED, 1.0f);
+        checkJobStatus(job.getStatus(), jobId, JOB_NAME, JobStatus.State.SUCCEEDED, 1.0f);
         assert jobStatus.getSetupProgress() == 1.0f;
         assert jobStatus.getMapProgress() == 1.0f;
         assert jobStatus.getReduceProgress() == 1.0f;
@@ -337,16 +333,14 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
      * @param status Job status.
      * @param expJobId Expected job ID.
      * @param expJobName Expected job name.
-     * @param expUser Expected user.
      * @param expState Expected state.
      * @param expCleanupProgress Expected cleanup progress.
      * @throws Exception If failed.
      */
-    private static void checkJobStatus(JobStatus status, JobID expJobId, String expJobName, String expUser,
+    private static void checkJobStatus(JobStatus status, JobID expJobId, String expJobName,
         JobStatus.State expState, float expCleanupProgress) throws Exception {
         assert F.eq(status.getJobID(), expJobId) : "Expected=" + expJobId + ", actual=" + status.getJobID();
         assert F.eq(status.getJobName(), expJobName) : "Expected=" + expJobName + ", actual=" + status.getJobName();
-        assert F.eq(status.getUsername(), expUser) : "Expected=" + expUser + ", actual=" + status.getUsername();
         assert F.eq(status.getState(), expState) : "Expected=" + expState + ", actual=" + status.getState();
         assert F.eq(status.getCleanupProgress(), expCleanupProgress) :
             "Expected=" + expCleanupProgress + ", actual=" + status.getCleanupProgress();
