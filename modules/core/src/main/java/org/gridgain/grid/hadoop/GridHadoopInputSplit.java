@@ -11,19 +11,36 @@ package org.gridgain.grid.hadoop;
 
 import java.io.*;
 
-import org.jetbrains.annotations.*;
-
 /**
  * Abstract fragment of an input data source.
  */
-public interface GridHadoopInputSplit extends Externalizable {
-    /**
-     * @return Hosts.
-     */
-    public String[] hosts();
+public abstract class GridHadoopInputSplit implements Externalizable {
+    /** */
+    protected String[] hosts;
 
     /**
-     * @return Either {@code null} or native input split if it's not FileSplit.
+     * Array of hosts where this input split resides.
+     *
+     * @return Hosts.
      */
-    @Nullable public <T> T innerSplit();
+    public String[] hosts() {
+        assert hosts != null;
+
+        return hosts;
+    }
+
+    /**
+     * This method must be implemented for purpose of internal implementation.
+     *
+     * @param obj Another object.
+     * @return {@code true} If objects are equal.
+     */
+    @Override public abstract boolean equals(Object obj);
+
+    /**
+     * This method must be implemented for purpose of internal implementation.
+     *
+     * @return Hash code of the object.
+     */
+    @Override public abstract int hashCode();
 }

@@ -34,7 +34,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return 2;
+        return 3;
     }
 
     /**
@@ -140,7 +140,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
             while(sc.hasNextLine()) {
                 UUID next = UUID.fromString(sc.nextLine());
 
-                X.printerrln("___ check: " + next);
+//                X.printerrln("___ check: " + next);
 
                 if (prev != null)
                     assertTrue(prev.compareTo(next) < 0);
@@ -157,7 +157,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
 
             FakeSplit split = new FakeSplit();
 
-            for (int i = 0; i < 1; i++)
+            for (int i = 0; i < 10; i++)
                 res.add(split);
 
             return res;

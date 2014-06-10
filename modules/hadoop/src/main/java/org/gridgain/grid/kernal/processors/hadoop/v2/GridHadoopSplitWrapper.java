@@ -22,15 +22,12 @@ import org.jetbrains.annotations.*;
 /**
  * The wrapper for native hadoop input splits.
  */
-public class GridHadoopSplitWrapper implements GridHadoopInputSplit {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Hosts where split is located. */
-    private String[] hosts;
-
+public class GridHadoopSplitWrapper extends GridHadoopInputSplit {
     /** Native hadoop input split. */
     private Object innerSplit;
+
+    /** Internal ID */
+    private int id;
 
     /**
      * Creates new split wrapper.
@@ -42,31 +39,30 @@ public class GridHadoopSplitWrapper implements GridHadoopInputSplit {
     /**
      * Creates new split wrapper.
      *
+     * @param id Split ID.
      * @param innerSplit Native hadoop input split to wrap or {@code null} if it is serialized in external file.
      * @param hosts Hosts where split is located.
      */
-    public GridHadoopSplitWrapper(@Nullable Object innerSplit, String[] hosts) {
+    public GridHadoopSplitWrapper(int id, @Nullable Object innerSplit, String[] hosts) {
         assert hosts != null;
 
         this.innerSplit = innerSplit;
         this.hosts = hosts;
+        this.id = id;
     }
 
-    /** {@inheritDoc} */
-    @Override public String[] hosts() {
-        assert hosts != null;
-
-        return hosts;
-    }
-
-    /** {@inheritDoc} */
+    /**
+     * @return Inner split.
+     */
     @SuppressWarnings("unchecked")
-    @Nullable @Override public <T> T innerSplit() {
-        return (T)innerSplit;
+    public Object innerSplit() {
+        return innerSplit;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeInt(id);
+
         boolean writable = innerSplit instanceof Writable;
 
         out.writeUTF(writable ? innerSplit.getClass().getName() : null);
@@ -79,6 +75,8 @@ public class GridHadoopSplitWrapper implements GridHadoopInputSplit {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        id = in.readInt();
+
         String clsName = in.readUTF();
 
         if (clsName == null)
@@ -95,5 +93,23 @@ public class GridHadoopSplitWrapper implements GridHadoopInputSplit {
 
             ((Writable)innerSplit).readFields(in);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        GridHadoopSplitWrapper that = (GridHadoopSplitWrapper)o;
+
+        return id == that.id;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return id;
     }
 }

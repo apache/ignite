@@ -10,22 +10,15 @@
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.gridgain.grid.hadoop.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
 
 /**
  * Split serialized in external file.
  */
-public class GridHadoopExternalSplit implements GridHadoopInputSplit {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class GridHadoopExternalSplit extends GridHadoopInputSplit {
     /** */
     private long off;
-
-    /** */
-    private String[] hosts;
 
     /**
      * For {@link Externalizable}.
@@ -46,18 +39,6 @@ public class GridHadoopExternalSplit implements GridHadoopInputSplit {
         this.off = off;
     }
 
-    /** {@inheritDoc} */
-    @Override public String[] hosts() {
-        assert hosts != null;
-
-        return hosts;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public <T> T innerSplit() {
-        throw new IllegalStateException();
-    }
-
     /**
      * @return Offset of this input split in external file.
      */
@@ -73,5 +54,23 @@ public class GridHadoopExternalSplit implements GridHadoopInputSplit {
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         off = in.readLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        GridHadoopExternalSplit that = (GridHadoopExternalSplit) o;
+
+        return off == that.off;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return (int)(off ^ (off >>> 32));
     }
 }
