@@ -33,6 +33,27 @@ import java.util.*;
  * Hadoop job implementation for v2 API.
  */
 public class GridHadoopV2Job implements GridHadoopJob {
+    /** */
+    private static final boolean COMBINE_KEY_GROUPING_SUPPORTED;
+
+    /**
+     * Check for combiner grouping support (available since Hadoop 2.3).
+     */
+    static {
+        boolean ok;
+
+        try {
+            org.apache.hadoop.mapreduce.JobContext.class.getDeclaredMethod("getCombinerKeyGroupingComparator");
+
+            ok = true;
+        }
+        catch (NoSuchMethodException ignore) {
+            ok = false;
+        }
+
+        COMBINE_KEY_GROUPING_SUPPORTED = ok;
+    }
+
     /** Flag is set if new context-object code is used for running the mapper. */
     private final boolean useNewMapper;
 
@@ -303,8 +324,8 @@ public class GridHadoopV2Job implements GridHadoopJob {
     }
 
     /** {@inheritDoc} */
-    @Override public Comparator<Object> combineGroupComparator() {
-        return null; // TODO implement for Hadoop 2.4
+    @Override public Comparator<?> combineGroupComparator() {
+        return COMBINE_KEY_GROUPING_SUPPORTED ? ctx.getCombinerKeyGroupingComparator() : null;
     }
 
     /** {@inheritDoc} */
