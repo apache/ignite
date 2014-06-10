@@ -19,4 +19,6 @@ public interface GridCacheQueryClassResolver {
     public String resolveTypeName(Object o);
 
     public Class<?> resolveFieldType(String field);
+
+    public Object valueOf(String field);
 }
