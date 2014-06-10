@@ -1143,7 +1143,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             cp.pendingSplits(splitsCp);
 
-            if (cp.phase() != PHASE_CANCELLING)
+            if (cp.phase() != PHASE_CANCELLING && err != null)
                 cp.failCause(err);
 
             if (err != null)
@@ -1315,7 +1315,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             cp.phase(PHASE_CANCELLING);
 
-            cp.failCause(err);
+            if (err != null)
+                cp.failCause(err);
 
             return cp;
         }

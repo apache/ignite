@@ -13,11 +13,9 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
 import java.util.concurrent.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.processors.hadoop.taskexecutor.GridHadoopTaskState.*;
 
 /**
  * Task executor.

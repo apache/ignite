@@ -19,6 +19,7 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.typedef.*;
 
 import java.io.*;
+import java.net.*;
 import java.util.*;
 
 /**
@@ -33,7 +34,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return 3;
+        return 2;
     }
 
     /**
@@ -94,13 +95,17 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
         setupFileSytems(job.getConfiguration());
 
         job.getConfiguration().set(CommonConfigurationKeys.IO_SERIALIZATIONS_KEY, JavaSerialization.class.getName() +
-            "," + WritableSerialization.class);
+            "," + WritableSerialization.class.getName());
 
         FileInputFormat.setInputPaths(job, new Path(ggfsScheme() + PATH_INPUT));
         FileOutputFormat.setOutputPath(job, new Path(ggfsScheme() + PATH_OUTPUT));
 
+        job.setSortComparatorClass(JavaSerializationComparator.class);
+
         job.setMapperClass(MyMapper.class);
         job.setReducerClass(MyReducer.class);
+
+        job.setNumReduceTasks(2);
 
         job.setMapOutputKeyClass(UUID.class);
         job.setMapOutputValueClass(NullWritable.class);
@@ -118,10 +123,13 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
         // Check result.
         Path outDir = new Path(ggfsScheme() + PATH_OUTPUT);
 
-        AbstractFileSystem fs = AbstractFileSystem.get(outDir.toUri(), job.getConfiguration());
+        AbstractFileSystem fs = AbstractFileSystem.get(new URI(ggfsScheme()), job.getConfiguration());
 
         for (FileStatus file : fs.listStatus(outDir)) {
-            X.println("file: " + file);
+            X.printerrln("__ file: " + file);
+
+            if (file.getLen() == 0)
+                continue;
 
             FSDataInputStream in = fs.open(file.getPath());
 
@@ -131,6 +139,8 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
 
             while(sc.hasNextLine()) {
                 UUID next = UUID.fromString(sc.nextLine());
+
+                X.printerrln("___ check: " + next);
 
                 if (prev != null)
                     assertTrue(prev.compareTo(next) < 0);
@@ -147,7 +157,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
 
             FakeSplit split = new FakeSplit();
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 1; i++)
                 res.add(split);
 
             return res;
@@ -160,6 +170,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
                 /** */
                 int cnt;
 
+                /** */
                 Text txt = new Text();
 
                 @Override public void initialize(InputSplit split, TaskAttemptContext context) throws IOException,
@@ -168,11 +179,13 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
                 }
 
                 @Override public boolean nextKeyValue() throws IOException, InterruptedException {
-                    return ++cnt < split.getLength();
+                    return ++cnt <= split.getLength();
                 }
 
                 @Override public Text getCurrentKey() throws IOException, InterruptedException {
                     txt.set(UUID.randomUUID().toString());
+
+//                    X.printerrln("___ read: " + txt);
 
                     return txt;
                 }
@@ -192,10 +205,12 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
         }
     }
 
-    public static class MyMapper extends Mapper<Text, Object, UUID, NullWritable> {
+    public static class MyMapper extends Mapper<LongWritable, Text, UUID, NullWritable> {
         /** {@inheritDoc} */
-        @Override protected void map(Text key, Object val, Context ctx) throws IOException, InterruptedException {
-            ctx.write(UUID.fromString(key.toString()), NullWritable.get());
+        @Override protected void map(LongWritable key, Text val, Context ctx) throws IOException, InterruptedException {
+//            X.printerrln("___ map: " + val);
+
+            ctx.write(UUID.fromString(val.toString()), NullWritable.get());
         }
     }
 
@@ -206,6 +221,8 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
         /** {@inheritDoc} */
         @Override protected void reduce(UUID key, Iterable<NullWritable> vals, Context ctx)
             throws IOException, InterruptedException {
+//            X.printerrln("___ rdc: " + key);
+
             text.set(key.toString());
 
             ctx.write(text, NullWritable.get());
@@ -218,7 +235,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override public long getLength() throws IOException, InterruptedException {
-            return 300;
+            return 10;
         }
 
         /** {@inheritDoc} */

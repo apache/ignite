@@ -416,7 +416,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
     @SuppressWarnings("unchecked")
     public GridFuture<?> flush() throws GridException {
         if (log.isDebugEnabled())
-            log.debug("Waiting for remote addresses initialization.");
+            log.debug("Flushing job " + job.id() + " on address " + locReduceAddr);
 
         flushed = true;
 
