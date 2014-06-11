@@ -685,8 +685,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
             startProcessor(ctx, (GridProcessor)GGFS.create(ctx, F.isEmpty(cfg.getGgfsConfiguration())), attrs);
             startProcessor(ctx, new GridContinuousProcessor(ctx), attrs);
-            startProcessor(ctx, (GridProcessor)GridComponentType.HADOOP.createIfInClassPath(ctx,
-                cfg.getHadoopConfiguration() != null), attrs);
+            startProcessor(ctx, (GridProcessor)(cfg.isPeerClassLoadingEnabled() ? GridComponentType.HADOOP.create(true):
+                GridComponentType.HADOOP.createIfInClassPath(ctx, cfg.getHadoopConfiguration() != null)), attrs);
             startProcessor(ctx, createComponent(GridDrProcessor.class, ctx), attrs);
 
             // Put version converters to attributes after
