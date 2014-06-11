@@ -26,20 +26,26 @@ namespace GridGain.Client {
          * <summary>Gets portable object type name.</summary>
          * <returns>Type name.</returns>
          */
-        string typeName();
+        string TypeName();
 
         /**
          * <summary>Gets list of field names that are accessible in this portable object.</summary>
          * <returns>Field names.</returns>
          */
-        ICollection<string> fields();
+        ICollection<string> Fields();
 
         /**
          * <summary>Gets field value.</summary>
          * <param name="fieldName">Field name.</param>
          * <returns>Field value.</returns>
          */
-        F field<F>(string fieldName);
+        F Field<F>(string fieldName);
+
+        /**
+         * <summary>Gets fully deserialized instance of portable object.</summary>
+         * <returns>Fully deserialized instance of portable object.</returns>
+         */
+        T Deserialize<T>() where T : IGridPortable;
 
         /**
          * <summary>Creates a copy of this portable object and optionally changes field values
@@ -47,12 +53,6 @@ namespace GridGain.Client {
          * <param name="fields">Fields to modify in copy.</param>
          * <returns>Copy of this portable object.</returns>
          */
-        IGridPortableObject copy(IDictionary<string, object> fields);
-
-        /**
-         * <summary>Gets fully deserialized instance of portable object.</summary>
-         * <returns>Fully deserialized instance of portable object.</returns>
-         */
-        T deserialize<T>() where T : IGridPortable;
+        IGridPortableObject Copy(IDictionary<string, object> fields);        
     }
 }

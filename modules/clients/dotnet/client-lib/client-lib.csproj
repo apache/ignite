@@ -70,6 +70,8 @@
     <Compile Include="client\balancer\GridClientLoadBalancer.cs" />
     <Compile Include="client\balancer\GridClientRoundRobinBalancer.cs" />
     <Compile Include="client\portable\GridClientPortableException.cs" />
+    <Compile Include="client\portable\GridClientPortableInvalidClassException.cs" />
+    <Compile Include="client\portable\GridClientPortableInvalidFieldException.cs" />
     <Compile Include="client\portable\IGridClientPortable.cs" />
     <Compile Include="client\portable\IGridClientPortableEx.cs" />
     <Compile Include="client\portable\IGridClientPortableReader.cs" />
