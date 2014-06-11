@@ -10,23 +10,33 @@
 package org.gridgain.grid.util.ipc.shmem;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.net.*;
+import java.nio.channels.*;
 import java.util.*;
-import java.util.regex.*;
 
 /**
- *
+ * Shared memory native loader.
  */
 @SuppressWarnings("ErrorNotRethrown")
 public class GridIpcSharedMemoryNativeLoader {
-    /** */
+    /** Loaded flag. */
     private static volatile boolean loaded;
 
-    /** */
-    private static final String LIB_NAME = "ggshmem";
+    /** Library name base. */
+    private static final String LIB_NAME_BASE = "ggshmem";
+
+    /** Library name. */
+    private static final String LIB_NAME = LIB_NAME_BASE + "-" + GridProductImpl.VER;
+
+    /** Lock file path. */
+    private static final File LOCK_FILE = new File(System.getProperty("java.io.tmpdir"), "ggshmem.lock");
+
+    /** Currently held file lock. */
+    private static FileLock lock;
 
     /**
      * @return Operating system name to resolve path to library.
@@ -90,6 +100,8 @@ public class GridIpcSharedMemoryNativeLoader {
      * @throws GridException If failed.
      */
     private static void doLoad() throws GridException {
+        assert Thread.holdsLock(GridIpcSharedMemoryNativeLoader.class);
+
         Collection<Throwable> errs = new LinkedList<>();
 
         try {
@@ -102,52 +114,98 @@ public class GridIpcSharedMemoryNativeLoader {
             errs.add(e);
         }
 
-        if (extractAndLoad(errs, platformSpecific()))
-            return;
+        lock();
 
-        if (extractAndLoad(errs, osSpecificResourcePath()))
-            return;
+        try {
+            if (extractAndLoad(errs, platformSpecificResourcePath()))
+                return;
 
-        if (extractAndLoad(errs, resourcePath()))
-            return;
+            if (extractAndLoad(errs, osSpecificResourcePath()))
+                return;
 
-        // Failed to find the library.
-        assert !errs.isEmpty();
+            if (extractAndLoad(errs, resourcePath()))
+                return;
 
-        throw new GridException("Failed to load native IPC library: " + errs);
+            // Failed to find the library.
+            assert !errs.isEmpty();
+
+            throw new GridException("Failed to load native IPC library: " + errs);
+        }
+        finally {
+            unlock();
+        }
+    }
+
+    /**
+     * Obtain lock on file to prevent concurrent extracts.
+     *
+     * @throws GridException If failed.
+     */
+    private static void lock() throws GridException {
+        assert Thread.holdsLock(GridIpcSharedMemoryNativeLoader.class);
+
+        try {
+            lock = new RandomAccessFile(LOCK_FILE, "rws").getChannel().lock();
+        }
+        catch (IOException e) {
+            throw new GridException("Failed to obtain file lock: " + LOCK_FILE, e);
+        }
+    }
+
+    /**
+     * Release lock on file.
+     *
+     * @throws GridException If failed.
+     */
+    private static void unlock() throws GridException {
+        assert Thread.holdsLock(GridIpcSharedMemoryNativeLoader.class);
+
+        if (lock != null) {
+            try {
+                lock.release();
+
+                lock = null;
+            }
+            catch (IOException ignore) {
+                // No-op.
+            }
+            finally {
+                lock = null;
+            }
+        }
     }
 
     /**
      * @return OS resource path.
      */
     private static String osSpecificResourcePath() {
-        return "META-INF/native/" + os() + "/" + mapLibraryName();
+        return "META-INF/native/" + os() + "/" + mapLibraryName(LIB_NAME_BASE);
     }
 
     /**
      * @return Platform resource path.
      */
-    private static String platformSpecific() {
-        return "META-INF/native/" + platform() + "/" + mapLibraryName();
-    }
-
-    /**
-     * @return Maps library name to file name.
-     */
-    private static String mapLibraryName() {
-        String libName = System.mapLibraryName(LIB_NAME);
-
-        if (U.isMacOs() && libName.endsWith(".jnilib"))
-            return libName.substring(0, libName.length() - "jnilib".length()) + "dylib";
-
-        return libName;
+    private static String platformSpecificResourcePath() {
+        return "META-INF/native/" + platform() + "/" + mapLibraryName(LIB_NAME_BASE);
     }
 
     /**
      * @return Resource path.
      */
     private static String resourcePath() {
-        return "META-INF/native/" + mapLibraryName();
+        return "META-INF/native/" + mapLibraryName(LIB_NAME_BASE);
+    }
+
+    /**
+     * @return Maps library name to file name.
+     */
+    private static String mapLibraryName(String name) {
+        String libName = System.mapLibraryName(name);
+
+        if (U.isMacOs() && libName.endsWith(".jnilib"))
+            return libName.substring(0, libName.length() - "jnilib".length()) + "dylib";
+
+        return libName;
     }
 
     /**
@@ -160,16 +218,14 @@ public class GridIpcSharedMemoryNativeLoader {
 
         URL rsrc = clsLdr.getResource(rsrcPath);
 
-        if (rsrc != null) {
-            return extract(errs,
-                rsrc,
-                new File(System.getProperty("java.io.tmpdir"), mapLibraryName()));
-        }
-        else
+        if (rsrc != null)
+            return extract(errs, rsrc, new File(System.getProperty("java.io.tmpdir"), mapLibraryName(LIB_NAME)));
+        else {
             errs.add(new IllegalStateException("Failed to find resource with specified class loader " +
                 "[rsrc=" + rsrcPath + ", clsLdr=" + clsLdr + ']'));
 
-        return false;
+            return false;
+        }
     }
 
     /**
@@ -178,14 +234,13 @@ public class GridIpcSharedMemoryNativeLoader {
      * @param target Target.
      * @return {@code True} if resource was found and loaded.
      */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     private static boolean extract(Collection<Throwable> errs, URL src, File target) {
         FileOutputStream os = null;
         InputStream is = null;
 
-        boolean err = true;
-
         try {
-            if (!target.exists() || isStale(src, target)) {
+            if (!target.exists()) {
                 is = src.openStream();
 
                 if (is != null) {
@@ -202,49 +257,20 @@ public class GridIpcSharedMemoryNativeLoader {
 
             // chmod 775.
             if (!U.isWindows())
-                Runtime.getRuntime().exec(
-                    new String[] {"chmod", "775", target.getCanonicalPath()}).waitFor();
+                Runtime.getRuntime().exec(new String[] {"chmod", "775", target.getCanonicalPath()}).waitFor();
 
             System.load(target.getPath());
 
-            err = false;
+            return true;
         }
         catch (IOException | UnsatisfiedLinkError | InterruptedException e) {
             errs.add(e);
-        } finally {
+        }
+        finally {
             U.closeQuiet(os);
             U.closeQuiet(is);
-
-            if (err && target.exists())
-                target.delete();
         }
 
-        return !err;
-    }
-
-    /**
-     * @param src Source.
-     * @param target Target.
-     * @return {@code True} if target is stale.
-     */
-    private static boolean isStale(URL src, File target) {
-        if ("jar".equals(src.getProtocol())) {
-            // Unwrap the jar protocol.
-            try {
-                String parts[] = src.getFile().split(Pattern.quote("!"));
-
-                src = new URL(parts[0]);
-            }
-            catch (MalformedURLException ignored) {
-                return false;
-            }
-        }
-
-        File srcFile = null;
-
-        if ("file".equals(src.getProtocol()))
-            srcFile = new File(src.getFile());
-
-        return srcFile != null && srcFile.exists() && srcFile.lastModified() > target.lastModified();
+        return false;
     }
 }

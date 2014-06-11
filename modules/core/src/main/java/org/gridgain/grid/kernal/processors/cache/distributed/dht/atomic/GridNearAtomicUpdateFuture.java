@@ -122,6 +122,9 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     /** Near cache flag. */
     private final boolean nearEnabled;
 
+    /** Subject ID. */
+    private final UUID subjId;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -136,6 +139,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         syncMode = null;
         op = null;
         nearEnabled = false;
+        subjId = null;
     }
 
     /**
@@ -166,7 +170,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         final boolean rawRetval,
         @Nullable GridCacheEntryEx<K, V> cached,
         long ttl,
-        final GridPredicate<GridCacheEntry<K, V>>[] filter
+        final GridPredicate<GridCacheEntry<K, V>>[] filter,
+        UUID subjId
     ) {
         super(cctx.kernalContext());
         this.rawRetval = rawRetval;
@@ -175,6 +180,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         assert drPutVals == null || drPutVals.size() == keys.size();
         assert drRmvVals == null || drRmvVals.size() == keys.size();
         assert cached == null || keys.size() == 1;
+        assert subjId != null;
 
         this.cctx = cctx;
         this.cache = cache;
@@ -188,6 +194,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         this.cached = cached;
         this.ttl = ttl;
         this.filter = filter;
+        this.subjId = subjId;
 
         log = U.logger(ctx, logRef, GridFutureAdapter.class);
 
@@ -523,7 +530,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 retval,
                 op == TRANSFORM && cctx.hasFlag(FORCE_TRANSFORM_BACKUP),
                 ttl,
-                filter);
+                filter,
+                subjId);
 
             req.addUpdateEntry(key, val, drTtl, drExpireTime, drVer, true);
 
@@ -619,7 +627,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                             retval,
                             op == TRANSFORM && cctx.hasFlag(FORCE_TRANSFORM_BACKUP),
                             ttl,
-                            filter);
+                            filter,
+                            subjId);
 
                         pendingMappings.put(nodeId, mapped);
 
