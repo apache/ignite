@@ -123,6 +123,45 @@ public interface GridPortableReader {
 
     /**
      * @param fieldName Field name.
+     * @return String value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public String readString(String fieldName) throws GridPortableException;
+
+    /**
+     * @return String value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public String readString() throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @return UUID.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public UUID readUuid(String fieldName) throws GridPortableException;
+
+    /**
+     * @return UUID.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public UUID readUuid() throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @return Object.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public <T> T readObject(String fieldName) throws GridPortableException;
+
+    /**
+     * @return Object.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public <T> T readObject() throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
      * @return Byte array.
      * @throws GridPortableException In case of error.
      */
@@ -227,42 +266,42 @@ public interface GridPortableReader {
 
     /**
      * @param fieldName Field name.
-     * @return String value.
+     * @return String array.
      * @throws GridPortableException In case of error.
      */
-    @Nullable public String readString(String fieldName) throws GridPortableException;
+    @Nullable public String[] readStringArray(String fieldName) throws GridPortableException;
 
     /**
-     * @return String value.
+     * @return String array.
      * @throws GridPortableException In case of error.
      */
-    @Nullable public String readString() throws GridPortableException;
-
-    /**
-     * @param fieldName Field name.
-     * @return UUID.
-     * @throws GridPortableException In case of error.
-     */
-    @Nullable public UUID readUuid(String fieldName) throws GridPortableException;
-
-    /**
-     * @return UUID.
-     * @throws GridPortableException In case of error.
-     */
-    @Nullable public UUID readUuid() throws GridPortableException;
+    @Nullable public String[] readStringArray() throws GridPortableException;
 
     /**
      * @param fieldName Field name.
-     * @return Object.
+     * @return UUID array.
      * @throws GridPortableException In case of error.
      */
-    @Nullable public <T> T readObject(String fieldName) throws GridPortableException;
+    @Nullable public UUID[] readUuidArray(String fieldName) throws GridPortableException;
 
     /**
-     * @return Object.
+     * @return UUID array.
      * @throws GridPortableException In case of error.
      */
-    @Nullable public <T> T readObject() throws GridPortableException;
+    @Nullable public UUID[] readUuidArray() throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @return Object array.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public Object[] readObjectArray(String fieldName) throws GridPortableException;
+
+    /**
+     * @return Object array.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public Object[] readObjectArray() throws GridPortableException;
 
     /**
      * @param fieldName Field name.
