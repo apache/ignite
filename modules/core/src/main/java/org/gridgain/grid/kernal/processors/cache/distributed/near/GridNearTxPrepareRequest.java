@@ -16,6 +16,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -50,6 +51,10 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     @GridDirectCollection(UUID.class)
     private Collection<UUID> lastBackups;
 
+    /** Subject ID. */
+    @GridDirectVersion(1)
+    private UUID subjId;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -74,7 +79,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     public GridNearTxPrepareRequest(GridUuid futId, long topVer, GridCacheTxEx<K, V> tx,
         Collection<GridCacheTxEntry<K, V>> reads, Collection<GridCacheTxEntry<K, V>> writes, Object grpLockKey,
         boolean partLock, boolean syncCommit, boolean syncRollback,
-        Map<UUID, Collection<UUID>> txNodes, boolean last, Collection<UUID> lastBackups) {
+        Map<UUID, Collection<UUID>> txNodes, boolean last, Collection<UUID> lastBackups, @Nullable UUID subjId) {
         super(tx, reads, writes, grpLockKey, partLock, txNodes);
 
         assert futId != null;
@@ -85,6 +90,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
         this.syncRollback = syncRollback;
         this.last = last;
         this.lastBackups = lastBackups;
+        this.subjId = subjId;
     }
 
     /**
@@ -120,6 +126,13 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
      */
     public void miniId(GridUuid miniId) {
         this.miniId = miniId;
+    }
+
+    /**
+     * @return Subject ID.
+     */
+    @Nullable public UUID subjectId() {
+        return subjId;
     }
 
     /**
@@ -192,6 +205,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
         _clone.topVer = topVer;
         _clone.last = last;
         _clone.lastBackups = lastBackups;
+        _clone.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -269,6 +283,12 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
             case 26:
                 if (!commState.putLong(topVer))
+                    return false;
+
+                commState.idx++;
+
+            case 27:
+                if (!commState.putUuid(subjId))
                     return false;
 
                 commState.idx++;
@@ -365,6 +385,16 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                     return false;
 
                 topVer = commState.getLong();
+
+                commState.idx++;
+
+            case 27:
+                UUID subjId0 = commState.getUuid();
+
+                if (subjId0 == UUID_NOT_READ)
+                    return false;
+
+                subjId = subjId0;
 
                 commState.idx++;
 

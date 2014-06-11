@@ -91,7 +91,7 @@ GridGain Maven repository has `5` artifacts (add `'-ent'` for enterprise edition
 
     <dependency>
         <groupId>org.gridgain</groupId>
-        <artifactId>gridgain-platform</artifactId>
+        <artifactId>gridgain-platform-edition</artifactId>
         <version>${gridgain.version}</version>
     </dependency>
 
@@ -105,7 +105,7 @@ GridGain Maven repository has `5` artifacts (add `'-ent'` for enterprise edition
     ...
     <dependency>
         <groupId>org.gridgain</groupId>
-        <artifactId>gridgain-platform-ent</artifactId>
+        <artifactId>gridgain-platform-ent-edition</artifactId>
         <version>${gridgain.version}</version>
     </dependency>
 

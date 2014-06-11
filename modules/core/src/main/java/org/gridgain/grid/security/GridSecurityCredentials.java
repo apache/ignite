@@ -43,11 +43,11 @@ public class GridSecurityCredentials implements Externalizable {
     private static final long serialVersionUID = -2655741071578326256L;
 
     /** Login. */
-    private String login;
+    private Object login;
 
     /** Password. */
     @GridToStringExclude
-    private String password;
+    private Object password;
 
     /** Additional user object. */
     @GridToStringExclude
@@ -90,7 +90,7 @@ public class GridSecurityCredentials implements Externalizable {
      *
      * @return Login.
      */
-    public String getLogin() {
+    public Object getLogin() {
         return login;
     }
 
@@ -99,7 +99,7 @@ public class GridSecurityCredentials implements Externalizable {
      *
      * @param login Login.
      */
-    public void setLogin(String login) {
+    public void setLogin(Object login) {
         this.login = login;
     }
 
@@ -108,7 +108,7 @@ public class GridSecurityCredentials implements Externalizable {
      *
      * @return Password.
      */
-    public String getPassword() {
+    public Object getPassword() {
         return password;
     }
 
@@ -117,7 +117,7 @@ public class GridSecurityCredentials implements Externalizable {
      *
      * @param password Password.
      */
-    public void setPassword(String password) {
+    public void setPassword(Object password) {
         this.password = password;
     }
 
@@ -141,15 +141,15 @@ public class GridSecurityCredentials implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, login);
-        U.writeString(out, password);
+        out.writeObject(login);
+        out.writeObject(password);
         out.writeObject(userObj);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        login = U.readString(in);
-        password = U.readString(in);
+        login = in.readObject();
+        password = in.readObject();
         userObj = in.readObject();
     }
 

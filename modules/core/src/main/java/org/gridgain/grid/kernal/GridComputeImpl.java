@@ -36,13 +36,17 @@ public class GridComputeImpl implements GridCompute {
     /** */
     private GridProjection prj;
 
+    /** */
+    private UUID subjId;
+
     /**
      * @param ctx Kernal context.
      * @param prj Projection.
      */
-    public GridComputeImpl(GridKernalContext ctx, GridProjection prj) {
+    public GridComputeImpl(GridKernalContext ctx, GridProjection prj, UUID subjId) {
         this.ctx = ctx;
         this.prj = prj;
+        this.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -88,6 +92,7 @@ public class GridComputeImpl implements GridCompute {
 
         try {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
+            ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
             return ctx.task().execute(taskName, arg);
         }
@@ -105,6 +110,7 @@ public class GridComputeImpl implements GridCompute {
 
         try {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
+            ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
             return ctx.task().execute(taskCls, arg);
         }
@@ -121,6 +127,7 @@ public class GridComputeImpl implements GridCompute {
 
         try {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
+            ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
             return ctx.task().execute(task, arg);
         }
@@ -324,15 +331,13 @@ public class GridComputeImpl implements GridCompute {
         try {
             GridComputeTaskFuture<Object> task = ctx.task().taskFuture(sesId);
 
-            if (task != null) {
-                boolean loc = F.nodeIds(prj.nodes()).contains(ctx.localNodeId());
-
-                if (loc)
-                    task.cancel();
-            }
-            else
+            if (task != null)
+                // Cancel local task.
+                task.cancel();
+            else if (prj.node(sesId.globalId()) != null)
+                // Cancel remote task only if its master is in projection.
                 ctx.io().send(
-                    prj.forRemotes().nodes(),
+                    sesId.globalId(),
                     TOPIC_TASK_CANCEL,
                     new GridTaskCancelRequest(sesId),
                     SYSTEM_POOL

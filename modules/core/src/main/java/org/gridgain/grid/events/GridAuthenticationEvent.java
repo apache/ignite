@@ -12,6 +12,7 @@ package org.gridgain.grid.events;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.security.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
@@ -55,6 +56,10 @@ public class GridAuthenticationEvent extends GridEventAdapter {
     /** Subject ID. */
     private UUID subjId;
 
+    /** Login. */
+    @GridToStringInclude
+    private Object login;
+
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
         return name() + ": subjType=" + subjType;
@@ -87,11 +92,12 @@ public class GridAuthenticationEvent extends GridEventAdapter {
      * @param subjId Subject ID.
      */
     public GridAuthenticationEvent(GridNode node, String msg, int type, GridSecuritySubjectType subjType,
-        UUID subjId) {
+        UUID subjId, Object login) {
         super(node, msg, type);
 
         this.subjType = subjType;
         this.subjId = subjId;
+        this.login = login;
     }
 
     /**
@@ -119,6 +125,24 @@ public class GridAuthenticationEvent extends GridEventAdapter {
      */
     public void subjectType(GridSecuritySubjectType subjType) {
         this.subjType = subjType;
+    }
+
+    /**
+     * Gets login that triggered event.
+     *
+     * @return Login object.
+     */
+    public Object login() {
+        return login;
+    }
+
+    /**
+     * Sets login that triggered event.
+     *
+     * @param login Login object.
+     */
+    public void login(Object login) {
+        this.login = login;
     }
 
     /**

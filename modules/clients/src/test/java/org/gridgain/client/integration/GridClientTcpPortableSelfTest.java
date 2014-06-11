@@ -13,7 +13,7 @@ import org.gridgain.client.*;
 import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.marshaller.optimized.*;
-import org.gridgain.grid.marshaller.portable.*;
+import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
@@ -49,8 +49,8 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
     /**
      * @return Portable types map.
      */
-    private Map<Integer, Class<? extends GridPortableObject>> typesMap() {
-        Map<Integer, Class<? extends GridPortableObject>> map = new HashMap<>();
+    private Map<Integer, Class<? extends GridPortableEx>> typesMap() {
+        Map<Integer, Class<? extends GridPortableEx>> map = new HashMap<>();
 
         map.put(TestKey1.TYPE_ID, TestKey1.class);
         map.put(TestKey2.TYPE_ID, TestKey2.class);
@@ -150,7 +150,7 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
      *
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class TestKey1 implements GridPortableObject {
+    public static class TestKey1 implements GridPortableEx {
         /** */
         static final int TYPE_ID = 0;
 
@@ -387,7 +387,7 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
      *
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class TestValue1 implements GridPortableObject {
+    public static class TestValue1 implements GridPortableEx {
         /** */
         static final int TYPE_ID = 2;
 
@@ -592,7 +592,7 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
      *
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class TestPortable implements GridPortableObject {
+    public static class TestPortable implements GridPortableEx {
         /** */
         static final int TYPE_ID = 4;
 
