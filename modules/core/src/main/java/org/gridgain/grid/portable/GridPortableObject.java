@@ -27,10 +27,14 @@ public interface GridPortableObject extends Serializable {
 
     /**
      * Gets portable object type name.
+     * <p>
+     * If class for this object's type ID is unknown, {@code null} is returned.
+     * Note that {@link #deserialize()} method will throw {@link GridPortableInvalidClassException}
+     * in this case.
      *
      * @return Type name.
      */
-    public String typeName();
+    @Nullable public String typeName();
 
     /**
      * Gets list of field names that are accessible in this portable object.
