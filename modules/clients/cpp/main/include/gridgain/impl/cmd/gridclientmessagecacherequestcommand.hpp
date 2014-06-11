@@ -12,7 +12,7 @@
 
 #include <string>
 #include <exception>
-#include <map>
+#include <unordered_map>
 #include <set>
 #include <cassert>
 
@@ -26,7 +26,7 @@
 class GridCacheRequestCommand  : public GridClientMessageCommand {
 public:
     /** Typedef for cache request. */
-    typedef std::map<GridClientVariant, GridClientVariant> TKeyValueMap;
+    typedef std::unordered_map<GridClientVariant, GridClientVariant> TKeyValueMap;
 
     /**
      * Available cache operations

@@ -13,92 +13,108 @@
 #include <sstream>
 
 #include "gridgain/gridclientvariant.hpp"
+#include "gridgain/impl/hash/gridclientvarianthasheableobject.hpp"
 
 using namespace std;
 
-GridClientVariant::GridClientVariant(){
+GridClientVariant::GridClientVariant() : portable(nullptr) {
     pimpl.var = NullType();
 }
 
 GridClientVariant::~GridClientVariant(){
 }
 
-GridClientVariant::GridClientVariant(const GridClientVariant& other) : pimpl(other.pimpl){
+GridClientVariant::GridClientVariant(const GridClientVariant& other) : pimpl(other.pimpl), portable(other.portable){
 }
 
 GridClientVariant& GridClientVariant::operator=(const GridClientVariant& rhs) {
-    if (this != &rhs)
+    if (this != &rhs) {
         pimpl.var = rhs.pimpl.var;
+        portable = rhs.portable;
+    }
 
     return *this;
 }
 
 GridClientVariant::GridClientVariant(bool b) {
-    pimpl.var = b;
+    set(b);
 }
 
 GridClientVariant::GridClientVariant(int16_t s) {
-    pimpl.var = s;
+    set(s);
 }
 
 GridClientVariant::GridClientVariant(int32_t i) {
-    pimpl.var = i;
+    set(i);
 }
 
 GridClientVariant::GridClientVariant(int64_t l) {
-    pimpl.var = l;
+    set(l);
 }
 
 GridClientVariant::GridClientVariant(double d) {
-    pimpl.var = d;
+    set(d);
 }
 
 GridClientVariant::GridClientVariant(float f) {
-    pimpl.var = f;
+    set(f);
 }
 
 GridClientVariant::GridClientVariant(const char * s) {
-    pimpl.var = std::string(s);
+    set(std::string(s));
 }
 
 GridClientVariant::GridClientVariant(const string& s) {
-    pimpl.var = s;
+        set(s);
 }
 
 GridClientVariant::GridClientVariant(const std::wstring& s) {
     pimpl.var = s;
+    portable = nullptr;
 }
 
 GridClientVariant::GridClientVariant(const vector<int8_t>& b) {
     pimpl.var = b;
+    portable = nullptr;
+}
+
+GridClientVariant::GridClientVariant(const std::unordered_map<GridClientVariant, GridClientVariant>& m) {
+    pimpl.var = m;
+    portable = nullptr;
 }
 
 GridClientVariant::GridClientVariant(const std::vector<GridClientVariant>& v)  {
     pimpl.var = v;
+    portable = nullptr;
 }
 
 GridClientVariant::GridClientVariant(GridPortable* v)  {
-    pimpl.var = TGridPortablePtr(v);
+    pimpl.var = NullType();
+    portable = v;
 }
 
 GridClientVariant::GridClientVariant(const GridClientUuid& val)  {
-    pimpl.var = val;
+    set(val);
 }
 
 void GridClientVariant::set(GridPortable* val) {
-    pimpl.var = TGridPortablePtr(val);
+    pimpl.var = NullType();
+    portable = val;
 }
 
 bool GridClientVariant::hasPortable() const {
-    return pimpl.var.which() == Impl::PORTABLE_TYPE;
+    return portable != nullptr;
 }
 
 GridPortable* GridClientVariant::getPortable() const {
-    return boost::get<TGridPortablePtr>(pimpl.var).get();
+    assert(hasPortable());
+
+    return portable;
 }
 
 void GridClientVariant::set(bool pBool) {
     pimpl.var = pBool;
+    portable = nullptr;
 }
 
 bool GridClientVariant::hasBool() const {
@@ -111,6 +127,7 @@ bool GridClientVariant::getBool() const {
 
 void GridClientVariant::set(int16_t value) {
     pimpl.var = value;
+    portable = nullptr;
 }
 
 bool GridClientVariant::hasShort() const {
@@ -123,6 +140,7 @@ int16_t GridClientVariant::getShort() const {
 
 void GridClientVariant::set(int32_t value) {
     pimpl.var = value;
+    portable = nullptr;
 }
 
 bool GridClientVariant::hasInt() const {
@@ -135,6 +153,7 @@ int32_t GridClientVariant::getInt() const {
 
 void GridClientVariant::set(int64_t value) {
     pimpl.var = value;
+    portable = nullptr;
 }
 
 bool GridClientVariant::hasLong() const {
@@ -147,6 +166,7 @@ int64_t GridClientVariant::getLong() const {
 
 void GridClientVariant::set(double val) {
     pimpl.var = val;
+    portable = nullptr;
 }
 
 bool GridClientVariant::hasDouble() const {
@@ -159,6 +179,7 @@ double GridClientVariant::getDouble() const {
 
 void GridClientVariant::set(float val) {
     pimpl.var = val;
+    portable = nullptr;
 }
 
 bool GridClientVariant::hasFloat() const {
@@ -171,10 +192,12 @@ float GridClientVariant::getFloat() const {
 
 void GridClientVariant::set(const char* pText) {
     pimpl.var = std::string(pText);
+    portable = nullptr;
 }
 
 void GridClientVariant::set(const string& pText) {
     pimpl.var = pText;
+    portable = nullptr;
 }
 
 bool GridClientVariant::hasString() const {
@@ -195,6 +218,7 @@ wstring GridClientVariant::getWideString() const {
 
 void GridClientVariant::set(const vector<int8_t>& pBuf) {
     pimpl.var = pBuf;
+    portable = nullptr;
 }
 
 bool GridClientVariant::hasByteArray() const {
@@ -209,12 +233,21 @@ bool GridClientVariant::hasVariantVector() const {
     return pimpl.var.which() == Impl::VARIANT_VECTOR_TYPE;
 }
 
+bool GridClientVariant::hasVariantMap() const {
+    return pimpl.var.which() == Impl::VARIANT_MAP_TYPE;
+}
+
 std::vector<GridClientVariant> GridClientVariant::getVariantVector() const {
     return boost::get<std::vector<GridClientVariant> >(pimpl.var);
 }
 
+std::unordered_map<GridClientVariant, GridClientVariant> GridClientVariant::getVariantMap() const {
+    return boost::get<std::unordered_map<GridClientVariant, GridClientVariant> >(pimpl.var);
+}
+
 void GridClientVariant::set(const GridClientUuid& val) {
     pimpl.var = val;
+    portable = nullptr;
 }
 
 bool GridClientVariant::hasUuid() const {
@@ -228,6 +261,9 @@ GridClientUuid GridClientVariant::getUuid() const {
 string GridClientVariant::toString() const {
     if (Impl::STRING_TYPE == pimpl.var.which()) {
         return getString();
+    }
+    else if (hasPortable()) {
+        return "GridPortable";
     }
     else {
         ostringstream os;
@@ -277,9 +313,6 @@ string GridClientVariant::toString() const {
                 os << getUuid().uuid();
 
                 break;
-
-            case Impl::PORTABLE_TYPE:
-                return "a";
         }
 
         return os.str();
@@ -291,7 +324,8 @@ string GridClientVariant::debugString() const {
 
     os << "GridClientVariant [type=";
 
-    switch (pimpl.var.which()) {
+    if (!hasPortable()) {
+        switch (pimpl.var.which()) {
         case Impl::BOOL_TYPE:
             os << "bool, value=" << getBool();
 
@@ -351,7 +385,10 @@ string GridClientVariant::debugString() const {
             os << "UNKNOWN";
 
             break;
+        }
     }
+    else
+        os << "GridPortable";
 
     os << ']';
 
@@ -403,11 +440,11 @@ public:
         visitor.visit(val);
     }
 
-    void operator()(const GridClientUuid& val) const {
+    void operator()(const unordered_map<GridClientVariant, GridClientVariant>& val) const {
         visitor.visit(val);
     }
 
-    void operator()(const TGridPortablePtr val) const {
+    void operator()(const GridClientUuid& val) const {
         visitor.visit(val);
     }
 
@@ -425,20 +462,34 @@ void GridClientVariant::accept(const GridClientVariantVisitor& visitor) const {
 }
 
 bool GridClientVariant::operator<(const GridClientVariant& varImpl) const {
+    if (hasPortable())
+        assert(false);
+
     return pimpl.var.which() == varImpl.pimpl.var.which() ?
         toString() < varImpl.toString() : pimpl.var.which() < varImpl.pimpl.var.which();
 }
 
-bool GridClientVariant::operator == (const GridClientVariant& varImpl) const {
+bool GridClientVariant::operator==(const GridClientVariant& varImpl) const {
+    if (hasPortable()) {
+        assert(varImpl.hasPortable());
+
+        return *portable == *varImpl.portable;
+    }
+
     return pimpl.var == varImpl.pimpl.var;
 }
 
 bool GridClientVariant::hasAnyValue() const {
-    return pimpl.var.which() != 0;
+    return pimpl.var.which() != 0 || portable != nullptr;
 }
 
 void GridClientVariant::clear() {
     const static Impl::TVariantType emptyVar;
 
     pimpl.var = emptyVar;
+    portable = nullptr;
 }
+
+size_t hash<GridClientVariant>::operator()(const GridClientVariant& x) const {
+    return GridClientVariantHasheableObject(x).hashCode();
+};

@@ -13,7 +13,7 @@
 #include <sstream>
 #include <iterator>
 #include <algorithm>
-#include <map>
+#include <unordered_map>
 
 #include <boost/asio.hpp>
 #include <boost/lexical_cast.hpp>
@@ -117,7 +117,7 @@ template<class T> void unwrapCollection(const ObjectWrapper& objWrapper, std::ve
 
 template<class K, class V, class T> class MapInserter {
 public:
-    MapInserter(std::map<K, V>& pMap) : map(pMap) {
+    MapInserter(std::unordered_map<K, V>& pMap) : map(pMap) {
         // No-op.
     }
 
@@ -131,7 +131,7 @@ public:
         map.insert(pair);
     }
 private:
-    std::map<K, V>& map;
+    std::unordered_map<K, V>& map;
 };
 
 class ProtobufMapInserter {
@@ -153,7 +153,7 @@ private:
     ::Map& protoMap;
 };
 
-template<class K, class V> void unwrapMap(::Map map, std::map<K, V>& res) {
+template<class K, class V> void unwrapMap(::Map map, std::unordered_map<K, V>& res) {
     res.clear();
 
     const ::google::protobuf::RepeatedPtrField< ::KeyValue >& repFileds = map.entry();
@@ -161,7 +161,7 @@ template<class K, class V> void unwrapMap(::Map map, std::map<K, V>& res) {
     std::for_each(repFileds.begin(), repFileds.end(), MapInserter<K, V, ::KeyValue>(res));
 }
 
-template<class K, class V> void unwrapMap(ObjectWrapper objWrapper, std::map<K, V>& res) {
+template<class K, class V> void unwrapMap(ObjectWrapper objWrapper, std::unordered_map<K, V>& res) {
     assert(objWrapper.type() == MAP);
     assert(objWrapper.has_binary());
 
@@ -609,11 +609,11 @@ static void unwrap(const ObjectWrapper& objWrapper, GridClientNode& res) {
 
     helper.setTcpAddresses(addresses);
 
-    std::map<GridClientVariant, GridClientVariant> cachesVars;
+    std::unordered_map<GridClientVariant, GridClientVariant> cachesVars;
     unwrapMap(bean.caches(), cachesVars);
     helper.setCaches(cachesVars);
 
-    std::map<GridClientVariant, GridClientVariant> attrs;
+    std::unordered_map<GridClientVariant, GridClientVariant> attrs;
     unwrapMap(bean.attributes(), attrs);
     helper.setAttributes(attrs);
 

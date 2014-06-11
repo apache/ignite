@@ -122,7 +122,8 @@ public:
         uuid.convertToBytes(bytes);
     }
 
-    virtual void visit(const TGridPortablePtr) const {
+    virtual void visit(const unordered_map<GridClientVariant, GridClientVariant>& vmap) const {
+        hashCode_ = 1;
     }
 
 private:
@@ -139,13 +140,17 @@ void GridClientVariantHasheableObject::init(const GridClientVariant& var) {
 }
 
 GridClientVariantHasheableObject::GridClientVariantHasheableObject(const GridClientVariant& var) {
-    init(var);
+    if (var.hasPortable())
+        hashCode_ = var.getPortable()->hashCode();
+    else
+        init(var);
 }
 
 GridClientVariantHasheableObject::GridClientVariantHasheableObject(const GridClientVariant& var,
         int calculatedHashCode) {
+    assert(!var.hasPortable());
+    
     init(var);
 
     hashCode_ = calculatedHashCode;
 }
-

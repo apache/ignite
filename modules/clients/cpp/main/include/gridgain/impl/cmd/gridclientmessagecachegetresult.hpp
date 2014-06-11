@@ -13,7 +13,7 @@
 #include "gridgain/impl/cmd/gridclientmessagecacheresult.hpp"
 
 /** Typedef for cache result key/value map. */
-typedef std::map<GridClientVariant, GridClientVariant> TCacheValuesMap;
+typedef std::unordered_map<GridClientVariant, GridClientVariant> TCacheValuesMap;
 
 /**
  * Cache get result message.

@@ -275,7 +275,7 @@ namespace {
             serialize(UUID, bytes);
         }
 
-        virtual void visit(const TGridPortablePtr) const {
+        virtual void visit(const unordered_map<GridClientVariant, GridClientVariant>& vmap) const {
         }
 
         void serialize(const ObjectWrapperType& type, const TByteVector& bytes) const {

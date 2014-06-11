@@ -22,6 +22,13 @@
 
 /** Forward declaration of class. */
 class GridClientVariantVisitor;
+class GridClientVariant;
+
+namespace std {
+  template <> struct hash<GridClientVariant> {
+    size_t operator()(const GridClientVariant& x) const;
+  };
+}
 
 /**
  * Class that replaces java.lang.Object holder for primitive types and string. It can hold boolean, int_*, float, double,
@@ -49,7 +56,11 @@ private:
     public:
         /** Boost typedef for holding multiple types. */
         typedef boost::variant<GridClientVariant::NullType, bool, int16_t, int32_t, int64_t, double,
-                float, std::string, std::wstring, std::vector<int8_t>, std::vector<GridClientVariant>, TGridPortablePtr, GridClientUuid> TVariantType;
+                float,
+                std::string, std::wstring, std::vector<int8_t>,
+                std::vector<GridClientVariant>,
+                std::unordered_map<GridClientVariant, GridClientVariant>,
+                GridClientUuid> TVariantType;
 
         /** Boost variable. */
         TVariantType var;
@@ -66,8 +77,8 @@ private:
             WIDE_STRING_TYPE,
             BYTE_ARRAY_TYPE,
             VARIANT_VECTOR_TYPE,
-            UUID_TYPE,
-            PORTABLE_TYPE
+            VARIANT_MAP_TYPE,
+            UUID_TYPE
         };
     };
 
@@ -156,10 +167,18 @@ public:
     GridClientVariant(const std::vector<GridClientVariant>& val);
 
     /**
+     * Constructor with variant map argument.
+     */
+    GridClientVariant(const std::unordered_map<GridClientVariant, GridClientVariant>& val);
+
+    /**
      * Constructor with UUID argument.
      */
     GridClientVariant(const GridClientUuid& val);
 
+    /**
+     * Constructor with GridPortable argument.
+     */
     GridClientVariant(GridPortable* val);
 
     /**
@@ -399,6 +418,15 @@ public:
      */
     std::vector<GridClientVariant> getVariantVector() const;
 
+    bool hasVariantMap() const;
+
+    /**
+     * Returns a variant map value from this variant.
+     *
+     * @return Value held in the variant.
+     */
+    std::unordered_map<GridClientVariant, GridClientVariant> getVariantMap() const;
+
     /**
      * Assigns this variant a UUID value.
      *
@@ -456,6 +484,8 @@ public:
     bool hasAnyValue() const;
 
 private:
+    GridPortable* portable;
+
     Impl pimpl;
 };
 
@@ -516,9 +546,10 @@ public:
     virtual void visit(const std::vector<GridClientVariant>&) const = 0;
 
     /** */
-    virtual void visit(const GridClientUuid&) const = 0;
+    virtual void visit(const std::unordered_map<GridClientVariant, GridClientVariant>&) const = 0;
 
-    virtual void visit(const TGridPortablePtr) const = 0;
+    /** */
+    virtual void visit(const GridClientUuid&) const = 0;
 };
 
 #endif //GRID_CLIENT_VARIANT_HPP_INCLUDED

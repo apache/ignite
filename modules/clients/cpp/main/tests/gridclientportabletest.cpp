@@ -75,31 +75,46 @@ GridClientConfiguration clientConfig() {
 
 class TestPortable : public GridPortable {
 public:    
+    TestPortable() {
+        cout << "Default constructor\n";
+    }
+
+    TestPortable(TestPortable& p) : id(p.id){
+        cout << "Copy constructor" << p.id << "\n";
+    }
+
+    TestPortable(int val) : id(val) {
+        cout << "Constructor with " << val << "\n";
+    }
+
 	int32_t typeId() const {
 		return 7;
 	}
 
     ~TestPortable() {
-        cout << "removed\n";
+        cout << "Destructor" << id << "\n";
     }
 
     void writePortable(GridPortableWriter &writer) const {
-		writer.writeInt("id", 10);
-
-        string str("abc");
-
-        writer.writeString("name", str);
+		writer.writeInt("id", id);
 	}
 
     void readPortable(GridPortableReader &reader) {
-		reader.readInt("id");
-
-        string str = reader.readString("name");
+		id = reader.readInt("id");
 	}
 
-    bool operator==(const GridPortable& other) const {
-        return true;
+    bool operator==(const GridPortable& portable) const {
+        const TestPortable* other = static_cast<const TestPortable*>(&portable);
+
+        return id == other->id;
     }
+
+    int hashCode() const {
+        return id;
+    }
+
+private:
+    int id;
 };
 
 class Deserializer {public: virtual void* newInstance() = 0; };
@@ -120,8 +135,52 @@ void test() {
     test2(key1);
 }
 
+class TestVariant {
+public:
+    TestVariant(const int val) {
+    }
+
+    TestVariant(const string& val) {
+    }
+
+    TestVariant(const char* val) {
+    }
+
+    TestVariant(GridPortable* val) {
+    }
+};
+
+class Test {
+public:
+    operator TestVariant() const {return TestVariant(1);}
+};
+
+class Cache {
+public:
+    void put(const TestVariant& val) {
+
+    }
+
+    TestVariant get() {
+
+    }
+};
+
 BOOST_AUTO_TEST_CASE(testPortableMarshalling) {
 	/*
+    Cache cache;
+
+    cache.put(1);
+    cache.put("");
+
+    TestPortable p;
+
+    cache.put(&p);
+
+    cache.put(new TestPortable());
+    */
+
+    /*
     GridPortableMarshaller marsh;
 
     Deserializer* d = m[1];
@@ -206,17 +265,30 @@ BOOST_AUTO_TEST_CASE(testPortableMarshalling) {
     cout << "test end \n";
     */
     
-	GridClientVariant key1(new TestPortable());
-	GridClientVariant val1(new TestPortable());
+	GridClientVariant key1(new TestPortable(1));
+	GridClientVariant val1(new TestPortable(11));
 
-    GridClientVariant key2(new TestPortable());
-	GridClientVariant val2(new TestPortable());
+    GridClientVariant key2(new TestPortable(2));
+	GridClientVariant val2(new TestPortable(12));
 
     TGridClientVariantMap pmap;
 
     pmap[key1] = val1;
-    pmap[key1] = val2;
-    
+    pmap[key2] = val2;
+
+	GridClientVariant key3(new TestPortable(3));
+
+    GridClientVariant val = pmap[key1];
+
+    cout << "Got 1 " << val.hasAnyValue() << " " << val.getPortable()->hashCode() << "\n";
+
+    val = pmap[key2];
+
+    cout << "Got 2 " << val.hasAnyValue() << " " << val.getPortable()->hashCode() << "\n";
+
+    val = pmap[key3];
+
+    cout << "Got 3 " << val.hasAnyValue() << "\n";
 }
 
 BOOST_AUTO_TEST_SUITE_END()

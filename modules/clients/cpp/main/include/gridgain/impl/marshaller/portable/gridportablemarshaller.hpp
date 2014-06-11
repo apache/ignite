@@ -29,6 +29,18 @@ public:
 
     void readPortable(GridPortableReader &reader) {
     }
+
+    bool operator==(const GridPortable& other) const {
+        assert(false);
+
+        return false; // Not needed since is not used as key.
+    }
+
+    int hashCode() const {
+        assert(false);
+
+        return 0; // Not needed since is not used as key.
+    }
 };
 
 class GridClientResponse : public GridClientPortableMessage {
