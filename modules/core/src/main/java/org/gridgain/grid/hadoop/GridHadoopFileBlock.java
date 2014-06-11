@@ -16,18 +16,10 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-import org.jetbrains.annotations.*;
-
 /**
  * Hadoop file block.
  */
-public class GridHadoopFileBlock implements GridHadoopInputSplit {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    protected String[] hosts;
-
+public class GridHadoopFileBlock extends GridHadoopInputSplit {
     /** */
     @GridToStringInclude
     protected URI file;
@@ -118,18 +110,6 @@ public class GridHadoopFileBlock implements GridHadoopInputSplit {
      */
     public void file(URI file) {
         this.file = file;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String[] hosts() {
-        assert hosts != null;
-
-        return hosts;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public <T> T innerSplit() {
-        return null;
     }
 
     /**

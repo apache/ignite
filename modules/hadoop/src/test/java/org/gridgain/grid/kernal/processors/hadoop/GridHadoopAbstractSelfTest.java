@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
+import org.apache.hadoop.conf.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
@@ -173,5 +174,22 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
      */
     protected int gridCount() {
         return 3;
+    }
+
+    /**
+     * @param cfg Config.
+     */
+    protected void setupFileSytems(Configuration cfg) {
+        cfg.set("fs.defaultFS", ggfsScheme());
+        cfg.set("fs.ggfs.impl", org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem.class.getName());
+        cfg.set("fs.AbstractFileSystem.ggfs.impl", org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem.
+            class.getName());
+    }
+
+    /**
+     * @return GGFS scheme for test.
+     */
+    protected String ggfsScheme() {
+        return "ggfs://:" + getTestGridName(0) + "@/";
     }
 }

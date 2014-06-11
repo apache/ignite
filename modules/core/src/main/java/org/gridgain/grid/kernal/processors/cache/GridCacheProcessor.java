@@ -200,18 +200,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param gridCfg Grid configuration.
      * @param cfg Configuration to check for possible performance issues.
      */
-    private void suggestOptimizations(GridConfiguration gridCfg, GridCacheConfiguration cfg) {
-        // Skip over GGFS caches.
-        if (gridCfg.getGgfsConfiguration() != null) {
-            for (GridGgfsConfiguration c : gridCfg.getGgfsConfiguration()) {
-                if (F.eq(c.getMetaCacheName(), cfg.getName()) || F.eq(c.getDataCacheName(), cfg.getName()))
-                    return;
-            }
-        }
-
+    private void suggestOptimizations(GridCacheConfiguration cfg) {
         GridPerformanceSuggestions perf = ctx.performance();
 
         String msg = "Disable eviction policy (remove from configuration)";
@@ -567,6 +558,38 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridDhtAtomicCache.GridDhtAtomicUpdateRequestConverter612.class,
             GridDhtAtomicCache.FORCE_TRANSFORM_BACKUP_SINCE);
 
+        ctx.versionConverter().registerLocal(GridNearLockRequest.class,
+            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
+            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtLockRequest.class,
+            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
+            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridNearTxPrepareRequest.class,
+            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
+            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtTxPrepareRequest.class,
+            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
+            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridNearTxFinishRequest.class,
+            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
+            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtTxFinishRequest.class,
+            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
+            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridNearAtomicUpdateRequest.class,
+            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
+            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtAtomicUpdateRequest.class,
+            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
+            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
         GridDeploymentMode depMode = ctx.config().getDeploymentMode();
 
         if (!F.isEmpty(ctx.config().getCacheConfiguration())) {
@@ -603,6 +626,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 sysCaches.add(CU.cacheNameForDrSystemCache(cacheName));
         }
 
+        if (U.securityEnabled(ctx.config()))
+            sysCaches.add(CU.SECURITY_SYS_CACHE_NAME);
+
         GridCacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
 
         for (int i = 0; i < cfgs.length; i++) {
@@ -611,7 +637,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             // Initialize defaults.
             initialize(cfg);
 
-            suggestOptimizations(ctx.config(), cfg);
+            // Skip suggestions for system caches.
+            if (!sysCaches.contains(cfg.getName()))
+                suggestOptimizations(cfg);
 
             validate(ctx.config(), cfg);
 

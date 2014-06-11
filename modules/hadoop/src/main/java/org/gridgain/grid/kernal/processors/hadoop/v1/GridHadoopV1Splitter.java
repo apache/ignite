@@ -42,14 +42,16 @@ public class GridHadoopV1Splitter {
 
             Collection<GridHadoopInputSplit> res = new ArrayList<>(splits.length);
 
-            for (InputSplit nativeSplit : splits) {
+            for (int i = 0; i < splits.length; i++) {
+                InputSplit nativeSplit = splits[i];
+
                 if (nativeSplit instanceof FileSplit) {
                     FileSplit s = (FileSplit)nativeSplit;
 
                     res.add(new GridHadoopFileBlock(s.getLocations(), s.getPath().toUri(), s.getStart(), s.getLength()));
                 }
                 else
-                    res.add(new GridHadoopSplitWrapper(nativeSplit, nativeSplit.getLocations()));
+                    res.add(new GridHadoopSplitWrapper(i, nativeSplit, nativeSplit.getLocations()));
             }
 
             return res;

@@ -90,7 +90,7 @@ public class GridHadoopHashMapSelfTest extends GridCommonAbstractTest {
         GridHadoopHashMultimap m = new GridHadoopHashMultimap(new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 10),
             new GridHadoopDefaultJobInfo(job.getConfiguration())), mem, mapSize);
 
-        GridHadoopConcurrentHashMultimap.Adder a = m.startAdding();
+        GridHadoopMultimap.Adder a = m.startAdding();
 
         Multimap<Integer, Integer> mm = ArrayListMultimap.create();
 
@@ -124,7 +124,7 @@ public class GridHadoopHashMapSelfTest extends GridCommonAbstractTest {
     }
 
     private void check(GridHadoopHashMultimap m, Multimap<Integer, Integer> mm) throws Exception {
-        final GridHadoopTaskInput in = m.input();
+        final GridHadoopTaskInput in = m.input(null);
 
         Map<Integer, Collection<Integer>> mmm = mm.asMap();
 

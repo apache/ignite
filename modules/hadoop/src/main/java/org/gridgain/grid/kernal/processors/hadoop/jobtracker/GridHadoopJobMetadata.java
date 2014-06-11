@@ -310,7 +310,10 @@ public class GridHadoopJobMetadata implements Externalizable {
      * @param failCause Fail cause.
      */
     public void failCause(Throwable failCause) {
-        this.failCause = failCause;
+        assert failCause != null;
+
+        if (this.failCause == null) // Keep the first error.
+            this.failCause = failCause;
     }
 
     /**

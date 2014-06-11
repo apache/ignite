@@ -75,6 +75,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     /** Retries because ownership changed. */
     private Collection<Integer> retries = new GridLeanSet<>();
 
+    /** Subject ID. */
+    private UUID subjId;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -100,7 +103,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         boolean reload,
         @Nullable GridCacheTxLocalEx<K, V> tx,
         long topVer,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filters) {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filters,
+        @Nullable UUID subjId) {
         super(cctx.kernalContext(), CU.<GridCacheEntryInfo<K, V>>collectionsReducer());
 
         assert reader != null;
@@ -114,6 +118,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         this.filters = filters;
         this.tx = tx;
         this.topVer = topVer;
+        this.subjId = subjId;
 
         futId = GridUuid.randomUuid();
 
@@ -305,9 +310,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
         if (txFut == null || txFut.isDone()) {
             if (reload && cctx.isStoreEnabled() && cctx.store().configured())
-                fut = cache().reloadAllAsync(keys.keySet(), true, filters);
+                fut = cache().reloadAllAsync(keys.keySet(), true, subjId, filters);
             else
-                fut = tx == null ? cache().getDhtAllAsync(keys.keySet(), filters) :
+                fut = tx == null ? cache().getDhtAllAsync(keys.keySet(), subjId, filters) :
                     tx.getAllAsync(keys.keySet(), null, filters);
         }
         else {
@@ -322,9 +327,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                             throw new GridClosureException(e);
 
                         if (reload)
-                            return cache().reloadAllAsync(keys.keySet(), true, filters);
+                            return cache().reloadAllAsync(keys.keySet(), true, subjId, filters);
                         else
-                            return tx == null ? cache().getDhtAllAsync(keys.keySet(), filters) :
+                            return tx == null ? cache().getDhtAllAsync(keys.keySet(), subjId, filters) :
                                 tx.getAllAsync(keys.keySet(), null, filters);
                     }
                 },

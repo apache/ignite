@@ -16,6 +16,8 @@ import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 
+import java.util.*;
+
 import static org.gridgain.grid.hadoop.GridHadoopJobProperty.*;
 import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
 
@@ -166,6 +168,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
      * @return Task input.
      * @throws GridException If failed.
      */
+    @SuppressWarnings("unchecked")
     private GridHadoopTaskInput createInput(GridHadoopTaskInfo info, boolean localCombiner) throws GridException {
         switch (info.type()) {
             case SETUP:
@@ -178,7 +181,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
                 if (localCombiner) {
                     assert local != null;
 
-                    return local.input();
+                    return local.input((Comparator<Object>)job.combineGroupComparator());
                 }
 
             default:
@@ -218,7 +221,9 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
                 if (localCombiner) {
                     assert local == null;
 
-                    local = new GridHadoopHashMultimap(job, mem, get(job, COMBINER_HASHMAP_SIZE, 8 * 1024));
+                    local = get(job, SHUFFLE_COMBINER_NO_SORTING, false) ?
+                        new GridHadoopHashMultimap(job, mem, get(job, COMBINER_HASHMAP_SIZE, 8 * 1024)):
+                        new GridHadoopSkipList(job, mem, job.sortComparator()); // TODO replace with red-black tree
 
                     return local.startAdding();
                 }

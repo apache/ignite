@@ -382,7 +382,7 @@ public class CacheQueryExample {
         @GridCacheQueryTextField
         private String resume;
 
-        /** Salary (create non-unique SQL index for this field). */
+        /** Salary (indexed). */
         @GridCacheQuerySqlField
         private double salary;
 
@@ -426,9 +426,9 @@ public class CacheQueryExample {
         /** {@inheritDoc} */
         @Override public String toString() {
             return "Person [firstName=" + firstName +
+                ", lastName=" + lastName +
                 ", id=" + id +
                 ", orgId=" + orgId +
-                ", lastName=" + lastName +
                 ", resume=" + resume +
                 ", salary=" + salary + ']';
         }

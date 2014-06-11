@@ -627,17 +627,27 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
+        @Override public Comparator<?> sortComparator() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Comparator<?> reduceGroupComparator() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Comparator<?> combineGroupComparator() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo) {
             return null;
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public String property(String name) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Comparator keyComparator() {
             return null;
         }
     }
@@ -956,6 +966,11 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
         /** {@inheritDoc} */
         @Nullable @Override public ExecutorService drPool() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridProjectionEx forSubjectId(UUID subjId) {
             return null;
         }
     }

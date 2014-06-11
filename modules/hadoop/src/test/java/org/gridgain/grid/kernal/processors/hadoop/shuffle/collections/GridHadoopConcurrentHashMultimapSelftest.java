@@ -14,6 +14,7 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;
@@ -89,7 +90,7 @@ public class GridHadoopConcurrentHashMultimapSelftest extends GridCommonAbstract
 
     private void check(GridHadoopConcurrentHashMultimap m, Multimap<Integer, Integer> mm,
         final Multimap<Integer, Integer> vis) throws Exception {
-        final GridHadoopTaskInput in = m.input();
+        final GridHadoopTaskInput in = m.input(null);
 
         Map<Integer, Collection<Integer>> mmm = mm.asMap();
 
@@ -166,10 +167,15 @@ public class GridHadoopConcurrentHashMultimapSelftest extends GridCommonAbstract
         in.close();
     }
 
+    /**
+     * @throws Exception if failed.
+     */
     public void testMultiThreaded() throws Exception {
         GridUnsafeMemory mem = new GridUnsafeMemory(0);
 
         X.println("___ Started");
+
+        Random rnd = new GridRandom();
 
         for (int i = 0; i < 20; i++) {
             Job job = Job.getInstance();
@@ -188,12 +194,12 @@ public class GridHadoopConcurrentHashMultimapSelftest extends GridCommonAbstract
                 @Override public Object call() throws Exception {
                     X.println("___ TH in");
 
-                    Random rnd = ThreadLocalRandom.current();
+                    Random rnd = new GridRandom();
 
                     IntWritable key = new IntWritable();
                     IntWritable val = new IntWritable();
 
-                    GridHadoopConcurrentHashMultimap.Adder a = m.startAdding();
+                    GridHadoopMultimap.Adder a = m.startAdding();
 
                     for (int i = 0; i < 50000; i++) {
                         int k = rnd.nextInt(32000);
@@ -224,7 +230,7 @@ public class GridHadoopConcurrentHashMultimapSelftest extends GridCommonAbstract
 
                     return null;
                 }
-            }, 17);
+            }, 3 + rnd.nextInt(27));
 
             X.println("___ Check: " + m.capacity());
 
@@ -232,7 +238,7 @@ public class GridHadoopConcurrentHashMultimapSelftest extends GridCommonAbstract
 
             assertTrue(m.capacity() > 32000);
 
-            GridHadoopTaskInput in = m.input();
+            GridHadoopTaskInput in = m.input(null);
 
             while (in.next()) {
                 IntWritable key = (IntWritable) in.key();

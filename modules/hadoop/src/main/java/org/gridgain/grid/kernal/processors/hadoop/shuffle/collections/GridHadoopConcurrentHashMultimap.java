@@ -152,10 +152,8 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
         return true;
     }
 
-    /**
-     * @return New input for task.
-     */
-    @Override public GridHadoopTaskInput input() throws GridException {
+    /** {@inheritDoc} */
+    @Override public GridHadoopTaskInput input(Comparator<Object> ignore) throws GridException {
         inputs.incrementAndGet();
 
         if (!adders.isEmpty())
@@ -169,9 +167,11 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
         assert s != State.REHASHING;
 
         return new Input() {
-            @Override public void close() {
+            @Override public void close() throws GridException {
                 if (inputs.decrementAndGet() < 0)
                     throw new IllegalStateException();
+
+                super.close();
             }
         };
     }
@@ -378,7 +378,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
 
             k.tmpKey = keySer.read(in, k.tmpKey);
 
-            k.meta = doAdd(k.tmpKey, null);
+            k.meta = add(k.tmpKey, null);
 
             return k;
         }
@@ -387,7 +387,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
         @Override public void write(Object key, Object val) throws GridException {
             A.notNull(val, "val");
 
-            doAdd(key, val);
+            add(key, val);
         }
 
         /**
@@ -428,7 +428,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
          * @return Updated or created meta page pointer.
          * @throws GridException If failed.
          */
-        private long doAdd(Object key, @Nullable Object val) throws GridException {
+        private long add(Object key, @Nullable Object val) throws GridException {
             AtomicLongArray tbl = oldTbl;
 
             int keyHash = U.hash(key.hashCode());

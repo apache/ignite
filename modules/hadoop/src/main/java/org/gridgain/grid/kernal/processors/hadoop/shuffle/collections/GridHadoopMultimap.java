@@ -14,6 +14,7 @@ import org.gridgain.grid.hadoop.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.util.*;
 
 /**
  * Multimap for hadoop intermediate results.
@@ -35,10 +36,11 @@ public interface GridHadoopMultimap extends AutoCloseable {
     public Adder startAdding() throws GridException;
 
     /**
+     * @param groupCmp Optional grouping comparator.
      * @return Task input.
      * @throws GridException If failed.
      */
-    public GridHadoopTaskInput input() throws GridException;
+    public GridHadoopTaskInput input(@Nullable Comparator<Object> groupCmp) throws GridException;
 
     /** {@inheritDoc} */
     @Override public void close();

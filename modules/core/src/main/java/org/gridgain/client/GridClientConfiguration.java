@@ -816,21 +816,6 @@ public class GridClientConfiguration {
         return exp.cast(obj);
     }
 
-    public static void main(String[] args) {
-        String[] creds = {"a:b", ":ab", "ab:", "ab"};
-
-        for (String cred : creds) {
-            int idx = cred.indexOf(':');
-
-            if (idx >= 0 && idx < cred.length()) {
-                System.out.println("'" + cred.substring(0, idx) +  "' '" + cred.substring(idx + 1) + '\'');
-            }
-            else {
-                System.out.println(cred);
-            }
-        }
-    }
-
     /**
      * Set the daemon flag value. Communication threads will be created as daemons if this flag is set.
      *

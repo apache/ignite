@@ -17,6 +17,9 @@ namespace GridGain.Client.Impl.Message {
         Failed = 1,
 
         /** <summary>Authentication failure.</summary> */
-        AuthFailure = 2
+        AuthFailure = 2,
+
+        /** <summary>Authorization failure.</summary> */
+        AuthorizationFailure = 3
     }
 }

@@ -101,7 +101,7 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
     /**
      * Reader for key and value.
      */
-    protected class ReaderBase {
+    protected class ReaderBase implements AutoCloseable {
         /** */
         private Object tmp;
 
@@ -136,6 +136,15 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
         }
 
         /**
+         * Resets temporary object to the given one.
+         *
+         * @param tmp Temporary object for reuse.
+         */
+        public void resetReusedObject(Object tmp) {
+            this.tmp = tmp;
+        }
+
+        /**
          * @param ptr Pointer.
          * @param size Object size.
          * @return Object.
@@ -146,6 +155,11 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
             tmp = ser.read(in, tmp);
 
             return tmp;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws GridException {
+            ser.close();
         }
     }
 
@@ -160,13 +174,13 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
         protected final GridHadoopSerialization valSer;
 
         /** */
-        private GridHadoopDataOutStream out;
+        private final GridHadoopDataOutStream out;
 
         /** */
         private long writeStart;
 
         /** Size and pointer pairs list. */
-        private GridLongList pages = new GridLongList(16);
+        private final GridLongList pages = new GridLongList(16);
 
         /**
          * @throws GridException If failed.
@@ -284,7 +298,7 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
             return (int)(out.buffer().pointer() - writeStart);
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public Key addKey(DataInput in, @Nullable Key reuse) throws GridException {
             throw new UnsupportedOperationException();
         }
@@ -295,6 +309,55 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
 
             keySer.close();
             valSer.close();
+        }
+    }
+
+    /**
+     * Iterator over values.
+     */
+    protected class ValueIterator implements Iterator<Object> {
+        /** */
+        private long valPtr;
+
+        /** */
+        private ReaderBase valReader;
+
+        /**
+         * @param valPtr Value page pointer.
+         * @param valReader Value reader.
+         */
+        protected ValueIterator(long valPtr, ReaderBase valReader) {
+            this.valPtr = valPtr;
+            this.valReader = valReader;
+        }
+
+        /**
+         * @param valPtr Head value pointer.
+         */
+        public void head(long valPtr) {
+            this.valPtr = valPtr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            return valPtr != 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object next() {
+            if (!hasNext())
+                throw new NoSuchElementException();
+
+            Object res = valReader.readValue(valPtr);
+
+            valPtr = nextValue(valPtr);
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void remove() {
+            throw new UnsupportedOperationException();
         }
     }
 }

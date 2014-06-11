@@ -24,6 +24,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v1.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -33,6 +34,27 @@ import java.util.*;
  * Hadoop job implementation for v2 API.
  */
 public class GridHadoopV2Job implements GridHadoopJob {
+    /** */
+    private static final boolean COMBINE_KEY_GROUPING_SUPPORTED;
+
+    /**
+     * Check for combiner grouping support (available since Hadoop 2.3).
+     */
+    static {
+        boolean ok;
+
+        try {
+            org.apache.hadoop.mapreduce.JobContext.class.getDeclaredMethod("getCombinerKeyGroupingComparator");
+
+            ok = true;
+        }
+        catch (NoSuchMethodException ignore) {
+            ok = false;
+        }
+
+        COMBINE_KEY_GROUPING_SUPPORTED = ok;
+    }
+
     /** Flag is set if new context-object code is used for running the mapper. */
     private final boolean useNewMapper;
 
@@ -59,6 +81,9 @@ public class GridHadoopV2Job implements GridHadoopJob {
      * @param jobInfo Job info.
      */
     public GridHadoopV2Job(GridHadoopJobId jobId, GridHadoopDefaultJobInfo jobInfo) {
+        assert jobId != null;
+        assert jobInfo != null;
+
         this.jobId = jobId;
         this.jobInfo = jobInfo;
 
@@ -163,7 +188,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    public <T> T readExternalSplit(GridHadoopExternalSplit split) throws GridException {
+    private Object readExternalSplit(GridHadoopExternalSplit split) throws GridException {
         Path jobDir = new Path(ctx.getConfiguration().get(MRJobConfig.MAPREDUCE_JOB_DIR));
 
         Class<?> cls;
@@ -186,7 +211,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
             assert res != null;
 
-            return (T)res;
+            return res;
         }
         catch (IOException e) {
             throw new GridException(e);
@@ -269,9 +294,14 @@ public class GridHadoopV2Job implements GridHadoopJob {
      */
     @SuppressWarnings("unchecked")
     private GridHadoopSerialization getSerialization(Class<?> cls) throws GridException {
+        A.notNull(cls, "cls");
+
         SerializationFactory factory = new SerializationFactory(ctx.getJobConf());
 
         Serialization<?> serialization = factory.getSerialization(cls);
+
+        if (serialization == null)
+            throw new GridException("Failed to find serialization for: " + cls.getName());
 
         if (serialization.getClass() == WritableSerialization.class)
             return new GridHadoopWritableSerialization((Class<? extends Writable>)cls);
@@ -290,13 +320,23 @@ public class GridHadoopV2Job implements GridHadoopJob {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String property(String name) {
-        return jobInfo.configuration().get(name);
+    @Override public Comparator<?> sortComparator() {
+        return ctx.getSortComparator();
     }
 
-    @Override
-    public Comparator keyComparator() {
-        return null; // TODO
+    /** {@inheritDoc} */
+    @Override public Comparator<?> reduceGroupComparator() {
+        return ctx.getGroupingComparator();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Comparator<?> combineGroupComparator() {
+        return COMBINE_KEY_GROUPING_SUPPORTED ? ctx.getCombinerKeyGroupingComparator() : null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String property(String name) {
+        return jobInfo.configuration().get(name);
     }
 
     /**
@@ -338,5 +378,21 @@ public class GridHadoopV2Job implements GridHadoopJob {
     /** Hadoop native job context. */
     public JobContext hadoopJobContext() {
         return ctx;
+    }
+
+    /**
+     * @param split Split.
+     * @return Native Hadoop split.
+     * @throws GridException if failed.
+     */
+    @SuppressWarnings("unchecked")
+    public Object getNativeSplit(GridHadoopInputSplit split) throws GridException {
+        if (split instanceof GridHadoopExternalSplit)
+            return readExternalSplit((GridHadoopExternalSplit)split);
+
+        if (split instanceof GridHadoopSplitWrapper)
+            return ((GridHadoopSplitWrapper)split).innerSplit();
+
+        throw new IllegalStateException("Unknown split: " + split);
     }
 }

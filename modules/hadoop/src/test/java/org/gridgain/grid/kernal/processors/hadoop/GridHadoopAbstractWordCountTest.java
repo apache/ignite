@@ -50,13 +50,6 @@ public abstract class GridHadoopAbstractWordCountTest extends GridHadoopAbstract
     }
 
     /**
-     * @return GGFS scheme for test.
-     */
-    protected String ggfsScheme() {
-        return "ggfs://:" + getTestGridName(0) + "@/";
-    }
-
-    /**
      *
      * @param path
      * @param wordCounts

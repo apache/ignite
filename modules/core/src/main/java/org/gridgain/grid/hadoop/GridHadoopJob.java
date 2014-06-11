@@ -33,9 +33,9 @@ public interface GridHadoopJob {
     public GridHadoopJobInfo info();
 
     /**
-     * Gets collection of input blocks.
+     * Gets collection of input splits for this job.
      *
-     * @return Input blocks.
+     * @return Input splits.
      */
     public Collection<GridHadoopInputSplit> input() throws GridException;
 
@@ -77,6 +77,27 @@ public interface GridHadoopJob {
     public GridHadoopSerialization valueSerialization() throws GridException;
 
     /**
+     * Creates mapper output key sorting comparator.
+     *
+     * @return New sort comparator.
+     */
+    public Comparator<?> sortComparator();
+
+    /**
+     * Creates reducer key grouping comparator.
+     *
+     * @return New group comparator.
+     */
+    @Nullable public Comparator<?> reduceGroupComparator();
+
+    /**
+     * Creates combiner key grouping comparator.
+     *
+     * @return New group comparator.
+     */
+    @Nullable public Comparator<?> combineGroupComparator();
+
+    /**
      * Creates task to be executed.
      *
      * @param taskInfo Task info.
@@ -91,11 +112,4 @@ public interface GridHadoopJob {
      * @return Value or {@code null} if none.
      */
     @Nullable public String property(String name);
-
-    /**
-     * Gets comparator to be used to compare keys for combiner and reducer.
-     *
-     * @return Key comparator.
-     */
-    Comparator keyComparator();
 }
