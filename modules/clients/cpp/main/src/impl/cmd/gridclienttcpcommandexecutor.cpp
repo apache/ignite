@@ -13,6 +13,8 @@
 #include <sstream>
 #include <boost/lexical_cast.hpp>
 
+#include "gridgain/gridclientnode.hpp"
+
 #include "gridgain/impl/cmd/gridclienttcpcommandexecutor.hpp"
 #include "gridgain/impl/connection/gridclienttcpconnection.hpp"
 #include "gridgain/impl/marshaller/protobuf/gridclientprotobufmarshaller.hpp"
@@ -77,12 +79,29 @@ void GridClientTcpCommandExecutor::executeTopologyCmd(const GridClientSocketAddr
 
         throw;
     }
+    
+    GridClientResponse* response = marsh.unmarshal<GridClientResponse>(tcpResponse.getRawData());
 
-    shared_ptr<GridClientResponse> ptr = marsh.unmarshal<GridClientResponse>();
+    GridClientVariant res = response->getResult();
 
-    GridClientResponse* res = ptr.get();
+    assert(res.hasVariantVector());
 
-    res->getResult();
+    vector<GridClientVariant> vec = res.getVariantVector();
+
+    vector<GridClientNode> nodes;
+
+    for (auto iter = vec.begin(); iter != vec.end(); ++iter) {
+        GridClientVariant nodeVariant = *iter;
+
+        GridClientNodeBean* nodeBean = static_cast<GridClientNodeBean*>(nodeVariant.getPortable());
+        
+        // TODO  8536.
+        GridClientNode node;
+
+        nodes.push_back(node);
+    }
+
+    rslt.setNodes(nodes);
 }
 
 /**

@@ -92,7 +92,7 @@ public:
 
     ObjectWrapper getData() const;
 
-    std::vector<int8_t>* getRawData();
+    std::vector<int8_t>& getRawData();
 
     size_t getDataSize() const;
 

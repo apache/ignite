@@ -47,6 +47,11 @@ GridClientUuid::GridClientUuid(const string& str)  {
     ss >> pimpl.uuid_;
 }
 
+GridClientUuid::GridClientUuid(int64_t mostSignificantBits, int64_t leastSignificantBits) {
+    // TODO 8536
+}
+
+
 GridClientUuid::GridClientUuid(const GridClientUuid& other) {
     pimpl.uuid_ = other.pimpl.uuid_;
 }

@@ -11,24 +11,30 @@
 #define GRIDPORTABLEREADER_HPP_INCLUDED
 
 #include <string>
+#include <vector>
+#include <unordered_map>
 
 #include <gridgain/gridconf.hpp>
 #include <gridgain/gridclienttypedef.hpp>
 #include <gridgain/gridclientvariant.hpp>
 #include <gridgain/gridclientuuid.hpp>
 
-using namespace std;
-
 /**
  * C++ client API.
  */
 class GRIDGAIN_API GridPortableReader {
 public:
-    virtual int32_t readInt(char* fieldName) = 0;
+    virtual int32_t readInt32(char* fieldName) = 0;
 
-    virtual string readString(char* fieldName) = 0;
+    virtual std::vector<int8_t> readBytes(char* fieldName) = 0;
+
+    virtual std::string readString(char* fieldName) = 0;
 
     virtual GridClientVariant readVariant(char* fieldName) = 0;
+
+    virtual std::vector<GridClientVariant> readCollection(char* fieldName) = 0;
+
+    virtual std::unordered_map<GridClientVariant, GridClientVariant> readMap(char* fieldName) = 0;
 };
 
 #endif // GRIDPORTABLEREADER_HPP_INCLUDED

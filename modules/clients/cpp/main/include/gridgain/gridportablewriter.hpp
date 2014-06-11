@@ -11,24 +11,30 @@
 #define GRIDPORTABLEWRITER_HPP_INCLUDED
 
 #include <string>
+#include <vector>
+#include <unordered_map>
 
 #include <gridgain/gridconf.hpp>
 #include <gridgain/gridclienttypedef.hpp>
 #include <gridgain/gridclientvariant.hpp>
 #include <gridgain/gridclientuuid.hpp>
 
-using namespace std;
-
 /**
  * C++ client API.
  */
 class GRIDGAIN_API GridPortableWriter {
 public:
-    virtual void writeInt(char* fieldName, int32_t val) = 0;
+    virtual void writeInt32(char* fieldName, int32_t val) = 0;
 
-    virtual void writeString(char* fieldName, const string &val) = 0;
+    virtual void writeBytes(char* fieldName, const std::vector<int8_t>& val) = 0;
 
-    virtual void writeVariant(char* fieldName, const GridClientVariant &str) = 0;
+    virtual void writeString(char* fieldName, const std::string &val) = 0;
+
+    virtual void writeVariant(char* fieldName, const GridClientVariant &val) = 0;
+
+    virtual void writeCollection(char* fieldName, const std::vector<GridClientVariant> &val) = 0;
+
+    virtual void writeMap(char* fieldName, const std::unordered_map<GridClientVariant, GridClientVariant> &map) = 0;
 };
 
 #endif // GRIDPORTABLEWRITER_HPP_INCLUDED

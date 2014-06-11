@@ -106,7 +106,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
     @Override protected void beforeTest() throws Exception {
         exec = Executors.newCachedThreadPool();
 
-        client = client();
+        //client = client();
     }
 
     /** {@inheritDoc} */

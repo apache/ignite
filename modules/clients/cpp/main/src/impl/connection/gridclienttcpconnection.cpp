@@ -127,8 +127,8 @@ void GridClientTcpPacket::setData(int8_t* start, int8_t* end) {
     data.assign(start, end);
 }
 
-std::vector<int8_t>* GridClientTcpPacket::getRawData() {
-    return &data;
+std::vector<int8_t>& GridClientTcpPacket::getRawData() {
+    return data;
 }
 
 ObjectWrapper GridClientTcpPacket::getData() const {

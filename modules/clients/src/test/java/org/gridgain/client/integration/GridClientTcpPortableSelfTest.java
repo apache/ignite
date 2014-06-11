@@ -61,6 +61,17 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
         return map;
     }
 
+    @Override
+    protected long getTestTimeout() {
+        return Long.MAX_VALUE;
+    }
+
+    public void test() throws Exception {
+        log.info("Started");
+
+        Thread.sleep(Long.MAX_VALUE);
+    }
+
     /**
      * @throws Exception If failed.
      */

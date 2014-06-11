@@ -147,6 +147,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
     @Override public void onMessage(final GridNioSession ses, final GridClientMessage msg) {
+        log.info("message " + msg);
+
         if (msg instanceof GridMemcachedMessage)
             memcachedLsnr.onMessage(ses, (GridMemcachedMessage)msg);
         else {
@@ -179,6 +181,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                 }
 
                 ses.addMeta(GridNioSessionMetaKey.MARSHALLER.ordinal(), marsh);
+
+                log.info("handshake ok");
 
                 ses.send(new GridClientHandshakeResponseWrapper(CODE_OK));
             }
@@ -234,6 +238,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
                                 return;
                             }
+
+                            log.info("send response " + res);
 
                             ses.send(wrapper);
                         }

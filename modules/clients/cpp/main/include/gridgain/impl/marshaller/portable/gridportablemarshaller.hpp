@@ -20,14 +20,33 @@
 
 using namespace std;
 
+const int8_t TYPE_NULL = 0;
+const int8_t TYPE_BYTE = 1;
+const int8_t TYPE_SHORT = 2;
+const int8_t TYPE_INT = 3;
+const int8_t TYPE_LONG = 4;
+const int8_t TYPE_FLOAT = 5;
+const int8_t TYPE_DOUBLE = 6;
+const int8_t TYPE_BOOLEAN = 7;
+const int8_t TYPE_CHAR = 8;
+const int8_t TYPE_STRING = 9;
+const int8_t TYPE_BYTE_ARRAY = 10;
+
+const int8_t TYPE_LIST = 18;
+const int8_t TYPE_MAP = 19;
+const int8_t TYPE_UUID = 20;
+const int8_t TYPE_USER_OBJECT = 21;
+
 const int8_t OBJECT_TYPE_OBJECT = 0;
 
 class GridClientPortableMessage : public GridPortable {
 public:
     void writePortable(GridPortableWriter &writer) const {
+        writer.writeBytes("sesTok", sesTok);
     }
 
     void readPortable(GridPortableReader &reader) {
+        sesTok = reader.readBytes("sesTok");
     }
 
     bool operator==(const GridPortable& other) const {
@@ -41,6 +60,9 @@ public:
 
         return 0; // Not needed since is not used as key.
     }
+
+private:
+    vector<int8_t> sesTok;
 };
 
 class GridClientResponse : public GridClientPortableMessage {
@@ -52,7 +74,7 @@ public:
     void writePortable(GridPortableWriter &writer) const {
         GridClientPortableMessage::writePortable(writer);
 
-        writer.writeInt("status", status);
+        writer.writeInt32("status", status);
         writer.writeString("errorMsg", errorMsg);
         writer.writeVariant("res", res);
     }
@@ -60,7 +82,7 @@ public:
     void readPortable(GridPortableReader &reader) {
         GridClientPortableMessage::readPortable(reader);
 
-        status = reader.readInt("status");
+        status = reader.readInt32("status");
         errorMsg = reader.readString("errorMsg");
         res = reader.readVariant("res");
     }
@@ -83,6 +105,31 @@ private:
     std::string errorMsg;
 
     GridClientVariant res;
+};
+
+// TODO: 8536.
+class GridClientNodeBean : public GridPortable {
+    int32_t typeId() const {
+        return -1;            
+    }
+
+    void writePortable(GridPortableWriter &writer) const {
+    }
+
+    void readPortable(GridPortableReader &reader) {
+    }
+
+    bool operator==(const GridPortable& other) const {
+        assert(false);
+
+        return false; // Not needed since is not used as key.
+    }
+
+    int hashCode() const {
+        assert(false);
+
+        return 0; // Not needed since is not used as key.
+    }
 };
 
 // TODO: 8536 reuse existing message classes.
@@ -206,6 +253,12 @@ public:
         out.insert(out.end(), bytes, bytes + 4);
 	}
 
+    void writeLong(int64_t val) {
+        int8_t* bytes = reinterpret_cast<int8_t*>(&val);
+
+        out.insert(out.end(), bytes, bytes + 8);
+	}
+
 	void writeBytes(const void* src, size_t size) {
         const int8_t* bytes = reinterpret_cast<const int8_t*>(src);
 
@@ -233,7 +286,7 @@ public:
         portable.writePortable(*this);
     }
 
-    void writeInt(char* fieldName, int32_t val) {
+    void writeInt32(char* fieldName, int32_t val) {
 		out.writeInt(val);
 	}
 
@@ -242,8 +295,87 @@ public:
 		out.writeBytes(str.data(), str.length());
 	}
 	
-    void writeVariant(char* fieldName, const GridClientVariant &str) {
+    void writeBytes(char* fieldName, const std::vector<int8_t>& val) {
+        out.writeInt(val.size());
+        out.writeBytes(val.data(), val.size());
+    }
 
+    void writeCollection(const vector<GridClientVariant>& col) {
+        out.writeByte(OBJECT_TYPE_OBJECT);
+
+        out.writeInt(col.size());
+
+        for (auto iter = col.begin(); iter != col.end(); ++iter) {
+            GridClientVariant variant = *iter;
+
+            writeVariant(nullptr, variant);
+        }
+    }
+
+    void writeMap(const unordered_map<GridClientVariant, GridClientVariant>& map) {
+        out.writeByte(OBJECT_TYPE_OBJECT);
+
+        out.writeInt(map.size());
+
+        for (auto iter = map.begin(); iter != map.end(); ++iter) {
+            GridClientVariant key = iter->first;
+            GridClientVariant val = iter->second;
+
+            writeVariant(nullptr, key);
+            writeVariant(nullptr, val);
+        }
+    }
+
+    void writeVariant(char* fieldName, const GridClientVariant &val) {
+        if (val.hasInt()) {
+            out.writeByte(TYPE_INT);
+            out.writeInt(val.getInt());
+        }
+        else if (val.hasString()) {
+            out.writeByte(TYPE_STRING);
+
+            string str = val.getString();
+
+    		out.writeInt(str.length());
+	    	out.writeBytes(str.data(), str.length());
+        }
+        else if (val.hasUuid()) {
+            out.writeByte(TYPE_UUID);
+
+            GridClientUuid uuid = val.getUuid();
+
+            out.writeLong(uuid.mostSignificantBits());
+            out.writeLong(uuid.leastSignificantBits());
+        }
+        else if (val.hasPortable()) {
+            out.writeByte(TYPE_USER_OBJECT);
+
+            writePortable(*val.getPortable());
+        }
+        else if (val.hasVariantVector()) {
+            out.writeByte(TYPE_LIST);
+
+            writeCollection(val.getVariantVector());
+        }
+        else if (val.hasVariantMap()) {
+            out.writeByte(TYPE_MAP);
+
+            writeMap(val.getVariantMap());
+        }
+        else if (!val.hasAnyValue()) {
+            out.writeByte(TYPE_NULL);
+        }
+        else {
+            assert(false);
+        }
+    }
+    
+    void writeCollection(char* fieldName, const vector<GridClientVariant> &val) {
+        writeCollection(val);
+    }
+
+    void writeMap(char* fieldName, const unordered_map<GridClientVariant, GridClientVariant> &map) {
+        writeMap(map);
     }
 
 	vector<int8_t> bytes() {
@@ -252,6 +384,183 @@ public:
 
 private:
 	PortableOutput out;
+};
+
+class PortableInput {
+public:
+    PortableInput(vector<int8_t>& data) : bytes(data), pos(0) {
+    }
+
+    int8_t readByte() {
+        checkAvailable(1);
+
+        return 0;
+    }
+
+    int32_t readInt() {
+        checkAvailable(4);
+
+        return 0;
+    }
+
+    int64_t readLong() {
+        checkAvailable(8);
+
+        return 0;
+    }
+
+    vector<int8_t> readBytes(int32_t size) {
+        checkAvailable(size);
+
+        vector<int8_t> vec;
+
+        return vec;
+    }
+
+private:
+    void checkAvailable(int cnt) {
+        assert(pos + cnt <= bytes.size());
+    }
+    
+    int32_t pos;
+
+    vector<int8_t>& bytes;
+};
+
+class GridPortableReaderImpl : GridPortableReader {
+public:
+    GridPortableReaderImpl(vector<int8_t>& data) : in(data) {
+
+    }
+
+    GridPortable* readPortable() {
+        int8_t type = in.readByte();
+
+        assert(type == OBJECT_TYPE_OBJECT);
+
+        int32_t typeId = in.readInt();
+
+        GridPortable* portable = createPortable(typeId);
+
+        portable->readPortable(*this);
+
+        return portable;
+    }
+
+    int32_t readInt32(char* fieldName) {
+        return in.readInt();
+    }
+
+    vector<int8_t> readBytes(char* fieldName) {
+        int32_t size = in.readInt();
+
+        return in.readBytes(size);
+    }
+
+    string readString(char* fieldName) {
+        int size = in.readInt();
+
+        if (size == -1)
+            return string();
+
+        vector<int8_t> bytes = in.readBytes(size);
+
+        return string((char*)bytes.data());
+    }
+
+    GridClientVariant readVariant(char* fieldName) {
+        int8_t type = in.readByte();
+
+        switch (type) {
+            case TYPE_NULL:
+                return GridClientVariant();
+
+            case TYPE_INT:
+                return GridClientVariant(in.readInt());
+
+            case TYPE_LONG:
+                return GridClientVariant(in.readLong());
+
+            case TYPE_UUID: {
+                if (in.readByte() == 0)
+                    return GridClientVariant();
+
+                long mostSignificantBits = in.readLong();
+                long leastSignificantBits = in.readLong();
+
+                return GridClientVariant(GridClientUuid(mostSignificantBits, leastSignificantBits));
+            }
+
+            case TYPE_LIST:
+                return GridClientVariant(readCollection());
+
+            case TYPE_MAP:
+                return GridClientVariant(readMap());
+
+            case TYPE_USER_OBJECT:
+                return GridClientVariant(readPortable());
+
+            default:
+                assert(false);
+        }
+
+        return GridClientVariant();
+    }
+
+    vector<GridClientVariant> readCollection() {
+        int8_t type = in.readByte();
+
+        assert(type == OBJECT_TYPE_OBJECT);
+
+        int32_t size = in.readInt();
+
+        if (size == -1)
+            return vector<GridClientVariant>();
+
+        vector<GridClientVariant> vec;
+
+        for (int i = 0; i < size; i++)
+            vec.push_back(readVariant(nullptr));
+
+        return vec;
+    }
+
+    vector<GridClientVariant> readCollection(char* fieldName) {
+        return readCollection();
+    }
+
+    unordered_map<GridClientVariant, GridClientVariant> readMap() {
+        int8_t type = in.readByte();
+
+        assert(type == OBJECT_TYPE_OBJECT);
+
+        int32_t size = in.readInt();
+
+        if (size == -1)
+            return unordered_map<GridClientVariant, GridClientVariant>();
+        
+        unordered_map<GridClientVariant, GridClientVariant> map;
+
+        for (int i = 0; i < size; i++) {
+            GridClientVariant key = readVariant(nullptr);
+            GridClientVariant val = readVariant(nullptr);
+
+            map[key] = val;
+        }
+
+        return map;
+    }
+
+    unordered_map<GridClientVariant, GridClientVariant> readMap(char* fieldName) {
+        return readMap();
+    }
+
+private:
+    PortableInput in;
+
+    GridPortable* createPortable(int32_t typeId) {
+        return nullptr;            
+    }
 };
 
 class GridPortableMarshaller {
@@ -265,10 +574,10 @@ public:
 	}
 
     template<typename T>
-    shared_ptr<T> unmarshal() {
-        shared_ptr<T> res(new T);
+    T* unmarshal(std::vector<int8_t>& data) {
+		GridPortableReaderImpl reader(data);
 
-        return res;
+        return static_cast<T*>(reader.readPortable());
     }
 };
 

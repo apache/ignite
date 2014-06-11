@@ -33,6 +33,8 @@ public:
      */
     GridClientUuid();
 
+    GridClientUuid(int64_t mostSignificantBits, int64_t leastSignificantBits);
+    
     /**
      * Reconstructs UUID from string.
      *
