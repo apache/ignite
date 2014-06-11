@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client 
+namespace GridGain.Client.Portable 
 {
     using System;
     using System.Runtime.Serialization;

@@ -7,15 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-using System.Collections.Generic;
-
-namespace GridGain.Client {
+namespace GridGain.Client.Portable {
     using System;
+    using System.Collections.Generic;
 
     /**
      * <summary>Writer for portable objects.</summary>
      */
-    public interface IGridPortableWriter {
+    public interface IGridClientPortableWriter {
         /**
          * <summary>Write named byte value.</summary>
          * <param name="fieldName">Field name.</param>

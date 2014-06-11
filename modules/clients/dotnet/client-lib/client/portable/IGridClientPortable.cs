@@ -7,13 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client
+namespace GridGain.Client.Portable
 {
     /**
      * <summary> Marker interface for all portable objects. All non-transient fields except of [NonSerialized] are 
      * serialized. If object contains non-portable object, an exception is thrown.</summary>
      */
-    interface IGridPortable
+    interface IGridClientPortable
     {
         // No-op.
     }

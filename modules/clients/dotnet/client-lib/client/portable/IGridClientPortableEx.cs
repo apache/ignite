@@ -7,14 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client
+namespace GridGain.Client.Portable
 {
     using System;
 
     /**
      * <summary>Interface to implement custom portable serialization logic.</summary>
      */
-    public interface IGridPortableEx 
+    public interface IGridClientPortableEx 
     {
         /**
          * <summary>Writes this object to the given writer.</summary>
@@ -22,7 +22,7 @@ namespace GridGain.Client
          * <param name="writer">Writer.</param>
          * <exception cref="System.IO.IOException">If write failed.</exception>
          */
-        public void WritePortable(IGridPortableWriter writer);
+        public void WritePortable(IGridClientPortableWriter writer);
 
         /**
          * <summary>Reads this object from the given reader.</summary>
@@ -30,6 +30,6 @@ namespace GridGain.Client
          * <param name="reader">Reader.</param>
          * <exception cref="System.IO.IOException">If read failed.</exception>
          */
-        public void ReadPortable(IGridPortableReader reader);
+        public void ReadPortable(IGridClientPortableReader reader);
     }
 }

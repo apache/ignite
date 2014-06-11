@@ -7,7 +7,8 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client {
+namespace GridGain.Client.Portable
+{
     using System;
     using System.Collections.Generic;
 
@@ -15,7 +16,7 @@ namespace GridGain.Client {
      * <summary>Wrapper for serialized portable objects.</summary>
      */
     [Serializable]
-    public interface IGridPortableObject {
+    public interface IGridClientPortableObject {
         /**
          * <summary>Gets portable object type ID.</summary> 
          * <returns>Type ID.</returns>
@@ -45,7 +46,7 @@ namespace GridGain.Client {
          * <summary>Gets fully deserialized instance of portable object.</summary>
          * <returns>Fully deserialized instance of portable object.</returns>
          */
-        T Deserialize<T>() where T : IGridPortable;
+        T Deserialize<T>() where T : IGridClientPortable;
 
         /**
          * <summary>Creates a copy of this portable object and optionally changes field values
@@ -53,6 +54,6 @@ namespace GridGain.Client {
          * <param name="fields">Fields to modify in copy.</param>
          * <returns>Copy of this portable object.</returns>
          */
-        IGridPortableObject Copy(IDictionary<string, object> fields);        
+        IGridClientPortableObject Copy(IDictionary<string, object> fields);        
     }
 }
