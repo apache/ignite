@@ -35,7 +35,7 @@ if %HADOOP_HOME:~-1,1% == \ (
 echo INFO: Hadoop was found in %HADOOP_HOME%
 
 ::
-:: Setting all hadoop modules if it's not set by /etc/default/hadoop
+:: Setting all hadoop modules
 ::
 
 set HADOOP_COMMON_HOME=%HADOOP_HOME%\share\hadoop\common

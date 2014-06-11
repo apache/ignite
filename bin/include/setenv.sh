@@ -72,7 +72,7 @@ if [ "$GRIDGAIN_HADOOP_CLASSPATH" != "" ]; then
         LINK=$(readlink -n -f $LINK)
 
         if [ "$LINK" != "$GG_JAR" ]; then
-            echo "WARNING: Symbolic link to $GG_JAR doesn't present in $COMMON_HOME_LIB"
+            echo "WARNING: Symbolic link to $GG_JAR doesn't exist in $COMMON_HOME_LIB"
         fi
     done
 

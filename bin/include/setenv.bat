@@ -13,7 +13,7 @@
 :: Exports GRIDGAIN_LIBS variable containing classpath for GridGain.
 :: Expects GRIDGAIN_HOME to be set.
 :: Can be used like:
-::      call %GRIDGAIN_HOME%\os\bin\include\setenv.bat
+::      call %GRIDGAIN_HOME%\bin\include\setenv.bat
 :: in other scripts to set classpath using exported GRIDGAIN_LIBS variable.
 ::
 
@@ -43,7 +43,7 @@ if defined GRIDGAIN_HADOOP_CLASSPATH (
     COMMON_HOME_LIB=%HADOOP_COMMON_HOME%\lib
 
     for /f %%f in ('dir /B %GRIDGAIN_HOME%\libs\gridgain-*.jar') do (
-        if not exist %COMMON_HOME_LIB%\%%f echo WARNING: %%f doesn't present in %COMMON_HOME_LIB%
+        if not exist %COMMON_HOME_LIB%\%%f echo WARNING: %%f doesn't exist in %COMMON_HOME_LIB%
     )
 
     set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%GRIDGAIN_HADOOP_CLASSPATH%
