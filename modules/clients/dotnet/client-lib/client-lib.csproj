@@ -69,11 +69,12 @@
     <Compile Include="client\balancer\IGridClientLoadBalancer.cs" />
     <Compile Include="client\balancer\GridClientLoadBalancer.cs" />
     <Compile Include="client\balancer\GridClientRoundRobinBalancer.cs" />
-    <Compile Include="client\IGridPortable.cs" />
-    <Compile Include="client\IGridPortableEx.cs" />
-    <Compile Include="client\IGridPortableReader.cs" />
-    <Compile Include="client\IGridPortableWriter.cs" />
-    <Compile Include="client\IGridPortableObject.cs" />
+    <Compile Include="client\portable\GridClientPortableException.cs" />
+    <Compile Include="client\portable\IGridClientPortable.cs" />
+    <Compile Include="client\portable\IGridClientPortableEx.cs" />
+    <Compile Include="client\portable\IGridClientPortableReader.cs" />
+    <Compile Include="client\portable\IGridClientPortableWriter.cs" />
+    <Compile Include="client\portable\IGridClientPortableObject.cs" />
     <Compile Include="client\GridClientCacheFlag.cs" />
     <Compile Include="client\GridClientAuthenticationException.cs" />
     <Compile Include="client\hasher\GridClientJavaHelper.cs" />
@@ -157,6 +158,7 @@
     <None Include="client-lib.snk" />
     <None Include="client\impl\protobuf\generate.sh" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>
