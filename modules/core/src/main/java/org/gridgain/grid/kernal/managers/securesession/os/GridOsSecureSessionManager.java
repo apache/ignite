@@ -39,7 +39,8 @@ public class GridOsSecureSessionManager extends GridNoopManagerAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecureSession validateSession(GridSecuritySubjectType subjType, UUID subjId, @Nullable byte[] tok,
+    @Override public GridSecureSession validateSession(GridSecuritySubjectType subjType, UUID subjId,
+        @Nullable byte[] tok,
         @Nullable Object params) throws GridException {
         return null;
     }
@@ -48,15 +49,5 @@ public class GridOsSecureSessionManager extends GridNoopManagerAdapter implement
     @Override public byte[] updateSession(GridSecuritySubjectType subjType, UUID subjId, GridSecurityContext subjCtx,
         @Nullable Object params) {
         return EMPTY_BYTES;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<GridSecuritySubject> authenticatedClients() {
-        return Collections.emptyList();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridSecuritySubject authenticatedClient(UUID clientId) {
-        return null;
     }
 }

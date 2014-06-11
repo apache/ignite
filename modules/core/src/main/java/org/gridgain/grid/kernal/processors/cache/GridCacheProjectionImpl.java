@@ -68,6 +68,9 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     @GridToStringInclude
     private Set<GridCacheFlag> flags;
 
+    /** Client ID which operates over this projection, if any, */
+    private UUID subjId;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -88,7 +91,8 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         GridCacheContext<K, V> cctx,
         @Nullable GridBiPredicate<K, V> kvFilter,
         @Nullable GridPredicate<? super GridCacheEntry<K, V>> entryFilter,
-        @Nullable Set<GridCacheFlag> flags) {
+        @Nullable Set<GridCacheFlag> flags,
+        @Nullable UUID subjId) {
         assert parent != null;
         assert cctx != null;
 
@@ -110,6 +114,8 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         withNullEntryFilter = new FullFilter<>(withNullKvFilter, entryFilter);
 
         noNullEntryFilter = new FullFilter<>(noNullKvFilter, entryFilter);
+
+        this.subjId = subjId;
 
         cache = cctx.cache();
 
@@ -371,6 +377,25 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     }
 
     /** {@inheritDoc} */
+    @Override public GridCacheProjectionEx<K, V> forSubjectId(UUID subjId) {
+        A.notNull(subjId, "subjId");
+
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, noNullKvFilter.kvFilter,
+            noNullEntryFilter.entryFilter, flags, subjId);
+
+        return new GridCacheProxyImpl<>(cctx, prj, prj);
+    }
+
+    /**
+     * Gets client ID for which this projection was created.
+     *
+     * @return Client ID.
+     */
+    @Nullable public UUID subjectId() {
+        return subjId;
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
     @Override public <K1, V1> GridCacheProjection<K1, V1> projection(
         Class<? super K1> keyType,
@@ -391,7 +416,7 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
             (GridCacheProjection<K1, V1>)this,
             (GridCacheContext<K1, V1>)cctx,
             CU.<K1, V1>typeFilter(keyType, valType),
-            (GridPredicate<GridCacheEntry>)noNullEntryFilter.entryFilter, flags);
+            (GridPredicate<GridCacheEntry>)noNullEntryFilter.entryFilter, flags, subjId);
 
         return new GridCacheProxyImpl((GridCacheContext<K1, V1>)cctx, prj, prj);
     }
@@ -399,7 +424,7 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     /** {@inheritDoc} */
     @Override public GridCacheProjection<K, V> projection(GridBiPredicate<K, V> p) {
         if (p == null)
-            return this;
+            return new GridCacheProxyImpl<>(cctx, this, this);
 
         GridBiPredicate<K, V> kvFilter = p;
 
@@ -416,7 +441,7 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         }
 
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, kvFilter,
-            noNullEntryFilter.entryFilter, flags);
+            noNullEntryFilter.entryFilter, flags, subjId);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }
@@ -425,7 +450,7 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     @SuppressWarnings({"unchecked"})
     @Override public GridCacheProjection<K, V> projection(GridPredicate <GridCacheEntry<K, V>> filter) {
         if (filter == null)
-            return this;
+            return new GridCacheProxyImpl<>(cctx, this, this);
 
         if (noNullEntryFilter.entryFilter != null)
             filter = and(filter, true);
@@ -440,7 +465,7 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         }
 
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, noNullKvFilter.kvFilter,
-            filter, flags);
+            filter, flags, subjId);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }
@@ -449,7 +474,7 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     /** {@inheritDoc} */
     @Override public GridCacheProjection<K, V> flagsOn(@Nullable GridCacheFlag[] flags) {
         if (F.isEmpty(flags))
-            return this;
+            return new GridCacheProxyImpl<>(cctx, this, this);
 
         Set<GridCacheFlag> res = EnumSet.noneOf(GridCacheFlag.class);
 
@@ -460,7 +485,7 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         res.addAll(EnumSet.copyOf(F.asList(flags)));
 
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, noNullKvFilter.kvFilter,
-            noNullEntryFilter.entryFilter, res);
+            noNullEntryFilter.entryFilter, res, subjId);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }
@@ -468,7 +493,7 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     /** {@inheritDoc} */
     @Override public GridCacheProjection<K, V> flagsOff(@Nullable GridCacheFlag[] flags) {
         if (F.isEmpty(flags))
-            return this;
+            return new GridCacheProxyImpl<>(cctx, this, this);
 
         Set<GridCacheFlag> res = EnumSet.noneOf(GridCacheFlag.class);
 
@@ -479,7 +504,7 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         res.removeAll(EnumSet.copyOf(F.asList(flags)));
 
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, noNullKvFilter.kvFilter,
-            noNullEntryFilter.entryFilter, res);
+            noNullEntryFilter.entryFilter, res, subjId);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }

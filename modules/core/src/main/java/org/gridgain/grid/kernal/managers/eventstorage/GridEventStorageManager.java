@@ -17,6 +17,7 @@ import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.eventstorage.*;
 import org.gridgain.grid.util.*;
@@ -285,6 +286,8 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
     public synchronized void enableEvents(int[] types) {
         assert types != null;
 
+        ctx.security().authorize(null, GridSecurityPermission.EVENTS_ENABLE, null);
+
         boolean[] userRecordableEvts0 = userRecordableEvts;
         boolean[] recordableEvts0 = recordableEvts;
         int[] inclEvtTypes0 = inclEvtTypes;
@@ -325,6 +328,8 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
     @SuppressWarnings("deprecation")
     public synchronized void disableEvents(int[] types) {
         assert types != null;
+
+        ctx.security().authorize(null, GridSecurityPermission.EVENTS_DISABLE, null);
 
         boolean[] userRecordableEvts0 = userRecordableEvts;
         boolean[] recordableEvts0 = recordableEvts;
