@@ -13,7 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
-import org.gridgain.grid.spi.authentication.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.communication.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.swapspace.*;
@@ -346,4 +346,19 @@ public interface GridSpiContext {
      * @return Whether delta was fully read.
      */
     public boolean readDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf);
+
+    /**
+     * Gets collection of authenticated subjects together with their permissions.
+     *
+     * @return Collection of authenticated subjects.
+     */
+    public Collection<GridSecuritySubject> authenticatedSubjects() throws GridException;
+
+    /**
+     * Gets security subject based on subject ID.
+     *
+     * @param subjId Subject ID.
+     * @return Authorized security subject.
+     */
+    public GridSecuritySubject authenticatedSubject(UUID subjId) throws GridException;
 }
