@@ -1668,6 +1668,9 @@ public class GridGainEx {
             myCfg.setDrSenderHubConfiguration(cfg.getDrSenderHubConfiguration());
             myCfg.setDrReceiverHubConfiguration(cfg.getDrReceiverHubConfiguration());
 
+            // Hadoop configuration.
+            myCfg.setHadoopConfiguration(cfg.getHadoopConfiguration());
+
             // Validate segmentation configuration.
             GridSegmentationPolicy segPlc = cfg.getSegmentationPolicy();
 
