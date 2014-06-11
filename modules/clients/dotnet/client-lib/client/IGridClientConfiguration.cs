@@ -103,5 +103,12 @@ namespace GridGain.Client {
         TimeSpan TopologyRefreshFrequency {
             get;
         }
+
+        /**
+         * <summary>Portable classes this client is aware of.</summary>
+         */
+        ICollection<Type> PortableClasses { 
+            get; 
+        }
     }
 }

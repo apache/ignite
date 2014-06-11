@@ -43,8 +43,7 @@ namespace GridGain.Client {
 
         /**
          * <summary>Creates a copy of this portable object and optionally changes field values
-         * if they are provided in map. If map is empty or {@code null}, clean copy
-         * is created.</summary>
+         * if they are provided in map. If map is empty or null, clean copy is created.</summary>
          * <param name="fields">Fields to modify in copy.</param>
          * <returns>Copy of this portable object.</returns>
          */

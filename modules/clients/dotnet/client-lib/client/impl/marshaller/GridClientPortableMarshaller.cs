@@ -69,7 +69,7 @@ namespace GridGain.Client.Impl.Marshaller {
         private IDictionary<int, Type> portableTypes;
 
         public GridClientPortableMarshaller(IDictionary<int, Type> portableTypes) {
-            this.portableTypes = portableTypes;
+            this.portableTypes = portableTypes; 
         }
 
         /** <inheritdoc /> */

@@ -58,6 +58,7 @@ namespace GridGain.Client {
             Credentials = cfg.Credentials;
             DataConfigurations = new List<IGridClientDataConfiguration>(cfg.DataConfigurations);
             IsTopologyCacheEnabled = cfg.IsTopologyCacheEnabled;
+            PortableClasses = cfg.PortableClasses;
             Protocol = cfg.Protocol;
             Servers = new HashSet<String>(cfg.Servers);
             Routers = new HashSet<String>(cfg.Routers);
@@ -142,6 +143,12 @@ namespace GridGain.Client {
 
         /** <inheritdoc /> */
         public TimeSpan TopologyRefreshFrequency {
+            get;
+            set;
+        }
+
+        /** <inheritdoc /> */
+        public ICollection<Type> PortableClasses {
             get;
             set;
         }
