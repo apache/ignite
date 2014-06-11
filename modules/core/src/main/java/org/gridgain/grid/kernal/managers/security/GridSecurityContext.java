@@ -25,19 +25,19 @@ public class GridSecurityContext implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Visor tasks prefix. */
-    private static final String VISOR_TASK_PREFIX = "org.gridgain.visor.gui.model.impl.tasks.";
+    private static final String VISOR_TASK_PREFIX = "org.gridgain.grid.kernal.visor.cmd.tasks.";
 
     /** Cache query task name. */
     public static final String VISOR_CACHE_QUERY_TASK_NAME =
-        "org.gridgain.visor.gui.model.impl.tasks.VisorFieldsQueryTask";
+        "org.gridgain.grid.kernal.visor.cmd.tasks.VisorQueryTask";
 
     /** Cache load task name. */
     public static final String VISOR_CACHE_LOAD_TASK_NAME =
-        "org.gridgain.visor.gui.model.impl.tasks.VisorLoadCachesTask";
+        "org.gridgain.grid.kernal.visor.gui.tasks.VisorCachesLoadTask";
 
     /** Cache clear task name. */
     public static final String VISOR_CACHE_CLEAR_TASK_NAME =
-        "org.gridgain.visor.gui.model.impl.tasks.VisorClearCachesTask";
+        "org.gridgain.grid.kernal.visor.cmd.tasks.VisorCachesClearTask";
 
     /** Security subject. */
     private GridSecuritySubject subj;
