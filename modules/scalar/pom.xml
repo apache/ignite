@@ -133,7 +133,7 @@
                         <phase>prepare-package</phase>
                         <configuration>
                             <target>
-                                <copy todir="target/site/apidocs">
+                                <copy todir="target/site/scaladocs">
                                     <fileset dir="../../assembly/docfiles">
                                         <include name="img/**"/>
                                         <include name="*.js"/>
