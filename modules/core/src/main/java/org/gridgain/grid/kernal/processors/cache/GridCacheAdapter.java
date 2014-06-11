@@ -1073,6 +1073,12 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         return entrySet((GridPredicate<GridCacheEntry<K, V>>[])null);
     }
 
+
+    /** {@inheritDoc} */
+    @Override public Set<GridCacheEntry<K, V>> entrySetx(GridPredicate<GridCacheEntry<K, V>>... filter) {
+        return map.entriesx(filter);
+    }
+
     /** {@inheritDoc} */
     @Override public Set<GridCacheEntry<K, V>> entrySet(int part) {
         throw new UnsupportedOperationException();
