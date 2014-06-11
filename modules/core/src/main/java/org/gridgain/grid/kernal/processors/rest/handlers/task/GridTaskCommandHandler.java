@@ -175,14 +175,14 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
                 final GridFuture<Object> taskFut =
                     locExec ?
-                        ctx.grid().compute().withTimeout(timeout).execute(
+                        ctx.grid().forSubjectId(req.clientId()).compute().withTimeout(timeout).execute(
                             name,
                             !F.isEmpty(params) ? params.size() == 1 ? params.get(0) : params.toArray() : null)
                         :
                         // Using predicate instead of node intentionally
                         // in order to provide user well-structured EmptyProjectionException.
                         ctx.grid().forPredicate(F.nodeForNodeId(req.destinationId())).
-                            compute().withNoFailover().call(new ExeCallable(name, params, timeout));
+                            compute().withNoFailover().call(new ExeCallable(name, params, timeout, req.clientId()));
 
                 if (async) {
                     if (locExec) {
@@ -217,7 +217,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                                         ", err=" + e + ']');
                                 else
                                     U.error(log, "Failed to execute task [name=" + name + ", clientId=" +
-                                            req.clientId() + ']', e);
+                                        req.clientId() + ']', e);
 
                                 desc = new TaskDescriptor(true, null, e);
                             }
@@ -555,8 +555,11 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         private long timeout;
 
         /** */
+        private UUID clientId;
+
+        /** */
         @GridInstanceResource
-        private Grid g;
+        private GridEx g;
 
         /**
          * Required by {@link Externalizable}.
@@ -570,15 +573,16 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
          * @param params Params.
          * @param timeout Timeout.
          */
-        private ExeCallable(String name, List<Object> params, long timeout) {
+        private ExeCallable(String name, List<Object> params, long timeout, UUID clientId) {
             this.name = name;
             this.params = params;
             this.timeout = timeout;
+            this.clientId = clientId;
         }
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            return g.compute().execute(
+            return g.forSubjectId(clientId).compute().execute(
                 name,
                 !params.isEmpty() ? params.size() == 1 ? params.get(0) : params.toArray() : null).get();
         }
@@ -588,6 +592,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
             U.writeString(out, name);
             out.writeObject(params);
             out.writeLong(timeout);
+            U.writeUuid(out, clientId);
         }
 
         /** {@inheritDoc} */
@@ -595,6 +600,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
             name = U.readString(in);
             params = (List<Object>)in.readObject();
             timeout = in.readLong();
+            clientId = U.readUuid(in);
         }
     }
 }

@@ -24,6 +24,14 @@ import java.util.*;
  */
 public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
     /**
+     * Creates projection for specified subject ID.
+     *
+     * @param subjId Client ID.
+     * @return Internal projection.
+     */
+    GridCacheProjectionEx<K, V> forSubjectId(UUID subjId);
+
+    /**
      * Gets predicate on which this projection is based on or {@code null}
      * if predicate is not defined.
      *
@@ -396,4 +404,12 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @return DR pause state.
      */
     @Nullable public GridDrStatus drPauseState();
+
+    /**
+     * Gets entry set containing internal entries.
+     *
+     * @param filter Filter.
+     * @return Entry set.
+     */
+    public Set<GridCacheEntry<K, V>> entrySetx(GridPredicate<GridCacheEntry<K, V>>... filter);
 }

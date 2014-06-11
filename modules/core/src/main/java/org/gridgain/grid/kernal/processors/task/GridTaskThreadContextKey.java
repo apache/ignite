@@ -23,5 +23,8 @@ public enum GridTaskThreadContextKey {
     TC_SUBGRID,
 
     /** Timeout in milliseconds associated with the task. */
-    TC_TIMEOUT
+    TC_TIMEOUT,
+
+    /** Security subject ID. */
+    TC_SUBJ_ID
 }
