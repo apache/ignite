@@ -26,9 +26,20 @@ namespace GridGain.Client.Util {
         private volatile Action err;
 
         /** <summary>Callback delegate to call on future finishes.</summary> */
-        public Action DoneCallback {
+        public volatile Action DoneCallback {
             get;
-            set;
+            set {
+                Int32 state = 0;
+
+                this.DoneCallback = () => {
+                    if (Interlocked.CompareExchange(ref state, 0, 1) == 0) {
+                        value();
+                    }
+                };
+
+                if (done)
+                    DoneCallback();
+            }
         }
 
         /**
