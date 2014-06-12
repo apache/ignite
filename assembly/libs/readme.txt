@@ -51,12 +51,14 @@ but with different artifact IDs. E.g., if you want to configure GridGain nodes v
     ...
     <dependencies>
         ...
+        <!-- Core module. -->
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-core</artifactId>
             <version>${gridgain.version}</version>
         </dependency>
 
+        <!-- Optional. -->
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-spring</artifactId>
