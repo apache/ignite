@@ -54,7 +54,7 @@ class GridUnsafePortableWriter extends GridPortableWriterAdapter {
 
     /** {@inheritDoc} */
     @Override public void writeByte(byte val) throws GridPortableException {
-        // TODO: implement.
+        UNSAFE.putByte(arr, BYTE_ARR_OFF + requestFreeSize(1), val);
     }
 
     /** {@inheritDoc} */
@@ -64,7 +64,7 @@ class GridUnsafePortableWriter extends GridPortableWriterAdapter {
 
     /** {@inheritDoc} */
     @Override public void writeShort(short val) throws GridPortableException {
-        // TODO: implement.
+        UNSAFE.putShort(arr, BYTE_ARR_OFF + requestFreeSize(2), val);
     }
 
     /** {@inheritDoc} */
@@ -74,7 +74,7 @@ class GridUnsafePortableWriter extends GridPortableWriterAdapter {
 
     /** {@inheritDoc} */
     @Override public void writeInt(int val) throws GridPortableException {
-        // TODO: implement.
+        UNSAFE.putInt(arr, BYTE_ARR_OFF + requestFreeSize(4), val);
     }
 
     /** {@inheritDoc} */
@@ -84,7 +84,7 @@ class GridUnsafePortableWriter extends GridPortableWriterAdapter {
 
     /** {@inheritDoc} */
     @Override public void writeLong(long val) throws GridPortableException {
-        // TODO: implement.
+        UNSAFE.putLong(arr, BYTE_ARR_OFF + requestFreeSize(8), val);
     }
 
     /** {@inheritDoc} */
@@ -94,7 +94,7 @@ class GridUnsafePortableWriter extends GridPortableWriterAdapter {
 
     /** {@inheritDoc} */
     @Override public void writeFloat(float val) throws GridPortableException {
-        // TODO: implement.
+        UNSAFE.putFloat(arr, BYTE_ARR_OFF + requestFreeSize(4), val);
     }
 
     /** {@inheritDoc} */
@@ -104,7 +104,7 @@ class GridUnsafePortableWriter extends GridPortableWriterAdapter {
 
     /** {@inheritDoc} */
     @Override public void writeDouble(double val) throws GridPortableException {
-        // TODO: implement.
+        UNSAFE.putDouble(arr, BYTE_ARR_OFF + requestFreeSize(8), val);
     }
 
     /** {@inheritDoc} */
@@ -114,7 +114,7 @@ class GridUnsafePortableWriter extends GridPortableWriterAdapter {
 
     /** {@inheritDoc} */
     @Override public void writeChar(char val) throws GridPortableException {
-        // TODO: implement.
+        UNSAFE.putChar(arr, BYTE_ARR_OFF + requestFreeSize(2), val);
     }
 
     /** {@inheritDoc} */
@@ -124,7 +124,7 @@ class GridUnsafePortableWriter extends GridPortableWriterAdapter {
 
     /** {@inheritDoc} */
     @Override public void writeBoolean(boolean val) throws GridPortableException {
-        // TODO: implement.
+        UNSAFE.putBoolean(arr, BYTE_ARR_OFF + requestFreeSize(1), val);
     }
 
     /** {@inheritDoc} */
@@ -134,7 +134,7 @@ class GridUnsafePortableWriter extends GridPortableWriterAdapter {
 
     /** {@inheritDoc} */
     @Override public void writeString(@Nullable String val) throws GridPortableException {
-        // TODO: implement.
+        writeByteArray(val != null ? val.getBytes() : null); // TODO: UTF-8
     }
 
     /** {@inheritDoc} */
@@ -144,7 +144,13 @@ class GridUnsafePortableWriter extends GridPortableWriterAdapter {
 
     /** {@inheritDoc} */
     @Override public void writeUuid(@Nullable UUID uuid) throws GridPortableException {
-        // TODO: implement.
+        if (uuid == null)
+            writeBoolean(false);
+        else {
+            writeBoolean(true);
+            writeLong(uuid.getMostSignificantBits());
+            writeLong(uuid.getLeastSignificantBits());
+        }
     }
 
     /** {@inheritDoc} */
@@ -164,7 +170,10 @@ class GridUnsafePortableWriter extends GridPortableWriterAdapter {
 
     /** {@inheritDoc} */
     @Override public void writeByteArray(@Nullable byte[] val) throws GridPortableException {
-        // TODO: implement.
+        writeInt(val != null ? val.length : -1);
+
+        if (val != null)
+            UNSAFE.copyMemory(val, BYTE_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(val.length), val.length);
     }
 
     /** {@inheritDoc} */
@@ -174,7 +183,13 @@ class GridUnsafePortableWriter extends GridPortableWriterAdapter {
 
     /** {@inheritDoc} */
     @Override public void writeShortArray(@Nullable short[] val) throws GridPortableException {
-        // TODO: implement.
+        writeInt(val != null ? val.length : -1);
+
+        if (val != null) {
+            int bytes = val.length << 1;
+
+            UNSAFE.copyMemory(val, SHORT_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(bytes), bytes);
+        }
     }
 
     /** {@inheritDoc} */
@@ -184,7 +199,13 @@ class GridUnsafePortableWriter extends GridPortableWriterAdapter {
 
     /** {@inheritDoc} */
     @Override public void writeIntArray(@Nullable int[] val) throws GridPortableException {
-        // TODO: implement.
+        writeInt(val != null ? val.length : -1);
+
+        if (val != null) {
+            int bytes = val.length << 2;
+
+            UNSAFE.copyMemory(val, INT_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(bytes), bytes);
+        }
     }
 
     /** {@inheritDoc} */
@@ -194,7 +215,13 @@ class GridUnsafePortableWriter extends GridPortableWriterAdapter {
 
     /** {@inheritDoc} */
     @Override public void writeLongArray(@Nullable long[] val) throws GridPortableException {
-        // TODO: implement.
+        writeInt(val != null ? val.length : -1);
+
+        if (val != null) {
+            int bytes = val.length << 3;
+
+            UNSAFE.copyMemory(val, LONG_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(bytes), bytes);
+        }
     }
 
     /** {@inheritDoc} */
@@ -204,7 +231,13 @@ class GridUnsafePortableWriter extends GridPortableWriterAdapter {
 
     /** {@inheritDoc} */
     @Override public void writeFloatArray(@Nullable float[] val) throws GridPortableException {
-        // TODO: implement.
+        writeInt(val != null ? val.length : -1);
+
+        if (val != null) {
+            int bytes = val.length << 2;
+
+            UNSAFE.copyMemory(val, FLOAT_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(bytes), bytes);
+        }
     }
 
     /** {@inheritDoc} */
@@ -214,7 +247,13 @@ class GridUnsafePortableWriter extends GridPortableWriterAdapter {
 
     /** {@inheritDoc} */
     @Override public void writeDoubleArray(@Nullable double[] val) throws GridPortableException {
-        // TODO: implement.
+        writeInt(val != null ? val.length : -1);
+
+        if (val != null) {
+            int bytes = val.length << 3;
+
+            UNSAFE.copyMemory(val, DOUBLE_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(bytes), bytes);
+        }
     }
 
     /** {@inheritDoc} */
@@ -224,7 +263,13 @@ class GridUnsafePortableWriter extends GridPortableWriterAdapter {
 
     /** {@inheritDoc} */
     @Override public void writeCharArray(@Nullable char[] val) throws GridPortableException {
-        // TODO: implement.
+        writeInt(val != null ? val.length : -1);
+
+        if (val != null) {
+            int bytes = val.length << 1;
+
+            UNSAFE.copyMemory(val, CHAR_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(bytes), bytes);
+        }
     }
 
     /** {@inheritDoc} */
@@ -234,7 +279,10 @@ class GridUnsafePortableWriter extends GridPortableWriterAdapter {
 
     /** {@inheritDoc} */
     @Override public void writeBooleanArray(@Nullable boolean[] val) throws GridPortableException {
-        // TODO: implement.
+        writeInt(val != null ? val.length : -1);
+
+        if (val != null)
+            UNSAFE.copyMemory(val, SHORT_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(val.length), val.length);
     }
 
     /** {@inheritDoc} */
@@ -244,7 +292,12 @@ class GridUnsafePortableWriter extends GridPortableWriterAdapter {
 
     /** {@inheritDoc} */
     @Override public void writeStringArray(@Nullable String[] val) throws GridPortableException {
-        // TODO: implement.
+        writeInt(val != null ? val.length : -1);
+
+        if (val != null) {
+            for (String str : val)
+                writeString(str);
+        }
     }
 
     /** {@inheritDoc} */
@@ -254,7 +307,12 @@ class GridUnsafePortableWriter extends GridPortableWriterAdapter {
 
     /** {@inheritDoc} */
     @Override public void writeUuidArray(@Nullable UUID[] val) throws GridPortableException {
-        // TODO: implement.
+        writeInt(val != null ? val.length : -1);
+
+        if (val != null) {
+            for (UUID uuid : val)
+                writeUuid(uuid);
+        }
     }
 
     /** {@inheritDoc} */
@@ -264,7 +322,12 @@ class GridUnsafePortableWriter extends GridPortableWriterAdapter {
 
     /** {@inheritDoc} */
     @Override public void writeObjectArray(@Nullable Object[] val) throws GridPortableException {
-        // TODO: implement.
+        writeInt(val != null ? val.length : -1);
+
+        if (val != null) {
+            for (Object obj : val)
+                writeObject(obj);
+        }
     }
 
     /** {@inheritDoc} */
@@ -275,7 +338,12 @@ class GridUnsafePortableWriter extends GridPortableWriterAdapter {
 
     /** {@inheritDoc} */
     @Override public <T> void writeCollection(@Nullable Collection<T> col) throws GridPortableException {
-        // TODO: implement.
+        writeInt(col != null ? col.size() : -1);
+
+        if (col != null) {
+            for (Object obj : col)
+                writeObject(obj);
+        }
     }
 
     /** {@inheritDoc} */
@@ -285,6 +353,13 @@ class GridUnsafePortableWriter extends GridPortableWriterAdapter {
 
     /** {@inheritDoc} */
     @Override public <K, V> void writeMap(@Nullable Map<K, V> map) throws GridPortableException {
-        // TODO: implement.
+        writeInt(map != null ? map.size() : -1);
+
+        if (map != null) {
+            for (Map.Entry<K, V> e : map.entrySet()) {
+                writeObject(e.getKey());
+                writeObject(e.getValue());
+            }
+        }
     }
 }

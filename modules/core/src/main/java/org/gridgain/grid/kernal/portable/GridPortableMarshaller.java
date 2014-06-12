@@ -33,7 +33,7 @@ public class GridPortableMarshaller {
      * @return Byte array.
      * @throws GridPortableException In case of error.
      */
-    public byte[] marshal(@Nullable GridPortable portable) throws GridPortableException {
+    public byte[] marshal(@Nullable Object portable) throws GridPortableException {
         if (portable == null)
             return NULL_ARR;
 
@@ -49,7 +49,7 @@ public class GridPortableMarshaller {
      * @return Portable object.
      * @throws GridPortableException
      */
-    @Nullable public GridPortable unmarshal(byte[] arr) throws GridPortableException {
+    @Nullable public Object unmarshal(byte[] arr) throws GridPortableException {
         return null;
     }
 }

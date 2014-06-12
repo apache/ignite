@@ -27,10 +27,10 @@ abstract class GridPortableWriterAdapter implements GridPortableWriter {
     private static final int INIT_SIZE = 4 * 1024;
 
     /** */
-    private byte[] arr;
+    protected byte[] arr;
 
     /** */
-    private int off;
+    private int size;
 
     /** */
     protected GridPortableWriterAdapter() {
@@ -39,26 +39,31 @@ abstract class GridPortableWriterAdapter implements GridPortableWriter {
 
     /**
      * @param bytes Number of bytes that are going to be written.
+     * @return Offset before write.
      */
-    protected void requestFreeSize(int bytes) {
-        int newSize = off + bytes;
+    protected int requestFreeSize(int bytes) {
+        int size0 = size;
 
-        if (off + bytes > arr.length) {
-            byte[] arr0 = new byte[newSize << 1];
+        size += bytes;
 
-            UNSAFE.copyMemory(arr, BYTE_ARR_OFF, arr0, BYTE_ARR_OFF, off);
+        if (size > arr.length) {
+            byte[] arr0 = new byte[size << 1];
+
+            UNSAFE.copyMemory(arr, BYTE_ARR_OFF, arr0, BYTE_ARR_OFF, size0);
 
             arr = arr0;
         }
+
+        return size0;
     }
 
     /**
      * @return Array.
      */
     public byte[] array() {
-        byte[] arr0 = new byte[off];
+        byte[] arr0 = new byte[size];
 
-        UNSAFE.copyMemory(arr, BYTE_ARR_OFF, arr0, BYTE_ARR_OFF, off);
+        UNSAFE.copyMemory(arr, BYTE_ARR_OFF, arr0, BYTE_ARR_OFF, size);
 
         return arr0;
     }
