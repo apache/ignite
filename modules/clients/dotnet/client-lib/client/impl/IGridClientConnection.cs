@@ -12,6 +12,7 @@ namespace GridGain.Client.Impl {
     using System.Net;
     using System.Collections.Generic;
     using GridGain.Client.Util;
+    using GridGain.Client.Impl.Query;
 
     /**
      * <summary>
@@ -275,5 +276,23 @@ namespace GridGain.Client.Impl {
          * <exception cref="GridClientClosedException">If client was manually closed before request was sent over network.</exception>
          */
         IGridClientFuture<IList<String>> Log(String path, int fromLine, int toLine, Guid destNodeId);
+
+        /**
+         * <summary>
+         * Starts query execution on given node.</summary>
+         * 
+         * <param name="cacheName">Cache name to execute query for.</param>
+         * <param name="destNodeId">Destination node ID to execute query on.</param>
+         */
+        IGridClientFuture<GridClientDataQueryPartialResult> ExecuteQuery(String cacheName, Guid destNodeId);
+
+        /**
+         * <summary>
+         * Fetches next query results page from destination node.</summary>
+         * 
+         * <param name="qryId">Query ID to fetch data for.</param>
+         * <param name="destNodeId">Destination node ID to fetch data from.</param>
+         */
+        IGridClientFuture<GridClientDataQueryPartialResult> FetchNextPage(Guid qryId, Guid destNodeId);
     }
 }

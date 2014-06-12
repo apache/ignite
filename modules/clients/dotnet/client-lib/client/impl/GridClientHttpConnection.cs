@@ -20,6 +20,7 @@ namespace GridGain.Client.Impl {
     using GridGain.Client.Ssl;
     using GridGain.Client.Util;
     using GridGain.Client.Impl.Message;
+    using GridGain.Client.Impl.Query;
 
     using sc = System.Collections;
     using U = GridGain.Client.Util.GridClientUtils;
@@ -587,6 +588,16 @@ namespace GridGain.Client.Impl {
 
                 return res;
             });
+        }
+
+        /** <inheritdoc /> */
+        override public IGridClientFuture<GridClientDataQueryPartialResult> ExecuteQuery(String cacheName, Guid destNodeId) {
+            return null;
+        }
+
+        /** <inheritdoc /> */
+        override public IGridClientFuture<GridClientDataQueryPartialResult> FetchNextPage(Guid qryId, Guid destNodeId) {
+            return null;
         }
 
         /**

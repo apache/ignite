@@ -72,7 +72,12 @@
     <Compile Include="client\GridClientCacheFlag.cs" />
     <Compile Include="client\GridClientAuthenticationException.cs" />
     <Compile Include="client\hasher\GridClientJavaHelper.cs" />
+    <Compile Include="client\impl\query\GridClientDataQueryPartialResult.cs" />
+    <Compile Include="client\query\IGridClientDataQuery.cs" />
+    <Compile Include="client\query\IGridClientDataQueryFuture.cs" />
+    <Compile Include="client\query\IGridClientDataQueryMetrics.cs" />
     <Compile Include="client\IGridClientNodeMetrics.cs" />
+    <Compile Include="client\query\IGridClientDataQueries.cs" />
     <Compile Include="client\impl\GridClientDataMetrics.cs" />
     <Compile Include="client\IGridClientDataMetrics.cs" />
     <Compile Include="client\impl\GridClientNodeMetrics.cs" />
