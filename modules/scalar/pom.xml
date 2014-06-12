@@ -176,6 +176,10 @@
                                     <replacevalue>location.replace("org/gridgain/scalar/scalar$.html")</replacevalue>
                                     <include name="**/index.js"/>
                                 </replace>
+
+                                <zip destfile="target/gridgain-scalar-${gridgain.version}-javadoc.jar"
+                                     basedir="target/site/scaladocs"
+                                     encoding="UTF-8"/>
                             </target>
                         </configuration>
                     </execution>
