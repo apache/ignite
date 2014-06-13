@@ -93,6 +93,7 @@ GridGain Maven repository has `5` artifacts (add `'-ent'` for enterprise edition
         <groupId>org.gridgain</groupId>
         <artifactId>gridgain-platform-edition</artifactId>
         <version>${gridgain.version}</version>
+        <type>pom</type>
     </dependency>
 
 #### 3.2.2 Enterprise
@@ -107,6 +108,7 @@ GridGain Maven repository has `5` artifacts (add `'-ent'` for enterprise edition
         <groupId>org.gridgain</groupId>
         <artifactId>gridgain-platform-ent-edition</artifactId>
         <version>${gridgain.version}</version>
+        <type>pom</type>
     </dependency>
 
 ## 4. Starting Grid Nodes
