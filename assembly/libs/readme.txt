@@ -19,9 +19,46 @@ to 'libs' folder. You can create a subfolder for convenience as well.
 Importing GridGain Dependencies In Maven Project
 ------------------------------------------------
 
-If you are using Maven to manage dependencies of your project, you should add GridGain core
-dependency like this (replace '${gridgain.version}' with actual GridGain version you are
-interested in):
+If you are using Maven to manage dependencies of your project, there are two options:
+- import one of four predefined GridGain editions (In-Memory DataGrid, In-Memory Streaming,
+  In-Memory Accelerator for Hadoop or In-Memory Platform),
+- import individual GridGain modules.
+
+Each edition automatically imports GridGain core module and a set of optional modules
+needed for this edition to work. Specifically:
+- In-Memory DataGrid imports 'gridgain-core', 'gridgain-indexing', 'gridgain-hibernate' and 'gridgain-jta' modules,
+- In-Memory Streaming imports only 'gridgain-core' (it doesn't require any optional modules),
+- In-Memory Accelerator for Hadoop imports 'gridgain-core' and 'gridgain-hadoop' modules,
+- In-Memory Platform imports all modules that are included in other editions.
+
+GridGain provides artifacts for all editions so that they can be easily added as a dependency to your project:
+- gridgain-datagrid-edition for In-Memory DataGrid,
+- gridgain-streaming-edition for In-Memory Streaming,
+- gridgain-hadoop-edition for In-Memory Accelerator,
+- gridgain-platform-edition for In-Memory Platform.
+
+For example, In-Memory DataGrid can be added like this (replace '${gridgain.version}' with actual
+GridGain version you are interested in):
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                        http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    ...
+    <dependencies>
+        ...
+        <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-datagrid-edition</artifactId>
+            <version>${gridgain.version}</version>
+        </dependency>
+        ...
+    </dependencies>
+    ...
+</project>
+
+Alternatively you can import GridGain modules one by one. For example, if you need only core module,
+it can be added like this:
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -40,8 +77,7 @@ interested in):
     ...
 </project>
 
-All optional modules can be imported using Maven as well. They are added just like the core module,
-but with different artifact IDs.
+All optional modules can be imported like the core module, but with different artifact IDs.
 
 Here is a list of available modules:
 - gridgain-spring (for Spring-based configuration support)

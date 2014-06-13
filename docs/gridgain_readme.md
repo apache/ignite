@@ -76,18 +76,16 @@ GridGain provides repository for its Maven artifacts.
 - GridGain Enterprise repository is located at http://www.gridgainsystems.com:8085/nexus/content/repositories/external
 
 ### 3.1 Maven Artifacts
-GridGain Maven repository has `5` artifacts (add `'-ent'` for enterprise edition):
+GridGain Maven repository has `4` artifacts:
 
-* gridgain-datagrid - contains jars and dependencies for In-Memory Data Grid
-* gridgain-streaming - contains jars and dependencies for In-Memory Streaming
-* gridgain-hadoop1 - contains jars and dependencies for In-Memory Accelerator for Hadoop (Hadoop 1.x version)
-* gridgain-hadoop2 - contains jars and dependencies for In-Memory Accelerator for Hadoop (Hadoop 2.x version)
-* gridgain-platform - contains jars and dependencies for all GridGain editions.
+* `gridgain-datagrid-edition` (`gridgain-datagrid-ent-edition` for enterprise edition) - contains jars and dependencies for In-Memory Data Grid.
+* `gridgain-streaming-edition` (`gridgain-streaming-ent-edition` for enterprise edition) - contains jars and dependencies for In-Memory Streaming.
+* `gridgain-hadoop-edition` (`gridgain-hadoop-ent-edition` for enterprise edition) - contains jars and dependencies for In-Memory Accelerator for Hadoop.
+* `gridgain-platform-edition` (`gridgain-platform-ent-edition` for enterprise edition) - contains jars and dependencies for all GridGain editions.
 
 ### 3.2 Maven Example
 
 #### 3.2.1 Open Source
-
 
     <dependency>
         <groupId>org.gridgain</groupId>
@@ -97,7 +95,6 @@ GridGain Maven repository has `5` artifacts (add `'-ent'` for enterprise edition
     </dependency>
 
 #### 3.2.2 Enterprise
-
 
     <repository>
         <id>GridGain External Repository</id>
