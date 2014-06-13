@@ -3,7 +3,7 @@ GridGain Dependencies
 
 Current folder contains JAR files for all GridGain modules along with their dependencies.
 When node is started using 'ggstart.{sh|bat}' script, all JARs and classes located in
-'libs' folder and all its subfolders except 'optional' are added to classpath of the node.
+'libs' folder and all its sub-folders except 'optional' are added to classpath of the node.
 
 By default, only GridGain core JAR and a minimum set of modules is enabled, while other
 modules are located in 'optional' folder and therefore disabled.
