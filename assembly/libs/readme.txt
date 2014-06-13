@@ -16,6 +16,7 @@ classpath in this case.
 If you need to add your own classes to classpath of the node (e.g., task classes), put them
 to 'libs' folder. You can create a subfolder for convenience as well.
 
+
 Importing GridGain Dependencies In Maven Project
 ------------------------------------------------
 
@@ -27,6 +28,10 @@ If you are using Maven to manage dependencies of your project, there are two opt
   - gridgain-platform-edition
 
 - or import individual GridGain modules a la carte.
+
+
+Importing GridGain Edition Dependencies
+---------------------------------------
 
 When importing editions, each edition automatically imports GridGain core module and
 a set of additional modules needed for this edition to work. Specifically:
@@ -67,8 +72,13 @@ Here is how 'gridgain-datagrid-edition' can be added to your POM file
     ...
 </project>
 
-Alternatively you can import GridGain modules a la carte, one by one. For example, if you need only the core module,
-it can be added like this:
+
+Importing Individual Modules A La Carte
+---------------------------------------
+
+Alternatively you can import GridGain modules a la carte, one by one.
+The only required module is 'gridgain-core', all others are optional.
+Here is how it can be imported into your POM file:
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -87,9 +97,9 @@ it can be added like this:
     ...
 </project>
 
-All optional modules can be imported like the core module, but with different artifact IDs.
+All optional modules can be imported just like the core module, but with different artifact IDs.
 
-Here is a list of available modules:
+The following modules are available:
 - gridgain-spring (for Spring-based configuration support)
 - gridgain-indexing (for SQL querying and indexing)
 - gridgain-hibernate (for Hibernate integration)
@@ -109,7 +119,8 @@ Here is a list of available modules:
 - gridgain-email (for email alerts)
 - gridgain-aop (for AOP-based grid-enabling)
 
-For example, if you want to configure GridGain nodes via Spring, add 'gridgain-spring' module like this:
+For example, if you want to use GridGain Spring-based configuration,
+you should add 'gridgain-spring' module like this:
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
