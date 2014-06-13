@@ -21,13 +21,14 @@ Importing GridGain Dependencies In Maven Project
 ------------------------------------------------
 
 If you are using Maven to manage dependencies of your project, there are two options:
-- import one of four predefined GridGain editions
+
+1. Import one of four predefined GridGain editions
   - gridgain-datagrid-edition
   - gridgain-streaming-edition
   - gridgain-hadoop-edition
   - gridgain-platform-edition
 
-- or import individual GridGain modules a la carte.
+2. Or import individual GridGain modules a la carte.
 
 
 Importing GridGain Edition Dependencies
