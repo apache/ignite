@@ -9,7 +9,7 @@ To enable URI Deploy module when starting a standalone node, move 'optional/grid
 be added to classpath in this case.
 
 Importing URI Deploy Module In Maven Project
--------------------------------------
+--------------------------------------------
 
 If you are using Maven to manage dependencies of your project, you can add URI Deploy module
 dependency like this (replace '${gridgain.version}' with actual GridGain version you are
