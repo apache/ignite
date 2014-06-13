@@ -20,25 +20,35 @@ Importing GridGain Dependencies In Maven Project
 ------------------------------------------------
 
 If you are using Maven to manage dependencies of your project, there are two options:
-- import one of four predefined GridGain editions (In-Memory DataGrid, In-Memory Streaming,
-  In-Memory Accelerator for Hadoop or In-Memory Platform),
-- import individual GridGain modules.
+- import one of four predefined GridGain editions
+  - gridgain-datagrid-edition
+  - gridgain-streaming-edition
+  - gridgain-hadoop-edition
+  - gridgain-platform-edition
 
-Each edition automatically imports GridGain core module and a set of optional modules
-needed for this edition to work. Specifically:
-- In-Memory DataGrid imports 'gridgain-core', 'gridgain-indexing', 'gridgain-hibernate' and 'gridgain-jta' modules,
-- In-Memory Streaming imports only 'gridgain-core' (it doesn't require any optional modules),
-- In-Memory Accelerator for Hadoop imports 'gridgain-core' and 'gridgain-hadoop' modules,
-- In-Memory Platform imports all modules that are included in other editions.
+- or import individual GridGain modules a la carte.
 
-GridGain provides artifacts for all editions so that they can be easily added as a dependency to your project:
-- gridgain-datagrid-edition for In-Memory DataGrid,
-- gridgain-streaming-edition for In-Memory Streaming,
-- gridgain-hadoop-edition for In-Memory Accelerator,
-- gridgain-platform-edition for In-Memory Platform.
+When importing editions, each edition automatically imports GridGain core module and
+a set of additional modules needed for this edition to work. Specifically:
 
-For example, In-Memory DataGrid can be added like this (replace '${gridgain.version}' with actual
-GridGain version you are interested in):
+- gridgain-datagrid-edition
+  - gridgain-core
+  - gridgain-indexing (optional, add if you need SQL indexing)
+  - gridgain-hibernate (optional, add if you need hibernate integration)
+  - gridgain-jta (optional, add if you need XA/JTA integration)
+
+- gridgain-streaming-edition
+  - gridgain-core
+
+- gridgain-hadoop-edition
+  - gridgain-core
+  - gridgain-hadoop
+
+- gridgain-platform-edition
+  - (all dependencies included in other editions)
+
+Here is how 'gridgain-datagrid-edition' can be added to your POM file
+(replace '${gridgain.version}' with actual GridGain version you are interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -57,7 +67,7 @@ GridGain version you are interested in):
     ...
 </project>
 
-Alternatively you can import GridGain modules one by one. For example, if you need only core module,
+Alternatively you can import GridGain modules a la carte, one by one. For example, if you need only the core module,
 it can be added like this:
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
