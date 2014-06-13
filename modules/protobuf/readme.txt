@@ -1,7 +1,7 @@
 GridGain Protobuf Module
 ------------------------
 
-GridGain Protobuf module provides Protobuf support for binary REST server. Enable it if you are going
+GridGain Protobuf module provides Protobuf support for binary grid client connections. Enable it if you are going
 to use C++ and/or .NET clients.
 
 To enable Protobuf module when starting a standalone node, move 'optional/gridgain-protobuf' folder to

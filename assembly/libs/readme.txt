@@ -41,8 +41,29 @@ interested in):
 </project>
 
 All optional modules can be imported using Maven as well. They are added just like the core module,
-but with different artifact IDs. E.g., if you want to configure GridGain nodes via Spring, add
-'gridgain-spring' module like this:
+but with different artifact IDs.
+
+Here is a list of available modules:
+- gridgain-spring (for Spring-based configuration support)
+- gridgain-indexing (for SQL querying and indexing)
+- gridgain-hibernate (for Hibernate integration)
+- gridgain-web (for Web Sessions Clustering)
+- gridgain-schedule (for Cron-based task scheduling)
+- gridgain-logj4 (for Log4j logging)
+- gridgain-jcl (for Apache Commons logging)
+- gridgain-jta (for XA integration)
+- gridgain-hadoop (for Apache Hadoop Accelerator)
+- gridgain-protobuf (for C++ and .NET clients)
+- gridgain-rest-http (for HTTP REST messages)
+- gridgain-scalar (for Scala API for GridGain)
+- gridgain-sl4j (for SL4J logging)
+- gridgain-ssh (for starting grid nodes on remote machines)
+- gridgain-urideploy (for URI-based deployment)
+- gridgain-aws (for seemless cluster discovery on AWS S3)
+- gridgain-email (for email alerts)
+- gridgain-aop (for AOP-based grid-enabling)
+
+For example, if you want to configure GridGain nodes via Spring, add 'gridgain-spring' module like this:
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
