@@ -9,14 +9,19 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.grid.portable.*;
+
 import java.io.*;
 
 /**
  * Node metrics bean.
  */
-public class GridClientNodeMetricsBean implements Externalizable {
+public class GridClientNodeMetricsBean implements Externalizable, GridPortableEx {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    public static final int PORTABLE_TYPE_ID = GridClientAbstractMessage.nextSystemTypeId();
 
     /** */
     private long lastUpdateTime = -1;
@@ -1336,6 +1341,123 @@ public class GridClientNodeMetricsBean implements Externalizable {
             append(", rcvdBytesCnt=").append(rcvdBytesCnt).
             append("]").
             toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int typeId() {
+        return PORTABLE_TYPE_ID;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writePortable(GridPortableWriter writer) throws IOException {
+        writer.writeLong("lastUpdateTime", lastUpdateTime);
+        writer.writeInt("maxActiveJobs", maxActiveJobs);
+        writer.writeInt("curActiveJobs", curActiveJobs);
+        writer.writeFloat("avgActiveJobs", avgActiveJobs);
+        writer.writeInt("maxWaitingJobs", maxWaitingJobs);
+        writer.writeInt("curWaitingJobs", curWaitingJobs);
+        writer.writeFloat("avgWaitingJobs", avgWaitingJobs);
+        writer.writeInt("maxRejectedJobs", maxRejectedJobs);
+        writer.writeInt("curRejectedJobs", curRejectedJobs);
+        writer.writeFloat("avgRejectedJobs", avgRejectedJobs);
+        writer.writeInt("maxCancelledJobs", maxCancelledJobs);
+        writer.writeInt("curCancelledJobs", curCancelledJobs);
+        writer.writeFloat("avgCancelledJobs", avgCancelledJobs);
+        writer.writeInt("totalRejectedJobs", totalRejectedJobs);
+        writer.writeInt("totalCancelledJobs", totalCancelledJobs);
+        writer.writeInt("totalExecutedJobs", totalExecutedJobs);
+        writer.writeLong("maxJobWaitTime", maxJobWaitTime);
+        writer.writeLong("curJobWaitTime", curJobWaitTime);
+        writer.writeDouble("avgJobWaitTime", avgJobWaitTime);
+        writer.writeLong("maxJobExecTime", maxJobExecTime);
+        writer.writeLong("curJobExecTime", curJobExecTime);
+        writer.writeDouble("avgJobExecTime", avgJobExecTime);
+        writer.writeInt("totalExecTasks", totalExecTasks);
+        writer.writeLong("totalIdleTime", totalIdleTime);
+        writer.writeLong("curIdleTime", curIdleTime);
+        writer.writeInt("availProcs", availProcs);
+        writer.writeDouble("load", load);
+        writer.writeDouble("avgLoad", avgLoad);
+        writer.writeDouble("gcLoad", gcLoad);
+        writer.writeLong("heapInit", heapInit);
+        writer.writeLong("heapUsed", heapUsed);
+        writer.writeLong("heapCommitted", heapCommitted);
+        writer.writeLong("heapMax", heapMax);
+        writer.writeLong("nonHeapInit", nonHeapInit);
+        writer.writeLong("nonHeapUsed", nonHeapUsed);
+        writer.writeLong("nonHeapCommitted", nonHeapCommitted);
+        writer.writeLong("nonHeapMax", nonHeapMax);
+        writer.writeLong("upTime", upTime);
+        writer.writeLong("startTime", startTime);
+        writer.writeLong("nodeStartTime", nodeStartTime);
+        writer.writeInt("threadCnt", threadCnt);
+        writer.writeInt("peakThreadCnt", peakThreadCnt);
+        writer.writeLong("startedThreadCnt", startedThreadCnt);
+        writer.writeInt("daemonThreadCnt", daemonThreadCnt);
+        writer.writeLong("fileSysFreeSpace", fileSysFreeSpace);
+        writer.writeLong("fileSysTotalSpace", fileSysTotalSpace);
+        writer.writeLong("fileSysUsableSpace", fileSysUsableSpace);
+        writer.writeLong("lastDataVer", lastDataVer);
+        writer.writeInt("sentMsgsCnt", sentMsgsCnt);
+        writer.writeLong("sentBytesCnt", sentBytesCnt);
+        writer.writeInt("rcvdMsgsCnt", rcvdMsgsCnt);
+        writer.writeLong("rcvdBytesCnt", rcvdBytesCnt);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readPortable(GridPortableReader reader) throws IOException {
+        lastUpdateTime = reader.readLong("lastUpdateTime");
+        maxActiveJobs = reader.readInt("maxActiveJobs");
+        curActiveJobs = reader.readInt("curActiveJobs");
+        avgActiveJobs = reader.readFloat("avgActiveJobs");
+        maxWaitingJobs = reader.readInt("maxWaitingJobs");
+        curWaitingJobs = reader.readInt("curWaitingJobs");
+        avgWaitingJobs = reader.readFloat("avgWaitingJobs");
+        maxRejectedJobs = reader.readInt("maxRejectedJobs");
+        curRejectedJobs = reader.readInt("curRejectedJobs");
+        avgRejectedJobs = reader.readFloat("avgRejectedJobs");
+        maxCancelledJobs = reader.readInt("maxCancelledJobs");
+        curCancelledJobs = reader.readInt("curCancelledJobs");
+        avgCancelledJobs = reader.readFloat("avgCancelledJobs");
+        totalRejectedJobs = reader.readInt("totalRejectedJobs");
+        totalCancelledJobs = reader.readInt("totalCancelledJobs");
+        totalExecutedJobs = reader.readInt("totalExecutedJobs");
+        maxJobWaitTime = reader.readLong("maxJobWaitTime");
+        curJobWaitTime = reader.readLong("curJobWaitTime");
+        avgJobWaitTime = reader.readDouble("avgJobWaitTime");
+        maxJobExecTime = reader.readLong("maxJobExecTime");
+        curJobExecTime = reader.readLong("curJobExecTime");
+        avgJobExecTime = reader.readDouble("avgJobExecTime");
+        totalExecTasks = reader.readInt("totalExecTasks");
+        totalIdleTime = reader.readLong("totalIdleTime");
+        curIdleTime = reader.readLong("curIdleTime");
+        availProcs = reader.readInt("availProcs");
+        load = reader.readDouble("load");
+        avgLoad = reader.readDouble("avgLoad");
+        gcLoad = reader.readDouble("gcLoad");
+        heapInit = reader.readLong("heapInit");
+        heapUsed = reader.readLong("heapUsed");
+        heapCommitted = reader.readLong("heapCommitted");
+        heapMax = reader.readLong("heapMax");
+        nonHeapInit = reader.readLong("nonHeapInit");
+        nonHeapUsed = reader.readLong("nonHeapUsed");
+        nonHeapCommitted = reader.readLong("nonHeapCommitted");
+        nonHeapMax = reader.readLong("nonHeapMax");
+        upTime = reader.readLong("upTime");
+        startTime = reader.readLong("startTime");
+        nodeStartTime = reader.readLong("nodeStartTime");
+        threadCnt = reader.readInt("threadCnt");
+        peakThreadCnt = reader.readInt("peakThreadCnt");
+        startedThreadCnt = reader.readLong("startedThreadCnt");
+        daemonThreadCnt = reader.readInt("daemonThreadCnt");
+        fileSysFreeSpace = reader.readLong("fileSysFreeSpace");
+        fileSysTotalSpace = reader.readLong("fileSysTotalSpace");
+        fileSysUsableSpace = reader.readLong("fileSysUsableSpace");
+        lastDataVer = reader.readLong("lastDataVer");
+        sentMsgsCnt = reader.readInt("sentMsgsCnt");
+        sentBytesCnt = reader.readLong("sentBytesCnt");
+        rcvdMsgsCnt = reader.readInt("rcvdMsgsCnt");
+        rcvdBytesCnt = reader.readLong("rcvdBytesCnt");
     }
 
     /** {@inheritDoc} */

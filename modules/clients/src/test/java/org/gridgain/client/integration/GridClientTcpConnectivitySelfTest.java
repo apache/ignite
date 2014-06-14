@@ -24,13 +24,17 @@ public class GridClientTcpConnectivitySelfTest extends GridClientAbstractConnect
         throws Exception {
         GridConfiguration cfg = getConfiguration(name);
 
-        cfg.setRestEnabled(true);
+        assert cfg.getClientConnectionConfiguration() == null;
+
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
 
         if (addr != null)
-            cfg.setRestTcpHost(addr);
+            clientCfg.setRestTcpHost(addr);
 
         if (port != null)
-            cfg.setRestTcpPort(port);
+            clientCfg.setRestTcpPort(port);
+
+        cfg.setClientConnectionConfiguration(clientCfg);
 
         return G.start(cfg);
     }

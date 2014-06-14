@@ -55,9 +55,15 @@ public class GridClientPreferDirectSelfTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        c.setRestEnabled(true);
         c.setLocalHost(HOST);
-        c.setRestTcpPort(REST_TCP_PORT_BASE);
+
+        assert c.getClientConnectionConfiguration() == null;
+
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+
+        clientCfg.setRestTcpPort(REST_TCP_PORT_BASE);
+
+        c.setClientConnectionConfiguration(clientCfg);
 
         return c;
     }

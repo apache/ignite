@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -16,9 +17,12 @@ import java.io.*;
 /**
  * Task result.
  */
-public class GridClientTaskResultBean implements Externalizable {
+public class GridClientTaskResultBean implements Externalizable, GridPortableEx {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    public static final int PORTABLE_TYPE_ID = GridClientAbstractMessage.nextSystemTypeId();
 
     /** Synthetic ID containing task ID and result holding node ID. */
     private String id;
@@ -87,6 +91,27 @@ public class GridClientTaskResultBean implements Externalizable {
      */
     public void setError(String error) {
         this.error = error;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int typeId() {
+        return PORTABLE_TYPE_ID;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writePortable(GridPortableWriter writer) throws IOException {
+        writer.writeString("id", id);
+        writer.writeBoolean("finished", finished);
+        writer.writeObject("res", res);
+        writer.writeString("error", error);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readPortable(GridPortableReader reader) throws IOException {
+        id = reader.readString("id");
+        finished = reader.readBoolean("finished");
+        res = reader.readObject("res");
+        error = reader.readString("error");
     }
 
     /** {@inheritDoc} */

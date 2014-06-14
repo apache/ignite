@@ -37,6 +37,7 @@ import java.io.*;
  * specifying {@link #setUserObject(Object) userObject} as well, which can be used
  * to pass in any additional information required for authentication.
  */
+// TODO: 8491 (need be portable to make client security tests pass).
 public class GridSecurityCredentials implements Externalizable {
     /** */
     private static final long serialVersionUID = -2655741071578326256L;

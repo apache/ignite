@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -20,6 +21,9 @@ import java.util.*;
 public class GridClientTopologyRequest extends GridClientAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    public static final int PORTABLE_TYPE_ID = GridClientAbstractMessage.nextSystemTypeId();
 
     /** Id of requested node. */
     private UUID nodeId;
@@ -107,6 +111,35 @@ public class GridClientTopologyRequest extends GridClientAbstractMessage {
     @Override public int hashCode() {
         return 31 * (includeMetrics ? 1 : 0) +
             (includeAttrs ? 1 : 0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int typeId() {
+        return PORTABLE_TYPE_ID;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writePortable(GridPortableWriter writer) throws IOException {
+        super.writePortable(writer);
+
+        writer.writeUuid("nodeId", nodeId);
+
+        writer.writeString("nodeIp", nodeIp);
+
+        writer.writeBoolean("includeMetrics", includeMetrics);
+        writer.writeBoolean("includeAttrs", includeAttrs);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readPortable(GridPortableReader reader) throws IOException {
+        super.readPortable(reader);
+
+        nodeId = reader.readUuid("nodeId");
+
+        nodeIp = reader.readString("nodeIp");
+
+        includeMetrics = reader.readBoolean("includeMetrics");
+        includeAttrs = reader.readBoolean("includeAttrs");
     }
 
     /** {@inheritDoc} */

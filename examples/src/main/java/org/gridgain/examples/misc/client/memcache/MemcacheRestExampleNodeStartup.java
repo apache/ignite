@@ -70,7 +70,11 @@ public class MemcacheRestExampleNodeStartup {
 
         cfg.setIndexingSpi(indexSpi);
 
-        cfg.setClientMessageInterceptor(new ClientBigIntegerMessageInterceptor());
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+
+        clientCfg.setClientMessageInterceptor(new ClientBigIntegerMessageInterceptor());
+
+        cfg.setClientConnectionConfiguration(clientCfg);
 
         GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
 

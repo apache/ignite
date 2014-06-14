@@ -27,8 +27,13 @@ public class GridClientTcpTaskExecutionAfterTopologyRestartSelfTest extends Grid
 
         cfg.setLocalHost("127.0.0.1");
 
-        cfg.setRestEnabled(true);
-        cfg.setRestTcpPort(PORT);
+        assert cfg.getClientConnectionConfiguration() == null;
+
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+
+        clientCfg.setRestTcpPort(PORT);
+
+        cfg.setClientConnectionConfiguration(clientCfg);
 
         return cfg;
     }

@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 import org.gridgain.client.marshaller.*;
 import org.gridgain.client.marshaller.jdk.*;
 import org.gridgain.client.marshaller.optimized.*;
+import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
@@ -99,6 +100,9 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
         if (protobufMarshaller != null)
             tmpMap.put(U.PROTOBUF_CLIENT_PROTO_ID, protobufMarshaller);
+
+        tmpMap.put(U.PORTABLE_OBJECT_PROTO_ID,
+            new GridClientPortableMarshaller(ctx.config().getClientConnectionConfiguration().getPortableTypesMap()));
 
         // Special case for Optimized marshaller, which may throw exception.
         // This may happen, for example, if some Unsafe methods are unavailable.
@@ -236,6 +240,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
     /**
      * Creates a REST request object from client TCP binary packet.
      *
+     * @param ses NIO session.
      * @param msg Request message.
      * @return REST request object.
      */

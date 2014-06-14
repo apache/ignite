@@ -69,8 +69,10 @@ public class GridClientMemcachedProtocolSelfTest extends GridAbstractRestProcess
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
+        assert cfg.getClientConnectionConfiguration() != null;
+
         if (customPort != null)
-            cfg.setRestTcpPort(customPort);
+            cfg.getClientConnectionConfiguration().setRestTcpPort(customPort);
 
         return cfg;
     }

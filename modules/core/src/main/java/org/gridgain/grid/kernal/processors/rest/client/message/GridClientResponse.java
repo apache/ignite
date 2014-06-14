@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -19,6 +20,9 @@ import java.io.*;
 public class GridClientResponse extends GridClientAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    public static final int PORTABLE_TYPE_ID = nextSystemTypeId();
 
     /** Command succeeded. */
     public static final int STATUS_SUCCESS = 0;
@@ -81,6 +85,33 @@ public class GridClientResponse extends GridClientAbstractMessage {
      */
     public void result(Object res) {
         this.res = res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int typeId() {
+        return PORTABLE_TYPE_ID;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writePortable(GridPortableWriter writer) throws IOException {
+        super.writePortable(writer);
+
+        writer.writeInt("successStatus", successStatus);
+
+        writer.writeString("errorMsg", errorMsg);
+
+        writer.writeObject("res", res);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readPortable(GridPortableReader reader) throws IOException {
+        super.readPortable(reader);
+
+        successStatus = reader.readInt("successStatus");
+
+        errorMsg = reader.readString("errorMsg");
+
+        res = reader.readObject("res");
     }
 
     /** {@inheritDoc} */

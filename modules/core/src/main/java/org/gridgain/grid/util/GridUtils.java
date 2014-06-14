@@ -126,6 +126,9 @@ public abstract class GridUtils {
     /** JDK client marshaller ID. */
     public static final byte JDK_CLIENT_PROTO_ID = 3;
 
+    /** Portable object protocol ID. */
+    public static final byte PORTABLE_OBJECT_PROTO_ID = 4;
+
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
 

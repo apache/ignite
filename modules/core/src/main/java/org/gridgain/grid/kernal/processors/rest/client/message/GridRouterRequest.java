@@ -42,6 +42,11 @@ public class GridRouterRequest extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
+    @Override public int typeId() {
+        throw new UnsupportedOperationException(); // Router request is not marshaled.
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return "GridRouterRequest [clientId=" + clientId() + ", reqId=" + requestId() + ", " +
             "destId=" + destinationId() + ", length=" + body.length + "]";

@@ -18,6 +18,7 @@ import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
+import org.gridgain.grid.portable.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.nio.*;
@@ -27,6 +28,7 @@ import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
 import java.io.*;
+import java.lang.reflect.*;
 import java.net.*;
 import java.nio.*;
 import java.util.*;
@@ -144,7 +146,11 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     @Override public void start(final GridRestProtocolHandler hnd) throws GridException {
         assert hnd != null;
 
-        GridConfiguration cfg = ctx.config();
+        GridClientConnectionConfiguration cfg = ctx.config().getClientConnectionConfiguration();
+
+        assert cfg != null;
+
+        validatePortableTypes(cfg);
 
         GridNioServerListener<GridClientMessage> lsnr =
             new GridTcpRestNioListener(log, this, hnd, ctx, protobufMarshaller);
@@ -152,7 +158,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
         GridNioParser parser = new GridTcpRestDirectParser(this, msgReader);
 
         try {
-            host = resolveRestTcpHost(cfg);
+            host = resolveRestTcpHost(ctx.config());
 
             SSLContext sslCtx = null;
 
@@ -192,6 +198,42 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
         }
     }
 
+    /**
+     * @param cfg Configuration.
+     * @throws GridException If validation fails.
+     */
+    private void validatePortableTypes(GridClientConnectionConfiguration cfg) throws GridException {
+        if (cfg.getPortableTypesMap() == null)
+            return;
+
+        for (Map.Entry<Integer, Class<? extends GridPortableEx>> entry : cfg.getPortableTypesMap().entrySet()) {
+            Integer typeId = entry.getKey();
+            Class<? extends GridPortableEx> cls = entry.getValue();
+
+            if (typeId < 0)
+                throw new GridException("Negative portable types identifiers reserved for system use " +
+                    "[typeId=" + typeId + ", cls=" + cls + ']');
+
+            Constructor<?> ctor;
+
+            try {
+                ctor = cls.getConstructor();
+            }
+            catch (NoSuchMethodException e) {
+                throw new GridException("Portable object class must define public no-arg constructor " +
+                    "[typeId=" + typeId + ", cls=" + cls + ']', e);
+            }
+
+            try {
+                ctor.newInstance();
+            }
+            catch (Exception e) {
+                throw new GridException("Can not instantiate portable object instance using public no-arg constructor "
+                    + "[typeId=" + typeId + ", cls=" + cls + ']', e);
+            }
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void stop() {
         if (srv != null) {
@@ -212,7 +254,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
      * @throws IOException If failed to resolve REST host.
      */
     private InetAddress resolveRestTcpHost(GridConfiguration cfg) throws IOException {
-        String host = cfg.getRestTcpHost();
+        String host = cfg.getClientConnectionConfiguration().getRestTcpHost();
 
         if (host == null)
             host = cfg.getLocalHost();
@@ -233,7 +275,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
      *      server was unable to start.
      */
     private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<GridClientMessage> lsnr,
-        GridNioParser parser, @Nullable SSLContext sslCtx, GridConfiguration cfg) {
+        GridNioParser parser, @Nullable SSLContext sslCtx, GridClientConnectionConfiguration cfg) {
         try {
             GridNioFilter codec = new GridNioCodecFilter(parser, log, true);
 

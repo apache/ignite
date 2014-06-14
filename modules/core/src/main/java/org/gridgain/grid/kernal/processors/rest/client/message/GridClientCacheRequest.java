@@ -8,6 +8,7 @@
  */
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -20,6 +21,9 @@ import java.util.*;
 public class GridClientCacheRequest<K, V> extends GridClientAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    public static final int PORTABLE_TYPE_ID = nextSystemTypeId();
 
     /**
      * Available cache operations.
@@ -216,6 +220,45 @@ public class GridClientCacheRequest<K, V> extends GridClientAbstractMessage {
      */
     public int cacheFlagsOn() {
         return cacheFlagsOn;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int typeId() {
+        return PORTABLE_TYPE_ID;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writePortable(GridPortableWriter writer) throws IOException {
+        super.writePortable(writer);
+
+        writer.writeInt("op", op.ordinal());
+
+        writer.writeString("cacheName", cacheName);
+
+        writer.writeObject("key", key);
+        writer.writeObject("val", val);
+        writer.writeObject("val2", val2);
+
+        writer.writeMap("vals", vals);
+
+        writer.writeInt("flags", cacheFlagsOn);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readPortable(GridPortableReader reader) throws IOException {
+        super.readPortable(reader);
+
+        op = GridCacheOperation.fromOrdinal(reader.readInt("op"));
+
+        cacheName = reader.readString("cacheName");
+
+        key = reader.readObject("key");
+        val = reader.readObject("val");
+        val2 = reader.readObject("val2");
+
+        vals = reader.readMap("vals");
+
+        cacheFlagsOn = reader.readInt("flags");
     }
 
     /** {@inheritDoc} */

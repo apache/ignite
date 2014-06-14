@@ -8,17 +8,29 @@
  */
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.atomic.*;
 
 /**
  * This class provides implementation for commit message fields and cannot be used directly.
  */
-public abstract class GridClientAbstractMessage implements GridClientMessage, Externalizable {
+public abstract class GridClientAbstractMessage implements GridClientMessage, Externalizable, GridPortableEx {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static AtomicInteger typeId = new AtomicInteger();
+
+    /**
+     * @return Portable type identifier for internal client messages classes.
+     */
+    static int nextSystemTypeId() {
+        return typeId.decrementAndGet();
+    }
 
     /** Request ID (transient). */
     private long reqId;
@@ -84,5 +96,15 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         sesTok = U.readByteArray(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writePortable(GridPortableWriter writer) throws IOException {
+        writer.writeByteArray("sesTok", sesTok);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readPortable(GridPortableReader reader) throws IOException {
+        sesTok = reader.readByteArray("sesTok");
     }
 }

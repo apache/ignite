@@ -79,8 +79,14 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setLocalHost(HOST);
-        cfg.setRestTcpPort(PORT);
-        cfg.setRestEnabled(true);
+
+        assert cfg.getClientConnectionConfiguration() == null;
+
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+
+        clientCfg.setRestTcpPort(PORT);
+
+        cfg.setClientConnectionConfiguration(clientCfg);
 
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 
