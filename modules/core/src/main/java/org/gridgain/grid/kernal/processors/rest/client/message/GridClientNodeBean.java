@@ -23,7 +23,7 @@ public class GridClientNodeBean implements Externalizable, GridPortableEx {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final int PORTABLE_TYPE_ID = GridClientAbstractMessage.nextSystemTypeId();
+    public static final int PORTABLE_TYPE_ID = -4;
 
     /** Node ID */
     private UUID nodeId;

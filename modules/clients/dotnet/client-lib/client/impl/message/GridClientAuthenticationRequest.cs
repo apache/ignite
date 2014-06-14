@@ -26,5 +26,20 @@ namespace GridGain.Client.Impl.Message {
             get;
             set;
         }
+
+        /** <inheritdoc /> */
+        public override void WritePortable(IGridPortableWriter writer)
+        {
+            base.WritePortable(writer);
+
+            writer.WriteObject("cred", Credentials);
+        }
+
+        /** <inheritdoc /> */
+        public override void ReadPortable(IGridPortableReader reader) {
+            base.ReadPortable(reader);
+
+            Credentials = reader.ReadObject<Object>("cred");
+        }
     }
 }

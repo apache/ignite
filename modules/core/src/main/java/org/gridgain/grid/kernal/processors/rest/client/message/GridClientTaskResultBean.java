@@ -22,7 +22,7 @@ public class GridClientTaskResultBean implements Externalizable, GridPortableEx 
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final int PORTABLE_TYPE_ID = GridClientAbstractMessage.nextSystemTypeId();
+    public static final int PORTABLE_TYPE_ID = -8;
 
     /** Synthetic ID containing task ID and result holding node ID. */
     private String id;

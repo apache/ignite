@@ -69,6 +69,15 @@
     <Compile Include="client\balancer\IGridClientLoadBalancer.cs" />
     <Compile Include="client\balancer\GridClientLoadBalancer.cs" />
     <Compile Include="client\balancer\GridClientRoundRobinBalancer.cs" />
+    <Compile Include="client\impl\marshaller\GridClientPortableMarshallerNew.cs" />
+    <Compile Include="client\portable\GridClientPortableException.cs" />
+    <Compile Include="client\portable\GridClientPortableInvalidClassException.cs" />
+    <Compile Include="client\portable\GridClientPortableInvalidFieldException.cs" />
+    <Compile Include="client\portable\IGridClientPortable.cs" />
+    <Compile Include="client\portable\IGridClientPortableEx.cs" />
+    <Compile Include="client\portable\IGridClientPortableReader.cs" />
+    <Compile Include="client\portable\IGridClientPortableWriter.cs" />
+    <Compile Include="client\portable\IGridClientPortableObject.cs" />
     <Compile Include="client\GridClientCacheFlag.cs" />
     <Compile Include="client\GridClientAuthenticationException.cs" />
     <Compile Include="client\hasher\GridClientJavaHelper.cs" />
@@ -81,6 +90,8 @@
     <Compile Include="client\impl\GridClientDataMetrics.cs" />
     <Compile Include="client\IGridClientDataMetrics.cs" />
     <Compile Include="client\impl\GridClientNodeMetrics.cs" />
+    <Compile Include="client\impl\marshaller\GridClientPortableMarshaller.cs" />
+    <Compile Include="client\impl\message\GridClientNodeMetricsBean.cs" />
     <Compile Include="client\util\GridClientArgumentCheck.cs" />
     <Compile Include="client\IGridClient.cs" />
     <Compile Include="client\GridClientCacheMode.cs" />
@@ -155,6 +166,7 @@
     <None Include="client-lib.snk" />
     <None Include="client\impl\protobuf\generate.sh" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>

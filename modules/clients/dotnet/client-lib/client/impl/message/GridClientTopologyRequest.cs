@@ -16,10 +16,10 @@ namespace GridGain.Client.Impl.Message {
         /**
          * <summary>
          * Constructs topology request.</summary>
-         * 
+         *
          * <param name="destNodeId">Node ID to route request to.</param>
          */
-        public GridClientTopologyRequest(Guid destNodeId) : base(destNodeId) { 
+        public GridClientTopologyRequest(Guid destNodeId) : base(destNodeId) {
         }
 
         /** <summary>Include metrics flag.</summary> */
@@ -44,6 +44,30 @@ namespace GridGain.Client.Impl.Message {
         public String NodeIP {
             get;
             set;
+        }
+
+        /** <inheritdoc /> */
+        public override void WritePortable(IGridPortableWriter writer) {
+            base.WritePortable(writer);
+
+            writer.WriteGuid("nodeId", NodeId);
+
+            writer.WriteString("nodeIp", NodeIP);
+
+            writer.WriteBoolean("includeMetrics", IncludeMetrics);
+            writer.WriteBoolean("includeAttrs", IncludeAttributes);
+        }
+
+        /** <inheritdoc /> */
+        public override void ReadPortable(IGridPortableReader reader) {
+            base.ReadPortable(reader);
+
+            NodeId = reader.ReadGuid("nodeId");
+
+            NodeIP = reader.ReadString("nodeIp");
+
+            IncludeMetrics = reader.ReadBoolean("includeMetrics");
+            IncludeAttributes = reader.ReadBoolean("includeAttrs");
         }
     }
 }

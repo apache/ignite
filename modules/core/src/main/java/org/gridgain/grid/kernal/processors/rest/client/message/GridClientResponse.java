@@ -22,7 +22,7 @@ public class GridClientResponse extends GridClientAbstractMessage {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final int PORTABLE_TYPE_ID = nextSystemTypeId();
+    public static final int PORTABLE_TYPE_ID = -6;
 
     /** Command succeeded. */
     public static final int STATUS_SUCCESS = 0;

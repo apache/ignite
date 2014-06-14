@@ -540,7 +540,7 @@ namespace GridGain.Client.Impl {
 
             req.CacheName = cacheName;
             req.CacheFlags = encodeCacheFlags(cacheFlags);
-            req.Values = entries.ToMap();
+            req.Values = (IDictionary<object, object>)entries.ToMap();
 
             return makeRequest<Boolean>(req);
         }
@@ -913,7 +913,7 @@ namespace GridGain.Client.Impl {
             if (nodeBean.Attributes != null && nodeBean.Attributes.Count > 0)
                 node.Attributes.AddAll<KeyValuePair<String, Object>>(nodeBean.Attributes);
 
-            if (nodeBean.Metrics != null && nodeBean.Metrics.Count > 0)
+            if (nodeBean.Metrics != null)
                 node.Metrics = parseNodeMetrics(nodeBean.Metrics);
 
             return node;

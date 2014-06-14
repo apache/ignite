@@ -42,5 +42,25 @@ namespace GridGain.Client.Impl.Message {
             get;
             set;
         }
+
+        /** <inheritdoc /> */
+        public override void WritePortable(IGridPortableWriter writer) {
+            base.WritePortable(writer);
+
+            writer.WriteString("path", Path);
+
+            writer.WriteInt("from", From);
+            writer.WriteInt("to", To);
+        }
+
+        /** <inheritdoc /> */
+        public override void ReadPortable(IGridPortableReader reader) {
+            base.ReadPortable(reader);
+
+            Path = reader.ReadString("path");
+
+            From = reader.ReadInt("from");
+            To = reader.ReadInt("to");
+        }
     }
 }

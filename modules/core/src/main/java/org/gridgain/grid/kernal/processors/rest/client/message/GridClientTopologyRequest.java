@@ -23,7 +23,7 @@ public class GridClientTopologyRequest extends GridClientAbstractMessage {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final int PORTABLE_TYPE_ID = GridClientAbstractMessage.nextSystemTypeId();
+    public static final int PORTABLE_TYPE_ID = -9;
 
     /** Id of requested node. */
     private UUID nodeId;

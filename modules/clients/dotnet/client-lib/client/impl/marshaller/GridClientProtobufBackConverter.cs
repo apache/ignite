@@ -233,8 +233,8 @@ namespace GridGain.Client.Impl.Marshaller {
             if (node.HasAttributes)
                 bean.Attributes.AddAll<KeyValuePair<String, Object>>(WrapMap<String, Object>(node.Attributes));
 
-            if (node.HasMetrics)
-                bean.Metrics.AddAll<KeyValuePair<String, Object>>(WrapMetrics(node.Metrics));
+            // if (node.HasMetrics)
+               //  bean.Metrics.AddAll<KeyValuePair<String, Object>>(WrapMetrics(node.Metrics));
 
             return bean;
         }
@@ -379,8 +379,8 @@ namespace GridGain.Client.Impl.Marshaller {
             if (data.HasValue2)
                 bean.Value2 = WrapObject(data.Value2);
 
-            if (data.HasValues)
-                bean.Values = WrapMap(data.Values);
+            //if (data.HasValues)
+                //bean.Values = WrapMap(data.Values);
 
             return WrapRequest(bean, req);
         }

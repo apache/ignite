@@ -7,6 +7,9 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
+using System.Reflection;
+using GridGain.Client.Impl.Message;
+
 namespace GridGain.Client.Impl {
     using System;
     using System.IO;
@@ -27,6 +30,9 @@ namespace GridGain.Client.Impl {
     internal class GridClientConnectionManager {
         /** <summary>Default timeout to close idle connections</summary> */
         private static readonly TimeSpan DefaultIdleTimeout = TimeSpan.FromSeconds(30);
+
+        /** <summary>Portable types used in system messages.</summary> */
+        private static IDictionary<int, Type> sysPortableTypes;
 
         /** <summary>Connect lock.</summary> */
         private readonly ReaderWriterLock guard = new ReaderWriterLock();
@@ -57,6 +63,20 @@ namespace GridGain.Client.Impl {
 
         /** <summary>Closed flag.</summary> */
         private volatile bool closed;
+
+        static GridClientConnectionManager() {
+            sysPortableTypes = new Dictionary<int, Type>();
+
+            sysPortableTypes.Add(GridClientAuthenticationRequest.PORTABLE_TYPE_ID, typeof(GridClientAuthenticationRequest));
+            sysPortableTypes.Add(GridClientCacheRequest.PORTABLE_TYPE_ID, typeof(GridClientCacheRequest));
+            sysPortableTypes.Add(GridClientLogRequest.PORTABLE_TYPE_ID, typeof(GridClientLogRequest));
+            sysPortableTypes.Add(GridClientNodeBean.PORTABLE_TYPE_ID, typeof(GridClientNodeBean));
+            sysPortableTypes.Add(GridClientNodeMetricsBean.PORTABLE_TYPE_ID, typeof(GridClientNodeMetricsBean));
+            sysPortableTypes.Add(GridClientResponse.PORTABLE_TYPE_ID, typeof(GridClientResponse));
+            sysPortableTypes.Add(GridClientTaskRequest.PORTABLE_TYPE_ID, typeof(GridClientTaskRequest));
+            sysPortableTypes.Add(GridClientTopologyRequest.PORTABLE_TYPE_ID, typeof(GridClientTopologyRequest));
+        }
+
 
         /**
          * <summary>
@@ -228,7 +248,7 @@ namespace GridGain.Client.Impl {
             switch (proto) {
                 case GridClientProtocol.Tcp: {
                     return new GridClientTcpConnection(clientId, srv, sslCtx, connectTimeout,
-                        new GridClientProtobufMarshaller(), credentials, top);
+                        new GridClientPortableMarshaller(sysPortableTypes), credentials, top);
                 }
 
                 case GridClientProtocol.Http: {

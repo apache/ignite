@@ -101,8 +101,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         if (protobufMarshaller != null)
             tmpMap.put(U.PROTOBUF_CLIENT_PROTO_ID, protobufMarshaller);
 
-        tmpMap.put(U.PORTABLE_OBJECT_PROTO_ID,
-            new GridClientPortableMarshaller(ctx.config().getClientConnectionConfiguration().getPortableTypesMap()));
+        tmpMap.put(U.PORTABLE_OBJECT_PROTO_ID, proto.portableMarshaller());
 
         // Special case for Optimized marshaller, which may throw exception.
         // This may happen, for example, if some Unsafe methods are unavailable.
