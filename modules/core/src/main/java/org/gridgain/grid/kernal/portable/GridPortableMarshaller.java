@@ -26,20 +26,20 @@ public class GridPortableMarshaller {
     static final byte OBJ = (byte)0x82;
 
     /** */
-    private static final byte[] NULL_ARR = new byte[] {NULL};
+    private static final byte[] NULL_ARR = new byte[] { NULL };
 
     /**
-     * @param portable Portable object.
+     * @param obj Object to marshal.
      * @return Byte array.
      * @throws GridPortableException In case of error.
      */
-    public byte[] marshal(@Nullable Object portable) throws GridPortableException {
-        if (portable == null)
+    public byte[] marshal(@Nullable Object obj) throws GridPortableException {
+        if (obj == null)
             return NULL_ARR;
 
         GridPortableWriterAdapter writer = new GridUnsafePortableWriter();
 
-        writer.writeObject(portable);
+        writer.writeObject(obj);
 
         return writer.array();
     }
