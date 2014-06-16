@@ -73,6 +73,13 @@
         </moduleSet>
     </moduleSets>
 
+    <fileSets>
+        <fileSet>
+            <directory>modules/core/licenses</directory>
+            <outputDirectory>/licenses</outputDirectory>
+        </fileSet>
+    </fileSets>
+
     <files>
         <file>
             <source>target/gridgain-${gridgain.version}.jar</source>

@@ -213,7 +213,7 @@ object visor extends VisorTag {
     @volatile private var rmtLogDisabled = false
 
     /** Internal thread pool. */
-    @volatile var pool: ExecutorService = null
+    @volatile var pool: ExecutorService = new GridThreadPoolExecutor()
 
     /** Configuration file path, if any. */
     @volatile var cfgPath: String = null
@@ -395,7 +395,7 @@ object visor extends VisorTag {
         args = Seq(
             "-cpath=<path>" -> Seq(
                 "Spring configuration path.",
-                "Can be absolute, relative to GRIDGAIN_HOME or any well formed URL."
+                "Can be absolute, relative to Gridgain home folder or any well formed URL."
             ),
             "-d" -> Seq(
                 "Flag forces the command to connect to the default grid",
@@ -447,7 +447,7 @@ object visor extends VisorTag {
             "Logging starts by default when Visor starts.",
             " ",
             "Events are logged to a file. If path is not provided,",
-            "it will log into 'GRIDGAIN_HOME/work/visor/visor-log'.",
+            "it will log into '<Gridgain home folder>/work/visor/visor-log'.",
             " ",
             "File is always opened in append mode.",
             "If file doesn't exist, it will be created.",
@@ -476,7 +476,7 @@ object visor extends VisorTag {
             ),
             "-f=<path>" -> Seq(
                 "Provides path to the file.",
-                "Path can be absolute or relative to GRIDGAIN_HOME."
+                "Path can be absolute or relative to Gridgain home folder."
             ),
             "-p=<num>" -> Seq(
                 "Provides period of querying events (in seconds).",
@@ -497,7 +497,7 @@ object visor extends VisorTag {
             "log -l -f=/home/user/visor-log" ->
                 "Starts logging to file 'visor-log' located at '/home/user'.",
             "log -l -f=log/visor-log" ->
-                "Starts logging to file 'visor-log' located at 'GRIDGAIN_HOME/log'.",
+                "Starts logging to file 'visor-log' located at '<Gridgain home folder>/log'.",
             "log -l -p=20" ->
                 "Starts logging with querying events period of 20 seconds.",
             "log -l -t=30" ->
@@ -1090,12 +1090,69 @@ object visor extends VisorTag {
         dFmt.format(date)
 
     /**
+     * Base class for memory units.
+     *
+     * @param name Unit name to display on screen.
+     * @param base Unit base to convert from bytes.
+     */
+    private[this] sealed abstract class VisorMemoryUnit(name: String, val base: Long) {
+        /**
+         * Convert memory in bytes to memory in units.
+         *
+         * @param m Memory in bytes.
+         * @return Memory in units.
+         */
+        def toUnits(m: Long): Double = m.toDouble / base
+
+        /**
+         * Check if memory fits measure units.
+         *
+         * @param m Memory in bytes.
+         * @return `True` if memory is more than `1` after converting bytes to units.
+         */
+        def has(m: Long): Boolean = toUnits(m) >= 1
+
+        override def toString = name
+    }
+
+    private[this] case object BYTES extends VisorMemoryUnit("b", 1)
+    private[this] case object KILOBYTES extends VisorMemoryUnit("kb", 1024L)
+    private[this] case object MEGABYTES extends VisorMemoryUnit("mb", 1024L * 1024L)
+    private[this] case object GIGABYTES extends VisorMemoryUnit("gb", 1024L * 1024L * 1024L)
+    private[this] case object TERABYTES extends VisorMemoryUnit("tb", 1024L * 1024L * 1024L * 1024L)
+
+    /**
+     * Detect memory measure units: from BYTES to TERABYTES.
+     *
+     * @param m Memory in bytes.
+     * @return Memory measure units.
+     */
+    private[this] def memoryUnit(m: Long): VisorMemoryUnit =
+        if (TERABYTES.has(m))
+            TERABYTES
+        else if (GIGABYTES.has(m))
+            GIGABYTES
+        else if (MEGABYTES.has(m))
+            MEGABYTES
+        else if (KILOBYTES.has(m))
+            KILOBYTES
+        else
+            BYTES
+
+    /**
      * Returns string representation of the memory.
      *
      * @param n Memory size.
      */
-    def formatMemory(n: Long): String =
-        kbFmt.format(n)
+    def formatMemory(n: Long): String = {
+        if (n > 0) {
+            val u = memoryUnit(n)
+
+            kbFmt.format(u.toUnits(n)) + u.toString
+        }
+        else
+            "0"
+    }
 
     /**
      * Returns string representation of the number.
@@ -1498,8 +1555,6 @@ object visor extends VisorTag {
 
         if (!grid.configuration().isPeerClassLoadingEnabled)
             warn("Peer class loading is disabled (custom closures in shell mode will not work).")
-
-        pool = new GridThreadPoolExecutor()
 
         grid.nodes().foreach(n => {
             setVarIfAbsent(nid8(n), "n")
@@ -2043,7 +2098,7 @@ object visor extends VisorTag {
                         Thread.currentThread.interrupt()
                 }
 
-                pool = null
+                pool = new GridThreadPoolExecutor()
             }
 
             // Call all close callbacks.
@@ -2129,7 +2184,7 @@ object visor extends VisorTag {
 
         if (logStarted) {
             t += ("File path", logFile.getAbsolutePath)
-            t += ("File size", if (logFile.exists) kbFmt.format(logFile.length()) + "kb" else "0kb")
+            t += ("File size", if (logFile.exists) formatMemory(logFile.length()))
         }
 
         t.render()
@@ -2144,7 +2199,7 @@ object visor extends VisorTag {
      * Starts logging to file `visor-log` located at `/home/user`.
      * <br>
      * <ex>log -l -f=log/visor-log</ex>
-     * Starts logging to file `visor-log` located at `GRIDGAIN_HOME/log`.
+     * Starts logging to file `visor-log` located at &lt`Gridgain home folder`&gt`/log`.
      * <br>
      * <ex>log -l -p=20</ex>
      * Starts logging with querying events period of 20 seconds.
@@ -2184,7 +2239,7 @@ object visor extends VisorTag {
                     try
                         startLog(argValue("f", argLst), argValue("p", argLst), argValue("t", argLst))
                     catch {
-                        case e: IllegalArgumentException => scold(e.getMessage)
+                        case e: Exception => scold(e.getMessage)
                     }
             else
                 scold("Invalid arguments.")
@@ -2231,7 +2286,18 @@ object visor extends VisorTag {
 
         val path = pathOpt.getOrElse(DFLT_LOG_PATH)
 
-        logFile = new File(U.resolveWorkDirectory(new File(path).getParent, false), new File(path).getName)
+        val folder = Option(new File(path).getParent).getOrElse("")
+        val fileName = new File(path).getName
+
+        logFile = new File(U.resolveWorkDirectory(folder, false), fileName)
+
+        if (logFile.exists() && logFile.isDirectory)
+            throw new IllegalArgumentException("Specified path is a folder. Please input valid file path.")
+
+        logFile.createNewFile()
+
+        if (!logFile.canWrite)
+            throw new IllegalArgumentException("Not enough permissions to write a log file.")
 
         var freq = 0L
 
