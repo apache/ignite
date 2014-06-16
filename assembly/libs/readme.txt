@@ -37,18 +37,23 @@ Importing GridGain Edition Dependencies
 When importing editions, each edition automatically imports GridGain core module and
 a set of additional modules needed for this edition to work. Specifically:
 
-- gridgain-datagrid-edition
+- gridgain-hpc
+  - gridgain-core
+  - gridgain-spring (optional, add if you plan to use Spring configuration)
+
+- gridgain-datagrid
   - gridgain-core
   - gridgain-indexing (optional, add if you need SQL indexing)
-  - gridgain-hibernate (optional, add if you need hibernate integration)
-  - gridgain-jta (optional, add if you need XA/JTA integration)
+  - gridgain-spring (optional, add if you plan to use Spring configuration)
 
-- gridgain-streaming-edition
+- gridgain-streaming
   - gridgain-core
+  - gridgain-spring (optional, add if you plan to use Spring configuration)
 
-- gridgain-hadoop-edition
+- gridgain-hadoop
   - gridgain-core
-  - gridgain-hadoop
+  - gridgain-hadoop-integration
+  - gridgain-spring (optional, add if you plan to use Spring configuration)
 
 - gridgain-platform-edition
   - (all dependencies included in other editions)
@@ -65,7 +70,7 @@ Here is how 'gridgain-datagrid-edition' can be added to your POM file
         ...
         <dependency>
             <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-datagrid-edition</artifactId>
+            <artifactId>gridgain-datagrid</artifactId>
             <version>${gridgain.version}</version>
         </dependency>
         ...
