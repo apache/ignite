@@ -315,6 +315,9 @@ namespace GridGain.Client.Impl {
                 if (statusCode == GridClientResponseStatus.Failed)
                     throw new GridClientException(errorMsg);
 
+                if (statusCode == GridClientResponseStatus.AuthorizationFailure)
+                    throw new GridClientException("Client authorization failed: " + errorMsg);
+
                 if (statusCode != GridClientResponseStatus.Success)
                     throw new GridClientException("Unsupported response status code: " + statusCode);
 

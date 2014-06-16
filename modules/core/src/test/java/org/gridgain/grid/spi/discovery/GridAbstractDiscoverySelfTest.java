@@ -394,7 +394,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
                         GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(
                             GridSecuritySubjectType.REMOTE_NODE, n.id());
 
-                        subj.permissions(new Allow());
+                        subj.permissions(new GridAllowAllPermissionSet());
 
                         return new GridSecurityContext(subj);
                     }
@@ -477,26 +477,6 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
         }
         finally {
             U.close(out, null);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class Allow implements GridSecurityPermissionSet {
-        /** {@inheritDoc} */
-        @Override public boolean defaultAllowAll() {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<String, Collection<GridSecurityPermission>> taskPermissions() {
-            return Collections.emptyMap();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<String, Collection<GridSecurityPermission>> cachePermissions() {
-            return Collections.emptyMap();
         }
     }
 

@@ -46,6 +46,7 @@
                 <exclude>org.gridgain:gridgain-tools</exclude>
                 <exclude>org.gridgain:gridgain-extdata-p2p</exclude>
                 <exclude>org.gridgain:gridgain-extdata-uri</exclude>
+                <exclude>org.gridgain:gridgain-examples</exclude>
                 <exclude>org.gridgain:gridgain-visor-console</exclude>
                 <exclude>org.gridgain:gridgain-hadoop</exclude>
                 <exclude>org.gridgain:gridgain-hibernate</exclude>
@@ -60,6 +61,7 @@
                         <outputDirectory>/</outputDirectory>
                         <includes>
                             <include>readme.txt</include>
+                            <include>licenses/**</include>
                         </includes>
                     </fileSet>
                     <fileSet>
@@ -74,6 +76,8 @@
                         </includes>
                         <excludes>
                             <exclude>*-tests.jar</exclude>
+                            <exclude>*-javadoc.jar</exclude>
+                            <exclude>*-sources.jar</exclude>
                         </excludes>
                     </fileSet>
                 </fileSets>
