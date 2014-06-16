@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.product.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
 import org.jetbrains.annotations.*;
@@ -23,6 +24,7 @@ import org.xml.sax.*;
 import javax.xml.parsers.*;
 import java.io.*;
 import java.net.*;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -34,18 +36,14 @@ import java.util.concurrent.*;
  * gracefully ignore any errors occurred during notification and verification process.
  */
 class GridUpdateNotifier {
-    /*
-     * *********************************************************
-     * DO NOT CHANGE THIS URL OR HOW IT IS PUT IN ONE LINE.    *
-     * THIS URL IS HANDLED BY POST-BUILD PROCESS AND IT HAS TO *
-     * BE PLACED EXACTLY HOW IT IS SHOWING.                    *
-     * *********************************************************
-     */
     /** Access URL to be used to access latest version data. */
     private static final String URL_SUFFIX = GridProperties.get("gridgain.update.status.url");
 
     /** Throttling for logging out. */
     private static final long THROTTLE_PERIOD = 24 * 60 * 60 * 1000; // 1 day.
+
+    /** Max length of package prefixes string. */
+    private static final int MAX_PREFIXES_LENGTH = 1024;
 
     /** Grid version. */
     private final String ver;
@@ -65,11 +63,14 @@ class GridUpdateNotifier {
     /** Grid name. */
     private final String gridName;
 
-    /**  Whether or not to report only new version. */
+    /** Whether or not to report only new version. */
     private boolean reportOnlyNew;
 
     /** */
     private int topSize;
+
+    /** Package prefixes. */
+    private String packages;
 
     /** */
     private long lastLog = -1;
@@ -89,13 +90,18 @@ class GridUpdateNotifier {
     GridUpdateNotifier(String gridName, String ver, String site, boolean reportOnlyNew)
         throws GridException {
         try {
+            packages = getPackages();
+
+            if (packages.length() > MAX_PREFIXES_LENGTH)
+                packages = packages.substring(0, MAX_PREFIXES_LENGTH);
+
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 
             documentBuilder = factory.newDocumentBuilder();
 
             documentBuilder.setEntityResolver(new EntityResolver() {
-                @Override public InputSource resolveEntity(String publicId, String systemId) {
-                    if (systemId.endsWith(".dtd"))
+                @Override public InputSource resolveEntity(String publicId, String sysId) {
+                    if (sysId.endsWith(".dtd"))
                         return new InputSource(new StringReader(""));
 
                     return null;
@@ -112,6 +118,31 @@ class GridUpdateNotifier {
         catch (ParserConfigurationException e) {
             throw new GridException("Failed to create xml parser.", e);
         }
+    }
+
+    /**
+     * Gets package prefixes from current stack trace.
+     *
+     * @return Package prefixes.
+     */
+    private static String getPackages() {
+        Collection<String> prefixes = new HashSet<>();
+
+        for (StackTraceElement trace : Thread.currentThread().getStackTrace()) {
+            String cls = trace.getClassName();
+
+            if (cls.startsWith("sun.") || cls.startsWith("lang.") || cls.startsWith("java.") ||
+                cls.startsWith("javax.") || cls.startsWith("junit."))
+                continue;
+
+            String[] pckgs = cls.split("\\.");
+
+            String pckg = pckgs[0] + (pckgs.length > 1 ? "." + pckgs[1] : "");
+
+            prefixes.add(pckg);
+        }
+
+        return prefixes.isEmpty() ? null : F.concat(prefixes, ",");
     }
 
     /**
@@ -243,7 +274,8 @@ class GridUpdateNotifier {
                     (url.endsWith(".php") ? '?' : '&') +
                     (topSize > 0 ? "t=" + topSize + "&" : "") +
                     (lic != null ? "l=" + lic.id() + "&" : "") +
-                    "p=" + gridName)
+                    "p=" + gridName + '&' +
+                    (packages != null ? "c=" + packages : ""))
                     .openConnection();
 
                 if (!isCancelled()) {
