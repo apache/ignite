@@ -23,10 +23,12 @@ Importing GridGain Dependencies In Maven Project
 If you are using Maven to manage dependencies of your project, there are two options:
 
 1. Import one of four predefined GridGain editions
-  - gridgain-datagrid-edition
-  - gridgain-streaming-edition
-  - gridgain-hadoop-edition
-  - gridgain-platform-edition
+  - gridgain-hpc
+  - gridgain-datagrid
+  - gridgain-streaming
+  - gridgain-hadoop1
+  - gridgain-hadoop2
+  - gridgain-platform
 
 2. Or import individual GridGain modules a la carte.
 
@@ -60,7 +62,7 @@ a set of additional modules needed for this edition to work. Specifically:
   - gridgain-hadoop2-integration
   - gridgain-spring (optional, add if you plan to use Spring configuration)
 
-- gridgain-platform-edition
+- gridgain-platform
   - (all dependencies included in other editions)
 
 Here is how 'gridgain-datagrid-edition' can be added to your POM file
