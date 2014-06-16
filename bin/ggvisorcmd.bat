@@ -42,7 +42,6 @@ goto error_finish
 :: Check GRIDGAIN_HOME.
 :checkGridGainHome1
 if not "%GRIDGAIN_HOME%" == "" goto checkGridGainHome2
-    echo %0, WARN: GRIDGAIN_HOME environment variable is not found.
     pushd "%~dp0"/../..
     set GRIDGAIN_HOME=%CD%
     popd
@@ -62,8 +61,9 @@ goto checkGridGainHome2
 
 :checkGridGainHome3
 if exist "%GRIDGAIN_HOME%\config" goto checkGridGainHome4
-    echo %0, ERROR: GRIDGAIN_HOME environment variable is not valid installation home.
-    echo %0, ERROR: GRIDGAIN_HOME variable must point to GridGain installation folder.
+    echo %0, ERROR: GridGain installation folder is not found or GRIDGAIN_HOME environment variable is not valid.
+    echo Please create GRIDGAIN_HOME environment variable pointing to location of
+    echo GridGain installation folder.
     goto error_finish
 
 :checkGridGainHome4
@@ -80,8 +80,8 @@ set ANT_AUGMENTED_GGJAR=gridgain.jar
 ::
 call "%GRIDGAIN_HOME%\os\bin\include\setenv.bat"
 
-set CP=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\%ANT_AUGMENTED_GGJAR%
-set CP=%CP%;%GRIDGAIN_HOME%\os\modules\visor-console\libs\*
+set CP=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\bin\include\visorcmd\*
+
 ::
 :: Parse command line parameters.
 ::

@@ -10,7 +10,6 @@
 package org.gridgain.grid.util.ipc.shmem;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
@@ -47,8 +46,14 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
     /** Default shared memory space in bytes. */
     public static final int DFLT_SPACE_SIZE = 256 * 1024;
 
-    /** Default shared memory space in bytes. */
-    public static final String DFLT_TOKEN_DIR_PATH = "work/ipc/shmem";
+    /**
+     * Default token directory. Note that this path is relative to {@code GRIDGAIN_HOME/work} folder
+     * if {@code GRIDGAIN_HOME} system or environment variable specified, otherwise it is relative to
+     * {@code work} folder under system {@code java.io.tmpdir} folder.
+     *
+     * @see GridConfiguration#getWorkDirectory()
+     */
+    public static final String DFLT_TOKEN_DIR_PATH = "ipc/shmem";
 
     /**
      * Shared memory token file name prefix.
@@ -141,22 +146,22 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
         pid = GridIpcSharedMemoryUtils.pid();
 
         if (pid == -1)
-            throw new GridGgfsIpcEndpointBindException("Failed to get PID of the current process.");
+            throw new GridIpcEndpointBindException("Failed to get PID of the current process.");
 
         if (size <= 0)
-            throw new GridGgfsIpcEndpointBindException("Space size should be positive: " + size);
+            throw new GridIpcEndpointBindException("Space size should be positive: " + size);
 
         String tokDirPath = this.tokDirPath;
 
         if (F.isEmpty(tokDirPath))
-            throw new GridGgfsIpcEndpointBindException("Token directory path is empty.");
+            throw new GridIpcEndpointBindException("Token directory path is empty.");
 
         tokDirPath = tokDirPath + '/' + locNodeId.toString() + '-' + GridIpcSharedMemoryUtils.pid();
 
-        tokDir = U.resolveWorkDirectory(tokDirPath, null, true, false);
+        tokDir = U.resolveWorkDirectory(tokDirPath, false);
 
         if (port <= 0 || port >= 0xffff)
-            throw new GridGgfsIpcEndpointBindException("Port value is illegal: " + port);
+            throw new GridIpcEndpointBindException("Port value is illegal: " + port);
 
         try {
             srvSock = new ServerSocket();
@@ -168,7 +173,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
             // Although empty socket constructor never throws exception, close it just in case.
             U.closeQuiet(srvSock);
 
-            throw new GridGgfsIpcEndpointBindException("Failed to bind shared memory IPC endpoint (is port already " +
+            throw new GridIpcEndpointBindException("Failed to bind shared memory IPC endpoint (is port already " +
                 "in use?): " + port, e);
         }
 
@@ -315,7 +320,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
      * @param out Output stream.
      * @param err Error cause.
      */
-    private void sendErrorResponse(ObjectOutputStream out, Exception err) {
+    private void sendErrorResponse(ObjectOutput out, Exception err) {
         try {
             out.writeObject(new GridIpcSharedMemoryInitResponse(err));
         }

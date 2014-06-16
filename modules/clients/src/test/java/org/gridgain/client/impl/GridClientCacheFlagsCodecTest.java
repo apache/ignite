@@ -29,7 +29,7 @@ public class GridClientCacheFlagsCodecTest extends TestCase {
             int bits = GridClientConnection.encodeCacheFlags(Collections.singleton(f));
             assertTrue(bits != 0);
 
-            GridCacheFlag[] out = GridCacheCommandHandler.parseCacheFlags(Integer.toString(bits));
+            GridCacheFlag[] out = GridCacheCommandHandler.parseCacheFlags(bits);
             assertEquals(1, out.length);
 
             assertEquals(f.name(), out[0].name());
@@ -57,7 +57,7 @@ public class GridClientCacheFlagsCodecTest extends TestCase {
 
         int bits = GridClientConnection.encodeCacheFlags(flagSet);
 
-        GridCacheFlag[] out = GridCacheCommandHandler.parseCacheFlags(Integer.toString(bits));
+        GridCacheFlag[] out = GridCacheCommandHandler.parseCacheFlags(bits);
 
         assertEquals(flagSet.size(), out.length);
 

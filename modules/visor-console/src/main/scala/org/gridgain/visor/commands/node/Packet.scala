@@ -24,7 +24,7 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     node "{id8=<node-id8>|id=<node-id>} {-a}"
+ *     node "{-id8=<node-id8>|-id=<node-id>} {-a}"
  *     node
  * }}}
  *

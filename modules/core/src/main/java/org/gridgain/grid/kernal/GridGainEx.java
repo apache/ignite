@@ -9,15 +9,16 @@
 
 package org.gridgain.grid.kernal;
 
-import org.apache.commons.logging.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.kernal.processors.resource.*;
+import org.gridgain.grid.kernal.processors.spring.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.logger.log4j.*;
+import org.gridgain.grid.logger.java.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.marshaller.optimized.*;
@@ -42,16 +43,13 @@ import org.gridgain.grid.spi.eventstorage.memory.*;
 import org.gridgain.grid.spi.failover.*;
 import org.gridgain.grid.spi.failover.always.*;
 import org.gridgain.grid.spi.indexing.*;
-import org.gridgain.grid.spi.indexing.h2.*;
 import org.gridgain.grid.spi.loadbalancing.*;
 import org.gridgain.grid.spi.loadbalancing.roundrobin.*;
 import org.gridgain.grid.spi.securesession.*;
 import org.gridgain.grid.spi.securesession.noop.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.spi.swapspace.file.*;
-import org.gridgain.grid.startup.cmdline.*;
-import org.gridgain.grid.startup.servlet.*;
-import org.gridgain.grid.startup.tomcat.*;
+import org.gridgain.grid.spi.swapspace.noop.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
@@ -59,17 +57,17 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
-import org.springframework.beans.*;
-import org.springframework.context.*;
 
 import javax.management.*;
 import java.io.*;
 import java.lang.management.*;
+import java.lang.reflect.*;
 import java.net.*;
 import java.util.*;
 import java.util.Map.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.logging.*;
 
 import static org.gridgain.grid.GridConfiguration.*;
 import static org.gridgain.grid.GridGainState.*;
@@ -77,6 +75,7 @@ import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
+import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
 
 /**
@@ -87,9 +86,8 @@ import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
  * often started and stopped by grid loaders. Grid loaders can be found in
  * {@link org.gridgain.grid.startup} package, for example:
  * <ul>
- * <li>{@link GridCommandLineStartup}</li>
- * <li>{@link GridTomcatStartup}</li>
- * <li>{@link GridServletStartup}</li>
+ * <li>{@code GridCommandLineStartup}</li>
+ * <li>{@code GridServletStartup}</li>
  * </ul>
  * <h1 class="header">Examples</h1>
  * Use {@link #start()} method to start grid with default configuration. You can also use
@@ -133,9 +131,6 @@ public class GridGainEx {
             !U.jdkVersion().contains("1.8"))
             throw new IllegalStateException("GridGain requires Java 7 or above. Current Java version " +
                 "is not supported: " + U.jdkVersion());
-
-        // Turn off default logging for Spring Framework.
-        LogFactory.getFactory().setAttribute("org.apache.commons.logging.Log", null);
 
         // To avoid nasty race condition in UUID.randomUUID() in JDK prior to 6u34.
         // For details please see:
@@ -403,7 +398,7 @@ public class GridGainEx {
      *      also if default grid has already been started.
      */
     public static Grid start() throws GridException {
-        return start((ApplicationContext)null);
+        return start((GridSpringResourceContext)null);
     }
 
     /**
@@ -419,7 +414,7 @@ public class GridGainEx {
      * @throws GridException If default grid could not be started. This exception will be thrown
      *      also if default grid has already been started.
      */
-    public static Grid start(@Nullable ApplicationContext springCtx) throws GridException {
+    public static Grid start(@Nullable GridSpringResourceContext springCtx) throws GridException {
         URL url = U.resolveGridGainUrl(DFLT_CFG);
 
         if (url != null)
@@ -456,7 +451,7 @@ public class GridGainEx {
      * @throws GridException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
-    public static Grid start(GridConfiguration cfg, @Nullable ApplicationContext springCtx) throws GridException {
+    public static Grid start(GridConfiguration cfg, @Nullable GridSpringResourceContext springCtx) throws GridException {
         A.notNull(cfg, "cfg");
 
         return start0(new GridStartContext(cfg, null, springCtx)).grid();
@@ -495,32 +490,11 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static GridBiTuple<Collection<GridConfiguration>, ? extends ApplicationContext> loadConfigurations(URL springCfgUrl)
-        throws GridException {
-        ApplicationContext springCtx;
+    public static GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
+        URL springCfgUrl) throws GridException {
+        GridSpringProcessor spring = SPRING.create(false);
 
-        try {
-            springCtx = U.applicationContext(springCfgUrl);
-        }
-        catch (BeansException e) {
-            throw new GridException("Failed to instantiate Spring XML application context [springUrl=" +
-                springCfgUrl + ", err=" + e.getMessage() + ']', e);
-        }
-
-        Map<String, GridConfiguration> cfgMap;
-
-        try {
-            cfgMap = springCtx.getBeansOfType(GridConfiguration.class);
-        }
-        catch (BeansException e) {
-            throw new GridException("Failed to instantiate bean [type=" + GridConfiguration.class + ", err=" +
-                e.getMessage() + ']', e);
-        }
-
-        if (cfgMap == null || cfgMap.isEmpty())
-            throw new GridException("Failed to find grid configuration in: " + springCfgUrl);
-
-        return F.t(cfgMap.values(), springCtx);
+        return spring.loadConfigurations(springCfgUrl);
     }
 
     /**
@@ -536,8 +510,8 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static GridBiTuple<Collection<GridConfiguration>, ? extends ApplicationContext> loadConfigurations(String springCfgPath)
-        throws GridException {
+    public static GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
+        String springCfgPath) throws GridException {
         A.notNull(springCfgPath, "springCfgPath");
 
         URL url;
@@ -570,9 +544,9 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static GridBiTuple<GridConfiguration, ApplicationContext> loadConfiguration(URL springCfgUrl)
+    public static GridBiTuple<GridConfiguration, GridSpringResourceContext> loadConfiguration(URL springCfgUrl)
         throws GridException {
-        GridBiTuple<Collection<GridConfiguration>, ? extends ApplicationContext> t = loadConfigurations(springCfgUrl);
+        GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> t = loadConfigurations(springCfgUrl);
 
         return F.t(F.first(t.get1()), t.get2());
     }
@@ -590,9 +564,10 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static GridBiTuple<GridConfiguration, ApplicationContext> loadConfiguration(String springCfgPath)
+    public static GridBiTuple<GridConfiguration, GridSpringResourceContext> loadConfiguration(String springCfgPath)
         throws GridException {
-        GridBiTuple<Collection<GridConfiguration>, ? extends ApplicationContext> t = loadConfigurations(springCfgPath);
+        GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> t =
+            loadConfigurations(springCfgPath);
 
         return F.t(F.first(t.get1()), t.get2());
     }
@@ -617,7 +592,7 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Grid start(String springCfgPath, @Nullable ApplicationContext springCtx) throws GridException {
+    public static Grid start(String springCfgPath, @Nullable GridSpringResourceContext springCtx) throws GridException {
         A.notNull(springCfgPath, "springCfgPath");
 
         URL url;
@@ -678,17 +653,21 @@ public class GridGainEx {
      *      been started or Spring XML configuration file is invalid.
      */
     // Warning is due to Spring.
-    public static Grid start(URL springCfgUrl, @Nullable ApplicationContext springCtx) throws GridException {
+    public static Grid start(URL springCfgUrl, @Nullable GridSpringResourceContext springCtx) throws GridException {
         A.notNull(springCfgUrl, "springCfgUrl");
 
         boolean isLog4jUsed = U.gridClassLoader().getResource("org/apache/log4j/Appender.class") != null;
 
         GridBiTuple<Object, Object> t = null;
 
+        Collection<Handler> savedHnds = null;
+
         if (isLog4jUsed)
             t = U.addLog4jNoOpLogger();
+        else
+            savedHnds = U.addJavaNoOpLogger();
 
-        GridBiTuple<Collection<GridConfiguration>, ? extends ApplicationContext> cfgMap;
+        GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> cfgMap;
 
         try {
             cfgMap = loadConfigurations(springCfgUrl);
@@ -696,6 +675,9 @@ public class GridGainEx {
         finally {
             if (isLog4jUsed && t != null)
                 U.removeLog4jNoOpLogger(t);
+
+            if (!isLog4jUsed)
+                U.removeJavaNoOpLogger(savedHnds);
         }
 
         List<GridNamedInstance> grids = new ArrayList<>(cfgMap.size());
@@ -980,7 +962,7 @@ public class GridGainEx {
         private URL cfgUrl;
 
         /** Optional Spring application context. */
-        private ApplicationContext springCtx;
+        private GridSpringResourceContext springCtx;
 
         /** Whether or not this is a single grid instance in current VM. */
         private boolean single;
@@ -991,7 +973,7 @@ public class GridGainEx {
          * @param cfgUrl Optional configuration path.
          * @param springCtx Optional Spring application context.
          */
-        GridStartContext(GridConfiguration cfg, @Nullable URL cfgUrl, @Nullable ApplicationContext springCtx) {
+        GridStartContext(GridConfiguration cfg, @Nullable URL cfgUrl, @Nullable GridSpringResourceContext springCtx) {
             assert(cfg != null);
 
             this.cfg = cfg;
@@ -1044,15 +1026,8 @@ public class GridGainEx {
         /**
          * @return Optional Spring application context.
          */
-        ApplicationContext springContext() {
+        public GridSpringResourceContext springContext() {
             return springCtx;
-        }
-
-        /**
-         * @param springCtx Optional Spring application context.
-         */
-        void springContext(ApplicationContext springCtx) {
-            this.springCtx = springCtx;
         }
     }
 
@@ -1120,6 +1095,15 @@ public class GridGainEx {
 
         /** GGFS executor service shutdown flag. */
         private boolean ggfsSvcShutdown;
+
+        /** REST requests executor service. */
+        private ExecutorService restExecSvc;
+
+        /** Auto REST service flag. */
+        private boolean isAutoRestSvc;
+
+        /** REST executor service shutdown flag. */
+        private boolean restSvcShutdown;
 
         /** DR executor service. */
         private ExecutorService drExecSvc;
@@ -1270,6 +1254,8 @@ public class GridGainEx {
                 // If user provided GRIDGAIN_HOME - set it as a system property.
                 U.setGridGainHome(ggHome);
 
+            U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
+
             /*
              * Set up all defaults and perform all checks.
              */
@@ -1290,18 +1276,7 @@ public class GridGainEx {
             if (nodeId == null)
                 nodeId = UUID.randomUUID();
 
-            GridLogger cfgLog = cfg.getGridLogger();
-
-            if (cfgLog == null) {
-                URL url = U.resolveGridGainUrl("config/gridgain-log4j.xml");
-
-                cfgLog = url == null || GridLog4jLogger.isConfigured() ? new GridLog4jLogger() :
-                    new GridLog4jLogger(url);
-            }
-
-            // Set node IDs for all file appenders.
-            if (cfgLog instanceof GridLog4jLogger)
-                GridLog4jLogger.setNodeId(nodeId);
+            GridLogger cfgLog = initLogger(cfg.getGridLogger(), nodeId);
 
             assert cfgLog != null;
 
@@ -1341,6 +1316,7 @@ public class GridGainEx {
             myCfg.setNetworkSendRetryDelay(cfg.getNetworkSendRetryDelay());
             myCfg.setNetworkSendRetryCount(cfg.getNetworkSendRetryCount());
             myCfg.setDataCenterId(cfg.getDataCenterId());
+            myCfg.setSecurityCredentialsProvider(cfg.getSecurityCredentialsProvider());
 
             String ntfStr = X.getSystemOrEnv(GG_LIFECYCLE_EMAIL_NOTIFY);
 
@@ -1480,7 +1456,25 @@ public class GridGainEx {
                     procCnt,
                     procCnt,
                     0,
-                    new ArrayBlockingQueue<Runnable>(DFLT_GGFS_THREADPOOL_QUEUE_CAP));
+                    new LinkedBlockingQueue<Runnable>());
+            }
+
+            restExecSvc = cfg.getRestExecutorService();
+
+            if (restExecSvc != null && !cfg.isRestEnabled()) {
+                U.warn(log, "REST executor service is configured, but REST is disabled in configuration " +
+                    "(safely ignoring).");
+            }
+            else if (restExecSvc == null && cfg.isRestEnabled()) {
+                isAutoRestSvc = true;
+
+                restExecSvc = new GridThreadPoolExecutor(
+                    "rest-" + cfg.getGridName(),
+                    DFLT_REST_CORE_THREAD_CNT,
+                    DFLT_REST_MAX_THREAD_CNT,
+                    DFLT_REST_KEEP_ALIVE_TIME,
+                    new LinkedBlockingQueue<Runnable>(DFLT_REST_THREADPOOL_QUEUE_CAP)
+                );
             }
 
             execSvcShutdown = cfg.getExecutorServiceShutdown();
@@ -1488,6 +1482,7 @@ public class GridGainEx {
             mgmtSvcShutdown = cfg.getManagementExecutorServiceShutdown();
             p2pSvcShutdown = cfg.getPeerClassLoadingExecutorServiceShutdown();
             ggfsSvcShutdown = cfg.getGgfsExecutorServiceShutdown();
+            restSvcShutdown = cfg.getRestExecutorServiceShutdown();
 
             if (marsh == null) {
                 if (!U.isHotSpot()) {
@@ -1527,11 +1522,13 @@ public class GridGainEx {
             myCfg.setManagementExecutorService(mgmtExecSvc);
             myCfg.setPeerClassLoadingExecutorService(p2pExecSvc);
             myCfg.setGgfsExecutorService(ggfsExecSvc);
+            myCfg.setRestExecutorService(restExecSvc);
             myCfg.setExecutorServiceShutdown(execSvcShutdown);
             myCfg.setSystemExecutorServiceShutdown(sysSvcShutdown);
             myCfg.setManagementExecutorServiceShutdown(mgmtSvcShutdown);
             myCfg.setPeerClassLoadingExecutorServiceShutdown(p2pSvcShutdown);
             myCfg.setGgfsExecutorServiceShutdown(ggfsSvcShutdown);
+            myCfg.setRestExecutorServiceShutdown(restSvcShutdown);
             myCfg.setNodeId(nodeId);
 
             GridGgfsConfiguration[] ggfsCfgs = cfg.getGgfsConfiguration();
@@ -1604,11 +1601,26 @@ public class GridGainEx {
             if (loadBalancingSpi == null)
                 loadBalancingSpi = new GridLoadBalancingSpi[] {new GridRoundRobinLoadBalancingSpi()};
 
-            if (swapspaceSpi == null)
-                swapspaceSpi = new GridFileSwapSpaceSpi();
+            if (swapspaceSpi == null) {
+                boolean needSwap = false;
+
+                GridCacheConfiguration[] caches = cfg.getCacheConfiguration();
+
+                if (caches != null) {
+                    for (GridCacheConfiguration c : caches) {
+                        if (c.isSwapEnabled()) {
+                            needSwap = true;
+
+                            break;
+                        }
+                    }
+                }
+
+                swapspaceSpi = needSwap ? new GridFileSwapSpaceSpi() : new GridNoopSwapSpaceSpi();
+            }
 
             if (indexingSpi == null)
-                indexingSpi = new GridIndexingSpi[] {new GridH2IndexingSpi()};
+                indexingSpi = new GridIndexingSpi[] {(GridIndexingSpi)H2_INDEXING.createOptional()};
 
             myCfg.setCommunicationSpi(commSpi);
             myCfg.setDiscoverySpi(discoSpi);
@@ -1622,6 +1634,8 @@ public class GridGainEx {
             myCfg.setLoadBalancingSpi(loadBalancingSpi);
             myCfg.setSwapSpaceSpi(swapspaceSpi);
             myCfg.setIndexingSpi(indexingSpi);
+
+            myCfg.setAddressResolver(cfg.getAddressResolver());
 
             // Set SMTP configuration.
             myCfg.setSmtpFromEmail(cfg.getSmtpFromEmail());
@@ -1760,27 +1774,40 @@ public class GridGainEx {
 
                     if (ccfg.getDrSenderConfiguration() != null)
                         drSysCaches.add(CU.cacheNameForDrSystemCache(ccfg.getName()));
+
+                    if (CU.isSecuritySystemCache(ccfg.getName()))
+                        throw new GridException("Cache name cannot start with \"" + CU.SECURITY_SYS_CACHE_NAME +
+                            "\" because this prefix is reserved for internal purposes.");
                 }
 
-                GridCacheConfiguration[] clone = new GridCacheConfiguration[cacheCfgs.length + drSysCaches.size()];
+                GridCacheConfiguration[] clone = new GridCacheConfiguration[cacheCfgs.length +
+                    drSysCaches.size() +
+                    (U.securityEnabled(cfg) ? 1 : 0)];
 
                 int cloneIdx = 0;
 
                 for (String drSysCache : drSysCaches)
                     clone[cloneIdx++] = drSystemCache(drSysCache);
 
+                if (U.securityEnabled(cfg))
+                    clone[cloneIdx++] = securitySystemCache();
+
                 for (GridCacheConfiguration ccfg : cacheCfgs)
                     clone[cloneIdx++] = new GridCacheConfiguration(ccfg);
 
                 myCfg.setCacheConfiguration(clone);
             }
-            else if (!drSysCaches.isEmpty()) {
-                GridCacheConfiguration[] ccfgs = new GridCacheConfiguration[drSysCaches.size()];
+            else if (!drSysCaches.isEmpty() || U.securityEnabled(cfg)) {
+                GridCacheConfiguration[] ccfgs = new GridCacheConfiguration[drSysCaches.size() +
+                    (U.securityEnabled(cfg) ? 1 : 0)];
 
                 int idx = 0;
 
                 for (String drSysCache : drSysCaches)
                     ccfgs[idx++] = drSystemCache(drSysCache);
+
+                if (U.securityEnabled(cfg))
+                    ccfgs[idx] = securitySystemCache();
 
                 myCfg.setCacheConfiguration(ccfgs);
             }
@@ -1900,6 +1927,57 @@ public class GridGainEx {
         }
 
         /**
+         * @param cfgLog Configured logger.
+         * @param nodeId Local node ID.
+         * @return Initialized logger.
+         * @throws GridException If failed.
+         */
+        private GridLogger initLogger(@Nullable GridLogger cfgLog, UUID nodeId) throws GridException {
+            try {
+                if (cfgLog == null) {
+                    Class<?> log4jCls;
+
+                    try {
+                        log4jCls = Class.forName("org.gridgain.grid.logger.log4j.GridLog4jLogger");
+                    }
+                    catch (ClassNotFoundException ignored) {
+                        log4jCls = null;
+                    }
+
+                    if (log4jCls != null) {
+                        URL url = U.resolveGridGainUrl("config/gridgain-log4j.xml");
+
+                        if (url != null) {
+                            boolean configured = (Boolean)log4jCls.getMethod("isConfigured").invoke(null);
+
+                            if (configured)
+                                url = null;
+                        }
+
+                        if (url != null) {
+                            Constructor<?> ctor = log4jCls.getConstructor(URL.class);
+
+                            cfgLog = (GridLogger)ctor.newInstance(url);
+                        }
+                        else
+                            cfgLog = (GridLogger)log4jCls.newInstance();
+                    }
+                    else
+                        cfgLog = new GridJavaLogger();
+                }
+
+                // Set node IDs for all file appenders.
+                if (cfgLog instanceof GridLoggerNodeIdAware)
+                    ((GridLoggerNodeIdAware)cfgLog).setNodeId(nodeId);
+
+                return cfgLog;
+            }
+            catch (Exception e) {
+                throw new GridException("Failed to create logger.", e);
+            }
+        }
+
+        /**
          * Creates system cache configuration used by data center replication component.
          *
          * @param cacheName Cache name.
@@ -1909,6 +1987,23 @@ public class GridGainEx {
             GridCacheConfiguration cache = new GridCacheConfiguration();
 
             cache.setName(cacheName);
+            cache.setCacheMode(REPLICATED);
+            cache.setAtomicityMode(TRANSACTIONAL);
+            cache.setSwapEnabled(false);
+            cache.setWriteSynchronizationMode(FULL_SYNC);
+
+            return cache;
+        }
+
+        /**
+         * Creates security system cache configuration.
+         *
+         * @return Security system cache configuration.
+         */
+        private GridCacheConfiguration securitySystemCache() {
+            GridCacheConfiguration cache = new GridCacheConfiguration();
+
+            cache.setName(CU.SECURITY_SYS_CACHE_NAME);
             cache.setCacheMode(REPLICATED);
             cache.setAtomicityMode(TRANSACTIONAL);
             cache.setSwapEnabled(false);
@@ -2042,6 +2137,12 @@ public class GridGainEx {
                 U.shutdownNow(getClass(), ggfsExecSvc, log);
 
                 ggfsExecSvc = null;
+            }
+
+            if (isAutoRestSvc || restSvcShutdown) {
+                U.shutdownNow(getClass(), restExecSvc, log);
+
+                restExecSvc = null;
             }
 
             if (drExecSvc != null) {

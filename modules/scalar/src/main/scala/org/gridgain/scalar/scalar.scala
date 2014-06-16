@@ -12,7 +12,6 @@
 package org.gridgain.scalar
 
 import java.net.URL
-import org.springframework.context.ApplicationContext
 import org.jetbrains.annotations.Nullable
 import java.util.UUID
 import org.gridgain.grid._
@@ -247,49 +246,6 @@ object scalar extends ScalarConversions {
     /**
      * Executes given closure within automatically managed grid instance.
      *
-     * @param cfg Spring XML configuration file path or URL.
-     * @param springCtx Optional Spring application context.
-     * @param body Closure to execute within automatically managed grid instance.
-     */
-    def apply(cfg: GridConfiguration, springCtx: ApplicationContext)(body: => Unit) {
-        init0(GridGain.start(cfg, springCtx), body)
-    }
-
-    /**
-     * Executes given closure within automatically managed grid instance.
-     *
-     * @param springCfgPath Spring XML configuration file path or URL.
-     * @param springCtx Optional Spring application context.
-     * @param body Closure to execute within automatically managed grid instance.
-     */
-    def apply(springCfgPath: String, springCtx: ApplicationContext)(body: => Unit) {
-        init0(GridGain.start(springCfgPath, springCtx), body)
-    }
-
-    /**
-     * Executes given closure within automatically managed grid instance.
-     *
-     * @param springCtx Optional Spring application context.
-     * @param body Closure to execute within automatically managed grid instance.
-     */
-    def apply(springCtx: ApplicationContext)(body: => Unit) {
-        init0(GridGain.start(springCtx), body)
-    }
-
-    /**
-     * Executes given closure within automatically managed grid instance.
-     *
-     * @param springCtx Optional Spring application context.
-     * @param springCfgUrl Spring XML configuration file URL.
-     * @param body Closure to execute within automatically managed grid instance.
-     */
-    def apply(springCfgUrl: URL, springCtx: ApplicationContext)(body: => Unit) {
-        init0(GridGain.start(springCfgUrl, springCtx), body)
-    }
-
-    /**
-     * Executes given closure within automatically managed grid instance.
-     *
      * @param springCfgUrl Spring XML configuration file URL.
      * @param body Closure to execute within automatically managed grid instance.
      */
@@ -482,49 +438,6 @@ object scalar extends ScalarConversions {
      */
     def start(cfg: GridConfiguration): Grid = {
         GridGain.start(cfg)
-    }
-
-    /**
-     * Starts grid with given parameter(s).
-     *
-     * @param cfg Grid configuration. This cannot be `null`.
-     * @param ctx Optional Spring application context.
-     * @return Started grid.
-     */
-    def start(cfg: GridConfiguration, @Nullable ctx: ApplicationContext): Grid = {
-        GridGain.start(cfg, ctx)
-    }
-
-    /**
-     * Starts grid with given parameter(s).
-     *
-     * @param springCfgPath Spring XML configuration file path or URL.
-     * @param ctx Optional Spring application context.
-     * @return Started grid.
-     */
-    def start(@Nullable springCfgPath: String = null, @Nullable ctx: ApplicationContext): Grid = {
-        GridGain.start(springCfgPath, ctx)
-    }
-
-    /**
-     * Starts grid with given parameter(s).
-     *
-     * @param ctx Optional Spring application context.
-     * @return Started grid.
-     */
-    def start(@Nullable ctx: ApplicationContext): Grid = {
-        GridGain.start(ctx)
-    }
-
-    /**
-     * Starts grid with given parameter(s).
-     *
-     * @param springCfgUrl Spring XML configuration file URL.
-     * @param ctx Optional Spring application context.
-     * @return Started grid.
-     */
-    def start(springCfgUrl: URL, @Nullable ctx: ApplicationContext): Grid = {
-        GridGain.start(springCfgUrl, ctx)
     }
 
     /**

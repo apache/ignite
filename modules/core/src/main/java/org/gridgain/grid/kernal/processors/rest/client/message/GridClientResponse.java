@@ -6,6 +6,7 @@
  *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
+
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
 import org.gridgain.grid.util.typedef.internal.*;
@@ -27,6 +28,9 @@ public class GridClientResponse extends GridClientAbstractMessage {
 
     /** Authentication failure. */
     public static final int STATUS_AUTH_FAILURE = 2;
+
+    /** Operation security failure. */
+    public static final int STATUS_SECURITY_CHECK_FAILED = 3;
 
     /** Success flag */
     private int successStatus;

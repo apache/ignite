@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.util.ipc.shmem;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
@@ -23,8 +24,10 @@ import java.io.*;
  */
 public class GridGgfsSharedMemoryTestServer {
     @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
-    public static void main(String[] args) {
+    public static void main(String[] args) throws GridException {
         System.out.println("Starting server ...");
+
+        U.setWorkDirectory(null, U.getGridGainHome());
 
         // Tell our process PID to the wrapper.
         X.println(GridJavaProcess.PID_MSG_PREFIX + U.jvmPid());
@@ -32,7 +35,7 @@ public class GridGgfsSharedMemoryTestServer {
         InputStream is = null;
 
         try {
-            GridIpcSharedMemoryServerEndpoint srv = new GridIpcSharedMemoryServerEndpoint();
+            GridIpcServerEndpoint srv = new GridIpcSharedMemoryServerEndpoint();
 
             new GridTestResources().inject(srv);
 

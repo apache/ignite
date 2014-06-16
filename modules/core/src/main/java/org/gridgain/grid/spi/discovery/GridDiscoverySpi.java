@@ -36,7 +36,7 @@ import java.util.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-public interface GridDiscoverySpi extends GridSpi, GridSpiJsonConfigurable {
+public interface GridDiscoverySpi extends GridSpi {
     /**
      * Gets collection of remote nodes in grid or empty collection if no remote nodes found.
      *
@@ -130,6 +130,13 @@ public interface GridDiscoverySpi extends GridSpi, GridSpiJsonConfigurable {
      * @see #disconnect()
      */
     public void reconnect() throws GridSpiException;
+
+    /**
+     * Sets discovery SPI node authenticator. This method is called before SPI start() method.
+     *
+     * @param auth Discovery SPI authenticator.
+     */
+    public void setAuthenticator(GridDiscoverySpiNodeAuthenticator auth);
 
     /**
      * Gets start time of the very first node in the grid. This value should be the same

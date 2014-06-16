@@ -29,8 +29,9 @@ edition is required in order to compile and build GridGain source code.
 ```xml
 <dependency>
     <groupId>org.gridgain</groupId>
-    <artifactId>gridgain-platform</artifactId>
+    <artifactId>gridgain-platform-edition</artifactId>
     <version>${gridgain.version}</version>
+    <type>pom</type>
 </dependency>
 ```
 
@@ -40,8 +41,9 @@ edition is required in order to compile and build GridGain source code.
 ```xml
 <dependency>
     <groupId>org.gridgain</groupId>
-    <artifactId>gridgain-datagrid</artifactId>
+    <artifactId>gridgain-datagrid-edition</artifactId>
     <version>${gridgain.version}</version>
+    <type>pom</type>
 </dependency>
 ```
 
@@ -51,8 +53,9 @@ edition is required in order to compile and build GridGain source code.
 ```xml
 <dependency>
     <groupId>org.gridgain</groupId>
-    <artifactId>gridgain-streaming</artifactId>
+    <artifactId>gridgain-streaming-edition</artifactId>
     <version>${gridgain.version}</version>
+    <type>pom</type>
 </dependency>
 ```
 
@@ -62,8 +65,9 @@ edition is required in order to compile and build GridGain source code.
 ```xml
 <dependency>
     <groupId>org.gridgain</groupId>
-    <artifactId>gridgain-hadoop</artifactId>
+    <artifactId>gridgain-hadoop-edition</artifactId>
     <version>${gridgain.version}</version>
+    <type>pom</type>
 </dependency>
 ```
 

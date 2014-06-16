@@ -15,6 +15,7 @@ import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -81,7 +82,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
      * @param incMeta Include metadata flag.
      * @param prjPred Cache projection filter.
      */
-    protected GridCacheQueryAdapter(GridCacheContext<?, ?> cctx, GridCacheQueryType type,
+    public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx, GridCacheQueryType type,
         @Nullable GridPredicate<GridCacheEntry<Object, Object>> prjPred, @Nullable Class<?> cls,
         @Nullable String clause, @Nullable GridBiPredicate<Object, Object> filter, boolean incMeta) {
         assert cctx != null;
@@ -334,6 +335,8 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     private <R> GridCacheQueryFuture<R> execute(@Nullable GridReducer<T, R> rmtReducer,
         @Nullable GridClosure<T, R> rmtTransform, @Nullable Object... args) {
         Collection<GridNode> nodes = nodes();
+
+        cctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         if (log.isDebugEnabled())
             log.debug("Executing query [query=" + this + ", nodes=" + nodes + ']');

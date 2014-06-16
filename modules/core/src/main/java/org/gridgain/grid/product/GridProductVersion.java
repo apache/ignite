@@ -9,11 +9,8 @@
 
 package org.gridgain.grid.product;
 
-import org.apache.commons.codec.*;
-import org.apache.commons.codec.binary.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
@@ -41,10 +38,7 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
 
     /** Regexp parse pattern. */
     private static final Pattern VER_PATTERN =
-        Pattern.compile("(.+-)?(\\d+)\\.(\\d+)\\.(\\d+)(-(\\d+))?(-([0-9a-f]+))?");
-
-    /** Development version string. */
-    private static final String DEV_VERSION_STR = "x.x.x-0-DEV";
+        Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)(-(os|ent))?(-(\\d+))?(-([0-9a-f]+))?");
 
     /** Major version number. */
     private byte major;
@@ -143,9 +137,7 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
 
     /** {@inheritDoc} */
     @Override public int compareTo(GridProductVersion o) {
-        // NOTE:
-        // Unknown version is less than any other version.
-        // Developer's version is greater than any other version.
+        // NOTE: Unknown version is less than any other version.
         if (major == o.major) {
             if (minor == o.minor) {
                 if (maintenance == o.maintenance)
@@ -208,9 +200,6 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
      * @throws ObjectStreamException In case of error.
      */
     protected Object readResolve() throws ObjectStreamException {
-        if (major == Integer.MAX_VALUE)
-            return VERSION_DEV;
-
         if (major == -1)
             return VERSION_UNKNOWN;
 
@@ -230,9 +219,8 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
      * @return Product version.
      */
     @SuppressWarnings({"MagicConstant", "TypeMayBeWeakened"})
-    public static GridProductVersion fromString(@Nullable String verStr) {
-        if (verStr == null)
-            return VERSION_UNKNOWN;
+    public static GridProductVersion fromString(String verStr) {
+        assert verStr != null;
 
         if (verStr.endsWith("-DEV"))
             return VERSION_DEV;
@@ -241,26 +229,26 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
 
         if (match.matches()) {
             try {
-                byte major = Byte.parseByte(match.group(2));
-                byte minor = Byte.parseByte(match.group(3));
-                byte maintenance = Byte.parseByte(match.group(4));
+                byte major = Byte.parseByte(match.group(1));
+                byte minor = Byte.parseByte(match.group(2));
+                byte maintenance = Byte.parseByte(match.group(3));
 
                 long revTs = 0;
 
                 if (match.group(6) != null)
-                    revTs = Long.parseLong(match.group(6));
+                    revTs = Long.parseLong(match.group(7));
 
                 byte[] revHash = null;
 
                 if (match.group(8) != null)
-                    revHash = Hex.decodeHex(match.group(8).toCharArray());
+                    revHash = U.decodeHex(match.group(9).toCharArray());
 
                 return new GridProductVersion(major, minor, maintenance, revTs, revHash);
             }
             catch (IllegalStateException | IndexOutOfBoundsException ignored) {
                 return VERSION_UNKNOWN;
             }
-            catch (NumberFormatException | DecoderException ignored) {
+            catch (NumberFormatException | GridException ignored) {
                 // Safety, should never happen.
                 return VERSION_UNKNOWN;
             }

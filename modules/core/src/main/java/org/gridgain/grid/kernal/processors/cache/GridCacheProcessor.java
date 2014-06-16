@@ -13,8 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
-import org.gridgain.grid.cache.eviction.*;
-import org.gridgain.grid.cache.eviction.ggfs.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.dr.cache.receiver.*;
 import org.gridgain.grid.dr.cache.sender.*;
@@ -27,16 +25,17 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
+import org.gridgain.grid.kernal.processors.cache.dr.*;
+import org.gridgain.grid.kernal.processors.cache.jta.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.cache.local.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
-import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;
@@ -46,12 +45,13 @@ import java.util.*;
 import static org.gridgain.grid.GridDeploymentMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheConfiguration.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.dr.cache.receiver.GridDrReceiverCacheConflictResolverMode.*;
+import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
@@ -154,10 +154,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cfg.getAffinityMapper() == null)
             cfg.setAffinityMapper(new GridCacheDefaultAffinityKeyMapper());
 
-        GridCacheEvictionPolicy evictPlc = cfg.getEvictionPolicy();
-
-        if (evictPlc instanceof GridCacheGgfsPerBlockLruEvictionPolicy && cfg.getEvictionFilter() == null)
-            cfg.setEvictionFilter(new GridCacheGgfsEvictionFilter());
+        ctx.ggfsHelper().preProcessCacheConfiguration(cfg);
 
         if (cfg.getPreloadMode() == null)
             cfg.setPreloadMode(ASYNC);
@@ -181,24 +178,31 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             assert cfg.getCacheMode() == LOCAL;
 
         if (cfg.getWriteSynchronizationMode() == null)
-            cfg.setWriteSynchronizationMode(cfg.getCacheMode() == PARTITIONED ? PRIMARY_SYNC : FULL_ASYNC);
+            cfg.setWriteSynchronizationMode(PRIMARY_SYNC);
 
         assert cfg.getWriteSynchronizationMode() != null;
+
+        if (cfg.getAtomicityMode() == ATOMIC) {
+            if (cfg.getAtomicWriteOrderMode() == null) {
+                cfg.setAtomicWriteOrderMode(cfg.getWriteSynchronizationMode() == FULL_SYNC ?
+                    GridCacheAtomicWriteOrderMode.CLOCK :
+                    GridCacheAtomicWriteOrderMode.PRIMARY);
+            }
+            else if (cfg.getWriteSynchronizationMode() != FULL_SYNC &&
+                cfg.getAtomicWriteOrderMode() == GridCacheAtomicWriteOrderMode.CLOCK) {
+                cfg.setAtomicWriteOrderMode(GridCacheAtomicWriteOrderMode.PRIMARY);
+
+                U.warn(log, "Automatically set write order mode to PRIMARY for better performance " +
+                    "[writeSynchronizationMode=" + cfg.getWriteSynchronizationMode() + ", " +
+                    "cacheName=" + cfg.getName() + ']');
+            }
+        }
     }
 
     /**
-     * @param gridCfg Grid configuration.
      * @param cfg Configuration to check for possible performance issues.
      */
-    private void suggestOptimizations(GridConfiguration gridCfg, GridCacheConfiguration cfg) {
-        // Skip over GGFS caches.
-        if (gridCfg.getGgfsConfiguration() != null) {
-            for (GridGgfsConfiguration c : gridCfg.getGgfsConfiguration()) {
-                if (F.eq(c.getMetaCacheName(), cfg.getName()) || F.eq(c.getDataCacheName(), cfg.getName()))
-                    return;
-            }
-        }
-
+    private void suggestOptimizations(GridCacheConfiguration cfg) {
         GridPerformanceSuggestions perf = ctx.performance();
 
         String msg = "Disable eviction policy (remove from configuration)";
@@ -262,10 +266,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 throw new GridException("For REPLICATED cache flag 'excludeNeighbors' in GridCacheConsistentHashAffinityFunction " +
                     "cannot be set [cacheName=" + cc.getName() + ']');
 
-            if (cc.getWriteSynchronizationMode() == PRIMARY_SYNC)
-                throw new GridException("Cannot start REPLICATED cache with PRIMARY_SYNC write synchronization mode " +
-                    "(switch to FULL_SYNC or FULL_ASYNC mode instead) [cacheName=" + cc.getName() + ']');
-
             if (cc.getDistributionMode() == NEAR_PARTITIONED) {
                 U.warn(log, "NEAR_PARTITIONED distribution mode cannot be used with REPLICATED cache, " +
                     "will be changed to PARTITIONED_ONLY [cacheName=" + cc.getName() + ']');
@@ -287,16 +287,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (cc.getAtomicityMode() == ATOMIC && cc.getWriteSynchronizationMode() == FULL_ASYNC)
                 U.warn(log, "Cache write synchronization mode is set to FULL_ASYNC. All single-key 'put' and " +
                     "'remove' operations will return 'null', all 'putx' and 'removex' operations will return" +
-                    " 'true'.");
-
-            if (cc.getAtomicityMode() == ATOMIC && cc.getWriteSynchronizationMode() != FULL_SYNC &&
-                cc.getAtomicWriteOrderMode() == GridCacheAtomicWriteOrderMode.CLOCK) {
-                cc.setAtomicWriteOrderMode(GridCacheAtomicWriteOrderMode.PRIMARY);
-
-                U.warn(log, "Automatically set write order mode to PRIMARY for write synchronization mode " +
-                    "[writeSynchronizationMode=" + cc.getWriteSynchronizationMode() + ", " +
-                    "cacheName=" + cc.getName() + ']');
-            }
+                    " 'true' [cacheName=" + cc.getName() + ']');
         }
 
         if (ctx.config().getDeploymentMode() == PRIVATE || ctx.config().getDeploymentMode() == ISOLATED)
@@ -347,15 +338,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        GridCacheEvictionPolicy evictPlc =  cc.getEvictionPolicy();
-
-        if (evictPlc != null && evictPlc instanceof GridCacheGgfsPerBlockLruEvictionPolicy) {
-            GridCacheEvictionFilter evictFilter = cc.getEvictionFilter();
-
-            if (evictFilter != null && !(evictFilter instanceof GridCacheGgfsEvictionFilter))
-                throw new GridException("Eviction filter cannot be set explicitly when using " +
-                    "GridCacheGgfsPerBlockLruEvictionPolicy:" + cc.getName());
-        }
+        ctx.ggfsHelper().validateCacheConfiguration(cc);
 
         switch (cc.getMemoryMode()) {
             case OFFHEAP_VALUES: {
@@ -445,6 +428,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (rslvrMode != DR_AUTO && drRcvCfg.getConflictResolver() == null)
                 throw new GridException("Conflict resolver must be not null with " + rslvrMode + " resolving policy");
         }
+
+        if (cc.getAtomicityMode() == ATOMIC)
+            assertParameter(cc.getTransactionManagerLookupClassName() == null,
+                "transaction manager can not be used with ATOMIC cache");
     }
 
     /**
@@ -470,17 +457,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param cfg Configuration.
+     * @param objs Extra components.
      * @throws GridException If failed to inject.
      */
-    private void prepare(GridCacheConfiguration cfg) throws GridException {
+    private void prepare(GridCacheConfiguration cfg, Object... objs) throws GridException {
         prepare(cfg, cfg.getEvictionPolicy(), false);
         prepare(cfg, cfg.getNearEvictionPolicy(), true);
         prepare(cfg, cfg.getAffinity(), false);
         prepare(cfg, cfg.getAffinityMapper(), false);
-        prepare(cfg, cfg.getTransactionManagerLookup(), false);
         prepare(cfg, cfg.getCloner(), false);
         prepare(cfg, cfg.getStore(), false);
         prepare(cfg, cfg.getEvictionFilter(), false);
+        prepare(cfg, cfg.getInterceptor(), false);
 
         GridDrSenderCacheConfiguration drSndCfg = cfg.getDrSenderConfiguration();
 
@@ -491,6 +479,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (drRcvCfg != null)
             prepare(cfg, drRcvCfg.getConflictResolver(), false);
+
+        for (Object obj : objs)
+            prepare(cfg, obj, false);
     }
 
     /**
@@ -519,7 +510,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         cleanup(cfg, cfg.getNearEvictionPolicy(), true);
         cleanup(cfg, cfg.getAffinity(), false);
         cleanup(cfg, cfg.getAffinityMapper(), false);
-        cleanup(cfg, cfg.getTransactionManagerLookup(), false);
+        cleanup(cfg, cctx.jta().tmLookup(), false);
         cleanup(cfg, cfg.getCloner(), false);
         cleanup(cfg, cfg.getStore(), false);
 
@@ -559,6 +550,46 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ctx.versionConverter().registerLocal(GridNearAtomicUpdateResponse.class,
             GridDhtAtomicCache.NearAtomicUpdateResponseConverter603.class, GridNearAtomicCache.SINCE_VER);
 
+        ctx.versionConverter().registerLocal(GridNearAtomicUpdateRequest.class,
+            GridDhtAtomicCache.GridNearAtomicUpdateRequestConverter612.class,
+            GridDhtAtomicCache.FORCE_TRANSFORM_BACKUP_SINCE);
+
+        ctx.versionConverter().registerLocal(GridDhtAtomicUpdateRequest.class,
+            GridDhtAtomicCache.GridDhtAtomicUpdateRequestConverter612.class,
+            GridDhtAtomicCache.FORCE_TRANSFORM_BACKUP_SINCE);
+
+        ctx.versionConverter().registerLocal(GridNearLockRequest.class,
+            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
+            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtLockRequest.class,
+            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
+            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridNearTxPrepareRequest.class,
+            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
+            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtTxPrepareRequest.class,
+            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
+            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridNearTxFinishRequest.class,
+            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
+            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtTxFinishRequest.class,
+            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
+            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridNearAtomicUpdateRequest.class,
+            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
+            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtAtomicUpdateRequest.class,
+            GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
+            GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
         GridDeploymentMode depMode = ctx.config().getDeploymentMode();
 
         if (!F.isEmpty(ctx.config().getCacheConfiguration())) {
@@ -592,6 +623,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 sysCaches.add(CU.cacheNameForDrSystemCache(cacheName));
         }
 
+        if (U.securityEnabled(ctx.config()))
+            sysCaches.add(CU.SECURITY_SYS_CACHE_NAME);
+
         GridCacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
 
         for (int i = 0; i < cfgs.length; i++) {
@@ -600,13 +634,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             // Initialize defaults.
             initialize(cfg);
 
-            suggestOptimizations(ctx.config(), cfg);
+            // Skip suggestions for system caches.
+            if (!sysCaches.contains(cfg.getName()))
+                suggestOptimizations(cfg);
 
             validate(ctx.config(), cfg);
 
-            prepare(cfg);
+            GridCacheJtaManagerAdapter jta = JTA.create(cfg.getTransactionManagerLookupClassName() == null);
 
-            U.startLifecycleAware(lifecycleAwares(cfg));
+            jta.createTmLookup(cfg);
+
+            prepare(cfg, jta.tmLookup());
+
+            U.startLifecycleAware(lifecycleAwares(cfg, jta.tmLookup()));
 
             cfgs[i] = cfg; // Replace original configuration value.
 
@@ -652,7 +692,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 tm,
                 dataStructuresMgr,
                 ttlMgr,
-                drMgr);
+                drMgr,
+                jta);
 
             GridCacheAdapter cache = null;
 
@@ -801,7 +842,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     tm,
                     dataStructuresMgr,
                     ttlMgr,
-                    drMgr);
+                    drMgr,
+                    jta);
 
                 GridDhtCacheAdapter dht = null;
 
@@ -905,6 +947,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         Collection<String> replicationCaches = new ArrayList<>();
 
+        Map<String, String> interceptors = new HashMap<>();
+
         int i = 0;
 
         for (GridCacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
@@ -912,11 +956,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (cfg.getDrSenderConfiguration() != null)
                 replicationCaches.add(cfg.getName());
+
+            if (cfg.getInterceptor() != null)
+                interceptors.put(cfg.getName(), cfg.getInterceptor().getClass().getName());
         }
 
         attrs.put(ATTR_CACHE, attrVals);
 
         attrs.put(ATTR_REPLICATION_CACHES, replicationCaches);
+
+        if (!interceptors.isEmpty())
+            attrs.put(ATTR_CACHE_INTERCEPTORS, interceptors);
     }
 
     /**
@@ -1042,6 +1092,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Gets cache interceptor class name from node attributes.
+     *
+     * @param node Node.
+     * @param cacheName Cache name.
+     * @return Interceptor class name.
+     */
+    @Nullable private String interceptor(GridNode node, @Nullable String cacheName) {
+        Map<String, String> map = node.attribute(ATTR_CACHE_INTERCEPTORS);
+
+        return map != null ? map.get(cacheName) : null;
+    }
+
+    /**
      * Checks that remote caches has configuration compatible with the local.
      *
      * @param rmt Node.
@@ -1065,6 +1128,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         locAttr.cacheMode(), rmtAttr.cacheMode(), true);
 
                     if (rmtAttr.cacheMode() != LOCAL) {
+                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "interceptor", "Cache Interceptor",
+                            interceptor(ctx.discovery().localNode(), rmtAttr.cacheName()),
+                            interceptor(rmt, rmtAttr.cacheName()), true);
+
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "atomicityMode",
                             "Cache atomicity mode", locAttr.atomicityMode(), rmtAttr.atomicityMode(), true);
 
@@ -1463,7 +1530,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     mgr.stop(cancel);
             }
 
-            U.stopLifecycleAware(log, lifecycleAwares(cache.configuration()));
+            U.stopLifecycleAware(log, lifecycleAwares(cache.configuration(), ctx.jta().tmLookup()));
 
             if (log.isInfoEnabled())
                 log.info("Stopped cache: " + cache.name());
@@ -1778,12 +1845,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param ccfg Cache configuration.
+     * @param objs Extra components.
      * @return Components provided in cache configuration which can implement {@link GridLifecycleAware} interface.
      */
-    private Iterable<Object> lifecycleAwares(GridCacheConfiguration ccfg) {
-        return F.asList(ccfg.getAffinity(), ccfg.getAffinityMapper(), ccfg.getCloner(),
-            ccfg.getEvictionFilter(), ccfg.getEvictionPolicy(), ccfg.getNearEvictionPolicy(),
-            ccfg.getTransactionManagerLookup());
+    private Iterable<Object> lifecycleAwares(GridCacheConfiguration ccfg, Object...objs) {
+        List<Object> ret = new ArrayList<>(7 + objs.length);
+
+        ret.add(ccfg.getAffinity());
+        ret.add(ccfg.getAffinityMapper());
+        ret.add(ccfg.getCloner());
+        ret.add(ccfg.getEvictionFilter());
+        ret.add(ccfg.getEvictionPolicy());
+        ret.add(ccfg.getNearEvictionPolicy());
+        ret.add(ccfg.getInterceptor());
+
+        Collections.addAll(ret, objs);
+
+        return ret;
     }
 
     /**

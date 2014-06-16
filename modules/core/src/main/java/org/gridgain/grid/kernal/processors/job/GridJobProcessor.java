@@ -1263,7 +1263,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     topic,
                     msgId,
                     jobRes,
-                    SYSTEM_POOL,
+                    req.isInternal() ? MANAGEMENT_POOL : SYSTEM_POOL,
                     timeout,
                     false);
             }
@@ -1271,7 +1271,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 ctx.task().processJobExecuteResponse(ctx.localNodeId(), jobRes);
             else
                 // Send response to common topic as unordered message.
-                ctx.io().send(sndNode, TOPIC_TASK, jobRes, SYSTEM_POOL);
+                ctx.io().send(sndNode, TOPIC_TASK, jobRes, req.isInternal() ? MANAGEMENT_POOL : SYSTEM_POOL);
         }
         catch (GridException e) {
             // The only option here is to log, as we must assume that resending will fail too.
@@ -1335,14 +1335,15 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 (Map<?, ?>)marsh.unmarshal(req.getAttributesBytes(), ses.getClassLoader());
 
             if (ctx.event().isRecordable(EVT_TASK_SESSION_ATTR_SET)) {
-                GridTaskEvent evt = new GridTaskEvent();
-
-                evt.message("Changed attributes: " + attrs);
-                evt.node(ctx.discovery().localNode());
-                evt.taskName(ses.getTaskName());
-                evt.taskClassName(ses.getTaskClassName());
-                evt.taskSessionId(ses.getId());
-                evt.type(EVT_TASK_SESSION_ATTR_SET);
+                GridEvent evt = new GridTaskEvent(
+                    ctx.discovery().localNode(),
+                    "Changed attributes: " + attrs,
+                    EVT_TASK_SESSION_ATTR_SET,
+                    ses.getId(),
+                    ses.getTaskName(),
+                    ses.getTaskClassName(),
+                    false,
+                    null);
 
                 ctx.event().record(evt);
             }

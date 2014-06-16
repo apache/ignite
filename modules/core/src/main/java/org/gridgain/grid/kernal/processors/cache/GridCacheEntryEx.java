@@ -222,6 +222,12 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
     public GridCacheBatchSwapEntry<K, V> evictInBatchInternal(GridCacheVersion obsoleteVer) throws GridException;
 
     /**
+     * This method should be called each time entry is marked obsolete
+     * other than by calling {@link #markObsolete(GridCacheVersion)}.
+     */
+    public void onMarkedObsolete();
+
+    /**
      * Checks if entry is new assuming lock is held externally.
      *
      * @return {@code True} if entry is new.
@@ -256,6 +262,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @param readThrough Flag indicating whether to read through.
      * @param failFast If {@code true}, then throw {@link GridCacheFilterFailedException} if
      *      filter didn't pass.
+     * @param subjId Subject ID initiated this read.
      * @param filter Filter to check prior to getting the value. Note that filter check
      *      together with getting the value is an atomic operation.
      * @param unmarshal Unmarshal flag.
@@ -267,7 +274,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @throws GridCacheFilterFailedException If filter failed.
      */
     @Nullable public V innerGet(@Nullable GridCacheTxEx<K, V> tx, boolean readSwap, boolean readThrough,
-        boolean failFast, boolean unmarshal, boolean updateMetrics, boolean evt,
+        boolean failFast, boolean unmarshal, boolean updateMetrics, boolean evt, UUID subjId,
         GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException, GridCacheEntryRemovedException,
         GridCacheFilterFailedException;
 
@@ -317,7 +324,8 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         GridPredicate<GridCacheEntry<K, V>>[] filter,
         GridDrType drType,
         long drExpireTime,
-        @Nullable GridCacheVersion explicitVer
+        @Nullable GridCacheVersion explicitVer,
+        @Nullable UUID subjId
     ) throws GridException, GridCacheEntryRemovedException;
 
     /**
@@ -347,7 +355,8 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         long topVer,
         GridPredicate<GridCacheEntry<K, V>>[] filter,
         GridDrType drType,
-        @Nullable GridCacheVersion explicitVer
+        @Nullable GridCacheVersion explicitVer,
+        @Nullable UUID subjId
     ) throws GridException, GridCacheEntryRemovedException;
 
     /**
@@ -371,6 +380,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @param drExpireTime DR expire time (if any).
      * @param drVer DR version (if any).
      * @param drResolve If {@code true} then performs DR conflicts resolution.
+     * @param intercept If {@code true} then calls cache interceptor.
      * @return Tuple where first value is flag showing whether operation succeeded,
      *      second value is old entry value if return value is requested, third is updated entry value,
      *      fourth is the version to enqueue for deferred delete the fifth is DR conflict context
@@ -398,7 +408,9 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         long drTtl,
         long drExpireTime,
         @Nullable GridCacheVersion drVer,
-        boolean drResolve
+        boolean drResolve,
+        boolean intercept,
+        @Nullable UUID subjId
     ) throws GridException, GridCacheEntryRemovedException;
 
     /**
@@ -413,6 +425,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @param evt Event flag.
      * @param metrics Metrics update flag.
      * @param filter Optional filter to check.
+     * @param intercept If {@code true} then calls cache interceptor.
      * @return Tuple containing success flag and old value.
      * @throws GridException If update failed.
      * @throws GridCacheEntryRemovedException If entry is obsolete.
@@ -426,7 +439,9 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         long ttl,
         boolean evt,
         boolean metrics,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter,
+        boolean intercept,
+        @Nullable UUID subjId
     ) throws GridException, GridCacheEntryRemovedException;
 
 
@@ -435,13 +450,12 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * from swap storage.
      *
      * @param ver Obsolete version.
-     * @param swap If {@code true} then remove from swap.
      * @param readers Flag to clear readers as well.
      * @param filter Optional entry filter.
      * @throws GridException If failed to remove from swap.
      * @return {@code True} if entry was not being used, passed the filter and could be removed.
      */
-    public boolean clear(GridCacheVersion ver, boolean swap, boolean readers,
+    public boolean clear(GridCacheVersion ver, boolean readers,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException;
 
     /**

@@ -10,7 +10,6 @@
 package org.gridgain.grid.util.ipc.loopback;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -45,7 +44,7 @@ public class GridIpcServerTcpEndpoint implements GridIpcServerEndpoint {
     /** {@inheritDoc} */
     @Override public void start() throws GridException {
         if (port <= 0 || port >= 0xffff)
-            throw new GridGgfsIpcEndpointBindException("Port value is illegal: " + port);
+            throw new GridIpcEndpointBindException("Port value is illegal: " + port);
 
         try {
             srvSock = new ServerSocket();
@@ -61,7 +60,7 @@ public class GridIpcServerTcpEndpoint implements GridIpcServerEndpoint {
             if (srvSock != null)
                 U.closeQuiet(srvSock);
 
-            throw new GridGgfsIpcEndpointBindException("Failed to bind loopback IPC endpoint (is port already in " +
+            throw new GridIpcEndpointBindException("Failed to bind loopback IPC endpoint (is port already in " +
                 "use?): " + port, e);
         }
     }

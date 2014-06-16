@@ -17,13 +17,13 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.managers.indexing.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.*;
-import org.gridgain.grid.spi.indexing.h2.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -31,9 +31,9 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
-import org.springframework.util.*;
 
 import java.io.*;
+import java.lang.reflect.*;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -437,6 +437,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 return idxMgr.queryText(spi, space, qry.clause(), (Class<? extends V>)U.box(qry.queryClass()),
                     qry.includeBackups(), projectionFilter(qry));
 
+            case SET:
+                return setIterator(qry);
+
             case SQL_FIELDS:
                 assert false : "SQL fields query is incorrectly processed.";
 
@@ -471,6 +474,56 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         return idxMgr.queryFields(spi, space, qry.clause(), F.asList(args), qry.includeBackups(),
             projectionFilter(qry));
+    }
+
+    /**
+     * @param qry Query.
+     * @return Cache set items iterator.
+     * @throws GridException If failed.
+     */
+    private GridCloseableIterator<GridIndexingKeyValueRow<K, V>> setIterator(GridCacheQueryAdapter<?> qry) {
+        final GridSetQueryPredicate filter = (GridSetQueryPredicate)qry.scanFilter();
+
+        filter.init(cctx);
+
+        GridUuid id = filter.setId();
+
+        Collection<GridCacheSetItemKey> data = cctx.dataStructures().setData(id);
+
+        if (data == null)
+            data = Collections.emptyList();
+
+        final GridIterator<GridIndexingKeyValueRow<K, V>> it = F.iterator(
+            data,
+            new C1<GridCacheSetItemKey, GridIndexingKeyValueRow<K, V>>() {
+                @Override public GridIndexingKeyValueRow<K, V> apply(GridCacheSetItemKey e) {
+                    return new GridIndexingKeyValueRowAdapter<>((K)e.item(), (V)Boolean.TRUE);
+                }
+            },
+            true,
+            new P1<GridCacheSetItemKey>() {
+                @Override public boolean apply(GridCacheSetItemKey e) {
+                    return filter.apply(e, null);
+                }
+            });
+
+        return new GridCloseableIteratorAdapter<GridIndexingKeyValueRow<K, V>>() {
+            @Override protected boolean onHasNext() {
+                return it.hasNext();
+            }
+
+            @Override protected GridIndexingKeyValueRow<K, V> onNext() {
+                return it.next();
+            }
+
+            @Override protected void onRemove() {
+                it.remove();
+            }
+
+            @Override protected void onClose() {
+                // No-op.
+            }
+        };
     }
 
     /**
@@ -1165,13 +1218,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         if (cls == null)
             return;
 
-        if (ClassUtils.isPrimitiveOrWrapper(cls)) {
+        if (GridUtils.isPrimitiveOrWrapper(cls)) {
             for (GridIndexingSpi indexingSpi : cctx.gridConfig().getIndexingSpi()) {
-                if (indexingSpi instanceof GridH2IndexingSpi)
-                    if (!((GridH2IndexingSpiMBean)indexingSpi).isDefaultIndexPrimitiveKey())
-                        throw new IllegalStateException("Invalid use of primitive class type in queries when " +
-                            "GridH2IndexingSpi.isDefaultIndexPrimitiveKey() is disabled " +
-                            "(consider enabling indexing for primitive types).");
+                if (!isDefaultIndexPrimitiveKey(indexingSpi))
+                    throw new IllegalStateException("Invalid use of primitive class type in queries when " +
+                        "GridH2IndexingSpi.isDefaultIndexPrimitiveKey() is disabled " +
+                        "(consider enabling indexing for primitive types).");
             }
         }
     }
@@ -1293,6 +1345,26 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
             }
         };
+    }
+
+    /**
+     * @param indexingSpi Indexing SPI.
+     * @return {@code True} if given SPI is GridH2IndexingSpi with enabled property {@code isDefaultIndexPrimitiveKey}.
+     */
+    private static boolean isDefaultIndexPrimitiveKey(GridIndexingSpi indexingSpi) {
+        if (indexingSpi.getClass().getName().equals(GridComponentType.H2_INDEXING.className())) {
+            try {
+                Method method = indexingSpi.getClass().getMethod("isDefaultIndexPrimitiveKey");
+
+                return (Boolean)method.invoke(indexingSpi);
+            }
+            catch (Exception e) {
+                throw new GridRuntimeException("Failed to invoke 'isDefaultIndexPrimitiveKey' method " +
+                    "on GridH2IndexingSpi.", e);
+            }
+        }
+
+        return false;
     }
 
     /**

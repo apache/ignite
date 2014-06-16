@@ -16,6 +16,7 @@ import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.nio.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;
@@ -246,7 +247,7 @@ public class GridClientTestRestServer {
             else if (msg instanceof GridClientHandshakeRequest) {
                 GridClientHandshakeRequest hs = (GridClientHandshakeRequest)msg;
 
-                assert hs.protocolId() == GridClientOptimizedMarshaller.PROTOCOL_ID;
+                assert hs.protocolId() == U.OPTIMIZED_CLIENT_PROTO_ID;
 
                 ses.addMeta(GridNioSessionMetaKey.MARSHALLER.ordinal(), optMarsh);
 

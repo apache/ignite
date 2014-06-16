@@ -26,83 +26,31 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
-    public void testPlatformEnt() throws Exception {
-        testNotifier("platform", true);
+    public void testEnt() throws Exception {
+        testNotifier(true);
     }
 
     /**
      * @throws Exception If test failed.
      */
-    public void testPlatformOs() throws Exception {
-        testNotifier("platform", false);
+    public void testOs() throws Exception {
+        testNotifier(false);
     }
 
     /**
-     * @throws Exception If test failed.
+     * @param ent Enterprise flag.
+     * @throws Exception If failed.
      */
-    public void testDataGridEnt() throws Exception {
-        testNotifier("datagrid", true);
-    }
-
-    /**
-     * @throws Exception If test failed.
-     */
-    public void testDataGridOs() throws Exception {
-        testNotifier("datagrid", false);
-    }
-
-    /**
-     * @throws Exception If test failed.
-     */
-    public void testHadoopEnt() throws Exception {
-        testNotifier("hadoop", true);
-    }
-
-    /**
-     * @throws Exception If test failed.
-     */
-    public void testHadoopOs() throws Exception {
-        testNotifier("hadoop", false);
-    }
-
-    /**
-     * @throws Exception If test failed.
-     */
-    public void testStreamingEnt() throws Exception {
-        testNotifier("streaming", true);
-    }
-
-    /**
-     * @throws Exception If test failed.
-     */
-    public void testStreamingOs() throws Exception {
-        testNotifier("streaming", false);
-    }
-
-    /**
-     * @throws Exception If test failed.
-     */
-    public void testMongoEnt() throws Exception {
-        testNotifier("mongo", true);
-    }
-
-    /**
-     * @throws Exception If test failed.
-     */
-    public void testMongoOs() throws Exception {
-        testNotifier("mongo", false);
-    }
-
-    private void testNotifier(String edition, boolean ent) throws Exception {
+    private void testNotifier(boolean ent) throws Exception {
         String site = "www.gridgain." + (ent ? "com" : "org");
 
-        GridUpdateNotifier ntf = new GridUpdateNotifier(null, edition, "x.x.x", site, false);
+        GridUpdateNotifier ntf = new GridUpdateNotifier(null, "x.x.x", site, false);
 
         ntf.checkForNewVersion(new SelfExecutor(), log);
 
         String ver = ntf.latestVersion();
 
-        info("Latest " + edition + " version: " + ver);
+        info("Latest version: " + ver);
 
         assertNotNull("GridGain latest version has not been detected.", ver);
 

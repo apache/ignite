@@ -9,56 +9,52 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.product.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
+import java.text.*;
 import java.util.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * {@link GridProduct} implementation.
  */
 public class GridProductImpl implements GridProduct {
+    /** Copyright blurb. */
+    public static final String COPYRIGHT = "2014 Copyright (C) GridGain Systems";
+
+    /** Enterprise edition flag. */
+    public static final boolean ENT;
+
     /** GridGain version. */
     public static final String VER;
 
-    /** Enterprise release flag. */
-    public static final boolean ENT;
+    /** Build timestamp in seconds. */
+    public static final long BUILD_TSTAMP;
 
-    /** Ant-augmented edition name. */
-    public static final String EDITION = /*@java.edition*/"platform";
+    /** Formatted build date. */
+    public static final String BUILD_TSTAMP_STR;
 
-    /** Compound GridGain version. */
-    public static final String COMPOUND_VERSION;
+    /** Revision hash. */
+    public static final String REV_HASH;
+
+    /** Release date. */
+    public static final String RELEASE_DATE;
 
     /** GridGain version as numeric array (generated from {@link #VER}). */
     public static final byte[] VER_BYTES;
 
-    /** Ant-augmented copyright blurb. */
-    public static final String COPYRIGHT = /*@java.copyright*/"Copyright (C) 2014 GridGain Systems";
+    /** Compound version. */
+    public static final String COMPOUND_VER;
 
-    /** Ant-augmented build number. */
-    public static final long BUILD = /*@java.build*/0;
-
-    /** Ant-augmented revision hash. */
-    public static final String REV_HASH = /*@java.revision*/"DEV";
-
-    /** Ant-augmented release date. */
-    public static final String RELEASE_DATE = /*@java.rel.date*/"01011970";
+    /** Compound version. */
+    public static final String ACK_VER;
 
     /** */
     private final GridKernalContext ctx;
 
     /** */
     private final GridProductVersion ver;
-
-    /** */
-    private final GridProductEdition edition;
 
     /** Update notifier. */
     private final GridUpdateNotifier verChecker;
@@ -78,27 +74,20 @@ public class GridProductImpl implements GridProduct {
 
         ENT = ent0;
 
-        final String propsFile = "gridgain.properties";
-
-        Properties props = new Properties();
-
-        try {
-            props.load(GridProductImpl.class.getClassLoader().getResourceAsStream(propsFile));
-
-            String prop = EDITION + ".ver";
-
-            VER = props.getProperty(prop);
-
-            if (F.isEmpty(VER))
-                throw new RuntimeException("Cannot read '" + prop + "' property from " + propsFile + " file.");
-        }
-        catch (IOException e) {
-            throw new RuntimeException("Cannot find '" + propsFile + "' file.", e);
-        }
-
-        COMPOUND_VERSION = EDITION + "-" + (ENT ? "ent" : "os") + "-" + VER;
+        VER = GridProperties.get("gridgain.version");
+        BUILD_TSTAMP = Long.valueOf(GridProperties.get("gridgain.build"));
+        REV_HASH = GridProperties.get("gridgain.revision");
+        RELEASE_DATE = GridProperties.get("gridgain.rel.date");
 
         VER_BYTES = U.intToBytes(VER.hashCode());
+
+        COMPOUND_VER = VER + "-" + (ENT ? "ent" : "os");
+
+        BUILD_TSTAMP_STR = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD_TSTAMP * 1000));
+
+        String rev = REV_HASH.length() > 8 ? REV_HASH.substring(0, 8) : REV_HASH;
+
+        ACK_VER = COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + rev;
     }
 
     /**
@@ -111,14 +100,7 @@ public class GridProductImpl implements GridProduct {
 
         String releaseType = ctx.isEnterprise() ? "ent" : "os";
 
-        ver = GridProductVersion.fromString(EDITION + "-" + releaseType + "-" + VER + '-' + BUILD + '-' + REV_HASH);
-
-        edition = editionFromString(EDITION);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridProductEdition edition() {
-        return edition;
+        ver = GridProductVersion.fromString(VER + '-' + releaseType + '-' + BUILD_TSTAMP + '-' + REV_HASH);
     }
 
     /** {@inheritDoc} */
@@ -165,31 +147,5 @@ public class GridProductImpl implements GridProduct {
         finally {
             ctx.gateway().readUnlock();
         }
-    }
-
-    /**
-     * @param edition Edition name.
-     * @return Edition.
-     */
-    private static GridProductEdition editionFromString(String edition) {
-        switch (edition) {
-            case "datagrid":
-                return DATA_GRID;
-
-            case "hadoop":
-                return HADOOP;
-
-            case "streaming":
-                return STREAMING;
-
-            case "mongo":
-                return MONGO;
-
-            case "dev":
-            case "platform":
-                return PLATFORM;
-        }
-
-        throw new GridRuntimeException("Failed to determine GridGain edition: " + edition);
     }
 }

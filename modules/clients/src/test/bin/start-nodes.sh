@@ -23,35 +23,26 @@ export BIN_PATH=$SCRIPT_DIR/../../../../../bin
 
 GG_HOME=$(cd $SCRIPT_DIR/../../../../../..; pwd)
 
-echo Switch to build script directory $SCRIPT_DIR
-cd $SCRIPT_DIR
-
-# Define this script configuration.
-CLIENT_TEST_JAR=${GG_HOME}/gridgain-clients-tests.jar
-
-ANT_TARGET="mk.tests.jar.full"
-
 if [ ! -d "${JAVA_HOME}" ]; then
     JAVA_HOME=/Library/Java/Home
 fi
 
-JVM_OPTS="-Xmx512m -Xss4m -XX:+UseConcMarkSweepGC -XX:MaxPermSize=256m -DCLIENTS_MODULE_PATH=$CLIENTS_MODULE_PATH"
-echo "JVM_OPTS ${JVM_OPTS}"
-export JVM_OPTS
-
-ANT_OPTS=${JVM_OPTS}
-echo "ANT_OPTS: ${ANT_OPTS}"
-export ANT_OPTS
-
-echo Generate client test jar [ant target=$ANT_TARGET, jar file=$CLIENT_TEST_JAR]
-ant -DGG_HOME="${GG_HOME}" -DJAVA_HOME="${JAVA_HOME}" \
--f ${SCRIPT_DIR}/../build/build.xml ${ANT_TARGET} || exit 1
-
-# Provide user library to the grid startup scripts.
-USER_LIBS=${CLIENT_TEST_JAR}
-export USER_LIBS
 export JAVA_HOME
 export GG_HOME
+
+echo Switch to home directory $GG_HOME
+cd $GG_HOME
+
+MVN_EXEC=mvn
+
+if [ -d "${M2_HOME}" ]; then
+    MVN_EXEC=${M2_HOME}/bin/${MVN_EXEC}
+fi
+
+${MVN_EXEC} -P+test,-scala,-examples,-release clean package -DskipTests -DskipClientDocs
+
+echo Switch to build script directory $SCRIPT_DIR
+cd $SCRIPT_DIR
 
 if [ ! -d "${GG_HOME}/work" ]; then
     mkdir "${GG_HOME}/work"
@@ -60,6 +51,8 @@ fi
 if [ ! -d "${GG_HOME}/work/log" ]; then
     mkdir "${GG_HOME}/work/log"
 fi
+
+export JVM_OPTS="${JVM_OPTS} -DCLIENTS_MODULE_PATH=${CLIENTS_MODULE_PATH}"
 
 for iter in {1..2}
 do
@@ -85,7 +78,7 @@ echo Start Router: ${LOG_FILE}
 nohup /bin/bash $BIN_PATH/ggrouter.sh $CONFIG_DIR/spring-router.xml -v < /dev/null > ${LOG_FILE} 2>&1 &
 
 # Disable hostname verification for self-signed certificates.
-export JVM_OPTS=${JVM_OPTS} -DGRIDGAIN_DISABLE_HOSTNAME_VERIFIER=true
+export JVM_OPTS="${JVM_OPTS} -DGRIDGAIN_DISABLE_HOSTNAME_VERIFIER=true"
 
 LOG_FILE=${GG_HOME}/work/log/router-ssl.log
 echo Start Router SSL: ${LOG_FILE}

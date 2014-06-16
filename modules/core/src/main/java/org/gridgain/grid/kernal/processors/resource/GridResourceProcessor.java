@@ -21,8 +21,6 @@ import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
-import org.springframework.aop.framework.*;
-import org.springframework.context.*;
 
 import javax.management.*;
 import java.lang.annotation.*;
@@ -70,7 +68,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         GridUserResource.class);
 
     /** Grid instance injector. */
-    private GridResourceBasicInjector<Grid> gridInjector;
+    private GridResourceBasicInjector<GridEx> gridInjector;
 
     /** GridGain home folder injector. */
     private GridResourceBasicInjector<String> ggHomeInjector;
@@ -94,19 +92,25 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     private GridResourceBasicInjector<UUID> nodeIdInjector;
 
     /** Spring application context injector. */
-    private GridResourceBasicInjector<ApplicationContext> springCtxInjector;
+    private GridResourceInjector springCtxInjector;
 
     /** Logger injector. */
     private GridResourceBasicInjector<GridLogger> logInjector;
 
+    /** Address resolver injector. */
+    private GridResourceBasicInjector<GridAddressResolver> addrsRslvrInjector;
+
     /** Spring bean resources injector. */
-    private GridResourceSpringBeanInjector springBeanInjector;
+    private GridResourceInjector springBeanInjector;
 
     /** Task resources injector. */
     private GridResourceCustomInjector customInjector;
 
     /** Cleaning injector. */
     private final GridResourceInjector nullInjector = new GridResourceBasicInjector<>(null);
+
+    /** */
+    private GridSpringResourceContext rsrcCtx;
 
     /** */
     private final GridResourceIoc ioc = new GridResourceIoc();
@@ -128,6 +132,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         execInjector = new GridResourceBasicInjector<Executor>(ctx.config().getExecutorService());
         nodeIdInjector = new GridResourceBasicInjector<>(ctx.config().getNodeId());
         logInjector = new GridResourceLoggerInjector(ctx.config().getGridLogger());
+        addrsRslvrInjector = new GridResourceBasicInjector<>(ctx.config().getAddressResolver());
     }
 
     /** {@inheritDoc} */
@@ -158,14 +163,15 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Sets Spring application context.
+     * Sets Spring resource context.
      *
-     * @param springCtx Spring application context.
+     * @param rsrcCtx Spring resource context.
      */
-    public void setSpringContext(ApplicationContext springCtx) {
-        springCtxInjector = new GridResourceBasicInjector<>(springCtx);
+    public void setSpringContext(@Nullable GridSpringResourceContext rsrcCtx) {
+        this.rsrcCtx = rsrcCtx;
 
-        springBeanInjector = new GridResourceSpringBeanInjector(springCtx);
+        springCtxInjector = rsrcCtx != null ? rsrcCtx.springContextInjector() : nullInjector;
+        springBeanInjector = rsrcCtx != null ? rsrcCtx.springBeanInjector() : nullInjector;
     }
 
     /**
@@ -501,6 +507,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         ioc.inject(obj, GridSpringApplicationContextResource.class, springCtxInjector, null, null);
         ioc.inject(obj, GridSpringResource.class, springBeanInjector, null, null);
         ioc.inject(obj, GridLoggerResource.class, logInjector, null, null);
+        ioc.inject(obj, GridAddressResolverResource.class, addrsRslvrInjector, null, null);
     }
 
     /**
@@ -527,6 +534,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         ioc.inject(obj, GridMarshallerResource.class, nullInjector, null, null);
         ioc.inject(obj, GridSpringApplicationContextResource.class, nullInjector, null, null);
         ioc.inject(obj, GridSpringResource.class, nullInjector, null, null);
+        ioc.inject(obj, GridAddressResolverResource.class, nullInjector, null, null);
     }
 
     /**
@@ -679,17 +687,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @throws GridException If unwrap failed.
      */
     private Object unwrapTarget(Object target) throws GridException {
-        if (target instanceof Advised) {
-            try {
-                return ((Advised)target).getTargetSource().getTarget();
-            }
-            catch (Exception e) {
-                throw new GridException("Failed to unwrap Spring proxy target [cls=" + target.getClass().getName() +
-                    ", target=" + target + ']', e);
-            }
-        }
-
-        return target;
+        return rsrcCtx != null ? rsrcCtx.unwrapTarget(target) : target;
     }
 
     /** {@inheritDoc} */

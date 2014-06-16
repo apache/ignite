@@ -18,6 +18,7 @@ import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -351,6 +352,15 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         @Nullable T arg,
         boolean sys) {
         assert sesId != null;
+
+        String taskClsName;
+
+        if (task != null)
+            taskClsName = task.getClass().getName();
+        else
+            taskClsName = taskCls != null ? taskCls.getName() : taskName;
+
+        ctx.security().authorize(taskClsName, GridSecurityPermission.TASK_EXECUTE, null);
 
         // Get values from thread-local context.
         Map<GridTaskThreadContextKey, Object> map = thCtx.get();
@@ -691,14 +701,15 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         }
 
         if (ctx.event().isRecordable(EVT_TASK_SESSION_ATTR_SET)) {
-            GridTaskEvent evt = new GridTaskEvent();
-
-            evt.message("Changed attributes: " + attrs);
-            evt.node(ctx.discovery().localNode());
-            evt.taskName(ses.getTaskName());
-            evt.taskClassName(ses.getTaskClassName());
-            evt.taskSessionId(ses.getId());
-            evt.type(EVT_TASK_SESSION_ATTR_SET);
+            GridEvent evt = new GridTaskEvent(
+                ctx.discovery().localNode(),
+                "Changed attributes: " + attrs,
+                EVT_TASK_SESSION_ATTR_SET,
+                ses.getId(),
+                ses.getTaskName(),
+                ses.getTaskClassName(),
+                false,
+                null);
 
             ctx.event().record(evt);
         }

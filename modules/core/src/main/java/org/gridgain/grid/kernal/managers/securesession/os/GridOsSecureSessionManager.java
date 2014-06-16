@@ -13,13 +13,19 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.securesession.*;
-import org.gridgain.grid.spi.*;
+import org.gridgain.grid.kernal.managers.security.*;
+import org.gridgain.grid.security.*;
 import org.jetbrains.annotations.*;
+
+import java.util.*;
 
 /**
  * No-op implementation for {@link GridSecureSessionManager}.
  */
 public class GridOsSecureSessionManager extends GridNoopManagerAdapter implements GridSecureSessionManager {
+    /** Empty bytes. */
+    private static final byte[] EMPTY_BYTES = new byte[0];
+
     /**
      * @param ctx Kernal context.
      */
@@ -33,8 +39,15 @@ public class GridOsSecureSessionManager extends GridNoopManagerAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public byte[] validate(GridSecuritySubjectType subjType, byte[] subjId, @Nullable byte[] tok,
+    @Override public GridSecureSession validateSession(GridSecuritySubjectType subjType, UUID subjId,
+        @Nullable byte[] tok,
         @Nullable Object params) throws GridException {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] updateSession(GridSecuritySubjectType subjType, UUID subjId, GridSecurityContext subjCtx,
+        @Nullable Object params) {
+        return EMPTY_BYTES;
     }
 }

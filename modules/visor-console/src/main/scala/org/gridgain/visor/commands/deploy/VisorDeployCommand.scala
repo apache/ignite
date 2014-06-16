@@ -11,20 +11,23 @@
 
 package org.gridgain.visor.commands.deploy
 
-import org.gridgain.scalar._
-import scalar._
-import org.gridgain.visor._
-import org.gridgain.visor.commands.VisorConsoleCommand
-import visor._
-import scala.util.control.Breaks._
-import com.jcraft.jsch._
 import java.io._
 import java.util.concurrent._
+
+import scala.language.{implicitConversions, reflectiveCalls}
+import scala.util.control.Breaks._
+
+import com.jcraft.jsch._
+
+import org.gridgain.scalar.scalar._
+import org.gridgain.visor._
+import org.gridgain.visor.commands.VisorConsoleCommand
+import org.gridgain.visor.visor._
 
 /**
  * Host data.
  */
-private case class Host(
+private case class VisorHost(
     name: String,
     port: Int,
     uname: String,
@@ -38,10 +41,10 @@ private case class Host(
     override def equals(r: Any) =
         if (this eq r.asInstanceOf[AnyRef])
             true
-        else if (r == null || !r.isInstanceOf[Host])
+        else if (r == null || !r.isInstanceOf[VisorHost])
             false
         else
-            r.asInstanceOf[Host].name == name
+            r.asInstanceOf[VisorHost].name == name
 
     override def hashCode() =
         name.hashCode()
@@ -50,8 +53,8 @@ private case class Host(
 /**
  * Runnable that copies file or directory.
  */
-private case class Copier(
-    host: Host,
+private case class VisorCopier(
+    host: VisorHost,
     key: Option[String],
     src: String,
     dest: String
@@ -267,7 +270,6 @@ class VisorDeployCommand {
         warn("Type 'help deploy' to see how to use this command.")
     }
 
-
     /**
      * Catch point for missing arguments case.
      */
@@ -301,24 +303,24 @@ class VisorDeployCommand {
             val dest = argValue("d", argLst)
 
             if (!src.isDefined)
-                scold("Source is not defined.") ^^
+                scold("Source is not defined.").^^
 
-            var hosts = Set.empty[Host]
+            var hosts = Set.empty[VisorHost]
 
             argLst.filter(_._1 == "h").map(_._2).foreach(h => {
                 try
                     hosts ++= mkHosts(h, dfltUname, dfltPasswd, key.isDefined)
                 catch {
-                    case e: IllegalArgumentException => scold(e.getMessage) ^^
+                    case e: IllegalArgumentException => scold(e.getMessage).^^
                 }
             })
 
-            val copiers = hosts.map(Copier(_, key, src.get, dest getOrElse ""))
+            val copiers = hosts.map(VisorCopier(_, key, src.get, dest getOrElse ""))
 
             try
                 copiers.map(pool.submit(_)).foreach(_.get)
             catch {
-                case _: RejectedExecutionException => scold("Failed due to system error.") ^^
+                case _: RejectedExecutionException => scold("Failed due to system error.").^^
             }
         }
     }
@@ -336,7 +338,7 @@ class VisorDeployCommand {
         host: String,
         dfltUname: Option[String],
         dfltPasswd: Option[String],
-        hasKey: Boolean): Set[Host] = {
+        hasKey: Boolean): Set[VisorHost] = {
         assert(host != null)
         assert(dfltUname != null)
         assert(dfltPasswd != null)
@@ -357,14 +359,14 @@ class VisorDeployCommand {
                     if (hostPort.size > 1) hostPort(1).toInt else DFLT_PORT
                 catch {
                     case e: NumberFormatException =>
-                        scold("Invalid port number: " + hostPort(1)) ^^
+                        scold("Invalid port number: " + hostPort(1)).^^
 
                         // Never happens.
                         0
                 }
 
             if (port <= 0)
-                scold("Invalid port number: " + port) ^^
+                scold("Invalid port number: " + port).^^
 
             (hosts, port)
         }
@@ -375,7 +377,7 @@ class VisorDeployCommand {
             val uname = dfltUname getOrElse System.getProperty("user.name")
             val passwd = if (!hasKey) Some(dfltPasswd getOrElse askPassword(uname)) else None
 
-            hosts.map(Host(_, port, uname, passwd))
+            hosts.map(VisorHost(_, port, uname, passwd))
         }
         else if (arr.size == 2) {
             val (hosts, port) = extractHostsPort(arr(1))
@@ -392,10 +394,10 @@ class VisorDeployCommand {
                 else
                     None
 
-            hosts.map(Host(_, port, uname, passwd))
+            hosts.map(VisorHost(_, port, uname, passwd))
         }
         else {
-            scold("Invalid host string: " + host) ^^
+            scold("Invalid host string: " + host).^^
 
             // Never happens.
             Set.empty
@@ -416,12 +418,12 @@ class VisorDeployCommand {
             val parts = addr.split(RANGE_SMB)
 
             if (parts.size != 2)
-                scold("Invalid IP range: " + addr) ^^
+                scold("Invalid IP range: " + addr).^^
 
             val lastDot = parts(0).lastIndexOf('.')
 
             if (lastDot < 0)
-                scold("Invalid IP range: " + addr) ^^
+                scold("Invalid IP range: " + addr).^^
 
             val (base, begin) = parts(0).splitAt(lastDot)
             val end = parts(1)
@@ -431,13 +433,13 @@ class VisorDeployCommand {
                 val b = end.toInt
 
                 if (a > b)
-                    scold("Invalid IP range: " + addr) ^^
+                    scold("Invalid IP range: " + addr).^^
 
                 (a to b).map(base + "." + _).toSet
             }
             catch {
                 case _: NumberFormatException =>
-                    scold("Invalid IP range: " + addr) ^^
+                    scold("Invalid IP range: " + addr).^^
 
                     // Never happens.
                     Set.empty

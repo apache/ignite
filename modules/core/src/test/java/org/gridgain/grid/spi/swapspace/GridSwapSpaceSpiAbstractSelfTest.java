@@ -11,7 +11,6 @@ package org.gridgain.grid.spi.swapspace;
 
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
@@ -48,6 +47,8 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        U.setWorkDirectory(null, U.getGridGainHome());
+
         spi = spi();
 
         getTestResources().inject(spi);

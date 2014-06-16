@@ -11,34 +11,35 @@
 
 package org.gridgain.visor
 
+import java.io._
 import java.net._
 import java.text._
-import java.io._
-import java.util._
 import java.util.concurrent._
-import org.jetbrains.annotations.Nullable
-import org.springframework.beans.BeansException
-import scala.collection.immutable
-import collection.JavaConversions._
-import org.gridgain.grid._
-import org.gridgain.grid.{GridGain => G, GridException => GE}
-import org.gridgain.grid.util.lang.{GridFunc => F}
-import org.gridgain.grid.events._
+import java.util.{HashSet => JHashSet, Set => JSet, _}
+
 import org.gridgain.grid.events.GridEventType._
-import org.gridgain.grid.events.GridDiscoveryEvent
-import org.gridgain.grid.kernal.{GridProductImpl, GridEx}
+import org.gridgain.grid.events._
+import org.gridgain.grid.kernal.GridComponentType._
 import org.gridgain.grid.kernal.GridNodeAttributes._
-import org.gridgain.grid.lang.{GridCallable, GridPredicate, GridBiTuple}
+import org.gridgain.grid.kernal.processors.spring.GridSpringProcessor
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask.VisorEventsCollectArgs
+import org.gridgain.grid.kernal.{GridEx, GridProductImpl}
+import org.gridgain.grid.lang.{GridBiTuple, GridPredicate}
 import org.gridgain.grid.spi.communication.tcp.GridTcpCommunicationSpi
 import org.gridgain.grid.thread._
+import org.gridgain.grid.util.lang.{GridFunc => F}
 import org.gridgain.grid.util.typedef._
-import org.gridgain.grid.util.{GridUtils => U, GridConfigurationFinder}
+import org.gridgain.grid.util.{GridConfigurationFinder, GridUtils => U}
+import org.gridgain.grid.{GridException => GE, GridGain => G, _}
 import org.gridgain.scalar._
 import org.gridgain.scalar.scalar._
-import org.gridgain.visor.commands.{VisorTextTable, VisorConsoleCommand}
-import org.gridgain.grid.resources.GridInstanceResource
-import org.gridgain.grid.kernal.processors.task.GridInternal
-import org.gridgain.grid.util.scala.impl
+import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
+import org.jetbrains.annotations.Nullable
+
+import scala.collection.JavaConversions._
+import scala.collection.immutable
+import scala.language.{implicitConversions, reflectiveCalls}
 
 /**
  * Holder for command help information.
@@ -55,7 +56,7 @@ sealed case class VisorConsoleCommandHolder(
     ) {
     /** Command host with optional aliases. */
     lazy val nameWithAliases: String =
-        if (aliases != null && !aliases.isEmpty)
+        if (aliases != null && aliases.nonEmpty)
             name + " (" + ("" /: aliases)((b, a) => if (b.length() == 0) a else b + ", " + a) + ")"
         else
             name
@@ -160,14 +161,21 @@ object visor extends VisorTag {
     /** */
     @volatile private var conTs: Long = 0
 
+    private final val LOC = Locale.US
+
     /** Date time format. */
-    private final val dtFmt = new SimpleDateFormat("MM/dd/yy, HH:mm:ss", Locale.US)
+    private final val dtFmt = new SimpleDateFormat("MM/dd/yy, HH:mm:ss", LOC)
 
     /** Date format. */
-    private final val dFmt = new SimpleDateFormat("MM/dd/yy", Locale.US)
+    private final val dFmt = new SimpleDateFormat("MM/dd/yy", LOC)
+
+    private final val DEC_FMT_SYMS = new DecimalFormatSymbols(LOC)
+
+    /** Number format. */
+    private final val nmFmt = new DecimalFormat("#", DEC_FMT_SYMS)
 
     /** KB format. */
-    private final val kbFmt = new DecimalFormat("###,###,###,###,###")
+    private final val kbFmt = new DecimalFormat("###,###,###,###,###", DEC_FMT_SYMS)
 
     /** */
     private val mem = new ConcurrentHashMap[String, String]()
@@ -179,7 +187,12 @@ object visor extends VisorTag {
     @volatile private var shutdownCbs = Seq.empty[() => Unit]
 
     /** Default log file path. */
-    private final val DFLT_LOG_PATH = "work/visor/visor-log"
+    /**
+     * Default log file path. Note that this path is relative to `GRIDGAIN_HOME/work` folder
+     * if `GRIDGAIN_HOME` system or environment variable specified, otherwise it is relative to
+     * `work` folder under system `java.io.tmpdir` folder.
+     */
+    private final val DFLT_LOG_PATH = "visor/visor-log"
 
     /** Default configuration path relative to GridGain home. */
     private final val DFLT_CFG = "config/default-config.xml"
@@ -219,12 +232,12 @@ object visor extends VisorTag {
         val g = grid
 
         if (g == null)
-            throw new GridException("Visor disconnected")
+            throw new GE("Visor disconnected")
         else {
             val node = g.node(nid)
 
             if (node == null)
-                throw new GridException("Node is gone: " + nid)
+                throw new GE("Node is gone: " + nid)
 
             node
         }
@@ -375,28 +388,18 @@ object visor extends VisorTag {
             "user to select XML configuration file in interactive mode."
         ),
         spec = Seq(
-            "open {-cpath=<path>} {-g=<gridName>} {-dl}",
-            "open {-d} {-g=<gridName>} {-dl}",
-            "open {-e} {-g=<gridName>} {-dl}",
-            "open"
+            "open -cpath=<path> {-dl}",
+            "open -d {-dl}",
+            "open {-dl}"
         ),
         args = Seq(
             "-cpath=<path>" -> Seq(
                 "Spring configuration path.",
                 "Can be absolute, relative to GRIDGAIN_HOME or any well formed URL."
             ),
-            "-g=<gridName>" -> Seq(
-                "Optional grid name.",
-                "Can be used with '-cpath', '-d' and '-e'."
-            ),
             "-d" -> Seq(
                 "Flag forces the command to connect to the default grid",
                 "without interactive mode."
-            ),
-            "-e" -> Seq(
-                "Flag forces the command to connect to the existing grid",
-                "without interactive mode. If there is no existing grid",
-                "command will fail."
             ),
             "-dl" -> Seq(
                 "Flag disables remote log collection."
@@ -407,12 +410,10 @@ object visor extends VisorTag {
                 "Prompts user to select XML Spring configuration file in interactive mode.",
             "open -d" ->
                 "Connects visor using default XML configuration.",
-            "open -g=mygrid" ->
-                "Connects visor to 'mygrid' grid using default configuration.",
-            "open -cpath=/gg/config/mycfg.xml -g=mygrid" ->
-                "Connects visor to 'mygrid' grid using configuration from provided Spring file."
+            "open -cpath=/gg/config/mycfg.xml" ->
+                "Connects visor to grid using configuration from provided Spring file."
         ),
-        ref = VisorConsoleCommand(open, open(_))
+        ref = VisorConsoleCommand(open, open)
     )
 
     addHelp(
@@ -494,9 +495,9 @@ object visor extends VisorTag {
             "log" ->
                 "Prints log status.",
             "log -l -f=/home/user/visor-log" ->
-                "Starts logging to file located at '/home/user/visor-log'.",
+                "Starts logging to file 'visor-log' located at '/home/user'.",
             "log -l -f=log/visor-log" ->
-                "Starts logging to file located at 'GRIDGAIN_HOME/log/visor-log'.",
+                "Starts logging to file 'visor-log' located at 'GRIDGAIN_HOME/log'.",
             "log -l -p=20" ->
                 "Starts logging with querying events period of 20 seconds.",
             "log -l -t=30" ->
@@ -641,7 +642,7 @@ object visor extends VisorTag {
      * @return Previous value.
      */
     def mset(n: String, v: String): String = {
-        msetOpt(n, v).getOrElse(null)
+        msetOpt(n, v).orNull
     }
 
     /**
@@ -805,8 +806,8 @@ object visor extends VisorTag {
         ref: VisorConsoleCommand) {
         assert(name != null)
         assert(shortInfo != null)
-        assert(spec != null && !spec.isEmpty)
-        assert(examples != null && !examples.isEmpty)
+        assert(spec != null && spec.nonEmpty)
+        assert(examples != null && examples.nonEmpty)
         assert(ref != null)
 
         // Add and re-sort
@@ -904,7 +905,7 @@ object visor extends VisorTag {
     def hasArgValue(@Nullable v: String, args: ArgList): Boolean = {
         assert(args != null)
 
-        !args.find(_._2 == v).isEmpty
+        args.find(_._2 == v).nonEmpty
     }
 
     /**
@@ -916,7 +917,7 @@ object visor extends VisorTag {
     def hasArgName(@Nullable n: String, args: ArgList): Boolean = {
         assert(args != null)
 
-        !args.find(_._1 == n).isEmpty
+        args.find(_._1 == n).nonEmpty
     }
 
     /**
@@ -929,7 +930,7 @@ object visor extends VisorTag {
     def hasArgFlag(n: String, args: ArgList): Boolean = {
         assert(n != null && args != null)
 
-        !args.find((a) => a._1 == n && a._2 == null).isEmpty
+        args.find((a) => a._1 == n && a._2 == null).nonEmpty
     }
 
     /**
@@ -1031,8 +1032,8 @@ object visor extends VisorTag {
     }
 
     // Formatters.
-    private val dblFmt = new DecimalFormat("#0.00")
-    private val intFmt = new DecimalFormat("#0")
+    private val dblFmt = new DecimalFormat("#0.00", DEC_FMT_SYMS)
+    private val intFmt = new DecimalFormat("#0", DEC_FMT_SYMS)
 
     /**
      * Formats double value with `#0.00` formatter.
@@ -1087,6 +1088,22 @@ object visor extends VisorTag {
      */
     def formatDate(date: Date): String =
         dFmt.format(date)
+
+    /**
+     * Returns string representation of the memory.
+     *
+     * @param n Memory size.
+     */
+    def formatMemory(n: Long): String =
+        kbFmt.format(n)
+
+    /**
+     * Returns string representation of the number.
+     *
+     * @param n Number.
+     */
+    def formatNumber(n: Long): String =
+        nmFmt.format(n)
 
     /**
      * Tests whether or not visor is connected.
@@ -1180,20 +1197,6 @@ object visor extends VisorTag {
     }
 
     /**
-     * ==Alias==
-     * Prints visor status. This is an alias for `status` command.
-     *
-     * ==Example==
-     * <ex>! -q</ex>
-     * Prints visor status without ASCII logo.
-     *
-     * @param args Optional "-q" flag to disable ASCII logo printout.
-     */
-    def !(args: String) {
-        status(args)
-    }
-
-    /**
      * ==Command==
      * Prints visor status (with ASCII logo).
      *
@@ -1203,18 +1206,6 @@ object visor extends VisorTag {
      */
     def status() {
         status("")
-    }
-
-    /**
-     * ==Alias==
-     * Prints visor status. This is an alias for `status` command.
-     *
-     * ==Example==
-     * <ex>status</ex>
-     * Prints visor status.
-     */
-    def `!`() {
-        status(null)
     }
 
     /**
@@ -1309,7 +1300,7 @@ object visor extends VisorTag {
      * Tests whether passed in sequence is not `null` and not empty.
      */
     private def has[T](@Nullable s: Seq[T]): Boolean = {
-        s != null && !s.isEmpty
+        s != null && s.nonEmpty
     }
 
     /**
@@ -1322,32 +1313,6 @@ object visor extends VisorTag {
      */
     def help() {
         help("")
-    }
-
-    /**
-     * ==Alias==
-     * Prints help. This is an alias for `help` command.
-     *
-     * ==Example==
-     * <ex>help open</ex>
-     * Prints help for 'open' command.
-     *
-     * @param args List of commands to print help for. If `null` or empty - prints generic help.
-     */
-    def ?(args: String = "") {
-        help(args)
-    }
-
-    /**
-     * ==Alias==
-     * Prints help. This is an alias for `help` command.
-     *
-     * ==Example==
-     * <ex>help</ex>
-     * Prints help.
-     */
-    def `?`() {
-        help()
     }
 
     /**
@@ -1379,343 +1344,287 @@ object visor extends VisorTag {
      * Connects to 'mygrid' grid.
      *
      * @param args Command arguments.
-     * @param repl Whether or not Visor is running inside of the Scala REPL.
      */
-    def open(args: String, repl: Boolean = true) {
-        def scold(errMsgs: String*) {
-            assert(errMsgs != null)
+    def open(args: String) {
+        assert(args != null)
 
-            warn(errMsgs: _*)
-            warn("Type 'help open' to see how to use this command.")
+        if (isConnected) {
+            warn("Visor is already connected. Disconnect first.")
+
+            return
         }
 
         try {
-            open0(args, repl)
-        }
-        catch {
-            case e: GridException => scold(e.getMessage)
-        }
-    }
+            def configuration(path: String): GridConfiguration = {
+                assert(path != null)
 
-    /**
-     * Internal implementation of 'open' command that throws 'GridException' in
-     * case of any error.
-     *
-     * @param args Command arguments.
-     * @param repl Whether or not Visor is running inside of the Scala REPL.
-     */
-    def open0(args: String, repl: Boolean) {
-        assert(args != null)
+                val url =
+                    try
+                        new URL(path)
+                    catch {
+                        case e: Exception =>
+                            val url = U.resolveGridGainUrl(path)
 
-        def configuration(path: String): GridConfiguration = {
-            assert(path != null)
+                            if (url == null)
+                                throw new GE("Spring XML configuration path is invalid: " + path, e)
 
-            val url =
-                try
-                    new URL(path)
-                catch {
-                    case e: Exception =>
-                        val url = U.resolveGridGainUrl(path)
+                            url
+                    }
 
-                        if (url == null)
-                            throw new GE("Spring XML configuration path is invalid: " + path, e)
+                // Add no-op logger to remove no-appender warning.
+                val log4jTup =
+                    if (classOf[G].getClassLoader.getResource("org/apache/log4j/Appender.class") != null)
+                        U.addLog4jNoOpLogger()
+                    else
+                        null
 
-                        url
-                }
+                val spring: GridSpringProcessor = SPRING.create(false)
 
-            val isLog4jUsed = classOf[G].getClassLoader.getResource("org/apache/log4j/Appender.class") != null
+                val cfgs =
+                    try
+                        // Cache, GGFS, streamer and DR configurations should be excluded from daemon node config.
+                        spring.loadConfigurations(url, "cacheConfiguration", "ggfsConfiguration", "streamerConfiguration",
+                            "drSenderHubConfiguration", "drReceiverHubConfiguration").get1()
+                    finally {
+                        if (log4jTup != null)
+                            U.removeLog4jNoOpLogger(log4jTup)
+                    }
 
-            var log4jTup: GridBiTuple[AnyRef, AnyRef] = null
+                if (cfgs == null || cfgs.isEmpty)
+                    throw new GE("Can't find grid configuration in: " + url)
 
-            val springCtx =
-                try {
-                    // Add no-op logger to remove no-appender warning.
-                    if (isLog4jUsed)
-                        log4jTup = U.addLog4jNoOpLogger()
+                if (cfgs.size > 1)
+                    throw new GE("More than one grid configuration found in: " + url)
 
-                    // Streamer and cache configurations should be excluded from config.
-                    U.applicationContext(url, "streamerConfiguration", "cacheConfiguration")
-                }
-                catch {
-                    case e: BeansException => throw new GE("Failed to instantiate Spring " +
-                        "XML application context: " + url, e)
-                }
+                val cfg = cfgs.iterator().next()
 
-            val cfgMap =
-                try {
-                    springCtx.getBeansOfType(classOf[GridConfiguration]).toMap
-                }
-                catch {
-                    case e: BeansException => throw new GE("Failed to instantiate Spring bean.", e)
-                }
-                finally {
-                    if (isLog4jUsed && log4jTup != null)
-                        U.removeLog4jNoOpLogger(log4jTup)
-                }
+                // Setting up 'Config URL' for properly print in console.
+                System.setProperty(GridSystemProperties.GG_CONFIG_URL, url.getPath)
 
-            if (cfgMap == null || cfgMap.isEmpty)
-                throw new GE("Can't find grid configuration in: " + url)
+                var cpuCnt = Runtime.getRuntime.availableProcessors
 
-            if (cfgMap.size > 1)
-                throw new GE("More than one grid configuration found in: " + url)
+                if (cpuCnt < 4)
+                    cpuCnt = 4
 
-            val cfg = cfgMap.head._2
+                cfg.setRestEnabled(false)
 
-            // Setting up 'Config URL' for properly print in console.
-            System.setProperty(GridSystemProperties.GG_CONFIG_URL, url.getPath)
+                def createExecutor = new GridThreadPoolExecutor(cpuCnt, cpuCnt, Long.MaxValue, new LinkedBlockingQueue[Runnable])
 
-            var cpuCnt = Runtime.getRuntime.availableProcessors
+                // All thread pools are overridden to have size equal to number of CPUs.
+                cfg.setExecutorService(createExecutor)
+                cfg.setSystemExecutorService(createExecutor)
+                cfg.setPeerClassLoadingExecutorService(createExecutor)
 
-            if (cpuCnt < 4)
-                cpuCnt = 4
+                var ioSpi = cfg.getCommunicationSpi
 
-            cfg.setRestEnabled(false)
+                if (ioSpi == null)
+                    ioSpi = new GridTcpCommunicationSpi()
 
-            // All thread pools are overridden to have size equal to number of CPUs.
-            cfg.setExecutorService(new GridThreadPoolExecutor(cpuCnt, cpuCnt,
-                Long.MaxValue, new LinkedBlockingQueue[Runnable]))
-            cfg.setSystemExecutorService(new GridThreadPoolExecutor(cpuCnt, cpuCnt,
-                Long.MaxValue, new LinkedBlockingQueue[Runnable]))
-            cfg.setPeerClassLoadingExecutorService(new GridThreadPoolExecutor(cpuCnt, cpuCnt,
-                Long.MaxValue, new LinkedBlockingQueue[Runnable]))
+                cfg
+            }
 
-            var ioSpi = cfg.getCommunicationSpi
-
-            if (ioSpi == null)
-                ioSpi = new GridTcpCommunicationSpi()
-
-            cfg
-        }
-
-        if (isConnected)
-            throw new GE("Visor is already connected. Disconnect first.")
-        else {
             val argLst = parseArgs(args)
 
-            val name = argValue("g", argLst).getOrElse(null)
             val path = argValue("cpath", argLst)
-            val existing = hasArgFlag("e", argLst)
             val dflt = hasArgFlag("d", argLst)
 
             rmtLogDisabled = hasArgFlag("dl", argLst)
 
-            if (existing && dflt)
-                throw new GE("Can't have both '-e' and '-d' together.")
+            val (cfg, cfgPath) =
+                if (path.isDefined)
+                    (configuration(path.get), path.get)
+                else if (dflt)
+                    (configuration(DFLT_CFG), "<default>")
+                else {
+                    // If configuration file is not defined in arguments,
+                    // ask to choose from the list
+                    askConfigFile() match {
+                        case Some(p) =>
+                            nl()
 
-            if (existing)
-                grid$(name) match {
-                    case Some(g) =>
-                        // Successfully "connected" to already joined grid.
-                        grid = g.asInstanceOf[GridEx]
-                        isCon = true
-                        conOwner = false
-                        cfgPath = "<n/a>"
-                        conTs = System.currentTimeMillis
-
-                    case None => throw new GE("Failed to connect to existing grid.")
-                }
-            else {
-                var cfg: GridConfiguration = null
-                var startedGridName: String = null
-
-                val cfgPath =
-                    if (path.isDefined) {
-                        cfg = configuration(path.get)
-
-                        path.get
-                    }
-                    else if (dflt) {
-                        cfg = configuration(DFLT_CFG)
-
-                        "<default>"
-                    }
-                    else {
-                        // If configuration file is not defined in arguments,
-                        // ask to choose from the list
-                        askConfigFile() match {
-                            case Some(p) =>
-                                nl()
-
-                                (VisorTextTable() += ("Using configuration", p)) render()
-
-                                nl()
-
-                                cfg = configuration(p)
-
-                                p
-                            case None =>
-                                return
-                        }
-                    }
-
-                val daemon = scalar.isDaemon
-
-                // Make sure visor starts as daemon node.
-                scalar.daemon(true)
-
-                try {
-                    startedGridName = scalar.start(cfg).name
-                }
-                finally {
-                    scalar.daemon(daemon)
-                }
-
-                this.cfgPath = cfgPath
-
-                val nameToCheck = if (name == null) startedGridName else name
-
-                grid$(nameToCheck) match {
-                    case Some(g) => grid = g.asInstanceOf[GridEx]
-                    case None =>
-                        this.cfgPath = null
-
-                        throw new GE("Named grid unavailable: " + nameToCheck)
-                }
-
-                assert(cfgPath != null)
-
-                isCon = true
-                conOwner = true
-                conTs = System.currentTimeMillis
-            }
-
-            if (!grid.configuration().isPeerClassLoadingEnabled)
-                warn("Peer class loading is disabled (custom closures in shell mode will not work).")
-
-            pool = new GridThreadPoolExecutor()
-
-            grid.nodes().foreach(n => {
-                setVarIfAbsent(nid8(n), "n")
-
-                val ip = n.addresses().headOption
-
-                if (ip.isDefined)
-                    setVarIfAbsent(ip.get, "h")
-            })
-
-            nodeJoinLsnr = new GridPredicate[GridEvent]() {
-                override def apply(e: GridEvent): Boolean = {
-                    e match {
-                        case de: GridDiscoveryEvent =>
-                            setVarIfAbsent(nid8(de.eventNode()), "n")
-
-                            val node = grid.node(de.eventNode().id())
-
-                            if (node != null) {
-                                val ip = node.addresses().headOption
-
-                                if (ip.isDefined)
-                                    setVarIfAbsent(ip.get, "h")
-                            }
-                            else {
-                                if (repl)
-                                    warn(
-                                        "New node not found: " + de.eventNode().id(),
-                                        "Visor must have discovery configuration and local " +
-                                            "host bindings identical with grid nodes."
-                                    )
-                            }
-                    }
-
-                    true
-                }
-            }
-
-            grid.events().localListen(nodeJoinLsnr, EVT_NODE_JOINED)
-
-            nodeLeftLsnr = new GridPredicate[GridEvent]() {
-                override def apply(e: GridEvent): Boolean = {
-                    e match {
-                        case (de: GridDiscoveryEvent) =>
-                            val nv = mfind(nid8(de.eventNode()))
-
-                            if (nv.isDefined)
-                                mem.remove(nv.get._1)
-
-                            val ip = de.eventNode().addresses.headOption
-
-                            if (ip.isDefined) {
-                                val last = !grid.nodes().exists(n =>
-                                    n.addresses.size > 0 && n.addresses.head == ip.get
-                                )
-
-                                if (last) {
-                                    val hv = mfind(ip.get)
-
-                                    if (hv.isDefined)
-                                        mem.remove(hv.get._1)
-                                }
-                            }
-                    }
-
-                    true
-                }
-            }
-
-            grid.events().localListen(nodeLeftLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED)
-
-            nodeSegLsnr = new GridPredicate[GridEvent] {
-                override def apply(e: GridEvent): Boolean = {
-                    e match {
-                        case de: GridDiscoveryEvent =>
-                            if (de.eventNode().id() == grid.localNode.id) {
-                                if (repl) {
-                                    warn("Closing visor due to topology segmentation.")
-                                    warn("Contact your system administrator.")
-
-                                    nl()
-                                }
-
-                                close()
-                            }
-                    }
-
-                    true
-                }
-            }
-
-            grid.events().localListen(nodeSegLsnr, EVT_NODE_SEGMENTED)
-
-            nodeStopLsnr = new GridGainListener {
-                def onStateChange(name: String, state: GridGainState) {
-                    if (name == grid.name && state == GridGainState.STOPPED) {
-                        if (repl) {
-                            warn("Closing visor due to stopping of host grid instance.")
+                            (VisorTextTable() +=("Using configuration", p)) render()
 
                             nl()
-                        }
 
-                        close()
+                            (configuration(p), p)
+                        case None =>
+                            return
                     }
                 }
-            }
 
-            G.addListener(nodeStopLsnr)
-
-            if (repl) {
-                logText("Visor joined topology: " + cfgPath)
-                logText("All live nodes, if any, will re-join.")
-
-                nl()
-
-                val t = VisorTextTable()
-
-                // Print advise.
-                println("Some useful commands:")
-
-                t += ("Type 'top'", "to see full topology.")
-                t += ("Type 'node'", "to see node statistics.")
-                t += ("Type 'cache'", "to see cache statistics.")
-                t += ("Type 'tasks'", "to see tasks statistics.")
-                t += ("Type 'config'", "to see node configuration.")
-
-                t.render()
-
-                println("\nType 'help' to get help.\n")
-            }
-
-            status()
+            open(cfg, cfgPath)
         }
+        catch {
+            case e: GE =>
+                warn(e.getMessage)
+                warn("Type 'help open' to see how to use this command.")
+        }
+    }
+
+    /**
+     * Connects visor to configuration with path.
+     *
+     * @param cfg Configuration.
+     * @param cfgPath Configuration path.
+     */
+    def open(cfg: GridConfiguration, cfgPath: String) {
+        val daemon = scalar.isDaemon
+
+        // Make sure visor starts as daemon node.
+        scalar.daemon(true)
+
+        val startedGridName = try {
+             scalar.start(cfg).name
+        }
+        finally {
+            scalar.daemon(daemon)
+        }
+
+        this.cfgPath = cfgPath
+
+        grid$(startedGridName) match {
+            case Some(g) => grid = g.asInstanceOf[GridEx]
+            case None =>
+                this.cfgPath = null
+
+                throw new GE("Named grid unavailable: " + startedGridName)
+        }
+
+        assert(cfgPath != null)
+
+        isCon = true
+        conOwner = true
+        conTs = System.currentTimeMillis
+
+        if (!grid.configuration().isPeerClassLoadingEnabled)
+            warn("Peer class loading is disabled (custom closures in shell mode will not work).")
+
+        pool = new GridThreadPoolExecutor()
+
+        grid.nodes().foreach(n => {
+            setVarIfAbsent(nid8(n), "n")
+
+            val ip = n.addresses().headOption
+
+            if (ip.isDefined)
+                setVarIfAbsent(ip.get, "h")
+        })
+
+        nodeJoinLsnr = new GridPredicate[GridEvent]() {
+            override def apply(e: GridEvent): Boolean = {
+                e match {
+                    case de: GridDiscoveryEvent =>
+                        setVarIfAbsent(nid8(de.eventNode()), "n")
+
+                        val node = grid.node(de.eventNode().id())
+
+                        if (node != null) {
+                            val ip = node.addresses().headOption
+
+                            if (ip.isDefined)
+                                setVarIfAbsent(ip.get, "h")
+                        }
+                        else {
+                            warn(
+                                "New node not found: " + de.eventNode().id(),
+                                "Visor must have discovery configuration and local " +
+                                    "host bindings identical with grid nodes."
+                            )
+                        }
+                }
+
+                true
+            }
+        }
+
+        grid.events().localListen(nodeJoinLsnr, EVT_NODE_JOINED)
+
+        nodeLeftLsnr = new GridPredicate[GridEvent]() {
+            override def apply(e: GridEvent): Boolean = {
+                e match {
+                    case (de: GridDiscoveryEvent) =>
+                        val nv = mfind(nid8(de.eventNode()))
+
+                        if (nv.isDefined)
+                            mem.remove(nv.get._1)
+
+                        val ip = de.eventNode().addresses.headOption
+
+                        if (ip.isDefined) {
+                            val last = !grid.nodes().exists(n =>
+                                n.addresses.size > 0 && n.addresses.head == ip.get
+                            )
+
+                            if (last) {
+                                val hv = mfind(ip.get)
+
+                                if (hv.isDefined)
+                                    mem.remove(hv.get._1)
+                            }
+                        }
+                }
+
+                true
+            }
+        }
+
+        grid.events().localListen(nodeLeftLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED)
+
+        nodeSegLsnr = new GridPredicate[GridEvent] {
+            override def apply(e: GridEvent): Boolean = {
+                e match {
+                    case de: GridDiscoveryEvent =>
+                        if (de.eventNode().id() == grid.localNode.id) {
+                            warn("Closing visor due to topology segmentation.")
+                            warn("Contact your system administrator.")
+
+                            nl()
+
+                            close()
+                        }
+                }
+
+                true
+            }
+        }
+
+        grid.events().localListen(nodeSegLsnr, EVT_NODE_SEGMENTED)
+
+        nodeStopLsnr = new GridGainListener {
+            def onStateChange(name: String, state: GridGainState) {
+                if (name == grid.name && state == GridGainState.STOPPED) {
+                    warn("Closing visor due to stopping of host grid instance.")
+
+                    nl()
+
+                    close()
+                }
+            }
+        }
+
+        G.addListener(nodeStopLsnr)
+
+        logText("Visor joined topology: " + cfgPath)
+        logText("All live nodes, if any, will re-join.")
+
+        nl()
+
+        val t = VisorTextTable()
+
+        // Print advise.
+        println("Some useful commands:")
+
+        t += ("Type 'top'", "to see full topology.")
+        t += ("Type 'node'", "to see node statistics.")
+        t += ("Type 'cache'", "to see cache statistics.")
+        t += ("Type 'tasks'", "to see tasks statistics.")
+        t += ("Type 'config'", "to see node configuration.")
+
+        t.render()
+
+        println("\nType 'help' to get help.\n")
+
+        status()
     }
 
     /**
@@ -1786,6 +1695,17 @@ object visor extends VisorTag {
         else
             formatDouble(v) + " %"
     }
+
+    /** Convert to task argument. */
+    def emptyTaskArgument[A](nid: UUID): GridBiTuple[JSet[UUID], Void] = new T2(Collections.singleton(nid), null)
+
+    def emptyTaskArgument[A](nids: Iterable[UUID]): GridBiTuple[JSet[UUID], Void] = new T2(new JHashSet(nids), null)
+
+    /** Convert to task argument. */
+    def toTaskArgument[A](nid: UUID, arg: A): GridBiTuple[JSet[UUID], A] = new T2(Collections.singleton(nid), arg)
+
+    /** Convert to task argument. */
+    def toTaskArgument[A](nids: Iterable[UUID], arg: A): GridBiTuple[JSet[UUID], A] = new T2(new JHashSet(nids), arg)
 
     /**
      * Asks user to select a node from the list.
@@ -2063,7 +1983,6 @@ object visor extends VisorTag {
         shutdownCbs = shutdownCbs :+ f
     }
 
-
     /**
      * Adds close callback. Added function will be called every time
      * command `close` is called.
@@ -2222,17 +2141,17 @@ object visor extends VisorTag {
      *
      * ==Examples==
      * <ex>log -l -f=/home/user/visor-log</ex>
-     * Starts logging to file located at '/home/user/visor-log'.
-     *
+     * Starts logging to file `visor-log` located at `/home/user`.
+     * <br>
      * <ex>log -l -f=log/visor-log</ex>
-     * Starts logging to file located at 'GRIDGAIN_HOME/log/visor-log'.
-     *
+     * Starts logging to file `visor-log` located at `GRIDGAIN_HOME/log`.
+     * <br>
      * <ex>log -l -p=20</ex>
      * Starts logging with querying events period of 20 seconds.
-     *
+     * <br>
      * <ex>log -l -t=30</ex>
      * Starts logging with topology snapshot logging period of 30 seconds.
-     *
+     * <br>
      * <ex>log -s</ex>
      * Stops logging.
      *
@@ -2241,31 +2160,35 @@ object visor extends VisorTag {
     def log(args: String) {
         assert(args != null)
 
-        def scold(errMsgs: Any*) {
-            assert(errMsgs != null)
+        if (!isConnected)
+            adviseToConnect()
+        else {
+            def scold(errMsgs: Any*) {
+                assert(errMsgs != null)
 
-            warn(errMsgs: _*)
-            warn("Type 'help log' to see how to use this command.")
+                warn(errMsgs: _*)
+                warn("Type 'help log' to see how to use this command.")
+            }
+
+            val argLst = parseArgs(args)
+
+            if (hasArgFlag("s", argLst))
+                if (!logStarted)
+                    scold("Logging was not started.")
+                else
+                    stopLog()
+            else if (hasArgFlag("l", argLst))
+                if (logStarted)
+                    scold("Logging is already started.")
+                else
+                    try
+                        startLog(argValue("f", argLst), argValue("p", argLst), argValue("t", argLst))
+                    catch {
+                        case e: IllegalArgumentException => scold(e.getMessage)
+                    }
+            else
+                scold("Invalid arguments.")
         }
-
-        val argLst = parseArgs(args)
-
-        if (hasArgFlag("s", argLst))
-            if (!logStarted)
-                scold("Logging was not started.")
-            else
-                stopLog()
-        else if (hasArgFlag("l", argLst))
-            if (logStarted)
-                scold("Logging is already started.")
-            else
-                try
-                    startLog(argValue("f", argLst), argValue("p", argLst), argValue("t", argLst))
-                catch {
-                    case e: IllegalArgumentException => scold(e.getMessage)
-                }
-        else
-            scold("Invalid arguments.")
     }
 
     /**
@@ -2308,7 +2231,7 @@ object visor extends VisorTag {
 
         val path = pathOpt.getOrElse(DFLT_LOG_PATH)
 
-        logFile = U.resolveWorkDirectory(path, null, false, false)
+        logFile = new File(U.resolveWorkDirectory(new File(path).getParent, false), new File(path).getName)
 
         var freq = 0L
 
@@ -2344,70 +2267,74 @@ object visor extends VisorTag {
 
         logTimer.schedule(new TimerTask() {
             /** Events to be logged by visor (additionally to discovery events). */
-            private final val LOG_EVTS = Seq(
+            private final val LOG_EVTS = Array(
                 EVT_JOB_TIMEDOUT,
                 EVT_JOB_FAILED,
                 EVT_JOB_FAILED_OVER,
                 EVT_JOB_REJECTED,
                 EVT_JOB_CANCELLED,
+
                 EVT_TASK_TIMEDOUT,
                 EVT_TASK_FAILED,
-                EVT_CLASS_DEPLOY_FAILED,
                 EVT_TASK_DEPLOY_FAILED,
                 EVT_TASK_DEPLOYED,
                 EVT_TASK_UNDEPLOYED,
+
                 EVT_LIC_CLEARED,
                 EVT_LIC_VIOLATION,
                 EVT_LIC_GRACE_EXPIRED,
+
                 EVT_CACHE_PRELOAD_STARTED,
-                EVT_CACHE_PRELOAD_STOPPED
+                EVT_CACHE_PRELOAD_STOPPED,
+                EVT_CLASS_DEPLOY_FAILED
             )
 
             override def run() {
                 val g = grid
 
                 if (g != null) {
-                    // Discovery events collected only locally.
-                    var evts = Collector.collect(LOG_EVTS ++ EVTS_DISCOVERY, g, key)
+                    try {
+                        // Discovery events collected only locally.
+                        val loc = g.forLocal().compute().withName("visor-log-collector").withNoFailover().
+                            execute(classOf[VisorEventsCollectTask], toTaskArgument(g.localNode().id(),
+                            VisorEventsCollectArgs.createLogArg(key, LOG_EVTS ++ EVTS_DISCOVERY))).get.toSeq
 
-                    if (!rmtLogDisabled)
-                        try {
-                            evts = evts ++ g.forRemotes()
-                                .compute()
-                                .withName("visor-log-collector")
-                                .withNoFailover()
-                                .broadcast(new CollectorClosure(LOG_EVTS, key))
-                                .get
-                                .flatten
+                        val evts = if (!rmtLogDisabled) {
+                            val prj = g.forRemotes()
+
+                            loc ++ prj.compute().withName("visor-log-collector").withNoFailover().
+                                execute(classOf[VisorEventsCollectTask], toTaskArgument(prj.nodes().map(_.id()),
+                                    VisorEventsCollectArgs.createLogArg(key, LOG_EVTS))).get.toSeq
                         }
-                        catch {
-                            case _: GridEmptyProjectionException => // Ignore.
-                            case _: Exception => logText("Failed to collect remote log.")
+                        else
+                            loc
+
+                        if (evts.nonEmpty) {
+                            var out: FileWriter = null
+
+                            try {
+                                out = new FileWriter(logFile, true)
+
+                                evts.toList.sortBy(_.timestamp).foreach(e => {
+                                    logImpl(
+                                        out,
+                                        formatDateTime(e.timestamp),
+                                        nodeId8Addr(e.nid()),
+                                        U.compact(e.shortDisplay())
+                                    )
+
+                                    if (EVTS_DISCOVERY.contains(e.typeId()))
+                                        snapshot()
+                                })
+                            }
+                            finally {
+                                U.close(out, null)
+                            }
                         }
-
-                    if (!evts.isEmpty) {
-                        var out: FileWriter = null
-
-                        try {
-                            out = new FileWriter(logFile, true)
-
-                            evts.toList.sortBy(_.timestamp).foreach((e: GridEvent) => {
-                                logImpl(
-                                    out,
-                                    formatDateTime(e.timestamp),
-                                    nodeId8Addr(e.node().id()),
-                                    U.compact(e.shortDisplay)
-                                )
-
-                                e match {
-                                    case _: GridDiscoveryEvent => snapshot()
-                                    case _ => ()
-                                }
-                            })
-                        }
-                        finally {
-                            U.close(out, null)
-                        }
+                    }
+                    catch {
+                        case _: GridEmptyProjectionException => // Ignore.
+                        case e: Exception => logText("Failed to collect log.")
                     }
                 }
             }
@@ -2535,7 +2462,7 @@ object visor extends VisorTag {
 
         nl()
 
-        `?`()
+        help()
     }
 
     lazy val commands = cmdLst.map(_.name) ++ cmdLst.map(_.aliases).flatten
@@ -2570,51 +2497,5 @@ object visor extends VisorTag {
      */
     def nodeById8(id8: String) = {
         grid.nodes().filter(n => id8.equalsIgnoreCase(nid8(n)))
-    }
-}
-
-/**
- * Event collect utils
- */
-object Collector {
-    /**
-     * Collects local event from given grid instance.
-     *
-     * @param types Types of events to collect.
-     * @param g Grid instance.
-     * @param key Node local storage key.
-     */
-    def collect(types: Seq[Int], g: Grid, key: String): Seq[GridEvent] = {
-        assert(types != null)
-        assert(g != null)
-        assert(key != null)
-
-        val nl = g.nodeLocalMap[String, Long]()
-
-        val last: Long = nl.getOrElse(key, -1L)
-
-        val tenMinAgo = System.currentTimeMillis() - 10 * 60 * 1000
-
-        val evts = g.events().localQuery((evt: GridEvent) =>
-            types.contains(evt.`type`) && evt.localOrder > last && evt.timestamp() > tenMinAgo)
-
-        // Update latest order in node local, if not empty.
-        if (!evts.isEmpty)
-            nl.put(key, evts.maxBy(_.localOrder()).localOrder)
-
-        evts.toList.sortBy(_.timestamp)
-    }
-}
-
-/**
- * Remote events collector closure.
- */
-@GridInternal
-class CollectorClosure(types: Seq[Int], key: String) extends GridCallable[Seq[GridEvent]] {
-    @GridInstanceResource
-    private val g: Grid = null
-
-    @impl def call(): Seq[GridEvent] = {
-        Collector.collect(types, g, key)
     }
 }

@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.apache.commons.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
@@ -42,6 +41,9 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 public class GridCacheUtils {
     /** DR system cache name prefix. */
     public static final String DR_SYS_CACHE_PREFIX = "gg-dr-sys-cache-";
+
+    /** Security system cache name. */
+    public static final String SECURITY_SYS_CACHE_NAME = "gg-security-sys-cache";
 
     /** Flag to turn off DHT cache for debugging purposes. */
     public static final boolean DHT_ENABLED = true;
@@ -1345,7 +1347,7 @@ public class GridCacheUtils {
      * @throws GridException If attribute values are different and fail flag is true.
      */
     public static void checkAttributeMismatch(GridLogger log, String cfgName, GridNode rmt, String attrName,
-        String attrMsg, Object locVal, Object rmtVal, boolean fail) throws GridException {
+        String attrMsg, @Nullable Object locVal, @Nullable Object rmtVal, boolean fail) throws GridException {
         assert rmt != null;
         assert attrName != null;
         assert attrMsg != null;
@@ -1354,8 +1356,8 @@ public class GridCacheUtils {
             if (fail) {
                 throw new GridException(attrMsg + " mismatch (fix " + attrMsg.toLowerCase() + " in cache " +
                     "configuration) [cacheName=" + cfgName +
-                    ", local" + WordUtils.capitalize(attrName) + "=" + locVal +
-                    ", remote" + WordUtils.capitalize(attrName) + "=" + rmtVal +
+                    ", local" + capitalize(attrName) + "=" + locVal +
+                    ", remote" + capitalize(attrName) + "=" + rmtVal +
                     ", rmtNodeId=" + rmt.id() + ']');
             }
             else {
@@ -1363,11 +1365,19 @@ public class GridCacheUtils {
 
                 U.warn(log, attrMsg + " mismatch (fix " + attrMsg.toLowerCase() + " in cache " +
                     "configuration) [cacheName=" + cfgName +
-                    ", local" + WordUtils.capitalize(attrName) + "=" + locVal +
-                    ", remote" + WordUtils.capitalize(attrName) + "=" + rmtVal +
+                    ", local" + capitalize(attrName) + "=" + locVal +
+                    ", remote" + capitalize(attrName) + "=" + rmtVal +
                     ", rmtNodeId=" + rmt.id() + ']');
             }
         }
+    }
+
+    /**
+     * @param str String.
+     * @return String with first symbol in upper case.
+     */
+    private static String capitalize(String str) {
+        return Character.toUpperCase(str.charAt(0)) + str.substring(1);
     }
 
     /**
@@ -1416,6 +1426,14 @@ public class GridCacheUtils {
      */
     public static boolean isDrSystemCache(String cacheName) {
         return cacheName != null && cacheName.startsWith(DR_SYS_CACHE_PREFIX);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return {@code True} if this is security system cache.
+     */
+    public static boolean isSecuritySystemCache(String cacheName) {
+        return SECURITY_SYS_CACHE_NAME.equals(cacheName);
     }
 
     /**
@@ -1511,6 +1529,21 @@ public class GridCacheUtils {
 
             tx.commit();
         }
+    }
+
+    /**
+     * Gets subject ID by transaction.
+     *
+     * @param tx Transaction.
+     * @return Subject ID.
+     */
+    public static <K, V> UUID subjectId(GridCacheTxEx<K, V> tx, GridCacheContext<K, V> ctx) {
+        if (tx == null)
+            return ctx.localNodeId();
+
+        UUID subjId = tx.subjectId();
+
+        return subjId != null ? subjId : tx.originatingNodeId();
     }
 
     /**

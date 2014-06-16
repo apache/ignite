@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+
+    @xml.file.header
+    Version: @xml.file.version
+-->
+
+<!--
+    GridGain Client Spring configuration file to start grid client.
+
+    When starting GridGain Client from Java IDE, pass configuration bean into GridClientFactory:
+    GridClientFactory.start(new FileSystemXmlApplicationContext(
+        "/path/to/grid-client-spring-config.xml").getBean(GridClientConfiguration.class));
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <!--
+        Optional description.
+    -->
+    <description>
+        Spring file for grid client configuration.
+    </description>
+
+    <!--
+        Configuration below demonstrates how to setup caches within grid nodes.
+    -->
+    <bean id="grid.client.cfg" class="org.gridgain.client.GridClientConfiguration">
+        <!-- Data configurations. -->
+        <property name="dataConfigurations">
+            <list>
+                <bean class="org.gridgain.client.GridClientDataConfiguration">
+                    <property name="name" value="partitioned"/>
+                    <property name="affinity">
+                        <bean class="org.gridgain.client.GridClientPartitionAffinity"/>
+                    </property>
+                </bean>
+            </list>
+        </property>
+
+        <!--
+            The list of servers this client should connect to.
+        -->
+        <property name="servers">
+            <list>
+                <value>127.0.0.1:11211</value>
+            </list>
+        </property>
+
+        <!--
+            Client credentials used in authentication process.
+        -->
+        <!--<property name="credentials" value="s3cret"/>-->
+    </bean>
+</beans>

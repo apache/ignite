@@ -47,9 +47,6 @@ public final class GridNodeAttributes {
     public static final String ATTR_PEER_CLASSLOADING = ATTR_PREFIX + ".peer.classloading.enabled";
 
     /** Internal attribute name postfix constant. */
-    public static final String ATTR_SPI_VER = ATTR_PREFIX + ".spi.ver";
-
-    /** Internal attribute name postfix constant. */
     public static final String ATTR_SPI_CLASS = ATTR_PREFIX + ".spi.class";
 
     /** Internal attribute name constant. */
@@ -109,9 +106,6 @@ public final class GridNodeAttributes {
     /** Internal attribute name constant. */
     public static final String ATTR_STREAMER = ATTR_PREFIX + ".streamer";
 
-    /** Libraries list attribute name constant. */
-    public static final String ATTR_LIBRARIES = ATTR_PREFIX + ".libs";
-
     /** Time server host attribute name. */
     public static final String ATTR_TIME_SERVER_HOST = ATTR_PREFIX + ".time.host";
 
@@ -129,6 +123,15 @@ public final class GridNodeAttributes {
 
     /** Internal attribute name constant. */
     public static final String ATTR_DATA_CENTER_ID = ATTR_PREFIX + ".data.center.id";
+
+    /** Security credentials attribute name. Attribute is not available via public API. */
+    public static final String ATTR_SECURITY_CREDENTIALS = ATTR_PREFIX + ".security.cred";
+
+    /** Security subject for authenticated node. */
+    public static final String ATTR_SECURITY_SUBJECT = ATTR_PREFIX + ".security.subject";
+
+    /** Cache interceptors. */
+    public static final String ATTR_CACHE_INTERCEPTORS = ATTR_PREFIX + ".cache.interceptors";
 
     /**
      * Enforces singleton.

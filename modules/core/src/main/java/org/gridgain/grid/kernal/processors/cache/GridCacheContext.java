@@ -25,6 +25,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
+import org.gridgain.grid.kernal.processors.cache.jta.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
@@ -35,6 +36,7 @@ import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
@@ -132,6 +134,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Replication manager. */
     private GridCacheDrManager<K, V> drMgr;
 
+    /** JTA manager. */
+    private GridCacheJtaManagerAdapter<K, V> jtaMgr;
+
     /** Managers. */
     private List<GridCacheManager<K, V>> mgrs = new LinkedList<>();
 
@@ -209,6 +214,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param dataStructuresMgr Cache dataStructures manager.
      * @param ttlMgr TTL manager.
      * @param drMgr Data center replication manager.
+     * @param jtaMgr JTA manager.
      */
     @SuppressWarnings({"unchecked"})
     public GridCacheContext(
@@ -235,7 +241,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheTxManager<K, V> txMgr,
         GridCacheDataStructuresManager<K, V> dataStructuresMgr,
         GridCacheTtlManager<K, V> ttlMgr,
-        GridCacheDrManager<K, V> drMgr) {
+        GridCacheDrManager<K, V> drMgr,
+        GridCacheJtaManagerAdapter<K, V> jtaMgr) {
         assert ctx != null;
         assert cacheCfg != null;
 
@@ -278,6 +285,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.dataStructuresMgr = add(dataStructuresMgr);
         this.ttlMgr = add(ttlMgr);
         this.drMgr = add(drMgr);
+        this.jtaMgr = add(jtaMgr);
 
         log = ctx.log(getClass());
 
@@ -519,6 +527,17 @@ public class GridCacheContext<K, V> implements Externalizable {
         String name = namex();
 
         return name == null ? "default" : name;
+    }
+
+    /**
+     * @param op Operation to check.
+     * @throws GridSecurityException If security check failed.
+     */
+    public void checkSecurity(GridSecurityPermission op) throws GridSecurityException {
+        if (CU.isSecuritySystemCache(name()))
+            return;
+
+        ctx.security().authorize(name(), op, null);
     }
 
     /**
@@ -851,6 +870,12 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return JTA manager.
+     */
+    public GridCacheJtaManagerAdapter<K, V> jta() {
+        return jtaMgr;
+    }
+    /**
      * @return No get-value filter.
      */
     public GridPredicate<GridCacheEntry<K, V>>[] noGetArray() {
@@ -1088,6 +1113,27 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public GridCacheProjectionImpl<K, V> projectionPerCall() {
         return nearContext() ? dht().near().context().prjPerCall.get() : prjPerCall.get();
+    }
+
+    /**
+     * Gets subject ID per call.
+     *
+     * @param subjId Optional already existing subject ID.
+     * @return Subject ID per call.
+     */
+    public UUID subjectIdPerCall(@Nullable UUID subjId) {
+        if (subjId != null)
+            return subjId;
+
+        GridCacheProjectionImpl<K, V> prj = projectionPerCall();
+
+        if (prj != null)
+            subjId = prj.subjectId();
+
+        if (subjId == null)
+            subjId = ctx.localNodeId();
+
+        return subjId;
     }
 
     /**
@@ -1368,14 +1414,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if swap store of off-heap cache are enabled.
      */
     public boolean isSwapOrOffheapEnabled() {
-        return isSwapEnabled() || isOffHeapEnabled();
-    }
-
-    /**
-     * @return {@code True} if swap storage is enabled.
-     */
-    public boolean isSwapEnabled() {
-        return swapMgr.swapEnabled() && !hasFlag(SKIP_SWAP);
+        return (swapMgr.swapEnabled() && !hasFlag(SKIP_SWAP)) || isOffHeapEnabled();
     }
 
     /**
@@ -1653,6 +1692,28 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert deferredDelete();
 
         cache.onDeferredDelete(entry, ver);
+    }
+
+    /**
+     * @param interceptorRes Result of {@link GridCacheInterceptor#onBeforeRemove} callback.
+     * @return {@code True} if interceptor cancels remove.
+     */
+    public boolean cancelRemove(@Nullable GridBiTuple<Boolean, ?> interceptorRes) {
+        if (interceptorRes != null) {
+            if (interceptorRes.get1() == null) {
+                U.warn(log, "GridCacheInterceptor must not return null as cancellation flag value from " +
+                    "'onBeforeRemove' method.");
+
+                return false;
+            }
+            else
+                return interceptorRes.get1();
+        }
+        else {
+            U.warn(log, "GridCacheInterceptor must not return null from 'onBeforeRemove' method.");
+
+            return false;
+        }
     }
 
     /**

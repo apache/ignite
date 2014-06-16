@@ -12,23 +12,27 @@ package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 import org.gridgain.client.marshaller.*;
 import org.gridgain.client.marshaller.jdk.*;
 import org.gridgain.client.marshaller.optimized.*;
-import org.gridgain.client.marshaller.protobuf.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.cache.*;
+import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.GridProductImpl.*;
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
+import static org.gridgain.grid.kernal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.*;
+import static org.gridgain.grid.kernal.processors.rest.client.message.GridClientHandshakeResponse.*;
 
 /**
  * Listener for nio server that handles incoming tcp rest packets.
@@ -36,6 +40,9 @@ import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridClientMessage> {
     /** Logger. */
     private GridLogger log;
+
+    /** Protocol. */
+    private GridTcpRestProtocol proto;
 
     /** Protocol handler. */
     private GridRestProtocolHandler hnd;
@@ -47,28 +54,56 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
     @GridToStringExclude
     private final Map<Byte, GridClientMarshaller> suppMarshMap;
 
+    /** Mapping of {@code GridCacheOperation} to {@code GridRestCommand}. */
+    private static final Map<GridClientCacheRequest.GridCacheOperation, GridRestCommand> cacheCmdMap =
+        new EnumMap<>(GridClientCacheRequest.GridCacheOperation.class);
+
+    /**
+     * Fills {@code cacheCmdMap}.
+     */
+    static {
+        cacheCmdMap.put(PUT, CACHE_PUT);
+        cacheCmdMap.put(PUT_ALL, CACHE_PUT_ALL);
+        cacheCmdMap.put(GET, CACHE_GET);
+        cacheCmdMap.put(GET_ALL, CACHE_GET_ALL);
+        cacheCmdMap.put(RMV, CACHE_REMOVE);
+        cacheCmdMap.put(RMV_ALL, CACHE_REMOVE_ALL);
+        cacheCmdMap.put(REPLACE, CACHE_REPLACE);
+        cacheCmdMap.put(CAS, CACHE_CAS);
+        cacheCmdMap.put(METRICS, CACHE_METRICS);
+        cacheCmdMap.put(APPEND, CACHE_APPEND);
+        cacheCmdMap.put(PREPEND, CACHE_PREPEND);
+    }
+
     /**
      * Creates listener which will convert incoming tcp packets to rest requests and forward them to
      * a given rest handler.
      *
      * @param log Logger to use.
+     * @param proto Protocol.
      * @param hnd Rest handler.
+     * @param ctx Context.
+     * @param protobufMarshaller Protobuf marshaller.
      */
-    public GridTcpRestNioListener(GridLogger log, GridRestProtocolHandler hnd) {
-        memcachedLsnr = new GridTcpMemcachedNioListener(log, hnd);
+    public GridTcpRestNioListener(GridLogger log, GridTcpRestProtocol proto, GridRestProtocolHandler hnd,
+        GridKernalContext ctx, @Nullable GridClientMarshaller protobufMarshaller) {
+        memcachedLsnr = new GridTcpMemcachedNioListener(log, hnd, ctx);
 
         this.log = log;
+        this.proto = proto;
         this.hnd = hnd;
 
         Map<Byte, GridClientMarshaller> tmpMap = new GridLeanMap<>(3);
 
-        tmpMap.put(GridClientProtobufMarshaller.PROTOCOL_ID, new GridClientProtobufMarshaller());
-        tmpMap.put(GridClientJdkMarshaller.PROTOCOL_ID, new GridClientJdkMarshaller());
+        tmpMap.put(U.JDK_CLIENT_PROTO_ID, new GridClientJdkMarshaller());
+
+        if (protobufMarshaller != null)
+            tmpMap.put(U.PROTOBUF_CLIENT_PROTO_ID, protobufMarshaller);
 
         // Special case for Optimized marshaller, which may throw exception.
         // This may happen, for example, if some Unsafe methods are unavailable.
         try {
-            tmpMap.put(GridClientOptimizedMarshaller.PROTOCOL_ID, new GridClientOptimizedMarshaller());
+            tmpMap.put(U.OPTIMIZED_CLIENT_PROTO_ID, new GridClientOptimizedMarshaller());
         }
         catch (Exception e) {
             U.warn(
@@ -104,43 +139,39 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             memcachedLsnr.onMessage(ses, (GridMemcachedMessage)msg);
         else {
             if (msg == GridClientPingPacket.PING_MESSAGE)
-                ses.send(GridClientPingPacket.PING_MESSAGE);
+                ses.send(new GridClientPingPacketWrapper());
             else if (msg instanceof GridClientHandshakeRequest) {
-                GridClientHandshakeResponse res = null;
-
                 GridClientHandshakeRequest hs = (GridClientHandshakeRequest)msg;
 
                 byte[] verBytes = hs.versionBytes();
 
-                if (!Arrays.equals(VER_BYTES, verBytes)) {
-                    log.warning("Client version check failed [ses=" + ses +
+                if (!Arrays.equals(VER_BYTES, verBytes))
+                    U.warn(log, "Client version check failed [ses=" + ses +
                         ", expected=" + Arrays.toString(VER_BYTES)
                         + ", actual=" + Arrays.toString(verBytes) + ']');
-
-                    res = GridClientHandshakeResponse.ERR_VERSION_CHECK_FAILED;
-                }
 
                 GridClientMarshaller marsh = suppMarshMap.get(hs.protocolId());
 
                 if (marsh == null) {
                     log.error("No marshaller found with given protocol ID [protocolId=" + hs.protocolId() + ']');
 
-                    ses.send(GridClientHandshakeResponse.ERR_UNKNOWN_PROTO_ID).listenAsync(
+                    ses.send(new GridClientHandshakeResponseWrapper(CODE_UNKNOWN_PROTO_ID)).listenAsync(
                         new CI1<GridNioFuture<?>>() {
                             @Override public void apply(GridNioFuture<?> fut) {
                                 ses.close();
                             }
-                        });
+                        }
+                    );
 
                     return;
                 }
 
                 ses.addMeta(GridNioSessionMetaKey.MARSHALLER.ordinal(), marsh);
 
-                ses.send(res == null ? GridClientHandshakeResponse.OK : res);
+                ses.send(new GridClientHandshakeResponseWrapper(CODE_OK));
             }
             else {
-                final GridRestRequest req = createRestRequest(msg);
+                final GridRestRequest req = createRestRequest(ses, msg);
 
                 if (req != null)
                     hnd.handleAsync(req).listenAsync(new CI1<GridFuture<GridRestResponse>>() {
@@ -166,13 +197,33 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                                 res.result(o);
                             }
                             catch (GridException e) {
-                                U.error(log, "Failed to process client request: " + req, e);
+                                U.error(log, "Failed to process client request: " + msg, e);
 
                                 res.successStatus(GridClientResponse.STATUS_FAILED);
                                 res.errorMessage("Failed to process client request: " + e.getMessage());
                             }
 
-                            ses.send(res);
+                            GridClientMessageWrapper wrapper = new GridClientMessageWrapper();
+
+                            wrapper.requestId(msg.requestId());
+                            wrapper.clientId(msg.clientId());
+
+                            try {
+                                byte[] bytes = proto.marshaller(ses).marshal(res);
+
+                                wrapper.message(bytes);
+
+                                wrapper.messageSize(bytes.length + 40);
+                            }
+                            catch (IOException | GridException e) {
+                                U.error(log, "Failed to marshal response: " + res, e);
+
+                                ses.close();
+
+                                return;
+                            }
+
+                            ses.send(wrapper);
                         }
                     });
                 else
@@ -188,187 +239,94 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
      * @param msg Request message.
      * @return REST request object.
      */
-    @Nullable private GridRestRequest createRestRequest(GridClientMessage msg) {
+    @Nullable private GridRestRequest createRestRequest(GridNioSession ses, GridClientMessage msg) {
         GridRestRequest restReq = null;
 
         if (msg instanceof GridClientAuthenticationRequest) {
             GridClientAuthenticationRequest req = (GridClientAuthenticationRequest)msg;
 
-            restReq = new GridRestRequest();
+            restReq = new GridRestTaskRequest();
 
-            restReq.setCommand(NOOP);
+            restReq.command(NOOP);
 
-            restReq.setCredentials(req.credentials());
+            restReq.credentials(req.credentials());
         }
         else if (msg instanceof GridClientCacheRequest) {
             GridClientCacheRequest req = (GridClientCacheRequest)msg;
 
-            Map<?, ?> vals = req.values();
+            GridRestCacheRequest restCacheReq = new GridRestCacheRequest();
 
-            restReq = new GridRestRequest();
+            restCacheReq.cacheName(req.cacheName());
+            restCacheReq.cacheFlags(req.cacheFlagsOn());
 
-            Map<String, Object> params = new GridLeanMap<>(4);
+            restCacheReq.key(req.key());
+            restCacheReq.value(req.value());
+            restCacheReq.value2(req.value2());
 
-            params.put("cacheName", req.cacheName());
+            Map vals = req.values();
+            if (vals != null)
+                restCacheReq.values(new HashMap<Object, Object>(vals));
 
-            int i = 1;
+            restCacheReq.command(cacheCmdMap.get(req.operation()));
 
-            switch (req.operation()) {
-                case PUT:
-                    restReq.setCommand(CACHE_PUT);
-
-                    params.put("key", req.key());
-                    params.put("val", req.value());
-
-                    break;
-                case PUT_ALL:
-                    restReq.setCommand(CACHE_PUT_ALL);
-
-                    for (Map.Entry entry : vals.entrySet()) {
-                        params.put("k" + i, entry.getKey());
-                        params.put("v" + i, entry.getValue());
-
-                        i++;
-                    }
-
-                    break;
-                case GET:
-                    restReq.setCommand(CACHE_GET);
-
-                    params.put("key", req.key());
-
-                    break;
-                case GET_ALL:
-                    restReq.setCommand(CACHE_GET_ALL);
-
-                    for (Map.Entry entry : vals.entrySet()) {
-                        params.put("k" + i, entry.getKey());
-
-                        i++;
-                    }
-
-                    break;
-                case RMV:
-                    restReq.setCommand(CACHE_REMOVE);
-
-                    params.put("key", req.key());
-
-                    break;
-                case RMV_ALL:
-                    restReq.setCommand(CACHE_REMOVE_ALL);
-
-                    for (Map.Entry entry : vals.entrySet()) {
-                        params.put("k" + i, entry.getKey());
-
-                        i++;
-                    }
-
-                    break;
-                case REPLACE:
-                    restReq.setCommand(CACHE_REPLACE);
-
-                    params.put("key", req.key());
-                    params.put("val", req.value());
-
-                    break;
-                case CAS:
-                    restReq.setCommand(CACHE_CAS);
-
-                    params.put("key", req.key());
-                    params.put("val1", req.value());
-                    params.put("val2", req.value2());
-
-                    break;
-                case METRICS:
-                    restReq.setCommand(CACHE_METRICS);
-
-                    params.put("key", req.key());
-
-                    break;
-                case APPEND:
-                    restReq.setCommand(CACHE_APPEND);
-
-                    params.put("key", req.key());
-                    params.put("val", req.value());
-
-                    break;
-                case PREPEND:
-                    restReq.setCommand(CACHE_PREPEND);
-
-                    params.put("key", req.key());
-                    params.put("val", req.value());
-
-                    break;
-            }
-
-            if (req.cacheFlagsOn() != 0)
-                params.put("cacheFlags", Integer.toString(req.cacheFlagsOn()));
-
-            restReq.setParameters(params);
+            restReq = restCacheReq;
         }
         else if (msg instanceof GridClientTaskRequest) {
-            GridClientTaskRequest req = (GridClientTaskRequest)msg;
+            GridClientTaskRequest req = (GridClientTaskRequest) msg;
 
-            restReq = new GridRestRequest();
+            GridRestTaskRequest restTaskReq = new GridRestTaskRequest();
 
-            restReq.setCommand(EXE);
+            restTaskReq.command(EXE);
 
-            Map<String, Object> params = new GridLeanMap<>(1);
+            restTaskReq.taskName(req.taskName());
+            restTaskReq.params(Arrays.asList(req.argument()));
 
-            params.put("name", req.taskName());
-
-            params.put("p1", req.argument());
-
-            restReq.setParameters(params);
+            restReq = restTaskReq;
         }
         else if (msg instanceof GridClientTopologyRequest) {
-            GridClientTopologyRequest req = (GridClientTopologyRequest)msg;
+            GridClientTopologyRequest req = (GridClientTopologyRequest) msg;
 
-            restReq = new GridRestRequest();
+            GridRestTopologyRequest restTopReq = new GridRestTopologyRequest();
 
-            restReq.setCommand(TOPOLOGY);
-
-            Map<String, Object> params = new GridLeanMap<>(2);
-
-            params.put("mtr", req.includeMetrics());
-            params.put("attr", req.includeAttributes());
+            restTopReq.includeMetrics(req.includeMetrics());
+            restTopReq.includeAttributes(req.includeAttributes());
 
             if (req.nodeId() != null) {
-                restReq.setCommand(NODE);
+                restTopReq.command(NODE);
 
-                params.put("id", req.nodeId().toString());
+                restTopReq.nodeId(req.nodeId());
             }
             else if (req.nodeIp() != null) {
-                restReq.setCommand(NODE);
+                restTopReq.command(NODE);
 
-                params.put("ip", req.nodeIp());
+                restTopReq.nodeIp(req.nodeIp());
             }
             else
-                restReq.setCommand(TOPOLOGY);
+                restTopReq.command(TOPOLOGY);
 
-            restReq.setParameters(params);
+            restReq = restTopReq;
         }
         else if (msg instanceof GridClientLogRequest) {
-            GridClientLogRequest req = (GridClientLogRequest)msg;
+            GridClientLogRequest req = (GridClientLogRequest) msg;
 
-            restReq = new GridRestRequest();
+            GridRestLogRequest restLogReq = new GridRestLogRequest();
 
-            restReq.setCommand(LOG);
+            restLogReq.command(LOG);
 
-            Map<String, Object> params = new GridLeanMap<>(3);
+            restLogReq.path(req.path());
+            restLogReq.from(req.from());
+            restLogReq.to(req.to());
 
-            params.put("path", req.path());
-            params.put("from", req.from());
-            params.put("to", req.to());
-
-            restReq.setParameters(params);
+            restReq = restLogReq;
         }
 
         if (restReq != null) {
-            restReq.setDestId(msg.destinationId());
-            restReq.setClientId(msg.clientId());
-            restReq.setSessionToken(msg.sessionToken());
+            restReq.destinationId(msg.destinationId());
+            restReq.clientId(msg.clientId());
+            restReq.sessionToken(msg.sessionToken());
         }
+
+        restReq.address(ses.remoteAddress());
 
         return restReq;
     }

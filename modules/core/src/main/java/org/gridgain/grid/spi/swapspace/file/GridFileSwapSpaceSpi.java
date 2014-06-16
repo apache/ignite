@@ -92,22 +92,17 @@ import static org.gridgain.grid.events.GridEventType.*;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see GridSwapSpaceSpi
  */
-@GridSpiInfo(
-    author = /*@java.spi.author*/"GridGain Systems",
-    url = /*@java.spi.url*/"www.gridgain.com",
-    email = /*@java.spi.email*/"support@gridgain.com",
-    version = /*@java.spi.version*/"x.x")
 @GridSpiMultipleInstancesSupport(true)
 @SuppressWarnings({"PackageVisibleInnerClass", "PackageVisibleField"})
 public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpaceSpi, GridFileSwapSpaceSpiMBean {
-    /** Default base directory. */
-    public static final String DFLT_BASE_DIR = "work/swapspace";
-
     /**
-     * Default directory name for SPI when {@code GRIDGAIN_HOME} not defined.
-     * This directory name relative to file path in {@code java.io.tmpdir} system property value.
+     * Default base directory. Note that this path is relative to {@code GRIDGAIN_HOME/work} folder
+     * if {@code GRIDGAIN_HOME} system or environment variable specified, otherwise it is relative to
+     * {@code work} folder under system {@code java.io.tmpdir} folder.
+     *
+     * @see GridConfiguration#getWorkDirectory()
      */
-    private static final String DFLT_TMP_DIR = ".gg.file.ss";
+    public static final String DFLT_BASE_DIR = "swapspace";
 
     /** Default maximum sparsity. */
     public static final float DFLT_MAX_SPARSITY = 0.5f;
@@ -271,7 +266,7 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
         String path = baseDir + File.separator + gridName + File.separator + locNodeId;
 
         try {
-            dir = U.resolveWorkDirectory(path, DFLT_TMP_DIR, false, true);
+            dir = U.resolveWorkDirectory(path, true);
         }
         catch (GridException e) {
             throw new GridSpiException(e);

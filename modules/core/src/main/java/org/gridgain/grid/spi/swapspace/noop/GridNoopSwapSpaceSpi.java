@@ -23,11 +23,6 @@ import java.util.*;
 /**
  * No-op implementation of {@link GridSwapSpaceSpi}. Exists for testing and benchmarking purposes.
  */
-@GridSpiInfo(
-    author = /*@java.spi.author*/"GridGain Systems",
-    url = /*@java.spi.url*/"www.gridgain.com",
-    email = /*@java.spi.email*/"support@gridgain.com",
-    version = /*@java.spi.version*/"x.x")
 @GridSpiNoop
 @GridSpiMultipleInstancesSupport(true)
 public class GridNoopSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpaceSpi {
@@ -37,9 +32,7 @@ public class GridNoopSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String gridName) throws GridSpiException {
-        U.warn(log, "Swap space is disabled. To enable use GridFileSwapSpaceSpi or GridLevelDbSwapSpaceSpi " +
-            "(must have Microsoft Visual C++ Redistributable Package installed).",
-            "Swap space is disabled (to enable use GridFileSwapSpaceSpi or GridLevelDbSwapSpaceSpi).");
+        U.warn(log, "Swap space is disabled. To enable use GridFileSwapSpaceSpi.");
     }
 
     /** {@inheritDoc} */

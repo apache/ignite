@@ -17,6 +17,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.product.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
@@ -149,7 +150,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             }
 
             try {
-                processNearAtomicUpdateResponse(ver, key, val, valBytes, res.nearTtl(), req.nodeId());
+                processNearAtomicUpdateResponse(ver, key, val, valBytes, res.nearTtl(), req.nodeId(), req.subjectId());
             }
             catch (GridException e) {
                 res.addFailedKey(key, new GridException("Failed to update key in near cache: " + key, e));
@@ -172,7 +173,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         @Nullable V val,
         @Nullable byte[] valBytes,
         Long ttl,
-        UUID nodeId
+        UUID nodeId,
+        UUID subjId
     ) throws GridException {
         try {
             while (true) {
@@ -204,7 +206,9 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         -1,
                         -1,
                         null,
-                        false);
+                        false,
+                        false,
+                        subjId);
 
                     if (updRes.removeVersion() != null)
                         ctx.onDeferredDelete(entry, updRes.removeVersion());
@@ -244,6 +248,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
         Collection<K> backupKeys = req.keys();
 
+        boolean intercept = req.forceTransformBackups() && ctx.config().getInterceptor() != null;
+
         for (int i = 0; i < req.nearSize(); i++) {
             K key = req.nearKey(i);
 
@@ -267,15 +273,19 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
                         V val = req.nearValue(i);
                         byte[] valBytes = req.nearValueBytes(i);
+                        GridClosure<V, V> transform = req.nearTransformClosure(i);
 
-                        GridCacheOperation op = (val != null || valBytes != null) ? UPDATE : DELETE;
+                        GridCacheOperation op = transform != null ? TRANSFORM :
+                            (val != null || valBytes != null) ?
+                                UPDATE :
+                                DELETE;
 
                         GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                             ver,
                             nodeId,
                             nodeId,
                             op,
-                            val,
+                            op == TRANSFORM ? transform : val,
                             valBytes,
                             /*write-through*/false,
                             /*retval*/false,
@@ -283,13 +293,15 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             /*event*/true,
                             /*metrics*/true,
                             /*primary*/false,
-                            /*check version*/true,
+                            /*check version*/!req.forceTransformBackups(),
                             CU.<K, V>empty(),
                             DR_NONE,
                             -1,
                             -1,
                             null,
-                            false);
+                            false,
+                            intercept,
+                            req.subjectId());
 
                         if (updRes.removeVersion() != null)
                             ctx.onDeferredDelete(entry, updRes.removeVersion());
@@ -314,14 +326,18 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         boolean forcePrimary,
         boolean skipTx,
         @Nullable GridCacheEntryEx<K, V> entry,
+        @Nullable UUID subjId,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter
     ) {
         ctx.denyOnFlag(LOCAL);
+        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
-        return loadAsync(null, keys, false, forcePrimary, filter);
+        subjId = ctx.subjectIdPerCall(subjId);
+
+        return loadAsync(null, keys, false, forcePrimary, filter, subjId);
     }
 
     /** {@inheritDoc} */
@@ -587,13 +603,13 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         boolean invalidate,
         boolean syncCommit,
         boolean syncRollback,
-        boolean swapEnabled,
+        boolean swapOrOffheapEnabled,
         boolean storeEnabled,
         int txSize,
         @Nullable Object grpLockKey,
         boolean partLock) {
         return dht.newTx(implicit, implicitSingle, concurrency, isolation, timeout, invalidate, syncCommit,
-            syncRollback, swapEnabled, storeEnabled, txSize, grpLockKey, partLock);
+            syncRollback, swapOrOffheapEnabled, storeEnabled, txSize, grpLockKey, partLock);
     }
 
     /** {@inheritDoc} */

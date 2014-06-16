@@ -28,6 +28,9 @@ namespace GridGain.Client {
      * to configuration file to <c>ggstart.{sh|bat}</c> script, like so:
      * <c>ggstart.sh examples/config/example-cache.xml'</c>.
      * <para/>
+     * Before starting nodes you also need to enable <c>gridgain-protobuf</c> module. Simply move
+     * <c>libs/optional/gridgain-protobuf<c> folder to <c>libs<c> folder so that the module is added to classpath.
+     * <para/>
      * After node has been started this example creates a client and performs several cache
      * operations.
      * <para/>
