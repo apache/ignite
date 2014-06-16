@@ -850,7 +850,7 @@ object visor extends VisorTag {
             Right(None)
     }
 
-    private[this] def parseArg(@Nullable arg: String): Arg = {
+    private[this] def parseArg(arg: String): Arg = {
         if (arg(0) == '-' || arg(0) == '/') {
             val eq = arg.indexOf('=')
 
