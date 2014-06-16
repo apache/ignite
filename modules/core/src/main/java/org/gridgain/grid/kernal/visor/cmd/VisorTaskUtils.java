@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.visor.cmd;
 
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -51,7 +52,7 @@ public class VisorTaskUtils {
      * @param obj Object to compact.
      * @return String.
      */
-    public static Object compactObject(Object obj) {
+    @Nullable public static Object compactObject(Object obj) {
         if (obj == null)
             return null;
 
@@ -101,7 +102,7 @@ public class VisorTaskUtils {
 
             StringBuilder sb = new StringBuilder("[");
 
-            for (int i = 0; i < 0; i++) {
+            for (int i = 0; i <= iMax; i++) {
                 sb.append(compactObject(arr[i]));
 
                 if (i != iMax)
@@ -116,7 +117,7 @@ public class VisorTaskUtils {
         return U.compact(obj.getClass().getName());
     }
 
-    public static String compactClass(Object obj) {
+    @Nullable public static String compactClass(Object obj) {
         if (obj == null)
             return null;
 
@@ -129,7 +130,7 @@ public class VisorTaskUtils {
      * @param arr Array.
      * @return String.
      */
-    public static String compactArray(Object[] arr) {
+    @Nullable public static String compactArray(Object[] arr) {
         if (arr == null || arr.length == 0)
             return null;
 
