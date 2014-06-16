@@ -248,7 +248,7 @@ private case class VisorCopier(
                 ch.mkdir(dest)
 
             root.list.foreach(
-                f => copy(ch, new File(src, f), GridFilenameUtils.separatorsToUnix(dest + "/" + f))
+                f => copy(ch, new File(src, f).getPath, GridFilenameUtils.separatorsToUnix(dest + "/" + f))
             )
         }
         else
