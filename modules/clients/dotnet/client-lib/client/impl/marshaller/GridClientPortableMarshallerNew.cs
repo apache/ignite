@@ -17,17 +17,46 @@ namespace GridGain.Client.Impl.Marshaller
     /** <summary>Portable marshaller implementation.</summary> */
     internal class GridClientPortableMarshallerNew : IGridClientMarshaller
     {
+        /**  */
+        private static readonly int TYPE_BOOL = 0;
+
+        private static readonly int TYPE_SBYTE = 1;
+
+        private static readonly int TYPE_INT16 = 2;
+
+        private static readonly int TYPE_INT32 = 3;
+
+        private static readonly int TYPE_INT64 = 4;
+
+        private static readonly int TYPE_CHAR = 5;
+
+        private static readonly int TYPE_SINGLE = 6;
+
+        private static readonly int TYPE_DOUBLE = 7;
+
+        private static readonly int TYPE_STRING = 8;
+
+        /** Header of NULL object. */
+        private static readonly byte HDR_NULL = 0x80;
+
+        /** Header of object handle. */
+        private static readonly byte HDR_HND = 0x81;
+
+        /** Header of object in fully serialized form. */
+        private static readonly byte HDR_FULL = 0x82;
+
         /** <inheritdoc /> */
-        public byte[] Marshal(Object val)
+        public byte[] Marshal(object val)
         {
-            // TODO
-            return null;
+            return Marshal0(val);
         }
 
         /** <inheritdoc /> */
-        void Marshal(Object val, Stream output)
+        void Marshal(object val, Stream output)
         {
-            // TODO
+            byte[] valBytes = Marshal0(val);
+
+            output.Write(valBytes, 0, valBytes.Length);
         }
 
         /** <inheritdoc /> */
@@ -42,6 +71,16 @@ namespace GridGain.Client.Impl.Marshaller
         {
             // TODO
             return default(T);
+        }
+
+        /**
+         * <summary>Internal marshalling routine.</summary>
+         */ 
+        private byte[] Marshal0(object val)
+        {
+            Context ctx = new Context();
+            // TODO
+            return null;
         }
 
         /** <summary>Marshalling context.</summary> */
@@ -61,7 +100,7 @@ namespace GridGain.Client.Impl.Marshaller
 
             private Frame frame;
 
-            private Context()
+            public Context()
             {
                 // TODO
             }
@@ -72,33 +111,17 @@ namespace GridGain.Client.Impl.Marshaller
              */ 
             private void write(object obj)
             {
-                if (obj is IGridClientPortable)
-                    writePortable((IGridClientPortable)obj);
-                else if (obj is IGridClientPortableEx)
-                    writePortableEx((IGridClientPortableEx)obj);
-                else
-                    throw new GridClientPortableInvalidClassException("Object is neither IGridPortable nor IGridPortableEx: " + obj.GetType());
-
-                // Finalize remaining references.
+                // Prepare context. 
+                prepare(obj);
             }
 
-            private void writePortable(IGridClientPortable obj)
+            /**
+             * <summary>Prepare context to handle this object.</summary>
+             */ 
+            private void prepare(object obj)
             {
-                if (frame != null)
-                    frames.Push(frame);
-
-                frame = new Frame();
-
-                // TODO.
-
-                frame = frames.Pop();
+                
             }
-
-            private void writePortableEx(IGridClientPortableEx obj)
-            {
-
-            }
-
         }
 
         /** <summary>Object marshalling context.</summary> */

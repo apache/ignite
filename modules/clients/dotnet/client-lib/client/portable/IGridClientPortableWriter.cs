@@ -20,13 +20,13 @@ namespace GridGain.Client.Portable {
          * <param name="fieldName">Field name.</param>
          * <param name="val">Byte value.</param>
          */
-        void WriteByte(string fieldName, byte val);
+        void WriteByte(string fieldName, sbyte val);
 
         /**
          * <summary>Write byte value.</summary>
          * <param name="val">Byte value.</param>
          */
-        void WriteByte(byte val);
+        void WriteByte(sbyte val);
 
         /**
          * <summary>Write named byte array.</summary>

@@ -73,9 +73,11 @@
     <Compile Include="client\portable\GridClientPortableException.cs" />
     <Compile Include="client\portable\GridClientPortableInvalidClassException.cs" />
     <Compile Include="client\portable\GridClientPortableInvalidFieldException.cs" />
+    <Compile Include="client\portable\GridClientReflectingPortableSerializer.cs" />
     <Compile Include="client\portable\IGridClientPortable.cs" />
     <Compile Include="client\portable\IGridClientPortableEx.cs" />
     <Compile Include="client\portable\IGridClientPortableReader.cs" />
+    <Compile Include="client\portable\IGridClientPortableSerializer.cs" />
     <Compile Include="client\portable\IGridClientPortableWriter.cs" />
     <Compile Include="client\portable\IGridClientPortableObject.cs" />
     <Compile Include="client\GridClientCacheFlag.cs" />
