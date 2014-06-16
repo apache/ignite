@@ -37,7 +37,7 @@ public class GridPortableMarshaller {
         if (obj == null)
             return NULL_ARR;
 
-        GridPortableWriterAdapter writer = new GridUnsafePortableWriter();
+        GridPortableWriterAdapter writer = new GridPortableWriterAdapter();
 
         writer.marshal(obj);
 
@@ -49,7 +49,7 @@ public class GridPortableMarshaller {
      * @return Portable object.
      * @throws GridPortableException
      */
-    @Nullable public Object unmarshal(byte[] arr) throws GridPortableException {
+    @Nullable public <T> T unmarshal(byte[] arr) throws GridPortableException {
         return null;
     }
 }

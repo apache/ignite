@@ -10,7 +10,10 @@
 package org.gridgain.grid.kernal.portable;
 
 import org.gridgain.grid.portable.*;
+import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
+import sun.misc.*;
 
 import java.lang.reflect.*;
 import java.util.*;
@@ -23,6 +26,15 @@ import static org.gridgain.grid.kernal.portable.GridPortableMarshaller.*;
  * Portable class descriptor.
  */
 class GridPortableClassDescriptor {
+    /** */
+    protected static final Unsafe UNSAFE = GridUnsafe.unsafe();
+
+    /** */
+    protected static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
+
+    /** */
+    private static final GridPortablePrimitivesWriter PRIM = GridPortablePrimitivesWriter.get();
+
     /** */
     private static final ConcurrentMap<Class<?>, GridPortableClassDescriptor> CACHE = new ConcurrentHashMap8<>(256);
 
@@ -52,7 +64,10 @@ class GridPortableClassDescriptor {
     private final int typeId;
 
     /** */
-    private List<List<Field>> fields;
+    private List<T2<Field, Integer>> fields;
+
+    /** */
+    private byte[] hdr;
 
     /**
      * @param cls Class.
@@ -71,31 +86,68 @@ class GridPortableClassDescriptor {
 
             fields = new ArrayList<>();
 
+            Collection<T2<Field, Integer>> namedFields = new ArrayList<>();
+
+            Collection<Integer> hashCodes = new LinkedHashSet<>();
+            Collection<byte[]> names = null;
+
+            int hdrLen = 8;
+
             for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
-                Field[] clsFields0 = c.getDeclaredFields();
-
-                Arrays.sort(clsFields0, new Comparator<Field>() {
-                    @Override public int compare(Field f1, Field f2) {
-                        return f1.getName().compareTo(f2.getName());
-                    }
-                });
-
-                List<Field> clsFields = new ArrayList<>(clsFields0.length);
-
-                for (Field f : clsFields0) {
+                for (Field f : c.getDeclaredFields()) {
                     int mod = f.getModifiers();
 
                     if (!isStatic(mod) && !isTransient(mod)) {
                         f.setAccessible(true);
 
-                        clsFields.add(f);
+                        String name = f.getName();
+
+                        if (hashCodes.add(name.hashCode())) {
+                            fields.add(f);
+
+                            hdrLen += 8;
+                        }
+                        else {
+                            namedFields.add(f);
+
+                            byte[] nameArr = name.getBytes(); // TODO: UTF-8
+
+                            if (names == null)
+                                names = new ArrayList<>();
+
+                            names.add(nameArr);
+
+                            hdrLen += nameArr.length + 4;
+                        }
                     }
                 }
-
-                fields.add(clsFields);
             }
 
-            Collections.reverse(fields);
+            fields.addAll(namedFields);
+
+            hdr = new byte[hdrLen];
+
+            int off = 0;
+
+            PRIM.writeInt(hdr, off, hashCodes.size());
+
+            off += 4;
+
+            for (Integer hashCode : hashCodes) {
+                PRIM.writeInt(hdr, off, hashCode);
+
+                off += 8;
+            }
+
+            PRIM.writeInt(hdr, off, names != null ? names.size() : -1);
+
+            if (names != null) {
+                for (byte[] name : names) {
+                    UNSAFE.copyMemory(name, BYTE_ARR_OFF, hdr, BYTE_ARR_OFF + off, name.length);
+
+                    off += name.length + 4;
+                }
+            }
         }
     }
 
@@ -107,26 +159,45 @@ class GridPortableClassDescriptor {
         assert obj != null;
         assert writer != null;
 
+        writer.doWriteByte(OBJ);
+        writer.doWriteInt(typeId);
+
         switch (mode) {
             case PORTABLE_EX:
-                GridPortableEx portable = (GridPortableEx)obj;
+//                writer.doWriteInt(obj.hashCode());
+//
+//                // Length.
+//                writer.reserve(4);
+//
+//                ((GridPortableEx)obj).writePortable(writer);
+//
+//                writer.doWriteInt(-1); // TODO: Header handles.
+//
+//                writer.flush();
 
-                portable.writePortable(writer);
+                break;
 
-                writer.doWriteByte(OBJ);
-                writer.doWriteInt(typeId);
+            case PORTABLE:
                 writer.doWriteInt(obj.hashCode());
 
                 // Length.
                 writer.reserve(4);
 
                 writer.doWriteInt(-1); // TODO: Header handles.
+                writer.doWriteByteArray(hdr);
 
-                writer.flush();
+                for (int i = 0; i < fields.size(); i++) {
+                    Field f = fields.get(i);
 
-                break;
+                    writer.writeCurrentSize();
 
-            case PORTABLE:
+                    try {
+                        writer.doWriteObject(f.get(obj));
+                    }
+                    catch (IllegalAccessException e) {
+                        throw new GridPortableException("Failed to get value for field: " + f, e);
+                    }
+                }
 
                 break;
 

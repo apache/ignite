@@ -21,7 +21,7 @@ import static org.gridgain.grid.kernal.portable.GridPortableMarshaller.*;
 /**
  * Portable writer adapter.
  */
-abstract class GridPortableWriterAdapter implements GridPortableWriter {
+class GridPortableWriterAdapter implements GridPortableWriter {
     /** */
     protected static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -52,6 +52,9 @@ abstract class GridPortableWriterAdapter implements GridPortableWriter {
     /** */
     private static final int INIT_CAP = 4 * 1024;
 
+    /** */
+    private static final GridPortablePrimitivesWriter PRIM = GridPortablePrimitivesWriter.get();
+
 //    /** */
 //    private final Map<String, > fieldNames = new ArrayList<>();
 //
@@ -75,22 +78,29 @@ abstract class GridPortableWriterAdapter implements GridPortableWriter {
     /**
      * @return Array.
      */
-    public byte[] array() {
+    byte[] array() {
         return arr.entireArray();
     }
 
     /**
      * @param bytes Number of bytes to reserve.
      */
-    public void reserve(int bytes) {
+    void reserve(int bytes) {
         arr.requestFreeSize(bytes);
+    }
+
+    /**
+     * @throws GridPortableException In case of error.
+     */
+    void flush() throws GridPortableException {
+        // TODO
     }
 
     /**
      * @param obj Object to marshal.
      * @throws GridPortableException In case of error.
      */
-    public void marshal(Object obj) throws GridPortableException {
+    void marshal(Object obj) throws GridPortableException {
         assert obj != null;
 
         GridPortableClassDescriptor desc = GridPortableClassDescriptor.get(obj.getClass());
@@ -98,6 +108,269 @@ abstract class GridPortableWriterAdapter implements GridPortableWriter {
         assert desc != null;
 
         desc.write(obj, this);
+    }
+
+    /**
+     * @param off Offset.
+     */
+    void writeCurrentSize(int off) {
+        PRIM.writeInt(arr.array(), off, arr.size());
+    }
+
+    /**
+     * @param val Value.
+     */
+    void doWriteByte(byte val) {
+        PRIM.writeByte(arr.array(), arr.requestFreeSize(1), val);
+    }
+
+    /**
+     * @param val Value.
+     */
+    void doWriteShort(short val) {
+        PRIM.writeShort(arr.array(), arr.requestFreeSize(2), val);
+    }
+
+    /**
+     * @param val Value.
+     */
+    void doWriteInt(int val) {
+        PRIM.writeInt(arr.array(), arr.requestFreeSize(4), val);
+    }
+
+    /**
+     * @param val Value.
+     */
+    void doWriteLong(long val) {
+        PRIM.writeLong(arr.array(), arr.requestFreeSize(8), val);
+    }
+
+    /**
+     * @param val Value.
+     */
+    void doWriteFloat(float val) {
+        PRIM.writeFloat(arr.array(), arr.requestFreeSize(4), val);
+    }
+
+    /**
+     * @param val Value.
+     */
+    void doWriteDouble(double val) {
+        PRIM.writeDouble(arr.array(), arr.requestFreeSize(8), val);
+    }
+
+    /**
+     * @param val Value.
+     */
+    void doWriteChar(char val) {
+        PRIM.writeChar(arr.array(), arr.requestFreeSize(2), val);
+    }
+
+    /**
+     * @param val Value.
+     */
+    void doWriteBoolean(boolean val) {
+        PRIM.writeBoolean(arr.array(), arr.requestFreeSize(1), val);
+    }
+
+    /**
+     * @param val String value.
+     */
+    void doWriteString(@Nullable String val) {
+        doWriteByteArray(val != null ? val.getBytes() : null); // TODO: UTF-8
+    }
+
+    /**
+     * @param uuid UUID.
+     */
+    void doWriteUuid(@Nullable UUID uuid) {
+        if (uuid == null)
+            doWriteBoolean(false);
+        else {
+            doWriteBoolean(true);
+            doWriteLong(uuid.getMostSignificantBits());
+            doWriteLong(uuid.getLeastSignificantBits());
+        }
+    }
+
+    /**
+     * @param obj Object.
+     */
+    <T> void doWriteObject(@Nullable T obj) throws GridPortableException {
+        if (obj == null)
+            doWriteInt(NULL);
+
+        // TODO: Handle.
+
+        GridPortableWriterAdapter writer = new GridPortableWriterAdapter(arr);
+
+        writer.marshal(obj);
+    }
+
+    /**
+     * @param val Byte array.
+     */
+    void doWriteByteArray(@Nullable byte[] val) {
+        doWriteInt(val != null ? val.length : -1);
+
+        if (val != null)
+            UNSAFE.copyMemory(val, BYTE_ARR_OFF, arr.array(),
+                BYTE_ARR_OFF + arr.requestFreeSize(val.length), val.length);
+    }
+
+    /**
+     * @param val Short array.
+     */
+    void doWriteShortArray(@Nullable short[] val) {
+        doWriteInt(val != null ? val.length : -1);
+
+        if (val != null) {
+            int bytes = val.length << 1;
+
+            UNSAFE.copyMemory(val, SHORT_ARR_OFF, arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(bytes), bytes);
+        }
+    }
+
+    /**
+     * @param val Integer array.
+     */
+    void doWriteIntArray(@Nullable int[] val) {
+        doWriteInt(val != null ? val.length : -1);
+
+        if (val != null) {
+            int bytes = val.length << 2;
+
+            UNSAFE.copyMemory(val, INT_ARR_OFF, arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(bytes), bytes);
+        }
+    }
+
+    /**
+     * @param val Long array.
+     * @throws GridPortableException In case of error.
+     */
+    void doWriteLongArray(@Nullable long[] val) {
+        doWriteInt(val != null ? val.length : -1);
+
+        if (val != null) {
+            int bytes = val.length << 3;
+
+            UNSAFE.copyMemory(val, LONG_ARR_OFF, arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(bytes), bytes);
+        }
+    }
+
+    /**
+     * @param val Float array.
+     */
+    void doWriteFloatArray(@Nullable float[] val) {
+        doWriteInt(val != null ? val.length : -1);
+
+        if (val != null) {
+            int bytes = val.length << 2;
+
+            UNSAFE.copyMemory(val, FLOAT_ARR_OFF, arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(bytes), bytes);
+        }
+    }
+
+    /**
+     * @param val Double array.
+     */
+    void doWriteDoubleArray(@Nullable double[] val) {
+        doWriteInt(val != null ? val.length : -1);
+
+        if (val != null) {
+            int bytes = val.length << 3;
+
+            UNSAFE.copyMemory(val, DOUBLE_ARR_OFF, arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(bytes), bytes);
+        }
+    }
+
+    /**
+     * @param val Char array.
+     */
+    void doWriteCharArray(@Nullable char[] val) {
+        doWriteInt(val != null ? val.length : -1);
+
+        if (val != null) {
+            int bytes = val.length << 1;
+
+            UNSAFE.copyMemory(val, CHAR_ARR_OFF, arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(bytes), bytes);
+        }
+    }
+
+    /**
+     * @param val Boolean array.
+     */
+    void doWriteBooleanArray(@Nullable boolean[] val) {
+        doWriteInt(val != null ? val.length : -1);
+
+        if (val != null)
+            UNSAFE.copyMemory(val, BOOLEAN_ARR_OFF, arr.array(),
+                BYTE_ARR_OFF + arr.requestFreeSize(val.length), val.length);
+    }
+
+    /**
+     * @param val Array of strings.
+     */
+    void doWriteStringArray(@Nullable String[] val) {
+        doWriteInt(val != null ? val.length : -1);
+
+        if (val != null) {
+            for (String str : val)
+                doWriteString(str);
+        }
+    }
+
+    /**
+     * @param val Array of UUIDs.
+     */
+    void doWriteUuidArray(@Nullable UUID[] val) {
+        doWriteInt(val != null ? val.length : -1);
+
+        if (val != null) {
+            for (UUID uuid : val)
+                doWriteUuid(uuid);
+        }
+    }
+
+    /**
+     * @param val Array of objects.
+     * @throws GridPortableException In case of error.
+     */
+    void doWriteObjectArray(@Nullable Object[] val) throws GridPortableException {
+        doWriteInt(val != null ? val.length : -1);
+
+        if (val != null) {
+            for (Object obj : val)
+                doWriteObject(obj);
+        }
+    }
+
+    /**
+     * @param col Collection.
+     * @throws GridPortableException In case of error.
+     */
+    <T> void doWriteCollection(@Nullable Collection<T> col) throws GridPortableException {
+        doWriteInt(col != null ? col.size() : -1);
+
+        if (col != null) {
+            for (Object obj : col)
+                doWriteObject(obj);
+        }
+    }
+
+    /**
+     * @param map Map.
+     * @throws GridPortableException In case of error.
+     */
+    <K, V> void doWriteMap(@Nullable Map<K, V> map) throws GridPortableException {
+        doWriteInt(map != null ? map.size() : -1);
+
+        if (map != null) {
+            for (Map.Entry<K, V> e : map.entrySet()) {
+                doWriteObject(e.getKey());
+                doWriteObject(e.getValue());
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -339,261 +612,5 @@ abstract class GridPortableWriterAdapter implements GridPortableWriter {
     /** {@inheritDoc} */
     @Override public <K, V> void writeMap(@Nullable Map<K, V> map) throws GridPortableException {
         // TODO
-    }
-
-    /**
-     * @param val Byte value.
-     * @throws GridPortableException In case of error.
-     */
-    protected abstract void doWriteByte(byte val) throws GridPortableException;
-
-    /**
-     * @param val Short value.
-     * @throws GridPortableException In case of error.
-     */
-    protected abstract void doWriteShort(short val) throws GridPortableException;
-
-    /**
-     * @param val Integer value.
-     * @throws GridPortableException In case of error.
-     */
-    protected abstract void doWriteInt(int val) throws GridPortableException;
-
-    /**
-     * @param val Long value.
-     * @throws GridPortableException In case of error.
-     */
-    protected abstract void doWriteLong(long val) throws GridPortableException;
-
-    /**
-     * @param val Float value.
-     * @throws GridPortableException In case of error.
-     */
-    protected abstract void doWriteFloat(float val) throws GridPortableException;
-
-    /**
-     * @param val Double value.
-     * @throws GridPortableException In case of error.
-     */
-    protected abstract void doWriteDouble(double val) throws GridPortableException;
-
-    /**
-     * @param val Char value.
-     * @throws GridPortableException In case of error.
-     */
-    protected abstract void doWriteChar(char val) throws GridPortableException;
-
-    /**
-     * @param val Boolean value.
-     * @throws GridPortableException In case of error.
-     */
-    protected abstract void doWriteBoolean(boolean val) throws GridPortableException;
-
-    /**
-     * @param val String value.
-     * @throws GridPortableException In case of error.
-     */
-    private void doWriteString(@Nullable String val) throws GridPortableException {
-        doWriteByteArray(val != null ? val.getBytes() : null); // TODO: UTF-8
-    }
-
-    /**
-     * @param uuid UUID.
-     * @throws GridPortableException In case of error.
-     */
-    private void doWriteUuid(@Nullable UUID uuid) throws GridPortableException {
-        if (uuid == null)
-            doWriteBoolean(false);
-        else {
-            doWriteBoolean(true);
-            doWriteLong(uuid.getMostSignificantBits());
-            doWriteLong(uuid.getLeastSignificantBits());
-        }
-    }
-
-    /**
-     * @param obj Object.
-     * @throws GridPortableException In case of error.
-     */
-    private <T> void doWriteObject(@Nullable T obj) throws GridPortableException {
-        if (obj == null)
-            doWriteInt(NULL);
-
-        // TODO: Handle.
-
-        GridPortableWriterAdapter writer = new GridUnsafePortableWriter(arr);
-
-        writer.marshal(obj);
-    }
-
-    /**
-     * @param val Byte array.
-     * @throws GridPortableException In case of error.
-     */
-    private void doWriteByteArray(@Nullable byte[] val) throws GridPortableException {
-        writeInt(val != null ? val.length : -1);
-
-        if (val != null)
-            UNSAFE.copyMemory(val, BYTE_ARR_OFF, arr.array(),
-                BYTE_ARR_OFF + arr.requestFreeSize(val.length), val.length);
-    }
-
-    /**
-     * @param val Short array.
-     * @throws GridPortableException In case of error.
-     */
-    private void doWriteShortArray(@Nullable short[] val) throws GridPortableException {
-        writeInt(val != null ? val.length : -1);
-
-        if (val != null) {
-            int bytes = val.length << 1;
-
-            UNSAFE.copyMemory(val, SHORT_ARR_OFF, arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(bytes), bytes);
-        }
-    }
-
-    /**
-     * @param val Integer array.
-     * @throws GridPortableException In case of error.
-     */
-    private void doWriteIntArray(@Nullable int[] val) throws GridPortableException {
-        writeInt(val != null ? val.length : -1);
-
-        if (val != null) {
-            int bytes = val.length << 2;
-
-            UNSAFE.copyMemory(val, INT_ARR_OFF, arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(bytes), bytes);
-        }
-    }
-
-    private void doWriteLongArray(@Nullable long[] val) throws GridPortableException {
-        writeInt(val != null ? val.length : -1);
-
-        if (val != null) {
-            int bytes = val.length << 3;
-
-            UNSAFE.copyMemory(val, LONG_ARR_OFF, arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(bytes), bytes);
-        }
-    }
-
-    /**
-     * @param val Float array.
-     * @throws GridPortableException In case of error.
-     */
-    private void doWriteFloatArray(@Nullable float[] val) throws GridPortableException {
-        writeInt(val != null ? val.length : -1);
-
-        if (val != null) {
-            int bytes = val.length << 2;
-
-            UNSAFE.copyMemory(val, FLOAT_ARR_OFF, arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(bytes), bytes);
-        }
-    }
-
-    /**
-     * @param val Double array.
-     * @throws GridPortableException In case of error.
-     */
-    private void doWriteDoubleArray(@Nullable double[] val) throws GridPortableException {
-        writeInt(val != null ? val.length : -1);
-
-        if (val != null) {
-            int bytes = val.length << 3;
-
-            UNSAFE.copyMemory(val, DOUBLE_ARR_OFF, arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(bytes), bytes);
-        }
-    }
-
-    /**
-     * @param val Char array.
-     * @throws GridPortableException In case of error.
-     */
-    private void doWriteCharArray(@Nullable char[] val) throws GridPortableException {
-        writeInt(val != null ? val.length : -1);
-
-        if (val != null) {
-            int bytes = val.length << 1;
-
-            UNSAFE.copyMemory(val, CHAR_ARR_OFF, arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(bytes), bytes);
-        }
-    }
-
-    /**
-     * @param val Boolean array.
-     * @throws GridPortableException In case of error.
-     */
-    private void doWriteBooleanArray(@Nullable boolean[] val) throws GridPortableException {
-        writeInt(val != null ? val.length : -1);
-
-        if (val != null)
-            UNSAFE.copyMemory(val, BOOLEAN_ARR_OFF, arr.array(),
-                BYTE_ARR_OFF + arr.requestFreeSize(val.length), val.length);
-    }
-
-    /**
-     * @param val Array of strings.
-     * @throws GridPortableException In case of error.
-     */
-    private void doWriteStringArray(@Nullable String[] val) throws GridPortableException {
-        writeInt(val != null ? val.length : -1);
-
-        if (val != null) {
-            for (String str : val)
-                writeString(str);
-        }
-    }
-
-    /**
-     * @param val Array of UUIDs.
-     * @throws GridPortableException In case of error.
-     */
-    private void doWriteUuidArray(@Nullable UUID[] val) throws GridPortableException {
-        writeInt(val != null ? val.length : -1);
-
-        if (val != null) {
-            for (UUID uuid : val)
-                writeUuid(uuid);
-        }
-    }
-
-    /**
-     * @param val Array of objects.
-     * @throws GridPortableException In case of error.
-     */
-    private void doWriteObjectArray(@Nullable Object[] val) throws GridPortableException {
-        writeInt(val != null ? val.length : -1);
-
-        if (val != null) {
-            for (Object obj : val)
-                writeObject(obj);
-        }
-    }
-
-    /**
-     * @param col Collection.
-     * @throws GridPortableException In case of error.
-     */
-    private <T> void doWriteCollection(@Nullable Collection<T> col) throws GridPortableException {
-        writeInt(col != null ? col.size() : -1);
-
-        if (col != null) {
-            for (Object obj : col)
-                writeObject(obj);
-        }
-    }
-
-    /**
-     * @param map Map.
-     * @throws GridPortableException In case of error.
-     */
-    private  <K, V> void doWriteMap(@Nullable Map<K, V> map) throws GridPortableException {
-        writeInt(map != null ? map.size() : -1);
-
-        if (map != null) {
-            for (Map.Entry<K, V> e : map.entrySet()) {
-                writeObject(e.getKey());
-                writeObject(e.getValue());
-            }
-        }
     }
 }

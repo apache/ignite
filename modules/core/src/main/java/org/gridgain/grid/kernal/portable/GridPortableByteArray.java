@@ -63,6 +63,13 @@ class GridPortableByteArray {
     }
 
     /**
+     * @return Size.
+     */
+    public int size() {
+        return size;
+    }
+
+    /**
      * @return Array copy.
      */
     public byte[] entireArray() {
