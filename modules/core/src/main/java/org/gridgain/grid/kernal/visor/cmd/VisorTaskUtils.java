@@ -27,8 +27,17 @@ public class VisorTaskUtils {
      * @param name Grid-style nullable name.
      * @return Name with {@code null} replaced to &lt;default&gt;.
      */
-    public static String escapeName(String name) {
+    public static String escapeName(@Nullable String name) {
         return name == null ? DFLT_EMPTY_NAME : name;
+    }
+
+    /**
+     * @param a First name.
+     * @param b Second name.
+     * @return {@code true} if both names equals.
+     */
+    public static boolean safeEquals(@Nullable String a, @Nullable String b) {
+        return (a != null && b != null) ? a.equals(b) : (a == null && b == null);
     }
 
     /**

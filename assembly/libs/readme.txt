@@ -23,10 +23,12 @@ Importing GridGain Dependencies In Maven Project
 If you are using Maven to manage dependencies of your project, there are two options:
 
 1. Import one of four predefined GridGain editions
-  - gridgain-datagrid-edition
-  - gridgain-streaming-edition
-  - gridgain-hadoop-edition
-  - gridgain-platform-edition
+  - gridgain-hpc
+  - gridgain-datagrid
+  - gridgain-streaming
+  - gridgain-hadoop1
+  - gridgain-hadoop2
+  - gridgain-platform (all inclusive)
 
 2. Or import individual GridGain modules a la carte.
 
@@ -37,24 +39,34 @@ Importing GridGain Edition Dependencies
 When importing editions, each edition automatically imports GridGain core module and
 a set of additional modules needed for this edition to work. Specifically:
 
-- gridgain-datagrid-edition
+- gridgain-hpc
+  - gridgain-core
+  - gridgain-spring (optional, add if you plan to use Spring configuration)
+
+- gridgain-datagrid
   - gridgain-core
   - gridgain-indexing (optional, add if you need SQL indexing)
-  - gridgain-hibernate (optional, add if you need hibernate integration)
-  - gridgain-jta (optional, add if you need XA/JTA integration)
+  - gridgain-spring (optional, add if you plan to use Spring configuration)
 
-- gridgain-streaming-edition
+- gridgain-streaming
   - gridgain-core
+  - gridgain-spring (optional, add if you plan to use Spring configuration)
 
-- gridgain-hadoop-edition
+- gridgain-hadoop1
   - gridgain-core
-  - gridgain-hadoop
+  - gridgain-hadoop1-integration
+  - gridgain-spring (optional, add if you plan to use Spring configuration)
 
-- gridgain-platform-edition
+- gridgain-hadoop2
+  - gridgain-core
+  - gridgain-hadoop2-integration
+  - gridgain-spring (optional, add if you plan to use Spring configuration)
+
+- gridgain-platform
   - (all dependencies included in other editions)
 
-Here is how 'gridgain-datagrid-edition' can be added to your POM file
-(replace '${gridgain.version}' with actual GridGain version you are interested in):
+Here is how 'gridgain-datagrid' can be added to your POM file (replace '${gridgain.version}'
+with actual GridGain version you are interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -65,7 +77,7 @@ Here is how 'gridgain-datagrid-edition' can be added to your POM file
         ...
         <dependency>
             <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-datagrid-edition</artifactId>
+            <artifactId>gridgain-datagrid</artifactId>
             <version>${gridgain.version}</version>
         </dependency>
         ...
@@ -112,7 +124,7 @@ The following modules are available:
 - gridgain-hadoop (for Apache Hadoop Accelerator)
 - gridgain-protobuf (for C++ and .NET clients)
 - gridgain-rest-http (for HTTP REST messages)
-- gridgain-scalar (for Scala API for GridGain)
+- gridgain-scalar (for GridGain Scala API)
 - gridgain-sl4j (for SL4J logging)
 - gridgain-ssh (for starting grid nodes on remote machines)
 - gridgain-urideploy (for URI-based deployment)
