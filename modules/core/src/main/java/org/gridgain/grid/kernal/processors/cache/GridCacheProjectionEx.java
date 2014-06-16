@@ -404,4 +404,12 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @return DR pause state.
      */
     @Nullable public GridDrStatus drPauseState();
+
+    /**
+     * Gets entry set containing internal entries.
+     *
+     * @param filter Filter.
+     * @return Entry set.
+     */
+    public Set<GridCacheEntry<K, V>> entrySetx(GridPredicate<GridCacheEntry<K, V>>... filter);
 }

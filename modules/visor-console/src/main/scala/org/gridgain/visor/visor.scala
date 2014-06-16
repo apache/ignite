@@ -1438,11 +1438,10 @@ object visor extends VisorTag {
                 val spring: GridSpringProcessor = SPRING.create(false)
 
                 val cfgs =
-                    try {
-                        // Streamer and cache configurations should be excluded from config.
-                        spring.loadConfigurations(url, "streamerConfiguration", "cacheConfiguration",
-                            "ggfsConfiguration", "drSenderHubConfiguration", "drReceiverHubConfiguration").get1()
-                    }
+                    try
+                        // Cache, GGFS, streamer and DR configurations should be excluded from daemon node config.
+                        spring.loadConfigurations(url, "cacheConfiguration", "ggfsConfiguration", "streamerConfiguration",
+                            "drSenderHubConfiguration", "drReceiverHubConfiguration").get1()
                     finally {
                         if (log4jTup != null)
                             U.removeLog4jNoOpLogger(log4jTup)
@@ -1466,13 +1465,12 @@ object visor extends VisorTag {
 
                 cfg.setRestEnabled(false)
 
+                def createExecutor = new GridThreadPoolExecutor(cpuCnt, cpuCnt, Long.MaxValue, new LinkedBlockingQueue[Runnable])
+
                 // All thread pools are overridden to have size equal to number of CPUs.
-                cfg.setExecutorService(new GridThreadPoolExecutor(cpuCnt, cpuCnt,
-                    Long.MaxValue, new LinkedBlockingQueue[Runnable]))
-                cfg.setSystemExecutorService(new GridThreadPoolExecutor(cpuCnt, cpuCnt,
-                    Long.MaxValue, new LinkedBlockingQueue[Runnable]))
-                cfg.setPeerClassLoadingExecutorService(new GridThreadPoolExecutor(cpuCnt, cpuCnt,
-                    Long.MaxValue, new LinkedBlockingQueue[Runnable]))
+                cfg.setExecutorService(createExecutor)
+                cfg.setSystemExecutorService(createExecutor)
+                cfg.setPeerClassLoadingExecutorService(createExecutor)
 
                 var ioSpi = cfg.getCommunicationSpi
 
