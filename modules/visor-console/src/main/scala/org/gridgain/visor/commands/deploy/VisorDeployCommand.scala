@@ -98,7 +98,6 @@ private case class VisorCopier(
 
                 if (ggh == "")
                     warn("GRIDGAIN_HOME is not set on " + host.name)
-
                 else {
                     ch = ses.openChannel("sftp").asInstanceOf[ChannelSftp]
 
@@ -110,7 +109,7 @@ private case class VisorCopier(
                 }
             }
             finally {
-                if (ch.isConnected)
+                if (ch != null && ch.isConnected)
                     ch.disconnect()
             }
         }
