@@ -11,12 +11,7 @@
 #
 
 #
-# Adds simbolyc links to gridgain jars into hadoop libs folder.
 # Run this script to confure hadoop client to work with gridgain.
-#
-
-#
-# Check HADOOP_HOME
 #
 
 HADOOP_COMMON_HOME=
@@ -30,42 +25,33 @@ if [ "$HADOOP_HOME" == "" ]; then
     fi
 fi
 
-if [ "$HADOOP_HOME" == "" ]; then
-    echo ERROR: HADOOP_HOME variable is not set.
-    exit 1
-fi
-
-echo
-echo "Found Hadoop in $HADOOP_HOME"
-echo
-
-#
-# Setting all hadoop modules if it's not set by /etc/default/hadoop
-#
-if [ "$HADOOP_COMMON_HOME" == "" ]; then
-    export HADOOP_COMMON_HOME=$HADOOP_HOME/share/hadoop/common
-fi
-
 #
 # Import common functions.
 #
 if [ "${GRIDGAIN_HOME}" = "" ];
-    then GRIDGAIN_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
+    then GRIDGAIN_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";GRIDGAIN_HOME_TMP="$(dirname "${GRIDGAIN_HOME_TMP}")"
     else GRIDGAIN_HOME_TMP=${GRIDGAIN_HOME};
 fi
 
-source "${GRIDGAIN_HOME_TMP}"/bin/include/functions.sh
+source "${GRIDGAIN_HOME_TMP}"/os/bin/include/functions.sh
 
 #
 # Discover GRIDGAIN_HOME environment variable.
 #
 setGridGainHome
 
-COMMON_HOME_LIB=$HADOOP_COMMON_HOME/lib
+#
+# Get correct Java class path separator symbol for the given platform.
+#
+getClassPathSeparator
 
-rm  ${COMMON_HOME_LIB}/gridgain* 2>/dev/null
+#
+# Set utility environment.
+#
+export MAIN_CLASS=org.gridgain.grid.hadoop.CommandLineUtils
 
-for file in $(ls ${GRIDGAIN_HOME}/libs/gridgain-*.jar); do
-    GG_JAR=$(readlink -m $file)
-    ln -s $GG_JAR ${COMMON_HOME_LIB}/$(basename $GG_JAR)
-done
+#
+# Start utility.
+#
+. "${GRIDGAIN_HOME}/os/bin/ggstart.sh" $@
+
