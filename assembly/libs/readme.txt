@@ -28,7 +28,7 @@ If you are using Maven to manage dependencies of your project, there are two opt
   - gridgain-streaming
   - gridgain-hadoop1
   - gridgain-hadoop2
-  - gridgain-platform
+  - gridgain-platform (all inclusive)
 
 2. Or import individual GridGain modules a la carte.
 
