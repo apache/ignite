@@ -12,12 +12,14 @@
 #include <cstdlib>
 #include <sstream>
 #include <boost/lexical_cast.hpp>
+#include <boost/optional.hpp>
 
 #include "gridgain/gridclientnode.hpp"
 
 #include "gridgain/impl/cmd/gridclienttcpcommandexecutor.hpp"
 #include "gridgain/impl/connection/gridclienttcpconnection.hpp"
 #include "gridgain/impl/marshaller/protobuf/gridclientprotobufmarshaller.hpp"
+#include "gridgain/impl/marshaller/gridnodemarshallerhelper.hpp"
 #include "gridgain/impl/marshaller/portable/gridportablemarshaller.hpp"
 #include "gridgain/impl/connection/gridclientconnectionpool.hpp"
 #include "gridgain/gridclientexception.hpp"
@@ -54,8 +56,10 @@ void GridClientTcpCommandExecutor::executeTopologyCmd(const GridClientSocketAddr
 
     msg.setIncludeMetrics(topCmd.getIncludeMetrics());
 
-    if (!topCmd.getNodeId().empty())
-        msg.setNodeId(topCmd.getNodeId());
+    boost::optional<GridClientUuid> nodeId = topCmd.getNodeId();
+
+    if (nodeId)
+        msg.setNodeId(*nodeId);
     else if (!topCmd.getNodeIp().empty())
         msg.setNodeId(topCmd.getNodeIp());
 
@@ -63,7 +67,6 @@ void GridClientTcpCommandExecutor::executeTopologyCmd(const GridClientSocketAddr
     
     GridClientTcpPacket tcpPacket;
     GridClientTcpPacket tcpResponse;
-    ProtoRequest req;
 
     tcpPacket.setData(data);
     tcpPacket.setAdditionalHeaders(topCmd);
@@ -95,10 +98,9 @@ void GridClientTcpCommandExecutor::executeTopologyCmd(const GridClientSocketAddr
 
         GridClientNodeBean* nodeBean = nodeVariant.getPortable<GridClientNodeBean>();
         
-        // TODO  8536.
-        GridClientNode node;
+        nodes.push_back(nodeBean->createNode());
 
-        nodes.push_back(node);
+        delete nodeBean;
     }
 
     rslt.setNodes(nodes);

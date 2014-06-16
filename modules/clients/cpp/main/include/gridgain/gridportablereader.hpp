@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <boost/optional.hpp>
 
 #include <gridgain/gridconf.hpp>
 #include <gridgain/gridclienttypedef.hpp>
@@ -34,7 +35,7 @@ public:
 
     virtual GridClientVariant readVariant(char* fieldName) = 0;
 
-    virtual GridClientUuid readUuid(char* fieldName) = 0;
+    virtual boost::optional<GridClientUuid> readUuid(char* fieldName) = 0;
 
     virtual std::vector<GridClientVariant> readCollection(char* fieldName) = 0;
 

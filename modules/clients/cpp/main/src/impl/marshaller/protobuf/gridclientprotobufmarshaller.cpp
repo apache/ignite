@@ -242,10 +242,11 @@ void GridClientProtobufMarshaller::wrap(const GridTopologyRequestCommand& reqCmd
 
     topReq.set_includemetrics(reqCmd.getIncludeMetrics());
 
-    if (!reqCmd.getNodeId().empty())
-        topReq.set_nodeid(reqCmd.getNodeId());
-    else if (!reqCmd.getNodeIp().empty())
-        topReq.set_nodeip(reqCmd.getNodeIp());
+// TODO 8536
+//    if (!reqCmd.getNodeId().empty())
+//        topReq.set_nodeid(reqCmd.getNodeId());
+//    else if (!reqCmd.getNodeIp().empty())
+//        topReq.set_nodeip(reqCmd.getNodeIp());
 
     wrapRequest(reqCmd, TOPOLOGY_REQUEST, topReq, objWrapper);
 }

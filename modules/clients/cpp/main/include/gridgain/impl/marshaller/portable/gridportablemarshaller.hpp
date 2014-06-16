@@ -12,11 +12,18 @@
 
 #include <vector>
 #include <iterator>
+#include <boost/asio.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "gridgain/gridportable.hpp"
 #include "gridgain/gridportablereader.hpp"
 #include "gridgain/gridportablewriter.hpp"
 #include "gridgain/impl/utils/gridclientbyteutils.hpp"
+
+#include "gridgain/impl/utils/gridclientlog.hpp"
+#include "gridgain/impl/marshaller/gridnodemarshallerhelper.hpp"
+#include "gridgain/gridclientexception.hpp"
+#include "gridgain/gridclientnode.hpp"
 
 using namespace std;
 
@@ -38,6 +45,7 @@ const int8_t TYPE_UUID = 20;
 const int8_t TYPE_USER_OBJECT = 21;
 
 const int8_t OBJECT_TYPE_OBJECT = 0;
+const int8_t OBJECT_TYPE_NULL = 2;
 
 GridPortable* createPortable(int32_t typeId, GridPortableReader &reader);
 
@@ -131,7 +139,7 @@ class GridClientMetricsBean : public GridPortable {
 
         return 0; // Not needed since is not used as key.
     }
-}
+};
 
 // TODO: 8536.
 class GridClientNodeBean : public GridPortable {
@@ -194,7 +202,107 @@ public:
         return 0; // Not needed since is not used as key.
     }
 
-private:
+    GridClientNode createNode() {
+        GridClientNode res;
+
+        GridClientNodeMarshallerHelper helper(res);
+
+        if (!nodeId)
+            throw GridClientCommandException("Failed to read node ID");
+
+        helper.setNodeId(nodeId.get());
+
+        helper.setConsistentId(consistentId);
+
+        int tcpport = tcpPort;
+        int jettyport = jettyPort;
+
+        std::vector<GridClientSocketAddress> addresses;
+
+        boost::asio::io_service ioSrvc;
+        boost::asio::ip::tcp::resolver resolver(ioSrvc);
+
+        for (int i = 0; i < jettyAddrs.size(); ++i) {
+            GridClientVariant addr = jettyAddrs[i];
+
+            GridClientSocketAddress newJettyAddress = GridClientSocketAddress(addr.getString(), jettyport);
+
+            boost::asio::ip::tcp::resolver::query queryIp(addr.getString(), boost::lexical_cast<std::string>(jettyport));
+
+            boost::system::error_code ec;
+
+            boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryIp, ec);
+
+            if (!ec)
+                addresses.push_back(newJettyAddress);
+            else
+                GG_LOG_ERROR("Error resolving hostname: %s, %s", addr.getString(), ec.message().c_str());
+        }
+
+        for (int i = 0; i < jettyHostNames.size(); ++i) {
+            GridClientSocketAddress newJettyAddress = GridClientSocketAddress(jettyHostNames[i].getString(), jettyport);
+
+            boost::asio::ip::tcp::resolver::query queryHostname(jettyHostNames[i].getString(),
+                boost::lexical_cast<std::string>(jettyport));
+
+            boost::system::error_code ec;
+
+            boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryHostname, ec);
+
+            if (!ec)
+                addresses.push_back(newJettyAddress);
+            else
+                GG_LOG_ERROR("Error resolving hostname: %s, %s", jettyHostNames[i].getString(), ec.message().c_str());
+        }
+
+        helper.setJettyAddresses(addresses);
+        addresses.clear();
+
+        for (int i = 0; i < tcpAddrs.size(); ++i) {
+            GridClientSocketAddress newTCPAddress = GridClientSocketAddress(tcpAddrs[i].getString(), tcpport);
+
+            boost::asio::ip::tcp::resolver::query queryIp(tcpAddrs[i].getString(),
+                boost::lexical_cast<std::string>(tcpport));
+
+            boost::system::error_code ec;
+
+            boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryIp, ec);
+
+            if (!ec)
+                addresses.push_back(newTCPAddress);
+            else
+                GG_LOG_ERROR("Error resolving hostname: %s, %s", tcpAddrs[i].getString(), ec.message().c_str());
+        }
+
+        for (int i = 0; i < tcpHostNames.size(); ++i) {
+            GridClientSocketAddress newTCPAddress = GridClientSocketAddress(tcpHostNames[i].getString(), tcpport);
+
+            boost::asio::ip::tcp::resolver::query queryHostname(tcpHostNames[i].getString(),
+                boost::lexical_cast<std::string>(tcpport));
+
+            boost::system::error_code ec;
+
+            boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryHostname, ec);
+
+            if (!ec)
+                addresses.push_back(newTCPAddress);
+            else
+                GG_LOG_ERROR("Error resolving hostname: %s, %s", tcpHostNames[i].getString(), ec.message().c_str());
+        }
+
+        helper.setTcpAddresses(addresses);
+
+        helper.setCaches(caches);
+
+        helper.setAttributes(attrs);
+
+        if (metrics.hasPortable()) {
+            // TODO 8536.
+        }
+
+        return res;
+    }
+
     int32_t tcpPort;
     
     int32_t jettyPort;
@@ -215,7 +323,7 @@ private:
 
     std::vector<GridClientVariant> jettyHostNames;
 
-    GridClientUuid nodeId;
+    boost::optional<GridClientUuid> nodeId;
 
     GridClientVariant consistentId;
 
@@ -266,7 +374,7 @@ public:
      *
      * @return Node identifier, if specified, empty string otherwise.
      */
-     std::string getNodeId() const {
+     boost::optional<GridClientUuid> getNodeId() const {
         return nodeId;
      }
 
@@ -275,7 +383,7 @@ public:
      *
      * @param pNodeId Node identifier to lookup.
      */
-     void setNodeId(const std::string& nodeId) {
+     void setNodeId(const GridClientUuid& nodeId) {
         this->nodeId = nodeId;
      }
 
@@ -304,7 +412,7 @@ public:
     void writePortable(GridPortableWriter &writer) const {
         GridClientPortableMessage::writePortable(writer);
 
-        writer.writeString("nodeId", nodeId);
+        writer.writeUuid("nodeId", nodeId);
         writer.writeString("nodeIp", nodeIp);
         writer.writeBool("includeMetrics", includeMetrics);
         writer.writeBool("includeAttrs", includeAttrs);
@@ -313,7 +421,7 @@ public:
     void readPortable(GridPortableReader &reader) {
         GridClientPortableMessage::readPortable(reader);
 
-        nodeId = reader.readString("nodeId");
+        nodeId = reader.readUuid("nodeId");
         nodeIp  = reader.readString("nodeIp");
         includeMetrics = reader.readBool("includeMetrics");
         includeAttrs = reader.readBool("includeAttrs");
@@ -321,7 +429,7 @@ public:
 
 private:
     /** Id of requested node. */
-     std::string nodeId;
+     boost::optional<GridClientUuid> nodeId;
 
     /** IP address of requested node. */
      std::string nodeIp;
@@ -387,8 +495,12 @@ public:
 	}
 
 	void writeString(char* fieldName, const string &str) {
-		out.writeInt(str.length());
-		out.writeBytes(str.data(), str.length());
+		if (!str.empty()) {
+            out.writeInt(str.length());
+		    out.writeBytes(str.data(), str.length());
+        }
+        else
+            out.writeInt(-1);
 	}
 	
     void writeBytes(char* fieldName, const std::vector<int8_t>& val) {
@@ -421,8 +533,23 @@ public:
             writeVariant(nullptr, val);
         }
     }
+    
+	void writeBool(char* fieldName, bool val) {
+		out.writeByte(val ? 1 : 0);
+	}
 
-    void writeVariant(char* fieldName, const GridClientVariant &val) {
+	void writeUuid(char* fieldName, const boost::optional<GridClientUuid>& val) {
+        if (val) {
+            out.writeByte(1);
+
+            out.writeLong(val.get().mostSignificantBits());
+            out.writeLong(val.get().leastSignificantBits());
+        }
+        else
+            out.writeByte(0);
+	}
+
+    void writeVariant(char* fieldName, const GridClientVariant &val) override {
         if (val.hasInt()) {
             out.writeByte(TYPE_INT);
             out.writeInt(val.getInt());
@@ -432,8 +559,7 @@ public:
 
             string str = val.getString();
 
-    		out.writeInt(str.length());
-	    	out.writeBytes(str.data(), str.length());
+            writeString(nullptr, str);
         }
         else if (val.hasUuid()) {
             out.writeByte(TYPE_UUID);
@@ -553,6 +679,8 @@ public:
 
         GridPortable* portable = createPortable(typeId, *this);
 
+        portable->readPortable(*this);
+
         return portable;
     }
 
@@ -563,7 +691,10 @@ public:
     vector<int8_t> readBytes(char* fieldName) {
         int32_t size = in.readInt();
 
-        return in.readBytes(size);
+        if (size > 0)
+            return in.readBytes(size);
+
+        return vector<int8_t>();
     }
 
     string readString(char* fieldName) {
@@ -577,6 +708,25 @@ public:
         return string((char*)bytes.data(), size);
     }
 
+    bool readBool(char* fieldName) {
+        int8_t val = in.readByte();
+
+        return val == 0 ? false : true;
+    }
+
+    boost::optional<GridClientUuid> readUuid(char* fieldName) {
+        boost::optional<GridClientUuid> res;
+
+        if (in.readByte() != 0) {
+            int64_t mostSignificantBits = in.readLong();
+            int64_t leastSignificantBits = in.readLong();
+
+            res = GridClientUuid(mostSignificantBits, leastSignificantBits);
+        }
+
+        return res;
+    }
+
     GridClientVariant readVariant(char* fieldName) {
         int8_t type = in.readByte();
 
@@ -586,6 +736,9 @@ public:
 
             case TYPE_INT:
                 return GridClientVariant(in.readInt());
+
+            case TYPE_STRING:
+                return GridClientVariant(readString(nullptr));
 
             case TYPE_LONG:
                 return GridClientVariant(in.readLong());
@@ -640,6 +793,9 @@ public:
 
     unordered_map<GridClientVariant, GridClientVariant> readMap() {
         int8_t type = in.readByte();
+
+        if (type == OBJECT_TYPE_NULL)
+            return unordered_map<GridClientVariant, GridClientVariant>();
 
         assert(type == OBJECT_TYPE_OBJECT);
 
