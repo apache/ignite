@@ -50,9 +50,14 @@ a set of additional modules needed for this edition to work. Specifically:
   - gridgain-core
   - gridgain-spring (optional, add if you plan to use Spring configuration)
 
-- gridgain-hadoop
+- gridgain-hadoop1
   - gridgain-core
-  - gridgain-hadoop-integration
+  - gridgain-hadoop1-integration
+  - gridgain-spring (optional, add if you plan to use Spring configuration)
+
+- gridgain-hadoop2
+  - gridgain-core
+  - gridgain-hadoop2-integration
   - gridgain-spring (optional, add if you plan to use Spring configuration)
 
 - gridgain-platform-edition
