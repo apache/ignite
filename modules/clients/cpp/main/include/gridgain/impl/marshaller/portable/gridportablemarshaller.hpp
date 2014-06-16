@@ -44,7 +44,7 @@ GridPortable* createPortable(int32_t typeId, GridPortableReader &reader);
 class GridClientPortableMessage : public GridPortable {
 public:
     void writePortable(GridPortableWriter &writer) const {
-        writer.writeBytes("sesTok", sesTok);
+        writer.writeBytes("sesTok", sesTok); //TODO 8536.
     }
 
     void readPortable(GridPortableReader &reader) {
@@ -70,7 +70,7 @@ private:
 class GridClientResponse : public GridClientPortableMessage {
 public:
     int32_t typeId() const {
-        return -1000;
+        return -6;
     }
 
     void writePortable(GridPortableWriter &writer) const {
@@ -109,10 +109,9 @@ private:
     GridClientVariant res;
 };
 
-// TODO: 8536.
-class GridClientNodeBean : public GridPortable {
+class GridClientMetricsBean : public GridPortable {
     int32_t typeId() const {
-        return -1;            
+        return -5;            
     }
 
     void writePortable(GridPortableWriter &writer) const {
@@ -132,6 +131,95 @@ class GridClientNodeBean : public GridPortable {
 
         return 0; // Not needed since is not used as key.
     }
+}
+
+// TODO: 8536.
+class GridClientNodeBean : public GridPortable {
+public:
+    int32_t typeId() const {
+        return -4;            
+    }
+
+    void writePortable(GridPortableWriter &writer) const {
+        writer.writeInt32("tcpPort", tcpPort);
+        writer.writeInt32("jettyPort", jettyPort);
+        writer.writeInt32("replicaCnt", replicaCnt);
+
+        writer.writeString("dfltCacheMode", dfltCacheMode);
+
+        writer.writeMap("attrs", attrs);
+        writer.writeMap("caches", caches);
+
+        writer.writeCollection("tcpAddrs", tcpAddrs);
+        writer.writeCollection("tcpHostNames", tcpHostNames);
+        writer.writeCollection("jettyAddrs", jettyAddrs);
+        writer.writeCollection("jettyHostNames", jettyHostNames);
+
+        writer.writeUuid("nodeId", nodeId);
+
+        writer.writeVariant("consistentId", consistentId);
+        writer.writeVariant("metrics", metrics);
+    }
+
+    void readPortable(GridPortableReader &reader) {
+        tcpPort = reader.readInt32("tcpPort");
+        jettyPort = reader.readInt32("jettyPort");
+        replicaCnt = reader.readInt32("replicaCnt");
+
+        dfltCacheMode = reader.readString("dfltCacheMode");
+
+        attrs = reader.readMap("attrs");
+        caches = reader.readMap("caches");
+
+        tcpAddrs = reader.readCollection("tcpAddrs");
+        tcpHostNames = reader.readCollection("tcpHostNames");
+        jettyAddrs = reader.readCollection("jettyAddrs");
+        jettyHostNames = reader.readCollection("jettyHostNames");
+
+        nodeId = reader.readUuid("nodeId");
+
+        consistentId = reader.readVariant("consistentId");
+        metrics = reader.readVariant("metrics");
+    }
+
+    bool operator==(const GridPortable& other) const {
+        assert(false);
+
+        return false; // Not needed since is not used as key.
+    }
+
+    int hashCode() const {
+        assert(false);
+
+        return 0; // Not needed since is not used as key.
+    }
+
+private:
+    int32_t tcpPort;
+    
+    int32_t jettyPort;
+    
+    int32_t replicaCnt;
+
+    std::string dfltCacheMode;
+
+    std::unordered_map<GridClientVariant, GridClientVariant> attrs;
+    
+    std::unordered_map<GridClientVariant, GridClientVariant> caches;
+
+    std::vector<GridClientVariant> tcpAddrs;
+
+    std::vector<GridClientVariant> tcpHostNames;
+
+    std::vector<GridClientVariant> jettyAddrs;
+
+    std::vector<GridClientVariant> jettyHostNames;
+
+    GridClientUuid nodeId;
+
+    GridClientVariant consistentId;
+
+    GridClientVariant metrics;
 };
 
 // TODO: 8536 reuse existing message classes.
@@ -210,19 +298,25 @@ public:
     }
 
     int32_t typeId() const {
-        return -1000;
+        return -9;
     }
 
     void writePortable(GridPortableWriter &writer) const {
         GridClientPortableMessage::writePortable(writer);
 
         writer.writeString("nodeId", nodeId);
+        writer.writeString("nodeIp", nodeIp);
+        writer.writeBool("includeMetrics", includeMetrics);
+        writer.writeBool("includeAttrs", includeAttrs);
     }
 
     void readPortable(GridPortableReader &reader) {
         GridClientPortableMessage::readPortable(reader);
 
         nodeId = reader.readString("nodeId");
+        nodeIp  = reader.readString("nodeIp");
+        includeMetrics = reader.readBool("includeMetrics");
+        includeAttrs = reader.readBool("includeAttrs");
     }
 
 private:

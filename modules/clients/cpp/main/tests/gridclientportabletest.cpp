@@ -171,6 +171,15 @@ public:
 
 REGISTER_TYPE_SERIALIZER(101, Person, PersonSerializer);
 
+BOOST_AUTO_TEST_CASE(testClient) {
+    GridClientConfiguration cfg = clientConfig();
+
+	TGridClientPtr client = GridClientFactory::start(cfg);	
+
+    TGridClientDataPtr data = client->data("partitioned");
+}
+
+/*
 BOOST_AUTO_TEST_CASE(testPortableCache) {
     GridClientConfiguration cfg = clientConfig();
 
@@ -235,5 +244,6 @@ BOOST_AUTO_TEST_CASE(testExternalSerialization) {
     delete pRead->getObject();
     delete pRead;
 }
+*/
 
 BOOST_AUTO_TEST_SUITE_END()

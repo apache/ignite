@@ -24,6 +24,8 @@
  */
 class GRIDGAIN_API GridPortableWriter {
 public:
+    virtual void writeBool(char* fieldName, bool val) = 0;
+
     virtual void writeInt32(char* fieldName, int32_t val) = 0;
 
     virtual void writeBytes(char* fieldName, const std::vector<int8_t>& val) = 0;
@@ -35,6 +37,8 @@ public:
     virtual void writeCollection(char* fieldName, const std::vector<GridClientVariant> &val) = 0;
 
     virtual void writeMap(char* fieldName, const std::unordered_map<GridClientVariant, GridClientVariant> &map) = 0;
+
+    virtual void writeUuid(char* fieldName, const GridClientUuid& val) = 0;
 };
 
 #endif // GRIDPORTABLEWRITER_HPP_INCLUDED

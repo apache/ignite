@@ -22,7 +22,7 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final int PORTABLE_TYPE_ID = nextSystemTypeId();
+    public static final int PORTABLE_TYPE_ID = -7;
 
     /** Task name. */
     private String taskName;

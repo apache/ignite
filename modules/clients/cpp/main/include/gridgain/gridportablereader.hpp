@@ -24,6 +24,8 @@
  */
 class GRIDGAIN_API GridPortableReader {
 public:
+    virtual bool readBool(char* fieldName) = 0;
+
     virtual int32_t readInt32(char* fieldName) = 0;
 
     virtual std::vector<int8_t> readBytes(char* fieldName) = 0;
@@ -31,6 +33,8 @@ public:
     virtual std::string readString(char* fieldName) = 0;
 
     virtual GridClientVariant readVariant(char* fieldName) = 0;
+
+    virtual GridClientUuid readUuid(char* fieldName) = 0;
 
     virtual std::vector<GridClientVariant> readCollection(char* fieldName) = 0;
 
