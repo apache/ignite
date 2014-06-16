@@ -248,7 +248,7 @@ private case class VisorCopier(
                 ch.mkdir(dest)
 
             root.list.foreach(
-                f => copy(ch, src + File.separatorChar + f, GridFilenameUtils.separatorsToUnix(dest + "/" + f))
+                f => copy(ch, new File(src, f), GridFilenameUtils.separatorsToUnix(dest + "/" + f))
             )
         }
         else
@@ -374,6 +374,9 @@ class VisorDeployCommand {
                 case e: IllegalArgumentException => scold(e.getMessage).^^
             }
         })
+
+        if (hosts.isEmpty)
+            scold("You should specify atleast one remote host.").^^
 
         val copiers = hosts.map(VisorCopier(_, key, src.get, dest getOrElse ""))
 
