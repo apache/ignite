@@ -37,4 +37,15 @@ public:
     virtual std::unordered_map<GridClientVariant, GridClientVariant> readMap(char* fieldName) = 0;
 };
 
+class GridPortableFactory {
+public: 
+    virtual void* newInstance(GridPortableReader& reader) = 0; 
+};
+
+void registerPortableFactory(int32_t typeId, GridPortableFactory* factory);
+
+#define REGISTER_TYPE(TYPE_ID, TYPE) class GridPortableFactory_##TYPE : public GridPortableFactory { public: GridPortableFactory_##TYPE() {registerPortableFactory(TYPE_ID, this);} void* newInstance(GridPortableReader& reader) { GridPortable* p = new TYPE; p->readPortable(reader); return p;}; }; GridPortableFactory_##TYPE factory_##TYPE;
+
+#define REGISTER_TYPE_SERIALIZER(TYPE_ID, TYPE, SERIALIZER) class GridPortableFactory_##TYPE : public GridPortableFactory { public: GridPortableFactory_##TYPE() {registerPortableFactory(TYPE_ID, this);}  public: void* newInstance(GridPortableReader& reader) { return new GridExternalPortable<TYPE>(ser.readPortable(reader), ser); } private: SERIALIZER ser; }; GridPortableFactory_##TYPE factory_##TYPE;
+
 #endif // GRIDPORTABLEREADER_HPP_INCLUDED

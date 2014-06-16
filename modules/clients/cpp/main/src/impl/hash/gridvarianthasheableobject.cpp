@@ -141,7 +141,7 @@ void GridClientVariantHasheableObject::init(const GridClientVariant& var) {
 
 GridClientVariantHasheableObject::GridClientVariantHasheableObject(const GridClientVariant& var) {
     if (var.hasPortable())
-        hashCode_ = var.getPortable()->hashCode();
+        hashCode_ = var.getPortable<GridPortable>()->hashCode();
     else
         init(var);
 }

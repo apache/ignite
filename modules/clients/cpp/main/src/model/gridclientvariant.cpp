@@ -106,12 +106,6 @@ bool GridClientVariant::hasPortable() const {
     return portable != nullptr;
 }
 
-GridPortable* GridClientVariant::getPortable() const {
-    assert(hasPortable());
-
-    return portable;
-}
-
 void GridClientVariant::set(bool pBool) {
     pimpl.var = pBool;
     portable = nullptr;

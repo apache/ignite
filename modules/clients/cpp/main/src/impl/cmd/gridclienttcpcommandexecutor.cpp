@@ -93,7 +93,7 @@ void GridClientTcpCommandExecutor::executeTopologyCmd(const GridClientSocketAddr
     for (auto iter = vec.begin(); iter != vec.end(); ++iter) {
         GridClientVariant nodeVariant = *iter;
 
-        GridClientNodeBean* nodeBean = static_cast<GridClientNodeBean*>(nodeVariant.getPortable());
+        GridClientNodeBean* nodeBean = nodeVariant.getPortable<GridClientNodeBean>();
         
         // TODO  8536.
         GridClientNode node;

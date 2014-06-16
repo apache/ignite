@@ -363,11 +363,31 @@ public:
      */
     std::string getString() const;
 
+    /**
+     * Assigns this variant a portable value.
+     *
+     * @param val New value for the variant.
+     */
     void set(GridPortable* val);
 
+    /**
+     * Checks if this variant holds a portable value.
+     *
+     * @return <tt>true</tt> if value is of portable, <tt>false</tt> otherwise.
+     */
     bool hasPortable() const;
 
-    GridPortable* getPortable() const;
+    /**
+     * Returns a portable value from this variant.
+     *
+     * @return Value held in the variant.
+     */
+    template<typename T>
+    T* getPortable() const {
+        assert(hasPortable());
+    
+        return static_cast<T*>(portable);
+    }
 
     /**
      * Checks if this variant holds a wide string value.

@@ -39,6 +39,8 @@ const int8_t TYPE_USER_OBJECT = 21;
 
 const int8_t OBJECT_TYPE_OBJECT = 0;
 
+GridPortable* createPortable(int32_t typeId, GridPortableReader &reader);
+
 class GridClientPortableMessage : public GridPortable {
 public:
     void writePortable(GridPortableWriter &writer) const {
@@ -281,7 +283,7 @@ public:
     void writePortable(GridPortable &portable) {
         out.writeByte(OBJECT_TYPE_OBJECT);
 
-        out.writeByte(portable.typeId());
+        out.writeInt(portable.typeId());
 
         portable.writePortable(*this);
     }
@@ -350,7 +352,7 @@ public:
         else if (val.hasPortable()) {
             out.writeByte(TYPE_USER_OBJECT);
 
-            writePortable(*val.getPortable());
+            writePortable(*val.getPortable<GridPortable>());
         }
         else if (val.hasVariantVector()) {
             out.writeByte(TYPE_LIST);
@@ -394,25 +396,41 @@ public:
     int8_t readByte() {
         checkAvailable(1);
 
-        return 0;
+        return bytes[pos++];
     }
 
     int32_t readInt() {
         checkAvailable(4);
 
-        return 0;
+        int32_t res = 0;
+
+        memcpy(&res, bytes.data() + pos, 4);
+
+        pos += 4;
+
+        return res;
     }
 
     int64_t readLong() {
         checkAvailable(8);
 
-        return 0;
+        int64_t res = 0;
+
+        memcpy(&res, bytes.data() + pos, 8);
+
+        pos += 8;
+
+        return res;
     }
 
     vector<int8_t> readBytes(int32_t size) {
         checkAvailable(size);
 
         vector<int8_t> vec;
+
+        vec.insert(vec.end(), bytes.data() + pos, bytes.data() + pos + size);
+
+        pos += size;
 
         return vec;
     }
@@ -430,7 +448,6 @@ private:
 class GridPortableReaderImpl : GridPortableReader {
 public:
     GridPortableReaderImpl(vector<int8_t>& data) : in(data) {
-
     }
 
     GridPortable* readPortable() {
@@ -440,9 +457,7 @@ public:
 
         int32_t typeId = in.readInt();
 
-        GridPortable* portable = createPortable(typeId);
-
-        portable->readPortable(*this);
+        GridPortable* portable = createPortable(typeId, *this);
 
         return portable;
     }
@@ -465,7 +480,7 @@ public:
 
         vector<int8_t> bytes = in.readBytes(size);
 
-        return string((char*)bytes.data());
+        return string((char*)bytes.data(), size);
     }
 
     GridClientVariant readVariant(char* fieldName) {
@@ -485,8 +500,8 @@ public:
                 if (in.readByte() == 0)
                     return GridClientVariant();
 
-                long mostSignificantBits = in.readLong();
-                long leastSignificantBits = in.readLong();
+                int64_t mostSignificantBits = in.readLong();
+                int64_t leastSignificantBits = in.readLong();
 
                 return GridClientVariant(GridClientUuid(mostSignificantBits, leastSignificantBits));
             }
@@ -557,15 +572,11 @@ public:
 
 private:
     PortableInput in;
-
-    GridPortable* createPortable(int32_t typeId) {
-        return nullptr;            
-    }
 };
 
 class GridPortableMarshaller {
 public:
-    vector<int8_t> marshal(GridPortable &portable) {
+    vector<int8_t> marshal(GridPortable& portable) {
 		GridPortableWriterImpl writer;
 
 		writer.writePortable(portable);

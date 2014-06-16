@@ -13,6 +13,7 @@
 #include "gridgain/impl/utils/gridclientdebug.hpp"
 
 #include <iostream>
+#include <string>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/test/unit_test.hpp>
@@ -20,6 +21,7 @@
 #include <gridgain/gridgain.hpp>
 
 #include "gridgain/gridclientvariant.hpp"
+#include "gridgain/gridportableserializer.hpp"
 
 #include "gridgain/impl/gridclienttopology.hpp"
 #include "gridgain/impl/gridclientdataprojection.hpp"
@@ -73,28 +75,38 @@ GridClientConfiguration clientConfig() {
     return clientConfig;
 }
 
-class TestPortable : public GridPortable {
+class PortablePerson : public GridPortable {
 public:    
-    TestPortable() {
+    PortablePerson() {
     }
 
-    TestPortable(int val) : id(val) {
+    PortablePerson(int id, string name) : name(name), id(id) {
+    }
+
+    int32_t getId() {
+        return id;
+    }
+
+    string getName() {
+        return name;
     }
 
 	int32_t typeId() const {
-		return 7;
+		return 100;
 	}
 
     void writePortable(GridPortableWriter &writer) const {
-		writer.writeInt32("id", id);
+        writer.writeString("name", name);
+		writer.writeInt32("age", id);
 	}
 
     void readPortable(GridPortableReader &reader) {
-		id = reader.readInt32("id");
+		name = reader.readString("name");
+        id = reader.readInt32("id");
 	}
 
     bool operator==(const GridPortable& portable) const {
-        const TestPortable* other = static_cast<const TestPortable*>(&portable);
+        const PortablePerson* other = static_cast<const PortablePerson*>(&portable);
 
         return id == other->id;
     }
@@ -104,24 +116,124 @@ public:
     }
 
 private:
-    int id;
+    string name;
+
+    int32_t id;
 };
 
+REGISTER_TYPE(100, PortablePerson);
+
+class Person {
+public :
+    Person(int32_t id, string name) : name(name), id(id) {
+    }
+
+    int32_t getId() {
+        return id;
+    }
+
+    string getName() {
+        return name;
+    }
+
+private:
+    string name;
+
+    int32_t id;
+};
+
+class PersonSerializer : public GridPortableSerializer<Person> {
+public:
+    void writePortable(Person* obj, GridPortableWriter& writer) override {
+        writer.writeInt32("id", obj->getId());
+        writer.writeString("name", obj->getName());
+    }
+
+    Person* readPortable(GridPortableReader& reader) override {
+        int32_t id = reader.readInt32("id");
+        string name = reader.readString("name");
+
+        return new Person(id, name);
+    }
+
+    int32_t typeId(Person* obj) override {
+        return 101;
+    }
+
+    int32_t hashCode(Person* obj) override {
+        return obj->getId();
+    }
+
+    bool compare(Person* obj1, Person* obj2) override {
+        return obj1->getId() == obj2->getId();
+    }
+};
+
+REGISTER_TYPE_SERIALIZER(101, Person, PersonSerializer);
+
 BOOST_AUTO_TEST_CASE(testPortableCache) {
-	GridClientConfiguration cfg = clientConfig();
+    GridClientConfiguration cfg = clientConfig();
 
 	TGridClientPtr client = GridClientFactory::start(cfg);	
 
     TGridClientDataPtr data = client->data("partitioned");
 
-    TestPortable key(1);
-    TestPortable val(1);
+    PortablePerson person1(10, "person1");
 
-    data->put(&key, &val);
+    data->put(10, &person1);
 
-    GridClientVariant variant = data->get(&key);
+    PortablePerson* getPerson1 = data->get(10).getPortable<PortablePerson>();
 
-    TestPortable* getVal = static_cast<TestPortable*>(variant.getPortable());
+    cout << "Person1: " << getPerson1->getId();
+
+    PersonSerializer serializer;
+
+    Person person2(20, "person2");
+
+    data->put(20, &GridExternalPortable<Person>(&person2, serializer));
+
+    GridExternalPortable<Person>* getPerson2 = data->get(10).getPortable<GridExternalPortable<Person>>();
+
+    cout << "Person2: " << (*getPerson2)->getId();
+}
+
+BOOST_AUTO_TEST_CASE(testPortableSerialization) {
+    GridPortableMarshaller marsh;
+
+    PortablePerson p(-10, "ABC");
+
+    vector<int8_t> bytes = marsh.marshal(p);
+
+    PortablePerson* pRead = marsh.unmarshal<PortablePerson>(bytes);
+
+    cout << "Unmarshalled " << pRead->getId() << " " << pRead->getName() << "\n";
+
+    BOOST_CHECK_EQUAL(-10, pRead->getId());
+    BOOST_CHECK_EQUAL("ABC", pRead->getName());
+
+    delete pRead;
+}
+
+BOOST_AUTO_TEST_CASE(testExternalSerialization) {
+    GridPortableMarshaller marsh;
+
+    Person person(20, "abc");
+
+    PersonSerializer ser;
+
+    GridExternalPortable<Person> ext(&person, ser);
+
+    vector<int8_t> bytes = marsh.marshal(ext);
+
+    GridExternalPortable<Person>* pRead = marsh.unmarshal<GridExternalPortable<Person>>(bytes);
+
+    cout << "Unmarshalled " << (*pRead)->getId() << " " << (*pRead)->getName() << "\n";
+
+    BOOST_CHECK_EQUAL(20, (*pRead)->getId());
+    BOOST_CHECK_EQUAL("abc", (*pRead)->getName());
+
+    delete pRead->getObject();
+    delete pRead;
 }
 
 BOOST_AUTO_TEST_SUITE_END()
