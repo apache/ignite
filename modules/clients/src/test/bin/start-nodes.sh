@@ -39,7 +39,7 @@ if [ -d "${M2_HOME}" ]; then
     MVN_EXEC=${M2_HOME}/bin/${MVN_EXEC}
 fi
 
-${MVN_EXEC} -P+test,-scala,-release clean package -DskipTests -DskipClientDocs
+${MVN_EXEC} -P+test,-scala,-examples,-release clean package -DskipTests -DskipClientDocs
 
 echo Switch to build script directory $SCRIPT_DIR
 cd $SCRIPT_DIR

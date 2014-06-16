@@ -54,7 +54,6 @@
         <module>modules/log4j</module>
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
-        <module>examples</module>
     </modules>
 
     <build>
@@ -97,13 +96,21 @@
         <profile>
             <id>scala</id>
             <activation>
-                <property>
-                    <name>!noScala</name>
-                </property>
+                <activeByDefault>true</activeByDefault>
             </activation>
             <modules>
                 <module>modules/scalar</module>
                 <module>modules/visor-console</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>examples</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <modules>
+                <module>examples</module>
             </modules>
         </profile>
     </profiles>
