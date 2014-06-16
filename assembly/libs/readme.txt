@@ -117,7 +117,7 @@ The following modules are available:
 - gridgain-hadoop (for Apache Hadoop Accelerator)
 - gridgain-protobuf (for C++ and .NET clients)
 - gridgain-rest-http (for HTTP REST messages)
-- gridgain-scalar (for Scala API for GridGain)
+- gridgain-scalar (for GridGain Scala API)
 - gridgain-sl4j (for SL4J logging)
 - gridgain-ssh (for starting grid nodes on remote machines)
 - gridgain-urideploy (for URI-based deployment)
