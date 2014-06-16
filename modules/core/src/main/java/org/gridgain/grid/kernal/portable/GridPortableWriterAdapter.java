@@ -16,6 +16,8 @@ import sun.misc.*;
 
 import java.util.*;
 
+import static org.gridgain.grid.kernal.portable.GridPortableMarshaller.*;
+
 /**
  * Portable writer adapter.
  */
@@ -64,10 +66,38 @@ abstract class GridPortableWriterAdapter implements GridPortableWriter {
     }
 
     /**
+     * @param arr Array.
+     */
+    protected GridPortableWriterAdapter(GridPortableByteArray arr) {
+        this.arr = arr;
+    }
+
+    /**
      * @return Array.
      */
     public byte[] array() {
-        return arr.arrayCopy();
+        return arr.entireArray();
+    }
+
+    /**
+     * @param bytes Number of bytes to reserve.
+     */
+    public void reserve(int bytes) {
+        arr.requestFreeSize(bytes);
+    }
+
+    /**
+     * @param obj Object to marshal.
+     * @throws GridPortableException In case of error.
+     */
+    public void marshal(Object obj) throws GridPortableException {
+        assert obj != null;
+
+        GridPortableClassDescriptor desc = GridPortableClassDescriptor.get(obj.getClass());
+
+        assert desc != null;
+
+        desc.write(obj, this);
     }
 
     /** {@inheritDoc} */
@@ -315,65 +345,49 @@ abstract class GridPortableWriterAdapter implements GridPortableWriter {
      * @param val Byte value.
      * @throws GridPortableException In case of error.
      */
-    protected void doWriteByte(byte val) throws GridPortableException {
-        UNSAFE.putByte(arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(1), val);
-    }
+    protected abstract void doWriteByte(byte val) throws GridPortableException;
 
     /**
      * @param val Short value.
      * @throws GridPortableException In case of error.
      */
-    protected void doWriteShort(short val) throws GridPortableException {
-        UNSAFE.putShort(arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(2), val);
-    }
+    protected abstract void doWriteShort(short val) throws GridPortableException;
 
     /**
      * @param val Integer value.
      * @throws GridPortableException In case of error.
      */
-    protected void doWriteInt(int val) throws GridPortableException {
-        UNSAFE.putInt(arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(4), val);
-    }
+    protected abstract void doWriteInt(int val) throws GridPortableException;
 
     /**
      * @param val Long value.
      * @throws GridPortableException In case of error.
      */
-    protected void doWriteLong(long val) throws GridPortableException {
-        UNSAFE.putLong(arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(8), val);
-    }
+    protected abstract void doWriteLong(long val) throws GridPortableException;
 
     /**
      * @param val Float value.
      * @throws GridPortableException In case of error.
      */
-    protected void doWriteFloat(float val) throws GridPortableException {
-        UNSAFE.putFloat(arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(4), val);
-    }
+    protected abstract void doWriteFloat(float val) throws GridPortableException;
 
     /**
      * @param val Double value.
      * @throws GridPortableException In case of error.
      */
-    protected void doWriteDouble(double val) throws GridPortableException {
-        UNSAFE.putDouble(arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(8), val);
-    }
+    protected abstract void doWriteDouble(double val) throws GridPortableException;
 
     /**
      * @param val Char value.
      * @throws GridPortableException In case of error.
      */
-    protected void doWriteChar(char val) throws GridPortableException {
-        UNSAFE.putChar(arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(2), val);
-    }
+    protected abstract void doWriteChar(char val) throws GridPortableException;
 
     /**
      * @param val Boolean value.
      * @throws GridPortableException In case of error.
      */
-    protected void doWriteBoolean(boolean val) throws GridPortableException {
-        UNSAFE.putBoolean(arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(1), val);
-    }
+    protected abstract void doWriteBoolean(boolean val) throws GridPortableException;
 
     /**
      * @param val String value.
@@ -402,7 +416,14 @@ abstract class GridPortableWriterAdapter implements GridPortableWriter {
      * @throws GridPortableException In case of error.
      */
     private <T> void doWriteObject(@Nullable T obj) throws GridPortableException {
-        // TODO
+        if (obj == null)
+            doWriteInt(NULL);
+
+        // TODO: Handle.
+
+        GridPortableWriterAdapter writer = new GridUnsafePortableWriter(arr);
+
+        writer.marshal(obj);
     }
 
     /**

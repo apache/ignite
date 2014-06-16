@@ -15,7 +15,7 @@ import sun.misc.*;
 /**
  * Byte array wrapper.
  */
-public class GridPortableByteArray {
+class GridPortableByteArray {
     /** */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -31,7 +31,7 @@ public class GridPortableByteArray {
     /**
      * @param cap Initial capacity.
      */
-    public GridPortableByteArray(int cap) {
+    GridPortableByteArray(int cap) {
         arr = new byte[cap];
     }
 
@@ -65,11 +65,15 @@ public class GridPortableByteArray {
     /**
      * @return Array copy.
      */
-    public byte[] arrayCopy() {
-        byte[] arr0 = new byte[size];
+    public byte[] entireArray() {
+        if (arr.length == size)
+            return arr;
+        else {
+            byte[] arr0 = new byte[size];
 
-        UNSAFE.copyMemory(arr, BYTE_ARR_OFF, arr0, BYTE_ARR_OFF, size);
+            UNSAFE.copyMemory(arr, BYTE_ARR_OFF, arr0, BYTE_ARR_OFF, size);
 
-        return arr0;
+            return arr0;
+        }
     }
 }

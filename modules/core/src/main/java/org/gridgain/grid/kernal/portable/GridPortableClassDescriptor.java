@@ -12,12 +12,24 @@ package org.gridgain.grid.kernal.portable;
 import org.gridgain.grid.portable.*;
 import org.jdk8.backport.*;
 
+import java.lang.reflect.*;
+import java.util.*;
+import java.util.concurrent.*;
+
+import static java.lang.reflect.Modifier.*;
+import static org.gridgain.grid.kernal.portable.GridPortableMarshaller.*;
+
 /**
  * Portable class descriptor.
  */
-public class GridPortableClassDescriptor {
-    private static final ConcurrentHashMap8<Class<?>, GridPortableClassDescriptor> CACHE = new ConcurrentHashMap8<>(256);
+class GridPortableClassDescriptor {
+    /** */
+    private static final ConcurrentMap<Class<?>, GridPortableClassDescriptor> CACHE = new ConcurrentHashMap8<>(256);
 
+    /**
+     * @param cls Class.
+     * @return Class descriptor.
+     */
     public static GridPortableClassDescriptor get(Class<?> cls) {
         assert cls != null;
 
@@ -33,11 +45,106 @@ public class GridPortableClassDescriptor {
         return desc;
     }
 
-    public GridPortableClassDescriptor(Class<?> cls) {
+    /** */
+    private final Mode mode;
 
+    /** */
+    private final int typeId;
+
+    /** */
+    private List<List<Field>> fields;
+
+    /**
+     * @param cls Class.
+     */
+    private GridPortableClassDescriptor(Class<?> cls) {
+        assert cls != null;
+
+        typeId = cls.getSimpleName().hashCode(); // TODO
+
+        // TODO: Other types.
+
+        if (GridPortableEx.class.isAssignableFrom(GridPortableEx.class))
+            mode = Mode.PORTABLE_EX;
+        else {
+            mode = Mode.PORTABLE;
+
+            fields = new ArrayList<>();
+
+            for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
+                Field[] clsFields0 = c.getDeclaredFields();
+
+                Arrays.sort(clsFields0, new Comparator<Field>() {
+                    @Override public int compare(Field f1, Field f2) {
+                        return f1.getName().compareTo(f2.getName());
+                    }
+                });
+
+                List<Field> clsFields = new ArrayList<>(clsFields0.length);
+
+                for (Field f : clsFields0) {
+                    int mod = f.getModifiers();
+
+                    if (!isStatic(mod) && !isTransient(mod)) {
+                        f.setAccessible(true);
+
+                        clsFields.add(f);
+                    }
+                }
+
+                fields.add(clsFields);
+            }
+
+            Collections.reverse(fields);
+        }
     }
 
-    public void write(GridPortableWriter writer) {
+    /**
+     * @param writer Writer.
+     * @throws GridPortableException In case of error.
+     */
+    public void write(Object obj, GridPortableWriterAdapter writer) throws GridPortableException {
+        assert obj != null;
+        assert writer != null;
 
+        switch (mode) {
+            case PORTABLE_EX:
+                GridPortableEx portable = (GridPortableEx)obj;
+
+                portable.writePortable(writer);
+
+                writer.doWriteByte(OBJ);
+                writer.doWriteInt(typeId);
+                writer.doWriteInt(obj.hashCode());
+
+                // Length.
+                writer.reserve(4);
+
+                writer.doWriteInt(-1); // TODO: Header handles.
+
+                writer.flush();
+
+                break;
+
+            case PORTABLE:
+
+                break;
+
+            default:
+                assert false : "Invalid mode: " + mode;
+        }
+    }
+
+    /**
+     * Types.
+     */
+    private enum Mode {
+        // TODO: Others
+
+        /** */
+        PORTABLE_EX,
+
+        /** */
+        PORTABLE
     }
 }

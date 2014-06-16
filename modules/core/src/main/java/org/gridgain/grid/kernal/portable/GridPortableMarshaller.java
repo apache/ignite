@@ -39,7 +39,7 @@ public class GridPortableMarshaller {
 
         GridPortableWriterAdapter writer = new GridUnsafePortableWriter();
 
-        writer.writeObject(obj);
+        writer.marshal(obj);
 
         return writer.array();
     }

@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.portable;
 
-import java.io.*;
-
 /**
  * Extension if {@link GridPortable} interface that allows
  * to implement custom serialization/deserialization logic.
@@ -18,13 +16,13 @@ import java.io.*;
 public interface GridPortableEx {
     /**
      * @param writer Portable object writer.
-     * @throws IOException In case of error.
+     * @throws GridPortableException In case of error.
      */
-    public void writePortable(GridPortableWriter writer) throws IOException;
+    public void writePortable(GridPortableWriter writer) throws GridPortableException;
 
     /**
      * @param reader Portable object reader.
-     * @throws IOException In case of error.
+     * @throws GridPortableException In case of error.
      */
-    public void readPortable(GridPortableReader reader) throws IOException;
+    public void readPortable(GridPortableReader reader) throws GridPortableException;
 }
