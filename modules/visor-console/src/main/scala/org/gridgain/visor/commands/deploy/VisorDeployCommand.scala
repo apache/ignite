@@ -376,7 +376,7 @@ class VisorDeployCommand {
         })
 
         if (hosts.isEmpty)
-            scold("You should specify atleast one remote host.").^^
+            scold("At least one remote host should be specified.").^^
 
         val copiers = hosts.map(VisorCopier(_, key, src.get, dest getOrElse ""))
 
