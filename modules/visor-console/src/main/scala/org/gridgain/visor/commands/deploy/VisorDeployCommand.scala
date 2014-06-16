@@ -11,6 +11,7 @@
 
 package org.gridgain.visor.commands.deploy
 
+import org.gridgain.grid.util.io.GridFilenameUtils
 import org.gridgain.grid.util.{GridUtils => U}
 
 import java.io._
@@ -103,7 +104,7 @@ private case class VisorCopier(
 
                     ch.connect()
 
-                    copy(ch, src, ggh + File.separatorChar + dest)
+                    copy(ch, src, GridFilenameUtils.separatorsToUnix(ggh + "/" + dest))
 
                     println("ok => " + host.name)
                 }
@@ -248,7 +249,7 @@ private case class VisorCopier(
                 ch.mkdir(dest)
 
             root.list.foreach(
-                f => copy(ch, src + File.separatorChar + f, dest + File.separatorChar + f)
+                f => copy(ch, src + File.separatorChar + f, GridFilenameUtils.separatorsToUnix(dest + "/" + f))
             )
         }
         else
