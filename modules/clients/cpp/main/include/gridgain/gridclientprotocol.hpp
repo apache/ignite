@@ -13,9 +13,6 @@
  * Protocol that will be used when a client connections are created.
  */
 enum GridClientProtocol {
-    /** Communication via HTTP protocol. */
-    HTTP,
-
     /** Communication via tcp binary protocol. */
     TCP
 };

@@ -52,6 +52,9 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
     private Map<Integer, Class<? extends GridPortableObject>> typesMap() {
         Map<Integer, Class<? extends GridPortableObject>> map = new HashMap<>();
 
+        map.put(100, Person.class);
+        map.put(101, Person2.class);
+
         map.put(TestKey1.TYPE_ID, TestKey1.class);
         map.put(TestKey2.TYPE_ID, TestKey2.class);
         map.put(TestValue1.TYPE_ID, TestValue1.class);
@@ -61,15 +64,132 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
         return map;
     }
 
+    public static class Person implements GridPortableObject {
+        @Override
+        public int typeId() {
+            return 100;
+        }
+
+        @Override
+        public void writePortable(GridPortableWriter writer) throws IOException {
+            writer.writeString("name", name);
+            writer.writeInt("id", id);
+        }
+
+        @Override
+        public void readPortable(GridPortableReader reader) throws IOException {
+            name = reader.readString("name");
+            id = reader.readInt("id");
+        }
+
+        private int id;
+
+        private String name;
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Person person = (Person) o;
+
+            if (id != person.id) return false;
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            return id;
+        }
+
+        @Override
+        public String toString() {
+            return "Person{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                '}';
+        }
+    }
+
+    public static class Person2 implements GridPortableObject {
+        @Override
+        public int typeId() {
+            return 101;
+        }
+
+        @Override
+        public void writePortable(GridPortableWriter writer) throws IOException {
+            writer.writeInt("id", id);
+            writer.writeString("name", name);
+        }
+
+        @Override
+        public void readPortable(GridPortableReader reader) throws IOException {
+            id = reader.readInt("id");
+            name = reader.readString("name");
+        }
+
+        private int id;
+
+        private String name;
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Person2 person2 = (Person2) o;
+
+            if (id != person2.id) return false;
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            return id;
+        }
+
+        @Override
+        public String toString() {
+            return "Person2{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                '}';
+        }
+    }
+
     @Override
     protected long getTestTimeout() {
         return Long.MAX_VALUE;
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void test() throws Exception {
         log.info("Started");
 
         Thread.sleep(Long.MAX_VALUE);
+    }
+
+    /**
+     *
+     */
+    public static class TestPortableTask extends GridTaskSingleJobSplitAdapter {
+        @Override protected Object executeJob(int gridSize, Object arg) throws GridException {
+            System.out.println("Execute job " + arg);
+
+            Person p = (Person)arg;
+
+            Person p1 = new Person();
+
+            p1.name = "result";
+            p1.id = p.id + 1;
+
+            return p1;
+        }
     }
 
     /**

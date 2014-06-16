@@ -17,7 +17,6 @@
 
 #include "gridgain/impl/connection/gridclientconnectionpool.hpp"
 #include "gridgain/impl/connection/gridclienttcpconnection.hpp"
-#include "gridgain/impl/connection/gridclienthttpconnection.hpp"
 #include "gridgain/impl/utils/gridutil.hpp"
 #include "gridgain/gridclientexception.hpp"
 
@@ -100,53 +99,6 @@ std::shared_ptr<GridClientTcpConnection> GridClientConnectionPool::rentTcpConnec
     return conn;
 }
 
-std::shared_ptr<GridClientHttpConnection> GridClientConnectionPool::rentHttpConnection(const string& host,
-        int port) {
-    std::shared_ptr<GridClientHttpConnection> conn;
-
-    {
-        boost::lock_guard<boost::mutex> lock(mux_);
-
-        if (closed)
-            throw GridClientClosedException();
-
-        conn = availableConnection<GridClientHttpConnection>(host, port);
-
-        if (conn.get() != NULL) {
-            availableConnections.erase(conn); //take away this connection
-
-            return conn;
-        }
-    }
-
-    // If no any available connection, we create and return a new one.
-    GG_LOG_DEBUG("New HTTP connection to %s:%d", host.c_str(), port);
-
-    if (!protoCfg.sslEnabled()) {
-        conn.reset(new GridClientHttpConnection());
-    } else {
-        boost::shared_ptr<boost::asio::ssl::context> ssl = createSslContext();
-
-        conn.reset(new GridClientHttpConnection(ssl));
-    }
-
-    conn->connect(host, port);
-
-    authenticateHttpConnection(host, port, conn);
-
-    // Make pool aware of this connection.
-    {
-        boost::lock_guard<boost::mutex> guard(mux_);
-
-        if (closed)
-            throw GridClientClosedException();
-
-        allConnections.insert(conn);
-    }
-
-    return conn;
-}
-
 void GridClientConnectionPool::turnBack(const TConnectionPtr& conn) {
     boost::lock_guard<boost::mutex> lock(mux_);
 
@@ -172,32 +124,8 @@ void GridClientConnectionPool::steal(const TConnectionPtr& conn) {
     allConnections.erase(conn);
 }
 
-void GridClientConnectionPool::authenticateHttpConnection(const string& host, int port,
-        std::shared_ptr<GridClientHttpConnection> conn) {
-    if (protoCfg.credentials().empty())
-        return;
-
-    std::string sessKey = host + ":" + boost::lexical_cast<std::string>(port);
-
-    {
-        boost::lock_guard<boost::mutex> g(mux_);
-
-        if (sessToks.find(sessKey) != sessToks.end()) {
-            conn->sessionToken(sessToks[sessKey]);
-
-            return;
-        }
-    }
-
-    conn->authenticate(protoCfg.uuid().uuid(), protoCfg.credentials());
-
-    mux_.lock();
-    sessToks[sessKey] = conn->sessionToken();
-    mux_.unlock();
-}
-
 /**
- * Find an existing TCP or HTTP connection to a host.
+ * Find an existing connection to a host.
  *
  * @returns Shared pointer to a connection.
  */

@@ -384,10 +384,15 @@ public:
      */
     template<typename T>
     T* getPortable() const {
-        assert(hasPortable());
-    
-        return static_cast<T*>(portable);
+        return static_cast<T*>(getPortable());
     }
+
+    /**
+     * Returns a portable value from this variant.
+     *
+     * @return Value held in the variant.
+     */
+    GridPortable* getPortable() const;
 
     /**
      * Checks if this variant holds a wide string value.

@@ -48,7 +48,23 @@ GridClientUuid::GridClientUuid(const string& str)  {
 }
 
 GridClientUuid::GridClientUuid(int64_t mostSignificantBits, int64_t leastSignificantBits) {
-    // TODO 8536
+    pimpl.uuid_.data[7] = (mostSignificantBits >> 0) & 0xFF;
+    pimpl.uuid_.data[6] = (mostSignificantBits >> 8) & 0xFF;
+    pimpl.uuid_.data[5] = (mostSignificantBits >> 16) & 0xFF;
+    pimpl.uuid_.data[4] = (mostSignificantBits >> 24) & 0xFF;
+    pimpl.uuid_.data[3] = (mostSignificantBits >> 32) & 0xFF;
+    pimpl.uuid_.data[2] = (mostSignificantBits >> 40) & 0xFF;
+    pimpl.uuid_.data[1] = (mostSignificantBits >> 48) & 0xFF;
+    pimpl.uuid_.data[0] = (mostSignificantBits >> 56) & 0xFF;
+
+    pimpl.uuid_.data[15] = (leastSignificantBits >> 0) & 0xFF;
+    pimpl.uuid_.data[14] = (leastSignificantBits >> 8) & 0xFF;
+    pimpl.uuid_.data[13] = (leastSignificantBits >> 16) & 0xFF;
+    pimpl.uuid_.data[12] = (leastSignificantBits >> 24) & 0xFF;
+    pimpl.uuid_.data[11] = (leastSignificantBits >> 32) & 0xFF;
+    pimpl.uuid_.data[10] = (leastSignificantBits >> 40) & 0xFF;
+    pimpl.uuid_.data[9] = (leastSignificantBits >> 48) & 0xFF;
+    pimpl.uuid_.data[8] = (leastSignificantBits >> 56) & 0xFF;
 }
 
 

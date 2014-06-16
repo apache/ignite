@@ -198,13 +198,15 @@ static void transformValues(::KeyValue keyValue, std::pair<std::string, GridClie
 }
 
 static void fillRequestHeader(const GridClientMessage& clientMsg, ProtoRequest& protoReq) {
-    protoReq.set_sessiontoken(clientMsg.sessionToken());
+    // TODO 8536
+    // protoReq.set_sessiontoken(clientMsg.sessionToken());
 }
 
 static void fillResponseHeader(const ProtoResponse& resp, GridClientMessageResult& clientMsg) {
     clientMsg.setStatus((GridClientMessageResult::StatusCode) resp.status());
 
-    clientMsg.sessionToken(resp.sessiontoken());
+    // TODO 8536
+    // clientMsg.sessionToken(resp.sessiontoken());
 
     if (resp.has_errormessage())
         throw GridClientCommandException(resp.errormessage());
@@ -242,10 +244,11 @@ void GridClientProtobufMarshaller::wrap(const GridTopologyRequestCommand& reqCmd
 
     topReq.set_includemetrics(reqCmd.getIncludeMetrics());
 
-    if (!reqCmd.getNodeId().empty())
-        topReq.set_nodeid(reqCmd.getNodeId());
-    else if (!reqCmd.getNodeIp().empty())
-        topReq.set_nodeip(reqCmd.getNodeIp());
+// TODO 8536
+//    if (!reqCmd.getNodeId().empty())
+//        topReq.set_nodeid(reqCmd.getNodeId());
+//    else if (!reqCmd.getNodeIp().empty())
+//        topReq.set_nodeip(reqCmd.getNodeIp());
 
     wrapRequest(reqCmd, TOPOLOGY_REQUEST, topReq, objWrapper);
 }

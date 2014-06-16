@@ -68,7 +68,7 @@ const uint8_t HANDSHAKE_PACKET[] = {
         (uint8_t)verByteVec[1],                          //
         (uint8_t)verByteVec[2],                          //
         (uint8_t)verByteVec[3],                          //
-        2                                                // GridClientProtobufMarshaller.PROTOCOL_ID
+        4                                                // GridClientPortableMarshaller.PROTOCOL_ID
 };
 
 /**
@@ -288,7 +288,7 @@ void GridClientSyncTcpConnection::authenticate(const string& clientId, const str
  *
  * @return Session token or empty string if this is not a secure session.
  */
-std::string GridClientSyncTcpConnection::sessionToken() {
+std::vector<int8_t> GridClientSyncTcpConnection::sessionToken() {
     return sessToken;
 }
 
@@ -760,7 +760,7 @@ void GridClientRawSyncTcpConnection::authenticate(const string& clientId, const 
  *
  * @return Session token or empty string if this is not a secure session.
  */
-std::string GridClientRawSyncTcpConnection::sessionToken() {
+std::vector<int8_t> GridClientRawSyncTcpConnection::sessionToken() {
     return sessToken;
 }
 

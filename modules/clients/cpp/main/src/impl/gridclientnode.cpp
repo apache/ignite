@@ -136,9 +136,6 @@ const std::vector<GridClientSocketAddress> & GridClientNode::availableAddresses(
         case TCP:
             return getTcpAddresses();
 
-        case HTTP:
-            return getJettyAddresses();
-
         default:
             throw std::logic_error("Unknown protocol.");
     }

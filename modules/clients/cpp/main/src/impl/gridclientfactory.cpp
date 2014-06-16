@@ -16,7 +16,6 @@
 #include "gridgain/impl/gridclientimpl.hpp"
 #include "gridgain/impl/connection/gridclientconnectionpool.hpp"
 #include "gridgain/impl/cmd/gridclienttcpcommandexecutor.hpp"
-#include "gridgain/impl/cmd/gridclienthttpcommandexecutor.hpp"
 #include "gridgain/impl/connection/gridclientconnectionpool.hpp"
 #include "gridgain/impl/utils/gridclientlog.hpp"
 
@@ -31,11 +30,6 @@ public:
         switch (cfg.protocolConfiguration().protocol()) {
             case TCP:
                 exec.reset(new GridClientTcpCommandExecutor(connPool));
-
-                break;
-
-            case HTTP:
-                exec.reset(new GridClientHttpCommandExecutor(connPool));
 
                 break;
 

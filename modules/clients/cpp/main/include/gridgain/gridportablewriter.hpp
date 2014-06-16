@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <boost/optional.hpp>
 
 #include <gridgain/gridconf.hpp>
 #include <gridgain/gridclienttypedef.hpp>
@@ -28,6 +29,12 @@ public:
 
     virtual void writeInt32(char* fieldName, int32_t val) = 0;
 
+    virtual void writeInt64(char* fieldName, int64_t val) = 0;
+
+    virtual void writeFloat(char* fieldName, float val) = 0;
+
+    virtual void writeDouble(char* fieldName, double val) = 0;
+
     virtual void writeBytes(char* fieldName, const std::vector<int8_t>& val) = 0;
 
     virtual void writeString(char* fieldName, const std::string &val) = 0;
@@ -38,7 +45,7 @@ public:
 
     virtual void writeMap(char* fieldName, const std::unordered_map<GridClientVariant, GridClientVariant> &map) = 0;
 
-    virtual void writeUuid(char* fieldName, const GridClientUuid& val) = 0;
+    virtual void writeUuid(char* fieldName, const boost::optional<GridClientUuid>& val) = 0;
 };
 
 #endif // GRIDPORTABLEWRITER_HPP_INCLUDED

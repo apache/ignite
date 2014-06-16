@@ -97,7 +97,7 @@ public:
 
     void writePortable(GridPortableWriter &writer) const {
         writer.writeString("name", name);
-		writer.writeInt32("age", id);
+		writer.writeInt32("id", id);
 	}
 
     void readPortable(GridPortableReader &reader) {
@@ -171,13 +171,64 @@ public:
 
 REGISTER_TYPE_SERIALIZER(101, Person, PersonSerializer);
 
-BOOST_AUTO_TEST_CASE(testClient) {
+BOOST_AUTO_TEST_CASE(testPortableTask) {
+    GridClientConfiguration cfg = clientConfig();
+
+	TGridClientPtr client = GridClientFactory::start(cfg);	
+
+    TGridClientComputePtr compute = client->compute();
+
+    PortablePerson person(10, "person1");
+
+    GridClientVariant res = compute->execute("org.gridgain.client.integration.GridClientTcpPortableSelfTest$TestPortableTask", &person);
+
+    BOOST_REQUIRE(res.hasPortable());
+
+    PortablePerson* p = res.getPortable<PortablePerson>();
+
+    BOOST_CHECK_EQUAL(11, p->getId());
+    BOOST_CHECK_EQUAL("result", p->getName());
+
+    delete p;
+}
+
+/*
+BOOST_AUTO_TEST_CASE(testPortableKey) {
     GridClientConfiguration cfg = clientConfig();
 
 	TGridClientPtr client = GridClientFactory::start(cfg);	
 
     TGridClientDataPtr data = client->data("partitioned");
+
+    PortablePerson person1(10, "person1");
+    PortablePerson person2(20, "person2");
+    PortablePerson person3(30, "person3");
+
+    bool put = data->put(&person1, 100);
+
+    BOOST_CHECK_EQUAL(true, put);
+
+    put = data->put(&person2, 200);
+
+    BOOST_CHECK_EQUAL(true, put);
+
+    GridClientVariant val = data->get(&person1);
+
+    BOOST_REQUIRE(val.hasInt());
+
+    BOOST_CHECK_EQUAL(100, val.getInt());
+
+    val = data->get(&person2);
+
+    BOOST_REQUIRE(val.hasInt());
+
+    BOOST_CHECK_EQUAL(200, val.getInt());
+
+    val = data->get(&person3);
+
+    BOOST_REQUIRE(!val.hasAnyValue());
 }
+*/
 
 /*
 BOOST_AUTO_TEST_CASE(testPortableCache) {
@@ -187,25 +238,48 @@ BOOST_AUTO_TEST_CASE(testPortableCache) {
 
     TGridClientDataPtr data = client->data("partitioned");
 
-    PortablePerson person1(10, "person1");
+    PortablePerson person(10, "person1");
 
-    data->put(10, &person1);
+    bool put = data->put(100, &person);
 
-    PortablePerson* getPerson1 = data->get(10).getPortable<PortablePerson>();
+    BOOST_CHECK_EQUAL(true, put);
 
-    cout << "Person1: " << getPerson1->getId();
+    PortablePerson* p = data->get(100).getPortable<PortablePerson>();
+
+    cout << "Get person: " << p->getId() << " " << p->getName() << "\n";
+
+    BOOST_CHECK_EQUAL(10, p->getId());
+    BOOST_CHECK_EQUAL("person1", p->getName());
+
+    delete p;
+}
+
+BOOST_AUTO_TEST_CASE(testExternalPortableCache) {
+    GridClientConfiguration cfg = clientConfig();
+
+	TGridClientPtr client = GridClientFactory::start(cfg);	
+
+    TGridClientDataPtr data = client->data("partitioned");
 
     PersonSerializer serializer;
 
-    Person person2(20, "person2");
+    Person person(20, "person2");
 
-    data->put(20, &GridExternalPortable<Person>(&person2, serializer));
+    data->put(200, &GridExternalPortable<Person>(&person, serializer));
 
-    GridExternalPortable<Person>* getPerson2 = data->get(10).getPortable<GridExternalPortable<Person>>();
+    GridExternalPortable<Person>* p = data->get(200).getPortable<GridExternalPortable<Person>>();
 
-    cout << "Person2: " << (*getPerson2)->getId();
+    cout << "Get person: " << (*p)->getId() << " " << (*p)->getName() << "\n";
+
+    BOOST_CHECK_EQUAL(20, (*p)->getId());
+    BOOST_CHECK_EQUAL("person2", (*p)->getName());
+
+    delete p->getObject();
+    delete p;
 }
+*/
 
+/*
 BOOST_AUTO_TEST_CASE(testPortableSerialization) {
     GridPortableMarshaller marsh;
 

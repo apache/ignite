@@ -252,6 +252,13 @@ GridClientUuid GridClientVariant::getUuid() const {
     return boost::get<GridClientUuid>(pimpl.var);
 }
 
+GridPortable* GridClientVariant::getPortable() const {
+    if (!hasPortable())
+        throw std::exception();
+
+    return portable;
+}
+
 string GridClientVariant::toString() const {
     if (Impl::STRING_TYPE == pimpl.var.which()) {
         return getString();
@@ -465,7 +472,8 @@ bool GridClientVariant::operator<(const GridClientVariant& varImpl) const {
 
 bool GridClientVariant::operator==(const GridClientVariant& varImpl) const {
     if (hasPortable()) {
-        assert(varImpl.hasPortable());
+        if (!varImpl.hasPortable() || portable->typeId() != varImpl.getPortable()->typeId())
+            return false;
 
         return *portable == *varImpl.portable;
     }

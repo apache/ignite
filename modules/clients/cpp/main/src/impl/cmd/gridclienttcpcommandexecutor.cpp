@@ -12,12 +12,14 @@
 #include <cstdlib>
 #include <sstream>
 #include <boost/lexical_cast.hpp>
+#include <boost/optional.hpp>
 
 #include "gridgain/gridclientnode.hpp"
 
 #include "gridgain/impl/cmd/gridclienttcpcommandexecutor.hpp"
 #include "gridgain/impl/connection/gridclienttcpconnection.hpp"
 #include "gridgain/impl/marshaller/protobuf/gridclientprotobufmarshaller.hpp"
+#include "gridgain/impl/marshaller/gridnodemarshallerhelper.hpp"
 #include "gridgain/impl/marshaller/portable/gridportablemarshaller.hpp"
 #include "gridgain/impl/connection/gridclientconnectionpool.hpp"
 #include "gridgain/gridclientexception.hpp"
@@ -33,8 +35,14 @@ using namespace org::gridgain::grid::kernal::processors::rest::client::message;
  * @param rslt Log response message to fill.
  */
 void GridClientTcpCommandExecutor::executeLogCmd(const GridClientSocketAddress& host, GridLogRequestCommand& logCmd,
-        GridClientMessageLogResult& rslt) {
-    executeCmd(host, logCmd, rslt);
+    GridClientMessageLogResult& rslt) {
+    GridClientLogRequest msg;
+
+    msg.from = logCmd.from();
+    msg.to = logCmd.to();
+    msg.path = logCmd.path();
+
+    executeCmdPortable(host, msg, logCmd, rslt);
 }
 
 /**
@@ -45,63 +53,21 @@ void GridClientTcpCommandExecutor::executeLogCmd(const GridClientSocketAddress& 
  * @param rslt Topology response message to fill.
  */
 void GridClientTcpCommandExecutor::executeTopologyCmd(const GridClientSocketAddress& host, GridTopologyRequestCommand& topCmd,
-        GridClientMessageTopologyResult& rslt) {
-    std::shared_ptr<GridClientTcpConnection> conn = connPool->rentTcpConnection(host.host(), host.port());
-
+    GridClientMessageTopologyResult& rslt) {
     GridClientTopologyRequest msg;
 
     msg.setIncludeAttributes(topCmd.getIncludeAttributes());
 
     msg.setIncludeMetrics(topCmd.getIncludeMetrics());
 
-    if (!topCmd.getNodeId().empty())
-        msg.setNodeId(topCmd.getNodeId());
+    boost::optional<GridClientUuid> nodeId = topCmd.getNodeId();
+
+    if (nodeId)
+        msg.setNodeId(*nodeId);
     else if (!topCmd.getNodeIp().empty())
         msg.setNodeId(topCmd.getNodeIp());
 
-    vector<int8_t> data = marsh.marshal(msg);    
-    
-    GridClientTcpPacket tcpPacket;
-    GridClientTcpPacket tcpResponse;
-    ProtoRequest req;
-
-    tcpPacket.setData(data);
-    tcpPacket.setAdditionalHeaders(topCmd);
-
-    try {
-        sendPacket(conn, tcpPacket, tcpResponse);
-
-        connPool->turnBack(conn);
-    }
-    catch (GridClientException& e) {
-        GG_LOG_DEBUG("Failed to execute requestId [%lld] on [%s:%d]: %s",
-                topCmd.getRequestId(), host.host().c_str(), host.port(), e.what());
-
-        throw;
-    }
-    
-    GridClientResponse* response = marsh.unmarshal<GridClientResponse>(tcpResponse.getRawData());
-
-    GridClientVariant res = response->getResult();
-
-    assert(res.hasVariantVector());
-
-    vector<GridClientVariant> vec = res.getVariantVector();
-
-    vector<GridClientNode> nodes;
-
-    for (auto iter = vec.begin(); iter != vec.end(); ++iter) {
-        GridClientVariant nodeVariant = *iter;
-
-        GridClientNodeBean* nodeBean = nodeVariant.getPortable<GridClientNodeBean>();
-        
-        // TODO  8536.
-        GridClientNode node;
-
-        nodes.push_back(node);
-    }
-
-    rslt.setNodes(nodes);
+    executeCmdPortable(host, msg, topCmd, rslt);
 }
 
 /**
@@ -112,8 +78,12 @@ void GridClientTcpCommandExecutor::executeTopologyCmd(const GridClientSocketAddr
  * @param rslt Cache get response message to fill.
  */
 void GridClientTcpCommandExecutor::executeGetCacheCmd(const GridClientSocketAddress& host, GridCacheRequestCommand& cacheCmd,
-        GridClientMessageCacheGetResult& rslt) {
-    executeCmd(host, cacheCmd, rslt);
+    GridClientMessageCacheGetResult& rslt) {
+    GridClientCacheRequest msg;
+
+    msg.init(cacheCmd);
+    
+    executeCmdPortable(host, msg, cacheCmd, rslt);
 }
 
 /**
@@ -124,8 +94,12 @@ void GridClientTcpCommandExecutor::executeGetCacheCmd(const GridClientSocketAddr
  * @param rslt Cache modify response message to fill.
  */
 void GridClientTcpCommandExecutor::executeModifyCacheCmd(const GridClientSocketAddress& host,
-        GridCacheRequestCommand& cacheCmd, GridClientMessageCacheModifyResult& rslt) {
-    executeCmd(host, cacheCmd, rslt);
+    GridCacheRequestCommand& cacheCmd, GridClientMessageCacheModifyResult& rslt) {
+    GridClientCacheRequest msg;
+
+    msg.init(cacheCmd);
+    
+    executeCmdPortable(host, msg, cacheCmd, rslt);
 }
 
 /**
@@ -136,8 +110,12 @@ void GridClientTcpCommandExecutor::executeModifyCacheCmd(const GridClientSocketA
  * @param rslt Cache metrics response message to fill.
  */
 void GridClientTcpCommandExecutor::executeGetCacheMetricsCmd(const GridClientSocketAddress& host,
-        GridCacheRequestCommand& cacheCmd, GridClientMessageCacheMetricResult& rslt) {
-    executeCmd(host, cacheCmd, rslt);
+    GridCacheRequestCommand& cacheCmd, GridClientMessageCacheMetricResult& rslt) {
+    GridClientCacheRequest msg;
+
+    msg.init(cacheCmd);
+    
+    executeCmdPortable(host, msg, cacheCmd, rslt);
 }
 
 /**
@@ -148,8 +126,60 @@ void GridClientTcpCommandExecutor::executeGetCacheMetricsCmd(const GridClientSoc
  * @param rslt Task response message to fill.
  */
 void GridClientTcpCommandExecutor::executeTaskCmd(const GridClientSocketAddress& host, GridTaskRequestCommand& taskCmd,
-        GridClientMessageTaskResult& rslt) {
-    executeCmd(host, taskCmd, rslt);
+    GridClientMessageTaskResult& rslt) {
+    GridClientTaskRequest msg;
+
+    msg.taskName = taskCmd.getTaskName();
+    msg.arg = taskCmd.getArg();
+         
+    executeCmdPortable(host, msg, taskCmd, rslt);
+}
+
+/**
+ * Sends a general command to a remote host.
+ *
+ * @param host Host/port pair to connect to.
+ * @param cmd Command to send.
+ * @param rslt Response message to fill.
+ */
+template<class C, class R> void GridClientTcpCommandExecutor::executeCmdPortable(const GridClientSocketAddress& host, GridClientPortableMessage& msg, C& cmd, R& response) {
+    std::shared_ptr<GridClientTcpConnection> conn = connPool->rentTcpConnection(host.host(), host.port());
+
+    msg.sesTok = cmd.sessionToken();
+
+    vector<int8_t> data = marsh.marshal(msg);    
+    
+    GridClientTcpPacket tcpPacket;
+    GridClientTcpPacket tcpResponse;
+
+    tcpPacket.setData(data);
+    tcpPacket.setAdditionalHeaders(cmd);
+
+    try {
+        sendPacket(conn, tcpPacket, tcpResponse);
+
+        connPool->turnBack(conn);
+    }
+    catch (GridClientException& e) {
+        GG_LOG_DEBUG("Failed to execute requestId [%lld] typeId [%d] on [%s:%d]: %s", cmd.getRequestId(), msg.typeId(), host.host().c_str(), host.port(), e.what());
+
+        throw;
+    }
+    
+    GG_LOG_DEBUG("Successfully executed requestId [%lld] typeId [%d] on [%s:%d].", cmd.getRequestId(), msg.typeId(), host.host().c_str(), host.port());
+    
+    GridClientResponse* resMsg = marsh.unmarshal<GridClientResponse>(tcpResponse.getRawData());
+    
+    response.setStatus(static_cast<GridClientMessageResult::StatusCode>(resMsg->status));
+
+    if (!resMsg->errorMsg.empty())
+        throw GridClientCommandException(resMsg->errorMsg);
+
+    response.sessionToken(resMsg->sesTok);
+
+    marsh.parseResponse(resMsg, response);
+
+    delete resMsg;
 }
 
 /**
@@ -160,7 +190,7 @@ void GridClientTcpCommandExecutor::executeTaskCmd(const GridClientSocketAddress&
  * @param rslt Response message to fill.
  */
 template<class C, class R> void GridClientTcpCommandExecutor::executeCmd(const GridClientSocketAddress& host, C& cmd,
-        R& rslt) {
+    R& rslt) {
     ObjectWrapper protoMsg;
 
     std::shared_ptr<GridClientTcpConnection> conn = connPool->rentTcpConnection(host.host(), host.port());
