@@ -114,7 +114,7 @@ class GridUpdateNotifier {
 
             url = "http://" + site + "/update_status.php";
 
-            this.gridName = gridName;
+            this.gridName = gridName == null ? "null" : gridName;
             this.reportOnlyNew = reportOnlyNew;
         }
         catch (ParserConfigurationException e) {
