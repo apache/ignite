@@ -39,9 +39,9 @@ for /D %%F in (%GRIDGAIN_HOME%\libs\*) do if not %%F == "%GRIDGAIN_HOME%\libs\op
 
 if defined USER_LIBS set GRIDGAIN_LIBS=%USER_LIBS%;%GRIDGAIN_LIBS%
 
-if defined GRIDGAIN_HADOOP_CLASSPATH (
-    set COMMON_HOME_LIB=%HADOOP_COMMON_HOME%\lib
+set COMMON_HOME_LIB=%HADOOP_COMMON_HOME%\lib
 
+if defined GRIDGAIN_HADOOP_CLASSPATH (
     for /f %%f in ('dir /B %GRIDGAIN_HOME%\libs\gridgain-*.jar') do (
         if not exist %COMMON_HOME_LIB%\%%f echo WARNING: %%f doesn't exist in %COMMON_HOME_LIB%
     )

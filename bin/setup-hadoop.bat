@@ -10,13 +10,13 @@
 ::
 
 ::
-:: Run this script to confure hadoop client to work with gridgain.
+:: Run this script to configure Hadoop client to work with GridGain.
 ::
 
 @echo off
 
 if "%OS%" == "Windows_NT" setlocal
 
-set MAIN_CLASS=org.gridgain.grid.hadoop.CommandLineUtils
+set MAIN_CLASS=org.gridgain.grid.hadoop.GridHadoopSetup
 
 call "%~dp0\ggstart.bat" %*

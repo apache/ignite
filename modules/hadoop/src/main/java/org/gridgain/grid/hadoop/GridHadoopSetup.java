@@ -16,30 +16,30 @@ import java.nio.file.*;
 import java.util.*;
 
 /**
- * Some utils to use from command line.
+ * Setup tool to configure Hadoop client.
  */
-public class CommandLineUtils {
+public class GridHadoopSetup {
     /** */
     public static final String WINUTILS_EXE = "winutils.exe";
 
     /**
      * The main method.
-     * @param args Params.
+     * @param ignore Params.
      * @throws IOException If fails.
      */
-    public static void main(String[] args) throws IOException {
-        //Ignore args. The only supported operation runs by default.
+    public static void main(String[] ignore) throws IOException {
+        //Ignore arguments. The only supported operation runs by default.
         configureHadoop();
     }
 
     /**
-     * This operation prepares the clean unpacked hadoop distributive to work as client with GridGain-Hadoop.
+     * This operation prepares the clean unpacked Hadoop distributive to work as client with GridGain-Hadoop.
      * It performs these operations:
      * <ul>
      *     <li>Check for setting of HADOOP_HOME environment variable.</li>
-     *     <li>Try resolve HADOOP_COMMON_HOME or evaluate it relative to HADOOP_HOME.</li>
-     *     <li>In Windows, check for winutils.exe is exist and try to fix issue with some restrictions.</li>
-     *     <li>In windows, check new line character issues in CMD scripts.</li>
+     *     <li>Try to resolve HADOOP_COMMON_HOME or evaluate it relative to HADOOP_HOME.</li>
+     *     <li>In Windows check if winutils.exe exists and try to fix issue with some restrictions.</li>
+     *     <li>In Windows check new line character issues in CMD scripts.</li>
      *     <li>Scan Hadoop lib directory to detect GridGain JARs. If these don't exist tries to create ones.</li>
      * </ul>
      * @throws IOException If fails.
@@ -48,7 +48,8 @@ public class CommandLineUtils {
         String hadoopHome = System.getenv("HADOOP_HOME");
 
         if (hadoopHome == null || hadoopHome.isEmpty()) {
-            System.out.println("ERROR: HADOOP_HOME variable is not set.");
+            System.out.println("ERROR: HADOOP_HOME variable is not set. Please set HADOOP_HOME to valid Hadoop " +
+                "installation folder and run setup tool again.");
 
             return;
         }
@@ -74,14 +75,15 @@ public class CommandLineUtils {
             File hadoopBinDir = new File(hadoopDir, "bin");
 
             if (!hadoopBinDir.exists()) {
-                System.out.println("Invalid hadoop home directory. 'bin' subdirectory was not found.");
+                System.out.println("Invalid Hadoop home directory. 'bin' subdirectory was not found.");
 
                 return;
             }
 
             File winutilsFile = new File(hadoopBinDir, WINUTILS_EXE);
 
-            if (!winutilsFile.exists() && getAnswer(WINUTILS_EXE + " doesn't exist. It may be replaced by a stub. Create it ?"))
+            if (!winutilsFile.exists() && getAnswer("File " + WINUTILS_EXE + " doesn't exist. " +
+                "It may be replaced by a stub. Create it?"))
                 winutilsFile.createNewFile();
 
             processCmdFiles(hadoopDir, "bin", "sbin", "libexec");
@@ -108,8 +110,8 @@ public class CommandLineUtils {
                 jarsExist = false;
         }
 
-        if (!jarsExist && getAnswer("Current GridGain JAR files are not found in Hadoop libs directory. " +
-            "Create appropriate symbolic links ?")) {
+        if (!jarsExist && getAnswer("GridGain JAR files are not found in Hadoop libs directory. " +
+            "Create appropriate symbolic links?")) {
             File[] oldGridGainJarFiles = hadoopCommonLibDir.listFiles(new FilenameFilter() {
                 @Override public boolean accept(File dir, String name) {
                     return name.startsWith("gridgain-");
@@ -118,7 +120,7 @@ public class CommandLineUtils {
 
             if (oldGridGainJarFiles.length > 0) {
                 if (!getAnswer("The Hadoop libs directory contains JARs from other GridGain installation. " +
-                    "It needs to be deleted to continue. Continue ?"))
+                    "It needs to be deleted to continue. Continue?"))
                     return;
 
                 for (File file : oldGridGainJarFiles)
@@ -131,6 +133,8 @@ public class CommandLineUtils {
                 Files.createSymbolicLink(targetFile.toPath(), file.toPath());
             }
         }
+
+        System.out.println("Hadoop setting is completed.");
     }
 
     /**
@@ -192,7 +196,7 @@ public class CommandLineUtils {
                 }
 
                 if (invalid) {
-                    answer = answer || getAnswer("One or more *.CMD files has invalid new line character. Replace them ?");
+                    answer = answer || getAnswer("One or more *.CMD files has invalid new line character. Replace them?");
 
                     if (!answer)
                         return;

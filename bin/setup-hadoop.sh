@@ -11,7 +11,7 @@
 #
 
 #
-# Run this script to confure hadoop client to work with gridgain.
+# Run this script to configure Hadoop client to work with GridGain.
 #
 
 HADOOP_COMMON_HOME=
@@ -48,7 +48,7 @@ getClassPathSeparator
 #
 # Set utility environment.
 #
-export MAIN_CLASS=org.gridgain.grid.hadoop.CommandLineUtils
+export MAIN_CLASS=org.gridgain.grid.hadoop.GridHadoopSetup
 
 #
 # Start utility.
