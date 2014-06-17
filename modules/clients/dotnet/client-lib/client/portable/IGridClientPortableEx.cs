@@ -22,7 +22,7 @@ namespace GridGain.Client.Portable
          * <param name="writer">Writer.</param>
          * <exception cref="System.IO.IOException">If write failed.</exception>
          */
-        public void WritePortable(IGridClientPortableWriter writer);
+        void WritePortable(IGridClientPortableWriter writer);
 
         /**
          * <summary>Reads this object from the given reader.</summary>
@@ -30,6 +30,6 @@ namespace GridGain.Client.Portable
          * <param name="reader">Reader.</param>
          * <exception cref="System.IO.IOException">If read failed.</exception>
          */
-        public void ReadPortable(IGridClientPortableReader reader);
+        void ReadPortable(IGridClientPortableReader reader);
     }
 }

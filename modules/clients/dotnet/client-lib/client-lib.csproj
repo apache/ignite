@@ -70,6 +70,7 @@
     <Compile Include="client\balancer\GridClientLoadBalancer.cs" />
     <Compile Include="client\balancer\GridClientRoundRobinBalancer.cs" />
     <Compile Include="client\impl\marshaller\GridClientPortableMarshallerNew.cs" />
+    <Compile Include="client\portable\GridClientExternalPortableSerializer.cs" />
     <Compile Include="client\portable\GridClientPortableClassMetadata.cs" />
     <Compile Include="client\portable\GridClientPortableException.cs" />
     <Compile Include="client\portable\GridClientPortableInvalidClassException.cs" />

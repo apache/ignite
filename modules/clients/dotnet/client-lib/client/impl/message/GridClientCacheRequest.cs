@@ -13,6 +13,7 @@ namespace GridGain.Client.Impl.Message {
     using System;
     using System.Text;
     using System.Collections;
+    using GridGain.Client.Portable;
 
     using A = GridGain.Client.Util.GridClientArgumentCheck;
 
@@ -101,7 +102,7 @@ namespace GridGain.Client.Impl.Message {
         }
 
         /** <inheritdoc /> */
-        public override void WritePortable(IGridPortableWriter writer) {
+        public override void WritePortable(IGridClientPortableWriter writer) {
             base.WritePortable(writer);
 
             writer.WriteInt("op", (int)Operation);
@@ -118,7 +119,7 @@ namespace GridGain.Client.Impl.Message {
         }
 
         /** <inheritdoc /> */
-        public override void ReadPortable(IGridPortableReader reader) {
+        public override void ReadPortable(IGridClientPortableReader reader) {
             base.ReadPortable(reader);
 
             Operation = (GridClientCacheRequestOperation)reader.ReadInt("op");

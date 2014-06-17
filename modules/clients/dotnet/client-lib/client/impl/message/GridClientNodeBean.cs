@@ -10,10 +10,15 @@
 namespace GridGain.Client.Impl.Message {
     using System;
     using System.Collections.Generic;
+    using GridGain.Client.Portable;
     using GridGain.Client.Util;
 
     /** <summary>Node bean.</summary> */
-    internal class GridClientNodeBean : IGridPortableEx {
+    internal class GridClientNodeBean : IGridClientPortableEx {
+        /** Portable type ID. */
+        // TODO: GG-8535: Remove in favor of normal IDs.
+        public static readonly int PORTABLE_TYPE_ID = 0;
+
         /** <summary>Constructs client node bean.</summary> */
         public GridClientNodeBean() {
             TcpAddresses = new HashSet<String>();
@@ -111,7 +116,7 @@ namespace GridGain.Client.Impl.Message {
         }
         
         /** <inheritdoc /> */
-        public override void WritePortable(IGridPortableWriter writer) {
+        public void WritePortable(IGridClientPortableWriter writer) {
             writer.WriteInt("tcpPort", TcpPort);
             writer.WriteInt("jettyPort", JettyPort);
             writer.WriteInt("replicaCnt", ReplicaCount);
@@ -133,7 +138,7 @@ namespace GridGain.Client.Impl.Message {
         }
 
         /** <inheritdoc /> */
-        public override void ReadPortable(IGridPortableReader reader) {
+        public void ReadPortable(IGridClientPortableReader reader) {
             TcpPort = reader.ReadInt("tcpPort");
             JettyPort = reader.ReadInt("jettyPort");
             ReplicaCount = reader.ReadInt("replicaCnt");

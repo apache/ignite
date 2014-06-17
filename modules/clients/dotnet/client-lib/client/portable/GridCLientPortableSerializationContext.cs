@@ -101,9 +101,9 @@ namespace GridGain.Client.Portable
             }
 
             /**
-             * <summary>Create metadata for marshaller.</summary>
-             * <param name="ctx">Context.</param>
+             * <summary>Create metadata for marshaller.</summary>* 
              * <param name="fields">Participating fields.</param>
+             * <param name="enqueue">Whether to enqueue.</param>
              * <returns>Metadata for mershaller.</returns>
              */
             public GridClientPortableClassMetadata Delta(ICollection<string> fields, out bool enqueue)

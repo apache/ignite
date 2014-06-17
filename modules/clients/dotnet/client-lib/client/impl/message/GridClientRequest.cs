@@ -9,13 +9,18 @@
 
 namespace GridGain.Client.Impl.Message {
     using System;
+    using GridGain.Client.Portable;
 
     /**
      * <summary>
      * This class provides implementation for commit message fields
      * and cannot be used directly.</summary>
      */
-    internal abstract class GridClientRequest : IGridPortableEx {
+    internal abstract class GridClientRequest : IGridClientPortableEx {
+        /** Portable type ID. */
+        // TODO: GG-8535: Remove in favor of normal IDs.
+        public static readonly int PORTABLE_TYPE_ID = 0;
+
         /** <summary>Deny no-arg constructor for client requests.</summary> */
         private GridClientRequest() { 
         }
@@ -54,14 +59,15 @@ namespace GridGain.Client.Impl.Message {
             set;
         }
         
-        public abstract int TypeId { get; }
+        // TODO: GG-8535: Correct type IDs in child classes (should be abstract instead of virtual).
+        public virtual int TypeId { get {return 0;} }
 
-        public virtual void WritePortable(IGridPortableWriter writer) {
-            writer.WriteBytes("sesTok", SessionToken);
+        public virtual void WritePortable(IGridClientPortableWriter writer) {
+            writer.WriteByteArray("sesTok", SessionToken);
         }
 
-        public virtual void ReadPortable(IGridPortableReader reader) {
-            SessionToken = reader.ReadBytes("sesTok");
+        public virtual void ReadPortable(IGridClientPortableReader reader) {
+            SessionToken = reader.ReadByteArray("sesTok");
         }
     }
 }

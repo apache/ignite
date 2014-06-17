@@ -9,6 +9,7 @@
 
 namespace GridGain.Client.Impl.Message {
     using System;
+    using GridGain.Client.Portable;
 
     /** <summary>Client authentication request.</summary> */
     internal class GridClientAuthenticationRequest : GridClientRequest {
@@ -28,7 +29,7 @@ namespace GridGain.Client.Impl.Message {
         }
 
         /** <inheritdoc /> */
-        public override void WritePortable(IGridPortableWriter writer)
+        public override void WritePortable(IGridClientPortableWriter writer)
         {
             base.WritePortable(writer);
 
@@ -36,7 +37,7 @@ namespace GridGain.Client.Impl.Message {
         }
 
         /** <inheritdoc /> */
-        public override void ReadPortable(IGridPortableReader reader) {
+        public override void ReadPortable(IGridClientPortableReader reader) {
             base.ReadPortable(reader);
 
             Credentials = reader.ReadObject<Object>("cred");

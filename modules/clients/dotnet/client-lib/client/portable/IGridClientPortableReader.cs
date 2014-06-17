@@ -252,26 +252,26 @@ namespace GridGain.Client.Portable
          * <param name="fieldName">Field name.</param>
          * <returns>GUID value.</returns>
          */
-        string ReadGuid(string fieldName);
+        Guid ReadGuid(string fieldName);
 
         /**
          * <summary>Read GUID value.</summary>
          * <returns>GUID value.</returns>
          */
-        string ReadGuid();
+        Guid ReadGuid();
 
         /**
          * <summary>Read named GUID array.</summary>
          * <param name="fieldName">Field name.</param>
          * <returns>GUID array.</returns>
          */
-        string[] ReadGuidArray(string fieldName);
+        Guid[] ReadGuidArray(string fieldName);
 
         /**
          * <summary>Read GUID array.</summary>
          * <returns>GUID array.</returns>
          */
-        string[] ReadGuidArray();
+        Guid[] ReadGuidArray();
 
         /**
          * <summary>Read named object.</summary>

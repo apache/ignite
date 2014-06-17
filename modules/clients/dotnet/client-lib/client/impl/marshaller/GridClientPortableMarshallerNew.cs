@@ -74,6 +74,21 @@ namespace GridGain.Client.Impl.Marshaller
             return default(T);
         }
 
+        void IGridClientMarshaller.Marshal(object val, Stream output)
+        {
+            throw new NotImplementedException();
+        }
+
+        T IGridClientMarshaller.Unmarshal<T>(byte[] data)
+        {
+            throw new NotImplementedException();
+        }
+
+        T IGridClientMarshaller.Unmarshal<T>(Stream input)
+        {
+            throw new NotImplementedException();
+        }
+
         /**
          * <summary>Internal marshalling routine.</summary>
          */ 
@@ -187,12 +202,10 @@ namespace GridGain.Client.Impl.Marshaller
                 return TypeId + (Fields == null ? 0 : 31 * Fields.GetHashCode());
             }
         }
-
-        
     }
 
     /** <summary>Byte array writer.</summary> */
-    private class ByteWriter : IGridClientPortableWriter
+    public class ByteWriter
     {
         /** Default array size. */
         private static readonly int DFLT_SIZE = 1024;
@@ -259,343 +272,341 @@ namespace GridGain.Client.Impl.Marshaller
     }
 
     /** <summary>Writer which simply caches passed values.</summary> */
-    private class DelayedWriter : IGridClientPortableWriter 
+    public class DelayedWriter //: IGridClientPortableWriter 
     {
+        ///** Named actions. */
+        //private readonly List<Action<IGridClientPortableWriter>> namedActions = new List<Action<IGridClientPortableWriter>>();
 
+        ///** Actions. */
+        //private readonly List<Action<IGridClientPortableWriter>> actions = new List<Action<IGridClientPortableWriter>>();
 
-        /** Named actions. */
-        private readonly List<Action<IGridClientPortableWriter>> namedActions = new List<Action<IGridClientPortableWriter>>();
+        ///**
+        // * <summary>Execute all tracked write actions.</summary>
+        // * <param name="writer">Underlying real writer.</param>
+        // */
+        //private void execute(IGridClientPortableWriter writer)
+        //{
+        //    foreach (Action<IGridClientPortableWriter> namedAction in namedActions)
+        //    {
+        //        namedAction.Invoke(writer);
+        //    }
 
-        /** Actions. */
-        private readonly List<Action<IGridClientPortableWriter>> actions = new List<Action<IGridClientPortableWriter>>();
+        //    foreach (Action<IGridClientPortableWriter> action in actions)
+        //    {
+        //        action.Invoke(writer);
+        //    }
+        //}
 
-        /**
-         * <summary>Execute all tracked write actions.</summary>
-         * <param name="writer">Underlying real writer.</param>
-         */
-        private void execute(IGridClientPortableWriter writer)
-        {
-            foreach (Action<IGridClientPortableWriter> namedAction in namedActions)
-            {
-                namedAction.Invoke(writer);
-            }
+        ///** <inheritdoc /> */
+        //public void WriteByte(string fieldName, sbyte val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteByte(fieldName, val));
+        //}
 
-            foreach (Action<IGridClientPortableWriter> action in actions)
-            {
-                action.Invoke(writer);
-            }
-        }
+        ///** <inheritdoc /> */
+        //public void WriteByte(sbyte val)
+        //{
+        //    actions.Add((writer) => writer.WriteByte(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteByte(string fieldName, byte val)
-        {
-            namedActions.Add((writer) => writer.WriteByte(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteByteArray(string fieldName, sbyte[] val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteByteArray(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteByte(byte val)
-        {
-            actions.Add((writer) => writer.WriteByte(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteByteArray(sbyte[] val)
+        //{
+        //    actions.Add((writer) => writer.WriteByteArray(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteByteArray(string fieldName, byte[] val)
-        {
-            namedActions.Add((writer) => writer.WriteByteArray(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteChar(string fieldName, char val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteChar(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteByteArray(byte[] val)
-        {
-            actions.Add((writer) => writer.WriteByteArray(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteChar(char val)
+        //{
+        //    actions.Add((writer) => writer.WriteChar(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteChar(string fieldName, char val)
-        {
-            namedActions.Add((writer) => writer.WriteChar(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteCharArray(string fieldName, char[] val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteCharArray(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteChar(char val)
-        {
-            actions.Add((writer) => writer.WriteChar(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteCharArray(char[] val)
+        //{
+        //    actions.Add((writer) => writer.WriteCharArray(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteCharArray(string fieldName, char[] val)
-        {
-            namedActions.Add((writer) => writer.WriteCharArray(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteShort(string fieldName, short val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteShort(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteCharArray(char[] val)
-        {
-            actions.Add((writer) => writer.WriteCharArray(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteShort(short val)
+        //{
+        //    actions.Add((writer) => writer.WriteShort(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteShort(string fieldName, short val)
-        {
-            namedActions.Add((writer) => writer.WriteShort(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteShortArray(string fieldName, short[] val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteShortArray(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteShort(short val)
-        {
-            actions.Add((writer) => writer.WriteShort(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteShortArray(short[] val)
+        //{
+        //    actions.Add((writer) => writer.WriteShortArray(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteShortArray(string fieldName, short[] val)
-        {
-            namedActions.Add((writer) => writer.WriteShortArray(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteInt(string fieldName, int val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteInt(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteShortArray(short[] val)
-        {
-            actions.Add((writer) => writer.WriteShortArray(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteInt(int val)
+        //{
+        //    actions.Add((writer) => writer.WriteInt(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteInt(string fieldName, int val)
-        {
-            namedActions.Add((writer) => writer.WriteInt(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteIntArray(string fieldName, int[] val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteIntArray(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteInt(int val)
-        {
-            actions.Add((writer) => writer.WriteInt(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteIntArray(int[] val)
+        //{
+        //    actions.Add((writer) => writer.WriteIntArray(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteIntArray(string fieldName, int[] val)
-        {
-            namedActions.Add((writer) => writer.WriteIntArray(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteLong(string fieldName, long val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteLong(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteIntArray(int[] val)
-        {
-            actions.Add((writer) => writer.WriteIntArray(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteLong(long val)
+        //{
+        //    actions.Add((writer) => writer.WriteLong(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteLong(string fieldName, long val)
-        {
-            namedActions.Add((writer) => writer.WriteLong(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteLongArray(string fieldName, long[] val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteLongArray(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteLong(long val)
-        {
-            actions.Add((writer) => writer.WriteLong(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteLongArray(long[] val)
+        //{
+        //    actions.Add((writer) => writer.WriteLongArray(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteLongArray(string fieldName, long[] val)
-        {
-            namedActions.Add((writer) => writer.WriteLongArray(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteBoolean(string fieldName, bool val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteBoolean(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteLongArray(long[] val)
-        {
-            actions.Add((writer) => writer.WriteLongArray(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteBoolean(bool val)
+        //{
+        //    actions.Add((writer) => writer.WriteBoolean(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteBoolean(string fieldName, bool val)
-        {
-            namedActions.Add((writer) => writer.WriteBoolean(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteBooleanArray(string fieldName, bool[] val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteBooleanArray(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteBoolean(bool val)
-        {
-            actions.Add((writer) => writer.WriteBoolean(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteBooleanArray(bool[] val)
+        //{
+        //    actions.Add((writer) => writer.WriteBooleanArray(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteBooleanArray(string fieldName, bool[] val)
-        {
-            namedActions.Add((writer) => writer.WriteBooleanArray(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteFloat(string fieldName, float val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteFloat(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteBooleanArray(bool[] val)
-        {
-            actions.Add((writer) => writer.WriteBooleanArray(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteFloat(float val)
+        //{
+        //    actions.Add((writer) => writer.WriteFloat(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteFloat(string fieldName, float val)
-        {
-            namedActions.Add((writer) => writer.WriteFloat(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteFloatArray(string fieldName, float[] val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteFloatArray(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteFloat(float val)
-        {
-            actions.Add((writer) => writer.WriteFloat(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteFloatArray(float[] val)
+        //{
+        //    actions.Add((writer) => writer.WriteFloatArray(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteFloatArray(string fieldName, float[] val)
-        {
-            namedActions.Add((writer) => writer.WriteFloatArray(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteDouble(string fieldName, double val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteDouble(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteFloatArray(float[] val)
-        {
-            actions.Add((writer) => writer.WriteFloatArray(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteDouble(double val)
+        //{
+        //    actions.Add((writer) => writer.WriteDouble(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteDouble(string fieldName, double val)
-        {
-            namedActions.Add((writer) => writer.WriteDouble(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteDoubleArray(string fieldName, double[] val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteDoubleArray(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteDouble(double val)
-        {
-            actions.Add((writer) => writer.WriteDouble(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteDoubleArray(double[] val)
+        //{
+        //    actions.Add((writer) => writer.WriteDoubleArray(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteDoubleArray(string fieldName, double[] val)
-        {
-            namedActions.Add((writer) => writer.WriteDoubleArray(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteString(string fieldName, string val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteString(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteDoubleArray(double[] val)
-        {
-            actions.Add((writer) => writer.WriteDoubleArray(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteString(string val)
+        //{
+        //    actions.Add((writer) => writer.WriteString(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteString(string fieldName, string val)
-        {
-            namedActions.Add((writer) => writer.WriteString(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteStringArray(string fieldName, string[] val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteStringArray(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteString(string val)
-        {
-            actions.Add((writer) => writer.WriteString(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteStringArray(string[] val)
+        //{
+        //    actions.Add((writer) => writer.WriteStringArray(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteStringArray(string fieldName, string[] val)
-        {
-            namedActions.Add((writer) => writer.WriteStringArray(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteGuid(string fieldName, Guid val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteGuid(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteStringArray(string[] val)
-        {
-            actions.Add((writer) => writer.WriteStringArray(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteGuid(Guid val)
+        //{
+        //    actions.Add((writer) => writer.WriteGuid(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteGuid(string fieldName, Guid val)
-        {
-            namedActions.Add((writer) => writer.WriteGuid(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteGuidArray(string fieldName, Guid[] val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteGuidArray(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteGuid(Guid val)
-        {
-            actions.Add((writer) => writer.WriteGuid(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteGuidArray(Guid[] val)
+        //{
+        //    actions.Add((writer) => writer.WriteGuidArray(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteGuidArray(string fieldName, Guid[] val)
-        {
-            namedActions.Add((writer) => writer.WriteGuidArray(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteObject<T>(string fieldName, T val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteObject(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteGuidArray(Guid[] val)
-        {
-            actions.Add((writer) => writer.WriteGuidArray(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteObject<T>(T val)
+        //{
+        //    actions.Add((writer) => writer.WriteObject(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteObject<T>(string fieldName, T val)
-        {
-            namedActions.Add((writer) => writer.WriteObject(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteObjectArray<T>(string fieldName, T[] val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteObjectArray(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteObject<T>(T val)
-        {
-            actions.Add((writer) => writer.WriteObject(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteObjectArray<T>(T[] val)
+        //{
+        //    actions.Add((writer) => writer.WriteObjectArray(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteObjectArray<T>(string fieldName, T[] val)
-        {
-            namedActions.Add((writer) => writer.WriteObjectArray(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteCollection(string fieldName, ICollection val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteCollection(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteObjectArray<T>(T[] val)
-        {
-            actions.Add((writer) => writer.WriteObjectArray(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteCollection(ICollection val)
+        //{
+        //    actions.Add((writer) => writer.WriteCollection(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteCollection(string fieldName, ICollection val)
-        {
-            namedActions.Add((writer) => writer.WriteCollection(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteCollection<T>(string fieldName, ICollection<T> val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteCollection(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteCollection(ICollection val)
-        {
-            actions.Add((writer) => writer.WriteCollection(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteCollection<T>(ICollection<T> val)
+        //{
+        //    actions.Add((writer) => writer.WriteCollection(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteCollection<T>(string fieldName, ICollection<T> val)
-        {
-            namedActions.Add((writer) => writer.WriteCollection(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteMap(string fieldName, IDictionary val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteMap(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteCollection<T>(ICollection<T> val)
-        {
-            actions.Add((writer) => writer.WriteCollection(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteMap(IDictionary val)
+        //{
+        //    actions.Add((writer) => writer.WriteMap(val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteMap(string fieldName, IDictionary val)
-        {
-            namedActions.Add((writer) => writer.WriteMap(fieldName, val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteMap<K, V>(string fieldName, IDictionary<K, V> val)
+        //{
+        //    namedActions.Add((writer) => writer.WriteMap(fieldName, val));
+        //}
 
-        /** <inheritdoc /> */
-        public void WriteMap(IDictionary val)
-        {
-            actions.Add((writer) => writer.WriteMap(val));
-        }
-
-        /** <inheritdoc /> */
-        public void WriteMap<K, V>(string fieldName, IDictionary<K, V> val)
-        {
-            namedActions.Add((writer) => writer.WriteMap(fieldName, val));
-        }
-
-        /** <inheritdoc /> */
-        public void WriteMap<K, V>(IDictionary<K, V> val)
-        {
-            actions.Add((writer) => writer.WriteMap(val));
-        }
+        ///** <inheritdoc /> */
+        //public void WriteMap<K, V>(IDictionary<K, V> val)
+        //{
+        //    actions.Add((writer) => writer.WriteMap(val));
+        //}
     }
 }

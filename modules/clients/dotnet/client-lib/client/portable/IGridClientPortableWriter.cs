@@ -21,13 +21,13 @@ namespace GridGain.Client.Portable {
          * <param name="fieldName">Field name.</param>
          * <param name="val">Byte value.</param>
          */
-        void WriteByte(string fieldName, sbyte val);
+        void WriteByte(string fieldName, byte val);
 
         /**
          * <summary>Write byte value.</summary>
          * <param name="val">Byte value.</param>
          */
-        void WriteByte(sbyte val);
+        void WriteByte(byte val);
 
         /**
          * <summary>Write named byte array.</summary>
@@ -275,6 +275,32 @@ namespace GridGain.Client.Portable {
          * <param name="val">GUID array.</param>
          */
         void WriteGuidArray(Guid[] val);
+
+        /**
+         * <summary>Write named enum value.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <param name="val">Enum value.</param>
+         */
+        void WriteEnum(string fieldName, Enum val);
+
+        /**
+        * <summary>Write enum value.</summary>
+        * <param name="val">Enumvalue.</param>
+        */
+        void WriteEnum(Enum val);
+
+        /**
+         * <summary>Write named enum array.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <param name="val">Enum array.</param>
+         */
+        void WriteEnumArray(string fieldName, Enum[] val);
+
+        /**
+         * <summary>Write enum array.</summary>
+         * <param name="val">Enum array.</param>
+         */
+        void WriteEnumArray(Enum[] val);
 
         /**
          * <summary>Write named object value.</summary>

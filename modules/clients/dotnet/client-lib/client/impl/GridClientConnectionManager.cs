@@ -247,8 +247,10 @@ namespace GridGain.Client.Impl {
 
             switch (proto) {
                 case GridClientProtocol.Tcp: {
-                    return new GridClientTcpConnection(clientId, srv, sslCtx, connectTimeout,
-                        new GridClientPortableMarshaller(sysPortableTypes), credentials, top);
+                    // TODO: GG-8535: Create correct marshaller.
+                    return null;
+                    //return new GridClientTcpConnection(clientId, srv, sslCtx, connectTimeout,
+                    //    new GridClientPortableMarshaller(sysPortableTypes), credentials, top);
                 }
 
                 case GridClientProtocol.Http: {

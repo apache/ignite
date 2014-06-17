@@ -22,10 +22,10 @@ namespace GridGain.Client.Portable
 
         /** Empty list in case there are no fields. */
         private static readonly ICollection<string> EMPTY_FIELDS = new List<string>();
-                
+
         /**
          * <summary>Constructor.</summary>
-         * <param name="clsName">Class name.</param>
+         * <param name="type">Type.</param>
          * <param name="fields">Fields.</param>
          */
         public GridClientPortableClassMetadata(Type type, ICollection<string> fields)
