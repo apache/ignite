@@ -9,9 +9,14 @@
 
 namespace GridGain.Client.Impl.Message {
     using System;
+    using GridGain.Client.Portable;
 
     /** <summary>Bean representing client operation result.</summary> */
-    internal class GridClientResponse : IGridPortableEx {
+    internal class GridClientResponse : IGridClientPortableEx {
+        /** Portable type ID. */
+        // TODO: GG-8535: Remove in favor of normal IDs.
+        public static readonly int PORTABLE_TYPE_ID = 0;
+
         /**
          * <summary>
          * Tries to find enum value by operation code.</summary>
@@ -70,8 +75,8 @@ namespace GridGain.Client.Impl.Message {
         }
 
         /** <inheritdoc /> */
-        public override void WritePortable(IGridPortableWriter writer) {
-            writer.WriteBytes("sesTok", SessionToken);
+        public void WritePortable(IGridClientPortableWriter writer) {
+            writer.WriteByteArray("sesTok", SessionToken);
 
             writer.WriteInt("successStatus", (int)Status);
 
@@ -81,8 +86,8 @@ namespace GridGain.Client.Impl.Message {
         }
 
         /** <inheritdoc /> */
-        public override void ReadPortable(IGridPortableReader reader) {
-            SessionToken = reader.ReadBytes("sesTok");
+        public void ReadPortable(IGridClientPortableReader reader) {
+            SessionToken = reader.ReadByteArray("sesTok");
 
             Status = (GridClientResponseStatus)reader.ReadInt("successStatus");
 

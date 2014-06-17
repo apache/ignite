@@ -10,6 +10,7 @@
 namespace GridGain.Client.Impl.Message {
     using System;
     using System.Text;
+    using GridGain.Client.Portable;
 
     /** <summary><c>Topology</c> command request.</summary> */
     internal class GridClientTopologyRequest : GridClientRequest {
@@ -47,7 +48,7 @@ namespace GridGain.Client.Impl.Message {
         }
 
         /** <inheritdoc /> */
-        public override void WritePortable(IGridPortableWriter writer) {
+        public override void WritePortable(IGridClientPortableWriter writer) {
             base.WritePortable(writer);
 
             writer.WriteGuid("nodeId", NodeId);
@@ -59,7 +60,7 @@ namespace GridGain.Client.Impl.Message {
         }
 
         /** <inheritdoc /> */
-        public override void ReadPortable(IGridPortableReader reader) {
+        public override void ReadPortable(IGridClientPortableReader reader) {
             base.ReadPortable(reader);
 
             NodeId = reader.ReadGuid("nodeId");

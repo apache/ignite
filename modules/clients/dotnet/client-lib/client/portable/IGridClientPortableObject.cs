@@ -15,7 +15,6 @@ namespace GridGain.Client.Portable
     /**
      * <summary>Wrapper for serialized portable objects.</summary>
      */
-    [Serializable]
     public interface IGridClientPortableObject {
         /**
          * <summary>Gets portable object type ID.</summary> 
@@ -46,7 +45,7 @@ namespace GridGain.Client.Portable
          * <summary>Gets fully deserialized instance of portable object.</summary>
          * <returns>Fully deserialized instance of portable object.</returns>
          */
-        T Deserialize<T>() where T : IGridClientPortable;
+        T Deserialize<T>();
 
         /**
          * <summary>Creates a copy of this portable object and optionally changes field values

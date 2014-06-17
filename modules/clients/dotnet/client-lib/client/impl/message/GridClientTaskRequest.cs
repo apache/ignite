@@ -9,6 +9,7 @@
 
 namespace GridGain.Client.Impl.Message {
     using System;
+    using GridGain.Client.Portable;
 
     using U = GridGain.Client.Util.GridClientUtils;
 
@@ -36,7 +37,7 @@ namespace GridGain.Client.Impl.Message {
         }
 
         /** <inheritdoc /> */
-        public override void WritePortable(IGridPortableWriter writer) {
+        public override void WritePortable(IGridClientPortableWriter writer) {
             base.WritePortable(writer);
 
             writer.WriteString("taskName", TaskName);
@@ -45,7 +46,7 @@ namespace GridGain.Client.Impl.Message {
         }
 
         /** <inheritdoc /> */
-        public override void ReadPortable(IGridPortableReader reader) {
+        public override void ReadPortable(IGridClientPortableReader reader) {
             base.ReadPortable(reader);
 
             TaskName = reader.ReadString("taskName");

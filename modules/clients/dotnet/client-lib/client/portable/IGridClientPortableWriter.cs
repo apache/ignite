@@ -9,6 +9,7 @@
 
 namespace GridGain.Client.Portable {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
 
     /**
@@ -20,13 +21,13 @@ namespace GridGain.Client.Portable {
          * <param name="fieldName">Field name.</param>
          * <param name="val">Byte value.</param>
          */
-        void WriteByte(string fieldName, sbyte val);
+        void WriteByte(string fieldName, byte val);
 
         /**
          * <summary>Write byte value.</summary>
          * <param name="val">Byte value.</param>
          */
-        void WriteByte(sbyte val);
+        void WriteByte(byte val);
 
         /**
          * <summary>Write named byte array.</summary>
@@ -276,6 +277,32 @@ namespace GridGain.Client.Portable {
         void WriteGuidArray(Guid[] val);
 
         /**
+         * <summary>Write named enum value.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <param name="val">Enum value.</param>
+         */
+        void WriteEnum(string fieldName, Enum val);
+
+        /**
+        * <summary>Write enum value.</summary>
+        * <param name="val">Enumvalue.</param>
+        */
+        void WriteEnum(Enum val);
+
+        /**
+         * <summary>Write named enum array.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <param name="val">Enum array.</param>
+         */
+        void WriteEnumArray(string fieldName, Enum[] val);
+
+        /**
+         * <summary>Write enum array.</summary>
+         * <param name="val">Enum array.</param>
+         */
+        void WriteEnumArray(Enum[] val);
+
+        /**
          * <summary>Write named object value.</summary>
          * <param name="fieldName">Field name.</param>
          * <param name="val">Object value.</param>
@@ -306,10 +333,23 @@ namespace GridGain.Client.Portable {
          * <param name="fieldName">Field name.</param>
          * <param name="val">Collection.</param>
          */
-        void WriteCollection<T>(string fieldName, ICollection<T> val);
+        void WriteCollection(string fieldName, ICollection val);
 
         /**
          * <summary>Write collection.</summary>
+         * <param name="val">Collection.</param>
+         */
+        void WriteCollection(ICollection val);
+
+        /**
+         * <summary>Write named generic collection.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <param name="val">Collection.</param>
+         */
+        void WriteCollection<T>(string fieldName, ICollection<T> val);
+
+        /**
+         * <summary>Write generic collection.</summary>
          * <param name="val">Collection.</param>
          */
         void WriteCollection<T>(ICollection<T> val);
@@ -319,10 +359,23 @@ namespace GridGain.Client.Portable {
          * <param name="fieldName">Field name.</param>
          * <param name="val">Map.</param>
          */
-        void WriteMap<K, V>(string fieldName, IDictionary<K, V> val);
+        void WriteMap(string fieldName, IDictionary val);
 
         /**
          * <summary>Write map.</summary>
+         * <param name="val">Map.</param>
+         */
+        void WriteMap(IDictionary val);
+
+        /**
+         * <summary>Write named generic map.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <param name="val">Map.</param>
+         */
+        void WriteMap<K, V>(string fieldName, IDictionary<K, V> val);
+
+        /**
+         * <summary>Write generic map.</summary>
          * <param name="val">Map.</param>
          */
         void WriteMap<K, V>(IDictionary<K, V> val);

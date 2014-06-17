@@ -9,9 +9,10 @@
 
 namespace GridGain.Client.Impl.Message {
     using System;
+    using GridGain.Client.Portable;
 
     /** <summary>Task result.</summary> */
-    internal class GridClientTaskResultBean : IGridPortableEx {
+    internal class GridClientTaskResultBean : IGridClientPortableEx {
         /** <summary>Synthetic ID containing task ID and result holding node ID.</summary> */
         public String TaskId {
             get;
@@ -37,7 +38,8 @@ namespace GridGain.Client.Impl.Message {
         }
         
         /** <inheritdoc /> */
-        public override void WritePortable(IGridPortableWriter writer) {
+        public void WritePortable(IGridClientPortableWriter writer)
+        {
             writer.WriteString("id", TaskId);
             writer.WriteBoolean("finished", IsFinished);
             writer.WriteObject("res", Result);
@@ -45,7 +47,8 @@ namespace GridGain.Client.Impl.Message {
         }
 
         /** <inheritdoc /> */
-        public override void ReadPortable(IGridPortableReader reader) {
+        public void ReadPortable(IGridClientPortableReader reader)
+        {
             TaskId = reader.ReadString("id");
             IsFinished = reader.ReadBoolean("finished");
             Result = reader.ReadObject<Object>("res");

@@ -15,12 +15,12 @@ namespace GridGain.Client.Portable
          * <param name="obj">Object.</param>
          * <param name="writer">Poratble writer.</param>
          */
-        public void WritePortable(object obj, IGridClientPortableWriter writer);
+        void WritePortable(object obj, IGridClientPortableWriter writer);
 
         /**
          * <summary>Read portable object.</summary>
-         * <param name="writer">Poratble reader.</param>
+         * <param name="reader">Poratble reader.</param>
          */
-        public T ReadPortable<T>(IGridClientPortableReader reader);
+        T ReadPortable<T>(IGridClientPortableReader reader);
     }
 }
