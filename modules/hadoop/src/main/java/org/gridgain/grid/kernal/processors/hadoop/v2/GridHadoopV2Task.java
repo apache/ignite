@@ -76,7 +76,10 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
 
             assert outputFormat != null;
 
-            outputFormat.getOutputCommitter(hadoopCtx).setupTask(hadoopCtx);
+            OutputCommitter outCommitter = outputFormat.getOutputCommitter(hadoopCtx);
+
+            if (outCommitter != null)
+                outCommitter.setupTask(hadoopCtx);
 
             RecordWriter writer = outputFormat.getRecordWriter(hadoopCtx);
 
@@ -134,8 +137,6 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
             if (outputCommitter.needsTaskCommit(hadoopCtx))
                 outputCommitter.commitTask(hadoopCtx);
         }
-        else
-            assert outputFormat == null;
     }
 
     /**

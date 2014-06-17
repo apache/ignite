@@ -9,38 +9,34 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
-import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
-import org.apache.hadoop.mapreduce.lib.output.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Grouping test.
  */
 public class GridHadoopGroupingTest extends GridHadoopAbstractSelfTest {
     /** */
-    private static final String PATH_INPUT = "/test-in";
+    private static final String PATH_OUTPUT = "/test-out";
 
     /** */
-    private static final String PATH_OUTPUT = "/test-out";
+    private static final GridConcurrentHashSet<UUID> vals = new GridConcurrentHashSet<>();
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 3;
     }
 
-    /**
-     * @return {@code True} if GGFS is enabled on Hadoop nodes.
-     */
+    /** {@inheritDoc} */
     protected boolean ggfsEnabled() {
-        return true;
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -62,34 +58,90 @@ public class GridHadoopGroupingTest extends GridHadoopAbstractSelfTest {
         return cfg;
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGroupingReducer() throws Exception {
+        doTestGrouping(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGroupingCombiner() throws Exception {
+        doTestGrouping(true);
+    }
+
+    /**
+     * @param combiner With combiner.
+     * @throws Exception If failed.
+     */
     public void doTestGrouping(boolean combiner) throws Exception {
+        vals.clear();
+
         Job job = Job.getInstance();
 
         job.setInputFormatClass(InFormat.class);
+        job.setOutputFormatClass(OutFormat.class);
 
         job.setOutputKeyClass(YearTemperature.class);
         job.setOutputValueClass(Text.class);
 
         job.setMapperClass(Mapper.class);
-        job.setNumReduceTasks(4);
 
-        setupFileSytems(job.getConfiguration());
+        if (combiner) {
+            job.setCombinerClass(MyReducer.class);
+            job.setNumReduceTasks(0);
+            job.setCombinerKeyGroupingComparatorClass(YearComparator.class);
+        }
+        else {
+            job.setReducerClass(MyReducer.class);
+            job.setNumReduceTasks(4);
+            job.setGroupingComparatorClass(YearComparator.class);
+        }
 
-        FileOutputFormat.setOutputPath(job, new Path(ggfsScheme() + PATH_INPUT));
+        grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 2),
+            new GridHadoopDefaultJobInfo(job.getConfiguration())).get(30000);
 
-
+        assertTrue(vals.isEmpty());
     }
 
-    public static class MyReducer extends Reducer<YearTemperature, Text, Object, Object> {
+    public static class MyReducer extends Reducer<YearTemperature, Text, Text, Object> {
+        /** */
+        int lastYear;
 
+        @Override protected void reduce(YearTemperature key, Iterable<Text> vals0, Context context)
+            throws IOException, InterruptedException {
+            X.println("___ : " + context.getTaskAttemptID() + " --> " + key);
 
+            Set<UUID> ids = new HashSet<>();
 
+            for (Text val : vals0)
+                assertTrue(ids.add(UUID.fromString(val.toString())));
+
+            for (Text val : vals0)
+                assertTrue(ids.remove(UUID.fromString(val.toString())));
+
+            assertTrue(ids.isEmpty());
+
+            assertTrue(key.year > lastYear);
+
+            lastYear = key.year;
+
+            for (Text val : vals0)
+                assertTrue(vals.remove(UUID.fromString(val.toString())));
+        }
     }
 
-    public static class YearComparator implements Comparator<YearTemperature> { // Grouping comparator.
+    public static class YearComparator implements RawComparator<YearTemperature> { // Grouping comparator.
         /** {@inheritDoc */
         @Override public int compare(YearTemperature o1, YearTemperature o2) {
             return Integer.compare(o1.year, o2.year);
+        }
+
+        /** {@inheritDoc */
+        @Override public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
+            throw new IllegalStateException();
         }
     }
 
@@ -145,7 +197,7 @@ public class GridHadoopGroupingTest extends GridHadoopAbstractSelfTest {
             ArrayList<InputSplit> list = new ArrayList<>();
 
             for (int i = 0; i < 10; i++)
-                list.add(new GridHadoopSortingTest.FakeSplit(23));
+                list.add(new GridHadoopSortingTest.FakeSplit(20));
 
             return list;
         }
@@ -163,6 +215,7 @@ public class GridHadoopGroupingTest extends GridHadoopAbstractSelfTest {
                 /** */
                 YearTemperature key = new YearTemperature();
 
+                /** */
                 Text val = new Text();
 
                 @Override public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
@@ -181,7 +234,11 @@ public class GridHadoopGroupingTest extends GridHadoopAbstractSelfTest {
                 }
 
                 @Override public Text getCurrentValue() throws IOException, InterruptedException {
-                    val.set(UUID.randomUUID().toString());
+                    UUID id = UUID.randomUUID();
+
+                    assertTrue(vals.add(id));
+
+                    val.set(id.toString());
 
                     return val;
                 }
@@ -194,6 +251,26 @@ public class GridHadoopGroupingTest extends GridHadoopAbstractSelfTest {
                     // No-op.
                 }
             };
+        }
+    }
+
+    /**
+     *
+     */
+    public static class OutFormat extends OutputFormat {
+        /** {@inheritDoc} */
+        @Override public RecordWriter getRecordWriter(TaskAttemptContext context) throws IOException, InterruptedException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void checkOutputSpecs(JobContext context) throws IOException, InterruptedException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public OutputCommitter getOutputCommitter(TaskAttemptContext context) throws IOException, InterruptedException {
+            return null;
         }
     }
 }

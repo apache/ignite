@@ -40,7 +40,8 @@ public class GridHadoopV2SetupTask extends GridHadoopV2Task {
 
             OutputCommitter committer = outputFormat.getOutputCommitter(hadoopContext());
 
-            committer.setupJob(jobCtx);
+            if (committer != null)
+                committer.setupJob(jobCtx);
         }
         catch (ClassNotFoundException | IOException e) {
             throw new GridException(e);

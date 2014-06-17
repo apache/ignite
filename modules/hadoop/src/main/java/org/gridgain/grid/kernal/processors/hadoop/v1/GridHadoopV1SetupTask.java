@@ -40,7 +40,8 @@ public class GridHadoopV1SetupTask extends GridHadoopV1Task {
 
             OutputCommitter committer = jobCtx.getJobConf().getOutputCommitter();
 
-            committer.setupJob(jobCtx);
+            if (committer != null)
+                committer.setupJob(jobCtx);
         }
         catch (IOException e) {
             throw new GridException(e);
