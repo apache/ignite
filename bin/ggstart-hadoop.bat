@@ -10,7 +10,7 @@
 ::
 
 ::
-:: Grid command line loader with hadoop classpath.
+:: Grid command line loader with Hadoop classpath.
 ::
 
 ::
