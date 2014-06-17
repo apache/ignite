@@ -31,6 +31,19 @@ edition is required in order to compile and build GridGain source code.
     <groupId>org.gridgain</groupId>
     <artifactId>gridgain-platform</artifactId>
     <version>${gridgain.version}</version>
+    <type>pom</type>
+</dependency>
+```
+
+### HPC Edition
+`HPC` edition includes all GridGain functionality except for `data grid`, `streaming` and `hadoop accelerator`.
+
+```xml
+<dependency>
+    <groupId>org.gridgain</groupId>
+    <artifactId>gridgain-hpc</artifactId>
+    <version>${gridgain.version}</version>
+    <type>pom</type>
 </dependency>
 ```
 
@@ -42,6 +55,7 @@ edition is required in order to compile and build GridGain source code.
     <groupId>org.gridgain</groupId>
     <artifactId>gridgain-datagrid</artifactId>
     <version>${gridgain.version}</version>
+    <type>pom</type>
 </dependency>
 ```
 
@@ -53,6 +67,7 @@ edition is required in order to compile and build GridGain source code.
     <groupId>org.gridgain</groupId>
     <artifactId>gridgain-streaming</artifactId>
     <version>${gridgain.version}</version>
+    <type>pom</type>
 </dependency>
 ```
 
@@ -64,6 +79,7 @@ edition is required in order to compile and build GridGain source code.
     <groupId>org.gridgain</groupId>
     <artifactId>gridgain-hadoop</artifactId>
     <version>${gridgain.version}</version>
+    <type>pom</type>
 </dependency>
 ```
 

@@ -1,7 +1,7 @@
 GridGain Protobuf Module
 ------------------------
 
-GridGain Protobuf module provides Protobuf support for binary REST server. Enable it if you are going
+GridGain Protobuf module provides Protobuf support for binary grid client connections. Enable it if you are going
 to use C++ and/or .NET clients.
 
 To enable Protobuf module when starting a standalone node, move 'optional/gridgain-protobuf' folder to
@@ -9,7 +9,7 @@ To enable Protobuf module when starting a standalone node, move 'optional/gridga
 be added to classpath in this case.
 
 Importing Protobuf Module In Maven Project
--------------------------------------
+------------------------------------------
 
 If you are using Maven to manage dependencies of your project, you can add Protobuf module
 dependency like this (replace '${gridgain.version}' with actual GridGain version you are

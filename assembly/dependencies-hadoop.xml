@@ -48,6 +48,7 @@
                         <outputDirectory>/</outputDirectory>
                         <includes>
                             <include>readme.txt</include>
+                            <include>licenses/**</include>
                         </includes>
                     </fileSet>
                     <fileSet>
@@ -93,6 +94,13 @@
             </sources>
         </moduleSet>
     </moduleSets>
+
+    <fileSets>
+        <fileSet>
+            <directory>modules/core/licenses</directory>
+            <outputDirectory>/licenses</outputDirectory>
+        </fileSet>
+    </fileSets>
 
     <files>
         <file>
