@@ -239,6 +239,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
         if (isRestEnabled()) {
             // Register handlers.
             addHandler(new GridCacheCommandHandler(ctx));
+            addHandler(new GridCacheQueryCommandHandler(ctx));
             addHandler(new GridTaskCommandHandler(ctx));
             addHandler(new GridTopologyCommandHandler(ctx));
             addHandler(new GridVersionCommandHandler(ctx));
