@@ -155,7 +155,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
         @Override public List<InputSplit> getSplits(JobContext context) throws IOException, InterruptedException {
             List<InputSplit> res = new ArrayList<>();
 
-            FakeSplit split = new FakeSplit();
+            FakeSplit split = new FakeSplit(20);
 
             for (int i = 0; i < 10; i++)
                 res.add(split);
@@ -233,9 +233,26 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
         /** */
         private static final String[] HOSTS = {"127.0.0.1"};
 
+        /** */
+        private int len;
+
+        /**
+         * @param len Length.
+         */
+        public FakeSplit(int len) {
+            this.len = len;
+        }
+
+        /**
+         *
+         */
+        public FakeSplit() {
+            // No-op.
+        }
+
         /** {@inheritDoc} */
         @Override public long getLength() throws IOException, InterruptedException {
-            return 10;
+            return len;
         }
 
         /** {@inheritDoc} */
@@ -245,12 +262,12 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override public void write(DataOutput out) throws IOException {
-            // No-op.
+            out.writeInt(len);
         }
 
         /** {@inheritDoc} */
         @Override public void readFields(DataInput in) throws IOException {
-            // No-op.
+            len = in.readInt();
         }
     }
 }
