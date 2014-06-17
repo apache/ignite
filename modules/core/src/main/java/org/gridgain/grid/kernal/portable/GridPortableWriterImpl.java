@@ -20,7 +20,7 @@ import static java.nio.charset.StandardCharsets.*;
 import static org.gridgain.grid.kernal.portable.GridPortableMarshaller.*;
 
 /**
- * Portable writer adapter.
+ * Portable writer implementation.
  */
 class GridPortableWriterImpl implements GridPortableWriter {
     /** */
