@@ -10,10 +10,7 @@
 package org.gridgain.grid.kernal.portable;
 
 import org.gridgain.grid.portable.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
-import sun.misc.*;
 
 import java.lang.reflect.*;
 import java.util.*;
@@ -27,39 +24,10 @@ import static org.gridgain.grid.kernal.portable.GridPortableMarshaller.*;
  */
 class GridPortableClassDescriptor {
     /** */
-    protected static final Unsafe UNSAFE = GridUnsafe.unsafe();
-
-    /** */
-    protected static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
-
-    /** */
-    private static final GridPortablePrimitivesWriter PRIM = GridPortablePrimitivesWriter.get();
-
-    /** */
     private static final ConcurrentMap<Class<?>, GridPortableClassDescriptor> CACHE = new ConcurrentHashMap8<>(256);
 
     /** */
     private static final int TOTAL_LEN_POS = 9;
-
-    /**
-     * @param cls Class.
-     * @return Class descriptor.
-     * @throws GridPortableException In case of error.
-     */
-    public static GridPortableClassDescriptor get(Class<?> cls) throws GridPortableException {
-        assert cls != null;
-
-        GridPortableClassDescriptor desc = CACHE.get(cls);
-
-        if (desc == null) {
-            GridPortableClassDescriptor old = CACHE.putIfAbsent(cls, desc = new GridPortableClassDescriptor(cls));
-
-            if (old != null)
-                desc = old;
-        }
-
-        return desc;
-    }
 
     /** */
     private final Mode mode;
@@ -90,11 +58,7 @@ class GridPortableClassDescriptor {
 
             fields = new ArrayList<>();
 
-            Collection<String> names = new HashSet<>();
-            Collection<Integer> hashCodes = new LinkedHashSet<>();
-            Collection<T2<byte[], Field>> namedFields = null;
-
-            int hdrLen = 4;
+            GridPortableHeaderWriter hdrWriter = new GridPortableHeaderWriter();
 
             for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
                 for (Field f : c.getDeclaredFields()) {
@@ -103,75 +67,43 @@ class GridPortableClassDescriptor {
                     if (!isStatic(mod) && !isTransient(mod)) {
                         f.setAccessible(true);
 
-                        String name = f.getName();
+                        int offPos = hdrWriter.addField(f.getName());
 
-                        if (!names.add(name))
-                            throw new GridPortableException("Two fields in class " + cls.getName() +
-                                " have the same name: " + name);
-
-                        if (hashCodes.add(name.hashCode())) {
-                            hdrLen += 4;
-
-                            fields.add(new FieldInfo(f, hdrLen));
-
-                            hdrLen += 4;
-                        }
-                        else {
-                            if (namedFields == null)
-                                namedFields = new ArrayList<>();
-
-                            namedFields.add(new T2<>(name.getBytes(), f)); // TODO: UTF-8
-                        }
+                        fields.add(new FieldInfo(f, offPos));
                     }
                 }
             }
 
-            for (T2<byte[], Field> t : namedFields) {
-                byte[] name = t.get1();
-                Field f = t.get2();
-
-                hdrLen += name.length;
-
-                fields.add(new FieldInfo(f, hdrLen));
-
-                hdrLen += 4;
-            }
-
-            hdr = new byte[hdrLen];
-
-            int off = 0;
-
-            PRIM.writeInt(hdr, off, hashCodes.size());
-
-            off += 4;
-
-            for (Integer hashCode : hashCodes) {
-                PRIM.writeInt(hdr, off, hashCode);
-
-                off += 8;
-            }
-
-            PRIM.writeInt(hdr, off, namedFields != null ? namedFields.size() : -1);
-
-            off += 4;
-
-            if (namedFields != null) {
-                for (T2<byte[], Field> t : namedFields) {
-                    byte[] name = t.get1();
-
-                    UNSAFE.copyMemory(name, BYTE_ARR_OFF, hdr, BYTE_ARR_OFF + off, name.length);
-
-                    off += name.length + 4;
-                }
-            }
+            hdr = hdrWriter.header();
         }
     }
 
     /**
+     * @param cls Class.
+     * @return Class descriptor.
+     * @throws GridPortableException In case of error.
+     */
+    static GridPortableClassDescriptor get(Class<?> cls) throws GridPortableException {
+        assert cls != null;
+
+        GridPortableClassDescriptor desc = CACHE.get(cls);
+
+        if (desc == null) {
+            GridPortableClassDescriptor old = CACHE.putIfAbsent(cls, desc = new GridPortableClassDescriptor(cls));
+
+            if (old != null)
+                desc = old;
+        }
+
+        return desc;
+    }
+
+    /**
+     * @param obj Object.
      * @param writer Writer.
      * @throws GridPortableException In case of error.
      */
-    public void write(Object obj, GridPortableWriterAdapter writer) throws GridPortableException {
+    void write(Object obj, GridPortableWriterImpl writer) throws GridPortableException {
         assert obj != null;
         assert writer != null;
 
@@ -180,8 +112,6 @@ class GridPortableClassDescriptor {
 
         switch (mode) {
             case PORTABLE_EX:
-                writer = new GridPortableWriterAdapter(writer);
-
                 writer.doWriteInt(obj.hashCode());
 
                 // Length.
@@ -190,9 +120,7 @@ class GridPortableClassDescriptor {
                 // Header handles are not supported for GridPortableEx.
                 writer.doWriteInt(-1);
 
-                ((GridPortableEx)obj).writePortable(writer);
-
-                writer.flush();
+                writePortableEx((GridPortableEx)obj, writer);
 
                 // Length.
                 writer.writeCurrentSize(TOTAL_LEN_POS);
@@ -227,6 +155,22 @@ class GridPortableClassDescriptor {
             default:
                 assert false : "Invalid mode: " + mode;
         }
+    }
+
+    /**
+     * @param obj Object.
+     * @param writer Writer.
+     * @throws GridPortableException In case of error.
+     */
+    private void writePortableEx(GridPortableEx obj, GridPortableWriterImpl writer) throws GridPortableException {
+        assert obj != null;
+        assert writer != null;
+
+        GridPortableWriterImpl writer0 = new GridPortableWriterImpl(writer);
+
+        obj.writePortable(writer0);
+
+        writer0.flush();
     }
 
     /** */

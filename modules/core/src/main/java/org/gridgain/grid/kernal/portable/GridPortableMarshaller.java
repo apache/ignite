@@ -37,7 +37,7 @@ public class GridPortableMarshaller {
         if (obj == null)
             return NULL_ARR;
 
-        GridPortableWriterAdapter writer = new GridPortableWriterAdapter();
+        GridPortableWriterImpl writer = new GridPortableWriterImpl();
 
         writer.doWriteObject(obj);
 

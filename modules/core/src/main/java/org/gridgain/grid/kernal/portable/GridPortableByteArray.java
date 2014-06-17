@@ -39,7 +39,7 @@ class GridPortableByteArray {
      * @param bytes Number of bytes that are going to be written.
      * @return Offset before write.
      */
-    public int requestFreeSize(int bytes) {
+    int requestFreeSize(int bytes) {
         int size0 = size;
 
         size += bytes;
@@ -58,21 +58,21 @@ class GridPortableByteArray {
     /**
      * @return Array.
      */
-    public byte[] array() {
+    byte[] array() {
         return arr;
     }
 
     /**
      * @return Size.
      */
-    public int size() {
+    int size() {
         return size;
     }
 
     /**
      * @return Array copy.
      */
-    public byte[] entireArray() {
+    byte[] entireArray() {
         if (arr.length == size)
             return arr;
         else {
