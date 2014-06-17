@@ -7,66 +7,86 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client
+namespace GridGain.Client.Impl.Query
 {
     using System;
     using System.Collections.ObjectModel;
     using System.Collections.Generic;
 
     /**
-     * <summary>Data query object.</summary>
+     * 
      */
-    public interface IGridClientDataQuery<T> {
+    class GridClientDataQueryImpl<T> : IGridClientDataQuery<T> {
+        /** Remote reducer class name. */
+        private String rmtRdcClsName;
+
+        /** Remote transformer class name. */
+        private String rmtTransClsName;
+
+        /** Reducer or transformer constructor arguments. */
+        private Object[] clsArgs;
+
         /**
          * 
          */
-        int PageSize { 
-            get; set;
+        int PageSize {
+            get;
+            set;
         }
 
         /**
          * 
          */
         TimeSpan Timeout {
-            get; set;
+            get;
+            set;
         }
 
         /**
          * 
          */
         bool KeepAll {
-            get; set;
+            get;
+            set;
         }
 
         /**
          * 
          */
         bool IncludeBackups {
-            get; set;
+            get;
+            set;
         }
 
         /**
          * 
          */
         bool EnableDedup {
-            get; set;
+            get;
+            set;
         }
 
         /**
          * 
          */
-        void remoteReducer(String clsName, Object[] args);
+        void remoteReducer(String clsName, Object[] args) {
+
+        }
 
         /**
          * 
          */
-        void remoteTransformer(String clsName, Object[] args);
+        void remoteTransformer(String clsName, Object[] args) {
+
+        }
 
         /**
          * 
          */
-        IGridClientDataQueryFuture<T> execute(Object[] args);
+        IGridClientDataQueryFuture<T> execute(Object[] args) {
+            GridClientDataQueryFutureImpl<T> fut = new GridClientDataQueryFutureImpl<T>();
 
-        // TODO projection.
+            return null;
+        }
     }
 }

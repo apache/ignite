@@ -70,6 +70,11 @@
     <Compile Include="client\balancer\GridClientLoadBalancer.cs" />
     <Compile Include="client\balancer\GridClientRoundRobinBalancer.cs" />
     <Compile Include="client\impl\marshaller\GridClientPortableMarshallerNew.cs" />
+    <Compile Include="client\impl\message\GridClientCacheQueryRequest.cs" />
+    <Compile Include="client\impl\message\GridClientCacheQueryRequestOperation.cs" />
+    <Compile Include="client\impl\query\GridClientDataQueryFutureImpl.cs" />
+    <Compile Include="client\impl\query\GridClientDataQueryImpl.cs" />
+    <Compile Include="client\impl\query\GridClientDataQueryType.cs" />
     <Compile Include="client\portable\GridClientPortableException.cs" />
     <Compile Include="client\portable\GridClientPortableInvalidClassException.cs" />
     <Compile Include="client\portable\GridClientPortableInvalidFieldException.cs" />
@@ -83,7 +88,6 @@
     <Compile Include="client\GridClientCacheFlag.cs" />
     <Compile Include="client\GridClientAuthenticationException.cs" />
     <Compile Include="client\hasher\GridClientJavaHelper.cs" />
-    <Compile Include="client\impl\query\GridClientDataQueryPartialResult.cs" />
     <Compile Include="client\query\IGridClientDataQuery.cs" />
     <Compile Include="client\query\IGridClientDataQueryFuture.cs" />
     <Compile Include="client\query\IGridClientDataQueryMetrics.cs" />

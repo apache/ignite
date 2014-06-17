@@ -27,7 +27,7 @@ namespace GridGain.Client
         /**
          * 
          */
-        IGridClientDataQuery<IList> createSqlFieldsQuery(String clsName, String clause);
+        IGridClientDataQuery<IList> createSqlFieldsQuery(String clause);
 
         /**
          * 
@@ -37,7 +37,7 @@ namespace GridGain.Client
         /**
          * 
          */
-        IGridClientDataQuery<DictionaryEntry> createScanQuery(String clsName, String clause);
+        IGridClientDataQuery<DictionaryEntry> createScanQuery(String clsName, Object[] args);
 
         /**
          * 

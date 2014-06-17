@@ -7,15 +7,16 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client.Impl.Query
+namespace GridGain.Client.Impl.Message
 {
     using System;
-    using System.Collections.ObjectModel;
-    using System.Collections.Generic;
 
-    /**
-     * 
-     */
-    class GridClientDataQueryPartialResult {
+    /** <summary>Available cache operations.</summary> */
+    internal enum GridClientCacheQueryRequestOperation {
+        /** <summary>Query execution request.</summary> */
+        Execute,
+
+        /** <summary>Query results fetch request.</summary> */
+        Fetch,
     }
 }
