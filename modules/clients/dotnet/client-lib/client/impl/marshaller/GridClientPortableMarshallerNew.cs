@@ -16,7 +16,7 @@ namespace GridGain.Client.Impl.Marshaller
     using GridGain.Client.Portable;
 
     /** <summary>Portable marshaller implementation.</summary> */
-    internal class GridClientPortableMarshallerNew : IGridClientMarshaller
+    internal class GridClientPortableMarshallerNew
     {
         /**  */
         private static readonly int TYPE_BOOL = 0;
@@ -74,25 +74,12 @@ namespace GridGain.Client.Impl.Marshaller
             return default(T);
         }
 
-        void IGridClientMarshaller.Marshal(object val, Stream output)
-        {
-            throw new NotImplementedException();
-        }
-
-        T IGridClientMarshaller.Unmarshal<T>(byte[] data)
-        {
-            throw new NotImplementedException();
-        }
-
-        T IGridClientMarshaller.Unmarshal<T>(Stream input)
-        {
-            throw new NotImplementedException();
-        }
-
         /**
          * <summary>Internal marshalling routine.</summary>
-         */ 
-        private byte[] Marshal0(object val)
+         * <param name="obj">Object to be serialized.</param>
+         * <param name="serCtx">Context.</param>
+         */
+        private byte[] Marshal0(object obj, GridClientPortableSerializationContext serCtx)
         {
             Context ctx = new Context();
             // TODO
