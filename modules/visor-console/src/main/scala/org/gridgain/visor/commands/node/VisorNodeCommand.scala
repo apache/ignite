@@ -67,12 +67,6 @@ import scala.util.control.Breaks._
  * }}}
  */
 class VisorNodeCommand {
-    /** */
-    private val KB = 1024L
-
-    /** */
-    private val MB = KB * 1024L
-
     /**
      * Prints error message and advise.
      *
@@ -210,14 +204,14 @@ class VisorNodeCommand {
                             t += ("Busy time %", formatDouble(m.getBusyTimePercentage * 100) + "%")
                             t += ("Current CPU load %", formatDouble(m.getCurrentCpuLoad * 100) + "%")
                             t += ("Average CPU load %", formatDouble(m.getAverageCpuLoad * 100) + "%")
-                            t += ("Heap memory initialized", formatMemory(m.getHeapMemoryInitialized / MB) + "mb")
-                            t += ("Heap memory used", formatMemory(m.getHeapMemoryUsed / MB) + "mb")
-                            t += ("Heap memory committed", formatMemory(m.getHeapMemoryCommitted / MB) + "mb")
-                            t += ("Heap memory maximum", formatMemory(m.getHeapMemoryMaximum / MB) + "mb")
-                            t += ("Non-heap memory initialized", formatMemory(m.getNonHeapMemoryInitialized / MB) + "mb")
-                            t += ("Non-heap memory used", formatMemory(m.getNonHeapMemoryUsed / MB) + "mb")
-                            t += ("Non-heap memory committed", formatMemory(m.getNonHeapMemoryCommitted / MB) + "mb")
-                            t += ("Non-heap memory maximum", formatMemory(m.getNonHeapMemoryMaximum / MB) + "mb")
+                            t += ("Heap memory initialized", formatMemory(m.getHeapMemoryInitialized))
+                            t += ("Heap memory used", formatMemory(m.getHeapMemoryUsed))
+                            t += ("Heap memory committed", formatMemory(m.getHeapMemoryCommitted))
+                            t += ("Heap memory maximum", formatMemory(m.getHeapMemoryMaximum))
+                            t += ("Non-heap memory initialized", formatMemory(m.getNonHeapMemoryInitialized))
+                            t += ("Non-heap memory used", formatMemory(m.getNonHeapMemoryUsed))
+                            t += ("Non-heap memory committed", formatMemory(m.getNonHeapMemoryCommitted))
+                            t += ("Non-heap memory maximum", formatMemory(m.getNonHeapMemoryMaximum))
                             t += ("Current thread count", formatNumber(m.getCurrentThreadCount))
                             t += ("Maximum thread count", formatNumber(m.getMaximumThreadCount))
                             t += ("Total started thread count", formatNumber(m.getTotalStartedThreadCount))
@@ -255,8 +249,8 @@ class VisorNodeCommand {
                                 "/" + formatDouble(m.getAverageJobExecuteTime) + "ms")
                             t += ("Cur/avg CPU load %", formatDouble(m.getCurrentCpuLoad * 100) +
                                 "/" + formatDouble(m.getAverageCpuLoad * 100) + "%")
-                            t += ("Heap memory used/max", formatMemory(m.getHeapMemoryUsed / MB) +
-                                "/" +  formatMemory(m.getHeapMemoryMaximum / MB) + "mb")
+                            t += ("Heap memory used/max", formatMemory(m.getHeapMemoryUsed) +
+                                "/" +  formatMemory(m.getHeapMemoryMaximum))
                         }
 
                         println("Time of the snapshot: " + formatDateTime(System.currentTimeMillis))
