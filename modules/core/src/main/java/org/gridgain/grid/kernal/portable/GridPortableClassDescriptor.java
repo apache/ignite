@@ -342,11 +342,92 @@ class GridPortableClassDescriptor {
 
     /**
      * @param reader Reader.
+     * @return Object.
      */
-    Object read(GridPortableReaderImpl reader) {
+    Object read(GridPortableReaderImpl reader) throws GridPortableException {
         assert reader != null;
 
+        switch (mode) {
+            case BYTE:
+                return reader.readByte();
 
+            case SHORT:
+                return reader.readShort();
+
+            case INT:
+                return reader.readInt();
+
+            case LONG:
+                return reader.readLong();
+
+            case FLOAT:
+                return reader.readFloat();
+
+            case DOUBLE:
+                return reader.readDouble();
+
+            case CHAR:
+                return reader.readChar();
+
+            case BOOLEAN:
+                return reader.readBoolean();
+
+            case STRING:
+                return reader.readString();
+
+            case UUID:
+                return reader.readUuid();
+
+            case BYTE_ARR:
+                return reader.readByteArray();
+
+            case SHORT_ARR:
+                return reader.readShortArray();
+
+            case INT_ARR:
+                return reader.readShortArray();
+
+            case LONG_ARR:
+                return reader.readLongArray();
+
+            case FLOAT_ARR:
+                return reader.readFloatArray();
+
+            case DOUBLE_ARR:
+                return reader.readDoubleArray();
+
+            case CHAR_ARR:
+                return reader.readCharArray();
+
+            case BOOLEAN_ARR:
+                return reader.readBooleanArray();
+
+            case STRING_ARR:
+                return reader.readStringArray();
+
+            case UUID_ARR:
+                return reader.readUuidArray();
+
+            case OBJ_ARR:
+                return reader.readObjectArray();
+
+            case COL:
+                return reader.readCollection();
+
+            case MAP:
+                return reader.readMap();
+
+            case PORTABLE_EX:
+                return null; // TODO
+
+            case PORTABLE:
+                return null; // TODO
+
+            default:
+                assert false : "Invalid mode: " + mode;
+
+                return null;
+        }
     }
 
     /**
