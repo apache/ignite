@@ -939,6 +939,13 @@ public:
 };
 
 class GridClientAuthenticationRequest : public GridClientPortableMessage {
+public:
+    GridClientAuthenticationRequest() {
+    }
+
+    GridClientAuthenticationRequest(std::string credStr) : cred(credStr) {
+    }
+
     int32_t typeId() const {
         return -1;
     }
@@ -967,6 +974,12 @@ public:
     void writeByte(int8_t val) {
         out.push_back(val);
     }
+
+	void writeInt16(int16_t val) {
+        int8_t* bytes = reinterpret_cast<int8_t*>(&val);
+
+        out.insert(out.end(), bytes, bytes + 2);
+	}
 
 	void writeInt32(int32_t val) {
         int8_t* bytes = reinterpret_cast<int8_t*>(&val);
@@ -1018,6 +1031,14 @@ public:
 
         portable.writePortable(*this);
     }
+
+    void writeByte(char* fieldName, int8_t val) override {
+		out.writeByte(val);
+	}
+
+    void writeInt16(char* fieldName, int16_t val) override {
+		out.writeInt16(val);
+	}
 
     void writeInt32(char* fieldName, int32_t val) override {
 		out.writeInt32(val);
@@ -1160,6 +1181,18 @@ public:
         return bytes[pos++];
     }
 
+    int16_t readInt16() {
+        checkAvailable(2);
+
+        int32_t res = 0;
+
+        memcpy(&res, bytes.data() + pos, 2);
+
+        pos += 2;
+
+        return res;
+    }
+
     int32_t readInt32() {
         checkAvailable(4);
 
@@ -1251,6 +1284,18 @@ public:
         GG_LOG_DEBUG("End read portable");
 
         return portable;
+    }
+
+    int8_t readByte(char* fieldName) override {
+        GG_LOG_DEBUG("Read byte %s", fieldName);
+
+        return in.readByte();
+    }
+
+    int16_t readInt16(char* fieldName) override {
+        GG_LOG_DEBUG("Read int16 %s", fieldName);
+
+        return in.readInt32();
     }
 
     int32_t readInt32(char* fieldName) override {

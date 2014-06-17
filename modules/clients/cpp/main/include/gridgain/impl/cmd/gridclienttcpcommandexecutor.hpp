@@ -18,15 +18,6 @@
 class GridClientConnectionPool;
 class GridClientSocketAddress;
 
-namespace org {
-namespace gridgain {
-namespace client {
-namespace message {
-/** Forward declaration. */
-class ObjectWrapper;
-
-}}}}
-
 /**
  * TCP command executor. Sends commands over HTTP transport.
  */
@@ -121,21 +112,12 @@ private:
      * Execute generic command on the node.
      *
      * @param nodeHost Host/port pair.
-     * @param cmd Command to send.
-     * @param response Response to fill.
-     */
-    template <class C, class R> void executeCmd(const GridClientSocketAddress& nodeHost, C& cmd, R& response);
-
-    /**
-     * Execute generic command on the node.
-     *
-     * @param nodeHost Host/port pair.
      * @param msg Message to send.
      * @param cmd Command.
      * @param response Response to fill.
      */
-    template <class C, class R> void executeCmdPortable(const GridClientSocketAddress& nodeHost,
-        GridClientPortableMessage& msg, C& cmd, R& response);
+    template <class C, class R>
+    void executeCmd(const GridClientSocketAddress& nodeHost, GridClientPortableMessage& msg, C& cmd, R& response);
 
     /** Connection pool. */
     boost::shared_ptr<GridClientConnectionPool> connPool;

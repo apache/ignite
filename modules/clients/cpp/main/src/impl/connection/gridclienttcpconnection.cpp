@@ -31,8 +31,7 @@
 #include "gridgain/impl/connection/gridclientconnectionpool.hpp"
 #include "gridgain/impl/cmd/gridclientmessageauthrequestcommand.hpp"
 #include "gridgain/impl/cmd/gridclientmessageauthresult.hpp"
-#include "gridgain/impl/marshaller/protobuf/gridclientprotobufmarshaller.hpp"
-#include "gridgain/impl/marshaller/protobuf/ClientMessages.pb.h"
+#include "gridgain/impl/marshaller/portable/gridportablemarshaller.hpp"
 #include "gridgain/gridclientexception.hpp"
 
 #include "gridgain/impl/utils/gridclientlog.hpp"
@@ -85,8 +84,6 @@ enum HandshakeResultCode {
     ERR_UNKNOWN_PROTO_ID = 2
 };
 
-using namespace org::gridgain::grid::kernal::processors::rest::client::message;
-
 /** Fills packet with ping data. */
 void GridClientTcpPacket::createPingPacket(GridClientTcpPacket& pingPacket) {
     pingPacket.sizeHeader.assign(PING_PACKET_SIZE_HEADER,
@@ -113,11 +110,6 @@ void GridClientTcpPacket::setPacketSize(int32_t size) {
     GridClientByteUtils::valueToBytes(size, &sizeHeader[0], sizeof(size));
 }
 
-void GridClientTcpPacket::setData(const ObjectWrapper& protoMsg) {
-    GridClientProtobufMarshaller::marshal(protoMsg, data);
-    setPacketSize(ADDITIONAL_HEADERS_SIZE + data.size());
-}
-
 void GridClientTcpPacket::setData(std::vector<int8_t>& bytes) {
     data = bytes;
     setPacketSize(ADDITIONAL_HEADERS_SIZE + data.size());
@@ -127,16 +119,8 @@ void GridClientTcpPacket::setData(int8_t* start, int8_t* end) {
     data.assign(start, end);
 }
 
-std::vector<int8_t>& GridClientTcpPacket::getRawData() {
+std::vector<int8_t>& GridClientTcpPacket::getData() {
     return data;
-}
-
-ObjectWrapper GridClientTcpPacket::getData() const {
-    ObjectWrapper ret;
-
-    GridClientProtobufMarshaller::unmarshal(data, ret);
-
-    return ret;
 }
 
 size_t GridClientTcpPacket::getDataSize() const {
@@ -144,9 +128,20 @@ size_t GridClientTcpPacket::getDataSize() const {
 }
 
 void GridClientTcpPacket::setAdditionalHeaders(const GridClientMessage& msg) {
-    GridClientProtobufMarshaller::marshal(msg.getRequestId(), requestIdHeader);
-    GridClientProtobufMarshaller::marshal(msg.getClientId(), clientIdHeader);
-    GridClientProtobufMarshaller::marshal(msg.getDestinationId(), destinationIdHeader);
+    marshal(msg.getRequestId(), requestIdHeader);
+    marshal(msg.getClientId(), clientIdHeader);
+    marshal(msg.getDestinationId(), destinationIdHeader);
+}
+
+void GridClientTcpPacket::marshal(int64_t i64, std::vector<int8_t>& bytes) {
+    bytes.resize(sizeof(i64));
+    memset(&bytes[0], 0, sizeof(i64));
+
+    GridClientByteUtils::valueToBytes(i64, &bytes[0], sizeof(i64));
+}
+
+void GridClientTcpPacket::marshal(const GridClientUuid& uuid, std::vector<int8_t>& bytes) {
+    uuid.rawBytes(bytes);
 }
 
 void GridClientTcpPacket::setAdditionalHeaders(int8_t* pBuf) {
@@ -257,6 +252,34 @@ void GridClientSyncTcpConnection::connect(const string& pHost, int pPort) {
  * @param creds Credentials to use.
  */
 void GridClientSyncTcpConnection::authenticate(const string& clientId, const string& creds) {
+    GridClientAuthenticationRequest msg(creds);
+
+    GridAuthenticationRequestCommand authReq;
+    GridClientMessageAuthenticationResult authResult;
+
+    authReq.setClientId(clientId);
+    authReq.credentials(creds);
+    authReq.setRequestId(1);
+
+    GridClientTcpPacket tcpPacket;
+    GridClientTcpPacket tcpResponse;
+
+    GridPortableMarshaller marsh;
+
+    vector<int8_t> data = marsh.marshal(msg);    
+
+    tcpPacket.setData(data);
+    tcpPacket.setAdditionalHeaders(authReq);
+
+    send(tcpPacket, tcpResponse);
+
+    std::unique_ptr<GridClientResponse> resMsg(marsh.unmarshal<GridClientResponse>(tcpResponse.getData()));
+
+    if (!resMsg->errorMsg.empty())
+        throw GridClientCommandException(resMsg->errorMsg);
+
+    sessToken = resMsg->sesTok;
+    /*
     ObjectWrapper protoMsg;
 
     GridAuthenticationRequestCommand authReq;
@@ -281,6 +304,7 @@ void GridClientSyncTcpConnection::authenticate(const string& clientId, const str
     GridClientProtobufMarshaller::unwrap(respMsg, authResult);
 
     sessToken = authResult.sessionToken();
+    */
 }
 
 /**
@@ -728,6 +752,34 @@ void GridClientRawSyncTcpConnection::connect(const string& pHost, int pPort) {
  * @param creds Credentials to use.
  */
 void GridClientRawSyncTcpConnection::authenticate(const string& clientId, const string& creds) {
+    GridClientAuthenticationRequest msg(creds);
+
+    GridAuthenticationRequestCommand authReq;
+    GridClientMessageAuthenticationResult authResult;
+
+    authReq.setClientId(clientId);
+    authReq.credentials(creds);
+    authReq.setRequestId(1);
+
+    GridClientTcpPacket tcpPacket;
+    GridClientTcpPacket tcpResponse;
+
+    GridPortableMarshaller marsh;
+
+    vector<int8_t> data = marsh.marshal(msg);    
+
+    tcpPacket.setData(data);
+    tcpPacket.setAdditionalHeaders(authReq);
+
+    send(tcpPacket, tcpResponse);
+
+    std::unique_ptr<GridClientResponse> resMsg(marsh.unmarshal<GridClientResponse>(tcpResponse.getData()));
+
+    if (!resMsg->errorMsg.empty())
+        throw GridClientCommandException(resMsg->errorMsg);
+
+    sessToken = resMsg->sesTok;
+    /*
     ObjectWrapper protoMsg;
 
     GridAuthenticationRequestCommand authReq;
@@ -753,6 +805,7 @@ void GridClientRawSyncTcpConnection::authenticate(const string& clientId, const 
     GridClientProtobufMarshaller::unwrap(respMsg, authResult);
 
     sessToken = authResult.sessionToken();
+    */
 }
 
 /**

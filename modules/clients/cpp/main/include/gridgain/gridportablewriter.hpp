@@ -27,6 +27,10 @@ class GRIDGAIN_API GridPortableWriter {
 public:
     virtual void writeBool(char* fieldName, bool val) = 0;
 
+    virtual void writeByte(char* fieldName, int8_t val) = 0;
+
+    virtual void writeInt16(char* fieldName, int16_t val) = 0;
+
     virtual void writeInt32(char* fieldName, int32_t val) = 0;
 
     virtual void writeInt64(char* fieldName, int64_t val) = 0;

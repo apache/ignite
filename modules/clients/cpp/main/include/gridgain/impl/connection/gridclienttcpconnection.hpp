@@ -20,9 +20,6 @@
 #include "gridgain/impl/cmd/gridclientmessage.hpp"
 #include "gridgain/gridclientexception.hpp"
 
-#include "gridgain/impl/marshaller/protobuf/ClientMessages.pb.h"
-
-using org::gridgain::grid::kernal::processors::rest::client::message::ObjectWrapper;
 
 /** Forward declaration. */
 class GridClientConnectionPool;
@@ -86,13 +83,9 @@ public:
      */
     size_t getHeaderSize() const;
 
-    void setData(const ObjectWrapper& protoMsg);
-
     void setData(std::vector<int8_t>& bytes);
 
-    ObjectWrapper getData() const;
-
-    std::vector<int8_t>& getRawData();
+    std::vector<int8_t>& getData();
 
     size_t getDataSize() const;
 
@@ -110,6 +103,22 @@ public:
 
 private:
     void setData(int8_t* start, int8_t* end);
+
+    /**
+     * Marshals 64-bit integer to byte vector.
+     *
+     * @param i64 64-bit integer to marshal.
+     * @param bytes Vector to fill.
+     */
+    static void marshal(int64_t i64, std::vector<int8_t>& bytes);
+
+    /**
+     * Marshals UUID to byte vector.
+     *
+     * @param uuid An UUID to marshal.
+     * @param bytes Vector to fill.
+     */
+    static void marshal(const GridClientUuid& uuid, std::vector<int8_t>& bytes);
 
     /**
      * Sets the size header of this packet.

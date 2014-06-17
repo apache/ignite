@@ -192,7 +192,6 @@ BOOST_AUTO_TEST_CASE(testPortableTask) {
     delete p;
 }
 
-/*
 BOOST_AUTO_TEST_CASE(testPortableKey) {
     GridClientConfiguration cfg = clientConfig();
 
@@ -228,9 +227,7 @@ BOOST_AUTO_TEST_CASE(testPortableKey) {
 
     BOOST_REQUIRE(!val.hasAnyValue());
 }
-*/
 
-/*
 BOOST_AUTO_TEST_CASE(testPortableCache) {
     GridClientConfiguration cfg = clientConfig();
 
@@ -277,9 +274,7 @@ BOOST_AUTO_TEST_CASE(testExternalPortableCache) {
     delete p->getObject();
     delete p;
 }
-*/
 
-/*
 BOOST_AUTO_TEST_CASE(testPortableSerialization) {
     GridPortableMarshaller marsh;
 
@@ -318,6 +313,5 @@ BOOST_AUTO_TEST_CASE(testExternalSerialization) {
     delete pRead->getObject();
     delete pRead;
 }
-*/
 
 BOOST_AUTO_TEST_SUITE_END()

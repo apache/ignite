@@ -18,14 +18,11 @@
 
 #include "gridgain/impl/cmd/gridclienttcpcommandexecutor.hpp"
 #include "gridgain/impl/connection/gridclienttcpconnection.hpp"
-#include "gridgain/impl/marshaller/protobuf/gridclientprotobufmarshaller.hpp"
 #include "gridgain/impl/marshaller/gridnodemarshallerhelper.hpp"
 #include "gridgain/impl/marshaller/portable/gridportablemarshaller.hpp"
 #include "gridgain/impl/connection/gridclientconnectionpool.hpp"
 #include "gridgain/gridclientexception.hpp"
 #include "gridgain/impl/utils/gridclientlog.hpp"
-
-using namespace org::gridgain::grid::kernal::processors::rest::client::message;
 
 /**
  * Sends a log command to a remote host.
@@ -42,7 +39,7 @@ void GridClientTcpCommandExecutor::executeLogCmd(const GridClientSocketAddress& 
     msg.to = logCmd.to();
     msg.path = logCmd.path();
 
-    executeCmdPortable(host, msg, logCmd, rslt);
+    executeCmd(host, msg, logCmd, rslt);
 }
 
 /**
@@ -67,7 +64,7 @@ void GridClientTcpCommandExecutor::executeTopologyCmd(const GridClientSocketAddr
     else if (!topCmd.getNodeIp().empty())
         msg.setNodeId(topCmd.getNodeIp());
 
-    executeCmdPortable(host, msg, topCmd, rslt);
+    executeCmd(host, msg, topCmd, rslt);
 }
 
 /**
@@ -82,8 +79,8 @@ void GridClientTcpCommandExecutor::executeGetCacheCmd(const GridClientSocketAddr
     GridClientCacheRequest msg;
 
     msg.init(cacheCmd);
-    
-    executeCmdPortable(host, msg, cacheCmd, rslt);
+
+    executeCmd(host, msg, cacheCmd, rslt);
 }
 
 /**
@@ -98,8 +95,8 @@ void GridClientTcpCommandExecutor::executeModifyCacheCmd(const GridClientSocketA
     GridClientCacheRequest msg;
 
     msg.init(cacheCmd);
-    
-    executeCmdPortable(host, msg, cacheCmd, rslt);
+
+    executeCmd(host, msg, cacheCmd, rslt);
 }
 
 /**
@@ -114,8 +111,8 @@ void GridClientTcpCommandExecutor::executeGetCacheMetricsCmd(const GridClientSoc
     GridClientCacheRequest msg;
 
     msg.init(cacheCmd);
-    
-    executeCmdPortable(host, msg, cacheCmd, rslt);
+
+    executeCmd(host, msg, cacheCmd, rslt);
 }
 
 /**
@@ -131,8 +128,8 @@ void GridClientTcpCommandExecutor::executeTaskCmd(const GridClientSocketAddress&
 
     msg.taskName = taskCmd.getTaskName();
     msg.arg = taskCmd.getArg();
-         
-    executeCmdPortable(host, msg, taskCmd, rslt);
+
+    executeCmd(host, msg, taskCmd, rslt);
 }
 
 /**
@@ -142,13 +139,13 @@ void GridClientTcpCommandExecutor::executeTaskCmd(const GridClientSocketAddress&
  * @param cmd Command to send.
  * @param rslt Response message to fill.
  */
-template<class C, class R> void GridClientTcpCommandExecutor::executeCmdPortable(const GridClientSocketAddress& host, GridClientPortableMessage& msg, C& cmd, R& response) {
+template<class C, class R> void GridClientTcpCommandExecutor::executeCmd(const GridClientSocketAddress& host, GridClientPortableMessage& msg, C& cmd, R& response) {
     std::shared_ptr<GridClientTcpConnection> conn = connPool->rentTcpConnection(host.host(), host.port());
 
     msg.sesTok = cmd.sessionToken();
 
-    vector<int8_t> data = marsh.marshal(msg);    
-    
+    std::vector<int8_t> data = marsh.marshal(msg);
+
     GridClientTcpPacket tcpPacket;
     GridClientTcpPacket tcpResponse;
 
@@ -165,11 +162,11 @@ template<class C, class R> void GridClientTcpCommandExecutor::executeCmdPortable
 
         throw;
     }
-    
+
     GG_LOG_DEBUG("Successfully executed requestId [%lld] typeId [%d] on [%s:%d].", cmd.getRequestId(), msg.typeId(), host.host().c_str(), host.port());
-    
-    GridClientResponse* resMsg = marsh.unmarshal<GridClientResponse>(tcpResponse.getRawData());
-    
+
+    std::unique_ptr<GridClientResponse> resMsg(marsh.unmarshal<GridClientResponse>(tcpResponse.getData()));
+
     response.setStatus(static_cast<GridClientMessageResult::StatusCode>(resMsg->status));
 
     if (!resMsg->errorMsg.empty())
@@ -177,9 +174,7 @@ template<class C, class R> void GridClientTcpCommandExecutor::executeCmdPortable
 
     response.sessionToken(resMsg->sesTok);
 
-    marsh.parseResponse(resMsg, response);
-
-    delete resMsg;
+    marsh.parseResponse(resMsg.get(), response);
 }
 
 /**
@@ -189,6 +184,7 @@ template<class C, class R> void GridClientTcpCommandExecutor::executeCmdPortable
  * @param cmd Command to send.
  * @param rslt Response message to fill.
  */
+/*
 template<class C, class R> void GridClientTcpCommandExecutor::executeCmd(const GridClientSocketAddress& host, C& cmd,
     R& rslt) {
     ObjectWrapper protoMsg;
@@ -228,6 +224,7 @@ template<class C, class R> void GridClientTcpCommandExecutor::executeCmd(const G
 
     GridClientProtobufMarshaller::unwrap(respMsg, rslt);
 }
+*/
 
 /**
  * Stops the command executor freeing all resources

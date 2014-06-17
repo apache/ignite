@@ -27,6 +27,10 @@ class GRIDGAIN_API GridPortableReader {
 public:
     virtual bool readBool(char* fieldName) = 0;
 
+    virtual int8_t readByte(char* fieldName) = 0;
+
+    virtual int16_t readInt16(char* fieldName) = 0;
+
     virtual int32_t readInt32(char* fieldName) = 0;
 
     virtual int64_t readInt64(char* fieldName) = 0;
