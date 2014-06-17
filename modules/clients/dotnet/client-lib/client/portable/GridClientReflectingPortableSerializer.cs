@@ -22,7 +22,19 @@ namespace GridGain.Client.Portable
     {
         /** Cached binding flags. */
         private static readonly BindingFlags FLAGS = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
-        
+
+        /** Collection type. */
+        private static readonly Type TYP_COLLECTION = typeof(ICollection);
+
+        /** Dictionary type. */
+        private static readonly Type TYP_DICTIONARY = typeof(IDictionary);
+
+        /** Generic collection type. */
+        private static readonly Type TYP_GENERIC_COLLECTION = typeof(ICollection<>);
+
+        /** Generic dictionary type. */
+        private static readonly Type TYP_GENERIC_DICTIONARY = typeof(IDictionary<,>);
+
         /** Cached type descriptors. */
         private readonly ConcurrentDictionary<Type, Descriptor> types = new ConcurrentDictionary<Type, Descriptor>();
 
@@ -110,8 +122,24 @@ namespace GridGain.Client.Portable
                         actions.Add((obj, writer) => { writer.WriteEnum(name, (Enum)field.GetValue(obj)); });
                     else if (type.IsArray)
                         HandleArray(field, type, name, actions);
-                    else if (type.IsGenericType)
-                        HandleGeneric(field, type, name, actions);
+                    else if (type.IsGenericType && type.GetInterface(TYP_GENERIC_DICTIONARY.Name) != null)
+                    {
+                        actions.Add((obj, writer) =>
+                        {
+                            dynamic val = field.GetValue(obj);
+
+                            writer.WriteMap(name, val);
+                        });
+                    }
+                    else if (type.IsGenericType && type.GetInterface(TYP_GENERIC_COLLECTION.Name) != null)
+                    {
+                        actions.Add((obj, writer) =>
+                        {
+                            dynamic val = field.GetValue(obj);
+
+                            writer.WriteCollection(name, val);
+                        });
+                    }
                     else if (type is IDictionary) 
                     {
                         actions.Add((obj, writer) =>
@@ -231,13 +259,23 @@ namespace GridGain.Client.Portable
              */
             private void HandleGeneric(FieldInfo field, Type type, string name, ICollection<Action<Object, IGridClientPortableWriter>> actions)
             {
-                if (type.IsGenericType && type.GetGenericTypeDefinition() is IDictionary)
+                if (type.IsGenericType && type.GetInterface(TYP_GENERIC_DICTIONARY.Name) != null)
                 {
+                    actions.Add((obj, writer) => 
+                    {
+                        dynamic val = field.GetValue(obj);
 
+                        writer.WriteMap(name, val); 
+                    });
                 }
-                else if (type.IsGenericType && type.GetGenericTypeDefinition() is ICollection)
+                else if (type.IsGenericType && type.GetInterface(TYP_GENERIC_COLLECTION.Name) != null)
                 {
+                    actions.Add((obj, writer) =>
+                    {
+                        dynamic val = field.GetValue(obj);
 
+                        writer.WriteCollection(name, val);
+                    });
                 }
             }
 
