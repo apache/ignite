@@ -10,8 +10,9 @@
 namespace GridGain.Client.Impl.Marshaller
 {
     using System;
-    using System.IO;
+    using System.Collections;
     using System.Collections.Generic;
+    using System.IO;
     using GridGain.Client.Portable;
 
     /** <summary>Portable marshaller implementation.</summary> */
@@ -260,6 +261,8 @@ namespace GridGain.Client.Impl.Marshaller
     /** <summary>Writer which simply caches passed values.</summary> */
     private class DelayedWriter : IGridClientPortableWriter 
     {
+
+
         /** Named actions. */
         private readonly List<Action<IGridClientPortableWriter>> namedActions = new List<Action<IGridClientPortableWriter>>();
 
@@ -548,6 +551,18 @@ namespace GridGain.Client.Impl.Marshaller
         }
 
         /** <inheritdoc /> */
+        public void WriteCollection(string fieldName, ICollection val)
+        {
+            namedActions.Add((writer) => writer.WriteCollection(fieldName, val));
+        }
+
+        /** <inheritdoc /> */
+        public void WriteCollection(ICollection val)
+        {
+            actions.Add((writer) => writer.WriteCollection(val));
+        }
+
+        /** <inheritdoc /> */
         public void WriteCollection<T>(string fieldName, ICollection<T> val)
         {
             namedActions.Add((writer) => writer.WriteCollection(fieldName, val));
@@ -557,6 +572,18 @@ namespace GridGain.Client.Impl.Marshaller
         public void WriteCollection<T>(ICollection<T> val)
         {
             actions.Add((writer) => writer.WriteCollection(val));
+        }
+
+        /** <inheritdoc /> */
+        public void WriteMap(string fieldName, IDictionary val)
+        {
+            namedActions.Add((writer) => writer.WriteMap(fieldName, val));
+        }
+
+        /** <inheritdoc /> */
+        public void WriteMap(IDictionary val)
+        {
+            actions.Add((writer) => writer.WriteMap(val));
         }
 
         /** <inheritdoc /> */
