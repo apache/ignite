@@ -65,8 +65,8 @@ a set of additional modules needed for this edition to work. Specifically:
 - gridgain-platform
   - (all dependencies included in other editions)
 
-Here is how 'gridgain-datagrid-edition' can be added to your POM file
-(replace '${gridgain.version}' with actual GridGain version you are interested in):
+Here is how 'gridgain-datagrid' can be added to your POM file (replace '${gridgain.version}'
+with actual GridGain version you are interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
