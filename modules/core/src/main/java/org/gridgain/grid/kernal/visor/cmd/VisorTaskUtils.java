@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.visor.cmd;
 
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -26,8 +27,17 @@ public class VisorTaskUtils {
      * @param name Grid-style nullable name.
      * @return Name with {@code null} replaced to &lt;default&gt;.
      */
-    public static String escapeName(String name) {
+    public static String escapeName(@Nullable String name) {
         return name == null ? DFLT_EMPTY_NAME : name;
+    }
+
+    /**
+     * @param a First name.
+     * @param b Second name.
+     * @return {@code true} if both names equals.
+     */
+    public static boolean safeEquals(@Nullable String a, @Nullable String b) {
+        return (a != null && b != null) ? a.equals(b) : (a == null && b == null);
     }
 
     /**
@@ -51,7 +61,7 @@ public class VisorTaskUtils {
      * @param obj Object to compact.
      * @return String.
      */
-    public static Object compactObject(Object obj) {
+    @Nullable public static Object compactObject(Object obj) {
         if (obj == null)
             return null;
 
@@ -101,7 +111,7 @@ public class VisorTaskUtils {
 
             StringBuilder sb = new StringBuilder("[");
 
-            for (int i = 0; i < 0; i++) {
+            for (int i = 0; i <= iMax; i++) {
                 sb.append(compactObject(arr[i]));
 
                 if (i != iMax)
@@ -116,7 +126,7 @@ public class VisorTaskUtils {
         return U.compact(obj.getClass().getName());
     }
 
-    public static String compactClass(Object obj) {
+    @Nullable public static String compactClass(Object obj) {
         if (obj == null)
             return null;
 
@@ -129,7 +139,7 @@ public class VisorTaskUtils {
      * @param arr Array.
      * @return String.
      */
-    public static String compactArray(Object[] arr) {
+    @Nullable public static String compactArray(Object[] arr) {
         if (arr == null || arr.length == 0)
             return null;
 
