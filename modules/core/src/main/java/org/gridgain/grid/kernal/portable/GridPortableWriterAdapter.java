@@ -55,10 +55,11 @@ class GridPortableWriterAdapter implements GridPortableWriter {
     /** */
     private static final GridPortablePrimitivesWriter PRIM = GridPortablePrimitivesWriter.get();
 
-//    /** */
-//    private final Map<String, > fieldNames = new ArrayList<>();
-//
-//    private final
+    /** */
+    private final Map<String, Runnable> data = new LinkedHashMap<>();
+
+    /** */
+    private final Collection<Runnable> rawData = new ArrayList<>();
 
     /** */
     protected GridPortableByteArray arr;
@@ -69,10 +70,10 @@ class GridPortableWriterAdapter implements GridPortableWriter {
     }
 
     /**
-     * @param arr Array.
+     * @param writer Writer.
      */
-    protected GridPortableWriterAdapter(GridPortableByteArray arr) {
-        this.arr = arr;
+    protected GridPortableWriterAdapter(GridPortableWriterAdapter writer) {
+        arr = writer.arr;
     }
 
     /**
@@ -97,24 +98,19 @@ class GridPortableWriterAdapter implements GridPortableWriter {
     }
 
     /**
-     * @param obj Object to marshal.
-     * @throws GridPortableException In case of error.
-     */
-    void marshal(Object obj) throws GridPortableException {
-        assert obj != null;
-
-        GridPortableClassDescriptor desc = GridPortableClassDescriptor.get(obj.getClass());
-
-        assert desc != null;
-
-        desc.write(obj, this);
-    }
-
-    /**
      * @param off Offset.
      */
     void writeCurrentSize(int off) {
         PRIM.writeInt(arr.array(), off, arr.size());
+    }
+
+    /**
+     * @param val Byte array.
+     */
+    void write(byte[] val) {
+        assert val != null;
+
+        UNSAFE.copyMemory(val, BYTE_ARR_OFF, arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(val.length), val.length);
     }
 
     /**
@@ -197,14 +193,19 @@ class GridPortableWriterAdapter implements GridPortableWriter {
      * @param obj Object.
      */
     <T> void doWriteObject(@Nullable T obj) throws GridPortableException {
-        if (obj == null)
+        if (obj == null) {
             doWriteInt(NULL);
+
+            return;
+        }
 
         // TODO: Handle.
 
-        GridPortableWriterAdapter writer = new GridPortableWriterAdapter(arr);
+        GridPortableClassDescriptor desc = GridPortableClassDescriptor.get(obj.getClass());
 
-        writer.marshal(obj);
+        assert desc != null;
+
+        desc.write(obj, this);
     }
 
     /**
@@ -374,13 +375,24 @@ class GridPortableWriterAdapter implements GridPortableWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeByte(String fieldName, byte val) throws GridPortableException {
-        // TODO: implement.
+    @Override public void writeByte(String fieldName, final byte val) throws GridPortableException {
+        Runnable old = data.put(fieldName, new Runnable() {
+            @Override public void run() {
+                doWriteByte(val);
+            }
+        });
+
+        if (old != null)
+            throw new GridPortableException("Duplicate field name: " + fieldName);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeByte(byte val) throws GridPortableException {
-        // TODO
+    @Override public void writeByte(final byte val) throws GridPortableException {
+        rawData.add(new Runnable() {
+            @Override public void run() {
+                doWriteByte(val);
+            }
+        });
     }
 
     /** {@inheritDoc} */

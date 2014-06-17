@@ -38,11 +38,15 @@ class GridPortableClassDescriptor {
     /** */
     private static final ConcurrentMap<Class<?>, GridPortableClassDescriptor> CACHE = new ConcurrentHashMap8<>(256);
 
+    /** */
+    private static final int TOTAL_LEN_POS = 9;
+
     /**
      * @param cls Class.
      * @return Class descriptor.
+     * @throws GridPortableException In case of error.
      */
-    public static GridPortableClassDescriptor get(Class<?> cls) {
+    public static GridPortableClassDescriptor get(Class<?> cls) throws GridPortableException {
         assert cls != null;
 
         GridPortableClassDescriptor desc = CACHE.get(cls);
@@ -64,7 +68,7 @@ class GridPortableClassDescriptor {
     private final int typeId;
 
     /** */
-    private List<T2<Field, Integer>> fields;
+    private List<FieldInfo> fields;
 
     /** */
     private byte[] hdr;
@@ -72,10 +76,10 @@ class GridPortableClassDescriptor {
     /**
      * @param cls Class.
      */
-    private GridPortableClassDescriptor(Class<?> cls) {
+    private GridPortableClassDescriptor(Class<?> cls) throws GridPortableException {
         assert cls != null;
 
-        typeId = cls.getSimpleName().hashCode(); // TODO
+        typeId = cls.getSimpleName().hashCode(); // TODO: should be taken from config
 
         // TODO: Other types.
 
@@ -86,12 +90,11 @@ class GridPortableClassDescriptor {
 
             fields = new ArrayList<>();
 
-            Collection<T2<Field, Integer>> namedFields = new ArrayList<>();
-
+            Collection<String> names = new HashSet<>();
             Collection<Integer> hashCodes = new LinkedHashSet<>();
-            Collection<byte[]> names = null;
+            Collection<T2<byte[], Field>> namedFields = null;
 
-            int hdrLen = 8;
+            int hdrLen = 4;
 
             for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
                 for (Field f : c.getDeclaredFields()) {
@@ -102,28 +105,37 @@ class GridPortableClassDescriptor {
 
                         String name = f.getName();
 
-                        if (hashCodes.add(name.hashCode())) {
-                            fields.add(f);
+                        if (!names.add(name))
+                            throw new GridPortableException("Two fields in class " + cls.getName() +
+                                " have the same name: " + name);
 
-                            hdrLen += 8;
+                        if (hashCodes.add(name.hashCode())) {
+                            hdrLen += 4;
+
+                            fields.add(new FieldInfo(f, hdrLen));
+
+                            hdrLen += 4;
                         }
                         else {
-                            namedFields.add(f);
+                            if (namedFields == null)
+                                namedFields = new ArrayList<>();
 
-                            byte[] nameArr = name.getBytes(); // TODO: UTF-8
-
-                            if (names == null)
-                                names = new ArrayList<>();
-
-                            names.add(nameArr);
-
-                            hdrLen += nameArr.length + 4;
+                            namedFields.add(new T2<>(name.getBytes(), f)); // TODO: UTF-8
                         }
                     }
                 }
             }
 
-            fields.addAll(namedFields);
+            for (T2<byte[], Field> t : namedFields) {
+                byte[] name = t.get1();
+                Field f = t.get2();
+
+                hdrLen += name.length;
+
+                fields.add(new FieldInfo(f, hdrLen));
+
+                hdrLen += 4;
+            }
 
             hdr = new byte[hdrLen];
 
@@ -139,10 +151,14 @@ class GridPortableClassDescriptor {
                 off += 8;
             }
 
-            PRIM.writeInt(hdr, off, names != null ? names.size() : -1);
+            PRIM.writeInt(hdr, off, namedFields != null ? namedFields.size() : -1);
 
-            if (names != null) {
-                for (byte[] name : names) {
+            off += 4;
+
+            if (namedFields != null) {
+                for (T2<byte[], Field> t : namedFields) {
+                    byte[] name = t.get1();
+
                     UNSAFE.copyMemory(name, BYTE_ARR_OFF, hdr, BYTE_ARR_OFF + off, name.length);
 
                     off += name.length + 4;
@@ -164,16 +180,22 @@ class GridPortableClassDescriptor {
 
         switch (mode) {
             case PORTABLE_EX:
-//                writer.doWriteInt(obj.hashCode());
-//
-//                // Length.
-//                writer.reserve(4);
-//
-//                ((GridPortableEx)obj).writePortable(writer);
-//
-//                writer.doWriteInt(-1); // TODO: Header handles.
-//
-//                writer.flush();
+                writer = new GridPortableWriterAdapter(writer);
+
+                writer.doWriteInt(obj.hashCode());
+
+                // Length.
+                writer.reserve(4);
+
+                // Header handles are not supported for GridPortableEx.
+                writer.doWriteInt(-1);
+
+                ((GridPortableEx)obj).writePortable(writer);
+
+                writer.flush();
+
+                // Length.
+                writer.writeCurrentSize(TOTAL_LEN_POS);
 
                 break;
 
@@ -184,20 +206,21 @@ class GridPortableClassDescriptor {
                 writer.reserve(4);
 
                 writer.doWriteInt(-1); // TODO: Header handles.
-                writer.doWriteByteArray(hdr);
+                writer.write(hdr);
 
-                for (int i = 0; i < fields.size(); i++) {
-                    Field f = fields.get(i);
-
-                    writer.writeCurrentSize();
+                for (FieldInfo info : fields) {
+                    writer.writeCurrentSize(info.offPos);
 
                     try {
-                        writer.doWriteObject(f.get(obj));
+                        writer.doWriteObject(info.field.get(obj));
                     }
                     catch (IllegalAccessException e) {
-                        throw new GridPortableException("Failed to get value for field: " + f, e);
+                        throw new GridPortableException("Failed to get value for field: " + info.field, e);
                     }
                 }
+
+                // Length.
+                writer.writeCurrentSize(TOTAL_LEN_POS);
 
                 break;
 
@@ -206,9 +229,25 @@ class GridPortableClassDescriptor {
         }
     }
 
-    /**
-     * Types.
-     */
+    /** */
+    private static class FieldInfo {
+        /** */
+        private final Field field;
+
+        /** */
+        private final int offPos;
+
+        /**
+         * @param field Field.
+         * @param offPos Offset position.
+         */
+        private FieldInfo(Field field, int offPos) {
+            this.field = field;
+            this.offPos = offPos;
+        }
+    }
+
+    /** */
     private enum Mode {
         // TODO: Others
 
