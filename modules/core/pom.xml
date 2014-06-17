@@ -192,7 +192,7 @@
 
                                 <replaceregexp file="target/classes/gridgain.properties" byline="true">
                                     <regexp pattern="gridgain.update.status.params=.*"/>
-                                    <substitution expression="gridgain.update.status.params=?v=${gridgain.version}"/>
+                                    <substitution expression="gridgain.update.status.params=ver=${gridgain.version}"/>
                                 </replaceregexp>
                             </target>
                         </configuration>

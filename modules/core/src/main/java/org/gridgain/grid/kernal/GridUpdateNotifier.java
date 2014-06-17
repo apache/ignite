@@ -44,9 +44,6 @@ class GridUpdateNotifier {
     /** Throttling for logging out. */
     private static final long THROTTLE_PERIOD = 24 * 60 * 60 * 1000; // 1 day.
 
-    /** Max length of package prefixes string. */
-    private static final int MAX_PREFIXES_LENGTH = 1024;
-
     /** Grid version. */
     private final String ver;
 
@@ -66,13 +63,16 @@ class GridUpdateNotifier {
     private final String gridName;
 
     /** Whether or not to report only new version. */
-    private boolean reportOnlyNew;
+    private volatile boolean reportOnlyNew;
 
     /** */
-    private int topSize;
+    private volatile int topSize;
 
     /** Package prefixes. */
-    private String packages;
+    private final String packages;
+
+    /** System properties */
+    private final String sysProps;
 
     /** */
     private long lastLog = -1;
@@ -92,11 +92,6 @@ class GridUpdateNotifier {
     GridUpdateNotifier(String gridName, String ver, String site, boolean reportOnlyNew)
         throws GridException {
         try {
-            packages = getPackages();
-
-            if (packages.length() > MAX_PREFIXES_LENGTH)
-                packages = packages.substring(0, MAX_PREFIXES_LENGTH);
-
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 
             documentBuilder = factory.newDocumentBuilder();
@@ -116,6 +111,9 @@ class GridUpdateNotifier {
 
             this.gridName = gridName == null ? "null" : gridName;
             this.reportOnlyNew = reportOnlyNew;
+
+            packages = getPackages();
+            sysProps = getSystemProperties();
         }
         catch (ParserConfigurationException e) {
             throw new GridException("Failed to create xml parser.", e);
@@ -130,21 +128,54 @@ class GridUpdateNotifier {
     private static String getPackages() {
         Collection<String> prefixes = new HashSet<>();
 
-        for (StackTraceElement trace : Thread.currentThread().getStackTrace()) {
-            String cls = trace.getClassName();
+        try {
+            for (StackTraceElement trace : Thread.currentThread().getStackTrace()) {
+                String cls = trace.getClassName();
 
-            if (cls.startsWith("sun.") || cls.startsWith("lang.") || cls.startsWith("java.") ||
-                cls.startsWith("javax.") || cls.startsWith("junit."))
-                continue;
+                if (F.isEmpty(cls))
+                    continue;
 
-            String[] pckgs = cls.split("\\.");
+                if (cls.startsWith("sun.") || cls.startsWith("lang.") || cls.startsWith("java.") ||
+                    cls.startsWith("javax.") || cls.startsWith("junit."))
+                    continue;
 
-            String pckg = pckgs[0] + (pckgs.length > 1 ? "." + pckgs[1] : "");
+                String[] pckgs = cls.split("\\.");
 
-            prefixes.add(pckg);
+                String pckg = pckgs[0] + (pckgs.length > 1 ? "." + pckgs[1] : "");
+
+                prefixes.add(pckg);
+            }
+
+            return prefixes.isEmpty() ? null : F.concat(prefixes, ",");
         }
+        catch (SecurityException ignore) {
+            return null;
+        }
+    }
 
-        return prefixes.isEmpty() ? null : F.concat(prefixes, ",");
+    /**
+     * Gets system properties.
+     *
+     * @return System properties.
+     */
+    private static String getSystemProperties() {
+        try {
+            Properties props = System.getProperties();
+
+            StringWriter sw = new StringWriter();
+
+            try {
+                props.store(new PrintWriter(sw), "");
+            }
+            catch (IOException ignore) {
+                return null;
+            }
+
+            return sw.getBuffer().toString();
+        }
+        catch (SecurityException ignore) {
+            return null;
+        }
     }
 
     /**
@@ -276,11 +307,12 @@ class GridUpdateNotifier {
                 GridProductLicense lic = licProc != null ? licProc.license() : null;
 
                 String postParams =
-                    (F.isEmpty(UPD_STATUS_PARAMS) ? "" : encode(UPD_STATUS_PARAMS, CHARSET) + '&') +
-                    (topSize > 0 ? "t=" + topSize + '&' : "") +
-                    (lic != null ? "l=" + lic.id() + '&' : "") +
-                    "p=" + encode(gridName, CHARSET) + '&' +
-                    (packages != null ? "c=" + encode(packages, CHARSET) : "");
+                    "gridName=" + encode(gridName, CHARSET) +
+                    (!F.isEmpty(UPD_STATUS_PARAMS) ? "&" + encode(UPD_STATUS_PARAMS, CHARSET) : "") +
+                    (topSize > 0 ? "&topSize=" + topSize : "") +
+                    (lic != null ? "&licenseId=" + lic.id() : "") +
+                    (!F.isEmpty(packages) ? "&package=" + encode(packages, CHARSET) : "") +
+                    (!F.isEmpty(sysProps) ? "&userProps=" + encode(sysProps, CHARSET) : "");
 
                 URLConnection conn = new URL(url).openConnection();
 
