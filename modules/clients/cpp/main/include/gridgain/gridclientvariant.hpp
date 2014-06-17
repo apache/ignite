@@ -24,12 +24,6 @@
 class GridClientVariantVisitor;
 class GridClientVariant;
 
-namespace std {
-  template <> struct hash<GridClientVariant> {
-    size_t operator()(const GridClientVariant& x) const;
-  };
-}
-
 /**
  * Class that replaces java.lang.Object holder for primitive types and string. It can hold boolean, int_*, float, double,
  * string and byte array values.
@@ -59,7 +53,7 @@ private:
                 float,
                 std::string, std::wstring, std::vector<int8_t>,
                 std::vector<GridClientVariant>,
-                std::unordered_map<GridClientVariant, GridClientVariant>,
+                boost::unordered_map<GridClientVariant, GridClientVariant>,
                 GridClientUuid> TVariantType;
 
         /** Boost variable. */
@@ -169,7 +163,7 @@ public:
     /**
      * Constructor with variant map argument.
      */
-    GridClientVariant(const std::unordered_map<GridClientVariant, GridClientVariant>& val);
+    GridClientVariant(const boost::unordered_map<GridClientVariant, GridClientVariant>& val);
 
     /**
      * Constructor with UUID argument.
@@ -450,7 +444,7 @@ public:
      *
      * @return Value held in the variant.
      */
-    std::unordered_map<GridClientVariant, GridClientVariant> getVariantMap() const;
+    boost::unordered_map<GridClientVariant, GridClientVariant> getVariantMap() const;
 
     /**
      * Assigns this variant a UUID value.
@@ -514,6 +508,8 @@ private:
     Impl pimpl;
 };
 
+std::size_t hash_value(GridClientVariant const& variant);
+
 /**
  * Print 'null' value to output stream.
  *
@@ -571,7 +567,7 @@ public:
     virtual void visit(const std::vector<GridClientVariant>&) const = 0;
 
     /** */
-    virtual void visit(const std::unordered_map<GridClientVariant, GridClientVariant>&) const = 0;
+    virtual void visit(const boost::unordered_map<GridClientVariant, GridClientVariant>&) const = 0;
 
     /** */
     virtual void visit(const GridClientUuid&) const = 0;

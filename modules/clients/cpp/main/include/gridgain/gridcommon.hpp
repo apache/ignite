@@ -12,15 +12,15 @@
 #define WIN32_LEAN_AND_MEAN // Solves Boost include problems on Windows.
 
 #include <memory>
-#include <unordered_map>
 #include <cstdint>
+#include <boost/unordered_map.hpp>
 
 #define strtoll _strtoi64
 
 #else
 
 #include <memory>
-#include <unordered_map>
+#include <boost/unordered_map.hpp>
 
 #endif
 

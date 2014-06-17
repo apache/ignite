@@ -12,7 +12,7 @@
 
 #include <string>
 #include <exception>
-#include <unordered_map>
+#include <boost/unordered_map.hpp>
 #include <set>
 #include <cassert>
 
@@ -26,7 +26,7 @@
 class GridCacheRequestCommand  : public GridClientMessageCommand {
 public:
     /** Typedef for cache request. */
-    typedef std::unordered_map<GridClientVariant, GridClientVariant> TKeyValueMap;
+    typedef boost::unordered_map<GridClientVariant, GridClientVariant> TKeyValueMap;
 
     /**
      * Available cache operations

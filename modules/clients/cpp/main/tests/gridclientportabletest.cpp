@@ -39,7 +39,7 @@
 
 #include "gridgain/impl/marshaller/portable/gridportablemarshaller.hpp"
 
-#include <unordered_map>
+#include <boost/unordered_map.hpp>
 
 using namespace std;
 

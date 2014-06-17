@@ -12,7 +12,7 @@
 
 #include <string>
 #include <vector>
-#include <unordered_map>
+#include <boost/unordered_map.hpp>
 #include <boost/optional.hpp>
 
 #include <gridgain/gridconf.hpp>
@@ -47,7 +47,7 @@ public:
 
     virtual void writeCollection(char* fieldName, const std::vector<GridClientVariant> &val) = 0;
 
-    virtual void writeMap(char* fieldName, const std::unordered_map<GridClientVariant, GridClientVariant> &map) = 0;
+    virtual void writeMap(char* fieldName, const boost::unordered_map<GridClientVariant, GridClientVariant> &map) = 0;
 
     virtual void writeUuid(char* fieldName, const boost::optional<GridClientUuid>& val) = 0;
 };

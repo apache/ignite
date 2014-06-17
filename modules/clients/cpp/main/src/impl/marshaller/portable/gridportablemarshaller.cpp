@@ -6,7 +6,7 @@
  *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
-#include <unordered_map>
+#include <boost/unordered_map.hpp>
 
 #include "gridgain/gridportable.hpp"
 #include "gridgain/gridportableserializer.hpp"
@@ -15,22 +15,20 @@
 
 #include "gridgain/impl/marshaller/portable/gridportablemarshaller.hpp"
 
-using namespace std;
-
-unordered_map<int32_t, GridPortableFactory*>& portableFactories() {
-    static unordered_map<int32_t, GridPortableFactory*> portableFactories;
+boost::unordered_map<int32_t, GridPortableFactory*>& portableFactories() {
+    static boost::unordered_map<int32_t, GridPortableFactory*> portableFactories;
 
     return portableFactories;
 }
 
 void registerPortableFactory(int32_t typeId, GridPortableFactory* factory) {
-    unordered_map<int32_t, GridPortableFactory*>& factories = portableFactories();
+    boost::unordered_map<int32_t, GridPortableFactory*>& factories = portableFactories();
 
     factories[typeId] = factory;
 }
 
 GridPortable* createPortable(int32_t typeId, GridPortableReader &reader) {
-    unordered_map<int32_t, GridPortableFactory*>& factories = portableFactories();
+    boost::unordered_map<int32_t, GridPortableFactory*>& factories = portableFactories();
 
     GridPortableFactory* factory = factories[typeId];
 

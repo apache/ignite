@@ -15,7 +15,6 @@
 #include "boost/date_time/posix_time/posix_time.hpp"
 
 #include "gridtestcommon.hpp"
-#include "gridgain/impl/marshaller/protobuf/ClientMessages.pb.h"
 #include "gridgain/gridclientnodemetricsbean.hpp"
 #include "gridgain/impl/cmd/gridclientmessagelogrequestcommand.hpp"
 #include "gridgain/impl/cmd/gridclientmessagelogresult.hpp"
@@ -28,8 +27,6 @@
 #include "gridgain/impl/cmd/gridclientmessagecachegetresult.hpp"
 #include "gridgain/impl/cmd/gridclientmessagetaskrequestcommand.hpp"
 #include "gridgain/impl/cmd/gridclientmessagetaskresult.hpp"
-#include "gridgain/impl/marshaller/protobuf/gridclientobjectwrapperconvertor.hpp"
-#include "gridgain/impl/marshaller/protobuf/gridclientprotobufmarshaller.hpp"
 
 /** Map of command line arguments. */
 boost::program_options::variables_map vm;
@@ -54,10 +51,14 @@ public:
      *
      * @param iterationCnt How many iterations to perform.
      */
-    TestThread(org::gridgain::grid::kernal::processors::rest::client::message::ObjectWrapperType messageType) {
+    TestThread() {
         seed = time(NULL);
 
-        thread = boost::thread(boost::bind(&TestThread::run, this, messageType));
+        thread = boost::thread(boost::bind(&TestThread::run, this));
+    }
+
+    // TODO: 8536 change to portable marshal test .
+    void run() {
     }
 
     /**
@@ -65,6 +66,7 @@ public:
      *
      * @param messageType Type of messages to marshal.
      */
+     /*
     void run(ObjectWrapperType messageType) {
 
         using namespace org::gridgain::grid::kernal::processors::rest::client::message;
@@ -218,6 +220,7 @@ public:
             exit(1);
         }
     }
+    */
 
     /** Joins the test thread. */
     void join() {
@@ -245,7 +248,6 @@ typedef std::shared_ptr<TestThread> TestThreadPtr;
 int main(int argc, const char** argv) {
     using namespace std;
     using namespace boost::program_options;
-    using namespace org::gridgain::grid::kernal::processors::rest::client::message;
 
     // initialize random seed
     srand(time(NULL));
@@ -268,6 +270,7 @@ int main(int argc, const char** argv) {
     int totalOps = 0;
     double totalSecs = 0.0f;
 
+    /*
     if ((ObjectWrapperType) vm["messagetype"].as<int>() != NONE) {
         std::vector<TestThreadPtr> workers;
 
@@ -312,6 +315,7 @@ int main(int argc, const char** argv) {
             workers.clear();
         }
     }
+    */
 
     std::cout << "Total ops/sec " << totalOps / totalSecs << std::endl;
 

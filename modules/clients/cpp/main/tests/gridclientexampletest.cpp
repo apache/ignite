@@ -17,8 +17,8 @@
 #include <string.h>
 #include <iostream>
 #include <sstream>
-#include <unordered_map>
 
+#include <boost/unordered_map.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/lexical_cast.hpp>
@@ -122,7 +122,7 @@ BOOST_FIXTURE_TEST_CASE(clientCacheExample, GridClientFactoryFixture1<clientConf
 
     TGridBoolFuturePtr futPut = prj->putAsync((int32_t) 0, "new value for 0");
 
-    unordered_map<GridClientUuid, TGridClientVariantMap> keyVals;
+    boost::unordered_map<GridClientUuid, TGridClientVariantMap> keyVals;
 
     GridClientVariant key0 = GridClientVariant((int32_t)0);
 

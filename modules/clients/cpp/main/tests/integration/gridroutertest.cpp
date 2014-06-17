@@ -20,7 +20,6 @@ static string SERVER_ADDRESS = "127.0.0.1";
 static string CACHE_NAME = "partitioned";
 static int KEYS_CNT = 10;
 static int TCP_PORT = 12100;
-static int HTTP_PORT = 8081;
 
 GridClientConfiguration tcpClientConfiguration() {
     GridClientConfiguration clientConfig;
@@ -36,25 +35,6 @@ GridClientConfiguration tcpClientConfiguration() {
     GridClientProtocolConfiguration protoCfg;
     protoCfg.protocol(TCP);
     protoCfg.credentials("s3cret");
-
-    clientConfig.protocolConfiguration(protoCfg);
-
-    return clientConfig;
-}
-
-GridClientConfiguration httpClientConfiguration() {
-    GridClientConfiguration clientConfig;
-
-    vector<GridClientSocketAddress> routers;
-
-    cout << "Connecting to router " << SERVER_ADDRESS << ", port " << HTTP_PORT << endl;
-
-    routers.push_back(GridClientSocketAddress(SERVER_ADDRESS, HTTP_PORT));
-
-    clientConfig.routers(routers);
-
-    GridClientProtocolConfiguration protoCfg;
-    protoCfg.protocol(HTTP);
 
     clientConfig.protocolConfiguration(protoCfg);
 

@@ -12,7 +12,7 @@
 
 #include <string>
 #include <vector>
-#include <unordered_map>
+#include <boost/unordered_map.hpp>
 
 #include <gridgain/gridconf.hpp>
 #include <gridgain/gridclienttypedef.hpp>

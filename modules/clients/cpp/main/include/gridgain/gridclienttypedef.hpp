@@ -10,9 +10,9 @@
 #ifndef GRID_CLIENT_TYPEDEF_HPP_INCLUDED
 #define GRID_CLIENT_TYPEDEF_HPP_INCLUDED
 
-#include <unordered_map>
 #include <vector>
 #include <memory>
+#include <boost/unordered_map.hpp>
 
 class GridClient;
 class GridClientNode;
@@ -43,7 +43,7 @@ typedef std::shared_ptr<GridClientTopologyListener> TGridClientTopologyListenerP
 typedef std::shared_ptr<TGridClientNodePredicate> TGridClientNodePredicatePtr;
 typedef std::shared_ptr<GridClientRouterBalancer> TGridClientRouterBalancerPtr;
 
-typedef std::unordered_map<GridClientVariant, GridClientVariant> TGridClientVariantMap;
+typedef boost::unordered_map<GridClientVariant, GridClientVariant> TGridClientVariantMap;
 typedef std::vector<GridClientVariant> TGridClientVariantSet;
 typedef std::vector<TGridClientNodePtr> TGridClientNodeList;
 typedef std::vector<GridClientSocketAddress> TGridClientSocketAddressList;

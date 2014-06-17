@@ -9,6 +9,7 @@
 #include "gridgain/impl/utils/gridclientdebug.hpp"
 
 #include <vector>
+#include <boost/unordered_map.hpp>
 
 #include "gridgain/impl/hash/gridclientvarianthasheableobject.hpp"
 #include "gridgain/impl/hash/gridclientsimpletypehasheableobject.hpp"
@@ -122,7 +123,7 @@ public:
         uuid.convertToBytes(bytes);
     }
 
-    virtual void visit(const unordered_map<GridClientVariant, GridClientVariant>& vmap) const {
+    virtual void visit(const boost::unordered_map<GridClientVariant, GridClientVariant>& vmap) const {
         hashCode_ = 1;
     }
 

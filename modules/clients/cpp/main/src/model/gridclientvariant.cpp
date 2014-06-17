@@ -78,7 +78,7 @@ GridClientVariant::GridClientVariant(const vector<int8_t>& b) {
     portable = nullptr;
 }
 
-GridClientVariant::GridClientVariant(const std::unordered_map<GridClientVariant, GridClientVariant>& m) {
+GridClientVariant::GridClientVariant(const boost::unordered_map<GridClientVariant, GridClientVariant>& m) {
     pimpl.var = m;
     portable = nullptr;
 }
@@ -235,8 +235,8 @@ std::vector<GridClientVariant> GridClientVariant::getVariantVector() const {
     return boost::get<std::vector<GridClientVariant> >(pimpl.var);
 }
 
-std::unordered_map<GridClientVariant, GridClientVariant> GridClientVariant::getVariantMap() const {
-    return boost::get<std::unordered_map<GridClientVariant, GridClientVariant> >(pimpl.var);
+boost::unordered_map<GridClientVariant, GridClientVariant> GridClientVariant::getVariantMap() const {
+    return boost::get<boost::unordered_map<GridClientVariant, GridClientVariant> >(pimpl.var);
 }
 
 void GridClientVariant::set(const GridClientUuid& val) {
@@ -441,7 +441,7 @@ public:
         visitor.visit(val);
     }
 
-    void operator()(const unordered_map<GridClientVariant, GridClientVariant>& val) const {
+    void operator()(const boost::unordered_map<GridClientVariant, GridClientVariant>& val) const {
         visitor.visit(val);
     }
 
@@ -492,6 +492,6 @@ void GridClientVariant::clear() {
     portable = nullptr;
 }
 
-size_t hash<GridClientVariant>::operator()(const GridClientVariant& x) const {
+std::size_t hash_value(GridClientVariant const& x) {
     return GridClientVariantHasheableObject(x).hashCode();
-};
+}

@@ -12,7 +12,7 @@
 
 #include <string>
 #include <vector>
-#include <unordered_map>
+#include <boost/unordered_map.hpp>
 #include <boost/optional.hpp>
 
 #include <gridgain/gridconf.hpp>
@@ -49,7 +49,7 @@ public:
 
     virtual std::vector<GridClientVariant> readCollection(char* fieldName) = 0;
 
-    virtual std::unordered_map<GridClientVariant, GridClientVariant> readMap(char* fieldName) = 0;
+    virtual boost::unordered_map<GridClientVariant, GridClientVariant> readMap(char* fieldName) = 0;
 };
 
 class GridPortableFactory {

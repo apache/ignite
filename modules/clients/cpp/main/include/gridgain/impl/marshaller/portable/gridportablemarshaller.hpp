@@ -505,7 +505,7 @@ public:
             if (!ec)
                 addresses.push_back(newJettyAddress);
             else
-                GG_LOG_ERROR("Error resolving hostname: %s, %s", addr.getString(), ec.message().c_str());
+                GG_LOG_ERROR("Error resolving hostname: %s, %s", addr.getString().c_str(), ec.message().c_str());
         }
 
         for (size_t i = 0; i < jettyHostNames.size(); ++i) {
@@ -521,7 +521,7 @@ public:
             if (!ec)
                 addresses.push_back(newJettyAddress);
             else
-                GG_LOG_ERROR("Error resolving hostname: %s, %s", jettyHostNames[i].getString(), ec.message().c_str());
+                GG_LOG_ERROR("Error resolving hostname: %s, %s", jettyHostNames[i].getString().c_str(), ec.message().c_str());
         }
 
         helper.setJettyAddresses(addresses);
@@ -540,7 +540,7 @@ public:
             if (!ec)
                 addresses.push_back(newTCPAddress);
             else
-                GG_LOG_ERROR("Error resolving hostname: %s, %s", tcpAddrs[i].getString(), ec.message().c_str());
+                GG_LOG_ERROR("Error resolving hostname: %s, %s", tcpAddrs[i].getString().c_str(), ec.message().c_str());
         }
 
         for (size_t i = 0; i < tcpHostNames.size(); ++i) {
@@ -556,7 +556,7 @@ public:
             if (!ec)
                 addresses.push_back(newTCPAddress);
             else
-                GG_LOG_ERROR("Error resolving hostname: %s, %s", tcpHostNames[i].getString(), ec.message().c_str());
+                GG_LOG_ERROR("Error resolving hostname: %s, %s", tcpHostNames[i].getString().c_str(), ec.message().c_str());
         }
 
         helper.setTcpAddresses(addresses);
@@ -635,9 +635,9 @@ public:
 
     std::string dfltCacheMode;
 
-    std::unordered_map<GridClientVariant, GridClientVariant> attrs;
+    boost::unordered_map<GridClientVariant, GridClientVariant> attrs;
     
-    std::unordered_map<GridClientVariant, GridClientVariant> caches;
+    boost::unordered_map<GridClientVariant, GridClientVariant> caches;
 
     std::vector<GridClientVariant> tcpAddrs;
 
@@ -830,7 +830,7 @@ public:
 
     int32_t cacheFlagsOn;
 
-    std::unordered_map<GridClientVariant, GridClientVariant> vals;
+    boost::unordered_map<GridClientVariant, GridClientVariant> vals;
 };
 
 class GridClientLogRequest : public GridClientPortableMessage {
@@ -1132,7 +1132,7 @@ public:
         writeCollection(val);
     }
 
-    void writeMap(char* fieldName, const std::unordered_map<GridClientVariant, GridClientVariant> &map) override {
+    void writeMap(char* fieldName, const TGridClientVariantMap &map) override {
         writeMap(map);
     }
 
@@ -1153,7 +1153,7 @@ private:
         }
     }
 
-    void writeMap(const std::unordered_map<GridClientVariant, GridClientVariant>& map) {
+    void writeMap(const boost::unordered_map<GridClientVariant, GridClientVariant>& map) {
         out.writeByte(OBJECT_TYPE_OBJECT);
 
         out.writeInt32(map.size());
@@ -1269,62 +1269,42 @@ public:
     }
 
     GridPortable* readPortable() {
-        GG_LOG_DEBUG("Start read portable");
-
         int8_t type = in.readByte();
 
         assert(type == OBJECT_TYPE_OBJECT);
 
         int32_t typeId = in.readInt32();
 
-        GG_LOG_DEBUG("Portable type %d", typeId);
-
         GridPortable* portable = createPortable(typeId, *this);
-
-        GG_LOG_DEBUG("End read portable");
 
         return portable;
     }
 
     int8_t readByte(char* fieldName) override {
-        GG_LOG_DEBUG("Read byte %s", fieldName);
-
         return in.readByte();
     }
 
     int16_t readInt16(char* fieldName) override {
-        GG_LOG_DEBUG("Read int16 %s", fieldName);
-
         return in.readInt32();
     }
 
     int32_t readInt32(char* fieldName) override {
-        GG_LOG_DEBUG("Read int32 %s", fieldName);
-
         return in.readInt32();
     }
 
     int64_t readInt64(char* fieldName) override {
-        GG_LOG_DEBUG("Read int64 %s", fieldName);
-
         return in.readInt64();
     }
 
     float readFloat(char* fieldName) override {
-        GG_LOG_DEBUG("Read float %s", fieldName);
-
         return in.readFloat();
     }
 
     double readDouble(char* fieldName) override {
-        GG_LOG_DEBUG("Read double %s", fieldName);
-
         return in.readDouble();
     }
 
     std::vector<int8_t> readBytes(char* fieldName) override {
-        GG_LOG_DEBUG("Read bytes %s", fieldName);
-
         int32_t size = in.readInt32();
 
         if (size > 0)
@@ -1334,8 +1314,6 @@ public:
     }
 
     std::string readString(char* fieldName) override {
-        GG_LOG_DEBUG("Read string %s", fieldName);
-
         int size = in.readInt32();
 
         if (size == -1)
@@ -1347,16 +1325,12 @@ public:
     }
 
     bool readBool(char* fieldName) override {
-        GG_LOG_DEBUG("Read bool %s", fieldName);
-
         int8_t val = in.readByte();
 
         return val == 0 ? false : true;
     }
 
     boost::optional<GridClientUuid> readUuid(char* fieldName) override {
-        GG_LOG_DEBUG("Read uuid %s", fieldName);
-
         boost::optional<GridClientUuid> res;
 
         if (in.readByte() != 0) {
@@ -1370,41 +1344,25 @@ public:
     }
 
     GridClientVariant readVariant(char* fieldName) override {
-        GG_LOG_DEBUG("Read variant %s", fieldName);
-
         int8_t type = in.readByte();
-
-        GG_LOG_DEBUG("Variant type %d", type);
 
         switch (type) {
             case TYPE_NULL:
-                GG_LOG_DEBUG("Read null");
-
                 return GridClientVariant();
 
             case TYPE_INT:
-                GG_LOG_DEBUG("Read int");
-
                 return GridClientVariant(in.readInt32());
 
             case TYPE_BOOLEAN:
-                GG_LOG_DEBUG("Read boolean");
-
                 return GridClientVariant(in.readByte() != 0);
 
             case TYPE_STRING:
-                GG_LOG_DEBUG("Read string");
-
                 return GridClientVariant(readString(nullptr));
 
             case TYPE_LONG:
-                GG_LOG_DEBUG("Read long");
-
                 return GridClientVariant(in.readInt64());
 
             case TYPE_UUID: {
-                GG_LOG_DEBUG("Read uuid");
-
                 if (in.readByte() == 0)
                     return GridClientVariant();
 
@@ -1415,18 +1373,12 @@ public:
             }
 
             case TYPE_LIST:
-                GG_LOG_DEBUG("Read list");
-
                 return GridClientVariant(readCollection());
 
             case TYPE_MAP:
-                GG_LOG_DEBUG("Read map");
-
                 return GridClientVariant(readMap());
 
             case TYPE_USER_OBJECT:
-                GG_LOG_DEBUG("Read portable");
-
                 return GridClientVariant(readPortable());
 
             default:
@@ -1437,77 +1389,54 @@ public:
     }
 
     std::vector<GridClientVariant> readCollection(char* fieldName) override {
-        GG_LOG_DEBUG("Read collection %s", fieldName);
-
         return readCollection();
     }
 
-    std::unordered_map<GridClientVariant, GridClientVariant> readMap(char* fieldName) override {
-        GG_LOG_DEBUG("Read map %s", fieldName);
-
+    boost::unordered_map<GridClientVariant, GridClientVariant> readMap(char* fieldName) override {
         return readMap();
     }
 
 private:
     std::vector<GridClientVariant> readCollection() {
-        GG_LOG_DEBUG("Read collection");
-
         int8_t type = in.readByte();
 
         assert(type == OBJECT_TYPE_OBJECT);
 
         int32_t size = in.readInt32();
-
-        GG_LOG_DEBUG("Collection size %d", size);
 
         if (size == -1)
             return std::vector<GridClientVariant>();
 
         std::vector<GridClientVariant> vec;
 
-        for (int i = 0; i < size; i++) {
-            GG_LOG_DEBUG("Read collection element");
-
+        for (int i = 0; i < size; i++)
             vec.push_back(readVariant(nullptr));
-        }
-
-        GG_LOG_DEBUG("End read collection");
 
         return vec;
     }
 
-    std::unordered_map<GridClientVariant, GridClientVariant> readMap() {
-        GG_LOG_DEBUG("Read map");
-
+    boost::unordered_map<GridClientVariant, GridClientVariant> readMap() {
         int8_t type = in.readByte();
 
         if (type == OBJECT_TYPE_NULL)
-            return std::unordered_map<GridClientVariant, GridClientVariant>();
+            return boost::unordered_map<GridClientVariant, GridClientVariant>();
 
         assert(type == OBJECT_TYPE_OBJECT);
 
         int32_t size = in.readInt32();
 
-        GG_LOG_DEBUG("Map size %d", size);
-
         if (size == -1)
-            return std::unordered_map<GridClientVariant, GridClientVariant>();
+            return boost::unordered_map<GridClientVariant, GridClientVariant>();
         
-        std::unordered_map<GridClientVariant, GridClientVariant> map;
+        boost::unordered_map<GridClientVariant, GridClientVariant> map;
 
         for (int i = 0; i < size; i++) {
-            GG_LOG_DEBUG("Read map key");
-
             GridClientVariant key = readVariant(nullptr);
-            
-            GG_LOG_DEBUG("Read map value");
 
             GridClientVariant val = readVariant(nullptr);
 
             map[key] = val;
         }
-
-        GG_LOG_DEBUG("End read map");
 
         return map;
     }
