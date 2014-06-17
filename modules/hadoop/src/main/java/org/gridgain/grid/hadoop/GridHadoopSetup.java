@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.hadoop;
 
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -33,6 +34,17 @@ public class GridHadoopSetup {
     }
 
     /**
+     * Exit with message.
+     *
+     * @param msg Exit message.
+     */
+    private static void exit(String msg) {
+        X.println("ERROR: " + msg);
+
+        System.exit(1);
+    }
+
+    /**
      * This operation prepares the clean unpacked Hadoop distributive to work as client with GridGain-Hadoop.
      * It performs these operations:
      * <ul>
@@ -42,58 +54,86 @@ public class GridHadoopSetup {
      *     <li>In Windows check new line character issues in CMD scripts.</li>
      *     <li>Scan Hadoop lib directory to detect GridGain JARs. If these don't exist tries to create ones.</li>
      * </ul>
-     * @throws IOException If fails.
      */
-    private static void configureHadoop() throws IOException {
+    private static void configureHadoop() {
         String hadoopHome = System.getenv("HADOOP_HOME");
 
-        if (hadoopHome == null || hadoopHome.isEmpty()) {
-            System.out.println("ERROR: HADOOP_HOME variable is not set. Please set HADOOP_HOME to valid Hadoop " +
-                "installation folder and run setup tool again.");
-
-            return;
-        }
+        if (hadoopHome == null || hadoopHome.isEmpty())
+            exit("HADOOP_HOME environment variable is not set. Please set HADOOP_HOME to " +
+                "valid Hadoop installation folder and run setup tool again.");
 
         hadoopHome = hadoopHome.replaceAll("\"", "");
 
-        System.out.println("\nFound Hadoop in " + hadoopHome + "\n");
-
-        String hadoopCommonHome = System.getenv("HADOOP_COMMON_HOME");
+        X.println("HADOOP_HOME is set to '" + hadoopHome + "'.");
 
         File hadoopDir = new File(hadoopHome);
+        
+        if (!hadoopDir.exists())
+            exit("Hadoop installation folder does not exist.");
+
+        if (!hadoopDir.isDirectory())
+            exit("HADOOP_HOME must point to a directory.");
+
+        if (!hadoopDir.canRead())
+            exit("Hadoop installation folder can not be read. Please check permissions.");
 
         File hadoopCommonDir;
 
-        if (hadoopCommonHome == null || hadoopCommonHome.isEmpty())
+        String hadoopCommonHome = System.getenv("HADOOP_COMMON_HOME");
+
+        if (F.isEmpty(hadoopCommonHome)) {
             hadoopCommonDir = new File(hadoopDir, "share/hadoop/common");
-        else
+
+            X.println("HADOOP_COMMON_HOME is not set, will use '" + hadoopCommonDir.getPath() + "'.");
+        }
+        else {
+            X.println("HADOOP_COMMON_HOME is set to '" + hadoopCommonHome + "'.");
+
             hadoopCommonDir = new File(hadoopCommonHome);
+        }
+
+        if (!hadoopCommonDir.canRead())
+            exit("Failed to read Hadoop common dir in '" + hadoopCommonHome);
 
         File hadoopCommonLibDir = new File(hadoopCommonDir, "lib");
+
+        if (!hadoopCommonLibDir.canRead())
+            exit("Failed to read Hadoop 'lib' folder in '" + hadoopCommonLibDir.getPath() + "'.");
 
         if (U.isWindows()) {
             File hadoopBinDir = new File(hadoopDir, "bin");
 
-            if (!hadoopBinDir.exists()) {
-                System.out.println("Invalid Hadoop home directory. 'bin' subdirectory was not found.");
-
-                return;
-            }
+            if (!hadoopBinDir.canRead())
+                exit("Failed to read subdirectory 'bin' in HADOOP_HOME.");
 
             File winutilsFile = new File(hadoopBinDir, WINUTILS_EXE);
 
-            if (!winutilsFile.exists() && getAnswer("File " + WINUTILS_EXE + " doesn't exist. " +
-                "It may be replaced by a stub. Create it?"))
-                winutilsFile.createNewFile();
+            if (!winutilsFile.exists() && getAnswer("File " + WINUTILS_EXE + " does not exist. " +
+                "It may be replaced by a stub. Create it?")) {
+                boolean ok = false;
+
+                try {
+                    ok = winutilsFile.createNewFile();
+                }
+                catch (IOException ignore) {
+                    // No-op.
+                }
+
+                if (!ok)
+                    exit("Failed to create " + WINUTILS_EXE + " file. Please check permissions.");
+            }
 
             processCmdFiles(hadoopDir, "bin", "sbin", "libexec");
         }
 
         String gridgainHome = U.getGridGainHome();
 
-        System.out.println("GRIDGAIN_HOME=" + gridgainHome);
+        X.println("GRIDGAIN_HOME=" + gridgainHome);
 
         File gridGainLibs = new File(new File(gridgainHome), "libs");
+
+        if (!gridGainLibs.exists())
+            exit("GridGain 'libs' folder is not found.");
 
         File[] jarFiles = gridGainLibs.listFiles(new FilenameFilter() {
             @Override public boolean accept(File dir, String name) {
@@ -110,7 +150,7 @@ public class GridHadoopSetup {
                 jarsExist = false;
         }
 
-        if (!jarsExist && getAnswer("GridGain JAR files are not found in Hadoop libs directory. " +
+        if (!jarsExist && getAnswer("GridGain JAR files are not found in Hadoop 'lib' directory. " +
             "Create appropriate symbolic links?")) {
             File[] oldGridGainJarFiles = hadoopCommonLibDir.listFiles(new FilenameFilter() {
                 @Override public boolean accept(File dir, String name) {
@@ -119,22 +159,29 @@ public class GridHadoopSetup {
             });
 
             if (oldGridGainJarFiles.length > 0) {
-                if (!getAnswer("The Hadoop libs directory contains JARs from other GridGain installation. " +
+                if (!getAnswer("The Hadoop 'lib' directory contains JARs from other GridGain installation. " +
                     "It needs to be deleted to continue. Continue?"))
                     return;
 
-                for (File file : oldGridGainJarFiles)
-                    file.delete();
+                for (File file : oldGridGainJarFiles) {
+                    if (!file.delete())
+                        exit("Failed to delete file '" + file.getPath() + "'.");
+                }
             }
 
             for (File file : jarFiles) {
                 File targetFile = new File(hadoopCommonLibDir, file.getName());
 
-                Files.createSymbolicLink(targetFile.toPath(), file.toPath());
+                try {
+                    Files.createSymbolicLink(targetFile.toPath(), file.toPath());
+                }
+                catch (IOException e) {
+                    exit("Failed to create symbolic link '" + targetFile.getPath() + "'. Please check permissions.");
+                }
             }
         }
 
-        System.out.println("Hadoop setting is completed.");
+        X.println("Hadoop setup is successfully completed.");
     }
 
     /**
@@ -142,14 +189,20 @@ public class GridHadoopSetup {
      *
      * @param question Question to write.
      * @return {@code true} if user inputs 'Y' or 'y', {@code false} otherwise.
-     * @throws IOException If fails.
      */
-    private static boolean getAnswer(String question) throws IOException {
-        System.out.print(question + " (Y/N):");
+    private static boolean getAnswer(String question) {
+        X.print(question + " (Y/N):");
 
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
-        String answer = br.readLine();
+        String answer = null;
+
+        try {
+            answer = br.readLine();
+        }
+        catch (IOException e) {
+            exit("Failed to read answer: " + e.getMessage());
+        }
 
         if (answer != null)
             if ("Y".equals(answer.toUpperCase().trim()))
@@ -164,9 +217,8 @@ public class GridHadoopSetup {
      *
      * @param rootDir Root directory to process.
      * @param dirs Directories inside of the root to process.
-     * @throws IOException If fails.
      */
-    private static void processCmdFiles(File rootDir, String... dirs) throws IOException {
+    private static void processCmdFiles(File rootDir, String... dirs) {
         Boolean answer = false;
 
         for (String dir : dirs) {
@@ -179,10 +231,13 @@ public class GridHadoopSetup {
             });
 
             for (File file : cmdFiles) {
-                String content;
+                String content = null;
 
                 try (Scanner scanner = new Scanner(file)) {
                     content = scanner.useDelimiter("\\Z").next();
+                }
+                catch (FileNotFoundException e) {
+                    exit("Failed to read file '" + file + "'.");
                 }
 
                 boolean invalid = false;
@@ -201,7 +256,8 @@ public class GridHadoopSetup {
                     if (!answer)
                         return;
 
-                    file.renameTo(new File(file.getAbsolutePath() + ".bak"));
+                    if (!file.renameTo(new File(file.getAbsolutePath() + ".bak")))
+                        exit("Failed to rename file '" + file.getPath() + "'.");
 
                     try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
                         for (int i = 0; i < content.length(); i++) {
@@ -210,6 +266,9 @@ public class GridHadoopSetup {
 
                             writer.write(content.charAt(i));
                         }
+                    }
+                    catch (IOException e) {
+                        exit("Failed to write file '" + file.getPath() + "'. " + e.getMessage());
                     }
                 }
             }
