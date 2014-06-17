@@ -93,7 +93,7 @@ public class GridHadoopSetup {
         }
 
         if (!hadoopCommonDir.canRead())
-            exit("Failed to read Hadoop common dir in '" + hadoopCommonHome);
+            exit("Failed to read Hadoop common dir in '" + hadoopCommonHome + "'.");
 
         File hadoopCommonLibDir = new File(hadoopCommonDir, "lib");
 
@@ -120,7 +120,7 @@ public class GridHadoopSetup {
                 }
 
                 if (!ok)
-                    exit("Failed to create " + WINUTILS_EXE + " file. Please check permissions.");
+                    exit("Failed to create '" + WINUTILS_EXE + "' file. Please check permissions.");
             }
 
             processCmdFiles(hadoopDir, "bin", "sbin", "libexec");
@@ -268,7 +268,7 @@ public class GridHadoopSetup {
                         }
                     }
                     catch (IOException e) {
-                        exit("Failed to write file '" + file.getPath() + "'. " + e.getMessage());
+                        exit("Failed to write file '" + file.getPath() + "': " + e.getMessage());
                     }
                 }
             }
