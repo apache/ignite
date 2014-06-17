@@ -27,6 +27,8 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static java.net.URLEncoder.*;
+
 /**
  * This class is responsible for notification about new version availability. Note that this class
  * does not send any information and merely accesses the {@code www.gridgain.org} web site for the
@@ -37,7 +39,7 @@ import java.util.concurrent.*;
  */
 class GridUpdateNotifier {
     /** Access URL to be used to access latest version data. */
-    private static final String URL_SUFFIX = GridProperties.get("gridgain.update.status.url");
+    private static final String UPD_STATUS_PARAMS = GridProperties.get("gridgain.update.status.params");
 
     /** Throttling for logging out. */
     private static final long THROTTLE_PERIOD = 24 * 60 * 60 * 1000; // 1 day.
@@ -110,7 +112,7 @@ class GridUpdateNotifier {
 
             this.ver = ver;
 
-            url = "http://" + site + "/update_status.php" + URL_SUFFIX;
+            url = "http://" + site + "/update_status.php";
 
             this.gridName = gridName;
             this.reportOnlyNew = reportOnlyNew;
@@ -251,6 +253,9 @@ class GridUpdateNotifier {
      * Asynchronous checker of the latest version available.
      */
     private class UpdateChecker extends GridWorker {
+        /** Default encoding. */
+        private static final String CHARSET = "UTF-8";
+
         /** Logger. */
         private final GridLogger log;
 
@@ -270,58 +275,62 @@ class GridUpdateNotifier {
             try {
                 GridProductLicense lic = licProc != null ? licProc.license() : null;
 
-                URLConnection conn = new URL(url +
-                    (url.endsWith(".php") ? '?' : '&') +
-                    (topSize > 0 ? "t=" + topSize + "&" : "") +
-                    (lic != null ? "l=" + lic.id() + "&" : "") +
-                    "p=" + gridName + '&' +
-                    (packages != null ? "c=" + packages : ""))
-                    .openConnection();
+                String postParams =
+                    (F.isEmpty(UPD_STATUS_PARAMS) ? "" : encode(UPD_STATUS_PARAMS, CHARSET) + '&') +
+                    (topSize > 0 ? "t=" + topSize + '&' : "") +
+                    (lic != null ? "l=" + lic.id() + '&' : "") +
+                    "p=" + encode(gridName, CHARSET) + '&' +
+                    (packages != null ? "c=" + encode(packages, CHARSET) : "");
+
+                URLConnection conn = new URL(url).openConnection();
 
                 if (!isCancelled()) {
-                    // Timeout after 3 seconds.
+                    conn.setDoOutput(true);
+                    conn.setRequestProperty("Accept-Charset", CHARSET);
+                    conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=" + CHARSET);
+
                     conn.setConnectTimeout(3000);
                     conn.setReadTimeout(3000);
-
-                    InputStream in = null;
 
                     Document dom = null;
 
                     try {
-                        in = conn.getInputStream();
-
-                        if (in == null)
-                            return;
-
-                        BufferedReader reader = new BufferedReader(new InputStreamReader(in, "UTF-8"));
-
-                        StringBuilder xml = new StringBuilder();
-
-                        String line;
-
-                        while ((line = reader.readLine()) != null) {
-                            if (line.contains("<meta") && !line.contains("/>"))
-                                line = line.replace(">", "/>");
-
-                            xml.append(line).append('\n');
+                        try (OutputStream os = conn.getOutputStream()) {
+                            os.write(postParams.getBytes(CHARSET));
                         }
 
-                        dom = documentBuilder.parse(new ByteArrayInputStream(xml.toString().getBytes("UTF-8")));
+                        try (InputStream in = conn.getInputStream()) {
+                            if (in == null)
+                                return;
+
+                            BufferedReader reader = new BufferedReader(new InputStreamReader(in, CHARSET));
+
+                            StringBuilder xml = new StringBuilder();
+
+                            String line;
+
+                            while ((line = reader.readLine()) != null) {
+                                if (line.contains("<meta") && !line.contains("/>"))
+                                    line = line.replace(">", "/>");
+
+                                xml.append(line).append('\n');
+                            }
+
+                            dom = documentBuilder.parse(new ByteArrayInputStream(xml.toString().getBytes(CHARSET)));
+                        }
                     }
                     catch (IOException e) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to connect to GridGain update server. " + e.getMessage());
-                    }
-                    finally {
-                        U.close(in, log);
                     }
 
                     if (dom != null)
                         latestVer = obtainVersionFrom(dom);
                 }
             }
-            catch (Exception ignore) {
-                // Ignore this error.
+            catch (Exception e) {
+                if (log.isDebugEnabled())
+                    log.debug("Unexpected exception in update checker. " + e.getMessage());
             }
         }
 
