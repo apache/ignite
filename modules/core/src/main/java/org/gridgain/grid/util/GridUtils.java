@@ -773,13 +773,33 @@ public abstract class GridUtils {
         // In bytes.
         double heap = 0.0;
 
-        for (GridNode n : nodes) {
+        for (GridNode n : nodesPerJvm(nodes)) {
             GridNodeMetrics m = n.metrics();
 
             heap += Math.max(m.getHeapMemoryInitialized(), m.getHeapMemoryMaximum());
         }
 
         return roundedHeapSize(heap, precision);
+    }
+
+    /**
+     * Returns one representative node for each JVM.
+     *
+     * @param nodes Nodes.
+     * @return Collection which contains only one representative node for each JVM.
+     */
+    private static Iterable<GridNode> nodesPerJvm(Iterable<GridNode> nodes) {
+        Map<String, GridNode> grpMap = new HashMap<>();
+
+        // Group by mac addresses and pid.
+        for (GridNode node : nodes) {
+            String grpId = node.attribute(ATTR_MACS) + "|" + node.attribute(ATTR_JVM_PID);
+
+            if (!grpMap.containsKey(grpId))
+                grpMap.put(grpId, node);
+        }
+
+        return grpMap.values();
     }
 
     /**
