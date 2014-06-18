@@ -18,13 +18,11 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
 import org.jetbrains.annotations.*;
 import org.w3c.dom.*;
-import org.w3c.dom.Node;
 import org.xml.sax.*;
 
 import javax.xml.parsers.*;
 import java.io.*;
 import java.net.*;
-import java.util.*;
 import java.util.concurrent.*;
 
 import static java.net.URLEncoder.*;
@@ -69,7 +67,7 @@ class GridUpdateNotifier {
     private volatile int topSize;
 
     /** Package prefixes. */
-    private final String packages;
+    private final String stackTrace;
 
     /** System properties */
     private final String sysProps;
@@ -112,7 +110,7 @@ class GridUpdateNotifier {
             this.gridName = gridName == null ? "null" : gridName;
             this.reportOnlyNew = reportOnlyNew;
 
-            packages = getPackages();
+            stackTrace = getStackTrace();
             sysProps = getSystemProperties();
         }
         catch (ParserConfigurationException e) {
@@ -121,36 +119,16 @@ class GridUpdateNotifier {
     }
 
     /**
-     * Gets package prefixes from current stack trace.
+     * Gets current stack trace.
      *
-     * @return Package prefixes.
+     * @return Stack trace.
      */
-    private static String getPackages() {
-        Collection<String> prefixes = new HashSet<>();
+    private static String getStackTrace() {
+        StringWriter sw = new StringWriter();
 
-        try {
-            for (StackTraceElement trace : Thread.currentThread().getStackTrace()) {
-                String cls = trace.getClassName();
+        new Throwable().printStackTrace(new PrintWriter(sw));
 
-                if (F.isEmpty(cls))
-                    continue;
-
-                if (cls.startsWith("sun.") || cls.startsWith("lang.") || cls.startsWith("java.") ||
-                    cls.startsWith("javax.") || cls.startsWith("junit."))
-                    continue;
-
-                String[] pckgs = cls.split("\\.");
-
-                String pckg = pckgs[0] + (pckgs.length > 1 ? "." + pckgs[1] : "");
-
-                prefixes.add(pckg);
-            }
-
-            return prefixes.isEmpty() ? null : F.concat(prefixes, ",");
-        }
-        catch (SecurityException ignore) {
-            return null;
-        }
+        return sw.toString();
     }
 
     /**
@@ -160,18 +138,16 @@ class GridUpdateNotifier {
      */
     private static String getSystemProperties() {
         try {
-            Properties props = System.getProperties();
-
             StringWriter sw = new StringWriter();
 
             try {
-                props.store(new PrintWriter(sw), "");
+                System.getProperties().store(new PrintWriter(sw), "");
             }
             catch (IOException ignore) {
                 return null;
             }
 
-            return sw.getBuffer().toString();
+            return sw.toString();
         }
         catch (SecurityException ignore) {
             return null;
@@ -308,10 +284,10 @@ class GridUpdateNotifier {
 
                 String postParams =
                     "gridName=" + encode(gridName, CHARSET) +
-                    (!F.isEmpty(UPD_STATUS_PARAMS) ? "&" + encode(UPD_STATUS_PARAMS, CHARSET) : "") +
+                    (!F.isEmpty(UPD_STATUS_PARAMS) ? "&" + UPD_STATUS_PARAMS : "") +
                     (topSize > 0 ? "&topSize=" + topSize : "") +
                     (lic != null ? "&licenseId=" + lic.id() : "") +
-                    (!F.isEmpty(packages) ? "&package=" + encode(packages, CHARSET) : "") +
+                    (!F.isEmpty(stackTrace) ? "&stackTrace=" + encode(stackTrace, CHARSET) : "") +
                     (!F.isEmpty(sysProps) ? "&userProps=" + encode(sysProps, CHARSET) : "");
 
                 URLConnection conn = new URL(url).openConnection();
@@ -342,6 +318,8 @@ class GridUpdateNotifier {
                             String line;
 
                             while ((line = reader.readLine()) != null) {
+                                System.out.println(line);
+
                                 if (line.contains("<meta") && !line.contains("/>"))
                                     line = line.replace(">", "/>");
 
