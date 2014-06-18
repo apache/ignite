@@ -8,7 +8,7 @@ To enable SLF4J module when starting a standalone node, move 'optional/gridgain-
 be added to classpath in this case.
 
 Importing SLF4J Module In Maven Project
--------------------------------------
+---------------------------------------
 
 If you are using Maven to manage dependencies of your project, you can add SLF4J module
 dependency like this (replace '${gridgain.version}' with actual GridGain version you are

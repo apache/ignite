@@ -8,7 +8,7 @@ To enable Log4J module when starting a standalone node, move 'optional/gridgain-
 be added to classpath in this case.
 
 Importing Log4J Module In Maven Project
--------------------------------------
+---------------------------------------
 
 If you are using Maven to manage dependencies of your project, you can add Log4J module
 dependency like this (replace '${gridgain.version}' with actual GridGain version you are
