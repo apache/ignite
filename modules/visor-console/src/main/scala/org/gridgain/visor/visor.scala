@@ -476,7 +476,7 @@ object visor extends VisorTag {
             ),
             "-f=<path>" -> Seq(
                 "Provides path to the file.",
-                "Path can be absolute or relative to Gridgain home folder."
+                "Path to the file can be absolute or relative to Gridgain home folder."
             ),
             "-p=<num>" -> Seq(
                 "Provides period of querying events (in seconds).",
@@ -850,6 +850,36 @@ object visor extends VisorTag {
             Right(None)
     }
 
+    private[this] def parseArg(arg: String): Arg = {
+        if (arg(0) == '-' || arg(0) == '/') {
+            val eq = arg.indexOf('=')
+
+            if (eq == -1)
+                arg.substring(1) -> null
+            else {
+                val n = arg.substring(1, eq).trim
+                var v = arg.substring(eq + 1).trim.replaceAll("['\"`]$", "").replaceAll("^['\"`]", "")
+
+                if (v.startsWith("@"))
+                    v = mgetOpt(v.substring(1)).getOrElse(v)
+
+                n -> v
+            }
+        }
+        else {
+            val k: String = null
+
+            val v = if (arg.startsWith("@"))
+                mgetOpt(arg.substring(1)).getOrElse(arg)
+            else
+                arg
+
+            k -> v
+        }
+    }
+
+    private val quotedArg = "(?:[-/].*=)?(['\"`]).*".r
+
     /**
      * Utility method that parses command arguments. Arguments represented as a string
      * into argument list represented as list of tuples (host, value) performing
@@ -865,35 +895,29 @@ object visor extends VisorTag {
      * @param args Command arguments to parse.
      */
     def parseArgs(@Nullable args: String): ArgList = {
-        var lst: ArgList = Nil
+        val buf = collection.mutable.ArrayBuffer.empty[Arg]
 
-        if (args != null)
-            for (s <- args.split(" ") if s.trim.length > 0)
-                if (s(0) == '-' || s(0) == '/') {
-                    val eq = s.indexOf('=')
+        if (args != null && args.trim.nonEmpty) {
+            val lst = args.trim.split(" ")
 
-                    if (eq == -1)
-                        lst = lst ++ Seq(s.substring(1) -> null)
-                    else {
-                        val n = s.substring(1, eq).trim
-                        var v = s.substring(eq + 1).trim
+            val sb = new StringBuilder()
 
-                        if (v.startsWith("@"))
-                            v = mgetOpt(v.substring(1)).getOrElse(v)
+            for (i <- 0 until lst.size) {
+                val arg = sb.toString + lst(i)
 
-                        lst = lst ++ Seq(n -> v)
-                    }
+                arg match {
+                    case quotedArg(quote) if arg.count(_ == quote(0)) % 2 != 0 && i + 1 < lst.size =>
+                        sb.append(lst(i)).append(" ")
+
+                    case _ =>
+                        sb.clear()
+
+                        buf += parseArg(arg)
                 }
-                else {
-                    var v = s
+            }
+        }
 
-                    if (v.startsWith("@"))
-                        v = mgetOpt(v.substring(1)).getOrElse(v)
-
-                    lst = lst ++ Seq((null, v))
-                }
-
-        lst
+        buf
     }
 
     /**
@@ -2286,13 +2310,15 @@ object visor extends VisorTag {
 
         val path = pathOpt.getOrElse(DFLT_LOG_PATH)
 
-        val folder = Option(new File(path).getParent).getOrElse("")
-        val fileName = new File(path).getName
+        val f = new File(path)
+
+        if (f.exists() && f.isDirectory)
+            throw new IllegalArgumentException("Specified path is a folder. Please input valid file path.")
+
+        val folder = Option(f.getParent).getOrElse("")
+        val fileName = f.getName
 
         logFile = new File(U.resolveWorkDirectory(folder, false), fileName)
-
-        if (logFile.exists() && logFile.isDirectory)
-            throw new IllegalArgumentException("Specified path is a folder. Please input valid file path.")
 
         logFile.createNewFile()
 
