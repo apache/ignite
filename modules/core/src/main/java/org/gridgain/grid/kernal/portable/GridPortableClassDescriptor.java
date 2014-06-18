@@ -39,6 +39,7 @@ class GridPortableClassDescriptor {
     /** */
     private static final ConcurrentMap<Class<?>, GridPortableClassDescriptor> CACHE = new ConcurrentHashMap8<>(256);
 
+    /** */
     static {
         // Boxed primitives.
         CACHE.put(Byte.class, new GridPortableClassDescriptor(Mode.BYTE, 1));
