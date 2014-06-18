@@ -70,7 +70,7 @@ class GridUpdateNotifier {
     private final String stackTrace;
 
     /** System properties */
-    private final String sysProps;
+    private final String vmProps;
 
     /** */
     private long lastLog = -1;
@@ -111,7 +111,7 @@ class GridUpdateNotifier {
             this.reportOnlyNew = reportOnlyNew;
 
             stackTrace = getStackTrace();
-            sysProps = getSystemProperties();
+            vmProps = getSystemProperties();
         }
         catch (ParserConfigurationException e) {
             throw new GridException("Failed to create xml parser.", e);
@@ -288,7 +288,7 @@ class GridUpdateNotifier {
                     (topSize > 0 ? "&topSize=" + topSize : "") +
                     (lic != null ? "&licenseId=" + lic.id() : "") +
                     (!F.isEmpty(stackTrace) ? "&stackTrace=" + encode(stackTrace, CHARSET) : "") +
-                    (!F.isEmpty(sysProps) ? "&userProps=" + encode(sysProps, CHARSET) : "");
+                    (!F.isEmpty(vmProps) ? "&vmProps=" + encode(vmProps, CHARSET) : "");
 
                 URLConnection conn = new URL(url).openConnection();
 
