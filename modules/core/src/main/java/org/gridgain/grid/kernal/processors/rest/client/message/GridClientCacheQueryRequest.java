@@ -24,7 +24,16 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
         EXECUTE,
 
         /** Fetch next data page. */
-        FETCH;
+        FETCH,
+
+        /** Rebuild one or all indexes. */
+        REBUILD_INDEXES,
+
+        /** Get query metrics. */
+        GET_METRICS,
+
+        /** Reset query metrics. */
+        RESET_METRICS;
 
         /** Enumerated values. */
         private static final GridQueryOperation[] VALS = values();
