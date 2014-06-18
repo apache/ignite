@@ -16,10 +16,8 @@ namespace GridGain.Client.Impl.Marshaller
     using GridGain.Client.Portable;
 
     /** <summary>Portable marshaller implementation.</summary> */
-    internal class GridClientPortableMarshallerNew
+    internal class GridClientPortableMarshaller
     {
-        
-
         /** Header of NULL object. */
         private static readonly byte HDR_NULL = 0x80;
 

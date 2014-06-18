@@ -14,8 +14,8 @@ namespace GridGain.Client.Portable
 
     /**
      * <summary>Serializer capable of writing portable objects.</summary>
-     */ 
-    class GridClientExternalPortableSerializer : IGridClientPortableSerializer
+     */
+    class GridClientPortableExternalSerializer : IGridClientPortableSerializer
     {
         /** <inheritdoc /> */
         public void WritePortable(object obj, IGridClientPortableWriter writer)
