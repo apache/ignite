@@ -13,6 +13,7 @@ namespace GridGain.Client.Impl {
     using System.Collections.Generic;
     using GridGain.Client.Util;
     using GridGain.Client.Impl.Query;
+    using GridGain.Client.Impl.Message;
 
     /**
      * <summary>
@@ -284,7 +285,7 @@ namespace GridGain.Client.Impl {
          * <param name="cacheName">Cache name to execute query for.</param>
          * <param name="destNodeId">Destination node ID to execute query on.</param>
          */
-        IGridClientFuture<GridClientDataQueryPartialResult> ExecuteQuery(String cacheName, Guid destNodeId);
+        IGridClientFuture<GridClientDataQueryResult> ExecuteQuery(GridClientCacheQueryRequest req);
 
         /**
          * <summary>
@@ -293,6 +294,6 @@ namespace GridGain.Client.Impl {
          * <param name="qryId">Query ID to fetch data for.</param>
          * <param name="destNodeId">Destination node ID to fetch data from.</param>
          */
-        IGridClientFuture<GridClientDataQueryPartialResult> FetchNextPage(Guid qryId, Guid destNodeId);
+        IGridClientFuture<GridClientDataQueryResult> FetchNextPage(long qryId, Guid destNodeId);
     }
 }

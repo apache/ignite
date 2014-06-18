@@ -72,8 +72,10 @@
     <Compile Include="client\impl\marshaller\GridClientPortableMarshallerNew.cs" />
     <Compile Include="client\impl\message\GridClientCacheQueryRequest.cs" />
     <Compile Include="client\impl\message\GridClientCacheQueryRequestOperation.cs" />
+    <Compile Include="client\impl\query\GridClientDataQueriesImpl.cs" />
     <Compile Include="client\impl\query\GridClientDataQueryFutureImpl.cs" />
-    <Compile Include="client\impl\query\GridClientDataQueryImpl.cs" />
+    <Compile Include="client\impl\query\GridClientDataQueryBean.cs" />
+    <Compile Include="client\impl\query\GridClientDataQueryResult.cs" />
     <Compile Include="client\impl\query\GridClientDataQueryType.cs" />
     <Compile Include="client\portable\GridClientExternalPortableSerializer.cs" />
     <Compile Include="client\portable\GridClientPortableByteArrayMarshallerOutput.cs" />

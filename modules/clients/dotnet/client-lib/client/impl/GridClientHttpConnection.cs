@@ -591,12 +591,12 @@ namespace GridGain.Client.Impl {
         }
 
         /** <inheritdoc /> */
-        override public IGridClientFuture<GridClientDataQueryPartialResult> ExecuteQuery(String cacheName, Guid destNodeId) {
+        override public IGridClientFuture<GridClientDataQueryResult> ExecuteQuery(GridClientCacheQueryRequest req) {
             return null;
         }
 
         /** <inheritdoc /> */
-        override public IGridClientFuture<GridClientDataQueryPartialResult> FetchNextPage(Guid qryId, Guid destNodeId) {
+        override public IGridClientFuture<GridClientDataQueryResult> FetchNextPage(long qryId, Guid destNodeId) {
             return null;
         }
 
