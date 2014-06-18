@@ -34,18 +34,9 @@ class GridPortableClassDescriptor {
     /** */
     private static final int MAP_TYPE_ID = 200;
 
-    /** */
-    private final Mode mode;
-
-    /** */
-    private final int typeId;
-
-    /** */
-    private List<FieldInfo> fields;
-
-    /** */
-    private byte[] hdr;
-
+    /**
+     *
+     */
     static {
         // Boxed primitives.
         CACHE.put(Byte.class, new GridPortableClassDescriptor(Mode.BYTE, 1));
@@ -86,6 +77,18 @@ class GridPortableClassDescriptor {
         CACHE.put(UUID[].class, new GridPortableClassDescriptor(Mode.UUID_ARR, 20));
         CACHE.put(Object[].class, new GridPortableClassDescriptor(Mode.OBJ_ARR, 21));
     }
+
+    /** */
+    private final Mode mode;
+
+    /** */
+    private final int typeId;
+
+    /** */
+    private List<FieldInfo> fields;
+
+    /** */
+    private byte[] hdr;
 
     /**
      * @param mode Mode.
