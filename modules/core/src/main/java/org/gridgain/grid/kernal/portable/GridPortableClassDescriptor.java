@@ -17,7 +17,6 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.lang.reflect.Modifier.*;
-import static org.gridgain.grid.kernal.portable.GridPortableMarshaller.*;
 
 /**
  * Portable class descriptor.
@@ -175,7 +174,6 @@ class GridPortableClassDescriptor {
         assert obj != null;
         assert writer != null;
 
-        writer.doWriteByte(OBJ);
         writer.doWriteInt(typeId);
 
         switch (mode) {

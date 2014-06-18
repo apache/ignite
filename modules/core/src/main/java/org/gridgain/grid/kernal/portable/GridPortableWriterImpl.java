@@ -211,6 +211,8 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
         // TODO: Handle.
 
+        doWriteByte(OBJ);
+
         GridPortableClassDescriptor desc = GridPortableClassDescriptor.get(obj.getClass());
 
         assert desc != null;
