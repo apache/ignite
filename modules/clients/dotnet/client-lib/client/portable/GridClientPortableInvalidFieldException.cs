@@ -17,7 +17,7 @@ namespace GridGain.Client.Portable
      * exist.</summary> 
      */
     [Serializable]
-    class GridClientPortableInvalidFieldException : GridClientPortableException
+    public class GridClientPortableInvalidFieldException : GridClientPortableException
     {
         /** <summary>Constructs an exception.</summary> */
         public GridClientPortableInvalidFieldException() {

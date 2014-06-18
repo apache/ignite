@@ -60,7 +60,7 @@ namespace GridGain.Client {
         /**
          * <summary>
          * Adds topology listener. Remote grid topology is refreshed every
-         * <see cref="IGridClientConfiguration.TopologyRefreshFrequency"/> milliseconds. If any node was added or removed,
+         * <see cref="GridClientConfiguration.TopologyRefreshFrequency"/> milliseconds. If any node was added or removed,
          * a listener will be notified.</summary>
          *
          * <param name="lsnr">Listener to add.</param>

@@ -16,7 +16,7 @@ namespace GridGain.Client.Impl.Message {
      * This class provides implementation for commit message fields
      * and cannot be used directly.</summary>
      */
-    internal abstract class GridClientRequest : IGridClientPortableEx {
+    internal abstract class GridClientRequest : IGridClientPortable {
         /** Portable type ID. */
         // TODO: GG-8535: Remove in favor of normal IDs.
         public static readonly int PORTABLE_TYPE_ID = 0;

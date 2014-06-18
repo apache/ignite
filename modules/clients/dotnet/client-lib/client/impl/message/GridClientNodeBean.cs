@@ -14,7 +14,7 @@ namespace GridGain.Client.Impl.Message {
     using GridGain.Client.Util;
 
     /** <summary>Node bean.</summary> */
-    internal class GridClientNodeBean : IGridClientPortableEx {
+    internal class GridClientNodeBean : IGridClientPortable {
         /** Portable type ID. */
         // TODO: GG-8535: Remove in favor of normal IDs.
         public static readonly int PORTABLE_TYPE_ID = 0;
@@ -23,8 +23,6 @@ namespace GridGain.Client.Impl.Message {
         public GridClientNodeBean() {
             TcpAddresses = new HashSet<String>();
             TcpHostNames = new HashSet<String>();
-            JettyAddresses = new HashSet<String>();
-            JettyHostNames = new HashSet<String>();
             Attributes = new Dictionary<String, Object>();
             Caches = new GridClientNullDictionary<String, String>();
         }
@@ -46,19 +44,7 @@ namespace GridGain.Client.Impl.Message {
             get;
             private set;
         }
-
-        /** <summary>Jetty addresses.</summary> */
-        public ICollection<String> JettyAddresses {
-            get;
-            private set;
-        }
-
-        /** <summary>Jetty host names.</summary> */
-        public ICollection<String> JettyHostNames {
-            get;
-            private set;
-        }
-
+        
         /** <summary>Node replica count for consistent hash ring.</summary> */
         public int ReplicaCount {
             get;
@@ -82,13 +68,7 @@ namespace GridGain.Client.Impl.Message {
             get;
             set;
         }
-
-        /** <summary>REST http protocol port.</summary> */
-        public int JettyPort {
-            get;
-            set;
-        }
-
+        
         /**
          * <summary>
          * Consistent globally unique node ID. Unlike the Id property,
@@ -118,7 +98,6 @@ namespace GridGain.Client.Impl.Message {
         /** <inheritdoc /> */
         public void WritePortable(IGridClientPortableWriter writer) {
             writer.WriteInt("tcpPort", TcpPort);
-            writer.WriteInt("jettyPort", JettyPort);
             writer.WriteInt("replicaCnt", ReplicaCount);
 
             writer.WriteString("dfltCacheMode", DefaultCacheMode);
@@ -128,8 +107,6 @@ namespace GridGain.Client.Impl.Message {
 
             writer.WriteCollection("tcpAddrs", TcpAddresses);
             writer.WriteCollection("tcpHostNames", TcpHostNames);
-            writer.WriteCollection("jettyAddrs", JettyAddresses);
-            writer.WriteCollection("jettyHostNames", JettyHostNames);
 
             writer.WriteGuid("nodeId", NodeId);
 
@@ -140,7 +117,6 @@ namespace GridGain.Client.Impl.Message {
         /** <inheritdoc /> */
         public void ReadPortable(IGridClientPortableReader reader) {
             TcpPort = reader.ReadInt("tcpPort");
-            JettyPort = reader.ReadInt("jettyPort");
             ReplicaCount = reader.ReadInt("replicaCnt");
 
             DefaultCacheMode = reader.ReadString("dfltCacheMode");
@@ -150,8 +126,6 @@ namespace GridGain.Client.Impl.Message {
 
             TcpAddresses = reader.ReadCollection<String>("tcpAddrs");
             TcpHostNames = reader.ReadCollection<String>("tcpHostNames");
-            JettyAddresses = reader.ReadCollection<String>("jettyAddrs");
-            JettyHostNames = reader.ReadCollection<String>("jettyHostNames");
 
             NodeId = reader.ReadGuid("nodeId");
 

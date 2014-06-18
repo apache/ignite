@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client.Portable
+namespace GridGain.Client.Impl.Portable
 {
     /**
      * <summary>Output for portable marshaller.</summary>
@@ -15,20 +15,26 @@ namespace GridGain.Client.Portable
     interface IGridClientPortableMarshallerOutput
     {
         /**
+         * <summary>Initialize output.</summary>
+         * <param name="len">Resulting data length.</param>
+         */ 
+        void Initialize(int len);
+
+        /**
          * <summary>Write single byte.</summary>
          * <param name="val">Byte</param>
          */
-        void writeByte(byte val);
+        void WriteByte(byte val);
 
         /**
          * <summary>Write byte array.</summary>
          * <param name="val">Byte array.</param>
          */
-        void writeBytes(byte[] val);
+        void WriteBytes(byte[] val);
 
         /**
          * <summary>Flushes output to the underlying storage and closes the output.</summary>
          */ 
-        void close();
+        void Close();
     }
 }
