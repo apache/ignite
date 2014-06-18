@@ -14,7 +14,7 @@ namespace GridGain.Client.Portable
 
     /** <summary>Client portable object exception.</summary> */
     [Serializable]
-    class GridClientPortableException : Exception
+    public class GridClientPortableException : Exception
     {
         /** <summary>Constructs an exception.</summary> */
         public GridClientPortableException() {

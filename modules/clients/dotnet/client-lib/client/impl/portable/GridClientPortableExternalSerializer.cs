@@ -7,10 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client.Portable
+namespace GridGain.Client.Impl.Portable
 {
     using System;
     using System.Collections.Generic;
+    using GridGain.Client.Portable;
 
     /**
      * <summary>Serializer capable of writing portable objects.</summary>
@@ -20,18 +21,18 @@ namespace GridGain.Client.Portable
         /** <inheritdoc /> */
         public void WritePortable(object obj, IGridClientPortableWriter writer)
         {
-            if (obj is IGridClientPortableEx)
+            if (obj is IGridClientPortable)
             {
-                IGridClientPortableEx obj0 = (IGridClientPortableEx)obj;
+                IGridClientPortable obj0 = (IGridClientPortable)obj;
 
                 obj0.WritePortable(writer);
             }
             else
-                throw new GridClientPortableInvalidClassException("Class being marshalled doesn't implement external portable interface: " + obj.GetType());
+                throw new GridClientPortableInvalidClassException("Class being marshalled doesn't implement IGridClientPortable interface: " + obj.GetType());
         }
 
         /** <inheritdoc /> */
-        public T ReadPortable<T>(IGridClientPortableReader reader)
+        public T ReadPortable<T>(object obj, IGridClientPortableReader reader)
         {
             throw new NotImplementedException();
         }

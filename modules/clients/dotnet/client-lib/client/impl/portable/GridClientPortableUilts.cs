@@ -7,10 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client.Portable
+namespace GridGain.Client.Impl.Portable
 {
     using System;
     using System.Collections.Generic;
+    using GridGain.Client.Portable;
 
     /**
      * <summary>Utilities for portable serialization.</summary>
@@ -18,82 +19,82 @@ namespace GridGain.Client.Portable
     static class GridClientPortableUilts
     {
         /** Type: boolean. */
-        private static const int TYPE_BOOL = 1;
+        private const int TYPE_BOOL = 1;
 
         /** Type: unsigned byte. */
-        private static const int TYPE_BYTE = 2;
+        private const int TYPE_BYTE = 2;
         
         /** Type: short. */
-        private static const int TYPE_SHORT = 5;
+        private const int TYPE_SHORT = 5;
 
         /** Type: int. */
-        private static const int TYPE_INT = 7;
+        private const int TYPE_INT = 7;
 
         /** Type: long. */
-        private static const int TYPE_LONG = 9;
+        private const int TYPE_LONG = 9;
 
         /** Type: char. */
-        private static const int TYPE_CHAR = 10;
+        private const int TYPE_CHAR = 10;
 
         /** Type: float. */
-        private static const int TYPE_FLOAT = 11;
+        private const int TYPE_FLOAT = 11;
 
         /** Type: double. */
-        private static const int TYPE_DOUBLE = 12;
+        private const int TYPE_DOUBLE = 12;
 
         /** Type: string. */
-        private static const int TYPE_STRING = 13;
+        private const int TYPE_STRING = 13;
 
         /** Type: GUID. */
-        private static const int TYPE_GUID = 14;
+        private const int TYPE_GUID = 14;
 
         /** Type: boolean array. */
-        private static const int TYPE_ARRAY_BOOL = 101;
+        private const int TYPE_ARRAY_BOOL = 101;
 
         /** Type: unsigned byte array. */
-        private static const int TYPE_ARRAY_BYTE = 102;
+        private const int TYPE_ARRAY_BYTE = 102;
 
         /** Type: short array. */
-        private static const int TYPE_ARRAY_SHORT = 105;
+        private const int TYPE_ARRAY_SHORT = 105;
 
         /** Type: int array. */
-        private static const int TYPE_ARRAY_INT = 107;
+        private const int TYPE_ARRAY_INT = 107;
 
         /** Type: long array. */
-        private static const int TYPE_ARRAY_LONG = 109;
+        private const int TYPE_ARRAY_LONG = 109;
 
         /** Type: char array. */
-        private static const int TYPE_ARRAY_CHAR = 110;
+        private const int TYPE_ARRAY_CHAR = 110;
 
         /** Type: float array. */
-        private static const int TYPE_ARRAY_FLOAT = 111;
+        private const int TYPE_ARRAY_FLOAT = 111;
 
         /** Type: double array. */
-        private static const int TYPE_ARRAY_DOUBLE = 112;
+        private const int TYPE_ARRAY_DOUBLE = 112;
 
         /** Type: string array. */
-        private static const int TYPE_ARRAY_STRING = 113;
+        private const int TYPE_ARRAY_STRING = 113;
 
         /** Type: GUID array. */
-        private static const int TYPE_ARRA_GUID = 114;
+        private const int TYPE_ARRA_GUID = 114;
 
         /** Type: object array. */
-        private static const int TYPE_ARRAY = 200;
+        private const int TYPE_ARRAY = 200;
 
         /** Type: collection. */
-        private static const int TYPE_COLLECTION = 201;
+        private const int TYPE_COLLECTION = 201;
 
         /** Type: map. */
-        private static const int TYPE_MAP = 202;
+        private const int TYPE_MAP = 202;
 
         /** Byte "0". */
-        private static const byte BYTE_ZERO = (byte)0;
+        private const byte BYTE_ZERO = (byte)0;
 
         /** Byte "1". */
-        private static const byte BYTE_ONE = (byte)1;
+        private const byte BYTE_ONE = (byte)1;
         
         /** Whether little endian is set. */
-        private static const bool LITTLE_ENDIAN = BitConverter.IsLittleEndian;
+        private static readonly bool LITTLE_ENDIAN = BitConverter.IsLittleEndian;
 
         /**
          * <summary>Get primitive type ID.</summary>

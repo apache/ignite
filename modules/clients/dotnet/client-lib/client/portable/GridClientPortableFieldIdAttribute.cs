@@ -15,7 +15,7 @@ namespace GridGain.Client.Portable
      * <summary>Portable class field ID.</summary>
      */
     [AttributeUsage(AttributeTargets.Field)]
-    class GridClientPortableFieldIdAttribute : Attribute
+    public class GridClientPortableFieldIdAttribute : Attribute
     {
         /**
          * <summary>Constructor.</summary>

@@ -23,7 +23,7 @@
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Debug\GridGainClient.xml</DocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -73,21 +73,21 @@
     <Compile Include="client\portable\GridClientPortableClassIdAttribute.cs" />
     <Compile Include="client\portable\GridClientPortableFieldIdAttribute.cs" />
     <Compile Include="client\portable\GridClientPortableIdMapper.cs" />
-    <Compile Include="client\portable\impl\GridClientPortableMarshaller.cs" />
-    <Compile Include="client\portable\impl\GridClientPortableExternalSerializer.cs" />
-    <Compile Include="client\portable\impl\GridClientPortableByteArrayMarshallerOutput.cs" />
-    <Compile Include="client\portable\impl\GridClientPortableClassMetadata.cs" />
+    <Compile Include="client\impl\portable\GridClientPortableMarshaller.cs" />
+    <Compile Include="client\impl\portable\GridClientPortableExternalSerializer.cs" />
+    <Compile Include="client\impl\portable\GridClientPortableByteArrayMarshallerOutput.cs" />
+    <Compile Include="client\impl\portable\GridClientPortableClassMetadata.cs" />
     <Compile Include="client\portable\GridClientPortableException.cs" />
-    <Compile Include="client\portable\impl\GridClientPortableFieldMetadata.cs" />
-    <Compile Include="client\portable\impl\GridClientPortableHeader.cs" />
+    <Compile Include="client\impl\portable\GridClientPortableFieldMetadata.cs" />
+    <Compile Include="client\impl\portable\GridClientPortableHeader.cs" />
     <Compile Include="client\portable\GridClientPortableInvalidClassException.cs" />
     <Compile Include="client\portable\GridClientPortableInvalidFieldException.cs" />
-    <Compile Include="client\portable\impl\GridClientPortableUilts.cs" />
-    <Compile Include="client\portable\impl\IGridClientPortableMarshallerOutput.cs" />
-    <Compile Include="client\portable\impl\GridClientPortableObjectHandle.cs" />
-    <Compile Include="client\portable\impl\GridClientPortableStreamMarshallerOutput.cs" />
-    <Compile Include="client\portable\impl\GridClientReflectingPortableSerializer.cs" />
-    <Compile Include="client\portable\impl\GridClientPortableSerializationContext.cs" />
+    <Compile Include="client\impl\portable\GridClientPortableUilts.cs" />
+    <Compile Include="client\impl\portable\IGridClientPortableMarshallerOutput.cs" />
+    <Compile Include="client\impl\portable\GridClientPortableObjectHandle.cs" />
+    <Compile Include="client\impl\portable\GridClientPortableStreamMarshallerOutput.cs" />
+    <Compile Include="client\impl\portable\GridClientReflectingPortableSerializer.cs" />
+    <Compile Include="client\impl\portable\GridClientPortableSerializationContext.cs" />
     <Compile Include="client\portable\IGridClientPortable.cs" />
     <Compile Include="client\portable\IGridClientPortableReader.cs" />
     <Compile Include="client\portable\IGridClientPortableSerializer.cs" />

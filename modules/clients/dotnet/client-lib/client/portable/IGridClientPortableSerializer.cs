@@ -8,7 +8,7 @@ namespace GridGain.Client.Portable
     /**
      * <summary>Portable serializer.</summary>
      */ 
-    interface IGridClientPortableSerializer
+    public interface IGridClientPortableSerializer
     {
         /**
          * <summary>Write portalbe object.</summary>

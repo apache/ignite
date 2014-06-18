@@ -24,6 +24,7 @@ namespace GridGain.Client.Impl {
     using GridGain.Client.Impl.Message;
     using GridGain.Client.Util;
     using GridGain.Client.Ssl;
+    using GridGain.Client.Portable;
 
     using A = GridGain.Client.Util.GridClientArgumentCheck;
     using U = GridGain.Client.Util.GridClientUtils;

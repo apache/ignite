@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client.Impl.Marshaller
+namespace GridGain.Client.Impl.Portable
 {
     using System;
     using System.Collections;
@@ -253,7 +253,7 @@ namespace GridGain.Client.Impl.Marshaller
         /**
          * <summary>Writer.</summary>
          */ 
-        private class Writer : IGridClientPortableWriter 
+        private class Writer //: IGridClientPortableWriter 
         {
             /** Context. */
             private readonly Context ctx;

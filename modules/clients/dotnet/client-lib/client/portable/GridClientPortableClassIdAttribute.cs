@@ -15,7 +15,7 @@ namespace GridGain.client.portable
      * <summary>Portable class ID.</summary>
      */
     [AttributeUsage(AttributeTargets.Field)]
-    class GridClientPortableClassIdAttribute : Attribute
+    public class GridClientPortableClassIdAttribute : Attribute
     {
         /**
          * <summary>Constructor.</summary>

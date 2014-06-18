@@ -90,7 +90,6 @@
     <Compile Include="client\GridClientTcpTest.cs" />
     <Compile Include="client\hasher\GridClientJavaHelperTest.cs" />
     <Compile Include="client\impl\GridClientTopologyTest.cs" />
-    <Compile Include="client\impl\marshaller\GridClientPortableMarshallerTest.cs" />
     <Compile Include="client\impl\marshaller\GridClientProtobufMarshallerTest.cs" />
     <Compile Include="client\util\NullDictionaryTest.cs" />
     <Compile Include="client\hasher\GridClientConsistentHashTest.cs" />

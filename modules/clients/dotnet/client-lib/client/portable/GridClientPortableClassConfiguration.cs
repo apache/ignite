@@ -12,7 +12,7 @@ namespace GridGain.Client.Portable
     /**
      * <summary>Portable class configuration.</summary>
      */ 
-    class GridClientPortableClassConfiguration
+    public class GridClientPortableClassConfiguration
     {
         /**
          * <summary>Constructor.</summary>

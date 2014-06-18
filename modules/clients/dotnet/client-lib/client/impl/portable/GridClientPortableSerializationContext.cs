@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client.Portable
+namespace GridGain.Client.Impl.Portable
 {
     using System;
     using System.Collections.Concurrent;

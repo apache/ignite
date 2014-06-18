@@ -7,13 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client.Portable
+namespace GridGain.Client.Impl.Portable
 {
     using System;
     using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Reflection;
+    using GridGain.Client.Portable;
 
     /**
      * <summary>Serializer which reflectively writes all fields except of transient ones.</summary>
@@ -52,7 +53,7 @@ namespace GridGain.Client.Portable
         }
 
         /** <inheritdoc /> */
-        public T ReadPortable<T>(IGridClientPortableReader reader)
+        public T ReadPortable<T>(object obj, IGridClientPortableReader reader)
         {
             throw new NotImplementedException();
         }
