@@ -140,14 +140,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="client\impl\GridClientTcpConnection.cs" />
-    <Compile Include="client\impl\marshaller\GridClientProtobufBackConverter.cs" />
-    <Compile Include="client\impl\marshaller\IGridClientMarshaller.cs" />
-    <Compile Include="client\impl\marshaller\GridClientProtobufConverter.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="client\impl\marshaller\GridClientProtobufMarshaller.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="client\impl\message\GridClientResponseStatus.cs" />
     <Compile Include="client\impl\message\GridClientCacheRequestOperation.cs" />
     <Compile Include="client\impl\message\GridClientRequest.cs" />
@@ -160,7 +152,6 @@
     <Compile Include="client\impl\message\GridClientTaskRequest.cs" />
     <Compile Include="client\impl\message\GridClientTaskResultBean.cs" />
     <Compile Include="client\impl\message\GridClientTopologyRequest.cs" />
-    <Compile Include="client\impl\protobuf\GridClientMessages.cs" />
     <Compile Include="client\ssl\GridClientSslContext.cs" />
     <Compile Include="client\ssl\IGridClientSslContext.cs" />
     <Compile Include="client\util\GridClientNullDictionary.cs" />
@@ -171,7 +162,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="client-lib.snk" />
-    <None Include="client\impl\protobuf\generate.sh" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

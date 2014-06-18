@@ -19,7 +19,6 @@ namespace GridGain.Client.Impl {
     using System.Collections.Concurrent;
     using GridGain.Client;
     using GridGain.Client.Ssl;
-    using GridGain.Client.Impl.Marshaller;
 
     using A = GridGain.Client.Util.GridClientArgumentCheck;
     using C = GridGain.Client.Impl.IGridClientConnection;

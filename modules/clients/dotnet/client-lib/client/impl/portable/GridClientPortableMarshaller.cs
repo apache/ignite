@@ -30,33 +30,45 @@ namespace GridGain.Client.Impl.Portable
         /** Header of object in fully serailized form with metadata. */
         private static readonly byte HDR_META = 0x83;
 
-        /** <inheritdoc /> */
-        public byte[] Marshal(object val)
+        /**
+         * <summary>Marhshal object</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Serialization context.</param>
+         * <returns>Serialized data as byte array.</returns>
+         */
+        public byte[] Marshal(object val, GridClientPortableSerializationContext ctx)
         {
             GridClientPortableByteArrayMarshallerOutput output = new GridClientPortableByteArrayMarshallerOutput();
 
-            // TODO: GG-8535: Pass context here.
-            Marshal0(val, output, null);
+            Marshal0(val, output, ctx);
 
             return output.Data();
         }
 
-        /** <inheritdoc /> */
-        void Marshal(object val, Stream output)
+        /**
+         * <summary>Marhshal object</summary>
+         * <param name="val">Value.</param>
+         * <param name="output">Output stream.</param>
+         * <param name="ctx">Serialization context.</param>
+         */
+        public void Marshal(object val, Stream output, GridClientPortableSerializationContext ctx)
         {
-            // TODO: GG-8535: Pass context here.
-            Marshal0(val, new GridClientPortableStreamMarshallerOutput(output), null);
+            Marshal0(val, new GridClientPortableStreamMarshallerOutput(output), ctx);
         }
 
-        /** <inheritdoc /> */
-        T Unmarshal<T>(byte[] data)
+        /**
+         * 
+         */ 
+        public T Unmarshal<T>(byte[] data)
         {
             // TODO: GG-8535: Implement.
             return default(T);
         }
 
-        /** <inheritdoc /> */
-        T Unmarshal<T>(Stream input)
+        /**
+         * 
+         */ 
+        public T Unmarshal<T>(Stream input)
         {
             // TODO: GG-8535: Implement.
             return default(T);

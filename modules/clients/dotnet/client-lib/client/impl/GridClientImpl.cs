@@ -17,7 +17,6 @@ namespace GridGain.Client.Impl {
     using System.Threading;
     using GridGain.Client;
     using GridGain.Client.Balancer;
-    using GridGain.Client.Impl.Marshaller;
     using GridGain.Client.Util;
 
     using U = GridGain.Client.Util.GridClientUtils;

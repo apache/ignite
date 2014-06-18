@@ -20,11 +20,10 @@ namespace GridGain.Client.Impl {
     using System.Security;
 
     using GridGain.Client;
-    using GridGain.Client.Impl.Marshaller;
     using GridGain.Client.Impl.Message;
+    using GridGain.Client.Impl.Portable;
     using GridGain.Client.Util;
     using GridGain.Client.Ssl;
-    using GridGain.Client.Portable;
 
     using A = GridGain.Client.Util.GridClientArgumentCheck;
     using U = GridGain.Client.Util.GridClientUtils;
@@ -76,7 +75,7 @@ namespace GridGain.Client.Impl {
         private volatile bool waitCompletion = true;
 
         /** <summary>Message marshaller</summary> */
-        private IGridClientMarshaller marshaller;
+        private GridClientPortableMarshaller marshaller;
 
         /** <summary>Underlying tcp client.</summary> */
         private readonly TcpClient tcp;
@@ -89,6 +88,9 @@ namespace GridGain.Client.Impl {
 
         /** <summary>SSL stream flag.</summary> */
         private readonly bool isSslStream;
+
+        /** <summary>Serialization context.</summary> */
+        private readonly GridClientPortableSerializationContext serializaionCtx = new GridClientPortableSerializationContext();
         
         /** <summary>Last stream reading failed with timeout.</summary> */
         internal bool lastReadTimedOut = false;
@@ -129,7 +131,7 @@ namespace GridGain.Client.Impl {
          * <exception cref="IOException">If connection could not be established.</exception>
          */
         public GridClientTcpConnection(Guid clientId, IPEndPoint srvAddr, IGridClientSslContext sslCtx, int connectTimeout,
-            IGridClientMarshaller marshaller, Object credentials, GridClientTopology top)
+            GridClientPortableMarshaller marshaller, Object credentials, GridClientTopology top)
             : base(clientId, srvAddr, sslCtx, credentials, top) {
             this.marshaller = marshaller;
 
@@ -498,7 +500,7 @@ namespace GridGain.Client.Impl {
                 buf.Write(GridClientUtils.ToBytes(msg.ClientId), 0, 16);
                 buf.Write(GridClientUtils.ToBytes(msg.DestNodeId), 0, 16);
 
-                marshaller.Marshal(msg, buf);
+                marshaller.Marshal(msg, buf, serializaionCtx);
 
                 int len = (int)buf.Length;
 
