@@ -73,10 +73,13 @@
     <Compile Include="client\portable\GridClientExternalPortableSerializer.cs" />
     <Compile Include="client\portable\GridClientPortableByteArrayMarshallerOutput.cs" />
     <Compile Include="client\portable\GridClientPortableClassMetadata.cs" />
+    <Compile Include="client\portable\GridClientPortableConfiguration.cs" />
     <Compile Include="client\portable\GridClientPortableException.cs" />
+    <Compile Include="client\portable\GridClientPortableFieldMetadata.cs" />
     <Compile Include="client\portable\GridClientPortableHeader.cs" />
     <Compile Include="client\portable\GridClientPortableInvalidClassException.cs" />
     <Compile Include="client\portable\GridClientPortableInvalidFieldException.cs" />
+    <Compile Include="client\portable\GridClientPortableUilts.cs" />
     <Compile Include="client\portable\IGridClientPortableMarshallerOutput.cs" />
     <Compile Include="client\portable\GridClientPortableObjectHandle.cs" />
     <Compile Include="client\portable\GridClientPortableStreamMarshallerOutput.cs" />

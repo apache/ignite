@@ -18,24 +18,7 @@ namespace GridGain.Client.Impl.Marshaller
     /** <summary>Portable marshaller implementation.</summary> */
     internal class GridClientPortableMarshallerNew
     {
-        /**  */
-        private static readonly int TYPE_BOOL = 0;
-
-        private static readonly int TYPE_SBYTE = 1;
-
-        private static readonly int TYPE_INT16 = 2;
-
-        private static readonly int TYPE_INT32 = 3;
-
-        private static readonly int TYPE_INT64 = 4;
-
-        private static readonly int TYPE_CHAR = 5;
-
-        private static readonly int TYPE_SINGLE = 6;
-
-        private static readonly int TYPE_DOUBLE = 7;
-
-        private static readonly int TYPE_STRING = 8;
+        
 
         /** Header of NULL object. */
         private static readonly byte HDR_NULL = 0x80;
@@ -46,216 +29,247 @@ namespace GridGain.Client.Impl.Marshaller
         /** Header of object in fully serialized form. */
         private static readonly byte HDR_FULL = 0x82;
 
+        /** Header of object in fully serailized form with metadata. */
+        private static readonly byte HDR_META = 0x83;
+
         /** <inheritdoc /> */
         public byte[] Marshal(object val)
         {
-            return Marshal0(val);
+            GridClientPortableByteArrayMarshallerOutput output = new GridClientPortableByteArrayMarshallerOutput();
+
+            // TODO: GG-8535: Pass context here.
+            Marshal0(val, output, null);
+
+            return output.Data();
         }
 
         /** <inheritdoc /> */
         void Marshal(object val, Stream output)
         {
-            byte[] valBytes = Marshal0(val);
-
-            output.Write(valBytes, 0, valBytes.Length);
+            // TODO: GG-8535: Pass context here.
+            Marshal0(val, new GridClientPortableStreamMarshallerOutput(output), null);
         }
 
         /** <inheritdoc /> */
         T Unmarshal<T>(byte[] data)
         {
-            // TODO
+            // TODO: GG-8535: Implement.
             return default(T);
         }
 
         /** <inheritdoc /> */
         T Unmarshal<T>(Stream input)
         {
-            // TODO
+            // TODO: GG-8535: Implement.
             return default(T);
         }
 
         /**
          * <summary>Internal marshalling routine.</summary>
          * <param name="obj">Object to be serialized.</param>
-         * <param name="serCtx">Context.</param>
+         * <param name="output">Output.</param>
+         * <param name="ctx">Context.</param>
          */
-        private byte[] Marshal0(object obj, GridClientPortableSerializationContext serCtx)
+        private void Marshal0(object obj, IGridClientPortableMarshallerOutput output, GridClientPortableSerializationContext ctx)
         {
-            Context ctx = new Context();
-            // TODO
-            return null;
+            new Context(ctx, output).Write(obj);
         }
-
-        /** <summary>Marshalling context.</summary> */
-        private class Context
+        
+        /**
+         * <summary>Context.</summary>
+         */ 
+        private class Context 
         {
-            /** Rewrites which will be performed during the second pass over resulting array. */
-            private readonly IDictionary<int, int> rewrites = new Dictionary<int, int>();
+            /** Per-connection serialization context. */
+            private readonly GridClientPortableSerializationContext ctx;
 
-            /** Type handles. */
-            private readonly IDictionary<TypeDescriptor, int> typeHnds = new Dictionary<TypeDescriptor, int>();
+            /** Output. */
+            private readonly IGridClientPortableMarshallerOutput output;
 
-            /** Object handles. */
-            private readonly IDictionary<object, int> hnds = new Dictionary<object, int>();
+            /** Tracking wrier. */
+            private readonly Writer writer;
 
-            /** Frames. */
-            private readonly Stack<Frame> frames = new Stack<Frame>();
+            /** Current length. */
+            private int len;
 
-            private Frame frame;
-
-            public Context()
+            /**
+             * <summary>Constructor.</summary>
+             * <param name="ctx">Client connection context.</param>
+             * <param name="output">Output.</param>
+             */
+            public Context(GridClientPortableSerializationContext ctx, IGridClientPortableMarshallerOutput output)
             {
-                // TODO
+                this.ctx = ctx;
+                this.output = output;
+
+                writer = new Writer(this);
             }
 
             /**
-             * <summary>Write object.</summary>
+             * <summary>Write top-level object to the context.</summary>
              * <param name="obj">Object.</param>
              */ 
-            private void write(object obj)
+            public void Write(object obj)
             {
-                // Prepare context. 
-                prepare(obj);
-            }
+                if (obj == null)
+                {
+                    // Special case for top-level null value.
+                    output.Initialize(1);
 
-            /**
-             * <summary>Prepare context to handle this object.</summary>
-             */ 
-            private void prepare(object obj)
-            {
-                
-            }
-        }
-
-        /** <summary>Object marshalling context.</summary> */
-        private class Frame
-        {
-
-            /**
-             * <summary>Add value.</summary>
-             * <param name="val">Value.</param>
-             */
-            private void Add(object val)
-            {
-
-            }
-
-            /**
-             * <summary>Add name value.</summary>
-             * <param name="fieldName">Field name.</param>
-             * <param name="val">Value.</param>
-             */
-            private void Add(string fieldName, object val)
-            {
-
-            }
-        }
-
-        /** <summary>Type descriptor consisting of type name and optional field names.</summary> */
-        private class TypeDescriptor
-        {
-            /** <summary>Type ID.</summary> */
-            private int TypeId
-            {
-                get;
-                set;
-            }
-
-            /** <summary>Fields participating in marshalling.</summary> */
-            private IList<string> Fields
-            {
-                get;
-                set;
-            }
-
-            /** <inheritdoc /> */
-            public override bool Equals(object obj)
-            {
-                if (this == obj)
-                    return true;
-
-                if (obj != null && obj is TypeDescriptor) {
-                    TypeDescriptor that = (TypeDescriptor)obj;
-                    
-                    return TypeId.Equals(that.TypeId) && (Fields == null && that.Fields == null || Fields != null && Fields.Equals(that.Fields));
+                    output.WriteByte(HDR_NULL);
                 }
-                else
-                    return false;
+                else 
+                { 
+                    Frame frame = Write0(obj); // Top-level frame.
+
+                    output.Initialize(frame.Length());
+
+                    frame.Write(output);
+                }
+
+                output.Close();
+            }
+
+            /**
+             * <summary>Internal write routine.</summary>
+             * <param name="obj">Object to write.</param>
+             */ 
+            public Frame Write0(object obj)
+            {
+                Type type = obj.GetType();
+
+                return obj.GetType().IsPrimitive ? new PrimitiveFrame(obj) as Frame : new ObjectFrame(this, obj);
+            }
+        }
+
+        /**
+         * <summary>Serialization frame.</summary>
+         */ 
+        private interface Frame
+        {
+            /**
+             * <summary>Prepare frame.</summary>
+             */ 
+            void Prepare();
+
+            /**
+             * <summary>Get's frame data length.</summary>
+             * <returns>Frame raw length.</returns>
+             */ 
+            int Length();
+
+            /**
+             * <summary>Write frame data to output.</summary>
+             * <param name="output">Output.</param>
+             */ 
+            void Write(IGridClientPortableMarshallerOutput output);
+        }
+
+        /**
+         * <summary>Primitive frame.</summary>
+         */ 
+        private class PrimitiveFrame : Frame
+        {
+            /** Primitive object. */
+            private readonly object obj;
+
+            /** Type ID. */
+            private int typeId;
+
+            /** Full length. */
+            private int len; 
+
+            /**
+             * <summary>Constructor.</summary>
+             * <param name="obj">Object.</param>
+             */ 
+            public PrimitiveFrame(object obj)
+            {
+                this.obj = obj;
             }
 
             /** <inheritdoc /> */
-            public override int GetHashCode()
+            public void Prepare()
             {
-                return TypeId + (Fields == null ? 0 : 31 * Fields.GetHashCode());
-            }
-        }
-    }
+                typeId = GridClientPortableUilts.PrimitiveTypeId(obj.GetType());
 
-    /** <summary>Byte array writer.</summary> */
-    public class ByteWriter
-    {
-        /** Default array size. */
-        private static readonly int DFLT_SIZE = 1024;
-
-        /** Byte array. */
-        private byte[] data;
-
-        /** Length. */
-        private uint len;
-
-        /** Whether current array size has power of 2 size. */
-        private bool power2;
-
-        /**
-         * <summary>Constructor allocating byte array of default size.</summary>
-         */
-        private ByteWriter() : this(DFLT_SIZE) { }
-
-        /**
-         * <summary>Constructor allocating byte array of the given size.</summary>
-         * <param name="initLen">Array size.</param>
-         */ 
-        private ByteWriter(int initLen)
-        {
-            if (initLen <= 0)
-                initLen = DFLT_SIZE;
-
-            data = new byte[initLen];
-
-            power2 = (initLen & (initLen - 1)) == 0;
-        }
-
-        /**
-         * <summary>Resize byte array allocating more space.</summary>
-         */ 
-        private void resize()
-        {
-            int len = data.Length;
-
-            if (!power2)
-            {
-                len--;
-                len |= len >> 1;
-                len |= len >> 2;
-                len |= len >> 4;
-                len |= len >> 8;
-                len |= len >> 16;
-                len++;
-
-                power2 = true;
+                len = GridClientPortableUilts.PrimitiveLength(typeId);
             }
 
-            len = len << 1;
+            /** <inheritdoc /> */
+            public int Length()
+            {
+                return /** Flag. */ 1 + /** User type flag. */  1 +  /** Type ID. */ 4 + /** Data length. */ len;
+            }
 
-            if (len < data.Length)
-                throw new OverflowException("Buffer size overflow.");
-
-            byte[] newData = new byte[len];
-
-            Array.Copy(data, newData, data.Length);
-
-            data = newData;
+            /** <inheritdoc /> */
+            public void Write(IGridClientPortableMarshallerOutput output)
+            {
+                output.WriteByte(HDR_FULL);
+                GridClientPortableUilts.WriteBoolean(false, output);
+                GridClientPortableUilts.WritePrimitive(typeId, obj, output);
+            }
         }
+
+        /**
+         * <summary>Object frame.</summary>
+         */ 
+        private class ObjectFrame : Frame
+        {
+            /** Context. */
+            private readonly Context ctx;
+
+            /** Object to be serialized. */
+            private readonly object obj;
+
+            /**
+             * <summary>Constructor.</summary>
+             * <param name="ctx">Context.</param>
+             * <param name="obj">Object.</param>
+             */
+            public ObjectFrame(Context ctx, object obj)
+            {
+                this.ctx = ctx;
+                this.obj = obj;
+            }
+
+            /** <inheritdoc /> */
+            public void Prepare()
+            {
+                throw new NotImplementedException();
+            }
+
+            /** <inheritdoc /> */
+            public int Length()
+            {
+                throw new NotImplementedException();
+            }
+
+            /** <inheritdoc /> */
+            public void Write(IGridClientPortableMarshallerOutput output)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        /**
+         * <summary>Writer.</summary>
+         */ 
+        private class Writer : IGridClientPortableWriter 
+        {
+            /** Context. */
+            private readonly Context ctx;
+
+            /**
+             * <summary>Constructor.</summary>
+             * <param name="ctx">Context.</param>
+             */ 
+            public Writer(Context ctx)
+            {
+                this.ctx = ctx;
+            }
+        }
+        
     }
 
     /** <summary>Writer which simply caches passed values.</summary> */

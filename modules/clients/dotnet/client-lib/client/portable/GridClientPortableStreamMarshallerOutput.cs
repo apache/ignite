@@ -29,19 +29,25 @@ namespace GridGain.Client.Portable
         }
 
         /** <inheritdoc /> */
-        public void writeByte(byte val)
+        public void Initialize(int val)
+        {
+            // No-op.
+        }
+
+        /** <inheritdoc /> */
+        public void WriteByte(byte val)
         {
             stream.WriteByte(val);
         }
 
         /** <inheritdoc /> */
-        public void writeBytes(byte[] val)
+        public void WriteBytes(byte[] val)
         {
             stream.Write(val, 0, val.Length);
         }
 
         /** <inheritdoc /> */
-        public void close()
+        public void Close()
         {
             stream.Flush();
         }

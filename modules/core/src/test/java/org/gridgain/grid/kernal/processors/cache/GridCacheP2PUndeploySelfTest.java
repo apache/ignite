@@ -288,7 +288,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
             if (cache.isEmpty())
                 return true;
 
-            Thread.sleep(500);
+            Thread.sleep(500);         BigNum
         }
 
         return cache.isEmpty();

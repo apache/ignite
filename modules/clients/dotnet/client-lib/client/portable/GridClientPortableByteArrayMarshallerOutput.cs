@@ -22,23 +22,20 @@ namespace GridGain.Client.Portable
         /** Position. */
         private int pos;
 
-        /**
-         * <summary>Initializes output.</summary>
-         * <param name="len">Data length.</param>
-         */
-        public void initialize(int len)
+        /** <inheritdoc /> */
+        public void Initialize(int len)
         {
             data = new byte[len];
         }
 
         /** <inheritdoc /> */
-        public void writeByte(byte val)
+        public void WriteByte(byte val)
         {
             data[pos++] = val;
         }
 
         /** <inheritdoc /> */
-        public void writeBytes(byte[] val)
+        public void WriteBytes(byte[] val)
         {
             Array.Copy(val, 0, data, pos, val.Length);
 
@@ -46,7 +43,7 @@ namespace GridGain.Client.Portable
         }
 
         /** <inheritdoc /> */
-        public void close()
+        public void Close()
         {
             // No-op.
         }

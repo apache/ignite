@@ -26,11 +26,11 @@ namespace GridGain.Client.Portable
         private readonly ConcurrentQueue<GridClientPortableClassMetadata> pendingMetas = new ConcurrentQueue<GridClientPortableClassMetadata>();
 
         /**
-         * <summary></summary>
+         * <summary>Gets metadata required for that type and that fields.</summary>
          * <param name="type">Type.</param>
          * <param name="fields">Fields.</param>
-         */ 
-        public GridClientPortableClassMetadata metadata(Type type, ICollection<string> fields)
+         */
+        public GridClientPortableClassMetadata metadata(Type type, ICollection<GridClientPortableFieldMetadata> fields)
         {
             Metadata meta = metas[type];
 
@@ -73,16 +73,16 @@ namespace GridGain.Client.Portable
             /**
              * <summary>Constructor.</summary>
              * <param name="fields">Fields.</param>
-             */ 
-            public Metadata(ICollection<string> fields)
+             */
+            public Metadata(ICollection<GridClientPortableFieldMetadata> fields)
             {
-                Fields = new HashSet<string>(fields);
+                Fields = new HashSet<GridClientPortableFieldMetadata>(fields);
             }
 
             /**
              * <summary>Fields.</summary>
-             */ 
-            public HashSet<string> Fields
+             */
+            public HashSet<GridClientPortableFieldMetadata> Fields
             {
                 get;
                 private set;
@@ -92,8 +92,8 @@ namespace GridGain.Client.Portable
              * <summary>Merge new fields with metadata.</summary>
              * <param name="fields">Fields.</param>
              * <returns>Update metadata.</returns>
-             */ 
-            public Metadata Merge(ICollection<string> fields)
+             */
+            public Metadata Merge(ICollection<GridClientPortableFieldMetadata> fields)
             {
                 Fields.UnionWith(fields);
 
@@ -106,7 +106,7 @@ namespace GridGain.Client.Portable
              * <param name="enqueue">Whether to enqueue.</param>
              * <returns>Metadata for mershaller.</returns>
              */
-            public GridClientPortableClassMetadata Delta(ICollection<string> fields, out bool enqueue)
+            public GridClientPortableClassMetadata Delta(ICollection<GridClientPortableFieldMetadata> fields, out bool enqueue)
             {
                 if (Fields.IsSupersetOf(fields))
                 {
@@ -118,7 +118,7 @@ namespace GridGain.Client.Portable
                 {
                     enqueue = true;
 
-                    HashSet<string> newFields = new HashSet<string>(fields);
+                    HashSet<GridClientPortableFieldMetadata> newFields = new HashSet<GridClientPortableFieldMetadata>(fields);
 
                     newFields.ExceptWith(Fields);
 

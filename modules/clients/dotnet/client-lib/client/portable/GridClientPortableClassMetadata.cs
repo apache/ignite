@@ -21,14 +21,14 @@ namespace GridGain.Client.Portable
         public static readonly GridClientPortableClassMetadata EMPTY_META = new GridClientPortableClassMetadata(null, null);
 
         /** Empty list in case there are no fields. */
-        private static readonly ICollection<string> EMPTY_FIELDS = new List<string>();
+        private static readonly ICollection<GridClientPortableFieldMetadata> EMPTY_FIELDS = new List<GridClientPortableFieldMetadata>();
 
         /**
          * <summary>Constructor.</summary>
          * <param name="type">Type.</param>
          * <param name="fields">Fields.</param>
          */
-        public GridClientPortableClassMetadata(Type type, ICollection<string> fields)
+        public GridClientPortableClassMetadata(Type type, ICollection<GridClientPortableFieldMetadata> fields)
         {
             Type = type;
 
@@ -47,7 +47,7 @@ namespace GridGain.Client.Portable
         /**
          * <summary>Fields.</summary>
          */
-        public ICollection<string> Fields
+        public ICollection<GridClientPortableFieldMetadata> Fields
         {
             get;
             private set;
