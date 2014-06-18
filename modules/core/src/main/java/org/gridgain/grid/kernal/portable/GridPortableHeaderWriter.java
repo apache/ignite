@@ -21,19 +21,32 @@ import static java.nio.charset.StandardCharsets.*;
  */
 class GridPortableHeaderWriter {
     /** */
-    private static final GridPortablePrimitivesWriter PRIM = GridPortablePrimitivesWriter.get();
+    private static final GridPortablePrimitives PRIM = GridPortablePrimitives.get();
 
     /** */
     private final Collection<String> allNames = new HashSet<>();
 
     /** */
-    private final Collection<Integer> hashCodes = new LinkedHashSet<>();
+    private final Collection<Integer> hashCodes;
 
     /** */
-    private Collection<byte[]> names;
+    private final Collection<byte[]> names;
+
+    /** */
+    private final boolean useNames;
 
     /** */
     private int hdrLen = 4;
+
+    /**
+     * @param useNames Whether to use names instead of hash codes.
+     */
+    GridPortableHeaderWriter(boolean useNames) {
+        this.useNames = useNames;
+
+        hashCodes = useNames ? null : new LinkedHashSet<Integer>();
+        names = useNames ? new ArrayList<byte[]>() : null;
+    }
 
     /**
      * @param name Field name.
@@ -44,17 +57,18 @@ class GridPortableHeaderWriter {
         if (!allNames.add(name))
             throw new GridPortableException("Duplicate field name: " + name);
 
-        if (hashCodes.add(name.hashCode()))
-            hdrLen += 4;
-        else {
+        if (useNames) {
             byte[] nameArr = name.getBytes(UTF_8);
-
-            if (names == null)
-                names = new ArrayList<>();
 
             names.add(nameArr);
 
             hdrLen += nameArr.length;
+        }
+        else {
+            if (hashCodes.add(name.hashCode()))
+                hdrLen += 4;
+            else
+                throw new GridPortableException("Hash code collision for field: " + name); // TODO: Proper message.
         }
 
         int offPos = hdrLen;
@@ -72,25 +86,26 @@ class GridPortableHeaderWriter {
 
         int off = 0;
 
-        PRIM.writeInt(hdr, off, hashCodes.size());
+        if (useNames) {
+            PRIM.writeInt(hdr, off, names.size());
 
-        off += 4;
+            off += 4;
 
-        for (Integer hashCode : hashCodes) {
-            PRIM.writeInt(hdr, off, hashCode);
-
-            off += 8;
-        }
-
-        PRIM.writeInt(hdr, off, names != null ? names.size() : -1);
-
-        off += 4;
-
-        if (names != null) {
             for (byte[] name : names) {
                 U.arrayCopy(name, 0, hdr, off, name.length);
 
                 off += name.length + 4;
+            }
+        }
+        else {
+            PRIM.writeInt(hdr, off, hashCodes.size());
+
+            off += 4;
+
+            for (Integer hashCode : hashCodes) {
+                PRIM.writeInt(hdr, off, hashCode);
+
+                off += 8;
             }
         }
 

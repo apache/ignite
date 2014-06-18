@@ -10,7 +10,9 @@
 package org.gridgain.grid.kernal.portable;
 
 import org.gridgain.grid.portable.*;
+import org.gridgain.grid.util.*;
 import org.jdk8.backport.*;
+import sun.misc.*;
 
 import java.lang.reflect.*;
 import java.util.*;
@@ -23,7 +25,7 @@ import static java.lang.reflect.Modifier.*;
  */
 class GridPortableClassDescriptor {
     /** */
-    private static final ConcurrentMap<Class<?>, GridPortableClassDescriptor> CACHE = new ConcurrentHashMap8<>(256);
+    protected static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
     /** */
     private static final int TOTAL_LEN_POS = 10;
@@ -35,16 +37,7 @@ class GridPortableClassDescriptor {
     private static final int MAP_TYPE_ID = 200;
 
     /** */
-    private final Mode mode;
-
-    /** */
-    private final int typeId;
-
-    /** */
-    private List<FieldInfo> fields;
-
-    /** */
-    private byte[] hdr;
+    private static final ConcurrentMap<Class<?>, GridPortableClassDescriptor> CACHE = new ConcurrentHashMap8<>(256);
 
     static {
         // Boxed primitives.
@@ -88,64 +81,6 @@ class GridPortableClassDescriptor {
     }
 
     /**
-     * @param mode Mode.
-     * @param typeId Type ID.
-     */
-    private GridPortableClassDescriptor(Mode mode, int typeId) {
-        assert mode != null;
-
-        this.mode = mode;
-        this.typeId = typeId;
-    }
-
-    /**
-     * @param cls Class.
-     */
-    private GridPortableClassDescriptor(Class<?> cls) throws GridPortableException {
-        assert cls != null;
-
-        if (Collection.class.isAssignableFrom(cls)) {
-            mode = Mode.COL;
-
-            typeId = COL_TYPE_ID;
-        }
-        else if (Map.class.isAssignableFrom(cls)) {
-            mode = Mode.MAP;
-
-            typeId = MAP_TYPE_ID;
-        }
-        else {
-            if (GridPortableEx.class.isAssignableFrom(cls))
-                mode = Mode.PORTABLE_EX;
-            else {
-                mode = Mode.PORTABLE;
-
-                fields = new ArrayList<>();
-
-                GridPortableHeaderWriter hdrWriter = new GridPortableHeaderWriter();
-
-                for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
-                    for (Field f : c.getDeclaredFields()) {
-                        int mod = f.getModifiers();
-
-                        if (!isStatic(mod) && !isTransient(mod)) {
-                            f.setAccessible(true);
-
-                            int offPos = hdrWriter.addField(f.getName());
-
-                            fields.add(new FieldInfo(f, offPos));
-                        }
-                    }
-                }
-
-                hdr = hdrWriter.header();
-            }
-
-            typeId = cls.getSimpleName().hashCode(); // TODO: should be taken from config
-        }
-    }
-
-    /**
      * @param cls Class.
      * @return Class descriptor.
      * @throws GridPortableException In case of error.
@@ -165,6 +100,91 @@ class GridPortableClassDescriptor {
         return desc;
     }
 
+    /** */
+    private final Class<?> cls;
+
+    /** */
+    private final boolean userType;
+
+    /** */
+    private final Mode mode;
+
+    /** */
+    private final int typeId;
+
+    /** */
+    private List<FieldInfo> fields;
+
+    /** */
+    private byte[] hdr;
+
+    /**
+     * @param mode Mode.
+     * @param typeId Type ID.
+     */
+    private GridPortableClassDescriptor(Mode mode, int typeId) {
+        assert mode != null;
+
+        assert mode != Mode.COL && mode != Mode.MAP && mode != Mode.PORTABLE_EX && mode != Mode.PORTABLE;
+
+        cls = null;
+        userType = false;
+
+        this.mode = mode;
+        this.typeId = typeId;
+    }
+
+    /**
+     * @param cls Class.
+     */
+    private GridPortableClassDescriptor(Class<?> cls) throws GridPortableException {
+        assert cls != null;
+
+        this.cls = cls;
+
+        if (Collection.class.isAssignableFrom(cls)) {
+            userType = false;
+            mode = Mode.COL;
+            typeId = COL_TYPE_ID;
+        }
+        else if (Map.class.isAssignableFrom(cls)) {
+            userType = false;
+            mode = Mode.MAP;
+            typeId = MAP_TYPE_ID;
+        }
+        else {
+            if (GridPortableEx.class.isAssignableFrom(cls))
+                mode = Mode.PORTABLE_EX;
+            else {
+                mode = Mode.PORTABLE;
+
+                fields = new ArrayList<>();
+
+                // TODO: useNames flag
+                GridPortableHeaderWriter hdrWriter = new GridPortableHeaderWriter(false);
+
+                for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
+                    for (Field f : c.getDeclaredFields()) {
+                        int mod = f.getModifiers();
+
+                        if (!isStatic(mod) && !isTransient(mod)) {
+                            f.setAccessible(true);
+
+                            int offPos = hdrWriter.addField(f.getName());
+
+                            fields.add(new FieldInfo(f, offPos));
+                        }
+                    }
+                }
+
+                hdr = hdrWriter.header();
+            }
+
+            userType = true;
+            typeId = cls.getSimpleName().hashCode(); // TODO: should be taken from config
+        }
+    }
+
     /**
      * @param obj Object.
      * @param writer Writer.
@@ -174,6 +194,7 @@ class GridPortableClassDescriptor {
         assert obj != null;
         assert writer != null;
 
+        writer.doWriteBoolean(userType);
         writer.doWriteInt(typeId);
 
         switch (mode) {
@@ -420,6 +441,17 @@ class GridPortableClassDescriptor {
                 return reader.readMap();
 
             case PORTABLE_EX:
+                GridPortableEx obj;
+
+                try {
+                    obj = (GridPortableEx)UNSAFE.allocateInstance(cls);
+                }
+                catch (InstantiationException e) {
+                    throw new GridPortableException("Failed to instantiate instance: " + cls, e);
+                }
+
+
+
                 return null; // TODO
 
             case PORTABLE:

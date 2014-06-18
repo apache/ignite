@@ -57,10 +57,10 @@ class GridPortableWriterImpl implements GridPortableWriter {
     private static final int INIT_CAP = 4 * 1024;
 
     /** */
-    private static final GridPortablePrimitivesWriter PRIM = GridPortablePrimitivesWriter.get();
+    private static final GridPortablePrimitives PRIM = GridPortablePrimitives.get();
 
     /** */
-    private final GridPortableHeaderWriter hdrWriter = new GridPortableHeaderWriter();
+    private final GridPortableHeaderWriter hdrWriter = new GridPortableHeaderWriter(false); // TODO: useNames flag
 
     /** */
     private final Collection<WriteAction> data = new ArrayList<>();

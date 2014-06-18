@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Portable reader implementation.
  */
-public class GridPortableReaderImpl implements GridPortableReader {
+class GridPortableReaderImpl implements GridPortableReader {
     /** {@inheritDoc} */
     @Override public byte readByte(String fieldName) throws GridPortableException {
         return 0; // TODO: implement.
