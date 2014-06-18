@@ -14,6 +14,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.counters.*;
+import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.mapreduce.task.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
@@ -45,6 +46,15 @@ public class GridHadoopV2Context extends JobContextImpl implements MapContext, R
     /** Indicates that this task is to be cancelled. */
     private volatile boolean cancelled;
 
+    /** Input split. */
+    private InputSplit inputSplit;
+
+    /** */
+    private GridHadoopTaskContext ctx;
+
+    /** */
+    private String status;
+
     /**
      * @param cfg Hadoop configuration of the job.
      * @param ctx Context for IO operations.
@@ -60,11 +70,34 @@ public class GridHadoopV2Context extends JobContextImpl implements MapContext, R
 
         output = ctx.output();
         input = ctx.input();
+
+        this.ctx = ctx;
     }
 
     /** {@inheritDoc} */
     @Override public InputSplit getInputSplit() {
-        throw new UnsupportedOperationException();
+        if (inputSplit == null) {
+            GridHadoopInputSplit split = ctx.taskInfo().inputSplit();
+
+            if (split == null)
+                return null;
+
+            if (split instanceof GridHadoopFileBlock) {
+                GridHadoopFileBlock fileBlock = (GridHadoopFileBlock)split;
+
+                inputSplit = new FileSplit(new Path(fileBlock.file()), fileBlock.start(), fileBlock.length(), null);
+            }
+            else if (split instanceof GridHadoopExternalSplit) {
+                // TODO
+            }
+            else if (split instanceof GridHadoopSplitWrapper) {
+                inputSplit = (InputSplit)((GridHadoopSplitWrapper)split).innerSplit();
+            }
+            else
+                throw new IllegalStateException();
+        }
+
+        return inputSplit;
     }
 
     /** {@inheritDoc} */
@@ -119,17 +152,17 @@ public class GridHadoopV2Context extends JobContextImpl implements MapContext, R
 
     /** {@inheritDoc} */
     @Override public void setStatus(String msg) {
-        throw new UnsupportedOperationException();
+        status = msg;
     }
 
     /** {@inheritDoc} */
     @Override public String getStatus() {
-        throw new UnsupportedOperationException();
+        return status;
     }
 
     /** {@inheritDoc} */
     @Override public float getProgress() {
-        throw new UnsupportedOperationException();
+        return 0.5f; // TODO
     }
 
     /** {@inheritDoc} */

@@ -22,15 +22,30 @@ public class GridHadoopTaskContext {
     /** */
     private final GridHadoopTaskOutput output;
 
+    /** */
+    private final GridHadoopTaskInfo taskInfo;
+
     /**
+     * @param taskInfo Task info.
      * @param job Job.
      * @param input Input.
      * @param output Output.
      */
-    public GridHadoopTaskContext(GridHadoopJob job, GridHadoopTaskInput input, GridHadoopTaskOutput output) {
+    public GridHadoopTaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob job, GridHadoopTaskInput input,
+        GridHadoopTaskOutput output) {
+        this.taskInfo = taskInfo;
         this.job = job;
         this.input = input;
         this.output = output;
+    }
+
+    /**
+     * Gets task info.
+     *
+     * @return Task info.
+     */
+    public GridHadoopTaskInfo taskInfo() {
+        return taskInfo;
     }
 
     /**

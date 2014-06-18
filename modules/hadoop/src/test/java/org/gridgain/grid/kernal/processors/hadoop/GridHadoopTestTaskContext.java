@@ -169,8 +169,8 @@ class GridHadoopTestTaskContext extends GridHadoopTaskContext {
     /**
      * @param gridJob Grid Hadoop job.
      */
-    public GridHadoopTestTaskContext(GridHadoopJob gridJob) {
-        super(gridJob, null, null);
+    public GridHadoopTestTaskContext(GridHadoopTaskInfo taskInfo,  GridHadoopJob gridJob) {
+        super(taskInfo, gridJob, null, null);
     }
 
     /** {@inheritDoc} */

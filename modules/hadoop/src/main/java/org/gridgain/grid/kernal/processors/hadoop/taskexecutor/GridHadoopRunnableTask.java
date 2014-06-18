@@ -135,7 +135,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
         try (GridHadoopTaskOutput out = createOutput(info, localCombiner);
              GridHadoopTaskInput in = createInput(info, localCombiner)) {
 
-            GridHadoopTaskContext ctx = new GridHadoopTaskContext(job, in, out);
+            GridHadoopTaskContext ctx = new GridHadoopTaskContext(info, job, in, out);
 
             task = job.createTask(info);
 
