@@ -10,9 +10,6 @@
 package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.gridgain.grid.*;
-import org.gridgain.testframework.*;
-
-import java.util.concurrent.*;
 
 /**
  * Configuration validation tests.
@@ -44,23 +41,5 @@ public class GridHadoopValidationSelfTest extends GridHadoopAbstractSelfTest {
      */
     public void testValid() throws Exception {
         startGrids(1);
-    }
-
-    /**
-     * Ensure that Grid cannot start when peer class loading is enabled.
-     *
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public void testInvalidPeerDeploymentEnabled() throws Exception {
-        peerClassLoading = true;
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                startGrids(1);
-
-                return null;
-            }
-        }, GridException.class, null);
     }
 }
