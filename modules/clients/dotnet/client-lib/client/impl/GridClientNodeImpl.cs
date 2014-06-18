@@ -36,8 +36,6 @@ namespace GridGain.Client.Impl {
             Id = nodeId;
             TcpAddresses = new List<String>();
             TcpHostNames = new List<String>();
-            JettyAddresses = new List<String>();
-            JettyHostNames = new List<String>();
             Attributes = new Dictionary<String, Object>();
             Metrics = null;
             Caches = new GridClientNullDictionary<String, GridClientCacheMode>();
@@ -61,30 +59,12 @@ namespace GridGain.Client.Impl {
             private set;
         }
 
-        /** <summary>Jetty addresses.</summary> */
-        public IList<String> JettyAddresses {
-            get;
-            private set;
-        }
-
-        /** <summary>Jetty host names.</summary> */
-        public IList<String> JettyHostNames {
-            get;
-            private set;
-        }
-
         /** <summary>Tcp remote port value.</summary> */
         public int TcpPort {
             get;
             set;
         }
-
-        /** <summary>Http(s) port value.</summary> */
-        public int HttpPort {
-            get;
-            set;
-        }
-
+        
         /** <summary>Node attributes.</summary> */
         public IDictionary<String, Object> Attributes {
             get;
@@ -125,21 +105,15 @@ namespace GridGain.Client.Impl {
          * <summary>
          * Gets list of all addresses available for connection.</summary>
          *
-         * <param name="proto">Protocol type.</param>
          * <returns>List of socket addresses.</returns>
          */
-        public IList<IPEndPoint> AvailableAddresses(GridClientProtocol proto) {
+        public IList<IPEndPoint> AvailableAddresses() {
             lock (restAddresses) {
                 if (restAddresses.Count == 0) {
-                    int port = proto == GridClientProtocol.Tcp ? TcpPort : HttpPort;
-
-                    if (port != 0) {
-                        if (proto == GridClientProtocol.Tcp)
-                            foreach (IPAddress addr in ToHostAddresses(TcpAddresses, TcpHostNames))
-                                restAddresses.Add(new IPEndPoint(addr, port));
-                        else
-                            foreach (IPAddress addr in ToHostAddresses(JettyAddresses, JettyHostNames))
-                                restAddresses.Add(new IPEndPoint(addr, port));
+                    if (TcpPort != 0)
+                    {
+                        foreach (IPAddress addr in ToHostAddresses(TcpAddresses, TcpHostNames))
+                            restAddresses.Add(new IPEndPoint(addr, TcpPort));
                     }
                 }
             }
@@ -219,10 +193,7 @@ namespace GridGain.Client.Impl {
             sb.AppendFormat(" [NodeId={0}", Id);
             sb.AppendFormat(", TcpAddresses={0}", String.Join<String>(",", TcpAddresses));
             sb.AppendFormat(", TcpHostNames={0}", String.Join<String>(",", TcpHostNames));
-            sb.AppendFormat(", JettyAddresses={0}", String.Join<String>(",", JettyAddresses));
-            sb.AppendFormat(", JettyHostNames={0}", String.Join<String>(",", JettyHostNames));
             sb.AppendFormat(", TcpPort={0}", TcpPort);
-            sb.AppendFormat(", HttpPort={0}", HttpPort);
             sb.Append(']');
 
             return sb.ToString();

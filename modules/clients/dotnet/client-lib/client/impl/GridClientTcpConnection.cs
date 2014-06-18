@@ -886,10 +886,8 @@ namespace GridGain.Client.Impl {
             GridClientNodeImpl node = new GridClientNodeImpl(nodeId);
 
             node.TcpAddresses.AddAll<String>(nodeBean.TcpAddresses);
-            node.JettyAddresses.AddAll<String>(nodeBean.JettyAddresses);
             node.TcpPort = nodeBean.TcpPort;
             node.ConsistentId = nodeBean.ConsistentId;
-            node.HttpPort = nodeBean.JettyPort;
             node.ReplicaCount = nodeBean.ReplicaCount;
 
             if (nodeBean.Caches != null && nodeBean.Caches.Count > 0)

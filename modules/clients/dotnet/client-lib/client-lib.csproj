@@ -119,7 +119,6 @@
     <Compile Include="client\GridClientPartitionAffinity.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="client\GridClientProtocol.cs" />
     <Compile Include="client\IGridClientTopologyListener.cs" />
     <Compile Include="client\GridClientServerUnreachableException.cs" />
     <Compile Include="client\util\GridClientFinishedFuture.cs" />

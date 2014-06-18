@@ -91,7 +91,7 @@ namespace GridGain.Client.Impl.Portable
             /**
              * <summary>Constructor.</summary>
              * <param name="ctx">Client connection context.</param>
-             * <param name="output">Output.</param>
+             * <param name="stream">Output stream.</param>
              */
             public Context(GridClientPortableSerializationContext ctx, Stream stream)
             {
@@ -161,18 +161,16 @@ namespace GridGain.Client.Impl.Portable
                     // Dealing with handles.
                     GridClientPortableObjectHandle hnd = new GridClientPortableObjectHandle(obj);
 
-                    int hndNum = hnds[hnd];
+                    int? hndNum = hnds[hnd];
                     
-                    if (hndNum == null)
-                        hnds.Add(hnd, curHndNum++);
-                    else 
+                    if (hndNum.HasValue)                    
                     {
                         if (blocker == null)
                         {
                             // We can be here in case of String, UUID or primitive array.
                             stream.WriteByte(HDR_HND);
 
-                            GridClientPortableUilts.WriteInt(hndNum, stream);
+                            GridClientPortableUilts.WriteInt(hndNum.Value, stream);
                         }
                         else 
                         {
@@ -180,13 +178,15 @@ namespace GridGain.Client.Impl.Portable
                             {
                                 stream.WriteByte(HDR_HND);
 
-                                GridClientPortableUilts.WriteInt(hndNum, stream);
+                                GridClientPortableUilts.WriteInt(hndNum.Value, stream);
                             });
 
                         }
 
                         return 5;
                     }
+                    else
+                        hnds.Add(hnd, curHndNum++);
 
                     // 2. String?
                     if (type == typeof(string))
@@ -221,6 +221,8 @@ namespace GridGain.Client.Impl.Portable
                     
 
                 }
+
+                return 0;
             }
         }
 

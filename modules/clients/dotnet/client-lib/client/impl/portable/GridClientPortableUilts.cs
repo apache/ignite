@@ -14,6 +14,18 @@ namespace GridGain.Client.Impl.Portable
     using System.IO;
     using GridGain.Client.Portable;
 
+    /*
+    sysPortableTypes.Add(GridClientAuthenticationRequest.PORTABLE_TYPE_ID, typeof(GridClientAuthenticationRequest));
+           sysPortableTypes.Add(GridClientCacheRequest.PORTABLE_TYPE_ID, typeof(GridClientCacheRequest));
+            sysPortableTypes.Add(GridClientLogRequest.PORTABLE_TYPE_ID, typeof(GridClientLogRequest));
+            sysPortableTypes.Add(GridClientNodeBean.PORTABLE_TYPE_ID, typeof(GridClientNodeBean));
+            sysPortableTypes.Add(GridClientNodeMetricsBean.PORTABLE_TYPE_ID, typeof(GridClientNodeMetricsBean));
+            sysPortableTypes.Add(GridClientResponse.PORTABLE_TYPE_ID, typeof(GridClientResponse));
+            sysPortableTypes.Add(GridClientTaskRequest.PORTABLE_TYPE_ID, typeof(GridClientTaskRequest));
+            sysPortableTypes.Add(GridClientTopologyRequest.PORTABLE_TYPE_ID, typeof(GridClientTopologyRequest));
+
+     */
+ 
     /**
      * <summary>Utilities for portable serialization.</summary>
      */ 
@@ -197,33 +209,23 @@ namespace GridGain.Client.Impl.Portable
 
                     case TYPE_SHORT:
                     case TYPE_CHAR:
-                        WriteShort((short)obj, output);
-
-                        break;
+                        return WriteShort((short)obj, stream);
 
                     case TYPE_INT:
-                        WriteInt((int)obj, output);
-
-                        break;
+                        return WriteInt((int)obj, stream);
 
                     case TYPE_LONG:
-                        WriteLong((long)obj, output);
-
-                        break;
+                        return WriteLong((long)obj, stream);
 
                     case TYPE_FLOAT:
                         float floatVal = (float)obj;
 
-                        WriteInt(*(int*)&floatVal, output);
-
-                        break;
+                        return WriteInt(*(int*)&floatVal, stream);
 
                     case TYPE_DOUBLE:
                         double doubleVal = (double)obj;
 
-                        WriteLong(*(long*)&doubleVal, output);
-
-                        break;
+                        return WriteLong(*(long*)&doubleVal, stream);
 
                     default:
                         throw new GridClientPortableException("Type ID doesn't refer to primitive type: " + typeId);
@@ -246,7 +248,7 @@ namespace GridGain.Client.Impl.Portable
 
         /**
          * <summary>Write boolean array.</summary>
-         * <param name="val">Value.</param>
+         * <param name="vals">Value.</param>
          * <param name="stream">Output stream.</param>
          * <returns>Length of written data.</returns>
          */
@@ -280,7 +282,7 @@ namespace GridGain.Client.Impl.Portable
 
         /**
          * <summary>Write byte array.</summary>
-         * <param name="val">Value.</param>
+         * <param name="vals">Value.</param>
          * <param name="stream">Output stream.</param>
          * <returns>Length of written data.</returns>
          */
@@ -297,7 +299,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="stream">Output stream.</param>
          * <returns>Length of written data.</returns>
          */
-        public static unsafe void WriteShort(short val, Stream stream)
+        public static unsafe int WriteShort(short val, Stream stream)
         {
             byte[] bytes = new byte[2];
 
@@ -318,12 +320,14 @@ namespace GridGain.Client.Impl.Portable
 
                 stream.Write(bytes, 0, 2);
             }
+
+            return 2;
         }
 
         /**
          * <summary>Write int value.</summary>
          * <param name="val">Value.</param>
-         * <param name="output">Output.</param>
+         * <param name="stream">Output stream.</param>
          */
         public static unsafe int WriteInt(int val, Stream stream)
         {
@@ -355,35 +359,37 @@ namespace GridGain.Client.Impl.Portable
         /**
          * <summary>Write long value.</summary>
          * <param name="val">Value.</param>
-         * <param name="output">Output.</param>
+         * <param name="stream">Output stream.</param>
          */
-        public static unsafe void WriteLong(long val, IGridClientPortableMarshallerOutput output)
+        public static unsafe int WriteLong(long val, Stream stream)
         {
             unchecked
             {
+                byte[] bytes = new byte[8];
+
                 if (LITTLE_ENDIAN)
                 {
-                    byte[] bytes = new byte[8];
-
                     fixed (byte* b = bytes)
                     {
                         *((long*)b) = val;
                     }
-
-                    output.WriteBytes(bytes);
                 }
                 else
                 {
-                    output.WriteByte((byte)(val & 0xFF));
-                    output.WriteByte((byte)(val >> 8 & 0xFF));
-                    output.WriteByte((byte)(val >> 16 & 0xFF));
-                    output.WriteByte((byte)(val >> 24 & 0xFF));
-                    output.WriteByte((byte)(val >> 32 & 0xFF));
-                    output.WriteByte((byte)(val >> 40 & 0xFF));
-                    output.WriteByte((byte)(val >> 48 & 0xFF));
-                    output.WriteByte((byte)(val >> 54 & 0xFF));
+                    bytes[0] = (byte)(val & 0xFF);
+                    bytes[1] = (byte)(val >> 8 & 0xFF);
+                    bytes[2] = (byte)(val >> 16 & 0xFF);
+                    bytes[3] = (byte)(val >> 24 & 0xFF);
+                    bytes[4] = (byte)(val >> 32 & 0xFF);
+                    bytes[5] = (byte)(val >> 40 & 0xFF);
+                    bytes[6] = (byte)(val >> 48 & 0xFF);
+                    bytes[7] = (byte)(val >> 54 & 0xFF);
                 }
-            } 
+
+                stream.Write(bytes, 0, 8);
+            }
+
+            return 8;
         }
     }
 }

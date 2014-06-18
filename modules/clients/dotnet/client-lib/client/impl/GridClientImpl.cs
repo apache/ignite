@@ -94,7 +94,7 @@ namespace GridGain.Client.Impl {
                 // Disable routers for connection manager.
                 routers = new HashSet<IPEndPoint>(); 
 
-            connMgr = new GridClientConnectionManager(Id, top, routers, cfg.Credentials, cfg.Protocol, cfg.SslContext, cfg.ConnectTimeout);
+            connMgr = new GridClientConnectionManager(Id, top, routers, cfg.Credentials, cfg.SslContext, cfg.ConnectTimeout);
 
             int retries = 3;
 

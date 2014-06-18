@@ -600,10 +600,7 @@ namespace GridGain.Client.Impl {
 
             node.TcpAddresses.AddAll<String>(AsList<String>(json["tcpAddresses"]));
             node.TcpHostNames.AddAll<String>(AsList<String>(json["tcpHostNames"]));
-            node.JettyAddresses.AddAll<String>(AsList<String>(json["jettyAddresses"]));
-            node.JettyHostNames.AddAll<String>(AsList<String>(json["jettyHostNames"]));
             node.TcpPort = (int)json["tcpPort"];
-            node.HttpPort = (int)json["jettyPort"];
             node.ConsistentId = json["consistentId"];
             node.ReplicaCount = (int)json["replicaCount"];
 

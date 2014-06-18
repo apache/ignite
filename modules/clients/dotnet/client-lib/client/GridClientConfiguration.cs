@@ -1,3 +1,4 @@
+
 /* @csharp.file.header */
 
 /*  _________        _____ __________________        _____
@@ -17,9 +18,6 @@ namespace GridGain.Client {
 
     /** <summary>Client configuration.</summary> */
     public class GridClientConfiguration {
-        /** <summary>Default client protocol.</summary> */
-        public const GridClientProtocol DefaultClientProtocol = GridClientProtocol.Tcp;
-
         /** <summary>Default TCP server port.</summary> */
         public static readonly int DefaultTcpPort = 11211;
 
@@ -38,7 +36,6 @@ namespace GridGain.Client {
             Credentials = null;
             DataConfigurations = new List<GridClientDataConfiguration>();
             IsTopologyCacheEnabled = false;
-            Protocol = DefaultClientProtocol;
             Servers = new HashSet<String>();
             Routers = new HashSet<String>();
             SslContext = null;
@@ -60,7 +57,6 @@ namespace GridGain.Client {
             DataConfigurations = new List<GridClientDataConfiguration>(cfg.DataConfigurations);
             IsTopologyCacheEnabled = cfg.IsTopologyCacheEnabled;
             PortableClassConfigurations = cfg.PortableClassConfigurations;
-            Protocol = cfg.Protocol;
             Servers = new HashSet<String>(cfg.Servers);
             Routers = new HashSet<String>(cfg.Routers);
             SslContext = cfg.SslContext;
@@ -123,12 +119,6 @@ namespace GridGain.Client {
          * in the background every <see cref="TopologyRefreshFrequency"/> interval.</summary>
          */
         public bool IsTopologyCacheEnabled {
-            get;
-            set;
-        }
-
-        /** <summary>Protocol for communication between client and remote grid.</summary> */
-        public GridClientProtocol Protocol {
             get;
             set;
         }
