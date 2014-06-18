@@ -69,6 +69,10 @@
     <Compile Include="client\balancer\IGridClientLoadBalancer.cs" />
     <Compile Include="client\balancer\GridClientLoadBalancer.cs" />
     <Compile Include="client\balancer\GridClientRoundRobinBalancer.cs" />
+    <Compile Include="client\portable\GridClientPortableClassConfiguration.cs" />
+    <Compile Include="client\portable\GridClientPortableClassIdAttribute.cs" />
+    <Compile Include="client\portable\GridClientPortableFieldIdAttribute.cs" />
+    <Compile Include="client\portable\GridClientPortableIdMapper.cs" />
     <Compile Include="client\portable\impl\GridClientPortableMarshaller.cs" />
     <Compile Include="client\portable\impl\GridClientPortableExternalSerializer.cs" />
     <Compile Include="client\portable\impl\GridClientPortableByteArrayMarshallerOutput.cs" />
