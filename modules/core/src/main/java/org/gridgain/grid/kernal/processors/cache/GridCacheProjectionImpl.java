@@ -20,7 +20,6 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
@@ -34,8 +33,7 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 /**
  * Cache projection.
  */
-public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter implements GridCacheProjectionEx<K, V>,
-    Externalizable {
+public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -512,6 +510,16 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     /** {@inheritDoc} */
     @Override public int size() {
         return keySet().size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int globalSize() throws GridException {
+        return cache.globalSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int globalPrimarySize() throws GridException {
+        return cache.globalPrimarySize();
     }
 
     /** {@inheritDoc} */
