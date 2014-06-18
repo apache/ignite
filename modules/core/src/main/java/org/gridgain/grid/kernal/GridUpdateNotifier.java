@@ -318,8 +318,6 @@ class GridUpdateNotifier {
                             String line;
 
                             while ((line = reader.readLine()) != null) {
-                                System.out.println(line);
-
                                 if (line.contains("<meta") && !line.contains("/>"))
                                     line = line.replace(">", "/>");
 
