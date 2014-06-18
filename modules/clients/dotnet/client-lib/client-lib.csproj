@@ -72,12 +72,10 @@
     <Compile Include="client\portable\GridClientPortableClassConfiguration.cs" />
     <Compile Include="client\portable\GridClientPortableClassIdAttribute.cs" />
     <Compile Include="client\portable\GridClientPortableFieldIdAttribute.cs" />
-    <Compile Include="client\portable\GridClientPortableIdMapper.cs" />
     <Compile Include="client\impl\portable\GridClientPortableMarshaller.cs" />
     <Compile Include="client\impl\portable\GridClientPortableExternalSerializer.cs" />
     <Compile Include="client\impl\portable\GridClientPortableByteArrayMarshallerOutput.cs" />
     <Compile Include="client\impl\portable\GridClientPortableClassMetadata.cs" />
-    <Compile Include="client\impl\marshaller\GridClientPortableMarshallerNew.cs" />
     <Compile Include="client\impl\message\GridClientCacheQueryRequest.cs" />
     <Compile Include="client\impl\message\GridClientCacheQueryRequestOperation.cs" />
     <Compile Include="client\impl\query\GridClientDataQueriesImpl.cs" />
@@ -85,9 +83,6 @@
     <Compile Include="client\impl\query\GridClientDataQueryBean.cs" />
     <Compile Include="client\impl\query\GridClientDataQueryResult.cs" />
     <Compile Include="client\impl\query\GridClientDataQueryType.cs" />
-    <Compile Include="client\portable\GridClientExternalPortableSerializer.cs" />
-    <Compile Include="client\portable\GridClientPortableByteArrayMarshallerOutput.cs" />
-    <Compile Include="client\portable\GridClientPortableClassMetadata.cs" />
     <Compile Include="client\portable\GridClientPortableException.cs" />
     <Compile Include="client\impl\portable\GridClientPortableFieldMetadata.cs" />
     <Compile Include="client\impl\portable\GridClientPortableHeader.cs" />
@@ -177,7 +172,9 @@
   <ItemGroup>
     <None Include="client-lib.snk" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="client\impl\marshaller\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>
