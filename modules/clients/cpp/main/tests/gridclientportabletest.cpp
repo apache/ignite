@@ -76,7 +76,7 @@ GridClientConfiguration clientConfig() {
 }
 
 class PortablePerson : public GridPortable {
-public:    
+public:
     PortablePerson() {
     }
 
@@ -171,10 +171,54 @@ public:
 
 REGISTER_TYPE_SERIALIZER(101, Person, PersonSerializer);
 
+BOOST_AUTO_TEST_CASE(testWriteHandleTable) {
+    GridWriteHandleTable table(3, 3);
+
+    int32_t vals[100];
+
+    for (int i = 0; i < 100; i++) {
+        int32_t handle = table.lookup(&vals[i]);
+
+        BOOST_REQUIRE_EQUAL(-1, handle);
+
+        handle = table.lookup(&vals[i]);
+
+        BOOST_REQUIRE_EQUAL(i, handle);
+    }
+
+    for (int i = 0; i < 100; i++) {
+        int32_t handle = table.lookup(&vals[i]);
+
+        BOOST_REQUIRE_EQUAL(i, handle);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(testReadHandleTable) {
+    GridReadHandleTable table(3);
+
+    int32_t vals[100];
+
+    for (int i = 0; i < 100; i++) {
+        int32_t handle = table.assign(&vals[i]);
+
+        BOOST_REQUIRE_EQUAL(i, handle);
+
+        void* obj = table.lookup(i);
+
+        BOOST_REQUIRE_EQUAL(&vals[i], obj);
+    }
+
+    for (int i = 0; i < 100; i++) {
+        void* obj = table.lookup(i);
+
+        BOOST_REQUIRE_EQUAL(&vals[i], obj);
+    }
+}
+
 BOOST_AUTO_TEST_CASE(testPortableTask) {
     GridClientConfiguration cfg = clientConfig();
 
-	TGridClientPtr client = GridClientFactory::start(cfg);	
+	TGridClientPtr client = GridClientFactory::start(cfg);
 
     TGridClientComputePtr compute = client->compute();
 
@@ -195,7 +239,7 @@ BOOST_AUTO_TEST_CASE(testPortableTask) {
 BOOST_AUTO_TEST_CASE(testPortableKey) {
     GridClientConfiguration cfg = clientConfig();
 
-	TGridClientPtr client = GridClientFactory::start(cfg);	
+	TGridClientPtr client = GridClientFactory::start(cfg);
 
     TGridClientDataPtr data = client->data("partitioned");
 
@@ -231,7 +275,7 @@ BOOST_AUTO_TEST_CASE(testPortableKey) {
 BOOST_AUTO_TEST_CASE(testPortableCache) {
     GridClientConfiguration cfg = clientConfig();
 
-	TGridClientPtr client = GridClientFactory::start(cfg);	
+	TGridClientPtr client = GridClientFactory::start(cfg);
 
     TGridClientDataPtr data = client->data("partitioned");
 
@@ -254,7 +298,7 @@ BOOST_AUTO_TEST_CASE(testPortableCache) {
 BOOST_AUTO_TEST_CASE(testExternalPortableCache) {
     GridClientConfiguration cfg = clientConfig();
 
-	TGridClientPtr client = GridClientFactory::start(cfg);	
+	TGridClientPtr client = GridClientFactory::start(cfg);
 
     TGridClientDataPtr data = client->data("partitioned");
 

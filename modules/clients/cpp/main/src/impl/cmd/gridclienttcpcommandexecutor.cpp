@@ -53,16 +53,16 @@ void GridClientTcpCommandExecutor::executeTopologyCmd(const GridClientSocketAddr
     GridClientMessageTopologyResult& rslt) {
     GridClientTopologyRequest msg;
 
-    msg.setIncludeAttributes(topCmd.getIncludeAttributes());
+    msg.includeAttrs = topCmd.getIncludeAttributes();
 
-    msg.setIncludeMetrics(topCmd.getIncludeMetrics());
+    msg.includeMetrics = topCmd.getIncludeMetrics();
 
     boost::optional<GridClientUuid> nodeId = topCmd.getNodeId();
 
     if (nodeId)
-        msg.setNodeId(*nodeId);
+        msg.nodeId = *nodeId;
     else if (!topCmd.getNodeIp().empty())
-        msg.setNodeId(topCmd.getNodeIp());
+        msg.nodeIp = topCmd.getNodeIp();
 
     executeCmd(host, msg, topCmd, rslt);
 }

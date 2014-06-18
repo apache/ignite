@@ -259,6 +259,10 @@ GridPortable* GridClientVariant::getPortable() const {
     return portable;
 }
 
+int32_t GridClientVariant::hashCode() const {
+    return hash_value(*this);
+}
+
 string GridClientVariant::toString() const {
     if (Impl::STRING_TYPE == pimpl.var.which()) {
         return getString();

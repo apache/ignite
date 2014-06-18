@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <boost/unordered_map.hpp>
+#include <boost/foreach.hpp>
 
 #include "gridgain/impl/hash/gridclientvarianthasheableobject.hpp"
 #include "gridgain/impl/hash/gridclientsimpletypehasheableobject.hpp"
@@ -124,7 +125,14 @@ public:
     }
 
     virtual void visit(const boost::unordered_map<GridClientVariant, GridClientVariant>& vmap) const {
-        hashCode_ = 1;
+        hashCode_ = 0;
+
+        BOOST_FOREACH(TGridClientVariantMap::value_type pair, vmap) {
+            GridClientVariant key = pair.first;
+            GridClientVariant value = pair.second;
+
+            hashCode_ += hash_value(key) ^ hash_value(value);
+        }
     }
 
 private:

@@ -468,6 +468,13 @@ public:
     GridClientUuid getUuid() const;
 
     /**
+     * Returns hash code for value from this variant.
+     * 
+     * @return Hash code for value held in this variant.
+     */
+    int32_t hashCode() const;
+
+    /**
      * Method for visitors.
      *
      * @param visitor Visitor to accept.

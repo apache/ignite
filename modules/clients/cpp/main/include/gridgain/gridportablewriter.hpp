@@ -39,15 +39,17 @@ public:
 
     virtual void writeDouble(char* fieldName, double val) = 0;
 
+    virtual void writeBytesArray(char* fieldName, int8_t* val, int32_t size) = 0;
+
     virtual void writeBytes(char* fieldName, const std::vector<int8_t>& val) = 0;
 
-    virtual void writeString(char* fieldName, const std::string &val) = 0;
+    virtual void writeString(char* fieldName, const std::string& val) = 0;
 
-    virtual void writeVariant(char* fieldName, const GridClientVariant &val) = 0;
+    virtual void writeVariant(char* fieldName, const GridClientVariant& val) = 0;
 
-    virtual void writeCollection(char* fieldName, const std::vector<GridClientVariant> &val) = 0;
+    virtual void writeCollection(char* fieldName, const std::vector<GridClientVariant>& val) = 0;
 
-    virtual void writeMap(char* fieldName, const boost::unordered_map<GridClientVariant, GridClientVariant> &map) = 0;
+    virtual void writeMap(char* fieldName, const boost::unordered_map<GridClientVariant, GridClientVariant>& map) = 0;
 
     virtual void writeUuid(char* fieldName, const boost::optional<GridClientUuid>& val) = 0;
 };

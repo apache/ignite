@@ -41,6 +41,8 @@ public:
 
     virtual std::vector<int8_t> readBytes(char* fieldName) = 0;
 
+    virtual std::pair<int8_t*, int32_t> readBytesArray(char* fieldName) = 0;
+
     virtual std::string readString(char* fieldName) = 0;
 
     virtual GridClientVariant readVariant(char* fieldName) = 0;
