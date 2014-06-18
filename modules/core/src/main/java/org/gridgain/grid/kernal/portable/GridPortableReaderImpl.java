@@ -15,9 +15,9 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Portable reader implementation based on {@code sun.misc.Unsafe}.
+ * Portable reader implementation.
  */
-class GridUnsafePortableReader extends GridPortableReaderAdapter {
+public class GridPortableReaderImpl implements GridPortableReader {
     /** {@inheritDoc} */
     @Override public byte readByte(String fieldName) throws GridPortableException {
         return 0; // TODO: implement.
@@ -130,112 +130,112 @@ class GridUnsafePortableReader extends GridPortableReaderAdapter {
 
     /** {@inheritDoc} */
     @Nullable @Override public byte[] readByteArray(String fieldName) throws GridPortableException {
-        return null; // TODO: implement.
+        return new byte[0]; // TODO: implement.
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public byte[] readByteArray() throws GridPortableException {
-        return null; // TODO: implement.
+        return new byte[0]; // TODO: implement.
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public short[] readShortArray(String fieldName) throws GridPortableException {
-        return null; // TODO: implement.
+        return new short[0]; // TODO: implement.
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public short[] readShortArray() throws GridPortableException {
-        return null; // TODO: implement.
+        return new short[0]; // TODO: implement.
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public int[] readIntArray(String fieldName) throws GridPortableException {
-        return null; // TODO: implement.
+        return new int[0]; // TODO: implement.
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public int[] readIntArray() throws GridPortableException {
-        return null; // TODO: implement.
+        return new int[0]; // TODO: implement.
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public long[] readLongArray(String fieldName) throws GridPortableException {
-        return null; // TODO: implement.
+        return new long[0]; // TODO: implement.
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public long[] readLongArray() throws GridPortableException {
-        return null; // TODO: implement.
+        return new long[0]; // TODO: implement.
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public float[] readFloatArray(String fieldName) throws GridPortableException {
-        return null; // TODO: implement.
+        return new float[0]; // TODO: implement.
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public float[] readFloatArray() throws GridPortableException {
-        return null; // TODO: implement.
+        return new float[0]; // TODO: implement.
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public double[] readDoubleArray(String fieldName) throws GridPortableException {
-        return null; // TODO: implement.
+        return new double[0]; // TODO: implement.
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public double[] readDoubleArray() throws GridPortableException {
-        return null; // TODO: implement.
+        return new double[0]; // TODO: implement.
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public char[] readCharArray(String fieldName) throws GridPortableException {
-        return null; // TODO: implement.
+        return new char[0]; // TODO: implement.
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public char[] readCharArray() throws GridPortableException {
-        return null; // TODO: implement.
+        return new char[0]; // TODO: implement.
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public boolean[] readBooleanArray(String fieldName) throws GridPortableException {
-        return null; // TODO: implement.
+        return new boolean[0]; // TODO: implement.
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public boolean[] readBooleanArray() throws GridPortableException {
-        return null; // TODO: implement.
+        return new boolean[0]; // TODO: implement.
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public String[] readStringArray(String fieldName) throws GridPortableException {
-        return null; // TODO: implement.
+        return new String[0]; // TODO: implement.
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public String[] readStringArray() throws GridPortableException {
-        return null; // TODO: implement.
+        return new String[0]; // TODO: implement.
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public UUID[] readUuidArray(String fieldName) throws GridPortableException {
-        return null; // TODO: implement.
+        return new UUID[0]; // TODO: implement.
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public UUID[] readUuidArray() throws GridPortableException {
-        return null; // TODO: implement.
+        return new UUID[0]; // TODO: implement.
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Object[] readObjectArray(String fieldName) throws GridPortableException {
-        return null; // TODO: implement.
+        return new Object[0]; // TODO: implement.
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Object[] readObjectArray() throws GridPortableException {
-        return null; // TODO: implement.
+        return new Object[0]; // TODO: implement.
     }
 
     /** {@inheritDoc} */

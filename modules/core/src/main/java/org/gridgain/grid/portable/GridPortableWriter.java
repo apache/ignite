@@ -136,16 +136,16 @@ public interface GridPortableWriter {
 
     /**
      * @param fieldName Field name.
-     * @param uuid UUID to write.
+     * @param val UUID to write.
      * @throws GridPortableException In case of error.
      */
-    public void writeUuid(String fieldName, @Nullable UUID uuid) throws GridPortableException;
+    public void writeUuid(String fieldName, @Nullable UUID val) throws GridPortableException;
 
     /**
-     * @param uuid UUID to write.
+     * @param val UUID to write.
      * @throws GridPortableException In case of error.
      */
-    public void writeUuid(@Nullable UUID uuid) throws GridPortableException;
+    public void writeUuid(@Nullable UUID val) throws GridPortableException;
 
     /**
      * @param fieldName Field name.
