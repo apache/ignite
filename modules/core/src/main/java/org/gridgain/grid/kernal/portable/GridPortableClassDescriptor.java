@@ -441,26 +441,48 @@ class GridPortableClassDescriptor {
                 return reader.readMap();
 
             case PORTABLE_EX:
-                GridPortableEx obj;
+                GridPortableEx portableEx = newInstance(cls);
 
-                try {
-                    obj = (GridPortableEx)UNSAFE.allocateInstance(cls);
-                }
-                catch (InstantiationException e) {
-                    throw new GridPortableException("Failed to instantiate instance: " + cls, e);
-                }
+                portableEx.readPortable(reader);
 
-
-
-                return null; // TODO
+                return portableEx;
 
             case PORTABLE:
-                return null; // TODO
+                GridPortable portable = newInstance(cls);
+
+                for (FieldInfo info : fields) {
+                    Field f = info.field;
+
+                    Object val = reader.readObject(f.getName());
+
+                    try {
+                        f.set(portable, val);
+                    }
+                    catch (IllegalAccessException e) {
+                        throw new GridPortableException("Failed to set value for field: " + f, e);
+                    }
+                }
+
+                return portable;
 
             default:
                 assert false : "Invalid mode: " + mode;
 
                 return null;
+        }
+    }
+
+    /**
+     * @param cls Class.
+     * @return Instance.
+     * @throws GridPortableException In case of error.
+     */
+    private <T> T newInstance(Class<?> cls) throws GridPortableException {
+        try {
+            return (T)UNSAFE.allocateInstance(cls);
+        }
+        catch (InstantiationException e) {
+            throw new GridPortableException("Failed to instantiate instance: " + cls, e);
         }
     }
 
