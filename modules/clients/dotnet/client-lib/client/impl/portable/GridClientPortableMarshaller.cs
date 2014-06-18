@@ -38,22 +38,22 @@ namespace GridGain.Client.Impl.Portable
          */
         public byte[] Marshal(object val, GridClientPortableSerializationContext ctx)
         {
-            GridClientPortableByteArrayMarshallerOutput output = new GridClientPortableByteArrayMarshallerOutput();
+            MemoryStream stream = new MemoryStream();
 
-            Marshal0(val, output, ctx);
+            Marshal(val, stream, ctx);
 
-            return output.Data();
+            return stream.ToArray();
         }
 
         /**
          * <summary>Marhshal object</summary>
          * <param name="val">Value.</param>
-         * <param name="output">Output stream.</param>
+         * <param name="stream">Output stream.</param>
          * <param name="ctx">Serialization context.</param>
          */
-        public void Marshal(object val, Stream output, GridClientPortableSerializationContext ctx)
+        public void Marshal(object val, Stream stream, GridClientPortableSerializationContext ctx)
         {
-            Marshal0(val, new GridClientPortableStreamMarshallerOutput(output), ctx);
+            new Context(ctx, stream).Write(val);
         }
 
         /**
@@ -73,17 +73,6 @@ namespace GridGain.Client.Impl.Portable
             // TODO: GG-8535: Implement.
             return default(T);
         }
-
-        /**
-         * <summary>Internal marshalling routine.</summary>
-         * <param name="obj">Object to be serialized.</param>
-         * <param name="output">Output.</param>
-         * <param name="ctx">Context.</param>
-         */
-        private void Marshal0(object obj, IGridClientPortableMarshallerOutput output, GridClientPortableSerializationContext ctx)
-        {
-            new Context(ctx, output).Write(obj);
-        }
         
         /**
          * <summary>Context.</summary>
@@ -94,171 +83,144 @@ namespace GridGain.Client.Impl.Portable
             private readonly GridClientPortableSerializationContext ctx;
 
             /** Output. */
-            private readonly IGridClientPortableMarshallerOutput output;
+            private readonly Stream stream;
 
             /** Tracking wrier. */
             private readonly Writer writer;
-
-            /** Current length. */
-            private int len;
-
+            
             /**
              * <summary>Constructor.</summary>
              * <param name="ctx">Client connection context.</param>
              * <param name="output">Output.</param>
              */
-            public Context(GridClientPortableSerializationContext ctx, IGridClientPortableMarshallerOutput output)
+            public Context(GridClientPortableSerializationContext ctx, Stream stream)
             {
                 this.ctx = ctx;
-                this.output = output;
+                this.stream = stream;
 
                 writer = new Writer(this);
             }
 
+            /** Object preventing direct write to the stream. */
+            private object blocker;
+
+            private readonly ICollection<Action> actions = new List<Action>();
+
+            private int curHndNum;
+
+            private readonly IDictionary<GridClientPortableObjectHandle, int> hnds = new Dictionary<GridClientPortableObjectHandle, int>();
+
             /**
-             * <summary>Write top-level object to the context.</summary>
+             * <summary>Write object to the context.</summary>
              * <param name="obj">Object.</param>
+             * <returns>Length of written data.</returns>
              */ 
-            public void Write(object obj)
+            public int Write(object obj)
             {
                 if (obj == null)
                 {
-                    // Special case for top-level null value.
-                    output.Initialize(1);
+                    // Special case for null value.
+                    if (blocker == null)
+                        stream.WriteByte(HDR_NULL);
+                    else
+                        actions.Add(() => { stream.WriteByte(HDR_NULL); });
 
-                    output.WriteByte(HDR_NULL);
+                    return 1;
                 }
-                else 
-                { 
-                    Frame frame = Write0(obj); // Top-level frame.
+                else
+                {
+                    Type type = obj.GetType();
 
-                    output.Initialize(frame.Length());
+                    // 1. Primitive?
+                    int typeId = GridClientPortableUilts.PrimitiveTypeId(obj.GetType());
 
-                    frame.Write(output);
+                    if (typeId != 0)
+                    {
+                        // Writing primitive value.
+                        if (blocker == null)
+                        {
+                            stream.WriteByte(HDR_FULL);
+
+                            GridClientPortableUilts.WriteInt(typeId, stream);
+                            GridClientPortableUilts.WritePrimitive(typeId, obj, stream);
+                        }
+                        else
+                        {
+                            actions.Add(() => 
+                            {
+                                stream.WriteByte(HDR_FULL);
+
+                                GridClientPortableUilts.WriteInt(typeId, stream);
+                                GridClientPortableUilts.WritePrimitive(typeId, obj, stream);
+                            });
+
+                            return 5 + GridClientPortableUilts.PrimitiveLength(typeId);
+                        }
+                    }
+
+                    // Dealing with handles.
+                    GridClientPortableObjectHandle hnd = new GridClientPortableObjectHandle(obj);
+
+                    int hndNum = hnds[hnd];
+                    
+                    if (hndNum == null)
+                        hnds.Add(hnd, curHndNum++);
+                    else 
+                    {
+                        if (blocker == null)
+                        {
+                            // We can be here in case of String, UUID or primitive array.
+                            stream.WriteByte(HDR_HND);
+
+                            GridClientPortableUilts.WriteInt(hndNum, stream);
+                        }
+                        else 
+                        {
+                            actions.Add(() => 
+                            {
+                                stream.WriteByte(HDR_HND);
+
+                                GridClientPortableUilts.WriteInt(hndNum, stream);
+                            });
+
+                        }
+
+                        return 5;
+                    }
+
+                    // 2. String?
+                    if (type == typeof(string))
+                    {
+                        if (blocker == null)
+                        {
+
+                        }
+                        else
+                        {
+
+                        }
+
+                        return 0; // TODO: GG-8535: Implement.
+                    }
+
+                    // 3. GUID?
+                    // TODO: GG-8535: Implement.
+
+                    // 4. Primitive array?
+
+
+                    /** Dealing with complex object. */
+                    
+                    // 5. Object array?
+
+                    // 6. Collection?
+
+                    // 7. Map?
+
+                    // 8. Just object.
+                    
+
                 }
-
-                output.Close();
-            }
-
-            /**
-             * <summary>Internal write routine.</summary>
-             * <param name="obj">Object to write.</param>
-             */ 
-            public Frame Write0(object obj)
-            {
-                Type type = obj.GetType();
-
-                return obj.GetType().IsPrimitive ? new PrimitiveFrame(obj) as Frame : new ObjectFrame(this, obj);
-            }
-        }
-
-        /**
-         * <summary>Serialization frame.</summary>
-         */ 
-        private interface Frame
-        {
-            /**
-             * <summary>Prepare frame.</summary>
-             */ 
-            void Prepare();
-
-            /**
-             * <summary>Get's frame data length.</summary>
-             * <returns>Frame raw length.</returns>
-             */ 
-            int Length();
-
-            /**
-             * <summary>Write frame data to output.</summary>
-             * <param name="output">Output.</param>
-             */ 
-            void Write(IGridClientPortableMarshallerOutput output);
-        }
-
-        /**
-         * <summary>Primitive frame.</summary>
-         */ 
-        private class PrimitiveFrame : Frame
-        {
-            /** Primitive object. */
-            private readonly object obj;
-
-            /** Type ID. */
-            private int typeId;
-
-            /** Full length. */
-            private int len; 
-
-            /**
-             * <summary>Constructor.</summary>
-             * <param name="obj">Object.</param>
-             */ 
-            public PrimitiveFrame(object obj)
-            {
-                this.obj = obj;
-            }
-
-            /** <inheritdoc /> */
-            public void Prepare()
-            {
-                typeId = GridClientPortableUilts.PrimitiveTypeId(obj.GetType());
-
-                len = GridClientPortableUilts.PrimitiveLength(typeId);
-            }
-
-            /** <inheritdoc /> */
-            public int Length()
-            {
-                return /** Flag. */ 1 + /** User type flag. */  1 +  /** Type ID. */ 4 + /** Data length. */ len;
-            }
-
-            /** <inheritdoc /> */
-            public void Write(IGridClientPortableMarshallerOutput output)
-            {
-                output.WriteByte(HDR_FULL);
-                GridClientPortableUilts.WriteBoolean(false, output);
-                GridClientPortableUilts.WritePrimitive(typeId, obj, output);
-            }
-        }
-
-        /**
-         * <summary>Object frame.</summary>
-         */ 
-        private class ObjectFrame : Frame
-        {
-            /** Context. */
-            private readonly Context ctx;
-
-            /** Object to be serialized. */
-            private readonly object obj;
-
-            /**
-             * <summary>Constructor.</summary>
-             * <param name="ctx">Context.</param>
-             * <param name="obj">Object.</param>
-             */
-            public ObjectFrame(Context ctx, object obj)
-            {
-                this.ctx = ctx;
-                this.obj = obj;
-            }
-
-            /** <inheritdoc /> */
-            public void Prepare()
-            {
-                throw new NotImplementedException();
-            }
-
-            /** <inheritdoc /> */
-            public int Length()
-            {
-                throw new NotImplementedException();
-            }
-
-            /** <inheritdoc /> */
-            public void Write(IGridClientPortableMarshallerOutput output)
-            {
-                throw new NotImplementedException();
             }
         }
 
