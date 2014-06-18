@@ -9,12 +9,27 @@
 
 namespace GridGain.Client.Portable
 {
+    using System;
+
     /**
-     * <summary> Marker interface for all portable objects. All non-transient fields except of [NonSerialized] are 
-     * serialized. If object contains non-portable object, an exception is thrown.</summary>
+     * <summary>Interface to implement custom portable serialization logic.</summary>
      */
-    interface IGridClientPortable
+    public interface IGridClientPortable 
     {
-        // No-op.
+        /**
+         * <summary>Writes this object to the given writer.</summary>
+         * 
+         * <param name="writer">Writer.</param>
+         * <exception cref="System.IO.IOException">If write failed.</exception>
+         */
+        void WritePortable(IGridClientPortableWriter writer);
+
+        /**
+         * <summary>Reads this object from the given reader.</summary>
+         * 
+         * <param name="reader">Reader.</param>
+         * <exception cref="System.IO.IOException">If read failed.</exception>
+         */
+        void ReadPortable(IGridClientPortableReader reader);
     }
 }

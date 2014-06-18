@@ -15,7 +15,7 @@ namespace GridGain.Client {
      * Since the topology refresh is performed in background, the listeners will
      * not be notified immediately after the node leaves grid, but the maximum time
      * window between remote grid detects node leaving and client receives topology
-     * update is <see cref="IGridClientConfiguration.TopologyRefreshFrequency"/>.</summary>
+     * update is <see cref="GridClientConfiguration.TopologyRefreshFrequency"/>.</summary>
      */
     public interface IGridClientTopologyListener {
         /**

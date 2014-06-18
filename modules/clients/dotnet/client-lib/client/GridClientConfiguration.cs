@@ -11,11 +11,12 @@ namespace GridGain.Client {
     using System;
     using System.Collections.Generic;
     using GridGain.Client.Balancer;
+    using GridGain.Client.Portable;
     using GridGain.Client.Ssl;
     using GridGain.Client.Util;
 
-    /** <summary>Client configuration adapter.</summary> */
-    public class GridClientConfiguration : IGridClientConfiguration {
+    /** <summary>Client configuration.</summary> */
+    public class GridClientConfiguration {
         /** <summary>Default client protocol.</summary> */
         public const GridClientProtocol DefaultClientProtocol = GridClientProtocol.Tcp;
 
@@ -35,7 +36,7 @@ namespace GridGain.Client {
             ConnectionIdleTimeout = DefaultConnectionIdleTimeout;
             ConnectTimeout = 0;
             Credentials = null;
-            DataConfigurations = new List<IGridClientDataConfiguration>();
+            DataConfigurations = new List<GridClientDataConfiguration>();
             IsTopologyCacheEnabled = false;
             Protocol = DefaultClientProtocol;
             Servers = new HashSet<String>();
@@ -50,15 +51,15 @@ namespace GridGain.Client {
          *
          * <param name="cfg">Configuration to be copied.</param>
          */
-        public GridClientConfiguration(IGridClientConfiguration cfg) {
+        public GridClientConfiguration(GridClientConfiguration cfg) {
             // Preserve alphabetical order for maintenance;
             Balancer = cfg.Balancer;
             ConnectionIdleTimeout = cfg.ConnectionIdleTimeout;
             ConnectTimeout = cfg.ConnectTimeout;
             Credentials = cfg.Credentials;
-            DataConfigurations = new List<IGridClientDataConfiguration>(cfg.DataConfigurations);
+            DataConfigurations = new List<GridClientDataConfiguration>(cfg.DataConfigurations);
             IsTopologyCacheEnabled = cfg.IsTopologyCacheEnabled;
-            PortableClasses = cfg.PortableClasses;
+            PortableClassConfigurations = cfg.PortableClassConfigurations;
             Protocol = cfg.Protocol;
             Servers = new HashSet<String>(cfg.Servers);
             Routers = new HashSet<String>(cfg.Routers);
@@ -66,34 +67,38 @@ namespace GridGain.Client {
             TopologyRefreshFrequency = cfg.TopologyRefreshFrequency;
         }
 
-        /** <inheritdoc /> */
+        /**
+         * <summary>
+         * Default balancer to be used for computational client. It can be overridden
+         * for different compute instances.</summary>
+         */
         public IGridClientLoadBalancer Balancer {
             get;
             set;
         }
 
-        /** <inheritdoc /> */
+        /** <summary>Maximum amount of time that client connection can be idle before it is closed.</summary> */
         public TimeSpan ConnectionIdleTimeout {
             get;
             set;
         }
 
-        /** <inheritdoc /> */
+        /** <summary>Timeout for socket connect operation.</summary> */
         public int ConnectTimeout {
             get;
             set;
         }
 
-        /** <inheritdoc /> */
+        /** <summary>Client credentials to authenticate with.</summary> */
         public Object Credentials {
             get;
             set;
         }
 
-        /** <inheritdoc /> */
-        public ICollection<IGridClientDataConfiguration> DataConfigurations {
+        /** <summary>Collection of data configurations (possibly empty).</summary> */
+        public ICollection<GridClientDataConfiguration> DataConfigurations {
             get;
-            private set;
+            set;
         }
 
         /**
@@ -103,7 +108,7 @@ namespace GridGain.Client {
          * <param name="name">Name of grid cache.</param>
          * <returns>Configuration or <c>null</c> if there is not configuration for specified name.</returns>
          */
-        public IGridClientDataConfiguration DataConfiguration(String name) {
+        public GridClientDataConfiguration DataConfiguration(String name) {
             foreach (var cfg in DataConfigurations)
                 if (name == null ? cfg.Name == null : name.Equals(cfg.Name))
                     return cfg;
@@ -111,44 +116,77 @@ namespace GridGain.Client {
             return null;
         }
 
-        /** <inheritdoc /> */
+        /**
+         * <summary>
+         * Enables client to cache topology internally, so it does not have to
+         * be always refreshed. Topology cache will be automatically refreshed
+         * in the background every <see cref="TopologyRefreshFrequency"/> interval.</summary>
+         */
         public bool IsTopologyCacheEnabled {
             get;
             set;
         }
 
-        /** <inheritdoc /> */
+        /** <summary>Protocol for communication between client and remote grid.</summary> */
         public GridClientProtocol Protocol {
             get;
             set;
         }
 
-        /** <inheritdoc /> */
+        /**
+         * <summary>
+         * Collection of <c>'host:port'</c> pairs representing
+         * remote grid servers used to establish initial connection to
+         * the grid. Once connection is established, GridGain will get
+         * a full view on grid topology and will be able to connect to
+         * any available remote node.</summary>
+         */
         public ICollection<String> Servers {
             get;
             private set;
         }
 
-        /** <inheritdoc /> */
+        /**
+         * <summary>
+         * Collection of <c>'host:port'</c> pairs representing
+         * grid routers used to establish connection to the grid.
+         * <p/>
+         * This configuration parameter will not be used and
+         * direct grid connection will be established if
+         * 'Servers' return non-<c>null</c> value.</summary>
+         */
         public ICollection<String> Routers {
             get;
             private set;
         }
 
-        /** <inheritdoc /> */
+        /**
+         * <summary>
+         * SSL context, indicating whether client should try to connect server with secure
+         * socket layer enabled (regardless of protocol used).
+         * <para/>
+         * SSL context is null to disable secure communication.</summary>
+         */
         public IGridClientSslContext SslContext {
             get;
             set;
         }
 
-        /** <inheritdoc /> */
+        /**
+         * <summary>
+         * Topology refresh frequency. If topology cache is enabled, grid topology
+         * will be refreshed every <c>topRefreshFreq</c> milliseconds.</summary>
+         */
         public TimeSpan TopologyRefreshFrequency {
             get;
             set;
         }
 
-        /** <inheritdoc /> */
-        public ICollection<Type> PortableClasses {
+        /**
+         * <summary>Configuration for custom portable classes.</summary>
+         */
+        public ICollection<GridClientPortableClassConfiguration> PortableClassConfigurations
+        {
             get;
             set;
         }

@@ -64,7 +64,7 @@ namespace GridGain.Client.Impl {
          * <exception cref="GridClientException">If client configuration is incorrect.</exception>
          * <exception cref="GridClientServerUnreachableException">If none of the servers specified in configuration can be reached.</exception>
          */
-        public GridClientImpl(Guid id, IGridClientConfiguration cfg0) {
+        public GridClientImpl(Guid id, GridClientConfiguration cfg0) {
             Id = id;
 
             cfg = new GridClientConfiguration(cfg0);
@@ -82,7 +82,7 @@ namespace GridGain.Client.Impl {
             };
 
             // Add to topology as listeners.
-            foreach (IGridClientDataConfiguration dataCfg in cfg.DataConfigurations)
+            foreach (GridClientDataConfiguration dataCfg in cfg.DataConfigurations)
                 addTopLsnr(dataCfg.Affinity);
 
             addTopLsnr(cfg.Balancer);
@@ -194,7 +194,7 @@ namespace GridGain.Client.Impl {
             // Shutdown listener notification.
             top.Dispose();
 
-            foreach (IGridClientDataConfiguration dataCfg in cfg.DataConfigurations) {
+            foreach (GridClientDataConfiguration dataCfg in cfg.DataConfigurations) {
                 var lsnr = dataCfg.Affinity as IGridClientTopologyListener;
 
                 if (lsnr != null)
@@ -215,7 +215,7 @@ namespace GridGain.Client.Impl {
                 GridClientDataImpl data;
 
                 if (!dataMap.TryGetValue(cacheName, out data)) {
-                    IGridClientDataConfiguration dataCfg = cfg.DataConfiguration(cacheName);
+                    GridClientDataConfiguration dataCfg = cfg.DataConfiguration(cacheName);
 
                     if (dataCfg == null && cacheName != null)
                         throw new GridClientException("Data configuration for given cache name was not provided: " +
@@ -281,7 +281,7 @@ namespace GridGain.Client.Impl {
          * <exception cref="ArgumentException">If client data with given name was not configured.</exception>
          */
         public IGridClientDataAffinity Affinity(String cacheName) {
-            IGridClientDataConfiguration dataCfg = cfg.DataConfiguration(cacheName);
+            GridClientDataConfiguration dataCfg = cfg.DataConfiguration(cacheName);
 
             return dataCfg == null ? null : dataCfg.Affinity;
         }

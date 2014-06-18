@@ -135,7 +135,7 @@ namespace GridGain {
             G.StopAll();
         }
 
-        private static IGridClientConfiguration CreateConfig(GridClientProtocol proto, String srv) {
+        private static GridClientConfiguration CreateConfig(GridClientProtocol proto, String srv) {
             var atomic = new GridClientDataConfiguration();
             atomic.Name = "atomic";
             atomic.Affinity = new GridClientPartitionAffinity();
