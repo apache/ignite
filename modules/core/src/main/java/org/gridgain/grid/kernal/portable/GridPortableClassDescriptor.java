@@ -26,7 +26,7 @@ class GridPortableClassDescriptor {
     private static final ConcurrentMap<Class<?>, GridPortableClassDescriptor> CACHE = new ConcurrentHashMap8<>(256);
 
     /** */
-    private static final int TOTAL_LEN_POS = 9;
+    private static final int TOTAL_LEN_POS = 10;
 
     /** */
     private static final int COL_TYPE_ID = 100;
@@ -295,13 +295,17 @@ class GridPortableClassDescriptor {
             case PORTABLE_EX:
                 writer.doWriteInt(obj.hashCode());
 
-                // Length.
-                writer.reserve(4);
+                // Length + raw data offset.
+                writer.reserve(8);
 
                 // Header handles are not supported for GridPortableEx.
                 writer.doWriteInt(-1);
 
-                writePortableEx((GridPortableEx)obj, writer);
+                GridPortableWriterImpl writer0 = new GridPortableWriterImpl(writer);
+
+                ((GridPortableEx)obj).writePortable(writer0);
+
+                writer0.flush();
 
                 // Length.
                 writer.writeCurrentSize(TOTAL_LEN_POS);
@@ -311,8 +315,8 @@ class GridPortableClassDescriptor {
             case PORTABLE:
                 writer.doWriteInt(obj.hashCode());
 
-                // Length.
-                writer.reserve(4);
+                // Length + raw data offset.
+                writer.reserve(8);
 
                 writer.doWriteInt(-1); // TODO: Header handles.
                 writer.write(hdr);
@@ -426,22 +430,6 @@ class GridPortableClassDescriptor {
 
                 return null;
         }
-    }
-
-    /**
-     * @param obj Object.
-     * @param writer Writer.
-     * @throws GridPortableException In case of error.
-     */
-    private void writePortableEx(GridPortableEx obj, GridPortableWriterImpl writer) throws GridPortableException {
-        assert obj != null;
-        assert writer != null;
-
-        GridPortableWriterImpl writer0 = new GridPortableWriterImpl(writer);
-
-        obj.writePortable(writer0);
-
-        writer0.flush();
     }
 
     /** */

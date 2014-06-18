@@ -51,6 +51,9 @@ class GridPortableWriterImpl implements GridPortableWriter {
     protected static final long BOOLEAN_ARR_OFF = UNSAFE.arrayBaseOffset(boolean[].class);
 
     /** */
+    private static final int RAW_DATA_OFF_POS = 14;
+
+    /** */
     private static final int INIT_CAP = 4 * 1024;
 
     /** */
@@ -102,6 +105,8 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
         for (WriteAction act : data)
             act.apply();
+
+        writeCurrentSize(RAW_DATA_OFF_POS);
 
         for (WriteAction act : rawData)
             act.apply();
