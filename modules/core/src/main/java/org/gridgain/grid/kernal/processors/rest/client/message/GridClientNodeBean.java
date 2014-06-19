@@ -312,13 +312,13 @@ public class GridClientNodeBean implements Externalizable, GridPortable {
         return nodeId == null ? other.nodeId == null : nodeId.equals(other.nodeId);
     }
 
-    /** {@inheritDoc} */
-    @Override public int typeId() {
-        return PORTABLE_TYPE_ID;
-    }
+//    /** {@inheritDoc} */
+//    @Override public int typeId() {
+//        return PORTABLE_TYPE_ID;
+//    }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws IOException {
+    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
         writer.writeInt("tcpPort", tcpPort);
         writer.writeInt("jettyPort", jettyPort);
         writer.writeInt("replicaCnt", replicaCnt);
@@ -340,7 +340,7 @@ public class GridClientNodeBean implements Externalizable, GridPortable {
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws IOException {
+    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
         tcpPort = reader.readInt("tcpPort");
         jettyPort = reader.readInt("jettyPort");
         replicaCnt = reader.readInt("replicaCnt");

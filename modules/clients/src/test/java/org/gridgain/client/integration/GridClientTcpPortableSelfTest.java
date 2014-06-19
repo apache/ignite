@@ -17,7 +17,6 @@ import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -219,13 +218,13 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
             this.i = i;
         }
 
-        /** {@inheritDoc} */
-        @Override public int typeId() {
-            return TYPE_ID;
-        }
+//        /** {@inheritDoc} */
+//        @Override public int typeId() {
+//            return TYPE_ID;
+//        }
 
         /** {@inheritDoc} */
-        @Override public void writePortable(GridPortableWriter writer) throws IOException {
+        @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
             writer.writeBoolean("a", a);
             writer.writeByte("b", b);
             writer.writeShort("c", c);
@@ -238,7 +237,7 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(GridPortableReader reader) throws IOException {
+        @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
             a = reader.readBoolean("a");
             b = reader.readByte("b");
             c = reader.readShort("c");
@@ -337,20 +336,20 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
             this.obj = obj;
         }
 
-        /** {@inheritDoc} */
-        @Override public int typeId() {
-            return TYPE_ID;
-        }
+//        /** {@inheritDoc} */
+//        @Override public int typeId() {
+//            return TYPE_ID;
+//        }
 
         /** {@inheritDoc} */
-        @Override public void writePortable(GridPortableWriter writer) throws IOException {
+        @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
             super.writePortable(writer);
 
             writer.writeObject("obj", obj);
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(GridPortableReader reader) throws IOException {
+        @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
             super.readPortable(reader);
 
             obj = reader.readObject("obj");
@@ -451,13 +450,13 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
             this.h = h;
         }
 
-        /** {@inheritDoc} */
-        @Override public int typeId() {
-            return TYPE_ID;
-        }
+//        /** {@inheritDoc} */
+//        @Override public int typeId() {
+//            return TYPE_ID;
+//        }
 
         /** {@inheritDoc} */
-        @Override public void writePortable(GridPortableWriter writer) throws IOException {
+        @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
             writer.writeBooleanArray("a", a);
             writer.writeByteArray("b", b);
             writer.writeShortArray("c", c);
@@ -469,7 +468,7 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(GridPortableReader reader) throws IOException {
+        @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
             a = reader.readBooleanArray("a");
             b = reader.readByteArray("b");
             c = reader.readShortArray("c");
@@ -566,13 +565,13 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
             this.b = bCol;
         }
 
-        /** {@inheritDoc} */
-        @Override public int typeId() {
-            return TYPE_ID;
-        }
+//        /** {@inheritDoc} */
+//        @Override public int typeId() {
+//            return TYPE_ID;
+//        }
 
         /** {@inheritDoc} */
-        @Override public void writePortable(GridPortableWriter writer) throws IOException {
+        @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
             super.writePortable(writer);
 
             writer.writeMap("aMap", a);
@@ -580,7 +579,7 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(GridPortableReader reader) throws IOException {
+        @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
             super.readPortable(reader);
 
             a = reader.readMap("aMap");
@@ -623,20 +622,20 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
             this.c = c;
         }
 
-        /** {@inheritDoc} */
-        @Override public int typeId() {
-            return TYPE_ID;
-        }
+//        /** {@inheritDoc} */
+//        @Override public int typeId() {
+//            return TYPE_ID;
+//        }
 
         /** {@inheritDoc} */
-        @Override public void writePortable(GridPortableWriter writer) throws IOException {
+        @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
             writer.writeInt("a", a);
             writer.writeMap("b", b);
             writer.writeString("c", c);
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(GridPortableReader reader) throws IOException {
+        @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
             a = reader.readInt("a");
             b = reader.readMap("b");
             c = reader.readString("c");

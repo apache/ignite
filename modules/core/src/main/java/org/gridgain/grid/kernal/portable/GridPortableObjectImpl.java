@@ -107,6 +107,11 @@ public class GridPortableObjectImpl implements GridPortableObject {
     }
 
     /** {@inheritDoc} */
+    @Override public GridPortableObject clone() {
+        return null; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean equals(Object other) {
         if (this == other)
             return true;

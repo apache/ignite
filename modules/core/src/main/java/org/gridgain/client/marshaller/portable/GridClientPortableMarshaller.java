@@ -52,9 +52,9 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
     /** {@inheritDoc} */
     @Override public byte[] marshal(Object obj) throws IOException {
         try {
-            return marsh.marshal(obj);
+            return marsh.marshal(obj).array();
         }
-        catch (GridException e) {
+        catch (GridPortableException e) {
             throw new IOException(e);
         }
     }
