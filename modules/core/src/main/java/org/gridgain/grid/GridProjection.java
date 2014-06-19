@@ -217,6 +217,20 @@ public interface GridProjection {
     public GridProjection forRandom();
 
     /**
+     * Creates grid projection with one oldest node in the current projection.
+     *
+     * @return Grid projection with one oldest node in the current projection.
+     */
+    public GridProjection forOldest();
+
+    /**
+     * Creates grid projection with one youngest node in the current projection.
+     *
+     * @return Grid projection with one youngest node in the current projection.
+     */
+    public GridProjection forYoungest();
+
+    /**
      * Gets read-only collections of nodes in this projection.
      *
      * @return All nodes in this projection.

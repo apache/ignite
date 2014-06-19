@@ -496,6 +496,46 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
+    @Override public GridProjection forOldest() {
+        GridNode oldest = null;
+
+        long minOrder = Long.MAX_VALUE;
+
+        for (GridNode n : nodes()) {
+            if (n.order() < minOrder) {
+                oldest = n;
+
+                minOrder = n.order();
+            }
+        }
+
+        if (minOrder == Long.MAX_VALUE)
+            throw new GridRuntimeException("Grid projection is empty.");
+
+        return forNode(oldest);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridProjection forYoungest() {
+        GridNode youngest = null;
+
+        long maxOrder = Long.MIN_VALUE;
+
+        for (GridNode n : nodes()) {
+            if (n.order() > maxOrder) {
+                youngest = n;
+
+                maxOrder = n.order();
+            }
+        }
+
+        if (maxOrder == Long.MIN_VALUE)
+            throw new GridRuntimeException("Grid projection is empty.");
+
+        return forNode(youngest);
+    }
+
+    /** {@inheritDoc} */
     @Override public GridProjectionEx forSubjectId(UUID subjId) {
         if (subjId == null)
             return this;

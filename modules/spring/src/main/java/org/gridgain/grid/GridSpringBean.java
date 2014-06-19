@@ -340,6 +340,20 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
     }
 
     /** {@inheritDoc} */
+    @Override public GridProjection forOldest() {
+        assert g != null;
+
+        return g.forOldest();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridProjection forYoungest() {
+        assert g != null;
+
+        return g.forYoungest();
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<GridNode> nodes() {
         assert g != null;
 
