@@ -337,6 +337,10 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
         return delegate.predicate();
     }
 
+    @Override public GridCacheProjectionEx<K, V> forSubjectId(UUID subjId) {
+        return delegate.forSubjectId(subjId);
+    }
+
     /** {@inheritDoc} */
     @Override public <K1, V1> GridCacheProjection<K1, V1> projection(
         Class<? super K1> keyType,
@@ -1114,6 +1118,18 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
         try {
             return delegate.entrySet(part);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<GridCacheEntry<K, V>> entrySetx(GridPredicate<GridCacheEntry<K, V>>... filter) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.entrySetx(filter);
         }
         finally {
             gate.leave(prev);

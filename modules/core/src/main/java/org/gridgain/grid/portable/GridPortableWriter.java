@@ -126,6 +126,49 @@ public interface GridPortableWriter {
      * @param val Value to write.
      * @throws GridPortableException In case of error.
      */
+    public void writeString(String fieldName, @Nullable String val) throws GridPortableException;
+
+    /**
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void writeString(@Nullable String val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val UUID to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void writeUuid(String fieldName, @Nullable UUID val) throws GridPortableException;
+
+    /**
+     * @param val UUID to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void writeUuid(@Nullable UUID val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param obj Value to write.
+     * @throws GridPortableNotSupportedClassException If class that doesn't
+     *      implement {@link GridPortable} is being serialized.
+     * @throws GridPortableException In case of error.
+     */
+    public <T> void writeObject(String fieldName, @Nullable T obj) throws GridPortableException;
+
+    /**
+     * @param obj Value to write.
+     * @throws GridPortableNotSupportedClassException If class that doesn't
+     *      implement {@link GridPortable} is being serialized.
+     * @throws GridPortableException In case of error.
+     */
+    public <T> void writeObject(@Nullable T obj) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
     public void writeByteArray(String fieldName, @Nullable byte[] val) throws GridPortableException;
 
     /**
@@ -230,43 +273,39 @@ public interface GridPortableWriter {
      * @param val Value to write.
      * @throws GridPortableException In case of error.
      */
-    public void writeString(String fieldName, @Nullable String val) throws GridPortableException;
+    public void writeStringArray(String fieldName, @Nullable String[] val) throws GridPortableException;
 
     /**
      * @param val Value to write.
      * @throws GridPortableException In case of error.
      */
-    public void writeString(@Nullable String val) throws GridPortableException;
+    public void writeStringArray(@Nullable String[] val) throws GridPortableException;
 
     /**
      * @param fieldName Field name.
-     * @param uuid UUID to write.
+     * @param val Value to write.
      * @throws GridPortableException In case of error.
      */
-    public void writeUuid(String fieldName, @Nullable UUID uuid) throws GridPortableException;
+    public void writeUuidArray(String fieldName, @Nullable UUID[] val) throws GridPortableException;
 
     /**
-     * @param uuid UUID to write.
+     * @param val Value to write.
      * @throws GridPortableException In case of error.
      */
-    public void writeUuid(@Nullable UUID uuid) throws GridPortableException;
+    public void writeUuidArray(@Nullable UUID[] val) throws GridPortableException;
 
     /**
      * @param fieldName Field name.
-     * @param obj Value to write.
-     * @throws GridPortableNotSupportedClassException If class that doesn't
-     *      implement {@link GridPortable} is being serialized.
+     * @param val Value to write.
      * @throws GridPortableException In case of error.
      */
-    public <T> void writeObject(String fieldName, @Nullable T obj) throws GridPortableException;
+    public void writeObjectArray(String fieldName, @Nullable Object[] val) throws GridPortableException;
 
     /**
-     * @param obj Value to write.
-     * @throws GridPortableNotSupportedClassException If class that doesn't
-     *      implement {@link GridPortable} is being serialized.
+     * @param val Value to write.
      * @throws GridPortableException In case of error.
      */
-    public <T> void writeObject(@Nullable T obj) throws GridPortableException;
+    public void writeObjectArray(@Nullable Object[] val) throws GridPortableException;
 
     /**
      * @param fieldName Field name.

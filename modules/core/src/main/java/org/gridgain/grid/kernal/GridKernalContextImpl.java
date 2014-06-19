@@ -439,7 +439,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public Grid grid() {
+    @Override public GridEx grid() {
         return grid;
     }
 

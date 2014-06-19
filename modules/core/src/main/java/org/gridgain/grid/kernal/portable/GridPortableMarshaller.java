@@ -16,11 +16,40 @@ import org.jetbrains.annotations.*;
  * Portable objects marshaller.
  */
 public class GridPortableMarshaller {
-    public GridPortableObject marshal(@Nullable GridPortable portable) throws GridPortableException {
-        return null;
+    /** */
+    static final byte NULL = (byte)0x80;
+
+    /** */
+    static final byte HANDLE = (byte)0x81;
+
+    /** */
+    static final byte OBJ = (byte)0x82;
+
+    /** */
+    private static final byte[] NULL_ARR = new byte[] { NULL };
+
+    /**
+     * @param obj Object to marshal.
+     * @return Byte array.
+     * @throws GridPortableException In case of error.
+     */
+    public byte[] marshal(@Nullable Object obj) throws GridPortableException {
+        if (obj == null)
+            return NULL_ARR;
+
+        GridPortableWriterImpl writer = new GridPortableWriterImpl();
+
+        writer.doWriteObject(obj);
+
+        return writer.array();
     }
 
-    public GridPortable unmarshal(@Nullable GridPortableObject portableObj) throws GridPortableException {
+    /**
+     * @param arr Byte array.
+     * @return Portable object.
+     * @throws GridPortableException
+     */
+    @Nullable public <T> T unmarshal(byte[] arr) throws GridPortableException {
         return null;
     }
 }

@@ -11,8 +11,8 @@ package org.gridgain.client.marshaller.portable;
 
 import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.portable.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
-import org.gridgain.grid.marshaller.portable.*;
 import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -46,7 +46,7 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
         types.put(GridClientTaskResultBean.PORTABLE_TYPE_ID, GridClientTaskResultBean.class);
         types.put(GridClientTopologyRequest.PORTABLE_TYPE_ID, GridClientTopologyRequest.class);
 
-        marsh = new GridPortableMarshaller(types);
+        marsh = null;//new GridPortableMarshaller(types);
     }
 
     /** {@inheritDoc} */
@@ -62,7 +62,7 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
     /** {@inheritDoc} */
     @Override public <T> T unmarshal(byte[] bytes) throws IOException {
         try {
-            return marsh.unmarshal(bytes, null);
+            return marsh.unmarshal(bytes);
         }
         catch (GridException e) {
             throw new IOException(e);

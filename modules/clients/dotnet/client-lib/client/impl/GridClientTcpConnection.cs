@@ -465,6 +465,13 @@ namespace GridGain.Client.Impl {
 
                     break;
 
+                case GridClientResponseStatus.AuthorizationFailure:
+                    fut.Fail(() => {
+                        throw new GridClientException("Client authorization failed: " + resp.ErrorMessage);
+                    });
+
+                    break;
+
                 default:
                     fut.Fail(() => {
                         throw new GridClientException("Unknown server response status code: " + resp.Status);

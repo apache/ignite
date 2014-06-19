@@ -529,10 +529,29 @@ class VisorTasksCommand {
             })
         }
 
+        /**
+         * If task name is task class name, show simple class name.
+         *
+         * @param taskName Task name.
+         * @param taskClsName Task class name.
+         * @return Simple class name.
+         */
+        def taskSimpleName(taskName: String, taskClsName: String) =  {
+            if (taskName == taskClsName || taskName == null) {
+                val idx = taskClsName.lastIndexOf('.')
+
+                if (idx >= 0) taskClsName.substring(idx + 1) else taskClsName
+            }
+            else
+                taskName
+        }
+
         evts.foreach {
             case te: VisorGridTaskEvent =>
-                val s = getSession(te.taskSessionId(), te.name())
-                val t = getTask(te.name())
+                val displayedTaskName = taskSimpleName(te.taskName(), te.taskClassName())
+
+                val s = getSession(te.taskSessionId(), displayedTaskName)
+                val t = getTask(displayedTaskName)
 
                 t.execs = t.execs + s
 
@@ -558,8 +577,9 @@ class VisorTasksCommand {
                 }
 
             case je: VisorGridJobEvent =>
-                val s = getSession(je.taskSessionId(), je.taskName())
-                val t = getTask(je.taskName())
+                val displayedTaskName = taskSimpleName(je.taskName(), je.taskClassName())
+                val s = getSession(je.taskSessionId(), displayedTaskName)
+                val t = getTask(displayedTaskName)
 
                 t.execs = t.execs + s
 

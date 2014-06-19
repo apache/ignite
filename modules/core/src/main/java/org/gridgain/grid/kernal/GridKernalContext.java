@@ -124,7 +124,7 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      *
      * @return Grid instance.
      */
-    public Grid grid();
+    public GridEx grid();
 
     /**
      * Gets grid configuration.

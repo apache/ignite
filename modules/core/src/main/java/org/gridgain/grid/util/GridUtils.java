@@ -22,6 +22,7 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.*;
+import org.gridgain.grid.spi.authentication.noop.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.mbean.*;
@@ -620,6 +621,17 @@ public abstract class GridUtils {
     }
 
     /**
+     * Checks whether authentication SPI other than noop authentication SPI is configured.
+     *
+     * @param cfg Configuration to check.
+     * @return {@code True} if authentication SPI is configured.
+     */
+    public static boolean securityEnabled(GridConfiguration cfg) {
+        return cfg.getAuthenticationSpi() != null &&
+            cfg.getAuthenticationSpi().getClass() != GridNoopAuthenticationSpi.class;
+    }
+
+    /**
      * @return Checks if disco ordering should be enforced.
      */
     public static boolean relaxDiscoveryOrdered() {
@@ -764,13 +776,33 @@ public abstract class GridUtils {
         // In bytes.
         double heap = 0.0;
 
-        for (GridNode n : nodes) {
+        for (GridNode n : nodesPerJvm(nodes)) {
             GridNodeMetrics m = n.metrics();
 
             heap += Math.max(m.getHeapMemoryInitialized(), m.getHeapMemoryMaximum());
         }
 
         return roundedHeapSize(heap, precision);
+    }
+
+    /**
+     * Returns one representative node for each JVM.
+     *
+     * @param nodes Nodes.
+     * @return Collection which contains only one representative node for each JVM.
+     */
+    private static Iterable<GridNode> nodesPerJvm(Iterable<GridNode> nodes) {
+        Map<String, GridNode> grpMap = new HashMap<>();
+
+        // Group by mac addresses and pid.
+        for (GridNode node : nodes) {
+            String grpId = node.attribute(ATTR_MACS) + "|" + node.attribute(ATTR_JVM_PID);
+
+            if (!grpMap.containsKey(grpId))
+                grpMap.put(grpId, node);
+        }
+
+        return grpMap.values();
     }
 
     /**
