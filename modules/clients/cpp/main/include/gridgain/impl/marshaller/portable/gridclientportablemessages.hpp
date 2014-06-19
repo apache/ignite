@@ -25,11 +25,11 @@
 class GridClientPortableMessage : public GridPortable {
 public:
     void writePortable(GridPortableWriter &writer) const {
-        writer.writeBytes("sesTok", sesTok);
+        writer.writeByteCollection("sesTok", sesTok);
     }
 
     void readPortable(GridPortableReader &reader) {
-        sesTok = reader.readBytes("sesTok");
+        sesTok = reader.readByteCollection("sesTok");
     }
 
     bool operator==(const GridPortable& other) const {
@@ -386,13 +386,13 @@ public:
 
         writer.writeString("dfltCacheMode", dfltCacheMode);
 
-        writer.writeMap("attrs", attrs);
-        writer.writeMap("caches", caches);
+        writer.writeVariantMap("attrs", attrs);
+        writer.writeVariantMap("caches", caches);
 
-        writer.writeCollection("tcpAddrs", tcpAddrs);
-        writer.writeCollection("tcpHostNames", tcpHostNames);
-        writer.writeCollection("jettyAddrs", jettyAddrs);
-        writer.writeCollection("jettyHostNames", jettyHostNames);
+        writer.writeVariantCollection("tcpAddrs", tcpAddrs);
+        writer.writeVariantCollection("tcpHostNames", tcpHostNames);
+        writer.writeVariantCollection("jettyAddrs", jettyAddrs);
+        writer.writeVariantCollection("jettyHostNames", jettyHostNames);
 
         writer.writeUuid("nodeId", nodeId);
 
@@ -407,13 +407,13 @@ public:
 
         dfltCacheMode = reader.readString("dfltCacheMode");
 
-        attrs = reader.readMap("attrs");
-        caches = reader.readMap("caches");
+        attrs = reader.readVariantMap("attrs");
+        caches = reader.readVariantMap("caches");
 
-        tcpAddrs = reader.readCollection("tcpAddrs");
-        tcpHostNames = reader.readCollection("tcpHostNames");
-        jettyAddrs = reader.readCollection("jettyAddrs");
-        jettyHostNames = reader.readCollection("jettyHostNames");
+        tcpAddrs = reader.readVariantCollection("tcpAddrs");
+        tcpHostNames = reader.readVariantCollection("tcpHostNames");
+        jettyAddrs = reader.readVariantCollection("jettyAddrs");
+        jettyHostNames = reader.readVariantCollection("jettyHostNames");
 
         nodeId = reader.readUuid("nodeId");
 
@@ -685,7 +685,7 @@ public:
         writer.writeVariant("val", val);
         writer.writeVariant("val2", val2);
 
-        writer.writeMap("vals", vals);
+        writer.writeVariantMap("vals", vals);
 
         writer.writeInt32("flags", cacheFlagsOn);
     }
@@ -701,7 +701,7 @@ public:
         val = reader.readVariant("val");
         val2 = reader.readVariant("val2");
 
-        vals = reader.readMap("vals");
+        vals = reader.readVariantMap("vals");
 
         cacheFlagsOn = reader.readInt32("flags");
     }

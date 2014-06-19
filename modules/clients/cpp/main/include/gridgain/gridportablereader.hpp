@@ -27,31 +27,61 @@ class GRIDGAIN_API GridPortableReader {
 public:
     virtual bool readBool(char* fieldName) = 0;
 
+    virtual std::pair<bool*, int32_t> readBoolArray(char* fieldName) = 0;
+
+    virtual std::vector<bool> readBoolCollection(char* fieldName) = 0;
+
     virtual int8_t readByte(char* fieldName) = 0;
+
+    virtual std::pair<int8_t*, int32_t> readByteArray(char* fieldName) = 0;
+
+    virtual std::vector<int8_t> readByteCollection(char* fieldName) = 0;
 
     virtual int16_t readInt16(char* fieldName) = 0;
 
+    virtual std::pair<int16_t*, int32_t> readInt16Array(char* fieldName) = 0;
+
+    virtual std::vector<int16_t> readInt16Collection(char* fieldName) = 0;
+
     virtual int32_t readInt32(char* fieldName) = 0;
+
+    virtual std::pair<int32_t*, int32_t> readInt32Array(char* fieldName) = 0;
+
+    virtual std::vector<int32_t> readInt32Collection(char* fieldName) = 0;
 
     virtual int64_t readInt64(char* fieldName) = 0;
 
+    virtual std::pair<int64_t*, int32_t> readInt64Array(char* fieldName) = 0;
+
+    virtual std::vector<int64_t> readInt64Collection(char* fieldName) = 0;
+
     virtual float readFloat(char* fieldName) = 0;
+
+    virtual std::pair<float*, int32_t> readFloatArray(char* fieldName) = 0;
+
+    virtual std::vector<float> readFloatCollection(char* fieldName) = 0;
 
     virtual double readDouble(char* fieldName) = 0;
 
-    virtual std::vector<int8_t> readBytes(char* fieldName) = 0;
+    virtual std::pair<double*, int32_t> readDoubleArray(char* fieldName) = 0;
 
-    virtual std::pair<int8_t*, int32_t> readBytesArray(char* fieldName) = 0;
+    virtual std::vector<double> readDoubleCollection(char* fieldName) = 0;
 
     virtual std::string readString(char* fieldName) = 0;
 
-    virtual GridClientVariant readVariant(char* fieldName) = 0;
+    virtual std::vector<std::string> readStringCollection(char* fieldName) = 0;
+
+    virtual std::wstring readWString(char* fieldName) = 0;
+
+    virtual std::vector<std::wstring> readWStringCollection(char* fieldName) = 0;
 
     virtual boost::optional<GridClientUuid> readUuid(char* fieldName) = 0;
 
-    virtual std::vector<GridClientVariant> readCollection(char* fieldName) = 0;
+    virtual GridClientVariant readVariant(char* fieldName) = 0;
 
-    virtual boost::unordered_map<GridClientVariant, GridClientVariant> readMap(char* fieldName) = 0;
+    virtual std::vector<GridClientVariant> readVariantCollection(char* fieldName) = 0;
+
+    virtual boost::unordered_map<GridClientVariant, GridClientVariant> readVariantMap(char* fieldName) = 0;
 };
 
 class GridPortableFactory {
