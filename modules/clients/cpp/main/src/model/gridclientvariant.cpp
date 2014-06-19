@@ -65,7 +65,7 @@ GridClientVariant::GridClientVariant(const char * s) {
 }
 
 GridClientVariant::GridClientVariant(const string& s) {
-        set(s);
+    set(s);
 }
 
 GridClientVariant::GridClientVariant(const std::wstring& s) {
@@ -464,14 +464,6 @@ void GridClientVariant::accept(const GridClientVariantVisitor& visitor) const {
     VariantVisitorImpl visitorImpl(visitor);
 
     boost::apply_visitor(visitorImpl, pimpl.var);
-}
-
-bool GridClientVariant::operator<(const GridClientVariant& varImpl) const {
-    if (hasPortable())
-        assert(false);
-
-    return pimpl.var.which() == varImpl.pimpl.var.which() ?
-        toString() < varImpl.toString() : pimpl.var.which() < varImpl.pimpl.var.which();
 }
 
 bool GridClientVariant::operator==(const GridClientVariant& varImpl) const {

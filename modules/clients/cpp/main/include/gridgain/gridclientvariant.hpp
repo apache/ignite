@@ -50,11 +50,11 @@ private:
     public:
         /** Boost typedef for holding multiple types. */
         typedef boost::variant<GridClientVariant::NullType, bool, int16_t, int32_t, int64_t, double,
-                float,
-                std::string, std::wstring, std::vector<int8_t>,
-                std::vector<GridClientVariant>,
-                boost::unordered_map<GridClientVariant, GridClientVariant>,
-                GridClientUuid> TVariantType;
+            float,
+            std::string, std::wstring, std::vector<int8_t>,
+            std::vector<GridClientVariant>,
+            boost::unordered_map<GridClientVariant, GridClientVariant>,
+            GridClientUuid> TVariantType;
 
         /** Boost variable. */
         TVariantType var;
@@ -437,6 +437,11 @@ public:
      */
     std::vector<GridClientVariant> getVariantVector() const;
 
+    /**
+     * Checks if this variant holds a variant map value.
+     *
+     * @return <tt>true</tt> if value is of variant map type, <tt>false</tt> otherwise.
+     */
     bool hasVariantMap() const;
 
     /**
@@ -469,7 +474,7 @@ public:
 
     /**
      * Returns hash code for value from this variant.
-     * 
+     *
      * @return Hash code for value held in this variant.
      */
     int32_t hashCode() const;
@@ -480,14 +485,6 @@ public:
      * @param visitor Visitor to accept.
      */
     void accept(const GridClientVariantVisitor& visitor) const;
-
-    /**
-     * Comparison operator for variant.
-     *
-     * @param other Variant to compare this variant to.
-     * @return <tt>true</tt> if this variant is less than other, <tt>false</tt> otherwise.
-     */
-    bool operator<(const GridClientVariant& other) const;
 
     /**
      * Comparison operator for variant.
@@ -515,6 +512,12 @@ private:
     Impl pimpl;
 };
 
+/**
+ * Returns hash code for value from given variant.
+ * Function is needed for boost::unordered_map.
+ *
+ * @return Hash code for value held in this variant.
+ */
 std::size_t hash_value(GridClientVariant const& variant);
 
 /**

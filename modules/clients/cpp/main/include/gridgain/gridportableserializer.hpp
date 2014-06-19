@@ -68,12 +68,13 @@ public:
         return object;
     }
 
-    T *operator->() const { 
-        return object; 
+    T *operator->() const {
+        return object;
     }
+
 private:
     T* object;
-    
+
     GridPortableSerializer<T>& serializer;
 };
 

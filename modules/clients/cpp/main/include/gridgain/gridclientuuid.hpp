@@ -33,8 +33,14 @@ public:
      */
     GridClientUuid();
 
+    /**
+     * Reconstructs UUID from least significant and most significant bits.
+     *
+     * @param mostSignificantBits Most significant bits.
+     * @param leastSignificantBits Least significant bits.
+     */
     GridClientUuid(int64_t mostSignificantBits, int64_t leastSignificantBits);
-    
+
     /**
      * Reconstructs UUID from string.
      *

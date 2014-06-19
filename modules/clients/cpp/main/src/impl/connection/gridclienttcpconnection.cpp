@@ -111,7 +111,7 @@ void GridClientTcpPacket::setPacketSize(int32_t size) {
 }
 
 void GridClientTcpPacket::setData(std::vector<int8_t>& bytes) {
-    data = bytes;
+    data = bytes; // TODO: 8536 can use move?
     setPacketSize(ADDITIONAL_HEADERS_SIZE + data.size());
 }
 
@@ -266,7 +266,7 @@ void GridClientSyncTcpConnection::authenticate(const string& clientId, const str
 
     GridPortableMarshaller marsh;
 
-    vector<int8_t> data = marsh.marshal(msg);    
+    vector<int8_t> data = marsh.marshal(msg);
 
     tcpPacket.setData(data);
     tcpPacket.setAdditionalHeaders(authReq);
@@ -766,7 +766,7 @@ void GridClientRawSyncTcpConnection::authenticate(const string& clientId, const 
 
     GridPortableMarshaller marsh;
 
-    vector<int8_t> data = marsh.marshal(msg);    
+    vector<int8_t> data = marsh.marshal(msg);
 
     tcpPacket.setData(data);
     tcpPacket.setAdditionalHeaders(authReq);
