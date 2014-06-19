@@ -20,6 +20,7 @@ import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -37,7 +38,10 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
     /** Supported commands. */
     private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(
         CACHE_QUERY_EXECUTE,
-        CACHE_QUERY_FETCH
+        CACHE_QUERY_FETCH,
+        CACHE_QUERY_REBUILD_INDEXES,
+        CACHE_QUERY_GET_METRICS,
+        CACHE_QUERY_RESET_METRICS
     );
 
     /** Query ID sequence. */
@@ -72,6 +76,18 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
             case CACHE_QUERY_FETCH: {
                 return execute(destId, cacheName, new FetchQueryResults(qryReq));
+            }
+
+            case CACHE_QUERY_REBUILD_INDEXES: {
+                return broadcast(qryReq.cacheName(), new RebuildIndexes(qryReq.cacheName(), qryReq.className()));
+            }
+
+            case CACHE_QUERY_RESET_METRICS: {
+                return broadcast(qryReq.cacheName(), new ResetQueryMetrics(qryReq.cacheName()));
+            }
+
+            case CACHE_QUERY_GET_METRICS: {
+                // TODO.
             }
 
             default:
@@ -109,6 +125,28 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
             return ctx.grid().forNodeId(destId).compute().withNoFailover().call(c);
         }
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param c Closure to execute.
+     * @return Execution future.
+     */
+    private GridFuture<GridRestResponse> broadcast(String cacheName, Callable<?> c) {
+        GridFuture<Collection<?>> fut = ctx.grid().forCache(cacheName).compute().broadcast(c);
+
+        return fut.chain(new C1<GridFuture<Collection<?>>, GridRestResponse>() {
+            @Override public GridRestResponse apply(GridFuture<Collection<?>> fut) {
+                try {
+                    fut.get();
+
+                    return new GridRestResponse();
+                }
+                catch (GridException e) {
+                    throw new GridClosureException(e);
+                }
+            }
+        });
     }
 
     /**
@@ -311,6 +349,66 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
             return fetchQueryResults(req.queryId(), req.pageSize(), locMap.get(new QueryExecutionKey(req.queryId())),
                 locMap);
+        }
+    }
+
+    /**
+     * Rebuild indexes closure.
+     */
+    private static class RebuildIndexes implements GridCallable<Object> {
+        /** Injected grid. */
+        @GridInstanceResource
+        private Grid g;
+
+        /** Cache name. */
+        private String cacheName;
+
+        /** Class name. */
+        private String clsName;
+
+        /**
+         * @param cacheName Cache name.
+         * @param clsName Optional class name to rebuild indexes for.
+         */
+        private RebuildIndexes(String cacheName, String clsName) {
+            this.cacheName = cacheName;
+            this.clsName = clsName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object call() throws Exception {
+            if (clsName == null)
+                g.cache(cacheName).queries().rebuildAllIndexes();
+            else
+                g.cache(cacheName).queries().rebuildIndexes(Class.forName(clsName));
+
+            return null;
+        }
+    }
+
+    /**
+     * Rest query metrics closure.
+     */
+    private static class ResetQueryMetrics implements GridCallable<Object> {
+        /** Injected grid. */
+        @GridInstanceResource
+        private Grid g;
+
+        /** Cache name. */
+        private String cacheName;
+
+        /**
+         * @param cacheName Cache name.
+         */
+        private ResetQueryMetrics(String cacheName) {
+            this.cacheName = cacheName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object call() throws Exception {
+            g.cache(cacheName).queries().resetMetrics();
+
+            return null;
         }
     }
 
