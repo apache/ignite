@@ -26,6 +26,8 @@ public class GridServiceConfiguration {
 
     private int maxPerNode;
 
+    private String cacheName;
+
     private Collection<?> affKeys;
 
     private Collection<Integer> parts;
@@ -52,6 +54,14 @@ public class GridServiceConfiguration {
 
     public void setMaxPerNodeCount(int maxPerNode) {
         this.maxPerNode = maxPerNode;
+    }
+
+    public String getCacheName() {
+        return cacheName;
+    }
+
+    public void setCacheName(String cacheName) {
+        this.cacheName = cacheName;
     }
 
     public Collection<?> getAffinityKeys() {
