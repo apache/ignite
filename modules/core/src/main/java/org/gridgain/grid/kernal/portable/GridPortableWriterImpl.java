@@ -11,9 +11,11 @@ package org.gridgain.grid.kernal.portable;
 
 import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
+import java.nio.*;
 import java.util.*;
 
 import static java.nio.charset.StandardCharsets.*;
@@ -60,63 +62,66 @@ class GridPortableWriterImpl implements GridPortableWriter {
     private static final GridPortablePrimitives PRIM = GridPortablePrimitives.get();
 
     /** */
-    private final GridPortableHeaderWriter hdrWriter = new GridPortableHeaderWriter(false); // TODO: useNames flag
+    private static final boolean useNames = false; // TODO: take from config
 
     /** */
-    private final Collection<WriteAction> data = new ArrayList<>();
+    private byte[] arr;
 
     /** */
-    private final Collection<WriteAction> rawData = new ArrayList<>();
+    private int size;
 
     /** */
-    protected GridPortableByteArray arr;
+    private int mark;
 
     /** */
-    protected GridPortableWriterImpl() {
-        arr = new GridPortableByteArray(INIT_CAP);
-    }
+    private boolean allowFields = true;
 
-    /**
-     * @param writer Writer.
-     */
-    protected GridPortableWriterImpl(GridPortableWriterImpl writer) {
-        arr = writer.arr;
+    /** */
+    GridPortableWriterImpl() {
+        arr = new byte[INIT_CAP];
     }
 
     /**
      * @return Array.
      */
-    byte[] array() {
-        return arr.entireArray();
+    ByteBuffer buffer() {
+        return ByteBuffer.wrap(arr, 0, size);
     }
 
     /**
      * @param bytes Number of bytes to reserve.
      */
-    void reserve(int bytes) {
-        arr.requestFreeSize(bytes);
+    int reserve(int bytes) {
+        int size0 = size;
+
+        requestFreeSize(bytes);
+
+        return size0;
     }
 
     /**
-     * @throws GridPortableException In case of error.
+     * @param bytes Number of bytes to reserve.
      */
-    void flush() throws GridPortableException {
-        doWriteByteArray(hdrWriter.header()); // TODO: Write directly to writer
+    int reserveAndMark(int bytes) {
+        int size0 = reserve(bytes);
 
-        for (WriteAction act : data)
-            act.apply();
+        mark = size;
 
-        writeCurrentSize(RAW_DATA_OFF_POS);
+        return size0;
+    }
 
-        for (WriteAction act : rawData)
-            act.apply();
+    /**
+     * @param off Offset.
+     */
+    void writeDelta(int off) {
+        PRIM.writeInt(arr, off, size - mark);
     }
 
     /**
      * @param off Offset.
      */
     void writeCurrentSize(int off) {
-        PRIM.writeInt(arr.array(), off, arr.size());
+        PRIM.writeInt(arr, off, size);
     }
 
     /**
@@ -125,63 +130,63 @@ class GridPortableWriterImpl implements GridPortableWriter {
     void write(byte[] val) {
         assert val != null;
 
-        UNSAFE.copyMemory(val, BYTE_ARR_OFF, arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(val.length), val.length);
+        UNSAFE.copyMemory(val, BYTE_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(val.length), val.length);
     }
 
     /**
      * @param val Value.
      */
     void doWriteByte(byte val) {
-        PRIM.writeByte(arr.array(), arr.requestFreeSize(1), val);
+        PRIM.writeByte(arr, requestFreeSize(1), val);
     }
 
     /**
      * @param val Value.
      */
     void doWriteShort(short val) {
-        PRIM.writeShort(arr.array(), arr.requestFreeSize(2), val);
+        PRIM.writeShort(arr, requestFreeSize(2), val);
     }
 
     /**
      * @param val Value.
      */
     void doWriteInt(int val) {
-        PRIM.writeInt(arr.array(), arr.requestFreeSize(4), val);
+        PRIM.writeInt(arr, requestFreeSize(4), val);
     }
 
     /**
      * @param val Value.
      */
     void doWriteLong(long val) {
-        PRIM.writeLong(arr.array(), arr.requestFreeSize(8), val);
+        PRIM.writeLong(arr, requestFreeSize(8), val);
     }
 
     /**
      * @param val Value.
      */
     void doWriteFloat(float val) {
-        PRIM.writeFloat(arr.array(), arr.requestFreeSize(4), val);
+        PRIM.writeFloat(arr, requestFreeSize(4), val);
     }
 
     /**
      * @param val Value.
      */
     void doWriteDouble(double val) {
-        PRIM.writeDouble(arr.array(), arr.requestFreeSize(8), val);
+        PRIM.writeDouble(arr, requestFreeSize(8), val);
     }
 
     /**
      * @param val Value.
      */
     void doWriteChar(char val) {
-        PRIM.writeChar(arr.array(), arr.requestFreeSize(2), val);
+        PRIM.writeChar(arr, requestFreeSize(2), val);
     }
 
     /**
      * @param val Value.
      */
     void doWriteBoolean(boolean val) {
-        PRIM.writeBoolean(arr.array(), arr.requestFreeSize(1), val);
+        PRIM.writeBoolean(arr, requestFreeSize(1), val);
     }
 
     /**
@@ -191,7 +196,7 @@ class GridPortableWriterImpl implements GridPortableWriter {
         doWriteByteArray(val != null ? val.getBytes(UTF_8) : null);
     }
 
-    /**
+     /**
      * @param uuid UUID.
      */
     void doWriteUuid(@Nullable UUID uuid) {
@@ -232,8 +237,7 @@ class GridPortableWriterImpl implements GridPortableWriter {
         doWriteInt(val != null ? val.length : -1);
 
         if (val != null)
-            UNSAFE.copyMemory(val, BYTE_ARR_OFF, arr.array(),
-                BYTE_ARR_OFF + arr.requestFreeSize(val.length), val.length);
+            UNSAFE.copyMemory(val, BYTE_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(val.length), val.length);
     }
 
     /**
@@ -245,7 +249,7 @@ class GridPortableWriterImpl implements GridPortableWriter {
         if (val != null) {
             int bytes = val.length << 1;
 
-            UNSAFE.copyMemory(val, SHORT_ARR_OFF, arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(bytes), bytes);
+            UNSAFE.copyMemory(val, SHORT_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(bytes), bytes);
         }
     }
 
@@ -258,7 +262,7 @@ class GridPortableWriterImpl implements GridPortableWriter {
         if (val != null) {
             int bytes = val.length << 2;
 
-            UNSAFE.copyMemory(val, INT_ARR_OFF, arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(bytes), bytes);
+            UNSAFE.copyMemory(val, INT_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(bytes), bytes);
         }
     }
 
@@ -272,7 +276,7 @@ class GridPortableWriterImpl implements GridPortableWriter {
         if (val != null) {
             int bytes = val.length << 3;
 
-            UNSAFE.copyMemory(val, LONG_ARR_OFF, arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(bytes), bytes);
+            UNSAFE.copyMemory(val, LONG_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(bytes), bytes);
         }
     }
 
@@ -285,7 +289,7 @@ class GridPortableWriterImpl implements GridPortableWriter {
         if (val != null) {
             int bytes = val.length << 2;
 
-            UNSAFE.copyMemory(val, FLOAT_ARR_OFF, arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(bytes), bytes);
+            UNSAFE.copyMemory(val, FLOAT_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(bytes), bytes);
         }
     }
 
@@ -298,7 +302,7 @@ class GridPortableWriterImpl implements GridPortableWriter {
         if (val != null) {
             int bytes = val.length << 3;
 
-            UNSAFE.copyMemory(val, DOUBLE_ARR_OFF, arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(bytes), bytes);
+            UNSAFE.copyMemory(val, DOUBLE_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(bytes), bytes);
         }
     }
 
@@ -311,7 +315,7 @@ class GridPortableWriterImpl implements GridPortableWriter {
         if (val != null) {
             int bytes = val.length << 1;
 
-            UNSAFE.copyMemory(val, CHAR_ARR_OFF, arr.array(), BYTE_ARR_OFF + arr.requestFreeSize(bytes), bytes);
+            UNSAFE.copyMemory(val, CHAR_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(bytes), bytes);
         }
     }
 
@@ -322,8 +326,7 @@ class GridPortableWriterImpl implements GridPortableWriter {
         doWriteInt(val != null ? val.length : -1);
 
         if (val != null)
-            UNSAFE.copyMemory(val, BOOLEAN_ARR_OFF, arr.array(),
-                BYTE_ARR_OFF + arr.requestFreeSize(val.length), val.length);
+            UNSAFE.copyMemory(val, BOOLEAN_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(val.length), val.length);
     }
 
     /**
@@ -392,543 +395,440 @@ class GridPortableWriterImpl implements GridPortableWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeByte(String fieldName, final byte val) throws GridPortableException {
-        final int offPos = hdrWriter.addField(fieldName);
+    @Override public void writeByte(String fieldName, byte val) throws GridPortableException {
+        writeFieldName(fieldName);
 
-        data.add(new WriteAction() {
-            @Override public void apply() {
-                writeCurrentSize(offPos);
-
-                doWriteByte(val);
-            }
-        });
+        doWriteInt(1);
+        doWriteByte(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeByte(final byte val) throws GridPortableException {
-        rawData.add(new WriteAction() {
-            @Override public void apply() {
-                doWriteByte(val);
-            }
-        });
+    @Override public void writeByte(byte val) throws GridPortableException {
+        switchToRaw();
+
+        doWriteByte(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeShort(String fieldName, final short val) throws GridPortableException {
-        final int offPos = hdrWriter.addField(fieldName);
+    @Override public void writeShort(String fieldName, short val) throws GridPortableException {
+        writeFieldName(fieldName);
 
-        data.add(new WriteAction() {
-            @Override public void apply() {
-                writeCurrentSize(offPos);
-
-                doWriteShort(val);
-            }
-        });
+        doWriteInt(2);
+        doWriteShort(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeShort(final short val) throws GridPortableException {
-        rawData.add(new WriteAction() {
-            @Override public void apply() {
-                doWriteShort(val);
-            }
-        });
+    @Override public void writeShort(short val) throws GridPortableException {
+        switchToRaw();
+
+        doWriteShort(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeInt(String fieldName, final int val) throws GridPortableException {
-        final int offPos = hdrWriter.addField(fieldName);
+    @Override public void writeInt(String fieldName, int val) throws GridPortableException {
+        writeFieldName(fieldName);
 
-        data.add(new WriteAction() {
-            @Override public void apply() {
-                writeCurrentSize(offPos);
-
-                doWriteInt(val);
-            }
-        });
+        doWriteInt(4);
+        doWriteInt(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeInt(final int val) throws GridPortableException {
-        rawData.add(new WriteAction() {
-            @Override public void apply() {
-                doWriteInt(val);
-            }
-        });
+    @Override public void writeInt(int val) throws GridPortableException {
+        switchToRaw();
+
+        doWriteInt(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeLong(String fieldName, final long val) throws GridPortableException {
-        final int offPos = hdrWriter.addField(fieldName);
+    @Override public void writeLong(String fieldName, long val) throws GridPortableException {
+        writeFieldName(fieldName);
 
-        data.add(new WriteAction() {
-            @Override public void apply() {
-                writeCurrentSize(offPos);
-
-                doWriteLong(val);
-            }
-        });
+        doWriteInt(8);
+        doWriteLong(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeLong(final long val) throws GridPortableException {
-        rawData.add(new WriteAction() {
-            @Override public void apply() {
-                doWriteLong(val);
-            }
-        });
+    @Override public void writeLong(long val) throws GridPortableException {
+        switchToRaw();
+
+        doWriteLong(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeFloat(String fieldName, final float val) throws GridPortableException {
-        final int offPos = hdrWriter.addField(fieldName);
+    @Override public void writeFloat(String fieldName, float val) throws GridPortableException {
+        writeFieldName(fieldName);
 
-        data.add(new WriteAction() {
-            @Override public void apply() {
-                writeCurrentSize(offPos);
-
-                doWriteFloat(val);
-            }
-        });
+        doWriteInt(4);
+        doWriteFloat(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeFloat(final float val) throws GridPortableException {
-        rawData.add(new WriteAction() {
-            @Override public void apply() {
-                doWriteFloat(val);
-            }
-        });
+    @Override public void writeFloat(float val) throws GridPortableException {
+        switchToRaw();
+
+        doWriteFloat(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeDouble(String fieldName, final double val) throws GridPortableException {
-        final int offPos = hdrWriter.addField(fieldName);
+    @Override public void writeDouble(String fieldName, double val) throws GridPortableException {
+        writeFieldName(fieldName);
 
-        data.add(new WriteAction() {
-            @Override public void apply() {
-                writeCurrentSize(offPos);
-
-                doWriteDouble(val);
-            }
-        });
+        doWriteInt(8);
+        doWriteDouble(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeDouble(final double val) throws GridPortableException {
-        rawData.add(new WriteAction() {
-            @Override public void apply() {
-                doWriteDouble(val);
-            }
-        });
+    @Override public void writeDouble(double val) throws GridPortableException {
+        switchToRaw();
+
+        doWriteDouble(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeChar(String fieldName, final char val) throws GridPortableException {
-        final int offPos = hdrWriter.addField(fieldName);
+    @Override public void writeChar(String fieldName, char val) throws GridPortableException {
+        writeFieldName(fieldName);
 
-        data.add(new WriteAction() {
-            @Override public void apply() {
-                writeCurrentSize(offPos);
-
-                doWriteChar(val);
-            }
-        });
+        doWriteInt(2);
+        doWriteChar(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeChar(final char val) throws GridPortableException {
-        rawData.add(new WriteAction() {
-            @Override public void apply() {
-                doWriteChar(val);
-            }
-        });
+    @Override public void writeChar(char val) throws GridPortableException {
+        switchToRaw();
+
+        doWriteChar(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBoolean(String fieldName, final boolean val) throws GridPortableException {
-        final int offPos = hdrWriter.addField(fieldName);
+    @Override public void writeBoolean(String fieldName, boolean val) throws GridPortableException {
+        writeFieldName(fieldName);
 
-        data.add(new WriteAction() {
-            @Override public void apply() {
-                writeCurrentSize(offPos);
-
-                doWriteBoolean(val);
-            }
-        });
+        doWriteInt(1);
+        doWriteBoolean(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBoolean(final boolean val) throws GridPortableException {
-        rawData.add(new WriteAction() {
-            @Override public void apply() {
-                doWriteBoolean(val);
-            }
-        });
+    @Override public void writeBoolean(boolean val) throws GridPortableException {
+        switchToRaw();
+
+        doWriteBoolean(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeString(String fieldName, @Nullable final String val) throws GridPortableException {
-        final int offPos = hdrWriter.addField(fieldName);
+    @Override public void writeString(String fieldName, @Nullable String val) throws GridPortableException {
+        writeFieldName(fieldName);
 
-        data.add(new WriteAction() {
-            @Override public void apply() {
-                writeCurrentSize(offPos);
+        byte[] arr = null;
+        int len = 4;
 
-                doWriteString(val);
-            }
-        });
+        if (val != null) {
+            arr = val.getBytes(UTF_8);
+            len += arr.length;
+        }
+
+        doWriteInt(len);
+        doWriteByteArray(arr);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeString(@Nullable final String val) throws GridPortableException {
-        rawData.add(new WriteAction() {
-            @Override public void apply() {
-                doWriteString(val);
-            }
-        });
+    @Override public void writeString(@Nullable String val) throws GridPortableException {
+        switchToRaw();
+
+        doWriteString(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeUuid(String fieldName, @Nullable final UUID val) throws GridPortableException {
-        final int offPos = hdrWriter.addField(fieldName);
+    @Override public void writeUuid(String fieldName, @Nullable UUID val) throws GridPortableException {
+        writeFieldName(fieldName);
 
-        data.add(new WriteAction() {
-            @Override public void apply() {
-                writeCurrentSize(offPos);
-
-                doWriteUuid(val);
-            }
-        });
+        doWriteInt(val != null ? 17 : 1);
+        doWriteUuid(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeUuid(@Nullable final UUID val) throws GridPortableException {
-        rawData.add(new WriteAction() {
-            @Override public void apply() {
-                doWriteUuid(val);
-            }
-        });
+    @Override public void writeUuid(@Nullable UUID val) throws GridPortableException {
+        switchToRaw();
+
+        doWriteUuid(val);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> void writeObject(String fieldName, @Nullable final T obj) throws GridPortableException {
-        final int offPos = hdrWriter.addField(fieldName);
+    @Override public <T> void writeObject(String fieldName, @Nullable T obj) throws GridPortableException {
+        writeFieldName(fieldName);
 
-        data.add(new WriteAction() {
-            @Override public void apply() throws GridPortableException {
-                writeCurrentSize(offPos);
+        int lenPos = reserveAndMark(4);
 
-                doWriteObject(obj);
-            }
-        });
+        doWriteObject(obj);
+
+        writeDelta(lenPos);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> void writeObject(@Nullable final T obj) throws GridPortableException {
-        rawData.add(new WriteAction() {
-            @Override public void apply() throws GridPortableException {
-                doWriteObject(obj);
-            }
-        });
+    @Override public <T> void writeObject(@Nullable T obj) throws GridPortableException {
+        switchToRaw();
+
+        doWriteObject(obj);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeByteArray(String fieldName, @Nullable final byte[] val) throws GridPortableException {
-        final int offPos = hdrWriter.addField(fieldName);
+    @Override public void writeByteArray(String fieldName, @Nullable byte[] val) throws GridPortableException {
+        writeFieldName(fieldName);
 
-        data.add(new WriteAction() {
-            @Override public void apply() {
-                writeCurrentSize(offPos);
-
-                doWriteByteArray(val);
-            }
-        });
+        doWriteInt(val != null ? 4 + val.length : 4);
+        doWriteByteArray(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeByteArray(@Nullable final byte[] val) throws GridPortableException {
-        rawData.add(new WriteAction() {
-            @Override public void apply() {
-                doWriteByteArray(val);
-            }
-        });
+    @Override public void writeByteArray(@Nullable byte[] val) throws GridPortableException {
+        switchToRaw();
+
+        doWriteByteArray(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeShortArray(String fieldName, @Nullable final short[] val) throws GridPortableException {
-        final int offPos = hdrWriter.addField(fieldName);
+    @Override public void writeShortArray(String fieldName, @Nullable short[] val) throws GridPortableException {
+        writeFieldName(fieldName);
 
-        data.add(new WriteAction() {
-            @Override public void apply() {
-                writeCurrentSize(offPos);
-
-                doWriteShortArray(val);
-            }
-        });
+        doWriteInt(val != null ? 4 + val.length << 1 : 4);
+        doWriteShortArray(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeShortArray(@Nullable final short[] val) throws GridPortableException {
-        rawData.add(new WriteAction() {
-            @Override public void apply() {
-                doWriteShortArray(val);
-            }
-        });
+    @Override public void writeShortArray(@Nullable short[] val) throws GridPortableException {
+        switchToRaw();
+
+        doWriteShortArray(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeIntArray(String fieldName, @Nullable final int[] val) throws GridPortableException {
-        final int offPos = hdrWriter.addField(fieldName);
+    @Override public void writeIntArray(String fieldName, @Nullable int[] val) throws GridPortableException {
+        writeFieldName(fieldName);
 
-        data.add(new WriteAction() {
-            @Override public void apply() {
-                writeCurrentSize(offPos);
-
-                doWriteIntArray(val);
-            }
-        });
+        doWriteInt(val != null ? 4 + val.length << 2 : 4);
+        doWriteIntArray(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeIntArray(@Nullable final int[] val) throws GridPortableException {
-        rawData.add(new WriteAction() {
-            @Override public void apply() {
-                doWriteIntArray(val);
-            }
-        });
+    @Override public void writeIntArray(@Nullable int[] val) throws GridPortableException {
+        switchToRaw();
+
+        doWriteIntArray(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeLongArray(String fieldName, @Nullable final long[] val) throws GridPortableException {
-        final int offPos = hdrWriter.addField(fieldName);
+    @Override public void writeLongArray(String fieldName, @Nullable long[] val) throws GridPortableException {
+        writeFieldName(fieldName);
 
-        data.add(new WriteAction() {
-            @Override public void apply() {
-                writeCurrentSize(offPos);
-
-                doWriteLongArray(val);
-            }
-        });
+        doWriteInt(val != null ? 4 + val.length << 3 : 4);
+        doWriteLongArray(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeLongArray(@Nullable final long[] val) throws GridPortableException {
-        rawData.add(new WriteAction() {
-            @Override public void apply() {
-                doWriteLongArray(val);
-            }
-        });
+    @Override public void writeLongArray(@Nullable long[] val) throws GridPortableException {
+        switchToRaw();
+
+        doWriteLongArray(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeFloatArray(String fieldName, @Nullable final float[] val) throws GridPortableException {
-        final int offPos = hdrWriter.addField(fieldName);
+    @Override public void writeFloatArray(String fieldName, @Nullable float[] val) throws GridPortableException {
+        writeFieldName(fieldName);
 
-        data.add(new WriteAction() {
-            @Override public void apply() {
-                writeCurrentSize(offPos);
-
-                doWriteFloatArray(val);
-            }
-        });
+        doWriteInt(val != null ? 4 + val.length << 2 : 4);
+        doWriteFloatArray(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeFloatArray(@Nullable final float[] val) throws GridPortableException {
-        rawData.add(new WriteAction() {
-            @Override public void apply() {
-                doWriteFloatArray(val);
-            }
-        });
+    @Override public void writeFloatArray(@Nullable float[] val) throws GridPortableException {
+        switchToRaw();
+
+        doWriteFloatArray(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeDoubleArray(String fieldName, @Nullable final double[] val)
+    @Override public void writeDoubleArray(String fieldName, @Nullable double[] val)
         throws GridPortableException {
-        final int offPos = hdrWriter.addField(fieldName);
+        writeFieldName(fieldName);
 
-        data.add(new WriteAction() {
-            @Override public void apply() {
-                writeCurrentSize(offPos);
-
-                doWriteDoubleArray(val);
-            }
-        });
+        doWriteInt(val != null ? 4 + val.length << 3 : 4);
+        doWriteDoubleArray(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeDoubleArray(@Nullable final double[] val) throws GridPortableException {
-        rawData.add(new WriteAction() {
-            @Override public void apply() {
-                doWriteDoubleArray(val);
-            }
-        });
+    @Override public void writeDoubleArray(@Nullable double[] val) throws GridPortableException {
+        switchToRaw();
+
+        doWriteDoubleArray(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeCharArray(String fieldName, @Nullable final char[] val) throws GridPortableException {
-        final int offPos = hdrWriter.addField(fieldName);
+    @Override public void writeCharArray(String fieldName, @Nullable char[] val) throws GridPortableException {
+        writeFieldName(fieldName);
 
-        data.add(new WriteAction() {
-            @Override public void apply() {
-                writeCurrentSize(offPos);
-
-                doWriteCharArray(val);
-            }
-        });
+        doWriteInt(val != null ? 4 + val.length << 1 : 4);
+        doWriteCharArray(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeCharArray(@Nullable final char[] val) throws GridPortableException {
-        rawData.add(new WriteAction() {
-            @Override public void apply() {
-                doWriteCharArray(val);
-            }
-        });
+    @Override public void writeCharArray(@Nullable char[] val) throws GridPortableException {
+        switchToRaw();
+
+        doWriteCharArray(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBooleanArray(String fieldName, @Nullable final boolean[] val)
+    @Override public void writeBooleanArray(String fieldName, @Nullable boolean[] val)
         throws GridPortableException {
-        final int offPos = hdrWriter.addField(fieldName);
+        writeFieldName(fieldName);
 
-        data.add(new WriteAction() {
-            @Override public void apply() {
-                writeCurrentSize(offPos);
-
-                doWriteBooleanArray(val);
-            }
-        });
+        doWriteInt(val != null ? 4 + val.length : 4);
+        doWriteBooleanArray(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBooleanArray(@Nullable final boolean[] val) throws GridPortableException {
-        rawData.add(new WriteAction() {
-            @Override public void apply() {
-                doWriteBooleanArray(val);
-            }
-        });
+    @Override public void writeBooleanArray(@Nullable boolean[] val) throws GridPortableException {
+        switchToRaw();
+
+        doWriteBooleanArray(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeStringArray(String fieldName, @Nullable final String[] val)
+    @Override public void writeStringArray(String fieldName, @Nullable String[] val)
         throws GridPortableException {
-        final int offPos = hdrWriter.addField(fieldName);
+        writeFieldName(fieldName);
 
-        data.add(new WriteAction() {
-            @Override public void apply() {
-                writeCurrentSize(offPos);
+        int lenPos = reserveAndMark(4);
 
-                doWriteStringArray(val);
-            }
-        });
+        doWriteStringArray(val);
+
+        writeDelta(lenPos);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeStringArray(@Nullable final String[] val) throws GridPortableException {
-        rawData.add(new WriteAction() {
-            @Override public void apply() {
-                doWriteStringArray(val);
-            }
-        });
+    @Override public void writeStringArray(@Nullable String[] val) throws GridPortableException {
+        switchToRaw();
+
+        doWriteStringArray(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeUuidArray(String fieldName, @Nullable final UUID[] val) throws GridPortableException {
-        final int offPos = hdrWriter.addField(fieldName);
+    @Override public void writeUuidArray(String fieldName, @Nullable UUID[] val) throws GridPortableException {
+        writeFieldName(fieldName);
 
-        data.add(new WriteAction() {
-            @Override public void apply() {
-                writeCurrentSize(offPos);
+        int lenPos = reserveAndMark(4);
 
-                doWriteUuidArray(val);
-            }
-        });
+        doWriteUuidArray(val);
+
+        writeDelta(lenPos);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeUuidArray(@Nullable final UUID[] val) throws GridPortableException {
-        rawData.add(new WriteAction() {
-            @Override public void apply() {
-                doWriteUuidArray(val);
-            }
-        });
+    @Override public void writeUuidArray(@Nullable UUID[] val) throws GridPortableException {
+        switchToRaw();
+
+        doWriteUuidArray(val);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeObjectArray(String fieldName, @Nullable final Object[] val) throws GridPortableException {
-        final int offPos = hdrWriter.addField(fieldName);
+    @Override public void writeObjectArray(String fieldName, @Nullable Object[] val) throws GridPortableException {
+        writeFieldName(fieldName);
 
-        data.add(new WriteAction() {
-            @Override public void apply() throws GridPortableException {
-                writeCurrentSize(offPos);
+        int lenPos = reserveAndMark(4);
 
-                doWriteObjectArray(val);
-            }
-        });
+        doWriteObjectArray(val);
+
+        writeDelta(lenPos);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeObjectArray(@Nullable final Object[] val) throws GridPortableException {
-        rawData.add(new WriteAction() {
-            @Override public void apply() throws GridPortableException {
-                doWriteObjectArray(val);
-            }
-        });
+    @Override public void writeObjectArray(@Nullable Object[] val) throws GridPortableException {
+        switchToRaw();
+
+        doWriteObjectArray(val);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> void writeCollection(String fieldName, @Nullable final Collection<T> col)
+    @Override public <T> void writeCollection(String fieldName, @Nullable Collection<T> col)
         throws GridPortableException {
-        final int offPos = hdrWriter.addField(fieldName);
+        writeFieldName(fieldName);
 
-        data.add(new WriteAction() {
-            @Override public void apply() throws GridPortableException {
-                writeCurrentSize(offPos);
+        int lenPos = reserveAndMark(4);
 
-                doWriteCollection(col);
-            }
-        });
+        doWriteCollection(col);
+
+        writeDelta(lenPos);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> void writeCollection(@Nullable final Collection<T> col) throws GridPortableException {
-        rawData.add(new WriteAction() {
-            @Override public void apply() throws GridPortableException {
-                doWriteCollection(col);
-            }
-        });
+    @Override public <T> void writeCollection(@Nullable Collection<T> col) throws GridPortableException {
+        switchToRaw();
+
+        doWriteCollection(col);
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> void writeMap(String fieldName, @Nullable final Map<K, V> map)
+    @Override public <K, V> void writeMap(String fieldName, @Nullable Map<K, V> map)
         throws GridPortableException {
-        final int offPos = hdrWriter.addField(fieldName);
+        writeFieldName(fieldName);
 
-        data.add(new WriteAction() {
-            @Override public void apply() throws GridPortableException {
-                writeCurrentSize(offPos);
+        int lenPos = reserveAndMark(4);
 
-                doWriteMap(map);
-            }
-        });
+        doWriteMap(map);
+
+        writeDelta(lenPos);
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> void writeMap(@Nullable final Map<K, V> map) throws GridPortableException {
-        rawData.add(new WriteAction() {
-            @Override public void apply() throws GridPortableException {
-                doWriteMap(map);
-            }
-        });
+    @Override public <K, V> void writeMap(@Nullable Map<K, V> map) throws GridPortableException {
+        switchToRaw();
+
+        doWriteMap(map);
     }
 
-    /** */
-    private static interface WriteAction {
-        /**
-         * @throws GridPortableException In case of error.
-         */
-        public void apply() throws GridPortableException;
+    /**
+     * @param bytes Number of bytes that are going to be written.
+     * @return Offset before write.
+     */
+    private int requestFreeSize(int bytes) {
+        int size0 = size;
+
+        size += bytes;
+
+        if (size > arr.length) {
+            byte[] arr0 = new byte[size << 1];
+
+            UNSAFE.copyMemory(arr, BYTE_ARR_OFF, arr0, BYTE_ARR_OFF, size0);
+
+            arr = arr0;
+        }
+
+        return size0;
+    }
+
+    /**
+     * @throws GridPortableException If fields are not allowed.
+     * @param fieldName
+     */
+    private void writeFieldName(String fieldName) throws GridPortableException {
+        A.notNull(fieldName, "fieldName");
+
+        if (!allowFields)
+            throw new GridPortableException("Fields are not allowed."); // TODO: proper message
+
+        if (useNames)
+            doWriteByteArray(fieldName.getBytes(UTF_8));
+        else
+            doWriteInt(fieldName.hashCode());
+    }
+
+    /**
+     * Restricts fields.
+     */
+    private void switchToRaw() {
+        if (allowFields) {
+            writeCurrentSize(RAW_DATA_OFF_POS);
+
+            allowFields = false;
+        }
     }
 }
