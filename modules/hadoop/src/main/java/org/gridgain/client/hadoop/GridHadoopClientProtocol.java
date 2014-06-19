@@ -98,7 +98,7 @@ public class GridHadoopClientProtocol implements ClientProtocol {
 
     /** {@inheritDoc} */
     @Override public ClusterMetrics getClusterMetrics() throws IOException, InterruptedException {
-        return null;
+        return new ClusterMetrics(0, 0, 0, 0, 0, 0, 1000, 1000, 1, 100, 0, 0);
     }
 
     /** {@inheritDoc} */
