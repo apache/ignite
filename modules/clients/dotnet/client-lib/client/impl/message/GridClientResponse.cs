@@ -11,7 +11,10 @@ namespace GridGain.Client.Impl.Message {
     using System;
     using GridGain.Client.Portable;
 
+    using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
+
     /** <summary>Bean representing client operation result.</summary> */
+    [GridClientPortableId(PU.TYPE_RESP)]
     internal class GridClientResponse : IGridClientPortable {
         /** Portable type ID. */
         // TODO: GG-8535: Remove in favor of normal IDs.
@@ -76,24 +79,24 @@ namespace GridGain.Client.Impl.Message {
 
         /** <inheritdoc /> */
         public void WritePortable(IGridClientPortableWriter writer) {
-            writer.WriteByteArray("sesTok", SessionToken);
+            writer.WriteByteArray(SessionToken);
 
-            writer.WriteInt("successStatus", (int)Status);
+            writer.WriteInt((int)Status);
 
-            writer.WriteString("errorMsg", ErrorMessage);
+            writer.WriteString(ErrorMessage);
 
-            writer.WriteObject("res", Result);
+            writer.WriteObject(Result);
         }
 
         /** <inheritdoc /> */
         public void ReadPortable(IGridClientPortableReader reader) {
-            SessionToken = reader.ReadByteArray("sesTok");
+            SessionToken = reader.ReadByteArray();
 
-            Status = (GridClientResponseStatus)reader.ReadInt("successStatus");
+            Status = (GridClientResponseStatus)reader.ReadInt();
 
-            ErrorMessage = reader.ReadString("errorMsg");
+            ErrorMessage = reader.ReadString();
 
-            Result = reader.ReadObject<Object>("res");
+            Result = reader.ReadObject<Object>();
         }
     }
 }

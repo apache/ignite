@@ -493,7 +493,7 @@ namespace GridGain.Client.Impl {
         private void sendPacket(GridClientRequest msg) {
             try {
                 MemoryStream buf = new MemoryStream(1024);
-
+                
                 // Header.
                 buf.WriteByte((byte)0x90);
 

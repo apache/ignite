@@ -11,15 +11,16 @@ namespace GridGain.Client.Impl.Portable
 {
     using System;
     using System.Collections;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Reflection;
     using GridGain.Client.Portable;
 
+    using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
+
     /**
      * <summary>Serializer which reflectively writes all fields except of transient ones.</summary>
      */ 
-    class GridClientReflectingPortableSerializer : IGridClientPortableSerializer
+    class GridClientPortableReflectingSerializer : IGridClientPortableSerializer
     {
         /** Cached binding flags. */
         private static readonly BindingFlags FLAGS = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
@@ -37,7 +38,7 @@ namespace GridGain.Client.Impl.Portable
         private static readonly Type TYP_GENERIC_DICTIONARY = typeof(IDictionary<,>);
 
         /** Cached type descriptors. */
-        private readonly ConcurrentDictionary<Type, Descriptor> types = new ConcurrentDictionary<Type, Descriptor>();
+        private readonly IDictionary<Type, Descriptor> types = new Dictionary<Type, Descriptor>();
 
         /** <inheritdoc /> */
         public void WritePortable(object obj, IGridClientPortableWriter writer)
@@ -47,7 +48,7 @@ namespace GridGain.Client.Impl.Portable
             Descriptor desc = types[type];
 
             if (desc == null)
-                desc = types.GetOrAdd(type, CreateDescriptor(type));
+                throw new GridClientPortableException("Type is not registered in reflecting serializer: " + type.Name);
 
             desc.Write(obj, writer);
         }
@@ -59,30 +60,51 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
-         * <summary>Create descriptor for the given type.</summary>
-         */ 
-        private Descriptor CreateDescriptor(Type type)
+         * <summary>Register type.</summary>
+         * <param name="type">Type.</param>
+         * <param name="typeId">Type ID.</param>
+         * <param name="idMapper">ID mapper.</param>
+         */
+        public void Register(Type type, int typeId, GridClientPortableIdMapper idMapper)
         {
             List<FieldInfo> fields = new List<FieldInfo>();
 
             Type curType = type;
 
-            while (curType != null) 
+            while (curType != null)
             {
-                foreach(FieldInfo fieldInfo in curType.GetFields(FLAGS)) 
+                foreach (FieldInfo field in curType.GetFields(FLAGS))
                 {
-                    if (!fieldInfo.IsNotSerialized)
-                        fields.Add(fieldInfo);
+                    if (!field.IsNotSerialized)
+                        fields.Add(field);
                 }
-
-                fields.AddRange(curType.GetFields(FLAGS));
 
                 curType = curType.BaseType;
             }
 
+            IDictionary<int, string> idMap = new Dictionary<int, string>();
+
+            foreach (FieldInfo field in fields)
+            {
+                int? fieldIdRef = idMapper.FieldId(typeId, field.Name);
+
+                int fieldId = fieldIdRef.HasValue ? fieldIdRef.Value : PU.StringHashCode(field.Name.ToLower());
+
+                if (idMap.ContainsKey(fieldId))
+                {
+                    throw new GridClientPortableException("Conflicting field IDs [type=" +
+                        type.Name + ", field1=" + idMap[fieldId] + ", field2=" + field.Name + 
+                        ", fieldId=" + fieldId + ']');
+                }
+                else
+                    idMap[fieldId] = field.Name;
+            }
+
             fields.Sort(compare);
 
-            return new Descriptor(fields);
+            Descriptor desc = new Descriptor(fields);
+
+            types[type] = desc;
         }
 
         /**
@@ -173,30 +195,25 @@ namespace GridGain.Client.Impl.Portable
              */
             private void HandlePrimitive(FieldInfo field, Type type, string name, ICollection<Action<Object, IGridClientPortableWriter>> actions)
             {
-                if (type == typeof(Boolean))
-                    actions.Add((obj, writer) => { writer.WriteBoolean(name, (Boolean)field.GetValue(obj)); });
-                else if (type == typeof(Byte))
-                    actions.Add((obj, writer) => { writer.WriteByte(name, (Byte)field.GetValue(obj)); });                    
-                else if (type == typeof(SByte))
-                    throw new GridClientPortableInvalidFieldException("Cannot serialize SByte field (change it to unsinged type or use custom serialization): " + name);
-                else if (type == typeof(UInt16))
-                    throw new GridClientPortableInvalidFieldException("Cannot serialize UInt16 field (change it to singed type or use custom serialization): " + name);
-                else if (type == typeof(Int16))
-                    actions.Add((obj, writer) => { writer.WriteShort(name, (Int16)field.GetValue(obj)); });
-                else if (type == typeof(UInt32))
-                    throw new GridClientPortableInvalidFieldException("Cannot serialize UInt32 field (change it to singed type or use custom serialization): " + name);
-                else if (type == typeof(Int32))
-                    actions.Add((obj, writer) => { writer.WriteInt(name, (Int32)field.GetValue(obj)); });
-                else if (type == typeof(UInt64))
-                    throw new GridClientPortableInvalidFieldException("Cannot serialize UInt64 field (change it to singed type or use custom serialization): " + name);
-                else if (type == typeof(Int64))
-                    actions.Add((obj, writer) => { writer.WriteLong(name, (Int64)field.GetValue(obj)); });
-                else if (type == typeof(Char))
-                    actions.Add((obj, writer) => { writer.WriteChar(name, (Char)field.GetValue(obj)); });
-                else if (type == typeof(Single))
-                    actions.Add((obj, writer) => { writer.WriteFloat(name, (Single)field.GetValue(obj)); });
-                else if (type == typeof(Double))
-                    actions.Add((obj, writer) => { writer.WriteDouble(name, (Double)field.GetValue(obj)); });
+                unchecked
+                {
+                    if (type == typeof(Boolean))
+                        actions.Add((obj, writer) => { writer.WriteBoolean(name, (Boolean)field.GetValue(obj)); });
+                    else if (type == typeof(Byte) || type == typeof(SByte))
+                        actions.Add((obj, writer) => { writer.WriteByte(name, (Byte)field.GetValue(obj)); });
+                    else if (type == typeof(Int16) || type == typeof(UInt16))
+                        actions.Add((obj, writer) => { writer.WriteShort(name, (Int16)field.GetValue(obj)); });
+                    else if (type == typeof(Int32) || type == typeof(UInt32))
+                        actions.Add((obj, writer) => { writer.WriteInt(name, (Int32)field.GetValue(obj)); });
+                    else if (type == typeof(Int64) || type == typeof(UInt64))
+                        actions.Add((obj, writer) => { writer.WriteLong(name, (Int64)field.GetValue(obj)); });
+                    else if (type == typeof(Char))
+                        actions.Add((obj, writer) => { writer.WriteChar(name, (Char)field.GetValue(obj)); });
+                    else if (type == typeof(Single))
+                        actions.Add((obj, writer) => { writer.WriteFloat(name, (Single)field.GetValue(obj)); });
+                    else if (type == typeof(Double))
+                        actions.Add((obj, writer) => { writer.WriteDouble(name, (Double)field.GetValue(obj)); });
+                }
             }
             
             /**
@@ -208,46 +225,41 @@ namespace GridGain.Client.Impl.Portable
              */
             private void HandleArray(FieldInfo field, Type type, string name, ICollection<Action<Object, IGridClientPortableWriter>> actions)
             {
-                Type elemType = type.GetElementType();
-
-                if (elemType == typeof(Boolean))
-                    actions.Add((obj, writer) => { writer.WriteBooleanArray(name, (Boolean[])field.GetValue(obj)); });
-                else if (elemType == typeof(Byte))
-                    actions.Add((obj, writer) => { writer.WriteByteArray(name, (Byte[])field.GetValue(obj)); });                    
-                else if (elemType == typeof(SByte))
-                    throw new GridClientPortableInvalidFieldException("Cannot serialize SByte[] field (change it to unsinged type or use custom serialization): " + name);
-                else if (elemType == typeof(UInt16))
-                    throw new GridClientPortableInvalidFieldException("Cannot serialize UInt16[] field (change it to singed type or use custom serialization): " + name);
-                else if (elemType == typeof(Int16))
-                    actions.Add((obj, writer) => { writer.WriteShortArray(name, (Int16[])field.GetValue(obj)); });
-                else if (elemType == typeof(UInt32))
-                    throw new GridClientPortableInvalidFieldException("Cannot serialize UInt32[] field (change it to singed type or use custom serialization): " + name);
-                else if (elemType == typeof(Int32))
-                    actions.Add((obj, writer) => { writer.WriteIntArray(name, (Int32[])field.GetValue(obj)); });
-                else if (elemType == typeof(UInt64))
-                    throw new GridClientPortableInvalidFieldException("Cannot serialize UInt64[] field (change it to singed type or use custom serialization): " + name);
-                else if (elemType == typeof(Int64))
-                    actions.Add((obj, writer) => { writer.WriteLongArray(name, (Int64[])field.GetValue(obj)); });
-                else if (elemType == typeof(Char))
-                    actions.Add((obj, writer) => { writer.WriteCharArray(name, (Char[])field.GetValue(obj)); });
-                else if (elemType == typeof(Single))
-                    actions.Add((obj, writer) => { writer.WriteFloatArray(name, (Single[])field.GetValue(obj)); });
-                else if (elemType == typeof(Double))
-                    actions.Add((obj, writer) => { writer.WriteDoubleArray(name, (Double[])field.GetValue(obj)); });
-                else if (elemType == typeof(String))
-                    actions.Add((obj, writer) => { writer.WriteStringArray(name, (String[])field.GetValue(obj)); });
-                else if (elemType == typeof(Guid))
-                    actions.Add((obj, writer) => { writer.WriteGuidArray(name, (Guid[])field.GetValue(obj)); });
-                else if (elemType == typeof(Enum))
-                    actions.Add((obj, writer) => { writer.WriteEnumArray(name, (Enum[])field.GetValue(obj)); });
-                else
+                unchecked
                 {
-                    actions.Add((obj, writer) =>
-                    {
-                        dynamic val = field.GetValue(obj);
+                    Type elemType = type.GetElementType();
 
-                        writer.WriteObjectArray(name, val);
-                    });
+                    if (elemType == typeof(Boolean))
+                        actions.Add((obj, writer) => { writer.WriteBooleanArray(name, (Boolean[])field.GetValue(obj)); });
+                    else if (elemType == typeof(Byte) || elemType == typeof(SByte))
+                        actions.Add((obj, writer) => { writer.WriteByteArray(name, (Byte[])field.GetValue(obj)); });
+                    else if (elemType == typeof(Int16) || elemType == typeof(UInt16))
+                        actions.Add((obj, writer) => { writer.WriteShortArray(name, (Int16[])field.GetValue(obj)); });
+                    else if (elemType == typeof(Int32) || elemType == typeof(UInt32))
+                        actions.Add((obj, writer) => { writer.WriteIntArray(name, (Int32[])field.GetValue(obj)); });
+                    else if (elemType == typeof(Int64) || elemType == typeof(UInt64))
+                        actions.Add((obj, writer) => { writer.WriteLongArray(name, (Int64[])field.GetValue(obj)); });
+                    else if (elemType == typeof(Char))
+                        actions.Add((obj, writer) => { writer.WriteCharArray(name, (Char[])field.GetValue(obj)); });
+                    else if (elemType == typeof(Single))
+                        actions.Add((obj, writer) => { writer.WriteFloatArray(name, (Single[])field.GetValue(obj)); });
+                    else if (elemType == typeof(Double))
+                        actions.Add((obj, writer) => { writer.WriteDoubleArray(name, (Double[])field.GetValue(obj)); });
+                    else if (elemType == typeof(String))
+                        actions.Add((obj, writer) => { writer.WriteStringArray(name, (String[])field.GetValue(obj)); });
+                    else if (elemType == typeof(Guid))
+                        actions.Add((obj, writer) => { writer.WriteGuidArray(name, (Guid[])field.GetValue(obj)); });
+                    else if (elemType == typeof(Enum))
+                        actions.Add((obj, writer) => { writer.WriteEnumArray(name, (Enum[])field.GetValue(obj)); });
+                    else
+                    {
+                        actions.Add((obj, writer) =>
+                        {
+                            dynamic val = field.GetValue(obj);
+
+                            writer.WriteObjectArray(name, val);
+                        });
+                    }
                 }
             }
 

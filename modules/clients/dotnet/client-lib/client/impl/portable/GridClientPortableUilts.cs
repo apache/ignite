@@ -12,93 +12,106 @@ namespace GridGain.Client.Impl.Portable
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using GridGain.Client.Portable;
+    using System.Text;
+    using GridGain.Client.Portable;    
 
-    /*
-    sysPortableTypes.Add(GridClientAuthenticationRequest.PORTABLE_TYPE_ID, typeof(GridClientAuthenticationRequest));
-           sysPortableTypes.Add(GridClientCacheRequest.PORTABLE_TYPE_ID, typeof(GridClientCacheRequest));
-            sysPortableTypes.Add(GridClientLogRequest.PORTABLE_TYPE_ID, typeof(GridClientLogRequest));
-            sysPortableTypes.Add(GridClientNodeBean.PORTABLE_TYPE_ID, typeof(GridClientNodeBean));
-            sysPortableTypes.Add(GridClientNodeMetricsBean.PORTABLE_TYPE_ID, typeof(GridClientNodeMetricsBean));
-            sysPortableTypes.Add(GridClientResponse.PORTABLE_TYPE_ID, typeof(GridClientResponse));
-            sysPortableTypes.Add(GridClientTaskRequest.PORTABLE_TYPE_ID, typeof(GridClientTaskRequest));
-            sysPortableTypes.Add(GridClientTopologyRequest.PORTABLE_TYPE_ID, typeof(GridClientTopologyRequest));
-
-     */
- 
     /**
      * <summary>Utilities for portable serialization.</summary>
      */ 
     static class GridClientPortableUilts
     {
         /** Type: boolean. */
-        private const int TYPE_BOOL = 1;
+        public const int TYPE_BOOL = 1;
 
         /** Type: unsigned byte. */
-        private const int TYPE_BYTE = 2;
+        public const int TYPE_BYTE = 2;
         
         /** Type: short. */
-        private const int TYPE_SHORT = 5;
+        public const int TYPE_SHORT = 5;
 
         /** Type: int. */
-        private const int TYPE_INT = 7;
+        public const int TYPE_INT = 7;
 
         /** Type: long. */
-        private const int TYPE_LONG = 9;
+        public const int TYPE_LONG = 9;
 
         /** Type: char. */
-        private const int TYPE_CHAR = 10;
+        public const int TYPE_CHAR = 10;
 
         /** Type: float. */
-        private const int TYPE_FLOAT = 11;
+        public const int TYPE_FLOAT = 11;
 
         /** Type: double. */
-        private const int TYPE_DOUBLE = 12;
+        public const int TYPE_DOUBLE = 12;
 
         /** Type: string. */
-        private const int TYPE_STRING = 13;
+        public const int TYPE_STRING = 13;
 
         /** Type: GUID. */
-        private const int TYPE_GUID = 14;
+        public const int TYPE_GUID = 14;
 
         /** Type: boolean array. */
-        private const int TYPE_ARRAY_BOOL = 101;
+        public const int TYPE_ARRAY_BOOL = 101;
 
         /** Type: unsigned byte array. */
-        private const int TYPE_ARRAY_BYTE = 102;
+        public const int TYPE_ARRAY_BYTE = 102;
 
         /** Type: short array. */
-        private const int TYPE_ARRAY_SHORT = 105;
+        public const int TYPE_ARRAY_SHORT = 105;
 
         /** Type: int array. */
-        private const int TYPE_ARRAY_INT = 107;
+        public const int TYPE_ARRAY_INT = 107;
 
         /** Type: long array. */
-        private const int TYPE_ARRAY_LONG = 109;
+        public const int TYPE_ARRAY_LONG = 109;
 
         /** Type: char array. */
-        private const int TYPE_ARRAY_CHAR = 110;
+        public const int TYPE_ARRAY_CHAR = 110;
 
         /** Type: float array. */
-        private const int TYPE_ARRAY_FLOAT = 111;
+        public const int TYPE_ARRAY_FLOAT = 111;
 
         /** Type: double array. */
-        private const int TYPE_ARRAY_DOUBLE = 112;
+        public const int TYPE_ARRAY_DOUBLE = 112;
 
         /** Type: string array. */
-        private const int TYPE_ARRAY_STRING = 113;
+        public const int TYPE_ARRAY_STRING = 113;
 
         /** Type: GUID array. */
-        private const int TYPE_ARRA_GUID = 114;
+        public const int TYPE_ARRAY_GUID = 114;
 
         /** Type: object array. */
-        private const int TYPE_ARRAY = 200;
+        public const int TYPE_ARRAY = 200;
 
         /** Type: collection. */
-        private const int TYPE_COLLECTION = 201;
+        public const int TYPE_COLLECTION = 201;
 
         /** Type: map. */
-        private const int TYPE_MAP = 202;
+        public const int TYPE_MAP = 202;
+
+        /** Type: authentication request. */
+        public const int TYPE_AUTH_REQ = 300;
+
+        /** Type: topology request. */
+        public const int TYPE_TOP_REQ = 301;
+
+        /** Type: task request. */
+        public const int TYPE_TASK_REQ = 302;
+
+        /** Type: cache request. */
+        public const int TYPE_CACHE_REQ = 303;
+        
+        /** Type: log request. */
+        public const int TYPE_LOG_REQ = 304;
+
+        /** Type: response. */
+        public const int TYPE_RESP = 305;
+
+        /** Type: node bean. */
+        public const int TYPE_NODE_BEAN = 306;
+
+        /** Type: node metrics bean. */
+        public const int TYPE_NODE_METRICS_BEAN = 307;
 
         /** Byte "0". */
         private const byte BYTE_ZERO = (byte)0;
@@ -128,16 +141,13 @@ namespace GridGain.Client.Impl.Portable
             SYSTEM_TYPES[typeof(ulong)] = TYPE_LONG;
             SYSTEM_TYPES[typeof(char)] = TYPE_CHAR;
             SYSTEM_TYPES[typeof(float)] = TYPE_FLOAT;
-            SYSTEM_TYPES[typeof(double)] = TYPE_DOUBLE;
-            
+            SYSTEM_TYPES[typeof(double)] = TYPE_DOUBLE;            
         }   
-
-        
 
         /**
          * <summary>Get primitive type ID.</summary>
          * <param name="type">Type.</param>
-         * <returns>Primitive type ID.</returns>
+         * <returns>Primitive type ID or 0 if this is not primitive type.</returns>
          */ 
         public static int PrimitiveTypeId(Type type)
         {
@@ -191,45 +201,221 @@ namespace GridGain.Client.Impl.Portable
          * <param name="typeId">Primitive type ID</param>
          * <param name="obj">Object.</param>
          * <param name="stream">Output stream.</param>
-         * <returns>Length of written data.</returns>
          */
-        public static unsafe int WritePrimitive(int typeId, object obj, Stream stream)
+        public static unsafe void WritePrimitive(int typeId, object obj, Stream stream)
         {
+            WriteBoolean(false, stream);
+            WriteInt(typeId, stream);
+
             unchecked
             {
                 switch (typeId)
                 {
                     case TYPE_BOOL:
-                        return WriteBoolean((bool)obj, stream);
+                        WriteBoolean((bool)obj, stream);
+
+                        break;
 
                     case TYPE_BYTE:
                         stream.WriteByte((byte)obj);
 
-                        return 1;
+                        break;
 
                     case TYPE_SHORT:
                     case TYPE_CHAR:
-                        return WriteShort((short)obj, stream);
+                        WriteShort((short)obj, stream);
+
+                        break;
 
                     case TYPE_INT:
-                        return WriteInt((int)obj, stream);
+                        WriteInt((int)obj, stream);
+
+                        break;
 
                     case TYPE_LONG:
-                        return WriteLong((long)obj, stream);
+                        WriteLong((long)obj, stream);
+
+                        break;
 
                     case TYPE_FLOAT:
                         float floatVal = (float)obj;
 
-                        return WriteInt(*(int*)&floatVal, stream);
+                        WriteInt(*(int*)&floatVal, stream);
+
+                        break;
 
                     case TYPE_DOUBLE:
                         double doubleVal = (double)obj;
 
-                        return WriteLong(*(long*)&doubleVal, stream);
+                        WriteLong(*(long*)&doubleVal, stream);
+
+                        break;
 
                     default:
                         throw new GridClientPortableException("Type ID doesn't refer to primitive type: " + typeId);
                 }
+            }
+        }
+
+        /**
+         * <summary>Write string in UTF8 encoding.</summary>
+         * <param name="val">String.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static void WriteString(string val, Stream stream)
+        {
+            if (val == null)
+                stream.WriteByte(BYTE_ZERO);
+            else
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(val);
+
+                stream.WriteByte(BYTE_ONE);
+                stream.Write(bytes, 0, bytes.Length);
+            }
+        }
+
+        /**
+         * <summary>Get string hash code.</summary> 
+         * <param name="val">Value.</param>
+         * <returns>Hash code.</returns>
+         */ 
+        public static int StringHashCode(string val)
+        {
+            if (val.Length == 0)
+                return 0;
+            else
+            {
+                char[] arr = val.ToCharArray();
+
+                int hash = 0;
+
+                foreach (char c in val.ToCharArray())
+                    hash = 31 * hash + c;
+
+                return hash;
+            }
+        }
+
+        /**
+         * 
+         */ 
+        public static int ArrayHashCode<T>(T[] arr)
+        {
+            int hash = 1;
+
+            for (int i = 0; i < arr.Length; i++) {
+                T item = arr[i];
+
+                hash = 31 * hash + (item == null ? 0 : item.GetHashCode());
+            }
+
+            return hash;
+        }
+
+        /**
+         * <summary>Get Guid hash code.</summary> 
+         * <param name="val">Value.</param>
+         * <returns>Hash code.</returns>
+         */ 
+        public static int GuidHashCode(Guid val)
+        {
+            byte[] arr = val.ToByteArray();
+
+            long msb = 0;
+            long lsb = 0;
+            
+            for (int i = 0; i < 8; i++)
+                msb = (msb << 8) | ((uint)arr[i] & 0xff);
+
+            for (int i=8; i<16; i++)
+                lsb = (lsb << 8) | ((uint)arr[i] & 0xff);
+
+            long hilo = msb ^ lsb;
+
+            return ((int)(hilo >> 32)) ^ (int)hilo;
+        }
+
+        /**
+         * <summary>Write GUID.</summary>
+         * <param name="val">GUID.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static void WriteGuid(Guid val, Stream stream)
+        {
+            if (val == null)
+                stream.WriteByte(BYTE_ZERO);
+            else
+            {
+                byte[] bytes = val.ToByteArray();
+
+                stream.WriteByte(BYTE_ONE);
+                stream.Write(bytes, 0, bytes.Length);
+            }
+        }
+
+        /**
+         * <summary>Get primitive array type ID.</summary>
+         * <param name="type">Type.</param>
+         * <returns>Primitive array type ID or 0 if this is not primitive array type.</returns>
+         */
+        public static int PrimitiveArrayTypeId(Type type)
+        {
+            if (type.IsArray)
+            {
+                Type elemType = type.GetElementType();
+
+                if (elemType == typeof(Boolean))
+                    return TYPE_ARRAY_BOOL;
+                else if (elemType == typeof(Byte) || type == typeof(SByte))
+                    return TYPE_ARRAY_BYTE;
+                else if (elemType == typeof(Int16) || type == typeof(UInt16))
+                    return TYPE_ARRAY_SHORT;
+                else if (elemType == typeof(Int32) || type == typeof(Int32))
+                    return TYPE_ARRAY_INT;
+                else if (elemType == typeof(Int64) || type == typeof(Int64))
+                    return TYPE_ARRAY_LONG;
+                else if (elemType == typeof(Char))
+                    return TYPE_ARRAY_CHAR;
+                else if (elemType == typeof(Single))
+                    return TYPE_ARRAY_FLOAT;
+                else if (elemType == typeof(Double))
+                    return TYPE_ARRAY_DOUBLE;
+            }
+
+            return 0;
+        }
+
+        /**
+         * <summary>Write primitive array to the underlying output.</summary>
+         * <param name="typeId">Primitive array type ID</param>
+         * <param name="obj">Array object.</param>
+         * <param name="stream">Output stream.</param>
+         * <returns>Length of written data.</returns>
+         */
+        public static int WritePrimitiveArray(int typeId, object obj, Stream stream)
+        {
+            switch (typeId) {
+                case TYPE_ARRAY_BOOL:
+                    return WriteBooleanArray((bool[])obj, stream);
+
+                case TYPE_ARRAY_BYTE:
+                    return WriteByteArray((bool[])obj, stream);
+
+                case TYPE_ARRAY_SHORT:
+                    return WriteShortArray((short[])obj, stream);
+
+                case TYPE_ARRAY_INT:                
+                    return WriteIntArray((int[])obj, stream);
+
+                case TYPE_ARRAY_LONG:
+                    return WriteLongArray((long[])obj, stream);
+
+                case TYPE_ARRAY_CHAR:
+                case TYPE_ARRAY_FLOAT:
+                case TYPE_ARRAY_DOUBLE:
+                default:
+                    throw new GridClientPortableException("Type ID doesn't refer to primitive type: " + typeId);
             }
         }
 
@@ -273,11 +459,16 @@ namespace GridGain.Client.Impl.Portable
          * <param name="stream">Output stream.</param>
          * <returns>Length of written data.</returns>
          */
-        public static int writeByte(byte val, Stream stream)
+        public static int WriteByte(byte val, Stream stream)
         {
             stream.WriteByte(val);
 
             return 1;
+        }
+
+        public static int WriteByteArray(byte[] val, Stream stream) 
+        {
+            throw new NotImplementedException();
         }
 
         /**
@@ -390,6 +581,14 @@ namespace GridGain.Client.Impl.Portable
             }
 
             return 8;
+        }
+
+        /**
+         * <summary>Constructor.</summary>
+         */ 
+        private GridClientPortableUilts()
+        {
+            // No-op.
         }
     }
 }

@@ -11,9 +11,11 @@ namespace GridGain.Client.Impl.Message {
     using System;
     using GridGain.Client.Portable;
 
+    using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
     using U = GridGain.Client.Util.GridClientUtils;
 
     /** <summary><c>Task</c> command request.</summary> */
+    [GridClientPortableId(PU.TYPE_TASK_REQ)]
     internal class GridClientTaskRequest : GridClientRequest {
         /**
          * <summary>
@@ -40,18 +42,18 @@ namespace GridGain.Client.Impl.Message {
         public override void WritePortable(IGridClientPortableWriter writer) {
             base.WritePortable(writer);
 
-            writer.WriteString("taskName", TaskName);
+            writer.WriteString(TaskName);
 
-            writer.WriteObject("arg", Argument);
+            writer.WriteObject(Argument);
         }
 
         /** <inheritdoc /> */
         public override void ReadPortable(IGridClientPortableReader reader) {
             base.ReadPortable(reader);
 
-            TaskName = reader.ReadString("taskName");
+            TaskName = reader.ReadString();
 
-            Argument = reader.ReadObject<Object>("arg");
+            Argument = reader.ReadObject<Object>();
         }
     }
 }

@@ -9,24 +9,26 @@
 
 namespace GridGain.Client.Portable
 {
+    using System;
+
     /**
-     * <summary>Portable class configuration.</summary>
+     * <summary>Portable type configuration.</summary>
      */ 
-    public class GridClientPortableClassConfiguration
+    public class GridClientPortableTypeConfiguration
     {
         /**
          * <summary>Constructor.</summary>
          */ 
-        public GridClientPortableClassConfiguration()
+        public GridClientPortableTypeConfiguration()
         {
-
+            // No-op.
         }
 
         /**
          * <summary>Constructor.</summary>
          * <param name="className">Class name.</param>
          */ 
-        public GridClientPortableClassConfiguration(string className)
+        public GridClientPortableTypeConfiguration(string className)
         {
             ClassName = className;
         }
@@ -35,7 +37,7 @@ namespace GridGain.Client.Portable
          * <summary>Copying constructor.</summary>
          * <param name="cfg">Configuration to copy.</param>
          */
-        public GridClientPortableClassConfiguration(GridClientPortableClassConfiguration cfg)
+        public GridClientPortableTypeConfiguration(GridClientPortableTypeConfiguration cfg)
         {
             ClassName = cfg.ClassName;
             IdMapper = cfg.IdMapper;
@@ -73,6 +75,13 @@ namespace GridGain.Client.Portable
         {
             get;
             set;
+        }
+
+        /** {@inheritDoc} */
+        override public String ToString()
+        {
+            return typeof(GridClientPortableTypeConfiguration).Name + " [className=" + ClassName +
+                ", IdMapper=" + IdMapper + ", Serializer=" + Serializer + ']';
         }
     }
 }

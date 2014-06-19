@@ -13,22 +13,141 @@ namespace GridGain.Client.Impl.Portable
     using System.Collections;
     using System.Collections.Generic;
     using System.IO;
-    using GridGain.Client.Portable;
+    using GridGain.Client.Impl.Message;
+    using GridGain.Client.Portable;    
+
+    using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
 
     /** <summary>Portable marshaller implementation.</summary> */
     internal class GridClientPortableMarshaller
     {
         /** Header of NULL object. */
-        private static readonly byte HDR_NULL = 0x80;
+        public const byte HDR_NULL = 0x80;
 
         /** Header of object handle. */
-        private static readonly byte HDR_HND = 0x81;
+        public const byte HDR_HND = 0x81;
 
         /** Header of object in fully serialized form. */
-        private static readonly byte HDR_FULL = 0x82;
+        public const byte HDR_FULL = 0x82;
 
         /** Header of object in fully serailized form with metadata. */
-        private static readonly byte HDR_META = 0x83;
+        public const byte HDR_META = 0x83;
+
+        /** Descriptors. */
+        public IDictionary<string, GridClientPortableTypeDescriptor> descriptors = new Dictionary<string, GridClientPortableTypeDescriptor>();
+
+        /**
+         * <summary>Constructor.</summary>
+         * <param name="typeCfgs">User type configurtaions.</param>
+         */ 
+        public GridClientPortableMarshaller(ICollection<GridClientPortableTypeConfiguration> typeCfgs) 
+        {
+            GridClientPortableReflectingSerializer refSerializer = new GridClientPortableReflectingSerializer();
+            IGridClientPortableSerializer extSerializer = new GridClientPortableExternalSerializer();
+
+            // 1. Define system types.
+            addSystemType(typeof(GridClientAuthenticationRequest), refSerializer);
+            addSystemType(typeof(GridClientTopologyRequest), refSerializer);
+            addSystemType(typeof(GridClientTaskRequest), refSerializer);
+            addSystemType(typeof(GridClientCacheRequest), refSerializer);
+            addSystemType(typeof(GridClientLogRequest), refSerializer);
+            addSystemType(typeof(GridClientResponse), refSerializer);
+            addSystemType(typeof(GridClientNodeBean), refSerializer);
+            addSystemType(typeof(GridClientNodeMetricsBean), refSerializer);
+            
+            // 2. Define user types.
+            if (typeCfgs != null)
+            {
+                foreach (GridClientPortableTypeConfiguration typeCfg in typeCfgs)
+                    addUserType(typeCfg, refSerializer, extSerializer);
+            }
+        }
+
+        /**
+         * <summary>Add system type.</summary>
+         * <param name="type">Type.</param>
+         * <param name="refSerializer">Reflection serializer.</param>
+         */
+        private void addSystemType(Type type, GridClientPortableReflectingSerializer refSerializer)
+        {
+            GridClientPortableReflectingIdMapper mapper = new GridClientPortableReflectingIdMapper(type);
+
+            int? typeIdHolder = mapper.TypeId(type.Name);
+
+            int typeId = typeIdHolder.HasValue ? typeIdHolder.Value : PU.StringHashCode(type.Name.ToLower());
+
+            refSerializer.Register(type, typeId, mapper);
+
+            addType(type, typeId, false, mapper, refSerializer);
+        }
+
+        /**
+         * <summary>Add user type.</summary>
+         * <param name="typeCfg">Type configuration.</param>
+         * <param name="refSerializer">Reflection serializer.</param>
+         * <param name="extSerializer">External serializer.</param>
+         */
+        private void addUserType(GridClientPortableTypeConfiguration typeCfg, GridClientPortableReflectingSerializer refSerializer, IGridClientPortableSerializer extSerializer)
+        {            
+            if (typeCfg.ClassName == null)
+                throw new GridClientPortableException("Type name cannot be null: " + typeCfg);
+            
+            Type type;
+
+            try
+            {
+                type = Type.GetType(typeCfg.ClassName);
+            }
+            catch (Exception e)
+            {
+                throw new GridClientPortableException("Type cannot be instantiated: " + typeCfg, e);
+            }
+
+            GridClientPortableIdMapper mapper = typeCfg.IdMapper != null ?
+                typeCfg.IdMapper : new GridClientPortableReflectingIdMapper(type);
+
+            int? typeIdRef = mapper.TypeId(type.Name);
+
+            int typeId = typeIdRef.HasValue ? typeIdRef.Value : PU.StringHashCode(type.Name.ToLower());
+
+            IGridClientPortableSerializer serializer;
+
+            if (typeCfg.Serializer != null)
+                serializer = typeCfg.Serializer;
+            else
+            {
+                if (type.GetInterface(typeof(IGridClientPortable).Name) != null)
+                    serializer = extSerializer;
+                else
+                {
+                    refSerializer.Register(type, typeId, mapper);
+
+                    serializer = refSerializer;
+                }
+            }
+
+            addType(type, typeId, true, mapper, serializer); 
+        }
+
+        /**
+         * <summary>Add type.</summary>
+         * <param name="type">Type.</param>
+         * <param name="typeId">Type ID.</param>
+         * <param name="userType">User type flag.</param>
+         * <param name="mapper">ID mapper.</param>
+         * <param name="serializer">Serializer.</param>
+         */
+        private void addType(Type type, int typeId, bool userType, GridClientPortableIdMapper mapper, IGridClientPortableSerializer serializer)
+        {
+            foreach (KeyValuePair<string, GridClientPortableTypeDescriptor> descriptor in descriptors)
+            {
+                if (descriptor.Value.TypeId == typeId)
+                    throw new GridClientPortableException("Conflicting type IDs [type1=" + descriptors.Keys +
+                        ", type2=" + type.Name + ", typeId=" + typeId + ']');
+            }
+
+            descriptors[type.Name] = new GridClientPortableTypeDescriptor(typeId, false, mapper, serializer);
+        }
 
         /**
          * <summary>Marhshal object</summary>
@@ -57,21 +176,24 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
-         * 
+         * <summary>Unmarshal object.</summary>
+         * <param name="data">Raw data.</param>
+         * <returns>Unmarshalled object.</returns>
          */ 
         public T Unmarshal<T>(byte[] data)
         {
-            // TODO: GG-8535: Implement.
-            return default(T);
+            return Unmarshal<T>(new MemoryStream(data));
         }
 
         /**
-         * 
+         * <summary>Unmarshal object.</summary>
+         * <param name="data">Stream.</param>
+         * <returns>Unmarshalled object.</returns>
          */ 
         public T Unmarshal<T>(Stream input)
         {
             // TODO: GG-8535: Implement.
-            return default(T);
+            throw new NotImplementedException();
         }
         
         /**
@@ -87,6 +209,12 @@ namespace GridGain.Client.Impl.Portable
 
             /** Tracking wrier. */
             private readonly Writer writer;
+                        
+            /** Handles. */
+            private readonly IDictionary<GridClientPortableObjectHandle, int> hnds = new Dictionary<GridClientPortableObjectHandle, int>();
+            
+            /** Current object handle number. */
+            private int curHndNum;
             
             /**
              * <summary>Constructor.</summary>
@@ -101,126 +229,104 @@ namespace GridGain.Client.Impl.Portable
                 writer = new Writer(this);
             }
 
-            /** Object preventing direct write to the stream. */
-            private object blocker;
-
-            private readonly ICollection<Action> actions = new List<Action>();
-
-            private int curHndNum;
-
-            private readonly IDictionary<GridClientPortableObjectHandle, int> hnds = new Dictionary<GridClientPortableObjectHandle, int>();
-
             /**
              * <summary>Write object to the context.</summary>
              * <param name="obj">Object.</param>
-             * <returns>Length of written data.</returns>
              */ 
-            public int Write(object obj)
+            public void Write(object obj)
             {
+                // 1. Write null.
                 if (obj == null)
                 {
-                    // Special case for null value.
-                    if (blocker == null)
-                        stream.WriteByte(HDR_NULL);
-                    else
-                        actions.Add(() => { stream.WriteByte(HDR_NULL); });
+                    stream.WriteByte(HDR_NULL);
 
-                    return 1;
+                    return;
+                }
+                
+                // 2. Write primitive.
+                Type type = obj.GetType();
+
+                int typeId = PU.PrimitiveTypeId(type);
+
+                if (typeId != 0)
+                {
+                    stream.WriteByte(HDR_FULL);
+
+                    PU.WriteBoolean(false, stream);
+                    PU.WriteInt(typeId, stream);
+                    PU.WritePrimitive(typeId, obj, stream);
+
+                    return;
+                }
+
+                // 3. Try interpreting object as handle.
+                GridClientPortableObjectHandle hnd = new GridClientPortableObjectHandle(obj);
+
+                int? hndNum = hnds[hnd];
+
+                if (hndNum.HasValue) 
+                {
+                    stream.WriteByte(HDR_HND);
+
+                    PU.WriteInt(hndNum.Value, stream);
+
+                    return;
                 }
                 else
+                    hnds.Add(hnd, curHndNum++);
+
+                // 4. Write string.
+                dynamic obj0 = obj;
+
+                if (type == typeof(string)) 
                 {
-                    Type type = obj.GetType();
+                    stream.WriteByte(HDR_FULL);
 
-                    // 1. Primitive?
-                    int typeId = GridClientPortableUilts.PrimitiveTypeId(obj.GetType());
+                    PU.WriteBoolean(false, stream);                    
+                    PU.WriteInt(PU.TYPE_STRING, stream);
+                    PU.WriteInt(PU.StringHashCode(obj0), stream);
+                    PU.WriteString(obj0, stream);
 
-                    if (typeId != 0)
-                    {
-                        // Writing primitive value.
-                        if (blocker == null)
-                        {
-                            stream.WriteByte(HDR_FULL);
-
-                            GridClientPortableUilts.WriteInt(typeId, stream);
-                            GridClientPortableUilts.WritePrimitive(typeId, obj, stream);
-                        }
-                        else
-                        {
-                            actions.Add(() => 
-                            {
-                                stream.WriteByte(HDR_FULL);
-
-                                GridClientPortableUilts.WriteInt(typeId, stream);
-                                GridClientPortableUilts.WritePrimitive(typeId, obj, stream);
-                            });
-
-                            return 5 + GridClientPortableUilts.PrimitiveLength(typeId);
-                        }
-                    }
-
-                    // Dealing with handles.
-                    GridClientPortableObjectHandle hnd = new GridClientPortableObjectHandle(obj);
-
-                    int? hndNum = hnds[hnd];
-                    
-                    if (hndNum.HasValue)                    
-                    {
-                        if (blocker == null)
-                        {
-                            // We can be here in case of String, UUID or primitive array.
-                            stream.WriteByte(HDR_HND);
-
-                            GridClientPortableUilts.WriteInt(hndNum.Value, stream);
-                        }
-                        else 
-                        {
-                            actions.Add(() => 
-                            {
-                                stream.WriteByte(HDR_HND);
-
-                                GridClientPortableUilts.WriteInt(hndNum.Value, stream);
-                            });
-
-                        }
-
-                        return 5;
-                    }
-                    else
-                        hnds.Add(hnd, curHndNum++);
-
-                    // 2. String?
-                    if (type == typeof(string))
-                    {
-                        if (blocker == null)
-                        {
-
-                        }
-                        else
-                        {
-
-                        }
-
-                        return 0; // TODO: GG-8535: Implement.
-                    }
-
-                    // 3. GUID?
-                    // TODO: GG-8535: Implement.
-
-                    // 4. Primitive array?
-
-
-                    /** Dealing with complex object. */
-                    
-                    // 5. Object array?
-
-                    // 6. Collection?
-
-                    // 7. Map?
-
-                    // 8. Just object.
-                    
-
+                    return;
                 }
+
+                // 5. Write GUID.
+                if (type == typeof(Guid))
+                {
+                    stream.WriteByte(HDR_FULL);
+                    PU.WriteBoolean(false, stream);    
+                    PU.WriteInt(PU.TYPE_GUID, stream);
+                    PU.WriteInt(PU.GuidHashCode(obj0), stream);
+                    PU.WriteGuid(obj0, stream);
+
+                    return;
+                }
+
+                // 6. Write primitive array.
+                typeId = PU.PrimitiveArrayTypeId(type);
+
+                if (typeId != 0) 
+                {
+                    stream.WriteByte(HDR_FULL);
+                    PU.WriteBoolean(false, stream);    
+                    PU.WriteInt(typeId, stream);
+
+                    // TODO: GG-8535: Implement.
+                }
+
+                // 8. Write object array.
+                // TODO: GG-8535: Implement.
+
+                // 9. Write collection.
+                // TODO: GG-8535: Implement.
+
+                // 10. Write map.
+                // TODO: GG-8535: Implement.
+
+                // 11. Just object.
+                long pos = stream.Position; 
+                
+   
 
                 return 0;
             }

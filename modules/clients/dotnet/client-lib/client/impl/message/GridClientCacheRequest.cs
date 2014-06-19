@@ -16,8 +16,10 @@ namespace GridGain.Client.Impl.Message {
     using GridGain.Client.Portable;
 
     using A = GridGain.Client.Util.GridClientArgumentCheck;
+    using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
 
     /** <summary>Generic cache request.</summary> */
+    [GridClientPortableId(PU.TYPE_CACHE_REQ)]
     internal class GridClientCacheRequest : GridClientRequest {
         /**
          * <summary>
@@ -105,34 +107,34 @@ namespace GridGain.Client.Impl.Message {
         public override void WritePortable(IGridClientPortableWriter writer) {
             base.WritePortable(writer);
 
-            writer.WriteInt("op", (int)Operation);
+            writer.WriteInt((int)Operation);
 
-            writer.WriteString("cacheName", CacheName);
+            writer.WriteString(CacheName);
 
-            writer.WriteObject("key", Key);
-            writer.WriteObject("val", Value);
-            writer.WriteObject("val2", Value2);
+            writer.WriteObject(Key);
+            writer.WriteObject(Value);
+            writer.WriteObject(Value2);
 
-            writer.WriteMap("vals", Values);
+            writer.WriteMap(Values);
 
-            writer.WriteInt("flags", CacheFlags);
+            writer.WriteInt(CacheFlags);
         }
 
         /** <inheritdoc /> */
         public override void ReadPortable(IGridClientPortableReader reader) {
             base.ReadPortable(reader);
 
-            Operation = (GridClientCacheRequestOperation)reader.ReadInt("op");
+            Operation = (GridClientCacheRequestOperation)reader.ReadInt();
 
-            CacheName = reader.ReadString("cacheName");
+            CacheName = reader.ReadString();
 
-            Key = reader.ReadObject<Object>("key");
-            Value = reader.ReadObject<Object>("val");
-            Value2 = reader.ReadObject<Object>("val2");
+            Key = reader.ReadObject<Object>();
+            Value = reader.ReadObject<Object>();
+            Value2 = reader.ReadObject<Object>();
 
-            Values = reader.ReadMap<Object, Object>("vals");
+            Values = reader.ReadMap<Object, Object>();
 
-            CacheFlags = reader.ReadInt("flags");
+            CacheFlags = reader.ReadInt();
         }
     }
 }
