@@ -47,7 +47,7 @@ public class GridGgfsConfiguration {
     public static final float DFLT_FRAGMENTIZER_LOCAL_WRITES_RATIO = 0.8f;
 
     /** Fragmentizer enabled property. */
-    public static final boolean DFLT_FRAGMENTIZER_ENABLED = true;
+    public static final boolean DFLT_FRAGMENTIZER_ENABLED = false;
 
     /** Default user's working directory. */
     public static final GridGgfsPath DFLT_WORKING_DIR = new GridGgfsPath("/Users/" + DFLT_USER_NAME);
