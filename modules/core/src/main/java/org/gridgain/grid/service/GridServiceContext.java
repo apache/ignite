@@ -30,7 +30,5 @@ public interface GridServiceContext {
 
     @Nullable public String cacheName();
 
-    public <K> Collection<? extends K> affinityKeys();
-
-    public Collection<Integer> partitions();
+    public <K> K affinityKey();
 }
