@@ -95,13 +95,7 @@ public enum GridRestCommand {
     CACHE_QUERY_FETCH("queryfetch"),
 
     /** Rebuild indexes. */
-    CACHE_QUERY_REBUILD_INDEXES("rebuildqueryindexes"),
-
-    /** Get metrics. */
-    CACHE_QUERY_GET_METRICS("querymetrics"),
-
-    /** Reset metrics. */
-    CACHE_QUERY_RESET_METRICS("resetquerymetrics");
+    CACHE_QUERY_REBUILD_INDEXES("rebuildqueryindexes");
 
     /** Enum values. */
     private static final GridRestCommand[] VALS = values();

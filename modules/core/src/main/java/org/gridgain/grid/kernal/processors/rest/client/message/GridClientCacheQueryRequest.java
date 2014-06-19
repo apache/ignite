@@ -9,7 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.grid.portable.*;
 import org.jetbrains.annotations.*;
+
+import java.io.*;
 
 /**
  * Cache query request.
@@ -27,13 +30,7 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
         FETCH,
 
         /** Rebuild one or all indexes. */
-        REBUILD_INDEXES,
-
-        /** Get query metrics. */
-        GET_METRICS,
-
-        /** Reset query metrics. */
-        RESET_METRICS;
+        REBUILD_INDEXES;
 
         /** Enumerated values. */
         private static final GridQueryOperation[] VALS = values();
@@ -316,5 +313,45 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
      */
     public void queryArguments(Object[] qryArgs) {
         this.qryArgs = qryArgs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readPortable(GridPortableReader reader) throws IOException {
+        super.readPortable(reader);
+
+        qryId = reader.readLong("queryId");
+        op = GridQueryOperation.fromOrdinal(reader.readInt("op"));
+        type = GridQueryType.fromOrdinal(reader.readInt("type"));
+        cacheName = reader.readString("cacheName");
+        clause = reader.readString("clause");
+        pageSize = reader.readInt("pageSize");
+        timeout = reader.readLong("timeout");
+        includeBackups = reader.readBoolean("includeBackups");
+        enableDedup = reader.readBoolean("enableDedup");
+        clsName = reader.readString("className");
+        rmtReducerClsName = reader.readString("remoteReducerClassName");
+        rmtTransformerClsName = reader.readString("remoteTransformerClassName");
+        clsArgs = reader.readObjectArray("classArguments");
+        qryArgs = reader.readObjectArray("arguments");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writePortable(GridPortableWriter writer) throws IOException {
+        super.writePortable(writer);
+
+        writer.writeLong("queryId", qryId);
+        writer.writeInt("op", op.ordinal());
+        writer.writeInt("type", type.ordinal());
+        writer.writeString("cacheName", cacheName);
+        writer.writeString("clause", clause);
+        writer.writeInt("pageSize", pageSize);
+        writer.writeLong("timeout", timeout);
+        writer.writeBoolean("includeBackups", includeBackups);
+        writer.writeBoolean("enableDedup", enableDedup);
+        writer.writeString("className", clsName);
+        writer.writeString("remoteReducerClassName", rmtReducerClsName);
+        writer.writeString("remoteTransformerClassName", rmtTransformerClsName);
+        writer.writeObjectArray("classArguments", clsArgs);
+        writer.writeObjectArray("arguments", qryArgs);
     }
 }
