@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.portable;
 import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.*;
 import org.jdk8.backport.*;
+import org.jetbrains.annotations.*;
 import sun.misc.*;
 
 import java.lang.reflect.*;
@@ -129,16 +130,19 @@ class GridPortableClassDescriptor {
     private final Class<?> cls;
 
     /** */
-    private final boolean userType;
+    private final Mode mode;
 
     /** */
-    private final Mode mode;
+    private final boolean userType;
 
     /** */
     private final int typeId;
 
     /** */
-    private Collection<FieldInfo> fields;
+    private final Constructor<?> cons;
+
+    /** */
+    private final Collection<FieldInfo> fields;
 
     /**
      * @param mode Mode.
@@ -154,6 +158,9 @@ class GridPortableClassDescriptor {
 
         this.mode = mode;
         this.typeId = typeId;
+
+        cons = null;
+        fields = null;
     }
 
     /**
@@ -165,24 +172,31 @@ class GridPortableClassDescriptor {
         this.cls = cls;
 
         if (Collection.class.isAssignableFrom(cls)) {
-            userType = false;
             mode = Mode.COL;
+            userType = false;
             typeId = COL_TYPE_ID;
+            cons = null;
+            fields = null;
         }
         else if (Map.class.isAssignableFrom(cls)) {
-            userType = false;
             mode = Mode.MAP;
+            userType = false;
             typeId = MAP_TYPE_ID;
+            cons = null;
+            fields = null;
         }
         else if (GridPortable.class.isAssignableFrom(cls)) {
-            userType = true;
             mode = Mode.PORTABLE;
+            userType = true;
             typeId = cls.getSimpleName().hashCode(); // TODO: should be taken from config
+            cons = constructor(cls);
+            fields = null;
         }
         else {
-            userType = true;
             mode = Mode.OBJECT;
+            userType = true;
             typeId = cls.getSimpleName().hashCode(); // TODO: should be taken from config
+            cons = constructor(cls);
 
             fields = new ArrayList<>();
 
@@ -457,14 +471,14 @@ class GridPortableClassDescriptor {
                 return reader.readMap();
 
             case PORTABLE:
-                GridPortable portableEx = newInstance(cls);
+                GridPortable portable = newInstance();
 
-                portableEx.readPortable(reader);
+                portable.readPortable(reader);
 
-                return portableEx;
+                return portable;
 
             case OBJECT:
-                GridPortable portable = newInstance(cls);
+                GridPortable obj = newInstance();
 
                 for (FieldInfo info : fields) {
                     Field f = info.field;
@@ -472,14 +486,14 @@ class GridPortableClassDescriptor {
                     Object val = reader.readObject(f.getName());
 
                     try {
-                        f.set(portable, val);
+                        f.set(obj, val);
                     }
                     catch (IllegalAccessException e) {
                         throw new GridPortableException("Failed to set value for field: " + f, e);
                     }
                 }
 
-                return portable;
+                return obj;
 
             default:
                 assert false : "Invalid mode: " + mode;
@@ -489,16 +503,32 @@ class GridPortableClassDescriptor {
     }
 
     /**
-     * @param cls Class.
      * @return Instance.
      * @throws GridPortableException In case of error.
      */
-    private <T> T newInstance(Class<?> cls) throws GridPortableException {
+    private <T> T newInstance() throws GridPortableException {
         try {
-            return (T)UNSAFE.allocateInstance(cls);
+            return cons != null ? (T)cons.newInstance() : (T)UNSAFE.allocateInstance(cls);
         }
-        catch (InstantiationException e) {
+        catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new GridPortableException("Failed to instantiate instance: " + cls, e);
+        }
+    }
+
+    /**
+     * @param cls Class.
+     * @return Constructor.
+     */
+    @Nullable private static Constructor<?> constructor(Class<?> cls) {
+        try {
+            Constructor<?> cons = cls.getConstructor();
+
+            cons.setAccessible(true);
+
+            return cons;
+        }
+        catch (NoSuchMethodException ignored) {
+            return null;
         }
     }
 

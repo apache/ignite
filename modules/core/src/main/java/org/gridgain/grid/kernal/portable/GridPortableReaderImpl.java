@@ -47,7 +47,21 @@ class GridPortableReaderImpl implements GridPortableReader {
     /** */
     private static final long BOOLEAN_ARR_OFF = UNSAFE.arrayBaseOffset(boolean[].class);
 
+    /** */
+    private static final int INIT_RAW_OFF = 6;
 
+    /** */
+    private final byte[] arr;
+
+    /** */
+    private int rawOff = 6;
+
+    /**
+     * @param arr Array.
+     */
+    GridPortableReaderImpl(byte[] arr) {
+        this.arr = arr;
+    }
 
     /** {@inheritDoc} */
     @Override public byte readByte(String fieldName) throws GridPortableException {
