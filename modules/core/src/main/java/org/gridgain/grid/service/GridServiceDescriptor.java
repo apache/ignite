@@ -9,24 +9,21 @@
 
 package org.gridgain.grid.service;
 
-import org.jetbrains.annotations.*;
-
+import java.io.*;
 import java.util.*;
 
 /**
- * TODO: Add interface description.
+ * TODO: Add class description.
  *
  * @author @java.author
  * @version @java.version
  */
-public interface GridServiceContext {
+public interface GridServiceDescriptor extends Serializable {
     public UUID serviceId();
 
-    public UUID executionId();
+    public Class<? extends GridService> serviceClass();
 
-    public boolean isCancelled();
+    public int totalCount();
 
-    @Nullable public String cacheName();
-
-    @Nullable public <K> K affinityKey();
+    public int maxPerNodeCount();
 }
