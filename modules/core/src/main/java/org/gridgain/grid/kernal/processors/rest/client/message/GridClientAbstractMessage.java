@@ -99,12 +99,12 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws IOException {
+    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
         writer.writeByteArray("sesTok", sesTok);
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws IOException {
+    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
         sesTok = reader.readByteArray("sesTok");
     }
 }

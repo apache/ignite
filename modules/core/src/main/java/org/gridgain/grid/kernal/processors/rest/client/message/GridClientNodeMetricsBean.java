@@ -1343,13 +1343,13 @@ public class GridClientNodeMetricsBean implements Externalizable, GridPortable {
             toString();
     }
 
-    /** {@inheritDoc} */
-    @Override public int typeId() {
-        return PORTABLE_TYPE_ID;
-    }
+//    /** {@inheritDoc} */
+//        @Override public int typeId() {
+//        return PORTABLE_TYPE_ID;
+//    }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws IOException {
+    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
         writer.writeLong("lastUpdateTime", lastUpdateTime);
         writer.writeInt("maxActiveJobs", maxActiveJobs);
         writer.writeInt("curActiveJobs", curActiveJobs);
@@ -1405,7 +1405,7 @@ public class GridClientNodeMetricsBean implements Externalizable, GridPortable {
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws IOException {
+    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
         lastUpdateTime = reader.readLong("lastUpdateTime");
         maxActiveJobs = reader.readInt("maxActiveJobs");
         curActiveJobs = reader.readInt("curActiveJobs");

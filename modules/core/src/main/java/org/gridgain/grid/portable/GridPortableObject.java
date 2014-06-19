@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Wrapper for serialized portable object.
  */
-public interface GridPortableObject extends Serializable {
+public interface GridPortableObject extends Serializable, Cloneable {
     /**
      * Gets portable object type ID.
      *
@@ -82,5 +82,13 @@ public interface GridPortableObject extends Serializable {
      * @param fields Fields to modify in copy.
      * @return Copy of this portable object.
      */
-    @Nullable public GridPortableObject copy(@Nullable Map<String, Object> fields);
+    public GridPortableObject copy(@Nullable Map<String, Object> fields);
+
+    /**
+     * Copies this portable object.
+     *
+     * @return Copy of this portable object.
+     */
+    @SuppressWarnings("CloneDoesntDeclareCloneNotSupportedException")
+    public GridPortableObject clone();
 }

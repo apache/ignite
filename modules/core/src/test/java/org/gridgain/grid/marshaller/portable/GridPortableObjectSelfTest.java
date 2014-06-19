@@ -11,10 +11,8 @@ package org.gridgain.grid.marshaller.portable;
 
 import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.portable.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -47,13 +45,13 @@ public class GridPortableObjectSelfTest extends GridCommonAbstractTest {
         /** */
         private String d;
 
-        /** {@inheritDoc} */
-        @Override public int typeId() {
-            return TYPE1;
-        }
+//        /** {@inheritDoc} */
+//        @Override public int typeId() {
+//            return TYPE1;
+//        }
 
         /** {@inheritDoc} */
-        @Override public void writePortable(GridPortableWriter writer) throws IOException {
+        @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
             writer.writeInt("a", a);
             writer.writeMap("b", b);
             writer.writeObject("c", c);
@@ -61,7 +59,7 @@ public class GridPortableObjectSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(GridPortableReader reader) throws IOException {
+        @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
             a = reader.readInt("a");
             b = reader.readMap("b");
             c = reader.readObject("c");
@@ -83,20 +81,20 @@ public class GridPortableObjectSelfTest extends GridCommonAbstractTest {
         /** */
         private Type3 c;
 
-        /** {@inheritDoc} */
-        @Override public int typeId() {
-            return TYPE2;
-        }
+//        /** {@inheritDoc} */
+//        @Override public int typeId() {
+//            return TYPE2;
+//        }
 
         /** {@inheritDoc} */
-        @Override public void writePortable(GridPortableWriter writer) throws IOException {
+        @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
             writer.writeByte("a", a);
             writer.writeLong("b", b);
             writer.writeObject("c", c);
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(GridPortableReader reader) throws IOException {
+        @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
             a = reader.readByte("a");
             b = reader.readLong("b");
             c = reader.readObject("c");
@@ -111,18 +109,18 @@ public class GridPortableObjectSelfTest extends GridCommonAbstractTest {
         /** */
         private Type2 a;
 
-        /** {@inheritDoc} */
-        @Override public int typeId() {
-            return TYPE3;
-        }
+//        /** {@inheritDoc} */
+//        @Override public int typeId() {
+//            return TYPE3;
+//        }
 
         /** {@inheritDoc} */
-        @Override public void writePortable(GridPortableWriter writer) throws IOException {
+        @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
             writer.writeObject("a", a);
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(GridPortableReader reader) throws IOException {
+        @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
             a = reader.readObject("a");
         }
     }
@@ -205,33 +203,5 @@ public class GridPortableObjectSelfTest extends GridCommonAbstractTest {
         Type2 t2Read = marshaller.unmarshal(bytes);
 
         assertSame(t2Read, t2Read.c.a);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testFieldsCollection() throws Exception {
-        Type1 t1 = new Type1();
-
-        t1.c = new Type2();
-
-        GridPortableMetadataCollectingWriter writer = new GridPortableMetadataCollectingWriter();
-
-        Map<Integer, List<String>> fields = writer.writeAndCollect(t1);
-
-        assertEquals(2, fields.size());
-
-        assertEquals(F.asList("a", "b", "c", "d"), fields.get(TYPE1));
-        assertEquals(F.asList("a", "b", "c"), fields.get(TYPE2));
-
-        t1 = new Type1();
-
-        t1.c = new Type1();
-
-        fields = writer.writeAndCollect(t1);
-
-        assertEquals(1, fields.size());
-
-        assertEquals(F.asList("a", "b", "c", "d"), fields.get(TYPE1));
     }
 }

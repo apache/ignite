@@ -20,6 +20,7 @@ import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
@@ -508,6 +509,10 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
         }
     }
 
+    @Nullable @Override public GridPortableObject getPortable(K key) throws GridException {
+        return null; // TODO: implement.
+    }
+
     /** {@inheritDoc} */
     @Override public V get(K key, @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
@@ -531,6 +536,10 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
         finally {
             gate.leave(prev);
         }
+    }
+
+    @Override public GridFuture<GridPortableObject> getPortableAsync(K key) {
+        return null; // TODO: implement.
     }
 
     /** {@inheritDoc} */
@@ -665,6 +674,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
         }
     }
 
+    @Override public Map<K, GridPortableObject> getAllPortable(
+        @Nullable Collection<? extends K> keys) throws GridException {
+        return null; // TODO: implement.
+    }
+
     /** {@inheritDoc} */
     @Override public GridFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
@@ -675,6 +689,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
         finally {
             gate.leave(prev);
         }
+    }
+
+    @Override public GridFuture<Map<K, GridPortableObject>> getAllPortableAsync(
+        @Nullable Collection<? extends K> keys) {
+        return null; // TODO: implement.
     }
 
     /** {@inheritDoc} */
@@ -1236,6 +1255,10 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
         }
     }
 
+    @Nullable @Override public GridPortableObject peekPortable(K key) {
+        return null; // TODO: implement.
+    }
+
     /** {@inheritDoc} */
     @Nullable @Override public V peek(K key, @Nullable Collection<GridCachePeekMode> modes) throws GridException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
@@ -1246,6 +1269,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
         finally {
             gate.leave(prev);
         }
+    }
+
+    @Nullable @Override public GridPortableObject peekPortable(K key,
+        @Nullable Collection<GridCachePeekMode> modes) throws GridException {
+        return null; // TODO: implement.
     }
 
     /** {@inheritDoc} */
