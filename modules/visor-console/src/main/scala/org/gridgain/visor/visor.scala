@@ -540,7 +540,7 @@ object visor extends VisorTag {
             val r = if (arg.trim == "") mem.toMap else mem.filter { case (k, _) => arg.contains(k.charAt(0)) }
 
             if (r.isEmpty)
-                println("Match not found.")
+                println("No matches found.")
             else {
                 val t = new VisorTextTable()
 
