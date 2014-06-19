@@ -16,7 +16,7 @@ import java.io.*;
 /**
  * Node metrics bean.
  */
-public class GridClientNodeMetricsBean implements Externalizable, GridPortableEx {
+public class GridClientNodeMetricsBean implements Externalizable, GridPortable {
     /** */
     private static final long serialVersionUID = 0L;
 

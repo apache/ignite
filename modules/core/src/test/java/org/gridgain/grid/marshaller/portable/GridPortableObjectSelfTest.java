@@ -34,7 +34,7 @@ public class GridPortableObjectSelfTest extends GridCommonAbstractTest {
      *
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class Type1 implements GridPortableEx {
+    public static class Type1 implements GridPortable {
         /** */
         private int a;
 
@@ -73,7 +73,7 @@ public class GridPortableObjectSelfTest extends GridCommonAbstractTest {
      *
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class Type2 implements GridPortableEx {
+    public static class Type2 implements GridPortable {
         /** */
         private byte a;
 
@@ -107,7 +107,7 @@ public class GridPortableObjectSelfTest extends GridCommonAbstractTest {
      *
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class Type3 implements GridPortableEx {
+    public static class Type3 implements GridPortable {
         /** */
         private Type2 a;
 
@@ -130,8 +130,8 @@ public class GridPortableObjectSelfTest extends GridCommonAbstractTest {
     /**
      * @return Types map.
      */
-    private Map<Integer, Class<? extends GridPortableEx>> typesMap() {
-        Map<Integer, Class<? extends GridPortableEx>> typesMap = new HashMap<>();
+    private Map<Integer, Class<? extends GridPortable>> typesMap() {
+        Map<Integer, Class<? extends GridPortable>> typesMap = new HashMap<>();
 
         typesMap.put(TYPE1, Type1.class);
         typesMap.put(TYPE2, Type2.class);

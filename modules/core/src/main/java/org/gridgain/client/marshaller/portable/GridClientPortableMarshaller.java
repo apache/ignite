@@ -21,7 +21,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Client marshaller supporting {@link GridPortableEx}.
+ * Client marshaller supporting {@link GridPortable}.
  */
 public class GridClientPortableMarshaller implements GridClientMarshaller {
     /** */
@@ -30,8 +30,8 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
     /**
      * @param typesMap Map associating portable type identifiers with java classes..
      */
-    public GridClientPortableMarshaller(@Nullable Map<Integer, Class<? extends GridPortableEx>> typesMap) {
-        Map<Integer, Class<? extends GridPortableEx>> types = new HashMap<>();
+    public GridClientPortableMarshaller(@Nullable Map<Integer, Class<? extends GridPortable>> typesMap) {
+        Map<Integer, Class<? extends GridPortable>> types = new HashMap<>();
 
         if (typesMap != null)
             types.putAll(typesMap);

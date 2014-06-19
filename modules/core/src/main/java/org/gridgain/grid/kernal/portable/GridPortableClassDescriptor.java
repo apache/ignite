@@ -19,6 +19,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.lang.reflect.Modifier.*;
+import static java.nio.charset.StandardCharsets.*;
 
 /**
  * Portable class descriptor.
@@ -114,10 +115,10 @@ class GridPortableClassDescriptor {
     private final int typeId;
 
     /** */
-    private List<FieldInfo> fields;
+    private final boolean useNames = false; // TODO: take from config
 
     /** */
-    private byte[] hdr;
+    private Collection<FieldInfo> fields;
 
     /**
      * @param mode Mode.
@@ -126,7 +127,7 @@ class GridPortableClassDescriptor {
     private GridPortableClassDescriptor(Mode mode, int typeId) {
         assert mode != null;
 
-        assert mode != Mode.COL && mode != Mode.MAP && mode != Mode.PORTABLE_EX && mode != Mode.PORTABLE;
+        assert mode != Mode.COL && mode != Mode.MAP && mode != Mode.PORTABLE && mode != Mode.OBJECT;
 
         cls = null;
         userType = false;
@@ -153,36 +154,46 @@ class GridPortableClassDescriptor {
             mode = Mode.MAP;
             typeId = MAP_TYPE_ID;
         }
+        else if (GridPortable.class.isAssignableFrom(cls)) {
+            userType = true;
+            mode = Mode.PORTABLE;
+            typeId = cls.getSimpleName().hashCode(); // TODO: should be taken from config
+        }
         else {
-            if (GridPortableEx.class.isAssignableFrom(cls))
-                mode = Mode.PORTABLE_EX;
-            else {
-                mode = Mode.PORTABLE;
+            userType = true;
+            mode = Mode.OBJECT;
+            typeId = cls.getSimpleName().hashCode(); // TODO: should be taken from config
 
-                fields = new ArrayList<>();
+            fields = new ArrayList<>();
 
-                // TODO: useNames flag
-                GridPortableHeaderWriter hdrWriter = new GridPortableHeaderWriter(false);
+            Collection<String> names = new HashSet<>();
+            Collection<Integer> ids = useNames ? null : new HashSet<Integer>();
 
-                for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
-                    for (Field f : c.getDeclaredFields()) {
-                        int mod = f.getModifiers();
+            for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
+                for (Field f : c.getDeclaredFields()) {
+                    int mod = f.getModifiers();
 
-                        if (!isStatic(mod) && !isTransient(mod)) {
-                            f.setAccessible(true);
+                    if (!isStatic(mod) && !isTransient(mod)) {
+                        f.setAccessible(true);
 
-                            int offPos = hdrWriter.addField(f.getName());
+                        String name = f.getName();
 
-                            fields.add(new FieldInfo(f, offPos));
+                        if (!names.add(name))
+                            throw new GridPortableException("Duplicate field name: " + name);
+
+                        if (useNames)
+                            fields.add(new FieldInfo(f, name.getBytes(UTF_8)));
+                        else {
+                            int id = name.hashCode();
+
+                            if (!ids.add(id))
+                                throw new GridPortableException("Duplicate field ID: " + name); // TODO: proper message
+
+                            fields.add(new FieldInfo(f, id));
                         }
                     }
                 }
-
-                hdr = hdrWriter.header();
             }
-
-            userType = true;
-            typeId = cls.getSimpleName().hashCode(); // TODO: should be taken from config
         }
     }
 
@@ -198,104 +209,205 @@ class GridPortableClassDescriptor {
         writer.doWriteBoolean(userType);
         writer.doWriteInt(typeId);
 
+        write0(obj, writer, mode, false);
+    }
+
+    private void write0(Object obj, GridPortableWriterImpl writer, Mode mode, boolean writeLen)
+        throws GridPortableException {
         switch (mode) {
             case BYTE:
+                if (writeLen)
+                    writer.doWriteInt(1);
+
                 writer.doWriteByte((byte)obj);
 
                 break;
 
             case SHORT:
+                if (writeLen)
+                    writer.doWriteInt(2);
+
                 writer.doWriteShort((short)obj);
 
                 break;
 
             case INT:
+                if (writeLen)
+                    writer.doWriteInt(4);
+
                 writer.doWriteInt((int)obj);
 
                 break;
 
             case LONG:
+                if (writeLen)
+                    writer.doWriteInt(8);
+
                 writer.doWriteLong((long)obj);
 
                 break;
 
             case FLOAT:
+                if (writeLen)
+                    writer.doWriteInt(4);
+
                 writer.doWriteFloat((float)obj);
 
                 break;
 
             case DOUBLE:
+                if (writeLen)
+                    writer.doWriteInt(8);
+
                 writer.doWriteDouble((double)obj);
 
                 break;
 
             case CHAR:
+                if (writeLen)
+                    writer.doWriteInt(2);
+
                 writer.doWriteChar((char)obj);
 
                 break;
 
             case BOOLEAN:
+                if (writeLen)
+                    writer.doWriteInt(1);
+
                 writer.doWriteBoolean((boolean)obj);
 
                 break;
 
             case STRING:
-                writer.doWriteString((String)obj);
+                byte[] strbyteArr = null;
+                int strLen = 4;
+
+                if (obj != null) {
+                    strbyteArr = ((String)obj).getBytes(UTF_8);
+                    strLen += strbyteArr.length;
+                }
+
+                if (writeLen)
+                    writer.writeInt(strLen);
+
+                writer.doWriteByteArray(strbyteArr);
 
                 break;
 
             case UUID:
+                if (writeLen)
+                    writer.doWriteInt(obj != null ? 17 : 1);
+
                 writer.doWriteUuid((UUID)obj);
 
                 break;
 
             case BYTE_ARR:
-                writer.doWriteByteArray((byte[])obj);
+                byte[] byteArr = (byte[])obj;
+
+                if (writeLen)
+                    writer.doWriteInt(4 + byteArr.length);
+
+                writer.doWriteByteArray(byteArr);
 
                 break;
 
             case SHORT_ARR:
-                writer.doWriteShortArray((short[])obj);
+                short[] shortArr = (short[])obj;
+
+                if (writeLen)
+                    writer.doWriteInt(4 + (shortArr != null ? shortArr.length << 1 : 0));
+
+                writer.doWriteShortArray(shortArr);
 
                 break;
 
             case INT_ARR:
-                writer.doWriteIntArray((int[])obj);
+                int[] intArr = (int[])obj;
+
+                if (writeLen)
+                    writer.doWriteInt(4 + (intArr != null ? intArr.length << 2 : 0));
+
+                writer.doWriteIntArray(intArr);
 
                 break;
 
             case LONG_ARR:
-                writer.doWriteLongArray((long[])obj);
+                long[] longArr = (long[])obj;
+
+                if (writeLen)
+                    writer.doWriteInt(4 + (longArr != null ? longArr.length << 1 : 0));
+
+                writer.doWriteLongArray(longArr);
 
                 break;
 
             case FLOAT_ARR:
-                writer.doWriteFloatArray((float[])obj);
+                float[] floatArr = (float[])obj;
+
+                if (writeLen)
+                    writer.doWriteInt(4 + (floatArr != null ? floatArr.length << 1 : 0));
+
+                writer.doWriteFloatArray(floatArr);
 
                 break;
 
             case DOUBLE_ARR:
-                writer.doWriteDoubleArray((double[])obj);
+                double[] doubleArr = (double[])obj;
+
+                if (writeLen)
+                    writer.doWriteInt(4 + (doubleArr != null ? doubleArr.length << 1 : 0));
+
+                writer.doWriteDoubleArray(doubleArr);
 
                 break;
 
             case CHAR_ARR:
-                writer.doWriteCharArray((char[])obj);
+                char[] charArr = (char[])obj;
+
+                if (writeLen)
+                    writer.doWriteInt(4 + (charArr != null ? charArr.length << 1 : 0));
+
+                writer.doWriteCharArray(charArr);
 
                 break;
 
             case BOOLEAN_ARR:
-                writer.doWriteBooleanArray((boolean[])obj);
+                boolean[] booleanArr = (boolean[])obj;
+
+                if (writeLen)
+                    writer.doWriteInt(4 + (booleanArr != null ? booleanArr.length << 1 : 0));
+
+                writer.doWriteBooleanArray(booleanArr);
 
                 break;
 
             case STRING_ARR:
-                writer.doWriteStringArray((String[])obj);
+                // TODO
+
+//                String[] strArr = (String[])obj;
+//
+//                byte[][] strbyteArrs = new byte[strArr.length][];
+//
+//                int strArrLen = 4;
+//
+//                if (writeLen)
+//                    writer.doWriteInt(4 + (shortArr != null ? shortArr.length << 1 : 0));
+//
+//                writer.doWriteStringArray((String[])obj);
 
                 break;
 
             case UUID_ARR:
-                writer.doWriteUuidArray((UUID[])obj);
+                // TODO
+
+//                UUID[] uuidArr = (UUID[])obj;
+//
+//                if (writeLen)
+//                    writer.doWriteInt();
+//
+//                writer.doWriteUuidArray((UUID[])obj);
 
                 break;
 
@@ -314,18 +426,18 @@ class GridPortableClassDescriptor {
 
                 break;
 
-            case PORTABLE_EX:
+            case PORTABLE:
                 writer.doWriteInt(obj.hashCode());
 
                 // Length + raw data offset.
                 writer.reserve(8);
 
-                // Header handles are not supported for GridPortableEx.
+                // Header handles are not supported for GridPortable.
                 writer.doWriteInt(-1);
 
                 GridPortableWriterImpl writer0 = new GridPortableWriterImpl(writer);
 
-                ((GridPortableEx)obj).writePortable(writer0);
+                ((GridPortable)obj).writePortable(writer0);
 
                 writer0.flush();
 
@@ -334,20 +446,25 @@ class GridPortableClassDescriptor {
 
                 break;
 
-            case PORTABLE:
+            case OBJECT:
                 writer.doWriteInt(obj.hashCode());
 
                 // Length + raw data offset.
                 writer.reserve(8);
 
-                writer.doWriteInt(-1); // TODO: Header handles.
-                writer.write(hdr);
+                writer.doWriteBoolean(useNames);
 
                 for (FieldInfo info : fields) {
-                    writer.writeCurrentSize(info.offPos);
+                    if (useNames)
+                        writer.doWriteByteArray(info.name);
+                    else
+                        writer.doWriteInt(info.id);
+
+                    // Field length.
+                    writer.reserve(4);
 
                     try {
-                        writer.doWriteObject(info.field.get(obj));
+                        write0(info.field.get(obj), writer, info.mode, true);
                     }
                     catch (IllegalAccessException e) {
                         throw new GridPortableException("Failed to get value for field: " + info.field, e);
@@ -441,14 +558,14 @@ class GridPortableClassDescriptor {
             case MAP:
                 return reader.readMap();
 
-            case PORTABLE_EX:
-                GridPortableEx portableEx = newInstance(cls);
+            case PORTABLE:
+                GridPortable portableEx = newInstance(cls);
 
                 portableEx.readPortable(reader);
 
                 return portableEx;
 
-            case PORTABLE:
+            case OBJECT:
                 GridPortable portable = newInstance(cls);
 
                 for (FieldInfo info : fields) {
@@ -493,15 +610,36 @@ class GridPortableClassDescriptor {
         private final Field field;
 
         /** */
-        private final int offPos;
+        private final Mode mode;
+
+        /** */
+        private final int id;
+
+        /** */
+        private final byte[] name;
 
         /**
          * @param field Field.
-         * @param offPos Offset position.
+         * @param id Field ID.
          */
-        private FieldInfo(Field field, int offPos) {
+        private FieldInfo(Field field, int id) {
+            assert field != null;
+
             this.field = field;
-            this.offPos = offPos;
+            this.id = id;
+
+            name = null;
+        }
+
+        /**
+         * @param field Field.
+         * @param name Field name.
+         */
+        private FieldInfo(Field field, byte[] name) {
+            this.field = field;
+            this.name = name;
+
+            id = 0;
         }
     }
 
@@ -577,9 +715,9 @@ class GridPortableClassDescriptor {
         MAP,
 
         /** */
-        PORTABLE_EX,
+        PORTABLE,
 
         /** */
-        PORTABLE
+        OBJECT
     }
 }
