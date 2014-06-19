@@ -1335,14 +1335,15 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 (Map<?, ?>)marsh.unmarshal(req.getAttributesBytes(), ses.getClassLoader());
 
             if (ctx.event().isRecordable(EVT_TASK_SESSION_ATTR_SET)) {
-                GridTaskEvent evt = new GridTaskEvent();
-
-                evt.message("Changed attributes: " + attrs);
-                evt.node(ctx.discovery().localNode());
-                evt.taskName(ses.getTaskName());
-                evt.taskClassName(ses.getTaskClassName());
-                evt.taskSessionId(ses.getId());
-                evt.type(EVT_TASK_SESSION_ATTR_SET);
+                GridEvent evt = new GridTaskEvent(
+                    ctx.discovery().localNode(),
+                    "Changed attributes: " + attrs,
+                    EVT_TASK_SESSION_ATTR_SET,
+                    ses.getId(),
+                    ses.getTaskName(),
+                    ses.getTaskClassName(),
+                    false,
+                    null);
 
                 ctx.event().record(evt);
             }

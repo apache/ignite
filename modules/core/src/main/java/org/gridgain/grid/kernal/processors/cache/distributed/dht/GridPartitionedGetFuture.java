@@ -27,7 +27,6 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.GridSystemProperties.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 
 /**
  * Colocated get future.
@@ -64,9 +63,6 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     /** Version. */
     private GridCacheVersion ver;
 
-    /** Transaction. */
-    private GridCacheTxLocalEx<K, V> tx;
-
     /** Filters. */
     private GridPredicate<GridCacheEntry<K, V>>[] filters;
 
@@ -78,6 +74,9 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
     /** Remap count. */
     private AtomicInteger remapCnt = new AtomicInteger();
+
+    /** Subject ID. */
+    private UUID subjId;
 
     /**
      * Initializes max remap count.
@@ -112,7 +111,6 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @param reload Reload flag.
      * @param forcePrimary If {@code true} then will force network trip to primary node even
      *          if called on backup node.
-     * @param tx Transaction.
      * @param filters Filters.
      */
     public GridPartitionedGetFuture(
@@ -120,8 +118,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         Collection<? extends K> keys,
         boolean reload,
         boolean forcePrimary,
-        @Nullable GridCacheTxLocalEx<K, V> tx,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filters
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filters,
+        @Nullable UUID subjId
     ) {
         super(cctx.kernalContext(), CU.<K, V>mapsReducer(keys.size()));
 
@@ -133,11 +131,11 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         this.reload = reload;
         this.forcePrimary = forcePrimary;
         this.filters = filters;
-        this.tx = tx;
+        this.subjId = subjId;
 
         futId = GridUuid.randomUuid();
 
-        ver = tx == null ? cctx.versions().next() : tx.xidVersion();
+        ver = cctx.versions().next();
 
         log = U.logger(ctx, logRef, GridPartitionedGetFuture.class);
     }
@@ -146,7 +144,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * Initializes future.
      */
     public void init() {
-        long topVer = tx == null ? ctx.discovery().topologyVersion() : tx.topologyVersion();
+        long topVer = ctx.discovery().topologyVersion();
 
         map(keys, Collections.<GridNode, LinkedHashMap<K, Boolean>>emptyMap(), topVer);
 
@@ -297,7 +295,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
             // If this is the primary or backup node for the keys.
             if (n.isLocal()) {
                 final GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
-                    cache().getDhtAsync(n.id(), -1, mappedKeys, reload, topVer, filters);
+                    cache().getDhtAsync(n.id(), -1, mappedKeys, reload, topVer, subjId, filters);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -339,7 +337,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 MiniFuture fut = new MiniFuture(n, mappedKeys, topVer);
 
                 GridCacheMessage<K, V> req = new GridNearGetRequest<>(futId, fut.futureId(), ver, mappedKeys,
-                    reload, topVer, filters);
+                    reload, topVer, filters, subjId);
 
                 add(fut); // Append new future.
 
@@ -388,17 +386,17 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                         if (entry != null) {
                             boolean isNew = entry.isNewLocked();
 
-                            V v = entry.innerGet(tx,
+                            V v = entry.innerGet(null,
                                 /*swap*/true,
                                 /*read-through*/false,
                                 /*fail-fast*/true,
                                 /*unmarshal*/true,
                                 /**update-metrics*/true,
                                 /*event*/true,
+                                subjId,
                                 filters);
 
-                            if (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED))
-                                colocated.context().evicts().touch(entry, topVer);
+                            colocated.context().evicts().touch(entry, topVer);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null) {
@@ -454,8 +452,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 if (log.isDebugEnabled())
                     log.debug("Filter validation failed for entry: " + e);
 
-                if (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED))
-                    colocated.context().evicts().touch(entry, topVer);
+                colocated.context().evicts().touch(entry, topVer);
 
                 break;
             }

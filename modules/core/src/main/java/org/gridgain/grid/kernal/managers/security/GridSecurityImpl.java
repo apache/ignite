@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.managers.security;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.managers.securesession.*;
 import org.gridgain.grid.security.*;
 
 import java.util.*;
@@ -22,36 +21,20 @@ public class GridSecurityImpl implements GridSecurity {
     /** Security manager. */
     private GridSecurityManager secMgr;
 
-    /** Secure session manager. */
-    private GridSecureSessionManager secSesMgr;
-
     /**
      * @param secMgr Security manager.
-     * @param secSesMgr Secure session manager.
      */
-    public GridSecurityImpl(GridSecurityManager secMgr, GridSecureSessionManager secSesMgr) {
+    public GridSecurityImpl(GridSecurityManager secMgr) {
         this.secMgr = secMgr;
-        this.secSesMgr = secSesMgr;
     }
 
     /** {@inheritDoc} */
     @Override public Collection<GridSecuritySubject> authenticatedSubjects() throws GridException {
-        Collection<GridSecuritySubject> res = new ArrayList<>();
-
-        // First add all nodes.
-        res.addAll(secMgr.authenticatedNodes());
-        res.addAll(secSesMgr.authenticatedClients());
-
-        return res;
+        return secMgr.authenticatedSubjects();
     }
 
     /** {@inheritDoc} */
     @Override public GridSecuritySubject authenticatedSubject(UUID subjId) throws GridException {
-        GridSecuritySubject subj = secMgr.authenticatedNode(subjId);
-
-        if (subj != null)
-            return subj;
-
-        return secSesMgr.authenticatedClient(subjId);
+        return secMgr.authenticatedSubject(subjId);
     }
 }

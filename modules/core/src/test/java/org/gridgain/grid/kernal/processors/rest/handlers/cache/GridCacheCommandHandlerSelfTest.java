@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.rest.handlers.cache;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
@@ -223,11 +224,11 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
          *
          * @return Instance of a GridCache proxy.
          */
-        @Override protected GridCache<Object, Object> localCache(String cacheName) throws GridException {
-            final GridCache<Object, Object> cache = super.localCache(cacheName);
+        @Override protected GridCacheProjectionEx<Object, Object> localCache(String cacheName) throws GridException {
+            final GridCacheProjectionEx<Object, Object> cache = super.localCache(cacheName);
 
-            return (GridCache<Object, Object>)Proxy.newProxyInstance(getClass().getClassLoader(),
-                new Class[] {GridCache.class},
+            return (GridCacheProjectionEx<Object, Object>)Proxy.newProxyInstance(getClass().getClassLoader(),
+                new Class[] {GridCacheProjectionEx.class},
                 new InvocationHandler() {
                     @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
                         if (failMtd.equals(mtd.getName())) {
@@ -240,6 +241,8 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
                         }
                         // Rewriting flagsOn result to keep intercepting invocations after it.
                         else if ("flagsOn".equals(mtd.getName()))
+                            return proxy;
+                        else if ("forSubjectId".equals(mtd.getName()))
                             return proxy;
 
                         return mtd.invoke(cache, args);

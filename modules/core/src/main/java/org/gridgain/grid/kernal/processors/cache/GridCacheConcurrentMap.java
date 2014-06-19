@@ -588,6 +588,19 @@ public class GridCacheConcurrentMap<K, V> {
     }
 
     /**
+     * Returns entry set containing internal entries.
+     *
+     * @param filter Filter.
+     * @return Set of the mappings contained in this map.
+     */
+    @SuppressWarnings({"unchecked"})
+    public Set<GridCacheEntry<K, V>> entriesx(GridPredicate<GridCacheEntry<K, V>>... filter) {
+        checkWeakQueue();
+
+        return new EntrySet<>(this, filter, true);
+    }
+
+    /**
      * Internal entry set, excluding {@link GridCacheInternal} entries.
      *
      * @return Set of the mappings contained in this map.
@@ -2313,6 +2326,7 @@ public class GridCacheConcurrentMap<K, V> {
             set = (Set0<K, V>)in.readObject();
         }
     }
+
     /**
      * Entry set.
      */
@@ -2335,9 +2349,19 @@ public class GridCacheConcurrentMap<K, V> {
          * @param filter Key filter.
          */
         private EntrySet(GridCacheConcurrentMap<K, V> map, GridPredicate<GridCacheEntry<K, V>>[] filter) {
+            this(map, filter, false);
+        }
+
+        /**
+         * @param map Base map.
+         * @param filter Key filter.
+         * @param internal Whether to allow internal entries.
+         */
+        private EntrySet(GridCacheConcurrentMap<K, V> map, GridPredicate<GridCacheEntry<K, V>>[] filter,
+            boolean internal) {
             assert map != null;
 
-            set = new Set0<>(map, nonInternal(filter));
+            set = new Set0<>(map, internal ? filter : nonInternal(filter));
         }
 
         /** {@inheritDoc} */

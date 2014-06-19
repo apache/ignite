@@ -40,6 +40,22 @@ public interface GridPortableObject extends Serializable {
     public Collection<String> fields();
 
     /**
+     * Gets field type ID.
+     *
+     * @param fieldName Field name.
+     * @return Field type ID.
+     */
+    public int fieldTypeId(String fieldName);
+
+    /**
+     * Gets field type name.
+     *
+     * @param fieldName Field name.
+     * @return Field type name.
+     */
+    public String fieldTypeName(String fieldName);
+
+    /**
      * Gets field value.
      *
      * @param fieldName Field name.
@@ -56,7 +72,7 @@ public interface GridPortableObject extends Serializable {
      * @throws GridPortableInvalidClassException If class doesn't exist.
      * @throws GridPortableException In case of any other error.
      */
-    public <T extends GridPortable> T deserialize() throws GridPortableException;
+    @Nullable public <T extends GridPortable> T deserialize() throws GridPortableException;
 
     /**
      * Creates a copy of this portable object and optionally changes field values
@@ -66,5 +82,5 @@ public interface GridPortableObject extends Serializable {
      * @param fields Fields to modify in copy.
      * @return Copy of this portable object.
      */
-    public GridPortableObject copy(@Nullable Map<String, Object> fields);
+    @Nullable public GridPortableObject copy(@Nullable Map<String, Object> fields);
 }

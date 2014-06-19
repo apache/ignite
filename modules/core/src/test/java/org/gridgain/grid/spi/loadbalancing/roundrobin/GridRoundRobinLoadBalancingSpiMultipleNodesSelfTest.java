@@ -116,7 +116,9 @@ public class GridRoundRobinLoadBalancingSpiMultipleNodesSelfTest
             assert orderedNodes1.get(i) == orderedNodes2.get(i);
         }
 
-        getSpiContext().triggerEvent(new GridTaskEvent(null, null, EVT_TASK_FINISHED, ses1.getId(), null));
-        getSpiContext().triggerEvent(new GridTaskEvent(null, null, EVT_TASK_FAILED, ses2.getId(), null));
+        getSpiContext().triggerEvent(new GridTaskEvent(
+            null, null, EVT_TASK_FINISHED, ses1.getId(), null, null, false, null));
+        getSpiContext().triggerEvent(new GridTaskEvent(
+            null, null, EVT_TASK_FAILED, ses2.getId(), null, null, false, null));
     }
 }

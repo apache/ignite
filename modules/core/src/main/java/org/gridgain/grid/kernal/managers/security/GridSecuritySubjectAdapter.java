@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.managers.security;
 
 import org.gridgain.grid.security.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.net.*;
@@ -33,6 +34,10 @@ public class GridSecuritySubjectAdapter implements GridSecuritySubject {
 
     /** Permissions assigned to a subject. */
     private GridSecurityPermissionSet permissions;
+
+    /** Login. */
+    @GridToStringInclude
+    private Object login;
 
     /**
      * @param subjType Subject type.
@@ -86,6 +91,20 @@ public class GridSecuritySubjectAdapter implements GridSecuritySubject {
      */
     @Override public GridSecurityPermissionSet permissions() {
         return permissions;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object login() {
+        return login;
+    }
+
+    /**
+     * Sets login provided by security credentials.
+     *
+     * @param login Login.
+     */
+    public void login(Object login) {
+        this.login = login;
     }
 
     /**

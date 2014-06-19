@@ -7,18 +7,21 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.portable;
+package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
 
+import java.util.*;
+
 /**
- * Exception thrown in case field can't be found.
+ * Internal projection interface.
  */
-public class GridPortableNoSuchFieldException extends GridException {
+public interface GridProjectionEx extends GridProjection {
     /**
-     * @param msg Message.
+     * Creates projection for specified subject ID.
+     *
+     * @param subjId Subject ID.
+     * @return Internal projection.
      */
-    public GridPortableNoSuchFieldException(String msg) {
-        super(msg);
-    }
+    public GridProjectionEx forSubjectId(UUID subjId);
 }
