@@ -27,19 +27,7 @@ public:
 
         std::shared_ptr<GridClientCommandExecutorPrivate> exec;
 
-        switch (cfg.protocolConfiguration().protocol()) {
-            case TCP:
-                exec.reset(new GridClientTcpCommandExecutor(connPool));
-
-                break;
-
-            default: {
-                assert(false);
-
-                exec.reset(new GridClientTcpCommandExecutor(connPool));
-            }
-            break;
-        }
+        exec.reset(new GridClientTcpCommandExecutor(connPool));
 
         std::shared_ptr<GridClientImpl> client(new GridClientImpl(cfg, exec));
 
@@ -47,8 +35,8 @@ public:
 
         clients[client->id()] = client;
 
-        GG_LOG_INFO("Client started [id=%s, protocol=%s]",
-            client->id().uuid().c_str(), cfg.protocolConfiguration().protocol() == TCP ? "TCP" : "HTTP");
+        GG_LOG_INFO("Client started [id=%s, protocol=TCP]",
+            client->id().uuid().c_str());
 
         return client;
     }

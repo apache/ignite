@@ -64,8 +64,6 @@ GridClientConfiguration clientConfig2() {
 
     GridClientProtocolConfiguration protoCfg;
 
-    protoCfg.protocol(TCP);
-
     protoCfg.credentials(CREDS);
 
     clientConfig.protocolConfiguration(protoCfg);
@@ -271,7 +269,7 @@ BOOST_FIXTURE_TEST_CASE(clientComputeExample, GridClientFactoryFixture1<clientCo
     // Nodes may also be refreshed by IP address.
     string clntAddr = SERVER_ADDRESS;
 
-    vector<GridClientSocketAddress> addrs = clntNode->availableAddresses(TCP);
+    vector<GridClientSocketAddress> addrs = clntNode->getTcpAddresses();
 
     if (addrs.size() > 0)
         clntAddr = addrs[0].host();

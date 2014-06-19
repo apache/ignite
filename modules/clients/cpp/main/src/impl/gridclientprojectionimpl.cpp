@@ -135,9 +135,8 @@ bool GridClientProjectionImpl::processClosure(TGridClientNodePtr node, ClientPro
 
     bool routing = !addrs.empty();
 
-    if (!routing) {
-        addrs = node->availableAddresses(protocol());
-    }
+    if (!routing)
+        addrs = node->getTcpAddresses();
 
     if (addrs.empty())
         throw GridClientException(string("No available endpoints to connect (is rest enabled for this node?): ") +

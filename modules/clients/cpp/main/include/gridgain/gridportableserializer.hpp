@@ -37,7 +37,7 @@ public:
 };
 
 template<typename T>
-class GRIDGAIN_API GridExternalPortable : public GridPortable {
+class GRIDGAIN_API GridExternalPortable : public GridHashablePortable {
 public:
     GridExternalPortable(T* obj, GridPortableSerializer<T>& ser) : object(obj), serializer(ser) {
     }
@@ -58,7 +58,7 @@ public:
         return serializer.hashCode(object);
     }
 
-    bool operator==(const GridPortable& other) const override {
+    bool operator==(const GridHashablePortable& other) const override {
         const GridExternalPortable* externalPortable = static_cast<const GridExternalPortable*>(&other);
 
         return serializer.compare(object, externalPortable->object);
@@ -68,7 +68,7 @@ public:
         return object;
     }
 
-    T *operator->() const {
+    T* operator->() const {
         return object;
     }
 
