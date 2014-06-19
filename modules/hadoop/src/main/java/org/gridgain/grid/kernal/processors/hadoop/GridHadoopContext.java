@@ -133,6 +133,16 @@ public class GridHadoopContext {
     }
 
     /**
+     * @param plan Map-reduce plan.
+     * @return {@code true} If local node will run any tasks.
+     */
+    public boolean willRunTasks(GridHadoopMapReducePlan plan) {
+        UUID locNodeId = localNodeId();
+
+        return plan.mapperNodeIds().contains(locNodeId) || plan.reducerNodeIds().contains(locNodeId) || jobUpdateLeader();
+    }
+
+    /**
      * @return Jon tracker instance.
      */
     public GridHadoopJobTracker jobTracker() {

@@ -120,21 +120,15 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
         else if (meta.phase() != GridHadoopJobPhase.PHASE_CANCELLING) {
             GridHadoopJobClassLoadingContext tctx = ctxs.get(job.id());
 
-            if (tctx == null) {
-                GridHadoopMapReducePlan plan = meta.mapReducePlan();
+            if (tctx == null && ctx.willRunTasks(meta.mapReducePlan())) {
+                tctx = new GridHadoopJobClassLoadingContext(ctx.localNodeId(), job, log);
 
-                UUID locNodeId = ctx.localNodeId();
+                tctx.prepareJobFiles();
+                tctx.initializeClassLoader();
 
-                if (plan.mapperNodeIds().contains(locNodeId) || plan.reducerNodeIds().contains(locNodeId)) {
-                    tctx = new GridHadoopJobClassLoadingContext(ctx.localNodeId(), job, log);
+                GridHadoopJobClassLoadingContext old = ctxs.putIfAbsent(job.id(), tctx);
 
-                    tctx.prepareJobFiles();
-                    tctx.initializeClassLoader();
-
-                    GridHadoopJobClassLoadingContext old = ctxs.putIfAbsent(job.id(), tctx);
-
-                    assert old == null;
-                }
+                assert old == null;
             }
         }
     }

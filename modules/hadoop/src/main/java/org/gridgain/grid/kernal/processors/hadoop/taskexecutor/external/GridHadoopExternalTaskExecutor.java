@@ -169,12 +169,8 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                 });
             }
         }
-        else {
-            GridHadoopMapReducePlan plan = meta.mapReducePlan();
-
-            if (plan.mapperNodeIds().contains(ctx.localNodeId()) || plan.reducerNodeIds().contains(ctx.localNodeId()))
-                startProcess(job, meta.mapReducePlan());
-        }
+        else if (ctx.willRunTasks(meta.mapReducePlan()))
+            startProcess(job, meta.mapReducePlan());
     }
 
     /** {@inheritDoc} */
