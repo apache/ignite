@@ -661,9 +661,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
         /** {@inheritDoc} */
         @Override public void onConnectionLost(GridHadoopProcessDescriptor desc) {
-            assert desc != null;
-
-            if (!busyLock.tryReadLock())
+            if (desc == null || !busyLock.tryReadLock())
                 return;
 
             try {
