@@ -480,7 +480,7 @@ public:
         }
     }
     
-    void writeVariantCollection(char* fieldName, const std::vector<GridClientVariant> &val) override {
+    void writeVariantCollection(char* fieldName, const TGridClientVariantSet &val) override {
         writeCollection(val);
     }
 
@@ -488,12 +488,128 @@ public:
         writeMap(map);
     }
 
+    void writeByte(int8_t val) override {
+        // TODO
+	}
+
+    void writeInt16(int16_t val) override {
+        // TODO
+	}
+	
+    void writeInt16Collection(const std::vector<int16_t>& val) override {
+        // TODO
+    }
+    
+    void writeInt16Array(int16_t* val, int32_t size) override {
+        // TODO
+    }
+
+    void writeInt32(int32_t val) override {
+        // TODO
+	}
+	
+    void writeInt32Collection(const std::vector<int32_t>& val) override {
+        // TODO
+    }
+    
+    void writeInt32Array(int32_t* val, int32_t size) override {
+        // TODO
+    }
+
+    void writeInt64(int64_t val) override {
+        // TODO
+	}
+	
+    void writeInt64Collection(const std::vector<int64_t>& val) override {
+        // TODO
+    }
+    
+    void writeInt64Array(int64_t* val, int32_t size) override {
+        // TODO
+    }
+
+    void writeFloat(float val) override {
+        // TODO
+	}
+	
+    void writeFloatCollection(const std::vector<float>& val) override {
+        // TODO
+    }
+    
+    void writeFloatArray(float* val, int32_t size) override {
+        // TODO
+    }
+
+    void writeDouble(double val) override {
+        // TODO
+	}
+	
+    void writeDoubleCollection(const std::vector<double>& val) override {
+        // TODO
+    }
+    
+    void writeDoubleArray(double* val, int32_t size) override {
+        // TODO
+    }
+
+	void writeString(const std::string &str) override {
+        // TODO
+	}
+
+    void writeStringCollection(const std::vector<std::string>& val) override {
+        // TODO
+    }
+
+    void writeWString(const std::wstring& val) override {
+        // TODO
+    }
+
+    void writeWStringCollection(const std::vector<std::wstring>& val) override {
+        // TODO
+    }
+	
+    void writeByteCollection(const std::vector<int8_t>& val) override {
+        // TODO
+    }
+    
+    void writeByteArray(int8_t* val, int32_t size) override {
+        // TODO
+    }
+
+	void writeBool(bool val) override {
+        // TODO
+	}
+	
+    void writeBoolCollection(const std::vector<bool>& val) override {
+        // TODO
+    }
+    
+    void writeBoolArray(bool* val, int32_t size) override {
+        // TODO
+    }
+
+	void writeUuid(const boost::optional<GridClientUuid>& val) override {
+        // TODO
+	}
+
+    void writeVariant(const GridClientVariant &val) override {
+        // TODO
+    }
+    
+    void writeVariantCollection(const TGridClientVariantSet &val) override {
+        // TODO
+    }
+
+    void writeVariantMap(const TGridClientVariantMap &map) override {
+        // TODO
+    }
+
 	std::vector<int8_t> bytes() {
 		return out.bytes();
 	}
 
 private:
-    void writeCollection(const std::vector<GridClientVariant>& col) {
+    void writeCollection(const TGridClientVariantSet& col) {
         out.writeByte(OBJECT_TYPE_OBJECT);
 
         out.writeInt32(col.size());
@@ -505,7 +621,7 @@ private:
         }
     }
 
-    void writeMap(const boost::unordered_map<GridClientVariant, GridClientVariant>& map) {
+    void writeMap(const TGridClientVariantMap& map) {
         out.writeByte(OBJECT_TYPE_OBJECT);
 
         out.writeInt32(map.size());
@@ -787,7 +903,7 @@ public:
         return in.readByte();
     }
 
-    std::vector<int8_t> readByteCollection(char* fieldName) override {
+    boost::optional<std::vector<int8_t>> readByteCollection(char* fieldName) override {
         int32_t size = in.readInt32();
 
         if (size > 0)
@@ -813,7 +929,7 @@ public:
         return std::pair<int16_t*, int32_t>(nullptr, -1); // TODO
     }
 
-    std::vector<int16_t> readInt16Collection(char* fieldName) override {
+    boost::optional<std::vector<int16_t>> readInt16Collection(char* fieldName) override {
         return std::vector<int16_t>(); // TODO
     }
 
@@ -825,7 +941,7 @@ public:
         return std::pair<int32_t*, int32_t>(nullptr, -1); // TODO
     }
 
-    std::vector<int32_t> readInt32Collection(char* fieldName) override {
+    boost::optional<std::vector<int32_t>> readInt32Collection(char* fieldName) override {
         return std::vector<int32_t>(); // TODO
     }
 
@@ -837,7 +953,7 @@ public:
         return std::pair<int64_t*, int32_t>(nullptr, -1); // TODO
     }
 
-    std::vector<int64_t> readInt64Collection(char* fieldName) override {
+    boost::optional<std::vector<int64_t>> readInt64Collection(char* fieldName) override {
         return std::vector<int64_t>(); // TODO
     }
 
@@ -849,7 +965,7 @@ public:
         return std::pair<float*, int32_t>(nullptr, -1); // TODO
     }
 
-    std::vector<float> readFloatCollection(char* fieldName) override {
+    boost::optional<std::vector<float>> readFloatCollection(char* fieldName) override {
         return std::vector<float>(); // TODO
     }
 
@@ -861,30 +977,34 @@ public:
         return std::pair<double*, int32_t>(nullptr, -1); // TODO
     }
 
-    std::vector<double> readDoubleCollection(char* fieldName) override {
+    boost::optional<std::vector<double>> readDoubleCollection(char* fieldName) override {
         return std::vector<double>(); // TODO
     }
 
-    std::string readString(char* fieldName) override {
+    boost::optional<std::string> readString(char* fieldName) override {
+        boost::optional<std::string> res;
+
         int size = in.readInt32();
 
         if (size == -1)
-            return std::string();
+            return res;
 
         std::vector<int8_t> bytes = in.readBytes(size);
 
-        return std::string((char*)bytes.data(), size);
+        res.reset(std::string((char*)bytes.data(), size));
+
+        return res;
     }
 
-    std::vector<std::string> readStringCollection(char* fieldName) override {
+    boost::optional<std::vector<std::string>> readStringCollection(char* fieldName) override {
         return std::vector<std::string>(); // TODO
     }
 
-    std::wstring readWString(char* fieldName) override {
+    boost::optional<std::wstring> readWString(char* fieldName) override {
         return std::wstring(); // TODO
     }
 
-    std::vector<std::wstring> readWStringCollection(char* fieldName) override {
+    boost::optional<std::vector<std::wstring>> readWStringCollection(char* fieldName) override {
         return std::vector<std::wstring>(); // TODO
     }
 
@@ -894,7 +1014,7 @@ public:
         return val == 0 ? false : true;
     }
 
-    std::vector<bool> readBoolCollection(char* fieldName) override {
+    boost::optional<std::vector<bool>> readBoolCollection(char* fieldName) override {
         return std::vector<bool>(); // TODO
     }
 
@@ -929,7 +1049,7 @@ public:
                 return GridClientVariant(in.readByte() != 0);
 
             case TYPE_STRING:
-                return GridClientVariant(readString(nullptr));
+                return GridClientVariant(readString(nullptr).get());
 
             case TYPE_LONG:
                 return GridClientVariant(in.readInt64());
@@ -945,10 +1065,10 @@ public:
             }
 
             case TYPE_LIST:
-                return GridClientVariant(readCollection());
+                return GridClientVariant(readCollection().get());
 
             case TYPE_MAP:
-                return GridClientVariant(readMap());
+                return GridClientVariant(readMap().get());
 
             case TYPE_USER_OBJECT:
                 return GridClientVariant(readPortable());
@@ -960,16 +1080,136 @@ public:
         return GridClientVariant();
     }
 
-    std::vector<GridClientVariant> readVariantCollection(char* fieldName) override {
+    boost::optional<TGridClientVariantSet> readVariantCollection(char* fieldName) override {
         return readCollection();
     }
 
-    boost::unordered_map<GridClientVariant, GridClientVariant> readVariantMap(char* fieldName) override {
+    boost::optional<TGridClientVariantMap> readVariantMap(char* fieldName) override {
         return readMap();
     }
 
+    int8_t readByte() override {
+        return 0; // TODO
+    }
+
+    boost::optional<std::vector<int8_t>> readByteCollection() override {
+        return std::vector<int8_t>(); // TODO
+    }
+
+    std::pair<int8_t*, int32_t> readByteArray() override {
+        return std::pair<int8_t*, int32_t>(nullptr, -1); // TODO
+    }
+
+    int16_t readInt16() override {
+        return 0; // TODO
+    }
+
+    std::pair<int16_t*, int32_t> readInt16Array() override {
+        return std::pair<int16_t*, int32_t>(nullptr, -1); // TODO
+    }
+
+    boost::optional<std::vector<int16_t>> readInt16Collection() override {
+        return std::vector<int16_t>(); // TODO
+    }
+
+    int32_t readInt32() override {
+        return 0; // TODO
+    }
+
+    std::pair<int32_t*, int32_t> readInt32Array() override {
+        return std::pair<int32_t*, int32_t>(nullptr, -1); // TODO
+    }
+
+    boost::optional<std::vector<int32_t>> readInt32Collection() override {
+        return std::vector<int32_t>(); // TODO
+    }
+
+    int64_t readInt64() override {
+        return 0; // TODO
+    }
+
+    std::pair<int64_t*, int32_t> readInt64Array() override {
+        return std::pair<int64_t*, int32_t>(nullptr, -1); // TODO
+    }
+
+    boost::optional<std::vector<int64_t>> readInt64Collection() override {
+        return std::vector<int64_t>(); // TODO
+    }
+
+    float readFloat() override {
+        return in.readFloat(); // TODO
+    }
+
+    std::pair<float*, int32_t> readFloatArray() override {
+        return std::pair<float*, int32_t>(nullptr, -1); // TODO
+    }
+
+    boost::optional<std::vector<float>> readFloatCollection() override {
+        return std::vector<float>(); // TODO
+    }
+
+    double readDouble() override {
+        return in.readDouble();
+    }
+
+    std::pair<double*, int32_t> readDoubleArray() override {
+        return std::pair<double*, int32_t>(nullptr, -1); // TODO
+    }
+
+    boost::optional<std::vector<double>> readDoubleCollection() override {
+        return std::vector<double>(); // TODO
+    }
+
+    boost::optional<std::string> readString() override { 
+        return std::string(); // TODO
+    }
+
+    boost::optional<std::vector<std::string>> readStringCollection() override {
+        return std::vector<std::string>(); // TODO
+    }
+
+    boost::optional<std::wstring> readWString() override {
+        return std::wstring(); // TODO
+    }
+
+    boost::optional<std::vector<std::wstring>> readWStringCollection() override {
+        return std::vector<std::wstring>(); // TODO
+    }
+
+    bool readBool() override {
+        return false; // TODO
+    }
+
+    boost::optional<std::vector<bool>> readBoolCollection() override {
+        return std::vector<bool>(); // TODO
+    }
+
+    std::pair<bool*, int32_t> readBoolArray() override {
+        return std::pair<bool*, int32_t>(nullptr, -1); // TODO
+    }
+
+    boost::optional<GridClientUuid> readUuid() override {
+        boost::optional<GridClientUuid> res;
+
+        return res; // TODO
+    }
+
+    GridClientVariant readVariant() override {
+        return GridClientVariant(); // TODO
+    }
+
+    boost::optional<TGridClientVariantSet> readVariantCollection() override {
+        return readCollection(); // TODO
+    }
+
+    boost::optional<TGridClientVariantMap> readVariantMap() override {
+        return readMap(); // TODO
+    }
+
 private:
-    std::vector<GridClientVariant> readCollection() {
+    boost::optional<TGridClientVariantSet> readCollection() {
+        boost::optional<TGridClientVariantSet> res;
+
         int8_t type = in.readByte();
 
         assert(type == OBJECT_TYPE_OBJECT);
@@ -977,21 +1217,25 @@ private:
         int32_t size = in.readInt32();
 
         if (size == -1)
-            return std::vector<GridClientVariant>();
+            return res;
 
         std::vector<GridClientVariant> vec;
 
         for (int i = 0; i < size; i++)
             vec.push_back(readVariant(nullptr));
 
-        return vec;
+        res.reset(vec);
+
+        return res;
     }
 
-    boost::unordered_map<GridClientVariant, GridClientVariant> readMap() {
+    boost::optional<TGridClientVariantMap> readMap() {
+        boost::optional<TGridClientVariantMap> res;
+
         int8_t type = in.readByte();
 
         if (type == OBJECT_TYPE_NULL)
-            return boost::unordered_map<GridClientVariant, GridClientVariant>();
+            return res;
 
         assert(type == OBJECT_TYPE_OBJECT);
 
@@ -1010,7 +1254,9 @@ private:
             map[key] = val;
         }
 
-        return map;
+        res.reset(map);
+
+        return res;
     }
 
 #ifdef BOOST_BIG_ENDIAN

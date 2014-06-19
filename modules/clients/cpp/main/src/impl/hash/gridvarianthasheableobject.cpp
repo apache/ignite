@@ -149,8 +149,12 @@ void GridClientVariantHasheableObject::init(const GridClientVariant& var) {
 }
 
 GridClientVariantHasheableObject::GridClientVariantHasheableObject(const GridClientVariant& var) {
-    if (var.hasPortable())
-        hashCode_ = var.getPortable<GridPortable>()->hashCode();
+    if (var.hasPortable()) {
+        if (!var.hasHashablePortable())
+            throw std::exception("Can not calculate hash code for GridClientVariant holding GridPortable, GridHahshablePortable must be used instead.");
+
+        hashCode_ = static_cast<GridHashablePortable*>(var.getPortable<GridPortable>())->hashCode();
+    }
     else
         init(var);
 }

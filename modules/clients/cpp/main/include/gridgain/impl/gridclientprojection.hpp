@@ -108,11 +108,6 @@ protected:
         return loadBalancer_.get() != NULL ? loadBalancer_ : sharedData->loadBalancer();
     }
 
-    /** Returns the current protocol used by the client. */
-    GridClientProtocol protocol() const {
-        return sharedData->protocol();
-    }
-
     /** Shared data used by all the instances of projections */
     const TGridClientSharedDataPtr sharedData;
 

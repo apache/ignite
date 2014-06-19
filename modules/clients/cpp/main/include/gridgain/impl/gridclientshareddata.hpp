@@ -111,15 +111,6 @@ public:
     }
 
     /**
-     * Return protocol currently used.
-     *
-     * @return Current protocol.
-     */
-    GridClientProtocol protocol() const {
-        return protocolCfg().protocol();
-    }
-
-    /**
      * Get the list of servers, specified by client for initial connection.
      *
      * @return List of host/port pairs.

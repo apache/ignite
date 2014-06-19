@@ -70,8 +70,6 @@ public:
 
         protoCfg.credentials(CREDS);
 
-        protoCfg.protocol(TCP);
-
         clientConfig.protocolConfiguration(protoCfg);
 
         return clientConfig;
@@ -95,8 +93,6 @@ public:
         GridClientProtocolConfiguration protoCfg;
 
         protoCfg.credentials(CREDS);
-
-        protoCfg.protocol(TCP);
 
         clientConfig.protocolConfiguration(protoCfg);
 
@@ -746,7 +742,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testCompute, CfgT, TestCfgs, GridClientFactoryF
     static const string taskName = "org.gridgain.client.GridClientStringLengthTask"; // Takes a single string argument.
 
     CfgT cfg = CfgT();
-    GridClientProtocol proto = cfg().protocolConfiguration().protocol();
 
     TGridClientPtr client = this->client(cfg);
     TGridClientDataPtr data = client->data(CACHE_NAME);
@@ -764,54 +759,32 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testCompute, CfgT, TestCfgs, GridClientFactoryF
     {
         GridClientVariant result = compute->execute(taskName, val1);
 
-        if (proto == TCP)
-            BOOST_CHECK_EQUAL(result.getInt(), val1.getString().length());
-        else
-            // HTTP operates only with string results.
-            BOOST_CHECK_EQUAL(result.getString(), boost::lexical_cast<string>(val1.getString().length()));
+        BOOST_CHECK_EQUAL(result.getInt(), val1.getString().length());
     }
 
     {
         TGridClientFutureVariant fut = compute->executeAsync(taskName, val1);
 
-        if (proto == TCP)
-            BOOST_CHECK_EQUAL(fut->get().getInt(), val1.getString().length());
-        else
-            // HTTP operates only with string results.
-            BOOST_CHECK_EQUAL(fut->get().getString(), boost::lexical_cast<string>(val1.getString().length()));
+        BOOST_CHECK_EQUAL(fut->get().getInt(), val1.getString().length());
     }
 
     {
         GridClientVariant result = compute->affinityExecute(taskName, CACHE_NAME, affKey, val1);
 
-        if (proto == TCP)
-            BOOST_CHECK_EQUAL(result.getInt(), val1.getString().length());
-        else
-            // HTTP operates only with string results.
-            BOOST_CHECK_EQUAL(result.getString(), boost::lexical_cast<string>(val1.getString().length()));
+        BOOST_CHECK_EQUAL(result.getInt(), val1.getString().length());
     }
 
     {
         TGridClientFutureVariant fut = compute->affinityExecuteAsync(taskName, CACHE_NAME, affKey, val1);
 
-        if (proto == TCP)
-            BOOST_CHECK_EQUAL(fut->get().getInt(), val1.getString().length());
-        else
-            // HTTP operates only with string results.
-            BOOST_CHECK_EQUAL(fut->get().getString(), boost::lexical_cast<string>(val1.getString().length()));
+        BOOST_CHECK_EQUAL(fut->get().getInt(), val1.getString().length());
     }
 
     {
         TGridClientFutureVariant fut = compute->executeAsync(taskName, GridClientVariant(123));
 
-        if (proto == TCP) {
-            // Should throw error, because only string arguments are supported by the task.
-            BOOST_CHECK_THROW(fut->get(), GridClientException);
-        }
-        else
-            // In HTTP, however, all types are converted to strings, so, the task
-            // should return string length (also represented as string).
-            BOOST_CHECK_EQUAL(GridClientVariant("3"), fut->get());
+        // Should throw error, because only string arguments are supported by the task.
+        BOOST_CHECK_THROW(fut->get(), GridClientException);
     }
 }
 
@@ -895,7 +868,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testGracefulShutdown, CfgT, TestCfgs, GridClien
     static const string taskName = "org.gridgain.client.GridSleepTestTask";
 
     CfgT cfg = CfgT();
-    GridClientProtocol proto = cfg().protocolConfiguration().protocol();
 
     TGridClientPtr client = this->client(cfg);
     TGridClientComputePtr compute = client->compute();
@@ -911,11 +883,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testGracefulShutdown, CfgT, TestCfgs, GridClien
     // Wait for the task to complete (this shouldn't throw).
     fut->get();
 
-    if (proto == TCP)
-        BOOST_CHECK_EQUAL(fut->result().getInt(), val1.getString().length());
-    else
-        // HTTP operates only with string results.
-        BOOST_CHECK_EQUAL(fut->result().getString(), boost::lexical_cast<string>(val1.getString().length()));
+    BOOST_CHECK_EQUAL(fut->result().getInt(), val1.getString().length());
 }
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(testForceShutdown, CfgT, TestCfgs, GridClientFactoryFixture2) {
@@ -957,7 +925,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testFutureTimeoutNotExpired, CfgT, TestCfgs, Gr
     static const string taskName = "org.gridgain.client.GridSleepTestTask";
 
     CfgT cfg = CfgT();
-    GridClientProtocol proto = cfg().protocolConfiguration().protocol();
 
     TGridClientPtr client = this->client(cfg);
     TGridClientComputePtr compute = client->compute();
@@ -969,11 +936,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testFutureTimeoutNotExpired, CfgT, TestCfgs, Gr
     // Wait for only 10 seconds (more than task lasts), this should return once task is completed.
     BOOST_CHECK_NO_THROW(fut->get(boost::posix_time::seconds(50)));
 
-    if (proto == TCP)
-        BOOST_CHECK_EQUAL(fut->result().getInt(), val1.getString().length());
-    else
-        // HTTP operates only with string results.
-        BOOST_CHECK_EQUAL(fut->result().getString(), boost::lexical_cast<string>(val1.getString().length()));
+    BOOST_CHECK_EQUAL(fut->result().getInt(), val1.getString().length());
 }
 
 bool doSleep(const boost::posix_time::time_duration& time) {

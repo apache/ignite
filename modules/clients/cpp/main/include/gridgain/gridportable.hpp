@@ -34,13 +34,16 @@ public:
      */
     virtual int32_t typeId() const = 0;
 
-    virtual void writePortable(GridPortableWriter &writer) const = 0;
+    virtual void writePortable(GridPortableWriter& writer) const = 0;
 
-    virtual void readPortable(GridPortableReader &reader) = 0;
+    virtual void readPortable(GridPortableReader& reader) = 0;
+};
 
+class GRIDGAIN_API GridHashablePortable : public GridPortable {
+public:
     virtual int hashCode() const = 0;
 
-    virtual bool operator==(const GridPortable& other) const = 0;
+    virtual bool operator==(const GridHashablePortable& other) const = 0;
 };
 
 #endif // GRIDPORTABLE_HPP_INCLUDED

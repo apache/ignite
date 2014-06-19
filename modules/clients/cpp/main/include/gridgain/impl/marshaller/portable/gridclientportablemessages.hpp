@@ -24,24 +24,15 @@
 
 class GridClientPortableMessage : public GridPortable {
 public:
-    void writePortable(GridPortableWriter &writer) const {
+    void writePortable(GridPortableWriter &writer) const override {
         writer.writeByteCollection("sesTok", sesTok);
     }
 
-    void readPortable(GridPortableReader &reader) {
-        sesTok = reader.readByteCollection("sesTok");
-    }
+    void readPortable(GridPortableReader &reader) override {
+        boost::optional<std::vector<int8_t>> bytes = reader.readByteCollection("sesTok");
 
-    bool operator==(const GridPortable& other) const {
-        assert(false);
-
-        return false; // Not needed since is not used as key.
-    }
-
-    int hashCode() const {
-        assert(false);
-
-        return 0; // Not needed since is not used as key.
+        if (bytes.is_initialized())
+            sesTok = std::move(bytes.get());
     }
 
     std::vector<int8_t> sesTok;
@@ -53,7 +44,7 @@ public:
         return -6;
     }
 
-    void writePortable(GridPortableWriter &writer) const {
+    void writePortable(GridPortableWriter &writer) const override {
         GridClientPortableMessage::writePortable(writer);
 
         writer.writeInt32("status", status);
@@ -61,11 +52,16 @@ public:
         writer.writeVariant("res", res);
     }
 
-    void readPortable(GridPortableReader &reader) {
+    void readPortable(GridPortableReader &reader) override {
         GridClientPortableMessage::readPortable(reader);
 
         status = reader.readInt32("status");
-        errorMsg = reader.readString("errorMsg");
+        
+        boost::optional<std::string> msg = reader.readString("errorMsg");
+        
+        if (msg.is_initialized())
+            errorMsg = std::move(msg.get());
+
         res = reader.readVariant("res");
     }
 
@@ -94,7 +90,7 @@ public:
         return -5;            
     }
 
-    void writePortable(GridPortableWriter &writer) const {
+    void writePortable(GridPortableWriter &writer) const override {
         writer.writeInt64("lastUpdateTime", lastUpdateTime);
         writer.writeInt32("maxActiveJobs", maxActiveJobs);
         writer.writeInt32("curActiveJobs", curActiveJobs);
@@ -149,7 +145,7 @@ public:
         writer.writeInt64("rcvdBytesCnt", rcvdBytesCnt);
     }
 
-    void readPortable(GridPortableReader &reader) {
+    void readPortable(GridPortableReader &reader) override {
         lastUpdateTime = reader.readInt64("lastUpdateTime");
         maxActiveJobs = reader.readInt32("maxActiveJobs");
         curActiveJobs = reader.readInt32("curActiveJobs");
@@ -202,18 +198,6 @@ public:
         sentBytesCnt = reader.readInt64("sentBytesCnt");
         rcvdMsgsCnt = reader.readInt32("rcvdMsgsCnt");
         rcvdBytesCnt = reader.readInt64("rcvdBytesCnt");
-    }
-
-    bool operator==(const GridPortable& other) const {
-        assert(false);
-
-        return false; // Not needed since is not used as key.
-    }
-
-    int hashCode() const {
-        assert(false);
-
-        return 0; // Not needed since is not used as key.
     }
     
     /** */
@@ -379,7 +363,7 @@ public:
         return -4;            
     }
 
-    void writePortable(GridPortableWriter &writer) const {
+    void writePortable(GridPortableWriter &writer) const override {
         writer.writeInt32("tcpPort", tcpPort);
         writer.writeInt32("jettyPort", jettyPort);
         writer.writeInt32("replicaCnt", replicaCnt);
@@ -400,37 +384,25 @@ public:
         writer.writeVariant("metrics", metrics);
     }
 
-    void readPortable(GridPortableReader &reader) {
+    void readPortable(GridPortableReader &reader) override {
         tcpPort = reader.readInt32("tcpPort");
         jettyPort = reader.readInt32("jettyPort");
         replicaCnt = reader.readInt32("replicaCnt");
 
-        dfltCacheMode = reader.readString("dfltCacheMode");
+        dfltCacheMode = reader.readString("dfltCacheMode").get_value_or(std::string());
 
-        attrs = reader.readVariantMap("attrs");
-        caches = reader.readVariantMap("caches");
+        attrs = reader.readVariantMap("attrs").get_value_or(TGridClientVariantMap());
+        caches = reader.readVariantMap("caches").get_value_or(TGridClientVariantMap());
 
-        tcpAddrs = reader.readVariantCollection("tcpAddrs");
-        tcpHostNames = reader.readVariantCollection("tcpHostNames");
-        jettyAddrs = reader.readVariantCollection("jettyAddrs");
-        jettyHostNames = reader.readVariantCollection("jettyHostNames");
+        tcpAddrs = reader.readVariantCollection("tcpAddrs").get_value_or(TGridClientVariantSet());
+        tcpHostNames = reader.readVariantCollection("tcpHostNames").get_value_or(TGridClientVariantSet());
+        jettyAddrs = reader.readVariantCollection("jettyAddrs").get_value_or(TGridClientVariantSet());
+        jettyHostNames = reader.readVariantCollection("jettyHostNames").get_value_or(TGridClientVariantSet());
 
         nodeId = reader.readUuid("nodeId");
 
         consistentId = reader.readVariant("consistentId");
         metrics = reader.readVariant("metrics");
-    }
-
-    bool operator==(const GridPortable& other) const {
-        assert(false);
-
-        return false; // Not needed since is not used as key.
-    }
-
-    int hashCode() const {
-        assert(false);
-
-        return 0; // Not needed since is not used as key.
     }
 
     GridClientNode createNode() {
@@ -597,17 +569,17 @@ public:
 
     std::string dfltCacheMode;
 
-    boost::unordered_map<GridClientVariant, GridClientVariant> attrs;
+    TGridClientVariantMap attrs;
     
-    boost::unordered_map<GridClientVariant, GridClientVariant> caches;
+    TGridClientVariantMap caches;
 
-    std::vector<GridClientVariant> tcpAddrs;
+    TGridClientVariantSet tcpAddrs;
 
-    std::vector<GridClientVariant> tcpHostNames;
+    TGridClientVariantSet tcpHostNames;
 
-    std::vector<GridClientVariant> jettyAddrs;
+    TGridClientVariantSet jettyAddrs;
 
-    std::vector<GridClientVariant> jettyHostNames;
+    TGridClientVariantSet jettyHostNames;
 
     boost::optional<GridClientUuid> nodeId;
 
@@ -622,7 +594,7 @@ public:
         return -9;
     }
 
-    void writePortable(GridPortableWriter &writer) const {
+    void writePortable(GridPortableWriter &writer) const override {
         GridClientPortableMessage::writePortable(writer);
 
         writer.writeUuid("nodeId", nodeId);
@@ -631,11 +603,11 @@ public:
         writer.writeBool("includeAttrs", includeAttrs);
     }
 
-    void readPortable(GridPortableReader &reader) {
+    void readPortable(GridPortableReader &reader) override {
         GridClientPortableMessage::readPortable(reader);
 
         nodeId = reader.readUuid("nodeId");
-        nodeIp  = reader.readString("nodeIp");
+        nodeIp  = reader.readString("nodeIp").get_value_or(std::string());
         includeMetrics = reader.readBool("includeMetrics");
         includeAttrs = reader.readBool("includeAttrs");
     }
@@ -674,7 +646,7 @@ public:
         return -2;
     }
 
-    void writePortable(GridPortableWriter &writer) const {
+    void writePortable(GridPortableWriter &writer) const override {
         GridClientPortableMessage::writePortable(writer);
 
         writer.writeInt32("op", op);
@@ -690,18 +662,18 @@ public:
         writer.writeInt32("flags", cacheFlagsOn);
     }
 
-    void readPortable(GridPortableReader &reader) {
+    void readPortable(GridPortableReader &reader) override {
         GridClientPortableMessage::readPortable(reader);
 
         op = reader.readInt32("op");
 
-        cacheName = reader.readString("cacheName");
+        cacheName = reader.readString("cacheName").get_value_or(std::string());
 
         key = reader.readVariant("key");
         val = reader.readVariant("val");
         val2 = reader.readVariant("val2");
 
-        vals = reader.readVariantMap("vals");
+        vals = reader.readVariantMap("vals").get_value_or(TGridClientVariantMap());
 
         cacheFlagsOn = reader.readInt32("flags");
     }
@@ -718,7 +690,7 @@ public:
 
     int32_t cacheFlagsOn;
 
-    boost::unordered_map<GridClientVariant, GridClientVariant> vals;
+    TGridClientVariantMap vals;
 };
 
 class GridClientLogRequest : public GridClientPortableMessage {
@@ -727,7 +699,7 @@ public:
         return -3;
     }
 
-    void writePortable(GridPortableWriter &writer) const {
+    void writePortable(GridPortableWriter &writer) const override {
         GridClientPortableMessage::writePortable(writer);
 
         writer.writeString("path", path);
@@ -736,10 +708,10 @@ public:
         writer.writeInt32("to", to);
     }
 
-    void readPortable(GridPortableReader &reader) {
+    void readPortable(GridPortableReader &reader) override {
         GridClientPortableMessage::readPortable(reader);
 
-        path = reader.readString("path");
+        path = reader.readString("path").get_value_or(std::string());
 
         from = reader.readInt32("from");
         to = reader.readInt32("to");
@@ -758,7 +730,7 @@ public:
         return -7;
     }
 
-    void writePortable(GridPortableWriter &writer) const {
+    void writePortable(GridPortableWriter &writer) const override {
         GridClientPortableMessage::writePortable(writer);
 
         writer.writeString("taskName", taskName);
@@ -766,10 +738,10 @@ public:
         writer.writeVariant("arg", arg);
     }
 
-    void readPortable(GridPortableReader &reader) {
+    void readPortable(GridPortableReader &reader) override {
         GridClientPortableMessage::readPortable(reader);
 
-        taskName = reader.readString("taskName");
+        taskName = reader.readString("taskName").get_value_or(std::string());
 
         arg = reader.readVariant("arg");
     }
@@ -785,7 +757,7 @@ public:
         return -8;
     }
 
-    void writePortable(GridPortableWriter &writer) const {
+    void writePortable(GridPortableWriter &writer) const override {
         writer.writeString("id", id);
         
         writer.writeBool("finished", finished);
@@ -795,26 +767,14 @@ public:
         writer.writeString("error", error);
     }
 
-    void readPortable(GridPortableReader &reader) {
-        id = reader.readString("id");
+    void readPortable(GridPortableReader &reader) override {
+        id = reader.readString("id").get_value_or(std::string());
 
         finished = reader.readBool("finished");
 
         res = reader.readVariant("res");
 
-        error = reader.readString("error");
-    }
-
-    bool operator==(const GridPortable& other) const {
-        assert(false);
-
-        return false; // Not needed since is not used as key.
-    }
-
-    int hashCode() const {
-        assert(false);
-
-        return 0; // Not needed since is not used as key.
+        error = reader.readString("error").get_value_or(std::string());;
     }
 
     std::string id;
@@ -835,16 +795,16 @@ public:
     }
 
     int32_t typeId() const {
-        return -1;
+        return -1; // TODO 8536
     }
 
-    void writePortable(GridPortableWriter &writer) const {
+    void writePortable(GridPortableWriter &writer) const override {
         GridClientPortableMessage::writePortable(writer);
 
         writer.writeVariant("cred", cred);
     }
 
-    void readPortable(GridPortableReader &reader) {
+    void readPortable(GridPortableReader &reader) override {
         GridClientPortableMessage::readPortable(reader);
 
         cred = reader.readVariant("cred");
@@ -877,18 +837,6 @@ public:
         writes = reader.readInt32("writes");
         hits = reader.readInt32("hots");
         misses = reader.readInt32("misses");
-    }
-
-    bool operator==(const GridPortable& other) const override {
-        assert(false);
-
-        return false; // Not needed since is not used as key.
-    }
-
-    int hashCode() const override {
-        assert(false);
-
-        return 0; // Not needed since is not used as key.
     }
 
     int64_t createTime;

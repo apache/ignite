@@ -23,13 +23,13 @@
 /** Forward declaration of class. */
 class GridClientVariantVisitor;
 class GridClientVariant;
+class GridHashablePortable;
 
 /**
  * Class that replaces java.lang.Object holder for primitive types and string. It can hold boolean, int_*, float, double,
  * string and byte array values.
  */
 class GRIDGAIN_API GridClientVariant {
-
 public:
     /** No-value type. */
     class NullType {
@@ -77,7 +77,6 @@ private:
     };
 
 public:
-
     /** No-arg constructor - variant with null value is created. */
     GridClientVariant();
 
@@ -174,6 +173,11 @@ public:
      * Constructor with GridPortable argument.
      */
     GridClientVariant(GridPortable* val);
+
+    /**
+     * Constructor with GridHashablePortable argument.
+     */
+    GridClientVariant(GridHashablePortable* val);
 
     /**
      * Copy constructor.
@@ -365,11 +369,25 @@ public:
     void set(GridPortable* val);
 
     /**
+     * Assigns this variant a hashable portable value.
+     *
+     * @param val New value for the variant.
+     */
+    void set(GridHashablePortable* val);
+
+    /**
      * Checks if this variant holds a portable value.
      *
      * @return <tt>true</tt> if value is of portable, <tt>false</tt> otherwise.
      */
     bool hasPortable() const;
+
+    /**
+     * Checks if this variant holds a hashable portable value.
+     *
+     * @return <tt>true</tt> if value is of portable, <tt>false</tt> otherwise.
+     */
+    bool hasHashablePortable() const;
 
     /**
      * Returns a portable value from this variant.
@@ -507,6 +525,10 @@ public:
     bool hasAnyValue() const;
 
 private:
+    void resetPortable();
+
+    bool hashablePortable;
+
     GridPortable* portable;
 
     Impl pimpl;
