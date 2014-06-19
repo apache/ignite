@@ -13,7 +13,7 @@ namespace GridGain.Client.Impl.Portable
     using System.Collections.Generic;
     using System.IO;
     using System.Text;
-    using GridGain.Client.Portable;    
+    using GridGain.Client.Portable;
 
     /**
      * <summary>Utilities for portable serialization.</summary>
@@ -114,10 +114,10 @@ namespace GridGain.Client.Impl.Portable
         public const int TYPE_NODE_METRICS_BEAN = 307;
 
         /** Byte "0". */
-        private const byte BYTE_ZERO = (byte)0;
+        public const byte BYTE_ZERO = (byte)0;
 
         /** Byte "1". */
-        private const byte BYTE_ONE = (byte)1;
+        public const byte BYTE_ONE = (byte)1;
         
         /** Whether little endian is set. */
         private static readonly bool LITTLE_ENDIAN = BitConverter.IsLittleEndian;
@@ -238,16 +238,12 @@ namespace GridGain.Client.Impl.Portable
                         break;
 
                     case TYPE_FLOAT:
-                        float floatVal = (float)obj;
-
-                        WriteInt(*(int*)&floatVal, stream);
+                        WriteFloat((float)obj, stream);
 
                         break;
 
                     case TYPE_DOUBLE:
-                        double doubleVal = (double)obj;
-
-                        WriteLong(*(long*)&doubleVal, stream);
+                        WriteDouble((double)obj, stream);
 
                         break;
 
@@ -264,14 +260,27 @@ namespace GridGain.Client.Impl.Portable
          */
         public static void WriteString(string val, Stream stream)
         {
-            if (val == null)
-                stream.WriteByte(BYTE_ZERO);
+            if (val == null)            
+                stream.WriteByte(BYTE_ZERO);            
             else
             {
                 byte[] bytes = Encoding.UTF8.GetBytes(val);
 
                 stream.WriteByte(BYTE_ONE);
                 stream.Write(bytes, 0, bytes.Length);
+            }            
+        }
+
+        public static void WriteStringArray(string[] val, Stream stream)
+        {
+            if (val == null)
+                stream.WriteByte(BYTE_ZERO);
+            else
+            {
+                stream.WriteByte(BYTE_ONE);
+                
+                WriteInt
+
             }
         }
 
@@ -410,17 +419,21 @@ namespace GridGain.Client.Impl.Portable
 
                     break;
 
-                case TYPE_ARRAY_INT:                
-                    
+                case TYPE_ARRAY_INT:
+                    WriteIntArray((int[])obj, stream);
 
                     break;
 
                 case TYPE_ARRAY_LONG:
-                    
+                    WriteLongArray((long[])obj, stream);
 
                     break;
 
                 case TYPE_ARRAY_CHAR:
+                    WriteCharArray((char[])obj, stream);
+
+                    break;
+
                 case TYPE_ARRAY_FLOAT:
                 case TYPE_ARRAY_DOUBLE:
                 default:
@@ -432,34 +445,28 @@ namespace GridGain.Client.Impl.Portable
          * <summary>Write boolean.</summary>
          * <param name="val">Value.</param>
          * <param name="stream">Output stream.</param>
-         * <returns>Length of written data.</returns>
          */
-        public static int WriteBoolean(bool val, Stream stream)
+        public static void WriteBoolean(bool val, Stream stream)
         {
             stream.WriteByte(val ? BYTE_ONE : BYTE_ZERO);
-
-            return 1;
         }
 
         /**
          * <summary>Write boolean array.</summary>
          * <param name="vals">Value.</param>
          * <param name="stream">Output stream.</param>
-         * <returns>Length of written data.</returns>
          */
-        public static int WriteBooleanArray(bool[] vals, Stream stream)
+        public static void WriteBooleanArray(bool[] vals, Stream stream)
         {
-            byte[] bytes = new byte[vals.Length];
-
-            for (int i = 0; i < vals.Length; i++) 
+            if (vals == null)
+                stream.WriteByte(BYTE_ZERO);
+            else
             {
-                if (vals[i])
-                    bytes[i] = BYTE_ONE;
+                stream.WriteByte(BYTE_ONE);
+
+                for (int i = 0; i < vals.Length; i++)
+                    stream.WriteByte(vals[i] ? BYTE_ONE : BYTE_ZERO);
             }
-
-            stream.Write(bytes, 0, bytes.Length);
-
-            return vals.Length;
         }
 
         /**
@@ -481,53 +488,52 @@ namespace GridGain.Client.Impl.Portable
          * <param name="stream">Output stream.</param>
          * <returns>Length of written data.</returns>
          */
-        public static int WriteByteArray(byte[] vals, Stream stream)
+        public static void WriteByteArray(byte[] vals, Stream stream)
         {
-            stream.Write(vals, 0, vals.Length);
-
-            return vals.Length;
+            if (vals == null)
+                stream.WriteByte(BYTE_ZERO);
+            else
+            {
+                stream.WriteByte(BYTE_ONE);
+                stream.Write(vals, 0, vals.Length);
+            }
         }
 
         /**
          * <summary>Write short value.</summary>
          * <param name="val">Value.</param>
          * <param name="stream">Output stream.</param>
-         * <returns>Length of written data.</returns>
          */
-        public static unsafe int WriteShort(short val, Stream stream)
+        public static void WriteShort(short val, Stream stream)
         {
-            byte[] bytes = new byte[2];
-
-            unchecked
+            if (LITTLE_ENDIAN)
             {
-                if (LITTLE_ENDIAN)
-                {
-                    fixed (byte* b = bytes)
-                    {
-                        *((short*)b) = val;
-                    }
-                }
-                else
-                {
-                    bytes[0] = (byte)(val & 0xFF);
-                    bytes[1] = (byte)(val >> 8 & 0xFF);
-                }
-
-                stream.Write(bytes, 0, 2);
+                stream.WriteByte((byte)(val >> 8 & 0xFF));
+                stream.WriteByte((byte)(val & 0xFF));
             }
-
-            return 2;
+            else
+            {
+                stream.WriteByte((byte)(val & 0xFF));
+                stream.WriteByte((byte)(val >> 8 & 0xFF));
+            }
         }
 
         /**
-         * <summary>Write byte array.</summary>
+         * <summary>Write short array.</summary>
          * <param name="vals">Value.</param>
          * <param name="stream">Output stream.</param>
-         * <returns>Length of written data.</returns>
          */
         public static void WriteShortArray(short[] vals, Stream stream)
         {
-            
+            if (vals == null)
+                stream.WriteByte(BYTE_ZERO);
+            else
+            {
+                stream.WriteByte(BYTE_ONE);
+
+                for (int i = 0; i < vals.Length; i++)
+                    WriteShort(vals[i], stream);                   
+            }
         }
 
         /**
@@ -535,31 +541,40 @@ namespace GridGain.Client.Impl.Portable
          * <param name="val">Value.</param>
          * <param name="stream">Output stream.</param>
          */
-        public static unsafe int WriteInt(int val, Stream stream)
+        public static void WriteInt(int val, Stream stream)
         {
-            unchecked
+            if (LITTLE_ENDIAN)
             {
-                byte[] bytes = new byte[4];
-
-                if (LITTLE_ENDIAN)
-                {
-                    fixed (byte* b = bytes)
-                    {
-                        *((int*)b) = val;
-                    }
-                }
-                else
-                {
-                    bytes[0] = (byte)(val & 0xFF);
-                    bytes[1] = (byte)(val >> 8 & 0xFF);
-                    bytes[2] = (byte)(val >> 16 & 0xFF);
-                    bytes[3] = (byte)(val >> 24 & 0xFF);
-                }
-
-                stream.Write(bytes, 0, 4);
+                stream.WriteByte((byte)(val >> 24 & 0xFF));
+                stream.WriteByte((byte)(val >> 16 & 0xFF));
+                stream.WriteByte((byte)(val >> 8 & 0xFF));
+                stream.WriteByte((byte)(val & 0xFF));
             }
+            else
+            {
+                stream.WriteByte((byte)(val & 0xFF));
+                stream.WriteByte((byte)(val >> 8 & 0xFF));
+                stream.WriteByte((byte)(val >> 16 & 0xFF));
+                stream.WriteByte((byte)(val >> 24 & 0xFF));
+            }
+        }
 
-            return 4;
+        /**
+         * <summary>Write int array.</summary>
+         * <param name="vals">Value.</param>
+         * <param name="stream">Output stream.</param>
+         */
+        public static void WriteIntArray(int[] vals, Stream stream)
+        {
+            if (vals == null)
+                stream.WriteByte(BYTE_ZERO);
+            else
+            {
+                stream.WriteByte(BYTE_ONE);
+
+                for (int i = 0; i < vals.Length; i++)
+                    WriteInt(vals[i], stream);
+            }
         }
 
         /**
@@ -567,35 +582,122 @@ namespace GridGain.Client.Impl.Portable
          * <param name="val">Value.</param>
          * <param name="stream">Output stream.</param>
          */
-        public static unsafe int WriteLong(long val, Stream stream)
+        public static void WriteLong(long val, Stream stream)
         {
-            unchecked
+            if (LITTLE_ENDIAN)
             {
-                byte[] bytes = new byte[8];
-
-                if (LITTLE_ENDIAN)
-                {
-                    fixed (byte* b = bytes)
-                    {
-                        *((long*)b) = val;
-                    }
-                }
-                else
-                {
-                    bytes[0] = (byte)(val & 0xFF);
-                    bytes[1] = (byte)(val >> 8 & 0xFF);
-                    bytes[2] = (byte)(val >> 16 & 0xFF);
-                    bytes[3] = (byte)(val >> 24 & 0xFF);
-                    bytes[4] = (byte)(val >> 32 & 0xFF);
-                    bytes[5] = (byte)(val >> 40 & 0xFF);
-                    bytes[6] = (byte)(val >> 48 & 0xFF);
-                    bytes[7] = (byte)(val >> 54 & 0xFF);
-                }
-
-                stream.Write(bytes, 0, 8);
+                stream.WriteByte((byte)(val >> 54 & 0xFF));
+                stream.WriteByte((byte)(val >> 48 & 0xFF));
+                stream.WriteByte((byte)(val >> 40 & 0xFF));
+                stream.WriteByte((byte)(val >> 32 & 0xFF));
+                stream.WriteByte((byte)(val >> 24 & 0xFF));
+                stream.WriteByte((byte)(val >> 16 & 0xFF));
+                stream.WriteByte((byte)(val >> 8 & 0xFF));
+                stream.WriteByte((byte)(val & 0xFF));
             }
+            else
+            {
+                stream.WriteByte((byte)(val & 0xFF));
+                stream.WriteByte((byte)(val >> 8 & 0xFF));
+                stream.WriteByte((byte)(val >> 16 & 0xFF));
+                stream.WriteByte((byte)(val >> 24 & 0xFF));
+                stream.WriteByte((byte)(val >> 32 & 0xFF));
+                stream.WriteByte((byte)(val >> 40 & 0xFF));
+                stream.WriteByte((byte)(val >> 48 & 0xFF));
+                stream.WriteByte((byte)(val >> 54 & 0xFF));
+            }
+        }
 
-            return 8;
+        /**
+         * <summary>Write long array.</summary>
+         * <param name="vals">Value.</param>
+         * <param name="stream">Output stream.</param>
+         */
+        public static void WriteLongArray(long[] vals, Stream stream)
+        {
+            if (vals == null)
+                stream.WriteByte(BYTE_ZERO);
+            else
+            {
+                stream.WriteByte(BYTE_ONE);
+
+                for (int i = 0; i < vals.Length; i++)
+                    WriteLong(vals[i], stream);
+            }
+        }
+
+        /**
+         * <summary>Write char array.</summary>
+         * <param name="vals">Value.</param>
+         * <param name="stream">Output stream.</param>
+         */
+        public static void WriteCharArray(char[] vals, Stream stream)
+        {
+            if (vals == null)
+                stream.WriteByte(BYTE_ZERO);
+            else
+            {
+                stream.WriteByte(BYTE_ONE);
+
+                for (int i = 0; i < vals.Length; i++)
+                    WriteShort((short)vals[i], stream);
+            }
+        }
+
+        /**
+         * <summary>Write float value.</summary>
+         * <param name="val">Value.</param>
+         * <param name="stream">Output stream.</param>
+         */
+        public static unsafe void WriteFloat(float val, Stream stream)
+        {
+            WriteInt(*(int*)&val, stream);
+        }
+
+        /**
+         * <summary>Write float array.</summary>
+         * <param name="vals">Value.</param>
+         * <param name="stream">Output stream.</param>
+         */
+        public static void WriteFloatArray(float[] vals, Stream stream)
+        {
+            if (vals == null)
+                stream.WriteByte(BYTE_ZERO);
+            else
+            {
+                stream.WriteByte(BYTE_ONE);
+
+                for (int i = 0; i < vals.Length; i++)
+                    WriteFloat((float)vals[i], stream);
+            }
+        }
+
+        /**
+         * <summary>Write double value.</summary>
+         * <param name="val">Value.</param>
+         * <param name="stream">Output stream.</param>
+         */
+        public static unsafe void WriteDouble(double val, Stream stream)
+        {
+            WriteLong(*(long*)&val, stream);
+        }
+
+        /**
+         * <summary>Write double array.</summary>
+         * <param name="vals">Value.</param>
+         * <param name="stream">Output stream.</param>
+         */
+        public static void WriteDoubleArray(double[] vals, Stream stream)
+        {
+            if (vals == null)
+                stream.WriteByte(BYTE_ZERO);
+            else
+            {
+                stream.WriteByte(BYTE_ONE);
+
+                for (int i = 0; i < vals.Length; i++)
+                    WriteDouble((double)vals[i], stream);
+            }
         }
     }
 }

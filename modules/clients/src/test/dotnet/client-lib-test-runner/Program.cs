@@ -10,6 +10,7 @@
 namespace GridGain {
     using System;
     using System.Collections.Concurrent;
+    using System.Collections.Generic;
     using System.Reflection;
     using System.Diagnostics;
     using GridGain.Client;

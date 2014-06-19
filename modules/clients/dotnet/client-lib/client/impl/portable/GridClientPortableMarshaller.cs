@@ -33,8 +33,19 @@ namespace GridGain.Client.Impl.Portable
         /** Header of object in fully serailized form with metadata. */
         public const byte HDR_META = 0x83;
 
+        /** Byte array of size 8. */
+        private static readonly byte[] BYTE_8;
+
         /** Descriptors. */
-        public IDictionary<string, GridClientPortableTypeDescriptor> descriptors = new Dictionary<string, GridClientPortableTypeDescriptor>();
+        public IDictionary<string, GridClientPortableTypeDescriptor> descs = new Dictionary<string, GridClientPortableTypeDescriptor>();
+
+        /**
+         * <summary>Static initializer.</summary>
+         */
+        static GridClientPortableMarshaller()
+        {
+            BYTE_8 = new byte[8]; 
+        }
 
         /**
          * <summary>Constructor.</summary>
@@ -139,14 +150,14 @@ namespace GridGain.Client.Impl.Portable
          */
         private void addType(Type type, int typeId, bool userType, GridClientPortableIdMapper mapper, IGridClientPortableSerializer serializer)
         {
-            foreach (KeyValuePair<string, GridClientPortableTypeDescriptor> descriptor in descriptors)
+            foreach (KeyValuePair<string, GridClientPortableTypeDescriptor> desc in descs)
             {
-                if (descriptor.Value.TypeId == typeId)
-                    throw new GridClientPortableException("Conflicting type IDs [type1=" + descriptors.Keys +
+                if (desc.Value.TypeId == typeId)
+                    throw new GridClientPortableException("Conflicting type IDs [type1=" + desc.Key +
                         ", type2=" + type.Name + ", typeId=" + typeId + ']');
             }
 
-            descriptors[type.Name] = new GridClientPortableTypeDescriptor(typeId, false, mapper, serializer);
+            descs[type.Name] = new GridClientPortableTypeDescriptor(typeId, false, mapper, serializer);
         }
 
         /**
@@ -172,7 +183,7 @@ namespace GridGain.Client.Impl.Portable
          */
         public void Marshal(object val, Stream stream, GridClientPortableSerializationContext ctx)
         {
-            new Context(ctx, stream).Write(val);
+            new Context(ctx, descs, stream).Write(val);
         }
 
         /**
@@ -204,6 +215,9 @@ namespace GridGain.Client.Impl.Portable
             /** Per-connection serialization context. */
             private readonly GridClientPortableSerializationContext ctx;
 
+            /** Type descriptors. */
+            private readonly IDictionary<string, GridClientPortableTypeDescriptor> descs;
+
             /** Output. */
             private readonly Stream stream;
 
@@ -212,6 +226,9 @@ namespace GridGain.Client.Impl.Portable
                         
             /** Handles. */
             private readonly IDictionary<GridClientPortableObjectHandle, int> hnds = new Dictionary<GridClientPortableObjectHandle, int>();
+
+            /** Frames. */
+            private readonly Stack<Frame> frames = new Stack<Frame>();
             
             /** Current object handle number. */
             private int curHndNum;
@@ -221,9 +238,10 @@ namespace GridGain.Client.Impl.Portable
              * <param name="ctx">Client connection context.</param>
              * <param name="stream">Output stream.</param>
              */
-            public Context(GridClientPortableSerializationContext ctx, Stream stream)
+            public Context(GridClientPortableSerializationContext ctx, IDictionary<string, GridClientPortableTypeDescriptor> descs, Stream stream)
             {
                 this.ctx = ctx;
+                this.descs = descs;
                 this.stream = stream;
 
                 writer = new Writer(this);
@@ -262,18 +280,20 @@ namespace GridGain.Client.Impl.Portable
                 // 3. Try interpreting object as handle.
                 GridClientPortableObjectHandle hnd = new GridClientPortableObjectHandle(obj);
 
-                int? hndNum = hnds[hnd];
-
-                if (hndNum.HasValue) 
-                {
+                int hndNum;
+                
+                if (hnds.TryGetValue(hnd, out hndNum)) {
                     stream.WriteByte(HDR_HND);
 
-                    PU.WriteInt(hndNum.Value, stream);
+                    PU.WriteInt(hndNum, stream);
 
                     return;
                 }
-                else
+                else 
                     hnds.Add(hnd, curHndNum++);
+
+                // 4. Complex object with handle, remember position.
+                long pos = stream.Position; 
 
                 // 4. Write string.
                 dynamic obj0 = obj;
@@ -281,11 +301,13 @@ namespace GridGain.Client.Impl.Portable
                 if (type == typeof(string)) 
                 {
                     stream.WriteByte(HDR_FULL);
-
                     PU.WriteBoolean(false, stream);                    
                     PU.WriteInt(PU.TYPE_STRING, stream);
                     PU.WriteInt(PU.StringHashCode(obj0), stream);
+                    PU.WriteByteArray(BYTE_8, stream);
                     PU.WriteString(obj0, stream);
+
+                    WriteLength(stream, pos, stream.Position, 0);
 
                     return;
                 }
@@ -297,12 +319,17 @@ namespace GridGain.Client.Impl.Portable
                     PU.WriteBoolean(false, stream);    
                     PU.WriteInt(PU.TYPE_GUID, stream);
                     PU.WriteInt(PU.GuidHashCode(obj0), stream);
+                    PU.WriteByteArray(BYTE_8, stream);
                     PU.WriteGuid(obj0, stream);
+
+                    WriteLength(stream, pos, stream.Position, 0);
 
                     return;
                 }
 
-                // 6. Write primitive array.
+                // 6. Write enum.
+
+                // 7. Write primitive array.
                 typeId = PU.PrimitiveArrayTypeId(type);
 
                 if (typeId != 0) 
@@ -314,28 +341,136 @@ namespace GridGain.Client.Impl.Portable
                     // TODO: GG-8535: Implement.
                 }
 
-                // 8. Write object array.
-                // TODO: GG-8535: Implement.
-
                 // 9. Write collection.
                 // TODO: GG-8535: Implement.
 
                 // 10. Write map.
                 // TODO: GG-8535: Implement.
 
-                // 11. Just object.
-                long pos = stream.Position; 
-                
-   
+                // 8. Write object array.
+                // TODO: GG-8535: Implement.
 
+                // 11. Just object.
+                GridClientPortableTypeDescriptor desc = descs[type.Name];
+
+                if (desc == null)
+                    throw new GridClientPortableException("Unsupported object type [type=" + type + ", object=" + obj + ']');
+
+                stream.WriteByte(HDR_FULL);
+                PU.WriteBoolean(desc.UserType, stream);
+                PU.WriteInt(desc.TypeId, stream);
+                PU.WriteInt(obj.GetHashCode(), stream);
+                PU.WriteByteArray(BYTE_8, stream);
+
+                // Push frame to stack.
+                CurrentFrame = new Frame(desc.TypeId, desc.Mapper);
+
+                frames.Push(CurrentFrame);
+
+                desc.Serializer.WritePortable(obj, writer);
                 
+                // Write length poping frame from stack.
+                WriteLength(stream, pos, stream.Position, CurrentFrame.RawPosition);
+
+                CurrentFrame = frames.Pop();
+            }
+
+            /**
+             * <summary>Current frame.</summary>
+             */ 
+            public Frame CurrentFrame
+            {
+                get;
+                private set;
+            }
+
+            /**
+             * <summary>Stream.</summary>
+             */ 
+            public Stream Stream 
+            {
+                get
+                {
+                    return stream;
+                }
+            }
+        }
+
+        /**
+         * <summary>Write lengths.</summary>
+         * <param name="stream"></param>
+         * <param name="pos"></param>
+         * <param name="retPos"></param>
+         * <param name="raw">Raw data length.</param>
+         */
+        private static void WriteLength(Stream stream, long pos, long retPos, long rawPos) {
+            stream.Seek(pos + 10, SeekOrigin.Begin);
+
+            PU.WriteInt((int)(retPos - pos), stream);
+
+            if (rawPos != 0)
+                PU.WriteInt((int)(retPos - rawPos), stream);
+
+            stream.Seek(retPos, SeekOrigin.Begin);
+        }
+
+        /**
+         * <summary>Serialization frame.</summary>
+         */ 
+        private class Frame 
+        {
+            /**
+             * <summary>Constructor.</summary>
+             * <param name="typeId">Type ID.</param>
+             * <param name="mapper">Field mapper.</param>
+             */
+            public Frame(int typeId, GridClientPortableIdMapper mapper)
+            {
+                TypeId = typeId;
+                Mapper = mapper;
+            }
+
+            /**
+             * <summary>Type ID.</summary>
+             */ 
+            public int TypeId
+            {
+                get;
+                private set;
+            }
+
+            /**
+             * <summary>ID mapper.</summary>
+             */ 
+            public GridClientPortableIdMapper Mapper
+            {
+                get;
+                private set;
+            }
+
+            /**
+             * <summary>Raw mode.</summary>
+             */
+            public bool Raw
+            {
+                get;
+                set;
+            }
+
+            /**
+             * <summary>Raw position.</summary>
+             */ 
+            public long RawPosition 
+            {
+                get;
+                set;
             }
         }
 
         /**
          * <summary>Writer.</summary>
          */ 
-        private class Writer //: IGridClientPortableWriter 
+        private class Writer : IGridClientPortableWriter 
         {
             /** Context. */
             private readonly Context ctx;
@@ -348,346 +483,487 @@ namespace GridGain.Client.Impl.Portable
             {
                 this.ctx = ctx;
             }
-        }
-        
-    }
 
-    /** <summary>Writer which simply caches passed values.</summary> */
-    public class DelayedWriter //: IGridClientPortableWriter 
-    {
-        ///** Named actions. */
-        //private readonly List<Action<IGridClientPortableWriter>> namedActions = new List<Action<IGridClientPortableWriter>>();
+            /** <inheritdoc /> */
+            public void WriteBoolean(string fieldName, bool val)
+            {
+                WriteField(fieldName);
 
-        ///** Actions. */
-        //private readonly List<Action<IGridClientPortableWriter>> actions = new List<Action<IGridClientPortableWriter>>();
+                PU.WriteInt(1, ctx.Stream);
+                PU.WriteBoolean(val, ctx.Stream);
+            }
 
-        ///**
-        // * <summary>Execute all tracked write actions.</summary>
-        // * <param name="writer">Underlying real writer.</param>
-        // */
-        //private void execute(IGridClientPortableWriter writer)
-        //{
-        //    foreach (Action<IGridClientPortableWriter> namedAction in namedActions)
-        //    {
-        //        namedAction.Invoke(writer);
-        //    }
+            /** <inheritdoc /> */
+            public void WriteBoolean(bool val)
+            {
+                MarkRaw();
 
-        //    foreach (Action<IGridClientPortableWriter> action in actions)
-        //    {
-        //        action.Invoke(writer);
-        //    }
-        //}
+                PU.WriteBoolean(val, ctx.Stream);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteByte(string fieldName, sbyte val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteByte(fieldName, val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteBooleanArray(string fieldName, bool[] val)
+            {
+                WriteField(fieldName);
 
-        ///** <inheritdoc /> */
-        //public void WriteByte(sbyte val)
-        //{
-        //    actions.Add((writer) => writer.WriteByte(val));
-        //}
+                PU.WriteInt(1 + (val == null ? 0 : val.Length), ctx.Stream);
+                PU.WriteBooleanArray(val, ctx.Stream);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteByteArray(string fieldName, sbyte[] val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteByteArray(fieldName, val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteBooleanArray(bool[] val)
+            {
+                MarkRaw();
 
-        ///** <inheritdoc /> */
-        //public void WriteByteArray(sbyte[] val)
-        //{
-        //    actions.Add((writer) => writer.WriteByteArray(val));
-        //}
+                PU.WriteBooleanArray(val, ctx.Stream);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteChar(string fieldName, char val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteChar(fieldName, val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteByte(string fieldName, byte val)
+            {
+                WriteField(fieldName);
 
-        ///** <inheritdoc /> */
-        //public void WriteChar(char val)
-        //{
-        //    actions.Add((writer) => writer.WriteChar(val));
-        //}
+                PU.WriteInt(1, ctx.Stream);
 
-        ///** <inheritdoc /> */
-        //public void WriteCharArray(string fieldName, char[] val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteCharArray(fieldName, val));
-        //}
+                ctx.Stream.WriteByte(val);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteCharArray(char[] val)
-        //{
-        //    actions.Add((writer) => writer.WriteCharArray(val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteByte(byte val)
+            {
+                MarkRaw();
 
-        ///** <inheritdoc /> */
-        //public void WriteShort(string fieldName, short val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteShort(fieldName, val));
-        //}
+                ctx.Stream.WriteByte(val);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteShort(short val)
-        //{
-        //    actions.Add((writer) => writer.WriteShort(val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteByteArray(string fieldName, byte[] val)
+            {
+                WriteField(fieldName);
 
-        ///** <inheritdoc /> */
-        //public void WriteShortArray(string fieldName, short[] val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteShortArray(fieldName, val));
-        //}
+                PU.WriteInt(1 + (val == null ? 0 : val.Length), ctx.Stream);
+                PU.WriteByteArray(val, ctx.Stream);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteShortArray(short[] val)
-        //{
-        //    actions.Add((writer) => writer.WriteShortArray(val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteByteArray(byte[] val)
+            {
+                MarkRaw();
 
-        ///** <inheritdoc /> */
-        //public void WriteInt(string fieldName, int val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteInt(fieldName, val));
-        //}
+                PU.WriteByteArray(val, ctx.Stream);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteInt(int val)
-        //{
-        //    actions.Add((writer) => writer.WriteInt(val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteShort(string fieldName, short val)
+            {
+                WriteField(fieldName);
 
-        ///** <inheritdoc /> */
-        //public void WriteIntArray(string fieldName, int[] val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteIntArray(fieldName, val));
-        //}
+                PU.WriteInt(2, ctx.Stream);
+                PU.WriteShort(val, ctx.Stream);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteIntArray(int[] val)
-        //{
-        //    actions.Add((writer) => writer.WriteIntArray(val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteShort(short val)
+            {
+                MarkRaw();
 
-        ///** <inheritdoc /> */
-        //public void WriteLong(string fieldName, long val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteLong(fieldName, val));
-        //}
+                PU.WriteShort(val, ctx.Stream);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteLong(long val)
-        //{
-        //    actions.Add((writer) => writer.WriteLong(val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteShortArray(string fieldName, short[] val)
+            {
+                WriteField(fieldName);
 
-        ///** <inheritdoc /> */
-        //public void WriteLongArray(string fieldName, long[] val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteLongArray(fieldName, val));
-        //}
+                PU.WriteInt(1 + (val == null ? 0 : 2 * val.Length), ctx.Stream);
+                PU.WriteShortArray(val, ctx.Stream);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteLongArray(long[] val)
-        //{
-        //    actions.Add((writer) => writer.WriteLongArray(val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteShortArray(short[] val)
+            {
+                MarkRaw();
 
-        ///** <inheritdoc /> */
-        //public void WriteBoolean(string fieldName, bool val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteBoolean(fieldName, val));
-        //}
+                PU.WriteShortArray(val, ctx.Stream);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteBoolean(bool val)
-        //{
-        //    actions.Add((writer) => writer.WriteBoolean(val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteInt(string fieldName, int val)
+            {
+                WriteField(fieldName);
 
-        ///** <inheritdoc /> */
-        //public void WriteBooleanArray(string fieldName, bool[] val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteBooleanArray(fieldName, val));
-        //}
+                PU.WriteInt(4, ctx.Stream);
+                PU.WriteInt(val, ctx.Stream);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteBooleanArray(bool[] val)
-        //{
-        //    actions.Add((writer) => writer.WriteBooleanArray(val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteInt(int val)
+            {
+                MarkRaw();
 
-        ///** <inheritdoc /> */
-        //public void WriteFloat(string fieldName, float val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteFloat(fieldName, val));
-        //}
+                PU.WriteInt(val, ctx.Stream);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteFloat(float val)
-        //{
-        //    actions.Add((writer) => writer.WriteFloat(val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteIntArray(string fieldName, int[] val)
+            {
+                WriteField(fieldName);
 
-        ///** <inheritdoc /> */
-        //public void WriteFloatArray(string fieldName, float[] val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteFloatArray(fieldName, val));
-        //}
+                PU.WriteInt(1 + (val == null ? 0 : 4 * val.Length), ctx.Stream);
+                PU.WriteIntArray(val, ctx.Stream);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteFloatArray(float[] val)
-        //{
-        //    actions.Add((writer) => writer.WriteFloatArray(val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteIntArray(int[] val)
+            {
+                MarkRaw();
 
-        ///** <inheritdoc /> */
-        //public void WriteDouble(string fieldName, double val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteDouble(fieldName, val));
-        //}
+                PU.WriteIntArray(val, ctx.Stream);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteDouble(double val)
-        //{
-        //    actions.Add((writer) => writer.WriteDouble(val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteLong(string fieldName, long val)
+            {
+                WriteField(fieldName);
 
-        ///** <inheritdoc /> */
-        //public void WriteDoubleArray(string fieldName, double[] val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteDoubleArray(fieldName, val));
-        //}
+                PU.WriteInt(8, ctx.Stream);
+                PU.WriteLong(val, ctx.Stream);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteDoubleArray(double[] val)
-        //{
-        //    actions.Add((writer) => writer.WriteDoubleArray(val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteLong(long val)
+            {
+                MarkRaw();
 
-        ///** <inheritdoc /> */
-        //public void WriteString(string fieldName, string val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteString(fieldName, val));
-        //}
+                PU.WriteLong(val, ctx.Stream);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteString(string val)
-        //{
-        //    actions.Add((writer) => writer.WriteString(val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteLongArray(string fieldName, long[] val)
+            {
+                WriteField(fieldName);
 
-        ///** <inheritdoc /> */
-        //public void WriteStringArray(string fieldName, string[] val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteStringArray(fieldName, val));
-        //}
+                PU.WriteInt(1 + (val == null ? 0 : 8 * val.Length), ctx.Stream);
+                PU.WriteLongArray(val, ctx.Stream);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteStringArray(string[] val)
-        //{
-        //    actions.Add((writer) => writer.WriteStringArray(val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteLongArray(long[] val)
+            {
+                MarkRaw();
 
-        ///** <inheritdoc /> */
-        //public void WriteGuid(string fieldName, Guid val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteGuid(fieldName, val));
-        //}
+                PU.WriteLongArray(val, ctx.Stream);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteGuid(Guid val)
-        //{
-        //    actions.Add((writer) => writer.WriteGuid(val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteChar(string fieldName, char val)
+            {
+                unchecked 
+                {
+                    WriteShort(fieldName, (short)val);
+                }
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteGuidArray(string fieldName, Guid[] val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteGuidArray(fieldName, val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteChar(char val)
+            {
+                unchecked
+                {
+                    WriteShort((short)val);
+                }
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteGuidArray(Guid[] val)
-        //{
-        //    actions.Add((writer) => writer.WriteGuidArray(val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteCharArray(string fieldName, char[] val)
+            {
+                WriteField(fieldName);
 
-        ///** <inheritdoc /> */
-        //public void WriteObject<T>(string fieldName, T val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteObject(fieldName, val));
-        //}
+                PU.WriteInt(1 + (val == null ? 0 : 2 * val.Length), ctx.Stream);
+                PU.WriteCharArray(val, ctx.Stream);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteObject<T>(T val)
-        //{
-        //    actions.Add((writer) => writer.WriteObject(val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteCharArray(char[] val)
+            {
+                MarkRaw();
 
-        ///** <inheritdoc /> */
-        //public void WriteObjectArray<T>(string fieldName, T[] val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteObjectArray(fieldName, val));
-        //}
+                PU.WriteCharArray(val, ctx.Stream);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteObjectArray<T>(T[] val)
-        //{
-        //    actions.Add((writer) => writer.WriteObjectArray(val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteFloat(string fieldName, float val)
+            {
+                WriteField(fieldName);
 
-        ///** <inheritdoc /> */
-        //public void WriteCollection(string fieldName, ICollection val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteCollection(fieldName, val));
-        //}
+                PU.WriteInt(4, ctx.Stream);
+                PU.WriteFloat(val, ctx.Stream);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteCollection(ICollection val)
-        //{
-        //    actions.Add((writer) => writer.WriteCollection(val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteFloat(float val)
+            {
+                MarkRaw();
 
-        ///** <inheritdoc /> */
-        //public void WriteCollection<T>(string fieldName, ICollection<T> val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteCollection(fieldName, val));
-        //}
+                PU.WriteFloat(val, ctx.Stream);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteCollection<T>(ICollection<T> val)
-        //{
-        //    actions.Add((writer) => writer.WriteCollection(val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteFloatArray(string fieldName, float[] val)
+            {
+                WriteField(fieldName);
 
-        ///** <inheritdoc /> */
-        //public void WriteMap(string fieldName, IDictionary val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteMap(fieldName, val));
-        //}
+                PU.WriteInt(1 + (val == null ? 0 : 4 * val.Length), ctx.Stream);
+                PU.WriteFloatArray(val, ctx.Stream);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteMap(IDictionary val)
-        //{
-        //    actions.Add((writer) => writer.WriteMap(val));
-        //}
+            /** <inheritdoc /> */
+            public void WriteFloatArray(float[] val)
+            {
+                MarkRaw();
 
-        ///** <inheritdoc /> */
-        //public void WriteMap<K, V>(string fieldName, IDictionary<K, V> val)
-        //{
-        //    namedActions.Add((writer) => writer.WriteMap(fieldName, val));
-        //}
+                PU.WriteFloatArray(val, ctx.Stream);
+            }
 
-        ///** <inheritdoc /> */
-        //public void WriteMap<K, V>(IDictionary<K, V> val)
-        //{
-        //    actions.Add((writer) => writer.WriteMap(val));
-        //}
-    }
+            /** <inheritdoc /> */
+            public void WriteDouble(string fieldName, double val)
+            {
+                WriteField(fieldName);
+
+                PU.WriteInt(4, ctx.Stream);
+                PU.WriteDouble(val, ctx.Stream);
+            }
+
+            /** <inheritdoc /> */
+            public void WriteDouble(double val)
+            {
+                MarkRaw();
+
+                PU.WriteDouble(val, ctx.Stream);
+            }
+
+            /** <inheritdoc /> */
+            public void WriteDoubleArray(string fieldName, double[] val)
+            {
+                WriteField(fieldName);
+
+                PU.WriteInt(1 + (val == null ? 0 : 4 * val.Length), ctx.Stream);
+                PU.WriteDoubleArray(val, ctx.Stream);
+            }
+
+            /** <inheritdoc /> */
+            public void WriteDoubleArray(double[] val)
+            {
+                MarkRaw();
+
+                PU.WriteDoubleArray(val, ctx.Stream);
+            }
+
+            /** <inheritdoc /> */
+            public void WriteString(string fieldName, string val)
+            {
+                WriteField(fieldName);
+
+                long pos = ctx.Stream.Position;
+
+                ctx.Stream.Seek(4, SeekOrigin.Current);
+
+                PU.WriteString(val, ctx.Stream);
+
+                WriteLength(pos);
+            }
+
+            /** <inheritdoc /> */
+            public void WriteString(string val)
+            {
+                MarkRaw();
+
+                PU.WriteString(val, ctx.Stream);
+            }
+
+            /** <inheritdoc /> */
+            public void WriteStringArray(string fieldName, string[] val)
+            {
+                WriteField(fieldName);
+
+                long pos = ctx.Stream.Position;
+
+                ctx.Stream.Seek(4, SeekOrigin.Current);
+
+                PU.WriteStringArray(val, ctx.Stream);
+
+                WriteLength(pos);
+            }
+
+            /** <inheritdoc /> */
+            public void WriteStringArray(string[] val)
+            {
+                MarkRaw();
+
+                PU.WriteStringArray(val, ctx.Stream);
+            }
+
+            public void WriteGuid(string fieldName, Guid val)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void WriteGuid(Guid val)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void WriteGuidArray(string fieldName, Guid[] val)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void WriteGuidArray(Guid[] val)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void WriteEnum(string fieldName, Enum val)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void WriteEnum(Enum val)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void WriteEnumArray(string fieldName, Enum[] val)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void WriteEnumArray(Enum[] val)
+            {
+                throw new NotImplementedException();
+            }
+
+            /** <inheritdoc /> */
+            public void WriteObject<T>(string fieldName, T val)
+            {
+                WriteField(fieldName);
+
+                long pos = ctx.Stream.Position;
+
+                ctx.Stream.Seek(4, SeekOrigin.Current);
+
+                ctx.Write(val);
+
+                WriteLength(pos);
+            }
+
+            /** <inheritdoc /> */
+            public void WriteObject<T>(T val)
+            {
+                MarkRaw();
+
+                ctx.Write(val);
+            }
+
+            public void WriteObjectArray<T>(string fieldName, T[] val)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void WriteObjectArray<T>(T[] val)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void WriteCollection(string fieldName, ICollection val)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void WriteCollection(ICollection val)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void WriteCollection<T>(string fieldName, ICollection<T> val)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void WriteCollection<T>(ICollection<T> val)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void WriteMap(string fieldName, IDictionary val)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void WriteMap(IDictionary val)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void WriteMap<K, V>(string fieldName, IDictionary<K, V> val)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void WriteMap<K, V>(IDictionary<K, V> val)
+            {
+                throw new NotImplementedException();
+            }
+            
+            /**
+             * <summary>Mark current output as raw.</summary>
+             */ 
+            public void MarkRaw()
+            {
+                Frame frame = ctx.CurrentFrame;
+
+                if (!frame.Raw)
+                {
+                    frame.RawPosition = ctx.Stream.Position;
+
+                    frame.Raw = true;
+                }
+            }
+
+            /**
+             * <summary>Write field.</summary>
+             * <param name="fieldName">Field name.</param>
+             */ 
+            private void WriteField(string fieldName)
+            {
+                if (ctx.CurrentFrame.Raw)
+                    throw new GridClientPortableException("Cannot write named fields after raw data is written.");
+
+                // TODO: GG-8535: Check string mode here.
+                Frame frame = ctx.CurrentFrame;
+
+                int? fieldIdRef = frame.Mapper.FieldId(frame.TypeId, fieldName);
+
+                int fieldId = fieldIdRef.HasValue ? fieldIdRef.Value : PU.StringHashCode(fieldName.ToLower());
+
+                PU.WriteInt(fieldId, ctx.Stream);
+            }
+
+            /**
+             * <summary></summary>
+             * <param name="pos">Position where length should reside.</param>
+             */
+            private void WriteLength(long pos)
+            {
+                Stream stream = ctx.Stream;
+
+                long retPos = stream.Position;
+
+                stream.Seek(pos, SeekOrigin.Begin);
+
+                PU.WriteInt((int)(retPos - pos), stream);
+
+                stream.Seek(retPos, SeekOrigin.Begin);
+            }
+        }        
+    }    
 }
