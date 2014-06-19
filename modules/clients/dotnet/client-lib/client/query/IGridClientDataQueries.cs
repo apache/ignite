@@ -48,15 +48,5 @@ namespace GridGain.Client
          * 
          */
         IGridClientFuture rebuildAllIndexes();
-
-        /**
-         * 
-         */
-        IGridClientDataQueryMetrics metrics();
-
-        /**
-         * 
-         */
-        void resetMetrics();
     }
 }

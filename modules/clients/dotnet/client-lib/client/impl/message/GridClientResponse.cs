@@ -12,7 +12,7 @@ namespace GridGain.Client.Impl.Message {
     using GridGain.Client.Portable;
 
     /** <summary>Bean representing client operation result.</summary> */
-    internal class GridClientResponse : IGridClientPortableEx {
+    internal class GridClientResponse : IGridClientPortable {
         /** Portable type ID. */
         // TODO: GG-8535: Remove in favor of normal IDs.
         public static readonly int PORTABLE_TYPE_ID = 0;

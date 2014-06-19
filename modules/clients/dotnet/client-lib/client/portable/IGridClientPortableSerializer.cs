@@ -8,7 +8,7 @@ namespace GridGain.Client.Portable
     /**
      * <summary>Portable serializer.</summary>
      */ 
-    interface IGridClientPortableSerializer
+    public interface IGridClientPortableSerializer
     {
         /**
          * <summary>Write portalbe object.</summary>
@@ -19,8 +19,9 @@ namespace GridGain.Client.Portable
 
         /**
          * <summary>Read portable object.</summary>
+         * <param name="obj">Instantiated empty object.</param>
          * <param name="reader">Poratble reader.</param>
          */
-        T ReadPortable<T>(IGridClientPortableReader reader);
+        T ReadPortable<T>(object obj, IGridClientPortableReader reader);
     }
 }

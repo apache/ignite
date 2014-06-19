@@ -35,7 +35,7 @@ namespace GridGain.Client {
          * <returns>Started client.</returns>
          * <exception cref="GridClientException">If client could not be created.</exception>
          */
-        public static IGridClient Start(IGridClientConfiguration cfg) {
+        public static IGridClient Start(GridClientConfiguration cfg) {
             Guid clientId = Guid.NewGuid();
 
             GridClientImpl client = new GridClientImpl(clientId, cfg);

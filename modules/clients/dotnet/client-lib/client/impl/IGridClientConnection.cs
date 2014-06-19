@@ -282,18 +282,28 @@ namespace GridGain.Client.Impl {
          * <summary>
          * Starts query execution on given node.</summary>
          * 
-         * <param name="cacheName">Cache name to execute query for.</param>
+         * <param name="qry">Query bean to create request from.</param>
+         * <param name="args">Query execution arguments.</param>
          * <param name="destNodeId">Destination node ID to execute query on.</param>
          */
-        IGridClientFuture<GridClientDataQueryResult> ExecuteQuery(GridClientCacheQueryRequest req);
+        IGridClientFuture<GridClientDataQueryResult> ExecuteQuery<T>(GridClientDataQueryBean<T> qry, Object[] args, Guid destNodeId);
 
         /**
          * <summary>
          * Fetches next query results page from destination node.</summary>
          * 
          * <param name="qryId">Query ID to fetch data for.</param>
+         * <param name="pageSize">Page size to fetch</param>
          * <param name="destNodeId">Destination node ID to fetch data from.</param>
          */
-        IGridClientFuture<GridClientDataQueryResult> FetchNextPage(long qryId, Guid destNodeId);
+        IGridClientFuture<GridClientDataQueryResult> FetchNextPage(long qryId, int pageSize, Guid destNodeId);
+
+        /**
+         * <summary>
+         * Requests index rebuild.</summary>
+         * 
+         * <param name="clsName">Optional class name to rebuild indexes for.</param>
+         */
+        IGridClientFuture<GridClientDataQueryResult> RebuildIndexes(String clsName);
     }
 }

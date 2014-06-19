@@ -23,7 +23,7 @@
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Debug\GridGainClient.xml</DocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -35,7 +35,7 @@
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Release\GridGainClient.xml</DocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup>
@@ -69,7 +69,13 @@
     <Compile Include="client\balancer\IGridClientLoadBalancer.cs" />
     <Compile Include="client\balancer\GridClientLoadBalancer.cs" />
     <Compile Include="client\balancer\GridClientRoundRobinBalancer.cs" />
-    <Compile Include="client\impl\marshaller\GridClientPortableMarshallerNew.cs" />
+    <Compile Include="client\portable\GridClientPortableClassConfiguration.cs" />
+    <Compile Include="client\portable\GridClientPortableClassIdAttribute.cs" />
+    <Compile Include="client\portable\GridClientPortableFieldIdAttribute.cs" />
+    <Compile Include="client\impl\portable\GridClientPortableMarshaller.cs" />
+    <Compile Include="client\impl\portable\GridClientPortableExternalSerializer.cs" />
+    <Compile Include="client\impl\portable\GridClientPortableByteArrayMarshallerOutput.cs" />
+    <Compile Include="client\impl\portable\GridClientPortableClassMetadata.cs" />
     <Compile Include="client\impl\message\GridClientCacheQueryRequest.cs" />
     <Compile Include="client\impl\message\GridClientCacheQueryRequestOperation.cs" />
     <Compile Include="client\impl\query\GridClientDataQueriesImpl.cs" />
@@ -77,20 +83,18 @@
     <Compile Include="client\impl\query\GridClientDataQueryBean.cs" />
     <Compile Include="client\impl\query\GridClientDataQueryResult.cs" />
     <Compile Include="client\impl\query\GridClientDataQueryType.cs" />
-    <Compile Include="client\portable\GridClientExternalPortableSerializer.cs" />
-    <Compile Include="client\portable\GridClientPortableByteArrayMarshallerOutput.cs" />
-    <Compile Include="client\portable\GridClientPortableClassMetadata.cs" />
     <Compile Include="client\portable\GridClientPortableException.cs" />
-    <Compile Include="client\portable\GridClientPortableHeader.cs" />
+    <Compile Include="client\impl\portable\GridClientPortableFieldMetadata.cs" />
+    <Compile Include="client\impl\portable\GridClientPortableHeader.cs" />
     <Compile Include="client\portable\GridClientPortableInvalidClassException.cs" />
     <Compile Include="client\portable\GridClientPortableInvalidFieldException.cs" />
-    <Compile Include="client\portable\IGridClientPortableMarshallerOutput.cs" />
-    <Compile Include="client\portable\GridClientPortableObjectHandle.cs" />
-    <Compile Include="client\portable\GridClientPortableStreamMarshallerOutput.cs" />
-    <Compile Include="client\portable\GridClientReflectingPortableSerializer.cs" />
-    <Compile Include="client\portable\GridClientPortableSerializationContext.cs" />
+    <Compile Include="client\impl\portable\GridClientPortableUilts.cs" />
+    <Compile Include="client\impl\portable\IGridClientPortableMarshallerOutput.cs" />
+    <Compile Include="client\impl\portable\GridClientPortableObjectHandle.cs" />
+    <Compile Include="client\impl\portable\GridClientPortableStreamMarshallerOutput.cs" />
+    <Compile Include="client\impl\portable\GridClientReflectingPortableSerializer.cs" />
+    <Compile Include="client\impl\portable\GridClientPortableSerializationContext.cs" />
     <Compile Include="client\portable\IGridClientPortable.cs" />
-    <Compile Include="client\portable\IGridClientPortableEx.cs" />
     <Compile Include="client\portable\IGridClientPortableReader.cs" />
     <Compile Include="client\portable\IGridClientPortableSerializer.cs" />
     <Compile Include="client\portable\IGridClientPortableWriter.cs" />
@@ -106,18 +110,15 @@
     <Compile Include="client\impl\GridClientDataMetrics.cs" />
     <Compile Include="client\IGridClientDataMetrics.cs" />
     <Compile Include="client\impl\GridClientNodeMetrics.cs" />
-    <Compile Include="client\impl\marshaller\GridClientPortableMarshaller.cs" />
     <Compile Include="client\impl\message\GridClientNodeMetricsBean.cs" />
     <Compile Include="client\util\GridClientArgumentCheck.cs" />
     <Compile Include="client\IGridClient.cs" />
     <Compile Include="client\GridClientCacheMode.cs" />
     <Compile Include="client\GridClientClosedException.cs" />
     <Compile Include="client\IGridClientCompute.cs" />
-    <Compile Include="client\IGridClientConfiguration.cs" />
     <Compile Include="client\GridClientConfiguration.cs" />
     <Compile Include="client\IGridClientData.cs" />
     <Compile Include="client\IGridClientDataAffinity.cs" />
-    <Compile Include="client\IGridClientDataConfiguration.cs" />
     <Compile Include="client\GridClientDataConfiguration.cs" />
     <Compile Include="client\GridClientException.cs" />
     <Compile Include="client\GridClientFactory.cs" />
@@ -128,7 +129,6 @@
     <Compile Include="client\GridClientPartitionAffinity.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="client\GridClientProtocol.cs" />
     <Compile Include="client\IGridClientTopologyListener.cs" />
     <Compile Include="client\GridClientServerUnreachableException.cs" />
     <Compile Include="client\util\GridClientFinishedFuture.cs" />
@@ -145,18 +145,7 @@
     <Compile Include="client\impl\IGridClientProjectionConfig.cs" />
     <Compile Include="client\impl\GridClientTopology.cs" />
     <Compile Include="client\impl\GridClientConnectionIdleClosedException.cs" />
-    <Compile Include="client\impl\GridClientHttpConnection.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="client\impl\GridClientTcpConnection.cs" />
-    <Compile Include="client\impl\marshaller\GridClientProtobufBackConverter.cs" />
-    <Compile Include="client\impl\marshaller\IGridClientMarshaller.cs" />
-    <Compile Include="client\impl\marshaller\GridClientProtobufConverter.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="client\impl\marshaller\GridClientProtobufMarshaller.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="client\impl\message\GridClientResponseStatus.cs" />
     <Compile Include="client\impl\message\GridClientCacheRequestOperation.cs" />
     <Compile Include="client\impl\message\GridClientRequest.cs" />
@@ -169,7 +158,6 @@
     <Compile Include="client\impl\message\GridClientTaskRequest.cs" />
     <Compile Include="client\impl\message\GridClientTaskResultBean.cs" />
     <Compile Include="client\impl\message\GridClientTopologyRequest.cs" />
-    <Compile Include="client\impl\protobuf\GridClientMessages.cs" />
     <Compile Include="client\ssl\GridClientSslContext.cs" />
     <Compile Include="client\ssl\IGridClientSslContext.cs" />
     <Compile Include="client\util\GridClientNullDictionary.cs" />
@@ -180,9 +168,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="client-lib.snk" />
-    <None Include="client\impl\protobuf\generate.sh" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="client\impl\marshaller\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>

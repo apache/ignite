@@ -116,7 +116,7 @@ namespace GridGain.Client.Impl.Message
         /** 
          * <summary>Remote reducer class name.</summary> 
          */
-        public String RemoteReducerClasssName {
+        public String RemoteReducerClassName {
             get;
             set;
         }
@@ -147,10 +147,46 @@ namespace GridGain.Client.Impl.Message
 
         /** <inheritdoc /> */
         public override void WritePortable(IGridClientPortableWriter writer) {
+            base.WritePortable(writer);
+
+            writer.WriteLong("queryId", QueryId);
+
+            writer.WriteInt("op", (int)Operation);
+            writer.WriteInt("type", (int)Type);
+
+            writer.WriteString("cacheName", CacheName);
+            writer.WriteString("clause", Clause);
+            writer.WriteInt("pageSize", PageSize);
+            writer.WriteLong("timeout", Timeout);
+            writer.WriteBoolean("includeBackups", IncludeBackups);
+            writer.WriteBoolean("enableDedup", EnableDedup);
+            writer.WriteString("className", ClassName);
+            writer.WriteString("remoteReducerClassName", RemoteReducerClassName);
+            writer.WriteString("remoteTransformerClassName", RemoteTransformerClassName);
+            writer.WriteObjectArray("classArguments", ClassArguments);
+            writer.WriteObjectArray("arguments", Arguments);
         }
 
         /** <inheritdoc /> */
         public override void ReadPortable(IGridClientPortableReader reader) {
+            base.ReadPortable(reader);
+
+            QueryId = reader.ReadLong("queryId");
+
+            Operation = (GridClientCacheQueryRequestOperation)reader.ReadInt("op");
+            Type = (GridClientDataQueryType)reader.ReadInt("type");
+
+            CacheName = reader.ReadString("cacheName");
+            Clause = reader.ReadString("clause");
+            PageSize = reader.ReadInt("pageSize");
+            Timeout = reader.ReadLong("timeout");
+            IncludeBackups = reader.ReadBoolean("includeBackups");
+            EnableDedup = reader.ReadBoolean("enableDedup");
+            ClassName = reader.ReadString("className");
+            RemoteReducerClassName = reader.ReadString("remoteReducerClassName");
+            RemoteTransformerClassName = reader.ReadString("remoteTransformerClassName");
+            ClassArguments = reader.ReadObjectArray<Object>("classArguments");
+            Arguments = reader.ReadObjectArray<Object>("arguments");
         }
     }
 }

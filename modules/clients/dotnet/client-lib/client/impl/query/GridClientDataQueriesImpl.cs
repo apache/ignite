@@ -13,6 +13,7 @@ namespace GridGain.Client.Impl.Query
     using System.Collections;
     using System.Collections.ObjectModel;
     using System.Collections.Generic;
+    using GridGain.Client.Impl.Query;
     using GridGain.Client.Balancer;
     using GridGain.Client.Impl.Message;
 
@@ -22,20 +23,25 @@ namespace GridGain.Client.Impl.Query
      * 
      */
    internal  class GridClientDataQueriesImpl : GridClientAbstractProjection<GridClientDataQueriesImpl>, IGridClientDataQueries {
-       public GridClientDataQueriesImpl(IGridClientProjectionConfig cfg, IEnumerable<N> nodes, Predicate<N> filter, IGridClientLoadBalancer balancer)
+       /**<summary>Cache name.</summary>*/
+       private String cacheName;
+
+       public GridClientDataQueriesImpl(IGridClientProjectionConfig cfg, IEnumerable<N> nodes, Predicate<N> filter, IGridClientLoadBalancer balancer, String cacheName)
            : base(cfg, nodes, filter, balancer) {
+           this.cacheName = cacheName;
        }
 
         /**
          * 
          */
         public IGridClientDataQuery<DictionaryEntry> createSqlQuery(String clsName, String clause) {
-            GridClientDataQueryBean<DictionaryEntry> qry = new GridClientDataQueryBean<DictionaryEntry>();
+            GridClientDataQueryBean<DictionaryEntry> qry = new GridClientDataQueryBean<DictionaryEntry>(this);
 
             qry.Type = GridClientDataQueryType.Sql;
 
             qry.Clause = clause;
             qry.ClassName = clsName;
+            qry.CacheName = cacheName;
 
             return qry;
         }
@@ -44,11 +50,12 @@ namespace GridGain.Client.Impl.Query
          * 
          */
         public IGridClientDataQuery<IList> createSqlFieldsQuery(String clause) {
-            GridClientDataQueryBean<IList> qry = new GridClientDataQueryBean<IList>();
+            GridClientDataQueryBean<IList> qry = new GridClientDataQueryBean<IList>(this);
 
             qry.Type = GridClientDataQueryType.SqlFields;
 
             qry.Clause = clause;
+            qry.CacheName = cacheName;
 
             return qry;
         }
@@ -57,12 +64,13 @@ namespace GridGain.Client.Impl.Query
          * 
          */
         public IGridClientDataQuery<DictionaryEntry> createFullTextQuery(String clsName, String clause) {
-            GridClientDataQueryBean<DictionaryEntry> qry = new GridClientDataQueryBean<DictionaryEntry>();
+            GridClientDataQueryBean<DictionaryEntry> qry = new GridClientDataQueryBean<DictionaryEntry>(this);
 
             qry.Type = GridClientDataQueryType.FullText;
 
             qry.Clause = clause;
             qry.ClassName = clsName;
+            qry.CacheName = cacheName;
 
             return qry;
         }
@@ -71,12 +79,13 @@ namespace GridGain.Client.Impl.Query
          * 
          */
         public IGridClientDataQuery<DictionaryEntry> createScanQuery(String clsName, Object[] args) {
-            GridClientDataQueryBean<DictionaryEntry> qry = new GridClientDataQueryBean<DictionaryEntry>();
+            GridClientDataQueryBean<DictionaryEntry> qry = new GridClientDataQueryBean<DictionaryEntry>(this);
 
             qry.Type = GridClientDataQueryType.Scan;
 
             qry.ClassName = clsName;
             qry.ClassArguments = args;
+            qry.CacheName = cacheName;
 
             return qry;
         }
@@ -85,42 +94,29 @@ namespace GridGain.Client.Impl.Query
          * 
          */
         public IGridClientFuture rebuildIndexes(String clsName) {
-            return null;
+            return WithReconnectHandling((conn, nodeId) => conn.RebuildIndexes(clsName));
         }
 
         /**
          * 
          */
         public IGridClientFuture rebuildAllIndexes() {
-            return null;
-        }
-
-        /**
-         * 
-         */
-        public IGridClientDataQueryMetrics metrics() {
-            return null;
-        }
-
-        /**
-         * 
-         */
-        public void resetMetrics() {
-
+            return WithReconnectHandling((conn, nodeId) => conn.RebuildIndexes(null));
         }
 
         /** <inheritdoc /> */
-        public IGridClientFuture<GridClientDataQueryResult> ExecuteQuery(GridClientCacheQueryRequest req, Guid destNodeId) {
-            return WithReconnectHandling((conn, nodeId) => conn.ExecuteQuery(req));
+        public IGridClientFuture<GridClientDataQueryResult> ExecuteQuery<T>(GridClientDataQueryBean<T> qry, Object[] args) {
+            return WithReconnectHandling((conn, nodeId) => conn.ExecuteQuery(qry, args, nodeId));
         }
 
         /** <inheritdoc /> */
-        public IGridClientFuture<GridClientDataQueryResult> FetchNextPage(long qryId, Guid destNodeId) {
-            return WithReconnectHandling((conn, nodeId) => conn.FetchNextPage(qryId, destNodeId));
+        public IGridClientFuture<GridClientDataQueryResult> FetchNextPage(long qryId, int pageSize, Guid destNodeId) {
+            return WithReconnectHandling((conn, nodeId) => conn.FetchNextPage(qryId, pageSize, destNodeId));
         }
 
+        /** <inheritdoc /> */
         override protected GridClientDataQueriesImpl CreateProjectionImpl(IEnumerable<N> nodes, Predicate<N> filter, IGridClientLoadBalancer balancer) {
-            return new GridClientDataQueriesImpl(cfg, nodes, filter, balancer);
+            return new GridClientDataQueriesImpl(cfg, nodes, filter, balancer, cacheName);
         }
     }
 }

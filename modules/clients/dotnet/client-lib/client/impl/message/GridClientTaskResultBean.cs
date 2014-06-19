@@ -12,7 +12,7 @@ namespace GridGain.Client.Impl.Message {
     using GridGain.Client.Portable;
 
     /** <summary>Task result.</summary> */
-    internal class GridClientTaskResultBean : IGridClientPortableEx {
+    internal class GridClientTaskResultBean : IGridClientPortable {
         /** <summary>Synthetic ID containing task ID and result holding node ID.</summary> */
         public String TaskId {
             get;
