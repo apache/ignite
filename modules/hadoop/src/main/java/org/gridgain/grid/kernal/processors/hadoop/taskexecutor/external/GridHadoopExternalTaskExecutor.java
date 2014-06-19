@@ -661,10 +661,16 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
         /** {@inheritDoc} */
         @Override public void onConnectionLost(GridHadoopProcessDescriptor desc) {
-            if (desc == null || !busyLock.tryReadLock())
+            if (!busyLock.tryReadLock())
                 return;
 
             try {
+                if (desc == null) {
+                    U.warn(log, "Handshake failed.");
+
+                    return;
+                }
+
                 // Notify job tracker about failed tasks.
                 HadoopProcess proc = runningProcsByProcId.get(desc.processId());
 

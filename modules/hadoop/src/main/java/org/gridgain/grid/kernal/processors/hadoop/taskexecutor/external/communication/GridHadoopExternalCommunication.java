@@ -94,6 +94,9 @@ public class GridHadoopExternalCommunication {
                 if (log.isDebugEnabled())
                     log.debug("Closed connection for session: " + ses);
 
+                if (e != null)
+                    U.error(log, "Session disconnected due to exception: " + ses, e);
+
                 GridHadoopProcessDescriptor desc = ses.meta(PROCESS_META);
 
                 if (desc != null) {

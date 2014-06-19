@@ -380,7 +380,7 @@ public class GridHadoopChildProcessRunner {
      */
     private class MessageListener implements GridHadoopMessageListener {
         /** {@inheritDoc} */
-        @Override public void onMessageReceived(GridHadoopProcessDescriptor desc, GridHadoopMessage msg) {
+        @Override public void onMessageReceived(final GridHadoopProcessDescriptor desc, final GridHadoopMessage msg) {
             if (msg instanceof GridHadoopTaskExecutionRequest) {
                 if (validateNodeMessage(desc, msg))
                     runTasks((GridHadoopTaskExecutionRequest)msg);
@@ -394,19 +394,23 @@ public class GridHadoopChildProcessRunner {
                     prepareProcess((GridHadoopPrepareForJobRequest)msg);
             }
             else if (msg instanceof GridHadoopShuffleMessage) {
-                try {
-                    if (log.isTraceEnabled())
-                        log.trace("Received shuffle message [desc=" + desc + ", msg=" + msg + ']');
+                if (log.isTraceEnabled())
+                    log.trace("Received shuffle message [desc=" + desc + ", msg=" + msg + ']');
 
-                    GridHadoopShuffleMessage m = (GridHadoopShuffleMessage)msg;
+                initFut.listenAsync(new CI1<GridFuture<?>>() {
+                    @Override public void apply(GridFuture<?> f) {
+                        try {
+                            GridHadoopShuffleMessage m = (GridHadoopShuffleMessage)msg;
 
-                    shuffleJob.onShuffleMessage(m);
+                            shuffleJob.onShuffleMessage(m);
 
-                    comm.sendMessage(desc, new GridHadoopShuffleAck(m.id(), m.jobId()));
-                }
-                catch (GridException e) {
-                    U.error(log, "Failed to process hadoop shuffle message [desc=" + desc + ", msg=" + msg + ']', e);
-                }
+                            comm.sendMessage(desc, new GridHadoopShuffleAck(m.id(), m.jobId()));
+                        }
+                        catch (GridException e) {
+                            U.error(log, "Failed to process hadoop shuffle message [desc=" + desc + ", msg=" + msg + ']', e);
+                        }
+                    }
+                });
             }
             else if (msg instanceof GridHadoopShuffleAck) {
                 if (log.isTraceEnabled())
@@ -423,7 +427,9 @@ public class GridHadoopChildProcessRunner {
             if (log.isDebugEnabled())
                 log.debug("Lost connection with remote process: " + desc);
 
-            if (desc.processId().equals(nodeDesc.processId())) {
+            if (desc == null)
+                U.warn(log, "Handshake failed.");
+            else if (desc.processId().equals(nodeDesc.processId())) {
                 log.warning("Child process lost connection with parent node (will terminate child process).");
 
                 shutdown();
