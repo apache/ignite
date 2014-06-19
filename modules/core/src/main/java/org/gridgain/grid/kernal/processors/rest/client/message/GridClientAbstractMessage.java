@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.*;
 /**
  * This class provides implementation for commit message fields and cannot be used directly.
  */
-public abstract class GridClientAbstractMessage implements GridClientMessage, Externalizable, GridPortableEx {
+public abstract class GridClientAbstractMessage implements GridClientMessage, Externalizable, GridPortable {
     /** */
     private static final long serialVersionUID = 0L;
 

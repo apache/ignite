@@ -10,14 +10,45 @@
 package org.gridgain.grid.kernal.portable;
 
 import org.gridgain.grid.portable.*;
+import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
+import sun.misc.*;
 
 import java.util.*;
 
 /**
  * Portable reader implementation.
  */
-public class GridPortableReaderImpl implements GridPortableReader {
+class GridPortableReaderImpl implements GridPortableReader {
+    /** */
+    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
+
+    /** */
+    private static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
+
+    /** */
+    private static final long SHORT_ARR_OFF = UNSAFE.arrayBaseOffset(short[].class);
+
+    /** */
+    private static final long INT_ARR_OFF = UNSAFE.arrayBaseOffset(int[].class);
+
+    /** */
+    private static final long LONG_ARR_OFF = UNSAFE.arrayBaseOffset(long[].class);
+
+    /** */
+    private static final long FLOAT_ARR_OFF = UNSAFE.arrayBaseOffset(float[].class);
+
+    /** */
+    private static final long DOUBLE_ARR_OFF = UNSAFE.arrayBaseOffset(double[].class);
+
+    /** */
+    private static final long CHAR_ARR_OFF = UNSAFE.arrayBaseOffset(char[].class);
+
+    /** */
+    private static final long BOOLEAN_ARR_OFF = UNSAFE.arrayBaseOffset(boolean[].class);
+
+
+
     /** {@inheritDoc} */
     @Override public byte readByte(String fieldName) throws GridPortableException {
         return 0; // TODO: implement.

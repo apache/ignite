@@ -17,7 +17,7 @@ import java.io.*;
 /**
  * Task result.
  */
-public class GridClientTaskResultBean implements Externalizable, GridPortableEx {
+public class GridClientTaskResultBean implements Externalizable, GridPortable {
     /** */
     private static final long serialVersionUID = 0L;
 

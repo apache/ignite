@@ -49,8 +49,8 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
     /**
      * @return Portable types map.
      */
-    private Map<Integer, Class<? extends GridPortableEx>> typesMap() {
-        Map<Integer, Class<? extends GridPortableEx>> map = new HashMap<>();
+    private Map<Integer, Class<? extends GridPortable>> typesMap() {
+        Map<Integer, Class<? extends GridPortable>> map = new HashMap<>();
 
         map.put(TestKey1.TYPE_ID, TestKey1.class);
         map.put(TestKey2.TYPE_ID, TestKey2.class);
@@ -150,7 +150,7 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
      *
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class TestKey1 implements GridPortableEx {
+    public static class TestKey1 implements GridPortable {
         /** */
         static final int TYPE_ID = 0;
 
@@ -387,7 +387,7 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
      *
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class TestValue1 implements GridPortableEx {
+    public static class TestValue1 implements GridPortable {
         /** */
         static final int TYPE_ID = 2;
 
@@ -592,7 +592,7 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
      *
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class TestPortable implements GridPortableEx {
+    public static class TestPortable implements GridPortable {
         /** */
         static final int TYPE_ID = 4;
 

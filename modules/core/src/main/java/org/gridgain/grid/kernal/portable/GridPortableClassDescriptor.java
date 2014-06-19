@@ -10,23 +10,23 @@
 package org.gridgain.grid.kernal.portable;
 
 import org.gridgain.grid.portable.*;
+import org.gridgain.grid.util.*;
 import org.jdk8.backport.*;
+import sun.misc.*;
 
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
 import static java.lang.reflect.Modifier.*;
+import static java.nio.charset.StandardCharsets.*;
 
 /**
  * Portable class descriptor.
  */
 class GridPortableClassDescriptor {
     /** */
-    private static final ConcurrentMap<Class<?>, GridPortableClassDescriptor> CACHE = new ConcurrentHashMap8<>(256);
-
-    /** */
-    private static final int TOTAL_LEN_POS = 10;
+    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
     /** */
     private static final int COL_TYPE_ID = 100;
@@ -34,10 +34,27 @@ class GridPortableClassDescriptor {
     /** */
     private static final int MAP_TYPE_ID = 200;
 
-    /**
-     *
-     */
+    /** */
+    private static final Map<Class<?>, FieldType> TYPES = new HashMap<>();
+
+    /** */
+    private static final ConcurrentMap<Class<?>, GridPortableClassDescriptor> CACHE = new ConcurrentHashMap8<>(256);
+
+    /** */
+    private static final boolean useNames = false; // TODO: take from config
+
+    /** */
     static {
+        // Field types.
+        TYPES.put(byte.class, FieldType.BYTE);
+        TYPES.put(short.class, FieldType.SHORT);
+        TYPES.put(int.class, FieldType.INT);
+        TYPES.put(long.class, FieldType.LONG);
+        TYPES.put(float.class, FieldType.FLOAT);
+        TYPES.put(double.class, FieldType.DOUBLE);
+        TYPES.put(char.class, FieldType.CHAR);
+        TYPES.put(boolean.class, FieldType.BOOLEAN);
+
         // Boxed primitives.
         CACHE.put(Byte.class, new GridPortableClassDescriptor(Mode.BYTE, 1));
         CACHE.put(Short.class, new GridPortableClassDescriptor(Mode.SHORT, 2));
@@ -78,74 +95,14 @@ class GridPortableClassDescriptor {
         CACHE.put(Object[].class, new GridPortableClassDescriptor(Mode.OBJ_ARR, 21));
     }
 
-    /** */
-    private final Mode mode;
-
-    /** */
-    private final int typeId;
-
-    /** */
-    private List<FieldInfo> fields;
-
-    /** */
-    private byte[] hdr;
-
     /**
-     * @param mode Mode.
-     * @param typeId Type ID.
+     * @param field Field.
+     * @return Field type.
      */
-    private GridPortableClassDescriptor(Mode mode, int typeId) {
-        assert mode != null;
+    private static FieldType fieldType(Field field) {
+        FieldType type = TYPES.get(field.getType());
 
-        this.mode = mode;
-        this.typeId = typeId;
-    }
-
-    /**
-     * @param cls Class.
-     */
-    private GridPortableClassDescriptor(Class<?> cls) throws GridPortableException {
-        assert cls != null;
-
-        if (Collection.class.isAssignableFrom(cls)) {
-            mode = Mode.COL;
-
-            typeId = COL_TYPE_ID;
-        }
-        else if (Map.class.isAssignableFrom(cls)) {
-            mode = Mode.MAP;
-
-            typeId = MAP_TYPE_ID;
-        }
-        else {
-            if (GridPortableEx.class.isAssignableFrom(cls))
-                mode = Mode.PORTABLE_EX;
-            else {
-                mode = Mode.PORTABLE;
-
-                fields = new ArrayList<>();
-
-                GridPortableHeaderWriter hdrWriter = new GridPortableHeaderWriter();
-
-                for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
-                    for (Field f : c.getDeclaredFields()) {
-                        int mod = f.getModifiers();
-
-                        if (!isStatic(mod) && !isTransient(mod)) {
-                            f.setAccessible(true);
-
-                            int offPos = hdrWriter.addField(f.getName());
-
-                            fields.add(new FieldInfo(f, offPos));
-                        }
-                    }
-                }
-
-                hdr = hdrWriter.header();
-            }
-
-            typeId = cls.getSimpleName().hashCode(); // TODO: should be taken from config
-        }
+        return type != null ? type : FieldType.OTHER;
     }
 
     /**
@@ -168,6 +125,98 @@ class GridPortableClassDescriptor {
         return desc;
     }
 
+    /** */
+    private final Class<?> cls;
+
+    /** */
+    private final boolean userType;
+
+    /** */
+    private final Mode mode;
+
+    /** */
+    private final int typeId;
+
+    /** */
+    private Collection<FieldInfo> fields;
+
+    /**
+     * @param mode Mode.
+     * @param typeId Type ID.
+     */
+    private GridPortableClassDescriptor(Mode mode, int typeId) {
+        assert mode != null;
+
+        assert mode != Mode.COL && mode != Mode.MAP && mode != Mode.PORTABLE && mode != Mode.OBJECT;
+
+        cls = null;
+        userType = false;
+
+        this.mode = mode;
+        this.typeId = typeId;
+    }
+
+    /**
+     * @param cls Class.
+     */
+    private GridPortableClassDescriptor(Class<?> cls) throws GridPortableException {
+        assert cls != null;
+
+        this.cls = cls;
+
+        if (Collection.class.isAssignableFrom(cls)) {
+            userType = false;
+            mode = Mode.COL;
+            typeId = COL_TYPE_ID;
+        }
+        else if (Map.class.isAssignableFrom(cls)) {
+            userType = false;
+            mode = Mode.MAP;
+            typeId = MAP_TYPE_ID;
+        }
+        else if (GridPortable.class.isAssignableFrom(cls)) {
+            userType = true;
+            mode = Mode.PORTABLE;
+            typeId = cls.getSimpleName().hashCode(); // TODO: should be taken from config
+        }
+        else {
+            userType = true;
+            mode = Mode.OBJECT;
+            typeId = cls.getSimpleName().hashCode(); // TODO: should be taken from config
+
+            fields = new ArrayList<>();
+
+            Collection<String> names = new HashSet<>();
+            Collection<Integer> ids = useNames ? null : new HashSet<Integer>();
+
+            for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
+                for (Field f : c.getDeclaredFields()) {
+                    int mod = f.getModifiers();
+
+                    if (!isStatic(mod) && !isTransient(mod)) {
+                        f.setAccessible(true);
+
+                        String name = f.getName();
+
+                        if (!names.add(name))
+                            throw new GridPortableException("Duplicate field name: " + name);
+
+                        if (useNames)
+                            fields.add(new FieldInfo(f, name.getBytes(UTF_8)));
+                        else {
+                            int id = name.hashCode();
+
+                            if (!ids.add(id))
+                                throw new GridPortableException("Duplicate field ID: " + name); // TODO: proper message
+
+                            fields.add(new FieldInfo(f, id));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * @param obj Object.
      * @param writer Writer.
@@ -177,6 +226,7 @@ class GridPortableClassDescriptor {
         assert obj != null;
         assert writer != null;
 
+        writer.doWriteBoolean(userType);
         writer.doWriteInt(typeId);
 
         switch (mode) {
@@ -295,48 +345,32 @@ class GridPortableClassDescriptor {
 
                 break;
 
-            case PORTABLE_EX:
-                writer.doWriteInt(obj.hashCode());
-
-                // Length + raw data offset.
-                writer.reserve(8);
-
-                // Header handles are not supported for GridPortableEx.
-                writer.doWriteInt(-1);
-
-                GridPortableWriterImpl writer0 = new GridPortableWriterImpl(writer);
-
-                ((GridPortableEx)obj).writePortable(writer0);
-
-                writer0.flush();
-
-                // Length.
-                writer.writeCurrentSize(TOTAL_LEN_POS);
-
-                break;
-
             case PORTABLE:
                 writer.doWriteInt(obj.hashCode());
 
                 // Length + raw data offset.
                 writer.reserve(8);
 
-                writer.doWriteInt(-1); // TODO: Header handles.
-                writer.write(hdr);
+                writer.doWriteBoolean(useNames);
 
-                for (FieldInfo info : fields) {
-                    writer.writeCurrentSize(info.offPos);
+                ((GridPortable)obj).writePortable(writer);
 
-                    try {
-                        writer.doWriteObject(info.field.get(obj));
-                    }
-                    catch (IllegalAccessException e) {
-                        throw new GridPortableException("Failed to get value for field: " + info.field, e);
-                    }
-                }
+                writer.writeLength();
 
-                // Length.
-                writer.writeCurrentSize(TOTAL_LEN_POS);
+                break;
+
+            case OBJECT:
+                writer.doWriteInt(obj.hashCode());
+
+                // Length + raw data offset.
+                writer.reserve(8);
+
+                writer.doWriteBoolean(useNames);
+
+                for (FieldInfo info : fields)
+                    info.write(obj, writer);
+
+                writer.writeLength();
 
                 break;
 
@@ -422,16 +456,49 @@ class GridPortableClassDescriptor {
             case MAP:
                 return reader.readMap();
 
-            case PORTABLE_EX:
-                return null; // TODO
-
             case PORTABLE:
-                return null; // TODO
+                GridPortable portableEx = newInstance(cls);
+
+                portableEx.readPortable(reader);
+
+                return portableEx;
+
+            case OBJECT:
+                GridPortable portable = newInstance(cls);
+
+                for (FieldInfo info : fields) {
+                    Field f = info.field;
+
+                    Object val = reader.readObject(f.getName());
+
+                    try {
+                        f.set(portable, val);
+                    }
+                    catch (IllegalAccessException e) {
+                        throw new GridPortableException("Failed to set value for field: " + f, e);
+                    }
+                }
+
+                return portable;
 
             default:
                 assert false : "Invalid mode: " + mode;
 
                 return null;
+        }
+    }
+
+    /**
+     * @param cls Class.
+     * @return Instance.
+     * @throws GridPortableException In case of error.
+     */
+    private <T> T newInstance(Class<?> cls) throws GridPortableException {
+        try {
+            return (T)UNSAFE.allocateInstance(cls);
+        }
+        catch (InstantiationException e) {
+            throw new GridPortableException("Failed to instantiate instance: " + cls, e);
         }
     }
 
@@ -441,16 +508,160 @@ class GridPortableClassDescriptor {
         private final Field field;
 
         /** */
-        private final int offPos;
+        private final FieldType type;
+
+        /** */
+        private final int id;
+
+        /** */
+        private final byte[] name;
 
         /**
          * @param field Field.
-         * @param offPos Offset position.
+         * @param id Field ID.
          */
-        private FieldInfo(Field field, int offPos) {
+        private FieldInfo(Field field, int id) {
+            assert field != null;
+
             this.field = field;
-            this.offPos = offPos;
+            this.id = id;
+
+            type = fieldType(field);
+
+            name = null;
         }
+
+        /**
+         * @param field Field.
+         * @param name Field name.
+         */
+        private FieldInfo(Field field, byte[] name) {
+            assert field != null;
+            assert name != null;
+
+            this.field = field;
+            this.name = name;
+
+            type = fieldType(field);
+
+            id = 0;
+        }
+
+        /**
+         * @param obj Object.
+         * @param writer Writer.
+         * @throws GridPortableException In case of error.
+         */
+        public void write(Object obj, GridPortableWriterImpl writer) throws GridPortableException {
+            assert obj != null;
+            assert writer != null;
+
+            if (name != null)
+                writer.doWriteByteArray(name);
+            else
+                writer.doWriteInt(id);
+
+            Object val;
+
+            try {
+                val = field.get(obj);
+            }
+            catch (IllegalAccessException e) {
+                throw new GridPortableException("Failed to get value for field: " + field, e);
+            }
+
+            switch (type) {
+                case BYTE:
+                    writer.doWriteInt(1);
+                    writer.doWriteByte((byte)val);
+
+                    break;
+
+                case SHORT:
+                    writer.doWriteInt(2);
+                    writer.doWriteShort((short)val);
+
+                    break;
+
+                case INT:
+                    writer.doWriteInt(4);
+                    writer.doWriteInt((int)val);
+
+                    break;
+
+                case LONG:
+                    writer.doWriteInt(8);
+                    writer.doWriteLong((long)val);
+
+                    break;
+
+                case FLOAT:
+                    writer.doWriteInt(4);
+                    writer.doWriteFloat((float)val);
+
+                    break;
+
+                case DOUBLE:
+                    writer.doWriteInt(8);
+                    writer.doWriteDouble((double)val);
+
+                    break;
+
+                case CHAR:
+                    writer.doWriteInt(2);
+                    writer.doWriteChar((char)val);
+
+                    break;
+
+                case BOOLEAN:
+                    writer.doWriteInt(1);
+                    writer.doWriteBoolean((boolean)val);
+
+                    break;
+
+                case OTHER:
+                    int lenPos = writer.reserveAndMark(4);
+
+                    writer.doWriteObject(val);
+
+                    writer.writeDelta(lenPos);
+
+                    break;
+
+                default:
+                    assert false : "Invalid field type: " + type;
+            }
+        }
+    }
+
+    /** */
+    private enum FieldType {
+        /** */
+        BYTE,
+
+        /** */
+        SHORT,
+
+        /** */
+        INT,
+
+        /** */
+        LONG,
+
+        /** */
+        FLOAT,
+
+        /** */
+        DOUBLE,
+
+        /** */
+        CHAR,
+
+        /** */
+        BOOLEAN,
+
+        /** */
+        OTHER
     }
 
     /** */
@@ -525,9 +736,9 @@ class GridPortableClassDescriptor {
         MAP,
 
         /** */
-        PORTABLE_EX,
+        PORTABLE,
 
         /** */
-        PORTABLE
+        OBJECT
     }
 }
