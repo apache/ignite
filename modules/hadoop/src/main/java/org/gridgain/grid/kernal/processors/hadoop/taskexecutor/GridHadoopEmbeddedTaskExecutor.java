@@ -60,7 +60,7 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
         for (final GridHadoopTaskInfo info : tasks) {
             assert info != null;
 
-            GridHadoopRunnableTask task = new GridHadoopRunnableTask(job, ctx.shuffle().memory(), info, clsLdrCtx) {
+            GridHadoopRunnableTask task = new GridHadoopRunnableTask(log, job, ctx.shuffle().memory(), info, clsLdrCtx) {
                 @Override protected void onTaskFinished(GridHadoopTaskState state, Throwable err) {
                     if (log.isDebugEnabled())
                         log.debug("Finished task execution [jobId=" + job.id() + ", taskInfo=" + info + ", " +

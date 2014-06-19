@@ -13,8 +13,10 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
+import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 
@@ -27,6 +29,9 @@ import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
 public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> {
     /** */
     private final GridUnsafeMemory mem;
+
+    /** */
+    private GridLogger log;
 
     /** */
     private final GridHadoopJob job;
@@ -56,13 +61,15 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
     private volatile boolean cancelled;
 
     /**
+     * @param log Log.
      * @param job Job.
      * @param mem Memory.
      * @param info Task info.
      * @param clsLdrCtx Class loading context.
      */
-    public GridHadoopRunnableTask(GridHadoopJob job, GridUnsafeMemory mem, GridHadoopTaskInfo info,
+    public GridHadoopRunnableTask(GridLogger log, GridHadoopJob job, GridUnsafeMemory mem, GridHadoopTaskInfo info,
         GridHadoopJobClassLoadingContext clsLdrCtx) {
+        this.log = log;
         this.job = job;
         this.mem = mem;
         this.info = info;
@@ -108,6 +115,8 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
         catch (Throwable e) {
             state = GridHadoopTaskState.FAILED;
             err = e;
+
+            U.error(log, "Task execution failed.", e);
         }
         finally {
             execEndTs = System.currentTimeMillis();
