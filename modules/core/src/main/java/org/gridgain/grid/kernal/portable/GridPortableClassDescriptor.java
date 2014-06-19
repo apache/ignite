@@ -38,6 +38,9 @@ class GridPortableClassDescriptor {
     private static final int MAP_TYPE_ID = 200;
 
     /** */
+    private static final Map<Class<?>, FieldType> TYPES = new HashMap<>();
+
+    /** */
     private static final ConcurrentMap<Class<?>, GridPortableClassDescriptor> CACHE = new ConcurrentHashMap8<>(256);
 
     /** */
@@ -45,6 +48,16 @@ class GridPortableClassDescriptor {
 
     /** */
     static {
+        // Field types.
+        TYPES.put(byte.class, FieldType.BYTE);
+        TYPES.put(short.class, FieldType.SHORT);
+        TYPES.put(int.class, FieldType.INT);
+        TYPES.put(long.class, FieldType.LONG);
+        TYPES.put(float.class, FieldType.FLOAT);
+        TYPES.put(double.class, FieldType.DOUBLE);
+        TYPES.put(char.class, FieldType.CHAR);
+        TYPES.put(boolean.class, FieldType.BOOLEAN);
+
         // Boxed primitives.
         CACHE.put(Byte.class, new GridPortableClassDescriptor(Mode.BYTE, 1));
         CACHE.put(Short.class, new GridPortableClassDescriptor(Mode.SHORT, 2));
@@ -83,6 +96,16 @@ class GridPortableClassDescriptor {
         CACHE.put(String[].class, new GridPortableClassDescriptor(Mode.STRING_ARR, 19));
         CACHE.put(UUID[].class, new GridPortableClassDescriptor(Mode.UUID_ARR, 20));
         CACHE.put(Object[].class, new GridPortableClassDescriptor(Mode.OBJ_ARR, 21));
+    }
+
+    /**
+     * @param field Field.
+     * @return Field type.
+     */
+    private static FieldType fieldType(Field field) {
+        FieldType type = TYPES.get(field.getType());
+
+        return type != null ? type : FieldType.OTHER;
     }
 
     /**
@@ -482,38 +505,6 @@ class GridPortableClassDescriptor {
         catch (InstantiationException e) {
             throw new GridPortableException("Failed to instantiate instance: " + cls, e);
         }
-    }
-
-    /**
-     * @param field Field.
-     * @return Field type.
-     */
-    @SuppressWarnings("IfMayBeConditional")
-    private static FieldType fieldType(Field field) {
-        Class<?> cls = field.getType();
-
-        FieldType type;
-
-        if (cls == byte.class)
-            type = FieldType.BYTE;
-        else if (cls == short.class)
-            type = FieldType.SHORT;
-        else if (cls == int.class)
-            type = FieldType.INT;
-        else if (cls == long.class)
-            type = FieldType.LONG;
-        else if (cls == float.class)
-            type = FieldType.FLOAT;
-        else if (cls == double.class)
-            type = FieldType.DOUBLE;
-        else if (cls == char.class)
-            type = FieldType.CHAR;
-        else if (cls == boolean.class)
-            type = FieldType.BOOLEAN;
-        else
-            type = FieldType.OTHER;
-
-        return type;
     }
 
     /** */
