@@ -15,8 +15,7 @@ namespace GridGain {
     using System.Diagnostics;
     using GridGain.Client;
     using GridGain.Client.Hasher;
-    using GridGain.Client.Impl.Marshaller;
-
+    
     using Dbg = System.Diagnostics.Debug;
 
     /** <summary>Start test suite main class.</summary> */

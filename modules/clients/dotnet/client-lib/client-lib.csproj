@@ -71,6 +71,7 @@
     <Compile Include="client\balancer\GridClientRoundRobinBalancer.cs" />
     <Compile Include="client\impl\portable\GridClientPortableReflectingIdMapper.cs" />
     <Compile Include="client\impl\portable\GridClientPortableTypeDescriptor.cs" />
+    <Compile Include="client\portable\GridClientPortableConfiguration.cs" />
     <Compile Include="client\portable\GridClientPortableTypeConfiguration.cs" />
     <Compile Include="client\portable\GridClientPortableId.cs" />
     <Compile Include="client\portable\GridClientPortableIdMapper.cs" />
@@ -85,6 +86,7 @@
     <Compile Include="client\impl\portable\GridClientPortableObjectHandle.cs" />
     <Compile Include="client\impl\portable\GridClientPortableReflectingSerializer.cs" />
     <Compile Include="client\impl\portable\GridClientPortableSerializationContext.cs" />
+    <Compile Include="client\portable\GridClientPortableType.cs" />
     <Compile Include="client\portable\IGridClientPortable.cs" />
     <Compile Include="client\portable\IGridClientPortableReader.cs" />
     <Compile Include="client\portable\IGridClientPortableSerializer.cs" />

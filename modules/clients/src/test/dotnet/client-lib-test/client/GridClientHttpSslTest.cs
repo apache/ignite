@@ -17,10 +17,6 @@ namespace GridGain.Client {
 
     [TestFixture]
     public class GridClientHttpSslTest : GridClientAbstractTest {
-        override protected GridClientProtocol Protocol() {
-            return GridClientProtocol.Http;
-        }
-
         override protected IGridClientSslContext SslContext() {
             return new GridClientSslContext(true);
         }

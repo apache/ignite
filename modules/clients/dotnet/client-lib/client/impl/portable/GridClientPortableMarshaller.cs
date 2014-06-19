@@ -49,10 +49,12 @@ namespace GridGain.Client.Impl.Portable
 
         /**
          * <summary>Constructor.</summary>
-         * <param name="typeCfgs">User type configurtaions.</param>
-         */ 
-        public GridClientPortableMarshaller(ICollection<GridClientPortableTypeConfiguration> typeCfgs) 
+         * <param name="cfg">Configurtaion.</param>
+         */
+        public GridClientPortableMarshaller(GridClientPortableConfiguration cfg) 
         {
+            ICollection<GridClientPortableTypeConfiguration> typeCfgs = cfg.TypeConfigurations;
+
             GridClientPortableReflectingSerializer refSerializer = new GridClientPortableReflectingSerializer();
             IGridClientPortableSerializer extSerializer = new GridClientPortableExternalSerializer();
 
@@ -198,7 +200,7 @@ namespace GridGain.Client.Impl.Portable
 
         /**
          * <summary>Unmarshal object.</summary>
-         * <param name="data">Stream.</param>
+         * <param name="input">Stream.</param>
          * <returns>Unmarshalled object.</returns>
          */ 
         public T Unmarshal<T>(Stream input)
@@ -232,10 +234,11 @@ namespace GridGain.Client.Impl.Portable
             
             /** Current object handle number. */
             private int curHndNum;
-            
+
             /**
              * <summary>Constructor.</summary>
              * <param name="ctx">Client connection context.</param>
+             * <param name="descs">Type descriptors.</param>
              * <param name="stream">Output stream.</param>
              */
             public Context(GridClientPortableSerializationContext ctx, IDictionary<string, GridClientPortableTypeDescriptor> descs, Stream stream)
@@ -401,7 +404,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="stream"></param>
          * <param name="pos"></param>
          * <param name="retPos"></param>
-         * <param name="raw">Raw data length.</param>
+         * <param name="rawPos">Raw position.</param>
          */
         private static void WriteLength(Stream stream, long pos, long retPos, long rawPos) {
             stream.Seek(pos + 10, SeekOrigin.Begin);

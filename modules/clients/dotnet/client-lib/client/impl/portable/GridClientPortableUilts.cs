@@ -279,7 +279,7 @@ namespace GridGain.Client.Impl.Portable
             {
                 stream.WriteByte(BYTE_ONE);
                 
-                WriteInt
+                // TODO: Finish.
 
             }
         }

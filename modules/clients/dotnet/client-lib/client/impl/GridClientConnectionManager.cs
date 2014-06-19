@@ -72,10 +72,10 @@ namespace GridGain.Client.Impl {
          * <param name="credentials">Connection credentials.</param>
          * <param name="sslCtx">SSL context to enable secured connection or <c>null</c> to use unsecured one.</param>
          * <param name="connectTimeout">TCP connection timeout.</param>
-         * <param name="portableTypCfgs">Portable type configurations.</param>
+         * <param name="portableCfg">Portable configuration.</param>
          */
         public GridClientConnectionManager(Guid clientId, GridClientTopology top, ICollection<IPEndPoint> routers,
-            Object credentials, IGridClientSslContext sslCtx, int connectTimeout, ICollection<GridClientPortableTypeConfiguration> portableTypCfgs) {
+            Object credentials, IGridClientSslContext sslCtx, int connectTimeout, GridClientPortableConfiguration portableCfg) {
             Dbg.Assert(clientId != null, "clientId != null");
             Dbg.Assert(top != null, "top != null");
             Dbg.Assert(routers != null, "routers != null");
@@ -88,7 +88,7 @@ namespace GridGain.Client.Impl {
             this.sslCtx = sslCtx;
             this.connectTimeout = connectTimeout;
 
-            marsh = new GridClientPortableMarshaller(portableTypCfgs);
+            marsh = new GridClientPortableMarshaller(portableCfg);
         }
 
         /**

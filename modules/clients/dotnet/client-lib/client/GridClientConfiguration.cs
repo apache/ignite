@@ -56,7 +56,7 @@ namespace GridGain.Client {
             Credentials = cfg.Credentials;
             DataConfigurations = new List<GridClientDataConfiguration>(cfg.DataConfigurations);
             IsTopologyCacheEnabled = cfg.IsTopologyCacheEnabled;
-            PortableTypeConfigurations = cfg.PortableTypeConfigurations;
+            PortableConfiguration = cfg.PortableConfiguration;
             Servers = new HashSet<String>(cfg.Servers);
             Routers = new HashSet<String>(cfg.Routers);
             SslContext = cfg.SslContext;
@@ -175,7 +175,7 @@ namespace GridGain.Client {
         /**
          * <summary>Configuration for custom portable types.</summary>
          */
-        public ICollection<GridClientPortableTypeConfiguration> PortableTypeConfigurations
+        public GridClientPortableConfiguration PortableConfiguration
         {
             get;
             set;
