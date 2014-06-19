@@ -11,8 +11,6 @@ package org.gridgain.grid.service;
 
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.util.*;
-
 /**
  * TODO: Add class description.
  *
@@ -28,9 +26,7 @@ public class GridServiceConfiguration {
 
     private String cacheName;
 
-    private Collection<?> affKeys;
-
-    private Collection<Integer> parts;
+    private Object affKey;
 
     public GridService getService() {
         return svc;
@@ -64,20 +60,12 @@ public class GridServiceConfiguration {
         this.cacheName = cacheName;
     }
 
-    public Collection<?> getAffinityKeys() {
-        return affKeys;
+    public Object getAffinityKey() {
+        return affKey;
     }
 
-    public void setAffinityKeys(Collection<?> affKeys) {
-        this.affKeys = affKeys;
-    }
-
-    public Collection<Integer> getPartitions() {
-        return parts;
-    }
-
-    public void setPartitions(Collection<Integer> parts) {
-        this.parts = parts;
+    public void setAffinityKey(Object affKey) {
+        this.affKey = affKey;
     }
 
     /** {@inheritDoc} */
