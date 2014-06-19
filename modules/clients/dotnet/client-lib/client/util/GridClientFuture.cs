@@ -51,7 +51,7 @@ namespace GridGain.Client.Util {
          *
          * <exception cref="GridClientException">If task execution fails with exception.</exception>
          */
-        public void WaitDone() {
+        public virtual void WaitDone() {
             WaitDone(TimeSpan.FromMilliseconds(-1));
         }
 
@@ -63,7 +63,7 @@ namespace GridGain.Client.Util {
          * <returns><c>true</c> if this future completes, <c>false</c> - otherwize.</returns>
          * <exception cref="GridClientException">If task execution fails with exception.</exception>
          */
-        public bool WaitDone(TimeSpan timeout) {
+        public virtual bool WaitDone(TimeSpan timeout) {
             if (!doneLatch.WaitOne(timeout))
                 return false;
 

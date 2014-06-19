@@ -146,10 +146,13 @@ namespace GridGain.Client.Impl {
         public abstract IGridClientFuture<IList<String>> Log(String path, int fromLine, int toLine, Guid destNodeId);
 
         /** <inheritdoc /> */
-        public abstract IGridClientFuture<GridClientDataQueryResult> ExecuteQuery(GridClientCacheQueryRequest req);
+        public abstract IGridClientFuture<GridClientDataQueryResult> ExecuteQuery<T>(GridClientDataQueryBean<T> qry, Object[] args, Guid destNodeId);
 
         /** <inheritdoc /> */
-        public abstract IGridClientFuture<GridClientDataQueryResult> FetchNextPage(long qryId, Guid destNodeId);
+        public abstract IGridClientFuture<GridClientDataQueryResult> FetchNextPage(long qryId, int pageSize, Guid destNodeId);
+
+        /** <inheritdoc /> */
+        public abstract IGridClientFuture<GridClientDataQueryResult> RebuildIndexes(String clsName);
 
         /**
          * <summary>

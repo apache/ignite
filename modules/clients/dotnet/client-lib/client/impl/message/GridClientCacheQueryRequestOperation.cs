@@ -18,5 +18,8 @@ namespace GridGain.Client.Impl.Message
 
         /** <summary>Query results fetch request.</summary> */
         Fetch,
+
+        /** <summary>Rebuild indexes request.</summary> */
+        RebuildIndexes,
     }
 }

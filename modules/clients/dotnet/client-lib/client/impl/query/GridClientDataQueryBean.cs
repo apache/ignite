@@ -17,11 +17,14 @@ namespace GridGain.Client.Impl.Query
      * 
      */
     internal class GridClientDataQueryBean<T> : IGridClientDataQuery<T> {
+        /**<summary>Root queries projection.</summary>*/
+        private GridClientDataQueriesImpl rootPrj;
+
         /**
          * 
          */
-        public GridClientDataQueryBean() {
-
+        public GridClientDataQueryBean(GridClientDataQueriesImpl rootPrj) {
+            this.rootPrj = rootPrj;
         }
 
         /**
@@ -39,12 +42,22 @@ namespace GridGain.Client.Impl.Query
             RemoteReducerClassName = src.RemoteReducerClassName;
             RemoteTransformerClassName = src.RemoteTransformerClassName;
             ClassArguments = src.ClassArguments;
+
+            rootPrj = src.rootPrj;
         }
 
         /**
          * 
          */
         public GridClientDataQueryType Type {
+            get;
+            set;
+        }
+
+        /**
+         * 
+         */
+        public String CacheName {
             get;
             set;
         }
@@ -154,9 +167,11 @@ namespace GridGain.Client.Impl.Query
         public IGridClientDataQueryFuture<T> execute(Object[] args) {
             GridClientDataQueryBean<T> cp = new GridClientDataQueryBean<T>(this);
 
-            GridClientDataQueryFutureImpl<T> fut = new GridClientDataQueryFutureImpl<T>();
+            GridClientDataQueryFutureImpl<T> fut = new GridClientDataQueryFutureImpl<T>(rootPrj, cp);
 
-            return null;
+            fut.Init(args);
+
+            return fut;
         }
     }
 }

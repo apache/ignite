@@ -35,7 +35,7 @@
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Release\GridGainClient.xml</DocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup>
@@ -145,9 +145,6 @@
     <Compile Include="client\impl\IGridClientProjectionConfig.cs" />
     <Compile Include="client\impl\GridClientTopology.cs" />
     <Compile Include="client\impl\GridClientConnectionIdleClosedException.cs" />
-    <Compile Include="client\impl\GridClientHttpConnection.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="client\impl\GridClientTcpConnection.cs" />
     <Compile Include="client\impl\message\GridClientResponseStatus.cs" />
     <Compile Include="client\impl\message\GridClientCacheRequestOperation.cs" />

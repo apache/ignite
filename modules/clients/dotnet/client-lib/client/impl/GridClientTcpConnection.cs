@@ -879,15 +879,73 @@ namespace GridGain.Client.Impl {
         }
 
         /** <inheritdoc /> */
-        override public IGridClientFuture<GridClientDataQueryResult> ExecuteQuery(GridClientCacheQueryRequest req) {
-            return null;
+        override public IGridClientFuture<GridClientDataQueryResult> ExecuteQuery<T>(GridClientDataQueryBean<T> qry, Object[] args, Guid destId) {
+            GridClientCacheQueryRequest msg = new GridClientCacheQueryRequest(GridClientCacheQueryRequestOperation.Execute, destId);
+
+            msg.CacheName = qry.CacheName;
+            msg.Type = qry.Type;
+            msg.Clause = qry.Clause;
+            msg.PageSize = qry.PageSize;
+            msg.Timeout = (long)qry.Timeout.TotalMilliseconds;
+            msg.IncludeBackups = qry.IncludeBackups;
+            msg.EnableDedup = qry.EnableDedup;
+            msg.ClassName = qry.ClassName;
+            msg.RemoteReducerClassName = qry.RemoteReducerClassName;
+            msg.RemoteTransformerClassName = qry.RemoteTransformerClassName;
+            msg.ClassArguments = qry.ClassArguments;
+            msg.Arguments = args;
+
+            GridClientTcpRequestFuture<GridClientDataQueryResult> fut = new GridClientTcpRequestFuture<GridClientDataQueryResult>(msg);
+
+            fut.DoneConverter = o =>
+            {
+                if (o == null)
+                    return null;
+
+                var res = o as GridClientDataQueryResult;
+
+                if (res == null)
+                    throw new ArgumentException("Expects query result, but received: " + o);
+
+                return res;
+            };
+
+            makeRequest<GridClientDataQueryResult>(fut);
+
+            return fut;
         }
 
         /** <inheritdoc /> */
-        override public IGridClientFuture<GridClientDataQueryResult> FetchNextPage(long qryId, Guid destNodeId) {
-            return null;
+        override public IGridClientFuture<GridClientDataQueryResult> FetchNextPage(long qryId, int pageSize, Guid destId) {
+            GridClientCacheQueryRequest msg = new GridClientCacheQueryRequest(GridClientCacheQueryRequestOperation.Fetch, destId);
+
+            msg.QueryId = qryId;
+            msg.PageSize = pageSize;
+
+            GridClientTcpRequestFuture<GridClientDataQueryResult> fut = new GridClientTcpRequestFuture<GridClientDataQueryResult>(msg);
+
+            fut.DoneConverter = o =>
+            {
+                if (o == null)
+                    return null;
+
+                var res = o as GridClientDataQueryResult;
+
+                if (res == null)
+                    throw new ArgumentException("Expects query result, but received: " + o);
+
+                return res;
+            };
+
+            makeRequest<GridClientDataQueryResult>(fut);
+
+            return fut;
         }
 
+        override public IGridClientFuture<GridClientDataQueryResult> RebuildIndexes(String clsName) {
+            return null;
+        }
+             
         /**
          * <summary>
          * Creates client node instance from message.</summary>

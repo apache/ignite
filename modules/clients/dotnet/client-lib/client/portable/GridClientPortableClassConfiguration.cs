@@ -57,7 +57,7 @@ namespace GridGain.Client.Portable
          * (GridClientPortableFieldIdAttribute) will be checked in class through reflection. If required
          * attribute is not set, then ID will be hash code of the class (field) simple name in lower case.</summary>
          */
-        public GridClientPortableIdMapper IdMapper
+        public string IdMapper
         {
             get;
             set;
