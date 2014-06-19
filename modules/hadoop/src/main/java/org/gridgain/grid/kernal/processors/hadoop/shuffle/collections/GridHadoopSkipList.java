@@ -31,7 +31,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
     private final AtomicInteger topLevel = new AtomicInteger(-1);
 
     /** Heads for all the lists. */
-    private final AtomicLongArray heads = new AtomicLongArray(32);
+    private final AtomicLongArray heads = new AtomicLongArray(33); // Level is from 0 to 32 inclusive.
 
     /** */
     private final AtomicBoolean visitGuard = new AtomicBoolean();
