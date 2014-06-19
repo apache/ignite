@@ -26,31 +26,34 @@ import static org.gridgain.grid.kernal.portable.GridPortableMarshaller.*;
  */
 class GridPortableWriterImpl implements GridPortableWriter {
     /** */
-    protected static final Unsafe UNSAFE = GridUnsafe.unsafe();
+    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
     /** */
-    protected static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
+    private static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
 
     /** */
-    protected static final long SHORT_ARR_OFF = UNSAFE.arrayBaseOffset(short[].class);
+    private static final long SHORT_ARR_OFF = UNSAFE.arrayBaseOffset(short[].class);
 
     /** */
-    protected static final long INT_ARR_OFF = UNSAFE.arrayBaseOffset(int[].class);
+    private static final long INT_ARR_OFF = UNSAFE.arrayBaseOffset(int[].class);
 
     /** */
-    protected static final long LONG_ARR_OFF = UNSAFE.arrayBaseOffset(long[].class);
+    private static final long LONG_ARR_OFF = UNSAFE.arrayBaseOffset(long[].class);
 
     /** */
-    protected static final long FLOAT_ARR_OFF = UNSAFE.arrayBaseOffset(float[].class);
+    private static final long FLOAT_ARR_OFF = UNSAFE.arrayBaseOffset(float[].class);
 
     /** */
-    protected static final long DOUBLE_ARR_OFF = UNSAFE.arrayBaseOffset(double[].class);
+    private static final long DOUBLE_ARR_OFF = UNSAFE.arrayBaseOffset(double[].class);
 
     /** */
-    protected static final long CHAR_ARR_OFF = UNSAFE.arrayBaseOffset(char[].class);
+    private static final long CHAR_ARR_OFF = UNSAFE.arrayBaseOffset(char[].class);
 
     /** */
-    protected static final long BOOLEAN_ARR_OFF = UNSAFE.arrayBaseOffset(boolean[].class);
+    private static final long BOOLEAN_ARR_OFF = UNSAFE.arrayBaseOffset(boolean[].class);
+
+    /** */
+    private static final int TOTAL_LEN_POS = 10;
 
     /** */
     private static final int RAW_DATA_OFF_POS = 14;
@@ -65,10 +68,10 @@ class GridPortableWriterImpl implements GridPortableWriter {
     private static final boolean useNames = false; // TODO: take from config
 
     /** */
-    private byte[] arr;
+    private final Context ctx;
 
     /** */
-    private int size;
+    private final int start;
 
     /** */
     private int mark;
@@ -78,50 +81,72 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** */
     GridPortableWriterImpl() {
-        arr = new byte[INIT_CAP];
+        ctx = new Context();
+
+        start = 0;
+    }
+
+    /**
+     * @param ctx Context.
+     */
+    private GridPortableWriterImpl(Context ctx) {
+        this.ctx = ctx;
+
+        start = ctx.off;
+    }
+
+    /**
+     * @param obj Object.
+     * @throws GridPortableException In case of error.
+     */
+    void marshal(Object obj) throws GridPortableException {
+        assert obj != null;
+
+        doWriteByte(OBJ);
+
+        GridPortableClassDescriptor desc = GridPortableClassDescriptor.get(obj.getClass());
+
+        assert desc != null;
+
+        desc.write(obj, this);
     }
 
     /**
      * @return Array.
      */
     ByteBuffer buffer() {
-        return ByteBuffer.wrap(arr, 0, size);
+        return ByteBuffer.wrap(ctx.arr, 0, ctx.off);
     }
 
     /**
      * @param bytes Number of bytes to reserve.
      */
     int reserve(int bytes) {
-        int size0 = size;
-
-        requestFreeSize(bytes);
-
-        return size0;
+        return ctx.requestFreeSize(bytes);
     }
 
     /**
      * @param bytes Number of bytes to reserve.
      */
     int reserveAndMark(int bytes) {
-        int size0 = reserve(bytes);
+        int off0 = reserve(bytes);
 
-        mark = size;
+        mark = ctx.off;
 
-        return size0;
+        return off0;
     }
 
     /**
      * @param off Offset.
      */
     void writeDelta(int off) {
-        PRIM.writeInt(arr, off, size - mark);
+        PRIM.writeInt(ctx.arr, off, ctx.off - mark);
     }
 
     /**
-     * @param off Offset.
      */
-    void writeCurrentSize(int off) {
-        PRIM.writeInt(arr, off, size);
+    void writeLength() {
+        PRIM.writeInt(ctx.arr, start + TOTAL_LEN_POS, ctx.off - start);
     }
 
     /**
@@ -130,63 +155,63 @@ class GridPortableWriterImpl implements GridPortableWriter {
     void write(byte[] val) {
         assert val != null;
 
-        UNSAFE.copyMemory(val, BYTE_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(val.length), val.length);
+        UNSAFE.copyMemory(val, BYTE_ARR_OFF, ctx.arr, BYTE_ARR_OFF + ctx.requestFreeSize(val.length), val.length);
     }
 
     /**
      * @param val Value.
      */
     void doWriteByte(byte val) {
-        PRIM.writeByte(arr, requestFreeSize(1), val);
+        PRIM.writeByte(ctx.arr, ctx.requestFreeSize(1), val);
     }
 
     /**
      * @param val Value.
      */
     void doWriteShort(short val) {
-        PRIM.writeShort(arr, requestFreeSize(2), val);
+        PRIM.writeShort(ctx.arr, ctx.requestFreeSize(2), val);
     }
 
     /**
      * @param val Value.
      */
     void doWriteInt(int val) {
-        PRIM.writeInt(arr, requestFreeSize(4), val);
+        PRIM.writeInt(ctx.arr, ctx.requestFreeSize(4), val);
     }
 
     /**
      * @param val Value.
      */
     void doWriteLong(long val) {
-        PRIM.writeLong(arr, requestFreeSize(8), val);
+        PRIM.writeLong(ctx.arr, ctx.requestFreeSize(8), val);
     }
 
     /**
      * @param val Value.
      */
     void doWriteFloat(float val) {
-        PRIM.writeFloat(arr, requestFreeSize(4), val);
+        PRIM.writeFloat(ctx.arr, ctx.requestFreeSize(4), val);
     }
 
     /**
      * @param val Value.
      */
     void doWriteDouble(double val) {
-        PRIM.writeDouble(arr, requestFreeSize(8), val);
+        PRIM.writeDouble(ctx.arr, ctx.requestFreeSize(8), val);
     }
 
     /**
      * @param val Value.
      */
     void doWriteChar(char val) {
-        PRIM.writeChar(arr, requestFreeSize(2), val);
+        PRIM.writeChar(ctx.arr, ctx.requestFreeSize(2), val);
     }
 
     /**
      * @param val Value.
      */
     void doWriteBoolean(boolean val) {
-        PRIM.writeBoolean(arr, requestFreeSize(1), val);
+        PRIM.writeBoolean(ctx.arr, ctx.requestFreeSize(1), val);
     }
 
     /**
@@ -211,8 +236,9 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /**
      * @param obj Object.
+     * @throws GridPortableException In case of error.
      */
-    <T> void doWriteObject(@Nullable T obj) throws GridPortableException {
+    void doWriteObject(@Nullable Object obj) throws GridPortableException {
         if (obj == null) {
             doWriteInt(NULL);
 
@@ -221,13 +247,9 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
         // TODO: Handle.
 
-        doWriteByte(OBJ);
+        GridPortableWriterImpl writer = new GridPortableWriterImpl(ctx);
 
-        GridPortableClassDescriptor desc = GridPortableClassDescriptor.get(obj.getClass());
-
-        assert desc != null;
-
-        desc.write(obj, this);
+        writer.marshal(obj);
     }
 
     /**
@@ -237,7 +259,7 @@ class GridPortableWriterImpl implements GridPortableWriter {
         doWriteInt(val != null ? val.length : -1);
 
         if (val != null)
-            UNSAFE.copyMemory(val, BYTE_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(val.length), val.length);
+            UNSAFE.copyMemory(val, BYTE_ARR_OFF, ctx.arr, BYTE_ARR_OFF + ctx.requestFreeSize(val.length), val.length);
     }
 
     /**
@@ -249,7 +271,7 @@ class GridPortableWriterImpl implements GridPortableWriter {
         if (val != null) {
             int bytes = val.length << 1;
 
-            UNSAFE.copyMemory(val, SHORT_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(bytes), bytes);
+            UNSAFE.copyMemory(val, SHORT_ARR_OFF, ctx.arr, BYTE_ARR_OFF + ctx.requestFreeSize(bytes), bytes);
         }
     }
 
@@ -262,7 +284,7 @@ class GridPortableWriterImpl implements GridPortableWriter {
         if (val != null) {
             int bytes = val.length << 2;
 
-            UNSAFE.copyMemory(val, INT_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(bytes), bytes);
+            UNSAFE.copyMemory(val, INT_ARR_OFF, ctx.arr, BYTE_ARR_OFF + ctx.requestFreeSize(bytes), bytes);
         }
     }
 
@@ -276,7 +298,7 @@ class GridPortableWriterImpl implements GridPortableWriter {
         if (val != null) {
             int bytes = val.length << 3;
 
-            UNSAFE.copyMemory(val, LONG_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(bytes), bytes);
+            UNSAFE.copyMemory(val, LONG_ARR_OFF, ctx.arr, BYTE_ARR_OFF + ctx.requestFreeSize(bytes), bytes);
         }
     }
 
@@ -289,7 +311,7 @@ class GridPortableWriterImpl implements GridPortableWriter {
         if (val != null) {
             int bytes = val.length << 2;
 
-            UNSAFE.copyMemory(val, FLOAT_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(bytes), bytes);
+            UNSAFE.copyMemory(val, FLOAT_ARR_OFF, ctx.arr, BYTE_ARR_OFF + ctx.requestFreeSize(bytes), bytes);
         }
     }
 
@@ -302,7 +324,7 @@ class GridPortableWriterImpl implements GridPortableWriter {
         if (val != null) {
             int bytes = val.length << 3;
 
-            UNSAFE.copyMemory(val, DOUBLE_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(bytes), bytes);
+            UNSAFE.copyMemory(val, DOUBLE_ARR_OFF, ctx.arr, BYTE_ARR_OFF + ctx.requestFreeSize(bytes), bytes);
         }
     }
 
@@ -315,7 +337,7 @@ class GridPortableWriterImpl implements GridPortableWriter {
         if (val != null) {
             int bytes = val.length << 1;
 
-            UNSAFE.copyMemory(val, CHAR_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(bytes), bytes);
+            UNSAFE.copyMemory(val, CHAR_ARR_OFF, ctx.arr, BYTE_ARR_OFF + ctx.requestFreeSize(bytes), bytes);
         }
     }
 
@@ -326,7 +348,8 @@ class GridPortableWriterImpl implements GridPortableWriter {
         doWriteInt(val != null ? val.length : -1);
 
         if (val != null)
-            UNSAFE.copyMemory(val, BOOLEAN_ARR_OFF, arr, BYTE_ARR_OFF + requestFreeSize(val.length), val.length);
+            UNSAFE.copyMemory(val, BOOLEAN_ARR_OFF, ctx.arr, BYTE_ARR_OFF + ctx.requestFreeSize(val.length),
+                val.length);
     }
 
     /**
@@ -553,7 +576,7 @@ class GridPortableWriterImpl implements GridPortableWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> void writeObject(String fieldName, @Nullable T obj) throws GridPortableException {
+    @Override public void writeObject(String fieldName, @Nullable Object obj) throws GridPortableException {
         writeFieldName(fieldName);
 
         int lenPos = reserveAndMark(4);
@@ -564,7 +587,7 @@ class GridPortableWriterImpl implements GridPortableWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> void writeObject(@Nullable T obj) throws GridPortableException {
+    @Override public void writeObject(@Nullable Object obj) throws GridPortableException {
         switchToRaw();
 
         doWriteObject(obj);
@@ -786,26 +809,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
     }
 
     /**
-     * @param bytes Number of bytes that are going to be written.
-     * @return Offset before write.
-     */
-    private int requestFreeSize(int bytes) {
-        int size0 = size;
-
-        size += bytes;
-
-        if (size > arr.length) {
-            byte[] arr0 = new byte[size << 1];
-
-            UNSAFE.copyMemory(arr, BYTE_ARR_OFF, arr0, BYTE_ARR_OFF, size0);
-
-            arr = arr0;
-        }
-
-        return size0;
-    }
-
-    /**
      * @throws GridPortableException If fields are not allowed.
      * @param fieldName
      */
@@ -826,9 +829,44 @@ class GridPortableWriterImpl implements GridPortableWriter {
      */
     private void switchToRaw() {
         if (allowFields) {
-            writeCurrentSize(RAW_DATA_OFF_POS);
+            PRIM.writeInt(ctx.arr, start + RAW_DATA_OFF_POS, ctx.off - start);
 
             allowFields = false;
+        }
+    }
+
+    /** */
+    private static class Context {
+        /** */
+        private byte[] arr;
+
+        /** */
+        private int off;
+
+        /**
+         */
+        private Context() {
+            arr = new byte[INIT_CAP];
+        }
+
+        /**
+         * @param bytes Number of bytes that are going to be written.
+         * @return Offset before write.
+         */
+        private int requestFreeSize(int bytes) {
+            int off0 = off;
+
+            off += bytes;
+
+            if (off > arr.length) {
+                byte[] arr0 = new byte[off << 1];
+
+                UNSAFE.copyMemory(arr, BYTE_ARR_OFF, arr0, BYTE_ARR_OFF, off0);
+
+                arr = arr0;
+            }
+
+            return off0;
         }
     }
 }

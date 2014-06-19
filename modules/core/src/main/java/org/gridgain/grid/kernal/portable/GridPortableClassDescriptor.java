@@ -26,10 +26,7 @@ import static java.nio.charset.StandardCharsets.*;
  */
 class GridPortableClassDescriptor {
     /** */
-    protected static final Unsafe UNSAFE = GridUnsafe.unsafe();
-
-    /** */
-    private static final int TOTAL_LEN_POS = 10;
+    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
     /** */
     private static final int COL_TYPE_ID = 100;
@@ -358,8 +355,7 @@ class GridPortableClassDescriptor {
 
                 ((GridPortable)obj).writePortable(writer);
 
-                // Length.
-                writer.writeCurrentSize(TOTAL_LEN_POS);
+                writer.writeLength();
 
                 break;
 
@@ -374,8 +370,7 @@ class GridPortableClassDescriptor {
                 for (FieldInfo info : fields)
                     info.write(obj, writer);
 
-                // Length.
-                writer.writeCurrentSize(TOTAL_LEN_POS);
+                writer.writeLength();
 
                 break;
 

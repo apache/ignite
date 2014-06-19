@@ -152,13 +152,13 @@ public interface GridPortableWriter {
      * @param obj Value to write.
      * @throws GridPortableException In case of error.
      */
-    public <T> void writeObject(String fieldName, @Nullable T obj) throws GridPortableException;
+    public void writeObject(String fieldName, @Nullable Object obj) throws GridPortableException;
 
     /**
      * @param obj Value to write.
      * @throws GridPortableException In case of error.
      */
-    public <T> void writeObject(@Nullable T obj) throws GridPortableException;
+    public void writeObject(@Nullable Object obj) throws GridPortableException;
 
     /**
      * @param fieldName Field name.

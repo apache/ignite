@@ -142,10 +142,10 @@ abstract class GridPortablePrimitives {
     /** */
     private static class UnsafePrimitives extends GridPortablePrimitives {
         /** */
-        protected static final Unsafe UNSAFE = GridUnsafe.unsafe();
+        private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
         /** */
-        protected static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
+        private static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
 
         /** {@inheritDoc} */
         @Override void writeByte(byte[] arr, int off, byte val) {
