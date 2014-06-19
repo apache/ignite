@@ -328,7 +328,7 @@ namespace GridGain.Client.Impl.Portable
                 
    
 
-                return 0;
+                
             }
         }
 

@@ -20,9 +20,5 @@ namespace GridGain.Client.Impl.Message {
          */
         public GridClientPingRequest(Guid destNodeId) : base(destNodeId) {
         }
-
-        public override int TypeId {
-            get { throw new NotImplementedException("Should not marshal ping request."); }
-        }
     }
 }

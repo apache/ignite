@@ -391,25 +391,34 @@ namespace GridGain.Client.Impl.Portable
          * <param name="typeId">Primitive array type ID</param>
          * <param name="obj">Array object.</param>
          * <param name="stream">Output stream.</param>
-         * <returns>Length of written data.</returns>
          */
-        public static int WritePrimitiveArray(int typeId, object obj, Stream stream)
+        public static void WritePrimitiveArray(int typeId, object obj, Stream stream)
         {
             switch (typeId) {
                 case TYPE_ARRAY_BOOL:
-                    return WriteBooleanArray((bool[])obj, stream);
+                    WriteBooleanArray((bool[])obj, stream);
+
+                    break;
 
                 case TYPE_ARRAY_BYTE:
-                    return WriteByteArray((bool[])obj, stream);
+                    WriteByteArray((byte[])obj, stream);
+
+                    break;
 
                 case TYPE_ARRAY_SHORT:
-                    return WriteShortArray((short[])obj, stream);
+                    WriteShortArray((short[])obj, stream);
+
+                    break;
 
                 case TYPE_ARRAY_INT:                
-                    return WriteIntArray((int[])obj, stream);
+                    
+
+                    break;
 
                 case TYPE_ARRAY_LONG:
-                    return WriteLongArray((long[])obj, stream);
+                    
+
+                    break;
 
                 case TYPE_ARRAY_CHAR:
                 case TYPE_ARRAY_FLOAT:
@@ -465,12 +474,7 @@ namespace GridGain.Client.Impl.Portable
 
             return 1;
         }
-
-        public static int WriteByteArray(byte[] val, Stream stream) 
-        {
-            throw new NotImplementedException();
-        }
-
+        
         /**
          * <summary>Write byte array.</summary>
          * <param name="vals">Value.</param>
@@ -513,6 +517,17 @@ namespace GridGain.Client.Impl.Portable
             }
 
             return 2;
+        }
+
+        /**
+         * <summary>Write byte array.</summary>
+         * <param name="vals">Value.</param>
+         * <param name="stream">Output stream.</param>
+         * <returns>Length of written data.</returns>
+         */
+        public static void WriteShortArray(short[] vals, Stream stream)
+        {
+            
         }
 
         /**
@@ -581,14 +596,6 @@ namespace GridGain.Client.Impl.Portable
             }
 
             return 8;
-        }
-
-        /**
-         * <summary>Constructor.</summary>
-         */ 
-        private GridClientPortableUilts()
-        {
-            // No-op.
         }
     }
 }

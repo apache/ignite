@@ -18,6 +18,7 @@ namespace GridGain.Client.Impl {
     using System.Collections.Generic;
     using System.Collections.Concurrent;
     using GridGain.Client;
+    using GridGain.Client.Portable;
     using GridGain.Client.Ssl;
     using GridGain.Client.Impl.Portable;
 
@@ -55,6 +56,9 @@ namespace GridGain.Client.Impl {
         /** <summary>Router endpoints to use instead of topology info.</summary> */
         private readonly ICollection<IPEndPoint> routers;
 
+        /** <summary>Marshaller.</summary> */
+        private readonly GridClientPortableMarshaller marsh;
+
         /** <summary>Closed flag.</summary> */
         private volatile bool closed;
 
@@ -68,9 +72,10 @@ namespace GridGain.Client.Impl {
          * <param name="credentials">Connection credentials.</param>
          * <param name="sslCtx">SSL context to enable secured connection or <c>null</c> to use unsecured one.</param>
          * <param name="connectTimeout">TCP connection timeout.</param>
+         * <param name="portableTypCfgs">Portable type configurations.</param>
          */
         public GridClientConnectionManager(Guid clientId, GridClientTopology top, ICollection<IPEndPoint> routers,
-            Object credentials, IGridClientSslContext sslCtx, int connectTimeout) {
+            Object credentials, IGridClientSslContext sslCtx, int connectTimeout, ICollection<GridClientPortableTypeConfiguration> portableTypCfgs) {
             Dbg.Assert(clientId != null, "clientId != null");
             Dbg.Assert(top != null, "top != null");
             Dbg.Assert(routers != null, "routers != null");
@@ -82,6 +87,8 @@ namespace GridGain.Client.Impl {
             this.routers = routers;
             this.sslCtx = sslCtx;
             this.connectTimeout = connectTimeout;
+
+            marsh = new GridClientPortableMarshaller(portableTypCfgs);
         }
 
         /**
@@ -223,8 +230,7 @@ namespace GridGain.Client.Impl {
         private C connect(IPEndPoint srv) {
             Dbg.Assert(guard.IsReaderLockHeld);
 
-            return new GridClientTcpConnection(clientId, srv, sslCtx, connectTimeout,
-                new GridClientPortableMarshaller(), credentials, top);
+            return new GridClientTcpConnection(clientId, srv, sslCtx, connectTimeout, marsh, credentials, top);
         }
 
         /**

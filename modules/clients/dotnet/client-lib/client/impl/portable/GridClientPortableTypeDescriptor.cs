@@ -29,7 +29,7 @@ namespace GridGain.Client.Impl.Portable
         /**
          * <summary>Type ID.</summary>
          */
-        readonly public int TypeId
+        public int TypeId
         {
             get;
             private set;
@@ -38,7 +38,7 @@ namespace GridGain.Client.Impl.Portable
         /**
          * <summary>User type flag.</summary>
          */
-        readonly public bool UserType
+        public bool UserType
         {
             get;
             private set;
@@ -47,7 +47,7 @@ namespace GridGain.Client.Impl.Portable
         /**
          * <summary>Mapper.</summary>
          */
-        readonly public GridClientPortableIdMapper Mapper
+        public GridClientPortableIdMapper Mapper
         {
             get;
             private set;
@@ -56,7 +56,7 @@ namespace GridGain.Client.Impl.Portable
         /**
          * <summary>Serializer.</summary>
          */
-        readonly public IGridClientPortableSerializer Serializer
+        public IGridClientPortableSerializer Serializer
         {
             get;
             private set;

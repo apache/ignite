@@ -15,7 +15,7 @@ namespace GridGain.Client.Portable
      * <summary>Portable ID attribute. When applied to class defines class ID, when 
      * applied to field defines field ID.</summary>
      */
-    [AttributeUsage(AttributeTargets.Field)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Field)]
     public class GridClientPortableId : Attribute
     {
         /**

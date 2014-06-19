@@ -21,7 +21,7 @@ namespace GridGain.Client.Impl.Portable
     class GridClientPortableReflectingIdMapper : GridClientPortableIdMapper 
     {
         /** Cached attribute type. */
-        private const Type ATTR = typeof(GridClientPortableId);
+        private static readonly Type ATTR;
 
         /** Cached binding flags. */
         private static readonly BindingFlags FLAGS = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
@@ -34,6 +34,14 @@ namespace GridGain.Client.Impl.Portable
 
         /** Field type IDs. */
         private readonly IDictionary<string, int> fieldIds = new Dictionary<string, int>();
+
+        /**
+         * <summary>Static initializer.</summary>
+         */ 
+        static GridClientPortableReflectingIdMapper()
+        {
+            ATTR = typeof(GridClientPortableId);
+        } 
 
         /** 
          * <summary>Constructor.</summary>
