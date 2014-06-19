@@ -115,5 +115,10 @@ public interface GridKernalGateway {
      * @param lsnr Listener to remove.
      */
     public void removeStopListener(Runnable lsnr);
+
+    /**
+     * Gets user stack trace through the first call of grid public API.
+     */
+    public String userStackTrace();
 }
 

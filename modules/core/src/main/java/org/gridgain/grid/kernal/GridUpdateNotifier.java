@@ -66,11 +66,11 @@ class GridUpdateNotifier {
     /** */
     private volatile int topSize;
 
-    /** Package prefixes. */
-    private final String stackTrace;
-
     /** System properties */
     private final String vmProps;
+
+    /** Kernal gateway */
+    private final GridKernalGateway gw;
 
     /** */
     private long lastLog = -1;
@@ -85,9 +85,10 @@ class GridUpdateNotifier {
      * @param ver Compound GridGain version.
      * @param site Site.
      * @param reportOnlyNew Whether or not to report only new version.
+     * @param gw Kernal gateway.
      * @throws GridException If failed.
      */
-    GridUpdateNotifier(String gridName, String ver, String site, boolean reportOnlyNew)
+    GridUpdateNotifier(String gridName, String ver, String site, GridKernalGateway gw, boolean reportOnlyNew)
         throws GridException {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -109,8 +110,8 @@ class GridUpdateNotifier {
 
             this.gridName = gridName == null ? "null" : gridName;
             this.reportOnlyNew = reportOnlyNew;
+            this.gw = gw;
 
-            stackTrace = getStackTrace();
             vmProps = getSystemProperties();
         }
         catch (ParserConfigurationException e) {
@@ -281,6 +282,8 @@ class GridUpdateNotifier {
         @Override protected void body() throws InterruptedException {
             try {
                 GridProductLicense lic = licProc != null ? licProc.license() : null;
+
+                String stackTrace = gw != null ? gw.userStackTrace() : null;
 
                 String postParams =
                     "gridName=" + encode(gridName, CHARSET) +
