@@ -539,25 +539,31 @@ object visor extends VisorTag {
         if (mem.isEmpty)
             println("Memory is empty.")
         else {
-            val t = new VisorTextTable()
+            val r = if (arg.trim == "") mem.toMap else mem.filter { case (k, _) => arg.contains(k.charAt(0)) }
 
-            t.maxCellWidth = 70
+            if (r.isEmpty)
+                println("No matches found.")
+            else {
+                val t = new VisorTextTable()
 
-            t #= ("Name", "Value")
+                t.maxCellWidth = 70
 
-            for ((k, v) <- mem.iterator.toList.sortBy(_._1) if arg == "" || arg.contains(k.charAt(0)))
-                t += (k, v)
+                t #= ("Name", "Value")
 
-            t.render()
+                r.toSeq.sortBy(_._1).foreach { case (k, v) => t += (k, v) }
 
-            nl()
-            println(
-                "Variable can be referenced in other commands with '@' prefix." + NL +
-                "Reference can be either a flag or a parameter value." + NL +
-                "\nEXAMPLE: " + NL +
-                "    'help @cmd' - where 'cmd' variable contains command name." + NL +
-                "    'node -id8=@n11' - where 'n11' variable contains node ID8."
-            )
+                t.render()
+
+                nl()
+
+                println(
+                    "Variable can be referenced in other commands with '@' prefix." + NL +
+                        "Reference can be either a flag or a parameter value." + NL +
+                        "\nEXAMPLE: " + NL +
+                        "    'help @cmd' - where 'cmd' variable contains command name." + NL +
+                        "    'node -id8=@n11' - where 'n11' variable contains node ID8."
+                )
+            }
         }
     }
 
