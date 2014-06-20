@@ -9,14 +9,16 @@
 
 package org.gridgain.grid.hadoop;
 
+import java.util.concurrent.*;
+
 /**
  * Hadoop configuration.
  */
 public class GridHadoopConfiguration {
-    /** Default finished jbo info time-to-live. */
+    /** Default finished job info time-to-live. */
     public static final long DFLT_FINISHED_JOB_INFO_TTL = 10_000;
 
-    /** */
+    /** Default value for external execution flag. */
     public static final boolean DFLT_EXTERNAL_EXECUTION = true;
 
     /** Job factory. */
@@ -30,6 +32,9 @@ public class GridHadoopConfiguration {
 
     /** Finished job info TTL. */
     private long finishedJobInfoTtl = DFLT_FINISHED_JOB_INFO_TTL;
+
+    /**  */
+    private ExecutorService embeddedExecutor;
 
     /**
      * Default constructor.
@@ -45,10 +50,31 @@ public class GridHadoopConfiguration {
      */
     public GridHadoopConfiguration(GridHadoopConfiguration cfg) {
         // Preserve alphabetic order.
+        embeddedExecutor = cfg.getEmbeddedExecutor();
         extExecution = cfg.isExternalExecution();
         finishedJobInfoTtl = cfg.getFinishedJobInfoTtl();
         jobFactory = cfg.getJobFactory();
         planner = cfg.getMapReducePlanner();
+    }
+
+    /**
+     * Sets executor service to run task in embedded mode.
+     * Embedded mode means that {@linkplain #isExternalExecution()} is {@code false}.
+     *
+     * @param embeddedExecutor Executor service.
+     */
+    public void setEmbeddedExecutor(ExecutorService embeddedExecutor) {
+        this.embeddedExecutor = embeddedExecutor;
+    }
+
+    /**
+     * Gets executor service to run task in embedded mode.
+     * Embedded mode means that {@linkplain #isExternalExecution()} is {@code false}.
+     *
+     * @return Executor service.
+     */
+    public ExecutorService getEmbeddedExecutor() {
+        return embeddedExecutor;
     }
 
     /**

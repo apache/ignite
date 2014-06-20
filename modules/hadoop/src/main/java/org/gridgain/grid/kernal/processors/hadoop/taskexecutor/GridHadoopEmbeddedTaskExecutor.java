@@ -13,6 +13,8 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.typedef.internal.*;
+
 import java.util.concurrent.*;
 import java.util.*;
 
@@ -30,7 +32,7 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
     /** Tasks shared contexts. */
     private final ConcurrentMap<GridHadoopJobId, GridHadoopJobClassLoadingContext> ctxs = new ConcurrentHashMap<>();
 
-    /** */
+    /** Executor service to run tasks. */
     private ExecutorService exec;
 
     /** {@inheritDoc} */
@@ -39,7 +41,31 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
 
         jobTracker = ctx.jobTracker();
 
-        exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
+        exec = ctx.configuration().getEmbeddedExecutor();
+
+        if (exec == null)
+            exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStop(boolean cancel) {
+        exec.shutdown();
+
+        if (cancel) {
+            for (GridHadoopJobId jobId : jobs.keySet())
+                cancelTasks(jobId);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop(boolean cancel) {
+        try {
+            if (!exec.awaitTermination(30, TimeUnit.SECONDS))
+                U.warn(log, "Failed to finish running tasks in 30 sec.");
+        }
+        catch (InterruptedException e) {
+            U.error(log, "Failed to finish running tasks.", e);
+        }
     }
 
     /** {@inheritDoc} */
