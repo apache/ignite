@@ -555,13 +555,14 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
 
         /** Collect DR. */
         private void dr(VisorDataCollectorJobResult res) {
-            try {
-                if (g.dr() != null)
-                    res.dr = VisorDr.from(g);
-            }
-            catch(Throwable drEx) {
-                res.drEx = drEx;
-            }
+            if (res.license != null) // Do not collect DR for OS.
+                try {
+                    if (g.dr() != null)
+                        res.dr = VisorDr.from(g);
+                }
+                catch(Throwable drEx) {
+                    res.drEx = drEx;
+                }
         }
 
         // TODO: gg-mongo private void mongo(VisorDataCollectorJobResult res) {
