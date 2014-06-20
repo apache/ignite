@@ -21,18 +21,6 @@ namespace GridGain.Client.Impl.Portable
     /** <summary>Portable marshaller implementation.</summary> */
     internal class GridClientPortableMarshaller
     {
-        /** Header of NULL object. */
-        public const byte HDR_NULL = 0x80;
-
-        /** Header of object handle. */
-        public const byte HDR_HND = 0x81;
-
-        /** Header of object in fully serialized form. */
-        public const byte HDR_FULL = 0x82;
-
-        /** Header of object in fully serailized form with metadata. */
-        public const byte HDR_META = 0x83;
-
         /** Byte array of size 8. */
         private static readonly byte[] BYTE_8;
 
@@ -223,7 +211,8 @@ namespace GridGain.Client.Impl.Portable
          * <param name="mapper">ID mapper.</param>
          * <param name="serializer">Serializer.</param>
          */
-        private void addType(Type type, int typeId, bool userType, GridClientPortableIdResolver mapper, IGridClientPortableSerializer serializer)
+        private void addType(Type type, int typeId, bool userType, GridClientPortableIdResolver mapper, 
+            IGridClientPortableSerializer serializer)
         {
             foreach (KeyValuePair<string, GridClientPortableTypeDescriptor> desc in descs)
             {
@@ -282,15 +271,15 @@ namespace GridGain.Client.Impl.Portable
 
             byte hdr = (byte)input.ReadByte();
 
-            if (hdr == HDR_NULL)
+            if (hdr == PU.HDR_NULL)
                 return null;
-            else if (hdr == HDR_META)
+            else if (hdr == PU.HDR_META)
             {
                 throw new NotImplementedException();
             }
             
             // Reading full object.
-            if (hdr != HDR_FULL)
+            if (hdr != PU.HDR_FULL)
                 throw new GridClientPortableException("Unexpected header: " + hdr);
 
             // Read header.
@@ -324,7 +313,8 @@ namespace GridGain.Client.Impl.Portable
 
             input.Seek(pos + len, SeekOrigin.Begin); // Position input after read data.
 
-            return new GridClientPortableObjectImpl(this, input.GetBuffer(), (int)pos, len, userType, typeId, hashCode, rawDataOffset, fields);
+            return new GridClientPortableObjectImpl(this, input.GetBuffer(), (int)pos, len, userType, typeId, 
+                hashCode, rawDataOffset, fields);
         }
 
         /**
@@ -368,7 +358,8 @@ namespace GridGain.Client.Impl.Portable
              * <param name="descs">Type descriptors.</param>
              * <param name="stream">Output stream.</param>
              */
-            public WriteContext(GridClientPortableSerializationContext ctx, IDictionary<string, GridClientPortableTypeDescriptor> descs, Stream stream)
+            public WriteContext(GridClientPortableSerializationContext ctx, 
+                IDictionary<string, GridClientPortableTypeDescriptor> descs, Stream stream)
             {
                 this.ctx = ctx;
                 this.descs = descs;
@@ -386,7 +377,7 @@ namespace GridGain.Client.Impl.Portable
                 // 1. Write null.
                 if (obj == null)
                 {
-                    stream.WriteByte(HDR_NULL);
+                    stream.WriteByte(PU.HDR_NULL);
 
                     return;
                 }
@@ -394,14 +385,12 @@ namespace GridGain.Client.Impl.Portable
                 // 2. Write primitive.
                 Type type = obj.GetType();
 
-                int typeId = PU.PrimitiveTypeId(type);
+                byte typeId = PU.PrimitiveTypeId(type);
 
                 if (typeId != 0)
                 {
-                    stream.WriteByte(HDR_FULL);
+                    stream.WriteByte(typeId);
 
-                    PU.WriteBoolean(false, stream);
-                    PU.WriteInt(typeId, stream);
                     PU.WritePrimitive(typeId, obj, stream);
 
                     return;
@@ -416,7 +405,7 @@ namespace GridGain.Client.Impl.Portable
                 int hndNum;
                 
                 if (hnds.TryGetValue(hnd, out hndNum)) {
-                    stream.WriteByte(HDR_HND);
+                    stream.WriteByte(PU.HDR_HND);
 
                     PU.WriteInt(hndNum, stream);
 
@@ -433,7 +422,7 @@ namespace GridGain.Client.Impl.Portable
 
                 if (type == typeof(string)) 
                 {
-                    stream.WriteByte(HDR_FULL);
+                    stream.WriteByte(PU.HDR_FULL);
                     PU.WriteBoolean(false, stream);                    
                     PU.WriteInt(PU.TYPE_STRING, stream);
                     PU.WriteInt(PU.StringHashCode(obj0), stream);
@@ -448,7 +437,7 @@ namespace GridGain.Client.Impl.Portable
                 // 5. Write GUID.
                 if (type == typeof(Guid))
                 {
-                    stream.WriteByte(HDR_FULL);
+                    stream.WriteByte(PU.HDR_FULL);
                     PU.WriteBoolean(false, stream);    
                     PU.WriteInt(PU.TYPE_GUID, stream);
                     PU.WriteInt(PU.GuidHashCode(obj0), stream);
@@ -467,7 +456,7 @@ namespace GridGain.Client.Impl.Portable
 
                 if (typeId != 0) 
                 {
-                    stream.WriteByte(HDR_FULL);
+                    stream.WriteByte(PU.HDR_FULL);
                     PU.WriteBoolean(false, stream);    
                     PU.WriteInt(typeId, stream);
 
@@ -487,9 +476,10 @@ namespace GridGain.Client.Impl.Portable
                 GridClientPortableTypeDescriptor desc = descs[type.Name];
 
                 if (desc == null)
-                    throw new GridClientPortableException("Unsupported object type [type=" + type + ", object=" + obj + ']');
+                    throw new GridClientPortableException("Unsupported object type [type=" + type + 
+                        ", object=" + obj + ']');
 
-                stream.WriteByte(HDR_FULL);
+                stream.WriteByte(PU.HDR_FULL);
                 PU.WriteBoolean(desc.UserType, stream);
                 PU.WriteInt(desc.TypeId, stream);
                 PU.WriteInt(obj.GetHashCode(), stream);

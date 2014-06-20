@@ -20,6 +20,18 @@ namespace GridGain.Client.Impl.Portable
      */ 
     static class GridClientPortableUilts
     {
+        /** Header of NULL object. */
+        public const byte HDR_NULL = 0x80;
+
+        /** Header of object handle. */
+        public const byte HDR_HND = 0x81;
+
+        /** Header of object in fully serialized form. */
+        public const byte HDR_FULL = 0x82;
+
+        /** Header of object in fully serailized form with metadata. */
+        public const byte HDR_META = 0x83;
+
         /** Type: boolean. */
         public const byte TYPE_BOOL = 1;
 
@@ -152,7 +164,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="type">Type.</param>
          * <returns>Primitive type ID or 0 if this is not primitive type.</returns>
          */ 
-        public static int PrimitiveTypeId(Type type)
+        public static byte PrimitiveTypeId(Type type)
         {
             if (type == typeof(Boolean))
                 return TYPE_BOOL;
@@ -160,9 +172,9 @@ namespace GridGain.Client.Impl.Portable
                 return TYPE_BYTE;
             else if (type == typeof(Int16) || type == typeof(UInt16))
                 return TYPE_SHORT;
-            else if (type == typeof(Int32) || type == typeof(Int32))
+            else if (type == typeof(Int32) || type == typeof(UInt32))
                 return TYPE_INT;
-            else if (type == typeof(Int64) || type == typeof(Int64))
+            else if (type == typeof(Int64) || type == typeof(UInt64))
                 return TYPE_LONG;
             else if (type == typeof(Char))
                 return TYPE_CHAR;
@@ -207,9 +219,6 @@ namespace GridGain.Client.Impl.Portable
          */
         public static unsafe void WritePrimitive(int typeId, object obj, Stream stream)
         {
-            WriteBoolean(false, stream);
-            WriteInt(typeId, stream);
-
             unchecked
             {
                 switch (typeId)
@@ -220,23 +229,73 @@ namespace GridGain.Client.Impl.Portable
                         break;
 
                     case TYPE_BYTE:
-                        stream.WriteByte((byte)obj);
+                        byte byteVal;
+
+                        if (obj is Byte)
+                            byteVal = (byte)obj;
+                        else
+                        {
+                            sbyte sByteVal = (sbyte)obj;
+
+                            byteVal = *(byte*)&sByteVal;
+                        }
+
+                        stream.WriteByte(byteVal);
 
                         break;
 
                     case TYPE_SHORT:
+                        short shortVal;
+
+                        if (obj is Int16)
+                            shortVal = (short)obj;
+                        else
+                        {
+                            ushort uShortVal = (ushort)obj;
+
+                            shortVal = *(short*)&uShortVal;
+                        }
+
+                        WriteShort(shortVal, stream);
+
+                        break;
+
                     case TYPE_CHAR:
-                        WriteShort((short)obj, stream);
+                        char charVal = (char)obj;
+
+                        WriteShort(*(short*)&charVal, stream);
 
                         break;
 
                     case TYPE_INT:
-                        WriteInt((int)obj, stream);
+                        int intVal;
+
+                        if (obj is Int32)
+                            intVal = (int)obj;
+                        else
+                        {
+                            uint uIntVal = (uint)obj;
+
+                            intVal = *(int*)&uIntVal;
+                        }
+
+                        WriteInt(intVal, stream);
 
                         break;
 
                     case TYPE_LONG:
-                        WriteLong((long)obj, stream);
+                        long longVal;
+
+                        if (obj is Int64)
+                            longVal = (long)obj;
+                        else
+                        {
+                            ulong uLongVal = (ulong)obj;
+
+                            longVal = *(long*)&uLongVal;
+                        }
+
+                        WriteLong(longVal, stream);
 
                         break;
 
@@ -371,7 +430,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="type">Type.</param>
          * <returns>Primitive array type ID or 0 if this is not primitive array type.</returns>
          */
-        public static int PrimitiveArrayTypeId(Type type)
+        public static byte PrimitiveArrayTypeId(Type type)
         {
             if (type.IsArray)
             {
@@ -545,13 +604,13 @@ namespace GridGain.Client.Impl.Portable
         {
             if (LITTLE_ENDIAN)
             {
-                stream.WriteByte((byte)(val >> 8 & 0xFF));
                 stream.WriteByte((byte)(val & 0xFF));
+                stream.WriteByte((byte)(val >> 8 & 0xFF));
             }
             else
             {
-                stream.WriteByte((byte)(val & 0xFF));
                 stream.WriteByte((byte)(val >> 8 & 0xFF));
+                stream.WriteByte((byte)(val & 0xFF));
             }
         }
 
@@ -582,17 +641,17 @@ namespace GridGain.Client.Impl.Portable
         {
             if (LITTLE_ENDIAN)
             {
-                stream.WriteByte((byte)(val >> 24 & 0xFF));
-                stream.WriteByte((byte)(val >> 16 & 0xFF));
-                stream.WriteByte((byte)(val >> 8 & 0xFF));
                 stream.WriteByte((byte)(val & 0xFF));
+                stream.WriteByte((byte)(val >> 8 & 0xFF));
+                stream.WriteByte((byte)(val >> 16 & 0xFF));
+                stream.WriteByte((byte)(val >> 24 & 0xFF));
             }
             else
             {
-                stream.WriteByte((byte)(val & 0xFF));
-                stream.WriteByte((byte)(val >> 8 & 0xFF));
-                stream.WriteByte((byte)(val >> 16 & 0xFF));
                 stream.WriteByte((byte)(val >> 24 & 0xFF));
+                stream.WriteByte((byte)(val >> 16 & 0xFF));
+                stream.WriteByte((byte)(val >> 8 & 0xFF));
+                stream.WriteByte((byte)(val & 0xFF));                
             }
         }
 
@@ -650,25 +709,25 @@ namespace GridGain.Client.Impl.Portable
         {
             if (LITTLE_ENDIAN)
             {
-                stream.WriteByte((byte)(val >> 54 & 0xFF));
-                stream.WriteByte((byte)(val >> 48 & 0xFF));
-                stream.WriteByte((byte)(val >> 40 & 0xFF));
-                stream.WriteByte((byte)(val >> 32 & 0xFF));
-                stream.WriteByte((byte)(val >> 24 & 0xFF));
-                stream.WriteByte((byte)(val >> 16 & 0xFF));
-                stream.WriteByte((byte)(val >> 8 & 0xFF));
                 stream.WriteByte((byte)(val & 0xFF));
+                stream.WriteByte((byte)(val >> 8 & 0xFF));
+                stream.WriteByte((byte)(val >> 16 & 0xFF));
+                stream.WriteByte((byte)(val >> 24 & 0xFF));
+                stream.WriteByte((byte)(val >> 32 & 0xFF));
+                stream.WriteByte((byte)(val >> 40 & 0xFF));
+                stream.WriteByte((byte)(val >> 48 & 0xFF));
+                stream.WriteByte((byte)(val >> 56 & 0xFF));
             }
             else
             {
-                stream.WriteByte((byte)(val & 0xFF));
-                stream.WriteByte((byte)(val >> 8 & 0xFF));
-                stream.WriteByte((byte)(val >> 16 & 0xFF));
-                stream.WriteByte((byte)(val >> 24 & 0xFF));
-                stream.WriteByte((byte)(val >> 32 & 0xFF));
-                stream.WriteByte((byte)(val >> 40 & 0xFF));
+                stream.WriteByte((byte)(val >> 56 & 0xFF));
                 stream.WriteByte((byte)(val >> 48 & 0xFF));
-                stream.WriteByte((byte)(val >> 54 & 0xFF));
+                stream.WriteByte((byte)(val >> 40 & 0xFF));
+                stream.WriteByte((byte)(val >> 32 & 0xFF));
+                stream.WriteByte((byte)(val >> 24 & 0xFF));
+                stream.WriteByte((byte)(val >> 16 & 0xFF));
+                stream.WriteByte((byte)(val >> 8 & 0xFF));
+                stream.WriteByte((byte)(val & 0xFF));
             }
         }
 
