@@ -14,7 +14,6 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.messaging.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -27,7 +26,7 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 /**
  *
  */
-public class GridProjectionAdapter extends GridMetadataAwareAdapter implements GridProjectionEx, Externalizable {
+public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -101,6 +100,27 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
         this.ids = ids;
 
         p = F.nodeForNodeIds(ids);
+    }
+
+    /**
+     * @param parent Parent of this projection.
+     * @param ctx Grid kernal context.
+     * @param p Predicate.
+     * @param ids Node IDs.
+     */
+    private GridProjectionAdapter(@Nullable GridProjection parent, @Nullable GridKernalContext ctx,
+        @Nullable UUID subjId, @Nullable GridPredicate<GridNode> p, Set<UUID> ids) {
+        this.parent = parent;
+
+        if (ctx != null)
+            setKernalContext(ctx);
+
+        this.subjId = subjId;
+        this.p = p;
+        this.ids = ids;
+
+        if (p == null && ids != null)
+            this.p = F.nodeForNodeIds(ids);
     }
 
     /**
@@ -210,7 +230,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public final Collection<GridNode> nodes() {
+    @Override public Collection<GridNode> nodes() {
         guard();
 
         try {
@@ -497,42 +517,12 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
 
     /** {@inheritDoc} */
     @Override public GridProjection forOldest() {
-        GridNode oldest = null;
-
-        long minOrder = Long.MAX_VALUE;
-
-        for (GridNode n : nodes()) {
-            if (n.order() < minOrder) {
-                oldest = n;
-
-                minOrder = n.order();
-            }
-        }
-
-        if (minOrder == Long.MAX_VALUE)
-            throw new GridRuntimeException("Grid projection is empty.");
-
-        return forNode(oldest);
+        return new AgeProjection(this, true);
     }
 
     /** {@inheritDoc} */
     @Override public GridProjection forYoungest() {
-        GridNode youngest = null;
-
-        long maxOrder = Long.MIN_VALUE;
-
-        for (GridNode n : nodes()) {
-            if (n.order() > maxOrder) {
-                youngest = n;
-
-                maxOrder = n.order();
-            }
-        }
-
-        if (maxOrder == Long.MIN_VALUE)
-            throw new GridRuntimeException("Grid projection is empty.");
-
-        return forNode(youngest);
+        return new AgeProjection(this, false);
     }
 
     /** {@inheritDoc} */
@@ -747,6 +737,102 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
         /** {@inheritDoc} */
         @Override public boolean apply(GridNode n) {
             return !nodeIds.contains(n.id());
+        }
+    }
+
+    /**
+     * Age-based projection.
+     */
+    private static class AgeProjection extends GridProjectionAdapter {
+        /** Oldest flag. */
+        private boolean isOldest;
+
+        /** Selected node. */
+        private volatile GridNode node;
+
+        /** Last topology version. */
+        private volatile long lastTopVer;
+
+        /**
+         * Required for {@link Externalizable}.
+         */
+        public AgeProjection() {
+            // No-op.
+        }
+
+        /**
+         * @param prj Parent projection.
+         * @param isOldest Oldest flag.
+         */
+        private AgeProjection(GridProjectionAdapter prj, boolean isOldest) {
+            super(prj.parent, prj.ctx, prj.subjId, prj.p, prj.ids);
+
+            this.isOldest = isOldest;
+
+            reset();
+        }
+
+        /**
+         * Resets node.
+         */
+        private synchronized void reset() {
+            guard();
+
+            try {
+                lastTopVer = ctx.discovery().topologyVersion();
+
+                if (isOldest) {
+                    GridNode oldest = null;
+
+                    long minOrder = Long.MAX_VALUE;
+
+                    for (GridNode n : super.nodes()) {
+                        if (n.order() < minOrder) {
+                            oldest = n;
+
+                            minOrder = n.order();
+                        }
+                    }
+
+                    this.node = oldest;
+                }
+                else {
+                    GridNode youngest = null;
+
+                    long maxOrder = Long.MIN_VALUE;
+
+                    for (GridNode n : super.nodes()) {
+                        if (n.order() > maxOrder) {
+                            youngest = n;
+
+                            maxOrder = n.order();
+                        }
+                    }
+
+                    this.node = youngest;
+                }
+            }
+            finally {
+                unguard();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridNode node() {
+            if (ctx.discovery().topologyVersion() != lastTopVer)
+                reset();
+
+            return node;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<GridNode> nodes() {
+            if (ctx.discovery().topologyVersion() != lastTopVer)
+                reset();
+
+            GridNode node = this.node;
+
+            return node == null ? Collections.<GridNode>emptyList() : Collections.singletonList(node);
         }
     }
 }

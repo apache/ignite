@@ -110,4 +110,27 @@ public class GridProjectionSelfTest extends GridProjectionAbstractTest {
 
         assertEquals(youngest.node(), grid.forNode(node).node());
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNewNodes() throws Exception {
+        GridProjection youngest = grid.forYoungest();
+        GridProjection oldest = grid.forOldest();
+
+        GridNode old = oldest.node();
+        GridNode last = youngest.node();
+
+        assertNotNull(last);
+
+        try (Grid g = startGrid(NODES_CNT)) {
+            GridNode n = g.localNode();
+
+            GridNode latest = youngest.node();
+
+            assertNotNull(latest);
+            assertEquals(latest.id(), n.id());
+            assertEquals(oldest.node(), old);
+        }
+    }
 }

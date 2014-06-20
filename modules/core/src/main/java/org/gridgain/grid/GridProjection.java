@@ -218,6 +218,9 @@ public interface GridProjection {
 
     /**
      * Creates grid projection with one oldest node in the current projection.
+     * The resulting projection is dynamic and will always pick the next oldest
+     * node if the previous one leaves topology even after the projection has
+     * been created.
      *
      * @return Grid projection with one oldest node in the current projection.
      */
@@ -225,6 +228,9 @@ public interface GridProjection {
 
     /**
      * Creates grid projection with one youngest node in the current projection.
+     * The resulting projection is dynamic and will always pick the newest
+     * node in the topology, even if more nodes entered after the projection
+     * has been created.
      *
      * @return Grid projection with one youngest node in the current projection.
      */
