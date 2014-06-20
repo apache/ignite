@@ -72,11 +72,6 @@ public class GridClientHandshakeResponse extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public int typeId() {
-        throw new UnsupportedOperationException(); // Handshake response is not marshaled.
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return getClass().getSimpleName() + " [resCode=" + resCode + ']';
     }

@@ -30,6 +30,7 @@ import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.portable.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.*;
@@ -4900,5 +4901,32 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         public void future(@Nullable GridFuture fut) {
             this.fut = fut;
         }
+    }
+
+    @Nullable @Override public GridPortableObject peekPortable(K key) {
+        return null; // TODO: implement.
+    }
+
+    @Nullable @Override public GridPortableObject peekPortable(K key,
+        @Nullable Collection<GridCachePeekMode> modes) throws GridException {
+        return null; // TODO: implement.
+    }
+
+    @Nullable @Override public GridPortableObject getPortable(K key) throws GridException {
+        return null; // TODO: implement.
+    }
+
+    @Override public GridFuture<GridPortableObject> getPortableAsync(K key) {
+        return null; // TODO: implement.
+    }
+
+    @Override public Map<K, GridPortableObject> getAllPortable(
+        @Nullable Collection<? extends K> keys) throws GridException {
+        return null; // TODO: implement.
+    }
+
+    @Override public GridFuture<Map<K, GridPortableObject>> getAllPortableAsync(
+        @Nullable Collection<? extends K> keys) {
+        return null; // TODO: implement.
     }
 }

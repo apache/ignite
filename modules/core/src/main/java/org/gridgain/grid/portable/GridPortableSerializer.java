@@ -10,19 +10,28 @@
 package org.gridgain.grid.portable;
 
 /**
- * Extension if {@link GridPortable} interface that allows
- * to implement custom serialization/deserialization logic.
+ * Interface that allows to implement custom serialization/deserialization
+ * logic for portable objects.
+ * <p>
+ * Can be used instead of {@link GridPortable} in case serialized
+ * class can be changed.
  */
-public interface GridPortableEx {
+public interface GridPortableSerializer {
     /**
+     * Writes fields to provided writer.
+     *
+     * @param obj Empty object.
      * @param writer Portable object writer.
      * @throws GridPortableException In case of error.
      */
-    public void writePortable(GridPortableWriter writer) throws GridPortableException;
+    public void writePortable(Object obj, GridPortableWriter writer) throws GridPortableException;
 
     /**
+     * Reads fields from provided reader.
+     *
+     * @param obj Empty object
      * @param reader Portable object reader.
      * @throws GridPortableException In case of error.
      */
-    public void readPortable(GridPortableReader reader) throws GridPortableException;
+    public void readPortable(Object obj, GridPortableReader reader) throws GridPortableException;
 }
