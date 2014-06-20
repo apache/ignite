@@ -27,6 +27,7 @@ class GridClientSocketAddress;
 class GridClientBoolFuture;
 class GridClientRouterBalancer;
 class GridPortable;
+class GridPortableIdResolver;
 template <class T> class GridClientFuture;
 template<class T> class GridClientPredicate;
 

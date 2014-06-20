@@ -11,12 +11,23 @@
 #define GRIDPORTABLE_HPP_INCLUDED
 
 #include <string>
+#include <boost/optional.hpp>
 
 #include <gridgain/gridconf.hpp>
 #include <gridgain/gridclienttypedef.hpp>
 #include <gridgain/gridclientuuid.hpp>
 #include <gridgain/gridportablereader.hpp>
 #include <gridgain/gridportablewriter.hpp>
+
+class GRIDGAIN_API GridPortableIdResolver {
+public:
+    virtual boost::optional<int32_t> fieldId(int32_t typeId, const char* fieldName) {
+        return boost::optional<int32_t>();
+    }
+
+    virtual ~GridPortableIdResolver() {
+    }
+};
 
 /**
  * C++ client API.
@@ -41,37 +52,47 @@ public:
 
 class GRIDGAIN_API GridHashablePortable : public GridPortable {
 public:
-    virtual int hashCode() const = 0;
+    virtual int32_t hashCode() const = 0;
 
     virtual bool operator==(const GridHashablePortable& other) const = 0;
 };
 
+class GridPortableReaderImpl;
+class GridPortableObjectBuilder;
+
 class GRIDGAIN_API GridPortableObject {
 public:
-    GridPortableObject(std::vector<int8_t> bytes);
-
     GridPortableObject(const GridPortableObject& other);
 
     GridPortableObject(const GridPortableObject&& other);
 
-    int32_t typeId();
+    int32_t typeId() const;
 
-    int32_t fieldTypeId(const std::string& fieldName);
+    int32_t hashCode() const;
 
-    std::string typeName();
+    GridClientVariant field(const std::string& fieldName) const;
 
-    int32_t hashCode();
+    GridPortable* deserialize() const;
 
-    std::vector<std::string> fields();
+    template<typename T>
+    T* deserialize() const {
+        return static_cast<T*>(deserialize());
+    }
 
-    GridClientVariant field(const std::string& fieldName);
+    GridPortableObject copy(boost::unordered_map<std::string, GridClientVariant> fields) const;
 
-    GridClientVariant deserialize();
-
-    GridPortableObject copy(boost::unordered_map<std::string, GridClientVariant> fields);
+    bool operator==(const GridPortableObject& other) const;
 
 private:
+    GridPortableObject(std::vector<int8_t>&& bytes, GridPortableIdResolver* idRslvr);
+
     std::vector<int8_t> bytes;
+    
+    GridPortableIdResolver* idRslvr;
+    
+    friend class GridPortableReaderImpl;
+
+    friend class GridPortableObjectBuilder;
 };
 
 class GRIDGAIN_API GridPortableObjectBuilder {

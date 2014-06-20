@@ -219,11 +219,53 @@ int32_t gridDoubleHash(double val) {
     return (int32_t)(bits ^ (bits >> 32));
 }
 
+template<typename T>
+int32_t gridHashCode(T val);
+
+template<>
+int32_t gridHashCode<>(int8_t val) {
+    return gridByteHash(val);
+}
+
+template<>
+int32_t gridHashCode<>(int16_t val) {
+    return gridInt16Hash(val);
+}
+
+template<>
+int32_t gridHashCode<>(int32_t val) {
+    return gridInt32Hash(val);
+}
+
+template<>
+int32_t gridHashCode<>(int64_t val) {
+    return gridInt64Hash(val);
+}
+
+template<>
+int32_t gridHashCode<>(bool val) {
+    return gridBoolHash(val);
+}
+
+template<>
+int32_t gridHashCode<>(float val) {
+    return gridFloatHash(val);
+}
+
+template<>
+int32_t gridHashCode<>(double val) {
+    return gridDoubleHash(val);
+}
+
+template<>
+int32_t gridHashCode<>(std::string val) {
+    return gridStringHash(val);
+}
+
 int32_t gridBytesHash(const std::vector<int8_t>& val) {
-    int32_t hash = 1;
+    return gridCollectionHash(val);
+}
 
-    for (size_t i = 0; i < val.size(); ++i)
-        hash = 31 * hash + val[i];
-
-    return hash;
+int32_t gridShortHash(const std::vector<int16_t>& val) {
+    return gridCollectionHash(val);
 }

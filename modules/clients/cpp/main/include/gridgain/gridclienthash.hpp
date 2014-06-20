@@ -33,6 +33,19 @@ int32_t gridStringHash(const std::string& val);
 
 int32_t gridWStringHash(const std::wstring& val);
 
-int32_t gridBytesHash(const std::vector<int8_t>& val); 
+int32_t gridByteArrayHash(const std::vector<int8_t>& val); 
+
+template<typename T>
+int32_t gridHashCode(T val);
+
+template<typename T>
+int32_t gridCollectionHash(const std::vector<T>& val) {
+    int32_t hash = 1;
+
+    for (size_t i = 0; i < val.size(); ++i)
+        hash = 31 * hash + gridHashCode(val[i]);
+
+    return hash;
+}
 
 #endif // GRIDCLIENTHASH_HPP_INCLUDED

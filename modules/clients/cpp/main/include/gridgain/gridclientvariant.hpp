@@ -24,6 +24,7 @@
 class GridClientVariantVisitor;
 class GridClientVariant;
 class GridHashablePortable;
+class GridPortableObject;
 
 /**
  * Class that replaces java.lang.Object holder for primitive types and string. It can hold boolean, int_*, float, double,
@@ -176,14 +177,14 @@ public:
      *
      * @param val Value for the variant.
      */
-    GridClientVariant(const vector<string>& val);
+    GridClientVariant(const std::vector<std::string>& val);
 
     /**
      * Constructor with uuid array argument.
      *
      * @param val Value for the variant.
      */
-    GridClientVariant(const vector<GridClientUuid>& val);
+    GridClientVariant(const std::vector<GridClientUuid>& val);
 
     /**
      * Constructor with variant vector argument.
@@ -218,9 +219,16 @@ public:
     /**
      * Copy constructor.
      *
-     * @param other Variant to take value from.
+     * @param other Variant to copy value from.
      */
     GridClientVariant(const GridClientVariant& other);
+
+    /**
+     * Move constructor.
+     *
+     * @param other Variant to move value from.
+     */
+    GridClientVariant(GridClientVariant&& other);
 
     /**
      * Assignment operator.
@@ -228,6 +236,13 @@ public:
      * @param other Variant to take value from.
      */
     GridClientVariant& operator=(const GridClientVariant& other);
+
+    /**
+     * Move assignment operator.
+     *
+     * @param other Variant to move value from.
+     */
+    GridClientVariant& operator=(GridClientVariant&& other);
 
     /**
      * Converts value contained in variant, to string.
@@ -437,7 +452,7 @@ public:
      *
      * @return Value held in the variant.
      */
-    std::string getString() const;
+    std::string& getString() const;
 
     /**
      * Assigns this variant a portable value.
@@ -639,7 +654,7 @@ public:
      *
      * @return Value held in the variant.
      */
-    std::vector<int8_t>& getFloatArray() const;
+    std::vector<float>& getFloatArray() const;
 
     /**
      * Assigns this variant a double array value.
@@ -705,6 +720,27 @@ public:
     std::vector<bool>& getBoolArray() const;
 
     /**
+     * Assigns this variant a string array value.
+     *
+     * @param val New value for the variant.
+     */
+    void set(const std::vector<std::string>& val);
+
+    /**
+     * Checks if this variant holds a string array value.
+     *
+     * @return <tt>true</tt> if value is of uuid array type, <tt>false</tt> otherwise.
+     */
+    bool hasStringArray() const;
+
+    /**
+     * Returns a string array value from this variant.
+     *
+     * @return Value held in the variant.
+     */
+    std::vector<std::string>& getStringArray() const;
+
+    /**
      * Assigns this variant a uuid array value.
      *
      * @param val New value for the variant.
@@ -740,6 +776,13 @@ public:
     TGridClientVariantSet& getVariantVector() const;
 
     /**
+     * Assigns this variant a variant array value.
+     *
+     * @param val New value for the variant.
+     */
+    void set(const TGridClientVariantSet& val);
+
+    /**
      * Checks if this variant holds a variant map value.
      *
      * @return <tt>true</tt> if value is of variant map type, <tt>false</tt> otherwise.
@@ -752,6 +795,13 @@ public:
      * @return Value held in the variant.
      */
     TGridClientVariantMap& getVariantMap() const;
+
+    /**
+     * Assigns this variant a variant map value.
+     *
+     * @param val New value for the variant.
+     */
+    void set(const TGridClientVariantMap& val);
 
     /**
      * Assigns this variant a UUID value.
@@ -809,8 +859,6 @@ public:
     bool hasAnyValue() const;
 
 private:
-    void copy(const GridClientVariant& other);
-
     /** Enum for possible types of values. */
     enum TypeEnum {
         NULL_TYPE,
@@ -871,7 +919,7 @@ private:
 
         GridPortable* portableVal;
 
-        GridPortable* hashPortableVal;
+        GridHashablePortable* hashPortableVal;
 
         GridPortableObject* portableObjVal;
 
@@ -903,6 +951,12 @@ private:
     TypeEnum type;
 
     U data;
+
+    void copy(const GridClientVariant& other);
+
+    void checkType(TypeEnum expType) const;
+
+    static std::string typeName(TypeEnum type);
 };
 
 /**

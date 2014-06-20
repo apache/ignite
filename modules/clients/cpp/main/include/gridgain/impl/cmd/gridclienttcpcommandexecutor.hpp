@@ -29,7 +29,7 @@ public:
      * @param connectionPool Connection pool to use.
      */
     GridClientTcpCommandExecutor(boost::shared_ptr<GridClientConnectionPool> connectionPool) :
-        connPool(connectionPool), marsh(false) { } // TODO 8536
+        connPool(connectionPool) { }
 
     /**
      * Execute log command.

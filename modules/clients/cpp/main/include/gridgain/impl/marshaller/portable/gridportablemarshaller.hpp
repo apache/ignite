@@ -64,6 +64,8 @@ const int8_t FLAG_METADATA = 0x83;
 
 GridPortable* createPortable(int32_t typeId, GridPortableReader &reader);
 
+int32_t cStringHash(const char* str);
+
 class GridWriteHandleTable {
 public:    
     GridWriteHandleTable(int initCap, float loadFactor) : spine(initCap, -1), next(initCap, 0), objs(initCap, nullptr), size(0) {
@@ -166,8 +168,8 @@ private:
 
 class GridReadHandleTable {
 public:
-    GridReadHandleTable(int initCap) {
-        handles.reserve(initCap);
+    GridReadHandleTable(int cap) {
+        handles.reserve(cap);
     }
 
     int32_t assign(void* obj) {
@@ -186,6 +188,7 @@ private:
     std::vector<void*> handles;
 };
 
+#ifdef BOOST_BIG_ENDIAN
 class PortableOutput {
 public:
 	PortableOutput(size_t cap) {
@@ -209,81 +212,77 @@ public:
         bytes.insert(bytes.end(), ptr, ptr + size);
 	}
 
-    virtual void writeInt32(int32_t val, int32_t pos) = 0;
-
-    virtual void writeInt16(int16_t val) = 0;
-
-    virtual void writeChar(uint16_t val) = 0;
-
-	virtual void writeInt32(int32_t val) = 0;
-
-    virtual void writeInt64(int64_t val) = 0;
-
-    virtual void writeFloat(float val) = 0;
-
-    virtual void writeDouble(double val) = 0;
-
-    std::vector<int8_t> bytes;
-};
-
-class LittleEndianPortableOutput : public PortableOutput {
-public:
-	LittleEndianPortableOutput(size_t cap) : PortableOutput(cap) {
-	}
-
-	void writeInt16(int16_t val) override {
-        int8_t* ptr = reinterpret_cast<int8_t*>(&val);
-
-        bytes.insert(bytes.end(), ptr, ptr + 2);
-	}
-
-    void writeChar(uint16_t val) override {
-        int8_t* ptr = reinterpret_cast<int8_t*>(&val);
-
-        bytes.insert(bytes.end(), ptr, ptr + 2);
+    void writeInt16Array(const std::vector<int16_t>& val) {
+        for (auto iter = val.begin(); iter != val.end(); ++iter)
+            writeInt16(*iter);
     }
 
-    void writeInt32(int32_t val, int32_t pos) override {
-        assert(pos < bytes.size());
-
-        int8_t* ptr = reinterpret_cast<int8_t*>(&val);
-        
-        int8_t* dst = reinterpret_cast<int8_t*>(bytes.data());
-
-        std::copy(ptr, ptr + 4, dst + pos);
+    void writeInt16Array(const int16_t* val, int32_t size) {
+        for (int i = 0; i < size; i++)
+            writeInt16(val[i]);
     }
 
-	void writeInt32(int32_t val) override {
-        int8_t* ptr = reinterpret_cast<int8_t*>(&val);
+    void writeInt32Array(const std::vector<int32_t>& val) {
+        for (auto iter = val.begin(); iter != val.end(); ++iter)
+            writeInt32(*iter);
+    }
 
-        bytes.insert(bytes.end(), ptr, ptr + 4);
-	}
+    void writeInt32Array(const int32_t* val, int32_t size) {
+        for (int i = 0; i < size; i++)
+            writeInt32(val[i]);
+    }
 
-    void writeInt64(int64_t val) override {
-        int8_t* ptr = reinterpret_cast<int8_t*>(&val);
+    void writeCharArray(const std::vector<uint16_t>& val) {
+        for (auto iter = val.begin(); iter != val.end(); ++iter)
+            writeChar(*iter);
+    }
 
-        bytes.insert(bytes.end(), ptr, ptr + 8);
-	}
+    void writeCharArray(const uint16_t* val, int32_t size) {
+        for (int i = 0; i < size; i++)
+            writeChar(val[i]);
+    }
 
-    void writeFloat(float val) override {
-        int8_t* ptr = reinterpret_cast<int8_t*>(&val);
+    void writeInt64Array(const std::vector<int64_t>& val) {
+        for (auto iter = val.begin(); iter != val.end(); ++iter)
+            writeInt64(*iter);
+    }
 
-        bytes.insert(bytes.end(), ptr, ptr + 4);
-	}
+    void writeInt64Array(const int64_t* val, int32_t size) {
+        for (int i = 0; i < size; i++)
+            writeInt64(val[i]);
+    }
 
-    void writeDouble(double val) override {
-        int8_t* ptr = reinterpret_cast<int8_t*>(&val);
+    void writeFloatArray(const std::vector<float>& val) {
+        for (auto iter = val.begin(); iter != val.end(); ++iter)
+            writeFloat(*iter);
+    }
 
-        bytes.insert(bytes.end(), ptr, ptr + 8);
-	}
-};
+    void writeFloatArray(const float* val, int32_t size) {
+        for (int i = 0; i < size; i++)
+            writeFloat(val[i]);
+    }
 
-class BigEndianPortableOutput : public PortableOutput {
-public:
-	BigEndianPortableOutput(size_t cap) : PortableOutput(cap) {
-	}
+    void writeDoubleArray(const std::vector<double>& val) {
+        for (auto iter = val.begin(); iter != val.end(); ++iter)
+            writeDouble(*iter);
+    }
 
-	void writeInt16(int16_t val) override {
+    void writeDoubleArray(const double* val, int32_t size) {
+        for (int i = 0; i < size; i++)
+            writeDouble(val[i]);
+    }
+
+    void writeBoolArray(const std::vector<bool>& val) {
+        for (int i = 0; i < val.size(); i++)
+            writeByte(val[i] ? 1 : 0);
+    }
+
+    void writeBoolArray(const bool* val, int32_t size) {
+        for (int i = 0; i < size; i++)
+            writeByte(val[i] ? 1 : 0);
+    }
+
+	void writeInt16(int16_t val) {
         int8_t* ptr = reinterpret_cast<int8_t*>(&val);
 
         size_t size = bytes.size();
@@ -293,7 +292,7 @@ public:
         std::reverse_copy(ptr, ptr + 2, bytes.data() + size);
 	}
     
-    void writeChar(uint16_t val) override {
+    void writeChar(uint16_t val) {
         int8_t* ptr = reinterpret_cast<int8_t*>(&val);
 
         size_t size = bytes.size();
@@ -303,7 +302,7 @@ public:
         std::reverse_copy(ptr, ptr + 2, bytes.data() + size);
     }
 
-	void writeInt32(int32_t val) override {
+	void writeInt32(int32_t val) {
         int8_t* ptr = reinterpret_cast<int8_t*>(&val);
 
         size_t size = bytes.size();
@@ -313,7 +312,7 @@ public:
         std::reverse_copy(ptr, ptr + 4, bytes.data() + size);
 	}
 
-    void writeInt32(int32_t val, int32_t pos) override {
+    void writeInt32(int32_t val, int32_t pos) {
         assert(pos < bytes.size());
 
         int8_t* ptr = reinterpret_cast<int8_t*>(&val);
@@ -323,7 +322,7 @@ public:
         std::reverse_copy(ptr, ptr + 4, dst + pos);
     }
 
-    void writeInt64(int64_t val) override {
+    void writeInt64(int64_t val) {
         int8_t* ptr = reinterpret_cast<int8_t*>(&val);
 
         size_t size = bytes.size();
@@ -333,7 +332,7 @@ public:
         std::reverse_copy(ptr, ptr + 8, bytes.data() + size);
 	}
 
-    void writeFloat(float val) override {
+    void writeFloat(float val) {
         int8_t* ptr = reinterpret_cast<int8_t*>(&val);
 
         size_t size = bytes.size();
@@ -343,7 +342,7 @@ public:
         std::reverse_copy(ptr, ptr + 4, bytes.data() + size);
 	}
 
-    void writeDouble(double val) override {
+    void writeDouble(double val) {
         int8_t* ptr = reinterpret_cast<int8_t*>(&val);
 
         size_t size = bytes.size();
@@ -352,77 +351,195 @@ public:
 
         std::reverse_copy(ptr, ptr + 8, bytes.data() + size);
 	}
+
+    std::vector<int8_t> bytes;
 };
+#else
+class PortableOutput {
+public:
+	PortableOutput(size_t cap) {
+        bytes.reserve(cap);
+	}
+
+    virtual ~PortableOutput() {
+    }
+
+    void writeBool(bool val) {
+        writeByte(val ? 1 : 0);
+    }
+
+    void writeByte(int8_t val) {
+        bytes.push_back(val);
+    }
+
+	void writeBytes(const void* src, size_t size) {
+        const int8_t* ptr = reinterpret_cast<const int8_t*>(src);
+
+        bytes.insert(bytes.end(), ptr, ptr + size);
+	}
+
+    void writeInt16Array(const std::vector<int16_t>& val) {
+        writeBytes(val.data(), val.size() * 2);
+    }
+
+    void writeInt16Array(const int16_t* val, int32_t size) {
+        writeBytes(val, size * 2);
+    }
+
+    void writeInt32Array(const std::vector<int32_t>& val) {
+        writeBytes(val.data(), val.size() * 4);
+    }
+
+    void writeInt32Array(const int32_t* val, int32_t size) {
+        writeBytes(val, size * 4);
+    }
+
+    void writeCharArray(const std::vector<uint16_t>& val) {
+        writeBytes(val.data(), val.size() * 2);
+    }
+
+    void writeCharArray(const uint16_t* val, int32_t size) {
+        writeBytes(val, size * 2);
+    }
+
+    void writeInt64Array(const std::vector<int64_t>& val) {
+        writeBytes(val.data(), val.size() * 8);
+    }
+
+    void writeInt64Array(const int64_t* val, int32_t size) {
+        writeBytes(val, size * 8);
+    }
+
+    void writeFloatArray(const std::vector<float>& val) {
+        writeBytes(val.data(), val.size() * 4);
+    }
+
+    void writeFloatArray(const float* val, int32_t size) {
+        writeBytes(val, size * 4);
+    }
+
+    void writeDoubleArray(const std::vector<double>& val) {
+        writeBytes(val.data(), val.size() * 2);
+    }
+
+    void writeDoubleArray(const double* val, int32_t size) {
+        writeBytes(val, size * 8);
+    }
+
+    void writeBoolArray(const std::vector<bool>& val) {
+        for (int i = 0; i < val.size(); i++)
+            writeByte(val[i] ? 1 : 0);
+    }
+
+    void writeBoolArray(const bool* val, int32_t size) {
+        for (int i = 0; i < size; i++)
+            writeByte(val[i] ? 1 : 0);
+    }
+
+	void writeInt16(int16_t val) {
+        int8_t* ptr = reinterpret_cast<int8_t*>(&val);
+
+        bytes.insert(bytes.end(), ptr, ptr + 2);
+	}
+
+    void writeChar(uint16_t val) {
+        int8_t* ptr = reinterpret_cast<int8_t*>(&val);
+
+        bytes.insert(bytes.end(), ptr, ptr + 2);
+    }
+
+    void writeInt32(int32_t pos, int32_t val) {
+        assert(pos < bytes.size());
+
+        int8_t* ptr = reinterpret_cast<int8_t*>(&val);
+        
+        int8_t* dst = reinterpret_cast<int8_t*>(bytes.data());
+
+        std::copy(ptr, ptr + 4, dst + pos);
+    }
+
+	void writeInt32(int32_t val) {
+        int8_t* ptr = reinterpret_cast<int8_t*>(&val);
+
+        bytes.insert(bytes.end(), ptr, ptr + 4);
+	}
+
+    void writeInt64(int64_t val) {
+        int8_t* ptr = reinterpret_cast<int8_t*>(&val);
+
+        bytes.insert(bytes.end(), ptr, ptr + 8);
+	}
+
+    void writeFloat(float val) {
+        int8_t* ptr = reinterpret_cast<int8_t*>(&val);
+
+        bytes.insert(bytes.end(), ptr, ptr + 4);
+	}
+
+    void writeDouble(double val) {
+        int8_t* ptr = reinterpret_cast<int8_t*>(&val);
+
+        bytes.insert(bytes.end(), ptr, ptr + 8);
+	}
+
+    std::vector<int8_t> bytes;
+};
+#endif;
 
 class WriteContext {
 public:
-    WriteContext(bool useNames, int cap) : useNames(useNames), out(cap), handles(10, 3) {
+    WriteContext(int cap, GridPortableIdResolver* idRslvr) : out(cap), handles(10, 3), idRslvr(idRslvr) {
     }
 
-    bool useNames;
+    GridPortableIdResolver* idRslvr;
 
     GridWriteHandleTable handles;
 
-#ifdef BOOST_BIG_ENDIAN
-    BigEndianPortableOutput out;
-#else
-    LittleEndianPortableOutput out;
-#endif;
+    PortableOutput out;
 };
 
 const int32_t TOTAL_LENGTH_POS = 10;
 const int32_t RAW_DATA_OFF_POS = 14;
 
-class GridPortableWriterImpl : public GridPortableWriter {
+class GridPortableWriterImpl : public GridPortableWriter, public GridPortableRawWriter {
 public:
-	GridPortableWriterImpl(WriteContext& ctx) : ctx(ctx), start(ctx.out.bytes.size()), allowFields(true) {
+	int32_t curTypeId;
+
+    GridPortableWriterImpl(WriteContext& ctx, int32_t curTypeId) : ctx(ctx), start(ctx.out.bytes.size()), allowFields(true), curTypeId(curTypeId) {
     }
 
-    void writePortable(GridPortable &portable) {
-        writePortable(portable, 0);
+    void writePortable(GridPortable& portable) {
+        doWriteVariant(GridClientVariant(&portable));
     }
 
-    void writePortable(GridPortable &portable, int32_t hashCode) {
-        int32_t handle = ctx.handles.lookup(&portable);
-
-        if (handle == -1) {
-            ctx.out.writeByte(FLAG_OBJECT);
-
-            writeHeader(false, portable.typeId());
-
-            ctx.out.writeInt32(hashCode);
-
-            ctx.out.writeInt64(0); // Reserve two int32 for length and row data offset.
-
-            ctx.out.writeBool(ctx.useNames);
-
-            portable.writePortable(*this);
-
-            int32_t len = ctx.out.bytes.size() - start;
-
-            ctx.out.writeInt32(len, start + TOTAL_LENGTH_POS); 
-        }
-        else {
-            ctx.out.writeByte(FLAG_HANDLE);
-
-            ctx.out.writeInt32(handle);
-        }
+    GridPortableRawWriter& rawWriter() override {
+        return *this;
     }
 
     void writeFieldName(char* fieldName) {
         if (!allowFields)
-            throw GridClientPortableException("Field are not allowed"); // TODO 8536.
+            throw GridClientPortableException("Named fields are not allowed after raw data.");
 
-        if (ctx.useNames)
-            ctx.out.writeBytes(fieldName, strlen(fieldName) / sizeof(char));
-        else
-            ctx.out.writeInt32(fieldNameHash(fieldName));
+        ctx.out.writeInt32(fieldId(fieldName));
     }
 
-    int32_t fieldNameHash(char* fieldName) {
+    int32_t fieldId(char* fieldName) {
+        if (ctx.idRslvr != nullptr) {
+            boost::optional<int32_t> id = ctx.idRslvr->fieldId(curTypeId, fieldName);
+
+            if (id.is_initialized())
+                return id.get();
+        }
+
+        /*
         std::string str(fieldName);
 
-        return gridStringHash(str); // TODO 8536
+        boost::to_lower(str);
+
+        return gridStringHash(str);
+        */
+
+        return cStringHash(fieldName); // TODO 8536
     }
 
     void switchToRaw() {
@@ -436,183 +553,341 @@ public:
     void writeByte(char* fieldName, int8_t val) override {
 		writeFieldName(fieldName);
 
+        ctx.out.writeInt32(2);
+        ctx.out.writeByte(TYPE_ID_BYTE);
+
         doWriteByte(val);
 	}
 
     void doWriteByte(int8_t val) {
-        ctx.out.writeInt32(1);
         ctx.out.writeByte(val);
 	}
 
     void writeInt16(char* fieldName, int16_t val) override {
 		writeFieldName(fieldName);
 
+        ctx.out.writeInt32(3);
+        ctx.out.writeByte(TYPE_ID_SHORT);
+
         doWriteInt16(val);
 	}
 
     void doWriteInt16(int16_t val) {
-        ctx.out.writeInt32(2);
         ctx.out.writeInt16(val);
 	}
 
+    void writeChar(char* fieldName, uint16_t val) override {
+		writeFieldName(fieldName);
+
+        ctx.out.writeInt32(3);
+        ctx.out.writeByte(TYPE_ID_CHAR);
+
+        doWriteInt16(val);
+    }
+
     void doWriteChar(uint16_t val) {
-        ctx.out.writeInt32(2);
         ctx.out.writeChar(val);
 	}
+    
+    void writeCharCollection(char* fieldName, const std::vector<uint16_t> val) override {
+        writeCharArray(fieldName, val.data(), val.size());
+    }
+
+    void writeCharArray(char* fieldName, const uint16_t* val, int32_t size) override {
+		writeFieldName(fieldName);
+
+        if (val != nullptr) {
+            ctx.out.writeInt32(5 + size * 2);
+            ctx.out.writeByte(TYPE_ID_CHAR_ARR);
+
+            ctx.out.writeInt32(size);
+            ctx.out.writeCharArray(val, size);
+        }
+        else {
+            ctx.out.writeInt32(5 + size * 2);
+            ctx.out.writeByte(TYPE_ID_CHAR_ARR);
+
+            ctx.out.writeInt32(-1);
+        }
+    }
 	
     void writeInt16Collection(char* fieldName, const std::vector<int16_t>& val) override {
-		writeFieldName(fieldName);
-
-        // TODO
+        writeInt16Array(fieldName, val.data(), val.size());
     }
     
-    void writeInt16Array(char* fieldName, int16_t* val, int32_t size) override {
+    void writeInt16Array(char* fieldName, const int16_t* val, int32_t size) override {
 		writeFieldName(fieldName);
 
-        // TODO
+        if (val != nullptr) {
+            ctx.out.writeInt32(5 + size * 2);
+            ctx.out.writeByte(TYPE_ID_SHORT_ARR);
+
+            ctx.out.writeInt32(size);
+            ctx.out.writeInt16Array(val, size);
+        }
+        else {
+            ctx.out.writeInt32(5 + size * 2);
+            ctx.out.writeByte(TYPE_ID_SHORT_ARR);
+
+            ctx.out.writeInt32(-1);
+        }
     }
 
     void writeInt32(char* fieldName, int32_t val) override {
 		writeFieldName(fieldName);
 
+        ctx.out.writeInt32(5);
+        ctx.out.writeByte(TYPE_ID_INT);
+
         doWriteInt32(val);
 	}
 
     void doWriteInt32(int32_t val) {
-        ctx.out.writeInt32(4);
         ctx.out.writeInt32(val);
 	}
 	
     void writeInt32Collection(char* fieldName, const std::vector<int32_t>& val) override {
 		writeFieldName(fieldName);
 
-        // TODO
+        writeInt32Array(val.data(), val.size());
     }
     
-    void writeInt32Array(char* fieldName, int32_t* val, int32_t size) override {
+    void writeInt32Array(char* fieldName, const int32_t* val, int32_t size) override {
 		writeFieldName(fieldName);
 
-        // TODO
+        if (val != nullptr) {
+            ctx.out.writeInt32(5 + size * 4);
+            ctx.out.writeByte(TYPE_ID_INT_ARR);
+
+            ctx.out.writeInt32(size);
+            ctx.out.writeInt32Array(val, size);
+        }
+        else {
+            ctx.out.writeInt32(5 + size * 4);
+            ctx.out.writeByte(TYPE_ID_INT_ARR);
+
+            ctx.out.writeInt32(-1);
+        }
     }
 
     void writeInt64(char* fieldName, int64_t val) override {
 		writeFieldName(fieldName);
 
+        ctx.out.writeInt32(9);
+        ctx.out.writeByte(TYPE_ID_LONG);
+
         doWriteInt64(val);
 	}
 
     void doWriteInt64(int64_t val) {
-        ctx.out.writeInt32(8);
         ctx.out.writeInt64(val);
 	}
 	
     void writeInt64Collection(char* fieldName, const std::vector<int64_t>& val) override {
 		writeFieldName(fieldName);
 
-        // TODO
+        writeInt64Array(fieldName, val.data(), val.size());
     }
     
-    void writeInt64Array(char* fieldName, int64_t* val, int32_t size) override {
+    void writeInt64Array(char* fieldName, const int64_t* val, int32_t size) override {
 		writeFieldName(fieldName);
 
-        // TODO
+        if (val != nullptr) {
+            ctx.out.writeInt32(5 + size * 8);
+            ctx.out.writeByte(TYPE_ID_LONG_ARR);
+
+            ctx.out.writeInt32(size);
+            ctx.out.writeInt64Array(val, size);
+        }
+        else {
+            ctx.out.writeInt32(5 + size * 8);
+            ctx.out.writeByte(TYPE_ID_LONG_ARR);
+
+            ctx.out.writeInt32(-1);
+        }
     }
 
     void writeFloat(char* fieldName, float val) override {
 		writeFieldName(fieldName);
 
+        ctx.out.writeInt32(5);
+        ctx.out.writeByte(TYPE_ID_FLOAT);
+
         doWriteFloat(val);
 	}
 
     void doWriteFloat(float val) {
-        ctx.out.writeInt32(4);
         ctx.out.writeFloat(val);
 	}
 	
     void writeFloatCollection(char* fieldName, const std::vector<float>& val) override {
 		writeFieldName(fieldName);
 
-        // TODO
+        writeFloatArray(fieldName, val.data(), val.size());
     }
     
-    void writeFloatArray(char* fieldName, float* val, int32_t size) override {
+    void writeFloatArray(char* fieldName, const float* val, int32_t size) override {
 		writeFieldName(fieldName);
 
-        // TODO
+        if (val != nullptr) {
+            ctx.out.writeInt32(5 + size * 4);
+            ctx.out.writeByte(TYPE_ID_FLOAT_ARR);
+
+            ctx.out.writeInt32(size);
+            ctx.out.writeFloatArray(val, size);
+        }
+        else {
+            ctx.out.writeInt32(5 + size * 4);
+            ctx.out.writeByte(TYPE_ID_FLOAT_ARR);
+
+            ctx.out.writeInt32(-1);
+        }
     }
 
     void writeDouble(char* fieldName, double val) override {
 		writeFieldName(fieldName);
 
+        ctx.out.writeInt32(9);
+        ctx.out.writeByte(TYPE_ID_DOUBLE);
+
         doWriteDouble(val);
 	}
 
     void doWriteDouble(double val) {
-        ctx.out.writeInt32(8);
         ctx.out.writeDouble(val);
 	}
 	
     void writeDoubleCollection(char* fieldName, const std::vector<double>& val) override {
 		writeFieldName(fieldName);
 
-        // TODO
+        writeDoubleArray(fieldName, val.data(), val.size());
     }
     
-    void writeDoubleArray(char* fieldName, double* val, int32_t size) override {
+    void writeDoubleArray(char* fieldName, const double* val, int32_t size) override {
 		writeFieldName(fieldName);
 
-        // TODO
+        if (val != nullptr) {
+            ctx.out.writeInt32(5 + size * 8);
+            ctx.out.writeByte(TYPE_ID_DOUBLE_ARR);
+
+            ctx.out.writeInt32(size);
+            ctx.out.writeDoubleArray(val, size);
+        }
+        else {
+            ctx.out.writeInt32(5 + size * 8);
+            ctx.out.writeByte(TYPE_ID_DOUBLE_ARR);
+
+            ctx.out.writeInt32(-1);
+        }
     }
 
-	void writeString(char* fieldName, const std::string &str) override {
+	void writeString(char* fieldName, const std::string &val) override {
 		writeFieldName(fieldName);
 
-		doWriteString(str);
+        int32_t len = val.length() / sizeof(char);
+        ctx.out.writeInt32(5 + len);
+
+        ctx.out.writeByte(TYPE_ID_STRING);
+        ctx.out.writeInt32(len);
+
+		ctx.out.writeBytes(val.data(), len);
 	}
 
-    void doWriteString(const std::string &str) {
-        int32_t len = str.length() / sizeof(char);
+    void doWriteString(const std::string &val) {
+        int32_t len = val.length() / sizeof(char);
         
         ctx.out.writeInt32(len);
-		ctx.out.writeBytes(str.data(), len);
+		ctx.out.writeBytes(val.data(), len);
 	}
 
     void writeStringCollection(char* fieldName, const std::vector<std::string>& val) override {
 		writeFieldName(fieldName);
 
-        // TODO
+        ctx.out.writeInt32(0);
+
+        int32_t fieldStart = ctx.out.bytes.size();
+
+        ctx.out.writeByte(TYPE_ID_STRING_ARR);
+
+        doWriteStringCollection(val);
+
+        int32_t len = ctx.out.bytes.size() - fieldStart;
+
+        ctx.out.writeInt32(len, fieldStart - 4);
+    }
+
+    void doWriteStringCollection(const std::vector<std::string>& val) {
+        ctx.out.writeInt32(val.size());
+
+        for (auto iter = val.begin(); iter != val.end(); ++iter)
+            doWriteString(*iter);
     }
 
     void writeWString(char* fieldName, const std::wstring& val) override {
 		writeFieldName(fieldName);
 
-        // TODO
+        int32_t len = val.length() / sizeof(wchar_t);
+        ctx.out.writeInt32(5 + len);
+
+        ctx.out.writeByte(TYPE_ID_STRING);
+
+		ctx.out.writeBytes(val.data(), len);
     }
+
+    void doWriteWString(const std::wstring &str) {
+        int32_t len = str.length() / sizeof(wchar_t);
+        
+		ctx.out.writeBytes(str.data(), len);
+	}
 
     void writeWStringCollection(char* fieldName, const std::vector<std::wstring>& val) override {
 		writeFieldName(fieldName);
 
-        // TODO
+        ctx.out.writeInt32(0);
+
+        int32_t fieldStart = ctx.out.bytes.size();
+
+        ctx.out.writeByte(TYPE_ID_STRING_ARR);
+
+        doWriteWStringCollection(val);
+
+        int32_t len = ctx.out.bytes.size() - fieldStart;
+
+        ctx.out.writeInt32(len, fieldStart - 4);
+    }
+
+    void doWriteWStringCollection(const std::vector<std::wstring>& val) {
+        ctx.out.writeInt32(val.size());
+
+        for (auto iter = val.begin(); iter != val.end(); ++iter)
+            doWriteWString(*iter);
     }
 	
     void writeByteCollection(char* fieldName, const std::vector<int8_t>& val) override {
 		writeFieldName(fieldName);
 
+        ctx.out.writeInt32(5 + val.size());
+
+        ctx.out.writeByte(TYPE_ID_BYTE_ARR);
+
         doWriteByteCollection(val);
     }
 
     void doWriteByteCollection(const std::vector<int8_t>& val) {
-        ctx.out.writeInt32(val.size());
         ctx.out.writeBytes(val.data(), val.size());
     }
     
-    void writeByteArray(char* fieldName, int8_t* val, int32_t size) override {
+    void writeByteArray(char* fieldName, const int8_t* val, int32_t size) override {
 		writeFieldName(fieldName);
+
+        ctx.out.writeInt32(val != nullptr ? 5 + size : 5);
+
+        ctx.out.writeByte(TYPE_ID_BYTE_ARR);
 
         doWriteByteArray(val, size);
     }
     
-    void doWriteByteArray(int8_t* val, int32_t size) {
+    void doWriteByteArray(const int8_t* val, int32_t size) {
         if (val != nullptr) {
             ctx.out.writeInt32(size);
             ctx.out.writeBytes(val, size);
@@ -624,50 +899,90 @@ public:
 	void writeBool(char* fieldName, bool val) override {
 		writeFieldName(fieldName);
 
+        ctx.out.writeInt32(2);
+        ctx.out.writeByte(TYPE_ID_BOOLEAN);
+
         doWriteBool(val);
 	}
 
 	void doWriteBool(bool val) {
-        ctx.out.writeInt32(1);
         ctx.out.writeBool(val);
 	}
 	
     void writeBoolCollection(char* fieldName, const std::vector<bool>& val) override {
 		writeFieldName(fieldName);
 
-        // TODO
+        ctx.out.writeInt32(val.size() + 1);
+        ctx.out.writeByte(TYPE_ID_BOOLEAN_ARR);
+
+        for (auto iter = val.begin(); iter != val.end(); ++iter)
+            doWriteBool(*iter);
     }
     
-    void writeBoolArray(char* fieldName, bool* val, int32_t size) override {
+    void writeBoolArray(char* fieldName, const bool* val, int32_t size) override {
 		writeFieldName(fieldName);
 
-        // TODO
+        ctx.out.writeInt32(size + 1);
+        ctx.out.writeByte(TYPE_ID_BOOLEAN_ARR);
+
+        for (int32_t i = 0; i < size; i++)
+            doWriteBool(val[i]);
     }
 
 	void writeUuid(char* fieldName, const boost::optional<GridClientUuid>& val) override {
 		writeFieldName(fieldName);
+
+        ctx.out.writeInt32(val.is_initialized() ? 18 : 2);
+    
+        ctx.out.writeByte(TYPE_ID_UUID);
 
         doWriteUuid(val);
 	}
 
     void doWriteUuid(const boost::optional<GridClientUuid>& val) {
         if (val) {
-            ctx.out.writeInt32(17);
-
             ctx.out.writeBool(true);
 
             ctx.out.writeInt64(val.get().mostSignificantBits());
             ctx.out.writeInt64(val.get().leastSignificantBits());
         }
-        else {
-            ctx.out.writeInt32(1);
+        else
             ctx.out.writeBool(false);
-        }
 	}
 
-    void writeHeader(bool userType, int32_t typeId) {
+    void writeUuidCollection(char* fieldName, const std::vector<GridClientUuid>& val) override {
+		writeFieldName(fieldName);
+
+        ctx.out.writeInt32(5 + val.size() * 16);
+    
+        ctx.out.writeByte(TYPE_ID_UUID);
+
+        doWriteUuidCollection(val);
+    }
+
+    void doWriteUuidCollection(const std::vector<GridClientUuid>& val) {
+        ctx.out.writeInt32(val.size());
+
+        for (auto iter = val.begin(); iter != val.end(); ++iter) {
+            GridClientUuid uuid = *iter;
+
+            ctx.out.writeBool(true);
+
+            ctx.out.writeInt64(uuid.mostSignificantBits());
+            ctx.out.writeInt64(uuid.leastSignificantBits());
+        }
+    }
+
+    int32_t writeHeader(bool userType, int32_t typeId, const GridClientVariant& val) {
         ctx.out.writeBool(userType);
         ctx.out.writeInt32(typeId);
+        ctx.out.writeInt32(val.hasPortable() ? 0 : val.hashCode());
+        
+        int32_t lenPos = ctx.out.bytes.size();
+
+        ctx.out.writeInt64(0); // Reserve space for length and raw data offset.
+
+        return lenPos;
     }
 
     void writeVariant(char* fieldName, const GridClientVariant& val) override {
@@ -685,86 +1000,231 @@ public:
     }
 
     void doWriteVariant(const GridClientVariant &val) {
-        if (val.hasByte()) {
-            writeHeader(false, TYPE_ID_BOOLEAN);
+        int32_t start = ctx.out.bytes.size();
+        int32_t lenPos = start + 10;
+
+        if (val.hasPortable() || val.hasHashablePortable()) {
+            GridPortable* portable = val.hasPortable() ? val.getPortable() : val.getHashablePortable();
+
+            int32_t handle = ctx.handles.lookup(portable);
+
+            if (handle >= 0) {
+                ctx.out.writeByte(FLAG_HANDLE);
+    
+                ctx.out.writeInt32(handle);
+
+                return;
+            }
+            else {
+                ctx.out.writeByte(FLAG_OBJECT);
+
+                lenPos = writeHeader(true, portable->typeId(), val);
+
+                GridPortableWriterImpl writer(ctx, portable->typeId());
+
+                portable->writePortable(writer);
+            }
+        }
+        else if (val.hasPortableObject()) {
+            // TODO
+        }
+        else if (val.hasByte()) {
+            ctx.out.writeByte(FLAG_OBJECT);
+
+            lenPos = writeHeader(false, TYPE_ID_BOOLEAN, val);
 
             doWriteByte(val.getByte());
         }
         else if (val.hasShort()) {
-            writeHeader(false, TYPE_ID_SHORT);
+            ctx.out.writeByte(FLAG_OBJECT);
+
+            lenPos = writeHeader(false, TYPE_ID_SHORT, val);
 
             doWriteInt16(val.getShort());
         }
         else if (val.hasInt()) {
-            writeHeader(false, TYPE_ID_INT);
+            ctx.out.writeByte(FLAG_OBJECT);
+
+            lenPos = writeHeader(false, TYPE_ID_INT, val);
 
             doWriteInt32(val.getInt());
         }
         else if (val.hasLong()) {
-            writeHeader(false, TYPE_ID_LONG);
+            ctx.out.writeByte(FLAG_OBJECT);
+
+            lenPos = writeHeader(false, TYPE_ID_LONG, val);
 
             doWriteInt64(val.getLong());
         }
         else if (val.hasFloat()) {
-            writeHeader(false, TYPE_ID_FLOAT);
+            ctx.out.writeByte(FLAG_OBJECT);
+
+            lenPos = writeHeader(false, TYPE_ID_FLOAT, val);
 
             doWriteFloat(val.getFloat());
         }
         else if (val.hasDouble()) {
-            writeHeader(false, TYPE_ID_DOUBLE);
+            ctx.out.writeByte(FLAG_OBJECT);
+
+            lenPos = writeHeader(false, TYPE_ID_DOUBLE, val);
 
             doWriteDouble(val.getInt());
         }
         else if (val.hasChar()) {
-            writeHeader(false, TYPE_ID_CHAR);
+            ctx.out.writeByte(FLAG_OBJECT);
+
+            lenPos = writeHeader(false, TYPE_ID_CHAR, val);
 
             doWriteChar(val.getChar());
         }
         else if (val.hasString()) {
-            writeHeader(false, TYPE_ID_STRING);
+            ctx.out.writeByte(FLAG_OBJECT);
+
+            lenPos = writeHeader(false, TYPE_ID_STRING, val);
 
             doWriteString(val.getString());
         }
         else if (val.hasBool()) {
-            writeHeader(false, TYPE_ID_BOOLEAN);
+            ctx.out.writeByte(FLAG_OBJECT);
+
+            lenPos = writeHeader(false, TYPE_ID_BOOLEAN, val);
 
             doWriteBool(val.getBool());
         }
         else if (val.hasUuid()) {
-            writeHeader(false, TYPE_ID_UUID);
+            ctx.out.writeByte(FLAG_OBJECT);
+
+            lenPos = writeHeader(false, TYPE_ID_UUID, val);
 
             doWriteInt32(val.getInt());
         }
-        else if (val.hasPortable()) {
-            int32_t hashCode = 0;
+        else if (val.hasByteArray()) {
+            ctx.out.writeByte(FLAG_OBJECT);
 
-            GridPortable* portable = val.getPortable();
+            lenPos = writeHeader(false, TYPE_ID_BYTE_ARR, val);
 
-            if (val.hasHashablePortable())
-                hashCode = static_cast<GridHashablePortable*>(portable)->hashCode();
+            std::vector<int8_t>& arr = val.getByteArray();
 
-            GridPortableWriterImpl writer(ctx);
+            doWriteByteArray(arr.data(), arr.size());
+        }
+        else if (val.hasShortArray()) {
+            ctx.out.writeByte(FLAG_OBJECT);
 
-            writer.writePortable(*portable, hashCode);
+            lenPos = writeHeader(false, TYPE_ID_SHORT_ARR, val);
+
+            std::vector<int16_t>& arr = val.getShortArray();
+
+            ctx.out.writeInt32(arr.size());
+            ctx.out.writeInt16Array(arr.data(), arr.size());
+        }
+        else if (val.hasIntArray()) {
+            ctx.out.writeByte(FLAG_OBJECT);
+
+            lenPos = writeHeader(false, TYPE_ID_INT_ARR, val);
+
+            std::vector<int32_t>& arr = val.getIntArray();
+
+            ctx.out.writeInt32(arr.size());
+            ctx.out.writeInt32Array(arr.data(), arr.size());
+        }
+        else if (val.hasLongArray()) {
+            ctx.out.writeByte(FLAG_OBJECT);
+
+            lenPos = writeHeader(false, TYPE_ID_LONG_ARR, val);
+
+            std::vector<int64_t>& arr = val.getLongArray();
+
+            ctx.out.writeInt32(arr.size());
+            ctx.out.writeInt64Array(arr.data(), arr.size());
+        }
+        else if (val.hasFloatArray()) {
+            ctx.out.writeByte(FLAG_OBJECT);
+
+            lenPos = writeHeader(false, TYPE_ID_FLOAT_ARR, val);
+
+            std::vector<float>& arr = val.getFloatArray();
+
+            ctx.out.writeInt32(arr.size());
+            ctx.out.writeFloatArray(arr.data(), arr.size());
+        }
+        else if (val.hasDoubleArray()) {
+            ctx.out.writeByte(FLAG_OBJECT);
+
+            lenPos = writeHeader(false, TYPE_ID_DOUBLE_ARR, val);
+
+            std::vector<double>& arr = val.getDoubleArray();
+
+            ctx.out.writeInt32(arr.size());
+            ctx.out.writeDoubleArray(arr.data(), arr.size());
+        }
+        else if (val.hasCharArray()) {
+            ctx.out.writeByte(FLAG_OBJECT);
+
+            lenPos = writeHeader(false, TYPE_ID_CHAR_ARR, val);
+
+            std::vector<uint16_t>& arr = val.getCharArray();
+
+            ctx.out.writeInt32(arr.size());
+            ctx.out.writeCharArray(arr.data(), arr.size());
+        }
+        else if (val.hasStringArray()) {
+            ctx.out.writeByte(FLAG_OBJECT);
+
+            lenPos = writeHeader(false, TYPE_ID_STRING_ARR, val);
+
+            std::vector<std::string>& arr = val.getStringArray();
+
+            doWriteStringCollection(arr);
+        }
+        else if (val.hasBoolArray()) {
+            ctx.out.writeByte(FLAG_OBJECT);
+
+            lenPos = writeHeader(false, TYPE_ID_BOOLEAN_ARR, val);
+
+            std::vector<bool>& arr = val.getBoolArray();
+
+            for (auto iter = arr.begin(); iter != arr.end(); ++iter)
+                doWriteBool(*iter);
+        }
+        else if (val.hasUuidArray()) {
+            ctx.out.writeByte(FLAG_OBJECT);
+
+            lenPos = writeHeader(false, TYPE_ID_UUID_ARR, val);
+
+            std::vector<GridClientUuid>& arr = val.getUuidArray();
+
+            doWriteUuidCollection(arr);
         }
         else if (val.hasVariantVector()) {
-            writeHeader(false, TYPE_ID_COLLECTION);
+            ctx.out.writeByte(FLAG_OBJECT);
 
-            doWriteCollection(val.getVariantVector());
+            lenPos = writeHeader(false, TYPE_ID_COLLECTION, val);
+
+            doWriteVariantCollection(val.getVariantVector());
         }
         else if (val.hasVariantMap()) {
-            writeHeader(false, TYPE_ID_MAP);
+            ctx.out.writeByte(FLAG_OBJECT);
 
-            doWriteMap(val.getVariantMap());
+            lenPos = writeHeader(false, TYPE_ID_MAP, val);
+
+            doWriteVariantMap(val.getVariantMap());
         }
         else if (!val.hasAnyValue()) {
             ctx.out.writeByte(FLAG_NULL);
+
+            return;
         }
         else {
             assert(false);
 
             throw GridClientPortableException("Unknown object type.");
         }
+
+        assert(lenPos > 0);
+
+        int32_t len = ctx.out.bytes.size() - start;
+
+        ctx.out.writeInt32(lenPos, len);
     }
 
     void writeVariantCollection(char* fieldName, const TGridClientVariantSet &val) override {
@@ -774,14 +1234,14 @@ public:
 
         int32_t fieldStart = ctx.out.bytes.size();
 
-        doWriteCollection(val);
+        doWriteVariantCollection(val);
 
         int32_t len = ctx.out.bytes.size() - fieldStart;
 
         ctx.out.writeInt32(len, fieldStart - 4);
     }
 
-    void doWriteCollection(const TGridClientVariantSet& col) {
+    void doWriteVariantCollection(const TGridClientVariantSet& col) {
         ctx.out.writeInt32(col.size());
 
         for (auto iter = col.begin(); iter != col.end(); ++iter) {
@@ -798,14 +1258,14 @@ public:
 
         int32_t fieldStart = ctx.out.bytes.size();
 
-        doWriteMap(val);
+        doWriteVariantMap(val);
 
         int32_t len = ctx.out.bytes.size() - fieldStart;
 
         ctx.out.writeInt32(len, fieldStart - 4);
     }
 
-    void doWriteMap(const TGridClientVariantMap& map) {
+    void doWriteVariantMap(const TGridClientVariantMap& map) {
         ctx.out.writeInt32(map.size());
 
         for (auto iter = map.begin(); iter != map.end(); ++iter) {
@@ -830,23 +1290,18 @@ public:
 	}
 	
     void writeInt16Collection(const std::vector<int16_t>& val) override {
+        writeInt16Array(val.data(), val.size());
+    }
+
+    void writeInt16Array(const int16_t* val, int32_t size) override {
         switchToRaw();
 
-        doWriteInt16Collection(val);
-    }
-    
-    void doWriteInt16Collection(const std::vector<int16_t>& val) {
-        // TODO
-    }
-
-    void writeInt16Array(int16_t* val, int32_t size) override {
-        switchToRaw();
-
-        doWriteInt16Array(val, size);
-    }
-
-    void doWriteInt16Array(int16_t* val, int32_t size) {
-        // TODO
+        if (val != nullptr) {
+            ctx.out.writeInt32(size);
+            ctx.out.writeInt16Array(val, size);
+        }
+        else
+            ctx.out.writeInt32(-1);
     }
 
     void writeInt32(int32_t val) override {
@@ -856,25 +1311,33 @@ public:
 	}
 	
     void writeInt32Collection(const std::vector<int32_t>& val) override {
-        switchToRaw();
-
-        doWriteInt32Collection(val);
-    }
-
-    void doWriteInt32Collection(const std::vector<int32_t>& val) {
-        // TODO
+        writeInt32Array(val.data(), val.size());
     }
     
-    void writeInt32Array(int32_t* val, int32_t size) override {
+    void writeInt32Array(const int32_t* val, int32_t size) override {
         switchToRaw();
 
-        doWriteInt32Array(val, size);
+        if (val != nullptr) {
+            ctx.out.writeInt32(size);
+            ctx.out.writeInt32Array(val, size);
+        }
+        else
+            ctx.out.writeInt32(-1);
+    }
+    
+    void writeCharCollection(const std::vector<uint16_t> val) override {
+        writeCharArray(val.data(), val.size());
     }
 
-    void doWriteInt32Array(int32_t* val, int32_t size) {
+    void writeCharArray(const uint16_t* val, int32_t size) override {
         switchToRaw();
 
-        // TODO
+        if (val != nullptr) {
+            ctx.out.writeInt32(size);
+            ctx.out.writeCharArray(val, size);
+        }
+        else
+            ctx.out.writeInt32(-1);
     }
 
     void writeInt64(int64_t val) override {
@@ -884,23 +1347,18 @@ public:
 	}
 	
     void writeInt64Collection(const std::vector<int64_t>& val) override {
-        switchToRaw();
-
-        doWriteInt64Collection(val);
-    }
-
-    void doWriteInt64Collection(const std::vector<int64_t>& val) {
-        // TODO
+        writeInt64Array(val.data(), val.size());
     }
     
-    void writeInt64Array(int64_t* val, int32_t size) override {
+    void writeInt64Array(const int64_t* val, int32_t size) override {
         switchToRaw();
 
-        doWriteInt64Array(val, size);
-    }
-
-    void doWriteInt64Array(int64_t* val, int32_t size) {
-        // TODO
+        if (val != nullptr) {
+            ctx.out.writeInt32(size);
+            ctx.out.writeInt64Array(val, size);
+        }
+        else
+            ctx.out.writeInt32(-1);
     }
 
     void writeFloat(float val) override {
@@ -910,23 +1368,18 @@ public:
 	}
 	
     void writeFloatCollection(const std::vector<float>& val) override {
-        switchToRaw();
-
-        doWriteFloatCollection(val);
-    }
-
-    void doWriteFloatCollection(const std::vector<float>& val) {
-        // TODO
+        writeFloatArray(val.data(), val.size());
     }
     
-    void writeFloatArray(float* val, int32_t size) override {
+    void writeFloatArray(const float* val, int32_t size) override {
         switchToRaw();
 
-        doWriteFloatArray(val, size);
-    }
-
-    void doWriteFloatArray(float* val, int32_t size) {
-        // TODO
+        if (val != nullptr) {
+            ctx.out.writeInt32(size);
+            ctx.out.writeFloatArray(val, size);
+        }
+        else
+            ctx.out.writeInt32(-1);
     }
 
     void writeDouble(double val) override {
@@ -938,17 +1391,18 @@ public:
     void writeDoubleCollection(const std::vector<double>& val) override {
         switchToRaw();
 
-        doWriteDoubleCollection(val);
-    }
-
-    void doWriteDoubleCollection(const std::vector<double>& val) {
-        // TODO
+        writeDoubleArray(val.data(), val.size());
     }
     
-    void writeDoubleArray(double* val, int32_t size) override {
+    void writeDoubleArray(const double* val, int32_t size) override {
         switchToRaw();
 
-        // TODO
+        if (val != nullptr) {
+            ctx.out.writeInt32(size);
+            ctx.out.writeDoubleArray(val, size);
+        }
+        else
+            ctx.out.writeInt32(-1);
     }
 
 	void writeString(const std::string& val) override {
@@ -960,19 +1414,19 @@ public:
     void writeStringCollection(const std::vector<std::string>& val) override {
         switchToRaw();
 
-        // TODO
+        doWriteStringCollection(val);
     }
 
     void writeWString(const std::wstring& val) override {
         switchToRaw();
 
-        // TODO
+        doWriteWString(val);
     }
 
     void writeWStringCollection(const std::vector<std::wstring>& val) override {
         switchToRaw();
 
-        // TODO
+        doWriteWStringCollection(val);
     }
 	
     void writeByteCollection(const std::vector<int8_t>& val) override {
@@ -981,7 +1435,7 @@ public:
         doWriteByteCollection(val);
     }
     
-    void writeByteArray(int8_t* val, int32_t size) override {
+    void writeByteArray(const int8_t* val, int32_t size) override {
         switchToRaw();
 
         doWriteByteArray(val, size);
@@ -996,13 +1450,17 @@ public:
     void writeBoolCollection(const std::vector<bool>& val) override {
         switchToRaw();
 
-        // TODO
+        ctx.out.writeInt32(val.size());
+
+        for (auto iter = val.begin(); iter != val.end(); ++iter)
+            doWriteBool(*iter);
     }
     
-    void writeBoolArray(bool* val, int32_t size) override {
+    void writeBoolArray(const bool* val, int32_t size) override {
         switchToRaw();
 
-        // TODO
+        for (int i = 0; i < size; i++)
+            doWriteBool(val[i]);
     }
 
 	void writeUuid(const boost::optional<GridClientUuid>& val) override {
@@ -1011,22 +1469,28 @@ public:
         doWriteUuid(val);
 	}
 
-    void writeVariant(const GridClientVariant &val) override {
+    void writeUuidCollection(const std::vector<GridClientUuid>& val) override {
         switchToRaw();
 
-        // TODO
+        doWriteUuidCollection(val);
+    }
+
+    void writeVariant(const GridClientVariant& val) override {
+        switchToRaw();
+
+        doWriteVariant(val);
     }
     
-    void writeVariantCollection(const TGridClientVariantSet &val) override {
+    void writeVariantCollection(const TGridClientVariantSet& val) override {
         switchToRaw();
 
-        // TODO
+        doWriteVariantCollection(val);
     }
 
-    void writeVariantMap(const TGridClientVariantMap &map) override {
+    void writeVariantMap(const TGridClientVariantMap& val) override {
         switchToRaw();
 
-        // TODO
+        doWriteVariantMap(val);
     }
 
 private:
@@ -1037,6 +1501,7 @@ private:
     WriteContext& ctx;
 };
 
+#ifdef BOOST_BIG_ENDIAN
 class PortableInput {
 public:
     PortableInput(std::vector<int8_t>& data) : bytes(data), pos(0) {
@@ -1049,6 +1514,35 @@ public:
         checkAvailable(1);
 
         return bytes[pos++];
+    }
+
+    int8_t readByte(int32_t off) {
+        checkAvailable(off, 1);
+
+        return bytes[off];
+    }
+
+    bool readBool(int32_t off) {
+        checkAvailable(off, 1);
+
+        int8_t val = bytes[off];
+
+        return val != 0;
+    }
+
+    int32_t readInt32(int32_t off) {
+        checkAvailable(off, 4);
+
+        int32_t res;
+
+        int8_t* start = bytes.data() + off;
+        int8_t* end = start + 4;
+
+        int8_t* dst = reinterpret_cast<int8_t*>(&res);
+
+        std::reverse_copy(start, end, dst);
+
+        return res;
     }
 
     std::vector<int8_t> readBytes(int32_t size) {
@@ -1075,252 +1569,729 @@ public:
         return res;
     }
 
-    virtual int16_t readInt16() = 0;
+    int16_t readInt16() {
+        checkAvailable(2);
 
-    virtual int32_t readInt32() = 0;
+        int16_t res;
 
-    virtual int64_t readInt64() = 0;
+        int8_t* start = bytes.data() + pos;
+        int8_t* end = start + 2;
 
-    virtual float readFloat() = 0;
+        int8_t* dst = reinterpret_cast<int8_t*>(&res);
 
-    virtual double readDouble() = 0;
+        std::reverse_copy(start, end, dst);
+
+        pos += 2;
+
+        return res;
+    }
+
+    int32_t readInt32() {
+        checkAvailable(4);
+
+        int32_t res;
+
+        int8_t* start = bytes.data() + pos;
+        int8_t* end = start + 4;
+
+        int8_t* dst = reinterpret_cast<int8_t*>(&res);
+
+        std::reverse_copy(start, end, dst);
+
+        pos += 4;
+
+        return res;
+    }
+
+    int64_t readInt64() {
+        checkAvailable(8);
+
+        int64_t res;
+
+        int8_t* start = bytes.data() + pos;
+        int8_t* end = start + 8;
+
+        int8_t* dst = reinterpret_cast<int8_t*>(&res);
+
+        std::reverse_copy(start, end, dst);
+
+        pos += 8;
+
+        return res;
+    }
+
+    float readFloat() {
+        checkAvailable(4);
+
+        float res;
+
+        int8_t* start = bytes.data() + pos;
+        int8_t* end = start + 4;
+
+        int8_t* dst = reinterpret_cast<int8_t*>(&res);
+
+        std::reverse_copy(start, end, dst);
+
+        pos += 4;
+
+        return res;
+    }
+
+    double readDouble() {
+        checkAvailable(4);
+
+        double res;
+
+        int8_t* start = bytes.data() + pos;
+        int8_t* end = start + 8;
+
+        int8_t* dst = reinterpret_cast<int8_t*>(&res);
+
+        std::reverse_copy(start, end, dst);
+
+        pos += 8;
+
+        return res;
+    }
 
 protected:
     void checkAvailable(size_t cnt) {
         assert(pos + cnt <= bytes.size());
+    }
+
+    void checkAvailable(int32_t off, size_t cnt) {
+        assert(off + pos + cnt <= bytes.size());
     }
     
     int32_t pos;
 
     std::vector<int8_t>& bytes;
 };
-
-class LittleEndianPortableInput : public PortableInput {
+#else
+class PortableInput {
 public:
-    LittleEndianPortableInput(std::vector<int8_t>& data) : PortableInput(data) {
+    PortableInput(const std::vector<int8_t>& data) : bytes(data) {
     }
 
-    int16_t readInt16() override {
-        checkAvailable(2);
-
-        int16_t res;
-
-        int8_t* start = bytes.data() + pos;
-        int8_t* end = start + 2;
-
-        int8_t* dst = reinterpret_cast<int8_t*>(&res);
-
-        std::copy(start, end, dst);
-
-        pos += 2;
-
-        return res;
+    virtual ~PortableInput() {
     }
 
-    int32_t readInt32() override {
-        checkAvailable(4);
+    int8_t readByte(int32_t off) {
+        checkAvailable(off, 1);
+
+        return bytes[off];
+    }
+
+    bool readBool(int32_t off) {
+        checkAvailable(off, 1);
+
+        int8_t val = bytes[off];
+
+        return val != 0;
+    }
+
+    int32_t readInt32(int32_t off) {
+        checkAvailable(off, 4);
 
         int32_t res;
 
-        int8_t* start = bytes.data() + pos;
-        int8_t* end = start + 4;
+        const int8_t* start = bytes.data() + off;
+        const int8_t* end = start + 4;
 
         int8_t* dst = reinterpret_cast<int8_t*>(&res);
 
         std::copy(start, end, dst);
 
-        pos += 4;
+        return res;
+    }
+
+    std::vector<int8_t>&& readByteCollection(int32_t off, int32_t size) {
+        checkAvailable(off, size);
+
+        std::vector<int8_t> vec(bytes.data() + off, bytes.data() + off + size);
+
+        return std::move(vec);
+    }
+
+    int8_t* readByteArray(int32_t off, int32_t size) {
+        checkAvailable(off, size);
+
+        int8_t* res = new int8_t[size];
+
+        std::copy(bytes.data() + off, bytes.data() + off + size, res);
 
         return res;
     }
 
-    int64_t readInt64() override {
-        checkAvailable(8);
+    std::vector<int16_t>&& readInt16Collection(int32_t off, int32_t size) {
+        checkAvailable(off, size);
 
-        int64_t res;
+        std::vector<int16_t> vec(bytes.data() + off, bytes.data() + off + size);
 
-        int8_t* start = bytes.data() + pos;
-        int8_t* end = start + 8;
+        return std::move(vec);
+    }
 
-        int8_t* dst = reinterpret_cast<int8_t*>(&res);
+    int16_t* readInt16Array(int32_t off, int32_t size) {
+        checkAvailable(off, size);
 
-        std::copy(start, end, dst);
+        int16_t* res = new int16_t[size];
 
-        pos += 8;
+        std::copy(bytes.data() + off, bytes.data() + off + size, res);
 
         return res;
     }
 
-    float readFloat() override {
-        checkAvailable(4);
-
-        float res;
-
-        int8_t* start = bytes.data() + pos;
-        int8_t* end = start + 4;
-
-        int8_t* dst = reinterpret_cast<int8_t*>(&res);
-
-        std::copy(start, end, dst);
-
-        pos += 4;
-
-        return res;
-    }
-
-    double readDouble() override {
-        checkAvailable(4);
-
-        double res;
-
-        int8_t* start = bytes.data() + pos;
-        int8_t* end = start + 8;
-
-        int8_t* dst = reinterpret_cast<int8_t*>(&res);
-
-        std::copy(start, end, dst);
-
-        pos += 8;
-
-        return res;
-    }
-};
-
-class BigEndianPortableInput : public PortableInput {
-public:
-    BigEndianPortableInput(std::vector<int8_t>& data) : PortableInput(data) {
-    }
-
-    int16_t readInt16() override {
-        checkAvailable(2);
+    int16_t readInt16(int32_t off) {
+        checkAvailable(off, 2);
 
         int16_t res;
 
-        int8_t* start = bytes.data() + pos;
-        int8_t* end = start + 2;
+        const int8_t* start = bytes.data() + off;
+        const int8_t* end = start + 2;
 
         int8_t* dst = reinterpret_cast<int8_t*>(&res);
 
-        std::reverse_copy(start, end, dst);
-
-        pos += 2;
+        std::copy(start, end, dst);
 
         return res;
     }
 
-    int32_t readInt32() override {
-        checkAvailable(4);
+    uint16_t readChar(int32_t off) {
+        checkAvailable(off, 2);
 
-        int32_t res;
+        uint16_t res;
 
-        int8_t* start = bytes.data() + pos;
-        int8_t* end = start + 4;
+        const int8_t* start = bytes.data() + off;
+        const int8_t* end = start + 2;
 
         int8_t* dst = reinterpret_cast<int8_t*>(&res);
 
-        std::reverse_copy(start, end, dst);
-
-        pos += 4;
+        std::copy(start, end, dst);
 
         return res;
     }
 
-    int64_t readInt64() override {
-        checkAvailable(8);
+    int64_t readInt64(int32_t off) {
+        checkAvailable(off, 8);
 
         int64_t res;
 
-        int8_t* start = bytes.data() + pos;
-        int8_t* end = start + 8;
+        const int8_t* start = bytes.data() + off;
+        const int8_t* end = start + 8;
 
         int8_t* dst = reinterpret_cast<int8_t*>(&res);
 
-        std::reverse_copy(start, end, dst);
-
-        pos += 8;
+        std::copy(start, end, dst);
 
         return res;
     }
 
-    float readFloat() override {
-        checkAvailable(4);
+    float readFloat(int32_t off) {
+        checkAvailable(off, 4);
 
         float res;
 
-        int8_t* start = bytes.data() + pos;
-        int8_t* end = start + 4;
+        const int8_t* start = bytes.data() + off;
+        const int8_t* end = start + 4;
 
         int8_t* dst = reinterpret_cast<int8_t*>(&res);
 
-        std::reverse_copy(start, end, dst);
-
-        pos += 4;
+        std::copy(start, end, dst);
 
         return res;
     }
 
-    double readDouble() override {
-        checkAvailable(4);
+    double readDouble(int32_t off) {
+        checkAvailable(off, 4);
 
         double res;
 
-        int8_t* start = bytes.data() + pos;
-        int8_t* end = start + 8;
+        const int8_t* start = bytes.data() + off;
+        const int8_t* end = start + 8;
 
         int8_t* dst = reinterpret_cast<int8_t*>(&res);
 
-        std::reverse_copy(start, end, dst);
-
-        pos += 8;
+        std::copy(start, end, dst);
 
         return res;
     }
-};
 
-class GridPortableReaderImpl : GridPortableReader {
+    const std::vector<int8_t>& bytes;
+
+protected:
+    void checkAvailable(int32_t off, size_t cnt) {
+        assert(off + cnt <= bytes.size());
+    }
+};
+#endif;
+
+class ReadContext {
 public:
-    GridPortableReaderImpl(std::vector<int8_t>& data) : in(data) {
+    ReadContext(const std::vector<int8_t>& data, int32_t handlesCap, GridPortableIdResolver* idRslvr) : in(data), handles(handlesCap), idRslvr(idRslvr) {
     }
 
-    GridPortable* readPortable() {
-        int8_t type = in.readByte();
+    GridPortableIdResolver* idRslvr;
 
-        assert(type == FLAG_OBJECT);
+    GridReadHandleTable handles;
 
-        int32_t typeId = in.readInt32();
+    PortableInput in;
+};
 
-        GridPortable* portable = createPortable(typeId, *this);
+class GridPortableReaderImpl : public GridPortableReader, public GridPortableRawReader {
+public:
+    int32_t rawOff;
+
+    int32_t off;
+
+    bool offInit;
+
+    int32_t curTypeId;
+
+    boost::unordered_map<int32_t, int32_t> fieldOffs;
+
+    GridPortableReaderImpl(ReadContext& ctx) : ctx(ctx), off(0), rawOff(0), curTypeId(0), offInit(false) {
+    }
+
+    GridPortable* deserializePortable() {
+        curTypeId = ctx.in.readInt32(2);
+
+        rawOff = ctx.in.readInt32(14);
+
+        GridPortable* portable = createPortable(curTypeId, *this);
 
         return portable;
     }
 
+    GridClientVariant unmarshal(bool raw) {
+        int8_t flag = doReadByte(raw);                
+        
+        switch(flag) {
+            case FLAG_NULL: {
+                return GridClientVariant();
+            }
+
+            case FLAG_HANDLE: {
+                return GridClientVariant();
+            }
+
+            case FLAG_OBJECT: {
+                bool userType = doReadBool(raw);
+               
+                int32_t typeId = doReadInt32(raw);  
+                
+                int32_t hashCode = doReadInt32(raw);  
+                
+                int32_t len = doReadInt32(raw);
+
+                int32_t rawOff = doReadInt32(raw);
+
+                if (userType) {
+                    std::vector<int8_t> objData(ctx.in.bytes.begin(), ctx.in.bytes.begin() + len);
+
+                    GridPortableObject obj(std::move(objData), ctx.idRslvr);
+
+                    return GridClientVariant(std::move(obj));
+                }
+                else
+                    return readStandard(typeId, raw);
+            }
+        }
+    }
+
+    GridClientVariant unmarshalFieldStr(const std::string& fieldName) {
+        off = fieldOffsetStr(fieldName);
+
+        return doUnmarshalField();
+    }
+
+    GridClientVariant unmarshalField(const char* fieldName) {
+        off = fieldOffset(fieldName);
+
+        return doUnmarshalField();
+    }
+
+    GridClientVariant doUnmarshalField() {
+        if (off == -1)
+            return GridClientVariant();
+
+        int8_t flag = doReadByte(false);
+
+        if (flag == FLAG_OBJECT) {
+            bool userType = doReadBool(false);
+        
+            int32_t typeId = doReadInt32(false);  
+
+            int32_t hashCode = doReadInt32(false);  
+                
+            int32_t len = doReadInt32(false);
+
+            int32_t rawOff = doReadInt32(false);
+
+            if (userType) {
+                std::vector<int8_t> objData(ctx.in.bytes.begin() + off, ctx.in.bytes.begin() + off + len);
+
+                GridPortableObject obj(std::move(objData), ctx.idRslvr);
+
+                return GridClientVariant(std::move(obj));
+            }
+            else
+                return readStandard(typeId, false);
+        }
+        else if (flag == FLAG_HANDLE) {
+            return GridClientVariant();
+        }
+        else if (flag == FLAG_NULL)
+            return GridClientVariant();
+
+        return readStandard(flag, false);
+    }
+
+    GridClientVariant readStandard(int32_t typeId, bool raw) {
+        switch (typeId) {
+            case TYPE_ID_BYTE: {
+                int8_t val = doReadByte(raw);
+
+                return GridClientVariant(val);
+            }
+
+            case TYPE_ID_BOOLEAN: {
+                bool val = doReadBool(raw);
+
+                return GridClientVariant(val);
+            }
+
+            case TYPE_ID_SHORT: {
+                int16_t val = doReadInt16(raw);
+
+                return GridClientVariant(val);
+            }
+
+            case TYPE_ID_CHAR: {
+                uint16_t val = doReadChar(raw);
+
+                return GridClientVariant(val);
+            }
+
+            case TYPE_ID_INT: {
+                int32_t val = doReadInt32(raw);
+
+                return GridClientVariant(val);
+            }
+
+            case TYPE_ID_LONG: {
+                int64_t val = doReadInt64(raw);
+
+                return GridClientVariant(val);
+            }
+
+            case TYPE_ID_STRING: {
+                boost::optional<std::string> val = doReadString(raw);
+
+                if (val.is_initialized())
+                    return GridClientVariant(val.get());
+                else
+                    return GridClientVariant();
+            }
+        }
+
+        throw GridClientPortableException("Invalid flag value.");
+    }
+
+    GridClientVariant unmarshalVariant(int32_t typeId, bool raw, int32_t dataStart) {
+    }
+
+    void checkType(int8_t expFlag, int8_t flag) {
+       // if (flag != expFlag) TODO 8536
+        //    throw GridClientPortableException("Unexpected field type.");
+    }
+
+    int32_t fieldIdStr(const std::string& fieldName) {
+        return gridStringHash(fieldName); // TODO
+    }
+
+    int32_t fieldId(const char* fieldName) {
+        if (ctx.idRslvr != nullptr) {
+            boost::optional<int32_t> rslvrId = ctx.idRslvr->fieldId(curTypeId, fieldName);
+
+            if (rslvrId.is_initialized())
+                return rslvrId.get();
+        }
+            
+        return cStringHash(fieldName); // TODO
+    }
+
+    
+    int32_t fieldOffsetStr(const std::string& fieldName) {
+        int32_t id = fieldIdStr(fieldName);
+
+        return fieldOffset(id);
+    }
+    
+    int32_t fieldOffset(const char* fieldName) {
+        int32_t id = fieldId(fieldName);
+
+        return fieldOffset(id);
+    }
+
+    int32_t fieldOffset(int32_t id) {
+        if (!offInit) {
+            int32_t off = 18; // Header size.
+
+            while(true) {
+                if (off >= ctx.in.bytes.size())
+                    break;
+
+                int32_t id = ctx.in.readInt32(off);
+
+                off += 4;
+
+                int32_t len = ctx.in.readInt32(off);
+
+                off += 4;
+
+                fieldOffs[id] = off;
+
+                off += len;
+            }
+
+            offInit = true;
+        }
+
+        boost::unordered_map<int32_t, int32_t>::const_iterator off = fieldOffs.find(id);
+
+        if (off == fieldOffs.end())
+            return -1;
+
+        return (*off).second;
+    }
+
+    int8_t doReadByte(bool raw) {
+        if (raw)
+            return ctx.in.readByte(rawOff++);
+        else
+            return ctx.in.readByte(off++);
+    }
+
+    bool doReadBool(bool raw) {
+        int8_t val;
+        
+        if (raw)
+            val = ctx.in.readByte(rawOff++);
+        else
+            val = ctx.in.readByte(off++);
+
+        return val != 0;
+    }
+
+    int16_t doReadInt16(bool raw) {
+        int16_t res;
+
+        if (raw) {
+            res = ctx.in.readInt16(rawOff);
+
+            rawOff += 2;
+        }
+        else {
+            res = ctx.in.readInt16(off);
+
+            off += 2;
+        }
+
+        return res;
+    }
+
+    uint16_t doReadChar(bool raw) {
+        uint16_t res;
+
+        if (raw) {
+            res = ctx.in.readChar(rawOff);
+
+            rawOff += 2;
+        }
+        else {
+            res = ctx.in.readChar(off);
+
+            off += 2;
+        }
+
+        return res;
+    }
+
+    int32_t doReadInt32(bool raw) {
+        int32_t res;
+
+        if (raw) {
+            res = ctx.in.readInt32(rawOff);
+
+            rawOff += 4;
+        }
+        else {
+            res = ctx.in.readInt32(off);
+
+            off += 4;
+        }
+
+        return res;
+    }
+
+    int64_t doReadInt64(bool raw) {
+        int64_t res;
+
+        if (raw) {
+            res = ctx.in.readInt64(rawOff);
+
+            rawOff += 4;
+        }
+        else {
+            res = ctx.in.readInt64(off);
+
+            off += 4;
+        }
+
+        return res;
+    }
+
+    float doReadFloat(bool raw) {
+        float res;
+
+        if (raw) {
+            res = ctx.in.readFloat(rawOff);
+
+            rawOff += 4;
+        }
+        else {
+            res = ctx.in.readFloat(off);
+
+            off += 4;
+        }
+
+        return res;
+    }
+
+    double doReadDouble(bool raw) {
+        double res;
+
+        if (raw) {
+            res = ctx.in.readDouble(rawOff);
+
+            rawOff += 2;
+        }
+        else {
+            res = ctx.in.readDouble(off);
+
+            off += 2;
+        }
+
+        return res;
+    }
+
+    GridPortableRawReader& rawReader() override {
+        return *this;
+    }
+
     int8_t readByte(char* fieldName) override {
-        return in.readByte();
+        off = fieldOffset(fieldName);
+
+        if (off >= 0) {
+            int8_t flag = doReadByte(false);
+
+            checkType(TYPE_ID_BYTE, flag);
+
+            return doReadByte(false);
+        }
+        else
+            return 0;
     }
 
     boost::optional<std::vector<int8_t>> readByteCollection(char* fieldName) override {
-        int32_t size = in.readInt32();
+        boost::optional<std::vector<int8_t>> res;
 
-        if (size > 0)
-            return in.readBytes(size);
+        off = fieldOffset(fieldName);
 
-        return std::vector<int8_t>();
+        if (off >= 0) {
+            int8_t flag = doReadByte(false);
+
+            checkType(TYPE_ID_BYTE_ARR, flag);
+
+            doReadByteCollection(false, res);
+        }
+
+        return res;
+    }
+
+    void doReadByteCollection(bool raw, boost::optional<std::vector<int8_t>>& res)  {
+        int32_t len = doReadInt32(raw);
+
+        if (len >= 0) {
+            if (raw) {            
+                res.reset(ctx.in.readByteCollection(rawOff, len));
+
+                rawOff += len;
+            }
+            else {
+                res.reset(ctx.in.readByteCollection(off, len));
+
+                off += len;
+            }
+        }
     }
 
     std::pair<int8_t*, int32_t> readByteArray(char* fieldName) override {
-        int32_t size = in.readInt32();
+        off = fieldOffset(fieldName);
+        
+        if (off >= 0) {
+            int8_t flag = doReadByte(false);
 
-        if (size > 0)
-            return std::pair<int8_t*, int32_t>(in.readBytesArray(size), size);
+            checkType(TYPE_ID_BYTE_ARR, flag);
+
+            return doReadByteArray(false);
+        }            
 
         return std::pair<int8_t*, int32_t>(nullptr, -1);
     }
 
+    std::pair<int8_t*, int32_t> doReadByteArray(bool raw) {
+        int32_t len = doReadInt32(raw);
+        
+        if (len >= 0) {
+            if (raw) {            
+                std::pair<int8_t*, int32_t> res(ctx.in.readByteArray(rawOff, len), len);
+                
+                rawOff += len;
+
+                return res;
+            }
+            else {
+                std::pair<int8_t*, int32_t> res(ctx.in.readByteArray(off, len), len);
+
+                off += len;
+
+                return res;
+            }
+        }
+        else
+            return std::pair<int8_t*, int32_t>(nullptr, 0);
+    }
+
     int16_t readInt16(char* fieldName) override {
-        return in.readInt32();
+        off = fieldOffset(fieldName);
+
+        if (off >= 0) {
+            int8_t flag = doReadByte(false);
+
+            checkType(TYPE_ID_SHORT, flag);
+
+            return doReadInt16(false);
+        }
+        else
+            return 0;
     }
 
     std::pair<int16_t*, int32_t> readInt16Array(char* fieldName) override {
+        return std::pair<int16_t*, int32_t>(nullptr, -1); // TODO
+    }
+
+    std::pair<int16_t*, int32_t> doReadInt16Array(bool raw) {
         return std::pair<int16_t*, int32_t>(nullptr, -1); // TODO
     }
 
@@ -1328,11 +2299,28 @@ public:
         return std::vector<int16_t>(); // TODO
     }
 
+    void doReadInt16Collection(bool raw, boost::optional<std::vector<int16_t>>& res) {
+    }
+
     int32_t readInt32(char* fieldName) override {
-        return in.readInt32();
+        off = fieldOffset(fieldName);
+
+        if (off >= 0) {
+            int8_t flag = doReadByte(false);
+
+            checkType(TYPE_ID_INT, flag);
+
+            return doReadInt32(false);
+        }
+        else
+            return 0;
     }
 
     std::pair<int32_t*, int32_t> readInt32Array(char* fieldName) override {
+        return std::pair<int32_t*, int32_t>(nullptr, -1); // TODO
+    }
+
+    std::pair<int32_t*, int32_t> doReadInt32Array(bool raw) {
         return std::pair<int32_t*, int32_t>(nullptr, -1); // TODO
     }
 
@@ -1340,11 +2328,29 @@ public:
         return std::vector<int32_t>(); // TODO
     }
 
+    void doReadInt32Collection(bool raw, boost::optional<std::vector<int32_t>>& res) {
+        // TODO
+    }
+
     int64_t readInt64(char* fieldName) override {
-        return in.readInt64();
+        off = fieldOffset(fieldName);
+
+        if (off >= 0) {
+            int8_t flag = doReadByte(false);
+
+            checkType(TYPE_ID_LONG, flag);
+
+            return doReadInt64(false);
+        }
+        else
+            return 0;
     }
 
     std::pair<int64_t*, int32_t> readInt64Array(char* fieldName) override {
+        return std::pair<int64_t*, int32_t>(nullptr, -1); // TODO
+    }
+
+    std::pair<int64_t*, int32_t> doReadInt64Array(bool raw) {
         return std::pair<int64_t*, int32_t>(nullptr, -1); // TODO
     }
 
@@ -1352,11 +2358,29 @@ public:
         return std::vector<int64_t>(); // TODO
     }
 
+    void doReadInt64Collection(bool raw, boost::optional<std::vector<int64_t>>& res) {
+        // TODO
+    }
+
     float readFloat(char* fieldName) override {
-        return in.readFloat();
+        off = fieldOffset(fieldName);
+
+        if (off >= 0) {
+            int8_t flag = doReadByte(false);
+
+            checkType(TYPE_ID_FLOAT, flag);
+
+            return doReadFloat(false);
+        }
+        else
+            return 0;
     }
 
     std::pair<float*, int32_t> readFloatArray(char* fieldName) override {
+        return std::pair<float*, int32_t>(nullptr, -1); // TODO
+    }
+
+    std::pair<float*, int32_t> doReadFloatArray(bool raw) {
         return std::pair<float*, int32_t>(nullptr, -1); // TODO
     }
 
@@ -1364,11 +2388,29 @@ public:
         return std::vector<float>(); // TODO
     }
 
+    void doReadFloatCollection(bool raw, boost::optional<std::vector<float>>& res) {
+        // TODO
+    }
+
     double readDouble(char* fieldName) override {
-        return in.readDouble();
+        off = fieldOffset(fieldName);
+
+        if (off >= 0) {
+            int8_t flag = doReadByte(false);
+
+            checkType(TYPE_ID_DOUBLE, flag);
+
+            return doReadDouble(false);
+        }
+        else
+            return 0;
     }
 
     std::pair<double*, int32_t> readDoubleArray(char* fieldName) override {
+        return std::pair<double*, int32_t>(nullptr, -1); // TODO
+    }
+
+    std::pair<double*, int32_t> readDoubleArray(bool raw) {
         return std::pair<double*, int32_t>(nullptr, -1); // TODO
     }
 
@@ -1376,23 +2418,44 @@ public:
         return std::vector<double>(); // TODO
     }
 
+    void doReadDoubleCollection(bool raw, boost::optional<std::vector<double>>& res) {
+        // TODO
+    }
+
     boost::optional<std::string> readString(char* fieldName) override {
+        off = fieldOffset(fieldName);
+
+        if (off >= 0) {
+            int8_t flag = doReadByte(false);
+
+            checkType(TYPE_ID_STRING, flag);
+
+            return doReadString(false);
+        }
+        else
+            return 0;
+    }
+
+    boost::optional<std::string> doReadString(bool raw) {
         boost::optional<std::string> res;
 
-        int size = in.readInt32();
+        std::pair<int8_t*, int32_t> data = doReadByteArray(raw);
 
-        if (size == -1)
-            return res;
+        if (data.first != nullptr) {
+            res.reset(std::string(reinterpret_cast<char*>(data.first), data.second / sizeof(char)));
 
-        std::vector<int8_t> bytes = in.readBytes(size);
-
-        res.reset(std::string((char*)bytes.data(), size));
+            delete[] data.first;
+        }
 
         return res;
     }
 
     boost::optional<std::vector<std::string>> readStringCollection(char* fieldName) override {
         return std::vector<std::string>(); // TODO
+    }
+
+    void doReadStringCollection(bool raw, boost::optional<std::vector<std::string>>& res)  {
+        // TODO
     }
 
     boost::optional<std::wstring> readWString(char* fieldName) override {
@@ -1403,150 +2466,174 @@ public:
         return std::vector<std::wstring>(); // TODO
     }
 
-    bool readBool(char* fieldName) override {
-        int8_t val = in.readByte();
+    void doReadWStringCollection(bool raw, boost::optional<std::vector<std::wstring>>& res) {
+        // TODO
+    }
 
-        return val == 0 ? false : true;
+    bool readBool(char* fieldName) override {
+        off = fieldOffset(fieldName);
+
+        if (off >= 0) {
+            int8_t flag = doReadByte(false);
+
+            checkType(TYPE_ID_BOOLEAN, flag);
+
+            return doReadBool(false);
+        }
+        else
+            return 0;
     }
 
     boost::optional<std::vector<bool>> readBoolCollection(char* fieldName) override {
         return std::vector<bool>(); // TODO
     }
 
+    void doReadBoolCollection(bool raw, boost::optional<std::vector<bool>>& res) {
+        // TODO
+    }
+
     std::pair<bool*, int32_t> readBoolArray(char* fieldName) override {
         return std::pair<bool*, int32_t>(nullptr, -1); // TODO
     }
 
+    std::pair<bool*, int32_t> doReadBoolArray(bool raw)  {
+        return std::pair<bool*, int32_t>(nullptr, -1); // TODO
+    }
+
     boost::optional<GridClientUuid> readUuid(char* fieldName) override {
+        off = fieldOffset(fieldName);
+
+        if (off >= 0) {
+            int8_t flag = doReadByte(false);
+
+            checkType(TYPE_ID_UUID, flag);
+
+            return doReadUuid(false);
+        }
+        else
+            return 0;
+    }
+
+    boost::optional<GridClientUuid> doReadUuid(bool raw) {
         boost::optional<GridClientUuid> res;
 
-        if (in.readByte() != 0) {
-            int64_t mostSignificantBits = in.readInt64();
-            int64_t leastSignificantBits = in.readInt64();
+        if (doReadBool(raw)) {
+            int64_t most = doReadInt64(raw);
+            int64_t least = doReadInt64(raw);
 
-            res = GridClientUuid(mostSignificantBits, leastSignificantBits);
+            res.reset(GridClientUuid(most, least));
         }
 
         return res;
     }
 
     GridClientVariant readVariant(char* fieldName) override {
-        // TODO
+        off = fieldOffset(fieldName);
 
-        /*
-        int8_t type = in.readByte();
-        switch (type) {
-            case TYPE_NULL:
-                return GridClientVariant();
+        if (off >= 0)
+            return unmarshal(false);
 
-            case TYPE_INT:
-                return GridClientVariant(in.readInt32());
-
-            case TYPE_BOOLEAN:
-                return GridClientVariant(in.readByte() != 0);
-
-            case TYPE_STRING:
-                return GridClientVariant(readString(nullptr).get());
-
-            case TYPE_LONG:
-                return GridClientVariant(in.readInt64());
-
-            case TYPE_UUID: {
-                if (in.readByte() == 0)
-                    return GridClientVariant();
-
-                int64_t mostSignificantBits = in.readInt64();
-                int64_t leastSignificantBits = in.readInt64();
-
-                return GridClientVariant(GridClientUuid(mostSignificantBits, leastSignificantBits));
-            }
-
-            case TYPE_LIST:
-                return GridClientVariant(readCollection().get());
-
-            case TYPE_MAP:
-                return GridClientVariant(readMap().get());
-
-            case TYPE_USER_OBJECT:
-                return GridClientVariant(readPortable());
-
-            default:
-                assert(false);
-        }
-        */
         return GridClientVariant();
     }
 
     boost::optional<TGridClientVariantSet> readVariantCollection(char* fieldName) override {
-        return readCollection();
+        boost::optional<TGridClientVariantSet> res;
+
+        doReadVariantCollection(false, res);
+
+        return res;
     }
 
     boost::optional<TGridClientVariantMap> readVariantMap(char* fieldName) override {
-        return readMap();
+        boost::optional<TGridClientVariantMap> res;
+
+        doReadVariantMap(false, res);
+
+        return res;
     }
 
     int8_t readByte() override {
-        return 0; // TODO
+        return doReadByte(true);
     }
 
     boost::optional<std::vector<int8_t>> readByteCollection() override {
-        return std::vector<int8_t>(); // TODO
+        boost::optional<std::vector<int8_t>> res;
+
+        doReadByteCollection(true, res);
+
+        return res;
     }
 
     std::pair<int8_t*, int32_t> readByteArray() override {
-        return std::pair<int8_t*, int32_t>(nullptr, -1); // TODO
+        return doReadByteArray(true);
     }
 
     int16_t readInt16() override {
-        return 0; // TODO
+        return doReadInt16(true);
     }
 
     std::pair<int16_t*, int32_t> readInt16Array() override {
-        return std::pair<int16_t*, int32_t>(nullptr, -1); // TODO
+        return doReadInt16Array(true);
     }
 
     boost::optional<std::vector<int16_t>> readInt16Collection() override {
-        return std::vector<int16_t>(); // TODO
+        boost::optional<std::vector<int16_t>> res;
+
+        doReadInt16Collection(true, res);
+
+        return res;
     }
 
     int32_t readInt32() override {
-        return 0; // TODO
+        return doReadInt32(true);
     }
 
     std::pair<int32_t*, int32_t> readInt32Array() override {
-        return std::pair<int32_t*, int32_t>(nullptr, -1); // TODO
+        return doReadInt32Array(true);
     }
 
     boost::optional<std::vector<int32_t>> readInt32Collection() override {
-        return std::vector<int32_t>(); // TODO
+        boost::optional<std::vector<int32_t>> res;
+
+        doReadInt32Collection(true, res);
+
+        return res;
     }
 
     int64_t readInt64() override {
-        return 0; // TODO
+        return doReadInt64(true);
     }
 
     std::pair<int64_t*, int32_t> readInt64Array() override {
-        return std::pair<int64_t*, int32_t>(nullptr, -1); // TODO
+        return doReadInt64Array(true);
     }
 
     boost::optional<std::vector<int64_t>> readInt64Collection() override {
-        return std::vector<int64_t>(); // TODO
+        boost::optional<std::vector<int64_t>> res;
+
+        doReadInt64Collection(true, res);
+
+        return res;
     }
 
     float readFloat() override {
-        return in.readFloat(); // TODO
+        return doReadFloat(true);
     }
 
     std::pair<float*, int32_t> readFloatArray() override {
-        return std::pair<float*, int32_t>(nullptr, -1); // TODO
+        return doReadFloatArray(true);
     }
 
     boost::optional<std::vector<float>> readFloatCollection() override {
-        return std::vector<float>(); // TODO
+        boost::optional<std::vector<float>> res;
+
+        doReadFloatCollection(true, res);
+
+        return res;
     }
 
     double readDouble() override {
-        return in.readDouble();
+        return doReadDouble(true);
     }
 
     std::pair<double*, int32_t> readDoubleArray() override {
@@ -1558,7 +2645,7 @@ public:
     }
 
     boost::optional<std::string> readString() override { 
-        return std::string(); // TODO
+        return doReadString(true);
     }
 
     boost::optional<std::vector<std::string>> readStringCollection() override {
@@ -1574,7 +2661,7 @@ public:
     }
 
     bool readBool() override {
-        return false; // TODO
+        return doReadBool(true);
     }
 
     boost::optional<std::vector<bool>> readBoolCollection() override {
@@ -1586,103 +2673,111 @@ public:
     }
 
     boost::optional<GridClientUuid> readUuid() override {
-        boost::optional<GridClientUuid> res;
-
-        return res; // TODO
+        return doReadUuid(true);
     }
 
     GridClientVariant readVariant() override {
-        return GridClientVariant(); // TODO
+        return unmarshal(true);
     }
 
     boost::optional<TGridClientVariantSet> readVariantCollection() override {
-        return readCollection(); // TODO
+        boost::optional<TGridClientVariantSet> res;
+        
+        doReadVariantCollection(true, res);
+
+        return res;
     }
 
     boost::optional<TGridClientVariantMap> readVariantMap() override {
-        return readMap(); // TODO
+        boost::optional<TGridClientVariantMap> res;
+
+        doReadVariantMap(true, res);
+
+        return res;
     }
 
 private:
-    boost::optional<TGridClientVariantSet> readCollection() {
-        boost::optional<TGridClientVariantSet> res;
-
-        int8_t type = in.readByte();
-
-        assert(type == FLAG_OBJECT);
-
-        int32_t size = in.readInt32();
+    void doReadVariantCollection(bool raw, boost::optional<TGridClientVariantSet>& res) {
+        int32_t size = doReadInt32(raw);
 
         if (size == -1)
-            return res;
+            return;
 
         std::vector<GridClientVariant> vec;
 
         for (int i = 0; i < size; i++)
-            vec.push_back(readVariant(nullptr));
+            vec.push_back(unmarshal(raw));
 
-        res.reset(vec);
-
-        return res;
+        res.reset(std::move(vec));
     }
 
-    boost::optional<TGridClientVariantMap> readMap() {
-        boost::optional<TGridClientVariantMap> res;
-
-        int8_t type = in.readByte();
-
-        if (type == FLAG_NULL)
-            return res;
-
-        assert(type == FLAG_OBJECT);
-
-        int32_t size = in.readInt32();
+    void doReadVariantMap(bool raw, boost::optional<TGridClientVariantMap>& res) {
+        int32_t size = doReadInt32(raw);
 
         if (size == -1)
-            return boost::unordered_map<GridClientVariant, GridClientVariant>();
+            return;
         
         boost::unordered_map<GridClientVariant, GridClientVariant> map;
 
         for (int i = 0; i < size; i++) {
-            GridClientVariant key = readVariant(nullptr);
+            GridClientVariant key = unmarshal(raw);
 
-            GridClientVariant val = readVariant(nullptr);
+            GridClientVariant val = unmarshal(raw);
 
             map[key] = val;
         }
 
-        res.reset(map);
-
-        return res;
+        res.reset(std::move(map));
     }
-
-#ifdef BOOST_BIG_ENDIAN
-    BigEndianPortableInput in;
-#else
-    LittleEndianPortableInput in;
-#endif;
+    
+    ReadContext& ctx;
 };
 
 class GridPortableMarshaller {
 public:
-    GridPortableMarshaller(bool useNames) : useNames(false) {
+    GridPortableIdResolver* idRslvr;
+
+    GridPortableMarshaller() : idRslvr(nullptr) {
+    }
+    
+    GridPortableMarshaller(GridPortableIdResolver* idRslvr) : idRslvr(idRslvr) {
+    }
+    
+    std::vector<int8_t> marshal(GridClientVariant var) {
+        WriteContext ctx(1024, idRslvr);
+
+        GridPortableWriterImpl writer(ctx, 0);
+
+		writer.doWriteVariant(var);
+
+		return std::move(ctx.out.bytes);
     }
 
     std::vector<int8_t> marshal(GridPortable& portable) {
-        WriteContext ctx(useNames, 1024);
+        WriteContext ctx(1024, idRslvr);
 
-        GridPortableWriterImpl writer(ctx);
+        GridPortableWriterImpl writer(ctx, portable.typeId());
 
 		writer.writePortable(portable);
 
 		return std::move(ctx.out.bytes);
 	}
 
-    template<typename T>
-    T* unmarshal(std::vector<int8_t>& data) {
-		GridPortableReaderImpl reader(data);
+    GridClientVariant unmarshal(std::vector<int8_t>& data) {
+		ReadContext ctx(data, 10, idRslvr);
 
-        return static_cast<T*>(reader.readPortable());
+        GridPortableReaderImpl reader(ctx);
+
+        return reader.unmarshal(false);
+    }
+
+    template<typename T>
+    T* unmarshalUserObject(std::vector<int8_t>& data) {
+        GridClientVariant var = unmarshal(data);
+
+        GridPortableObject& portable = var.getPortableObject();
+
+        return portable.deserialize<T>();
     }
 
     void parseResponse(GridClientResponse* msg, GridClientMessageTopologyResult& resp) {
@@ -1787,8 +2882,6 @@ public:
         }
     }
 
-private:
-    const bool useNames;
 };
 
 #endif

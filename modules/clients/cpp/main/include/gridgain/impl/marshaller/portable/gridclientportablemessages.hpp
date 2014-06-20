@@ -56,9 +56,9 @@ public:
         GridClientPortableMessage::readPortable(reader);
 
         status = reader.readInt32("status");
-        
+
         boost::optional<std::string> msg = reader.readString("errorMsg");
-        
+
         if (msg.is_initialized())
             errorMsg = std::move(msg.get());
 
@@ -87,7 +87,7 @@ public:
 class GridClientMetricsBean : public GridPortable {
 public:
     int32_t typeId() const {
-        return -5;            
+        return -5;
     }
 
     void writePortable(GridPortableWriter &writer) const override {
@@ -199,7 +199,7 @@ public:
         rcvdMsgsCnt = reader.readInt32("rcvdMsgsCnt");
         rcvdBytesCnt = reader.readInt64("rcvdBytesCnt");
     }
-    
+
     /** */
     int64_t lastUpdateTime;
 
@@ -360,7 +360,7 @@ public:
 class GridClientNodeBean : public GridPortable {
 public:
     int32_t typeId() const {
-        return -4;            
+        return -4;
     }
 
     void writePortable(GridPortableWriter &writer) const override {
@@ -562,15 +562,15 @@ public:
     }
 
     int32_t tcpPort;
-    
+
     int32_t jettyPort;
-    
+
     int32_t replicaCnt;
 
     std::string dfltCacheMode;
 
     TGridClientVariantMap attrs;
-    
+
     TGridClientVariantMap caches;
 
     TGridClientVariantSet tcpAddrs;
@@ -629,9 +629,11 @@ class GridClientCacheRequest : public GridClientPortableMessage {
 public:
     void init(GridCacheRequestCommand& cacheCmd) {
         op = static_cast<int32_t>(cacheCmd.getOperation());
-       
+
+        sesTok = cacheCmd.sessionToken();
+
         cacheName = cacheCmd.getCacheName();
-        
+
         key = cacheCmd.getKey();
         val = cacheCmd.getValue();
         val2 = cacheCmd.getValue2();
@@ -759,11 +761,11 @@ public:
 
     void writePortable(GridPortableWriter &writer) const override {
         writer.writeString("id", id);
-        
+
         writer.writeBool("finished", finished);
-        
+
         writer.writeVariant("res", res);
-        
+
         writer.writeString("error", error);
     }
 

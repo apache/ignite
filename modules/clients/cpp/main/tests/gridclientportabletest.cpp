@@ -253,43 +253,45 @@ public:
 
     void writePortable(GridPortableWriter &writer) const {
         if (rawMarshalling) {
-            writer.writeBool(vBool);
-            writer.writeBoolArray(vBoolArray, arraysSize);
-            writer.writeBoolCollection(vBoolVector);
+            GridPortableRawWriter& raw = writer.rawWriter();
 
-            writer.writeByte(vByte);
-            writer.writeByteArray(vByteArray, arraysSize);
-            writer.writeByteCollection(vByteVector);
+            raw.writeBool(vBool);
+            raw.writeBoolArray(vBoolArray, arraysSize);
+            raw.writeBoolCollection(vBoolVector);
 
-            writer.writeInt16(vInt16);
-            writer.writeInt16Array(vInt16Array, arraysSize);
-            writer.writeInt16Collection(vInt16Vector);
+            raw.writeByte(vByte);
+            raw.writeByteArray(vByteArray, arraysSize);
+            raw.writeByteCollection(vByteVector);
 
-            writer.writeInt32(vInt32);
-            writer.writeInt32Array(vInt32Array, arraysSize);
-            writer.writeInt32Collection(vInt32Vector);
+            raw.writeInt16(vInt16);
+            raw.writeInt16Array(vInt16Array, arraysSize);
+            raw.writeInt16Collection(vInt16Vector);
 
-            writer.writeInt64(vInt64);
-            writer.writeInt64Array(vInt64Array, arraysSize);
-            writer.writeInt64Collection(vInt64Vector);
+            raw.writeInt32(vInt32);
+            raw.writeInt32Array(vInt32Array, arraysSize);
+            raw.writeInt32Collection(vInt32Vector);
 
-            writer.writeFloat(vFloat);
-            writer.writeFloatArray(vFloatArray, arraysSize);
-            writer.writeFloatCollection(vFloatVector);
+            raw.writeInt64(vInt64);
+            raw.writeInt64Array(vInt64Array, arraysSize);
+            raw.writeInt64Collection(vInt64Vector);
 
-            writer.writeDouble(vDouble);
-            writer.writeDoubleArray(vDoubleArray, arraysSize);
-            writer.writeDoubleCollection(vDoubleVector);
+            raw.writeFloat(vFloat);
+            raw.writeFloatArray(vFloatArray, arraysSize);
+            raw.writeFloatCollection(vFloatVector);
 
-            writer.writeString(vStr);
-            writer.writeStringCollection(vStrVector);
+            raw.writeDouble(vDouble);
+            raw.writeDoubleArray(vDoubleArray, arraysSize);
+            raw.writeDoubleCollection(vDoubleVector);
 
-            writer.writeWString(vWStr);
-            writer.writeWStringCollection(vWStrVector);
+            raw.writeString(vStr);
+            raw.writeStringCollection(vStrVector);
 
-            writer.writeVariant(vVariant);
-            writer.writeVariantCollection(vVariantVector);
-            writer.writeVariantMap(vVariantMap);
+            raw.writeWString(vWStr);
+            raw.writeWStringCollection(vWStrVector);
+
+            raw.writeVariant(vVariant);
+            raw.writeVariantCollection(vVariantVector);
+            raw.writeVariantMap(vVariantMap);
         }
         else {
             writer.writeBool("1", vBool);
@@ -336,50 +338,52 @@ public:
         BOOST_REQUIRE_EQUAL(-1, arraysSize);
 
         if (rawMarshalling) {
-            vBool = reader.readBool();
-            pair<bool*, int32_t> boolArr = reader.readBoolArray();
+            GridPortableRawReader& raw = reader.rawReader();
+
+            vBool = raw.readBool();
+            pair<bool*, int32_t> boolArr = raw.readBoolArray();
             arraysSize = boolArr.second;
-            vBoolVector = reader.readBoolCollection().get();
+            vBoolVector = raw.readBoolCollection().get();
 
-            vByte = reader.readByte();
-            pair<int8_t*, int32_t> byteArr = reader.readByteArray();
+            vByte = raw.readByte();
+            pair<int8_t*, int32_t> byteArr = raw.readByteArray();
             BOOST_REQUIRE_EQUAL(arraysSize, byteArr.second);
-            vByteVector = reader.readByteCollection().get();
+            vByteVector = raw.readByteCollection().get();
 
-            vInt16 = reader.readInt16();
-            pair<int16_t*, int32_t> int16Arr = reader.readInt16Array();
+            vInt16 = raw.readInt16();
+            pair<int16_t*, int32_t> int16Arr = raw.readInt16Array();
             BOOST_REQUIRE_EQUAL(arraysSize, int16Arr.second);
-            vInt16Vector = reader.readInt16Collection().get();
+            vInt16Vector = raw.readInt16Collection().get();
 
-            vInt32 = reader.readInt32();
-            pair<int32_t*, int32_t> int32Arr = reader.readInt32Array();
+            vInt32 = raw.readInt32();
+            pair<int32_t*, int32_t> int32Arr = raw.readInt32Array();
             BOOST_REQUIRE_EQUAL(arraysSize, int32Arr.second);
-            vInt32Vector = reader.readInt32Collection().get();
+            vInt32Vector = raw.readInt32Collection().get();
 
-            vInt64 = reader.readInt64();
-            pair<int64_t*, int32_t> int64Arr = reader.readInt64Array();
+            vInt64 = raw.readInt64();
+            pair<int64_t*, int32_t> int64Arr = raw.readInt64Array();
             BOOST_REQUIRE_EQUAL(arraysSize, int64Arr.second);
-            vInt64Vector = reader.readInt64Collection().get();
+            vInt64Vector = raw.readInt64Collection().get();
 
-            vFloat = reader.readFloat();
-            pair<float*, int32_t> floatArr = reader.readFloatArray();
+            vFloat = raw.readFloat();
+            pair<float*, int32_t> floatArr = raw.readFloatArray();
             BOOST_REQUIRE_EQUAL(arraysSize, floatArr.second);
-            vFloatVector = reader.readFloatCollection().get();
+            vFloatVector = raw.readFloatCollection().get();
 
-            vDouble = reader.readDouble();
-            pair<double*, int32_t> doubleArr = reader.readDoubleArray();
+            vDouble = raw.readDouble();
+            pair<double*, int32_t> doubleArr = raw.readDoubleArray();
             BOOST_REQUIRE_EQUAL(arraysSize, doubleArr.second);
-            vDoubleVector = reader.readDoubleCollection().get();
+            vDoubleVector = raw.readDoubleCollection().get();
 
-            vStr = reader.readString().get();
-            vStrVector = reader.readStringCollection().get();
+            vStr = raw.readString().get();
+            vStrVector = raw.readStringCollection().get();
 
-            vWStr = reader.readWString().get();
-            vWStrVector = reader.readWStringCollection().get();
+            vWStr = raw.readWString().get();
+            vWStrVector = raw.readWStringCollection().get();
 
-            vVariant = reader.readVariant();
-            vVariantVector = reader.readVariantCollection().get();
-            vVariantMap = reader.readVariantMap().get();
+            vVariant = raw.readVariant();
+            vVariantVector = raw.readVariantCollection().get();
+            vVariantMap = raw.readVariantMap().get();
         }
         else {
             vBool = reader.readBool("1");
@@ -662,7 +666,7 @@ void validateTestPortable1(TestPortable1 p, int32_t arraysSize) {
 }
 
 void testTestPortable1Marshalling(bool rawMarshalling, int32_t arraysSize) {
-    GridPortableMarshaller marsh(true);
+    GridPortableMarshaller marsh;
 
     TestPortable1 p = createTestPortable1(arraysSize);
 
@@ -670,7 +674,7 @@ void testTestPortable1Marshalling(bool rawMarshalling, int32_t arraysSize) {
 
     vector<int8_t> bytes = marsh.marshal(p);
 
-    TestPortable1* pRead = marsh.unmarshal<TestPortable1>(bytes);
+    TestPortable1* pRead = marsh.unmarshalUserObject<TestPortable1>(bytes);
 
     validateTestPortable1(*pRead, arraysSize);
 
@@ -702,7 +706,7 @@ public:
 
     void readPortable(GridPortableReader& reader) override {
         val1 = reader.readInt32("1");
-        p2 = reader.readVariant().getPortable<TestPortableCycle2>();
+        p2 = reader.readVariant("2").getPortable<TestPortableCycle2>();
     }
 
     TestPortableCycle2* p2;
@@ -725,7 +729,7 @@ public:
 
     void readPortable(GridPortableReader& reader) override {
         val1 = reader.readFloat("1");
-        p1 = reader.readVariant().getPortable<TestPortableCycle1>();
+        p1 = reader.readVariant("2").getPortable<TestPortableCycle1>();
     }
 
     TestPortableCycle1* p1;
@@ -736,7 +740,7 @@ public:
 REGISTER_TYPE(401, TestPortableCycle2);
 
 BOOST_AUTO_TEST_CASE(testPortableSerialization_cycle) {
-    GridPortableMarshaller marsh(true);
+    GridPortableMarshaller marsh;
 
     TestPortableCycle1* p1 = new TestPortableCycle1();
     
@@ -754,7 +758,7 @@ BOOST_AUTO_TEST_CASE(testPortableSerialization_cycle) {
     delete p1;
     delete p2;
 
-    p1 = marsh.unmarshal<TestPortableCycle1>(bytes);
+    p1 = marsh.unmarshalUserObject<TestPortableCycle1>(bytes);
 
     BOOST_REQUIRE(p1 != nullptr);
     BOOST_REQUIRE(p1->p2 != nullptr);
@@ -783,14 +787,16 @@ public:
 
     void writePortable(GridPortableWriter& writer) const override {
         if (rawMarshalling) {
-            writer.writeInt32(flag);
+            GridPortableRawWriter& raw = writer.rawWriter();
+
+            raw.writeInt32(flag);
 
             if (flag == 0)
-                writer.writeInt32(1);
+                raw.writeInt32(1);
             else if (flag == 1)
-                writer.writeInt64(100);
+                raw.writeInt64(100);
             else if (flag == 2)
-                writer.writeString("string");
+                raw.writeString("string");
             else
                 BOOST_FAIL("Invalid flag");
         }
@@ -810,14 +816,16 @@ public:
 
     void readPortable(GridPortableReader& reader) override {
         if (rawMarshalling) {
-            flag = reader.readInt32();
+            GridPortableRawReader& raw = reader.rawReader();
+
+            flag = raw.readInt32();
 
             if (flag == 0)
-                BOOST_REQUIRE_EQUAL(1, reader.readInt32());
+                BOOST_REQUIRE_EQUAL(1, raw.readInt32());
             else if (flag == 1)
-                BOOST_REQUIRE_EQUAL(100, reader.readInt64());
+                BOOST_REQUIRE_EQUAL(100, raw.readInt64());
             else if (flag == 2)
-                BOOST_REQUIRE_EQUAL("string", reader.readString().get());
+                BOOST_REQUIRE_EQUAL("string", raw.readString().get());
             else
                 BOOST_FAIL("Invalid flag");
         }
@@ -847,7 +855,7 @@ REGISTER_TYPE(500, TestPortableCustom);
 void testCustomSerialization(bool rawMarshalling) {
     TestPortableCustom::rawMarshalling = rawMarshalling;
 
-    GridPortableMarshaller marsh(true);
+    GridPortableMarshaller marsh;
 
     for (int i = 0; i < 3; i++) {
         vector<int8_t> bytes;
@@ -856,7 +864,7 @@ void testCustomSerialization(bool rawMarshalling) {
 
         bytes = marsh.marshal(c);
 
-        TestPortableCustom* p = marsh.unmarshal<TestPortableCustom>(bytes);
+        TestPortableCustom* p = marsh.unmarshalUserObject<TestPortableCustom>(bytes);
 
         BOOST_REQUIRE_EQUAL(i, p->flag);
 
@@ -884,19 +892,19 @@ public:
 
     void writePortable(GridPortableWriter& writer) const override {
         if (invalidWrite) {
-            writer.writeInt32(val1);
+            writer.rawWriter().writeInt32(val1);
 
             writer.writeInt32("named", val2); // Try write named field after raw.
         }
         else {
             writer.writeInt32("named", val2);
 
-            writer.writeInt32(val1);
+            writer.rawWriter().writeInt32(val1);
         }
     }
 
     void readPortable(GridPortableReader& reader) override {
-        val1 = reader.readInt32();
+        val1 = reader.rawReader().readInt32();
 
         val2 = reader.readInt32("named");
     }
@@ -911,7 +919,7 @@ public:
 REGISTER_TYPE(600, TestPortableInvalid);
 
 BOOST_AUTO_TEST_CASE(testPortableSerialization_invalid) {
-    GridPortableMarshaller marsh(false);
+    GridPortableMarshaller marsh;
 
     TestPortableInvalid invalid(true, 100, 200);
 
@@ -930,10 +938,656 @@ BOOST_AUTO_TEST_CASE(testPortableSerialization_invalid) {
 
     vector<int8_t> bytes = marsh.marshal(valid);
 
-    unique_ptr<TestPortableInvalid> p(marsh.unmarshal<TestPortableInvalid>(bytes));
+    unique_ptr<TestPortableInvalid> p(marsh.unmarshalUserObject<TestPortableInvalid>(bytes));
     
     BOOST_REQUIRE_EQUAL(100, (*p).val1);
     BOOST_REQUIRE_EQUAL(200, (*p).val2);
+}
+
+class TestPortableFieldNames2 : public GridPortable {
+public:
+    TestPortableFieldNames2() {
+    }
+
+    TestPortableFieldNames2(int32_t f1, int32_t f2, int32_t f3, bool readAllFlag) : f1(f1), f2(f2), f3(f3), 
+        readAllFlag(readAllFlag) {
+    }
+
+    int32_t typeId() const override {
+        return 701;
+    }
+
+    void writePortable(GridPortableWriter& writer) const override {
+        writer.writeBool("readAllFlag", readAllFlag);
+        writer.writeInt32("f1", f1);
+        writer.writeInt32("f2", f2);
+        writer.writeInt32("f3", f3);
+        
+        writer.writeString("f4", "string");
+        writer.writeFloat("f5", 10.5f);
+
+        writer.rawWriter().writeInt32(f1);
+        writer.rawWriter().writeInt32(f2);
+        writer.rawWriter().writeInt32(f3);
+    }
+
+    void readPortable(GridPortableReader& reader) override {
+        f2 = reader.readInt32("f2");
+        f1 = reader.readInt32("f1");
+
+        readAllFlag = reader.readBool("readAllFlag");
+
+        BOOST_REQUIRE_EQUAL(0, reader.readInt32("noField1"));
+
+        if (readAllFlag) {
+            f3 = reader.readInt32("f3");
+
+            BOOST_REQUIRE_EQUAL(10.5f, reader.readFloat("f5"));
+            BOOST_REQUIRE(string("string") == reader.readString("f4"));
+
+            BOOST_REQUIRE_EQUAL(f1, reader.rawReader().readInt32());
+            BOOST_REQUIRE_EQUAL(f2, reader.rawReader().readInt32());
+            BOOST_REQUIRE_EQUAL(f3, reader.rawReader().readInt32());
+        }
+        else
+            f3 = -1;
+    }
+
+    int32_t f1;
+
+    int32_t f2;
+
+    int32_t f3;
+
+    bool readAllFlag;
+};
+
+class TestPortableFieldNames1 : public GridPortable {
+public:
+    TestPortableFieldNames1() : obj1(nullptr), obj2(nullptr), obj3(nullptr), f1(0) {
+    }
+
+    TestPortableFieldNames1(int32_t f1) : f1(f1) {  
+        obj1 = new TestPortableFieldNames2(100, 100, 100, true);
+        obj2 = new TestPortableFieldNames2(200, 200, 200, false); 
+        obj3 = new TestPortableFieldNames2(300, 300, 300, true);
+    }
+
+    ~TestPortableFieldNames1() {
+        if (obj1 != nullptr)
+            delete obj1;
+        if (obj2 != nullptr)
+            delete obj2;
+        if (obj3 != nullptr)
+            delete obj3;
+    }
+
+    int32_t typeId() const override {
+        return 700;
+    }
+
+    void writePortable(GridPortableWriter& writer) const override {
+        writer.writeInt32("f1", 10);
+        
+        writer.writeVariant("obj1", obj1);
+        writer.writeVariant("obj2", obj2);
+        writer.writeVariant("obj3", obj3);
+    }
+
+    void readPortable(GridPortableReader& reader) override {
+        obj2 = reader.readVariant("obj2").getPortable<TestPortableFieldNames2>();
+
+        BOOST_REQUIRE_EQUAL(200, obj2->f1);
+        BOOST_REQUIRE_EQUAL(200, obj2->f2);
+        BOOST_REQUIRE_EQUAL(-1, obj2->f3);
+
+        BOOST_REQUIRE_EQUAL(0, reader.readInt32("f2"));
+        BOOST_REQUIRE_EQUAL(0, reader.readInt32("f3"));
+        BOOST_REQUIRE_EQUAL(false, reader.readVariant("f5").hasAnyValue());
+
+        f1 = reader.readInt32("f1");
+
+        obj1 = reader.readVariant("obj1").getPortable<TestPortableFieldNames2>();
+        obj2 = reader.readVariant("obj3").getPortable<TestPortableFieldNames2>();
+
+        BOOST_REQUIRE_EQUAL(100, obj1->f1);
+        BOOST_REQUIRE_EQUAL(100, obj1->f2);
+        BOOST_REQUIRE_EQUAL(100, obj1->f3);
+
+        BOOST_REQUIRE_EQUAL(300, obj3->f1);
+        BOOST_REQUIRE_EQUAL(300, obj3->f2);
+        BOOST_REQUIRE_EQUAL(300, obj3->f3);
+    }
+
+    int32_t f1;
+
+    TestPortableFieldNames2* obj1;
+    TestPortableFieldNames2* obj2;
+    TestPortableFieldNames2* obj3;
+};
+
+REGISTER_TYPE(700, TestPortableFieldNames1);
+
+REGISTER_TYPE(701, TestPortableFieldNames2);
+
+BOOST_AUTO_TEST_CASE(testPortableSerialization_fieldNames) {
+    GridPortableMarshaller marsh;
+
+    TestPortableFieldNames1 obj(1000);
+
+    vector<int8_t> bytes = marsh.marshal(obj);
+
+    unique_ptr<TestPortableFieldNames1> p(marsh.unmarshalUserObject<TestPortableFieldNames1>(bytes));
+    
+    BOOST_REQUIRE_EQUAL(1000, (*p).f1);
+    BOOST_REQUIRE((*p).obj1 != nullptr);
+    BOOST_REQUIRE((*p).obj2 != nullptr);
+    BOOST_REQUIRE((*p).obj3 != nullptr);
+}
+
+void checkVariants(GridClientVariant& var1, GridClientVariant& var2, GridClientVariant& var3) {
+    cout << "Variants debugString [var1=" << var1.debugString() << ", var2=" << var2.debugString() << ", var3=" << var3.debugString() << "]\n";
+
+    cout << "Variants toString [var1=" << var1 << ", var2=" << var2 << ", var3=" << var3 << "]\n";
+
+    string str = var1.toString();
+
+    BOOST_REQUIRE(str.size() > 0);
+
+    str = var1.debugString();
+
+    BOOST_REQUIRE(str.size() > 0);
+
+    GridClientVariant nullVar;
+
+    if (var1.hasPortable()) {
+        try {
+            var1.hashCode();
+            
+            BOOST_FAIL("Exception must be thrown");
+        }
+        catch(runtime_error e) {
+            cout << "expected exception " << e.what() << "\n";
+        }
+
+        try {
+            var1 == var2;
+            
+            BOOST_FAIL("Exception must be thrown");
+        }
+        catch(runtime_error e) {
+            cout << "expected exception " << e.what() << "\n";
+        }
+
+        var1 = var2;
+
+        BOOST_REQUIRE(var1.hasPortable());
+
+        var1 = std::move(var3);
+
+        BOOST_REQUIRE(var1.hasPortable());
+
+        BOOST_REQUIRE(!var3.hasAnyValue());
+        BOOST_REQUIRE(var3 == nullVar);
+
+        return;
+    }
+
+    BOOST_REQUIRE(!(var1 == nullVar));
+
+    BOOST_REQUIRE(var1.hasAnyValue());
+
+    BOOST_REQUIRE(var1 == var1);
+    BOOST_REQUIRE(!(var1 == var2));
+    BOOST_REQUIRE(var1 == var3);
+    BOOST_REQUIRE_EQUAL(var1.hashCode(), var3.hashCode());
+
+    var1 = var1;
+
+    BOOST_REQUIRE(var1 == var3);
+    BOOST_REQUIRE_EQUAL(var1.hashCode(), var3.hashCode());
+
+    var1 = std::move(var1);
+
+    BOOST_REQUIRE(var1 == var3);
+    BOOST_REQUIRE_EQUAL(var1.hashCode(), var3.hashCode());
+
+    GridClientVariant var4(var3);
+
+    BOOST_REQUIRE(var1 == var4);
+    BOOST_REQUIRE_EQUAL(var1.hashCode(), var4.hashCode());
+
+    var4 = var1;
+
+    BOOST_REQUIRE(var4 == var3);
+    BOOST_REQUIRE_EQUAL(var4.hashCode(), var3.hashCode());
+
+    var3 = std::move(var1);
+
+    BOOST_REQUIRE(!var1.hasAnyValue());
+    BOOST_REQUIRE(!(var1 == var3));
+    BOOST_REQUIRE(var1 == nullVar);
+
+    BOOST_REQUIRE(var4 == var3);
+    BOOST_REQUIRE_EQUAL(var4.hashCode(), var3.hashCode());
+
+    nullVar = var3;
+
+    BOOST_REQUIRE(var4 == nullVar);
+    BOOST_REQUIRE_EQUAL(var4.hashCode(), nullVar.hashCode());
+
+    unique_ptr<PortablePerson> p(new PortablePerson(10, "ppppppp"));
+
+    GridClientVariant portVar(p.get());
+
+    BOOST_REQUIRE(!(var4 == portVar));
+}
+
+BOOST_AUTO_TEST_CASE(testVariants) {
+    {
+        bool val1 = true;
+        bool val2 = false;
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasBool());
+        BOOST_REQUIRE(!var1.hasInt());
+
+        BOOST_REQUIRE_EQUAL(val1, var1.getBool());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        int8_t val1 = 1;
+        int8_t val2 = 2;
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasByte());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE_EQUAL(val1, var1.getByte());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        int16_t val1 = 1;
+        int16_t val2 = 2;
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasShort());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE_EQUAL(val1, var1.getShort());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        int32_t val1 = 1;
+        int32_t val2 = 2;
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasInt());
+        BOOST_REQUIRE(!var1.hasByte());
+
+        BOOST_REQUIRE_EQUAL(val1, var1.getInt());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        int64_t val1 = 1;
+        int64_t val2 = 2;
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasLong());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE_EQUAL(val1, var1.getLong());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        float val1 = 1.5f;
+        float val2 = 2.5f;
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasFloat());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE_EQUAL(val1, var1.getFloat());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        double val1 = 1;
+        double val2 = 2;
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasDouble());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE_EQUAL(val1, var1.getDouble());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        uint16_t val1 = 1;
+        uint16_t val2 = 2;
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasChar());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE_EQUAL(val1, var1.getChar());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        string val1("1");
+        string val2("2");
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasString());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE(val1 == var1.getString());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        wstring val1(L"1");
+        wstring val2(L"2");
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasWideString());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE(val1 == var1.getWideString());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        GridClientUuid val1(1, 1);
+        GridClientUuid val2(1, 2);
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasUuid());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE_EQUAL(val1, var1.getUuid());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        vector<int8_t> val1(1, 1);
+        vector<int8_t> val2(1, 2);
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasByteArray());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE(val1 == var1.getByteArray());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        vector<int16_t> val1(1, 1);
+        vector<int16_t> val2(1, 2);
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasShortArray());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE(val1 == var1.getShortArray());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        vector<int32_t> val1(1, 1);
+        vector<int32_t> val2(1, 2);
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasIntArray());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE(val1 == var1.getIntArray());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        vector<int64_t> val1(1, 1);
+        vector<int64_t> val2(1, 2);
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasLongArray());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE(val1 == var1.getLongArray());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        vector<float> val1(1, 1.5f);
+        vector<float> val2(1, 2.5f);
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasFloatArray());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE(val1 == var1.getFloatArray());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        vector<double> val1(1, 1.5);
+        vector<double> val2(1, 2.5);
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasDoubleArray());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE(val1 == var1.getDoubleArray());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        vector<uint16_t> val1(1, 1);
+        vector<uint16_t> val2(1, 2);
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasCharArray());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE(val1 == var1.getCharArray());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        vector<bool> val1(1, true);
+        vector<bool> val2(1, false);
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasBoolArray());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE(val1 == var1.getBoolArray());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        vector<string> val1(1, string("1"));
+        vector<string> val2(1, string("2"));
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasStringArray());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE(val1 == var1.getStringArray());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        vector<GridClientUuid> val1(1, GridClientUuid(1, 1));
+        vector<GridClientUuid> val2(1, GridClientUuid(1, 2));
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasUuidArray());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE(val1 == var1.getUuidArray());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        TGridClientVariantSet val1(1, GridClientVariant(1));
+        TGridClientVariantSet val2(1, GridClientVariant(2));
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasVariantVector());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE(val1 == var1.getVariantVector());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        TGridClientVariantMap val1;
+        TGridClientVariantMap val2;
+        
+        val1[GridClientVariant(1)] = GridClientVariant(1);
+        val2[GridClientVariant(1)] = GridClientVariant(2);
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasVariantMap());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE(val1 == var1.getVariantMap());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        unique_ptr<PortablePerson> val1(new PortablePerson(1, "1"));
+        unique_ptr<PortablePerson> val2(new PortablePerson(2, "2"));
+
+        GridClientVariant var1(val1.get());
+        GridClientVariant var2(val2.get());
+        GridClientVariant var3(val1.get());
+
+        BOOST_REQUIRE(var1.hasHashablePortable());
+        BOOST_REQUIRE(!var1.hasPortable());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE(val1.get() == var1.getHashablePortable());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        unique_ptr<TestPortable1> val1(new TestPortable1());
+        unique_ptr<TestPortable1> val2(new TestPortable1());
+
+        GridClientVariant var1(val1.get());
+        GridClientVariant var2(val2.get());
+        GridClientVariant var3(val1.get());
+
+        BOOST_REQUIRE(var1.hasPortable());
+        BOOST_REQUIRE(!var1.hasHashablePortable());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE(val1.get() == var1.getPortable());
+        
+        checkVariants(var1, var2, var3);
+    }
 }
 
 BOOST_AUTO_TEST_CASE(testVariantMap) {
@@ -1246,13 +1900,13 @@ BOOST_AUTO_TEST_CASE(testExternalPortableCache) {
 }
 
 BOOST_AUTO_TEST_CASE(testPortableSerialization) {
-    GridPortableMarshaller marsh(true);
+    GridPortableMarshaller marsh;
 
     PortablePerson p(-10, "ABC");
 
     vector<int8_t> bytes = marsh.marshal(p);
 
-    PortablePerson* pRead = marsh.unmarshal<PortablePerson>(bytes);
+    PortablePerson* pRead = marsh.unmarshalUserObject<PortablePerson>(bytes);
 
     cout << "Unmarshalled " << pRead->getId() << " " << pRead->getName() << "\n";
 
@@ -1260,10 +1914,23 @@ BOOST_AUTO_TEST_CASE(testPortableSerialization) {
     BOOST_CHECK_EQUAL("ABC", pRead->getName());
 
     delete pRead;
+
+    GridClientVariant var = marsh.unmarshal(bytes);
+
+    BOOST_REQUIRE(var.hasPortableObject());
+
+    GridPortableObject& portable = var.getPortableObject();
+
+    BOOST_CHECK_EQUAL(-10, portable.field("id").getInt());
+    BOOST_CHECK_EQUAL("ABC", portable.field("name").getString());
+
+    GridClientVariant nullField = portable.field("invalidName");
+
+    BOOST_REQUIRE(!nullField.hasAnyValue());
 }
 
 BOOST_AUTO_TEST_CASE(testExternalSerialization) {
-    GridPortableMarshaller marsh(true);
+    GridPortableMarshaller marsh;
 
     Person person(20, "abc");
 
@@ -1273,7 +1940,7 @@ BOOST_AUTO_TEST_CASE(testExternalSerialization) {
 
     vector<int8_t> bytes = marsh.marshal(ext);
 
-    GridExternalPortable<Person>* pRead = marsh.unmarshal<GridExternalPortable<Person>>(bytes);
+    GridExternalPortable<Person>* pRead = marsh.unmarshalUserObject<GridExternalPortable<Person>>(bytes);
 
     cout << "Unmarshalled " << (*pRead)->getId() << " " << (*pRead)->getName() << "\n";
 

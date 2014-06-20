@@ -51,12 +51,12 @@ enum GridClientCacheTestType {
  *
  */
 void StatsPrinterThreadProc() {
-	int LastIters = gIters.load(); // Save global iterations count so while
+    int LastIters = gIters.load(); // Save global iterations count so while
 
     while (true) {
-    	boost::this_thread::sleep(boost::posix_time::seconds(1));
+        boost::this_thread::sleep(boost::posix_time::seconds(1));
 
-    	int CurIters = gIters.load();
+        int CurIters = gIters.load();
 
         std::cout << "Operations for last second: " << CurIters - LastIters << std::endl;
 
@@ -185,7 +185,7 @@ private:
 typedef std::shared_ptr<TestThread> TestThreadPtr;
 
 int main(int argc, const char** argv) {
-	gIters = 0;
+    gIters = 0;
     gExit = false;
     gWarmupDone = false;
 
@@ -198,29 +198,29 @@ int main(int argc, const char** argv) {
     // Declare the supported options.
     options_description desc("Allowed options");
     desc.add_options()
-    		("help",	"produce help message")
-    		("host",	value<string>()->required(),	"Host to connect to")
-    		("port",	value<int>()->required(),	"Port to connect to")
-    		("threads",	value<int>()->required(),	"Number of threads")
-    		("testtype",	value<string>()->required(),	"Type of operations to run")
-    		("cachename",	value<string>()->required(),	"Cache name")
-    		("warmupseconds",	value<int>()->required(),	"Seconds to warm up")
-    		("runseconds",	value<int>()->required(),	"Seconds to run")
-    		("usetransactions",	boost::program_options::value<bool>()->required(),	"Use transactions (bool)");
+            ("help", "produce help message")
+            ("host", value<string>()->required(), "Host to connect to")
+            ("port", value<int>()->required(), "Port to connect to")
+            ("threads", value<int>()->required(), "Number of threads")
+            ("testtype", value<string>()->required(), "Type of operations to run")
+            ("cachename", value<string>()->required(), "Cache name")
+            ("warmupseconds", value<int>()->required(), "Seconds to warm up")
+            ("runseconds", value<int>()->required(), "Seconds to run")
+            ("usetransactions", boost::program_options::value<bool>()->required(),	"Use transactions (bool)");
 
     try {
         store(parse_command_line(argc, argv, desc), vm);
         notify(vm);
     }
     catch (exception &e) {
-    	cerr << "Error parsing arguments: " << e.what() << endl;
-    	cerr << desc << endl;
-    	return 1;
+        cerr << "Error parsing arguments: " << e.what() << endl;
+        cerr << desc << endl;
+        return 1;
     }
 
     if (vm.count("help")) {
-    	cout << desc << endl;
-    	return 0;
+        cout << desc << endl;
+        return 0;
     }
 
     GridClientConfiguration cfg = clientConfig();

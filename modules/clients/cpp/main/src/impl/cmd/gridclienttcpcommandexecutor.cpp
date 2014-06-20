@@ -165,7 +165,9 @@ template<class C, class R> void GridClientTcpCommandExecutor::executeCmd(const G
 
     GG_LOG_DEBUG("Successfully executed requestId [%lld] typeId [%d] on [%s:%d].", cmd.getRequestId(), msg.typeId(), host.host().c_str(), host.port());
 
-    std::unique_ptr<GridClientResponse> resMsg(marsh.unmarshal<GridClientResponse>(tcpResponse.getData()));
+    GridClientVariant var = marsh.unmarshal(tcpResponse.getData());
+
+    std::unique_ptr<GridClientResponse> resMsg(var.getPortable<GridClientResponse>());
 
     response.setStatus(static_cast<GridClientMessageResult::StatusCode>(resMsg->status));
 

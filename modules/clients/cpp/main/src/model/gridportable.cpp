@@ -8,56 +8,50 @@
  */
 
 #include "gridgain/gridportable.hpp"
+#include "gridgain/impl/marshaller/portable/gridportablemarshaller.hpp"
 
-GridPortableObject::GridPortableObject(std::vector<int8_t> bytes) : bytes(bytes) {
+GridPortableObject::GridPortableObject(std::vector<int8_t>&& bytes, GridPortableIdResolver* idRslvr) : bytes(bytes), idRslvr(idRslvr) {
 }
 
-GridPortableObject::GridPortableObject(const GridPortableObject& other) : bytes(other.bytes) {
+GridPortableObject::GridPortableObject(const GridPortableObject& other) : bytes(other.bytes), idRslvr(other.idRslvr)  {
 }
 
-GridPortableObject::GridPortableObject(const GridPortableObject&& other) : bytes(std::move(other.bytes)) {
+GridPortableObject::GridPortableObject(const GridPortableObject&& other) : bytes(std::move(other.bytes)),
+    idRslvr(other.idRslvr) {
 }
 
-int32_t GridPortableObject::typeId() {
+int32_t GridPortableObject::typeId() const {
     return 0;
 }
 
-int32_t GridPortableObject::fieldTypeId(const std::string& fieldName) {
+int32_t GridPortableObject::hashCode() const {
     return 0;
 }
 
-std::string GridPortableObject::typeName() {
-    std::string str;
+GridClientVariant GridPortableObject::field(const std::string& fieldName) const {
+    ReadContext ctx(bytes, 10, idRslvr);
 
-    return str;
+    GridPortableReaderImpl reader(ctx);
+
+    return std::move(reader.unmarshalFieldStr(fieldName));
 }
 
-int32_t GridPortableObject::hashCode() {
-    return 0;
+GridPortable* GridPortableObject::deserialize() const {
+    ReadContext ctx(bytes, 10, idRslvr);
+
+    GridPortableReaderImpl reader(ctx);
+
+    return reader.deserializePortable();
 }
 
-std::vector<std::string> GridPortableObject::fields() {
-    std::vector<std::string> fields;
-    
-    return fields;
-}
-
-GridClientVariant GridPortableObject::field(const std::string& fieldName) {
-    GridClientVariant var;
-
-    return var;
-}
-
-GridClientVariant GridPortableObject::deserialize() {
-    GridClientVariant var;
-
-    return var;
-}
-
-GridPortableObject GridPortableObject::copy(boost::unordered_map<std::string, GridClientVariant> fields) {
+GridPortableObject GridPortableObject::copy(boost::unordered_map<std::string, GridClientVariant> fields) const {
     GridPortableObject obj(*this);
 
     return obj;
+}
+
+bool GridPortableObject::operator==(const GridPortableObject& other) const {
+    return false;
 }
 
 GridPortableObjectBuilder::GridPortableObjectBuilder(int32_t typeId) {
@@ -72,5 +66,5 @@ void GridPortableObjectBuilder::set(boost::unordered_map<std::string, GridClient
 GridPortableObject GridPortableObjectBuilder::build() {
     std::vector<int8_t> bytes;
 
-    return GridPortableObject(bytes);
+    return GridPortableObject(std::move(bytes), nullptr);
 }

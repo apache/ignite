@@ -12,6 +12,7 @@
 #include <boost/unordered_map.hpp>
 #include <boost/foreach.hpp>
 
+#include "gridgain/gridclienthash.hpp"
 #include "gridgain/impl/hash/gridclientvarianthasheableobject.hpp"
 #include "gridgain/impl/hash/gridclientsimpletypehasheableobject.hpp"
 #include "gridgain/impl/hash/gridclientstringhasheableobject.hpp"
@@ -21,6 +22,21 @@
 #include "gridgain/impl/hash/gridclientdoublehasheableobject.hpp"
 
 using namespace std;
+
+template<>
+int32_t gridHashCode<>(GridClientUuid val) {
+    return val.hashCode();
+}
+
+template<>
+int32_t gridHashCode<>(GridClientVariant val) {
+    return val.hashCode();
+}
+
+template<>
+int32_t gridHashCode<>(uint16_t val) {
+    return (int32_t)val;
+}
 
 template <class T> void getHashInfo(const T& val, int& hashCode, std::vector<int8_t>& bytes) {
     TGridHasheableObjectPtr simpleHasheable = createHasheable(val);
@@ -36,95 +52,99 @@ namespace {
 
 class GridClientVariantVisitorImpl : public GridClientVariantVisitor {
 public:
-    GridClientVariantVisitorImpl(int& pHashCode, std::vector<int8_t>& pBytes)
-        : hashCode_(pHashCode), bytes(pBytes) {
+    GridClientVariantVisitorImpl(int& pHashCode) : hashCode_(pHashCode) {
         hashCode_ = -1;
-
-        bytes.clear();
     }
 
-    virtual void visit(const int16_t pShort) const {
-        getHashInfo(pShort, hashCode_, bytes);
+    virtual void visit(const bool val) const override {
+        hashCode_ = gridBoolHash(val);
     }
 
-    virtual void visit(const int32_t pInt) const {
-        getHashInfo(pInt, hashCode_, bytes);
+    virtual void visit(const int8_t val) const override {
+        hashCode_ = gridByteHash(val);
     }
 
-    virtual void visit(const int64_t pLong) const {
-        getHashInfo(pLong, hashCode_, bytes);
+    virtual void visit(const uint16_t val) const override {
+        hashCode_ = gridHashCode<uint16_t>(val);
     }
 
-    virtual void visit(const bool pVal) const {
-        GridBoolHasheableObject boolHasheable(pVal);
-
-        hashCode_ = boolHasheable.hashCode();
-
-        boolHasheable.convertToBytes(bytes);
+    virtual void visit(const int16_t val) const override {
+        hashCode_ = gridInt16Hash(val);
     }
 
-    virtual void visit(const double pVal) const {
-        GridDoubleHasheableObject doubleHasheable(pVal);
-
-        hashCode_ = doubleHasheable.hashCode();
-
-        doubleHasheable.convertToBytes(bytes);
+    virtual void visit(const int32_t val) const override {
+        hashCode_ = gridInt32Hash(val);
     }
 
-    virtual void visit(const float pVal) const {
-        GridFloatHasheableObject floatHasheable(pVal);
-
-        hashCode_ = floatHasheable.hashCode();
-
-        floatHasheable.convertToBytes(bytes);
+    virtual void visit(const int64_t val) const override {
+        hashCode_ = gridInt64Hash(val);
     }
 
-    virtual void visit(const string& pText) const {
-        GridStringHasheableObject strHasheable(pText);
-
-        hashCode_ = strHasheable.hashCode();
-
-        strHasheable.convertToBytes(bytes);
+    virtual void visit(const double val) const override {
+        hashCode_ = gridDoubleHash(val);
     }
 
-    virtual void visit(const std::wstring& pText) const {
-        GridWideStringHasheableObject wstrHasheable(pText);
-
-        hashCode_ = wstrHasheable.hashCode();
-
-        wstrHasheable.convertToBytes(bytes);
+    virtual void visit(const float val) const override {
+        hashCode_ = gridFloatHash(val);
     }
 
-    virtual void visit(const vector<int8_t>& buf) const {
-        GridByteArrayHasheableObject bytesHasheable(buf);
-
-        hashCode_ = bytesHasheable.hashCode();
-
-        bytesHasheable.convertToBytes(bytes);
+    virtual void visit(const string& val) const override {
+        hashCode_ = gridStringHash(val);
     }
 
-    virtual void visit(const vector<GridClientVariant>& vvec) const {
-        hashCode_ = 1;
-
-        for (auto i = vvec.begin(); i != vvec.end(); i++) {
-            GridClientVariantHasheableObject o(*i);
-
-            hashCode_ = 31 * hashCode_ + o.hashCode();
-
-            vector<int8_t> b;
-            o.convertToBytes(b);
-
-            bytes.insert(bytes.end(), b.begin(), b.end());
-        }
+    virtual void visit(const std::wstring& val) const override {
+        hashCode_ = gridWStringHash(val);
     }
 
-    virtual void visit(const GridClientUuid& uuid) const {
+    virtual void visit(const vector<int8_t>& val) const override {
+        hashCode_ = gridCollectionHash(val);
+    }
+
+    virtual void visit(const vector<bool>& val) const override {
+        hashCode_ = gridCollectionHash(val);
+    }
+
+    virtual void visit(const vector<int16_t>& val) const override {
+        hashCode_ = gridCollectionHash(val);
+    }
+
+    virtual void visit(const vector<uint16_t>& val) const override {
+        hashCode_ = gridCollectionHash(val);
+    }
+
+    virtual void visit(const vector<int32_t>& val) const override {
+        hashCode_ = gridCollectionHash(val);
+    }
+
+    virtual void visit(const vector<int64_t>& val) const override {
+        hashCode_ = gridCollectionHash(val);
+    }
+
+    virtual void visit(const vector<float>& val) const override {
+        hashCode_ = gridCollectionHash(val);
+    }
+
+    virtual void visit(const vector<double>& val) const override {
+        hashCode_ = gridCollectionHash(val);
+    }
+
+    virtual void visit(const vector<string>& val) const override {
+        hashCode_ = gridCollectionHash(val);
+    }
+
+    virtual void visit(const vector<GridClientUuid>& val) const override {
+        hashCode_ = gridCollectionHash(val);
+    }
+
+    virtual void visit(const TGridClientVariantSet& val) const override {
+        hashCode_ = gridCollectionHash(val);
+    }
+
+    virtual void visit(const GridClientUuid& uuid) const override {
         hashCode_ = uuid.hashCode();
-
-        uuid.convertToBytes(bytes);
     }
 
-    virtual void visit(const boost::unordered_map<GridClientVariant, GridClientVariant>& vmap) const {
+    virtual void visit(const TGridClientVariantMap& vmap) const override {
         hashCode_ = 0;
 
         BOOST_FOREACH(TGridClientVariantMap::value_type pair, vmap) {
@@ -135,35 +155,30 @@ public:
         }
     }
 
+    virtual void visit(const GridPortable&) const override {
+        throw runtime_error("Can not calculate hash code for GridClientVariant holding GridPortable.");
+    }
+
+    virtual void visit(const GridHashablePortable& val) const override {
+        hashCode_ = val.hashCode();
+    }
+
+    virtual void visit(const GridPortableObject& val) const override {
+        hashCode_ = val.hashCode();
+    }
+
 private:
     int32_t& hashCode_;
-    std::vector<int8_t>& bytes;
 };
 
 }
 
 void GridClientVariantHasheableObject::init(const GridClientVariant& var) {
-    GridClientVariantVisitorImpl vis(hashCode_, bytes);
+    GridClientVariantVisitorImpl vis(hashCode_);
 
     var.accept(vis);
 }
 
 GridClientVariantHasheableObject::GridClientVariantHasheableObject(const GridClientVariant& var) {
-    if (var.hasPortable()) {
-        if (!var.hasHashablePortable())
-            throw std::exception("Can not calculate hash code for GridClientVariant holding GridPortable, GridHahshablePortable must be used instead.");
-
-        hashCode_ = static_cast<GridHashablePortable*>(var.getPortable<GridPortable>())->hashCode();
-    }
-    else
-        init(var);
-}
-
-GridClientVariantHasheableObject::GridClientVariantHasheableObject(const GridClientVariant& var,
-        int calculatedHashCode) {
-    assert(!var.hasPortable());
-    
     init(var);
-
-    hashCode_ = calculatedHashCode;
 }

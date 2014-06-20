@@ -264,7 +264,7 @@ void GridClientSyncTcpConnection::authenticate(const string& clientId, const str
     GridClientTcpPacket tcpPacket;
     GridClientTcpPacket tcpResponse;
 
-    GridPortableMarshaller marsh(true); // TODO 8536
+    GridPortableMarshaller marsh;
 
     vector<int8_t> data = marsh.marshal(msg);
 
@@ -273,7 +273,10 @@ void GridClientSyncTcpConnection::authenticate(const string& clientId, const str
 
     send(tcpPacket, tcpResponse);
 
-    std::unique_ptr<GridClientResponse> resMsg(marsh.unmarshal<GridClientResponse>(tcpResponse.getData()));
+    //std::unique_ptr<GridClientResponse> resMsg(marsh.unmarshal<GridClientResponse>(tcpResponse.getData()));
+    GridClientVariant variant = marsh.unmarshal(tcpResponse.getData());
+
+    GridClientResponse* resMsg = variant.getPortable<GridClientResponse>();
 
     if (!resMsg->errorMsg.empty())
         throw GridClientCommandException(resMsg->errorMsg);
@@ -764,7 +767,7 @@ void GridClientRawSyncTcpConnection::authenticate(const string& clientId, const 
     GridClientTcpPacket tcpPacket;
     GridClientTcpPacket tcpResponse;
 
-    GridPortableMarshaller marsh(true); // TODO 8536
+    GridPortableMarshaller marsh;
 
     vector<int8_t> data = marsh.marshal(msg);
 
@@ -773,7 +776,9 @@ void GridClientRawSyncTcpConnection::authenticate(const string& clientId, const 
 
     send(tcpPacket, tcpResponse);
 
-    std::unique_ptr<GridClientResponse> resMsg(marsh.unmarshal<GridClientResponse>(tcpResponse.getData()));
+    GridClientVariant var = marsh.unmarshal(tcpResponse.getData());
+
+    GridClientResponse* resMsg = var.getPortable<GridClientResponse>();
 
     if (!resMsg->errorMsg.empty())
         throw GridClientCommandException(resMsg->errorMsg);

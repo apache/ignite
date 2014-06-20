@@ -37,6 +37,20 @@ GridPortable* createPortable(int32_t typeId, GridPortableReader &reader) {
     return static_cast<GridPortable*>(factory->newInstance(reader));
 }
 
+int32_t cStringHash(const char* str) {
+    int32_t hash = 0;
+
+    int i = 0;
+
+    while(str[i]) {
+        hash = 31 * hash + str[i];
+    
+        i++;
+    }
+
+    return hash;
+}
+
 REGISTER_TYPE(-1, GridClientAuthenticationRequest);
 REGISTER_TYPE(-2, GridClientCacheRequest);
 REGISTER_TYPE(-3, GridClientLogRequest);
