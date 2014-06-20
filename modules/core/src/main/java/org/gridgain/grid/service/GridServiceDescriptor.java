@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.service;
 
+import org.jetbrains.annotations.*;
+
 import java.io.*;
 import java.util.*;
 
@@ -26,4 +28,8 @@ public interface GridServiceDescriptor extends Serializable {
     public int totalCount();
 
     public int maxPerNodeCount();
+
+    @Nullable public String cacheName();
+
+    @Nullable public <K> K affinityKey();
 }
