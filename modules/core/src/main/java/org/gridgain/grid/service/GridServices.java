@@ -26,7 +26,8 @@ public interface GridServices {
 
     public GridFuture<UUID> deployMultiple(GridService svc, int totalCnt, int maxPerNodeCnt);
 
-    public <K> GridFuture<UUID> deployForAffinityKey(String cacheName, K affKey, GridService svc);
+    public <K> GridFuture<UUID> deployForAffinityKey(GridService svc, String cacheName, K affKey,
+        boolean includeBackups);
 
     public GridFuture<?> cancel(UUID svcId);
 
