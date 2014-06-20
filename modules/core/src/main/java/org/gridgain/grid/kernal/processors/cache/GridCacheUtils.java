@@ -45,6 +45,9 @@ public class GridCacheUtils {
     /** Security system cache name. */
     public static final String SECURITY_SYS_CACHE_NAME = "gg-security-sys-cache";
 
+    /** Service cache name. */
+    public static final String SERVICE_SYS_CACHE_NAME = "gg-service-sys-cache";
+
     /** Flag to turn off DHT cache for debugging purposes. */
     public static final boolean DHT_ENABLED = true;
 

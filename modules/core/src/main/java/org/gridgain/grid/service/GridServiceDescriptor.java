@@ -38,5 +38,5 @@ public interface GridServiceDescriptor extends Serializable {
      *
      * @return Map of number of service instances per node.
      */
-    public Map<GridNode, Integer> topology();
+    public Map<GridNode, Integer> topologySnapshot();
 }
