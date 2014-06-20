@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.service;
 
+import org.jetbrains.annotations.*;
+
 import java.util.*;
 
 /**
@@ -18,9 +20,11 @@ import java.util.*;
  * @version @java.version
  */
 public interface GridServiceContext {
-    public UUID executionId();
+    public UUID serviceId();
 
     public boolean isCancelled();
 
-    public GridServiceDescriptor descriptor();
+    @Nullable public String cacheName();
+
+    @Nullable public <K> K affinityKey();
 }

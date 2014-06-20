@@ -30,9 +30,5 @@ public interface GridServices {
 
     public GridFuture<?> cancel(UUID svcId);
 
-    public Collection<? extends GridServiceContext> locallyDeployedServices();
-
-    public Collection<? extends GridServiceContext> allDeployedServices();
-
-    public Collection<? extends GridServiceContext> deployedServices(UUID nodeId);
+    public Collection<? extends GridServiceDescriptor> deployedServices();
 }

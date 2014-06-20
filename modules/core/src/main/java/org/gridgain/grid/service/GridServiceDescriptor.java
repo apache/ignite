@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.service;
 
+import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -32,4 +33,10 @@ public interface GridServiceDescriptor extends Serializable {
     @Nullable public String cacheName();
 
     @Nullable public <K> K affinityKey();
+
+    /**
+     *
+     * @return Map of number of service instances per node.
+     */
+    public Map<GridNode, Integer> topology();
 }
