@@ -60,7 +60,6 @@ public interface GridPortableObject extends Serializable, Cloneable {
      *
      * @param fieldName Field name.
      * @return Field value.
-     * @throws GridPortableInvalidFieldException If field doesn't exist.
      * @throws GridPortableException In case of any other error.
      */
     @Nullable public <F> F field(String fieldName) throws GridPortableException;

@@ -24,7 +24,7 @@ import static org.gridgain.grid.kernal.portable.GridPortableMarshaller.*;
 /**
  * Portable writer implementation.
  */
-class GridPortableWriterImpl implements GridPortableWriter {
+class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWriter {
     /** */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -53,6 +53,9 @@ class GridPortableWriterImpl implements GridPortableWriter {
     private static final long BOOLEAN_ARR_OFF = UNSAFE.arrayBaseOffset(boolean[].class);
 
     /** */
+    private static final GridPortablePrimitives PRIM = GridPortablePrimitives.get();
+
+    /** */
     private static final int TOTAL_LEN_POS = 10;
 
     /** */
@@ -60,9 +63,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** */
     private static final int INIT_CAP = 4 * 1024;
-
-    /** */
-    private static final GridPortablePrimitives PRIM = GridPortablePrimitives.get();
 
     /** */
     private static final boolean useNames = false; // TODO: take from config
@@ -427,8 +427,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** {@inheritDoc} */
     @Override public void writeByte(byte val) throws GridPortableException {
-        switchToRaw();
-
         doWriteByte(val);
     }
 
@@ -442,8 +440,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** {@inheritDoc} */
     @Override public void writeShort(short val) throws GridPortableException {
-        switchToRaw();
-
         doWriteShort(val);
     }
 
@@ -457,8 +453,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** {@inheritDoc} */
     @Override public void writeInt(int val) throws GridPortableException {
-        switchToRaw();
-
         doWriteInt(val);
     }
 
@@ -472,8 +466,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** {@inheritDoc} */
     @Override public void writeLong(long val) throws GridPortableException {
-        switchToRaw();
-
         doWriteLong(val);
     }
 
@@ -487,8 +479,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** {@inheritDoc} */
     @Override public void writeFloat(float val) throws GridPortableException {
-        switchToRaw();
-
         doWriteFloat(val);
     }
 
@@ -502,8 +492,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** {@inheritDoc} */
     @Override public void writeDouble(double val) throws GridPortableException {
-        switchToRaw();
-
         doWriteDouble(val);
     }
 
@@ -517,8 +505,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** {@inheritDoc} */
     @Override public void writeChar(char val) throws GridPortableException {
-        switchToRaw();
-
         doWriteChar(val);
     }
 
@@ -532,8 +518,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** {@inheritDoc} */
     @Override public void writeBoolean(boolean val) throws GridPortableException {
-        switchToRaw();
-
         doWriteBoolean(val);
     }
 
@@ -555,8 +539,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** {@inheritDoc} */
     @Override public void writeString(@Nullable String val) throws GridPortableException {
-        switchToRaw();
-
         doWriteString(val);
     }
 
@@ -570,8 +552,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** {@inheritDoc} */
     @Override public void writeUuid(@Nullable UUID val) throws GridPortableException {
-        switchToRaw();
-
         doWriteUuid(val);
     }
 
@@ -588,8 +568,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** {@inheritDoc} */
     @Override public void writeObject(@Nullable Object obj) throws GridPortableException {
-        switchToRaw();
-
         doWriteObject(obj);
     }
 
@@ -603,8 +581,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** {@inheritDoc} */
     @Override public void writeByteArray(@Nullable byte[] val) throws GridPortableException {
-        switchToRaw();
-
         doWriteByteArray(val);
     }
 
@@ -618,8 +594,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** {@inheritDoc} */
     @Override public void writeShortArray(@Nullable short[] val) throws GridPortableException {
-        switchToRaw();
-
         doWriteShortArray(val);
     }
 
@@ -633,8 +607,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** {@inheritDoc} */
     @Override public void writeIntArray(@Nullable int[] val) throws GridPortableException {
-        switchToRaw();
-
         doWriteIntArray(val);
     }
 
@@ -648,8 +620,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** {@inheritDoc} */
     @Override public void writeLongArray(@Nullable long[] val) throws GridPortableException {
-        switchToRaw();
-
         doWriteLongArray(val);
     }
 
@@ -663,8 +633,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** {@inheritDoc} */
     @Override public void writeFloatArray(@Nullable float[] val) throws GridPortableException {
-        switchToRaw();
-
         doWriteFloatArray(val);
     }
 
@@ -679,8 +647,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** {@inheritDoc} */
     @Override public void writeDoubleArray(@Nullable double[] val) throws GridPortableException {
-        switchToRaw();
-
         doWriteDoubleArray(val);
     }
 
@@ -694,8 +660,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** {@inheritDoc} */
     @Override public void writeCharArray(@Nullable char[] val) throws GridPortableException {
-        switchToRaw();
-
         doWriteCharArray(val);
     }
 
@@ -710,8 +674,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** {@inheritDoc} */
     @Override public void writeBooleanArray(@Nullable boolean[] val) throws GridPortableException {
-        switchToRaw();
-
         doWriteBooleanArray(val);
     }
 
@@ -729,8 +691,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** {@inheritDoc} */
     @Override public void writeStringArray(@Nullable String[] val) throws GridPortableException {
-        switchToRaw();
-
         doWriteStringArray(val);
     }
 
@@ -747,8 +707,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** {@inheritDoc} */
     @Override public void writeUuidArray(@Nullable UUID[] val) throws GridPortableException {
-        switchToRaw();
-
         doWriteUuidArray(val);
     }
 
@@ -765,8 +723,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** {@inheritDoc} */
     @Override public void writeObjectArray(@Nullable Object[] val) throws GridPortableException {
-        switchToRaw();
-
         doWriteObjectArray(val);
     }
 
@@ -784,8 +740,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** {@inheritDoc} */
     @Override public <T> void writeCollection(@Nullable Collection<T> col) throws GridPortableException {
-        switchToRaw();
-
         doWriteCollection(col);
     }
 
@@ -803,9 +757,16 @@ class GridPortableWriterImpl implements GridPortableWriter {
 
     /** {@inheritDoc} */
     @Override public <K, V> void writeMap(@Nullable Map<K, V> map) throws GridPortableException {
-        switchToRaw();
-
         doWriteMap(map);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridPortableRawWriter rawWriter() {
+        PRIM.writeInt(ctx.arr, start + RAW_DATA_OFF_POS, ctx.off - start);
+
+        allowFields = false;
+
+        return this;
     }
 
     /**
@@ -822,17 +783,6 @@ class GridPortableWriterImpl implements GridPortableWriter {
             doWriteByteArray(fieldName.getBytes(UTF_8));
         else
             doWriteInt(fieldName.hashCode());
-    }
-
-    /**
-     * Restricts fields.
-     */
-    private void switchToRaw() {
-        if (allowFields) {
-            PRIM.writeInt(ctx.arr, start + RAW_DATA_OFF_POS, ctx.off - start);
-
-            allowFields = false;
-        }
     }
 
     /** */
