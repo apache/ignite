@@ -100,40 +100,44 @@ namespace GridGain.Client.Impl.Message {
         
         /** <inheritdoc /> */
         public void WritePortable(IGridClientPortableWriter writer) {
-            writer.WriteInt(TcpPort);
-            writer.WriteInt(ReplicaCount);
+            IGridClientPortableRawWriter rawWriter = writer.RawWriter();
 
-            writer.WriteString(DefaultCacheMode);
+            rawWriter.WriteInt(TcpPort);
+            rawWriter.WriteInt(ReplicaCount);
 
-            writer.WriteMap(Attributes);
-            writer.WriteMap(Caches);
+            rawWriter.WriteString(DefaultCacheMode);
 
-            writer.WriteCollection(TcpAddresses);
-            writer.WriteCollection(TcpHostNames);
+            rawWriter.WriteMap(Attributes);
+            rawWriter.WriteMap(Caches);
 
-            writer.WriteGuid(NodeId);
+            rawWriter.WriteCollection(TcpAddresses);
+            rawWriter.WriteCollection(TcpHostNames);
 
-            writer.WriteObject(ConsistentId);
-            writer.WriteObject(Metrics);
+            rawWriter.WriteGuid(NodeId);
+
+            rawWriter.WriteObject(ConsistentId);
+            rawWriter.WriteObject(Metrics);
         }
 
         /** <inheritdoc /> */
         public void ReadPortable(IGridClientPortableReader reader) {
-            TcpPort = reader.ReadInt();
-            ReplicaCount = reader.ReadInt();
+            IGridClientPortableRawReader rawReader = reader.RawReader();
 
-            DefaultCacheMode = reader.ReadString();
+            TcpPort = rawReader.ReadInt();
+            ReplicaCount = rawReader.ReadInt();
 
-            Attributes = reader.ReadMap<String, Object>();
-            Caches = reader.ReadMap<String, String>();
+            DefaultCacheMode = rawReader.ReadString();
 
-            TcpAddresses = reader.ReadCollection<String>();
-            TcpHostNames = reader.ReadCollection<String>();
+            Attributes = rawReader.ReadMap<String, Object>();
+            Caches = rawReader.ReadMap<String, String>();
 
-            NodeId = reader.ReadGuid();
+            TcpAddresses = rawReader.ReadCollection<String>();
+            TcpHostNames = rawReader.ReadCollection<String>();
 
-            ConsistentId = reader.ReadObject<Object>();
-            Metrics = reader.ReadObject<GridClientNodeMetricsBean>();
+            NodeId = rawReader.ReadGuid();
+
+            ConsistentId = rawReader.ReadObject<Object>();
+            Metrics = rawReader.ReadObject<GridClientNodeMetricsBean>();
 
             if (DefaultCacheMode != null) {
                 Caches = Caches == null ? new GridClientNullDictionary<string, string>() : new GridClientNullDictionary<string, string>(Caches);

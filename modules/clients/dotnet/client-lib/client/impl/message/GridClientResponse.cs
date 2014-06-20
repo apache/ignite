@@ -16,10 +16,6 @@ namespace GridGain.Client.Impl.Message {
     /** <summary>Bean representing client operation result.</summary> */
     [GridClientPortableId(PU.TYPE_RESP)]
     internal class GridClientResponse : IGridClientPortable {
-        /** Portable type ID. */
-        // TODO: GG-8535: Remove in favor of normal IDs.
-        public static readonly int PORTABLE_TYPE_ID = 0;
-
         /**
          * <summary>
          * Tries to find enum value by operation code.</summary>
@@ -79,24 +75,22 @@ namespace GridGain.Client.Impl.Message {
 
         /** <inheritdoc /> */
         public void WritePortable(IGridClientPortableWriter writer) {
-            writer.WriteByteArray(SessionToken);
+            IGridClientPortableRawWriter rawWriter = writer.RawWriter();
 
-            writer.WriteInt((int)Status);
-
-            writer.WriteString(ErrorMessage);
-
-            writer.WriteObject(Result);
+            rawWriter.WriteByteArray(SessionToken);
+            rawWriter.WriteInt((int)Status);
+            rawWriter.WriteString(ErrorMessage);
+            rawWriter.WriteObject(Result);
         }
 
         /** <inheritdoc /> */
         public void ReadPortable(IGridClientPortableReader reader) {
-            SessionToken = reader.ReadByteArray();
+            IGridClientPortableRawReader rawReader = reader.RawReader();
 
-            Status = (GridClientResponseStatus)reader.ReadInt();
-
-            ErrorMessage = reader.ReadString();
-
-            Result = reader.ReadObject<Object>();
+            SessionToken = rawReader.ReadByteArray();
+            Status = (GridClientResponseStatus)rawReader.ReadInt();
+            ErrorMessage = rawReader.ReadString();
+            Result = rawReader.ReadObject<Object>();
         }
     }
 }

@@ -36,14 +36,14 @@ namespace GridGain.Client.Impl.Message {
         {
             base.WritePortable(writer);
 
-            writer.WriteObject(Credentials);
+            writer.RawWriter().WriteObject(Credentials);
         }
 
         /** <inheritdoc /> */
         public override void ReadPortable(IGridClientPortableReader reader) {
             base.ReadPortable(reader);
 
-            Credentials = reader.ReadObject<Object>();
+            Credentials = reader.RawReader().ReadObject<Object>();
         }
     }
 }

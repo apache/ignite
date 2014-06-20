@@ -54,22 +54,26 @@ namespace GridGain.Client.Impl.Message {
         public override void WritePortable(IGridClientPortableWriter writer) {
             base.WritePortable(writer);
 
-            writer.WriteGuid(NodeId);
-            writer.WriteString(NodeIP);
+            IGridClientPortableRawWriter rawWriter = writer.RawWriter();
 
-            writer.WriteBoolean(IncludeMetrics);
-            writer.WriteBoolean(IncludeAttributes);
+            rawWriter.WriteGuid(NodeId);
+            rawWriter.WriteString(NodeIP);
+
+            rawWriter.WriteBoolean(IncludeMetrics);
+            rawWriter.WriteBoolean(IncludeAttributes);
         }
 
         /** <inheritdoc /> */
         public override void ReadPortable(IGridClientPortableReader reader) {
             base.ReadPortable(reader);
 
-            NodeId = reader.ReadGuid();
-            NodeIP = reader.ReadString();
+            IGridClientPortableRawReader rawReader = reader.RawReader();
 
-            IncludeMetrics = reader.ReadBoolean();
-            IncludeAttributes = reader.ReadBoolean();
+            NodeId = rawReader.ReadGuid();
+            NodeIP = rawReader.ReadString();
+
+            IncludeMetrics = rawReader.ReadBoolean();
+            IncludeAttributes = rawReader.ReadBoolean();
         }
     }
 }

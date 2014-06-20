@@ -21,97 +21,100 @@ namespace GridGain.Client.Impl.Portable
     static class GridClientPortableUilts
     {
         /** Type: boolean. */
-        public const int TYPE_BOOL = 1;
+        public const byte TYPE_BOOL = 1;
 
         /** Type: unsigned byte. */
-        public const int TYPE_BYTE = 2;
+        public const byte TYPE_BYTE = 2;
         
         /** Type: short. */
-        public const int TYPE_SHORT = 5;
+        public const byte TYPE_SHORT = 5;
 
         /** Type: int. */
-        public const int TYPE_INT = 7;
+        public const byte TYPE_INT = 7;
 
         /** Type: long. */
-        public const int TYPE_LONG = 9;
+        public const byte TYPE_LONG = 9;
 
         /** Type: char. */
-        public const int TYPE_CHAR = 10;
+        public const byte TYPE_CHAR = 10;
 
         /** Type: float. */
-        public const int TYPE_FLOAT = 11;
+        public const byte TYPE_FLOAT = 11;
 
         /** Type: double. */
-        public const int TYPE_DOUBLE = 12;
+        public const byte TYPE_DOUBLE = 12;
 
         /** Type: string. */
-        public const int TYPE_STRING = 13;
+        public const byte TYPE_STRING = 13;
 
         /** Type: GUID. */
-        public const int TYPE_GUID = 14;
+        public const byte TYPE_GUID = 14;
 
         /** Type: boolean array. */
-        public const int TYPE_ARRAY_BOOL = 101;
+        public const byte TYPE_ARRAY_BOOL = 15;
 
         /** Type: unsigned byte array. */
-        public const int TYPE_ARRAY_BYTE = 102;
+        public const byte TYPE_ARRAY_BYTE = 16;
 
         /** Type: short array. */
-        public const int TYPE_ARRAY_SHORT = 105;
+        public const byte TYPE_ARRAY_SHORT = 17;
 
         /** Type: int array. */
-        public const int TYPE_ARRAY_INT = 107;
+        public const byte TYPE_ARRAY_INT = 18;
 
         /** Type: long array. */
-        public const int TYPE_ARRAY_LONG = 109;
+        public const byte TYPE_ARRAY_LONG = 19;
 
         /** Type: char array. */
-        public const int TYPE_ARRAY_CHAR = 110;
+        public const byte TYPE_ARRAY_CHAR = 20;
 
         /** Type: float array. */
-        public const int TYPE_ARRAY_FLOAT = 111;
+        public const byte TYPE_ARRAY_FLOAT = 21;
 
         /** Type: double array. */
-        public const int TYPE_ARRAY_DOUBLE = 112;
+        public const byte TYPE_ARRAY_DOUBLE = 22;
 
         /** Type: string array. */
-        public const int TYPE_ARRAY_STRING = 113;
+        public const byte TYPE_ARRAY_STRING = 23;
 
         /** Type: GUID array. */
-        public const int TYPE_ARRAY_GUID = 114;
+        public const byte TYPE_ARRAY_GUID = 24;
 
         /** Type: object array. */
-        public const int TYPE_ARRAY = 200;
+        public const byte TYPE_ARRAY = 25;
 
         /** Type: collection. */
-        public const int TYPE_COLLECTION = 201;
+        public const byte TYPE_COLLECTION = 26;
 
         /** Type: map. */
-        public const int TYPE_MAP = 202;
+        public const byte TYPE_MAP = 27;
 
         /** Type: authentication request. */
-        public const int TYPE_AUTH_REQ = 300;
+        public const byte TYPE_AUTH_REQ = 100;
 
         /** Type: topology request. */
-        public const int TYPE_TOP_REQ = 301;
+        public const byte TYPE_TOP_REQ = 101;
 
         /** Type: task request. */
-        public const int TYPE_TASK_REQ = 302;
+        public const byte TYPE_TASK_REQ = 102;
 
         /** Type: cache request. */
-        public const int TYPE_CACHE_REQ = 303;
+        public const byte TYPE_CACHE_REQ = 103;
         
         /** Type: log request. */
-        public const int TYPE_LOG_REQ = 304;
+        public const byte TYPE_LOG_REQ = 104;
 
         /** Type: response. */
-        public const int TYPE_RESP = 305;
+        public const byte TYPE_RESP = 105;
 
         /** Type: node bean. */
-        public const int TYPE_NODE_BEAN = 306;
+        public const byte TYPE_NODE_BEAN = 106;
 
         /** Type: node metrics bean. */
-        public const int TYPE_NODE_METRICS_BEAN = 307;
+        public const byte TYPE_NODE_METRICS_BEAN = 107;
+
+        /** Type: task result bean. */
+        public const byte TYPE_TASK_RES_BEAN = 108;
 
         /** Byte "0". */
         public const byte BYTE_ZERO = (byte)0;
@@ -452,6 +455,16 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
+         * <summary>Read boolean.</summary>
+         * <param name="stream">Output stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static bool ReadBoolean(Stream stream)
+        {
+            return stream.ReadByte() == BYTE_ONE;
+        }
+
+        /**
          * <summary>Write boolean array.</summary>
          * <param name="vals">Value.</param>
          * <param name="stream">Output stream.</param>
@@ -464,8 +477,32 @@ namespace GridGain.Client.Impl.Portable
             {
                 stream.WriteByte(BYTE_ONE);
 
+                WriteInt(vals.Length, stream);
+
                 for (int i = 0; i < vals.Length; i++)
                     stream.WriteByte(vals[i] ? BYTE_ONE : BYTE_ZERO);
+            }
+        }
+
+        /**
+         * <summary>Read boolean array.</summary>
+         * <param name="stream">Output stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static bool[] ReadBooleanArray(Stream stream)
+        {
+            if (stream.ReadByte() == BYTE_ZERO)
+                return null;
+            else 
+            {                
+                bool[] vals = new bool[ReadInt(stream)];
+
+                for (int i = 0; i < vals.Length; i++)
+                {
+                    vals[i] = stream.ReadByte() == BYTE_ONE;
+                }
+
+                return vals;
             }
         }
 
@@ -557,6 +594,33 @@ namespace GridGain.Client.Impl.Portable
                 stream.WriteByte((byte)(val >> 16 & 0xFF));
                 stream.WriteByte((byte)(val >> 24 & 0xFF));
             }
+        }
+
+        /**
+         * <summary>Read int.</summary>
+         * <param name="stream">Output stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static int ReadInt(Stream stream)
+        {
+            int val = 0;
+
+            if (LITTLE_ENDIAN)
+            {                
+                val |= stream.ReadByte() << 24;
+                val |= stream.ReadByte() << 16;
+                val |= stream.ReadByte() << 8;
+                val |= stream.ReadByte();
+            }
+            else
+            {
+                val |= stream.ReadByte();
+                val |= stream.ReadByte() << 8;
+                val |= stream.ReadByte() << 16;
+                val |= stream.ReadByte() << 24;
+            }
+
+            return val;
         }
 
         /**

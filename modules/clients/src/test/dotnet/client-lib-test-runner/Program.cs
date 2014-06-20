@@ -15,6 +15,7 @@ namespace GridGain {
     using System.Diagnostics;
     using GridGain.Client;
     using GridGain.Client.Hasher;
+    using GridGain.Client.Portable;
     
     using Dbg = System.Diagnostics.Debug;
 
@@ -27,7 +28,9 @@ namespace GridGain {
 
             Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
 
-            TestAll();
+            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveInt());
+
+            //TestAll();
 
             //TestOne(new GridClientRouterTcpSslTest(), test => test.TestAffinity());
             //TestOne(new GridClientRouterTcpSslTest(), test => test.TestAppendPrepend());
@@ -50,6 +53,20 @@ namespace GridGain {
             //TestOne(new GridClientRouterTcpSslTest(), test => test.TestPutAllSync());
             //TestOne(new GridClientRouterTcpSslTest(), test => test.TestPutAsync());
             //TestOne(new GridClientTcpTest(), test => test.TestPutSync());
+        }
+
+        private static void Test<T>(T test, Action<T> job) where T : GridClientAbstractTest
+        {
+            test.InitClient();
+
+            try
+            {
+                job(test);
+            }
+            finally
+            {
+                test.StopClient();
+            }
         }
 
         private static void TestOne(GridClientAbstractTest test, Action<GridClientAbstractTest> job) {

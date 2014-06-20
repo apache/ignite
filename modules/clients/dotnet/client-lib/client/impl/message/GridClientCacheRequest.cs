@@ -107,34 +107,38 @@ namespace GridGain.Client.Impl.Message {
         public override void WritePortable(IGridClientPortableWriter writer) {
             base.WritePortable(writer);
 
-            writer.WriteInt((int)Operation);
+            IGridClientPortableRawWriter rawWriter = writer.RawWriter();
 
-            writer.WriteString(CacheName);
+            rawWriter.WriteInt((int)Operation);
 
-            writer.WriteObject(Key);
-            writer.WriteObject(Value);
-            writer.WriteObject(Value2);
+            rawWriter.WriteString(CacheName);
 
-            writer.WriteMap(Values);
+            rawWriter.WriteObject(Key);
+            rawWriter.WriteObject(Value);
+            rawWriter.WriteObject(Value2);
 
-            writer.WriteInt(CacheFlags);
+            rawWriter.WriteMap(Values);
+
+            rawWriter.WriteInt(CacheFlags);
         }
 
         /** <inheritdoc /> */
         public override void ReadPortable(IGridClientPortableReader reader) {
             base.ReadPortable(reader);
 
-            Operation = (GridClientCacheRequestOperation)reader.ReadInt();
+            IGridClientPortableRawReader rawReader = reader.RawReader();
 
-            CacheName = reader.ReadString();
+            Operation = (GridClientCacheRequestOperation)rawReader.ReadInt();
 
-            Key = reader.ReadObject<Object>();
-            Value = reader.ReadObject<Object>();
-            Value2 = reader.ReadObject<Object>();
+            CacheName = rawReader.ReadString();
 
-            Values = reader.ReadMap<Object, Object>();
+            Key = rawReader.ReadObject<Object>();
+            Value = rawReader.ReadObject<Object>();
+            Value2 = rawReader.ReadObject<Object>();
 
-            CacheFlags = reader.ReadInt();
+            Values = rawReader.ReadMap<Object, Object>();
+
+            CacheFlags = rawReader.ReadInt();
         }
     }
 }

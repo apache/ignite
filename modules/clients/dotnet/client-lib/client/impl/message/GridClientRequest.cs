@@ -57,12 +57,12 @@ namespace GridGain.Client.Impl.Message {
 
         /** <inheritdoc /> */
         public virtual void WritePortable(IGridClientPortableWriter writer) {
-            writer.WriteByteArray(SessionToken);
+            writer.RawWriter().WriteByteArray(SessionToken);
         }
 
         /** <inheritdoc /> */
         public virtual void ReadPortable(IGridClientPortableReader reader) {
-            SessionToken = reader.ReadByteArray();
+            SessionToken = reader.RawReader().ReadByteArray();
         }
     }
 }

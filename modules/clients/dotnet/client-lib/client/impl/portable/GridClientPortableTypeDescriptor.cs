@@ -18,7 +18,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="mapper">Mapper.</param>
          * <param name="serializer">Serializer</param>
          */
-        public GridClientPortableTypeDescriptor(int typeId, bool userType, GridClientPortableIdMapper mapper, IGridClientPortableSerializer serializer)
+        public GridClientPortableTypeDescriptor(int typeId, bool userType, GridClientPortableIdResolver mapper, IGridClientPortableSerializer serializer)
         {
             TypeId = typeId;
             UserType = userType;
@@ -47,7 +47,7 @@ namespace GridGain.Client.Impl.Portable
         /**
          * <summary>Mapper.</summary>
          */
-        public GridClientPortableIdMapper Mapper
+        public GridClientPortableIdResolver Mapper
         {
             get;
             private set;

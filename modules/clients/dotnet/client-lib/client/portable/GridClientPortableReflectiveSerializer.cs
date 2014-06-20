@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client.Impl.Portable
+namespace GridGain.Client.Portable
 {
     using System;
     using System.Collections;
@@ -20,10 +20,11 @@ namespace GridGain.Client.Impl.Portable
     /**
      * <summary>Serializer which reflectively writes all fields except of transient ones.</summary>
      */ 
-    class GridClientPortableReflectingSerializer : IGridClientPortableSerializer
+    class GridClientPortableReflectiveSerializer : IGridClientPortableSerializer
     {
         /** Cached binding flags. */
-        private static readonly BindingFlags FLAGS = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+        private static readonly BindingFlags FLAGS = BindingFlags.Instance | BindingFlags.Public | 
+            BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
 
         /** Collection type. */
         private static readonly Type TYP_COLLECTION = typeof(ICollection);
@@ -43,14 +44,25 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public void WritePortable(object obj, IGridClientPortableWriter writer)
         {
-            Type type = obj.GetType();
+            if (obj is IGridClientPortable)
+            {
+                IGridClientPortable obj0 = (IGridClientPortable)obj;
 
-            Descriptor desc = types[type];
+                obj0.WritePortable(writer);
+            }
+            else
+            {
 
-            if (desc == null)
-                throw new GridClientPortableException("Type is not registered in reflecting serializer: " + type.Name);
+                Type type = obj.GetType();
 
-            desc.Write(obj, writer);
+                Descriptor desc = types[type];
+
+                if (desc == null)
+                    throw new GridClientPortableException("Type is not registered in reflecting serializer: " + 
+                        type.Name);
+
+                desc.Write(obj, writer);
+            }
         }
 
         /** <inheritdoc /> */
@@ -65,8 +77,11 @@ namespace GridGain.Client.Impl.Portable
          * <param name="typeId">Type ID.</param>
          * <param name="idMapper">ID mapper.</param>
          */
-        public void Register(Type type, int typeId, GridClientPortableIdMapper idMapper)
+        public void Register(Type type, int typeId, GridClientPortableIdResolver idMapper)
         {
+            if (type.GetInterface(typeof(IGridClientPortable).Name) != null)
+                return;
+
             List<FieldInfo> fields = new List<FieldInfo>();
 
             Type curType = type;
@@ -120,7 +135,8 @@ namespace GridGain.Client.Impl.Portable
         private class Descriptor
         {
             /** Actions to be performed. */
-            private readonly ICollection<Action<Object, IGridClientPortableWriter>> actions = new List<Action<Object, IGridClientPortableWriter>>();
+            private readonly ICollection<Action<Object, IGridClientPortableWriter>> actions = 
+                new List<Action<Object, IGridClientPortableWriter>>();
 
             /**
              * <summary>Constructor.</summary>
@@ -133,7 +149,7 @@ namespace GridGain.Client.Impl.Portable
                 foreach (FieldInfo field in fields)
                 {
                     Type type = field.FieldType;
-                    string name = field.Name.ToLower();
+                    string name = field.Name;
 
                     if (type.IsPrimitive)
                         HandlePrimitive(field, type, name, actions);
@@ -193,7 +209,8 @@ namespace GridGain.Client.Impl.Portable
              * <param name="name">Field name.</param>
              * <param name="actions">Actions.</param>
              */
-            private void HandlePrimitive(FieldInfo field, Type type, string name, ICollection<Action<Object, IGridClientPortableWriter>> actions)
+            private void HandlePrimitive(FieldInfo field, Type type, string name, 
+                ICollection<Action<Object, IGridClientPortableWriter>> actions)
             {
                 unchecked
                 {
@@ -223,14 +240,16 @@ namespace GridGain.Client.Impl.Portable
              * <param name="name">Field name.</param>
              * <param name="actions">Actions.</param>
              */
-            private void HandleArray(FieldInfo field, Type type, string name, ICollection<Action<Object, IGridClientPortableWriter>> actions)
+            private void HandleArray(FieldInfo field, Type type, string name, 
+                ICollection<Action<Object, IGridClientPortableWriter>> actions)
             {
                 unchecked
                 {
                     Type elemType = type.GetElementType();
 
                     if (elemType == typeof(Boolean))
-                        actions.Add((obj, writer) => { writer.WriteBooleanArray(name, (Boolean[])field.GetValue(obj)); });
+                        actions.Add((obj, writer) => { writer.WriteBooleanArray(name, 
+                            (Boolean[])field.GetValue(obj)); });
                     else if (elemType == typeof(Byte) || elemType == typeof(SByte))
                         actions.Add((obj, writer) => { writer.WriteByteArray(name, (Byte[])field.GetValue(obj)); });
                     else if (elemType == typeof(Int16) || elemType == typeof(UInt16))
@@ -242,11 +261,14 @@ namespace GridGain.Client.Impl.Portable
                     else if (elemType == typeof(Char))
                         actions.Add((obj, writer) => { writer.WriteCharArray(name, (Char[])field.GetValue(obj)); });
                     else if (elemType == typeof(Single))
-                        actions.Add((obj, writer) => { writer.WriteFloatArray(name, (Single[])field.GetValue(obj)); });
+                        actions.Add((obj, writer) => { writer.WriteFloatArray(name, 
+                            (Single[])field.GetValue(obj)); });
                     else if (elemType == typeof(Double))
-                        actions.Add((obj, writer) => { writer.WriteDoubleArray(name, (Double[])field.GetValue(obj)); });
+                        actions.Add((obj, writer) => { writer.WriteDoubleArray(name, 
+                            (Double[])field.GetValue(obj)); });
                     else if (elemType == typeof(String))
-                        actions.Add((obj, writer) => { writer.WriteStringArray(name, (String[])field.GetValue(obj)); });
+                        actions.Add((obj, writer) => { writer.WriteStringArray(name, 
+                            (String[])field.GetValue(obj)); });
                     else if (elemType == typeof(Guid))
                         actions.Add((obj, writer) => { writer.WriteGuidArray(name, (Guid[])field.GetValue(obj)); });
                     else if (elemType == typeof(Enum))
@@ -270,7 +292,8 @@ namespace GridGain.Client.Impl.Portable
              * <param name="name">Field name.</param>
              * <param name="actions">Actions.</param>
              */
-            private void HandleGeneric(FieldInfo field, Type type, string name, ICollection<Action<Object, IGridClientPortableWriter>> actions)
+            private void HandleGeneric(FieldInfo field, Type type, string name, 
+                ICollection<Action<Object, IGridClientPortableWriter>> actions)
             {
                 if (type.IsGenericType && type.GetInterface(TYP_GENERIC_DICTIONARY.Name) != null)
                 {

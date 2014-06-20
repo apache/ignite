@@ -11,7 +11,10 @@ namespace GridGain.Client.Impl.Message {
     using System;
     using GridGain.Client.Portable;
 
+    using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
+
     /** <summary>Task result.</summary> */
+    [GridClientPortableId(PU.TYPE_TASK_RES_BEAN)]
     internal class GridClientTaskResultBean : IGridClientPortable {
         /** <summary>Synthetic ID containing task ID and result holding node ID.</summary> */
         public String TaskId {
@@ -40,19 +43,23 @@ namespace GridGain.Client.Impl.Message {
         /** <inheritdoc /> */
         public void WritePortable(IGridClientPortableWriter writer)
         {
-            writer.WriteString("id", TaskId);
-            writer.WriteBoolean("finished", IsFinished);
-            writer.WriteObject("res", Result);
-            writer.WriteString("error", Error);
+            IGridClientPortableRawWriter rawWriter = writer.RawWriter();
+
+            rawWriter.WriteString(TaskId);
+            rawWriter.WriteBoolean(IsFinished);
+            rawWriter.WriteObject(Result);
+            rawWriter.WriteString(Error);
         }
 
         /** <inheritdoc /> */
         public void ReadPortable(IGridClientPortableReader reader)
         {
-            TaskId = reader.ReadString("id");
-            IsFinished = reader.ReadBoolean("finished");
-            Result = reader.ReadObject<Object>("res");
-            Error = reader.ReadString("error");
+            IGridClientPortableRawReader rawReader = reader.RawReader();
+
+            TaskId = rawReader.ReadString();
+            IsFinished = rawReader.ReadBoolean();
+            Result = rawReader.ReadObject<Object>();
+            Error = rawReader.ReadString();
         }
     }
 }

@@ -1050,7 +1050,7 @@ namespace GridGain.Client.Impl {
 
                     U.ReadFully(inStream, msgBytes, 0, msgBytes.Length);
 
-                    GridClientResponse msg = marshaller.Unmarshal<GridClientResponse>(msgBytes);
+                    GridClientResponse msg = marshaller.Unmarshal(msgBytes).Deserialize<GridClientResponse>();
 
                     msg.RequestId = reqId;
                     msg.ClientId = clientId;

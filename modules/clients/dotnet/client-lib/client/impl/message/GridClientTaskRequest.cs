@@ -42,18 +42,20 @@ namespace GridGain.Client.Impl.Message {
         public override void WritePortable(IGridClientPortableWriter writer) {
             base.WritePortable(writer);
 
-            writer.WriteString(TaskName);
+            IGridClientPortableRawWriter rawWriter = writer.RawWriter();
 
-            writer.WriteObject(Argument);
+            rawWriter.WriteString(TaskName);
+            rawWriter.WriteObject(Argument);
         }
 
         /** <inheritdoc /> */
         public override void ReadPortable(IGridClientPortableReader reader) {
             base.ReadPortable(reader);
 
-            TaskName = reader.ReadString();
+            IGridClientPortableRawReader rawReader = reader.RawReader();
 
-            Argument = reader.ReadObject<Object>();
+            TaskName = rawReader.ReadString();
+            Argument = rawReader.ReadObject<Object>();
         }
     }
 }

@@ -51,20 +51,22 @@ namespace GridGain.Client.Impl.Message {
         public override void WritePortable(IGridClientPortableWriter writer) {
             base.WritePortable(writer);
 
-            writer.WriteString(Path);
+            IGridClientPortableRawWriter rawWriter = writer.RawWriter();
 
-            writer.WriteInt(From);
-            writer.WriteInt(To);
+            rawWriter.WriteString(Path);
+            rawWriter.WriteInt(From);
+            rawWriter.WriteInt(To);
         }
 
         /** <inheritdoc /> */
         public override void ReadPortable(IGridClientPortableReader reader) {
             base.ReadPortable(reader);
 
-            Path = reader.ReadString();
+            IGridClientPortableRawReader rawReader = reader.RawReader();
 
-            From = reader.ReadInt();
-            To = reader.ReadInt();
+            Path = rawReader.ReadString();
+            From = rawReader.ReadInt();
+            To = rawReader.ReadInt();
         }
     }
 }

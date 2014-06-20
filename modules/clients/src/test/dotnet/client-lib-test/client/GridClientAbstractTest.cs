@@ -77,10 +77,16 @@ namespace GridGain.Client {
          *
          * <returns>SSL context used in tests or null to disable SSL.</returns>
          */
-        abstract protected IGridClientSslContext SslContext();
+        virtual protected IGridClientSslContext SslContext()
+        {
+            return null;
+        }
 
         /** <summary>Server address "host:port" to which client should connect.</summary> */
-        abstract protected String ServerAddress();
+        virtual protected String ServerAddress()
+        {
+            return null;
+        }
 
         /** <summary>Router address "host:port" to which client should connect.</summary> */
         virtual protected String RouterAddress() {
@@ -108,7 +114,7 @@ namespace GridGain.Client {
         }
 
         [TestFixtureSetUp]
-        public void InitClient() {
+        public virtual void InitClient() {
             // Bypass all certificates.
             System.Net.ServicePointManager.ServerCertificateValidationCallback = (sender, cert, chain, error) => true;
 
@@ -123,7 +129,7 @@ namespace GridGain.Client {
         }
 
         [TestFixtureTearDown]
-        public void StopClient() {
+        public virtual void StopClient() {
             lock (this) {
                 if (client != null)
                     GridClientFactory.Stop(client.Id);

@@ -26,11 +26,11 @@ namespace GridGain.Client.Portable
 
         /**
          * <summary>Constructor.</summary>
-         * <param name="className">Class name.</param>
-         */ 
-        public GridClientPortableTypeConfiguration(string className)
+         * <param name="typeName">Type name.</param>
+         */
+        public GridClientPortableTypeConfiguration(string typeName)
         {
-            ClassName = className;
+            TypeName = typeName;
         }
 
         /**
@@ -39,15 +39,15 @@ namespace GridGain.Client.Portable
          */
         public GridClientPortableTypeConfiguration(GridClientPortableTypeConfiguration cfg)
         {
-            ClassName = cfg.ClassName;
+            TypeName = cfg.TypeName;
             IdMapper = cfg.IdMapper;
             Serializer = cfg.Serializer;
         }
 
         /**
-         * <summary>Fully qualified class name.</summary>
+         * <summary>Fully qualified type name.</summary>
          */
-        public string ClassName
+        public string TypeName
         {
             get;
             set;
@@ -59,7 +59,7 @@ namespace GridGain.Client.Portable
          * (GridClientPortableFieldIdAttribute) will be checked in class through reflection. If required
          * attribute is not set, then ID will be hash code of the class (field) simple name in lower case.</summary>
          */
-        public GridClientPortableIdMapper IdMapper
+        public GridClientPortableIdResolver IdMapper
         {
             get;
             set;
@@ -80,7 +80,7 @@ namespace GridGain.Client.Portable
         /** {@inheritDoc} */
         override public String ToString()
         {
-            return typeof(GridClientPortableTypeConfiguration).Name + " [className=" + ClassName +
+            return typeof(GridClientPortableTypeConfiguration).Name + " [typeName=" + TypeName +
                 ", IdMapper=" + IdMapper + ", Serializer=" + Serializer + ']';
         }
     }
