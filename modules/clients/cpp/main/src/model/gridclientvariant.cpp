@@ -17,97 +17,239 @@
 
 using namespace std;
 
-GridClientVariant::GridClientVariant() : portable(nullptr), hashablePortable(false) {
-    pimpl.var = NullType();
+GridClientVariant::GridClientVariant() : type(NULL_TYPE) {
 }
 
-GridClientVariant::~GridClientVariant(){
+GridClientVariant::~GridClientVariant() {
+    clear();
 }
 
-GridClientVariant::GridClientVariant(const GridClientVariant& other) : pimpl(other.pimpl), portable(other.portable), hashablePortable(other.hashablePortable){
+GridClientVariant::GridClientVariant(const GridClientVariant& other) {
+    copy(other);
 }
 
-GridClientVariant& GridClientVariant::operator=(const GridClientVariant& rhs) {
-    if (this != &rhs) {
-        pimpl.var = rhs.pimpl.var;
-        portable = rhs.portable;
-        hashablePortable = rhs.hashablePortable;
+GridClientVariant& GridClientVariant::operator=(const GridClientVariant& other) {
+    if (this != &other) {
+        clear();
+
+        copy(other);
     }
 
     return *this;
 }
 
-GridClientVariant::GridClientVariant(bool b) {
-    set(b);
+void GridClientVariant::copy(const GridClientVariant& other) {
+    this->type = other.type;
+
+    switch(other.type) {
+        case NULL_TYPE:
+            break;
+
+        case BYTE_TYPE:
+        case SHORT_TYPE:
+        case INT_TYPE:
+        case LONG_TYPE:
+        case FLOAT_TYPE:
+        case DOUBLE_TYPE:
+        case CHAR_TYPE:
+        case BOOL_TYPE:
+        case PORTABLE_TYPE:
+        case HASHABLE_PORTABLE_TYPE:
+            data = other.data;
+
+            break;
+
+        case STRING_TYPE:
+            data.strVal = new string(*other.data.strVal);
+
+            break;
+
+        case WIDE_STRING_TYPE:
+            data.wideStrVal = new wstring(*other.data.wideStrVal);
+
+            break;
+
+        case UUID_TYPE:
+            data.uuidVal = new GridClientUuid(*other.data.uuidVal);
+
+            break;
+
+        case PORTABLE_OBJ_TYPE:
+            data.portableObjVal = new GridPortableObject(*other.data.portableObjVal);
+
+            break;
+
+        case BYTE_ARR_TYPE:
+            data.byteArrVal = new vector<int8_t>(*other.data.byteArrVal);
+
+            break;
+
+        case SHORT_ARR_TYPE:
+            data.shortArrVal = new vector<int16_t>(*other.data.shortArrVal);
+
+            break;
+
+        case INT_ARR_TYPE:
+            data.intArrVal = new vector<int32_t>(*other.data.intArrVal);
+
+            break;
+
+        case LONG_ARR_TYPE:
+            data.longArrVal = new vector<int64_t>(*other.data.longArrVal);
+
+            break;
+
+        case FLOAT_ARR_TYPE:
+            data.floatArrVal = new vector<float>(*other.data.floatArrVal);
+
+            break;
+
+        case DOUBLE_ARR_TYPE:
+            data.doubleArrVal = new vector<double>(*other.data.doubleArrVal);
+
+            break;
+
+        case CHAR_ARR_TYPE:
+            data.charArrVal = new vector<uint16_t>(*other.data.charArrVal);
+
+            break;
+
+        case BOOL_ARR_TYPE:
+            data.boolArrVal = new vector<bool>(*other.data.boolArrVal);
+
+            break;
+
+        case STRING_ARR_TYPE:
+            data.strArrVal = new vector<string>(*other.data.strArrVal);
+
+            break;
+
+        case UUID_ARR_TYPE:
+            data.uuidArrVal = new vector<GridClientUuid>(*other.data.uuidArrVal);
+
+            break;
+
+        case VARIANT_ARR_TYPE:
+            data.variantArr = new TGridClientVariantSet(*other.data.variantArr);
+
+            break;
+
+        case VARIANT_MAP_TYPE:
+            data.variantMap = new TGridClientVariantMap(*other.data.variantMap);
+
+            break;
+
+        default:
+            assert(false);
+    }
 }
 
-GridClientVariant::GridClientVariant(int16_t s) {
-    set(s);
+GridClientVariant::GridClientVariant(bool val) : type(BOOL_TYPE) {
+    data.boolVal = val;
 }
 
-GridClientVariant::GridClientVariant(int32_t i) {
-    set(i);
+GridClientVariant::GridClientVariant(int16_t val) : type(SHORT_TYPE) {
+    data.shortVal = val;
 }
 
-GridClientVariant::GridClientVariant(int64_t l) {
-    set(l);
+GridClientVariant::GridClientVariant(int8_t val) : type(BYTE_TYPE) {
+    data.byteVal = val;
 }
 
-GridClientVariant::GridClientVariant(double d) {
-    set(d);
+GridClientVariant::GridClientVariant(uint16_t val) : type(CHAR_TYPE) {
+    data.charVal = val;
 }
 
-GridClientVariant::GridClientVariant(float f) {
-    set(f);
+GridClientVariant::GridClientVariant(int32_t val) : type(INT_TYPE) {
+    data.intVal = val;
 }
 
-GridClientVariant::GridClientVariant(const char * s) {
-    set(std::string(s));
+GridClientVariant::GridClientVariant(int64_t val) : type(LONG_TYPE) {
+    data.longVal = val;
 }
 
-GridClientVariant::GridClientVariant(const string& s) {
-    set(s);
+GridClientVariant::GridClientVariant(double val)  : type(DOUBLE_TYPE) {
+    data.doubleVal = val;
 }
 
-GridClientVariant::GridClientVariant(const std::wstring& s) {
-    pimpl.var = s;
-    resetPortable();
+GridClientVariant::GridClientVariant(float val)  : type(FLOAT_TYPE) {
+    data.floatVal = val;
 }
 
-GridClientVariant::GridClientVariant(const vector<int8_t>& b) {
-    pimpl.var = b;
-    resetPortable();
+GridClientVariant::GridClientVariant(const char* val) : type(STRING_TYPE) {
+    data.strVal = new string(val);
 }
 
-GridClientVariant::GridClientVariant(const boost::unordered_map<GridClientVariant, GridClientVariant>& m) {
-    pimpl.var = m;
-    resetPortable();
+GridClientVariant::GridClientVariant(const string& val) : type(STRING_TYPE) {
+    data.strVal = new string(val);
 }
 
-GridClientVariant::GridClientVariant(const std::vector<GridClientVariant>& v)  {
-    pimpl.var = v;
-    resetPortable();
+GridClientVariant::GridClientVariant(const std::wstring& val) : type(WIDE_STRING_TYPE) {
+    data.wideStrVal = new wstring(val);
 }
 
-GridClientVariant::GridClientVariant(GridPortable* v)  {
-    pimpl.var = NullType();
-    portable = v;
-    hashablePortable = false;
+GridClientVariant::GridClientVariant(const vector<bool>& val) : type(BOOL_ARR_TYPE) {
+    data.boolArrVal = new vector<bool>(val);
 }
 
-GridClientVariant::GridClientVariant(GridHashablePortable* v) {
-    pimpl.var = NullType();
-    portable = v;
-    hashablePortable = true;
+GridClientVariant::GridClientVariant(const vector<int16_t>& val) : type(SHORT_ARR_TYPE) {
+    data.shortArrVal = new vector<int16_t>(val);
+}
+
+GridClientVariant::GridClientVariant(const vector<int8_t>& val) : type(BYTE_ARR_TYPE) {
+    data.byteArrVal = new vector<int8_t>(val);
+}
+
+GridClientVariant::GridClientVariant(const vector<uint16_t>& val) : type(CHAR_ARR_TYPE) {
+    data.charArrVal = new vector<uint16_t>(val);
+}
+
+GridClientVariant::GridClientVariant(const vector<int32_t>& val) : type(INT_ARR_TYPE) {
+    data.intArrVal = new vector<int32_t>(val);
+}
+
+GridClientVariant::GridClientVariant(const vector<int64_t>& val) : type(LONG_ARR_TYPE) {
+    data.longArrVal = new vector<int64_t>(val);
+}
+
+GridClientVariant::GridClientVariant(const vector<float>& val) : type(FLOAT_ARR_TYPE) {
+    data.floatArrVal = new vector<float>(val);
+}
+
+GridClientVariant::GridClientVariant(const vector<double>& val) : type(DOUBLE_ARR_TYPE) {
+    data.doubleArrVal = new vector<double>(val);
+}
+
+GridClientVariant::GridClientVariant(const vector<string>& val) : type(STRING_ARR_TYPE) {
+    data.strArrVal = new vector<string>(val);
+}
+
+GridClientVariant::GridClientVariant(const vector<GridClientUuid>& val) : type(UUID_ARR_TYPE) {
+    data.uuidArrVal = new vector<GridClientUuid>(val);
+}
+
+GridClientVariant::GridClientVariant(const TGridClientVariantMap& val) : type(VARIANT_MAP_TYPE) {
+    data.variantMapVal = new TGridClientVariantMap(val);
+}
+
+GridClientVariant::GridClientVariant(const TGridClientVariantSet& val) : type(VARIANT_ARR_TYPE) {
+    data.variantArrVal = new TGridClientVariantSet(val);
+}
+
+GridClientVariant::GridClientVariant(GridPortable* val)  : type(PORTABLE_TYPE) {
+    data.portableVal = val;
+}
+
+GridClientVariant::GridClientVariant(GridHashablePortable* val) : type(HASHABLE_PORTABLE_TYPE) {
+    data.hashPortableVal = val;
+}
+
+GridClientVariant::GridClientVariant(const GridPortableObject& val) : type(PORTABLE_OBJ_TYPE) {
+    data.portableObjVal = new GridPortableObject(val);
 }
 
 GridClientVariant::GridClientVariant(const GridClientUuid& val)  {
     set(val);
-}
-
-void GridClientVariant::resetPortable() {
-    portable = nullptr;
-    hashablePortable = false;
 }
 
 void GridClientVariant::set(GridPortable* val) {
@@ -256,11 +398,11 @@ bool GridClientVariant::hasVariantMap() const {
 }
 
 std::vector<GridClientVariant> GridClientVariant::getVariantVector() const {
-    return boost::get<std::vector<GridClientVariant> >(pimpl.var);
+    return boost::get<std::vector<GridClientVariant>>(pimpl.var);
 }
 
 boost::unordered_map<GridClientVariant, GridClientVariant> GridClientVariant::getVariantMap() const {
-    return boost::get<boost::unordered_map<GridClientVariant, GridClientVariant> >(pimpl.var);
+    return boost::get<boost::unordered_map<GridClientVariant, GridClientVariant>>(pimpl.var);
 }
 
 void GridClientVariant::set(const GridClientUuid& val) {
@@ -281,6 +423,30 @@ GridPortable* GridClientVariant::getPortable() const {
         throw std::exception("GridClientVariant does not hold GridPortable.");
 
     return portable;
+}
+
+bool GridClientVariant::hasByte() const {
+    return false; // TODO
+}
+
+int8_t GridClientVariant::getByte() const {
+    return 0; // TODO
+}
+
+void GridClientVariant::set(int8_t val) {
+    // TODO
+}
+
+bool GridClientVariant::hasChar() const {
+    return false; //  TODO
+}
+
+uint16_t GridClientVariant::getChar() const {
+    return 0; // TODO
+}
+
+void GridClientVariant::set(uint16_t val) {
+    // TODO
 }
 
 int32_t GridClientVariant::hashCode() const {

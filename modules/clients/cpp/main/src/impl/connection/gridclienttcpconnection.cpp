@@ -264,7 +264,7 @@ void GridClientSyncTcpConnection::authenticate(const string& clientId, const str
     GridClientTcpPacket tcpPacket;
     GridClientTcpPacket tcpResponse;
 
-    GridPortableMarshaller marsh;
+    GridPortableMarshaller marsh(true); // TODO 8536
 
     vector<int8_t> data = marsh.marshal(msg);
 
@@ -764,7 +764,7 @@ void GridClientRawSyncTcpConnection::authenticate(const string& clientId, const 
     GridClientTcpPacket tcpPacket;
     GridClientTcpPacket tcpResponse;
 
-    GridPortableMarshaller marsh;
+    GridPortableMarshaller marsh(true); // TODO 8536
 
     vector<int8_t> data = marsh.marshal(msg);
 

@@ -541,7 +541,7 @@ TestPortable1 createTestPortable1(int32_t arraysSize) {
     p.vFloat = 1.5;
     p.vFloatArray = new float[arraysSize];
     for (int i = 0; i < arraysSize; i++)
-        p.vFloatArray[i] = i % 2 == 0 ? 1.5 : -1.5;            
+        p.vFloatArray[i] = i % 2 == 0 ? 1.5f : -1.5f;            
     p.vFloatVector = vector<float>(arraysSize, -1);
 
     p.vDouble = 1.5;
@@ -662,7 +662,7 @@ void validateTestPortable1(TestPortable1 p, int32_t arraysSize) {
 }
 
 void testTestPortable1Marshalling(bool rawMarshalling, int32_t arraysSize) {
-    GridPortableMarshaller marsh;
+    GridPortableMarshaller marsh(true);
 
     TestPortable1 p = createTestPortable1(arraysSize);
 
@@ -736,7 +736,7 @@ public:
 REGISTER_TYPE(401, TestPortableCycle2);
 
 BOOST_AUTO_TEST_CASE(testPortableSerialization_cycle) {
-    GridPortableMarshaller marsh;
+    GridPortableMarshaller marsh(true);
 
     TestPortableCycle1* p1 = new TestPortableCycle1();
     
@@ -847,7 +847,7 @@ REGISTER_TYPE(500, TestPortableCustom);
 void testCustomSerialization(bool rawMarshalling) {
     TestPortableCustom::rawMarshalling = rawMarshalling;
 
-    GridPortableMarshaller marsh;
+    GridPortableMarshaller marsh(true);
 
     for (int i = 0; i < 3; i++) {
         vector<int8_t> bytes;
@@ -868,6 +868,72 @@ BOOST_AUTO_TEST_CASE(testPortableSerialization_custom) {
     testCustomSerialization(false);
 
     testCustomSerialization(true);
+}
+
+class TestPortableInvalid : public GridPortable {
+public:
+    TestPortableInvalid() : invalidWrite(false) {
+    }
+    
+    TestPortableInvalid(bool invalidWrite, int32_t val1, int32_t val2) : invalidWrite(invalidWrite), val1(val1), val2(val2) {
+    }
+    
+    int32_t typeId() const override {
+        return 600;
+    }
+
+    void writePortable(GridPortableWriter& writer) const override {
+        if (invalidWrite) {
+            writer.writeInt32(val1);
+
+            writer.writeInt32("named", val2); // Try write named field after raw.
+        }
+        else {
+            writer.writeInt32("named", val2);
+
+            writer.writeInt32(val1);
+        }
+    }
+
+    void readPortable(GridPortableReader& reader) override {
+        val1 = reader.readInt32();
+
+        val2 = reader.readInt32("named");
+    }
+
+    bool invalidWrite;
+
+    int32_t val1;
+
+    int32_t val2;
+};
+
+REGISTER_TYPE(600, TestPortableInvalid);
+
+BOOST_AUTO_TEST_CASE(testPortableSerialization_invalid) {
+    GridPortableMarshaller marsh(false);
+
+    TestPortableInvalid invalid(true, 100, 200);
+
+    try {
+        cout << "Try marshal.\n";
+
+        marsh.marshal(invalid);
+
+        BOOST_FAIL("Exception must be thrown");
+    }
+    catch (GridClientPortableException e) {
+        cout << "expected exception " << e.what() << "\n";
+    }
+
+    TestPortableInvalid valid(false, 100, 200);
+
+    vector<int8_t> bytes = marsh.marshal(valid);
+
+    unique_ptr<TestPortableInvalid> p(marsh.unmarshal<TestPortableInvalid>(bytes));
+    
+    BOOST_REQUIRE_EQUAL(100, (*p).val1);
+    BOOST_REQUIRE_EQUAL(200, (*p).val2);
 }
 
 BOOST_AUTO_TEST_CASE(testVariantMap) {
@@ -1180,7 +1246,7 @@ BOOST_AUTO_TEST_CASE(testExternalPortableCache) {
 }
 
 BOOST_AUTO_TEST_CASE(testPortableSerialization) {
-    GridPortableMarshaller marsh;
+    GridPortableMarshaller marsh(true);
 
     PortablePerson p(-10, "ABC");
 
@@ -1197,7 +1263,7 @@ BOOST_AUTO_TEST_CASE(testPortableSerialization) {
 }
 
 BOOST_AUTO_TEST_CASE(testExternalSerialization) {
-    GridPortableMarshaller marsh;
+    GridPortableMarshaller marsh(true);
 
     Person person(20, "abc");
 
