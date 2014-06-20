@@ -744,6 +744,9 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
      * Age-based projection.
      */
     private static class AgeProjection extends GridProjectionAdapter {
+        /** Serialization version. */
+        private static final long serialVersionUID = 0L;
+
         /** Oldest flag. */
         private boolean isOldest;
 
