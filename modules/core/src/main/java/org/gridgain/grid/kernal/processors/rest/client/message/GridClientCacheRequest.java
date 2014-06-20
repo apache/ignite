@@ -252,9 +252,9 @@ public class GridClientCacheRequest<K, V> extends GridClientAbstractMessage {
 
         cacheName = reader.readString("cacheName");
 
-        key = reader.readObject("key");
-        val = reader.readObject("val");
-        val2 = reader.readObject("val2");
+        key = (K)reader.readObject("key");
+        val = (V)reader.readObject("val");
+        val2 = (V)reader.readObject("val2");
 
         vals = reader.readMap("vals");
 

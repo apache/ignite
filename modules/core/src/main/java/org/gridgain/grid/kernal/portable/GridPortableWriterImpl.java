@@ -775,7 +775,7 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
         if (!allowFields)
             throw new GridPortableException("Fields are not allowed."); // TODO: proper message
 
-        doWriteInt(fieldName.hashCode());
+        doWriteInt(fieldName.hashCode()); // TODO: take from mapper.
     }
 
     /** */

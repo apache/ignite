@@ -51,23 +51,8 @@ class GridPortableObjectImpl implements GridPortableObject {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String typeName() {
-        return null; // TODO: implement.
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<String> fields() {
-        return null; // TODO: implement.
-    }
-
-    /** {@inheritDoc} */
     @Override public int fieldTypeId(String fieldName) {
         return 0; // TODO: implement.
-    }
-
-    /** {@inheritDoc} */
-    @Override public String fieldTypeName(String fieldName) {
-        return null; // TODO: implement.
     }
 
     /** {@inheritDoc} */

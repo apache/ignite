@@ -53,9 +53,6 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     private static final GridPortablePrimitives PRIM = GridPortablePrimitives.get();
 
     /** */
-    private static final int INIT_RAW_OFF = 6;
-
-    /** */
     private final Map<Integer, Integer> fieldsOffs = new HashMap<>();
 
     /** */
@@ -65,31 +62,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     private int off;
 
     /** */
-    private int rawOff = INIT_RAW_OFF;
+    private int rawOff;
 
     /**
      * @param arr Array.
      */
     GridPortableReaderImpl(byte[] arr) {
         this.arr = arr;
-    }
-
-    /**
-     * @return Unmarshalled object.
-     * @throws GridPortableException In case of error.
-     */
-    GridPortableObject unmarshal() throws GridPortableException {
-        boolean userType = PRIM.readBoolean(arr, off);
-        int typeId = PRIM.readInt(arr, off + 1);
-        int hashCode = PRIM.readInt(arr, off + 5);
-
-        // TODO: Length is skipped!
-
-        rawOff = PRIM.readInt(arr, off + 13);
-
-        off += 17;
-
-        return new GridPortableObjectImpl(this, userType, typeId, hashCode);
     }
 
     /** {@inheritDoc} */
@@ -271,12 +250,40 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> T readObject(String fieldName) throws GridPortableException {
+    @Nullable @Override public Object readObject(String fieldName) throws GridPortableException {
         return null; // TODO: implement.
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> T readObject() throws GridPortableException {
+    @Nullable @Override public Object readObject() throws GridPortableException {
+//        byte flag = PRIM.readByte(arr, off++);
+//
+//        switch (flag) {
+//            case NULL:
+//                return null;
+//
+//            case HANDLE:
+//                return null; // TODO: Handle.
+//
+//            case BYTE:
+//                byte b = readByte();
+//
+//            case BYTE:
+//                return readByte();
+//
+//            case BYTE:
+//                return readByte();
+//        }
+//
+//        int typeId = PRIM.readInt(arr, off);
+//        int hashCode = PRIM.readInt(arr, off + 4);
+//
+//        // TODO: Length is skipped!
+//
+//        rawOff = PRIM.readInt(arr, off + 13);
+//
+//        off += 17;
+
         return null;
     }
 

@@ -35,23 +35,10 @@ class GridPortableClassDescriptor {
     private static final int MAP_TYPE_ID = 200;
 
     /** */
-    private static final Map<Class<?>, FieldType> TYPES = new HashMap<>();
-
-    /** */
     private static final ConcurrentMap<Class<?>, GridPortableClassDescriptor> CACHE = new ConcurrentHashMap8<>(256);
 
     /** */
     static {
-        // Field types.
-        TYPES.put(byte.class, FieldType.BYTE);
-        TYPES.put(short.class, FieldType.SHORT);
-        TYPES.put(int.class, FieldType.INT);
-        TYPES.put(long.class, FieldType.LONG);
-        TYPES.put(float.class, FieldType.FLOAT);
-        TYPES.put(double.class, FieldType.DOUBLE);
-        TYPES.put(char.class, FieldType.CHAR);
-        TYPES.put(boolean.class, FieldType.BOOLEAN);
-
         // Boxed primitives.
         CACHE.put(Byte.class, new GridPortableClassDescriptor(Mode.BYTE));
         CACHE.put(Short.class, new GridPortableClassDescriptor(Mode.SHORT));
@@ -90,16 +77,6 @@ class GridPortableClassDescriptor {
         CACHE.put(String[].class, new GridPortableClassDescriptor(Mode.STRING_ARR));
         CACHE.put(UUID[].class, new GridPortableClassDescriptor(Mode.UUID_ARR));
         CACHE.put(Object[].class, new GridPortableClassDescriptor(Mode.OBJ_ARR));
-    }
-
-    /**
-     * @param field Field.
-     * @return Field type.
-     */
-    private static FieldType fieldType(Field field) {
-        FieldType type = TYPES.get(field.getType());
-
-        return type != null ? type : FieldType.OTHER;
     }
 
     /**
@@ -201,7 +178,7 @@ class GridPortableClassDescriptor {
                         if (!names.add(name))
                             throw new GridPortableException("Duplicate field name: " + name);
 
-                        int id = name.hashCode();
+                        int id = name.hashCode(); // TODO: take from mapper.
 
                         if (!ids.add(id))
                             throw new GridPortableException("Duplicate field ID: " + name); // TODO: proper message
@@ -222,7 +199,7 @@ class GridPortableClassDescriptor {
         assert obj != null;
         assert writer != null;
 
-        writer.doWriteByte((byte)mode.ordinal()); // TODO: correct flag value
+        writer.doWriteByte(mode.flag);
 
         switch (mode) {
             case BYTE:
@@ -517,9 +494,6 @@ class GridPortableClassDescriptor {
         private final Field field;
 
         /** */
-        private final FieldType type;
-
-        /** */
         private final int id;
 
         /**
@@ -531,8 +505,6 @@ class GridPortableClassDescriptor {
 
             this.field = field;
             this.id = id;
-
-            type = fieldType(field);
         }
 
         /**
@@ -555,175 +527,99 @@ class GridPortableClassDescriptor {
                 throw new GridPortableException("Failed to get value for field: " + field, e);
             }
 
-            switch (type) {
-                case BYTE:
-                    writer.doWriteInt(1);
-                    writer.doWriteByte((byte)val);
+            int lenPos = writer.reserveAndMark(4);
 
-                    break;
+            writer.doWriteObject(val);
 
-                case SHORT:
-                    writer.doWriteInt(2);
-                    writer.doWriteShort((short)val);
-
-                    break;
-
-                case INT:
-                    writer.doWriteInt(4);
-                    writer.doWriteInt((int)val);
-
-                    break;
-
-                case LONG:
-                    writer.doWriteInt(8);
-                    writer.doWriteLong((long)val);
-
-                    break;
-
-                case FLOAT:
-                    writer.doWriteInt(4);
-                    writer.doWriteFloat((float)val);
-
-                    break;
-
-                case DOUBLE:
-                    writer.doWriteInt(8);
-                    writer.doWriteDouble((double)val);
-
-                    break;
-
-                case CHAR:
-                    writer.doWriteInt(2);
-                    writer.doWriteChar((char)val);
-
-                    break;
-
-                case BOOLEAN:
-                    writer.doWriteInt(1);
-                    writer.doWriteBoolean((boolean)val);
-
-                    break;
-
-                case OTHER:
-                    int lenPos = writer.reserveAndMark(4);
-
-                    writer.doWriteObject(val);
-
-                    writer.writeDelta(lenPos);
-
-                    break;
-
-                default:
-                    assert false : "Invalid field type: " + type;
-            }
+            writer.writeDelta(lenPos);
         }
-    }
-
-    /** */
-    private enum FieldType {
-        /** */
-        BYTE,
-
-        /** */
-        SHORT,
-
-        /** */
-        INT,
-
-        /** */
-        LONG,
-
-        /** */
-        FLOAT,
-
-        /** */
-        DOUBLE,
-
-        /** */
-        CHAR,
-
-        /** */
-        BOOLEAN,
-
-        /** */
-        OTHER
     }
 
     /** */
     private enum Mode {
         /** */
-        BYTE,
+        BYTE(GridPortableMarshaller.BYTE),
 
         /** */
-        SHORT,
+        SHORT(GridPortableMarshaller.SHORT),
 
         /** */
-        INT,
+        INT(GridPortableMarshaller.INT),
 
         /** */
-        LONG,
+        LONG(GridPortableMarshaller.LONG),
 
         /** */
-        FLOAT,
+        FLOAT(GridPortableMarshaller.FLOAT),
 
         /** */
-        DOUBLE,
+        DOUBLE(GridPortableMarshaller.DOUBLE),
 
         /** */
-        CHAR,
+        CHAR(GridPortableMarshaller.CHAR),
 
         /** */
-        BOOLEAN,
+        BOOLEAN(GridPortableMarshaller.BOOLEAN),
 
         /** */
-        STRING,
+        STRING(GridPortableMarshaller.STRING),
 
         /** */
-        UUID,
+        UUID(GridPortableMarshaller.UUID),
 
         /** */
-        BYTE_ARR,
+        BYTE_ARR(GridPortableMarshaller.BYTE_ARR),
 
         /** */
-        SHORT_ARR,
+        SHORT_ARR(GridPortableMarshaller.SHORT_ARR),
 
         /** */
-        INT_ARR,
+        INT_ARR(GridPortableMarshaller.INT_ARR),
 
         /** */
-        LONG_ARR,
+        LONG_ARR(GridPortableMarshaller.LONG_ARR),
 
         /** */
-        FLOAT_ARR,
+        FLOAT_ARR(GridPortableMarshaller.FLOAT_ARR),
 
         /** */
-        DOUBLE_ARR,
+        DOUBLE_ARR(GridPortableMarshaller.DOUBLE_ARR),
 
         /** */
-        CHAR_ARR,
+        CHAR_ARR(GridPortableMarshaller.CHAR_ARR),
 
         /** */
-        BOOLEAN_ARR,
+        BOOLEAN_ARR(GridPortableMarshaller.BOOLEAN_ARR),
 
         /** */
-        STRING_ARR,
+        STRING_ARR(GridPortableMarshaller.STRING_ARR),
 
         /** */
-        UUID_ARR,
+        UUID_ARR(GridPortableMarshaller.UUID_ARR),
 
         /** */
-        OBJ_ARR,
+        OBJ_ARR(GridPortableMarshaller.OBJ_ARR),
 
         /** */
-        COL,
+        COL(GridPortableMarshaller.COL),
 
         /** */
-        MAP,
+        MAP(GridPortableMarshaller.MAP),
 
         /** */
-        PORTABLE,
+        PORTABLE(GridPortableMarshaller.OBJ),
 
         /** */
-        OBJECT
+        OBJECT(GridPortableMarshaller.OBJ);
+
+        /** */
+        private final byte flag;
+
+        /**
+         * @param flag Flag.
+         */
+        Mode(byte flag) {
+            this.flag = flag;
+        }
     }
 }

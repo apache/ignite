@@ -62,7 +62,7 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
     /** {@inheritDoc} */
     @Override public <T> T unmarshal(byte[] bytes) throws IOException {
         try {
-            return marsh.unmarshal(bytes);
+            return (T)marsh.unmarshal(bytes);
         }
         catch (GridException e) {
             throw new IOException(e);

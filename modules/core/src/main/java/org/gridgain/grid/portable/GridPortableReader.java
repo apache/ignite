@@ -92,7 +92,7 @@ public interface GridPortableReader {
      * @return Object.
      * @throws GridPortableException In case of error.
      */
-    @Nullable public <T> T readObject(String fieldName) throws GridPortableException;
+    @Nullable public Object readObject(String fieldName) throws GridPortableException;
 
     /**
      * @param fieldName Field name.
