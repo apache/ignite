@@ -30,11 +30,16 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
     /** Tasks shared contexts. */
     private final ConcurrentMap<GridHadoopJobId, GridHadoopJobClassLoadingContext> ctxs = new ConcurrentHashMap<>();
 
+    /** */
+    private ExecutorService exec;
+
     /** {@inheritDoc} */
     @Override public void onKernalStart() throws GridException {
         super.onKernalStart();
 
         jobTracker = ctx.jobTracker();
+
+        exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
     }
 
     /** {@inheritDoc} */
@@ -82,7 +87,7 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
 
             executedTasks.add(task);
 
-            ctx.kernalContext().closure().callLocalSafe(task, false);
+            exec.submit(task);
         }
     }
 
