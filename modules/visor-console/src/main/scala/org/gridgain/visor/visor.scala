@@ -484,7 +484,7 @@ object visor extends VisorTag {
                 "If logging is already stopped - it's no-op."
             ),
             "-dl" -> Seq(
-                "Flag disable collection job and task fail events, licence violation events, cache preloading events" +
+                "Disables collecting of job and task fail events, licence violation events, cache preloading events" +
                     " from remote nodes."
             )
         ),
