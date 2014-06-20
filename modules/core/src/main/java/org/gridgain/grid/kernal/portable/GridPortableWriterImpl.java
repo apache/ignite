@@ -65,9 +65,6 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     private static final int INIT_CAP = 4 * 1024;
 
     /** */
-    private static final boolean useNames = false; // TODO: take from config
-
-    /** */
     private final Context ctx;
 
     /** */
@@ -101,8 +98,6 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
      */
     void marshal(Object obj) throws GridPortableException {
         assert obj != null;
-
-        doWriteByte(OBJ);
 
         GridPortableClassDescriptor desc = GridPortableClassDescriptor.get(obj.getClass());
 
@@ -247,6 +242,7 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
 
         // TODO: Handle.
 
+        // TODO: Create new writer only for user object.
         GridPortableWriterImpl writer = new GridPortableWriterImpl(ctx);
 
         writer.marshal(obj);
@@ -779,10 +775,7 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
         if (!allowFields)
             throw new GridPortableException("Fields are not allowed."); // TODO: proper message
 
-        if (useNames)
-            doWriteByteArray(fieldName.getBytes(UTF_8));
-        else
-            doWriteInt(fieldName.hashCode());
+        doWriteInt(fieldName.hashCode());
     }
 
     /** */

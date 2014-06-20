@@ -56,10 +56,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     private static final int INIT_RAW_OFF = 6;
 
     /** */
-    private final Map<Integer, Integer> hashedFields = new HashMap<>();
-
-    /** */
-    private final Map<String, Integer> namedFields = new HashMap<>();
+    private final Map<Integer, Integer> fieldsOffs = new HashMap<>();
 
     /** */
     private final byte[] arr;
@@ -69,10 +66,6 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
 
     /** */
     private int rawOff = INIT_RAW_OFF;
-
-
-    /** */
-    private boolean useNames;
 
     /**
      * @param arr Array.
@@ -93,9 +86,8 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
         // TODO: Length is skipped!
 
         rawOff = PRIM.readInt(arr, off + 13);
-        useNames = PRIM.readBoolean(arr, off + 17);
 
-        off += 18;
+        off += 17;
 
         return new GridPortableObjectImpl(this, userType, typeId, hashCode);
     }
@@ -746,50 +738,24 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
 
         int hash = name.hashCode();
 
-        Integer fieldOff = useNames ? namedFields.get(name) : hashedFields.get(hash);
+        Integer fieldOff = fieldsOffs.get(hash);
 
         if (fieldOff == null) {
             while (true) {
                 if (off >= arr.length)
                     return -1;
 
-                if (useNames) {
-                    int arrLen = PRIM.readInt(arr, off);
+                int hash0 = PRIM.readInt(arr, off);
+                int len = PRIM.readInt(arr, off);
 
-                    off += 4;
+                off += 8;
 
-                    assert arrLen >= 0;
+                fieldsOffs.put(hash0, fieldOff = off);
 
-                    byte[] arr = new byte[arrLen];
+                off += len;
 
-                    UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + off, arr, BYTE_ARR_OFF, arrLen);
-
-                    String name0 = new String(arr, UTF_8);
-
-                    int len = PRIM.readInt(arr, off);
-
-                    off += 4;
-
-                    namedFields.put(name, fieldOff = off);
-
-                    off += len;
-
-                    if (name0.equals(name))
-                        break;
-                }
-                else {
-                    int hash0 = PRIM.readInt(arr, off);
-                    int len = PRIM.readInt(arr, off);
-
-                    off += 8;
-
-                    hashedFields.put(hash0, fieldOff = off);
-
-                    off += len;
-
-                    if (hash0 == hash)
-                        break;
-                }
+                if (hash0 == hash)
+                    break;
             }
         }
 
