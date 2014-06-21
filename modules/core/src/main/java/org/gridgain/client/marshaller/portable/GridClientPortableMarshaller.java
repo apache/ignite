@@ -11,7 +11,7 @@ package org.gridgain.client.marshaller.portable;
 
 import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.portable.*;
+import org.gridgain.grid.kernal.processors.portable.marshaller.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;

@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.portable;
+package org.gridgain.grid.kernal.processors.portable.marshaller;
 
 import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.*;

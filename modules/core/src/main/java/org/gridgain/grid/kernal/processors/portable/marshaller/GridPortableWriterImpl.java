@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.portable;
+package org.gridgain.grid.kernal.processors.portable.marshaller;
 
 import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.*;
@@ -19,7 +19,7 @@ import java.nio.*;
 import java.util.*;
 
 import static java.nio.charset.StandardCharsets.*;
-import static org.gridgain.grid.kernal.portable.GridPortableMarshaller.*;
+import static org.gridgain.grid.kernal.processors.portable.marshaller.GridPortableMarshaller.*;
 
 /**
  * Portable writer implementation.
