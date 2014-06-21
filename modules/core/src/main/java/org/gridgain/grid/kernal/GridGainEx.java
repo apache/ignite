@@ -1761,6 +1761,8 @@ public class GridGainEx {
 
             GridCacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
 
+            GridCacheConfiguration[] copies;
+
             if (cacheCfgs != null && cacheCfgs.length > 0) {
                 if (!U.discoOrdered(discoSpi) && !U.relaxDiscoveryOrdered())
                     throw new GridException("Discovery SPI implementation does not support node ordering and " +
@@ -1775,44 +1777,37 @@ public class GridGainEx {
                     if (ccfg.getDrSenderConfiguration() != null)
                         drSysCaches.add(CU.cacheNameForDrSystemCache(ccfg.getName()));
 
-                    if (CU.isSecuritySystemCache(ccfg.getName()))
-                        throw new GridException("Cache name cannot start with \"" + CU.SECURITY_SYS_CACHE_NAME +
+                    if (CU.isUtilityCache(ccfg.getName()))
+                        throw new GridException("Cache name cannot start with \"" + CU.UTILITY_CACHE_NAME +
                             "\" because this prefix is reserved for internal purposes.");
                 }
 
-                GridCacheConfiguration[] clone = new GridCacheConfiguration[cacheCfgs.length +
-                    drSysCaches.size() +
-                    (U.securityEnabled(cfg) ? 1 : 0)];
+                copies = new GridCacheConfiguration[cacheCfgs.length + drSysCaches.size() + 1];
 
                 int cloneIdx = 0;
 
                 for (String drSysCache : drSysCaches)
-                    clone[cloneIdx++] = drSystemCache(drSysCache);
-
-                if (U.securityEnabled(cfg))
-                    clone[cloneIdx++] = securitySystemCache();
+                    copies[cloneIdx++] = drSystemCache(drSysCache);
 
                 for (GridCacheConfiguration ccfg : cacheCfgs)
-                    clone[cloneIdx++] = new GridCacheConfiguration(ccfg);
-
-                myCfg.setCacheConfiguration(clone);
+                    copies[cloneIdx++] = new GridCacheConfiguration(ccfg);
             }
-            else if (!drSysCaches.isEmpty() || U.securityEnabled(cfg)) {
-                GridCacheConfiguration[] ccfgs = new GridCacheConfiguration[drSysCaches.size() +
-                    (U.securityEnabled(cfg) ? 1 : 0)];
+            else if (!drSysCaches.isEmpty()) {
+                copies = new GridCacheConfiguration[drSysCaches.size() + 1];
 
                 int idx = 0;
 
                 for (String drSysCache : drSysCaches)
-                    ccfgs[idx++] = drSystemCache(drSysCache);
-
-                if (U.securityEnabled(cfg))
-                    ccfgs[idx] = securitySystemCache();
-
-                myCfg.setCacheConfiguration(ccfgs);
+                    copies[idx++] = drSystemCache(drSysCache);
             }
-            else
-                myCfg.setCacheConfiguration(EMPTY_CACHE_CONFIGS);
+            else {
+                copies = new GridCacheConfiguration[1];
+            }
+
+            // Always add utility cache.
+            copies[copies.length - 1] = utilitySystemCache();
+
+            myCfg.setCacheConfiguration(copies);
 
             myCfg.setCacheSanityCheckEnabled(cfg.isCacheSanityCheckEnabled());
 
@@ -1996,17 +1991,18 @@ public class GridGainEx {
         }
 
         /**
-         * Creates security system cache configuration.
+         * Creates utility system cache configuration.
          *
-         * @return Security system cache configuration.
+         * @return Utility system cache configuration.
          */
-        private GridCacheConfiguration securitySystemCache() {
+        private GridCacheConfiguration utilitySystemCache() {
             GridCacheConfiguration cache = new GridCacheConfiguration();
 
-            cache.setName(CU.SECURITY_SYS_CACHE_NAME);
+            cache.setName(CU.UTILITY_CACHE_NAME);
             cache.setCacheMode(REPLICATED);
             cache.setAtomicityMode(TRANSACTIONAL);
             cache.setSwapEnabled(false);
+            cache.setQueryIndexEnabled(false);
             cache.setWriteSynchronizationMode(FULL_SYNC);
 
             return cache;

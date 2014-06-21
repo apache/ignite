@@ -43,10 +43,7 @@ public class GridCacheUtils {
     public static final String DR_SYS_CACHE_PREFIX = "gg-dr-sys-cache-";
 
     /** Security system cache name. */
-    public static final String SECURITY_SYS_CACHE_NAME = "gg-security-sys-cache";
-
-    /** Service cache name. */
-    public static final String SERVICE_SYS_CACHE_NAME = "gg-service-sys-cache";
+    public static final String UTILITY_CACHE_NAME = "gg-utility-sys-cache";
 
     /** Flag to turn off DHT cache for debugging purposes. */
     public static final boolean DHT_ENABLED = true;
@@ -1435,8 +1432,16 @@ public class GridCacheUtils {
      * @param cacheName Cache name.
      * @return {@code True} if this is security system cache.
      */
-    public static boolean isSecuritySystemCache(String cacheName) {
-        return SECURITY_SYS_CACHE_NAME.equals(cacheName);
+    public static boolean isUtilityCache(String cacheName) {
+        return UTILITY_CACHE_NAME.equals(cacheName);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return {@code True} if system cache.
+     */
+    public static boolean isSystemCache(String cacheName) {
+        return isDrSystemCache(cacheName) || isUtilityCache(cacheName);
     }
 
     /**

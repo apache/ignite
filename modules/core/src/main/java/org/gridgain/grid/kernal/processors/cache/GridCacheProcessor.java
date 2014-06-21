@@ -623,8 +623,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 sysCaches.add(CU.cacheNameForDrSystemCache(cacheName));
         }
 
-        if (U.securityEnabled(ctx.config()))
-            sysCaches.add(CU.SECURITY_SYS_CACHE_NAME);
+        sysCaches.add(CU.UTILITY_CACHE_NAME);
 
         GridCacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
 
@@ -1662,6 +1661,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public <K, V> GridCache<K, V> publicCache() {
         return publicCache(null);
+    }
+
+    /**
+     * Gets utility cache.
+     *
+     * @param keyCls Key class.
+     * @param valCls Value class.
+     * @return Projection over utility cache.
+     */
+    public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache(Class<K> keyCls, Class<V> valCls) {
+        return (GridCacheProjectionEx<K, V>)cache(CU.UTILITY_CACHE_NAME).projection(keyCls, valCls);
     }
 
     /**

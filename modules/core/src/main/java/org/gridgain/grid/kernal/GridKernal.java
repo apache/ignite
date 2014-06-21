@@ -2791,6 +2791,19 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /** {@inheritDoc} */
+    @Override public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache(Class<K> keyCls,
+        Class<V> valCls) {
+        guard();
+
+        try {
+            return ctx.cache().utilityCache(keyCls, valCls);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> GridCache<K, V> cachex(@Nullable String name) {
         guard();
 

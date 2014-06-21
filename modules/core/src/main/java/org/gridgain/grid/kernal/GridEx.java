@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -21,6 +22,15 @@ import java.util.concurrent.*;
  * Extended Grid interface which provides some additional methods required for kernal and Visor.
  */
 public interface GridEx extends Grid, GridProjectionEx {
+    /**
+     * Gets utility cache.
+     *
+     * @param keyCls Key class.
+     * @param valCls Value class.
+     * @return Utility cache.
+     */
+    public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache(Class<K> keyCls, Class<V> valCls);
+
     /**
      * Gets the cache instance for the given name if one is configured or
      * <tt>null</tt> otherwise returning even non-public caches.
