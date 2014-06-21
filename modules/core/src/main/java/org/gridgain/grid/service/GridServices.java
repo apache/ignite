@@ -20,6 +20,8 @@ import java.util.*;
  * @version @java.version
  */
 public interface GridServices {
+    public GridProjection projection();
+
     public GridFuture<?> deployOnEachNode(String name, GridService svc);
 
     public GridFuture<?> deploySingleton(String name, GridService svc);

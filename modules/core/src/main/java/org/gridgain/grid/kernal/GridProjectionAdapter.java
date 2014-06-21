@@ -14,6 +14,7 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.messaging.*;
+import org.gridgain.grid.service.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -30,31 +31,34 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Kernal context. */
     protected transient GridKernalContext ctx;
 
-    /** */
+    /** Parent projection. */
     private transient GridProjection parent;
 
-    /** */
+    /** Compute. */
     private transient GridComputeImpl compute;
 
-    /** */
+    /** Messaging. */
     private transient GridMessagingImpl messaging;
 
-    /** */
+    /** Events. */
     private transient GridEvents evts;
 
-    /** */
+    /** Services. */
+    private transient GridServices svcs;
+
+    /** Grid name. */
     private String gridName;
 
-    /** */
+    /** Subject ID. */
     private UUID subjId;
 
-    /** */
-    private GridPredicate<GridNode> p;
+    /** Projection predicate. */
+    protected GridPredicate<GridNode> p;
 
-    /** */
+    /** Node IDs. */
     private Set<UUID> ids;
 
     /**
@@ -212,6 +216,17 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         }
 
         return evts;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridServices services() {
+        if (svcs == null) {
+            assert ctx != null;
+
+            svcs = new GridServicesImpl(ctx, this, subjId);
+        }
+
+        return svcs;
     }
 
     /** {@inheritDoc} */
@@ -772,6 +787,14 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
 
             this.isOldest = isOldest;
 
+            PN pn = new PN() {
+                @Override public boolean apply(GridNode n) {
+                    return node != null && n.id().equals(node.id());
+                }
+            };
+
+            p = p == null ? pn : F.and(p, pn);
+
             reset();
         }
 
@@ -784,7 +807,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
             try {
                 lastTopVer = ctx.discovery().topologyVersion();
 
-                this.node = isOldest ? U.oldest(super.nodes()) : U.youngest(super.nodes());
+                this.node = isOldest ? U.oldest(super.nodes(), null) : U.youngest(super.nodes(), null);
             }
             finally {
                 unguard();

@@ -15,12 +15,14 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.service.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -79,11 +81,27 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         for (GridServiceConfiguration c : ctx.config().getServiceConfiguration())
             deploy(c);
+
+        if (log.isDebugEnabled())
+            log.debug("Started service processor.");
     }
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        super.onKernalStop(cancel); // TODO: CODE: implement.
+        Map<String, Collection<GridServiceContextImpl>> locSvcs;
+
+        synchronized (this.locSvcs) {
+            locSvcs = new HashMap<>(this.locSvcs);
+        }
+
+        for (Collection<GridServiceContextImpl> ctxs : locSvcs.values()) {
+            synchronized (ctxs) {
+                cancel(ctxs, ctxs.size());
+            }
+        }
+
+        if (log.isDebugEnabled())
+            log.debug("Stopped service processor.");
     }
 
     /**
@@ -99,6 +117,20 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         if (cfg.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED))
             throw new GridRuntimeException("Cannot deploy services in PRIVATE or ISOLATED deployment mode: " + depMode);
+
+        ensure(c.getTotalCount() > 0, "getTotalCount() > 0", c.getTotalCount());
+        ensure(c.getMaxPerNodeCount() > 0, "getMaxPerNodeCount() > 0", c.getMaxPerNodeCount());
+        ensure(c.getService() != null, "getService() != null", c.getService());
+    }
+
+    /**
+     * @param cond Condition.
+     * @param desc Description.
+     * @param v Value.
+     */
+    private void ensure(boolean cond, String desc, Object v) {
+        if (!cond)
+            throw new GridRuntimeException("Service configuration check failed (" + desc + "): " + v);
     }
 
     /**
@@ -106,8 +138,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param svc Service.
      * @return Future.
      */
-    public GridFuture<?> deployOnEachNode(String name, GridService svc) {
-        return deployMultiple(name, svc, 0, 1);
+    public GridFuture<?> deployOnEachNode(GridProjection prj, String name, GridService svc) {
+        return deployMultiple(prj, name, svc, 0, 1);
     }
 
     /**
@@ -115,8 +147,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param svc Service.
      * @return Future.
      */
-    public GridFuture<?> deploySingleton(String name, GridService svc) {
-        return deployMultiple(name, svc, 1, 1);
+    public GridFuture<?> deploySingleton(GridProjection prj, String name, GridService svc) {
+        return deployMultiple(prj, name, svc, 1, 1);
     }
 
     /**
@@ -126,13 +158,15 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param maxPerNodeCnt Max per-node count.
      * @return Future.
      */
-    public GridFuture<?> deployMultiple(String name, GridService svc, int totalCnt, int maxPerNodeCnt) {
+    public GridFuture<?> deployMultiple(GridProjection prj, String name, GridService svc, int totalCnt,
+        int maxPerNodeCnt) {
         GridServiceConfiguration cfg = new GridServiceConfiguration();
 
         cfg.setName(name);
         cfg.setService(svc);
         cfg.setTotalCount(totalCnt);
         cfg.setMaxPerNodeCount(maxPerNodeCnt);
+        cfg.setNodeFilter(F.<GridNode>alwaysTrue() == prj.predicate() ? null : prj.predicate());
 
         return deploy(cfg);
     }
@@ -164,7 +198,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         try {
             if (cfgCache.putxIfAbsent(new GridServiceConfigurationKey(cfg.getName()), cfg)) {
-
+                // TODO
             }
         }
         catch (GridException e) {
@@ -180,15 +214,56 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param name Service name.
      * @return Future.
      */
-    public GridFuture<?> cancel(String name) {
-        return null; // TODO
+    public GridFuture<?> cancel(GridProjection prj, String name) {
+        return ctx.closure().broadcast(new GridClosure<String, Object>() {
+            @Override public Object apply(String name) {
+                Collection<GridServiceContextImpl> ctxs = localContexts(name);
+
+                if (ctxs != null) {
+                    synchronized (ctxs) {
+                        cancel(ctxs, ctxs.size());
+                    }
+                }
+
+                return null;
+            }
+        }, name, prj.nodes());
     }
 
     /**
      * @return Collection of service descriptors.
      */
     public Collection<? extends GridServiceDescriptor> deployedServices() {
-        return null; // TODO
+        Collection<GridServiceDescriptor> descs = new ArrayList<>();
+
+        for (GridServiceConfiguration cfg : cfgCache.values()) {
+            GridServiceDescriptorImpl desc = new GridServiceDescriptorImpl(cfg);
+
+            try {
+                GridServiceAssignments assigns = assignCache.get(new GridServiceAssignmentsKey(cfg.getName()));
+
+                if (assigns != null) {
+                    desc.topologySnapshot(assigns.assigns());
+
+                    descs.add(desc);
+                }
+            }
+            catch (GridException e) {
+                log.error("Failed to get assignments from replicated cache for service: " + cfg.getName(), e);
+            }
+        }
+
+        return descs;
+    }
+
+    /**
+     * @param name Service name.
+     * @return Local contexts.
+     */
+    @Nullable private Collection<GridServiceContextImpl> localContexts(String name) {
+        synchronized (locSvcs) {
+            return locSvcs.get(name);
+        }
     }
 
     /**
@@ -210,7 +285,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             GridServiceAssignments oldAssigns = assignCache.get(key);
 
             GridServiceAssignments assigns = new GridServiceAssignments(cfg.getName(), cfg.getService(),
-                cfg.getCacheName(), cfg.getAffinityKey(), topVer);
+                cfg.getCacheName(), cfg.getAffinityKey(), topVer, cfg.getNodeFilter());
 
             Map<UUID, Integer> cnts = new HashMap<>();
 
@@ -224,10 +299,16 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 cnts.put(n.id(), cnt);
             }
             else {
-                Collection<GridNode> nodes = ctx.discovery().nodes(topVer);
 
-                int perNodeCnt = totalCnt != 0 ? totalCnt / nodes.size() : maxPerNodeCnt;
-                int remainder = totalCnt != 0 ? totalCnt % nodes.size() : 0;
+                Collection<GridNode> nodes =
+                    assigns.nodeFilter() == null ?
+                        ctx.discovery().nodes(topVer) :
+                        F.view(ctx.discovery().nodes(topVer), assigns.nodeFilter());
+
+                int size = nodes.size();
+
+                int perNodeCnt = totalCnt != 0 ? totalCnt / size : maxPerNodeCnt;
+                int remainder = totalCnt != 0 ? totalCnt % size : 0;
 
                 if (perNodeCnt > maxPerNodeCnt) {
                     perNodeCnt = maxPerNodeCnt;
@@ -338,7 +419,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                     long topVer = ctx.discovery().topologyVersion();
 
-                    GridNode oldest = U.oldest(ctx.discovery().nodes(topVer));
+                    GridNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
 
                     if (oldest.isLocal()) {
                         // Retry forever.
@@ -405,10 +486,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * Topology listener.
      */
     private class TopologyListener implements GridLocalEventListener {
+        /** {@inheritDoc} */
         @Override public void onEvent(GridEvent evt) {
             long topVer = ((GridDiscoveryEvent)evt).topologyVersion();
 
-            GridNode oldest = U.oldest(ctx.discovery().nodes(topVer));
+            GridNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
 
             if (oldest.isLocal()) {
                 List<GridServiceConfiguration> retries = new ArrayList<>();

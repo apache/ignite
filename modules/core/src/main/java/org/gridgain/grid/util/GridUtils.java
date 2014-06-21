@@ -8441,13 +8441,13 @@ public abstract class GridUtils {
      * @param c Collection of nodes.
      * @return Oldest node.
      */
-    public static GridNode oldest(Collection<GridNode> c) {
+    public static GridNode oldest(Collection<GridNode> c, @Nullable GridPredicate<GridNode> p) {
         GridNode oldest = null;
 
         long minOrder = Long.MAX_VALUE;
 
         for (GridNode n : c) {
-            if (n.order() < minOrder) {
+            if ((p == null || p.apply(n)) && n.order() < minOrder) {
                 oldest = n;
 
                 minOrder = n.order();
@@ -8463,13 +8463,13 @@ public abstract class GridUtils {
      * @param c Collection of nodes.
      * @return Youngest node.
      */
-    public static GridNode youngest(Collection<GridNode> c) {
+    public static GridNode youngest(Collection<GridNode> c, @Nullable GridPredicate<GridNode> p) {
         GridNode youngest = null;
 
         long maxOrder = Long.MIN_VALUE;
 
         for (GridNode n : c) {
-            if (n.order() > maxOrder) {
+            if ((p == null || p.apply(n)) && n.order() > maxOrder) {
                 youngest = n;
 
                 maxOrder = n.order();

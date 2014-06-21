@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.service;
 
+import org.gridgain.grid.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.service.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -29,12 +31,17 @@ public class GridServiceAssignments implements Serializable {
     /** Service name. */
     private final String name;
 
+    /** Cache name. */
     private final String cacheName;
 
+    /** Affinity key. */
     private final Object affKey;
 
     /** Service. */
     private final GridService svc;
+
+    /** Node filter. */
+    private final GridPredicate<GridNode> nodeFilter;
 
     /** Topology version. */
     private final long topVer;
@@ -49,13 +56,16 @@ public class GridServiceAssignments implements Serializable {
      * @param cacheName Cache name.
      * @param affKey Affinity key.
      * @param topVer Topology version.
+     * @param nodeFilter Node filter.
      */
-    public GridServiceAssignments(String name, GridService svc, String cacheName, Object affKey, long topVer) {
+    public GridServiceAssignments(String name, GridService svc, String cacheName, Object affKey, long topVer,
+        GridPredicate<GridNode> nodeFilter) {
         this.name = name;
         this.svc = svc;
         this.cacheName = cacheName;
         this.affKey = affKey;
         this.topVer = topVer;
+        this.nodeFilter = nodeFilter;
     }
 
     /**
@@ -91,6 +101,13 @@ public class GridServiceAssignments implements Serializable {
      */
     public Object affinityKey() {
         return affKey;
+    }
+
+    /**
+     * @return Node filter.
+     */
+    public GridPredicate<GridNode> nodeFilter() {
+        return nodeFilter;
     }
 
     /**

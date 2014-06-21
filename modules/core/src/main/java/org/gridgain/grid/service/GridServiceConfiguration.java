@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.service;
 
+import org.gridgain.grid.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -31,6 +33,8 @@ public class GridServiceConfiguration implements Serializable {
     private String cacheName;
 
     private Object affKey;
+
+    private GridPredicate<GridNode> nodeFilter;
 
     public String getName() {
         return name;
@@ -78,6 +82,14 @@ public class GridServiceConfiguration implements Serializable {
 
     public void setAffinityKey(Object affKey) {
         this.affKey = affKey;
+    }
+
+    public GridPredicate<GridNode> getNodeFilter() {
+        return nodeFilter;
+    }
+
+    public void setNodeFilter(GridPredicate<GridNode> nodeFilter) {
+        this.nodeFilter = nodeFilter;
     }
 
     /** {@inheritDoc} */

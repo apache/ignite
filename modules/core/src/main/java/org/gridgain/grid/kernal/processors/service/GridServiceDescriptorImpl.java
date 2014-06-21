@@ -1,0 +1,88 @@
+// @java.file.header
+
+/*  _________        _____ __________________        _____
+ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ */
+
+package org.gridgain.grid.kernal.processors.service;
+
+import org.gridgain.grid.service.*;
+import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
+
+import java.util.*;
+
+/**
+ * Service descriptor.
+ *
+ * @author @java.author
+ * @version @java.version
+ */
+public class GridServiceDescriptorImpl implements GridServiceDescriptor {
+    /** Configuration. */
+    @GridToStringInclude
+    private final GridServiceConfiguration cfg;
+
+    /** Topology snapshot. */
+    @GridToStringInclude
+    private Map<UUID, Integer> top;
+
+    /**
+     * @param cfg Configuration.
+     */
+    public GridServiceDescriptorImpl(GridServiceConfiguration cfg) {
+        this.cfg = cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return cfg.getName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class<? extends GridService> serviceClass() {
+        return cfg.getService().getClass();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int totalCount() {
+        return cfg.getTotalCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int maxPerNodeCount() {
+        return cfg.getMaxPerNodeCount();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String cacheName() {
+        return cfg.getCacheName();
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Nullable @Override public <K> K affinityKey() {
+        return (K)cfg.getAffinityKey();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<UUID, Integer> topologySnapshot() {
+        return top;
+    }
+
+    /**
+     * @param top Topology snapshot.
+     */
+    void topologySnapshot(Map<UUID, Integer> top) {
+        this.top = top;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridServiceDescriptorImpl.class, this);
+    }
+}

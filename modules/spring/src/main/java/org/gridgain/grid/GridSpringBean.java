@@ -21,6 +21,7 @@ import org.gridgain.grid.messaging.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.security.*;
+import org.gridgain.grid.service.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -210,6 +211,13 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
         assert g != null;
 
         return g.compute();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridServices services() {
+        assert g != null;
+
+        return g.services();
     }
 
     /** {@inheritDoc} */

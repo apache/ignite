@@ -13,6 +13,7 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.messaging.*;
+import org.gridgain.grid.service.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -84,6 +85,15 @@ public interface GridProjection {
      * @return Events instance over this grid projection.
      */
     public GridEvents events();
+
+    /**
+     * Gets {@code services} functionality over this grid projection. All operations
+     * on the returned {@link GridMessaging} instance will only include nodes from
+     * this projection.
+     *
+     * @return Services instance over this grid projection.
+     */
+    public GridServices services();
 
     /**
      * Creates a grid projection over a given set of nodes.

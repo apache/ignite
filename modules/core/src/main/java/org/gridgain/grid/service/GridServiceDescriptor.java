@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.service;
 
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -36,7 +35,7 @@ public interface GridServiceDescriptor extends Serializable {
 
     /**
      *
-     * @return Map of number of service instances per node.
+     * @return Map of number of service instances per node ID.
      */
-    public Map<GridNode, Integer> topologySnapshot();
+    public Map<UUID, Integer> topologySnapshot();
 }
