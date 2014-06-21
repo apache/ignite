@@ -11,13 +11,17 @@ package org.gridgain.grid.service;
 
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.io.*;
+
 /**
  * TODO: Add class description.
  *
  * @author @java.author
  * @version @java.version
  */
-public class GridServiceConfiguration {
+public class GridServiceConfiguration implements Serializable {
+    private String name;
+
     private GridService svc;
 
     private int totalCnt;
@@ -27,6 +31,14 @@ public class GridServiceConfiguration {
     private String cacheName;
 
     private Object affKey;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
 
     public GridService getService() {
         return svc;

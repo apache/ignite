@@ -9,13 +9,15 @@
 
 package org.gridgain.grid.service;
 
+import java.io.*;
+
 /**
  * TODO: Add interface description.
  *
  * @author @java.author
  * @version @java.version
  */
-public interface GridService {
+public interface GridService extends Serializable {
     public void cancel();
 
     public void execute(GridServiceContext ctx);

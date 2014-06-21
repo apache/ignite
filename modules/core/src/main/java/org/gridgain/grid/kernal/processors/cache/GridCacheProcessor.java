@@ -290,7 +290,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     " 'true' [cacheName=" + cc.getName() + ']');
         }
 
-        if (ctx.config().getDeploymentMode() == PRIVATE || ctx.config().getDeploymentMode() == ISOLATED)
+        GridConfiguration cfg = ctx.config();
+
+        GridDeploymentMode depMode = cfg.getDeploymentMode();
+
+        if (cfg.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED) &&
+            !CU.isSystemCache(cc.getName()))
             throw new GridException("Cannot start cache in PRIVATE or ISOLATED deployment mode: " +
                 ctx.config().getDeploymentMode());
 

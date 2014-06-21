@@ -22,7 +22,7 @@ import java.util.*;
  * @version @java.version
  */
 public interface GridServiceDescriptor extends Serializable {
-    public UUID serviceId();
+    public String name();
 
     public Class<? extends GridService> serviceClass();
 

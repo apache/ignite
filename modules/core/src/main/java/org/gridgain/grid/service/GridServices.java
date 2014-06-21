@@ -20,16 +20,17 @@ import java.util.*;
  * @version @java.version
  */
 public interface GridServices {
-    public GridFuture<UUID> deployOnEachNode(GridService svc);
+    public GridFuture<?> deployOnEachNode(String name, GridService svc);
 
-    public GridFuture<UUID> deploySingleton(GridService svc);
+    public GridFuture<?> deploySingleton(String name, GridService svc);
 
-    public GridFuture<UUID> deployMultiple(GridService svc, int totalCnt, int maxPerNodeCnt);
+    public GridFuture<?> deployMultiple(String name, GridService svc, int totalCnt, int maxPerNodeCnt);
 
-    public <K> GridFuture<UUID> deployForAffinityKey(GridService svc, String cacheName, K affKey,
-        boolean includeBackups);
+    public GridFuture<?> deployForAffinityKey(String name, GridService svc, String cacheName, Object affKey);
 
-    public GridFuture<?> cancel(UUID svcId);
+    public GridFuture<?> deploy(GridServiceConfiguration cfg);
+
+    public GridFuture<?> cancel(String name);
 
     public Collection<? extends GridServiceDescriptor> deployedServices();
 }

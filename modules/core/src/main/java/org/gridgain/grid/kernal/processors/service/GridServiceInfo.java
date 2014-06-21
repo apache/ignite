@@ -7,27 +7,16 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.service;
-
-import org.jetbrains.annotations.*;
+package org.gridgain.grid.kernal.processors.service;
 
 import java.io.*;
-import java.util.*;
 
 /**
- * TODO: Add interface description.
+ * TODO: Add class description.
  *
  * @author @java.author
  * @version @java.version
  */
-public interface GridServiceContext extends Serializable {
-    public String name();
+public class GridServiceInfo implements Serializable {
 
-    public UUID executionId();
-
-    public boolean isCancelled();
-
-    @Nullable public String cacheName();
-
-    @Nullable public <K> K affinityKey();
 }

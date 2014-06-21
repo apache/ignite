@@ -17,12 +17,21 @@ import java.io.*;
  * @author @java.author
  * @version @java.version
  */
-public abstract class GridCacheUtilityKey implements GridCacheInternal, Serializable {
-    @Override public final boolean equals(Object obj) {
-        return obj == this || obj != null && obj.getClass() == getClass() && equalsx((GridCacheUtilityKey)obj);
+public abstract class GridCacheUtilityKey<K extends GridCacheUtilityKey> implements GridCacheInternal, Serializable {
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked") @Override
+    public final boolean equals(Object obj) {
+        return obj == this || obj != null && obj.getClass() == getClass() && equalsx((K)obj);
     }
 
-    protected abstract boolean equalsx(GridCacheUtilityKey key);
+    /**
+     * Child-specific equals method.
+     *
+     * @param key Key.
+     * @return {@code True} if equals.
+     */
+    protected abstract boolean equalsx(K key);
 
+    /** {@inheritDoc} */
     public abstract int hashCode();
 }
