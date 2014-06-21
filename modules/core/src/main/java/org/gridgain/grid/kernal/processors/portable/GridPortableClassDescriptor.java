@@ -7,97 +7,30 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.portable.marshaller;
+package org.gridgain.grid.kernal.processors.portable;
 
 import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
 import java.lang.reflect.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 import static java.lang.reflect.Modifier.*;
 
 /**
  * Portable class descriptor.
  */
-class GridPortableClassDescriptor {
+public class GridPortableClassDescriptor {
     /** */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
     /** */
-    private static final ConcurrentMap<Class<?>, GridPortableClassDescriptor> CACHE = new ConcurrentHashMap8<>(256);
-
-    /** */
-    private static final int HDR_LEN = 18;
-
-    /** */
-    static {
-        // Boxed primitives.
-        CACHE.put(Byte.class, new GridPortableClassDescriptor(Mode.BYTE));
-        CACHE.put(Short.class, new GridPortableClassDescriptor(Mode.SHORT));
-        CACHE.put(Integer.class, new GridPortableClassDescriptor(Mode.INT));
-        CACHE.put(Long.class, new GridPortableClassDescriptor(Mode.LONG));
-        CACHE.put(Float.class, new GridPortableClassDescriptor(Mode.FLOAT));
-        CACHE.put(Double.class, new GridPortableClassDescriptor(Mode.DOUBLE));
-        CACHE.put(Character.class, new GridPortableClassDescriptor(Mode.CHAR));
-        CACHE.put(Boolean.class, new GridPortableClassDescriptor(Mode.BOOLEAN));
-
-        // Other objects.
-        CACHE.put(String.class, new GridPortableClassDescriptor(Mode.STRING));
-        CACHE.put(UUID.class, new GridPortableClassDescriptor(Mode.UUID));
-
-        // Arrays with primitives.
-        CACHE.put(byte[].class, new GridPortableClassDescriptor(Mode.BYTE_ARR));
-        CACHE.put(short[].class, new GridPortableClassDescriptor(Mode.SHORT_ARR));
-        CACHE.put(int[].class, new GridPortableClassDescriptor(Mode.INT_ARR));
-        CACHE.put(long[].class, new GridPortableClassDescriptor(Mode.LONG_ARR));
-        CACHE.put(float[].class, new GridPortableClassDescriptor(Mode.FLOAT_ARR));
-        CACHE.put(double[].class, new GridPortableClassDescriptor(Mode.DOUBLE_ARR));
-        CACHE.put(char[].class, new GridPortableClassDescriptor(Mode.CHAR_ARR));
-        CACHE.put(boolean[].class, new GridPortableClassDescriptor(Mode.BOOLEAN_ARR));
-
-        // Arrays with boxed primitives.
-        CACHE.put(Byte[].class, new GridPortableClassDescriptor(Mode.BYTE_ARR));
-        CACHE.put(Short[].class, new GridPortableClassDescriptor(Mode.SHORT_ARR));
-        CACHE.put(Integer[].class, new GridPortableClassDescriptor(Mode.INT_ARR));
-        CACHE.put(Long[].class, new GridPortableClassDescriptor(Mode.LONG_ARR));
-        CACHE.put(Float[].class, new GridPortableClassDescriptor(Mode.FLOAT_ARR));
-        CACHE.put(Double[].class, new GridPortableClassDescriptor(Mode.DOUBLE_ARR));
-        CACHE.put(Character[].class, new GridPortableClassDescriptor(Mode.CHAR_ARR));
-        CACHE.put(Boolean[].class, new GridPortableClassDescriptor(Mode.BOOLEAN_ARR));
-
-        // Other arrays.
-        CACHE.put(String[].class, new GridPortableClassDescriptor(Mode.STRING_ARR));
-        CACHE.put(UUID[].class, new GridPortableClassDescriptor(Mode.UUID_ARR));
-        CACHE.put(Object[].class, new GridPortableClassDescriptor(Mode.OBJ_ARR));
-    }
-
-    /**
-     * @param cls Class.
-     * @return Class descriptor.
-     * @throws GridPortableException In case of error.
-     */
-    static GridPortableClassDescriptor get(Class<?> cls) throws GridPortableException {
-        assert cls != null;
-
-        GridPortableClassDescriptor desc = CACHE.get(cls);
-
-        if (desc == null) {
-            GridPortableClassDescriptor old = CACHE.putIfAbsent(cls, desc = new GridPortableClassDescriptor(cls));
-
-            if (old != null)
-                desc = old;
-        }
-
-        return desc;
-    }
-
-    /** */
     private final Class<?> cls;
+
+    /** */
+    private final GridPortableSerializer serializer;
 
     /** */
     private final Mode mode;
@@ -115,55 +48,163 @@ class GridPortableClassDescriptor {
     private final Collection<FieldInfo> fields;
 
     /**
-     * @param mode Mode.
-     */
-    private GridPortableClassDescriptor(Mode mode) {
-        assert mode != null;
-
-        assert mode != Mode.COL && mode != Mode.MAP && mode != Mode.PORTABLE && mode != Mode.OBJECT;
-
-        this.mode = mode;
-
-        userType = false;
-        typeId = mode.type;
-        cls = null;
-        cons = null;
-        fields = null;
-    }
-
-    /**
      * @param cls Class.
      */
-    private GridPortableClassDescriptor(Class<?> cls) throws GridPortableException {
+    public GridPortableClassDescriptor(Class<?> cls, int typeId, @Nullable GridPortableIdMapper idMapper,
+        @Nullable GridPortableSerializer serializer) throws GridPortableException {
         assert cls != null;
 
         this.cls = cls;
+        this.typeId = typeId;
+        this.serializer = serializer;
 
-        if (Collection.class.isAssignableFrom(cls)) {
+        if (cls == Byte.class) {
+            mode = Mode.BYTE;
+            userType = false;
+            cons = null;
+            fields = null;
+        }
+        else if (cls == Short.class) {
+            mode = Mode.SHORT;
+            userType = false;
+            cons = null;
+            fields = null;
+        }
+        else if (cls == Integer.class) {
+            mode = Mode.INT;
+            userType = false;
+            cons = null;
+            fields = null;
+        }
+        else if (cls == Long.class) {
+            mode = Mode.LONG;
+            userType = false;
+            cons = null;
+            fields = null;
+        }
+        else if (cls == Float.class) {
+            mode = Mode.FLOAT;
+            userType = false;
+            cons = null;
+            fields = null;
+        }
+        else if (cls == Double.class) {
+            mode = Mode.DOUBLE;
+            userType = false;
+            cons = null;
+            fields = null;
+        }
+        else if (cls == Character.class) {
+            mode = Mode.CHAR;
+            userType = false;
+            cons = null;
+            fields = null;
+        }
+        else if (cls == Boolean.class) {
+            mode = Mode.BOOLEAN;
+            userType = false;
+            cons = null;
+            fields = null;
+        }
+        else if (cls == String.class) {
+            mode = Mode.STRING;
+            userType = false;
+            cons = null;
+            fields = null;
+        }
+        else if (cls == UUID.class) {
+            mode = Mode.UUID;
+            userType = false;
+            cons = null;
+            fields = null;
+        }
+        else if (cls == byte[].class) {
+            mode = Mode.BYTE_ARR;
+            userType = false;
+            cons = null;
+            fields = null;
+        }
+        else if (cls == short[].class) {
+            mode = Mode.SHORT_ARR;
+            userType = false;
+            cons = null;
+            fields = null;
+        }
+        else if (cls == int[].class) {
+            mode = Mode.INT_ARR;
+            userType = false;
+            cons = null;
+            fields = null;
+        }
+        else if (cls == long[].class) {
+            mode = Mode.LONG_ARR;
+            userType = false;
+            cons = null;
+            fields = null;
+        }
+        else if (cls == float[].class) {
+            mode = Mode.FLOAT_ARR;
+            userType = false;
+            cons = null;
+            fields = null;
+        }
+        else if (cls == double[].class) {
+            mode = Mode.DOUBLE_ARR;
+            userType = false;
+            cons = null;
+            fields = null;
+        }
+        else if (cls == char[].class) {
+            mode = Mode.CHAR_ARR;
+            userType = false;
+            cons = null;
+            fields = null;
+        }
+        else if (cls == boolean[].class) {
+            mode = Mode.BOOLEAN_ARR;
+            userType = false;
+            cons = null;
+            fields = null;
+        }
+        else if (cls == String[].class) {
+            mode = Mode.STRING_ARR;
+            userType = false;
+            cons = null;
+            fields = null;
+        }
+        else if (cls == UUID[].class) {
+            mode = Mode.UUID_ARR;
+            userType = false;
+            cons = null;
+            fields = null;
+        }
+        else if (cls == Object[].class) {
+            mode = Mode.OBJ_ARR;
+            userType = false;
+            cons = null;
+            fields = null;
+        }
+        else if (Collection.class.isAssignableFrom(cls)) {
             mode = Mode.COL;
             userType = false;
-            typeId = mode.type;
             cons = null;
             fields = null;
         }
         else if (Map.class.isAssignableFrom(cls)) {
             mode = Mode.MAP;
             userType = false;
-            typeId = mode.type;
             cons = null;
             fields = null;
         }
-        else if (GridPortable.class.isAssignableFrom(cls)) {
+        else if (serializer != null || GridPortable.class.isAssignableFrom(cls)) {
             mode = Mode.PORTABLE;
             userType = false;
-            typeId = cls.getSimpleName().hashCode(); // TODO: should be taken from config
             cons = constructor(cls);
             fields = null;
         }
         else {
             mode = Mode.OBJECT;
             userType = false;
-            typeId = cls.getSimpleName().hashCode(); // TODO: should be taken from config
             cons = constructor(cls);
 
             fields = new ArrayList<>();
@@ -183,12 +224,12 @@ class GridPortableClassDescriptor {
                         if (!names.add(name))
                             throw new GridPortableException("Duplicate field name: " + name);
 
-                        int id = name.hashCode(); // TODO: take from mapper.
+                        int fieldId = fieldId(typeId, name, idMapper);
 
-                        if (!ids.add(id))
+                        if (!ids.add(fieldId))
                             throw new GridPortableException("Duplicate field ID: " + name); // TODO: proper message
 
-                        fields.add(new FieldInfo(f, id));
+                        fields.add(new FieldInfo(f, fieldId));
                     }
                 }
             }
@@ -211,8 +252,8 @@ class GridPortableClassDescriptor {
         // Length.
         writer.reserve(4);
 
-        // Default raw offset.
-        writer.doWriteInt(HDR_LEN);
+        // Default raw offset (equal to header length).
+        writer.doWriteInt(18);
 
         switch (mode) {
             case BYTE:
@@ -331,7 +372,10 @@ class GridPortableClassDescriptor {
                 break;
 
             case PORTABLE:
-                ((GridPortable)obj).writePortable(writer);
+                if (serializer != null)
+                    serializer.writePortable(obj, writer);
+                else
+                    ((GridPortable)obj).writePortable(writer);
 
                 break;
 
@@ -426,14 +470,17 @@ class GridPortableClassDescriptor {
                 return reader.readMap();
 
             case PORTABLE:
-                GridPortable portable = newInstance();
+                Object portable = newInstance();
 
-                portable.readPortable(reader);
+                if (serializer != null)
+                    serializer.readPortable(portable, reader);
+                else
+                    ((GridPortable)portable).readPortable(reader);
 
                 return portable;
 
             case OBJECT:
-                GridPortable obj = newInstance();
+                Object obj = newInstance();
 
                 for (FieldInfo info : fields) {
                     Field f = info.field;
@@ -461,9 +508,9 @@ class GridPortableClassDescriptor {
      * @return Instance.
      * @throws GridPortableException In case of error.
      */
-    private <T> T newInstance() throws GridPortableException {
+    private Object newInstance() throws GridPortableException {
         try {
-            return cons != null ? (T)cons.newInstance() : (T)UNSAFE.allocateInstance(cls);
+            return cons != null ? cons.newInstance() : UNSAFE.allocateInstance(cls);
         }
         catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new GridPortableException("Failed to instantiate instance: " + cls, e);
@@ -471,10 +518,29 @@ class GridPortableClassDescriptor {
     }
 
     /**
+     * @param typeId Type ID.
+     * @param fieldName Field name.
+     * @param idMapper ID mapper.
+     * @return Field ID.
+     */
+    private static int fieldId(int typeId, String fieldName, @Nullable GridPortableIdMapper idMapper) {
+        assert fieldName != null;
+
+        Integer fieldId = null;
+
+        if (idMapper != null)
+            fieldId = idMapper.fieldId(typeId, fieldName);
+
+        return fieldId != null ? fieldId : fieldName.hashCode();
+    }
+
+    /**
      * @param cls Class.
      * @return Constructor.
      */
     @Nullable private static Constructor<?> constructor(Class<?> cls) {
+        assert cls != null;
+
         try {
             Constructor<?> cons = cls.getConstructor();
 
@@ -537,88 +603,78 @@ class GridPortableClassDescriptor {
     /** */
     private enum Mode {
         /** */
-        BYTE(GridPortableMarshaller.BYTE),
+        BYTE,
 
         /** */
-        SHORT(GridPortableMarshaller.SHORT),
+        SHORT,
 
         /** */
-        INT(GridPortableMarshaller.INT),
+        INT,
 
         /** */
-        LONG(GridPortableMarshaller.LONG),
+        LONG,
 
         /** */
-        FLOAT(GridPortableMarshaller.FLOAT),
+        FLOAT,
 
         /** */
-        DOUBLE(GridPortableMarshaller.DOUBLE),
+        DOUBLE,
 
         /** */
-        CHAR(GridPortableMarshaller.CHAR),
+        CHAR,
 
         /** */
-        BOOLEAN(GridPortableMarshaller.BOOLEAN),
+        BOOLEAN,
 
         /** */
-        STRING(GridPortableMarshaller.STRING),
+        STRING,
 
         /** */
-        UUID(GridPortableMarshaller.UUID),
+        UUID,
 
         /** */
-        BYTE_ARR(GridPortableMarshaller.BYTE_ARR),
+        BYTE_ARR,
 
         /** */
-        SHORT_ARR(GridPortableMarshaller.SHORT_ARR),
+        SHORT_ARR,
 
         /** */
-        INT_ARR(GridPortableMarshaller.INT_ARR),
+        INT_ARR,
 
         /** */
-        LONG_ARR(GridPortableMarshaller.LONG_ARR),
+        LONG_ARR,
 
         /** */
-        FLOAT_ARR(GridPortableMarshaller.FLOAT_ARR),
+        FLOAT_ARR,
 
         /** */
-        DOUBLE_ARR(GridPortableMarshaller.DOUBLE_ARR),
+        DOUBLE_ARR,
 
         /** */
-        CHAR_ARR(GridPortableMarshaller.CHAR_ARR),
+        CHAR_ARR,
 
         /** */
-        BOOLEAN_ARR(GridPortableMarshaller.BOOLEAN_ARR),
+        BOOLEAN_ARR,
 
         /** */
-        STRING_ARR(GridPortableMarshaller.STRING_ARR),
+        STRING_ARR,
 
         /** */
-        UUID_ARR(GridPortableMarshaller.UUID_ARR),
+        UUID_ARR,
 
         /** */
-        OBJ_ARR(GridPortableMarshaller.OBJ_ARR),
+        OBJ_ARR,
 
         /** */
-        COL(GridPortableMarshaller.COL),
+        COL,
 
         /** */
-        MAP(GridPortableMarshaller.MAP),
+        MAP,
 
         /** */
-        PORTABLE(GridPortableMarshaller.OBJ),
+        PORTABLE,
 
         /** */
-        OBJECT(GridPortableMarshaller.OBJ);
-
-        /** */
-        private final byte type;
-
-        /**
-         * @param type Type.
-         */
-        Mode(byte type) {
-            this.type = type;
-        }
+        OBJECT
     }
 }

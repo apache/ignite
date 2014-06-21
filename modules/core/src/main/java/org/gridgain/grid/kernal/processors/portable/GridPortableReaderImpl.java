@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.portable.marshaller;
+package org.gridgain.grid.kernal.processors.portable;
 
 import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.*;
@@ -17,7 +17,7 @@ import sun.misc.*;
 import java.util.*;
 
 import static java.nio.charset.StandardCharsets.*;
-import static org.gridgain.grid.kernal.processors.portable.marshaller.GridPortableMarshaller.*;
+import static org.gridgain.grid.kernal.processors.portable.GridPortableMarshaller.*;
 
 /**
  * Portable reader implementation.
@@ -57,6 +57,9 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     private static final int DATA_POS = 16;
 
     /** */
+    private final GridPortableContext ctx;
+
+    /** */
     private final byte[] arr;
 
     /** */
@@ -71,7 +74,8 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     /**
      * @param arr Array.
      */
-    GridPortableReaderImpl(byte[] arr) {
+    GridPortableReaderImpl(GridPortableContext ctx, byte[] arr) {
+        this.ctx = ctx;
         this.arr = arr;
 
         start = 0;
@@ -80,7 +84,8 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     /**
      * @param arr Array.
      */
-    private GridPortableReaderImpl(byte[] arr, int start, int rawOff) {
+    private GridPortableReaderImpl(GridPortableContext ctx, byte[] arr, int start, int rawOff) {
+        this.ctx = ctx;
         this.arr = arr;
         this.start = start;
         this.rawOff = rawOff;
@@ -105,7 +110,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
 
                 rawOff = readInt(off + 13);
 
-                return new GridPortableObjectImpl(this, userType, typeId, hashCode);
+                return new GridPortableObjectImpl(ctx, this, userType, typeId, hashCode);
 
             case BYTE:
                 return readByte(off);
@@ -399,12 +404,10 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
 
                 fieldOff += 4;
 
-                Class<?> cls = null; // TODO
+                GridPortableClassDescriptor desc = ctx.descriptorForTypeId(typeId);
 
-                if (cls == null)
-                    throw new GridPortableInvalidClassException(""); // TODO: message
-
-                GridPortableClassDescriptor desc = GridPortableClassDescriptor.get(cls);
+                if (desc == null)
+                    throw new GridPortableInvalidClassException("Unknown type ID: " + typeId);
 
                 // Skip hash code and length.
                 fieldOff += 8;
@@ -413,7 +416,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
 
                 fieldOff += 4;
 
-                return desc.read(new GridPortableReaderImpl(arr, fieldOff, rawOff));
+                return desc.read(new GridPortableReaderImpl(ctx, arr, fieldOff, rawOff));
 
             default:
                 throw new GridPortableException("Invalid flag value: " + flag);
@@ -434,19 +437,17 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             case OBJ:
                 int typeId = readInt();
 
-                Class<?> cls = null; // TODO
+                GridPortableClassDescriptor desc = ctx.descriptorForTypeId(typeId);
 
-                if (cls == null)
-                    throw new GridPortableInvalidClassException(""); // TODO: message
-
-                GridPortableClassDescriptor desc = GridPortableClassDescriptor.get(cls);
+                if (desc == null)
+                    throw new GridPortableInvalidClassException("Unknown type ID: " + typeId);
 
                 // Skip hash code and length.
                 rawOff += 8;
 
                 int rawOff0 = readInt();
 
-                return desc.read(new GridPortableReaderImpl(arr, rawOff, rawOff0));
+                return desc.read(new GridPortableReaderImpl(ctx, arr, rawOff, rawOff0));
 
             default:
                 throw new GridPortableException("Invalid flag value: " + flag);

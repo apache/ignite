@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.portable.marshaller;
+package org.gridgain.grid.kernal.processors.portable;
 
 import org.gridgain.grid.portable.*;
 import org.jetbrains.annotations.*;
@@ -18,6 +18,8 @@ import java.util.*;
  * Portable object implementation.
  */
 class GridPortableObjectImpl implements GridPortableObject {
+    private final GridPortableContext ctx;
+
     /** */
     private final GridPortableReaderImpl reader;
 
@@ -36,9 +38,11 @@ class GridPortableObjectImpl implements GridPortableObject {
      * @param typeId Type ID.
      * @param hashCode Hash code.
      */
-    GridPortableObjectImpl(GridPortableReaderImpl reader, boolean userType, int typeId, int hashCode) {
+    GridPortableObjectImpl(GridPortableContext ctx, GridPortableReaderImpl reader, boolean userType, int typeId,
+        int hashCode) {
         assert reader != null;
 
+        this.ctx = ctx;
         this.reader = reader;
         this.userType = userType;
         this.typeId = typeId;
@@ -62,14 +66,10 @@ class GridPortableObjectImpl implements GridPortableObject {
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> T deserialize() throws GridPortableException {
-        Class<?> cls = null; // TODO
+        GridPortableClassDescriptor desc = ctx.descriptorForTypeId(typeId);
 
-        if (cls == null)
-            throw new GridPortableInvalidClassException(""); // TODO: message
-
-        GridPortableClassDescriptor desc = GridPortableClassDescriptor.get(cls);
-
-        assert desc != null;
+        if (desc == null)
+            throw new GridPortableInvalidClassException("Unknown type ID: " + typeId);
 
         return (T)desc.read(reader);
     }

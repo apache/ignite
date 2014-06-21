@@ -14,7 +14,7 @@ package org.gridgain.grid.portable;
  */
 public class GridPortableTypeConfiguration {
     /** Type name. */
-    private String typeName;
+    private String clsName;
 
     /** ID mapper. */
     private GridPortableIdMapper idMapper;
@@ -27,17 +27,17 @@ public class GridPortableTypeConfiguration {
      *
      * @return Type name.
      */
-    public String getTypeName() {
-        return typeName;
+    public String getClassName() {
+        return clsName;
     }
 
     /**
      * Sets type name.
      *
-     * @param typeName Type name.
+     * @param clsName Type name.
      */
-    public void setTypeName(String typeName) {
-        this.typeName = typeName;
+    public void setClassName(String clsName) {
+        this.clsName = clsName;
     }
 
     /**

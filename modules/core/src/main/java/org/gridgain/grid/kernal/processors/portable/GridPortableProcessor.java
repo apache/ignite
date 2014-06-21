@@ -10,10 +10,26 @@
 package org.gridgain.grid.kernal.processors.portable;
 
 import org.gridgain.grid.kernal.processors.*;
+import org.gridgain.grid.portable.*;
+import org.jetbrains.annotations.*;
+
+import java.nio.*;
 
 /**
  * Portable processor.
  */
 public interface GridPortableProcessor extends GridProcessor {
+    /**
+     * @param obj Object to marshal.
+     * @return Byte buffer.
+     * @throws GridPortableException In case of error.
+     */
+    public ByteBuffer marshal(@Nullable Object obj) throws GridPortableException;
 
+    /**
+     * @param arr Byte array.
+     * @return Portable object.
+     * @throws GridPortableException
+     */
+    @Nullable public GridPortableObject unmarshal(byte[] arr) throws GridPortableException;
 }
