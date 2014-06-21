@@ -48,6 +48,9 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
         return ccfg;
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testOnHeapTiered() throws Exception {
         memMode = ONHEAP_TIERED;
 
@@ -61,6 +64,9 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testOffHeapTiered() throws Exception {
         memMode = OFFHEAP_TIERED;
 
@@ -74,6 +80,9 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testOffHeapValuesOnly() throws Exception {
         memMode = OFFHEAP_VALUES;
 
@@ -87,6 +96,9 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void checkByteArrays() throws Exception {
         int keyCnt = 1000;
 
