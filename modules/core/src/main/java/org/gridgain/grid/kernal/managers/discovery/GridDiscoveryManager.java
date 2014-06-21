@@ -2005,7 +2005,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
         /**
          * Gets all nodes that have cache with given name and should participate in affinity calculation. With
-         * partitioned cache nodes with near-only cache no not participate in affinity node calculation.
+         * partitioned cache nodes with near-only cache do not participate in affinity node calculation.
          *
          * @param cacheName Cache name.
          * @param topVer Topology version.

@@ -784,36 +784,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
             try {
                 lastTopVer = ctx.discovery().topologyVersion();
 
-                if (isOldest) {
-                    GridNode oldest = null;
-
-                    long minOrder = Long.MAX_VALUE;
-
-                    for (GridNode n : super.nodes()) {
-                        if (n.order() < minOrder) {
-                            oldest = n;
-
-                            minOrder = n.order();
-                        }
-                    }
-
-                    this.node = oldest;
-                }
-                else {
-                    GridNode youngest = null;
-
-                    long maxOrder = Long.MIN_VALUE;
-
-                    for (GridNode n : super.nodes()) {
-                        if (n.order() > maxOrder) {
-                            youngest = n;
-
-                            maxOrder = n.order();
-                        }
-                    }
-
-                    this.node = youngest;
-                }
+                this.node = isOldest ? U.oldest(super.nodes()) : U.youngest(super.nodes());
             }
             finally {
                 unguard();
