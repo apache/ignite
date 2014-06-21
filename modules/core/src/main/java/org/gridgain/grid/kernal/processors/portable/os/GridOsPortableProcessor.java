@@ -24,7 +24,7 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     /**
      * @param ctx Kernal context.
      */
-    protected GridOsPortableProcessor(GridKernalContext ctx) {
+    public GridOsPortableProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 

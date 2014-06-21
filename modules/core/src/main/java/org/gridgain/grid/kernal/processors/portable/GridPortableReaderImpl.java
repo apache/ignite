@@ -470,7 +470,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     @Nullable @Override public byte[] readByteArray() throws GridPortableException {
         byte[] arr = readByteArray(rawOff);
 
-        rawOff += arr.length;
+        rawOff += 4 + arr.length;
 
         return arr;
     }
@@ -491,7 +491,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     @Nullable @Override public short[] readShortArray() throws GridPortableException {
         short[] arr = readShortArray(rawOff);
 
-        rawOff += arr.length << 1;
+        rawOff += 4 + arr.length << 1;
 
         return arr;
     }
@@ -512,7 +512,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     @Nullable @Override public int[] readIntArray() throws GridPortableException {
         int[] arr = readIntArray(rawOff);
 
-        rawOff += arr.length << 2;
+        rawOff += 4 + arr.length << 2;
 
         return arr;
     }
@@ -533,7 +533,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     @Nullable @Override public long[] readLongArray() throws GridPortableException {
         long[] arr = readLongArray(rawOff);
 
-        rawOff += arr.length << 3;
+        rawOff += 4 + arr.length << 3;
 
         return arr;
     }
@@ -554,7 +554,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     @Nullable @Override public float[] readFloatArray() throws GridPortableException {
         float[] arr = readFloatArray(rawOff);
 
-        rawOff += arr.length << 2;
+        rawOff += 4 + arr.length << 2;
 
         return arr;
     }
@@ -575,7 +575,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     @Nullable @Override public double[] readDoubleArray() throws GridPortableException {
         double[] arr = readDoubleArray(rawOff);
 
-        rawOff += arr.length << 3;
+        rawOff += 4 + arr.length << 3;
 
         return arr;
     }
@@ -596,7 +596,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     @Nullable @Override public char[] readCharArray() throws GridPortableException {
         char[] arr = readCharArray(rawOff);
 
-        rawOff += arr.length << 1;
+        rawOff += 4 + arr.length << 1;
 
         return arr;
     }
@@ -617,7 +617,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     @Nullable @Override public boolean[] readBooleanArray() throws GridPortableException {
         boolean[] arr = readBooleanArray(rawOff);
 
-        rawOff += arr.length;
+        rawOff += 4 + arr.length;
 
         return arr;
     }

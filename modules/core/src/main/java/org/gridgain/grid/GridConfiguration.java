@@ -601,6 +601,7 @@ public class GridConfiguration {
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
         p2pSvc = cfg.getPeerClassLoadingExecutorService();
         p2pSvcShutdown = cfg.getPeerClassLoadingExecutorServiceShutdown();
+        portableCfg = cfg.getPortableConfiguration();
         restAccessibleFolders = cfg.getRestAccessibleFolders();
         restEnabled = cfg.isRestEnabled();
         restIdleTimeout = cfg.getRestIdleTimeout();

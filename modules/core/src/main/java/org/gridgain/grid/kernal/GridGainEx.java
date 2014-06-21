@@ -1679,6 +1679,9 @@ public class GridGainEx {
             // REST configuration.
             myCfg.setClientConnectionConfiguration(clientCfg);
 
+            // Portable configuration.
+            myCfg.setPortableConfiguration(cfg.getPortableConfiguration());
+
             // Replication configuration.
             myCfg.setDrSenderHubConfiguration(cfg.getDrSenderHubConfiguration());
             myCfg.setDrReceiverHubConfiguration(cfg.getDrReceiverHubConfiguration());
