@@ -36,6 +36,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  * @author @java.author
  * @version @java.version
  */
+@SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions"})
 public class GridServiceProcessor extends GridProcessorAdapter {
     /** Time to wait before reassignment retries. */
     private static final long RETRY_TIMEOUT = 1000;
@@ -74,6 +75,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         ctx.event().addLocalEventListener(new TopologyListener(), EVTS_DISCOVERY);
         ctx.event().addLocalEventListener(new DeploymentListener(), EVT_CACHE_OBJECT_PUT);
+        ctx.event().addLocalEventListener(new AssignmentListener(), EVT_CACHE_OBJECT_PUT);
 
         for (GridServiceConfiguration c : ctx.config().getServiceConfiguration())
             deploy(c);
@@ -161,7 +163,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         validate(cfg);
 
         try {
-            cfgCache.putIfAbsent(new GridServiceConfigurationKey(cfg.getName()), cfg);
+            if (cfgCache.putxIfAbsent(new GridServiceConfigurationKey(cfg.getName()), cfg)) {
+
+            }
         }
         catch (GridException e) {
             log.error("Failed to deploy service: " + cfg.getName(), e);
@@ -462,7 +466,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         /** Thread factory. */
         private GridThreadFactory threadFactory = new GridThreadFactory(ctx.gridName());
 
-        @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+        /** {@inheritDoc} */
         @Override public void onEvent(GridEvent evt) {
             if (evt.type() == EVT_CACHE_OBJECT_PUT) {
                 Object val = ((GridCacheEvent)evt).newValue();
