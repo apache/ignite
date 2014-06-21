@@ -23,14 +23,16 @@ namespace GridGain.Client.Portable
         {
             // No-op.
         }
-
+        
         /**
          * <summary>Constructor.</summary>
-         * <param name="typeName">Type name.</param>
-         */
-        public GridClientPortableTypeConfiguration(string typeName)
+         * <param name="type">Type.</param>
+         */ 
+        public GridClientPortableTypeConfiguration(Type type)
         {
-            TypeName = typeName;
+            AssemblyName = type.Assembly.GetName().Name;
+            AssemblyVersion = type.Assembly.GetName().Version.ToString();
+            TypeName = type.FullName;
         }
 
         /**
@@ -42,6 +44,24 @@ namespace GridGain.Client.Portable
             TypeName = cfg.TypeName;
             IdMapper = cfg.IdMapper;
             Serializer = cfg.Serializer;
+        }
+
+        /**
+         * <summary>Assembly name.</summary>
+         */ 
+        public string AssemblyName
+        {
+            get;
+            set;
+        }
+
+        /**
+         * <summary>Assembly version.</summary>
+         */
+        public string AssemblyVersion
+        {
+            get;
+            set;
         }
 
         /**
@@ -80,8 +100,9 @@ namespace GridGain.Client.Portable
         /** {@inheritDoc} */
         override public String ToString()
         {
-            return typeof(GridClientPortableTypeConfiguration).Name + " [typeName=" + TypeName +
-                ", IdMapper=" + IdMapper + ", Serializer=" + Serializer + ']';
+            return typeof(GridClientPortableTypeConfiguration).Name + " [assemblyName=" + AssemblyName + 
+                ", assemblyVersion=" + AssemblyVersion + ", typeName=" + TypeName + ", IdMapper=" + IdMapper +
+                ", Serializer=" + Serializer + ']';
         }
     }
 }

@@ -9,17 +9,19 @@
 
 namespace GridGain.Client.Portable
 {
+    using System;
+
     /**
      * <summary>Maps class name and class field names to integer identifiers.</summary>
      */ 
     public abstract class GridClientPortableIdResolver
     {
         /**
-         * <summary>Gets class ID for the given class.</summary>
-         * <param name="className">Class name.</param>
+         * <summary>Gets type ID for the given type.</summary>
+         * <param name="type">Type.</param>
          * <returns>ID of the class or null in case annotation or hash code is to be used.</returns>
          */
-        public virtual int? TypeId(string className)
+        public virtual int? TypeId(Type type)
         {
             return null;
         }

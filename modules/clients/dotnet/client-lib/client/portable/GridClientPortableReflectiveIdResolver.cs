@@ -29,7 +29,7 @@ namespace GridGain.Client.Portable
             BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
 
         /** Type IDs. */
-        private readonly IDictionary<string, int> typeIds = new Dictionary<string, int>();
+        private readonly IDictionary<Type, int> typeIds = new Dictionary<Type, int>();
 
         /** Field IDs. */
         private readonly IDictionary<KeyValuePair<int, string>, int> fieldIds = 
@@ -44,11 +44,11 @@ namespace GridGain.Client.Portable
         } 
 
         /** <inheritdoc /> */
-        override public int? TypeId(string typeName)
+        override public int? TypeId(Type type)
         {
             int typeId;
 
-            return typeIds.TryGetValue(typeName, out typeId) ? typeId : (int?)null;
+            return typeIds.TryGetValue(type, out typeId) ? typeId : (int?)null;
         }
 
         /** <inheritdoc /> */
@@ -62,33 +62,32 @@ namespace GridGain.Client.Portable
         
         /**
          * <summary>Register particular type.</summary>
-         * <param name="typeName">Type name.</param>
+         * <param name="type">Type.</param>
          */ 
-        public void Register(string typeName)
+        public void Register(Type type)
         {
-            if (typeIds.ContainsKey(typeName))
-                throw new GridClientPortableException("Type already registered: " + typeName);
+            if (typeIds.ContainsKey(type))
+                throw new GridClientPortableException("Type already registered: " + type.AssemblyQualifiedName);
             else
             {
                 try
                 {
                     // 1. Get type ID.
-                    Type type = Type.GetType(typeName);
-
                     object[] attrs = type.GetCustomAttributes(ATTR, false);
 
                     int typeId = attrs.Length > 0 ? ((GridClientPortableId)attrs[0]).Id :
                         GridClientPortableUilts.StringHashCode(type.Name.ToLower());
 
                     // 2. Detect collisions on type ID.
-                    foreach (KeyValuePair<string, int> pair in typeIds)
+                    foreach (KeyValuePair<Type, int> pair in typeIds)
                     {
                         if (typeId == pair.Value)
-                            throw new GridClientPortableException("Conflicting type IDs [type1=" + pair.Key +
-                                ", type2=" + type.Name + ", typeId=" + typeId + ']');
+                            throw new GridClientPortableException("Conflicting type IDs [type1=" + 
+                                pair.Key.AssemblyQualifiedName + ", type2=" + type.AssemblyQualifiedName + 
+                                ", typeId=" + typeId + ']');
                     }
 
-                    typeIds[typeName] = typeId;
+                    typeIds[type] = typeId;
 
                     // 3. Get field IDs.
                     Type curType = type;
@@ -122,7 +121,7 @@ namespace GridGain.Client.Portable
                 }
                 catch (Exception e)
                 {
-                    throw new GridClientPortableException("Cannot instantiate type: " + typeName, e);
+                    throw new GridClientPortableException("Cannot instantiate type: " + type.AssemblyQualifiedName, e);
                 }
             }
         }        

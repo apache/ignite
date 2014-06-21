@@ -11,6 +11,7 @@ namespace GridGain.Client.Impl.Portable
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using GridGain.Client.Impl.Portable;
     using GridGain.Client.Portable;
     
@@ -94,32 +95,8 @@ namespace GridGain.Client.Impl.Portable
         public int TypeId()
         {
             return typeId;
-        }
-
-        /** <inheritdoc /> */
-        public string TypeName()
-        {
-            return marsh.TypeName(typeId, userType);
-        }
-
-        /** <inheritdoc /> */
-        public ICollection<int> Fields()
-        {
-            return fields;
-        }
-        
-        /** <inheritdoc /> */
-        public int FieldTypeId(string fieldName)
-        {
-            throw new NotImplementedException();
-        }
-
-        /** <inheritdoc /> */
-        public int FieldTypeName(string fieldName)
-        {
-            throw new NotImplementedException();
-        }
-
+        }        
+       
         /** <inheritdoc /> */
         public F Field<F>(string fieldName)
         {
@@ -129,7 +106,11 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public T Deserialize<T>()
         {
-            throw new System.NotImplementedException();
+            MemoryStream stream = new MemoryStream(data);
+
+            stream.Seek(offset, SeekOrigin.Begin);
+
+            return marsh.Deserialize<T>(stream);
         }
 
         /** <inheritdoc /> */

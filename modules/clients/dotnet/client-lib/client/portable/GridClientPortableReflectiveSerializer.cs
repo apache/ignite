@@ -52,7 +52,6 @@ namespace GridGain.Client.Portable
             }
             else
             {
-
                 Type type = obj.GetType();
 
                 Descriptor desc = types[type];
@@ -209,21 +208,57 @@ namespace GridGain.Client.Portable
              * <param name="name">Field name.</param>
              * <param name="actions">Actions.</param>
              */
-            private void HandlePrimitive(FieldInfo field, Type type, string name, 
+            private unsafe void HandlePrimitive(FieldInfo field, Type type, string name, 
                 ICollection<Action<Object, IGridClientPortableWriter>> actions)
             {
                 unchecked
                 {
                     if (type == typeof(Boolean))
                         actions.Add((obj, writer) => { writer.WriteBoolean(name, (Boolean)field.GetValue(obj)); });
-                    else if (type == typeof(Byte) || type == typeof(SByte))
+                    else if (type == typeof(SByte))
+                    {
+                        actions.Add((obj, writer) =>
+                            {
+                                SByte val = (SByte)field.GetValue(obj);
+
+                                writer.WriteByte(name, *(byte*)&val);
+                            });
+                    }
+                    else if (type == typeof(Byte))
                         actions.Add((obj, writer) => { writer.WriteByte(name, (Byte)field.GetValue(obj)); });
-                    else if (type == typeof(Int16) || type == typeof(UInt16))
+                    else if (type == typeof(Int16))
                         actions.Add((obj, writer) => { writer.WriteShort(name, (Int16)field.GetValue(obj)); });
-                    else if (type == typeof(Int32) || type == typeof(UInt32))
+                    else if (type == typeof(UInt16))
+                    {
+                        actions.Add((obj, writer) =>
+                        {
+                            UInt16 val = (UInt16)field.GetValue(obj);
+
+                            writer.WriteShort(name, *(Int16*)&val);
+                        });
+                    }
+                    else if (type == typeof(Int32))
                         actions.Add((obj, writer) => { writer.WriteInt(name, (Int32)field.GetValue(obj)); });
-                    else if (type == typeof(Int64) || type == typeof(UInt64))
+                    else if (type == typeof(UInt32))
+                    {
+                        actions.Add((obj, writer) =>
+                        {
+                            UInt32 val = (UInt32)field.GetValue(obj);
+
+                            writer.WriteInt(name, *(Int32*)&val);
+                        });
+                    }
+                    else if (type == typeof(Int64))
                         actions.Add((obj, writer) => { writer.WriteLong(name, (Int64)field.GetValue(obj)); });
+                    else if (type == typeof(UInt64))
+                    {
+                        actions.Add((obj, writer) =>
+                        {
+                            UInt64 val = (UInt64)field.GetValue(obj);
+
+                            writer.WriteLong(name, *(Int64*)&val);
+                        });
+                    }
                     else if (type == typeof(Char))
                         actions.Add((obj, writer) => { writer.WriteChar(name, (Char)field.GetValue(obj)); });
                     else if (type == typeof(Single))

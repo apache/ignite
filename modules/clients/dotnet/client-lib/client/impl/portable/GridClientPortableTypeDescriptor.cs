@@ -13,17 +13,29 @@ namespace GridGain.Client.Impl.Portable
     class GridClientPortableTypeDescriptor
     {
         /**
+         * <param name="type">Type.</param>
          * <param name="typeId">Type ID.</param>
          * <param name="userType">User type flag.</param>
          * <param name="mapper">Mapper.</param>
          * <param name="serializer">Serializer</param>
          */
-        public GridClientPortableTypeDescriptor(int typeId, bool userType, GridClientPortableIdResolver mapper, IGridClientPortableSerializer serializer)
+        public GridClientPortableTypeDescriptor(Type type, int typeId, bool userType, 
+            GridClientPortableIdResolver mapper, IGridClientPortableSerializer serializer)
         {
+            Type = type;
             TypeId = typeId;
             UserType = userType;
             Mapper = mapper;
             Serializer = serializer;
+        }
+
+        /**
+        * <summary>Type.</summary>
+        */
+        public Type Type
+        {
+            get;
+            private set;
         }
 
         /**

@@ -13,6 +13,8 @@ namespace GridGain.Client.Impl.Portable
     using System.Collections;
     using System.Collections.Generic;
     using System.IO;
+    using System.Reflection;
+    using System.Runtime.Serialization;
     using GridGain.Client.Impl.Message;
     using GridGain.Client.Portable;    
 
@@ -21,22 +23,22 @@ namespace GridGain.Client.Impl.Portable
     /** <summary>Portable marshaller implementation.</summary> */
     internal class GridClientPortableMarshaller
     {
-        /** Byte array of size 8. */
-        private static readonly byte[] BYTE_8;
-
         /** Predefeined system types. */
         private static readonly ISet<Type> SYS_TYPES = new HashSet<Type>();
 
-        /** Descriptors. */
-        public IDictionary<string, GridClientPortableTypeDescriptor> descs = new Dictionary<string, GridClientPortableTypeDescriptor>();
+        /** Type to descriptor map. */
+        public IDictionary<Type, GridClientPortableTypeDescriptor> typeToDesc = 
+            new Dictionary<Type, GridClientPortableTypeDescriptor>();
+
+        /** ID to descriptor map. */
+        public IDictionary<int, GridClientPortableTypeDescriptor> idToDesc = 
+            new Dictionary<int, GridClientPortableTypeDescriptor>();
 
         /**
          * <summary>Static initializer.</summary>
          */
         static GridClientPortableMarshaller()
         {
-            BYTE_8 = new byte[8];
-
             SYS_TYPES.Add(typeof(GridClientAuthenticationRequest));
             SYS_TYPES.Add(typeof(GridClientTopologyRequest));
             SYS_TYPES.Add(typeof(GridClientTaskRequest));
@@ -57,6 +59,25 @@ namespace GridGain.Client.Impl.Portable
             // 1. Validation.
             if (cfg == null)
                 cfg = new GridClientPortableConfiguration();
+
+            if (cfg.TypeConfigurations == null)
+                cfg.TypeConfigurations = new List<GridClientPortableTypeConfiguration>();
+
+            foreach (GridClientPortableTypeConfiguration typeCfg in cfg.TypeConfigurations)
+            {
+                if (typeCfg.TypeName == null || typeCfg.TypeName.Length == 0)
+                    throw new GridClientPortableException("Type name cannot be null or empty: " + typeCfg);
+
+                if (typeCfg.AssemblyName != null && typeCfg.AssemblyName.Length == 0)
+                    throw new GridClientPortableException("Assembly name cannot be empty: " + typeCfg);
+
+                if (typeCfg.AssemblyVersion != null && typeCfg.AssemblyVersion.Length == 0)
+                    throw new GridClientPortableException("Assembly version cannot be empty: " + typeCfg);
+
+                if (typeCfg.AssemblyVersion != null && typeCfg.AssemblyName == null)
+                    throw new GridClientPortableException("Assembly version cannot be set when assembly " + 
+                        "name is null: " + typeCfg);
+            }
 
             // 2. Create default serializers and mappers.
             GridClientPortableReflectiveIdResolver refMapper = new GridClientPortableReflectiveIdResolver();
@@ -91,9 +112,9 @@ namespace GridGain.Client.Impl.Portable
         private void addSystemType(Type type, GridClientPortableReflectiveIdResolver refMapper, 
             GridClientPortableReflectiveSerializer refSerializer)
         {
-            refMapper.Register(type.FullName);
+            refMapper.Register(type);
 
-            int typeId = refMapper.TypeId(type.FullName).Value;
+            int typeId = refMapper.TypeId(type).Value;
 
             refSerializer.Register(type, typeId, refMapper);
 
@@ -110,21 +131,9 @@ namespace GridGain.Client.Impl.Portable
         private void addUserType(GridClientPortableConfiguration cfg, GridClientPortableTypeConfiguration typeCfg, 
             GridClientPortableReflectiveIdResolver refMapper, GridClientPortableReflectiveSerializer refSerializer) 
         {
-            // 1. Validation.
-            if (typeCfg.TypeName == null)
-                throw new GridClientPortableException("Type name cannot be null: " + typeCfg);
-
-            Type type;
-
-            try
-            {
-                type = Type.GetType(typeCfg.TypeName);
-            }
-            catch (Exception e)
-            {
-                throw new GridClientPortableException("Type with the given name is not found: " + typeCfg.TypeName, e);
-            }
-
+            // 1. Get type.
+            Type type = GetType(typeCfg);
+            
             // 2. Detect mapper and serializer.
             GridClientPortableIdResolver mapper = null;
             IGridClientPortableSerializer serializer = null;
@@ -184,12 +193,12 @@ namespace GridGain.Client.Impl.Portable
             // 2.4. Merge reflective stuff if necessary.
             if (mapper is GridClientPortableReflectiveIdResolver)
             {                
-                refMapper.Register(typeCfg.TypeName);
+                refMapper.Register(type);
 
                 mapper = refMapper;
             }
 
-            int? typeIdRef = mapper.TypeId(typeCfg.TypeName);
+            int? typeIdRef = mapper.TypeId(type);
 
             int typeId = typeIdRef.HasValue ? typeIdRef.Value : PU.StringHashCode(typeCfg.TypeName.ToLower());
 
@@ -214,14 +223,40 @@ namespace GridGain.Client.Impl.Portable
         private void addType(Type type, int typeId, bool userType, GridClientPortableIdResolver mapper, 
             IGridClientPortableSerializer serializer)
         {
-            foreach (KeyValuePair<string, GridClientPortableTypeDescriptor> desc in descs)
+            if (idToDesc.ContainsKey(typeId))
+                throw new GridClientPortableException("Conflicting type IDs [type1=" +
+                        idToDesc[typeId].Type.AssemblyQualifiedName + ", type2=" + type.AssemblyQualifiedName +
+                        ", typeId=" + typeId + ']');
+
+            GridClientPortableTypeDescriptor descriptor = 
+                new GridClientPortableTypeDescriptor(type, typeId, userType, mapper, serializer);
+
+            typeToDesc[type] = descriptor;
+            idToDesc[typeId] = descriptor;
+        }
+
+        /**
+         * <summary>Gets type for type configuration.</summary>
+         * <param name="typeCfg">Type configuration.</param>
+         * <returns>Type.</returns>
+         */
+        private Type GetType(GridClientPortableTypeConfiguration typeCfg)
+        {
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                if (desc.Value.TypeId == typeId)
-                    throw new GridClientPortableException("Conflicting type IDs [type1=" + desc.Key +
-                        ", type2=" + type.FullName + ", typeId=" + typeId + ']');
+                if (typeCfg.AssemblyName != null && !typeCfg.AssemblyName.Equals(assembly.GetName().Name))
+                    continue;
+
+                if (typeCfg.AssemblyVersion != null && !typeCfg.AssemblyVersion.Equals(assembly.GetName().Version.ToString()))
+                    continue;
+
+                Type type = assembly.GetType(typeCfg.TypeName, false, false);
+
+                if (type != null)
+                    return type;
             }
 
-            descs[type.FullName] = new GridClientPortableTypeDescriptor(typeId, false, mapper, serializer);
+            throw new GridClientPortableException("Cannot find type for type configuration: " + typeCfg);
         }
 
         /**
@@ -247,7 +282,7 @@ namespace GridGain.Client.Impl.Portable
          */
         public void Marshal(object val, Stream stream, GridClientPortableSerializationContext ctx)
         {
-            new WriteContext(ctx, descs, stream).Write(val);
+            new WriteContext(ctx, typeToDesc, stream).Write(val);
         }
 
         /**
@@ -292,15 +327,18 @@ namespace GridGain.Client.Impl.Portable
             // Read fields.
             HashSet<int> fields = null;
 
-            if (!userType) 
+            if (userType) 
             { 
                 long curPos = input.Position;
                 long endPos = pos + (rawDataOffset == 0 ? len : rawDataOffset);
 
                 while (curPos < endPos)
                 {
+                    long pp = input.Position;
                     int fieldId = PU.ReadInt(input);
                     int fieldLen = PU.ReadInt(input);
+
+                    Console.WriteLine("Read field: " + fieldId + " " + fieldLen + " " + pp);
 
                     if (fields == null)
                         fields = new HashSet<int>();
@@ -308,26 +346,78 @@ namespace GridGain.Client.Impl.Portable
                     fields.Add(fieldId);
 
                     input.Seek(fieldLen, SeekOrigin.Current);
+
+                    curPos = input.Position;
                 }
             }
 
             input.Seek(pos + len, SeekOrigin.Begin); // Position input after read data.
-
-            return new GridClientPortableObjectImpl(this, input.GetBuffer(), (int)pos, len, userType, typeId, 
+            
+            return new GridClientPortableObjectImpl(this, input.ToArray(), (int)pos, len, userType, typeId, 
                 hashCode, rawDataOffset, fields);
         }
 
         /**
-         * <summary>Gets type name by ID.</summary>
-         * <param name="typeId">Type ID.</param>
-         * <param name="userType">User type flag.</param>
+         * <summary>Deserializes object.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Deserialized value.</returns>
          */ 
-        public string TypeName(int typeId, bool userType)
+        public T Deserialize<T>(MemoryStream stream)
         {
-            throw new NotImplementedException();
-        }
+            byte hdr = (byte)stream.ReadByte();
 
-        
+            if (hdr == PU.HDR_FULL)
+            {
+                bool userType = PU.ReadBoolean(stream);
+                int typeId = PU.ReadInt(stream);
+                int hashCode = PU.ReadInt(stream);
+                int len = PU.ReadInt(stream);
+                int rawPos = PU.ReadInt(stream);
+                
+                if (userType)
+                {
+                    // 1. Lookup type and instantiate it.
+                    GridClientPortableTypeDescriptor desc;
+
+                    if (!idToDesc.TryGetValue(typeId, out desc))
+                        throw new GridClientPortableException("Unknown type ID: " + typeId);
+
+                    object obj;
+
+                    try
+                    {
+                        obj = FormatterServices.GetUninitializedObject(desc.Type);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new GridClientPortableException("Failed to create type instance: " + 
+                            desc.Type.AssemblyQualifiedName, e);
+                    }
+
+                    // TODO: GG-8535L Implement reader.
+
+                    return desc.Serializer.ReadPortable<T>(obj, null);
+                }
+                else
+                {
+                    // 1. Primitive type?
+                    bool processed;
+
+                    object res = PU.ReadPrimitive(typeId, (typeof(T)), stream, out processed);
+
+                    if (processed) 
+                        return (T)res;
+
+                    return (T)(new object());
+                }
+            }
+            else if (hdr == PU.HDR_HND)
+            {
+                throw new NotImplementedException();
+            }
+            else
+                throw new GridClientPortableException("Invalid header: " + hdr);
+        }
 
         /**
          * <summary>Write context.</summary>
@@ -338,7 +428,7 @@ namespace GridGain.Client.Impl.Portable
             private readonly GridClientPortableSerializationContext ctx;
 
             /** Type descriptors. */
-            private readonly IDictionary<string, GridClientPortableTypeDescriptor> descs;
+            private readonly IDictionary<Type, GridClientPortableTypeDescriptor> descs;
 
             /** Output. */
             private readonly Stream stream;
@@ -349,9 +439,6 @@ namespace GridGain.Client.Impl.Portable
             /** Handles. */
             private IDictionary<GridClientPortableObjectHandle, int> hnds;
                         
-            /** Current object handle number. */
-            private int curHndNum;
-
             /**
              * <summary>Constructor.</summary>
              * <param name="ctx">Client connection context.</param>
@@ -359,7 +446,7 @@ namespace GridGain.Client.Impl.Portable
              * <param name="stream">Output stream.</param>
              */
             public WriteContext(GridClientPortableSerializationContext ctx, 
-                IDictionary<string, GridClientPortableTypeDescriptor> descs, Stream stream)
+                IDictionary<Type, GridClientPortableTypeDescriptor> descs, Stream stream)
             {
                 this.ctx = ctx;
                 this.descs = descs;
@@ -383,15 +470,22 @@ namespace GridGain.Client.Impl.Portable
                 }
                 
                 // 2. Write primitive.
+                long pos = stream.Position; 
+
                 Type type = obj.GetType();
 
                 byte typeId = PU.PrimitiveTypeId(type);
 
                 if (typeId != 0)
                 {
-                    stream.WriteByte(typeId);
-
+                    stream.WriteByte(PU.HDR_FULL);
+                    PU.WriteBoolean(false, stream);
+                    PU.WriteInt(typeId, stream);
+                    PU.WriteInt(obj.GetHashCode(), stream);
+                    stream.Seek(8, SeekOrigin.Current);
                     PU.WritePrimitive(typeId, obj, stream);
+
+                    WriteLength(stream, pos, stream.Position, 0);                    
 
                     return;
                 }
@@ -402,21 +496,19 @@ namespace GridGain.Client.Impl.Portable
 
                 GridClientPortableObjectHandle hnd = new GridClientPortableObjectHandle(obj);
 
-                int hndNum;
-                
-                if (hnds.TryGetValue(hnd, out hndNum)) {
+                int hndPos;
+
+                if (hnds.TryGetValue(hnd, out hndPos))
+                {
                     stream.WriteByte(PU.HDR_HND);
 
-                    PU.WriteInt(hndNum, stream);
+                    PU.WriteInt(hndPos, stream);
 
                     return;
                 }
                 else 
-                    hnds.Add(hnd, curHndNum++);
-
-                // 4. Complex object with handle, remember position.
-                long pos = stream.Position; 
-
+                    hnds.Add(hnd, (int)pos);
+                
                 // 4. Write string.
                 dynamic obj0 = obj;
 
@@ -426,7 +518,9 @@ namespace GridGain.Client.Impl.Portable
                     PU.WriteBoolean(false, stream);                    
                     PU.WriteInt(PU.TYPE_STRING, stream);
                     PU.WriteInt(PU.StringHashCode(obj0), stream);
-                    PU.WriteByteArray(BYTE_8, stream);
+
+                    stream.Seek(8, SeekOrigin.Current);
+
                     PU.WriteString(obj0, stream);
 
                     WriteLength(stream, pos, stream.Position, 0);
@@ -441,7 +535,9 @@ namespace GridGain.Client.Impl.Portable
                     PU.WriteBoolean(false, stream);    
                     PU.WriteInt(PU.TYPE_GUID, stream);
                     PU.WriteInt(PU.GuidHashCode(obj0), stream);
-                    PU.WriteByteArray(BYTE_8, stream);
+
+                    stream.Seek(8, SeekOrigin.Current);
+
                     PU.WriteGuid(obj0, stream);
 
                     WriteLength(stream, pos, stream.Position, 0);
@@ -473,17 +569,18 @@ namespace GridGain.Client.Impl.Portable
                 // TODO: GG-8535: Implement.
 
                 // 11. Just object.
-                GridClientPortableTypeDescriptor desc = descs[type.Name];
-
-                if (desc == null)
-                    throw new GridClientPortableException("Unsupported object type [type=" + type + 
+                GridClientPortableTypeDescriptor desc;
+                
+                if (!descs.TryGetValue(type, out desc))
+                    throw new GridClientPortableException("Unsupported object type [type=" + type +
                         ", object=" + obj + ']');
-
+                
                 stream.WriteByte(PU.HDR_FULL);
                 PU.WriteBoolean(desc.UserType, stream);
                 PU.WriteInt(desc.TypeId, stream);
                 PU.WriteInt(obj.GetHashCode(), stream);
-                PU.WriteByteArray(BYTE_8, stream);
+
+                stream.Seek(8, SeekOrigin.Current);
 
                 Frame oldFrame = CurrentFrame;
 
@@ -626,7 +723,8 @@ namespace GridGain.Client.Impl.Portable
 
                 WriteField(fieldName);
 
-                PU.WriteInt(1, ctx.Stream);
+                PU.WriteInt(1 + 1, ctx.Stream);
+                PU.WriteByte(PU.TYPE_BOOL, ctx.Stream);
 
                 WriteBoolean(val);
 
@@ -646,7 +744,8 @@ namespace GridGain.Client.Impl.Portable
 
                 WriteField(fieldName);
 
-                PU.WriteInt(1 + (val == null ? 0 : val.Length), ctx.Stream);
+                PU.WriteInt(1 + 1 + (val == null ? 0 : val.Length), ctx.Stream);
+                PU.WriteByte(PU.TYPE_ARRAY_BOOL, ctx.Stream);
 
                 WriteBooleanArray(val);
             }
@@ -664,7 +763,8 @@ namespace GridGain.Client.Impl.Portable
 
                 WriteField(fieldName);
 
-                PU.WriteInt(1, ctx.Stream);
+                PU.WriteInt(1 + 1, ctx.Stream);
+                PU.WriteByte(PU.TYPE_BYTE, ctx.Stream);
 
                 WriteByte(val);
             }
@@ -681,9 +781,9 @@ namespace GridGain.Client.Impl.Portable
                 ObtainFrame();
 
                 WriteField(fieldName);
-
-                PU.WriteInt(1 + (val == null ? 0 : val.Length), ctx.Stream);
                 
+                PU.WriteInt(1 + 1 + (val == null ? 0 : val.Length), ctx.Stream);
+                PU.WriteByte(PU.TYPE_ARRAY_BYTE, ctx.Stream);
                 WriteByteArray(val);
             }
 
@@ -700,8 +800,8 @@ namespace GridGain.Client.Impl.Portable
 
                 WriteField(fieldName);
 
-                PU.WriteInt(2, ctx.Stream);
-                
+                PU.WriteInt(1 + 2, ctx.Stream);
+                PU.WriteByte(PU.TYPE_SHORT, ctx.Stream);
                 WriteShort(val);
             }
 
@@ -732,10 +832,11 @@ namespace GridGain.Client.Impl.Portable
             /** <inheritdoc /> */
             public void WriteInt(string fieldName, int val)
             {
-                ObtainFrame();
+                WriteField(fieldName);
 
-                PU.WriteInt(4, ctx.Stream);
-                
+                PU.WriteInt(1 + 4, ctx.Stream);
+                PU.WriteByte(PU.TYPE_INT, ctx.Stream);
+
                 WriteInt(val);
             }
 
@@ -752,8 +853,9 @@ namespace GridGain.Client.Impl.Portable
 
                 WriteField(fieldName);
 
-                PU.WriteInt(1 + (val == null ? 0 : 4 * val.Length), ctx.Stream);
-                
+                PU.WriteInt(1+ 1 + (val == null ? 0 : 4 * val.Length), ctx.Stream);
+                PU.WriteByte(PU.TYPE_ARRAY_INT, ctx.Stream);
+
                 WriteIntArray(val);
             }
 
@@ -770,8 +872,9 @@ namespace GridGain.Client.Impl.Portable
 
                 WriteField(fieldName);
 
-                PU.WriteInt(8, ctx.Stream);
-                
+                PU.WriteInt(1 + 8, ctx.Stream);
+                PU.WriteByte(PU.TYPE_LONG, ctx.Stream);
+
                 WriteLong(val);
             }
 
@@ -784,12 +887,11 @@ namespace GridGain.Client.Impl.Portable
             /** <inheritdoc /> */
             public void WriteLongArray(string fieldName, long[] val)
             {
-                ObtainFrame();
-
                 WriteField(fieldName);
 
-                PU.WriteInt(1 + (val == null ? 0 : 8 * val.Length), ctx.Stream);
-                
+                PU.WriteInt(1 + 1 + (val == null ? 0 : 8 * val.Length), ctx.Stream);
+                PU.WriteByte(PU.TYPE_ARRAY_BYTE, ctx.Stream);
+
                 WriteLongArray(val);
             }
 
@@ -802,7 +904,12 @@ namespace GridGain.Client.Impl.Portable
             /** <inheritdoc /> */
             public void WriteChar(string fieldName, char val)
             {
-                WriteShort(fieldName, (short)val);
+                WriteField(fieldName);
+
+                PU.WriteInt(1 + 2, ctx.Stream);
+                PU.WriteByte(PU.TYPE_CHAR, ctx.Stream);
+
+                WriteShort((short)val);
             }
 
             /** <inheritdoc /> */
@@ -818,8 +925,9 @@ namespace GridGain.Client.Impl.Portable
 
                 WriteField(fieldName);
 
-                PU.WriteInt(1 + (val == null ? 0 : 2 * val.Length), ctx.Stream);
-                
+                PU.WriteInt(1 + 1 + (val == null ? 0 : 2 * val.Length), ctx.Stream);
+                PU.WriteByte(PU.TYPE_ARRAY_CHAR, ctx.Stream);
+                 
                 WriteCharArray(val);
 
                 RestoreFrame();    
@@ -838,8 +946,9 @@ namespace GridGain.Client.Impl.Portable
 
                 WriteField(fieldName);
 
-                PU.WriteInt(4, ctx.Stream);
-                
+                PU.WriteInt(1 + 4, ctx.Stream);
+                PU.WriteByte(PU.TYPE_FLOAT, ctx.Stream);
+
                 WriteFloat(val);
 
                 RestoreFrame();
@@ -858,8 +967,9 @@ namespace GridGain.Client.Impl.Portable
 
                 WriteField(fieldName);
 
-                PU.WriteInt(1 + (val == null ? 0 : 4 * val.Length), ctx.Stream);
-                
+                PU.WriteInt(1 + 1 + (val == null ? 0 : 4 * val.Length), ctx.Stream);
+                PU.WriteByte(PU.TYPE_ARRAY_FLOAT, ctx.Stream);
+
                 WriteFloatArray(val);
 
                 RestoreFrame();
@@ -878,7 +988,8 @@ namespace GridGain.Client.Impl.Portable
 
                 WriteField(fieldName);
 
-                PU.WriteInt(4, ctx.Stream);
+                PU.WriteInt(1+ 8, ctx.Stream);
+                PU.WriteByte(PU.TYPE_DOUBLE, ctx.Stream);
 
                 WriteDouble(val);
 
@@ -898,8 +1009,9 @@ namespace GridGain.Client.Impl.Portable
 
                 WriteField(fieldName);
 
-                PU.WriteInt(1 + (val == null ? 0 : 4 * val.Length), ctx.Stream);
-                
+                PU.WriteInt(1 + 1 + (val == null ? 0 : 8 * val.Length), ctx.Stream);
+                PU.WriteByte(PU.TYPE_ARRAY_DOUBLE, ctx.Stream);
+
                 WriteDoubleArray(val);
 
                 RestoreFrame();
@@ -1099,6 +1211,8 @@ namespace GridGain.Client.Impl.Portable
                 int? fieldIdRef = Frame.Mapper.FieldId(Frame.TypeId, fieldName);
 
                 int fieldId = fieldIdRef.HasValue ? fieldIdRef.Value : PU.StringHashCode(fieldName.ToLower());
+
+                Console.WriteLine("Write field: " + fieldName + " " + fieldId + " " + ctx.Stream.Position);
 
                 PU.WriteInt(fieldId, ctx.Stream);
             }

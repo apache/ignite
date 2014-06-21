@@ -33,33 +33,7 @@ namespace GridGain.Client.Portable
          * <returns>Type ID.</returns>
          */
         int TypeId();
-
-        /**
-         * <summary>Gets portable object type name.</summary>
-         * <returns>Type name.</returns>
-         */
-        string TypeName();
-
-        /**
-         * <summary>Gets list of field IDs that are accessible in this portable object.</summary>
-         * <returns>Field IDs.</returns>
-         */
-        ICollection<int> Fields();
-
-        /**
-         * <summary>Gets field type ID.</summary>
-         * <param name="fieldName">Field name.</param>
-         * <returns>Field type ID.</returns>
-         */
-        int FieldTypeId(string fieldName);
-
-        /**
-         * <summary>Gets field type name.</summary>
-         * <param name="fieldName">Field name.</param>
-         * <returns>Field type name.</returns>
-         */
-        int FieldTypeName(string fieldName);
-        
+                        
         /**
          * <summary>Gets field value.</summary>
          * <param name="fieldName">Field name.</param>

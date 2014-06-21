@@ -157,7 +157,87 @@ namespace GridGain.Client.Impl.Portable
             SYSTEM_TYPES[typeof(char)] = TYPE_CHAR;
             SYSTEM_TYPES[typeof(float)] = TYPE_FLOAT;
             SYSTEM_TYPES[typeof(double)] = TYPE_DOUBLE;            
-        }   
+        }
+        
+        public static unsafe object ReadPrimitive(int typeId, Type type, Stream stream, out bool processed) 
+        {
+            if (type.IsGenericType)
+                type = type.GetGenericArguments()[0];
+
+            switch (typeId)
+            {
+                case TYPE_BOOL:
+                    processed = true;
+
+                    return ReadBoolean(stream);
+
+                case TYPE_BYTE:
+                    processed = true;
+
+                    byte byteVal = (byte)stream.ReadByte();
+
+                    if (type == typeof(byte))
+                        return byteVal;
+                    else
+                        return *(sbyte*)&byteVal;
+
+                case TYPE_SHORT:
+                    processed = true;
+
+                    short shortVal = ReadShort(stream);
+
+                    if (type == typeof(short))
+                        return shortVal;
+                    else
+                        return *(ushort*)&shortVal;
+
+                case TYPE_INT:
+                    processed = true;
+
+                    int intVal = ReadInt(stream);
+
+                    if (type == typeof(int))
+                        return intVal;
+                    else
+                        return *(uint*)&intVal;
+
+                case TYPE_LONG:
+                    processed = true;
+
+                    long longVal = ReadLong(stream);
+
+                    if (type == typeof(long))
+                        return longVal;
+                    else
+                        return *(ulong*)&longVal;
+
+                case TYPE_CHAR:
+                    processed = true;
+
+                    short charVal = ReadShort(stream);
+
+                    return *(char*)&charVal;
+
+                case TYPE_FLOAT:
+                    processed = true;
+
+                    int floatVal = ReadInt(stream);
+
+                    return *(float*)&floatVal;
+
+                case TYPE_DOUBLE:
+                    processed = true;
+
+                    long doubleVal = ReadLong(stream);
+
+                    return *(double*)&doubleVal;
+
+                default:
+                    processed = false;
+
+                    return null;
+            }
+        }
 
         /**
          * <summary>Get primitive type ID.</summary>
@@ -615,6 +695,29 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
+         * <summary>Read short value.</summary>
+         * <param name="stream">Output stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static short ReadShort(Stream stream)
+        {
+            short val = 0;
+
+            if (LITTLE_ENDIAN)
+            {
+                val |= (short)stream.ReadByte();
+                val |= (short)(stream.ReadByte() << 8);
+            }
+            else
+            {
+                val |= (short)(stream.ReadByte() << 8);
+                val |= (short)stream.ReadByte();
+            }
+
+            return val;
+        }
+
+        /**
          * <summary>Write short array.</summary>
          * <param name="vals">Value.</param>
          * <param name="stream">Output stream.</param>
@@ -656,7 +759,7 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
-         * <summary>Read int.</summary>
+         * <summary>Read int value.</summary>
          * <param name="stream">Output stream.</param>
          * <returns>Value.</returns>
          */
@@ -665,18 +768,18 @@ namespace GridGain.Client.Impl.Portable
             int val = 0;
 
             if (LITTLE_ENDIAN)
-            {                
-                val |= stream.ReadByte() << 24;
-                val |= stream.ReadByte() << 16;
-                val |= stream.ReadByte() << 8;
-                val |= stream.ReadByte();
-            }
-            else
             {
                 val |= stream.ReadByte();
                 val |= stream.ReadByte() << 8;
                 val |= stream.ReadByte() << 16;
                 val |= stream.ReadByte() << 24;
+            }
+            else
+            {
+                val |= stream.ReadByte() << 24;
+                val |= stream.ReadByte() << 16;
+                val |= stream.ReadByte() << 8;
+                val |= stream.ReadByte();                
             }
 
             return val;
@@ -729,6 +832,41 @@ namespace GridGain.Client.Impl.Portable
                 stream.WriteByte((byte)(val >> 8 & 0xFF));
                 stream.WriteByte((byte)(val & 0xFF));
             }
+        }
+
+        /**
+         * <summary>Read long value.</summary>
+         * <param name="stream">Output stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static long ReadLong(Stream stream)
+        {
+            long val = 0;
+
+            if (LITTLE_ENDIAN)
+            {
+                val |= (long)(stream.ReadByte()) << 0;
+                val |= (long)(stream.ReadByte()) << 8;
+                val |= (long)(stream.ReadByte()) << 16;
+                val |= (long)(stream.ReadByte()) << 24;
+                val |= (long)(stream.ReadByte()) << 32;
+                val |= (long)(stream.ReadByte()) << 40;
+                val |= (long)(stream.ReadByte()) << 48;
+                val |= (long)(stream.ReadByte()) << 56; 
+            }
+            else
+            {
+                val |= (long)(stream.ReadByte()) << 56;
+                val |= (long)(stream.ReadByte()) << 48;
+                val |= (long)(stream.ReadByte()) << 40;
+                val |= (long)(stream.ReadByte()) << 32;
+                val |= (long)(stream.ReadByte()) << 24;
+                val |= (long)(stream.ReadByte()) << 16;
+                val |= (long)(stream.ReadByte()) << 8;
+                val |= (long)(stream.ReadByte()) << 0;              
+            }
+
+            return val;
         }
 
         /**
