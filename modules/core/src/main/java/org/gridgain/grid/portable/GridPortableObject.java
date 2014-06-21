@@ -49,7 +49,7 @@ public interface GridPortableObject extends Serializable, Cloneable {
      * @throws GridPortableInvalidClassException If class doesn't exist.
      * @throws GridPortableException In case of any other error.
      */
-    @Nullable public <T extends GridPortable> T deserialize() throws GridPortableException;
+    @Nullable public <T> T deserialize() throws GridPortableException;
 
     /**
      * Creates a copy of this portable object and optionally changes field values

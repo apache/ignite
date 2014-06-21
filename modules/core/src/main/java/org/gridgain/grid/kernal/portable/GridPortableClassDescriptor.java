@@ -29,13 +29,10 @@ class GridPortableClassDescriptor {
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
     /** */
-    private static final int COL_TYPE_ID = 100;
-
-    /** */
-    private static final int MAP_TYPE_ID = 200;
-
-    /** */
     private static final ConcurrentMap<Class<?>, GridPortableClassDescriptor> CACHE = new ConcurrentHashMap8<>(256);
+
+    /** */
+    private static final int HDR_LEN = 18;
 
     /** */
     static {
@@ -106,6 +103,9 @@ class GridPortableClassDescriptor {
     private final Mode mode;
 
     /** */
+    private final boolean userType;
+
+    /** */
     private final int typeId;
 
     /** */
@@ -124,7 +124,8 @@ class GridPortableClassDescriptor {
 
         this.mode = mode;
 
-        typeId = 0;
+        userType = false;
+        typeId = mode.type;
         cls = null;
         cons = null;
         fields = null;
@@ -140,24 +141,28 @@ class GridPortableClassDescriptor {
 
         if (Collection.class.isAssignableFrom(cls)) {
             mode = Mode.COL;
-            typeId = COL_TYPE_ID;
+            userType = false;
+            typeId = mode.type;
             cons = null;
             fields = null;
         }
         else if (Map.class.isAssignableFrom(cls)) {
             mode = Mode.MAP;
-            typeId = MAP_TYPE_ID;
+            userType = false;
+            typeId = mode.type;
             cons = null;
             fields = null;
         }
         else if (GridPortable.class.isAssignableFrom(cls)) {
             mode = Mode.PORTABLE;
+            userType = false;
             typeId = cls.getSimpleName().hashCode(); // TODO: should be taken from config
             cons = constructor(cls);
             fields = null;
         }
         else {
             mode = Mode.OBJECT;
+            userType = false;
             typeId = cls.getSimpleName().hashCode(); // TODO: should be taken from config
             cons = constructor(cls);
 
@@ -199,7 +204,15 @@ class GridPortableClassDescriptor {
         assert obj != null;
         assert writer != null;
 
-        writer.doWriteByte(mode.flag);
+        writer.doWriteBoolean(userType);
+        writer.doWriteInt(typeId);
+        writer.doWriteInt(obj.hashCode());
+
+        // Length.
+        writer.reserve(4);
+
+        // Default raw offset.
+        writer.doWriteInt(HDR_LEN);
 
         switch (mode) {
             case BYTE:
@@ -318,35 +331,21 @@ class GridPortableClassDescriptor {
                 break;
 
             case PORTABLE:
-                writer.doWriteInt(typeId);
-                writer.doWriteInt(obj.hashCode());
-
-                // Length + raw data offset.
-                writer.reserve(8);
-
                 ((GridPortable)obj).writePortable(writer);
-
-                writer.writeLength();
 
                 break;
 
             case OBJECT:
-                writer.doWriteInt(typeId);
-                writer.doWriteInt(obj.hashCode());
-
-                // Length + raw data offset.
-                writer.reserve(8);
-
                 for (FieldInfo info : fields)
                     info.write(obj, writer);
-
-                writer.writeLength();
 
                 break;
 
             default:
                 assert false : "Invalid mode: " + mode;
         }
+
+        writer.writeLength();
     }
 
     /**
@@ -394,7 +393,7 @@ class GridPortableClassDescriptor {
                 return reader.readShortArray();
 
             case INT_ARR:
-                return reader.readShortArray();
+                return reader.readIntArray();
 
             case LONG_ARR:
                 return reader.readLongArray();
@@ -613,13 +612,13 @@ class GridPortableClassDescriptor {
         OBJECT(GridPortableMarshaller.OBJ);
 
         /** */
-        private final byte flag;
+        private final byte type;
 
         /**
-         * @param flag Flag.
+         * @param type Type.
          */
-        Mode(byte flag) {
-            this.flag = flag;
+        Mode(byte type) {
+            this.type = type;
         }
     }
 }

@@ -19,7 +19,7 @@ import java.util.*;
  */
 class GridPortableObjectImpl implements GridPortableObject {
     /** */
-    private final GridPortableReader reader;
+    private final GridPortableReaderImpl reader;
 
     /** */
     private final boolean userType;
@@ -36,7 +36,7 @@ class GridPortableObjectImpl implements GridPortableObject {
      * @param typeId Type ID.
      * @param hashCode Hash code.
      */
-    GridPortableObjectImpl(GridPortableReader reader, boolean userType, int typeId, int hashCode) {
+    GridPortableObjectImpl(GridPortableReaderImpl reader, boolean userType, int typeId, int hashCode) {
         assert reader != null;
 
         this.reader = reader;
@@ -61,8 +61,17 @@ class GridPortableObjectImpl implements GridPortableObject {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T extends GridPortable> T deserialize() throws GridPortableException {
-        return null; // TODO: implement.
+    @Nullable @Override public <T> T deserialize() throws GridPortableException {
+        Class<?> cls = null; // TODO
+
+        if (cls == null)
+            throw new GridPortableInvalidClassException(""); // TODO: message
+
+        GridPortableClassDescriptor desc = GridPortableClassDescriptor.get(cls);
+
+        assert desc != null;
+
+        return (T)desc.read(reader);
     }
 
     /** {@inheritDoc} */

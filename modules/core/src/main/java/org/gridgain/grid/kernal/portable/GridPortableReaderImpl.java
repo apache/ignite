@@ -17,6 +17,7 @@ import sun.misc.*;
 import java.util.*;
 
 import static java.nio.charset.StandardCharsets.*;
+import static org.gridgain.grid.kernal.portable.GridPortableMarshaller.*;
 
 /**
  * Portable reader implementation.
@@ -53,34 +54,141 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     private static final GridPortablePrimitives PRIM = GridPortablePrimitives.get();
 
     /** */
-    private final Map<Integer, Integer> fieldsOffs = new HashMap<>();
+    private static final int DATA_POS = 16;
 
     /** */
     private final byte[] arr;
 
     /** */
-    private int off;
+    private final int start;
 
     /** */
     private int rawOff;
+
+    /** */
+    private Map<Integer, Integer> fieldsOffs;
 
     /**
      * @param arr Array.
      */
     GridPortableReaderImpl(byte[] arr) {
         this.arr = arr;
+
+        start = 0;
+    }
+
+    /**
+     * @param arr Array.
+     */
+    private GridPortableReaderImpl(byte[] arr, int start, int rawOff) {
+        this.arr = arr;
+        this.start = start;
+        this.rawOff = rawOff;
+    }
+
+    @Nullable Object unmarshal(int off) throws GridPortableException {
+        byte flag = readByte(off++);
+
+        switch (flag) {
+            case NULL:
+                return null;
+
+            case HANDLE:
+                // TODO: Handle.
+
+                return null;
+
+            case OBJ:
+                boolean userType = readBoolean(off);
+                int typeId = readInt(off + 1);
+                int hashCode = readInt(off + 5);
+
+                rawOff = readInt(off + 13);
+
+                return new GridPortableObjectImpl(this, userType, typeId, hashCode);
+
+            case BYTE:
+                return readByte(off);
+
+            case SHORT:
+                return readShort(off);
+
+            case INT:
+                return readInt(off);
+
+            case LONG:
+                return readLong(off);
+
+            case FLOAT:
+                return readFloat(off);
+
+            case DOUBLE:
+                return readDouble(off);
+
+            case CHAR:
+                return readChar(off);
+
+            case BOOLEAN:
+                return readBoolean(off);
+
+            case STRING:
+                return readString(off);
+
+            case UUID:
+                return readUuid(off);
+
+            case BYTE_ARR:
+                return readByteArray(off);
+
+            case SHORT_ARR:
+                return readShortArray(off);
+
+            case INT_ARR:
+                return readIntArray(off);
+
+            case LONG_ARR:
+                return readLongArray(off);
+
+            case FLOAT_ARR:
+                return readFloatArray(off);
+
+            case DOUBLE_ARR:
+                return readDoubleArray(off);
+
+            case CHAR_ARR:
+                return readCharArray(off);
+
+            case BOOLEAN_ARR:
+                return readBooleanArray(off);
+
+
+            // TODO: Others
+//            case STRING_ARR:
+//                return readStringArray(off);
+//
+//            case UUID:
+//                return readByte(off);
+
+            default:
+                throw new GridPortableException("Invalid flag value: " + flag);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public byte readByte(String fieldName) throws GridPortableException {
         int fieldOff = fieldOffset(fieldName);
 
-        return fieldOff >= 0 ? PRIM.readByte(arr, fieldOff) : 0;
+        byte flag = readByte(fieldOff++);
+
+        if (flag != BYTE)
+            throw new GridPortableException("Invalid flag value: " + flag);
+
+        return fieldOff >= 0 ? readByte(fieldOff) : 0;
     }
 
     /** {@inheritDoc} */
     @Override public byte readByte() throws GridPortableException {
-        byte val = PRIM.readByte(arr, rawOff);
+        byte val = readByte(rawOff);
 
         rawOff++;
 
@@ -91,12 +199,17 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     @Override public short readShort(String fieldName) throws GridPortableException {
         int fieldOff = fieldOffset(fieldName);
 
-        return fieldOff >= 0 ? PRIM.readShort(arr, fieldOff) : 0;
+        byte flag = readByte(fieldOff++);
+
+        if (flag != SHORT)
+            throw new GridPortableException("Invalid flag value: " + flag);
+
+        return fieldOff >= 0 ? readShort(fieldOff) : 0;
     }
 
     /** {@inheritDoc} */
     @Override public short readShort() throws GridPortableException {
-        short val = PRIM.readShort(arr, rawOff);
+        short val = readShort(rawOff);
 
         rawOff += 2;
 
@@ -107,12 +220,17 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     @Override public int readInt(String fieldName) throws GridPortableException {
         int fieldOff = fieldOffset(fieldName);
 
-        return fieldOff >= 0 ? PRIM.readInt(arr, fieldOff) : 0;
+        byte flag = readByte(fieldOff++);
+
+        if (flag != INT)
+            throw new GridPortableException("Invalid flag value: " + flag);
+
+        return fieldOff >= 0 ? readInt(fieldOff) : 0;
     }
 
     /** {@inheritDoc} */
     @Override public int readInt() throws GridPortableException {
-        int val = PRIM.readInt(arr, rawOff);
+        int val = readInt(rawOff);
 
         rawOff += 4;
 
@@ -123,12 +241,17 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     @Override public long readLong(String fieldName) throws GridPortableException {
         int fieldOff = fieldOffset(fieldName);
 
-        return fieldOff >= 0 ? PRIM.readLong(arr, fieldOff) : 0;
+        byte flag = readByte(fieldOff++);
+
+        if (flag != LONG)
+            throw new GridPortableException("Invalid flag value: " + flag);
+
+        return fieldOff >= 0 ? readLong(fieldOff) : 0;
     }
 
     /** {@inheritDoc} */
     @Override public long readLong() throws GridPortableException {
-        long val = PRIM.readLong(arr, rawOff);
+        long val = readLong(rawOff);
 
         rawOff += 8;
 
@@ -139,12 +262,17 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     @Override public float readFloat(String fieldName) throws GridPortableException {
         int fieldOff = fieldOffset(fieldName);
 
-        return fieldOff >= 0 ? PRIM.readFloat(arr, fieldOff) : 0;
+        byte flag = readByte(fieldOff++);
+
+        if (flag != FLOAT)
+            throw new GridPortableException("Invalid flag value: " + flag);
+
+        return fieldOff >= 0 ? readFloat(fieldOff) : 0;
     }
 
     /** {@inheritDoc} */
     @Override public float readFloat() throws GridPortableException {
-        float val = PRIM.readFloat(arr, rawOff);
+        float val = readFloat(rawOff);
 
         rawOff += 4;
 
@@ -155,12 +283,17 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     @Override public double readDouble(String fieldName) throws GridPortableException {
         int fieldOff = fieldOffset(fieldName);
 
-        return fieldOff >= 0 ? PRIM.readDouble(arr, fieldOff) : 0;
+        byte flag = readByte(fieldOff++);
+
+        if (flag != DOUBLE)
+            throw new GridPortableException("Invalid flag value: " + flag);
+
+        return fieldOff >= 0 ? readDouble(fieldOff) : 0;
     }
 
     /** {@inheritDoc} */
     @Override public double readDouble() throws GridPortableException {
-        double val = PRIM.readDouble(arr, rawOff);
+        double val = readDouble(rawOff);
 
         rawOff += 8;
 
@@ -171,12 +304,17 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     @Override public char readChar(String fieldName) throws GridPortableException {
         int fieldOff = fieldOffset(fieldName);
 
-        return fieldOff >= 0 ? PRIM.readChar(arr, fieldOff) : 0;
+        byte flag = readByte(fieldOff++);
+
+        if (flag != CHAR)
+            throw new GridPortableException("Invalid flag value: " + flag);
+
+        return fieldOff >= 0 ? readChar(fieldOff) : 0;
     }
 
     /** {@inheritDoc} */
     @Override public char readChar() throws GridPortableException {
-        char val = PRIM.readChar(arr, rawOff);
+        char val = readChar(rawOff);
 
         rawOff += 2;
 
@@ -187,12 +325,17 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     @Override public boolean readBoolean(String fieldName) throws GridPortableException {
         int fieldOff = fieldOffset(fieldName);
 
-        return fieldOff >= 0 && PRIM.readBoolean(arr, fieldOff);
+        byte flag = readByte(fieldOff++);
+
+        if (flag != BOOLEAN)
+            throw new GridPortableException("Invalid flag value: " + flag);
+
+        return fieldOff >= 0 && readBoolean(fieldOff);
     }
 
     /** {@inheritDoc} */
     @Override public boolean readBoolean() throws GridPortableException {
-        boolean val = PRIM.readBoolean(arr, rawOff);
+        boolean val = readBoolean(rawOff);
 
         rawOff += 1;
 
@@ -203,20 +346,12 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     @Nullable @Override public String readString(String fieldName) throws GridPortableException {
         int fieldOff = fieldOffset(fieldName);
 
-        if (fieldOff >= 0) {
-            int len = PRIM.readInt(arr, fieldOff);
+        byte flag = readByte(fieldOff++);
 
-            if (len < 0)
-                return null;
+        if (flag != STRING)
+            throw new GridPortableException("Invalid flag value: " + flag);
 
-            byte[] arr = new byte[len];
-
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + fieldOff, arr, BYTE_ARR_OFF, len);
-
-            return new String(arr, UTF_8);
-        }
-        else
-            return null;
+        return fieldOff >= 0 ? readString(fieldOff) : null;
     }
 
     /** {@inheritDoc} */
@@ -230,18 +365,12 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     @Nullable @Override public UUID readUuid(String fieldName) throws GridPortableException {
         int fieldOff = fieldOffset(fieldName);
 
-        if (fieldOff >= 0) {
-            if (PRIM.readBoolean(arr, fieldOff)) {
-                long most = PRIM.readLong(arr, fieldOff + 1);
-                long least = PRIM.readLong(arr, fieldOff + 9);
+        byte flag = readByte(fieldOff++);
 
-                return new UUID(most, least);
-            }
-            else
-                return null;
-        }
-        else
-            return null;
+        if (flag != UUID)
+            throw new GridPortableException("Invalid flag value: " + flag);
+
+        return fieldOff >= 0 ? readUuid(fieldOff) : null;
     }
 
     /** {@inheritDoc} */
@@ -251,324 +380,245 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
 
     /** {@inheritDoc} */
     @Nullable @Override public Object readObject(String fieldName) throws GridPortableException {
-        return null; // TODO: implement.
+        int fieldOff = fieldOffset(fieldName);
+
+        if (fieldOff < 0)
+            return null;
+
+        byte flag = readByte(fieldOff++);
+
+        switch (flag) {
+            case NULL:
+                return null;
+
+            case HANDLE:
+                return null; // TODO: Handle.
+
+            case OBJ:
+                int typeId = readInt(fieldOff);
+
+                fieldOff += 4;
+
+                Class<?> cls = null; // TODO
+
+                if (cls == null)
+                    throw new GridPortableInvalidClassException(""); // TODO: message
+
+                GridPortableClassDescriptor desc = GridPortableClassDescriptor.get(cls);
+
+                // Skip hash code and length.
+                fieldOff += 8;
+
+                int rawOff = readInt(fieldOff);
+
+                fieldOff += 4;
+
+                return desc.read(new GridPortableReaderImpl(arr, fieldOff, rawOff));
+
+            default:
+                throw new GridPortableException("Invalid flag value: " + flag);
+        }
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Object readObject() throws GridPortableException {
-//        byte flag = PRIM.readByte(arr, off++);
-//
-//        switch (flag) {
-//            case NULL:
-//                return null;
-//
-//            case HANDLE:
-//                return null; // TODO: Handle.
-//
-//            case BYTE:
-//                byte b = readByte();
-//
-//            case BYTE:
-//                return readByte();
-//
-//            case BYTE:
-//                return readByte();
-//        }
-//
-//        int typeId = PRIM.readInt(arr, off);
-//        int hashCode = PRIM.readInt(arr, off + 4);
-//
-//        // TODO: Length is skipped!
-//
-//        rawOff = PRIM.readInt(arr, off + 13);
-//
-//        off += 17;
+        byte flag = readByte();
 
-        return null;
+        switch (flag) {
+            case NULL:
+                return null;
+
+            case HANDLE:
+                return null; // TODO: Handle.
+
+            case OBJ:
+                int typeId = readInt();
+
+                Class<?> cls = null; // TODO
+
+                if (cls == null)
+                    throw new GridPortableInvalidClassException(""); // TODO: message
+
+                GridPortableClassDescriptor desc = GridPortableClassDescriptor.get(cls);
+
+                // Skip hash code and length.
+                rawOff += 8;
+
+                int rawOff0 = readInt();
+
+                return desc.read(new GridPortableReaderImpl(arr, rawOff, rawOff0));
+
+            default:
+                throw new GridPortableException("Invalid flag value: " + flag);
+        }
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public byte[] readByteArray(String fieldName) throws GridPortableException {
         int fieldOff = fieldOffset(fieldName);
 
-        if (fieldOff >= 0) {
-            int len = PRIM.readInt(arr, fieldOff);
+        byte flag = readByte(fieldOff++);
 
-            byte[] arr = new byte[len];
+        if (flag != BYTE_ARR)
+            throw new GridPortableException("Invalid flag value: " + flag);
 
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + fieldOff + 4, arr, BYTE_ARR_OFF, len);
-
-            return arr;
-        }
-        else
-            return null;
+        return fieldOff >= 0 ? readByteArray(fieldOff) : null;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public byte[] readByteArray() throws GridPortableException {
-        int len = readInt();
+        byte[] arr = readByteArray(rawOff);
 
-        if (len >= 0) {
-            byte[] arr = new byte[len];
+        rawOff += arr.length;
 
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + rawOff, arr, BYTE_ARR_OFF, len);
-
-            rawOff += len;
-
-            return arr;
-        }
-        else
-            return null;
+        return arr;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public short[] readShortArray(String fieldName) throws GridPortableException {
         int fieldOff = fieldOffset(fieldName);
 
-        if (fieldOff >= 0) {
-            int len = PRIM.readInt(arr, fieldOff);
+        byte flag = readByte(fieldOff++);
 
-            short[] arr = new short[len];
+        if (flag != SHORT_ARR)
+            throw new GridPortableException("Invalid flag value: " + flag);
 
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + fieldOff + 4, arr, SHORT_ARR_OFF, len << 1);
-
-            return arr;
-        }
-        else
-            return null;
+        return fieldOff >= 0 ? readShortArray(fieldOff) : null;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public short[] readShortArray() throws GridPortableException {
-        int len = readInt();
+        short[] arr = readShortArray(rawOff);
 
-        if (len >= 0) {
-            short[] arr = new short[len];
+        rawOff += arr.length << 1;
 
-            int bytes = len << 1;
-
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + rawOff, arr, SHORT_ARR_OFF, bytes);
-
-            rawOff += bytes;
-
-            return arr;
-        }
-        else
-            return null;
+        return arr;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public int[] readIntArray(String fieldName) throws GridPortableException {
         int fieldOff = fieldOffset(fieldName);
 
-        if (fieldOff >= 0) {
-            int len = PRIM.readInt(arr, fieldOff);
+        byte flag = readByte(fieldOff++);
 
-            int[] arr = new int[len];
+        if (flag != INT_ARR)
+            throw new GridPortableException("Invalid flag value: " + flag);
 
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + fieldOff + 4, arr, INT_ARR_OFF, len << 2);
-
-            return arr;
-        }
-        else
-            return null;
+        return fieldOff >= 0 ? readIntArray(fieldOff) : null;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public int[] readIntArray() throws GridPortableException {
-        int len = readInt();
+        int[] arr = readIntArray(rawOff);
 
-        if (len >= 0) {
-            int[] arr = new int[len];
+        rawOff += arr.length << 2;
 
-            int bytes = len << 2;
-
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + rawOff, arr, INT_ARR_OFF, bytes);
-
-            rawOff += bytes;
-
-            return arr;
-        }
-        else
-            return null;
+        return arr;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public long[] readLongArray(String fieldName) throws GridPortableException {
         int fieldOff = fieldOffset(fieldName);
 
-        if (fieldOff >= 0) {
-            int len = PRIM.readInt(arr, fieldOff);
+        byte flag = readByte(fieldOff++);
 
-            long[] arr = new long[len];
+        if (flag != LONG_ARR)
+            throw new GridPortableException("Invalid flag value: " + flag);
 
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + fieldOff + 4, arr, LONG_ARR_OFF, len << 3);
-
-            return arr;
-        }
-        else
-            return null;
+        return fieldOff >= 0 ? readLongArray(fieldOff) : null;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public long[] readLongArray() throws GridPortableException {
-        int len = readInt();
+        long[] arr = readLongArray(rawOff);
 
-        if (len >= 0) {
-            long[] arr = new long[len];
+        rawOff += arr.length << 3;
 
-            int bytes = len << 3;
-
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + rawOff, arr, LONG_ARR_OFF, bytes);
-
-            rawOff += bytes;
-
-            return arr;
-        }
-        else
-            return null;
+        return arr;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public float[] readFloatArray(String fieldName) throws GridPortableException {
         int fieldOff = fieldOffset(fieldName);
 
-        if (fieldOff >= 0) {
-            int len = PRIM.readInt(arr, fieldOff);
+        byte flag = readByte(fieldOff++);
 
-            float[] arr = new float[len];
+        if (flag != FLOAT_ARR)
+            throw new GridPortableException("Invalid flag value: " + flag);
 
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + fieldOff + 4, arr, FLOAT_ARR_OFF, len << 2);
-
-            return arr;
-        }
-        else
-            return null;
+        return fieldOff >= 0 ? readFloatArray(fieldOff) : null;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public float[] readFloatArray() throws GridPortableException {
-        int len = readInt();
+        float[] arr = readFloatArray(rawOff);
 
-        if (len >= 0) {
-            float[] arr = new float[len];
+        rawOff += arr.length << 2;
 
-            int bytes = len << 2;
-
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + rawOff, arr, FLOAT_ARR_OFF, bytes);
-
-            rawOff += bytes;
-
-            return arr;
-        }
-        else
-            return null;
+        return arr;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public double[] readDoubleArray(String fieldName) throws GridPortableException {
         int fieldOff = fieldOffset(fieldName);
 
-        if (fieldOff >= 0) {
-            int len = PRIM.readInt(arr, fieldOff);
+        byte flag = readByte(fieldOff++);
 
-            double[] arr = new double[len];
+        if (flag != DOUBLE_ARR)
+            throw new GridPortableException("Invalid flag value: " + flag);
 
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + fieldOff + 4, arr, DOUBLE_ARR_OFF, len << 3);
-
-            return arr;
-        }
-        else
-            return null;
+        return fieldOff >= 0 ? readDoubleArray(fieldOff) : null;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public double[] readDoubleArray() throws GridPortableException {
-        int len = readInt();
+        double[] arr = readDoubleArray(rawOff);
 
-        if (len >= 0) {
-            double[] arr = new double[len];
+        rawOff += arr.length << 3;
 
-            int bytes = len << 3;
-
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + rawOff, arr, DOUBLE_ARR_OFF, bytes);
-
-            rawOff += bytes;
-
-            return arr;
-        }
-        else
-            return null;
+        return arr;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public char[] readCharArray(String fieldName) throws GridPortableException {
         int fieldOff = fieldOffset(fieldName);
 
-        if (fieldOff >= 0) {
-            int len = PRIM.readInt(arr, fieldOff);
+        byte flag = readByte(fieldOff++);
 
-            char[] arr = new char[len];
+        if (flag != CHAR_ARR)
+            throw new GridPortableException("Invalid flag value: " + flag);
 
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + fieldOff + 4, arr, CHAR_ARR_OFF, len << 1);
-
-            return arr;
-        }
-        else
-            return null;
+        return fieldOff >= 0 ? readCharArray(fieldOff) : null;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public char[] readCharArray() throws GridPortableException {
-        int len = readInt();
+        char[] arr = readCharArray(rawOff);
 
-        if (len >= 0) {
-            char[] arr = new char[len];
+        rawOff += arr.length << 1;
 
-            int bytes = len << 1;
-
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + rawOff, arr, CHAR_ARR_OFF, bytes);
-
-            rawOff += bytes;
-
-            return arr;
-        }
-        else
-            return null;
+        return arr;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public boolean[] readBooleanArray(String fieldName) throws GridPortableException {
         int fieldOff = fieldOffset(fieldName);
 
-        if (fieldOff >= 0) {
-            int len = PRIM.readInt(arr, fieldOff);
+        byte flag = readByte(fieldOff++);
 
-            boolean[] arr = new boolean[len];
+        if (flag != BOOLEAN_ARR)
+            throw new GridPortableException("Invalid flag value: " + flag);
 
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + fieldOff + 4, arr, BYTE_ARR_OFF, len);
-
-            return arr;
-        }
-        else
-            return null;
+        return fieldOff >= 0 ? readBooleanArray(fieldOff) : null;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public boolean[] readBooleanArray() throws GridPortableException {
-        int len = readInt();
+        boolean[] arr = readBooleanArray(rawOff);
 
-        if (len >= 0) {
-            boolean[] arr = new boolean[len];
+        rawOff += arr.length;
 
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + rawOff, arr, BOOLEAN_ARR_OFF, len);
-
-            rawOff += len;
-
-            return arr;
-        }
-        else
-            return null;
+        return arr;
     }
 
     /** {@inheritDoc} */
@@ -576,32 +626,25 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
         int fieldOff = fieldOffset(fieldName);
 
         if (fieldOff >= 0) {
-            int len = PRIM.readInt(arr, fieldOff);
+            int len = readInt(fieldOff);
 
-            fieldOff += 4;
-
-            if (len < 0)
-                return null;
-
-            String[] strs = new String[len];
-
-            for (int i = 0; i < len; i++) {
-                int strLen = PRIM.readInt(arr, fieldOff);
+            if (len >= 0) {
+                String[] strs = new String[len];
 
                 fieldOff += 4;
 
-                if (strLen >= 0) {
-                    byte[] arr = new byte[strLen];
+                for (int i = 0; i < len; i++) {
+                    byte[] arr = readByteArray(fieldOff);
 
-                    UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + fieldOff, arr, BYTE_ARR_OFF, strLen);
+                    fieldOff += 4 + arr.length;
 
-                    fieldOff += strLen;
-
-                    strs[i] = new String(arr, UTF_8);
+                    strs[i] = arr != null ? new String(arr, UTF_8) : null;
                 }
-            }
 
-            return strs;
+                return strs;
+            }
+            else
+                return null;
         }
         else
             return null;
@@ -627,26 +670,31 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     @Nullable @Override public UUID[] readUuidArray(String fieldName) throws GridPortableException {
         int fieldOff = fieldOffset(fieldName);
 
+        byte flag = readByte(fieldOff++);
+
+        if (flag != UUID_ARR)
+            throw new GridPortableException("Invalid flag value: " + flag);
+
         if (fieldOff >= 0) {
-            int len = PRIM.readInt(arr, fieldOff);
+            int len = readInt(fieldOff);
 
-            fieldOff += 4;
+            if (len >= 0) {
+                UUID[] uuids = new UUID[len];
 
-            if (len < 0)
-                return null;
+                fieldOff += 4;
 
-            UUID[] uuids = new UUID[len];
+                for (int i = 0; i < len; i++) {
+                    UUID uuid = readUuid(fieldOff);
 
-            for (int i = 0; i < len; i++) {
-                if (PRIM.readBoolean(arr, fieldOff)) {
-                    long most = PRIM.readLong(arr, fieldOff + 1);
-                    long least = PRIM.readLong(arr, fieldOff + 9);
+                    fieldOff += (uuid != null ? 17 : 1);
 
-                    uuids[i] = new UUID(most, least);
+                    uuids[i] = uuid;
                 }
-            }
 
-            return uuids;
+                return uuids;
+            }
+            else
+                return null;
         }
         else
             return null;
@@ -737,35 +785,270 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     }
 
     /**
+     * @param off Offset.
+     * @return Value.
+     */
+    private byte readByte(int off) {
+        return PRIM.readByte(arr, off);
+    }
+
+    /**
+     * @param off Offset.
+     * @return Value.
+     */
+    private short readShort(int off) {
+        return PRIM.readShort(arr, off);
+    }
+
+    /**
+     * @param off Offset.
+     * @return Value.
+     */
+    private int readInt(int off) {
+        return PRIM.readInt(arr, off);
+    }
+
+    /**
+     * @param off Offset.
+     * @return Value.
+     */
+    private long readLong(int off) {
+        return PRIM.readLong(arr, off);
+    }
+
+    /**
+     * @param off Offset.
+     * @return Value.
+     */
+    private float readFloat(int off) {
+        return PRIM.readFloat(arr, off);
+    }
+
+    /**
+     * @param off Offset.
+     * @return Value.
+     */
+    private double readDouble(int off) {
+        return PRIM.readDouble(arr, off);
+    }
+
+    /**
+     * @param off Offset.
+     * @return Value.
+     */
+    private char readChar(int off) {
+        return PRIM.readChar(arr, off);
+    }
+
+    /**
+     * @param off Offset.
+     * @return Value.
+     */
+    private boolean readBoolean(int off) {
+        return PRIM.readBoolean(arr, off);
+    }
+
+    /**
+     * @param off Offset.
+     * @return Value.
+     */
+    private String readString(int off) {
+        byte[] arr = readByteArray(off);
+
+        return arr != null ? new String(arr, UTF_8) : null;
+    }
+
+    /**
+     * @param off Offset.
+     * @return Value.
+     */
+    private UUID readUuid(int off) {
+        if (readBoolean(off)) {
+            long most = readLong(off + 1);
+            long least = readLong(off + 9);
+
+            return new UUID(most, least);
+        }
+        else
+            return null;
+    }
+
+    /**
+     * @param off Offset.
+     * @return Value.
+     */
+    private byte[] readByteArray(int off) {
+        int len = readInt(off);
+
+        if (len >= 0) {
+            byte[] arr = new byte[len];
+
+            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + off + 4, arr, BYTE_ARR_OFF, len);
+
+            return arr;
+        }
+        else
+            return null;
+    }
+
+    /**
+     * @param off Offset.
+     * @return Value.
+     */
+    private short[] readShortArray(int off) {
+        int len = readInt(off);
+
+        if (len >= 0) {
+            short[] arr = new short[len];
+
+            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + off + 4, arr, SHORT_ARR_OFF, len << 1);
+
+            return arr;
+        }
+        else
+            return null;
+    }
+
+    /**
+     * @param off Offset.
+     * @return Value.
+     */
+    private int[] readIntArray(int off) {
+        int len = readInt(off);
+
+        if (len >= 0) {
+            int[] arr = new int[len];
+
+            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + off + 4, arr, INT_ARR_OFF, len << 2);
+
+            return arr;
+        }
+        else
+            return null;
+    }
+
+    /**
+     * @param off Offset.
+     * @return Value.
+     */
+    private long[] readLongArray(int off) {
+        int len = readInt(off);
+
+        if (len >= 0) {
+            long[] arr = new long[len];
+
+            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + off + 4, arr, LONG_ARR_OFF, len << 3);
+
+            return arr;
+        }
+        else
+            return null;
+    }
+
+    /**
+     * @param off Offset.
+     * @return Value.
+     */
+    private float[] readFloatArray(int off) {
+        int len = readInt(off);
+
+        if (len >= 0) {
+            float[] arr = new float[len];
+
+            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + off + 4, arr, FLOAT_ARR_OFF, len << 2);
+
+            return arr;
+        }
+        else
+            return null;
+    }
+
+    /**
+     * @param off Offset.
+     * @return Value.
+     */
+    private double[] readDoubleArray(int off) {
+        int len = readInt(off);
+
+        if (len >= 0) {
+            double[] arr = new double[len];
+
+            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + off + 4, arr, DOUBLE_ARR_OFF, len << 3);
+
+            return arr;
+        }
+        else
+            return null;
+    }
+
+    /**
+     * @param off Offset.
+     * @return Value.
+     */
+    private char[] readCharArray(int off) {
+        int len = readInt(off);
+
+        if (len >= 0) {
+            char[] arr = new char[len];
+
+            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + off + 4, arr, CHAR_ARR_OFF, len << 1);
+
+            return arr;
+        }
+        else
+            return null;
+    }
+
+    /**
+     * @param off Offset.
+     * @return Value.
+     */
+    private boolean[] readBooleanArray(int off) {
+        int len = readInt(off);
+
+        if (len >= 0) {
+            boolean[] arr = new boolean[len];
+
+            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + off + 4, arr, BOOLEAN_ARR_OFF, len);
+
+            return arr;
+        }
+        else
+            return null;
+    }
+
+    /**
      * @param name Field name.
      * @return Field offset.
      */
     private int fieldOffset(String name) {
         assert name != null;
 
-        int hash = name.hashCode();
+        if (fieldsOffs == null) {
+            fieldsOffs = new HashMap<>();
 
-        Integer fieldOff = fieldsOffs.get(hash);
+            int off = start + DATA_POS;
 
-        if (fieldOff == null) {
             while (true) {
                 if (off >= arr.length)
-                    return -1;
+                    break;
 
-                int hash0 = PRIM.readInt(arr, off);
+                int id0 = PRIM.readInt(arr, off);
+
+                off += 4;
+
                 int len = PRIM.readInt(arr, off);
 
-                off += 8;
+                off += 4;
 
-                fieldsOffs.put(hash0, fieldOff = off);
+                fieldsOffs.put(id0, off);
 
                 off += len;
-
-                if (hash0 == hash)
-                    break;
             }
         }
 
-        return fieldOff;
+        Integer fieldOff = fieldsOffs.get(name.hashCode()); // TODO: get id from mapper
+
+        return fieldOff != null ? fieldOff : -1;
     }
 }
