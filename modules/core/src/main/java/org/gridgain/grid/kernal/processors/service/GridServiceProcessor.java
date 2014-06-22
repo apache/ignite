@@ -340,7 +340,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         }
 
                         if (remainder > 0) {
-                            for (Map.Entry<UUID, Integer> e : cnts.entrySet()) {
+                            List<Map.Entry<UUID, Integer>> entries = new ArrayList<>(cnts.entrySet());
+
+                            // Randomize.
+                            Collections.shuffle(entries);
+
+                            for (Map.Entry<UUID, Integer> e : entries) {
                                 // Assign only the ones that have not been reused from previous assignments.
                                 if (!used.contains(e.getKey())) {
                                     e.setValue(e.getValue() + 1);
@@ -352,7 +357,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         }
                     }
                     else {
-                        for (Map.Entry<UUID, Integer> e : cnts.entrySet()) {
+                        List<Map.Entry<UUID, Integer>> entries = new ArrayList<>(cnts.entrySet());
+
+                        // Randomize.
+                        Collections.shuffle(entries);
+
+                        for (Map.Entry<UUID, Integer> e : entries) {
                             e.setValue(e.getValue() + 1);
 
                             if (--remainder == 0)
