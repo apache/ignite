@@ -22,6 +22,6 @@ namespace GridGain.Client.Portable
          * <param name="obj">Instantiated empty object.</param>
          * <param name="reader">Poratble reader.</param>
          */
-        T ReadPortable<T>(object obj, IGridClientPortableReader reader);
+        void ReadPortable(object obj, IGridClientPortableReader reader);
     }
 }

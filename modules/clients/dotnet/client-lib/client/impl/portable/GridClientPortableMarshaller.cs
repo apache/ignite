@@ -14,7 +14,6 @@ namespace GridGain.Client.Impl.Portable
     using System.Collections.Generic;
     using System.IO;
     using System.Reflection;
-    using System.Runtime.Serialization;
     using GridGain.Client.Impl.Message;
     using GridGain.Client.Portable;    
 
@@ -27,12 +26,12 @@ namespace GridGain.Client.Impl.Portable
         private static readonly ISet<Type> SYS_TYPES = new HashSet<Type>();
 
         /** Type to descriptor map. */
-        public IDictionary<Type, GridClientPortableTypeDescriptor> typeToDesc = 
+        private IDictionary<Type, GridClientPortableTypeDescriptor> typeToDesc = 
             new Dictionary<Type, GridClientPortableTypeDescriptor>();
 
         /** ID to descriptor map. */
-        public IDictionary<int, GridClientPortableTypeDescriptor> idToDesc = 
-            new Dictionary<int, GridClientPortableTypeDescriptor>();
+        private IDictionary<long, GridClientPortableTypeDescriptor> idToDesc = 
+            new Dictionary<long, GridClientPortableTypeDescriptor>();
 
         /**
          * <summary>Static initializer.</summary>
@@ -101,6 +100,114 @@ namespace GridGain.Client.Impl.Portable
                 foreach (GridClientPortableTypeConfiguration typeCfg in typeCfgs)
                     addUserType(cfg, typeCfg, refMapper, refSerializer);
             }
+        }
+
+        /**
+         * <summary>Marhshal object</summary>
+         * <param name="val">Value.</param>
+         * <returns>Serialized data as byte array.</returns>
+         */
+        public byte[] Marshal(object val)
+        {
+            MemoryStream stream = new MemoryStream();
+
+            Marshal(val, stream);
+
+            return stream.ToArray();
+        }
+
+        /**
+         * <summary>Marhshal object</summary>
+         * <param name="val">Value.</param>
+         * <param name="stream">Output stream.</param>
+         */
+        public void Marshal(object val, Stream stream)
+        {
+            new GridClientPortableWriteContext(typeToDesc, stream).Write(val);
+        }
+
+        /**
+         * <summary>Unmarshal object.</summary>
+         * <param name="data">Raw data.</param>
+         * <returns>Portable object.</returns>
+         */
+        public IGridClientPortableObject Unmarshal(byte[] data)
+        {
+            return Unmarshal(new MemoryStream(data));
+        }
+
+        /**
+         * <summary>Unmarshal object.</summary>
+         * <param name="input">Stream.</param>
+         * <returns>Unmarshalled object.</returns>
+         */ 
+        public IGridClientPortableObject Unmarshal(MemoryStream input)
+        {
+            long pos = input.Position;
+
+            byte hdr = (byte)input.ReadByte();
+
+            if (hdr == PU.HDR_NULL)
+                return null;
+            else if (hdr == PU.HDR_META)
+            {
+                throw new NotImplementedException();
+            }
+            
+            // Reading full object.
+            if (hdr != PU.HDR_FULL)
+                throw new GridClientPortableException("Unexpected header: " + hdr);
+
+            // Read header.
+            bool userType = PU.ReadBoolean(input);
+            int typeId = PU.ReadInt(input);
+            int hashCode = PU.ReadInt(input);
+            int len = PU.ReadInt(input);
+            int rawDataOffset = PU.ReadInt(input);
+
+            // Read fields.
+            Dictionary<int, int> fields = null;
+
+            if (userType) 
+            { 
+                long curPos = input.Position;
+                long endPos = pos + (rawDataOffset == 0 ? len : rawDataOffset);
+
+                while (curPos < endPos)
+                {
+                    int fieldPos = (int)input.Position;
+                    int fieldId = PU.ReadInt(input);
+                    int fieldLen = PU.ReadInt(input);
+
+                    Console.WriteLine("Read field: " + fieldId + " " + fieldLen + " " + fieldPos);
+
+                    if (fields == null)
+                        fields = new Dictionary<int, int>();
+
+                    if (fields.ContainsKey(fieldId))
+                        throw new GridClientPortableException("Object contains duplicate field IDs [userType=" + 
+                            userType + ", typeId=" + typeId + ", fieldId=" + fieldId + ']');
+
+                    fields[fieldId] = fieldPos;
+
+                    input.Seek(fieldLen, SeekOrigin.Current);
+
+                    curPos = input.Position;
+                }
+            }
+
+            input.Seek(pos + len, SeekOrigin.Begin); // Position input after read data.
+            
+            return new GridClientPortableObjectImpl(this, input.ToArray(), (int)pos, len, userType, typeId, 
+                hashCode, rawDataOffset, fields);
+        }
+
+        /**
+         * <summary>ID to descriptor map.</summary>
+         */ 
+        public IDictionary<long, GridClientPortableTypeDescriptor> IdToDescriptor
+        {
+            get { return idToDesc; }
         }
 
         /**
@@ -223,16 +330,18 @@ namespace GridGain.Client.Impl.Portable
         private void addType(Type type, int typeId, bool userType, GridClientPortableIdResolver mapper, 
             IGridClientPortableSerializer serializer)
         {
-            if (idToDesc.ContainsKey(typeId))
+            long typeKey = PU.TypeKey(userType, typeId);
+
+            if (idToDesc.ContainsKey(typeKey))
                 throw new GridClientPortableException("Conflicting type IDs [type1=" +
-                        idToDesc[typeId].Type.AssemblyQualifiedName + ", type2=" + type.AssemblyQualifiedName +
+                        idToDesc[typeKey].Type.AssemblyQualifiedName + ", type2=" + type.AssemblyQualifiedName +
                         ", typeId=" + typeId + ']');
 
             GridClientPortableTypeDescriptor descriptor = 
                 new GridClientPortableTypeDescriptor(type, typeId, userType, mapper, serializer);
 
             typeToDesc[type] = descriptor;
-            idToDesc[typeId] = descriptor;
+            idToDesc[typeKey] = descriptor;
         }
 
         /**
@@ -258,1000 +367,5 @@ namespace GridGain.Client.Impl.Portable
 
             throw new GridClientPortableException("Cannot find type for type configuration: " + typeCfg);
         }
-
-        /**
-         * <summary>Marhshal object</summary>
-         * <param name="val">Value.</param>
-         * <param name="ctx">Serialization context.</param>
-         * <returns>Serialized data as byte array.</returns>
-         */
-        public byte[] Marshal(object val, GridClientPortableSerializationContext ctx)
-        {
-            MemoryStream stream = new MemoryStream();
-
-            Marshal(val, stream, ctx);
-
-            return stream.ToArray();
-        }
-
-        /**
-         * <summary>Marhshal object</summary>
-         * <param name="val">Value.</param>
-         * <param name="stream">Output stream.</param>
-         * <param name="ctx">Serialization context.</param>
-         */
-        public void Marshal(object val, Stream stream, GridClientPortableSerializationContext ctx)
-        {
-            new WriteContext(ctx, typeToDesc, stream).Write(val);
-        }
-
-        /**
-         * <summary>Unmarshal object.</summary>
-         * <param name="data">Raw data.</param>
-         * <returns>Portable object.</returns>
-         */
-        public IGridClientPortableObject Unmarshal(byte[] data)
-        {
-            return Unmarshal(new MemoryStream(data));
-        }
-
-        /**
-         * <summary>Unmarshal object.</summary>
-         * <param name="input">Stream.</param>
-         * <returns>Unmarshalled object.</returns>
-         */ 
-        public IGridClientPortableObject Unmarshal(MemoryStream input)
-        {
-            long pos = input.Position;
-
-            byte hdr = (byte)input.ReadByte();
-
-            if (hdr == PU.HDR_NULL)
-                return null;
-            else if (hdr == PU.HDR_META)
-            {
-                throw new NotImplementedException();
-            }
-            
-            // Reading full object.
-            if (hdr != PU.HDR_FULL)
-                throw new GridClientPortableException("Unexpected header: " + hdr);
-
-            // Read header.
-            bool userType = PU.ReadBoolean(input);
-            int typeId = PU.ReadInt(input);
-            int hashCode = PU.ReadInt(input);
-            int len = PU.ReadInt(input);
-            int rawDataOffset = PU.ReadInt(input);
-
-            // Read fields.
-            HashSet<int> fields = null;
-
-            if (userType) 
-            { 
-                long curPos = input.Position;
-                long endPos = pos + (rawDataOffset == 0 ? len : rawDataOffset);
-
-                while (curPos < endPos)
-                {
-                    long pp = input.Position;
-                    int fieldId = PU.ReadInt(input);
-                    int fieldLen = PU.ReadInt(input);
-
-                    Console.WriteLine("Read field: " + fieldId + " " + fieldLen + " " + pp);
-
-                    if (fields == null)
-                        fields = new HashSet<int>();
-
-                    fields.Add(fieldId);
-
-                    input.Seek(fieldLen, SeekOrigin.Current);
-
-                    curPos = input.Position;
-                }
-            }
-
-            input.Seek(pos + len, SeekOrigin.Begin); // Position input after read data.
-            
-            return new GridClientPortableObjectImpl(this, input.ToArray(), (int)pos, len, userType, typeId, 
-                hashCode, rawDataOffset, fields);
-        }
-
-        /**
-         * <summary>Deserializes object.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>Deserialized value.</returns>
-         */ 
-        public T Deserialize<T>(MemoryStream stream)
-        {
-            byte hdr = (byte)stream.ReadByte();
-
-            if (hdr == PU.HDR_FULL)
-            {
-                bool userType = PU.ReadBoolean(stream);
-                int typeId = PU.ReadInt(stream);
-                int hashCode = PU.ReadInt(stream);
-                int len = PU.ReadInt(stream);
-                int rawPos = PU.ReadInt(stream);
-                
-                if (userType)
-                {
-                    // 1. Lookup type and instantiate it.
-                    GridClientPortableTypeDescriptor desc;
-
-                    if (!idToDesc.TryGetValue(typeId, out desc))
-                        throw new GridClientPortableException("Unknown type ID: " + typeId);
-
-                    object obj;
-
-                    try
-                    {
-                        obj = FormatterServices.GetUninitializedObject(desc.Type);
-                    }
-                    catch (Exception e)
-                    {
-                        throw new GridClientPortableException("Failed to create type instance: " + 
-                            desc.Type.AssemblyQualifiedName, e);
-                    }
-
-                    // TODO: GG-8535L Implement reader.
-
-                    return desc.Serializer.ReadPortable<T>(obj, null);
-                }
-                else
-                {
-                    // 1. Primitive type?
-                    bool processed;
-
-                    object res = PU.ReadPrimitive(typeId, (typeof(T)), stream, out processed);
-
-                    if (processed) 
-                        return (T)res;
-
-                    return (T)(new object());
-                }
-            }
-            else if (hdr == PU.HDR_HND)
-            {
-                throw new NotImplementedException();
-            }
-            else
-                throw new GridClientPortableException("Invalid header: " + hdr);
-        }
-
-        /**
-         * <summary>Write context.</summary>
-         */ 
-        private class WriteContext 
-        {
-            /** Per-connection serialization context. */
-            private readonly GridClientPortableSerializationContext ctx;
-
-            /** Type descriptors. */
-            private readonly IDictionary<Type, GridClientPortableTypeDescriptor> descs;
-
-            /** Output. */
-            private readonly Stream stream;
-
-            /** Wrier. */
-            private readonly Writer writer;
-                        
-            /** Handles. */
-            private IDictionary<GridClientPortableObjectHandle, int> hnds;
-                        
-            /**
-             * <summary>Constructor.</summary>
-             * <param name="ctx">Client connection context.</param>
-             * <param name="descs">Type descriptors.</param>
-             * <param name="stream">Output stream.</param>
-             */
-            public WriteContext(GridClientPortableSerializationContext ctx, 
-                IDictionary<Type, GridClientPortableTypeDescriptor> descs, Stream stream)
-            {
-                this.ctx = ctx;
-                this.descs = descs;
-                this.stream = stream;
-
-                writer = new Writer(this);
-            }
-
-            /**
-             * <summary>Write object to the context.</summary>
-             * <param name="obj">Object.</param>
-             */ 
-            public void Write(object obj)
-            {
-                // 1. Write null.
-                if (obj == null)
-                {
-                    stream.WriteByte(PU.HDR_NULL);
-
-                    return;
-                }
-                
-                // 2. Write primitive.
-                long pos = stream.Position; 
-
-                Type type = obj.GetType();
-
-                byte typeId = PU.PrimitiveTypeId(type);
-
-                if (typeId != 0)
-                {
-                    stream.WriteByte(PU.HDR_FULL);
-                    PU.WriteBoolean(false, stream);
-                    PU.WriteInt(typeId, stream);
-                    PU.WriteInt(obj.GetHashCode(), stream);
-                    stream.Seek(8, SeekOrigin.Current);
-                    PU.WritePrimitive(typeId, obj, stream);
-
-                    WriteLength(stream, pos, stream.Position, 0);                    
-
-                    return;
-                }
-
-                // 3. Try interpreting object as handle.
-                if (hnds == null)
-                    hnds = new Dictionary<GridClientPortableObjectHandle, int>();
-
-                GridClientPortableObjectHandle hnd = new GridClientPortableObjectHandle(obj);
-
-                int hndPos;
-
-                if (hnds.TryGetValue(hnd, out hndPos))
-                {
-                    stream.WriteByte(PU.HDR_HND);
-
-                    PU.WriteInt(hndPos, stream);
-
-                    return;
-                }
-                else 
-                    hnds.Add(hnd, (int)pos);
-                
-                // 4. Write string.
-                dynamic obj0 = obj;
-
-                if (type == typeof(string)) 
-                {
-                    stream.WriteByte(PU.HDR_FULL);
-                    PU.WriteBoolean(false, stream);                    
-                    PU.WriteInt(PU.TYPE_STRING, stream);
-                    PU.WriteInt(PU.StringHashCode(obj0), stream);
-
-                    stream.Seek(8, SeekOrigin.Current);
-
-                    PU.WriteString(obj0, stream);
-
-                    WriteLength(stream, pos, stream.Position, 0);
-
-                    return;
-                }
-
-                // 5. Write GUID.
-                if (type == typeof(Guid))
-                {
-                    stream.WriteByte(PU.HDR_FULL);
-                    PU.WriteBoolean(false, stream);    
-                    PU.WriteInt(PU.TYPE_GUID, stream);
-                    PU.WriteInt(PU.GuidHashCode(obj0), stream);
-
-                    stream.Seek(8, SeekOrigin.Current);
-
-                    PU.WriteGuid(obj0, stream);
-
-                    WriteLength(stream, pos, stream.Position, 0);
-
-                    return;
-                }
-
-                // 6. Write enum.
-
-                // 7. Write primitive array.
-                typeId = PU.PrimitiveArrayTypeId(type);
-
-                if (typeId != 0) 
-                {
-                    stream.WriteByte(PU.HDR_FULL);
-                    PU.WriteBoolean(false, stream);    
-                    PU.WriteInt(typeId, stream);
-
-                    // TODO: GG-8535: Implement.
-                }
-
-                // 9. Write collection.
-                // TODO: GG-8535: Implement.
-
-                // 10. Write map.
-                // TODO: GG-8535: Implement.
-
-                // 8. Write object array.
-                // TODO: GG-8535: Implement.
-
-                // 11. Just object.
-                GridClientPortableTypeDescriptor desc;
-                
-                if (!descs.TryGetValue(type, out desc))
-                    throw new GridClientPortableException("Unsupported object type [type=" + type +
-                        ", object=" + obj + ']');
-                
-                stream.WriteByte(PU.HDR_FULL);
-                PU.WriteBoolean(desc.UserType, stream);
-                PU.WriteInt(desc.TypeId, stream);
-                PU.WriteInt(obj.GetHashCode(), stream);
-
-                stream.Seek(8, SeekOrigin.Current);
-
-                Frame oldFrame = CurrentFrame;
-
-                CurrentFrame = new Frame(desc.TypeId, desc.Mapper);
-
-                desc.Serializer.WritePortable(obj, writer);
-                
-                WriteLength(stream, pos, stream.Position, CurrentFrame.RawPosition);
-
-                CurrentFrame = oldFrame;
-            }
-
-            /**
-             * <summary>Current frame.</summary>
-             */ 
-            public Frame CurrentFrame
-            {
-                get;
-                set;
-            }
-
-            /**
-             * <summary>Stream.</summary>
-             */ 
-            public Stream Stream 
-            {
-                get
-                {
-                    return stream;
-                }
-            }
-        }
-
-        /**
-         * <summary>Write lengths.</summary>
-         * <param name="stream"></param>
-         * <param name="pos"></param>
-         * <param name="retPos"></param>
-         * <param name="rawPos">Raw position.</param>
-         */
-        private static void WriteLength(Stream stream, long pos, long retPos, long rawPos) {
-            stream.Seek(pos + 10, SeekOrigin.Begin);
-
-            PU.WriteInt((int)(retPos - pos), stream);
-
-            if (rawPos != 0)
-                PU.WriteInt((int)(retPos - rawPos), stream);
-
-            stream.Seek(retPos, SeekOrigin.Begin);
-        }
-
-        /**
-         * <summary>Serialization frame.</summary>
-         */ 
-        private class Frame 
-        {
-            /**
-             * <summary>Constructor.</summary>
-             * <param name="typeId">Type ID.</param>
-             * <param name="mapper">Field mapper.</param>
-             */
-            public Frame(int typeId, GridClientPortableIdResolver mapper)
-            {
-                TypeId = typeId;
-                Mapper = mapper;
-            }
-
-            /**
-             * <summary>Type ID.</summary>
-             */ 
-            public int TypeId
-            {
-                get;
-                private set;
-            }
-
-            /**
-             * <summary>ID mapper.</summary>
-             */ 
-            public GridClientPortableIdResolver Mapper
-            {
-                get;
-                private set;
-            }
-
-            /**
-             * <summary>Raw mode.</summary>
-             */
-            public bool Raw
-            {
-                get;
-                set;
-            }
-
-            /**
-             * <summary>Raw position.</summary>
-             */ 
-            public long RawPosition 
-            {
-                get;
-                set;
-            }
-        }
-
-        /**
-         * <summary>Writer.</summary>
-         */ 
-        private class Writer : IGridClientPortableWriter, IGridClientPortableRawWriter
-        {
-            /** Context. */
-            private readonly WriteContext ctx;
-
-            /**
-             * <summary>Constructor.</summary>
-             * <param name="ctx">Context.</param>
-             */ 
-            public Writer(WriteContext ctx)
-            {
-                this.ctx = ctx;
-            }
-
-            /** <inheritdoc /> */
-            public IGridClientPortableRawWriter RawWriter()
-            {
-                MarkRaw();
-
-                return this;
-            }
-
-            private Frame Frame
-            {
-                get;
-                set;
-            }
-
-            /** <inheritdoc /> */
-            public void WriteBoolean(string fieldName, bool val)
-            {
-                ObtainFrame();
-
-                WriteField(fieldName);
-
-                PU.WriteInt(1 + 1, ctx.Stream);
-                PU.WriteByte(PU.TYPE_BOOL, ctx.Stream);
-
-                WriteBoolean(val);
-
-                RestoreFrame();
-            }
-
-            /** <inheritdoc /> */
-            public void WriteBoolean(bool val)
-            {
-                PU.WriteBoolean(val, ctx.Stream);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteBooleanArray(string fieldName, bool[] val)
-            {
-                ObtainFrame();
-
-                WriteField(fieldName);
-
-                PU.WriteInt(1 + 1 + (val == null ? 0 : val.Length), ctx.Stream);
-                PU.WriteByte(PU.TYPE_ARRAY_BOOL, ctx.Stream);
-
-                WriteBooleanArray(val);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteBooleanArray(bool[] val)
-            {
-                PU.WriteBooleanArray(val, ctx.Stream);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteByte(string fieldName, byte val)
-            {
-                ObtainFrame();
-
-                WriteField(fieldName);
-
-                PU.WriteInt(1 + 1, ctx.Stream);
-                PU.WriteByte(PU.TYPE_BYTE, ctx.Stream);
-
-                WriteByte(val);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteByte(byte val)
-            {
-                ctx.Stream.WriteByte(val);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteByteArray(string fieldName, byte[] val)
-            {
-                ObtainFrame();
-
-                WriteField(fieldName);
-                
-                PU.WriteInt(1 + 1 + (val == null ? 0 : val.Length), ctx.Stream);
-                PU.WriteByte(PU.TYPE_ARRAY_BYTE, ctx.Stream);
-                WriteByteArray(val);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteByteArray(byte[] val)
-            {
-                PU.WriteByteArray(val, ctx.Stream);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteShort(string fieldName, short val)
-            {
-                ObtainFrame();
-
-                WriteField(fieldName);
-
-                PU.WriteInt(1 + 2, ctx.Stream);
-                PU.WriteByte(PU.TYPE_SHORT, ctx.Stream);
-                WriteShort(val);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteShort(short val)
-            {
-                PU.WriteShort(val, ctx.Stream);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteShortArray(string fieldName, short[] val)
-            {
-                ObtainFrame();
-
-                WriteField(fieldName);
-
-                PU.WriteInt(1 + (val == null ? 0 : 2 * val.Length), ctx.Stream);
-                
-                WriteShortArray(val);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteShortArray(short[] val)
-            {
-                PU.WriteShortArray(val, ctx.Stream);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteInt(string fieldName, int val)
-            {
-                WriteField(fieldName);
-
-                PU.WriteInt(1 + 4, ctx.Stream);
-                PU.WriteByte(PU.TYPE_INT, ctx.Stream);
-
-                WriteInt(val);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteInt(int val)
-            {
-                PU.WriteInt(val, ctx.Stream);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteIntArray(string fieldName, int[] val)
-            {
-                ObtainFrame();
-
-                WriteField(fieldName);
-
-                PU.WriteInt(1+ 1 + (val == null ? 0 : 4 * val.Length), ctx.Stream);
-                PU.WriteByte(PU.TYPE_ARRAY_INT, ctx.Stream);
-
-                WriteIntArray(val);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteIntArray(int[] val)
-            {
-                PU.WriteIntArray(val, ctx.Stream);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteLong(string fieldName, long val)
-            {
-                ObtainFrame();
-
-                WriteField(fieldName);
-
-                PU.WriteInt(1 + 8, ctx.Stream);
-                PU.WriteByte(PU.TYPE_LONG, ctx.Stream);
-
-                WriteLong(val);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteLong(long val)
-            {
-                PU.WriteLong(val, ctx.Stream);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteLongArray(string fieldName, long[] val)
-            {
-                WriteField(fieldName);
-
-                PU.WriteInt(1 + 1 + (val == null ? 0 : 8 * val.Length), ctx.Stream);
-                PU.WriteByte(PU.TYPE_ARRAY_BYTE, ctx.Stream);
-
-                WriteLongArray(val);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteLongArray(long[] val)
-            {
-                PU.WriteLongArray(val, ctx.Stream);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteChar(string fieldName, char val)
-            {
-                WriteField(fieldName);
-
-                PU.WriteInt(1 + 2, ctx.Stream);
-                PU.WriteByte(PU.TYPE_CHAR, ctx.Stream);
-
-                WriteShort((short)val);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteChar(char val)
-            {
-                WriteShort((short)val);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteCharArray(string fieldName, char[] val)
-            {
-                ObtainFrame();
-
-                WriteField(fieldName);
-
-                PU.WriteInt(1 + 1 + (val == null ? 0 : 2 * val.Length), ctx.Stream);
-                PU.WriteByte(PU.TYPE_ARRAY_CHAR, ctx.Stream);
-                 
-                WriteCharArray(val);
-
-                RestoreFrame();    
-            }
-
-            /** <inheritdoc /> */
-            public void WriteCharArray(char[] val)
-            {
-                PU.WriteCharArray(val, ctx.Stream);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteFloat(string fieldName, float val)
-            {
-                ObtainFrame();
-
-                WriteField(fieldName);
-
-                PU.WriteInt(1 + 4, ctx.Stream);
-                PU.WriteByte(PU.TYPE_FLOAT, ctx.Stream);
-
-                WriteFloat(val);
-
-                RestoreFrame();
-            }
-
-            /** <inheritdoc /> */
-            public void WriteFloat(float val)
-            {
-                PU.WriteFloat(val, ctx.Stream);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteFloatArray(string fieldName, float[] val)
-            {
-                ObtainFrame();
-
-                WriteField(fieldName);
-
-                PU.WriteInt(1 + 1 + (val == null ? 0 : 4 * val.Length), ctx.Stream);
-                PU.WriteByte(PU.TYPE_ARRAY_FLOAT, ctx.Stream);
-
-                WriteFloatArray(val);
-
-                RestoreFrame();
-            }
-
-            /** <inheritdoc /> */
-            public void WriteFloatArray(float[] val)
-            {
-                PU.WriteFloatArray(val, ctx.Stream);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteDouble(string fieldName, double val)
-            {
-                ObtainFrame();
-
-                WriteField(fieldName);
-
-                PU.WriteInt(1+ 8, ctx.Stream);
-                PU.WriteByte(PU.TYPE_DOUBLE, ctx.Stream);
-
-                WriteDouble(val);
-
-                RestoreFrame();
-            }
-
-            /** <inheritdoc /> */
-            public void WriteDouble(double val)
-            {
-                PU.WriteDouble(val, ctx.Stream);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteDoubleArray(string fieldName, double[] val)
-            {
-                ObtainFrame();
-
-                WriteField(fieldName);
-
-                PU.WriteInt(1 + 1 + (val == null ? 0 : 8 * val.Length), ctx.Stream);
-                PU.WriteByte(PU.TYPE_ARRAY_DOUBLE, ctx.Stream);
-
-                WriteDoubleArray(val);
-
-                RestoreFrame();
-            }
-
-            /** <inheritdoc /> */
-            public void WriteDoubleArray(double[] val)
-            {
-                PU.WriteDoubleArray(val, ctx.Stream);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteString(string fieldName, string val)
-            {
-                ObtainFrame();
-
-                WriteField(fieldName);
-
-                long pos = ctx.Stream.Position;
-
-                ctx.Stream.Seek(4, SeekOrigin.Current);
-
-                WriteString(val);
-
-                WriteLength(pos);
-
-                RestoreFrame();
-            }
-
-            /** <inheritdoc /> */
-            public void WriteString(string val)
-            {
-                PU.WriteString(val, ctx.Stream);
-            }
-
-            /** <inheritdoc /> */
-            public void WriteStringArray(string fieldName, string[] val)
-            {
-                ObtainFrame();
-
-                WriteField(fieldName);
-
-                long pos = ctx.Stream.Position;
-
-                ctx.Stream.Seek(4, SeekOrigin.Current);
-
-                WriteStringArray(val);
-
-                WriteLength(pos);
-
-                RestoreFrame();
-            }
-
-            /** <inheritdoc /> */
-            public void WriteStringArray(string[] val)
-            {
-                PU.WriteStringArray(val, ctx.Stream);
-            }
-
-            public void WriteGuid(string fieldName, Guid val)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void WriteGuid(Guid val)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void WriteGuidArray(string fieldName, Guid[] val)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void WriteGuidArray(Guid[] val)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void WriteEnum(string fieldName, Enum val)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void WriteEnum(Enum val)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void WriteEnumArray(string fieldName, Enum[] val)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void WriteEnumArray(Enum[] val)
-            {
-                throw new NotImplementedException();
-            }
-
-            /** <inheritdoc /> */
-            public void WriteObject<T>(string fieldName, T val)
-            {
-                ObtainFrame();
-
-                WriteField(fieldName);
-
-                long pos = ctx.Stream.Position;
-
-                ctx.Stream.Seek(4, SeekOrigin.Current);
-
-                WriteObject(val);
-
-                WriteLength(pos);
-
-                RestoreFrame();
-            }
-
-            /** <inheritdoc /> */
-            public void WriteObject<T>(T val)
-            {
-                ctx.Write(val);
-            }
-
-            public void WriteObjectArray<T>(string fieldName, T[] val)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void WriteObjectArray<T>(T[] val)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void WriteCollection(string fieldName, ICollection val)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void WriteCollection(ICollection val)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void WriteCollection<T>(string fieldName, ICollection<T> val)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void WriteCollection<T>(ICollection<T> val)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void WriteMap(string fieldName, IDictionary val)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void WriteMap(IDictionary val)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void WriteMap<K, V>(string fieldName, IDictionary<K, V> val)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void WriteMap<K, V>(IDictionary<K, V> val)
-            {
-                throw new NotImplementedException();
-            }
-            
-            /**
-             * <summary>Mark current output as raw.</summary>
-             */ 
-            public void MarkRaw()
-            {
-                if (!Frame.Raw)
-                {
-                    Frame.RawPosition = ctx.Stream.Position;
-
-                    Frame.Raw = true;
-                }
-            }
-
-            /**
-             * <summary>Write field.</summary>
-             * <param name="fieldName">Field name.</param>
-             */ 
-            private void WriteField(string fieldName)
-            {
-                if (ctx.CurrentFrame.Raw)
-                    throw new GridClientPortableException("Cannot write named fields after raw data is written.");
-
-                // TODO: GG-8535: Check string mode here.
-                int? fieldIdRef = Frame.Mapper.FieldId(Frame.TypeId, fieldName);
-
-                int fieldId = fieldIdRef.HasValue ? fieldIdRef.Value : PU.StringHashCode(fieldName.ToLower());
-
-                Console.WriteLine("Write field: " + fieldName + " " + fieldId + " " + ctx.Stream.Position);
-
-                PU.WriteInt(fieldId, ctx.Stream);
-            }
-
-            /**
-             * <summary></summary>
-             * <param name="pos">Position where length should reside.</param>
-             */
-            private void WriteLength(long pos)
-            {
-                Stream stream = ctx.Stream;
-
-                long retPos = stream.Position;
-
-                stream.Seek(pos, SeekOrigin.Begin);
-
-                PU.WriteInt((int)(retPos - pos), stream);
-
-                stream.Seek(retPos, SeekOrigin.Begin);
-            }
-
-            /**
-             * <summary>Obtain current frame to context.</summary>
-             * <returns>Frame.</returns>
-             */
-            private Frame ObtainFrame()
-            {
-                Frame = ctx.CurrentFrame;
-
-                return Frame;
-            }
-
-            /**
-             * <summary>Restore context frame to current.</summary>
-             */ 
-            private void RestoreFrame()
-            {
-                ctx.CurrentFrame = Frame;
-            }
-        }        
     }    
 }

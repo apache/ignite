@@ -12,7 +12,7 @@ namespace GridGain.Client.Impl.Portable
     /**
      * <summary>Field metadata.</summary>
      */ 
-    class GridClientPortableFieldMetadata
+    internal class GridClientPortableFieldMetadata
     {
         /**
          * <summary>Constructor.</summary>

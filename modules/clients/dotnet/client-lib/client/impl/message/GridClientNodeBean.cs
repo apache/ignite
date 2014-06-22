@@ -134,7 +134,7 @@ namespace GridGain.Client.Impl.Message {
             TcpAddresses = rawReader.ReadCollection<String>();
             TcpHostNames = rawReader.ReadCollection<String>();
 
-            NodeId = rawReader.ReadGuid();
+            NodeId = rawReader.ReadGuid().Value;
 
             ConsistentId = rawReader.ReadObject<Object>();
             Metrics = rawReader.ReadObject<GridClientNodeMetricsBean>();

@@ -131,13 +131,13 @@ namespace GridGain.Client.Portable
          * <summary>Write GUID value.</summary>
          * <param name="val">GUID value.</param>
          */
-        void WriteGuid(Guid val);
+        void WriteGuid(Guid? val);
 
         /**
          * <summary>Write GUID array.</summary>
          * <param name="val">GUID array.</param>
          */
-        void WriteGuidArray(Guid[] val);
+        void WriteGuidArray(Guid?[] val);
 
         /**
         * <summary>Write enum value.</summary>

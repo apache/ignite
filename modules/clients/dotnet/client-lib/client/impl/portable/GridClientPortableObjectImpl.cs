@@ -11,6 +11,7 @@ namespace GridGain.Client.Impl.Portable
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.IO;
     using GridGain.Client.Impl.Portable;
     using GridGain.Client.Portable;
@@ -21,7 +22,8 @@ namespace GridGain.Client.Impl.Portable
     internal class GridClientPortableObjectImpl : IGridClientPortableObject
     {
         /** Empty fields collection. */
-        private static readonly ISet<int> EMPTY_FIELDS = new GridClientPortableReadOnlySet<int>(new HashSet<int>());
+        private static readonly IDictionary<int, int> EMPTY_FIELDS = 
+            new GridClientPortableReadOnlyDictionary<int, int>(new Dictionary<int, int>());
 
         /** Marshaller. */
         private readonly GridClientPortableMarshaller marsh;
@@ -48,7 +50,7 @@ namespace GridGain.Client.Impl.Portable
         private readonly int rawDataOffset;
 
         /** Fields. */
-        private readonly ISet<int> fields;
+        private readonly IDictionary<int, int> fields;
 
         /**
          * <summary>Constructor.</summary>
@@ -63,7 +65,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="fields">Fields.</param>
          */
         public GridClientPortableObjectImpl(GridClientPortableMarshaller marsh, byte[] data, int offset,
-            int len, bool userType, int typeId, int hashCode, int rawDataOffset, ISet<int> fields)
+            int len, bool userType, int typeId, int hashCode, int rawDataOffset, IDictionary<int, int> fields)
         {
             this.marsh = marsh;
 
@@ -76,7 +78,7 @@ namespace GridGain.Client.Impl.Portable
             this.hashCode = hashCode;            
             this.rawDataOffset = rawDataOffset;
 
-            this.fields = fields == null ? EMPTY_FIELDS : new GridClientPortableReadOnlySet<int>(fields);
+            this.fields = fields == null ? EMPTY_FIELDS : new GridClientPortableReadOnlyDictionary<int, int>(fields);
         }
 
         /** <inheritdoc /> */
@@ -106,17 +108,54 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public T Deserialize<T>()
         {
-            MemoryStream stream = new MemoryStream(data);
-
-            stream.Seek(offset, SeekOrigin.Begin);
-
-            return marsh.Deserialize<T>(stream);
+            return new GridClientPortableReadContext(marsh.IdToDescriptor, Stream()).Deserialize<T>(this);
         }
 
         /** <inheritdoc /> */
         public IGridClientPortableObject Copy(IDictionary<string, object> fields)
         {
             throw new System.NotImplementedException();
+        }
+
+        /**
+         * <summary>Offset.</summary>
+         */ 
+        public int Offset
+        {
+            get { return offset; }
+        }
+
+        /**
+         * <summary>Raw data offset.</summary>
+         */
+        public int RawDataOffset
+        {
+            get { return rawDataOffset;  }
+        }
+
+        /**
+         * <summary>Gets portable object data as stream.</summary>
+         * <returns>Stream.</returns>
+         */ 
+        public MemoryStream Stream()
+        {
+            MemoryStream stream = new MemoryStream(data);
+
+            stream.Position = offset;
+
+            return stream;
+        }
+
+        /**
+         * <summary>Gets position of the given field ID.</summary>
+         * <param name="fieldId">Field ID.</param>
+         * <returns>Position.</returns>
+         */
+        public int? Position(int fieldId)
+        {
+            int pos;
+
+            return fields.TryGetValue(fieldId, out pos) ? pos : (int?)null;
         }
     }
 }

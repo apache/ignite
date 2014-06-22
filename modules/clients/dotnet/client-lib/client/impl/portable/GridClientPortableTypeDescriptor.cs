@@ -10,7 +10,7 @@ namespace GridGain.Client.Impl.Portable
     /**
      * <summary>Type descriptor.</summary>
      */ 
-    class GridClientPortableTypeDescriptor
+    internal class GridClientPortableTypeDescriptor
     {
         /**
          * <param name="type">Type.</param>

@@ -69,7 +69,7 @@ namespace GridGain.Client.Impl.Message {
 
             IGridClientPortableRawReader rawReader = reader.RawReader();
 
-            NodeId = rawReader.ReadGuid();
+            NodeId = rawReader.ReadGuid().Value;
             NodeIP = rawReader.ReadString();
 
             IncludeMetrics = rawReader.ReadBoolean();

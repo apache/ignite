@@ -28,7 +28,11 @@ namespace GridGain {
 
             Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
 
-            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFields());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsReflective());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsPortable());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsRawPortable());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsSerializer());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsRawSerializer());
 
             Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveBool());
             Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveSbyte());
@@ -42,7 +46,8 @@ namespace GridGain {
             Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveUlong());
             Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveFloat());
             Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveDouble());
-
+            // TODO: Primitive string
+            // TODO: Primitive Guid
             
 
             //TestAll();

@@ -15,7 +15,7 @@ namespace GridGain.Client.Impl.Portable
     /**
      * <summary>Metadata for particular object.</summary>
      */ 
-    class GridClientPortableClassMetadata
+    internal class GridClientPortableClassMetadata
     {
         /** Empty metadata. */
         public static readonly GridClientPortableClassMetadata EMPTY_META = new GridClientPortableClassMetadata(null, null);

@@ -10,14 +10,11 @@
 namespace GridGain.Client.Portable {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.IO;
-    using System.Web.Script.Serialization;
     using System.Text;
     using NUnit.Framework;
 
     using GridGain.Client.Impl.Portable;
-    using GridGain.Client.Portable;
 
     using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
 
@@ -25,9 +22,7 @@ namespace GridGain.Client.Portable {
     public class GridClientPortableSelfTest : GridClientAbstractTest {
 
         private GridClientPortableMarshaller marsh;
-
-        private GridClientPortableSerializationContext ctx = new GridClientPortableSerializationContext();
-
+        
         [TestFixtureSetUp]
         override public void InitClient()
         {
@@ -45,7 +40,7 @@ namespace GridGain.Client.Portable {
          */
         public void TestWritePrimitiveBool()
         {
-            CheckStrict(marsh.Marshal(false, ctx), 
+            CheckStrict(marsh.Marshal(false), 
                 PU.HDR_FULL, 
                 new BooleanValueAction(false), 
                 new IntValueAction(PU.TYPE_BOOL),
@@ -54,9 +49,9 @@ namespace GridGain.Client.Portable {
                 new IntValueAction(0),
                 PU.BYTE_ZERO);
 
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(false, ctx)).Deserialize<bool>(), false);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(false)).Deserialize<bool>(), false);
 
-            CheckStrict(marsh.Marshal(true, ctx),
+            CheckStrict(marsh.Marshal(true),
                 PU.HDR_FULL,
                 new BooleanValueAction(false),
                 new IntValueAction(PU.TYPE_BOOL),
@@ -65,9 +60,9 @@ namespace GridGain.Client.Portable {
                 new IntValueAction(0),
                 PU.BYTE_ONE);
 
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(true, ctx)).Deserialize<bool>(), true);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(true)).Deserialize<bool>(), true);
 
-            CheckStrict(marsh.Marshal((bool?)false, ctx),
+            CheckStrict(marsh.Marshal((bool?)false),
                 PU.HDR_FULL,
                 new BooleanValueAction(false),
                 new IntValueAction(PU.TYPE_BOOL),
@@ -76,12 +71,12 @@ namespace GridGain.Client.Portable {
                 new IntValueAction(0),
                 PU.BYTE_ZERO);
 
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((bool?)false, ctx)).Deserialize<bool?>(), false);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((bool?)false)).Deserialize<bool?>(), false);
 
-            CheckStrict(marsh.Marshal((bool?)null, ctx),
+            CheckStrict(marsh.Marshal((bool?)null),
                 PU.HDR_NULL);
 
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((bool?)null, ctx)), null);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((bool?)null)), null);
         }
 
         /**
@@ -89,12 +84,12 @@ namespace GridGain.Client.Portable {
          */
         public void TestWritePrimitiveSbyte()
         {
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((sbyte)1, ctx)).Deserialize<sbyte>(), (sbyte)1);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(SByte.MinValue, ctx)).Deserialize<sbyte>(), SByte.MinValue);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(SByte.MaxValue, ctx)).Deserialize<sbyte>(), SByte.MaxValue);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((sbyte)1)).Deserialize<sbyte>(), (sbyte)1);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(SByte.MinValue)).Deserialize<sbyte>(), SByte.MinValue);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(SByte.MaxValue)).Deserialize<sbyte>(), SByte.MaxValue);
 
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((sbyte?)1, ctx)).Deserialize<sbyte?>(), (sbyte?)1);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((sbyte?)null, ctx)), null);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((sbyte?)1)).Deserialize<sbyte?>(), (sbyte?)1);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((sbyte?)null)), null);
 
             //CheckStrict(marsh.Marshal((sbyte)1, ctx), PU.TYPE_BYTE, new byte[] { 0x01 });
             //CheckStrict(marsh.Marshal(SByte.MinValue, ctx), PU.TYPE_BYTE, new byte[] { 0x80 });
@@ -109,12 +104,12 @@ namespace GridGain.Client.Portable {
          */
         public void TestWritePrimitiveByte()
         {
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((byte)1, ctx)).Deserialize<byte>(), (byte)1);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(Byte.MinValue, ctx)).Deserialize<byte>(), Byte.MinValue);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(Byte.MaxValue, ctx)).Deserialize<byte>(), Byte.MaxValue);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((byte)1)).Deserialize<byte>(), (byte)1);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(Byte.MinValue)).Deserialize<byte>(), Byte.MinValue);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(Byte.MaxValue)).Deserialize<byte>(), Byte.MaxValue);
 
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((byte?)1, ctx)).Deserialize<byte?>(), (byte?)1);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((byte?)null, ctx)), null);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((byte?)1)).Deserialize<byte?>(), (byte?)1);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((byte?)null)), null);
 
             //CheckStrict(marsh.Marshal((byte)1, ctx), PU.TYPE_BYTE, new byte[] { 0x01});
             //CheckStrict(marsh.Marshal(Byte.MinValue, ctx), PU.TYPE_BYTE, new byte[] { 0x00 });
@@ -129,12 +124,12 @@ namespace GridGain.Client.Portable {
          */
         public void TestWritePrimitiveShort()
         {
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((short)1, ctx)).Deserialize<short>(), (short)1);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(Int16.MinValue, ctx)).Deserialize<short>(), Int16.MinValue);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(Int16.MaxValue, ctx)).Deserialize<short>(), Int16.MaxValue);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((short)1)).Deserialize<short>(), (short)1);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(Int16.MinValue)).Deserialize<short>(), Int16.MinValue);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(Int16.MaxValue)).Deserialize<short>(), Int16.MaxValue);
 
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((short?)1, ctx)).Deserialize<short?>(), (short?)1);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((short?)null, ctx)), null);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((short?)1)).Deserialize<short?>(), (short?)1);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((short?)null)), null);
 
             //CheckStrict(marsh.Marshal((short)1, ctx), PU.TYPE_SHORT, new byte[] { 0x01, 0x00 });
             //CheckStrict(marsh.Marshal(Int16.MinValue, ctx), PU.TYPE_SHORT, new byte[] { 0x00, 0x80 });
@@ -149,12 +144,12 @@ namespace GridGain.Client.Portable {
          */
         public void TestWritePrimitiveUshort()
         {
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((ushort)1, ctx)).Deserialize<ushort>(), (ushort)1);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(UInt16.MinValue, ctx)).Deserialize<ushort>(), UInt16.MinValue);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(UInt16.MaxValue, ctx)).Deserialize<ushort>(), UInt16.MaxValue);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((ushort)1)).Deserialize<ushort>(), (ushort)1);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(UInt16.MinValue)).Deserialize<ushort>(), UInt16.MinValue);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(UInt16.MaxValue)).Deserialize<ushort>(), UInt16.MaxValue);
 
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((ushort?)1, ctx)).Deserialize<ushort?>(), (ushort?)1);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((ushort?)null, ctx)), null);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((ushort?)1)).Deserialize<ushort?>(), (ushort?)1);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((ushort?)null)), null);
 
             //CheckStrict(marsh.Marshal((ushort)1, ctx), PU.TYPE_SHORT, new byte[] { 0x01, 0x00 });
             //CheckStrict(marsh.Marshal(UInt16.MinValue, ctx), PU.TYPE_SHORT, new byte[] { 0x00, 0x00 });
@@ -169,12 +164,12 @@ namespace GridGain.Client.Portable {
          */
         public void TestWritePrimitiveChar()
         {
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((char)1, ctx)).Deserialize<char>(), (char)1);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(Char.MinValue, ctx)).Deserialize<char>(), Char.MinValue);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(Char.MaxValue, ctx)).Deserialize<char>(), Char.MaxValue);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((char)1)).Deserialize<char>(), (char)1);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(Char.MinValue)).Deserialize<char>(), Char.MinValue);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(Char.MaxValue)).Deserialize<char>(), Char.MaxValue);
 
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((char?)1, ctx)).Deserialize<char?>(), (char?)1);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((char?)null, ctx)), null);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((char?)1)).Deserialize<char?>(), (char?)1);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((char?)null)), null);
 
             //CheckStrict(marsh.Marshal((char)1, ctx), PU.TYPE_CHAR, new byte[] { 0x01, 0x00 });
             //CheckStrict(marsh.Marshal(Char.MinValue, ctx), PU.TYPE_CHAR, new byte[] { 0x00, 0x00 });
@@ -189,12 +184,12 @@ namespace GridGain.Client.Portable {
          */ 
         public void TestWritePrimitiveInt()
         {
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((int)1, ctx)).Deserialize<int>(), (int)1);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(Int32.MinValue, ctx)).Deserialize<int>(), Int32.MinValue);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(Int32.MaxValue, ctx)).Deserialize<int>(), Int32.MaxValue);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((int)1)).Deserialize<int>(), (int)1);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(Int32.MinValue)).Deserialize<int>(), Int32.MinValue);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(Int32.MaxValue)).Deserialize<int>(), Int32.MaxValue);
 
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((int?)1, ctx)).Deserialize<int?>(), (int?)1);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((int?)null, ctx)), null);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((int?)1)).Deserialize<int?>(), (int?)1);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((int?)null)), null);
 
             //CheckStrict(marsh.Marshal(1, ctx), PU.TYPE_INT, new byte[] { 0x01, 0x00, 0x00, 0x00 });
             //CheckStrict(marsh.Marshal(Int32.MinValue, ctx), PU.TYPE_INT, new byte[] { 0x00, 0x00, 0x00, 0x80 });
@@ -209,12 +204,12 @@ namespace GridGain.Client.Portable {
          */ 
         public void TestWritePrimitiveUint()
         {
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((uint)1, ctx)).Deserialize<uint>(), (uint)1);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(UInt32.MinValue, ctx)).Deserialize<uint>(), UInt32.MinValue);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(UInt32.MaxValue, ctx)).Deserialize<uint>(), UInt32.MaxValue);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((uint)1)).Deserialize<uint>(), (uint)1);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(UInt32.MinValue)).Deserialize<uint>(), UInt32.MinValue);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(UInt32.MaxValue)).Deserialize<uint>(), UInt32.MaxValue);
 
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((uint?)1, ctx)).Deserialize<uint?>(), (int?)1);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((uint?)null, ctx)), null);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((uint?)1)).Deserialize<uint?>(), (int?)1);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((uint?)null)), null);
 
             //CheckStrict(marsh.Marshal((uint)1, ctx), PU.TYPE_INT, new byte[] { 0x01, 0x00, 0x00, 0x00 });
             //CheckStrict(marsh.Marshal(UInt32.MinValue, ctx), PU.TYPE_INT, new byte[] { 0x00, 0x00, 0x00, 0x00 });
@@ -229,12 +224,12 @@ namespace GridGain.Client.Portable {
          */
         public void TestWritePrimitiveLong()
         {
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((long)1, ctx)).Deserialize<long>(), (long)1);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(Int64.MinValue, ctx)).Deserialize<long>(), Int64.MinValue);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(Int64.MaxValue, ctx)).Deserialize<long>(), Int64.MaxValue);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((long)1)).Deserialize<long>(), (long)1);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(Int64.MinValue)).Deserialize<long>(), Int64.MinValue);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(Int64.MaxValue)).Deserialize<long>(), Int64.MaxValue);
 
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((long?)1, ctx)).Deserialize<long?>(), (long?)1);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((long?)null, ctx)), null);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((long?)1)).Deserialize<long?>(), (long?)1);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((long?)null)), null);
 
             //CheckStrict(marsh.Marshal((long)1, ctx), PU.TYPE_LONG, 
             //    new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
@@ -253,12 +248,12 @@ namespace GridGain.Client.Portable {
          */
         public void TestWritePrimitiveUlong()
         {
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((ulong)1, ctx)).Deserialize<ulong>(), (ulong)1);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(UInt64.MinValue, ctx)).Deserialize<ulong>(), UInt64.MinValue);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(UInt64.MaxValue, ctx)).Deserialize<ulong>(), UInt64.MaxValue);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((ulong)1)).Deserialize<ulong>(), (ulong)1);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(UInt64.MinValue)).Deserialize<ulong>(), UInt64.MinValue);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(UInt64.MaxValue)).Deserialize<ulong>(), UInt64.MaxValue);
 
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((ulong?)1, ctx)).Deserialize<ulong?>(), (ulong?)1);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((ulong?)null, ctx)), null);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((ulong?)1)).Deserialize<ulong?>(), (ulong?)1);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((ulong?)null)), null);
 
             //CheckStrict(marsh.Marshal((ulong)1, ctx), PU.TYPE_LONG, 
             //    new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
@@ -277,12 +272,12 @@ namespace GridGain.Client.Portable {
          */
         public void TestWritePrimitiveFloat()
         {
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((float)1, ctx)).Deserialize<float>(), (float)1);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(float.MinValue, ctx)).Deserialize<float>(), float.MinValue);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(float.MaxValue, ctx)).Deserialize<float>(), float.MaxValue);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((float)1)).Deserialize<float>(), (float)1);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(float.MinValue)).Deserialize<float>(), float.MinValue);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(float.MaxValue)).Deserialize<float>(), float.MaxValue);
 
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((float?)1, ctx)).Deserialize<float?>(), (float?)1);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((float?)null, ctx)), null);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((float?)1)).Deserialize<float?>(), (float?)1);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((float?)null)), null);
 
             //CheckStrict(marsh.Marshal((float)1, ctx), PU.TYPE_FLOAT, new byte[] { 0, 0, 128, 63 });
             //CheckStrict(marsh.Marshal(float.MinValue, ctx), PU.TYPE_FLOAT, new byte[] { 255, 255, 127, 255 });
@@ -297,12 +292,12 @@ namespace GridGain.Client.Portable {
          */
         public void TestWritePrimitiveDouble()
         {
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((double)1, ctx)).Deserialize<double>(), (double)1);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(double.MinValue, ctx)).Deserialize<double>(), double.MinValue);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(double.MaxValue, ctx)).Deserialize<double>(), double.MaxValue);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((double)1)).Deserialize<double>(), (double)1);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(double.MinValue)).Deserialize<double>(), double.MinValue);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(double.MaxValue)).Deserialize<double>(), double.MaxValue);
 
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((double?)1, ctx)).Deserialize<double?>(), (double?)1);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((double?)null, ctx)), null);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((double?)1)).Deserialize<double?>(), (double?)1);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((double?)null)), null);
 
             //CheckStrict(marsh.Marshal((double)1, ctx), PU.TYPE_DOUBLE,
             //    new byte[] { 0, 0, 0, 0, 0, 0, 240, 63 });
@@ -316,7 +311,10 @@ namespace GridGain.Client.Portable {
             //CheckStrict(marsh.Marshal((double?)null, ctx), PU.HDR_NULL);
         }
 
-        public void TestPrimitiveFields()
+        /**
+         * <summary>Check write of primitive fields through reflection.</summary>
+         */
+        public void TestPrimitiveFieldsReflective()
         {
             GridClientPortableTypeConfiguration typeCfg = 
                 new GridClientPortableTypeConfiguration(typeof(PrimitiveFieldReflectiveType));
@@ -333,15 +331,131 @@ namespace GridGain.Client.Portable {
 
             PrimitiveFieldReflectiveType obj = new PrimitiveFieldReflectiveType();
 
-            byte[] bytes = marsh.Marshal(obj, ctx);
+            TestPrimitiveFields(marsh, obj);
+        }
+
+        /**
+         * <summary>Check write of primitive fields through portable interface.</summary>
+         */
+        public void TestPrimitiveFieldsPortable()
+        {
+            GridClientPortableTypeConfiguration typeCfg =
+                new GridClientPortableTypeConfiguration(typeof(PrimitiveFieldPortableType));
+
+            ICollection<GridClientPortableTypeConfiguration> typeCfgs = new List<GridClientPortableTypeConfiguration>();
+
+            typeCfgs.Add(typeCfg);
+
+            GridClientPortableConfiguration cfg = new GridClientPortableConfiguration();
+
+            cfg.TypeConfigurations = typeCfgs;
+
+            GridClientPortableMarshaller marsh = new GridClientPortableMarshaller(cfg);
+
+            PrimitiveFieldPortableType obj = new PrimitiveFieldPortableType();
+
+            TestPrimitiveFields(marsh, obj);
+        }
+
+        /**
+         * <summary>Check write of primitive fields through portable interface.</summary>
+         */
+        public void TestPrimitiveFieldsRawPortable()
+        {
+            GridClientPortableTypeConfiguration typeCfg =
+                new GridClientPortableTypeConfiguration(typeof(PrimitiveFieldRawPortableType));
+
+            ICollection<GridClientPortableTypeConfiguration> typeCfgs = new List<GridClientPortableTypeConfiguration>();
+
+            typeCfgs.Add(typeCfg);
+
+            GridClientPortableConfiguration cfg = new GridClientPortableConfiguration();
+
+            cfg.TypeConfigurations = typeCfgs;
+
+            GridClientPortableMarshaller marsh = new GridClientPortableMarshaller(cfg);
+
+            PrimitiveFieldRawPortableType obj = new PrimitiveFieldRawPortableType();
+
+            TestPrimitiveFields(marsh, obj);
+        }
+
+        /**
+         * <summary>Check write of primitive fields through portable interface.</summary>
+         */
+        public void TestPrimitiveFieldsSerializer()
+        {
+            GridClientPortableTypeConfiguration typeCfg =
+                new GridClientPortableTypeConfiguration(typeof(PrimitiveFieldReflectiveType));
+
+            typeCfg.Serializer = new PrimitiveFieldsSerializer();
+
+            ICollection<GridClientPortableTypeConfiguration> typeCfgs = new List<GridClientPortableTypeConfiguration>();
+
+            typeCfgs.Add(typeCfg);
+
+            GridClientPortableConfiguration cfg = new GridClientPortableConfiguration();
+
+            cfg.TypeConfigurations = typeCfgs;
+
+            GridClientPortableMarshaller marsh = new GridClientPortableMarshaller(cfg);
+
+            PrimitiveFieldReflectiveType obj = new PrimitiveFieldReflectiveType();
+
+            TestPrimitiveFields(marsh, obj);
+        }
+
+        /**
+         * <summary>Check write of primitive fields through raw serializer.</summary>
+         */
+        public void TestPrimitiveFieldsRawSerializer()
+        {
+            GridClientPortableTypeConfiguration typeCfg =
+                new GridClientPortableTypeConfiguration(typeof(PrimitiveFieldReflectiveType));
+
+            typeCfg.Serializer = new PrimitiveFieldsRawSerializer();
+
+            ICollection<GridClientPortableTypeConfiguration> typeCfgs = new List<GridClientPortableTypeConfiguration>();
+
+            typeCfgs.Add(typeCfg);
+
+            GridClientPortableConfiguration cfg = new GridClientPortableConfiguration();
+
+            cfg.TypeConfigurations = typeCfgs;
+
+            GridClientPortableMarshaller marsh = new GridClientPortableMarshaller(cfg);
+
+            PrimitiveFieldReflectiveType obj = new PrimitiveFieldReflectiveType();
+
+            TestPrimitiveFields(marsh, obj);
+        }
+
+        private void TestPrimitiveFields(GridClientPortableMarshaller marsh, PrimitiveFieldReflectiveType obj)
+        {
+            obj.PBool = true;
+            obj.PByte = 2;
+            obj.PSbyte = 3;
+            obj.PShort = 4;
+            obj.PUshort = 5;
+            obj.PInt = 6;
+            obj.PUint = 7;
+            obj.PLong = 8;
+            obj.PUlong = 9;
+            obj.PChar = 'a';
+            obj.PFloat = 10;
+            obj.PDouble = 11;
+
+            byte[] bytes = marsh.Marshal(obj);
 
             IGridClientPortableObject portObj = marsh.Unmarshal(bytes);
 
+            Assert.AreEqual(obj.GetHashCode(), portObj.HashCode());
+
             PrimitiveFieldReflectiveType newObj = portObj.Deserialize<PrimitiveFieldReflectiveType>();
 
-            return;
+            Assert.AreEqual(obj, newObj);
         }
-
+        
         public static string PrintBytes(byte[] bytes)
         {
             StringBuilder sb = new StringBuilder();
@@ -394,8 +508,8 @@ namespace GridGain.Client.Portable {
 
             public byte PByte
             {
-                get { return PByte; }
-                set { PByte = value; }
+                get { return pByte; }
+                set { pByte = value; }
             }
 
             public short PShort
@@ -450,6 +564,39 @@ namespace GridGain.Client.Portable {
             {
                 get { return pDouble; }
                 set { pDouble = value; }
+            }
+
+            /** <inheritdoc /> */
+            public override bool Equals(object obj)
+            {
+                if (this == obj)
+                    return true;
+
+                if (obj != null && obj is PrimitiveFieldReflectiveType)
+                {
+                    PrimitiveFieldReflectiveType that = (PrimitiveFieldReflectiveType)obj;
+
+                    return pBool == that.pBool &&
+                        pByte == that.pByte &&
+                        pSbyte == that.pSbyte &&
+                        pShort == that.pShort &&
+                        pUshort == that.pUshort &&
+                        pInt == that.pInt &&
+                        pUint == that.pUint &&
+                        pLong == that.pLong &&
+                        pUlong == that.pUlong &&
+                        pChar == that.pChar &&
+                        pFloat == that.pFloat &&
+                        pDouble == that.pDouble;
+                }
+                else
+                    return false;
+            }
+
+            /** <inheritdoc /> */
+            public override int GetHashCode()
+            {
+                return pInt;
             }
 
             //public bool? RBool
@@ -524,8 +671,213 @@ namespace GridGain.Client.Portable {
             //    set { rDouble = value; }
             //}
         }
-
         
+        public class PrimitiveFieldPortableType : PrimitiveFieldReflectiveType, IGridClientPortable
+        {
+            public unsafe void WritePortable(IGridClientPortableWriter writer)
+            {
+                writer.WriteBoolean("bool", PBool);
+                writer.WriteByte("byte", PByte);
+                writer.WriteShort("short", PShort);
+                writer.WriteInt("int", PInt);
+                writer.WriteLong("long", PLong);
+                writer.WriteChar("char", PChar);
+                writer.WriteFloat("float", PFloat);
+                writer.WriteDouble("double", PDouble);
+
+                sbyte sByte = PSbyte;
+                ushort uShort = PUshort;
+                uint uInt = PUint;
+                ulong uLong = PUlong;
+
+                writer.WriteByte("sbyte", *(byte*)&sByte);
+                writer.WriteShort("ushort", *(short*)&uShort);
+                writer.WriteInt("uint", *(int*)&uInt);
+                writer.WriteLong("ulong", *(long*)&uLong);
+            }
+
+            public unsafe void ReadPortable(IGridClientPortableReader reader)
+            {
+                PBool = reader.ReadBoolean("bool");
+                PByte = reader.ReadByte("byte");
+                PShort = reader.ReadShort("short");
+                PInt = reader.ReadInt("int");
+
+                PLong = reader.ReadLong("long");
+                PChar = reader.ReadChar("char");
+                PFloat = reader.ReadFloat("float");
+                PDouble = reader.ReadDouble("double");
+
+                byte sByte = reader.ReadByte("sbyte");
+                short uShort = reader.ReadShort("ushort");
+                int uInt = reader.ReadInt("uint");
+                long uLong = reader.ReadLong("ulong");
+
+                PSbyte = *(sbyte*)&sByte;
+                PUshort = *(ushort*)&uShort;
+                PUint = *(uint*)&uInt;
+                PUlong = *(ulong*)&uLong;
+            }
+        }
+
+        public class PrimitiveFieldRawPortableType : PrimitiveFieldReflectiveType, IGridClientPortable
+        {
+            public unsafe void WritePortable(IGridClientPortableWriter writer)
+            {
+                IGridClientPortableRawWriter rawWriter = writer.RawWriter();
+
+                rawWriter.WriteBoolean(PBool);
+                rawWriter.WriteByte(PByte);
+                rawWriter.WriteShort(PShort);
+                rawWriter.WriteInt(PInt);
+                rawWriter.WriteLong(PLong);
+                rawWriter.WriteChar(PChar);
+                rawWriter.WriteFloat(PFloat);
+                rawWriter.WriteDouble(PDouble);
+
+                sbyte sByte = PSbyte;
+                ushort uShort = PUshort;
+                uint uInt = PUint;
+                ulong uLong = PUlong;
+
+                rawWriter.WriteByte(*(byte*)&sByte);
+                rawWriter.WriteShort(*(short*)&uShort);
+                rawWriter.WriteInt(*(int*)&uInt);
+                rawWriter.WriteLong(*(long*)&uLong);
+            }
+
+            public unsafe void ReadPortable(IGridClientPortableReader reader)
+            {
+                IGridClientPortableRawReader rawReader = reader.RawReader();
+
+                PBool = rawReader.ReadBoolean();
+                PByte = rawReader.ReadByte();
+                PShort = rawReader.ReadShort();
+                PInt = rawReader.ReadInt();
+
+                PLong = rawReader.ReadLong();
+                PChar = rawReader.ReadChar();
+                PFloat = rawReader.ReadFloat();
+                PDouble = rawReader.ReadDouble();
+
+                byte sByte = rawReader.ReadByte();
+                short uShort = rawReader.ReadShort();
+                int uInt = rawReader.ReadInt();
+                long uLong = rawReader.ReadLong();
+
+                PSbyte = *(sbyte*)&sByte;
+                PUshort = *(ushort*)&uShort;
+                PUint = *(uint*)&uInt;
+                PUlong = *(ulong*)&uLong;
+            }
+        }
+
+        public class PrimitiveFieldsSerializer : IGridClientPortableSerializer
+        {
+            public unsafe void WritePortable(object obj, IGridClientPortableWriter writer)
+            {
+                PrimitiveFieldReflectiveType obj0 = (PrimitiveFieldReflectiveType)obj;
+
+                writer.WriteBoolean("bool", obj0.PBool);
+                writer.WriteByte("byte", obj0.PByte);
+                writer.WriteShort("short", obj0.PShort);
+                writer.WriteInt("int", obj0.PInt);
+                writer.WriteLong("long", obj0.PLong);
+                writer.WriteChar("char", obj0.PChar);
+                writer.WriteFloat("float", obj0.PFloat);
+                writer.WriteDouble("double", obj0.PDouble);
+
+                sbyte sByte = obj0.PSbyte;
+                ushort uShort = obj0.PUshort;
+                uint uInt = obj0.PUint;
+                ulong uLong = obj0.PUlong;
+
+                writer.WriteByte("sbyte", *(byte*)&sByte);
+                writer.WriteShort("ushort", *(short*)&uShort);
+                writer.WriteInt("uint", *(int*)&uInt);
+                writer.WriteLong("ulong", *(long*)&uLong);
+            }
+
+            public unsafe void ReadPortable(object obj, IGridClientPortableReader reader)
+            {
+                PrimitiveFieldReflectiveType obj0 = (PrimitiveFieldReflectiveType)obj;
+
+                obj0.PBool = reader.ReadBoolean("bool");
+                obj0.PByte = reader.ReadByte("byte");
+                obj0.PShort = reader.ReadShort("short");
+                obj0.PInt = reader.ReadInt("int");
+
+                obj0.PLong = reader.ReadLong("long");
+                obj0.PChar = reader.ReadChar("char");
+                obj0.PFloat = reader.ReadFloat("float");
+                obj0.PDouble = reader.ReadDouble("double");
+
+                byte sByte = reader.ReadByte("sbyte");
+                short uShort = reader.ReadShort("ushort");
+                int uInt = reader.ReadInt("uint");
+                long uLong = reader.ReadLong("ulong");
+
+                obj0.PSbyte = *(sbyte*)&sByte;
+                obj0.PUshort = *(ushort*)&uShort;
+                obj0.PUint = *(uint*)&uInt;
+                obj0.PUlong = *(ulong*)&uLong;
+            }
+        }
+
+        public class PrimitiveFieldsRawSerializer : IGridClientPortableSerializer
+        {
+            public unsafe void WritePortable(object obj, IGridClientPortableWriter writer)
+            {
+                PrimitiveFieldReflectiveType obj0 = (PrimitiveFieldReflectiveType)obj;
+
+                IGridClientPortableRawWriter rawWriter = writer.RawWriter();
+
+                rawWriter.WriteBoolean(obj0.PBool);
+                rawWriter.WriteByte(obj0.PByte);
+                rawWriter.WriteShort( obj0.PShort);
+                rawWriter.WriteInt( obj0.PInt);
+                rawWriter.WriteLong( obj0.PLong);
+                rawWriter.WriteChar(obj0.PChar);
+                rawWriter.WriteFloat(obj0.PFloat);
+                rawWriter.WriteDouble( obj0.PDouble);
+
+                sbyte sByte = obj0.PSbyte;
+                ushort uShort = obj0.PUshort;
+                uint uInt = obj0.PUint;
+                ulong uLong = obj0.PUlong;
+
+                rawWriter.WriteByte(*(byte*)&sByte);
+                rawWriter.WriteShort(*(short*)&uShort);
+                rawWriter.WriteInt(*(int*)&uInt);
+                rawWriter.WriteLong(*(long*)&uLong);
+            }
+
+            public unsafe void ReadPortable(object obj, IGridClientPortableReader reader)
+            {
+                PrimitiveFieldReflectiveType obj0 = (PrimitiveFieldReflectiveType)obj;
+
+                IGridClientPortableRawReader rawReader = reader.RawReader();
+
+                obj0.PBool = rawReader.ReadBoolean();
+                obj0.PByte = rawReader.ReadByte();
+                obj0.PShort = rawReader.ReadShort();
+                obj0.PInt = rawReader.ReadInt();
+                obj0.PLong = rawReader.ReadLong();
+                obj0.PChar = rawReader.ReadChar();
+                obj0.PFloat = rawReader.ReadFloat();
+                obj0.PDouble = rawReader.ReadDouble();
+
+                byte sByte = rawReader.ReadByte();
+                short uShort = rawReader.ReadShort();
+                int uInt = rawReader.ReadInt();
+                long uLong = rawReader.ReadLong();
+
+                obj0.PSbyte = *(sbyte*)&sByte;
+                obj0.PUshort = *(ushort*)&uShort;
+                obj0.PUint = *(uint*)&uInt;
+                obj0.PUlong = *(ulong*)&uLong;
+            }
+        }
 
         private void CheckStrict(byte[] data, params object[] objs)
         {

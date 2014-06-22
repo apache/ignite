@@ -88,10 +88,7 @@ namespace GridGain.Client.Impl {
 
         /** <summary>SSL stream flag.</summary> */
         private readonly bool isSslStream;
-
-        /** <summary>Serialization context.</summary> */
-        private readonly GridClientPortableSerializationContext serializaionCtx = new GridClientPortableSerializationContext();
-        
+                
         /** <summary>Last stream reading failed with timeout.</summary> */
         internal bool lastReadTimedOut = false;
 
@@ -507,7 +504,7 @@ namespace GridGain.Client.Impl {
                 buf.Write(GridClientUtils.ToBytes(msg.ClientId), 0, 16);
                 buf.Write(GridClientUtils.ToBytes(msg.DestNodeId), 0, 16);
 
-                marshaller.Marshal(msg, buf, serializaionCtx);
+                marshaller.Marshal(msg, buf);
 
                 int len = (int)buf.Length;
 

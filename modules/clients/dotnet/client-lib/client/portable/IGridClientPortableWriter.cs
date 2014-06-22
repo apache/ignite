@@ -147,14 +147,14 @@ namespace GridGain.Client.Portable {
          * <param name="fieldName">Field name.</param>
          * <param name="val">GUID value.</param>
          */
-        void WriteGuid(string fieldName, Guid val);
+        void WriteGuid(string fieldName, Guid? val);
 
         /**
          * <summary>Write named GUID array.</summary>
          * <param name="fieldName">Field name.</param>
          * <param name="val">GUID array.</param>
          */
-        void WriteGuidArray(string fieldName, Guid[] val);
+        void WriteGuidArray(string fieldName, Guid?[] val);
 
         /**
          * <summary>Write named enum value.</summary>

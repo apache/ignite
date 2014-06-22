@@ -409,8 +409,32 @@ namespace GridGain.Client.Impl.Portable
                 byte[] bytes = Encoding.UTF8.GetBytes(val);
 
                 stream.WriteByte(BYTE_ONE);
+
+                WriteInt(bytes.Length, stream);
+
                 stream.Write(bytes, 0, bytes.Length);
             }            
+        }
+
+        /**
+         * <summary>Read string in UTF8 encoding.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>String.</returns>
+         */
+        public static string ReadString(Stream stream)
+        {
+            if (stream.ReadByte() == BYTE_ZERO)
+                return null;
+            else
+            {
+                int len = ReadInt(stream);
+
+                byte[] bytes = new byte[len];
+
+                stream.Read(bytes, 0, len);
+
+                return Encoding.UTF8.GetString(bytes);
+            }
         }
 
         public static void WriteStringArray(string[] val, Stream stream)
@@ -492,16 +516,35 @@ namespace GridGain.Client.Impl.Portable
          * <param name="val">GUID.</param>
          * <param name="stream">Stream.</param>
          */
-        public static void WriteGuid(Guid val, Stream stream)
+        public static void WriteGuid(Guid? val, Stream stream)
         {
-            if (val == null)
+            if (val.HasValue)
                 stream.WriteByte(BYTE_ZERO);
             else
             {
-                byte[] bytes = val.ToByteArray();
+                byte[] bytes = val.Value.ToByteArray();
 
                 stream.WriteByte(BYTE_ONE);
                 stream.Write(bytes, 0, bytes.Length);
+            }
+        }
+        
+        /**
+         * <summary>Read GUID.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>GUID</returns>
+         */
+        public static Guid? ReadGuid(Stream stream)
+        {
+            if (stream.ReadByte() == BYTE_ZERO)
+                return null;
+            else
+            {
+                byte[] bytes = new byte[16];
+
+                stream.Read(bytes, 0, 16);
+
+                return new Guid(bytes);
             }
         }
 
@@ -916,6 +959,18 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
+         * <summary>Read float value.</summary>
+         * <param name="stream">Output stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static unsafe float ReadFloat(Stream stream)
+        {
+            int val = ReadInt(stream);
+
+            return *(float*)&val;
+        }
+
+        /**
          * <summary>Write float array.</summary>
          * <param name="vals">Value.</param>
          * <param name="stream">Output stream.</param>
@@ -944,6 +999,18 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
+         * <summary>Read double value.</summary>
+         * <param name="stream">Output stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static unsafe double ReadDouble(Stream stream)
+        {
+            long val = ReadLong(stream);
+
+            return *(double*)&val;
+        }
+
+        /**
          * <summary>Write double array.</summary>
          * <param name="vals">Value.</param>
          * <param name="stream">Output stream.</param>
@@ -959,6 +1026,22 @@ namespace GridGain.Client.Impl.Portable
                 for (int i = 0; i < vals.Length; i++)
                     WriteDouble((double)vals[i], stream);
             }
+        }
+
+        /**
+         * <summary>Gets type key.</summary>
+         * <param name="userType">User type flag.</param>
+         * <param name="typeId">Type ID.</param>
+         * <returns>Type key.</returns>
+         */ 
+        public static long TypeKey(bool userType, int typeId)
+        {
+            long res = typeId;
+
+            if (userType)
+                res |= 1 << 32;
+
+            return res;
         }
     }
 }
