@@ -299,7 +299,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 cnts.put(n.id(), cnt);
             }
             else {
-
                 Collection<GridNode> nodes =
                     assigns.nodeFilter() == null ?
                         ctx.discovery().nodes(topVer) :
