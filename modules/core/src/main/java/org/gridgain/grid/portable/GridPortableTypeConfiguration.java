@@ -13,7 +13,7 @@ package org.gridgain.grid.portable;
  * Portable type configuration.
  */
 public class GridPortableTypeConfiguration {
-    /** Type name. */
+    /** Class name. */
     private String clsName;
 
     /** ID mapper. */
@@ -21,6 +21,19 @@ public class GridPortableTypeConfiguration {
 
     /** Serializer. */
     private GridPortableSerializer serializer;
+
+    /**
+     */
+    public GridPortableTypeConfiguration() {
+        // No-op.
+    }
+
+    /**
+     * @param clsName Class name.
+     */
+    public GridPortableTypeConfiguration(String clsName) {
+        this.clsName = clsName;
+    }
 
     /**
      * Gets type name.

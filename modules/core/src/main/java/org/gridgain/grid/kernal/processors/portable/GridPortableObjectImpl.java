@@ -66,10 +66,11 @@ class GridPortableObjectImpl implements GridPortableObject {
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> T deserialize() throws GridPortableException {
-        GridPortableClassDescriptor desc = ctx.descriptorForTypeId(typeId);
+        GridPortableClassDescriptor desc = ctx.descriptorForTypeId(userType, typeId);
 
         if (desc == null)
-            throw new GridPortableInvalidClassException("Unknown type ID: " + typeId);
+            throw new GridPortableInvalidClassException("Unknown type [userType=" + userType +
+                ", typeId=" + typeId + ']');
 
         return (T)desc.read(reader);
     }

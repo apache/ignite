@@ -17,5 +17,5 @@ import org.jetbrains.annotations.*;
 public interface GridPortableContext {
     @Nullable public GridPortableClassDescriptor descriptorForClass(Class<?> cls);
 
-    @Nullable public GridPortableClassDescriptor descriptorForTypeId(int typeId);
+    @Nullable public GridPortableClassDescriptor descriptorForTypeId(boolean userType, int typeId);
 }

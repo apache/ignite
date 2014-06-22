@@ -251,7 +251,6 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
 
         // TODO: Handle.
 
-        // TODO: Create new writer only for user object.
         GridPortableWriterImpl writer = new GridPortableWriterImpl(ctx, wCtx);
 
         writer.marshal(obj);
@@ -604,7 +603,7 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     @Override public void writeShortArray(String fieldName, @Nullable short[] val) throws GridPortableException {
         writeFieldId(fieldName);
 
-        doWriteInt(val != null ? 5 + val.length << 1 : 5);
+        doWriteInt(val != null ? 5 + (val.length << 1) : 5);
         doWriteByte(SHORT_ARR);
         doWriteShortArray(val);
     }
@@ -618,7 +617,7 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     @Override public void writeIntArray(String fieldName, @Nullable int[] val) throws GridPortableException {
         writeFieldId(fieldName);
 
-        doWriteInt(val != null ? 5 + val.length << 2 : 5);
+        doWriteInt(val != null ? 5 + (val.length << 2) : 5);
         doWriteByte(INT_ARR);
         doWriteIntArray(val);
     }
@@ -632,7 +631,7 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     @Override public void writeLongArray(String fieldName, @Nullable long[] val) throws GridPortableException {
         writeFieldId(fieldName);
 
-        doWriteInt(val != null ? 5 + val.length << 3 : 5);
+        doWriteInt(val != null ? 5 + (val.length << 3) : 5);
         doWriteByte(LONG_ARR);
         doWriteLongArray(val);
     }
@@ -646,7 +645,7 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     @Override public void writeFloatArray(String fieldName, @Nullable float[] val) throws GridPortableException {
         writeFieldId(fieldName);
 
-        doWriteInt(val != null ? 5 + val.length << 2 : 5);
+        doWriteInt(val != null ? 5 + (val.length << 2) : 5);
         doWriteByte(FLOAT_ARR);
         doWriteFloatArray(val);
     }
@@ -661,7 +660,7 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
         throws GridPortableException {
         writeFieldId(fieldName);
 
-        doWriteInt(val != null ? 5 + val.length << 3 : 5);
+        doWriteInt(val != null ? 5 + (val.length << 3) : 5);
         doWriteByte(DOUBLE_ARR);
         doWriteDoubleArray(val);
     }
@@ -675,7 +674,7 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     @Override public void writeCharArray(String fieldName, @Nullable char[] val) throws GridPortableException {
         writeFieldId(fieldName);
 
-        doWriteInt(val != null ? 5 + val.length << 1 : 5);
+        doWriteInt(val != null ? 5 + (val.length << 1) : 5);
         doWriteByte(CHAR_ARR);
         doWriteCharArray(val);
     }

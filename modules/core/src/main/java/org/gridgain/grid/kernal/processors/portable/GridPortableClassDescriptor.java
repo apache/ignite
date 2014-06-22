@@ -198,13 +198,13 @@ public class GridPortableClassDescriptor {
         }
         else if (serializer != null || GridPortable.class.isAssignableFrom(cls)) {
             mode = Mode.PORTABLE;
-            userType = false;
+            userType = true;
             cons = constructor(cls);
             fields = null;
         }
         else {
             mode = Mode.OBJECT;
-            userType = false;
+            userType = true;
             cons = constructor(cls);
 
             fields = new ArrayList<>();
