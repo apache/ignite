@@ -76,7 +76,7 @@ namespace GridGain.Client.Impl.Portable
          */
         public T Deserialize<T>(MemoryStream stream)
         {
-            return Deserialize<T>((GridClientPortableObjectImpl)marsh.Unmarshal(stream));
+            return Deserialize<T>((GridClientPortableObjectImpl)marsh.Unmarshal(stream, false));
         }
 
         /**

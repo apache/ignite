@@ -133,15 +133,16 @@ namespace GridGain.Client.Impl.Portable
          */
         public IGridClientPortableObject Unmarshal(byte[] data)
         {
-            return Unmarshal(new MemoryStream(data));
+            return Unmarshal(new MemoryStream(data), true);
         }
 
         /**
          * <summary>Unmarshal object.</summary>
          * <param name="input">Stream.</param>
+         * <param name="top">Whether this is top-level object.</param>
          * <returns>Unmarshalled object.</returns>
          */ 
-        public IGridClientPortableObject Unmarshal(MemoryStream input)
+        public IGridClientPortableObject Unmarshal(MemoryStream input, bool top)
         {
             long pos = input.Position;
 
@@ -197,8 +198,10 @@ namespace GridGain.Client.Impl.Portable
             }
 
             input.Seek(pos + len, SeekOrigin.Begin); // Position input after read data.
-            
-            return new GridClientPortableObjectImpl(this, input.ToArray(), (int)pos, len, userType, typeId, 
+
+            byte[] data = top ? input.ToArray() : PU.MemoryBuffer(input);
+
+            return new GridClientPortableObjectImpl(this, data, (int)pos, len, userType, typeId, 
                 hashCode, rawDataOffset, fields);
         }
 

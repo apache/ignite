@@ -12,6 +12,7 @@ namespace GridGain.Client.Impl.Portable
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Reflection;
     using System.Text;
     using GridGain.Client.Portable;
 
@@ -136,28 +137,11 @@ namespace GridGain.Client.Impl.Portable
         
         /** Whether little endian is set. */
         private static readonly bool LITTLE_ENDIAN = BitConverter.IsLittleEndian;
+        
+        /** Memory stream buffer field info. */
+        private static FieldInfo MEM_BUF_FIELD = typeof(MemoryStream).GetField("_buffer", 
+            BindingFlags.Instance | BindingFlags.NonPublic);
 
-        private static readonly Dictionary<Type, int> SYSTEM_TYPES = new Dictionary<Type,int>();
-
-        /**
-         * Static initializer.
-         */ 
-        static GridClientPortableUilts()
-        {
-            // 1. Add primitive types.
-            SYSTEM_TYPES[typeof(bool)] = TYPE_BOOL;
-            SYSTEM_TYPES[typeof(sbyte)] = TYPE_BYTE;
-            SYSTEM_TYPES[typeof(byte)] = TYPE_BYTE;
-            SYSTEM_TYPES[typeof(short)] = TYPE_SHORT;
-            SYSTEM_TYPES[typeof(ushort)] = TYPE_SHORT;
-            SYSTEM_TYPES[typeof(int)] = TYPE_INT;
-            SYSTEM_TYPES[typeof(uint)] = TYPE_INT;            
-            SYSTEM_TYPES[typeof(long)] = TYPE_LONG;
-            SYSTEM_TYPES[typeof(ulong)] = TYPE_LONG;
-            SYSTEM_TYPES[typeof(char)] = TYPE_CHAR;
-            SYSTEM_TYPES[typeof(float)] = TYPE_FLOAT;
-            SYSTEM_TYPES[typeof(double)] = TYPE_DOUBLE;            
-        }
         
         public static unsafe object ReadPrimitive(int typeId, Type type, Stream stream, out bool processed) 
         {
@@ -1042,6 +1026,14 @@ namespace GridGain.Client.Impl.Portable
                 res |= 1 << 32;
 
             return res;
+        }
+        
+        /**
+         * 
+         */ 
+        public static byte[] MemoryBuffer(MemoryStream stream)
+        {
+            return (byte[])MEM_BUF_FIELD.GetValue(stream);
         }
     }
 }
