@@ -108,7 +108,7 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public T Deserialize<T>()
         {
-            return new GridClientPortableReadContext(marsh.IdToDescriptor, Stream()).Deserialize<T>(this);
+            return new GridClientPortableReadContext(marsh, marsh.IdToDescriptor, Stream()).Deserialize<T>(this);
         }
 
         /** <inheritdoc /> */
@@ -116,7 +116,7 @@ namespace GridGain.Client.Impl.Portable
         {
             throw new System.NotImplementedException();
         }
-
+        
         /**
          * <summary>Offset.</summary>
          */ 

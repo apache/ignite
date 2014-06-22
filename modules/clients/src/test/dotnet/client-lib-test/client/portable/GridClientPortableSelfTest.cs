@@ -317,7 +317,7 @@ namespace GridGain.Client.Portable {
         public void TestPrimitiveFieldsReflective()
         {
             GridClientPortableTypeConfiguration typeCfg = 
-                new GridClientPortableTypeConfiguration(typeof(PrimitiveFieldReflectiveType));
+                new GridClientPortableTypeConfiguration(typeof(PrimitiveFieldType));
 
             ICollection<GridClientPortableTypeConfiguration> typeCfgs = new List<GridClientPortableTypeConfiguration>();
 
@@ -329,7 +329,7 @@ namespace GridGain.Client.Portable {
 
             GridClientPortableMarshaller marsh = new GridClientPortableMarshaller(cfg);
 
-            PrimitiveFieldReflectiveType obj = new PrimitiveFieldReflectiveType();
+            PrimitiveFieldType obj = new PrimitiveFieldType();
 
             TestPrimitiveFields(marsh, obj);
         }
@@ -386,7 +386,7 @@ namespace GridGain.Client.Portable {
         public void TestPrimitiveFieldsSerializer()
         {
             GridClientPortableTypeConfiguration typeCfg =
-                new GridClientPortableTypeConfiguration(typeof(PrimitiveFieldReflectiveType));
+                new GridClientPortableTypeConfiguration(typeof(PrimitiveFieldType));
 
             typeCfg.Serializer = new PrimitiveFieldsSerializer();
 
@@ -400,7 +400,7 @@ namespace GridGain.Client.Portable {
 
             GridClientPortableMarshaller marsh = new GridClientPortableMarshaller(cfg);
 
-            PrimitiveFieldReflectiveType obj = new PrimitiveFieldReflectiveType();
+            PrimitiveFieldType obj = new PrimitiveFieldType();
 
             TestPrimitiveFields(marsh, obj);
         }
@@ -411,7 +411,7 @@ namespace GridGain.Client.Portable {
         public void TestPrimitiveFieldsRawSerializer()
         {
             GridClientPortableTypeConfiguration typeCfg =
-                new GridClientPortableTypeConfiguration(typeof(PrimitiveFieldReflectiveType));
+                new GridClientPortableTypeConfiguration(typeof(PrimitiveFieldType));
 
             typeCfg.Serializer = new PrimitiveFieldsRawSerializer();
 
@@ -425,12 +425,50 @@ namespace GridGain.Client.Portable {
 
             GridClientPortableMarshaller marsh = new GridClientPortableMarshaller(cfg);
 
-            PrimitiveFieldReflectiveType obj = new PrimitiveFieldReflectiveType();
+            PrimitiveFieldType obj = new PrimitiveFieldType();
 
             TestPrimitiveFields(marsh, obj);
         }
 
-        private void TestPrimitiveFields(GridClientPortableMarshaller marsh, PrimitiveFieldReflectiveType obj)
+        /**
+         * <summary>Check write of object fields through reflective serializer.</summary>
+         */
+        public void TestObjectReflective()
+        {
+            ICollection<GridClientPortableTypeConfiguration> typeCfgs = 
+                new List<GridClientPortableTypeConfiguration>();
+
+            typeCfgs.Add(new GridClientPortableTypeConfiguration(typeof(OuterObjectType)));
+            typeCfgs.Add(new GridClientPortableTypeConfiguration(typeof(InnerObjectType)));
+
+            GridClientPortableConfiguration cfg = new GridClientPortableConfiguration();
+
+            cfg.TypeConfigurations = typeCfgs;
+
+            GridClientPortableMarshaller marsh = new GridClientPortableMarshaller(cfg);
+
+            TestObject(marsh, new OuterObjectType(), new InnerObjectType());
+        }
+
+        private void TestObject(GridClientPortableMarshaller marsh, OuterObjectType outObj, InnerObjectType inObj)
+        {
+            inObj.PInt1 = 1;
+            inObj.PInt2 = 2;
+
+            outObj.InObj = inObj;
+
+            byte[] bytes = marsh.Marshal(outObj);
+
+            IGridClientPortableObject portOutObj = marsh.Unmarshal(bytes);
+
+            Assert.AreEqual(outObj.GetHashCode(), portOutObj.HashCode());
+
+            OuterObjectType newOutObj = portOutObj.Deserialize<OuterObjectType>();
+
+            Assert.AreEqual(outObj, newOutObj);
+        }
+
+        private void TestPrimitiveFields(GridClientPortableMarshaller marsh, PrimitiveFieldType obj)
         {
             obj.PBool = true;
             obj.PByte = 2;
@@ -451,7 +489,7 @@ namespace GridGain.Client.Portable {
 
             Assert.AreEqual(obj.GetHashCode(), portObj.HashCode());
 
-            PrimitiveFieldReflectiveType newObj = portObj.Deserialize<PrimitiveFieldReflectiveType>();
+            PrimitiveFieldType newObj = portObj.Deserialize<PrimitiveFieldType>();
 
             Assert.AreEqual(obj, newObj);
         }
@@ -466,7 +504,80 @@ namespace GridGain.Client.Portable {
             return sb.ToString();
         }
 
-        public class PrimitiveFieldReflectiveType 
+        public class OuterObjectType
+        {
+            private InnerObjectType inObj;
+
+            public InnerObjectType InObj
+            {
+                get { return inObj; }
+                set { inObj = value; }
+            }
+
+            /** <inheritdoc /> */
+            public override bool Equals(object obj)
+            {
+                if (this == obj)
+                    return true;
+
+                if (obj != null && obj is OuterObjectType)
+                {
+                    OuterObjectType that = (OuterObjectType)obj;
+
+                    return inObj == null ? that.inObj == null : inObj.Equals(that.inObj);
+                }
+                else
+                    return false;
+            }
+
+            /** <inheritdoc /> */
+            public override int GetHashCode()
+            {
+                return inObj != null ? inObj.GetHashCode() : 0;
+            }
+        }
+
+        public class InnerObjectType
+        {
+            private int pInt1;
+            private int pInt2;
+
+            public int PInt1
+            {
+                get { return pInt1; }
+                set { pInt1 = value; }
+            }
+
+            public int PInt2
+            {
+                get { return pInt2; }
+                set { pInt2 = value; }
+            }
+
+            /** <inheritdoc /> */
+            public override bool Equals(object obj)
+            {
+                if (this == obj)
+                    return true;
+
+                if (obj != null && obj is InnerObjectType)
+                {
+                    InnerObjectType that = (InnerObjectType)obj;
+
+                    return pInt2 == that.pInt2 && pInt2 == that.pInt2;
+                }
+                else
+                    return false;
+            }
+
+            /** <inheritdoc /> */
+            public override int GetHashCode()
+            {
+                return 31 * pInt1 + pInt2;
+            }
+        }
+
+        public class PrimitiveFieldType 
         {
             private bool pBool;
             private sbyte pSbyte;
@@ -572,9 +683,9 @@ namespace GridGain.Client.Portable {
                 if (this == obj)
                     return true;
 
-                if (obj != null && obj is PrimitiveFieldReflectiveType)
+                if (obj != null && obj is PrimitiveFieldType)
                 {
-                    PrimitiveFieldReflectiveType that = (PrimitiveFieldReflectiveType)obj;
+                    PrimitiveFieldType that = (PrimitiveFieldType)obj;
 
                     return pBool == that.pBool &&
                         pByte == that.pByte &&
@@ -672,7 +783,7 @@ namespace GridGain.Client.Portable {
             //}
         }
         
-        public class PrimitiveFieldPortableType : PrimitiveFieldReflectiveType, IGridClientPortable
+        public class PrimitiveFieldPortableType : PrimitiveFieldType, IGridClientPortable
         {
             public unsafe void WritePortable(IGridClientPortableWriter writer)
             {
@@ -720,7 +831,7 @@ namespace GridGain.Client.Portable {
             }
         }
 
-        public class PrimitiveFieldRawPortableType : PrimitiveFieldReflectiveType, IGridClientPortable
+        public class PrimitiveFieldRawPortableType : PrimitiveFieldType, IGridClientPortable
         {
             public unsafe void WritePortable(IGridClientPortableWriter writer)
             {
@@ -776,7 +887,7 @@ namespace GridGain.Client.Portable {
         {
             public unsafe void WritePortable(object obj, IGridClientPortableWriter writer)
             {
-                PrimitiveFieldReflectiveType obj0 = (PrimitiveFieldReflectiveType)obj;
+                PrimitiveFieldType obj0 = (PrimitiveFieldType)obj;
 
                 writer.WriteBoolean("bool", obj0.PBool);
                 writer.WriteByte("byte", obj0.PByte);
@@ -800,7 +911,7 @@ namespace GridGain.Client.Portable {
 
             public unsafe void ReadPortable(object obj, IGridClientPortableReader reader)
             {
-                PrimitiveFieldReflectiveType obj0 = (PrimitiveFieldReflectiveType)obj;
+                PrimitiveFieldType obj0 = (PrimitiveFieldType)obj;
 
                 obj0.PBool = reader.ReadBoolean("bool");
                 obj0.PByte = reader.ReadByte("byte");
@@ -828,7 +939,7 @@ namespace GridGain.Client.Portable {
         {
             public unsafe void WritePortable(object obj, IGridClientPortableWriter writer)
             {
-                PrimitiveFieldReflectiveType obj0 = (PrimitiveFieldReflectiveType)obj;
+                PrimitiveFieldType obj0 = (PrimitiveFieldType)obj;
 
                 IGridClientPortableRawWriter rawWriter = writer.RawWriter();
 
@@ -854,7 +965,7 @@ namespace GridGain.Client.Portable {
 
             public unsafe void ReadPortable(object obj, IGridClientPortableReader reader)
             {
-                PrimitiveFieldReflectiveType obj0 = (PrimitiveFieldReflectiveType)obj;
+                PrimitiveFieldType obj0 = (PrimitiveFieldType)obj;
 
                 IGridClientPortableRawReader rawReader = reader.RawReader();
 

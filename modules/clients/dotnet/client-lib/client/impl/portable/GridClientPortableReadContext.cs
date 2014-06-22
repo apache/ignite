@@ -22,22 +22,28 @@ namespace GridGain.Client.Impl.Portable
      */ 
     internal class GridClientPortableReadContext
     {
+        /** Marshaller. */
+        private readonly GridClientPortableMarshaller marsh;
+
         /** Type descriptors. */
         private readonly IDictionary<long, GridClientPortableTypeDescriptor> descs;
 
         /** Reader. */
         private readonly GridClientPortableReaderImpl reader;
 
-        //private IDictionary<int, GridClientPortableObjectHandle> hnds;
+        /** Handles. */
+        private readonly IDictionary<int, object> hnds = new Dictionary<int, object>();
 
         /**
          * <summary>Constructor.</summary>
+         * <param name="marsh">Marshaller.</param>
          * <param name="descs">Descriptors.</param>
          * <param name="stream">Input stream.</param>
          */
-        public GridClientPortableReadContext(IDictionary<long, GridClientPortableTypeDescriptor> descs,
-            MemoryStream stream) 
+        public GridClientPortableReadContext(GridClientPortableMarshaller marsh, 
+            IDictionary<long, GridClientPortableTypeDescriptor> descs, MemoryStream stream) 
         {
+            this.marsh = marsh;
             this.descs = descs;
 
             Stream = stream;
@@ -65,11 +71,30 @@ namespace GridGain.Client.Impl.Portable
 
         /**
          * <summary>Deserialize portable object.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Desertialized object.</returns>
+         */
+        public T Deserialize<T>(MemoryStream stream)
+        {
+            return Deserialize<T>((GridClientPortableObjectImpl)marsh.Unmarshal(stream));
+        }
+
+        /**
+         * <summary>Deserialize portable object.</summary>
          * <param name="portObj">Portable object.</param>
          * <returns>Desertialized object.</returns>
          */ 
         public T Deserialize<T>(GridClientPortableObjectImpl portObj)
         {
+            // Lookup handle table first because the following scenario is possible:
+            // 1. Inner object meets handle of outer object.
+            // 2. Deserialization of outer object is triggered.
+            // 3. Outer object is trying to deserialize the same inner object again.
+            object hndObj;
+
+            if (hnds.TryGetValue(portObj.Offset, out hndObj))
+                return (T)hndObj;
+
             MemoryStream stream = portObj.Stream();
 
             byte hdr = (byte)stream.ReadByte();
@@ -101,6 +126,8 @@ namespace GridGain.Client.Impl.Portable
                         try
                         {
                             obj = FormatterServices.GetUninitializedObject(desc.Type);
+                            
+                            hnds[portObj.Offset] = obj;
                         }
                         catch (Exception e)
                         {
@@ -132,7 +159,19 @@ namespace GridGain.Client.Impl.Portable
             }
             else if (hdr == PU.HDR_HND)
             {
-                throw new NotImplementedException();
+                int hndPos = PU.ReadInt(stream);
+                
+                if (hnds.TryGetValue(hndPos, out hndObj))
+                    return (T)hndObj;
+                else
+                {
+                    // No such handle, i.e. we trying to deserialize inner object before deserializing outer.
+                    MemoryStream hndStream = new MemoryStream(stream.ToArray());
+
+                    hndStream.Seek(hndPos, SeekOrigin.Begin);
+
+                    return Deserialize<T>(hndStream);
+                }
             }
             else
                 throw new GridClientPortableException("Invalid header: " + hdr);

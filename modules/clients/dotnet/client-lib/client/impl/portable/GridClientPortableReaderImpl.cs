@@ -376,11 +376,27 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public T ReadObject<T>(string fieldName)
         {
-            throw new NotImplementedException();
+            PositionField(fieldName);
+
+            ctx.Stream.Seek(4, SeekOrigin.Current);
+
+            return ReadObject<T>();
+        }
+
+        /** <inheritdoc /> */
+        public T ReadObject<T>()
+        {
+            return ctx.Deserialize<T>(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public T[] ReadObjectArray<T>(string fieldName)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public T[] ReadObjectArray<T>()
         {
             throw new NotImplementedException();
         }
@@ -393,18 +409,6 @@ namespace GridGain.Client.Impl.Portable
 
         /** <inheritdoc /> */
         public IDictionary<K, V> ReadMap<K, V>(string fieldName)
-        {
-            throw new NotImplementedException();
-        }
-
-        /** <inheritdoc /> */
-        public T ReadObject<T>()
-        {
-            throw new NotImplementedException();
-        }
-
-        /** <inheritdoc /> */
-        public T[] ReadObjectArray<T>()
         {
             throw new NotImplementedException();
         }

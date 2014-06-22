@@ -27,6 +27,9 @@ namespace GridGain.Client.Impl.Portable
         /** Writer. */
         private readonly GridClientPortableWriterImpl writer;
 
+        /** Start position in the stream. */
+        private readonly int startPos;
+
         /** Handles. */
         private IDictionary<GridClientPortableObjectHandle, int> hnds;
                                 
@@ -41,6 +44,8 @@ namespace GridGain.Client.Impl.Portable
             this.descs = descs;
 
             Stream = stream;
+
+            startPos = (int)stream.Position;
 
             writer = new GridClientPortableWriterImpl(this);
         }
@@ -115,7 +120,8 @@ namespace GridGain.Client.Impl.Portable
                 return;
             }
             else 
-                hnds.Add(hnd, (int)pos);
+                // Handle position must be relative to the overall message start.
+                hnds.Add(hnd, (int)pos - startPos);
                 
             // 4. Write string.
             dynamic obj0 = obj;

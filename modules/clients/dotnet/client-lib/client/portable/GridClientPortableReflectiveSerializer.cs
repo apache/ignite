@@ -221,7 +221,10 @@ namespace GridGain.Client.Portable
                         });
                     }
                     else
+                    {
                         wActions.Add((obj, writer) => { writer.WriteObject(name, field.GetValue(obj)); });
+                        rActions.Add((obj, reader) => { field.SetValue(obj, reader.ReadObject<object>(name)); });
+                    }                        
                 }
             }
 

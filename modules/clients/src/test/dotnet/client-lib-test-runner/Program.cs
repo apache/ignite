@@ -28,6 +28,8 @@ namespace GridGain {
 
             Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
 
+            Test(new GridClientPortableSelfTest(), (test) => test.TestObjectReflective());
+
             Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsReflective());
             Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsPortable());
             Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsRawPortable());

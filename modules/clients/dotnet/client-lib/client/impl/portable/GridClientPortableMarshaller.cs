@@ -175,7 +175,7 @@ namespace GridGain.Client.Impl.Portable
 
                 while (curPos < endPos)
                 {
-                    int fieldPos = (int)input.Position;
+                    int fieldPos = (int)(input.Position - pos);
                     int fieldId = PU.ReadInt(input);
                     int fieldLen = PU.ReadInt(input);
 
