@@ -80,6 +80,9 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     /** */
     private Map<Integer, Integer> fieldsOffs;
 
+    /** */
+    private int typeId;
+
     /**
      * @param arr Array.
      */
@@ -97,13 +100,14 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
      * @param arr Array.
      */
     private GridPortableReaderImpl(GridPortableContext ctx, Map<Integer, GridPortableObject> poHandles,
-        Map<Integer, Object> oHandles, byte[] arr, int start, int rawOff) {
+        Map<Integer, Object> oHandles, byte[] arr, int start, int rawOff, int typeId) {
         this.ctx = ctx;
         this.poHandles = poHandles;
         this.oHandles = oHandles;
         this.arr = arr;
         this.start = start;
         this.rawOff = rawOff;
+        this.typeId = typeId;
     }
 
     /**
@@ -144,7 +148,9 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
 
             case OBJ:
                 boolean userType = doReadBoolean(false);
-                int typeId = doReadInt(false);
+
+                typeId = doReadInt(false);
+
                 int hashCode = doReadInt(false);
 
                 // Skip length.
@@ -938,7 +944,8 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
                 int dataLen = doReadInt(raw) - HDR_LEN;
                 int rawOff0 = start + doReadInt(raw);
 
-                Object obj = desc.read(new GridPortableReaderImpl(ctx, poHandles, oHandles, arr, start, rawOff0));
+                Object obj = desc.read(new GridPortableReaderImpl(
+                    ctx, poHandles, oHandles, arr, start, rawOff0, typeId));
 
                 if (raw)
                     rawOff += dataLen;
@@ -1280,7 +1287,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             }
         }
 
-        Integer fieldOff = fieldsOffs.get(name.hashCode()); // TODO: get id from mapper
+        Integer fieldOff = fieldsOffs.get(ctx.fieldId(typeId, name));
 
         return fieldOff != null ? fieldOff : -1;
     }

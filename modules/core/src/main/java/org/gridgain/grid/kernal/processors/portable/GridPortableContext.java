@@ -18,4 +18,6 @@ public interface GridPortableContext {
     @Nullable public GridPortableClassDescriptor descriptorForClass(Class<?> cls);
 
     @Nullable public GridPortableClassDescriptor descriptorForTypeId(boolean userType, int typeId);
+
+    public int fieldId(int typeId, String fieldName);
 }

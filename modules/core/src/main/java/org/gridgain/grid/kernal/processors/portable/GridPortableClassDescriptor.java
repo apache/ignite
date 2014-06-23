@@ -237,6 +237,13 @@ public class GridPortableClassDescriptor {
     }
 
     /**
+     * @return Type ID.
+     */
+    int typeId() {
+        return typeId;
+    }
+
+    /**
      * @param obj Object.
      * @param writer Writer.
      * @throws GridPortableException In case of error.

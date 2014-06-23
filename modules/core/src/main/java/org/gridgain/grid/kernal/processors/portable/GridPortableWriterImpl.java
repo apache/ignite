@@ -77,6 +77,9 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     private int mark;
 
     /** */
+    private int typeId;
+
+    /** */
     private boolean allowFields = true;
 
     /** */
@@ -111,6 +114,8 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
 
         if (desc == null)
             throw new GridPortableException("Object is not portable: " + obj);
+
+        typeId = desc.typeId();
 
         desc.write(obj, this);
     }
@@ -810,7 +815,7 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
         if (!allowFields)
             throw new GridPortableException("Fields are not allowed."); // TODO: proper message
 
-        doWriteInt(fieldName.hashCode()); // TODO: take from mapper.
+        doWriteInt(ctx.fieldId(typeId, fieldName));
     }
 
     /** */
