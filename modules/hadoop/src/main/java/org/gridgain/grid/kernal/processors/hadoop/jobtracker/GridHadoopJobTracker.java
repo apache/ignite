@@ -39,8 +39,11 @@ import static org.gridgain.grid.kernal.processors.hadoop.taskexecutor.GridHadoop
  * Hadoop job tracker.
  */
 public class GridHadoopJobTracker extends GridHadoopComponent {
+    /** */
+    private final GridMutex mux = new GridMutex();
+
     /** System cache. */
-    private GridCacheProjection<GridHadoopJobId, GridHadoopJobMetadata> jobMetaPrj;
+    private volatile GridCacheProjection<GridHadoopJobId, GridHadoopJobMetadata> jobMetaPrj;
 
     /** Map-reduce execution planner. */
     private GridHadoopMapReducePlanner mrPlanner;
@@ -79,21 +82,43 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         evtProcSvc = Executors.newFixedThreadPool(1);
     }
 
+    /**
+     * @return Job meta projection.
+     */
+    private GridCacheProjection<GridHadoopJobId, GridHadoopJobMetadata> jobMetaCache() {
+        GridCacheProjection<GridHadoopJobId, GridHadoopJobMetadata> prj = jobMetaPrj;
+
+        if (prj == null) {
+            synchronized (mux) {
+                if ((prj = jobMetaPrj) == null) {
+                    GridCache<Object, Object> sysCache = ctx.kernalContext().cache().cache(CU.SYS_CACHE_HADOOP_MR);
+
+                    assert sysCache != null;
+
+                    mrPlanner = ctx.planner();
+
+                    try {
+                        ctx.kernalContext().resource().injectGeneric(mrPlanner);
+                    }
+                    catch (GridException e) { // Must not happen.
+                        U.error(log, "Failed to inject resources.", e);
+
+                        throw new IllegalStateException(e);
+                    }
+
+                    jobMetaPrj = prj = sysCache.projection(GridHadoopJobId.class, GridHadoopJobMetadata.class);
+                }
+            }
+        }
+
+        return prj;
+    }
+
     /** {@inheritDoc} */
     @Override public void onKernalStart() throws GridException {
         super.onKernalStart();
 
-        GridCache<Object, Object> sysCache = ctx.kernalContext().cache().cache(CU.SYS_CACHE_HADOOP_MR);
-
-        assert sysCache != null;
-
-        mrPlanner = ctx.planner();
-
-        ctx.kernalContext().resource().injectGeneric(mrPlanner);
-
-        jobMetaPrj = sysCache.projection(GridHadoopJobId.class, GridHadoopJobMetadata.class);
-
-        GridCacheContinuousQuery<GridHadoopJobId, GridHadoopJobMetadata> qry = jobMetaPrj.queries()
+        GridCacheContinuousQuery<GridHadoopJobId, GridHadoopJobMetadata> qry = jobMetaCache().queries()
             .createContinuousQuery();
 
         qry.callback(new GridBiPredicate<UUID,
@@ -191,7 +216,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             if (log.isDebugEnabled())
                 log.debug("Submitting job metadata [jobId=" + jobId + ", meta=" + meta + ']');
 
-            jobMetaPrj.put(jobId, meta);
+            jobMetaCache().put(jobId, meta);
 
             return completeFut;
         }
@@ -216,7 +241,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             return null; // Grid is stopping.
 
         try {
-            GridHadoopJobMetadata meta = jobMetaPrj.get(jobId);
+            GridHadoopJobMetadata meta = jobMetaCache().get(jobId);
 
             return meta != null ? GridHadoopUtils.status(meta) : null;
         }
@@ -237,7 +262,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             return null; // Grid is stopping.
 
         try {
-            GridHadoopJobMetadata meta = jobMetaPrj.get(jobId);
+            GridHadoopJobMetadata meta = jobMetaCache().get(jobId);
 
             if (meta == null)
                 return null;
@@ -256,7 +281,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 new GridFutureAdapter<GridHadoopJobId>());
 
             // Get meta from cache one more time to close the window.
-            meta = jobMetaPrj.get(jobId);
+            meta = jobMetaCache().get(jobId);
 
             if (log.isTraceEnabled())
                 log.trace("Re-checking job metadata [locNodeId=" + ctx.localNodeId() + ", meta=" + meta + ']');
@@ -291,7 +316,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             return null;
 
         try {
-            GridHadoopJobMetadata meta = jobMetaPrj.get(jobId);
+            GridHadoopJobMetadata meta = jobMetaCache().get(jobId);
 
             if (meta != null)
                 return meta.mapReducePlan();
@@ -356,7 +381,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                 case COMMIT:
                 case ABORT: {
-                    GridCacheEntry<GridHadoopJobId, GridHadoopJobMetadata> entry = jobMetaPrj.entry(info.jobId());
+                    GridCacheEntry<GridHadoopJobId, GridHadoopJobMetadata> entry = jobMetaCache().entry(info.jobId());
 
                     entry.timeToLive(ctx.configuration().getFinishedJobInfoTtl());
 
@@ -376,7 +401,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param c Closure of operation.
      */
     private void transform(GridHadoopJobId jobId, GridClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> c) {
-        jobMetaPrj.transformAsync(jobId, c).listenAsync(failsLogger);
+        jobMetaCache().transformAsync(jobId, c).listenAsync(failsLogger);
     }
 
     /**
@@ -437,7 +462,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             boolean checkSetup = evt.eventNode().order() < ctx.localNodeOrder();
 
             // Iteration over all local entries is correct since system cache is REPLICATED.
-            for (GridHadoopJobMetadata meta : jobMetaPrj.values()) {
+            for (GridHadoopJobMetadata meta : jobMetaCache().values()) {
                 GridHadoopJobId jobId = meta.jobId();
 
                 GridHadoopMapReducePlan plan = meta.mapReducePlan();
@@ -488,7 +513,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         }
 
                         if (cancelSplits != null || cancelReducers != null)
-                            jobMetaPrj.transform(meta.jobId(), new CancelJobClosure(new GridException("One or " +
+                            jobMetaCache().transform(meta.jobId(), new CancelJobClosure(new GridException("One or " +
                                 "more nodes participating in map-reduce job execution failed."), cancelSplits,
                                 cancelReducers));
                     }
@@ -797,7 +822,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         if (state != null)
             return state.job;
 
-        GridHadoopJobMetadata meta = jobMetaPrj.get(jobId);
+        GridHadoopJobMetadata meta = jobMetaCache().get(jobId);
 
         if (meta == null)
             return null;
@@ -817,12 +842,12 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             return false; // Grid is stopping.
 
         try {
-            GridHadoopJobMetadata meta = jobMetaPrj.get(jobId);
+            GridHadoopJobMetadata meta = jobMetaCache().get(jobId);
 
             if (meta != null && meta.phase() != PHASE_COMPLETE && meta.phase() != PHASE_CANCELLING) {
                 GridHadoopTaskCancelledException err = new GridHadoopTaskCancelledException("Job cancelled.");
 
-                jobMetaPrj.transform(jobId, new CancelJobClosure(err));
+                jobMetaCache().transform(jobId, new CancelJobClosure(err));
             }
         }
         finally {
