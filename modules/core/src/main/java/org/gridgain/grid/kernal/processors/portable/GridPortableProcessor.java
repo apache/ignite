@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.portable;
 
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.portable.*;
+import org.gridgain.grid.util.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;

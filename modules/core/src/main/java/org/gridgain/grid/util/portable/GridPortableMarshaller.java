@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.portable;
+package org.gridgain.grid.util.portable;
 
 import org.gridgain.grid.portable.*;
 import org.jetbrains.annotations.*;
@@ -18,15 +18,6 @@ import java.nio.*;
  * Portable objects marshaller.
  */
 public class GridPortableMarshaller {
-    /** */
-    public static final byte NULL = (byte)0x00;
-
-    /** */
-    public static final byte HANDLE = (byte)0x01;
-
-    /** */
-    public static final byte OBJ = (byte)0x02;
-
     /** */
     public static final byte BYTE = (byte)0x10;
 
@@ -95,6 +86,15 @@ public class GridPortableMarshaller {
 
     /** */
     public static final byte MAP = (byte)0x32;
+
+    /** */
+    static final byte NULL = (byte)0x80;
+
+    /** */
+    static final byte HANDLE = (byte)0x81;
+
+    /** */
+    static final byte OBJ = (byte)0x82;
 
     /** */
     private static final ByteBuffer NULL_BUF = ByteBuffer.wrap(new byte[] { NULL });
