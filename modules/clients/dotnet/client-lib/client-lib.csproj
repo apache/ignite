@@ -74,6 +74,7 @@
     <Compile Include="client\impl\portable\GridClientPortableReadContext.cs" />
     <Compile Include="client\impl\portable\GridClientPortableReaderImpl.cs" />
     <Compile Include="client\impl\portable\GridClientPortableReadOnlyDictionary.cs" />
+    <Compile Include="client\impl\portable\GridClientPortableSystemHandlers.cs" />
     <Compile Include="client\impl\portable\GridClientPortableWriteContext.cs" />
     <Compile Include="client\impl\portable\GridClientPortableWriterImpl.cs" />
     <Compile Include="client\portable\GridClientPortableReflectiveIdResolver.cs" />

@@ -15,6 +15,7 @@ namespace GridGain.Client.Impl.Portable
     using GridGain.Client.Portable;
 
     using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
+    using PSH = GridGain.Client.Impl.Portable.GridClientPortableSystemHandlers;
 
     /**
      * <summary>Portable write context.</summary>
@@ -83,47 +84,21 @@ namespace GridGain.Client.Impl.Portable
             }
                 
             // 2. Write primitive.
-            long pos = Stream.Position; 
+            int pos = (int)Stream.Position;
 
             Type type = obj.GetType();
 
-            byte typeId = PU.PrimitiveTypeId(type);
+            GridClientPortableSystemWriteDelegate sysHandler = PSH.WriteHandler(type);
 
-            if (typeId != 0)
+            if (sysHandler != null)
             {
-                Stream.WriteByte(PU.HDR_FULL);
-                PU.WriteBoolean(false, Stream);
-                PU.WriteInt(typeId, Stream);
-                PU.WriteInt(obj.GetHashCode(), Stream);
-                Stream.Seek(8, SeekOrigin.Current);
-                PU.WritePrimitive(typeId, obj, Stream);
-
-                WriteLength(Stream, pos, Stream.Position, 0);                    
+                sysHandler.Invoke(Stream, pos, obj);
 
                 return;
             }
-
-            // 3. Write string.  
-            if (type == typeof(string)) 
-            {
-                string obj0 = (string)obj;
-
-                Stream.WriteByte(PU.HDR_FULL);
-                PU.WriteBoolean(false, Stream);
-                PU.WriteInt(PU.TYPE_STRING, Stream);
-                PU.WriteInt(PU.StringHashCode(obj0), Stream);
-
-                Stream.Seek(8, SeekOrigin.Current);
-
-                PU.WriteString(obj0, Stream);
-
-                WriteLength(Stream, pos, Stream.Position, 0);
-
-                return;
-            }
-
+            
             // 7. Write primitive array.
-            typeId = PU.PrimitiveArrayTypeId(type);
+            byte typeId = PU.PrimitiveArrayTypeId(type);
 
             if (typeId != 0)
             {
@@ -140,26 +115,7 @@ namespace GridGain.Client.Impl.Portable
 
                 return;
             }
-
-            // 4. Write GUID.
-            if (type == typeof(Guid))
-            {
-                Guid? obj0 = (Guid?)obj;
-
-                Stream.WriteByte(PU.HDR_FULL);
-                PU.WriteBoolean(false, Stream);
-                PU.WriteInt(PU.TYPE_GUID, Stream);
-                PU.WriteInt(PU.GuidHashCode(obj0.Value), Stream);
-
-                Stream.Seek(8, SeekOrigin.Current);
-
-                PU.WriteGuid(obj0, Stream);
-
-                WriteLength(Stream, pos, Stream.Position, 0);
-
-                return;
-            }
-
+            
             // 3. Try interpreting object as handle.
             if (hnds == null)
                 hnds = new Dictionary<GridClientPortableObjectHandle, int>();
@@ -217,12 +173,12 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
-            * <summary>Write lengths.</summary>
-            * <param name="stream">Stream</param>
-            * <param name="pos">Initial position.</param>
-            * <param name="retPos">Return position</param>
-            * <param name="rawPos">Raw data position.</param>
-            */
+         * <summary>Write lengths.</summary>
+         * <param name="stream">Stream</param>
+         * <param name="pos">Initial position.</param>
+         * <param name="retPos">Return position</param>
+         * <param name="rawPos">Raw data position.</param>
+         */
         private static void WriteLength(Stream stream, long pos, long retPos, long rawPos)
         {
             stream.Seek(pos + 10, SeekOrigin.Begin);

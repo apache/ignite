@@ -16,6 +16,7 @@ namespace GridGain.Client.Impl.Portable
     using GridGain.Client.Portable;
 
     using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
+    using PSH = GridGain.Client.Impl.Portable.GridClientPortableSystemHandlers;
 
     /**
      * <summary>Portable read context.</summary>
@@ -143,13 +144,16 @@ namespace GridGain.Client.Impl.Portable
                     }
                     else
                     {
-                        // 1. Primitive type?
-                        bool processed;
+                        object rrr;
 
-                        object res = PU.ReadPrimitive(typeId, (typeof(T)), stream, out processed);
+                        GridClientPortableSystemReadDelegate handler = PSH.ReadHandler(typeId);
 
-                        if (processed)
-                            return (T)res;
+                        if (handler != null)
+                        {
+                            handler.Invoke(stream, typeof(T), out rrr);
+
+                            return (T)rrr;
+                        }
 
                         // 2. String?
                         if (typeId == PU.TYPE_STRING)
@@ -160,7 +164,9 @@ namespace GridGain.Client.Impl.Portable
                             return (T)(object)PU.ReadGuid(stream);
 
                         // 4. Primitive array?
-                        res = PU.ReadPrimitiveArray(typeId, (typeof(T)), stream, out processed);
+                        bool processed;
+
+                        object res = PU.ReadPrimitiveArray(typeId, (typeof(T)), stream, out processed);
 
                         if (processed)
                             return (T)res;
