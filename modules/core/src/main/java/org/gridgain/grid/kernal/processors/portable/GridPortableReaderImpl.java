@@ -88,6 +88,22 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
         this.rawDataOff = rawDataOff;
     }
 
+    /**
+     * @param fieldName Field name.
+     * @return Field value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable Object unmarshalField(String fieldName) throws GridPortableException {
+        int fieldOff = fieldOffset(fieldName);
+
+        return fieldOff >= 0 ? unmarshal(fieldOff) : null;
+    }
+
+    /**
+     * @param off Offset.
+     * @return Object.
+     * @throws GridPortableException In case of error.
+     */
     @Nullable Object unmarshal(int off) throws GridPortableException {
         byte flag = readByte(off++);
 

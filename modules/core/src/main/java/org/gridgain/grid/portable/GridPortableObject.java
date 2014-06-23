@@ -26,14 +26,6 @@ public interface GridPortableObject extends Serializable, Cloneable {
     public int typeId();
 
     /**
-     * Gets field type ID.
-     *
-     * @param fieldName Field name.
-     * @return Field type ID.
-     */
-    public int fieldTypeId(String fieldName);
-
-    /**
      * Gets field value.
      *
      * @param fieldName Field name.

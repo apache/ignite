@@ -18,6 +18,7 @@ import java.util.*;
  * Portable object implementation.
  */
 class GridPortableObjectImpl implements GridPortableObject {
+    /** */
     private final GridPortableContext ctx;
 
     /** */
@@ -31,6 +32,9 @@ class GridPortableObjectImpl implements GridPortableObject {
 
     /** */
     private final int hashCode;
+
+    /** */
+    private volatile Object obj;
 
     /**
      * @param reader Reader.
@@ -55,24 +59,22 @@ class GridPortableObjectImpl implements GridPortableObject {
     }
 
     /** {@inheritDoc} */
-    @Override public int fieldTypeId(String fieldName) {
-        return 0; // TODO: implement.
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public <F> F field(String fieldName) throws GridPortableException {
-        return null; // TODO: implement.
+        return (F)reader.unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> T deserialize() throws GridPortableException {
-        GridPortableClassDescriptor desc = ctx.descriptorForTypeId(userType, typeId);
+        if (obj == null) {
+            GridPortableClassDescriptor desc = ctx.descriptorForTypeId(userType, typeId);
 
-        if (desc == null)
-            throw new GridPortableInvalidClassException("Unknown type [userType=" + userType +
+            if (desc == null) throw new GridPortableInvalidClassException("Unknown type [userType=" + userType +
                 ", typeId=" + typeId + ']');
 
-        return (T)desc.read(reader);
+            obj = desc.read(reader);
+        }
+
+        return (T)obj;
     }
 
     /** {@inheritDoc} */
