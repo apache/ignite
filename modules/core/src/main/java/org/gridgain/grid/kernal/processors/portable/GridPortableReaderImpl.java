@@ -64,6 +64,8 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
         this.arr = arr;
         this.start = start;
 
+        rawOff = start;
+
         poHandles = new HashMap<>();
         oHandles = new HashMap<>();
     }
@@ -198,7 +200,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
                     Object[] arr = new Object[arrLen];
 
                     for (int i = 0; i < arrLen; i++)
-                        arr[i] = unmarshal();
+                        arr[i] = doReadObject(false);
 
                     return arr;
                 }
@@ -212,7 +214,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
                     Collection<Object> col = new ArrayList<>(colSize);
 
                     for (int i = 0; i < colSize; i++)
-                        col.add(unmarshal());
+                        col.add(doReadObject(false));
 
                     return col;
                 }
@@ -226,7 +228,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
                     Map<Object, Object> map = new HashMap<>(mapSize);
 
                     for (int i = 0; i < mapSize; i++)
-                        map.put(unmarshal(), unmarshal());
+                        map.put(doReadObject(false), doReadObject(false));
 
                     return map;
                 }
@@ -719,7 +721,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
         if (off >= 0) {
             byte flag = doReadByte(false);
 
-            if (flag != BOOLEAN_ARR)
+            if (flag != MAP)
                 throw new GridPortableException("Invalid flag value: " + flag);
 
             return (Map<K, V>)doReadMap(false);
@@ -1099,12 +1101,10 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
         if (len >= 0) {
             boolean[] arr = PRIM.readBooleanArray(this.arr, raw ? rawOff : off, len);
 
-            int bytes = len << 1;
-
             if (raw)
-                rawOff += bytes;
+                rawOff += len;
             else
-                off += bytes;
+                off += len;
 
             return arr;
         }
