@@ -210,7 +210,8 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
     void addEntry0(int p, GridCacheEntryInfo<K, V> info, GridCacheContext<K, V> ctx) throws GridException {
         assert info != null;
         assert info.keyBytes() != null;
-        assert info.valueBytes() != null || info.value() instanceof byte[];
+        assert info.valueBytes() != null || info.value() instanceof byte[] :
+            "Missing value bytes with invalid value: " + info.value();
 
         // Need to call this method to initialize info properly.
         marshalInfo(info, ctx);
