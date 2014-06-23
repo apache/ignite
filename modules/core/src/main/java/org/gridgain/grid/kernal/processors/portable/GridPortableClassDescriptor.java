@@ -710,126 +710,125 @@ public class GridPortableClassDescriptor {
         public void read(Object obj, GridPortableReaderImpl reader) throws GridPortableException {
             Object val = null;
 
-            // TODO: use ID instead of name
             switch (mode) {
                 case BYTE:
-                    val = prim ? reader.readByte(field.getName()) : reader.readObject(field.getName());
+                    val = prim ? reader.readByte(id) : reader.readObject(id);
 
                     break;
 
                 case SHORT:
-                    val = prim ? reader.readShort(field.getName()) : reader.readObject(field.getName());
+                    val = prim ? reader.readShort(id) : reader.readObject(id);
 
                     break;
 
                 case INT:
-                    val = prim ? reader.readInt(field.getName()) : reader.readObject(field.getName());
+                    val = prim ? reader.readInt(id) : reader.readObject(id);
 
                     break;
 
                 case LONG:
-                    val = prim ? reader.readLong(field.getName()) : reader.readObject(field.getName());
+                    val = prim ? reader.readLong(id) : reader.readObject(id);
 
                     break;
 
                 case FLOAT:
-                    val = prim ? reader.readFloat(field.getName()) : reader.readObject(field.getName());
+                    val = prim ? reader.readFloat(id) : reader.readObject(id);
 
                     break;
 
                 case DOUBLE:
-                    val = prim ? reader.readDouble(field.getName()) : reader.readObject(field.getName());
+                    val = prim ? reader.readDouble(id) : reader.readObject(id);
 
                     break;
 
                 case CHAR:
-                    val = prim ? reader.readChar(field.getName()) : reader.readObject(field.getName());
+                    val = prim ? reader.readChar(id) : reader.readObject(id);
 
                     break;
 
                 case BOOLEAN:
-                    val = prim ? reader.readBoolean(field.getName()) : reader.readObject(field.getName());
+                    val = prim ? reader.readBoolean(id) : reader.readObject(id);
 
                     break;
 
                 case STRING:
-                    val = reader.readString(field.getName());
+                    val = reader.readString(id);
 
                     break;
 
                 case UUID:
-                    val = reader.readUuid(field.getName());
+                    val = reader.readUuid(id);
 
                     break;
 
                 case BYTE_ARR:
-                    val = reader.readByteArray(field.getName());
+                    val = reader.readByteArray(id);
 
                     break;
 
                 case SHORT_ARR:
-                    val = reader.readShortArray(field.getName());
+                    val = reader.readShortArray(id);
 
                     break;
 
                 case INT_ARR:
-                    val = reader.readIntArray(field.getName());
+                    val = reader.readIntArray(id);
 
                     break;
 
                 case LONG_ARR:
-                    val = reader.readLongArray(field.getName());
+                    val = reader.readLongArray(id);
 
                     break;
 
                 case FLOAT_ARR:
-                    val = reader.readFloatArray(field.getName());
+                    val = reader.readFloatArray(id);
 
                     break;
 
                 case DOUBLE_ARR:
-                    val = reader.readDoubleArray(field.getName());
+                    val = reader.readDoubleArray(id);
 
                     break;
 
                 case CHAR_ARR:
-                    val = reader.readCharArray(field.getName());
+                    val = reader.readCharArray(id);
 
                     break;
 
                 case BOOLEAN_ARR:
-                    val = reader.readBooleanArray(field.getName());
+                    val = reader.readBooleanArray(id);
 
                     break;
 
                 case STRING_ARR:
-                    val = reader.readStringArray(field.getName());
+                    val = reader.readStringArray(id);
 
                     break;
 
                 case UUID_ARR:
-                    val = reader.readUuidArray(field.getName());
+                    val = reader.readUuidArray(id);
 
                     break;
 
                 case OBJ_ARR:
-                    val = reader.readObjectArray(field.getName());
+                    val = reader.readObjectArray(id);
 
                     break;
 
                 case COL:
-                    val = reader.readCollection(field.getName());
+                    val = reader.readCollection(id);
 
                     break;
 
                 case MAP:
-                    val = reader.readMap(field.getName());
+                    val = reader.readMap(id);
 
                     break;
 
                 case PORTABLE:
                 case OBJECT:
-                    val = reader.readObject(field.getName());
+                    val = reader.readObject(id);
 
                     break;
 

@@ -96,7 +96,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
      * @throws GridPortableException In case of error.
      */
     @Nullable Object unmarshal(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+        off = fieldOffset(fieldId(fieldName));
 
         return off >= 0 ? unmarshal() : null;
     }
@@ -240,9 +240,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public byte readByte(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    byte readByte(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
 
         if (off >= 0) {
             byte flag = doReadByte(false);
@@ -256,14 +260,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             return 0;
     }
 
-    /** {@inheritDoc} */
-    @Override public byte readByte() throws GridPortableException {
-        return doReadByte(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short readShort(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    short readShort(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
 
         if (off >= 0) {
             byte flag = doReadByte(false);
@@ -277,14 +280,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             return 0;
     }
 
-    /** {@inheritDoc} */
-    @Override public short readShort() throws GridPortableException {
-        return doReadShort(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int readInt(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    int readInt(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
 
         if (off >= 0) {
             byte flag = doReadByte(false);
@@ -298,14 +300,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             return 0;
     }
 
-    /** {@inheritDoc} */
-    @Override public int readInt() throws GridPortableException {
-        return doReadInt(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long readLong(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    long readLong(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
 
         if (off >= 0) {
             byte flag = doReadByte(false);
@@ -319,14 +320,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             return 0;
     }
 
-    /** {@inheritDoc} */
-    @Override public long readLong() throws GridPortableException {
-        return doReadLong(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public float readFloat(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    float readFloat(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
 
         if (off >= 0) {
             byte flag = doReadByte(false);
@@ -340,14 +340,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             return 0;
     }
 
-    /** {@inheritDoc} */
-    @Override public float readFloat() throws GridPortableException {
-        return doReadFloat(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public double readDouble(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    double readDouble(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
 
         if (off >= 0) {
             byte flag = doReadByte(false);
@@ -361,14 +360,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             return 0;
     }
 
-    /** {@inheritDoc} */
-    @Override public double readDouble() throws GridPortableException {
-        return doReadDouble(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public char readChar(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    char readChar(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
 
         if (off >= 0) {
             byte flag = doReadByte(false);
@@ -382,14 +380,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             return 0;
     }
 
-    /** {@inheritDoc} */
-    @Override public char readChar() throws GridPortableException {
-        return doReadChar(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readBoolean(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    boolean readBoolean(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
 
         if (off >= 0) {
             byte flag = doReadByte(false);
@@ -403,14 +400,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean readBoolean() throws GridPortableException {
-        return doReadBoolean(true);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public String readString(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable String readString(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
 
         if (off >= 0) {
             byte flag = doReadByte(false);
@@ -424,14 +420,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             return null;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public String readString() throws GridPortableException {
-        return doReadString(true);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public UUID readUuid(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable UUID readUuid(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
 
         if (off >= 0) {
             byte flag = doReadByte(false);
@@ -445,26 +440,24 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             return null;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public UUID readUuid() throws GridPortableException {
-        return doReadUuid(true);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Object readObject(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable Object readObject(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
 
         return off >= 0 ? doReadObject(false) : null;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public Object readObject() throws GridPortableException {
-        return doReadObject(true);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public byte[] readByteArray(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable byte[] readByteArray(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
 
         if (off >= 0) {
             byte flag = doReadByte(false);
@@ -478,14 +471,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             return null;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public byte[] readByteArray() throws GridPortableException {
-        return doReadByteArray(true);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public short[] readShortArray(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable short[] readShortArray(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
 
         if (off >= 0) {
             byte flag = doReadByte(false);
@@ -499,14 +491,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             return null;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public short[] readShortArray() throws GridPortableException {
-        return doReadShortArray(true);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public int[] readIntArray(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable int[] readIntArray(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
 
         if (off >= 0) {
             byte flag = doReadByte(false);
@@ -520,14 +511,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             return null;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public int[] readIntArray() throws GridPortableException {
-        return doReadIntArray(true);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public long[] readLongArray(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable long[] readLongArray(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
 
         if (off >= 0) {
             byte flag = doReadByte(false);
@@ -541,14 +531,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             return null;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public long[] readLongArray() throws GridPortableException {
-        return doReadLongArray(true);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public float[] readFloatArray(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable float[] readFloatArray(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
 
         if (off >= 0) {
             byte flag = doReadByte(false);
@@ -562,14 +551,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             return null;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public float[] readFloatArray() throws GridPortableException {
-        return doReadFloatArray(true);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public double[] readDoubleArray(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable double[] readDoubleArray(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
 
         if (off >= 0) {
             byte flag = doReadByte(false);
@@ -583,14 +571,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             return null;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public double[] readDoubleArray() throws GridPortableException {
-        return doReadDoubleArray(true);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public char[] readCharArray(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable char[] readCharArray(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
 
         if (off >= 0) {
             byte flag = doReadByte(false);
@@ -604,14 +591,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             return null;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public char[] readCharArray() throws GridPortableException {
-        return doReadCharArray(true);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public boolean[] readBooleanArray(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable boolean[] readBooleanArray(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
 
         if (off >= 0) {
             byte flag = doReadByte(false);
@@ -625,14 +611,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             return null;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public boolean[] readBooleanArray() throws GridPortableException {
-        return doReadBooleanArray(true);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public String[] readStringArray(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable String[] readStringArray(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
 
         if (off >= 0) {
             byte flag = doReadByte(false);
@@ -646,14 +631,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             return null;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public String[] readStringArray() throws GridPortableException {
-        return doReadStringArray(true);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public UUID[] readUuidArray(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable UUID[] readUuidArray(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
 
         if (off >= 0) {
             byte flag = doReadByte(false);
@@ -667,14 +651,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             return null;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public UUID[] readUuidArray() throws GridPortableException {
-        return doReadUuidArray(true);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Object[] readObjectArray(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable Object[] readObjectArray(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
 
         if (off >= 0) {
             byte flag = doReadByte(false);
@@ -688,14 +671,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             return null;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public Object[] readObjectArray() throws GridPortableException {
-        return doReadObjectArray(true);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public <T> Collection<T> readCollection(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable <T> Collection<T> readCollection(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
 
         if (off >= 0) {
             byte flag = doReadByte(false);
@@ -709,14 +691,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             return null;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public <T> Collection<T> readCollection() throws GridPortableException {
-        return (Collection<T>)doReadCollection(true);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public <K, V> Map<K, V> readMap(String fieldName) throws GridPortableException {
-        off = fieldOffset(fieldName);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable <K, V> Map<K, V> readMap(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
 
         if (off >= 0) {
             byte flag = doReadByte(false);
@@ -728,6 +709,241 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
         }
         else
             return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte readByte(String fieldName) throws GridPortableException {
+        return readByte(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte readByte() throws GridPortableException {
+        return doReadByte(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short readShort(String fieldName) throws GridPortableException {
+        return readShort(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Override public short readShort() throws GridPortableException {
+        return doReadShort(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int readInt(String fieldName) throws GridPortableException {
+        return readInt(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Override public int readInt() throws GridPortableException {
+        return doReadInt(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long readLong(String fieldName) throws GridPortableException {
+        return readLong(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Override public long readLong() throws GridPortableException {
+        return doReadLong(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public float readFloat(String fieldName) throws GridPortableException {
+        return readFloat(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Override public float readFloat() throws GridPortableException {
+        return doReadFloat(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public double readDouble(String fieldName) throws GridPortableException {
+        return readDouble(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Override public double readDouble() throws GridPortableException {
+        return doReadDouble(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public char readChar(String fieldName) throws GridPortableException {
+        return readChar(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Override public char readChar() throws GridPortableException {
+        return doReadChar(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readBoolean(String fieldName) throws GridPortableException {
+        return readBoolean(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readBoolean() throws GridPortableException {
+        return doReadBoolean(true);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String readString(String fieldName) throws GridPortableException {
+        return readString(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String readString() throws GridPortableException {
+        return doReadString(true);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public UUID readUuid(String fieldName) throws GridPortableException {
+        return readUuid(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public UUID readUuid() throws GridPortableException {
+        return doReadUuid(true);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Object readObject(String fieldName) throws GridPortableException {
+        return readObject(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Object readObject() throws GridPortableException {
+        return doReadObject(true);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public byte[] readByteArray(String fieldName) throws GridPortableException {
+        return readByteArray(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public byte[] readByteArray() throws GridPortableException {
+        return doReadByteArray(true);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public short[] readShortArray(String fieldName) throws GridPortableException {
+        return readShortArray(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public short[] readShortArray() throws GridPortableException {
+        return doReadShortArray(true);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public int[] readIntArray(String fieldName) throws GridPortableException {
+        return readIntArray(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public int[] readIntArray() throws GridPortableException {
+        return doReadIntArray(true);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public long[] readLongArray(String fieldName) throws GridPortableException {
+        return readLongArray(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public long[] readLongArray() throws GridPortableException {
+        return doReadLongArray(true);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public float[] readFloatArray(String fieldName) throws GridPortableException {
+        return readFloatArray(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public float[] readFloatArray() throws GridPortableException {
+        return doReadFloatArray(true);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public double[] readDoubleArray(String fieldName) throws GridPortableException {
+        return readDoubleArray(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public double[] readDoubleArray() throws GridPortableException {
+        return doReadDoubleArray(true);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public char[] readCharArray(String fieldName) throws GridPortableException {
+        return readCharArray(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public char[] readCharArray() throws GridPortableException {
+        return doReadCharArray(true);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public boolean[] readBooleanArray(String fieldName) throws GridPortableException {
+        return readBooleanArray(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public boolean[] readBooleanArray() throws GridPortableException {
+        return doReadBooleanArray(true);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String[] readStringArray(String fieldName) throws GridPortableException {
+        return readStringArray(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String[] readStringArray() throws GridPortableException {
+        return doReadStringArray(true);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public UUID[] readUuidArray(String fieldName) throws GridPortableException {
+        return readUuidArray(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public UUID[] readUuidArray() throws GridPortableException {
+        return doReadUuidArray(true);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Object[] readObjectArray(String fieldName) throws GridPortableException {
+        return readObjectArray(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Object[] readObjectArray() throws GridPortableException {
+        return doReadObjectArray(true);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> Collection<T> readCollection(String fieldName) throws GridPortableException {
+        return readCollection(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> Collection<T> readCollection() throws GridPortableException {
+        return (Collection<T>)doReadCollection(true);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <K, V> Map<K, V> readMap(String fieldName) throws GridPortableException {
+        return readMap(fieldId(fieldName));
     }
 
     /** {@inheritDoc} */
@@ -1214,9 +1430,17 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
      * @param name Field name.
      * @return Field offset.
      */
-    private int fieldOffset(String name) {
+    private int fieldId(String name) {
         assert name != null;
 
+        return ctx.fieldId(typeId, name);
+    }
+
+    /**
+     * @param id Field ID.
+     * @return Field offset.
+     */
+    private int fieldOffset(int id) {
         if (fieldsOffs == null) {
             fieldsOffs = new HashMap<>();
 
@@ -1240,7 +1464,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             }
         }
 
-        Integer fieldOff = fieldsOffs.get(ctx.fieldId(typeId, name));
+        Integer fieldOff = fieldsOffs.get(id);
 
         return fieldOff != null ? fieldOff : -1;
     }
