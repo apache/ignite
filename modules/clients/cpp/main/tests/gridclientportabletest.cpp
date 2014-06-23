@@ -44,7 +44,7 @@
 using namespace std;
 
 BOOST_AUTO_TEST_SUITE(GridClientPortableSuite)
-
+/*
 GridClientConfiguration clientConfig() {
     GridClientConfiguration clientConfig;
 
@@ -1949,6 +1949,437 @@ BOOST_AUTO_TEST_CASE(testExternalSerialization) {
 
     delete pRead->getObject();
     delete pRead;
+}
+*/
+BOOST_AUTO_TEST_CASE(testMarshal_byte) {
+    int8_t val = 10;
+
+    GridClientVariant var(val);
+
+    GridPortableMarshaller marsh;
+    
+    vector<int8_t> bytes = marsh.marshal(var);
+
+    GridClientVariant varRead = marsh.unmarshal(bytes);
+
+    BOOST_REQUIRE_EQUAL(10, varRead.getByte());
+}
+
+BOOST_AUTO_TEST_CASE(testMarshal_bool) {
+    bool val = true;
+
+    GridClientVariant var(val);
+
+    GridPortableMarshaller marsh;
+    
+    vector<int8_t> bytes = marsh.marshal(var);
+
+    GridClientVariant varRead = marsh.unmarshal(bytes);
+
+    BOOST_REQUIRE_EQUAL(true, varRead.getBool());
+}
+
+BOOST_AUTO_TEST_CASE(testMarshal_char) {
+    uint16_t val = 10;
+
+    GridClientVariant var(val);
+
+    GridPortableMarshaller marsh;
+    
+    vector<int8_t> bytes = marsh.marshal(var);
+
+    GridClientVariant varRead = marsh.unmarshal(bytes);
+
+    BOOST_REQUIRE_EQUAL(10, varRead.getChar());
+}
+
+BOOST_AUTO_TEST_CASE(testMarshal_chort) {
+    int16_t val = 10;
+
+    GridClientVariant var(val);
+
+    GridPortableMarshaller marsh;
+    
+    vector<int8_t> bytes = marsh.marshal(var);
+
+    GridClientVariant varRead = marsh.unmarshal(bytes);
+
+    BOOST_REQUIRE_EQUAL(10, varRead.getShort());
+}
+
+BOOST_AUTO_TEST_CASE(testMarshal_int) {
+    int32_t val = 10;
+
+    GridClientVariant var(val);
+
+    GridPortableMarshaller marsh;
+    
+    vector<int8_t> bytes = marsh.marshal(var);
+
+    GridClientVariant varRead = marsh.unmarshal(bytes);
+
+    BOOST_REQUIRE_EQUAL(10, varRead.getInt());
+}
+
+BOOST_AUTO_TEST_CASE(testMarshal_long) {
+    int64_t val = 10;
+
+    GridClientVariant var(val);
+
+    GridPortableMarshaller marsh;
+    
+    vector<int8_t> bytes = marsh.marshal(var);
+
+    GridClientVariant varRead = marsh.unmarshal(bytes);
+
+    BOOST_REQUIRE_EQUAL(10, varRead.getLong());
+}
+
+BOOST_AUTO_TEST_CASE(testMarshal_float) {
+    float val = 10;
+
+    GridClientVariant var(val);
+
+    GridPortableMarshaller marsh;
+    
+    vector<int8_t> bytes = marsh.marshal(var);
+
+    GridClientVariant varRead = marsh.unmarshal(bytes);
+
+    BOOST_REQUIRE_EQUAL(10, varRead.getFloat());
+}
+
+BOOST_AUTO_TEST_CASE(testMarshal_double) {
+    double val = 10;
+
+    GridClientVariant var(val);
+
+    GridPortableMarshaller marsh;
+    
+    vector<int8_t> bytes = marsh.marshal(var);
+
+    GridClientVariant varRead = marsh.unmarshal(bytes);
+
+    BOOST_REQUIRE_EQUAL(10, varRead.getDouble());
+}
+
+BOOST_AUTO_TEST_CASE(testMarshal_str) {
+    string val("str");
+
+    GridClientVariant var(val);
+
+    GridPortableMarshaller marsh;
+    
+    vector<int8_t> bytes = marsh.marshal(var);
+
+    GridClientVariant varRead = marsh.unmarshal(bytes);
+
+    BOOST_REQUIRE_EQUAL("str", varRead.getString());
+}
+
+BOOST_AUTO_TEST_CASE(testMarshal_uuid) {
+    GridClientUuid val(10, 20);
+
+    GridClientVariant var(val);
+
+    GridPortableMarshaller marsh;
+    
+    vector<int8_t> bytes = marsh.marshal(var);
+
+    GridClientVariant varRead = marsh.unmarshal(bytes);
+
+    BOOST_REQUIRE(GridClientUuid(10, 20) == varRead.getUuid());
+}
+
+BOOST_AUTO_TEST_CASE(testMarshal_byteArr) {
+    vector<int8_t> val;
+    
+    int size = 3;
+
+    for (int i = 0; i < size; i++)
+        val.push_back(i);
+
+    GridClientVariant var(val);
+
+    GridPortableMarshaller marsh;
+    
+    vector<int8_t> bytes = marsh.marshal(var);
+
+    GridClientVariant varRead = marsh.unmarshal(bytes);
+
+    vector<int8_t>& valRead = varRead.getByteArray();
+
+    BOOST_REQUIRE_EQUAL(size, valRead.size());
+
+    for (int i = 0; i < size; i++)
+        BOOST_REQUIRE_EQUAL(i, valRead[i]);
+}
+
+BOOST_AUTO_TEST_CASE(testMarshal_boolArr) {
+    vector<bool> val;
+    
+    int size = 3;
+
+    for (int i = 0; i < size; i++)
+        val.push_back(i % 2 == 0);
+
+    GridClientVariant var(val);
+
+    GridPortableMarshaller marsh;
+    
+    vector<int8_t> bytes = marsh.marshal(var);
+
+    GridClientVariant varRead = marsh.unmarshal(bytes);
+
+    vector<bool>& valRead = varRead.getBoolArray();
+
+    BOOST_REQUIRE_EQUAL(size, valRead.size());
+
+    for (int i = 0; i < size; i++)
+        BOOST_REQUIRE_EQUAL(i % 2 == 0, valRead[i]);
+}
+
+BOOST_AUTO_TEST_CASE(testMarshal_int16Arr) {
+    vector<int16_t> val;
+    
+    int size = 3;
+
+    for (int i = 0; i < size; i++)
+        val.push_back(i);
+
+    GridClientVariant var(val);
+
+    GridPortableMarshaller marsh;
+    
+    vector<int8_t> bytes = marsh.marshal(var);
+
+    GridClientVariant varRead = marsh.unmarshal(bytes);
+
+    vector<int16_t>& valRead = varRead.getShortArray();
+
+    BOOST_REQUIRE_EQUAL(size, valRead.size());
+
+    for (int i = 0; i < size; i++)
+        BOOST_REQUIRE_EQUAL(i, valRead[i]);
+}
+
+BOOST_AUTO_TEST_CASE(testMarshal_charArr) {
+    vector<uint16_t> val;
+    
+    int size = 3;
+
+    for (int i = 0; i < size; i++)
+        val.push_back(i);
+
+    GridClientVariant var(val);
+
+    GridPortableMarshaller marsh;
+    
+    vector<int8_t> bytes = marsh.marshal(var);
+
+    GridClientVariant varRead = marsh.unmarshal(bytes);
+
+    vector<uint16_t>& valRead = varRead.getCharArray();
+
+    BOOST_REQUIRE_EQUAL(size, valRead.size());
+
+    for (int i = 0; i < size; i++)
+        BOOST_REQUIRE_EQUAL(i, valRead[i]);
+}
+
+BOOST_AUTO_TEST_CASE(testMarshal_int32Arr) {
+    vector<int32_t> val;
+    
+    int size = 3;
+
+    for (int i = 0; i < size; i++)
+        val.push_back(i);
+
+    GridClientVariant var(val);
+
+    GridPortableMarshaller marsh;
+    
+    vector<int8_t> bytes = marsh.marshal(var);
+
+    GridClientVariant varRead = marsh.unmarshal(bytes);
+
+    vector<int32_t>& valRead = varRead.getIntArray();
+
+    BOOST_REQUIRE_EQUAL(size, valRead.size());
+
+    for (int i = 0; i < size; i++)
+        BOOST_REQUIRE_EQUAL(i, valRead[i]);
+}
+
+BOOST_AUTO_TEST_CASE(testMarshal_int64Arr) {
+    vector<int64_t> val;
+    
+    int size = 3;
+
+    for (int i = 0; i < size; i++)
+        val.push_back(i);
+
+    GridClientVariant var(val);
+
+    GridPortableMarshaller marsh;
+    
+    vector<int8_t> bytes = marsh.marshal(var);
+
+    GridClientVariant varRead = marsh.unmarshal(bytes);
+
+    vector<int64_t>& valRead = varRead.getLongArray();
+
+    BOOST_REQUIRE_EQUAL(size, valRead.size());
+
+    for (int i = 0; i < size; i++)
+        BOOST_REQUIRE_EQUAL(i, valRead[i]);
+}
+
+BOOST_AUTO_TEST_CASE(testMarshal_floatArr) {
+    vector<float> val;
+    
+    int size = 3;
+
+    for (int i = 0; i < size; i++)
+        val.push_back(i);
+
+    GridClientVariant var(val);
+
+    GridPortableMarshaller marsh;
+    
+    vector<int8_t> bytes = marsh.marshal(var);
+
+    GridClientVariant varRead = marsh.unmarshal(bytes);
+
+    vector<float>& valRead = varRead.getFloatArray();
+
+    BOOST_REQUIRE_EQUAL(size, valRead.size());
+
+    for (int i = 0; i < size; i++)
+        BOOST_REQUIRE_EQUAL(i, valRead[i]);
+}
+
+BOOST_AUTO_TEST_CASE(testMarshal_doubleArr) {
+    vector<double> val;
+    
+    int size = 3;
+
+    for (int i = 0; i < size; i++)
+        val.push_back(i);
+
+    GridClientVariant var(val);
+
+    GridPortableMarshaller marsh;
+    
+    vector<int8_t> bytes = marsh.marshal(var);
+
+    GridClientVariant varRead = marsh.unmarshal(bytes);
+
+    vector<double>& valRead = varRead.getDoubleArray();
+
+    BOOST_REQUIRE_EQUAL(size, valRead.size());
+
+    for (int i = 0; i < size; i++)
+        BOOST_REQUIRE_EQUAL(i, valRead[i]);
+}
+
+BOOST_AUTO_TEST_CASE(testMarshal_stringArr) {
+    vector<string> val;
+    
+    int size = 3;
+
+    for (int i = 0; i < size; i++)
+        val.push_back(i % 2 == 0 ? "0" : "1");
+
+    GridClientVariant var(val);
+
+    GridPortableMarshaller marsh;
+    
+    vector<int8_t> bytes = marsh.marshal(var);
+
+    GridClientVariant varRead = marsh.unmarshal(bytes);
+
+    vector<string>& valRead = varRead.getStringArray();
+
+    BOOST_REQUIRE_EQUAL(size, valRead.size());
+
+    for (int i = 0; i < size; i++)
+        BOOST_REQUIRE_EQUAL(i % 2 == 0 ? "0" : "1", valRead[i]);
+}
+
+BOOST_AUTO_TEST_CASE(testMarshal_uuidArr) {
+    vector<GridClientUuid> val;
+    
+    int size = 3;
+
+    for (int i = 0; i < size; i++)
+        val.push_back(GridClientUuid(i, i));
+
+    GridClientVariant var(val);
+
+    GridPortableMarshaller marsh;
+    
+    vector<int8_t> bytes = marsh.marshal(var);
+
+    GridClientVariant varRead = marsh.unmarshal(bytes);
+
+    vector<GridClientUuid>& valRead = varRead.getUuidArray();
+
+    BOOST_REQUIRE_EQUAL(size, valRead.size());
+
+    for (int i = 0; i < size; i++)
+        BOOST_REQUIRE(GridClientUuid(i, i) == valRead[i]);
+}
+
+BOOST_AUTO_TEST_CASE(testMarshal_variantArr) {
+    vector<GridClientVariant> val;
+    
+    int size = 3;
+
+    for (int i = 0; i < size; i++)
+        val.push_back(GridClientVariant(i));
+
+    GridClientVariant var(val);
+
+    GridPortableMarshaller marsh;
+    
+    vector<int8_t> bytes = marsh.marshal(var);
+
+    GridClientVariant varRead = marsh.unmarshal(bytes);
+
+    vector<GridClientVariant>& valRead = varRead.getVariantVector();
+
+    BOOST_REQUIRE_EQUAL(size, valRead.size());
+
+    for (int i = 0; i < size; i++)
+        BOOST_REQUIRE_EQUAL(i, valRead[i].getInt());
+}
+
+BOOST_AUTO_TEST_CASE(testMarshal_variantMap) {
+    TGridClientVariantMap val;
+    
+    int size = 3;
+
+    for (int i = 0; i < size; i++)
+        val[GridClientVariant(i)] = GridClientVariant(i + 0.5);
+
+    GridClientVariant var(val);
+
+    GridPortableMarshaller marsh;
+    
+    vector<int8_t> bytes = marsh.marshal(var);
+
+    GridClientVariant varRead = marsh.unmarshal(bytes);
+
+    TGridClientVariantMap& valRead = varRead.getVariantMap();
+
+    BOOST_REQUIRE_EQUAL(size, valRead.size());
+
+    for (int i = 0; i < size; i++) {
+        GridClientVariant& mapVal = valRead[GridClientVariant(i)];
+
+        BOOST_REQUIRE_EQUAL(i + 0.5, mapVal.getDouble());
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

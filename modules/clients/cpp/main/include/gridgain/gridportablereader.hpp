@@ -67,6 +67,12 @@ public:
 
     virtual std::pair<double*, int32_t> readDoubleArray(char* fieldName) = 0;
 
+    virtual uint16_t readChar(char* fieldName) = 0;
+
+    virtual std::pair<uint16_t*, int32_t> readCharArray(char* fieldName) = 0;
+
+    virtual boost::optional<std::vector<uint16_t>> readCharCollection(char* fieldName) = 0;
+
     virtual boost::optional<std::vector<double>> readDoubleCollection(char* fieldName) = 0;
 
     virtual boost::optional<std::string> readString(char* fieldName) = 0;
@@ -78,6 +84,8 @@ public:
     virtual boost::optional<std::vector<std::wstring>> readWStringCollection(char* fieldName) = 0;
 
     virtual boost::optional<GridClientUuid> readUuid(char* fieldName) = 0;
+
+    virtual boost::optional<std::vector<GridClientUuid>> readUuidCollection(char* fieldName) = 0;
 
     virtual GridClientVariant readVariant(char* fieldName) = 0;
 
@@ -135,6 +143,12 @@ public:
 
     virtual boost::optional<std::vector<double>> readDoubleCollection() = 0;
 
+    virtual uint16_t readChar() = 0;
+
+    virtual std::pair<uint16_t*, int32_t> readCharArray() = 0;
+
+    virtual boost::optional<std::vector<uint16_t>> readCharCollection() = 0;
+
     virtual boost::optional<std::string> readString() = 0;
 
     virtual boost::optional<std::vector<std::string>> readStringCollection() = 0;
@@ -144,6 +158,8 @@ public:
     virtual boost::optional<std::vector<std::wstring>> readWStringCollection() = 0;
 
     virtual boost::optional<GridClientUuid> readUuid() = 0;
+
+    virtual boost::optional<std::vector<GridClientUuid>> readUuidCollection() = 0;
 
     virtual GridClientVariant readVariant() = 0;
 

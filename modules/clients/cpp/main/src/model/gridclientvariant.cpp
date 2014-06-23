@@ -372,7 +372,7 @@ string GridClientVariant::typeName(TypeEnum type) {
 
 void GridClientVariant::checkType(TypeEnum expType) const {
     if (type != expType) {
-        string msg = "Varinat contains unexpected type [exp=" + typeName(expType) + ", actual=" + typeName(expType) + "]";
+        string msg = "Varinat contains unexpected type [exp=" + typeName(expType) + ", actual=" + typeName(type) + "]";
         
         throw runtime_error(msg);
     }
