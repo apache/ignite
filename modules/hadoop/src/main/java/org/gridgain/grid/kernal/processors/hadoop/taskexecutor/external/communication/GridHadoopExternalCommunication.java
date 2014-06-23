@@ -142,9 +142,6 @@ public class GridHadoopExternalCommunication {
     /** Grid name. */
     private String gridName;
 
-    /** Local IP address. */
-    private String locAddr;
-
     /** Complex variable that represents this node IP address. */
     private volatile InetAddress locHost;
 
@@ -237,27 +234,6 @@ public class GridHadoopExternalCommunication {
         this.log = log.getLogger(GridHadoopExternalCommunication.class);
         this.execSvc = execSvc;
         this.gridName = gridName;
-    }
-
-    /**
-     * Sets local host address for socket binding. Note that one node could have
-     * additional addresses beside the loopback one. This configuration
-     * parameter is optional.
-     *
-     * @param locAddr IP address. Default value is any available local
-     *      IP address.
-     */
-    public void setLocalAddress(String locAddr) {
-        this.locAddr = locAddr;
-    }
-
-    /**
-     * Gets local address for socket binding.
-     *
-     * @return Local address.
-     */
-    public String getLocalAddress() {
-        return locAddr;
     }
 
     /**
@@ -539,10 +515,10 @@ public class GridHadoopExternalCommunication {
      */
     public void start() throws GridException {
         try {
-            locHost = locAddr == null ? U.getLocalHost() : U.resolveLocalHost(locAddr);
+            locHost = U.getLocalHost();
         }
         catch (IOException e) {
-            throw new GridException("Failed to initialize local address: " + locAddr, e);
+            throw new GridException("Failed to initialize local address.", e);
         }
 
         try {
