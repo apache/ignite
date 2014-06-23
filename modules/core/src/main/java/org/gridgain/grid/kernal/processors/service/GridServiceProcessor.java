@@ -15,13 +15,16 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.*;
+import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.service.*;
 import org.gridgain.grid.thread.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -40,6 +43,9 @@ import static org.gridgain.grid.events.GridEventType.*;
  */
 @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions"})
 public class GridServiceProcessor extends GridProcessorAdapter {
+    /** Thread factory. */
+    private GridThreadFactory threadFactory = new GridThreadFactory(ctx.gridName());
+
     /** Time to wait before reassignment retries. */
     private static final long RETRY_TIMEOUT = 1000;
 
@@ -51,6 +57,21 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
     /** Local service instances. */
     private final Map<String, Collection<GridServiceContextImpl>> locSvcs = new HashMap<>();
+
+    /** Topology listener. */
+    private TopologyListener topLsnr = new TopologyListener();
+
+    /** Deployment listener. */
+    private DeploymentListener depLsnr = new DeploymentListener();
+
+    /** Assignment listener. */
+    private AssignmentListener assignLsnr = new AssignmentListener();
+
+    /** Deployment futures. */
+    private final ConcurrentMap<String, GridFutureAdapter<?>> futs = new ConcurrentHashMap8<>();
+
+    /** Busy lock. */
+    private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /**
      * @param ctx Kernal context.
@@ -75,12 +96,22 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         cfgCache = ctx.cache().utilityCache(GridServiceConfigurationKey.class, GridServiceConfiguration.class);
         assignCache = ctx.cache().utilityCache(GridServiceAssignmentsKey.class, GridServiceAssignments.class);
 
-        ctx.event().addLocalEventListener(new TopologyListener(), EVTS_DISCOVERY);
-        ctx.event().addLocalEventListener(new DeploymentListener(), EVT_CACHE_OBJECT_PUT);
-        ctx.event().addLocalEventListener(new AssignmentListener(), EVT_CACHE_OBJECT_PUT);
+        ctx.event().addLocalEventListener(topLsnr, EVTS_DISCOVERY);
+        ctx.event().addLocalEventListener(depLsnr, EVT_CACHE_OBJECT_PUT);
+        ctx.event().addLocalEventListener(assignLsnr, EVT_CACHE_OBJECT_PUT);
+
+        Collection<GridFuture<?>> futs = new ArrayList<>();
 
         for (GridServiceConfiguration c : ctx.config().getServiceConfiguration())
-            deploy(c);
+            futs.add(deploy(c));
+
+        // Await for services to deploy.
+        for (GridFuture<?> f : futs)
+            f.get();
+
+        // Just in case if we missed an event, reprocess assignments.
+        for (GridServiceAssignments assigns : assignCache.values())
+            redeploy(assigns);
 
         if (log.isDebugEnabled())
             log.debug("Started service processor.");
@@ -88,6 +119,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
+        busyLock.block();
+
+        ctx.event().removeLocalEventListener(topLsnr);
+        ctx.event().removeLocalEventListener(depLsnr);
+        ctx.event().removeLocalEventListener(assignLsnr);
+
         Map<String, Collection<GridServiceContextImpl>> locSvcs;
 
         synchronized (this.locSvcs) {
@@ -197,17 +234,26 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         validate(cfg);
 
         try {
-            if (cfgCache.putxIfAbsent(new GridServiceConfigurationKey(cfg.getName()), cfg)) {
-                // TODO
+            GridFutureAdapter<?> fut = new GridFutureAdapter<>(ctx);
+
+            GridFutureAdapter<?> old;
+
+            if ((old = futs.putIfAbsent(cfg.getName(), fut)) != null) {
+                fut = old;
+
+                return fut;
             }
+
+            if (!cfgCache.putxIfAbsent(new GridServiceConfigurationKey(cfg.getName()), cfg))
+                fut.onDone();
+
+            return fut;
         }
         catch (GridException e) {
             log.error("Failed to deploy service: " + cfg.getName(), e);
 
             return new GridFinishedFuture<>(ctx, e);
         }
-
-        return null; // TODO
     }
 
     /**
@@ -381,6 +427,90 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Redeploys local services based on assignments.
+     *
+     * @param assigns Assignments.
+     */
+    private void redeploy(GridServiceAssignments assigns) {
+        String svcName = assigns.name();
+
+        int assignCnt = assigns.assigns().get(ctx.localNodeId());
+
+        GridService svc = assigns.service();
+
+        Collection<GridServiceContextImpl> ctxs;
+
+        synchronized (locSvcs) {
+            ctxs = locSvcs.get(svcName);
+
+            if (ctxs == null)
+                locSvcs.put(svcName, ctxs = new ArrayList<>());
+        }
+
+        synchronized (ctxs) {
+            if (ctxs.size() > assignCnt) {
+                int cancelCnt = ctxs.size() - assignCnt;
+
+                cancel(ctxs, cancelCnt);
+            }
+            else if (ctxs.size() < assignCnt) {
+                int createCnt = assignCnt - ctxs.size();
+
+                for (int i = 0; i < createCnt; i++) {
+                    final GridService copy = copy(svc);
+
+                    final ExecutorService exe = Executors.newSingleThreadExecutor(threadFactory);
+
+                    final GridServiceContextImpl ctx = new GridServiceContextImpl(assigns.name(),
+                        UUID.randomUUID(), assigns.cacheName(), assigns.affinityKey(), copy, exe);
+
+                    ctxs.add(ctx);
+
+                    if (log.isInfoEnabled())
+                        log.info("Starting service instance [name=" + ctx.name() + ", execId=" +
+                            ctx.executionId() + ']');
+
+                    // Start service in its own thread.
+                    exe.submit(new Runnable() {
+                        @Override public void run() {
+                            try {
+                                copy.execute(ctx);
+                            }
+                            catch (Throwable e) {
+                                log.error("Service execution stopped with error [name=" + ctx.name() +
+                                    ", execId=" + ctx.executionId() + ']', e);
+                            }
+                            finally {
+                                // Suicide.
+                                exe.shutdownNow();
+                            }
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    /**
+     * @param svc Service.
+     * @return Copy of service.
+     */
+    private GridService copy(GridService svc) {
+        GridMarshaller m = ctx.config().getMarshaller();
+
+        try {
+            byte[] bytes = m.marshal(svc);
+
+            return m.unmarshal(bytes, svc.getClass().getClassLoader());
+        }
+        catch (GridException e) {
+            log.error("Failed to copy service (will reuse same instance): " + svc.getClass(), e);
+
+            return svc;
+        }
+    }
+
+    /**
      * @param ctxs Contexts to cancel.
      * @param cancelCnt Number of contexts to cancel.
      */
@@ -418,75 +548,120 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * Service deployment listener.
      */
     private class DeploymentListener implements GridLocalEventListener {
+        /** {@inheritDoc} */
         @Override public void onEvent(GridEvent evt) {
-            if (evt.type() == EVT_CACHE_OBJECT_PUT) {
-                Object val = ((GridCacheEvent)evt).newValue();
+            if (!busyLock.enterBusy())
+                return;
 
-                // Ignore other utility cache events.
-                if (val instanceof GridServiceConfiguration) {
-                    GridServiceConfiguration cfg = (GridServiceConfiguration)val;
+            try {
+                if (evt.type() == EVT_CACHE_OBJECT_PUT) {
+                    Object val = ((GridCacheEvent)evt).newValue();
 
-                    long topVer = ctx.discovery().topologyVersion();
+                    // Ignore other utility cache events.
+                    if (val instanceof GridServiceConfiguration) {
+                        GridServiceConfiguration cfg = (GridServiceConfiguration)val;
 
-                    GridNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
+                        long topVer = ctx.discovery().topologyVersion();
 
-                    if (oldest.isLocal()) {
-                        // Retry forever.
-                        while (true) {
-                            try {
-                                reassign(cfg, topVer);
+                        GridNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
 
-                                break;
-                            }
-                            catch (GridException e) {
-                                if (!(e instanceof GridTopologyException))
-                                    log.error("Failed to do service reassignment (will retry): " + cfg.getName(), e);
+                        if (oldest.isLocal())
+                            onDeployment(cfg, topVer);
+                    }
+                }
+                // Handle undeployment.
+                else if (evt.type() == EVT_CACHE_OBJECT_REMOVED) {
+                    Object val = ((GridCacheEvent)evt).oldValue();
 
-                                long newTopVer = ctx.discovery().topologyVersion();
+                    // Ignore other utility cache events.
+                    if (val instanceof GridServiceConfiguration) {
+                        GridServiceConfiguration cfg = (GridServiceConfiguration)val;
 
-                                if (newTopVer != topVer) {
-                                    assert newTopVer > topVer;
+                        String svcName = cfg.getName();
 
-                                    // Reassignment will happen from topology event.
-                                    break;
-                                }
+                        Collection<GridServiceContextImpl> ctxs;
 
-                                try {
-                                    U.sleep(RETRY_TIMEOUT);
-                                }
-                                catch (GridInterruptedException ignore) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Got interrupted during service reassignment (will halt).");
+                        synchronized (locSvcs) {
+                            ctxs = locSvcs.remove(svcName);
+                        }
 
-                                    break;
-                                }
+                        if (ctx != null) {
+                            synchronized (ctxs) {
+                                cancel(ctxs, ctxs.size());
                             }
                         }
+
+                        GridFutureAdapter<?> fut = futs.get(cfg.getName());
+
+                        // Complete deployment future if undeployment happened.
+                        if (fut != null)
+                            fut.onDone();
                     }
                 }
             }
-            // Handle undeployment.
-            else if (evt.type() == EVT_CACHE_OBJECT_REMOVED) {
-                Object val = ((GridCacheEvent)evt).oldValue();
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
 
-                // Ignore other utility cache events.
-                if (val instanceof GridServiceConfiguration) {
-                    GridServiceConfiguration cfg = (GridServiceConfiguration)val;
+        /**
+         * Deployment callback.
+         *
+         * @param cfg Service configuration.
+         * @param topVer Topology version.
+         */
+        private void onDeployment(final GridServiceConfiguration cfg, final long topVer) {
+            if (!busyLock.enterBusy())
+                return;
 
-                    String svcName = cfg.getName();
+            // Retry forever.
+            try {
+                long newTopVer = ctx.discovery().topologyVersion();
 
-                    Collection<GridServiceContextImpl> ctxs;
+                // If topology version changed, reassignment will happen from topology event.
+                if (newTopVer == topVer)
+                    reassign(cfg, topVer);
 
-                    synchronized (locSvcs) {
-                        ctxs = locSvcs.remove(svcName);
-                    }
+                GridFutureAdapter<?> fut = futs.get(cfg.getName());
 
-                    if (ctx != null) {
-                        synchronized (ctxs) {
-                            cancel(ctxs, ctxs.size());
-                        }
-                    }
+                // Complete deployment futures once the assignments have been stored in cache.
+                if (fut != null)
+                    fut.onDone();
+            }
+            catch (GridException e) {
+                if (!(e instanceof GridTopologyException))
+                    log.error("Failed to do service reassignment (will retry): " + cfg.getName(), e);
+
+                long newTopVer = ctx.discovery().topologyVersion();
+
+                if (newTopVer != topVer) {
+                    assert newTopVer > topVer;
+
+                    // Reassignment will happen from topology event.
+                    return;
                 }
+
+                ctx.timeout().addTimeoutObject(new GridTimeoutObject() {
+                    private GridUuid id = GridUuid.randomUuid();
+
+                    private long start = System.currentTimeMillis();
+
+                    @Override public GridUuid timeoutId() {
+                        return id;
+                    }
+
+                    @Override public long endTime() {
+                        return start + RETRY_TIMEOUT;
+                    }
+
+                    @Override public void onTimeout() {
+                        // Try again.
+                        onDeployment(cfg, topVer);
+                    }
+                });
+            }
+            finally {
+                busyLock.leaveBusy();
             }
         }
     }
@@ -497,55 +672,89 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private class TopologyListener implements GridLocalEventListener {
         /** {@inheritDoc} */
         @Override public void onEvent(GridEvent evt) {
-            long topVer = ((GridDiscoveryEvent)evt).topologyVersion();
+            if (!busyLock.enterBusy())
+                return;
 
-            GridNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
+            try {
+                long topVer = ((GridDiscoveryEvent)evt).topologyVersion();
 
-            if (oldest.isLocal()) {
-                List<GridServiceConfiguration> retries = new ArrayList<>();
+                GridNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
 
-                for (GridServiceConfiguration cfg : cfgCache.values()) {
-                    try {
-                        reassign(cfg, topVer);
-                    }
-                    catch (GridException e) {
-                        if (!(e instanceof GridTopologyException))
-                            LT.error(log, e, "Failed to do service reassignment (will retry): " + cfg.getName());
+                if (oldest.isLocal()) {
+                    final Collection<GridServiceConfiguration> retries = new ConcurrentLinkedQueue<>();
 
-                        retries.add(cfg);
-                    }
-                }
-
-                long newTopVer = ctx.discovery().topologyVersion();
-
-                // If topology versions don't match, then reassignment will happen on next topology event.
-                if (newTopVer == topVer) {
-                    while (!retries.isEmpty()) {
-                        try {
-                            U.sleep(RETRY_TIMEOUT);
-                        }
-                        catch (GridInterruptedException ignore) {
-                            if (log.isDebugEnabled())
-                                log.debug("Got interrupted during service reassignment (will halt).");
-
-                            break;
-                        }
-                    }
-
-                    for (Iterator<GridServiceConfiguration> it = retries.iterator(); it.hasNext();) {
-                        GridServiceConfiguration cfg = it.next();
-
+                    for (GridServiceConfiguration cfg : cfgCache.values()) {
                         try {
                             reassign(cfg, topVer);
-
-                            it.remove();
                         }
                         catch (GridException e) {
                             if (!(e instanceof GridTopologyException))
                                 LT.error(log, e, "Failed to do service reassignment (will retry): " + cfg.getName());
+
+                            retries.add(cfg);
                         }
                     }
+
+                    if (!retries.isEmpty())
+                        onReassignmentFailed(topVer, retries);
                 }
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+
+        /**
+         * Handler for reassignment failures.
+         *
+         * @param topVer Topology version.
+         * @param retries Retries.
+         */
+        private void onReassignmentFailed(final long topVer, final Collection<GridServiceConfiguration> retries) {
+            if (!busyLock.enterBusy())
+                return;
+
+            try {
+                // If topology changed again, let next event handle it.
+                if (ctx.discovery().topologyVersion() != topVer)
+                    return;
+
+                for (Iterator<GridServiceConfiguration> it = retries.iterator(); it.hasNext(); ) {
+                    GridServiceConfiguration cfg = it.next();
+
+                    try {
+                        reassign(cfg, topVer);
+
+                        it.remove();
+                    }
+                    catch (GridException e) {
+                        if (!(e instanceof GridTopologyException))
+                            LT.error(log, e, "Failed to do service reassignment (will retry): " + cfg.getName());
+                    }
+                }
+
+                if (!retries.isEmpty()) {
+                    ctx.timeout().addTimeoutObject(new GridTimeoutObject() {
+                        private GridUuid id = GridUuid.randomUuid();
+
+                        private long start = System.currentTimeMillis();
+
+                        @Override public GridUuid timeoutId() {
+                            return id;
+                        }
+
+                        @Override public long endTime() {
+                            return start + RETRY_TIMEOUT;
+                        }
+
+                        @Override public void onTimeout() {
+                            onReassignmentFailed(topVer, retries);
+                        }
+                    });
+                }
+            }
+            finally {
+                busyLock.leaveBusy();
             }
         }
     }
@@ -554,118 +763,51 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * Assignment listener.
      */
     private class AssignmentListener implements GridLocalEventListener {
-        /** Thread factory. */
-        private GridThreadFactory threadFactory = new GridThreadFactory(ctx.gridName());
-
         /** {@inheritDoc} */
         @Override public void onEvent(GridEvent evt) {
-            if (evt.type() == EVT_CACHE_OBJECT_PUT) {
-                Object val = ((GridCacheEvent)evt).newValue();
-
-                // Ignore other utility cache events.
-                if (val instanceof GridServiceAssignments) {
-                    GridServiceAssignments assigns = (GridServiceAssignments)val;
-
-                    String svcName = assigns.name();
-
-                    int assignCnt = assigns.assigns().get(ctx.localNodeId());
-
-                    GridService svc = assigns.service();
-
-                    Collection<GridServiceContextImpl> ctxs;
-
-                    synchronized (locSvcs) {
-                        ctxs = locSvcs.get(svcName);
-
-                        if (ctxs == null)
-                            locSvcs.put(svcName, ctxs = new ArrayList<>());
-                    }
-
-                    synchronized (ctxs) {
-                        if (ctxs.size() > assignCnt) {
-                            int cancelCnt = ctxs.size() - assignCnt;
-
-                            cancel(ctxs, cancelCnt);
-                        }
-                        else if (ctxs.size() < assignCnt) {
-                            int createCnt = assignCnt - ctxs.size();
-
-                            for (int i = 0; i < createCnt; i++) {
-                                final GridService copy = copy(svc);
-
-                                final ExecutorService exe = Executors.newSingleThreadExecutor(threadFactory);
-
-                                final GridServiceContextImpl ctx = new GridServiceContextImpl(assigns.name(),
-                                    UUID.randomUUID(), assigns.cacheName(), assigns.affinityKey(), copy, exe);
-
-                                ctxs.add(ctx);
-
-                                if (log.isInfoEnabled())
-                                    log.info("Starting service instance [name=" + ctx.name() + ", execId=" +
-                                        ctx.executionId() + ']');
-
-                                // Start service in its own thread.
-                                exe.submit(new Runnable() {
-                                    @Override public void run() {
-                                        try {
-                                            copy.execute(ctx);
-                                        }
-                                        catch (Throwable e) {
-                                            log.error("Service execution stopped with error [name=" + ctx.name() +
-                                                ", execId=" + ctx.executionId() + ']', e);
-                                        }
-                                        finally {
-                                            // Suicide.
-                                            exe.shutdownNow();
-                                        }
-                                    }
-                                });
-                            }
-                        }
-                    }
-                }
-            }
-            // Handle undeployment.
-            else if (evt.type() == EVT_CACHE_OBJECT_REMOVED) {
-                Object val = ((GridCacheEvent)evt).oldValue();
-
-                // Ignore other utility cache events.
-                if (val instanceof GridServiceAssignments) {
-                    GridServiceAssignments assigns = (GridServiceAssignments)val;
-
-                    String svcName = assigns.name();
-
-                    Collection<GridServiceContextImpl> ctxs;
-
-                    synchronized (locSvcs) {
-                        ctxs = locSvcs.remove(svcName);
-                    }
-
-                    if (ctx != null) {
-                        synchronized (ctxs) {
-                            cancel(ctxs, ctxs.size());
-                        }
-                    }
-                }
-            }
-        }
-
-        /**
-         * @param svc Service.
-         * @return Copy of service.
-         */
-        private GridService copy(GridService svc) {
-            GridMarshaller m = ctx.config().getMarshaller();
+            if (!busyLock.enterBusy())
+                return;
 
             try {
-                byte[] bytes = m.marshal(svc);
+                if (evt.type() == EVT_CACHE_OBJECT_PUT) {
+                    Object val = ((GridCacheEvent)evt).newValue();
 
-                return m.unmarshal(bytes, svc.getClass().getClassLoader());
+                    // Ignore other utility cache events.
+                    if (val instanceof GridServiceAssignments)
+                        redeploy((GridServiceAssignments)val);
+                }
+                // Handle undeployment.
+                else if (evt.type() == EVT_CACHE_OBJECT_REMOVED) {
+                    Object val = ((GridCacheEvent)evt).oldValue();
+
+                    // Ignore other utility cache events.
+                    if (val instanceof GridServiceAssignments) {
+                        GridServiceAssignments assigns = (GridServiceAssignments)val;
+
+                        String svcName = assigns.name();
+
+                        Collection<GridServiceContextImpl> ctxs;
+
+                        synchronized (locSvcs) {
+                            ctxs = locSvcs.remove(svcName);
+                        }
+
+                        if (ctx != null) {
+                            synchronized (ctxs) {
+                                cancel(ctxs, ctxs.size());
+                            }
+                        }
+
+                        GridFutureAdapter<?> fut = futs.get(assigns.name());
+
+                        // Complete deployment future if undeployment happened.
+                        if (fut != null)
+                            fut.onDone();
+                    }
+                }
             }
-            catch (GridException e) {
-                log.error("Failed to copy service (will reuse same instance): " + svc.getClass(), e);
-
-                return svc;
+            finally {
+                busyLock.leaveBusy();
             }
         }
     }
