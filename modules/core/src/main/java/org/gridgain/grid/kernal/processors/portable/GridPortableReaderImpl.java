@@ -43,6 +43,9 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     private final int start;
 
     /** */
+    private final int len;
+
+    /** */
     private int rawOff;
 
     /** */
@@ -65,18 +68,20 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
         oHandles = new HashMap<>();
 
         start = 0;
+        len = arr.length;
     }
 
     /**
      * @param arr Array.
      */
     private GridPortableReaderImpl(GridPortableContext ctx, Map<Integer, GridPortableObject> poHandles,
-        Map<Integer, Object> oHandles, byte[] arr, int start, int rawOff, int typeId) {
+        Map<Integer, Object> oHandles, byte[] arr, int start, int len, int rawOff, int typeId) {
         this.ctx = ctx;
         this.poHandles = poHandles;
         this.oHandles = oHandles;
         this.arr = arr;
         this.start = start;
+        this.len = len;
         this.rawOff = rawOff;
         this.typeId = typeId;
     }
@@ -240,6 +245,26 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             default:
                 throw new GridPortableException("Invalid flag value: " + flag);
         }
+    }
+
+    /**
+     * @param other Other reader.
+     * @return Whether arrays are equal.
+     */
+    boolean equals(GridPortableReaderImpl other) {
+        assert other != null;
+
+        if (len != other.len)
+            return false;
+
+        int otherI = other.start;
+
+        for (int i = start; i < len; i++) {
+            if (arr[i] != other.arr[otherI++])
+                return false;
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -912,11 +937,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
                 else
                     off += 4;
 
-                int dataLen = doReadInt(raw) - HDR_LEN;
+                int len = doReadInt(raw);
                 int rawOff0 = start + doReadInt(raw);
 
                 Object obj = desc.read(new GridPortableReaderImpl(
-                    ctx, poHandles, oHandles, arr, start, rawOff0, typeId));
+                    ctx, poHandles, oHandles, arr, start, len, rawOff0, typeId));
+
+                int dataLen = len - HDR_LEN;
 
                 if (raw)
                     rawOff += dataLen;

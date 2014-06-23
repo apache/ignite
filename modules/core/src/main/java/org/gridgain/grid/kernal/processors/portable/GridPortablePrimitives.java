@@ -12,13 +12,15 @@ package org.gridgain.grid.kernal.processors.portable;
 import org.gridgain.grid.util.*;
 import sun.misc.*;
 
+import static java.nio.ByteOrder.*;
+
 /**
  * Primitives writer.
  */
 abstract class GridPortablePrimitives {
     /** */
-    // TODO: Other options.
-    private static final GridPortablePrimitives INSTANCE = new UnsafePrimitives();
+    private static final GridPortablePrimitives INSTANCE =
+        nativeOrder() == LITTLE_ENDIAN ? new UnsafePrimitives() : new BytePrimitives();
 
     /**
      * @return Primitives writer.
@@ -470,6 +472,170 @@ abstract class GridPortablePrimitives {
             UNSAFE.copyMemory(arr, BYTE_ARR_OFF + off, arr0, BOOLEAN_ARR_OFF, len);
 
             return arr0;
+        }
+    }
+
+    /** */
+    // TODO: Implement.
+    private static class BytePrimitives extends GridPortablePrimitives {
+        /** {@inheritDoc} */
+        @Override void writeByte(byte[] arr, int off, byte val) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override byte readByte(byte[] arr, int off) {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override void writeShort(byte[] arr, int off, short val) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override short readShort(byte[] arr, int off) {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override void writeInt(byte[] arr, int off, int val) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override int readInt(byte[] arr, int off) {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override void writeLong(byte[] arr, int off, long val) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override long readLong(byte[] arr, int off) {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override void writeFloat(byte[] arr, int off, float val) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override float readFloat(byte[] arr, int off) {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override void writeDouble(byte[] arr, int off, double val) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override double readDouble(byte[] arr, int off) {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override void writeChar(byte[] arr, int off, char val) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override char readChar(byte[] arr, int off) {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override void writeBoolean(byte[] arr, int off, boolean val) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override boolean readBoolean(byte[] arr, int off) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override void writeByteArray(byte[] arr, int off, byte[] val) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override byte[] readByteArray(byte[] arr, int off, int len) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override void writeShortArray(byte[] arr, int off, short[] val) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override short[] readShortArray(byte[] arr, int off, int len) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override void writeIntArray(byte[] arr, int off, int[] val) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override int[] readIntArray(byte[] arr, int off, int len) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override void writeLongArray(byte[] arr, int off, long[] val) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override long[] readLongArray(byte[] arr, int off, int len) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override void writeFloatArray(byte[] arr, int off, float[] val) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override float[] readFloatArray(byte[] arr, int off, int len) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override void writeDoubleArray(byte[] arr, int off, double[] val) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override double[] readDoubleArray(byte[] arr, int off, int len) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override void writeCharArray(byte[] arr, int off, char[] val) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override char[] readCharArray(byte[] arr, int off, int len) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override void writeBooleanArray(byte[] arr, int off, boolean[] val) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override boolean[] readBooleanArray(byte[] arr, int off, int len) {
+            return null;
         }
     }
 }

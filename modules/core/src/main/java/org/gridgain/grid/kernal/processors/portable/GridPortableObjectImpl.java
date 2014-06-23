@@ -83,6 +83,7 @@ class GridPortableObjectImpl implements GridPortableObject {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "CloneDoesntCallSuperClone"})
     @Override public GridPortableObject clone() {
         return null; // TODO: implement.
     }
@@ -97,7 +98,7 @@ class GridPortableObjectImpl implements GridPortableObject {
 
         GridPortableObjectImpl obj = (GridPortableObjectImpl)other;
 
-        return false;// Arrays.equals(arr, obj.arr);
+        return reader.equals(obj.reader);
     }
 
     /** {@inheritDoc} */
