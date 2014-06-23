@@ -224,7 +224,17 @@ public class GridPortableClassDescriptor {
                         if (!names.add(name))
                             throw new GridPortableException("Duplicate field name: " + name);
 
-                        int fieldId = fieldId(typeId, name, idMapper);
+                        Integer fieldId = null;
+
+                        GridPortableId idAnn = f.getAnnotation(GridPortableId.class);
+
+                        if (idAnn != null)
+                            fieldId = idAnn.id();
+                        else if (idMapper != null)
+                            fieldId = idMapper.fieldId(typeId, f.getName());
+
+                        if (fieldId == null)
+                            fieldId = f.getName().hashCode();
 
                         if (!ids.add(fieldId))
                             throw new GridPortableException("Duplicate field ID: " + name); // TODO: proper message
@@ -522,23 +532,6 @@ public class GridPortableClassDescriptor {
         catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new GridPortableException("Failed to instantiate instance: " + cls, e);
         }
-    }
-
-    /**
-     * @param typeId Type ID.
-     * @param fieldName Field name.
-     * @param idMapper ID mapper.
-     * @return Field ID.
-     */
-    private static int fieldId(int typeId, String fieldName, @Nullable GridPortableIdMapper idMapper) {
-        assert fieldName != null;
-
-        Integer fieldId = null;
-
-        if (idMapper != null)
-            fieldId = idMapper.fieldId(typeId, fieldName);
-
-        return fieldId != null ? fieldId : fieldName.hashCode();
     }
 
     /**
