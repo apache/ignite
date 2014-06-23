@@ -476,166 +476,289 @@ abstract class GridPortablePrimitives {
     }
 
     /** */
-    // TODO: Implement.
     private static class BytePrimitives extends GridPortablePrimitives {
         /** {@inheritDoc} */
         @Override void writeByte(byte[] arr, int off, byte val) {
-
+            arr[off] = val;
         }
 
         /** {@inheritDoc} */
         @Override byte readByte(byte[] arr, int off) {
-            return 0;
+            return arr[off];
         }
 
         /** {@inheritDoc} */
         @Override void writeShort(byte[] arr, int off, short val) {
-
+            arr[off++] = (byte)(val & 0xff);
+            arr[off] = (byte)((val >>> 8) & 0xff);
         }
 
         /** {@inheritDoc} */
         @Override short readShort(byte[] arr, int off) {
-            return 0;
+            short val = 0;
+
+            val |= (arr[off++] & 0xff);
+            val |= (arr[off] & 0xff) << 8;
+
+            return val;
         }
 
         /** {@inheritDoc} */
         @Override void writeInt(byte[] arr, int off, int val) {
-
+            arr[off++] = (byte)(val & 0xff);
+            arr[off++] = (byte)((val >>> 8) & 0xff);
+            arr[off++] = (byte)((val >>> 16) & 0xff);
+            arr[off] = (byte)((val >>> 24) & 0xff);
         }
 
         /** {@inheritDoc} */
         @Override int readInt(byte[] arr, int off) {
-            return 0;
+            int val = 0;
+
+            val |= (arr[off++] & 0xff);
+            val |= (arr[off++] & 0xff) << 8;
+            val |= (arr[off++] & 0xff) << 16;
+            val |= (arr[off] & 0xff) << 24;
+
+            return val;
         }
 
         /** {@inheritDoc} */
         @Override void writeLong(byte[] arr, int off, long val) {
-
+            arr[off++] = (byte)(val & 0xffL);
+            arr[off++] = (byte)((val >>> 8) & 0xffL);
+            arr[off++] = (byte)((val >>> 16) & 0xffL);
+            arr[off++] = (byte)((val >>> 24) & 0xffL);
+            arr[off++] = (byte)((val >>> 32) & 0xffL);
+            arr[off++] = (byte)((val >>> 40) & 0xffL);
+            arr[off++] = (byte)((val >>> 48) & 0xffL);
+            arr[off] = (byte)((val >>> 56) & 0xffL);
         }
 
         /** {@inheritDoc} */
         @Override long readLong(byte[] arr, int off) {
-            return 0;
+            long val = 0;
+
+            val |= (arr[off++] & 0xffL);
+            val |= (arr[off++] & 0xffL) << 8;
+            val |= (arr[off++] & 0xffL) << 16;
+            val |= (arr[off++] & 0xffL) << 24;
+            val |= (arr[off++] & 0xffL) << 32;
+            val |= (arr[off++] & 0xffL) << 40;
+            val |= (arr[off++] & 0xffL) << 48;
+            val |= (arr[off] & 0xffL) << 56;
+
+            return val;
         }
 
         /** {@inheritDoc} */
         @Override void writeFloat(byte[] arr, int off, float val) {
-
+            writeInt(arr, off, Float.floatToIntBits(val));
         }
 
         /** {@inheritDoc} */
         @Override float readFloat(byte[] arr, int off) {
-            return 0;
+            return Float.intBitsToFloat(readInt(arr, off));
         }
 
         /** {@inheritDoc} */
         @Override void writeDouble(byte[] arr, int off, double val) {
-
+            writeLong(arr, off, Double.doubleToLongBits(val));
         }
 
         /** {@inheritDoc} */
         @Override double readDouble(byte[] arr, int off) {
-            return 0;
+            return Double.longBitsToDouble(readLong(arr, off));
         }
 
         /** {@inheritDoc} */
         @Override void writeChar(byte[] arr, int off, char val) {
-
+            arr[off++] = (byte)(val & 0xff);
+            arr[off] = (byte)((val >>> 8) & 0xff);
         }
 
         /** {@inheritDoc} */
         @Override char readChar(byte[] arr, int off) {
-            return 0;
+            char val = 0;
+
+            val |= (arr[off++] & 0xff);
+            val |= (arr[off] & 0xff) << 8;
+
+            return val;
         }
 
         /** {@inheritDoc} */
         @Override void writeBoolean(byte[] arr, int off, boolean val) {
-
+            arr[off] = (byte)(val ? 1 : 0);
         }
 
         /** {@inheritDoc} */
         @Override boolean readBoolean(byte[] arr, int off) {
-            return false;
+            return arr[off] != 0;
         }
 
         /** {@inheritDoc} */
         @Override void writeByteArray(byte[] arr, int off, byte[] val) {
-
+            for (byte b : val)
+                arr[off++] = b;
         }
 
         /** {@inheritDoc} */
         @Override byte[] readByteArray(byte[] arr, int off, int len) {
-            return null;
+            byte[] val = new byte[len];
+
+            for (int i = 0; i < len; i++)
+                val[i] = arr[off++];
+
+            return val;
         }
 
         /** {@inheritDoc} */
         @Override void writeShortArray(byte[] arr, int off, short[] val) {
+            for (short s : val) {
+                writeShort(arr, off, s);
 
+                off += 2;
+            }
         }
 
         /** {@inheritDoc} */
         @Override short[] readShortArray(byte[] arr, int off, int len) {
-            return null;
+            short[] val = new short[len];
+
+            for (int i = 0; i < len; i++) {
+                val[i] = readShort(arr, off);
+
+                off += 2;
+            }
+
+            return val;
         }
 
         /** {@inheritDoc} */
         @Override void writeIntArray(byte[] arr, int off, int[] val) {
+            for (int i : val) {
+                writeInt(arr, off, i);
 
+                off += 4;
+            }
         }
 
         /** {@inheritDoc} */
         @Override int[] readIntArray(byte[] arr, int off, int len) {
-            return null;
+            int[] val = new int[len];
+
+            for (int i = 0; i < len; i++) {
+                val[i] = readInt(arr, off);
+
+                off += 4;
+            }
+
+            return val;
         }
 
         /** {@inheritDoc} */
         @Override void writeLongArray(byte[] arr, int off, long[] val) {
+            for (long l : val) {
+                writeLong(arr, off, l);
 
+                off += 8;
+            }
         }
 
         /** {@inheritDoc} */
         @Override long[] readLongArray(byte[] arr, int off, int len) {
-            return null;
+            long[] val = new long[len];
+
+            for (int i = 0; i < len; i++) {
+                val[i] = readLong(arr, off);
+
+                off += 8;
+            }
+
+            return val;
         }
 
         /** {@inheritDoc} */
         @Override void writeFloatArray(byte[] arr, int off, float[] val) {
+            for (float f : val) {
+                writeFloat(arr, off, f);
 
+                off += 4;
+            }
         }
 
         /** {@inheritDoc} */
         @Override float[] readFloatArray(byte[] arr, int off, int len) {
-            return null;
+            float[] val = new float[len];
+
+            for (int i = 0; i < len; i++) {
+                val[i] = readFloat(arr, off);
+
+                off += 4;
+            }
+
+            return val;
         }
 
         /** {@inheritDoc} */
         @Override void writeDoubleArray(byte[] arr, int off, double[] val) {
+            for (double d : val) {
+                writeDouble(arr, off, d);
 
+                off += 8;
+            }
         }
 
         /** {@inheritDoc} */
         @Override double[] readDoubleArray(byte[] arr, int off, int len) {
-            return null;
+            double[] val = new double[len];
+
+            for (int i = 0; i < len; i++) {
+                val[i] = readDouble(arr, off);
+
+                off += 8;
+            }
+
+            return val;
         }
 
         /** {@inheritDoc} */
         @Override void writeCharArray(byte[] arr, int off, char[] val) {
+            for (char c : val) {
+                writeChar(arr, off, c);
 
+                off += 2;
+            }
         }
 
         /** {@inheritDoc} */
         @Override char[] readCharArray(byte[] arr, int off, int len) {
-            return null;
+            char[] val = new char[len];
+
+            for (int i = 0; i < len; i++) {
+                val[i] = readChar(arr, off);
+
+                off += 2;
+            }
+
+            return val;
         }
 
         /** {@inheritDoc} */
         @Override void writeBooleanArray(byte[] arr, int off, boolean[] val) {
-
+            for (boolean b : val)
+                writeBoolean(arr, off++, b);
         }
 
         /** {@inheritDoc} */
         @Override boolean[] readBooleanArray(byte[] arr, int off, int len) {
-            return null;
+            boolean[] val = new boolean[len];
+
+            for (int i = 0; i < len; i++)
+                val[i] = readBoolean(arr, off++);
+
+            return val;
         }
     }
 }
