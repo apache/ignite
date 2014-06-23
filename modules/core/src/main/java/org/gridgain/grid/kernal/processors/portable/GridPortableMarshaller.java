@@ -139,6 +139,6 @@ public class GridPortableMarshaller {
 
         GridPortableReaderImpl reader = new GridPortableReaderImpl(ctx, arr);
 
-        return (GridPortableObject)reader.unmarshal(0);
+        return (GridPortableObject)reader.unmarshal();
     }
 }

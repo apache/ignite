@@ -60,7 +60,7 @@ class GridPortableObjectImpl implements GridPortableObject {
 
     /** {@inheritDoc} */
     @Nullable @Override public <F> F field(String fieldName) throws GridPortableException {
-        return (F)reader.unmarshalField(fieldName);
+        return (F)reader.unmarshal(fieldName);
     }
 
     /** {@inheritDoc} */
