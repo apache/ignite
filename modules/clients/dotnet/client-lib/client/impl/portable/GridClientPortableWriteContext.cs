@@ -69,9 +69,9 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
-            * <summary>Write object to the context.</summary>
-            * <param name="obj">Object.</param>
-            */ 
+         * <summary>Write object to the context.</summary>
+         * <param name="obj">Object.</param>
+         */ 
         public void Write(object obj)
         {
             // 1. Write null.
@@ -103,6 +103,63 @@ namespace GridGain.Client.Impl.Portable
                 return;
             }
 
+            // 3. Write string.  
+            if (type == typeof(string)) 
+            {
+                string obj0 = (string)obj;
+
+                Stream.WriteByte(PU.HDR_FULL);
+                PU.WriteBoolean(false, Stream);
+                PU.WriteInt(PU.TYPE_STRING, Stream);
+                PU.WriteInt(PU.StringHashCode(obj0), Stream);
+
+                Stream.Seek(8, SeekOrigin.Current);
+
+                PU.WriteString(obj0, Stream);
+
+                WriteLength(Stream, pos, Stream.Position, 0);
+
+                return;
+            }
+
+            // 7. Write primitive array.
+            typeId = PU.PrimitiveArrayTypeId(type);
+
+            if (typeId != 0)
+            {
+                Stream.WriteByte(PU.HDR_FULL);
+                PU.WriteBoolean(false, Stream);
+                PU.WriteInt(typeId, Stream);
+                PU.WriteInt(obj.GetHashCode(), Stream);
+
+                Stream.Seek(8, SeekOrigin.Current);
+
+                PU.WritePrimitiveArray(typeId, obj, Stream);
+
+                WriteLength(Stream, pos, Stream.Position, 0);
+
+                return;
+            }
+
+            // 4. Write GUID.
+            if (type == typeof(Guid))
+            {
+                Guid? obj0 = (Guid?)obj;
+
+                Stream.WriteByte(PU.HDR_FULL);
+                PU.WriteBoolean(false, Stream);
+                PU.WriteInt(PU.TYPE_GUID, Stream);
+                PU.WriteInt(PU.GuidHashCode(obj0.Value), Stream);
+
+                Stream.Seek(8, SeekOrigin.Current);
+
+                PU.WriteGuid(obj0, Stream);
+
+                WriteLength(Stream, pos, Stream.Position, 0);
+
+                return;
+            }
+
             // 3. Try interpreting object as handle.
             if (hnds == null)
                 hnds = new Dictionary<GridClientPortableObjectHandle, int>();
@@ -119,59 +176,11 @@ namespace GridGain.Client.Impl.Portable
 
                 return;
             }
-            else 
+            else
                 // Handle position must be relative to the overall message start.
                 hnds.Add(hnd, (int)pos - startPos);
-                
-            // 4. Write string.
-            dynamic obj0 = obj;
-
-            if (type == typeof(string)) 
-            {
-                Stream.WriteByte(PU.HDR_FULL);
-                PU.WriteBoolean(false, Stream);
-                PU.WriteInt(PU.TYPE_STRING, Stream);
-                PU.WriteInt(PU.StringHashCode(obj0), Stream);
-
-                Stream.Seek(8, SeekOrigin.Current);
-
-                PU.WriteString(obj0, Stream);
-
-                WriteLength(Stream, pos, Stream.Position, 0);
-
-                return;
-            }
-
-            // 5. Write GUID.
-            if (type == typeof(Guid))
-            {
-                Stream.WriteByte(PU.HDR_FULL);
-                PU.WriteBoolean(false, Stream);
-                PU.WriteInt(PU.TYPE_GUID, Stream);
-                PU.WriteInt(PU.GuidHashCode(obj0), Stream);
-
-                Stream.Seek(8, SeekOrigin.Current);
-
-                PU.WriteGuid(obj0, Stream);
-
-                WriteLength(Stream, pos, Stream.Position, 0);
-
-                return;
-            }
 
             // 6. Write enum.
-
-            // 7. Write primitive array.
-            typeId = PU.PrimitiveArrayTypeId(type);
-
-            if (typeId != 0) 
-            {
-                Stream.WriteByte(PU.HDR_FULL);
-                PU.WriteBoolean(false, Stream);
-                PU.WriteInt(typeId, Stream);
-
-                // TODO: GG-8535: Implement.
-            }
 
             // 9. Write collection.
             // TODO: GG-8535: Implement.

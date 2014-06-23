@@ -181,7 +181,10 @@ namespace GridGain.Client.Portable
                         rActions.Add((obj, reader) => { field.SetValue(obj, reader.ReadGuid(name)); });
                     }
                     else if (type.IsEnum)
-                        wActions.Add((obj, writer) => { writer.WriteEnum(name, (Enum)field.GetValue(obj)); });
+                    {
+                        //wActions.Add((obj, writer) => { writer.WriteEnum(name, (Enum)field.GetValue(obj)); });
+                        //rActions.Add((obj, reader) => { field.SetValue(obj, reader.ReadEnum(name, type)); });
+                    }                        
                     else if (type.IsArray)
                         HandleArray(field, type, name, wActions);
                     else if (type.IsGenericType && type.GetInterface(TYP_GENERIC_DICTIONARY.Name) != null)

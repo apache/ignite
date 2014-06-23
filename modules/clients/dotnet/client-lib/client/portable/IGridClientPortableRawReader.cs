@@ -136,7 +136,7 @@ namespace GridGain.Client.Portable
          * <returns>GUID array.</returns>
          */
         Guid?[] ReadGuidArray();
-
+        
         /**
          * <summary>Read object.</summary>
          * <returns>Object.</returns>

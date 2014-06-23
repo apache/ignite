@@ -142,92 +142,11 @@ namespace GridGain.Client.Impl.Portable
         private static FieldInfo MEM_BUF_FIELD = typeof(MemoryStream).GetField("_buffer", 
             BindingFlags.Instance | BindingFlags.NonPublic);
 
-        
-        public static unsafe object ReadPrimitive(int typeId, Type type, Stream stream, out bool processed) 
-        {
-            if (type.IsGenericType)
-                type = type.GetGenericArguments()[0];
-
-            switch (typeId)
-            {
-                case TYPE_BOOL:
-                    processed = true;
-
-                    return ReadBoolean(stream);
-
-                case TYPE_BYTE:
-                    processed = true;
-
-                    byte byteVal = (byte)stream.ReadByte();
-
-                    if (type == typeof(byte))
-                        return byteVal;
-                    else
-                        return *(sbyte*)&byteVal;
-
-                case TYPE_SHORT:
-                    processed = true;
-
-                    short shortVal = ReadShort(stream);
-
-                    if (type == typeof(short))
-                        return shortVal;
-                    else
-                        return *(ushort*)&shortVal;
-
-                case TYPE_INT:
-                    processed = true;
-
-                    int intVal = ReadInt(stream);
-
-                    if (type == typeof(int))
-                        return intVal;
-                    else
-                        return *(uint*)&intVal;
-
-                case TYPE_LONG:
-                    processed = true;
-
-                    long longVal = ReadLong(stream);
-
-                    if (type == typeof(long))
-                        return longVal;
-                    else
-                        return *(ulong*)&longVal;
-
-                case TYPE_CHAR:
-                    processed = true;
-
-                    short charVal = ReadShort(stream);
-
-                    return *(char*)&charVal;
-
-                case TYPE_FLOAT:
-                    processed = true;
-
-                    int floatVal = ReadInt(stream);
-
-                    return *(float*)&floatVal;
-
-                case TYPE_DOUBLE:
-                    processed = true;
-
-                    long doubleVal = ReadLong(stream);
-
-                    return *(double*)&doubleVal;
-
-                default:
-                    processed = false;
-
-                    return null;
-            }
-        }
-
         /**
          * <summary>Get primitive type ID.</summary>
          * <param name="type">Type.</param>
          * <returns>Primitive type ID or 0 if this is not primitive type.</returns>
-         */ 
+         */
         public static byte PrimitiveTypeId(Type type)
         {
             if (type == typeof(Boolean))
@@ -248,31 +167,6 @@ namespace GridGain.Client.Impl.Portable
                 return TYPE_DOUBLE;
             else
                 return 0;
-        }
-
-        /**
-         * <summary>Get primitive type length.</summary>
-         * <param name="typeId">Type ID.</param>
-         * <returns>Primitive type length.</returns>
-         */
-        public static int PrimitiveLength(int typeId)
-        {
-            switch (typeId) {
-                case TYPE_BOOL:
-                case TYPE_BYTE:
-                    return 1;
-                case TYPE_SHORT:
-                case TYPE_CHAR:
-                    return 2;
-                case TYPE_INT:
-                case TYPE_FLOAT:
-                    return 4;
-                case TYPE_LONG:
-                case TYPE_DOUBLE:
-                    return 8;
-                default:
-                    throw new GridClientPortableException("Type ID doesn't refer to primitive type: " + typeId);
-            }
         }
 
         /**
@@ -376,6 +270,256 @@ namespace GridGain.Client.Impl.Portable
                     default:
                         throw new GridClientPortableException("Type ID doesn't refer to primitive type: " + typeId);
                 }
+            }
+        }
+
+        /**
+         * <summary>Read primitive.</summary>
+         * <param name="typeId">Type ID.</param>
+         * <param name="type">Type.</param>
+         * <param name="stream">Stream.</param>
+         * <param name="processed">Whether data was processed.</param>
+         * <returns>Primitive.</returns>
+         */ 
+        public static unsafe object ReadPrimitive(int typeId, Type type, Stream stream, out bool processed) 
+        {
+            if (type.IsGenericType)
+                type = type.GetGenericArguments()[0];
+
+            switch (typeId)
+            {
+                case TYPE_BOOL:
+                    processed = true;
+
+                    return ReadBoolean(stream);
+
+                case TYPE_BYTE:
+                    processed = true;
+
+                    byte byteVal = (byte)stream.ReadByte();
+
+                    if (type == typeof(byte))
+                        return byteVal;
+                    else
+                        return *(sbyte*)&byteVal;
+
+                case TYPE_SHORT:
+                    processed = true;
+
+                    short shortVal = ReadShort(stream);
+
+                    if (type == typeof(short))
+                        return shortVal;
+                    else
+                        return *(ushort*)&shortVal;
+
+                case TYPE_INT:
+                    processed = true;
+
+                    int intVal = ReadInt(stream);
+
+                    if (type == typeof(int))
+                        return intVal;
+                    else
+                        return *(uint*)&intVal;
+
+                case TYPE_LONG:
+                    processed = true;
+
+                    long longVal = ReadLong(stream);
+
+                    if (type == typeof(long))
+                        return longVal;
+                    else
+                        return *(ulong*)&longVal;
+
+                case TYPE_CHAR:
+                    processed = true;
+
+                    short charVal = ReadShort(stream);
+
+                    return *(char*)&charVal;
+
+                case TYPE_FLOAT:
+                    processed = true;
+
+                    int floatVal = ReadInt(stream);
+
+                    return *(float*)&floatVal;
+
+                case TYPE_DOUBLE:
+                    processed = true;
+
+                    long doubleVal = ReadLong(stream);
+
+                    return *(double*)&doubleVal;
+
+                default:
+                    processed = false;
+
+                    return null;
+            }
+        }
+
+        /**
+         * <summary>Get primitive array type ID.</summary>
+         * <param name="type">Type.</param>
+         * <returns>Primitive array type ID or 0 if this is not primitive array type.</returns>
+         */
+        public static byte PrimitiveArrayTypeId(Type type)
+        {
+            if (type.IsArray)
+            {
+                Type elemType = type.GetElementType();
+
+                if (elemType == typeof(Boolean))
+                    return TYPE_ARRAY_BOOL;
+                else if (elemType == typeof(Byte) || elemType == typeof(SByte))
+                    return TYPE_ARRAY_BYTE;
+                else if (elemType == typeof(Int16) || elemType == typeof(UInt16))
+                    return TYPE_ARRAY_SHORT;
+                else if (elemType == typeof(Int32) || elemType == typeof(UInt32))
+                    return TYPE_ARRAY_INT;
+                else if (elemType == typeof(Int64) || elemType == typeof(UInt64))
+                    return TYPE_ARRAY_LONG;
+                else if (elemType == typeof(Char))
+                    return TYPE_ARRAY_CHAR;
+                else if (elemType == typeof(Single))
+                    return TYPE_ARRAY_FLOAT;
+                else if (elemType == typeof(Double))
+                    return TYPE_ARRAY_DOUBLE;
+            }
+
+            return 0;
+        }
+
+        /**
+         * <summary>Write primitive array to the underlying output.</summary>
+         * <param name="typeId">Primitive array type ID</param>
+         * <param name="obj">Array object.</param>
+         * <param name="stream">Output stream.</param>
+         */
+        public static void WritePrimitiveArray(int typeId, object obj, Stream stream)
+        {
+            Type elemType = obj.GetType().GetElementType();
+
+            switch (typeId)
+            {
+                case TYPE_ARRAY_BOOL:
+                    WriteBooleanArray((bool[])obj, stream);
+
+                    break;
+
+                case TYPE_ARRAY_BYTE:
+                    if (elemType == typeof(sbyte))
+                        obj = (byte[])(Array)obj;
+
+                    WriteByteArray((byte[])obj, stream);
+
+                    break;
+
+                case TYPE_ARRAY_SHORT:
+                    if (elemType == typeof(ushort))
+                        obj = (short[])(Array)obj;
+
+                    WriteShortArray((short[])obj, stream);
+
+                    break;
+
+                case TYPE_ARRAY_INT:
+                    if (elemType == typeof(uint))
+                        obj = (int[])(Array)obj;
+
+                    WriteIntArray((int[])obj, stream);
+
+                    break;
+
+                case TYPE_ARRAY_LONG:
+                    if (elemType == typeof(ulong))
+                        obj = (long[])(Array)obj;
+
+                    WriteLongArray((long[])obj, stream);
+
+                    break;
+
+                case TYPE_ARRAY_CHAR:
+                    WriteCharArray((char[])obj, stream);
+
+                    break;
+
+                case TYPE_ARRAY_FLOAT:
+                    WriteFloatArray((float[])obj, stream);
+
+                    break;
+
+                case TYPE_ARRAY_DOUBLE:
+                    WriteDoubleArray((double[])obj, stream);
+
+                    break;
+
+                default:
+                    throw new GridClientPortableException("Type ID doesn't refer to primitive type: " + typeId);
+            }
+        }
+
+        /**
+         * <summary>Read primitive array.</summary>
+         * <param name="typeId">Type ID.</param>
+         * <param name="type">Type.</param>
+         * <param name="stream">Stream.</param>
+         * <param name="processed">Whether data was processed.</param>
+         * <returns>Primitive array.</returns>
+         */
+        public static object ReadPrimitiveArray(int typeId, Type type, Stream stream, out bool processed)
+        {
+            Type elemType = type.GetElementType();
+
+            switch (typeId)
+            {
+                case TYPE_ARRAY_BOOL:
+                    processed = true;
+
+                    return ReadBooleanArray(stream);
+
+                case TYPE_ARRAY_BYTE:
+                    processed = true;
+
+                    return ReadByteArray(stream, elemType == typeof(sbyte));
+
+                case TYPE_ARRAY_SHORT:
+                    processed = true;
+
+                    return ReadShortArray(stream, elemType == typeof(short));
+
+                case TYPE_ARRAY_CHAR:
+                    processed = true;
+
+                    return ReadCharArray(stream);
+
+                case TYPE_ARRAY_INT:
+                    processed = true;
+
+                    return ReadIntArray(stream, elemType == typeof(int));
+
+                case TYPE_ARRAY_LONG:
+                    processed = true;
+
+                    return ReadLongArray(stream, elemType == typeof(long));
+
+                case TYPE_ARRAY_FLOAT:
+                    processed = true;
+
+                    return ReadFloatArray(stream);
+
+                case TYPE_ARRAY_DOUBLE:
+                    processed = true;
+
+                    return ReadDoubleArray(stream);
+
+                default:
+                    processed = false;
+
+                    return null;
             }
         }
 
@@ -502,15 +646,14 @@ namespace GridGain.Client.Impl.Portable
          */
         public static void WriteGuid(Guid? val, Stream stream)
         {
-            if (val.HasValue)
-                stream.WriteByte(BYTE_ZERO);
-            else
-            {
+            if (val.HasValue) {
                 byte[] bytes = val.Value.ToByteArray();
 
                 stream.WriteByte(BYTE_ONE);
                 stream.Write(bytes, 0, bytes.Length);
-            }
+            }                
+            else
+                stream.WriteByte(BYTE_ZERO);
         }
         
         /**
@@ -533,81 +676,13 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
-         * <summary>Get primitive array type ID.</summary>
-         * <param name="type">Type.</param>
-         * <returns>Primitive array type ID or 0 if this is not primitive array type.</returns>
+         * <summary>Write enum.</summary>
+         * <param name="val">enum.</param>
+         * <param name="stream">Stream.</param>
          */
-        public static byte PrimitiveArrayTypeId(Type type)
+        public static void WriteEnum(Enum val, Stream stream)
         {
-            if (type.IsArray)
-            {
-                Type elemType = type.GetElementType();
-
-                if (elemType == typeof(Boolean))
-                    return TYPE_ARRAY_BOOL;
-                else if (elemType == typeof(Byte) || type == typeof(SByte))
-                    return TYPE_ARRAY_BYTE;
-                else if (elemType == typeof(Int16) || type == typeof(UInt16))
-                    return TYPE_ARRAY_SHORT;
-                else if (elemType == typeof(Int32) || type == typeof(Int32))
-                    return TYPE_ARRAY_INT;
-                else if (elemType == typeof(Int64) || type == typeof(Int64))
-                    return TYPE_ARRAY_LONG;
-                else if (elemType == typeof(Char))
-                    return TYPE_ARRAY_CHAR;
-                else if (elemType == typeof(Single))
-                    return TYPE_ARRAY_FLOAT;
-                else if (elemType == typeof(Double))
-                    return TYPE_ARRAY_DOUBLE;
-            }
-
-            return 0;
-        }
-
-        /**
-         * <summary>Write primitive array to the underlying output.</summary>
-         * <param name="typeId">Primitive array type ID</param>
-         * <param name="obj">Array object.</param>
-         * <param name="stream">Output stream.</param>
-         */
-        public static void WritePrimitiveArray(int typeId, object obj, Stream stream)
-        {
-            switch (typeId) {
-                case TYPE_ARRAY_BOOL:
-                    WriteBooleanArray((bool[])obj, stream);
-
-                    break;
-
-                case TYPE_ARRAY_BYTE:
-                    WriteByteArray((byte[])obj, stream);
-
-                    break;
-
-                case TYPE_ARRAY_SHORT:
-                    WriteShortArray((short[])obj, stream);
-
-                    break;
-
-                case TYPE_ARRAY_INT:
-                    WriteIntArray((int[])obj, stream);
-
-                    break;
-
-                case TYPE_ARRAY_LONG:
-                    WriteLongArray((long[])obj, stream);
-
-                    break;
-
-                case TYPE_ARRAY_CHAR:
-                    WriteCharArray((char[])obj, stream);
-
-                    break;
-
-                case TYPE_ARRAY_FLOAT:
-                case TYPE_ARRAY_DOUBLE:
-                default:
-                    throw new GridClientPortableException("Type ID doesn't refer to primitive type: " + typeId);
-            }
+            throw new NotImplementedException();
         }
 
         /**
@@ -664,9 +739,7 @@ namespace GridGain.Client.Impl.Portable
                 bool[] vals = new bool[ReadInt(stream)];
 
                 for (int i = 0; i < vals.Length; i++)
-                {
                     vals[i] = stream.ReadByte() == BYTE_ONE;
-                }
 
                 return vals;
             }
@@ -676,15 +749,22 @@ namespace GridGain.Client.Impl.Portable
          * <summary>Write byte.</summary>
          * <param name="val">Value.</param>
          * <param name="stream">Output stream.</param>
-         * <returns>Length of written data.</returns>
          */
-        public static int WriteByte(byte val, Stream stream)
+        public static void WriteByte(byte val, Stream stream)
         {
             stream.WriteByte(val);
-
-            return 1;
         }
-        
+
+        /**
+         * <summary>Read byte.</summary>
+         * <param name="stream">Output stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static byte ReadByte(Stream stream)
+        {
+            return (byte)stream.ReadByte();
+        }
+
         /**
          * <summary>Write byte array.</summary>
          * <param name="vals">Value.</param>
@@ -698,8 +778,49 @@ namespace GridGain.Client.Impl.Portable
             else
             {
                 stream.WriteByte(BYTE_ONE);
+
+                WriteInt(vals.Length, stream);
+
                 stream.Write(vals, 0, vals.Length);
             }
+        }
+
+        /**
+         * <summary>Read byte array.</summary>
+         * <param name="stream">Output stream.</param>
+         * <param name="signed">Signed flag.</param>
+         * <returns>Value.</returns>
+         */
+        public static unsafe object ReadByteArray(Stream stream, bool signed)
+        {
+            if (stream.ReadByte() == BYTE_ONE)
+            {
+                int len = ReadInt(stream);
+
+                if (signed)
+                {
+                    sbyte[] vals = new sbyte[len];
+
+                    for (int i = 0; i < len; i++)
+                    {
+                        byte val = (byte)stream.ReadByte();
+
+                        vals[i] = *(sbyte*)&val;
+                    }
+
+                    return vals;
+                }
+                else
+                {
+                    byte[] vals = new byte[len];
+
+                    stream.Read(vals, 0, len);
+
+                    return vals;
+                }
+            }
+            else
+                return null;
         }
 
         /**
@@ -757,9 +878,50 @@ namespace GridGain.Client.Impl.Portable
             {
                 stream.WriteByte(BYTE_ONE);
 
+                WriteInt(vals.Length, stream);
+
                 for (int i = 0; i < vals.Length; i++)
                     WriteShort(vals[i], stream);                   
             }
+        }
+
+        /**
+         * <summary>Read short array.</summary>
+         * <param name="stream">Stream.</param>
+         * <param name="signed">Signed flag.</param>
+         * <returns>Value.</returns>
+         */
+        public static unsafe object ReadShortArray(Stream stream, bool signed)
+        {
+            if (stream.ReadByte() == BYTE_ONE)
+            {
+                int len = ReadInt(stream);
+
+                if (signed)
+                {
+                    short[] vals = new short[len];
+
+                    for (int i = 0; i < len; i++)
+                        vals[i] = ReadShort(stream);
+
+                    return vals;
+                }
+                else
+                {
+                    ushort[] vals = new ushort[len];
+
+                    for (int i = 0; i < len; i++)
+                    {
+                        short val = ReadShort(stream);
+
+                        vals[i] = *(ushort*)&val;
+                    }                        
+
+                    return vals;
+                }
+            }
+            else
+                return null;
         }
 
         /**
@@ -825,9 +987,50 @@ namespace GridGain.Client.Impl.Portable
             {
                 stream.WriteByte(BYTE_ONE);
 
+                WriteInt(vals.Length, stream);
+
                 for (int i = 0; i < vals.Length; i++)
                     WriteInt(vals[i], stream);
             }
+        }
+
+        /**
+         * <summary>Read int array.</summary>
+         * <param name="stream">Stream.</param>
+         * <param name="signed">Signed flag.</param>
+         * <returns>Value.</returns>
+         */
+        public static unsafe object ReadIntArray(Stream stream, bool signed)
+        {
+            if (stream.ReadByte() == BYTE_ONE)
+            {
+                int len = ReadInt(stream);
+
+                if (signed)
+                {
+                    int[] vals = new int[len];
+
+                    for (int i = 0; i < len; i++)
+                        vals[i] = ReadInt(stream);
+
+                    return vals;
+                }
+                else
+                {
+                    uint[] vals = new uint[len];
+
+                    for (int i = 0; i < len; i++)
+                    {
+                        int val = ReadInt(stream);
+
+                        vals[i] = *(uint*)&val;
+                    }
+
+                    return vals;
+                }                
+            }
+            else
+                return null;
         }
 
         /**
@@ -909,9 +1112,51 @@ namespace GridGain.Client.Impl.Portable
             {
                 stream.WriteByte(BYTE_ONE);
 
+                WriteInt(vals.Length, stream);
+
                 for (int i = 0; i < vals.Length; i++)
                     WriteLong(vals[i], stream);
             }
+        }
+
+        /**
+         * <summary>Read long array.</summary>
+         * <param name="stream">Stream.</param>
+         * <param name="signed">Signed flag.</param>
+         * <returns>Value.</returns>
+         */
+        public static unsafe object ReadLongArray(Stream stream, bool signed)
+        {
+            if (stream.ReadByte() == BYTE_ONE)
+            {
+                int len = ReadInt(stream);
+
+                if (signed)
+                {
+                    long[] vals = new long[len];
+
+                    for (int i = 0; i < len; i++)
+                        vals[i] = ReadLong(stream);
+
+                    return vals;
+                }
+                else
+                {
+                    ulong[] vals = new ulong[len];
+
+                    for (int i = 0; i < len; i++)
+                    {
+                        long val = ReadLong(stream);
+
+                        vals[i] = *(ulong*)&val;
+                    }
+
+                    return vals;
+                }
+                
+            }
+            else
+                return null;
         }
 
         /**
@@ -927,9 +1172,33 @@ namespace GridGain.Client.Impl.Portable
             {
                 stream.WriteByte(BYTE_ONE);
 
+                WriteInt(vals.Length, stream);
+
                 for (int i = 0; i < vals.Length; i++)
                     WriteShort((short)vals[i], stream);
             }
+        }
+
+        /**
+         * <summary>Read char array.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static char[] ReadCharArray(Stream stream)
+        {
+            if (stream.ReadByte() == BYTE_ONE)
+            {
+                int len = ReadInt(stream);
+
+                char[] vals = new char[len];
+
+                for (int i = 0; i < len; i++)
+                    vals[i] = (char)ReadShort(stream);
+
+                return vals;
+            }
+            else
+                return null;
         }
 
         /**
@@ -967,9 +1236,33 @@ namespace GridGain.Client.Impl.Portable
             {
                 stream.WriteByte(BYTE_ONE);
 
+                WriteInt(vals.Length, stream);
+
                 for (int i = 0; i < vals.Length; i++)
                     WriteFloat((float)vals[i], stream);
             }
+        }
+
+        /**
+         * <summary>Read float array.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static float[] ReadFloatArray(Stream stream)
+        {
+            if (stream.ReadByte() == BYTE_ONE)
+            {
+                int len = ReadInt(stream);
+
+                float[] vals = new float[len];
+
+                for (int i = 0; i < len; i++)
+                    vals[i] = ReadFloat(stream);
+
+                return vals;
+            }
+            else
+                return null;
         }
 
         /**
@@ -1007,9 +1300,33 @@ namespace GridGain.Client.Impl.Portable
             {
                 stream.WriteByte(BYTE_ONE);
 
+                WriteInt(vals.Length, stream);
+
                 for (int i = 0; i < vals.Length; i++)
                     WriteDouble((double)vals[i], stream);
             }
+        }
+
+        /**
+         * <summary>Read double array.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Value.</returns>
+         */ 
+        public static double[] ReadDoubleArray(Stream stream)
+        {
+            if (stream.ReadByte() == BYTE_ONE)
+            {
+                int len = ReadInt(stream);
+
+                double[] vals = new double[len];
+
+                for (int i = 0; i < len; i++)
+                    vals[i] = ReadDouble(stream);
+
+                return vals;
+            }
+            else
+                return null;
         }
 
         /**
@@ -1029,7 +1346,9 @@ namespace GridGain.Client.Impl.Portable
         }
         
         /**
-         * 
+         * <summary>Extract underlying array from memory stream.</summary>
+         * <param name="stream">Memory stream.</param>
+         * <returns>Extracted array.</returns>
          */ 
         public static byte[] MemoryBuffer(MemoryStream stream)
         {

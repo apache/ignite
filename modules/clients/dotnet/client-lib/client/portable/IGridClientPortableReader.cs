@@ -152,7 +152,7 @@ namespace GridGain.Client.Portable
          * <returns>GUID array.</returns>
          */
         Guid?[] ReadGuidArray(string fieldName);
-
+        
         /**
          * <summary>Read named object.</summary>
          * <param name="fieldName">Field name.</param>

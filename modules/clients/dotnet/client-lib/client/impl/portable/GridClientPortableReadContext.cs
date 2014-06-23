@@ -99,6 +99,8 @@ namespace GridGain.Client.Impl.Portable
 
             byte hdr = (byte)stream.ReadByte();
 
+            if (hdr == PU.HDR_NULL)
+                return default(T);
             if (hdr == PU.HDR_FULL)
             {
                 bool userType = PU.ReadBoolean(stream);
@@ -145,6 +147,20 @@ namespace GridGain.Client.Impl.Portable
                         bool processed;
 
                         object res = PU.ReadPrimitive(typeId, (typeof(T)), stream, out processed);
+
+                        if (processed)
+                            return (T)res;
+
+                        // 2. String?
+                        if (typeId == PU.TYPE_STRING)
+                            return (T)(object)PU.ReadString(stream);
+
+                        // 3. Guid?
+                        if (typeId == PU.TYPE_GUID) 
+                            return (T)(object)PU.ReadGuid(stream);
+
+                        // 4. Primitive array?
+                        res = PU.ReadPrimitiveArray(typeId, (typeof(T)), stream, out processed);
 
                         if (processed)
                             return (T)res;

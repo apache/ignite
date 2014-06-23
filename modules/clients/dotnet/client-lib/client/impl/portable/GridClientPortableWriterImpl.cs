@@ -386,14 +386,24 @@ namespace GridGain.Client.Impl.Portable
             throw new NotImplementedException();
         }
 
+        /** <inheritdoc /> */
         public void WriteEnum(string fieldName, Enum val)
         {
-            throw new NotImplementedException();
+            WriteField(fieldName);
+
+            long pos = ctx.Stream.Position;
+
+            ctx.Stream.Seek(4, SeekOrigin.Current);
+
+            WriteEnum(val);
+
+            WriteLength(pos);
         }
 
+        /** <inheritdoc /> */
         public void WriteEnum(Enum val)
         {
-            throw new NotImplementedException();
+            PU.WriteEnum(val, ctx.Stream);
         }
 
         public void WriteEnumArray(string fieldName, Enum[] val)

@@ -40,43 +40,21 @@ namespace GridGain.Client.Portable {
          */
         public void TestWritePrimitiveBool()
         {
-            CheckStrict(marsh.Marshal(false), 
-                PU.HDR_FULL, 
-                new BooleanValueAction(false), 
-                new IntValueAction(PU.TYPE_BOOL),
-                new IntValueAction(false.GetHashCode()),
-                new IntValueAction(18 + 1),
-                new IntValueAction(0),
-                PU.BYTE_ZERO);
-
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(false)).Deserialize<bool>(), false);
-
-            CheckStrict(marsh.Marshal(true),
-                PU.HDR_FULL,
-                new BooleanValueAction(false),
-                new IntValueAction(PU.TYPE_BOOL),
-                new IntValueAction(true.GetHashCode()),
-                new IntValueAction(18 + 1),
-                new IntValueAction(0),
-                PU.BYTE_ONE);
-
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(true)).Deserialize<bool>(), true);
 
-            CheckStrict(marsh.Marshal((bool?)false),
-                PU.HDR_FULL,
-                new BooleanValueAction(false),
-                new IntValueAction(PU.TYPE_BOOL),
-                new IntValueAction(false.GetHashCode()),
-                new IntValueAction(18 + 1),
-                new IntValueAction(0),
-                PU.BYTE_ZERO);
-
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((bool?)false)).Deserialize<bool?>(), false);
-
-            CheckStrict(marsh.Marshal((bool?)null),
-                PU.HDR_NULL);
-
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((bool?)null)), null);
+        }
+
+        /**
+         * <summary>Check write of primitive boolean array.</summary>
+         */
+        public void TestWritePrimitiveBoolArray()
+        {
+            bool[] vals = new bool[] { true, false };
+
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(vals)).Deserialize<bool[]>(), vals);
         }
 
         /**
@@ -90,13 +68,17 @@ namespace GridGain.Client.Portable {
 
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((sbyte?)1)).Deserialize<sbyte?>(), (sbyte?)1);
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((sbyte?)null)), null);
+        }
 
-            //CheckStrict(marsh.Marshal((sbyte)1, ctx), PU.TYPE_BYTE, new byte[] { 0x01 });
-            //CheckStrict(marsh.Marshal(SByte.MinValue, ctx), PU.TYPE_BYTE, new byte[] { 0x80 });
-            //CheckStrict(marsh.Marshal(SByte.MaxValue, ctx), PU.TYPE_BYTE, new byte[] { 0x7f });
+        /**
+         * <summary>Check write of primitive sbyte array.</summary>
+         */
+        public void TestWritePrimitiveSbyteArray()
+        {
+            sbyte[] vals = new sbyte[] { SByte.MinValue, 0, 1, SByte.MaxValue };
+            sbyte[] newVals = marsh.Unmarshal(marsh.Marshal(vals)).Deserialize<sbyte[]>();
 
-            //CheckStrict(marsh.Marshal((sbyte?)1, ctx), PU.TYPE_BYTE, new byte[] { 0x01 });
-            //CheckStrict(marsh.Marshal((sbyte?)null, ctx), PU.HDR_NULL);
+            Assert.AreEqual(vals, newVals);
         }
 
         /**
@@ -110,13 +92,17 @@ namespace GridGain.Client.Portable {
 
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((byte?)1)).Deserialize<byte?>(), (byte?)1);
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((byte?)null)), null);
+        }
 
-            //CheckStrict(marsh.Marshal((byte)1, ctx), PU.TYPE_BYTE, new byte[] { 0x01});
-            //CheckStrict(marsh.Marshal(Byte.MinValue, ctx), PU.TYPE_BYTE, new byte[] { 0x00 });
-            //CheckStrict(marsh.Marshal(Byte.MaxValue, ctx), PU.TYPE_BYTE, new byte[] { 0xFF });
+        /**
+         * <summary>Check write of primitive byte array.</summary>
+         */
+        public void TestWritePrimitiveByteArray()
+        {
+            byte[] vals = new byte[] { Byte.MinValue, 0, 1, Byte.MaxValue };
+            byte[] newVals = marsh.Unmarshal(marsh.Marshal(vals)).Deserialize<byte[]>();
 
-            //CheckStrict(marsh.Marshal((byte?)1, ctx), PU.TYPE_BYTE, new byte[] { 0x01 });
-            //CheckStrict(marsh.Marshal((byte?)null, ctx), PU.HDR_NULL);
+            Assert.AreEqual(vals, newVals);
         }
 
         /**
@@ -130,13 +116,17 @@ namespace GridGain.Client.Portable {
 
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((short?)1)).Deserialize<short?>(), (short?)1);
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((short?)null)), null);
+        }
 
-            //CheckStrict(marsh.Marshal((short)1, ctx), PU.TYPE_SHORT, new byte[] { 0x01, 0x00 });
-            //CheckStrict(marsh.Marshal(Int16.MinValue, ctx), PU.TYPE_SHORT, new byte[] { 0x00, 0x80 });
-            //CheckStrict(marsh.Marshal(Int16.MaxValue, ctx), PU.TYPE_SHORT, new byte[] { 0xFF, 0x7f });
+        /**
+         * <summary>Check write of primitive short array.</summary>
+         */
+        public void TestWritePrimitiveShortArray()
+        {
+            short[] vals = new short[] { Int16.MinValue, 0, 1, Int16.MaxValue };
+            short[] newVals = marsh.Unmarshal(marsh.Marshal(vals)).Deserialize<short[]>();
 
-            //CheckStrict(marsh.Marshal((short?)1, ctx), PU.TYPE_SHORT, new byte[] { 0x01, 0x00 });
-            //CheckStrict(marsh.Marshal((short?)null, ctx), PU.HDR_NULL);
+            Assert.AreEqual(vals, newVals);
         }
 
         /**
@@ -150,13 +140,17 @@ namespace GridGain.Client.Portable {
 
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((ushort?)1)).Deserialize<ushort?>(), (ushort?)1);
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((ushort?)null)), null);
+        }
 
-            //CheckStrict(marsh.Marshal((ushort)1, ctx), PU.TYPE_SHORT, new byte[] { 0x01, 0x00 });
-            //CheckStrict(marsh.Marshal(UInt16.MinValue, ctx), PU.TYPE_SHORT, new byte[] { 0x00, 0x00 });
-            //CheckStrict(marsh.Marshal(UInt16.MaxValue, ctx), PU.TYPE_SHORT, new byte[] { 0xFF, 0xFF });
+        /**
+         * <summary>Check write of primitive short array.</summary>
+         */
+        public void TestWritePrimitiveUshortArray()
+        {
+            ushort[] vals = new ushort[] { UInt16.MinValue, 0, 1, UInt16.MaxValue };
+            ushort[] newVals = marsh.Unmarshal(marsh.Marshal(vals)).Deserialize<ushort[]>();
 
-            //CheckStrict(marsh.Marshal((ushort?)1, ctx), PU.TYPE_SHORT, new byte[] { 0x01, 0x00 });
-            //CheckStrict(marsh.Marshal((ushort?)null, ctx), PU.HDR_NULL);
+            Assert.AreEqual(vals, newVals);
         }
 
         /**
@@ -170,13 +164,17 @@ namespace GridGain.Client.Portable {
 
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((char?)1)).Deserialize<char?>(), (char?)1);
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((char?)null)), null);
+        }
 
-            //CheckStrict(marsh.Marshal((char)1, ctx), PU.TYPE_CHAR, new byte[] { 0x01, 0x00 });
-            //CheckStrict(marsh.Marshal(Char.MinValue, ctx), PU.TYPE_CHAR, new byte[] { 0x00, 0x00 });
-            //CheckStrict(marsh.Marshal(Char.MaxValue, ctx), PU.TYPE_CHAR, new byte[] { 0xFF, 0xFF });
+        /**
+         * <summary>Check write of primitive uint array.</summary>
+         */
+        public void TestWritePrimitiveCharArray()
+        {
+            char[] vals = new char[] { Char.MinValue, (char)0, (char)1, Char.MaxValue };
+            char[] newVals = marsh.Unmarshal(marsh.Marshal(vals)).Deserialize<char[]>();
 
-            //CheckStrict(marsh.Marshal((char?)1, ctx), PU.TYPE_CHAR, new byte[] { 0x01, 0x00 });
-            //CheckStrict(marsh.Marshal((char?)null, ctx), PU.HDR_NULL);
+            Assert.AreEqual(vals, newVals);
         }
 
         /**
@@ -190,13 +188,17 @@ namespace GridGain.Client.Portable {
 
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((int?)1)).Deserialize<int?>(), (int?)1);
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((int?)null)), null);
+        }
 
-            //CheckStrict(marsh.Marshal(1, ctx), PU.TYPE_INT, new byte[] { 0x01, 0x00, 0x00, 0x00 });
-            //CheckStrict(marsh.Marshal(Int32.MinValue, ctx), PU.TYPE_INT, new byte[] { 0x00, 0x00, 0x00, 0x80 });
-            //CheckStrict(marsh.Marshal(Int32.MaxValue, ctx), PU.TYPE_INT, new byte[] { 0xFF, 0xFF, 0xFF, 0x7f });
+        /**
+         * <summary>Check write of primitive uint array.</summary>
+         */
+        public void TestWritePrimitiveIntArray()
+        {
+            int[] vals = new int[] { Int32.MinValue, 0, 1, Int32.MaxValue };
+            int[] newVals = marsh.Unmarshal(marsh.Marshal(vals)).Deserialize<int[]>();
 
-            //CheckStrict(marsh.Marshal((int?)1, ctx), PU.TYPE_INT, new byte[] { 0x01, 0x00, 0x00, 0x00 });
-            //CheckStrict(marsh.Marshal((int?)null, ctx), PU.HDR_NULL);
+            Assert.AreEqual(vals, newVals);
         }
 
         /**
@@ -210,13 +212,17 @@ namespace GridGain.Client.Portable {
 
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((uint?)1)).Deserialize<uint?>(), (int?)1);
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((uint?)null)), null);
+        }
 
-            //CheckStrict(marsh.Marshal((uint)1, ctx), PU.TYPE_INT, new byte[] { 0x01, 0x00, 0x00, 0x00 });
-            //CheckStrict(marsh.Marshal(UInt32.MinValue, ctx), PU.TYPE_INT, new byte[] { 0x00, 0x00, 0x00, 0x00 });
-            //CheckStrict(marsh.Marshal(UInt32.MaxValue, ctx), PU.TYPE_INT, new byte[] { 0xFF, 0xFF, 0xFF, 0xFF });
+        /**
+         * <summary>Check write of primitive uint array.</summary>
+         */
+        public void TestWritePrimitiveUintArray()
+        {
+            uint[] vals = new uint[] { UInt32.MinValue, 0, 1, UInt32.MaxValue };
+            uint[] newVals = marsh.Unmarshal(marsh.Marshal(vals)).Deserialize<uint[]>();
 
-            //CheckStrict(marsh.Marshal((uint?)1, ctx), PU.TYPE_INT, new byte[] { 0x01, 0x00, 0x00, 0x00 });
-            //CheckStrict(marsh.Marshal((uint?)null, ctx), PU.HDR_NULL);
+            Assert.AreEqual(vals, newVals);
         }
 
         /**
@@ -230,17 +236,17 @@ namespace GridGain.Client.Portable {
 
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((long?)1)).Deserialize<long?>(), (long?)1);
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((long?)null)), null);
+        }
 
-            //CheckStrict(marsh.Marshal((long)1, ctx), PU.TYPE_LONG, 
-            //    new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
-            //CheckStrict(marsh.Marshal(Int64.MinValue, ctx), PU.TYPE_LONG, 
-            //    new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 });
-            //CheckStrict(marsh.Marshal(Int64.MaxValue, ctx), PU.TYPE_LONG, 
-            //    new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7f });
+        /**
+         * <summary>Check write of primitive long array.</summary>
+         */
+        public void TestWritePrimitiveLongArray()
+        {
+            long[] vals = new long[] { Int64.MinValue, 0, 1, Int64.MaxValue };
+            long[] newVals = marsh.Unmarshal(marsh.Marshal(vals)).Deserialize<long[]>();
 
-            //CheckStrict(marsh.Marshal((long?)1, ctx), PU.TYPE_LONG,
-            //    new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
-            //CheckStrict(marsh.Marshal((long?)null, ctx), PU.HDR_NULL);
+            Assert.AreEqual(vals, newVals);
         }
 
         /**
@@ -254,17 +260,17 @@ namespace GridGain.Client.Portable {
 
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((ulong?)1)).Deserialize<ulong?>(), (ulong?)1);
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((ulong?)null)), null);
+        }
 
-            //CheckStrict(marsh.Marshal((ulong)1, ctx), PU.TYPE_LONG, 
-            //    new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
-            //CheckStrict(marsh.Marshal(UInt64.MinValue, ctx), PU.TYPE_LONG, 
-            //    new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
-            //CheckStrict(marsh.Marshal(UInt64.MaxValue, ctx), PU.TYPE_LONG, 
-            //    new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF });
+        /**
+         * <summary>Check write of primitive ulong array.</summary>
+         */
+        public void TestWritePrimitiveUlongArray()
+        {
+            ulong[] vals = new ulong[] { UInt64.MinValue, 0, 1, UInt64.MaxValue };
+            ulong[] newVals = marsh.Unmarshal(marsh.Marshal(vals)).Deserialize<ulong[]>();
 
-            //CheckStrict(marsh.Marshal((ulong?)1, ctx), PU.TYPE_LONG, 
-            //    new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
-            //CheckStrict(marsh.Marshal((ulong?)null, ctx), PU.HDR_NULL);
+            Assert.AreEqual(vals, newVals);
         }
 
         /**
@@ -278,13 +284,17 @@ namespace GridGain.Client.Portable {
 
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((float?)1)).Deserialize<float?>(), (float?)1);
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((float?)null)), null);
+        }
 
-            //CheckStrict(marsh.Marshal((float)1, ctx), PU.TYPE_FLOAT, new byte[] { 0, 0, 128, 63 });
-            //CheckStrict(marsh.Marshal(float.MinValue, ctx), PU.TYPE_FLOAT, new byte[] { 255, 255, 127, 255 });
-            //CheckStrict(marsh.Marshal(float.MaxValue, ctx), PU.TYPE_FLOAT, new byte[] { 255, 255, 127, 127 });
+        /**
+         * <summary>Check write of primitive float array.</summary>
+         */
+        public void TestWritePrimitiveFloatArray()
+        {
+            float[] vals = new float[] { float.MinValue, 0, 1, float.MaxValue };
+            float[] newVals = marsh.Unmarshal(marsh.Marshal(vals)).Deserialize<float[]>();
 
-            //CheckStrict(marsh.Marshal((float?)1, ctx), PU.TYPE_FLOAT, new byte[] { 0, 0, 128, 63 });
-            //CheckStrict(marsh.Marshal((float?)null, ctx), PU.HDR_NULL);
+            Assert.AreEqual(vals, newVals);
         }
 
         /**
@@ -298,17 +308,59 @@ namespace GridGain.Client.Portable {
 
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((double?)1)).Deserialize<double?>(), (double?)1);
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal((double?)null)), null);
+        }
 
-            //CheckStrict(marsh.Marshal((double)1, ctx), PU.TYPE_DOUBLE,
-            //    new byte[] { 0, 0, 0, 0, 0, 0, 240, 63 });
-            //CheckStrict(marsh.Marshal(double.MinValue, ctx), PU.TYPE_DOUBLE,
-            //    new byte[] { 255, 255, 255, 255, 255, 255, 239, 255 });
-            //CheckStrict(marsh.Marshal(double.MaxValue, ctx), PU.TYPE_DOUBLE,
-            //    new byte[] { 255, 255, 255, 255, 255, 255, 239, 127 });
+        /**
+         * <summary>Check write of primitive double array.</summary>
+         */
+        public void TestWritePrimitiveDoubleArray()
+        {
+            double[] vals = new double[] { double.MinValue, 0, 1, double.MaxValue };
+            double[] newVals = marsh.Unmarshal(marsh.Marshal(vals)).Deserialize<double[]>();
 
-            //CheckStrict(marsh.Marshal((double?)1, ctx), PU.TYPE_DOUBLE,
-            //    new byte[] { 0, 0, 0, 0, 0, 0, 240, 63 });
-            //CheckStrict(marsh.Marshal((double?)null, ctx), PU.HDR_NULL);
+            Assert.AreEqual(vals, newVals);
+        }
+
+        /**
+         * <summary>Check write of string.</summary>
+         */
+        public void TestWriteString()
+        {
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal("str")).Deserialize<string>(), "str");
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(null)), null);
+        }
+
+        /**
+         * <summary>Check write of Guid.</summary>
+         */
+        public void TestWriteGuid()
+        {
+            Guid guid = Guid.NewGuid();
+            Guid? nGuid = (Guid?)guid;
+
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(guid)).Deserialize<Guid>(), guid);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(nGuid)).Deserialize<Guid?>(), nGuid);
+
+            nGuid = null;
+
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(nGuid)), null);
+        }
+
+        /**
+         * <summary>Check write of enum.</summary>
+         */
+        public void TestWriteEnum()
+        {
+            TestEnum? nEnum = TestEnum.ONE;
+
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(TestEnum.ONE)).Deserialize<TestEnum>(), TestEnum.ONE);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(nEnum)).Deserialize<TestEnum?>(), nEnum);
+            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(null)), null);
+        }
+
+        public enum TestEnum 
+        {
+            ONE
         }
 
         /**
@@ -316,12 +368,10 @@ namespace GridGain.Client.Portable {
          */
         public void TestPrimitiveFieldsReflective()
         {
-            GridClientPortableTypeConfiguration typeCfg = 
-                new GridClientPortableTypeConfiguration(typeof(PrimitiveFieldType));
+            ICollection<GridClientPortableTypeConfiguration> typeCfgs = 
+                new List<GridClientPortableTypeConfiguration>();
 
-            ICollection<GridClientPortableTypeConfiguration> typeCfgs = new List<GridClientPortableTypeConfiguration>();
-
-            typeCfgs.Add(typeCfg);
+            typeCfgs.Add(new GridClientPortableTypeConfiguration(typeof(PrimitiveFieldType)));
 
             GridClientPortableConfiguration cfg = new GridClientPortableConfiguration();
 
@@ -430,6 +480,33 @@ namespace GridGain.Client.Portable {
             TestPrimitiveFields(marsh, obj);
         }
 
+        private void TestPrimitiveFields(GridClientPortableMarshaller marsh, PrimitiveFieldType obj)
+        {
+            obj.PBool = true;
+            obj.PByte = 2;
+            obj.PSbyte = 3;
+            obj.PShort = 4;
+            obj.PUshort = 5;
+            obj.PInt = 6;
+            obj.PUint = 7;
+            obj.PLong = 8;
+            obj.PUlong = 9;
+            obj.PChar = 'a';
+            obj.PFloat = 10;
+            obj.PDouble = 11;
+            obj.PString = "test";
+
+            byte[] bytes = marsh.Marshal(obj);
+
+            IGridClientPortableObject portObj = marsh.Unmarshal(bytes);
+
+            Assert.AreEqual(obj.GetHashCode(), portObj.HashCode());
+
+            PrimitiveFieldType newObj = portObj.Deserialize<PrimitiveFieldType>();
+
+            Assert.AreEqual(obj, newObj);
+        }
+
         /**
          * <summary>Check write of object fields through reflective serializer.</summary>
          */
@@ -466,42 +543,6 @@ namespace GridGain.Client.Portable {
             OuterObjectType newOutObj = portOutObj.Deserialize<OuterObjectType>();
 
             Assert.AreEqual(outObj, newOutObj);
-        }
-
-        private void TestPrimitiveFields(GridClientPortableMarshaller marsh, PrimitiveFieldType obj)
-        {
-            obj.PBool = true;
-            obj.PByte = 2;
-            obj.PSbyte = 3;
-            obj.PShort = 4;
-            obj.PUshort = 5;
-            obj.PInt = 6;
-            obj.PUint = 7;
-            obj.PLong = 8;
-            obj.PUlong = 9;
-            obj.PChar = 'a';
-            obj.PFloat = 10;
-            obj.PDouble = 11;
-
-            byte[] bytes = marsh.Marshal(obj);
-
-            IGridClientPortableObject portObj = marsh.Unmarshal(bytes);
-
-            Assert.AreEqual(obj.GetHashCode(), portObj.HashCode());
-
-            PrimitiveFieldType newObj = portObj.Deserialize<PrimitiveFieldType>();
-
-            Assert.AreEqual(obj, newObj);
-        }
-        
-        public static string PrintBytes(byte[] bytes)
-        {
-            StringBuilder sb = new StringBuilder();
-
-            foreach (byte b in bytes)
-                sb.Append(b + " ");
-
-            return sb.ToString();
         }
 
         public class OuterObjectType
@@ -577,6 +618,143 @@ namespace GridGain.Client.Portable {
             }
         }
 
+        public class PrimitiveArrayFieldType
+        {
+            private bool[] pBool;
+            private sbyte[] pSbyte;
+            private byte[] pByte;
+            private short[] pShort;
+            private ushort[] pUshort;
+            private char[] pChar;
+            private int[] pInt;
+            private uint[] pUint;
+            private long[] pLong;
+            private ulong[] pUlong;
+            private float[] pFloat;
+            private double[] pDouble;
+            private string[] pString;
+            private Guid?[] pGuid;
+            
+            public bool[] PBool
+            {
+                get { return pBool; }
+                set { pBool = value; }
+            }
+
+            public sbyte[] PSbyte
+            {
+                get { return pSbyte; }
+                set { pSbyte = value; }
+            }
+
+            public byte[] PByte
+            {
+                get { return pByte; }
+                set { pByte = value; }
+            }
+
+            public short[] PShort
+            {
+                get { return pShort; }
+                set { pShort = value; }
+            }
+
+            public ushort[] PUshort
+            {
+                get { return pUshort; }
+                set { pUshort = value; }
+            }
+
+            public char[] PChar
+            {
+                get { return pChar; }
+                set { pChar = value; }
+            }
+
+            public int[] PInt
+            {
+                get { return pInt; }
+                set { pInt = value; }
+            }
+
+            public uint[] PUint
+            {
+                get { return pUint; }
+                set { pUint = value; }
+            }
+
+            public long[] PLong
+            {
+                get { return pLong; }
+                set { pLong = value; }
+            }
+
+            public ulong[] PUlong
+            {
+                get { return pUlong; }
+                set { pUlong = value; }
+            }
+
+            public float[] PFloat
+            {
+                get { return pFloat; }
+                set { pFloat = value; }
+            }
+
+            public double[] PDouble
+            {
+                get { return pDouble; }
+                set { pDouble = value; }
+            }
+
+            public string[] PString
+            {
+                get { return pString; }
+                set { pString = value; }
+            }
+
+            public Guid?[] PGuid
+            {
+                get { return pGuid; }
+                set { pGuid = value; }
+            }
+
+            /** <inheritdoc /> */
+            public override bool Equals(object obj)
+            {
+                if (this == obj)
+                    return true;
+
+                if (obj != null && obj is PrimitiveArrayFieldType)
+                {
+                    PrimitiveArrayFieldType that = (PrimitiveArrayFieldType)obj;
+
+                    return pBool == that.pBool &&
+                        pByte == that.pByte &&
+                        pSbyte == that.pSbyte &&
+                        pShort == that.pShort &&
+                        pUshort == that.pUshort &&
+                        pInt == that.pInt &&
+                        pUint == that.pUint &&
+                        pLong == that.pLong &&
+                        pUlong == that.pUlong &&
+                        pChar == that.pChar &&
+                        pFloat == that.pFloat &&
+                        pDouble == that.pDouble &&
+                        pString == that.pString &&
+                        pGuid == that.pGuid;
+                }
+                else
+                    return false;
+            }
+
+            /** <inheritdoc /> */
+            public override int GetHashCode()
+            {
+                return pInt != null && pInt.Length > 0 ? pInt[0].GetHashCode() : 0;
+            }
+        }
+
         public class PrimitiveFieldType 
         {
             private bool pBool;
@@ -591,6 +769,8 @@ namespace GridGain.Client.Portable {
             private ulong pUlong;
             private float pFloat;
             private double pDouble;
+            private string pString;
+            private Guid pGuid;
 
             //private bool? rBool;
             //private sbyte? rSbyte;
@@ -677,6 +857,18 @@ namespace GridGain.Client.Portable {
                 set { pDouble = value; }
             }
 
+            public string PString
+            {
+                get { return pString; }
+                set { pString = value; }
+            }
+
+            public Guid PGuid
+            {
+                get { return pGuid; }
+                set { pGuid = value; }
+            }
+
             /** <inheritdoc /> */
             public override bool Equals(object obj)
             {
@@ -686,7 +878,7 @@ namespace GridGain.Client.Portable {
                 if (obj != null && obj is PrimitiveFieldType)
                 {
                     PrimitiveFieldType that = (PrimitiveFieldType)obj;
-
+                    
                     return pBool == that.pBool &&
                         pByte == that.pByte &&
                         pSbyte == that.pSbyte &&
@@ -698,7 +890,9 @@ namespace GridGain.Client.Portable {
                         pUlong == that.pUlong &&
                         pChar == that.pChar &&
                         pFloat == that.pFloat &&
-                        pDouble == that.pDouble;
+                        pDouble == that.pDouble &&
+                        pString == that.pString &&
+                        pGuid == that.pGuid;
                 }
                 else
                     return false;
@@ -990,96 +1184,14 @@ namespace GridGain.Client.Portable {
             }
         }
 
-        private void CheckStrict(byte[] data, params object[] objs)
+        public static string PrintBytes(byte[] bytes)
         {
-            int pos = 0;
+            StringBuilder sb = new StringBuilder();
 
-            foreach (object obj in objs)
-            {
-                if (obj is byte)
-                {
-                    byte obj0 = (byte)obj;
+            foreach (byte b in bytes)
+                sb.Append(b + " ");
 
-                    Assert.AreEqual(data[pos], obj0, "Invalid byte [pos=" + pos + ']');
-
-                    pos++;
-                }
-                else if (obj is byte[])
-                {
-                    byte[] obj0 = (byte[])obj;
-
-                    for (int i = 0; i < obj0.Length; i++)
-                    {
-                        Assert.AreEqual(data[pos], obj0[i], "Invalid byte [pos=" + pos + ']');
-
-                        pos++;
-                    }
-                }
-                else if (obj is BooleanValueAction)
-                {
-                    byte[] arr = new byte[1];
-
-                    Array.Copy(data, pos, arr, 0, 1);
-
-                    Assert.AreEqual(PU.ReadBoolean(new MemoryStream(arr)), ((BooleanValueAction)obj).Value);
-
-                    pos += 1;
-                }
-                else if (obj is IntValueAction)
-                {
-                    byte[] arr = new byte[4];
-
-                    Array.Copy(data, pos, arr, 0, 4);
-
-                    Assert.AreEqual(PU.ReadInt(new MemoryStream(arr)), ((IntValueAction)obj).Value);
-
-                    pos += 4;
-                }
-                else if (obj is SkipAction)
-                    pos += ((SkipAction)obj).Length;
-            }
-        }
-
-        private class BooleanValueAction
-        {
-            public BooleanValueAction(bool val)
-            {
-                Value = val;
-            }
-
-            public bool Value
-            {
-                get;
-                set;
-            }
-        }
-
-        private class IntValueAction
-        {
-            public IntValueAction(int val)
-            {
-                Value = val;
-            }
-
-            public int Value
-            {
-                get;
-                set;
-            }
-        }
-
-        private class SkipAction
-        {
-            public SkipAction(int len)
-            {
-                Length = len;
-            }
-
-            public int Length
-            {
-                get;
-                set;
-            }
+            return sb.ToString();
         }
     }
 }

@@ -28,14 +28,6 @@ namespace GridGain {
 
             Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
 
-            Test(new GridClientPortableSelfTest(), (test) => test.TestObjectReflective());
-
-            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsReflective());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsPortable());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsRawPortable());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsSerializer());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsRawSerializer());
-
             Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveBool());
             Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveSbyte());
             Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveByte());
@@ -48,9 +40,33 @@ namespace GridGain {
             Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveUlong());
             Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveFloat());
             Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveDouble());
+
+            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveBoolArray());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveSbyteArray());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveByteArray());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveShortArray());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveUshortArray());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveCharArray());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveIntArray());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveUintArray());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveLongArray());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveUlongArray());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveFloatArray());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveDoubleArray());
+
+            Test(new GridClientPortableSelfTest(), (test) => test.TestWriteString());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestWriteGuid());
+
             // TODO: Primitive string
             // TODO: Primitive Guid
-            
+
+            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsReflective());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsPortable());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsRawPortable());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsSerializer());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsRawSerializer());
+
+            Test(new GridClientPortableSelfTest(), (test) => test.TestObjectReflective());
 
             //TestAll();
 
