@@ -20,6 +20,13 @@ import java.nio.*;
  */
 public interface GridPortableProcessor extends GridProcessor {
     /**
+     * Gets portable context.
+     *
+     * @return Portable context.
+     */
+    public GridPortableContext portableContext();
+
+    /**
      * @param obj Object to marshal.
      * @return Byte buffer.
      * @throws GridPortableException In case of error.

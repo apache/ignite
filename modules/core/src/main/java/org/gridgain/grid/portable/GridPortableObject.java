@@ -19,6 +19,13 @@ import java.util.*;
  */
 public interface GridPortableObject extends Serializable, Cloneable {
     /**
+     * Gets user type flag value.
+     *
+     * @return Whether this is a user type object.
+     */
+    public boolean userType();
+
+    /**
      * Gets portable object type ID.
      *
      * @return Type ID.
@@ -58,6 +65,5 @@ public interface GridPortableObject extends Serializable, Cloneable {
      *
      * @return Copy of this portable object.
      */
-    @SuppressWarnings("CloneDoesntDeclareCloneNotSupportedException")
-    public GridPortableObject clone();
+    public GridPortableObject clone() throws CloneNotSupportedException;
 }

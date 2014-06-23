@@ -53,191 +53,91 @@ public class GridPortableClassDescriptor {
         this.typeId = typeId;
         this.serializer = serializer;
 
-        if (cls == Byte.class) {
-            mode = Mode.BYTE;
-            userType = false;
-            cons = null;
-            fields = null;
-        }
-        else if (cls == Short.class) {
-            mode = Mode.SHORT;
-            userType = false;
-            cons = null;
-            fields = null;
-        }
-        else if (cls == Integer.class) {
-            mode = Mode.INT;
-            userType = false;
-            cons = null;
-            fields = null;
-        }
-        else if (cls == Long.class) {
-            mode = Mode.LONG;
-            userType = false;
-            cons = null;
-            fields = null;
-        }
-        else if (cls == Float.class) {
-            mode = Mode.FLOAT;
-            userType = false;
-            cons = null;
-            fields = null;
-        }
-        else if (cls == Double.class) {
-            mode = Mode.DOUBLE;
-            userType = false;
-            cons = null;
-            fields = null;
-        }
-        else if (cls == Character.class) {
-            mode = Mode.CHAR;
-            userType = false;
-            cons = null;
-            fields = null;
-        }
-        else if (cls == Boolean.class) {
-            mode = Mode.BOOLEAN;
-            userType = false;
-            cons = null;
-            fields = null;
-        }
-        else if (cls == String.class) {
-            mode = Mode.STRING;
-            userType = false;
-            cons = null;
-            fields = null;
-        }
-        else if (cls == UUID.class) {
-            mode = Mode.UUID;
-            userType = false;
-            cons = null;
-            fields = null;
-        }
-        else if (cls == byte[].class) {
-            mode = Mode.BYTE_ARR;
-            userType = false;
-            cons = null;
-            fields = null;
-        }
-        else if (cls == short[].class) {
-            mode = Mode.SHORT_ARR;
-            userType = false;
-            cons = null;
-            fields = null;
-        }
-        else if (cls == int[].class) {
-            mode = Mode.INT_ARR;
-            userType = false;
-            cons = null;
-            fields = null;
-        }
-        else if (cls == long[].class) {
-            mode = Mode.LONG_ARR;
-            userType = false;
-            cons = null;
-            fields = null;
-        }
-        else if (cls == float[].class) {
-            mode = Mode.FLOAT_ARR;
-            userType = false;
-            cons = null;
-            fields = null;
-        }
-        else if (cls == double[].class) {
-            mode = Mode.DOUBLE_ARR;
-            userType = false;
-            cons = null;
-            fields = null;
-        }
-        else if (cls == char[].class) {
-            mode = Mode.CHAR_ARR;
-            userType = false;
-            cons = null;
-            fields = null;
-        }
-        else if (cls == boolean[].class) {
-            mode = Mode.BOOLEAN_ARR;
-            userType = false;
-            cons = null;
-            fields = null;
-        }
-        else if (cls == String[].class) {
-            mode = Mode.STRING_ARR;
-            userType = false;
-            cons = null;
-            fields = null;
-        }
-        else if (cls == UUID[].class) {
-            mode = Mode.UUID_ARR;
-            userType = false;
-            cons = null;
-            fields = null;
-        }
-        else if (cls == Object[].class) {
-            mode = Mode.OBJ_ARR;
-            userType = false;
-            cons = null;
-            fields = null;
-        }
-        else if (Collection.class.isAssignableFrom(cls)) {
-            mode = Mode.COL;
-            userType = false;
-            cons = null;
-            fields = null;
-        }
-        else if (Map.class.isAssignableFrom(cls)) {
-            mode = Mode.MAP;
-            userType = false;
-            cons = null;
-            fields = null;
-        }
-        else if (serializer != null || GridPortable.class.isAssignableFrom(cls)) {
-            mode = Mode.PORTABLE;
-            userType = true;
-            cons = constructor(cls);
-            fields = null;
-        }
-        else {
-            mode = Mode.OBJECT;
-            userType = true;
-            cons = constructor(cls);
+        mode = serializer != null ? Mode.PORTABLE : mode(cls);
 
-            fields = new ArrayList<>();
+        switch (mode) {
+            case BYTE:
+            case SHORT:
+            case INT:
+            case LONG:
+            case FLOAT:
+            case DOUBLE:
+            case CHAR:
+            case BOOLEAN:
+            case STRING:
+            case UUID:
+            case BYTE_ARR:
+            case SHORT_ARR:
+            case INT_ARR:
+            case LONG_ARR:
+            case FLOAT_ARR:
+            case DOUBLE_ARR:
+            case CHAR_ARR:
+            case BOOLEAN_ARR:
+            case STRING_ARR:
+            case UUID_ARR:
+            case OBJ_ARR:
+            case COL:
+            case MAP:
+                userType = false;
+                cons = null;
+                fields = null;
 
-            Collection<String> names = new HashSet<>();
-            Collection<Integer> ids = new HashSet<>();
+                break;
 
-            for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
-                for (Field f : c.getDeclaredFields()) {
-                    int mod = f.getModifiers();
+            case PORTABLE:
+                userType = true;
+                cons = constructor(cls);
+                fields = null;
 
-                    if (!isStatic(mod) && !isTransient(mod)) {
-                        f.setAccessible(true);
+                break;
 
-                        String name = f.getName();
+            case OBJECT:
+                userType = true;
+                cons = constructor(cls);
 
-                        if (!names.add(name))
-                            throw new GridPortableException("Duplicate field name: " + name);
+                fields = new ArrayList<>();
 
-                        Integer fieldId = null;
+                Collection<String> names = new HashSet<>();
+                Collection<Integer> ids = new HashSet<>();
 
-                        GridPortableId idAnn = f.getAnnotation(GridPortableId.class);
+                for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
+                    for (Field f : c.getDeclaredFields()) {
+                        int mod = f.getModifiers();
 
-                        if (idAnn != null)
-                            fieldId = idAnn.id();
-                        else if (idMapper != null)
-                            fieldId = idMapper.fieldId(typeId, f.getName());
+                        if (!isStatic(mod) && !isTransient(mod)) {
+                            f.setAccessible(true);
 
-                        if (fieldId == null)
-                            fieldId = f.getName().hashCode();
+                            String name = f.getName();
 
-                        if (!ids.add(fieldId))
-                            throw new GridPortableException("Duplicate field ID: " + name);
+                            if (!names.add(name))
+                                throw new GridPortableException("Duplicate field name: " + name);
 
-                        fields.add(new FieldInfo(f, fieldId));
+                            Integer fieldId = null;
+
+                            GridPortableId idAnn = f.getAnnotation(GridPortableId.class);
+
+                            if (idAnn != null)
+                                fieldId = idAnn.id();
+                            else if (idMapper != null)
+                                fieldId = idMapper.fieldId(typeId, f.getName());
+
+                            if (fieldId == null)
+                                fieldId = f.getName().hashCode();
+
+                            if (!ids.add(fieldId))
+                                throw new GridPortableException("Duplicate field ID: " + name);
+
+                            fields.add(new FieldInfo(f, fieldId));
+                        }
                     }
                 }
-            }
+
+                break;
+
+            default:
+                // Should never happen.
+                throw new GridPortableException("Invalid mode: " + mode);
         }
     }
 
@@ -494,18 +394,8 @@ public class GridPortableClassDescriptor {
             case OBJECT:
                 Object obj = newInstance();
 
-                for (FieldInfo info : fields) {
-                    Field f = info.field;
-
-                    Object val = reader.readObject(f.getName());
-
-                    try {
-                        f.set(obj, val);
-                    }
-                    catch (IllegalAccessException e) {
-                        throw new GridPortableException("Failed to set value for field: " + f, e);
-                    }
-                }
+                for (FieldInfo info : fields)
+                    info.read(obj, reader);
 
                 return obj;
 
@@ -551,6 +441,66 @@ public class GridPortableClassDescriptor {
         }
     }
 
+    /**
+     * @param cls Class.
+     * @return Mode.
+     */
+    @SuppressWarnings("IfMayBeConditional")
+    private static Mode mode(Class<?> cls) {
+        assert cls != null;
+
+        if (cls == byte.class || cls == Byte.class)
+            return Mode.BYTE;
+        else if (cls == short.class || cls == Short.class)
+            return Mode.SHORT;
+        else if (cls == int.class || cls == Integer.class)
+            return Mode.INT;
+        else if (cls == long.class || cls == Long.class)
+            return Mode.LONG;
+        else if (cls == float.class || cls == Float.class)
+            return Mode.FLOAT;
+        else if (cls == double.class || cls == Double.class)
+            return Mode.DOUBLE;
+        else if (cls == char.class || cls == Character.class)
+            return Mode.CHAR;
+        else if (cls == boolean.class || cls == Boolean.class)
+            return Mode.BOOLEAN;
+        else if (cls == String.class)
+            return Mode.STRING;
+        else if (cls == UUID.class)
+            return Mode.UUID;
+        else if (cls == byte[].class)
+            return Mode.BYTE_ARR;
+        else if (cls == short[].class)
+            return Mode.SHORT_ARR;
+        else if (cls == int[].class)
+            return Mode.INT_ARR;
+        else if (cls == long[].class)
+            return Mode.LONG_ARR;
+        else if (cls == float[].class)
+            return Mode.FLOAT_ARR;
+        else if (cls == double[].class)
+            return Mode.DOUBLE_ARR;
+        else if (cls == char[].class)
+            return Mode.CHAR_ARR;
+        else if (cls == boolean[].class)
+            return Mode.BOOLEAN_ARR;
+        else if (cls == String[].class)
+            return Mode.STRING_ARR;
+        else if (cls == UUID[].class)
+            return Mode.UUID_ARR;
+        else if (cls == Object[].class)
+            return Mode.OBJ_ARR;
+        else if (Collection.class.isAssignableFrom(cls))
+            return Mode.COL;
+        else if (Map.class.isAssignableFrom(cls))
+            return Mode.MAP;
+        else if (GridPortable.class.isAssignableFrom(cls))
+            return Mode.PORTABLE;
+        else
+            return Mode.OBJECT;
+    }
+
     /** */
     private static class FieldInfo {
         /** */
@@ -558,6 +508,12 @@ public class GridPortableClassDescriptor {
 
         /** */
         private final int id;
+
+        /** */
+        private final Mode mode;
+
+        /** */
+        private final boolean prim;
 
         /**
          * @param field Field.
@@ -568,6 +524,11 @@ public class GridPortableClassDescriptor {
 
             this.field = field;
             this.id = id;
+
+            Class<?> type = field.getType();
+
+            mode = mode(type);
+            prim = type.isPrimitive();
         }
 
         /**
@@ -590,11 +551,298 @@ public class GridPortableClassDescriptor {
                 throw new GridPortableException("Failed to get value for field: " + field, e);
             }
 
-            int lenPos = writer.reserveAndMark(4);
+            switch (mode) {
+                case BYTE:
+                    if (prim)
+                        writer.writeByteField((byte)val);
+                    else
+                        writer.writeObjectField(val);
 
-            writer.doWriteObject(val);
+                    break;
 
-            writer.writeDelta(lenPos);
+                case SHORT:
+                    if (prim)
+                        writer.writeShortField((short)val);
+                    else
+                        writer.writeObjectField(val);
+
+                    break;
+
+                case INT:
+                    if (prim)
+                        writer.writeIntField((int)val);
+                    else
+                        writer.writeObjectField(val);
+
+                    break;
+
+                case LONG:
+                    if (prim)
+                        writer.writeLongField((long)val);
+                    else
+                        writer.writeObjectField(val);
+
+                    break;
+
+                case FLOAT:
+                    if (prim)
+                        writer.writeFloatField((float)val);
+                    else
+                        writer.writeObjectField(val);
+
+                    break;
+
+                case DOUBLE:
+                    if (prim)
+                        writer.writeDoubleField((double)val);
+                    else
+                        writer.writeObjectField(val);
+
+                    break;
+
+                case CHAR:
+                    if (prim)
+                        writer.writeCharField((char)val);
+                    else
+                        writer.writeObjectField(val);
+
+                    break;
+
+                case BOOLEAN:
+                    if (prim)
+                        writer.writeBooleanField((boolean)val);
+                    else
+                        writer.writeObjectField(val);
+
+                    break;
+
+                case STRING:
+                    writer.writeStringField((String)val);
+
+                    break;
+
+                case UUID:
+                    writer.writeUuidField((UUID)val);
+
+                    break;
+
+                case BYTE_ARR:
+                    writer.writeByteArrayField((byte[])val);
+
+                    break;
+
+                case SHORT_ARR:
+                    writer.writeShortArrayField((short[])val);
+
+                    break;
+
+                case INT_ARR:
+                    writer.writeIntArrayField((int[])val);
+
+                    break;
+
+                case LONG_ARR:
+                    writer.writeLongArrayField((long[])val);
+
+                    break;
+
+                case FLOAT_ARR:
+                    writer.writeFloatArrayField((float[])val);
+
+                    break;
+
+                case DOUBLE_ARR:
+                    writer.writeDoubleArrayField((double[])val);
+
+                    break;
+
+                case CHAR_ARR:
+                    writer.writeCharArrayField((char[])val);
+
+                    break;
+
+                case BOOLEAN_ARR:
+                    writer.writeBooleanArrayField((boolean[])val);
+
+                    break;
+
+                case STRING_ARR:
+                    writer.writeStringArrayField((String[])val);
+
+                    break;
+
+                case UUID_ARR:
+                    writer.writeUuidArrayField((UUID[])val);
+
+                    break;
+
+                case OBJ_ARR:
+                    writer.writeObjectArrayField((Object[])val);
+
+                    break;
+
+                case COL:
+                    writer.writeCollectionField((Collection<?>)val);
+
+                    break;
+
+                case MAP:
+                    writer.writeMapField((Map<?, ?>)val);
+
+                    break;
+
+                case PORTABLE:
+                case OBJECT:
+                    writer.writeObjectField(val);
+
+                    break;
+
+                default:
+                    assert false : "Invalid mode: " + mode;
+            }
+        }
+
+        /**
+         * @param obj Object.
+         * @param reader Reader.
+         * @throws GridPortableException In case of error.
+         */
+        public void read(Object obj, GridPortableReaderImpl reader) throws GridPortableException {
+            Object val = null;
+
+            // TODO: use ID instead of name
+            switch (mode) {
+                case BYTE:
+                    val = prim ? reader.readByte(field.getName()) : reader.readObject(field.getName());
+
+                    break;
+
+                case SHORT:
+                    val = prim ? reader.readShort(field.getName()) : reader.readObject(field.getName());
+
+                    break;
+
+                case INT:
+                    val = prim ? reader.readInt(field.getName()) : reader.readObject(field.getName());
+
+                    break;
+
+                case LONG:
+                    val = prim ? reader.readLong(field.getName()) : reader.readObject(field.getName());
+
+                    break;
+
+                case FLOAT:
+                    val = prim ? reader.readFloat(field.getName()) : reader.readObject(field.getName());
+
+                    break;
+
+                case DOUBLE:
+                    val = prim ? reader.readDouble(field.getName()) : reader.readObject(field.getName());
+
+                    break;
+
+                case CHAR:
+                    val = prim ? reader.readChar(field.getName()) : reader.readObject(field.getName());
+
+                    break;
+
+                case BOOLEAN:
+                    val = prim ? reader.readBoolean(field.getName()) : reader.readObject(field.getName());
+
+                    break;
+
+                case STRING:
+                    val = reader.readString(field.getName());
+
+                    break;
+
+                case UUID:
+                    val = reader.readUuid(field.getName());
+
+                    break;
+
+                case BYTE_ARR:
+                    val = reader.readByteArray(field.getName());
+
+                    break;
+
+                case SHORT_ARR:
+                    val = reader.readShortArray(field.getName());
+
+                    break;
+
+                case INT_ARR:
+                    val = reader.readIntArray(field.getName());
+
+                    break;
+
+                case LONG_ARR:
+                    val = reader.readLongArray(field.getName());
+
+                    break;
+
+                case FLOAT_ARR:
+                    val = reader.readFloatArray(field.getName());
+
+                    break;
+
+                case DOUBLE_ARR:
+                    val = reader.readDoubleArray(field.getName());
+
+                    break;
+
+                case CHAR_ARR:
+                    val = reader.readCharArray(field.getName());
+
+                    break;
+
+                case BOOLEAN_ARR:
+                    val = reader.readBooleanArray(field.getName());
+
+                    break;
+
+                case STRING_ARR:
+                    val = reader.readStringArray(field.getName());
+
+                    break;
+
+                case UUID_ARR:
+                    val = reader.readUuidArray(field.getName());
+
+                    break;
+
+                case OBJ_ARR:
+                    val = reader.readObjectArray(field.getName());
+
+                    break;
+
+                case COL:
+                    val = reader.readCollection(field.getName());
+
+                    break;
+
+                case MAP:
+                    val = reader.readMap(field.getName());
+
+                    break;
+
+                case PORTABLE:
+                case OBJECT:
+                    val = reader.readObject(field.getName());
+
+                    break;
+
+                default:
+                    assert false : "Invalid mode: " + mode;
+            }
+
+            try {
+                field.set(obj, val);
+            }
+            catch (IllegalAccessException e) {
+                throw new GridPortableException("Failed to set value for field: " + field, e);
+            }
         }
     }
 

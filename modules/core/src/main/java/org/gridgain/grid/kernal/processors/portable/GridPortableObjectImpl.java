@@ -10,68 +10,94 @@
 package org.gridgain.grid.kernal.processors.portable;
 
 import org.gridgain.grid.portable.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
  * Portable object implementation.
  */
-class GridPortableObjectImpl implements GridPortableObject {
+class GridPortableObjectImpl implements GridPortableObject, Externalizable {
     /** */
-    private final GridPortableContext ctx;
+    private static final GridPortablePrimitives PRIM = GridPortablePrimitives.get();
 
     /** */
-    private final GridPortableReaderImpl reader;
+    private GridPortableContext ctx;
 
     /** */
-    private final boolean userType;
+    private byte[] arr;
 
     /** */
-    private final int typeId;
+    private int start;
 
     /** */
-    private final int hashCode;
+    private transient GridPortableReaderImpl reader;
 
     /** */
-    private Object obj;
+    private transient Object obj;
+
+    /** */
+    private transient Map<String, Object> fields;
 
     /**
-     * @param reader Reader.
-     * @param userType User type flag.
-     * @param typeId Type ID.
-     * @param hashCode Hash code.
+     * For {@link Externalizable}.
      */
-    GridPortableObjectImpl(GridPortableContext ctx, GridPortableReaderImpl reader, boolean userType, int typeId,
-        int hashCode) {
-        assert reader != null;
+    public GridPortableObjectImpl() {
+        // No-op.
+    }
+
+    /**
+     * @param ctx Context.
+     * @param arr Array.
+     * @param start Start.
+     */
+    GridPortableObjectImpl(GridPortableContext ctx, byte[] arr, int start) {
+        assert ctx != null;
+        assert arr != null;
 
         this.ctx = ctx;
-        this.reader = reader;
-        this.userType = userType;
-        this.typeId = typeId;
-        this.hashCode = hashCode;
+        this.arr = arr;
+        this.start = start;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean userType() {
+        return PRIM.readBoolean(arr, start + 1);
     }
 
     /** {@inheritDoc} */
     @Override public int typeId() {
-        return typeId;
+        return PRIM.readInt(arr, start + 2);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <F> F field(String fieldName) throws GridPortableException {
-        return (F)reader.unmarshal(fieldName);
+        if (fields != null) {
+            if (fields.containsKey(fieldName))
+                return (F)fields.get(fieldName);
+        }
+        else
+            fields = new HashMap<>();
+
+        if (reader == null)
+            reader = new GridPortableReaderImpl(ctx, arr, start);
+
+        Object field = reader.unmarshal(fieldName);
+
+        fields.put(fieldName, field);
+
+        return (F)field;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> T deserialize() throws GridPortableException {
         if (obj == null) {
-            GridPortableClassDescriptor desc = ctx.descriptorForTypeId(userType, typeId);
+            if (reader == null)
+                reader = new GridPortableReaderImpl(ctx, arr, start);
 
-            if (desc == null) throw new GridPortableInvalidClassException("Unknown type [userType=" + userType +
-                ", typeId=" + typeId + ']');
-
-            obj = desc.read(reader);
+            obj = reader.readObject();
         }
 
         return (T)obj;
@@ -83,9 +109,8 @@ class GridPortableObjectImpl implements GridPortableObject {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "CloneDoesntCallSuperClone"})
-    @Override public GridPortableObject clone() {
-        return null; // TODO: implement.
+    @Override public GridPortableObject clone() throws CloneNotSupportedException {
+        return (GridPortableObject)super.clone();
     }
 
     /** {@inheritDoc} */
@@ -103,6 +128,20 @@ class GridPortableObjectImpl implements GridPortableObject {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return hashCode;
+        return PRIM.readInt(arr, start + 6);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(ctx);
+        U.writeByteArray(out, arr);
+        out.writeInt(start);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        ctx = (GridPortableContext)in.readObject();
+        arr = U.readByteArray(in);
+        start = in.readInt();
     }
 }

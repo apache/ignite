@@ -43,9 +43,6 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     private final int start;
 
     /** */
-    private final int len;
-
-    /** */
     private int rawOff;
 
     /** */
@@ -58,30 +55,35 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     private int typeId;
 
     /**
+     * @param ctx Context.
      * @param arr Array.
+     * @param start Start.
      */
-    GridPortableReaderImpl(GridPortableContext ctx, byte[] arr) {
+    GridPortableReaderImpl(GridPortableContext ctx, byte[] arr, int start) {
         this.ctx = ctx;
         this.arr = arr;
+        this.start = start;
 
         poHandles = new HashMap<>();
         oHandles = new HashMap<>();
-
-        start = 0;
-        len = arr.length;
     }
 
     /**
+     * @param ctx Context.
+     * @param poHandles Portable handles.
+     * @param oHandles Object handles.
      * @param arr Array.
+     * @param start Start.
+     * @param rawOff Raw offset.
+     * @param typeId Type ID.
      */
     private GridPortableReaderImpl(GridPortableContext ctx, Map<Integer, GridPortableObject> poHandles,
-        Map<Integer, Object> oHandles, byte[] arr, int start, int len, int rawOff, int typeId) {
+        Map<Integer, Object> oHandles, byte[] arr, int start, int rawOff, int typeId) {
         this.ctx = ctx;
         this.poHandles = poHandles;
         this.oHandles = oHandles;
         this.arr = arr;
         this.start = start;
-        this.len = len;
         this.rawOff = rawOff;
         this.typeId = typeId;
     }
@@ -123,18 +125,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
                 return unmarshal();
 
             case OBJ:
-                boolean userType = doReadBoolean(false);
-
-                typeId = doReadInt(false);
-
-                int hashCode = doReadInt(false);
-
-                // Skip length.
-                off += 4;
-
-                rawOff = doReadInt(false);
-
-                GridPortableObject po = new GridPortableObjectImpl(ctx, this, userType, typeId, hashCode);
+                GridPortableObject po = new GridPortableObjectImpl(ctx, arr, start);
 
                 poHandles.put(start, po);
 
@@ -201,12 +192,12 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
                 return doReadUuidArray(false);
 
             case OBJ_ARR:
-                int len = doReadInt(false);
+                int arrLen = doReadInt(false);
 
-                if (len >= 0) {
-                    Object[] arr = new Object[len];
+                if (arrLen >= 0) {
+                    Object[] arr = new Object[arrLen];
 
-                    for (int i = 0; i < len; i++)
+                    for (int i = 0; i < arrLen; i++)
                         arr[i] = unmarshal();
 
                     return arr;
@@ -245,26 +236,6 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             default:
                 throw new GridPortableException("Invalid flag value: " + flag);
         }
-    }
-
-    /**
-     * @param other Other reader.
-     * @return Whether arrays are equal.
-     */
-    boolean equals(GridPortableReaderImpl other) {
-        assert other != null;
-
-        if (len != other.len)
-            return false;
-
-        int otherI = other.start;
-
-        for (int i = start; i < len; i++) {
-            if (arr[i] != other.arr[otherI++])
-                return false;
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
@@ -906,14 +877,14 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     @Nullable private Object doReadObject(boolean raw) throws GridPortableException {
         int start = raw ? rawOff : off;
 
-        byte flag = doReadByte(true);
+        byte flag = doReadByte(raw);
 
         switch (flag) {
             case NULL:
                 return null;
 
             case HANDLE:
-                int handle = doReadInt(false);
+                int handle = doReadInt(raw);
 
                 if (oHandles.containsKey(handle))
                     return oHandles.get(handle);
@@ -941,7 +912,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
                 int rawOff0 = start + doReadInt(raw);
 
                 Object obj = desc.read(new GridPortableReaderImpl(
-                    ctx, poHandles, oHandles, arr, start, len, rawOff0, typeId));
+                    ctx, poHandles, oHandles, arr, start, rawOff0, typeId));
 
                 int dataLen = len - HDR_LEN;
 

@@ -29,6 +29,11 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
+    @Override public GridPortableContext portableContext() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public ByteBuffer marshal(@Nullable Object obj) throws GridPortableException {
         return null;
     }

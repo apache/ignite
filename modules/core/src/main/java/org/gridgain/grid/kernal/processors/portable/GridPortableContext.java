@@ -11,10 +11,12 @@ package org.gridgain.grid.kernal.processors.portable;
 
 import org.jetbrains.annotations.*;
 
+import java.io.*;
+
 /**
  * Portable context.
  */
-public interface GridPortableContext {
+public interface GridPortableContext extends Serializable {
     @Nullable public GridPortableClassDescriptor descriptorForClass(Class<?> cls);
 
     @Nullable public GridPortableClassDescriptor descriptorForTypeId(boolean userType, int typeId);

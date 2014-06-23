@@ -137,8 +137,6 @@ public class GridPortableMarshaller {
         if (arr.length == 1 && arr[0] == NULL)
             return null;
 
-        GridPortableReaderImpl reader = new GridPortableReaderImpl(ctx, arr);
-
-        return (GridPortableObject)reader.unmarshal();
+        return new GridPortableObjectImpl(ctx, arr, 0);
     }
 }
