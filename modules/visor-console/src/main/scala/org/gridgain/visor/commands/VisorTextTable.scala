@@ -375,7 +375,7 @@ class VisorTextTable {
             if (colsNum == -1)
                 colsNum = r.size
             else if (colsNum != r.size)
-                assert (false, "Table with uneven rows.")
+                assert(false, "Table with uneven rows.")
 
         assert(colsNum > 0)
 
@@ -443,7 +443,7 @@ class VisorTextTable {
             tbl.a(blank(margin.left)).a(ROW_CRS).a(dash(ROW_HOR, tblW)).a(ROW_CRS).a(blank(margin.right)).a(NL)
 
         // Print rows, if any.
-        if (!rows.isEmpty) {
+        if (rows.nonEmpty) {
             val horLine = (i: Int) => {
                 // Left margin and '+'
                 tbl.a(blank(margin.left)).a(ROW_CRS)
