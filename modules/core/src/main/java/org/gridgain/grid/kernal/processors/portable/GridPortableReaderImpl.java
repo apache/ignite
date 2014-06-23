@@ -10,9 +10,7 @@
 package org.gridgain.grid.kernal.processors.portable;
 
 import org.gridgain.grid.portable.*;
-import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
-import sun.misc.*;
 
 import java.util.*;
 
@@ -23,33 +21,6 @@ import static org.gridgain.grid.kernal.processors.portable.GridPortableMarshalle
  * Portable reader implementation.
  */
 class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReader {
-    /** */
-    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
-
-    /** */
-    private static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
-
-    /** */
-    private static final long SHORT_ARR_OFF = UNSAFE.arrayBaseOffset(short[].class);
-
-    /** */
-    private static final long INT_ARR_OFF = UNSAFE.arrayBaseOffset(int[].class);
-
-    /** */
-    private static final long LONG_ARR_OFF = UNSAFE.arrayBaseOffset(long[].class);
-
-    /** */
-    private static final long FLOAT_ARR_OFF = UNSAFE.arrayBaseOffset(float[].class);
-
-    /** */
-    private static final long DOUBLE_ARR_OFF = UNSAFE.arrayBaseOffset(double[].class);
-
-    /** */
-    private static final long CHAR_ARR_OFF = UNSAFE.arrayBaseOffset(char[].class);
-
-    /** */
-    private static final long BOOLEAN_ARR_OFF = UNSAFE.arrayBaseOffset(boolean[].class);
-
     /** */
     private static final GridPortablePrimitives PRIM = GridPortablePrimitives.get();
 
@@ -969,9 +940,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
         int len = doReadInt(raw);
 
         if (len >= 0) {
-            byte[] arr = new byte[len];
-
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + (raw ? rawOff : off), arr, BYTE_ARR_OFF, len);
+            byte[] arr = PRIM.readByteArray(this.arr, raw ? rawOff : off, len);
 
             if (raw)
                 rawOff += len;
@@ -992,11 +961,9 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
         int len = doReadInt(raw);
 
         if (len >= 0) {
-            short[] arr = new short[len];
+            short[] arr = PRIM.readShortArray(this.arr, raw ? rawOff : off, len);
 
             int bytes = len << 1;
-
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + (raw ? rawOff : off), arr, SHORT_ARR_OFF, bytes);
 
             if (raw)
                 rawOff += bytes;
@@ -1017,11 +984,9 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
         int len = doReadInt(raw);
 
         if (len >= 0) {
-            int[] arr = new int[len];
+            int[] arr = PRIM.readIntArray(this.arr, raw ? rawOff : off, len);
 
             int bytes = len << 2;
-
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + (raw ? rawOff : off), arr, INT_ARR_OFF, bytes);
 
             if (raw)
                 rawOff += bytes;
@@ -1042,11 +1007,9 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
         int len = doReadInt(raw);
 
         if (len >= 0) {
-            long[] arr = new long[len];
+            long[] arr = PRIM.readLongArray(this.arr, raw ? rawOff : off, len);
 
             int bytes = len << 3;
-
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + (raw ? rawOff : off), arr, LONG_ARR_OFF, bytes);
 
             if (raw)
                 rawOff += bytes;
@@ -1067,11 +1030,9 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
         int len = doReadInt(raw);
 
         if (len >= 0) {
-            float[] arr = new float[len];
+            float[] arr = PRIM.readFloatArray(this.arr, raw ? rawOff : off, len);
 
             int bytes = len << 2;
-
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + (raw ? rawOff : off), arr, FLOAT_ARR_OFF, bytes);
 
             if (raw)
                 rawOff += bytes;
@@ -1092,11 +1053,9 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
         int len = doReadInt(raw);
 
         if (len >= 0) {
-            double[] arr = new double[len];
+            double[] arr = PRIM.readDoubleArray(this.arr, raw ? rawOff : off, len);
 
             int bytes = len << 3;
-
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + (raw ? rawOff : off), arr, DOUBLE_ARR_OFF, bytes);
 
             if (raw)
                 rawOff += bytes;
@@ -1117,11 +1076,9 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
         int len = doReadInt(raw);
 
         if (len >= 0) {
-            char[] arr = new char[len];
+            char[] arr = PRIM.readCharArray(this.arr, raw ? rawOff : off, len);
 
             int bytes = len << 1;
-
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + (raw ? rawOff : off), arr, CHAR_ARR_OFF, bytes);
 
             if (raw)
                 rawOff += bytes;
@@ -1142,11 +1099,9 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
         int len = doReadInt(raw);
 
         if (len >= 0) {
-            boolean[] arr = new boolean[len];
+            boolean[] arr = PRIM.readBooleanArray(this.arr, raw ? rawOff : off, len);
 
             int bytes = len << 1;
-
-            UNSAFE.copyMemory(this.arr, BYTE_ARR_OFF + (raw ? rawOff : off), arr, BOOLEAN_ARR_OFF, bytes);
 
             if (raw)
                 rawOff += bytes;

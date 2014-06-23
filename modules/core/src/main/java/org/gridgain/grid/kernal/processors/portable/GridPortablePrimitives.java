@@ -139,6 +139,118 @@ abstract class GridPortablePrimitives {
      */
     abstract boolean readBoolean(byte[] arr, int off);
 
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @param val Value.
+     */
+    abstract void writeByteArray(byte[] arr, int off, byte[] val);
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @return Value.
+     */
+    abstract byte[] readByteArray(byte[] arr, int off, int len);
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @param val Value.
+     */
+    abstract void writeShortArray(byte[] arr, int off, short[] val);
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @return Value.
+     */
+    abstract short[] readShortArray(byte[] arr, int off, int len);
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @param val Value.
+     */
+    abstract void writeIntArray(byte[] arr, int off, int[] val);
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @return Value.
+     */
+    abstract int[] readIntArray(byte[] arr, int off, int len);
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @param val Value.
+     */
+    abstract void writeLongArray(byte[] arr, int off, long[] val);
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @return Value.
+     */
+    abstract long[] readLongArray(byte[] arr, int off, int len);
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @param val Value.
+     */
+    abstract void writeFloatArray(byte[] arr, int off, float[] val);
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @return Value.
+     */
+    abstract float[] readFloatArray(byte[] arr, int off, int len);
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @param val Value.
+     */
+    abstract void writeDoubleArray(byte[] arr, int off, double[] val);
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @return Value.
+     */
+    abstract double[] readDoubleArray(byte[] arr, int off, int len);
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @param val Value.
+     */
+    abstract void writeCharArray(byte[] arr, int off, char[] val);
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @return Value.
+     */
+    abstract char[] readCharArray(byte[] arr, int off, int len);
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @param val Value.
+     */
+    abstract void writeBooleanArray(byte[] arr, int off, boolean[] val);
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @return Value.
+     */
+    abstract boolean[] readBooleanArray(byte[] arr, int off, int len);
+
     /** */
     private static class UnsafePrimitives extends GridPortablePrimitives {
         /** */
@@ -146,6 +258,27 @@ abstract class GridPortablePrimitives {
 
         /** */
         private static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
+
+        /** */
+        private static final long SHORT_ARR_OFF = UNSAFE.arrayBaseOffset(short[].class);
+
+        /** */
+        private static final long INT_ARR_OFF = UNSAFE.arrayBaseOffset(int[].class);
+
+        /** */
+        private static final long LONG_ARR_OFF = UNSAFE.arrayBaseOffset(long[].class);
+
+        /** */
+        private static final long FLOAT_ARR_OFF = UNSAFE.arrayBaseOffset(float[].class);
+
+        /** */
+        private static final long DOUBLE_ARR_OFF = UNSAFE.arrayBaseOffset(double[].class);
+
+        /** */
+        private static final long CHAR_ARR_OFF = UNSAFE.arrayBaseOffset(char[].class);
+
+        /** */
+        private static final long BOOLEAN_ARR_OFF = UNSAFE.arrayBaseOffset(boolean[].class);
 
         /** {@inheritDoc} */
         @Override void writeByte(byte[] arr, int off, byte val) {
@@ -225,6 +358,118 @@ abstract class GridPortablePrimitives {
         /** {@inheritDoc} */
         @Override boolean readBoolean(byte[] arr, int off) {
             return UNSAFE.getBoolean(arr, BYTE_ARR_OFF + off);
+        }
+
+        /** {@inheritDoc} */
+        @Override void writeByteArray(byte[] arr, int off, byte[] val) {
+            UNSAFE.copyMemory(val, BYTE_ARR_OFF, arr, BYTE_ARR_OFF + off, val.length);
+        }
+
+        /** {@inheritDoc} */
+        @Override byte[] readByteArray(byte[] arr, int off, int len) {
+            byte[] arr0 = new byte[len];
+
+            UNSAFE.copyMemory(arr, BYTE_ARR_OFF + off, arr0, BYTE_ARR_OFF, len);
+
+            return arr0;
+        }
+
+        /** {@inheritDoc} */
+        @Override void writeShortArray(byte[] arr, int off, short[] val) {
+            UNSAFE.copyMemory(val, SHORT_ARR_OFF, arr, BYTE_ARR_OFF + off, val.length << 1);
+        }
+
+        /** {@inheritDoc} */
+        @Override short[] readShortArray(byte[] arr, int off, int len) {
+            short[] arr0 = new short[len];
+
+            UNSAFE.copyMemory(arr, BYTE_ARR_OFF + off, arr0, SHORT_ARR_OFF, len << 1);
+
+            return arr0;
+        }
+
+        /** {@inheritDoc} */
+        @Override void writeIntArray(byte[] arr, int off, int[] val) {
+            UNSAFE.copyMemory(val, INT_ARR_OFF, arr, BYTE_ARR_OFF + off, val.length << 2);
+        }
+
+        /** {@inheritDoc} */
+        @Override int[] readIntArray(byte[] arr, int off, int len) {
+            int[] arr0 = new int[len];
+
+            UNSAFE.copyMemory(arr, BYTE_ARR_OFF + off, arr0, INT_ARR_OFF, len << 2);
+
+            return arr0;
+        }
+
+        /** {@inheritDoc} */
+        @Override void writeLongArray(byte[] arr, int off, long[] val) {
+            UNSAFE.copyMemory(val, LONG_ARR_OFF, arr, BYTE_ARR_OFF + off, val.length << 3);
+        }
+
+        /** {@inheritDoc} */
+        @Override long[] readLongArray(byte[] arr, int off, int len) {
+            long[] arr0 = new long[len];
+
+            UNSAFE.copyMemory(arr, BYTE_ARR_OFF + off, arr0, LONG_ARR_OFF, len << 3);
+
+            return arr0;
+        }
+
+        /** {@inheritDoc} */
+        @Override void writeFloatArray(byte[] arr, int off, float[] val) {
+            UNSAFE.copyMemory(val, FLOAT_ARR_OFF, arr, BYTE_ARR_OFF + off, val.length << 2);
+        }
+
+        /** {@inheritDoc} */
+        @Override float[] readFloatArray(byte[] arr, int off, int len) {
+            float[] arr0 = new float[len];
+
+            UNSAFE.copyMemory(arr, BYTE_ARR_OFF + off, arr0, FLOAT_ARR_OFF, len << 2);
+
+            return arr0;
+        }
+
+        /** {@inheritDoc} */
+        @Override void writeDoubleArray(byte[] arr, int off, double[] val) {
+            UNSAFE.copyMemory(val, DOUBLE_ARR_OFF, arr, BYTE_ARR_OFF + off, val.length << 3);
+        }
+
+        /** {@inheritDoc} */
+        @Override double[] readDoubleArray(byte[] arr, int off, int len) {
+            double[] arr0 = new double[len];
+
+            UNSAFE.copyMemory(arr, BYTE_ARR_OFF + off, arr0, DOUBLE_ARR_OFF, len << 3);
+
+            return arr0;
+        }
+
+        /** {@inheritDoc} */
+        @Override void writeCharArray(byte[] arr, int off, char[] val) {
+            UNSAFE.copyMemory(val, CHAR_ARR_OFF, arr, BYTE_ARR_OFF + off, val.length << 1);
+        }
+
+        /** {@inheritDoc} */
+        @Override char[] readCharArray(byte[] arr, int off, int len) {
+            char[] arr0 = new char[len];
+
+            UNSAFE.copyMemory(arr, BYTE_ARR_OFF + off, arr0, CHAR_ARR_OFF, len << 1);
+
+            return arr0;
+        }
+
+        /** {@inheritDoc} */
+        @Override void writeBooleanArray(byte[] arr, int off, boolean[] val) {
+            UNSAFE.copyMemory(val, BOOLEAN_ARR_OFF, arr, BYTE_ARR_OFF + off, val.length);
+        }
+
+        /** {@inheritDoc} */
+        @Override boolean[] readBooleanArray(byte[] arr, int off, int len) {
+            boolean[] arr0 = new boolean[len];
+
+            UNSAFE.copyMemory(arr, BYTE_ARR_OFF + off, arr0, BOOLEAN_ARR_OFF, len);
+
+            return arr0;
         }
     }
 }

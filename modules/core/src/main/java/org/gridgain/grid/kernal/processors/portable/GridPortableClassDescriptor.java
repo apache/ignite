@@ -10,9 +10,7 @@
 package org.gridgain.grid.kernal.processors.portable;
 
 import org.gridgain.grid.portable.*;
-import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
-import sun.misc.*;
 
 import java.lang.reflect.*;
 import java.util.*;
@@ -23,9 +21,6 @@ import static java.lang.reflect.Modifier.*;
  * Portable class descriptor.
  */
 public class GridPortableClassDescriptor {
-    /** */
-    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
-
     /** */
     private final Class<?> cls;
 
@@ -237,7 +232,7 @@ public class GridPortableClassDescriptor {
                             fieldId = f.getName().hashCode();
 
                         if (!ids.add(fieldId))
-                            throw new GridPortableException("Duplicate field ID: " + name); // TODO: proper message
+                            throw new GridPortableException("Duplicate field ID: " + name);
 
                         fields.add(new FieldInfo(f, fieldId));
                     }
@@ -526,8 +521,10 @@ public class GridPortableClassDescriptor {
      * @throws GridPortableException In case of error.
      */
     private Object newInstance() throws GridPortableException {
+        assert cons != null;
+
         try {
-            return cons != null ? cons.newInstance() : UNSAFE.allocateInstance(cls);
+            return cons.newInstance();
         }
         catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new GridPortableException("Failed to instantiate instance: " + cls, e);
@@ -537,19 +534,20 @@ public class GridPortableClassDescriptor {
     /**
      * @param cls Class.
      * @return Constructor.
+     * @throws GridPortableException If constructor doesn't exist.
      */
-    @Nullable private static Constructor<?> constructor(Class<?> cls) {
+    @Nullable private static Constructor<?> constructor(Class<?> cls) throws GridPortableException {
         assert cls != null;
 
         try {
-            Constructor<?> cons = cls.getConstructor();
+            Constructor<?> cons = cls.getDeclaredConstructor();
 
             cons.setAccessible(true);
 
             return cons;
         }
-        catch (NoSuchMethodException ignored) {
-            return null;
+        catch (NoSuchMethodException e) {
+            throw new GridPortableException("Class doesn't have default constructor: " + cls.getName(), e);
         }
     }
 

@@ -10,10 +10,8 @@
 package org.gridgain.grid.kernal.processors.portable;
 
 import org.gridgain.grid.portable.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
-import sun.misc.*;
 
 import java.nio.*;
 import java.util.*;
@@ -25,33 +23,6 @@ import static org.gridgain.grid.kernal.processors.portable.GridPortableMarshalle
  * Portable writer implementation.
  */
 class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWriter {
-    /** */
-    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
-
-    /** */
-    private static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
-
-    /** */
-    private static final long SHORT_ARR_OFF = UNSAFE.arrayBaseOffset(short[].class);
-
-    /** */
-    private static final long INT_ARR_OFF = UNSAFE.arrayBaseOffset(int[].class);
-
-    /** */
-    private static final long LONG_ARR_OFF = UNSAFE.arrayBaseOffset(long[].class);
-
-    /** */
-    private static final long FLOAT_ARR_OFF = UNSAFE.arrayBaseOffset(float[].class);
-
-    /** */
-    private static final long DOUBLE_ARR_OFF = UNSAFE.arrayBaseOffset(double[].class);
-
-    /** */
-    private static final long CHAR_ARR_OFF = UNSAFE.arrayBaseOffset(char[].class);
-
-    /** */
-    private static final long BOOLEAN_ARR_OFF = UNSAFE.arrayBaseOffset(boolean[].class);
-
     /** */
     private static final GridPortablePrimitives PRIM = GridPortablePrimitives.get();
 
@@ -75,6 +46,9 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
 
     /** */
     private int mark;
+
+    /** */
+    private Class<?> cls;
 
     /** */
     private int typeId;
@@ -110,7 +84,9 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
 
         doWriteByte(OBJ);
 
-        GridPortableClassDescriptor desc = ctx.descriptorForClass(obj.getClass());
+        cls = obj.getClass();
+
+        GridPortableClassDescriptor desc = ctx.descriptorForClass(cls);
 
         if (desc == null)
             throw new GridPortableException("Object is not portable: " + obj);
@@ -164,7 +140,7 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     void write(byte[] val) {
         assert val != null;
 
-        UNSAFE.copyMemory(val, BYTE_ARR_OFF, wCtx.arr, BYTE_ARR_OFF + wCtx.requestFreeSize(val.length), val.length);
+        PRIM.writeByteArray(wCtx.arr, wCtx.requestFreeSize(val.length), val);
     }
 
     /**
@@ -272,7 +248,7 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
         doWriteInt(val != null ? val.length : -1);
 
         if (val != null)
-            UNSAFE.copyMemory(val, BYTE_ARR_OFF, wCtx.arr, BYTE_ARR_OFF + wCtx.requestFreeSize(val.length), val.length);
+            PRIM.writeByteArray(wCtx.arr, wCtx.requestFreeSize(val.length), val);
     }
 
     /**
@@ -281,11 +257,8 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     void doWriteShortArray(@Nullable short[] val) {
         doWriteInt(val != null ? val.length : -1);
 
-        if (val != null) {
-            int bytes = val.length << 1;
-
-            UNSAFE.copyMemory(val, SHORT_ARR_OFF, wCtx.arr, BYTE_ARR_OFF + wCtx.requestFreeSize(bytes), bytes);
-        }
+        if (val != null)
+            PRIM.writeShortArray(wCtx.arr, wCtx.requestFreeSize(val.length << 1), val);
     }
 
     /**
@@ -294,11 +267,8 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     void doWriteIntArray(@Nullable int[] val) {
         doWriteInt(val != null ? val.length : -1);
 
-        if (val != null) {
-            int bytes = val.length << 2;
-
-            UNSAFE.copyMemory(val, INT_ARR_OFF, wCtx.arr, BYTE_ARR_OFF + wCtx.requestFreeSize(bytes), bytes);
-        }
+        if (val != null)
+            PRIM.writeIntArray(wCtx.arr, wCtx.requestFreeSize(val.length << 2), val);
     }
 
     /**
@@ -308,11 +278,8 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     void doWriteLongArray(@Nullable long[] val) {
         doWriteInt(val != null ? val.length : -1);
 
-        if (val != null) {
-            int bytes = val.length << 3;
-
-            UNSAFE.copyMemory(val, LONG_ARR_OFF, wCtx.arr, BYTE_ARR_OFF + wCtx.requestFreeSize(bytes), bytes);
-        }
+        if (val != null)
+            PRIM.writeLongArray(wCtx.arr, wCtx.requestFreeSize(val.length << 3), val);
     }
 
     /**
@@ -321,11 +288,8 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     void doWriteFloatArray(@Nullable float[] val) {
         doWriteInt(val != null ? val.length : -1);
 
-        if (val != null) {
-            int bytes = val.length << 2;
-
-            UNSAFE.copyMemory(val, FLOAT_ARR_OFF, wCtx.arr, BYTE_ARR_OFF + wCtx.requestFreeSize(bytes), bytes);
-        }
+        if (val != null)
+            PRIM.writeFloatArray(wCtx.arr, wCtx.requestFreeSize(val.length << 2), val);
     }
 
     /**
@@ -334,11 +298,8 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     void doWriteDoubleArray(@Nullable double[] val) {
         doWriteInt(val != null ? val.length : -1);
 
-        if (val != null) {
-            int bytes = val.length << 3;
-
-            UNSAFE.copyMemory(val, DOUBLE_ARR_OFF, wCtx.arr, BYTE_ARR_OFF + wCtx.requestFreeSize(bytes), bytes);
-        }
+        if (val != null)
+            PRIM.writeDoubleArray(wCtx.arr, wCtx.requestFreeSize(val.length << 3), val);
     }
 
     /**
@@ -347,11 +308,8 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     void doWriteCharArray(@Nullable char[] val) {
         doWriteInt(val != null ? val.length : -1);
 
-        if (val != null) {
-            int bytes = val.length << 1;
-
-            UNSAFE.copyMemory(val, CHAR_ARR_OFF, wCtx.arr, BYTE_ARR_OFF + wCtx.requestFreeSize(bytes), bytes);
-        }
+        if (val != null)
+            PRIM.writeCharArray(wCtx.arr, wCtx.requestFreeSize(val.length << 1), val);
     }
 
     /**
@@ -361,8 +319,7 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
         doWriteInt(val != null ? val.length : -1);
 
         if (val != null)
-            UNSAFE.copyMemory(val, BOOLEAN_ARR_OFF, wCtx.arr, BYTE_ARR_OFF + wCtx.requestFreeSize(val.length),
-                val.length);
+            PRIM.writeBooleanArray(wCtx.arr, wCtx.requestFreeSize(val.length), val);
     }
 
     /**
@@ -813,7 +770,8 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
         A.notNull(fieldName, "fieldName");
 
         if (!allowFields)
-            throw new GridPortableException("Fields are not allowed."); // TODO: proper message
+            throw new GridPortableException("Individual field can't be written after raw writer is acquired " +
+                "via rawWriter() method. Consider fixing serialization logic for class: " + cls.getName());
 
         doWriteInt(ctx.fieldId(typeId, fieldName));
     }
@@ -847,7 +805,7 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
             if (off > arr.length) {
                 byte[] arr0 = new byte[off << 1];
 
-                UNSAFE.copyMemory(arr, BYTE_ARR_OFF, arr0, BYTE_ARR_OFF, off0);
+                U.arrayCopy(arr, 0, arr0, 0, off0);
 
                 arr = arr0;
             }
