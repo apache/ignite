@@ -1312,7 +1312,6 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                             GridUuid valLdrId = swapEntry.valueClassLoaderId();
 
-
                             if (ldrId.equals(swapEntry.keyClassLoaderId())) {
                                 iter.removeX();
 
@@ -1404,7 +1403,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
             Map.Entry<byte[], byte[]> e = iter.nextX();
 
             // To unmarshal swap entry itself local class loader will be enough.
-            return F.t(e.getKey(), (GridCacheSwapEntry<V>)unmarshal(e.getValue(), cctx.deploy().localLoader()));
+            GridCacheSwapEntry<V> unmarshalled = unmarshal(e.getValue(), cctx.deploy().localLoader());
+
+            return F.t(e.getKey(), swapEntry(unmarshalled));
         }
 
         /** {@inheritDoc} */
