@@ -34,7 +34,7 @@ class GridPortableObjectImpl implements GridPortableObject {
     private final int hashCode;
 
     /** */
-    private volatile Object obj;
+    private Object obj;
 
     /**
      * @param reader Reader.
