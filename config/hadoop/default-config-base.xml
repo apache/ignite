@@ -90,13 +90,6 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                 </bean>
-
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
-                    <property name="name" value="hadoop-sys"/>
-                    <property name="cacheMode" value="REPLICATED"/>
-                    <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-                </bean>
             </list>
         </property>
 
@@ -111,14 +104,12 @@
             </list>
         </property>
 
-        <property name="localHost" value="127.0.0.1"/>
-
         <!--
-            TCP discovery SPI (uses VM-shared IP-finder).
+            TCP discovery SPI can be configured with list of addresses if multicast is not available.
         -->
+        <!--
         <property name="discoverySpi">
             <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
-                <!-- Override default IP-finder.-->
                 <property name="ipFinder">
                     <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
                         <property name="addresses">
@@ -130,5 +121,6 @@
                 </property>
             </bean>
         </property>
+        -->
     </bean>
 </beans>
