@@ -194,6 +194,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         }
 
         try {
+            jobMetaCache(); // Make sure it was initialized.
+
             GridHadoopJob job = ctx.jobFactory().createJob(jobId, info);
 
             Collection<GridHadoopInputSplit> splits = job.input();
