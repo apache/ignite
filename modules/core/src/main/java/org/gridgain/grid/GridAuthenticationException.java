@@ -7,18 +7,18 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.client;
+package org.gridgain.grid;
 
 /**
- * Exception that represents authentication failure.
+ * Exception that represents client authentication failure.
  */
-public class GridClientAuthenticationException extends GridClientException {
+public class GridAuthenticationException extends GridException {
     /**
      * Creates authentication exception with given error message.
      *
      * @param msg Error message.
      */
-    public GridClientAuthenticationException(String msg) {
+    public GridAuthenticationException(String msg) {
         super(msg);
     }
 }
