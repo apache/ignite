@@ -243,17 +243,21 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
      * @throws GridPortableException In case of error.
      */
     void doWriteObject(@Nullable Object obj) throws GridPortableException {
-        if (obj == null) {
+        if (obj == null)
             doWriteByte(NULL);
+        else {
+            int handle = wCtx.handle(obj);
 
-            return;
+            if (handle >= 0) {
+                doWriteByte(HANDLE);
+                doWriteInt(handle);
+            }
+            else {
+                GridPortableWriterImpl writer = new GridPortableWriterImpl(ctx, wCtx);
+
+                writer.marshal(obj);
+            }
         }
-
-        // TODO: Handle.
-
-        GridPortableWriterImpl writer = new GridPortableWriterImpl(ctx, wCtx);
-
-        writer.marshal(obj);
     }
 
     /**
@@ -817,6 +821,9 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
         /** */
         private int off;
 
+        /** */
+        private Map<Object, Integer> handles = new IdentityHashMap<>();
+
         /**
          */
         private WriterContext() {
@@ -841,6 +848,24 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
             }
 
             return off0;
+        }
+
+        /**
+         * @param obj Object.
+         * @return Handle.
+         */
+        private int handle(Object obj) {
+            assert obj != null;
+
+            Integer h = handles.get(obj);
+
+            if (h != null)
+                return h;
+            else {
+                handles.put(obj, off);
+
+                return -1;
+            }
         }
     }
 }
