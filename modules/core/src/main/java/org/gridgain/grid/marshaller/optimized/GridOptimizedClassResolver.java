@@ -271,15 +271,22 @@ class GridOptimizedClassResolver {
                 desc = ggT.get3();
 
                 if (desc == null) {
-                    if (cls == null) {
+                    if (clsLdr == U.gridClassLoader()) {
+                        if (cls == null) {
+                            cls = forName(name, clsLdr);
+
+                            ggT.set2(cls);
+                        }
+
+                        desc = classDescriptor(cls, null);
+
+                        ggT.set3(desc);
+                    }
+                    else {
                         cls = forName(name, clsLdr);
 
-                        ggT.set2(cls);
+                        desc = classDescriptor(cls, null);
                     }
-
-                    desc = classDescriptor(cls, null);
-
-                    ggT.set3(desc);
                 }
 
                 break;
