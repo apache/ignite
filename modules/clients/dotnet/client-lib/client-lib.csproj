@@ -93,7 +93,6 @@
     <Compile Include="client\impl\portable\GridClientPortableObjectHandle.cs" />
     <Compile Include="client\portable\GridClientPortableReflectiveSerializer.cs" />
     <Compile Include="client\impl\portable\GridClientPortableSerializationContext.cs" />
-    <Compile Include="client\portable\GridClientPortableType.cs" />
     <Compile Include="client\portable\IGridClientPortable.cs" />
     <Compile Include="client\portable\IGridClientPortableRawReader.cs" />
     <Compile Include="client\portable\IGridClientPortableRawWriter.cs" />

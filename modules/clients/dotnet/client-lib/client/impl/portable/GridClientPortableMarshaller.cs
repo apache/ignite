@@ -254,53 +254,14 @@ namespace GridGain.Client.Impl.Portable
             if (typeCfg.Serializer != null)
                 serializer = typeCfg.Serializer;
 
-            // 2.2. Try checking annotation.
-            if (mapper == null || serializer == null)
-            {
-                object[] attrs = type.GetCustomAttributes(typeof(GridClientPortableType), false);
-
-                if (attrs.Length > 0)
-                {
-                    GridClientPortableType typeDesc = (GridClientPortableType)attrs[0];
-
-                    if (mapper == null && typeDesc.IdMapperClass != null)
-                    {
-                        try
-                        {
-                            mapper = (GridClientPortableIdResolver)Activator.CreateInstance(
-                                Type.GetType(typeDesc.IdMapperClass));
-                        }
-                        catch (Exception e)
-                        {
-                            throw new GridClientPortableException("Failed to instantiate ID mapper [type=" +
-                                typeCfg.TypeName + ", idMapperClass=" + typeDesc.IdMapperClass + ']', e);
-                        }
-                    }
-
-                    if (serializer == null && typeDesc.SerializerClass != null)
-                    {
-                        try
-                        {
-                            serializer = (IGridClientPortableSerializer)Activator.CreateInstance(
-                                Type.GetType(typeDesc.SerializerClass));
-                        }
-                        catch (Exception e)
-                        {
-                            throw new GridClientPortableException("Failed to instantiate serializer [type=" +
-                                typeCfg.TypeName + ", idMapperClass=" + typeDesc.SerializerClass + ']', e);
-                        }
-                    }
-                }
-            }
-
-            // 2.3. Delegate to defaults if necessary.
+            // 2.2. Delegate to defaults if necessary.
             if (mapper == null)
                 mapper = cfg.DefaultIdMapper;
 
             if (serializer == null)
                 serializer = cfg.DefaultSerializer;
 
-            // 2.4. Merge reflective stuff if necessary.
+            // 2.3. Merge reflective stuff if necessary.
             if (mapper is GridClientPortableReflectiveIdResolver)
             {                
                 refMapper.Register(type);
