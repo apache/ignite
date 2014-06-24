@@ -87,7 +87,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @return Random grid.
      */
-    private Grid randomGrid() {
+    protected Grid randomGrid() {
         return grid(RAND.nextInt(nodeCount()));
     }
 
@@ -235,7 +235,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
      * @param descs Descriptors.
      * @param cnt Expected count
      */
-    private void checkCount(String svcName, Collection<GridServiceDescriptor> descs, int cnt) {
+    protected void checkCount(String svcName, Collection<GridServiceDescriptor> descs, int cnt) {
         int sum = 0;
 
         for (GridServiceDescriptor d : descs) {
