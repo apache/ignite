@@ -10,6 +10,7 @@
 namespace GridGain.Client.Portable
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
 
     /**
@@ -153,12 +154,27 @@ namespace GridGain.Client.Portable
          * <summary>Read collection.</summary>
          * <returns>Collection.</returns>
          */
-        ICollection<T> ReadCollection<T>();
+        ICollection ReadCollection();
 
         /**
-         * <summary>Read map.</summary>
-         * <returns>Map.</returns>
+         * <summary>Read collection.</summary>
+         * <param name="factory">Factory.</param>
+         * <param name="adder">Adder.</param>
+         * <returns>Collection.</returns>
          */
-        IDictionary<K, V> ReadMap<K, V>();
+        ICollection ReadCollection(GridClientPortableCollectionFactory factory, GridClientPortableCollectionAdder adder);
+
+        /**
+         * <summary>Read generic collection.</summary>
+         * <returns>Collection.</returns>
+         */
+        ICollection<T> ReadGenericCollection<T>();
+
+        /**
+         * <summary>Read generic collection.</summary>
+         * <param name="factory">Factory.</param>
+         * <returns>Collection.</returns>
+         */
+        ICollection<T> ReadGenericCollection<T>(GridClientPortableGenericCollectionFactory<T> factory);
     }
 }

@@ -10,6 +10,8 @@
 namespace GridGain.Client.Impl.Portable
 {
     using System;
+    using System.Collections;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.IO;
 
@@ -410,6 +412,85 @@ namespace GridGain.Client.Impl.Portable
             // 7. Object array.
         }
 
+        public static void WriteCollection(GridClientPortableWriteContext ctx, Stream stream, int pos, ICollection col, byte type)
+        {
+            WriteCommonHeader(stream, PU.TYPE_COLLECTION, col.GetHashCode());
+
+            PU.WriteInt(col.Count, stream);
+
+            stream.WriteByte(type); 
+
+            foreach (object elem in col)
+                ctx.Write(elem);
+
+            WriteLength(stream, pos, stream.Position, 0);
+        }
+
+        public static void WriteGenericCollection<T>(GridClientPortableWriteContext ctx, Stream stream, int pos, ICollection<T> col, byte type)
+        {
+            WriteCommonHeader(stream, PU.TYPE_COLLECTION, col.GetHashCode());
+
+            stream.WriteByte(PU.BYTE_ONE);
+
+            PU.WriteInt(col.Count, stream);
+
+            stream.WriteByte(type);
+
+            foreach (object elem in col)
+                ctx.Write(elem);
+
+            WriteLength(stream, pos, stream.Position, 0);
+        }
+
+        public static ICollection ReadCollection(GridClientPortableReadContext ctx, MemoryStream stream)
+        {
+            if (stream.ReadByte() == PU.BYTE_ONE)
+            {
+                int len = PU.ReadInt(stream);
+
+                byte type = (byte)stream.ReadByte();
+
+                ArrayList res = new ArrayList();
+
+                for (int i = 0; i < len; i++)
+                    res.Add(ctx.Deserialize<object>(stream));
+
+                return res;
+            }
+            else
+                return null;
+        }
+
+        public static ICollection<T> ReadCollection<T>(GridClientPortableReadContext ctx, MemoryStream stream)
+        {
+            if (stream.ReadByte() == PU.BYTE_ONE)
+            {
+                int len = PU.ReadInt(stream);
+
+                byte type = (byte)stream.ReadByte();
+
+                ICollection<T> res;
+
+                if (type == PU.COLLECTION_ARRAY_LIST)
+                    res = new List<T>(len);
+                else if (type == PU.COLLECTION_LINKED_LIST)
+                    res = new LinkedList<T>();
+                else if (type == PU.COLLECTION_HASH_SET)
+                    res = new HashSet<T>();
+                else if (type == PU.COLLECTION_SORTED_SET)
+                    res = new SortedSet<T>();
+                else
+                    res = new List<T>(len);
+
+                for (int i = 0; i < len; i++)
+                    res.Add(ctx.Deserialize<T>(stream));
+
+                return res;
+            }
+            else
+                return null;
+        }
+
         /**
          * <summary>Get write handler for type.</summary>
          * <param name="type">Type.</param>
@@ -419,9 +500,30 @@ namespace GridGain.Client.Impl.Portable
         {
             GridClientPortableSystemWriteDelegate handler;
 
-            WRITE_HANDLERS.TryGetValue(type, out handler);
+            if (WRITE_HANDLERS.TryGetValue(type, out handler))
+                return handler;
+            else
+            {
+                if (type.IsGenericType)
+                {
+                    // 1. Generic dictionary?
+                    
 
-            return handler;
+                    // 2. Generic collection?
+                    if (type.GetGenericTypeDefinition() == typeof(ICollection<>))
+                    {
+
+                    }
+                }
+
+                
+
+                // 3. Generic dictionary?
+
+                // 4. Dictionary?
+
+                return null;
+            }
         }
 
         /**
@@ -487,6 +589,26 @@ namespace GridGain.Client.Impl.Portable
                 PU.WriteInt((int)(rawPos - pos), stream);
 
             stream.Seek(retPos, SeekOrigin.Begin);
+        }
+
+        /**
+         * <summary>Create new array list.</summary>
+         * <param name="len">Length.</param>
+         * <returns>Array list.</returns>
+         */ 
+        public static ICollection CreateArrayList(int len)
+        {
+            return new ArrayList(len);
+        }
+
+        /**
+         * <summary>Add element to array list.</summary>
+         * <param name="col">Array list.</param>
+         * <param name="elem">Element</param>
+         */
+        public static void AddToArrayList(ICollection col, object elem)
+        {
+            (col as ArrayList).Add(elem);
         }
     }
 }

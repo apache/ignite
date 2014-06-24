@@ -141,20 +141,33 @@ namespace GridGain.Client.Impl.Portable
          * <param name="input">Stream.</param>
          * <param name="top">Whether this is top-level object.</param>
          * <returns>Unmarshalled object.</returns>
-         */ 
+         */
         public IGridClientPortableObject Unmarshal(MemoryStream input, bool top)
         {
             long pos = input.Position;
 
             byte hdr = (byte)input.ReadByte();
 
+            return Unmarshal0(input, top, pos, hdr);
+        }
+
+        /**
+         * <summary>Internal unmarshal routine.</summary>
+         * <param name="input">Stream.</param>
+         * <param name="top">Whether this is top-level object.</param>
+         * <param name="pos">Position.</param>
+         * <param name="hdr">Header byte.</param>
+         * <returns>Unmarshalled object.</returns>
+         */
+        public IGridClientPortableObject Unmarshal0(MemoryStream input, bool top, long pos, byte hdr)
+        {
             if (hdr == PU.HDR_NULL)
                 return null;
             else if (hdr == PU.HDR_META)
             {
                 throw new NotImplementedException();
             }
-            
+
             // Reading full object.
             if (hdr != PU.HDR_FULL)
                 throw new GridClientPortableException("Unexpected header: " + hdr);
@@ -169,8 +182,8 @@ namespace GridGain.Client.Impl.Portable
             // Read fields.
             Dictionary<int, int> fields = null;
 
-            if (userType) 
-            { 
+            if (userType)
+            {
                 long curPos = input.Position;
                 long endPos = pos + (rawDataOffset == 0 ? len : rawDataOffset);
 
@@ -186,11 +199,11 @@ namespace GridGain.Client.Impl.Portable
                         fields = new Dictionary<int, int>();
 
                     if (fields.ContainsKey(fieldId))
-                        throw new GridClientPortableException("Object contains duplicate field IDs [userType=" + 
+                        throw new GridClientPortableException("Object contains duplicate field IDs [userType=" +
                             userType + ", typeId=" + typeId + ", fieldId=" + fieldId + ']');
 
                     fields[fieldId] = fieldPos;
-                    
+
                     input.Seek(fieldLen, SeekOrigin.Current);
 
                     curPos = input.Position;
@@ -201,7 +214,7 @@ namespace GridGain.Client.Impl.Portable
 
             byte[] data = top ? input.ToArray() : PU.MemoryBuffer(input);
 
-            return new GridClientPortableObjectImpl(this, data, (int)pos, len, userType, typeId, 
+            return new GridClientPortableObjectImpl(this, data, (int)pos, len, userType, typeId,
                 hashCode, rawDataOffset, fields);
         }
 

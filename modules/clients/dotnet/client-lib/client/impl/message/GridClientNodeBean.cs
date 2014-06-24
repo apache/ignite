@@ -107,11 +107,11 @@ namespace GridGain.Client.Impl.Message {
 
             rawWriter.WriteString(DefaultCacheMode);
 
-            rawWriter.WriteMap(Attributes);
-            rawWriter.WriteMap(Caches);
+            //rawWriter.WriteMap(Attributes);
+            //rawWriter.WriteMap(Caches);
 
-            rawWriter.WriteCollection(TcpAddresses);
-            rawWriter.WriteCollection(TcpHostNames);
+            //rawWriter.WriteCollection(TcpAddresses);
+            //rawWriter.WriteCollection(TcpHostNames);
 
             rawWriter.WriteGuid(NodeId);
 
@@ -128,11 +128,11 @@ namespace GridGain.Client.Impl.Message {
 
             DefaultCacheMode = rawReader.ReadString();
 
-            Attributes = rawReader.ReadMap<String, Object>();
-            Caches = rawReader.ReadMap<String, String>();
+            //Attributes = rawReader.ReadMap<String, Object>();
+            //Caches = rawReader.ReadMap<String, String>();
 
-            TcpAddresses = rawReader.ReadCollection<String>();
-            TcpHostNames = rawReader.ReadCollection<String>();
+            //TcpAddresses = rawReader.ReadCollection<String>();
+            //TcpHostNames = rawReader.ReadCollection<String>();
 
             NodeId = rawReader.ReadGuid().Value;
 

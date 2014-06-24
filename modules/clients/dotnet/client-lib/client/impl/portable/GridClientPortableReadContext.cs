@@ -77,7 +77,36 @@ namespace GridGain.Client.Impl.Portable
          */
         public T Deserialize<T>(MemoryStream stream)
         {
-            return Deserialize<T>((GridClientPortableObjectImpl)marsh.Unmarshal(stream, false));
+            long pos = stream.Position;
+
+            byte hdr =(byte)stream.ReadByte();
+
+            if (hdr == PU.HDR_NULL)
+                return default(T);
+            else if (hdr == PU.HDR_HND)
+            {
+                object hndObj;
+
+                int hndPos = PU.ReadInt(stream);
+
+                if (hnds.TryGetValue(hndPos, out hndObj))
+                    return (T)hndObj;
+                else
+                {
+                    // No such handle, i.e. we trying to deserialize inner object before deserializing outer.
+                    MemoryStream hndStream = new MemoryStream(stream.ToArray());
+
+                    hndStream.Seek(hndPos, SeekOrigin.Begin);
+
+                    return Deserialize<T>(hndStream);
+                }
+            }
+            else
+            {
+                GridClientPortableObjectImpl portObj = (GridClientPortableObjectImpl)marsh.Unmarshal0(stream, false, pos, hdr);
+
+                return Deserialize<T>(portObj);
+            }            
         }
 
         /**

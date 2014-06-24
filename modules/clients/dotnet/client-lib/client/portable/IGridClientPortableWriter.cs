@@ -182,22 +182,8 @@ namespace GridGain.Client.Portable {
          * <param name="fieldName">Field name.</param>
          * <param name="val">Collection.</param>
          */
-        void WriteCollection<T>(string fieldName, ICollection<T> val);
-
-        /**
-         * <summary>Write named map.</summary>
-         * <param name="fieldName">Field name.</param>
-         * <param name="val">Map.</param>
-         */
-        void WriteMap(string fieldName, IDictionary val);
-
-        /**
-         * <summary>Write named generic map.</summary>
-         * <param name="fieldName">Field name.</param>
-         * <param name="val">Map.</param>
-         */
-        void WriteMap<K, V>(string fieldName, IDictionary<K, V> val);
-
+        void WriteGenericCollection<T>(string fieldName, ICollection<T> val);
+        
         /**
          * <summary>Get raw writer.</summary>
          * <returns>Raw writer.</returns>

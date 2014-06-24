@@ -161,18 +161,6 @@ namespace GridGain.Client.Portable
          * <summary>Write generic collection.</summary>
          * <param name="val">Collection.</param>
          */
-        void WriteCollection<T>(ICollection<T> val);
-
-        /**
-         * <summary>Write map.</summary>
-         * <param name="val">Map.</param>
-         */
-        void WriteMap(IDictionary val);
-
-        /**
-         * <summary>Write generic map.</summary>
-         * <param name="val">Map.</param>
-         */
-        void WriteMap<K, V>(IDictionary<K, V> val);
+        void WriteGenericCollection<T>(ICollection<T> val);
     }
 }

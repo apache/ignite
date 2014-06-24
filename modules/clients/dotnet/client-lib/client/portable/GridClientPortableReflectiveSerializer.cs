@@ -38,6 +38,10 @@ namespace GridGain.Client.Portable
         /** Generic dictionary type. */
         private static readonly Type TYP_GENERIC_DICTIONARY = typeof(IDictionary<,>);
 
+        /** Method: read generic collection. */
+        private static readonly MethodInfo MTHD_READ_GEN_COL = 
+            typeof(IGridClientPortableReader).GetMethod("ReadCollection", new Type[] { typeof(string), typeof(GridClientPortableGenericCollectionFactory<>) });
+
         /** Cached type descriptors. */
         private readonly IDictionary<Type, Descriptor> types = new Dictionary<Type, Descriptor>();
 
@@ -187,40 +191,54 @@ namespace GridGain.Client.Portable
                     }
                     else if (type.IsArray)
                         HandleArray(field, type, name, wActions);
-                    else if (type.IsGenericType && type.GetInterface(TYP_GENERIC_DICTIONARY.Name) != null)
-                    {
-                        wActions.Add((obj, writer) =>
-                        {
-                            dynamic val = field.GetValue(obj);
+                    //else if (type.IsGenericType && type.GetInterface(TYP_GENERIC_DICTIONARY.Name) != null)
+                    //{
+                    //    wActions.Add((obj, writer) =>
+                    //    {
+                    //        dynamic val = field.GetValue(obj);
 
-                            writer.WriteMap(name, val);
-                        });
-                    }
+                    //        //writer.WriteMap(name, val);
+                    //    });
+                    //}
                     else if (type.IsGenericType && type.GetInterface(TYP_GENERIC_COLLECTION.Name) != null)
                     {
                         wActions.Add((obj, writer) =>
                         {
                             dynamic val = field.GetValue(obj);
 
-                            writer.WriteCollection(name, val);
+                            writer.WriteGenericCollection(name, val);
                         });
-                    }
-                    else if (type is IDictionary)
-                    {
-                        wActions.Add((obj, writer) =>
-                        {
-                            dynamic val = (IDictionary)field.GetValue(obj);
 
-                            writer.WriteMap(name, val);
+                        rActions.Add((obj, reader) => 
+                        {
+                            object val = MTHD_READ_GEN_COL.MakeGenericMethod(type.GetGenericArguments()[0]).Invoke(reader, new object[] { name });
+
+                            field.SetValue(obj, val);
                         });
                     }
-                    else if (type is ICollection)
+                    //else if (type is IDictionary)
+                    //{
+                    //    wActions.Add((obj, writer) =>
+                    //    {
+                    //        dynamic val = (IDictionary)field.GetValue(obj);
+
+                    //        //writer.WriteMap(name, val);
+                    //    });
+                    //}
+                    else if (type == TYP_COLLECTION || type.GetInterface(TYP_COLLECTION.FullName) != null)
                     {
                         wActions.Add((obj, writer) =>
                         {
                             dynamic val = (ICollection)field.GetValue(obj);
 
                             writer.WriteCollection(name, val);
+                        });
+
+                        rActions.Add((obj, reader) =>
+                        {
+                            object val = reader.ReadCollection(name);
+
+                            field.SetValue(obj, val);
                         });
                     }
                     else
@@ -431,7 +449,7 @@ namespace GridGain.Client.Portable
                     {
                         dynamic val = field.GetValue(obj);
 
-                        writer.WriteMap(name, val); 
+                        //writer.WriteMap(name, val); 
                     });
                 }
                 else if (type.IsGenericType && type.GetInterface(TYP_GENERIC_COLLECTION.Name) != null)

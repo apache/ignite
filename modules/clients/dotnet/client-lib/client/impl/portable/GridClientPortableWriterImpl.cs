@@ -416,42 +416,46 @@ namespace GridGain.Client.Impl.Portable
             throw new NotImplementedException();
         }
 
+        /** <inheritdoc /> */
         public void WriteCollection(string fieldName, ICollection val)
         {
-            throw new NotImplementedException();
+            WriteField(fieldName);
+
+            long pos = ctx.Stream.Position;
+
+            ctx.Stream.Seek(4, SeekOrigin.Current);
+
+            PU.WriteByte(PU.TYPE_COLLECTION, ctx.Stream);
+
+            WriteCollection(val);
+
+            WriteLength(pos);
         }
 
+        /** <inheritdoc /> */
         public void WriteCollection(ICollection val)
         {
-            throw new NotImplementedException();
+            if (val != null)
+            {
+                PU.WriteInt(val.Count, ctx.Stream);
+
+                PU.WriteByte(val.GetType() == typeof(ArrayList) ? PU.COLLECTION_ARRAY_LIST : PU.COLLECTION_CUSTOM, ctx.Stream);
+
+                foreach (Object elem in val)
+                    ctx.Write(elem);
+            }
+            else
+            {
+                PU.WriteInt(-1, ctx.Stream);
+            }
         }
 
-        public void WriteCollection<T>(string fieldName, ICollection<T> val)
+        public void WriteGenericCollection<T>(string fieldName, ICollection<T> val)
         {
             throw new NotImplementedException();
         }
 
-        public void WriteCollection<T>(ICollection<T> val)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void WriteMap(string fieldName, IDictionary val)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void WriteMap(IDictionary val)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void WriteMap<K, V>(string fieldName, IDictionary<K, V> val)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void WriteMap<K, V>(IDictionary<K, V> val)
+        public void WriteGenericCollection<T>(ICollection<T> val)
         {
             throw new NotImplementedException();
         }

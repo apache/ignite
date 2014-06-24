@@ -9,8 +9,10 @@
 
 namespace GridGain.Client.Portable {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Text;
     using NUnit.Framework;
 
@@ -530,6 +532,72 @@ namespace GridGain.Client.Portable {
         }
 
         /**
+         * <summary>Check write of object with collections.</summary>
+         */
+        public void TestCollectionsReflective()
+        {
+            ICollection<GridClientPortableTypeConfiguration> typeCfgs =
+                new List<GridClientPortableTypeConfiguration>();
+
+            typeCfgs.Add(new GridClientPortableTypeConfiguration(typeof(CollectionsType)));
+            typeCfgs.Add(new GridClientPortableTypeConfiguration(typeof(InnerObjectType)));
+
+            GridClientPortableConfiguration cfg = new GridClientPortableConfiguration();
+
+            cfg.TypeConfigurations = typeCfgs;
+
+            GridClientPortableMarshaller marsh = new GridClientPortableMarshaller(cfg);
+
+            CollectionsType obj = new CollectionsType();
+
+            ArrayList list = new ArrayList();
+
+            list.Add(true);
+            list.Add((byte)1);
+            list.Add((short)2);
+            list.Add('a');
+            list.Add((int)3);
+            list.Add((long)4);
+            list.Add((float)5);
+            list.Add((double)6);
+
+            list.Add("string");
+            list.Add(Guid.NewGuid());
+
+            InnerObjectType innerObj = new InnerObjectType();
+
+            innerObj.PInt1 = 1;
+            innerObj.PInt2 = 2;
+
+            list.Add(innerObj);
+
+            obj.Col1 = list;
+
+            byte[] bytes = marsh.Marshal(obj);
+
+            IGridClientPortableObject portObj = marsh.Unmarshal(bytes);
+
+            Assert.AreEqual(obj.GetHashCode(), portObj.HashCode());
+
+            CollectionsType newObj = portObj.Deserialize<CollectionsType>();
+
+            Assert.AreEqual(obj, newObj);
+
+            obj.Col1 = null;
+
+            Assert.AreEqual(obj, marsh.Unmarshal(marsh.Marshal(obj)).Deserialize<CollectionsType>());
+
+            obj.Col1 = list;
+            obj.Col2 = list;
+
+            Assert.AreEqual(obj, marsh.Unmarshal(marsh.Marshal(obj)).Deserialize<CollectionsType>());
+
+            obj.Col2 = new TestList();
+
+            Assert.AreEqual(obj, marsh.Unmarshal(marsh.Marshal(obj)).Deserialize<CollectionsType>());
+        }
+
+        /**
          * <summary>Check write of object fields through reflective serializer.</summary>
          */
         public void TestObjectReflective()
@@ -627,7 +695,7 @@ namespace GridGain.Client.Portable {
                 {
                     InnerObjectType that = (InnerObjectType)obj;
 
-                    return pInt2 == that.pInt2 && pInt2 == that.pInt2;
+                    return pInt1 == that.pInt1 && pInt2 == that.pInt2;
                 }
                 else
                     return false;
@@ -637,6 +705,98 @@ namespace GridGain.Client.Portable {
             public override int GetHashCode()
             {
                 return 31 * pInt1 + pInt2;
+            }
+        }
+
+        public class CollectionsType
+        {
+            private ICollection col1;
+
+            private ArrayList col2;
+            
+            public ICollection Col1
+            {
+                get { return col1; }
+                set { col1 = value; }
+            }
+
+            public ArrayList Col2
+            {
+                get { return col2; }
+                set { col2 = value; }
+            }
+            
+            /** <inheritdoc /> */
+            public override bool Equals(object obj)
+            {
+                if (this == obj)
+                    return true;
+
+                if (obj != null && obj is CollectionsType)
+                {
+                    CollectionsType that = (CollectionsType)obj;
+
+                    return CompareCollections(col1, that.col1) && CompareCollections(col2, that.col2);
+                }
+                else
+                    return false;
+            }
+
+            /** <inheritdoc /> */
+            public override int GetHashCode()
+            {
+                int res = col1 != null ? col1.GetHashCode() : 0;
+
+                res = 31 * res + (col2 != null ? col2.GetHashCode() : 0);
+
+                return res;
+            }
+        }
+
+        public class TestList : ArrayList
+        {
+
+        }
+
+        private static bool CompareCollections(ICollection col1, ICollection col2)
+        {
+            if (col1 == null && col2 == null)
+                return true;
+            else
+            {
+                if (col1 == null || col2 == null)
+                    return false;
+                else
+                {
+                    if (col1.Count != col2.Count)
+                        return false;
+                    else
+                    {
+                        IEnumerator enum1 = col1.GetEnumerator();
+
+                        while (enum1.MoveNext())
+                        {
+                            object elem = enum1.Current;
+
+                            bool contains = false;
+
+                            foreach (object thatElem in col2)
+                            {
+                                if (elem == null && thatElem == null || elem != null && elem.Equals(thatElem))
+                                {
+                                    contains = true;
+
+                                    break;
+                                }
+                            }
+
+                            if (!contains)
+                                return false;
+                        }
+
+                        return true;
+                    }
+                }
             }
         }
 

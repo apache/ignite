@@ -17,6 +17,7 @@ namespace GridGain.Client.Impl.Portable
     using GridGain.Client.Portable;
 
     using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
+    using PSH = GridGain.Client.Impl.Portable.GridClientPortableSystemHandlers;
 
     /**
      * <summary>Portable reader implementation.</summary>
@@ -402,29 +403,83 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public ICollection<T> ReadCollection<T>(string fieldName)
+        public ICollection ReadCollection(string fieldName)
         {
-            throw new NotImplementedException();
+            PositionField(fieldName);
+
+            ctx.Stream.Seek(4, SeekOrigin.Current);
+
+            byte hdr = (byte)ctx.Stream.ReadByte();
+
+            if (hdr != PU.TYPE_COLLECTION)
+                throw new GridClientPortableInvalidFieldException("Written field is not collection: " + fieldName);
+
+            return ReadCollection();
         }
 
         /** <inheritdoc /> */
-        public IDictionary<K, V> ReadMap<K, V>(string fieldName)
+        public ICollection ReadCollection()
         {
-            throw new NotImplementedException();
+            return ReadCollection(PSH.CreateArrayList, PSH.AddToArrayList);
         }
 
         /** <inheritdoc /> */
-        public ICollection<T> ReadCollection<T>()
+        public ICollection ReadCollection(string fieldName, GridClientPortableCollectionFactory factory, 
+            GridClientPortableCollectionAdder adder)
         {
-            throw new NotImplementedException();
-        }
+            PositionField(fieldName);
 
+            ctx.Stream.Seek(4, SeekOrigin.Current);
+
+            byte hdr = (byte)ctx.Stream.ReadByte();
+
+            if (hdr != PU.TYPE_COLLECTION)
+                throw new GridClientPortableInvalidFieldException("Written field is not collection: " + fieldName);
+
+            return ReadCollection(factory, adder);
+        }
+        
         /** <inheritdoc /> */
-        public IDictionary<K, V> ReadMap<K, V>()
+        public ICollection ReadCollection(GridClientPortableCollectionFactory factory, GridClientPortableCollectionAdder adder)
+        {
+            int len = PU.ReadInt(ctx.Stream);
+
+            if (len >= 0)
+            {
+                // Doesn't support anything in non-generic mode.
+                ctx.Stream.Seek(1, SeekOrigin.Current);
+
+                ICollection res = factory.Invoke(len);
+
+                for (int i = 0; i < len; i++)
+                    adder.Invoke(res, ctx.Deserialize<object>(ctx.Stream));
+
+                return res;
+            }
+            else
+                return null;
+        }
+
+        public ICollection<T> ReadGenericCollection<T>(string fieldName)
         {
             throw new NotImplementedException();
         }
 
+        public ICollection<T> ReadGenericCollection<T>()
+        {
+            throw new NotImplementedException();
+        }
+
+        public ICollection<T> ReadGenericCollection<T>(string fieldName, GridClientPortableGenericCollectionFactory<T> factory)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ICollection<T> ReadGenericCollection<T>(GridClientPortableGenericCollectionFactory<T> factory)
+        {
+            throw new NotImplementedException();
+        }
+        
         /**
          * <summary>Mark current output as raw.</summary>
          */

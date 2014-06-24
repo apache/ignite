@@ -10,6 +10,8 @@
 namespace GridGain.Client.Impl.Portable
 {
     using System;
+    using System.Collections;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.IO;
     using System.Reflection;
@@ -97,7 +99,7 @@ namespace GridGain.Client.Impl.Portable
         public const byte TYPE_ARRAY = 25;
 
         /** Type: collection. */
-        public const byte TYPE_COLLECTION = 26;
+        public const byte TYPE_COLLECTION = 26; 
 
         /** Type: map. */
         public const byte TYPE_MAP = 27;
@@ -128,6 +130,27 @@ namespace GridGain.Client.Impl.Portable
 
         /** Type: task result bean. */
         public const byte TYPE_TASK_RES_BEAN = 108;
+
+        /** Collection: custom. */
+        public const byte COLLECTION_CUSTOM = 0;
+
+        /** Collection: array list. */
+        public const byte COLLECTION_ARRAY_LIST = 1;
+
+        /** Collection: linked list. */
+        public const byte COLLECTION_LINKED_LIST = 2;
+
+        /** Collection: hash set. */
+        public const byte COLLECTION_HASH_SET = 3;
+
+        /** Collection: hash set. */
+        public const byte COLLECTION_LINKED_HASH_SET = 4;
+
+        /** Collection: sorted set. */
+        public const byte COLLECTION_SORTED_SET = 5;
+
+        /** Collection: concurrent bag. */
+        public const byte COLLECTION_CONCURRENT_BAG = 6; 
 
         /** Byte "0". */
         public const byte BYTE_ZERO = (byte)0;

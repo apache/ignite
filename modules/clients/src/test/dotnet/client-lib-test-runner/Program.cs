@@ -9,6 +9,7 @@
 
 namespace GridGain {
     using System;
+    using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Reflection;
@@ -19,14 +20,27 @@ namespace GridGain {
     
     using Dbg = System.Diagnostics.Debug;
 
+    public class LList<T> : List<T>
+    {
+
+    }
+
     /** <summary>Start test suite main class.</summary> */
     public static class Program {
         [STAThread]
         static void Main(/*string[] args*/) {
+            LList<string> l = new LList<string>();
+
+            l.Add("att");
+
+            l.GetType().GetInterface(typeof(ICollection<>).FullName);
+
             Debug.Listeners.Add(new TextWriterTraceListener(System.Console.Out));
             Debug.AutoFlush = true;
 
             Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
+
+            Test(new GridClientPortableSelfTest(), (test) => test.TestCollectionsReflective());
 
             // 4. Handling simple fields inside object. 
             Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsReflective());
@@ -68,9 +82,7 @@ namespace GridGain {
 
             // 3. Handling Guids.
             Test(new GridClientPortableSelfTest(), (test) => test.TestWriteGuid());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWriteGuidArray());
-
-            
+            Test(new GridClientPortableSelfTest(), (test) => test.TestWriteGuidArray());            
 
             Test(new GridClientPortableSelfTest(), (test) => test.TestObjectReflective());
 

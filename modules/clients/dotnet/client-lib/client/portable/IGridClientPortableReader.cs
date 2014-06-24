@@ -10,7 +10,26 @@
 namespace GridGain.Client.Portable
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
+
+    /** 
+     * <summary>Delegate for collection creation.</summary>
+     * <param name="len">Collection length.</param>
+     */ 
+    public delegate ICollection GridClientPortableCollectionFactory(int len);
+
+    /**
+     * <summary>Delegate for adding element to collection.</summary>
+     * <param name="col">Collection.</param>
+     * <param name="elem">Element to add.</param>
+     */
+    public delegate void GridClientPortableCollectionAdder(ICollection col, object elem);
+
+    /**
+     * <summary>Delegate for generic collection creation.</summary>
+     */ 
+    public delegate ICollection<T> GridClientPortableGenericCollectionFactory<T>(int len);    
 
     /**
      * <summary>Reader for portable objects.</summary>
@@ -172,14 +191,31 @@ namespace GridGain.Client.Portable
          * <param name="fieldName">Field name.</param>
          * <returns>Collection.</returns>
          */
-        ICollection<T> ReadCollection<T>(string fieldName);
+        ICollection ReadCollection(string fieldName);
 
         /**
-         * <summary>Read named map.</summary>
+         * <summary>Read named collection.</summary>
          * <param name="fieldName">Field name.</param>
-         * <returns>Map.</returns>
+         * <param name="factory">Factory.</param>
+         * <param name="adder">Adder.</param>
+         * <returns>Collection.</returns>
          */
-        IDictionary<K, V> ReadMap<K, V>(string fieldName);
+        ICollection ReadCollection(string fieldName, GridClientPortableCollectionFactory factory, GridClientPortableCollectionAdder adder);
+
+        /**
+         * <summary>Read named generic collection.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <returns>Collection.</returns>
+         */
+        ICollection<T> ReadGenericCollection<T>(string fieldName);
+
+        /**
+         * <summary>Read named generic collection.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <param name="factory">Factory.</param>
+         * <returns>Collection.</returns>
+         */
+        ICollection<T> ReadGenericCollection<T>(string fieldName, GridClientPortableGenericCollectionFactory<T> factory);
 
         /**
          * <summary>Get raw reader.</summary>
