@@ -28,10 +28,10 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     /**
      * @throws Exception If failed.
      */
-    public void testUpdateTopology() throws Exception {
+    public void testSingletonUpdateTopology() throws Exception {
         Grid g = randomGrid();
 
-        String name = "serviceSingleton";
+        String name = "serviceSingletonUpdateTopology";
 
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -50,6 +50,56 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
         assertEquals(1, DummyService.started());
         assertFalse(DummyService.isCancelled());
 
+        int newNodes = 2;
+
+        for (int i = 0; i < newNodes; i++)
+            startGrid(nodeCount() + i);
+
+        assertEquals(1, DummyService.started());
+        assertFalse(DummyService.isCancelled());
+
         checkCount(name, g.services().deployedServices(), 1);
+                                              }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeployOnEachNode() throws Exception {
+        Grid g = randomGrid();
+
+        String name = "serviceOnEachNodeUpdateTopology";
+
+        CountDownLatch latch = new CountDownLatch(nodeCount());
+
+        DummyService.latch(latch);
+
+        GridFuture<?> fut = g.services().deployOnEachNode(name, new DummyService());
+
+        info("Deployed service: " + name);
+
+        fut.get();
+
+        info("Finished waiting for service future: " + name);
+
+        latch.await();
+
+        assertEquals(nodeCount(), DummyService.started());
+        assertFalse(DummyService.isCancelled());
+
+        int newNodes = 2;
+
+        latch = new CountDownLatch(newNodes);
+
+        DummyService.latch(latch);
+
+        for (int i = 0; i < newNodes; i++)
+            startGrid(nodeCount() + i);
+
+        latch.await();
+
+        assertEquals(nodeCount() + newNodes, DummyService.started());
+        assertFalse(DummyService.isCancelled());
+
+        checkCount(name, g.services().deployedServices(), nodeCount() + newNodes);
     }
 }
