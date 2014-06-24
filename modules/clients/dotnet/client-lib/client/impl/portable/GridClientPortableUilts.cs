@@ -143,330 +143,6 @@ namespace GridGain.Client.Impl.Portable
             BindingFlags.Instance | BindingFlags.NonPublic);
         
         /**
-         * <summary>Get primitive array type ID.</summary>
-         * <param name="type">Type.</param>
-         * <returns>Primitive array type ID or 0 if this is not primitive array type.</returns>
-         */
-        public static byte PrimitiveArrayTypeId(Type type)
-        {
-            if (type.IsArray)
-            {
-                Type elemType = type.GetElementType();
-
-                if (elemType == typeof(Boolean))
-                    return TYPE_ARRAY_BOOL;
-                else if (elemType == typeof(Byte) || elemType == typeof(SByte))
-                    return TYPE_ARRAY_BYTE;
-                else if (elemType == typeof(Int16) || elemType == typeof(UInt16))
-                    return TYPE_ARRAY_SHORT;
-                else if (elemType == typeof(Int32) || elemType == typeof(UInt32))
-                    return TYPE_ARRAY_INT;
-                else if (elemType == typeof(Int64) || elemType == typeof(UInt64))
-                    return TYPE_ARRAY_LONG;
-                else if (elemType == typeof(Char))
-                    return TYPE_ARRAY_CHAR;
-                else if (elemType == typeof(Single))
-                    return TYPE_ARRAY_FLOAT;
-                else if (elemType == typeof(Double))
-                    return TYPE_ARRAY_DOUBLE;
-            }
-
-            return 0;
-        }
-
-        /**
-         * <summary>Write primitive array to the underlying output.</summary>
-         * <param name="typeId">Primitive array type ID</param>
-         * <param name="obj">Array object.</param>
-         * <param name="stream">Output stream.</param>
-         */
-        public static void WritePrimitiveArray(int typeId, object obj, Stream stream)
-        {
-            Type elemType = obj.GetType().GetElementType();
-
-            switch (typeId)
-            {
-                case TYPE_ARRAY_BOOL:
-                    WriteBooleanArray((bool[])obj, stream);
-
-                    break;
-
-                case TYPE_ARRAY_BYTE:
-                    if (elemType == typeof(sbyte))
-                        obj = (byte[])(Array)obj;
-
-                    WriteByteArray((byte[])obj, stream);
-
-                    break;
-
-                case TYPE_ARRAY_SHORT:
-                    if (elemType == typeof(ushort))
-                        obj = (short[])(Array)obj;
-
-                    WriteShortArray((short[])obj, stream);
-
-                    break;
-
-                case TYPE_ARRAY_INT:
-                    if (elemType == typeof(uint))
-                        obj = (int[])(Array)obj;
-
-                    WriteIntArray((int[])obj, stream);
-
-                    break;
-
-                case TYPE_ARRAY_LONG:
-                    if (elemType == typeof(ulong))
-                        obj = (long[])(Array)obj;
-
-                    WriteLongArray((long[])obj, stream);
-
-                    break;
-
-                case TYPE_ARRAY_CHAR:
-                    WriteCharArray((char[])obj, stream);
-
-                    break;
-
-                case TYPE_ARRAY_FLOAT:
-                    WriteFloatArray((float[])obj, stream);
-
-                    break;
-
-                case TYPE_ARRAY_DOUBLE:
-                    WriteDoubleArray((double[])obj, stream);
-
-                    break;
-
-                default:
-                    throw new GridClientPortableException("Type ID doesn't refer to primitive type: " + typeId);
-            }
-        }
-
-        /**
-         * <summary>Read primitive array.</summary>
-         * <param name="typeId">Type ID.</param>
-         * <param name="type">Type.</param>
-         * <param name="stream">Stream.</param>
-         * <param name="processed">Whether data was processed.</param>
-         * <returns>Primitive array.</returns>
-         */
-        public static object ReadPrimitiveArray(int typeId, Type type, Stream stream, out bool processed)
-        {
-            Type elemType = type.GetElementType();
-
-            switch (typeId)
-            {
-                case TYPE_ARRAY_BOOL:
-                    processed = true;
-
-                    return ReadBooleanArray(stream);
-
-                case TYPE_ARRAY_BYTE:
-                    processed = true;
-
-                    return ReadByteArray(stream, elemType == typeof(sbyte));
-
-                case TYPE_ARRAY_SHORT:
-                    processed = true;
-
-                    return ReadShortArray(stream, elemType == typeof(short));
-
-                case TYPE_ARRAY_CHAR:
-                    processed = true;
-
-                    return ReadCharArray(stream);
-
-                case TYPE_ARRAY_INT:
-                    processed = true;
-
-                    return ReadIntArray(stream, elemType == typeof(int));
-
-                case TYPE_ARRAY_LONG:
-                    processed = true;
-
-                    return ReadLongArray(stream, elemType == typeof(long));
-
-                case TYPE_ARRAY_FLOAT:
-                    processed = true;
-
-                    return ReadFloatArray(stream);
-
-                case TYPE_ARRAY_DOUBLE:
-                    processed = true;
-
-                    return ReadDoubleArray(stream);
-
-                default:
-                    processed = false;
-
-                    return null;
-            }
-        }
-
-        /**
-         * <summary>Write string in UTF8 encoding.</summary>
-         * <param name="val">String.</param>
-         * <param name="stream">Stream.</param>
-         */
-        public static void WriteString(string val, Stream stream)
-        {
-            if (val == null)            
-                stream.WriteByte(BYTE_ZERO);            
-            else
-            {
-                byte[] bytes = Encoding.UTF8.GetBytes(val);
-
-                stream.WriteByte(BYTE_ONE);
-
-                WriteInt(bytes.Length, stream);
-
-                stream.Write(bytes, 0, bytes.Length);
-            }            
-        }
-
-        /**
-         * <summary>Read string in UTF8 encoding.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>String.</returns>
-         */
-        public static string ReadString(Stream stream)
-        {
-            if (stream.ReadByte() == BYTE_ZERO)
-                return null;
-            else
-            {
-                int len = ReadInt(stream);
-
-                byte[] bytes = new byte[len];
-
-                stream.Read(bytes, 0, len);
-
-                return Encoding.UTF8.GetString(bytes);
-            }
-        }
-
-        public static void WriteStringArray(string[] val, Stream stream)
-        {
-            if (val == null)
-                stream.WriteByte(BYTE_ZERO);
-            else
-            {
-                stream.WriteByte(BYTE_ONE);
-                
-                // TODO: Finish.
-
-            }
-        }
-
-        /**
-         * <summary>Get string hash code.</summary> 
-         * <param name="val">Value.</param>
-         * <returns>Hash code.</returns>
-         */ 
-        public static int StringHashCode(string val)
-        {
-            if (val.Length == 0)
-                return 0;
-            else
-            {
-                char[] arr = val.ToCharArray();
-
-                int hash = 0;
-
-                foreach (char c in val.ToCharArray())
-                    hash = 31 * hash + c;
-
-                return hash;
-            }
-        }
-
-        /**
-         * 
-         */ 
-        public static int ArrayHashCode<T>(T[] arr)
-        {
-            int hash = 1;
-
-            for (int i = 0; i < arr.Length; i++) {
-                T item = arr[i];
-
-                hash = 31 * hash + (item == null ? 0 : item.GetHashCode());
-            }
-
-            return hash;
-        }
-
-        /**
-         * <summary>Get Guid hash code.</summary> 
-         * <param name="val">Value.</param>
-         * <returns>Hash code.</returns>
-         */ 
-        public static int GuidHashCode(Guid val)
-        {
-            byte[] arr = val.ToByteArray();
-
-            long msb = 0;
-            long lsb = 0;
-            
-            for (int i = 0; i < 8; i++)
-                msb = (msb << 8) | ((uint)arr[i] & 0xff);
-
-            for (int i=8; i<16; i++)
-                lsb = (lsb << 8) | ((uint)arr[i] & 0xff);
-
-            long hilo = msb ^ lsb;
-
-            return ((int)(hilo >> 32)) ^ (int)hilo;
-        }
-
-        /**
-         * <summary>Write GUID.</summary>
-         * <param name="val">GUID.</param>
-         * <param name="stream">Stream.</param>
-         */
-        public static void WriteGuid(Guid? val, Stream stream)
-        {
-            if (val.HasValue) {
-                byte[] bytes = val.Value.ToByteArray();
-
-                stream.WriteByte(BYTE_ONE);
-                stream.Write(bytes, 0, bytes.Length);
-            }                
-            else
-                stream.WriteByte(BYTE_ZERO);
-        }
-        
-        /**
-         * <summary>Read GUID.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>GUID</returns>
-         */
-        public static Guid? ReadGuid(Stream stream)
-        {
-            if (stream.ReadByte() == BYTE_ZERO)
-                return null;
-            else
-            {
-                byte[] bytes = new byte[16];
-
-                stream.Read(bytes, 0, 16);
-
-                return new Guid(bytes);
-            }
-        }
-
-        /**
-         * <summary>Write enum.</summary>
-         * <param name="val">enum.</param>
-         * <param name="stream">Stream.</param>
-         */
-        public static void WriteEnum(Enum val, Stream stream)
-        {
-            throw new NotImplementedException();
-        }
-
-        /**
          * <summary>Write boolean.</summary>
          * <param name="val">Value.</param>
          * <param name="stream">Output stream.</param>
@@ -1111,6 +787,169 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
+         * <summary>Write string in UTF8 encoding.</summary>
+         * <param name="val">String.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static void WriteString(string val, Stream stream)
+        {
+            if (val == null)
+                stream.WriteByte(BYTE_ZERO);
+            else
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(val);
+
+                stream.WriteByte(BYTE_ONE);
+
+                WriteInt(bytes.Length, stream);
+
+                stream.Write(bytes, 0, bytes.Length);
+            }
+        }
+
+        /**
+         * <summary>Read string in UTF8 encoding.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>String.</returns>
+         */
+        public static string ReadString(Stream stream)
+        {
+            if (stream.ReadByte() == BYTE_ZERO)
+                return null;
+            else
+            {
+                int len = ReadInt(stream);
+
+                byte[] bytes = new byte[len];
+
+                stream.Read(bytes, 0, len);
+
+                return Encoding.UTF8.GetString(bytes);
+            }
+        }
+
+        /**
+         * <summary>Write string array in UTF8 encoding.</summary>
+         * <param name="vals">String array.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static void WriteStringArray(string[] vals, Stream stream)
+        {
+            if (vals != null)
+            {
+                stream.WriteByte(BYTE_ONE);
+
+                WriteInt(vals.Length, stream);
+
+                foreach (string val in vals)
+                    WriteString(val, stream);
+            }
+            else
+                stream.WriteByte(BYTE_ZERO);
+        }
+
+        /**
+         * <summary>Read string array in UTF8 encoding.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>String array.</returns>
+         */
+        public static string[] ReadStringArray(Stream stream)
+        {
+            if (stream.ReadByte() == BYTE_ONE)
+            {
+                int len = ReadInt(stream);
+
+                string[] vals = new string[len];
+
+                for (int i = 0; i < len; i++)
+                    vals[i] = ReadString(stream);
+
+                return vals;
+            }
+            else
+                return null;
+        }
+
+        /**
+         * <summary>Write GUID.</summary>
+         * <param name="val">GUID.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static void WriteGuid(Guid? val, Stream stream)
+        {
+            if (val.HasValue)
+            {
+                byte[] bytes = val.Value.ToByteArray();
+
+                stream.WriteByte(BYTE_ONE);
+                stream.Write(bytes, 0, bytes.Length);
+            }
+            else
+                stream.WriteByte(BYTE_ZERO);
+        }
+
+        /**
+         * <summary>Read GUID.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>GUID</returns>
+         */
+        public static Guid? ReadGuid(Stream stream)
+        {
+            if (stream.ReadByte() == BYTE_ZERO)
+                return null;
+            else
+            {
+                byte[] bytes = new byte[16];
+
+                stream.Read(bytes, 0, 16);
+
+                return new Guid(bytes);
+            }
+        }
+
+        /**
+         * <summary>Write GUID array.</summary>
+         * <param name="vals">GUID array.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static void WriteGuidArray(Guid?[] vals, Stream stream)
+        {
+            if (vals != null)
+            {
+                stream.WriteByte(BYTE_ONE);
+
+                WriteInt(vals.Length, stream);
+
+                foreach (Guid? val in vals)
+                    WriteGuid(val, stream);
+            }
+            else
+                stream.WriteByte(BYTE_ZERO);
+        }
+
+        /**
+         * <summary>Read GUID array.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>GUID array.</returns>
+         */
+        public static Guid?[] ReadGuidArray(Stream stream)
+        {
+            if (stream.ReadByte() == BYTE_ONE)
+            {
+                int len = ReadInt(stream);
+
+                Guid?[] vals = new Guid?[len];
+
+                for (int i = 0; i < len; i++)
+                    vals[i] = ReadGuid(stream);
+
+                return vals;
+            }
+            else
+                return null;
+        }
+
+        /**
          * <summary>Gets type key.</summary>
          * <param name="userType">User type flag.</param>
          * <param name="typeId">Type ID.</param>
@@ -1135,5 +974,67 @@ namespace GridGain.Client.Impl.Portable
         {
             return (byte[])MEM_BUF_FIELD.GetValue(stream);
         }
+        /**
+         * <summary>Get string hash code.</summary> 
+         * <param name="val">Value.</param>
+         * <returns>Hash code.</returns>
+         */
+        public static int StringHashCode(string val)
+        {
+            if (val.Length == 0)
+                return 0;
+            else
+            {
+                char[] arr = val.ToCharArray();
+
+                int hash = 0;
+
+                foreach (char c in val.ToCharArray())
+                    hash = 31 * hash + c;
+
+                return hash;
+            }
+        }
+
+        /**
+         * 
+         */
+        public static int ArrayHashCode<T>(T[] arr)
+        {
+            int hash = 1;
+
+            for (int i = 0; i < arr.Length; i++)
+            {
+                T item = arr[i];
+
+                hash = 31 * hash + (item == null ? 0 : item.GetHashCode());
+            }
+
+            return hash;
+        }
+
+        /**
+         * <summary>Get Guid hash code.</summary> 
+         * <param name="val">Value.</param>
+         * <returns>Hash code.</returns>
+         */
+        public static int GuidHashCode(Guid val)
+        {
+            byte[] arr = val.ToByteArray();
+
+            long msb = 0;
+            long lsb = 0;
+
+            for (int i = 0; i < 8; i++)
+                msb = (msb << 8) | ((uint)arr[i] & 0xff);
+
+            for (int i = 8; i < 16; i++)
+                lsb = (lsb << 8) | ((uint)arr[i] & 0xff);
+
+            long hilo = msb ^ lsb;
+
+            return ((int)(hilo >> 32)) ^ (int)hilo;
+        }
+
     }
 }

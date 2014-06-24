@@ -162,15 +162,7 @@ namespace GridGain.Client.Impl.Portable
                         // 3. Guid?
                         if (typeId == PU.TYPE_GUID) 
                             return (T)(object)PU.ReadGuid(stream);
-
-                        // 4. Primitive array?
-                        bool processed;
-
-                        object res = PU.ReadPrimitiveArray(typeId, (typeof(T)), stream, out processed);
-
-                        if (processed)
-                            return (T)res;
-
+                        
                         return (T)(new object());
                     }
                 }

@@ -225,10 +225,187 @@ namespace GridGain.Client.Impl.Portable
             };
 
             // 4. Primitive arrays.
+            WRITE_HANDLERS[typeof(bool[])] = (stream, pos, obj) =>
+            {
+                bool[] arr = (bool[])obj;
+
+                WriteCommonHeader(stream, PU.TYPE_ARRAY_BOOL, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length : 0));
+
+                PU.WriteBooleanArray(arr, stream);
+            };
+
+            READ_HANDLERS[PU.TYPE_ARRAY_BOOL] = delegate(Stream stream, Type type, out object obj)
+            {
+                obj = PU.ReadBooleanArray(stream);
+            };
+
+            WRITE_HANDLERS[typeof(byte[])] = (stream, pos, obj) =>
+            {
+                byte[] arr = (byte[])obj;
+
+                WriteCommonHeader(stream, PU.TYPE_ARRAY_BYTE, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length : 0));
+
+                PU.WriteByteArray(arr, stream);
+            };
+
+            WRITE_HANDLERS[typeof(sbyte[])] = (stream, pos, obj) =>
+            {
+                byte[] arr = (byte[])(Array)obj;
+
+                WriteCommonHeader(stream, PU.TYPE_ARRAY_BYTE, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length : 0));
+
+                PU.WriteByteArray(arr, stream);
+            };
+
+            READ_HANDLERS[PU.TYPE_ARRAY_BYTE] = delegate(Stream stream, Type type, out object obj)
+            {
+                obj = PU.ReadByteArray(stream, type == typeof(sbyte[]));
+            };
+
+            WRITE_HANDLERS[typeof(short[])] = (stream, pos, obj) =>
+            {
+                short[] arr = (short[])obj;
+
+                WriteCommonHeader(stream, PU.TYPE_ARRAY_SHORT, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 2 : 0));
+
+                PU.WriteShortArray(arr, stream);
+            };
+
+            WRITE_HANDLERS[typeof(ushort[])] = (stream, pos, obj) =>
+            {
+                short[] arr = (short[])(Array)obj;
+
+                WriteCommonHeader(stream, PU.TYPE_ARRAY_SHORT, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 2 : 0));
+
+                PU.WriteShortArray(arr, stream);
+            };
+
+            READ_HANDLERS[PU.TYPE_ARRAY_SHORT] = delegate(Stream stream, Type type, out object obj)
+            {
+                obj = PU.ReadShortArray(stream, type == typeof(short[]));
+            };
+
+            WRITE_HANDLERS[typeof(char[])] = (stream, pos, obj) =>
+            {
+                char[] arr = (char[])obj;
+
+                WriteCommonHeader(stream, PU.TYPE_ARRAY_CHAR, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 2 : 0));
+
+                PU.WriteCharArray(arr, stream);
+            };
+
+            READ_HANDLERS[PU.TYPE_ARRAY_CHAR] = delegate(Stream stream, Type type, out object obj)
+            {
+                obj = PU.ReadCharArray(stream);
+            };
+
+            WRITE_HANDLERS[typeof(int[])] = (stream, pos, obj) =>
+            {
+                int[] arr = (int[])obj;
+
+                WriteCommonHeader(stream, PU.TYPE_ARRAY_INT, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 4 : 0));
+
+                PU.WriteIntArray(arr, stream);
+            };
+
+            WRITE_HANDLERS[typeof(uint[])] = (stream, pos, obj) =>
+            {
+                int[] arr = (int[])(Array)obj;
+
+                WriteCommonHeader(stream, PU.TYPE_ARRAY_INT, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 4 : 0));
+
+                PU.WriteIntArray(arr, stream);
+            };
+
+            READ_HANDLERS[PU.TYPE_ARRAY_INT] = delegate(Stream stream, Type type, out object obj)
+            {
+                obj = PU.ReadIntArray(stream, type == typeof(int[]));
+            };
+
+            WRITE_HANDLERS[typeof(long[])] = (stream, pos, obj) =>
+            {
+                long[] arr = (long[])obj;
+
+                WriteCommonHeader(stream, PU.TYPE_ARRAY_LONG, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 8 : 0));
+
+                PU.WriteLongArray(arr, stream);
+            };
+
+            WRITE_HANDLERS[typeof(ulong[])] = (stream, pos, obj) =>
+            {
+                long[] arr = (long[])(Array)obj;
+
+                WriteCommonHeader(stream, PU.TYPE_ARRAY_LONG, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 8 : 0));
+
+                PU.WriteLongArray(arr, stream);
+            };
+
+            READ_HANDLERS[PU.TYPE_ARRAY_LONG] = delegate(Stream stream, Type type, out object obj)
+            {
+                obj = PU.ReadLongArray(stream, type == typeof(long[]));
+            };
+
+            WRITE_HANDLERS[typeof(float[])] = (stream, pos, obj) =>
+            {
+                float[] arr = (float[])obj;
+
+                WriteCommonHeader(stream, PU.TYPE_ARRAY_FLOAT, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 4 : 0));
+
+                PU.WriteFloatArray(arr, stream);
+            };
+
+            READ_HANDLERS[PU.TYPE_ARRAY_FLOAT] = delegate(Stream stream, Type type, out object obj)
+            {
+                obj = PU.ReadFloatArray(stream);
+            };
+
+            WRITE_HANDLERS[typeof(double[])] = (stream, pos, obj) =>
+            {
+                double[] arr = (double[])obj;
+
+                WriteCommonHeader(stream, PU.TYPE_ARRAY_DOUBLE, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 8 : 0));
+
+                PU.WriteDoubleArray(arr, stream);
+            };
+
+            READ_HANDLERS[PU.TYPE_ARRAY_DOUBLE] = delegate(Stream stream, Type type, out object obj)
+            {
+                obj = PU.ReadDoubleArray(stream);
+            };
 
             // 5. String array.
+            WRITE_HANDLERS[typeof(string[])] = (stream, pos, obj) =>
+            {
+                string[] arr = (string[])obj;
+
+                WriteCommonHeader(stream, PU.TYPE_ARRAY_STRING, obj.GetHashCode());
+
+                PU.WriteStringArray(arr, stream);
+
+                WriteLength(stream, pos, stream.Position, 0);
+            };
+
+            READ_HANDLERS[PU.TYPE_ARRAY_STRING] = delegate(Stream stream, Type type, out object obj)
+            {
+                obj = PU.ReadStringArray(stream);
+            };
 
             // 6. Guid array.
+            WRITE_HANDLERS[typeof(Guid?[])] = (stream, pos, obj) =>
+            {
+                Guid?[] arr = (Guid?[])obj;
+
+                WriteCommonHeader(stream, PU.TYPE_ARRAY_GUID, obj.GetHashCode());
+
+                PU.WriteGuidArray(arr, stream);
+
+                WriteLength(stream, pos, stream.Position, 0);
+            };
+
+            READ_HANDLERS[PU.TYPE_ARRAY_GUID] = delegate(Stream stream, Type type, out object obj)
+            {
+                obj = PU.ReadGuidArray(stream);
+            };
 
             // 7. Object array.
         }

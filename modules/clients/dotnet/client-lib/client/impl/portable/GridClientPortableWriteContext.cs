@@ -97,25 +97,6 @@ namespace GridGain.Client.Impl.Portable
                 return;
             }
             
-            // 7. Write primitive array.
-            byte typeId = PU.PrimitiveArrayTypeId(type);
-
-            if (typeId != 0)
-            {
-                Stream.WriteByte(PU.HDR_FULL);
-                PU.WriteBoolean(false, Stream);
-                PU.WriteInt(typeId, Stream);
-                PU.WriteInt(obj.GetHashCode(), Stream);
-
-                Stream.Seek(8, SeekOrigin.Current);
-
-                PU.WritePrimitiveArray(typeId, obj, Stream);
-
-                WriteLength(Stream, pos, Stream.Position, 0);
-
-                return;
-            }
-            
             // 3. Try interpreting object as handle.
             if (hnds == null)
                 hnds = new Dictionary<GridClientPortableObjectHandle, int>();

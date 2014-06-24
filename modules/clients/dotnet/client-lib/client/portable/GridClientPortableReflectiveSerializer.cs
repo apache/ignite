@@ -403,8 +403,6 @@ namespace GridGain.Client.Portable
                             (String[])field.GetValue(obj)); });
                     else if (elemType == typeof(Guid) || (nullable && nullableElemType == typeof(Guid)))
                         actions.Add((obj, writer) => { writer.WriteGuidArray(name, (Guid?[])field.GetValue(obj)); });
-                    else if (elemType == typeof(Enum))
-                        actions.Add((obj, writer) => { writer.WriteEnumArray(name, (Enum[])field.GetValue(obj)); });
                     else
                     {
                         actions.Add((obj, writer) =>

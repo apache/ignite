@@ -157,20 +157,6 @@ namespace GridGain.Client.Portable {
         void WriteGuidArray(string fieldName, Guid?[] val);
 
         /**
-         * <summary>Write named enum value.</summary>
-         * <param name="fieldName">Field name.</param>
-         * <param name="val">Enum value.</param>
-         */
-        void WriteEnum(string fieldName, Enum val);
-
-        /**
-         * <summary>Write named enum array.</summary>
-         * <param name="fieldName">Field name.</param>
-         * <param name="val">Enum array.</param>
-         */
-        void WriteEnumArray(string fieldName, Enum[] val);
-
-        /**
          * <summary>Write named object value.</summary>
          * <param name="fieldName">Field name.</param>
          * <param name="val">Object value.</param>

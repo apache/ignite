@@ -331,6 +331,17 @@ namespace GridGain.Client.Portable {
         }
 
         /**
+         * <summary>Check write of string array.</summary>
+         */
+        public void TestWriteStringArray()
+        {
+            string[] vals = new string[] { "str1", null, "", "str2", null};
+            string[] newVals = marsh.Unmarshal(marsh.Marshal(vals)).Deserialize<string[]>();
+
+            Assert.AreEqual(vals, newVals);
+        }
+
+        /**
          * <summary>Check write of Guid.</summary>
          */
         public void TestWriteGuid()
@@ -344,6 +355,17 @@ namespace GridGain.Client.Portable {
             nGuid = null;
 
             Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(nGuid)), null);
+        }
+
+        /**
+         * <summary>Check write of string array.</summary>
+         */
+        public void TestWriteGuidArray()
+        {
+            Guid?[] vals = new Guid?[] { Guid.NewGuid(), null, Guid.Empty, Guid.NewGuid(), null };
+            Guid?[] newVals = marsh.Unmarshal(marsh.Marshal(vals)).Deserialize<Guid?[]>();
+
+            Assert.AreEqual(vals, newVals);
         }
 
         /**
