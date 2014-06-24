@@ -132,19 +132,15 @@ public class GridTcpRestParser implements GridNioParser {
         else {
             GridClientMarshaller marsh = marshaller(ses);
 
-            byte[] data = marsh.marshal(msg);
+            ByteBuffer res = marsh.marshal(msg, 45);
 
-            assert data.length > 0;
+            ByteBuffer slice = res.slice();
 
-            ByteBuffer res = ByteBuffer.allocate(data.length + 45);
-
-            res.put(GRIDGAIN_REQ_FLAG);
-            res.put(U.intToBytes(data.length + 40));
-            res.put(U.longToBytes(msg.requestId()));
-            res.put(U.uuidToBytes(msg.clientId()));
-            res.put(U.uuidToBytes(msg.destinationId()));
-            res.put(data);
-            res.flip();
+            slice.put(GRIDGAIN_REQ_FLAG);
+            slice.putInt(res.remaining() - 5);
+            slice.putLong(msg.requestId());
+            slice.put(U.uuidToBytes(msg.clientId()));
+            slice.put(U.uuidToBytes(msg.destinationId()));
 
             return res;
         }

@@ -21,9 +21,6 @@ public class GridClientTaskResultBean implements Externalizable, GridPortable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    public static final int PORTABLE_TYPE_ID = GridClientAbstractMessage.nextSystemTypeId();
-
     /** Synthetic ID containing task ID and result holding node ID. */
     private String id;
 
@@ -93,25 +90,24 @@ public class GridClientTaskResultBean implements Externalizable, GridPortable {
         this.error = error;
     }
 
-//    /** {@inheritDoc} */
-//    @Override public int typeId() {
-//        return PORTABLE_TYPE_ID;
-//    }
-
     /** {@inheritDoc} */
     @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
-        writer.writeString("id", id);
-        writer.writeBoolean("finished", finished);
-        writer.writeObject("res", res);
-        writer.writeString("error", error);
+        GridPortableRawWriter raw = writer.rawWriter();
+
+        raw.writeString(id);
+        raw.writeBoolean(finished);
+        raw.writeObject(res);
+        raw.writeString(error);
     }
 
     /** {@inheritDoc} */
     @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
-        id = reader.readString("id");
-        finished = reader.readBoolean("finished");
-        res = reader.readObject("res");
-        error = reader.readString("error");
+        GridPortableRawReader raw = reader.rawReader();
+
+        id = raw.readString();
+        finished = raw.readBoolean();
+        res = raw.readPortable();
+        error = raw.readString();
     }
 
     /** {@inheritDoc} */

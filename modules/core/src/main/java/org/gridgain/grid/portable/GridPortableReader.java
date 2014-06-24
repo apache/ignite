@@ -103,6 +103,13 @@ public interface GridPortableReader {
 
     /**
      * @param fieldName Field name.
+     * @return Portable object.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public GridPortableObject readPortable(String fieldName) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
      * @return Byte array.
      * @throws GridPortableException In case of error.
      */

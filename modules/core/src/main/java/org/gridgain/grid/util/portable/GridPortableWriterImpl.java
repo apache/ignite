@@ -56,17 +56,21 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     /** */
     private boolean allowFields = true;
 
-    /** */
-    GridPortableWriterImpl(GridPortableContext ctx) {
+    /**
+     * @param ctx Context.
+     * @param off Start offset.
+     */
+    GridPortableWriterImpl(GridPortableContext ctx, int off) {
         this.ctx = ctx;
 
-        wCtx = new WriterContext();
+        wCtx = new WriterContext(off);
 
-        start = 0;
+        start = off;
     }
 
     /**
-     * @param wCtx Context.
+     * @param ctx Context.
+     * @param wCtx Writer context.
      */
     private GridPortableWriterImpl(GridPortableContext ctx, WriterContext wCtx) {
         this.ctx = ctx;
@@ -1003,9 +1007,12 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
         private Map<Object, Integer> handles = new IdentityHashMap<>();
 
         /**
+         * @param off Start offset.
          */
-        private WriterContext() {
-            arr = new byte[INIT_CAP];
+        private WriterContext(int off) {
+            arr = new byte[off + INIT_CAP];
+
+            this.off = off;
         }
 
         /**

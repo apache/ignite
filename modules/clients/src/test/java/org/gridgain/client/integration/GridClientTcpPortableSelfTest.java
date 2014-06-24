@@ -40,7 +40,7 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
     @Override protected GridClientConfiguration clientConfiguration() {
         GridClientConfiguration cfg = super.clientConfiguration();
 
-        cfg.setMarshaller(new GridClientPortableMarshaller(typesMap()));
+        cfg.setMarshaller(new GridClientPortableMarshaller());
 
         return cfg;
     }

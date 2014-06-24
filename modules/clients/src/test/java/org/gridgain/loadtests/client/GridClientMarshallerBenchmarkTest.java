@@ -17,6 +17,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
+import java.nio.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.*;
@@ -87,7 +88,13 @@ public class GridClientMarshallerBenchmarkTest extends GridCommonAbstractTest {
         throws IOException {
         if (iterCnt == 1) {
             // Warm-up, will not print statistics.
-            Object res = marshaller.unmarshal(marshaller.marshal(obj));
+            ByteBuffer buf = marshaller.marshal(obj, 0);
+
+            byte[] arr = new byte[buf.remaining()];
+
+            buf.get(arr);
+
+            Object res = marshaller.unmarshal(arr);
 
             assertNotNull("Failed for marshaller: " + marshaller.getClass().getSimpleName(), res);
 
@@ -101,7 +108,11 @@ public class GridClientMarshallerBenchmarkTest extends GridCommonAbstractTest {
         Object res = null;
 
         for (int i = 0; i < iterCnt; i++) {
-            byte[] raw = marshaller.marshal(obj);
+            ByteBuffer buf = marshaller.marshal(obj, 0);
+
+            byte[] raw = new byte[buf.remaining()];
+
+            buf.get(raw);
 
             long end = System.currentTimeMillis();
 

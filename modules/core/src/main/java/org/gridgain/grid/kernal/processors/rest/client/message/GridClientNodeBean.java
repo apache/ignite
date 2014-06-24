@@ -22,9 +22,6 @@ public class GridClientNodeBean implements Externalizable, GridPortable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    public static final int PORTABLE_TYPE_ID = GridClientAbstractMessage.nextSystemTypeId();
-
     /** Node ID */
     private UUID nodeId;
 
@@ -312,53 +309,42 @@ public class GridClientNodeBean implements Externalizable, GridPortable {
         return nodeId == null ? other.nodeId == null : nodeId.equals(other.nodeId);
     }
 
-//    /** {@inheritDoc} */
-//    @Override public int typeId() {
-//        return PORTABLE_TYPE_ID;
-//    }
-
     /** {@inheritDoc} */
     @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
-        writer.writeInt("tcpPort", tcpPort);
-        writer.writeInt("jettyPort", jettyPort);
-        writer.writeInt("replicaCnt", replicaCnt);
+        GridPortableRawWriter raw = writer.rawWriter();
 
-        writer.writeString("dfltCacheMode", dfltCacheMode);
-
-        writer.writeMap("attrs", attrs);
-        writer.writeMap("caches", caches);
-
-        writer.writeCollection("tcpAddrs", tcpAddrs);
-        writer.writeCollection("tcpHostNames", tcpHostNames);
-        writer.writeCollection("jettyAddrs", jettyAddrs);
-        writer.writeCollection("jettyHostNames", jettyHostNames);
-
-        writer.writeUuid("nodeId", nodeId);
-
-        writer.writeObject("consistentId", consistentId);
-        writer.writeObject("metrics", metrics);
+        raw.writeInt(tcpPort);
+        raw.writeInt(jettyPort);
+        raw.writeInt(replicaCnt);
+        raw.writeString(dfltCacheMode);
+        raw.writeMap(attrs);
+        raw.writeMap(caches);
+        raw.writeCollection(tcpAddrs);
+        raw.writeCollection(tcpHostNames);
+        raw.writeCollection(jettyAddrs);
+        raw.writeCollection(jettyHostNames);
+        raw.writeUuid(nodeId);
+        raw.writeObject(consistentId);
+        raw.writeObject(metrics);
     }
 
     /** {@inheritDoc} */
     @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
-        tcpPort = reader.readInt("tcpPort");
-        jettyPort = reader.readInt("jettyPort");
-        replicaCnt = reader.readInt("replicaCnt");
+        GridPortableRawReader raw = reader.rawReader();
 
-        dfltCacheMode = reader.readString("dfltCacheMode");
-
-        attrs = reader.readMap("attrs");
-        caches = reader.readMap("caches");
-
-        tcpAddrs = reader.readCollection("tcpAddrs");
-        tcpHostNames = reader.readCollection("tcpHostNames");
-        jettyAddrs = reader.readCollection("jettyAddrs");
-        jettyHostNames = reader.readCollection("jettyHostNames");
-
-        nodeId = reader.readUuid("nodeId");
-
-        consistentId = reader.readObject("consistentId");
-        metrics = (GridClientNodeMetricsBean)reader.readObject("metrics");
+        tcpPort = raw.readInt();
+        jettyPort = raw.readInt();
+        replicaCnt = raw.readInt();
+        dfltCacheMode = raw.readString();
+        attrs = raw.readMap();
+        caches = raw.readMap();
+        tcpAddrs = raw.readCollection();
+        tcpHostNames = raw.readCollection();
+        jettyAddrs = raw.readCollection();
+        jettyHostNames = raw.readCollection();
+        nodeId = raw.readUuid();
+        consistentId = raw.readObject();
+        metrics = (GridClientNodeMetricsBean)raw.readObject();
     }
 
     /** {@inheritDoc} */

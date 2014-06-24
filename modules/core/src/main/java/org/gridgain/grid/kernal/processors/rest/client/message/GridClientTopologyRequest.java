@@ -22,9 +22,6 @@ public class GridClientTopologyRequest extends GridClientAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    public static final int PORTABLE_TYPE_ID = GridClientAbstractMessage.nextSystemTypeId();
-
     /** Id of requested node. */
     private UUID nodeId;
 
@@ -113,33 +110,28 @@ public class GridClientTopologyRequest extends GridClientAbstractMessage {
             (includeAttrs ? 1 : 0);
     }
 
-//    /** {@inheritDoc} */
-//    @Override public int typeId() {
-//        return PORTABLE_TYPE_ID;
-//    }
-
     /** {@inheritDoc} */
     @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
         super.writePortable(writer);
 
-        writer.writeUuid("nodeId", nodeId);
+        GridPortableRawWriter raw = writer.rawWriter();
 
-        writer.writeString("nodeIp", nodeIp);
-
-        writer.writeBoolean("includeMetrics", includeMetrics);
-        writer.writeBoolean("includeAttrs", includeAttrs);
+        raw.writeUuid(nodeId);
+        raw.writeString(nodeIp);
+        raw.writeBoolean(includeMetrics);
+        raw.writeBoolean(includeAttrs);
     }
 
     /** {@inheritDoc} */
     @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
         super.readPortable(reader);
 
-        nodeId = reader.readUuid("nodeId");
+        GridPortableRawReader raw = reader.rawReader();
 
-        nodeIp = reader.readString("nodeIp");
-
-        includeMetrics = reader.readBoolean("includeMetrics");
-        includeAttrs = reader.readBoolean("includeAttrs");
+        nodeId = raw.readUuid();
+        nodeIp = raw.readString();
+        includeMetrics = raw.readBoolean();
+        includeAttrs = raw.readBoolean();
     }
 
     /** {@inheritDoc} */

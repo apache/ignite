@@ -22,6 +22,7 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.net.*;
+import java.nio.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -254,20 +255,21 @@ final class GridTestBinaryClient {
     private byte[] createPacket(GridClientMessage msg) throws IOException {
         msg.clientId(id);
 
-        byte[] data = marsh.marshal(msg);
+        ByteBuffer res = marsh.marshal(msg, 45);
 
-        byte[] res = new byte[45 + data.length];
+        ByteBuffer slice = res.slice();
 
-        res[0] = (byte)0x90;
+        slice.put((byte)0x90);
+        slice.putInt(res.remaining() - 5);
+        slice.putLong(msg.requestId());
+        slice.put(U.uuidToBytes(msg.clientId()));
+        slice.put(U.uuidToBytes(msg.destinationId()));
 
-        U.intToBytes(data.length + 40, res, 1);
-        U.longToBytes(msg.requestId(), res, 5);
-        U.uuidToBytes(msg.clientId(), res, 13);
-        U.uuidToBytes(msg.destinationId(), res, 29);
+        byte[] arr = new byte[res.remaining()];
 
-        U.arrayCopy(data, 0, res, 45, data.length);
+        res.get(arr);
 
-        return res;
+        return arr;
     }
 
     /**

@@ -22,6 +22,7 @@ import org.jetbrains.annotations.*;
 import javax.net.ssl.*;
 import java.io.*;
 import java.net.*;
+import java.nio.*;
 import java.nio.channels.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -436,7 +437,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         }
 
         if (fut.forward()) {
-            GridRouterResponse msg = new GridRouterResponse(req.message(),
+            GridRouterResponse msg = new GridRouterResponse(
+                req.message().array(),
                 req.requestId(),
                 clientId,
                 req.destinationId());
@@ -449,7 +451,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             GridClientMessage msg;
 
             try {
-                msg = marsh.unmarshal(req.message());
+                msg = marsh.unmarshal(req.messageArray());
             }
             catch (IOException e) {
                 fut.onDone(new GridClientException("Failed to unmarshal message.", e));
@@ -566,11 +568,12 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         wrapper.clientId(clientId);
         wrapper.destinationId(msg.destinationId());
 
-        byte[] data = (msg instanceof GridRouterRequest) ? ((GridRouterRequest)msg).body() : marsh.marshal(msg);
+        ByteBuffer data = (msg instanceof GridRouterRequest) ? ByteBuffer.wrap(((GridRouterRequest)msg).body()) :
+            marsh.marshal(msg, 0);
 
         wrapper.message(data);
 
-        wrapper.messageSize(data.length + 40);
+        wrapper.messageSize(data.remaining() + 40);
 
         return wrapper;
     }
@@ -603,12 +606,12 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridClientFutureAdapter<Boolean> cachePutAll(String cacheName, Map<K, V> entries,
+    @Override public GridClientFutureAdapter<Boolean> cachePutAll(String cacheName, Map<Object, Object> entries,
         Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException {
         assert entries != null;
 
-        GridClientCacheRequest<K, V> req = new GridClientCacheRequest<>(PUT_ALL);
+        GridClientCacheRequest req = new GridClientCacheRequest(PUT_ALL);
 
         req.cacheName(cacheName);
         req.values(entries);
@@ -618,12 +621,12 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridClientFutureAdapter<Map<K, V>> cacheGetAll(String cacheName, Collection<K> keys,
+    @Override public GridClientFutureAdapter<Map<Object, Object>> cacheGetAll(String cacheName, Collection<Object> keys,
         Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException {
         assert keys != null;
 
-        GridClientCacheRequest<K, V> req = new GridClientCacheRequest<>(GET_ALL);
+        GridClientCacheRequest req = new GridClientCacheRequest(GET_ALL);
 
         req.cacheName(cacheName);
         req.keys(new HashSet<>(keys));
@@ -633,10 +636,10 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public <K> GridClientFutureAdapter<Boolean> cacheRemove(String cacheName, K key,
+    @Override public GridClientFutureAdapter<Boolean> cacheRemove(String cacheName, Object key,
         Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException {
-        GridClientCacheRequest<K, Object> req = new GridClientCacheRequest<>(RMV);
+        GridClientCacheRequest req = new GridClientCacheRequest(RMV);
 
         req.cacheName(cacheName);
         req.key(key);
@@ -646,12 +649,12 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public <K> GridClientFutureAdapter<Boolean> cacheRemoveAll(String cacheName, Collection<K> keys,
+    @Override public GridClientFutureAdapter<Boolean> cacheRemoveAll(String cacheName, Collection<Object> keys,
         Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException {
         assert keys != null;
 
-        GridClientCacheRequest<K, Object> req = new GridClientCacheRequest<>(RMV_ALL);
+        GridClientCacheRequest req = new GridClientCacheRequest(RMV_ALL);
 
         req.cacheName(cacheName);
         req.keys(new HashSet<>(keys));
@@ -661,13 +664,13 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridClientFutureAdapter<Boolean> cacheReplace(String cacheName, K key, V val,
+    @Override public GridClientFutureAdapter<Boolean> cacheReplace(String cacheName, Object key, Object val,
         Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException {
         assert key != null;
         assert val != null;
 
-        GridClientCacheRequest<K, V> replace = new GridClientCacheRequest<>(REPLACE);
+        GridClientCacheRequest replace = new GridClientCacheRequest(REPLACE);
 
         replace.cacheName(cacheName);
         replace.key(key);
@@ -678,12 +681,12 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridClientFutureAdapter<Boolean> cacheCompareAndSet(String cacheName, K key, V newVal, V oldVal,
-        Set<GridClientCacheFlag> flags, UUID destNodeId)
+    @Override public GridClientFutureAdapter<Boolean> cacheCompareAndSet(String cacheName, Object key, Object newVal,
+        Object oldVal, Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException {
         assert key != null;
 
-        GridClientCacheRequest<K, V> msg = new GridClientCacheRequest<>(CAS);
+        GridClientCacheRequest msg = new GridClientCacheRequest(CAS);
 
         msg.cacheName(cacheName);
         msg.key(key);
@@ -696,9 +699,9 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <K> GridClientFutureAdapter<GridClientDataMetrics> cacheMetrics(String cacheName, UUID destNodeId)
+    @Override public GridClientFutureAdapter<GridClientDataMetrics> cacheMetrics(String cacheName, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException {
-        GridClientCacheRequest<K, Object> metrics = new GridClientCacheRequest<>(METRICS);
+        GridClientCacheRequest metrics = new GridClientCacheRequest(METRICS);
 
         metrics.cacheName(cacheName);
         metrics.destinationId(destNodeId);
@@ -713,13 +716,13 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridClientFutureAdapter<Boolean> cacheAppend(String cacheName, K key, V val,
+    @Override public GridClientFutureAdapter<Boolean> cacheAppend(String cacheName, Object key, Object val,
         Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException {
         assert key != null;
         assert val != null;
 
-        GridClientCacheRequest<K, Object> append = new GridClientCacheRequest<>(APPEND);
+        GridClientCacheRequest append = new GridClientCacheRequest(APPEND);
 
         append.cacheName(cacheName);
         append.key(key);
@@ -730,13 +733,13 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridClientFutureAdapter<Boolean> cachePrepend(String cacheName, K key, V val,
+    @Override public GridClientFutureAdapter<Boolean> cachePrepend(String cacheName, Object key, Object val,
         Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException {
         assert key != null;
         assert val != null;
 
-        GridClientCacheRequest<K, Object> prepend = new GridClientCacheRequest<>(PREPEND);
+        GridClientCacheRequest prepend = new GridClientCacheRequest(PREPEND);
 
         prepend.cacheName(cacheName);
         prepend.key(key);

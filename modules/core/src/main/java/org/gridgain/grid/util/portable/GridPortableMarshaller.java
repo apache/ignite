@@ -120,11 +120,11 @@ public class GridPortableMarshaller {
      * @return Byte buffer.
      * @throws GridPortableException In case of error.
      */
-    public ByteBuffer marshal(@Nullable Object obj) throws GridPortableException {
+    public ByteBuffer marshal(@Nullable Object obj, int off) throws GridPortableException {
         if (obj == null)
             return NULL_BUF;
 
-        GridPortableWriterImpl writer = new GridPortableWriterImpl(ctx);
+        GridPortableWriterImpl writer = new GridPortableWriterImpl(ctx, off);
 
         writer.marshal(obj);
 

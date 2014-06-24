@@ -21,9 +21,6 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    public static final int PORTABLE_TYPE_ID = nextSystemTypeId();
-
     /** Task name. */
     private String taskName;
 
@@ -78,27 +75,24 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
             31 * (arg == null ? 0 : arg.hashCode());
     }
 
-//    /** {@inheritDoc} */
-//    @Override public int typeId() {
-//        return PORTABLE_TYPE_ID;
-//    }
-
     /** {@inheritDoc} */
     @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
         super.writePortable(writer);
 
-        writer.writeString("taskName", taskName);
+        GridPortableRawWriter raw = writer.rawWriter();
 
-        writer.writeObject("arg", arg);
+        raw.writeString(taskName);
+        raw.writeObject(arg);
     }
 
     /** {@inheritDoc} */
     @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
         super.readPortable(reader);
 
-        taskName = reader.readString("taskName");
+        GridPortableRawReader raw = reader.rawReader();
 
-        arg = reader.readObject("arg");
+        taskName = raw.readString();
+        arg = raw.readPortable();
     }
 
     /** {@inheritDoc} */

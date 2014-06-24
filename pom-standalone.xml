@@ -415,6 +415,10 @@
                                     <title>Router APIs</title>
                                     <packages>org.gridgain.client.router</packages>
                                 </group>
+                                <group>
+                                    <title>Marshallers</title>
+                                    <packages>org.gridgain.client.marshaller:org.gridgain.client.marshaller.jdk:org.gridgain.client.marshaller.optimized:org.gridgain.client.marshaller.portable</packages>
+                                </group>
                             </groups>
                             <header>
                                 <![CDATA[

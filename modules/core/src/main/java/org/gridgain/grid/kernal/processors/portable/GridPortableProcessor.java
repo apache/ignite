@@ -29,6 +29,7 @@ public interface GridPortableProcessor extends GridProcessor {
 
     /**
      * @param obj Object to marshal.
+     *
      * @return Byte buffer.
      * @throws GridPortableException In case of error.
      */

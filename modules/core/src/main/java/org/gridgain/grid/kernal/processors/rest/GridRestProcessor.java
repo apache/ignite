@@ -388,7 +388,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 case EXE:
                     if (res.getResponse() instanceof GridClientTaskResultBean) {
-                        GridClientTaskResultBean taskRes = (GridClientTaskResultBean) res.getResponse();
+                        GridClientTaskResultBean taskRes = (GridClientTaskResultBean)res.getResponse();
 
                         taskRes.setResult(interceptor.onSend(taskRes.getResult()));
                     }

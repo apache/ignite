@@ -21,6 +21,7 @@ import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.nio.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.GridProductImpl.*;
@@ -32,7 +33,7 @@ import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
  */
 class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessage> {
     /** Empty byte array. */
-    private static final byte[] EMPTY_ARR = new byte[0];
+    private static final ByteBuffer EMPTY_BUF = ByteBuffer.wrap(new byte[0]);
 
     /** Logger. */
     private final GridLogger log;
@@ -138,11 +139,11 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
 
                 // Use a marshaller stub to just save protocol ID.
                 ses.addMeta(MARSHALLER.ordinal(), new GridClientMarshaller() {
-                    @Override public byte[] marshal(Object obj) {
+                    @Override public ByteBuffer marshal(Object obj, int off) {
                         U.warn(log, "Attempt to marshal a message with a stub " +
                             "(will output empty result): " + obj);
 
-                        return EMPTY_ARR;
+                        return EMPTY_BUF;
                     }
 
                     @Override public <T> T unmarshal(byte[] bytes) {
