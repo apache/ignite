@@ -50,7 +50,7 @@ public:
      *
      * @param val Value for the variant.
      */
-    GridClientVariant(bool val);
+    explicit GridClientVariant(bool val);
 
     /**
      * Constructor with int16_t argument.

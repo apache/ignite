@@ -12,11 +12,11 @@
 
 class GridPortableObject::Impl {
 public:
-    Impl(const boost::shared_ptr<std::vector<int8_t>>& dataPtr, int32_t start, GridPortableIdResolver* idRslvr) : 
-        dataPtr(dataPtr), start(start), ctx(dataPtr, idRslvr), reader(ctx, start) {
+    Impl(const boost::shared_ptr<PortableReadContext>& ctxPtr, int32_t start) : 
+        ctxPtr(ctxPtr), reader(ctxPtr, start) {
     }
 
-    Impl(const Impl& other) : dataPtr(other.dataPtr), start(other.start), ctx(dataPtr, other.ctx.idRslvr), reader(ctx, other.start) {
+    Impl(const Impl& other) : ctxPtr(other.ctxPtr), reader(ctxPtr, other.reader.start) {
     }
     
     GridClientVariant field(const std::string& fieldName) {
@@ -28,17 +28,13 @@ public:
     }
 
 private:
-    const boost::shared_ptr<std::vector<int8_t>> dataPtr;
-
-    ReadContext ctx;
+    const boost::shared_ptr<PortableReadContext> ctxPtr;
 
     GridPortableReaderImpl reader;
-
-    const int32_t start;
 };
 
-GridPortableObject::GridPortableObject(const boost::shared_ptr<std::vector<int8_t>>& dataPtr, int32_t start, GridPortableIdResolver* idRslvr) {
-    pImpl = new Impl(dataPtr, start, idRslvr);
+GridPortableObject::GridPortableObject(boost::shared_ptr<PortableReadContext>& ctxPtr, int32_t start) {
+    pImpl = new Impl(ctxPtr, start);
 }
 
 GridPortableObject::GridPortableObject(const GridPortableObject& other) {
@@ -85,7 +81,7 @@ void GridPortableObjectBuilder::set(boost::unordered_map<std::string, GridClient
 }
 
 GridPortableObject GridPortableObjectBuilder::build() {
-    boost::shared_ptr<std::vector<int8_t>> dataPtr;
+    boost::shared_ptr<PortableReadContext> ctxPtr;
     
-    return GridPortableObject(dataPtr, 0, nullptr);
+    return GridPortableObject(ctxPtr, 0);
 }

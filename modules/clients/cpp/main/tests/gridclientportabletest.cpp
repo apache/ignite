@@ -736,12 +736,12 @@ public:
 
     void writePortable(GridPortableWriter& writer) const override {
         writer.writeInt32("1", val1);
-        writer.writeVariant("2", GridClientVariant(p2));
+        writer.writeVariant("2", (GridPortable*)p2);
     }
 
     void readPortable(GridPortableReader& reader) override {
         val1 = reader.readInt32("1");
-        p2 = reader.readVariant("2").getPortable<TestPortableCycle2>();
+        p2 = reader.readVariant("2").getPortableObject().deserialize<TestPortableCycle2>();
     }
 
     TestPortableCycle2* p2;
@@ -759,12 +759,12 @@ public:
 
     void writePortable(GridPortableWriter& writer) const override {
         writer.writeFloat("1", val1);
-        writer.writeVariant("2", GridClientVariant(p1));
+        writer.writeVariant("2", p1);
     }
 
     void readPortable(GridPortableReader& reader) override {
         val1 = reader.readFloat("1");
-        p1 = reader.readVariant("2").getPortable<TestPortableCycle1>();
+        p1 = reader.readVariant("2").getPortableObject().deserialize<TestPortableCycle1>();
     }
 
     TestPortableCycle1* p1;
@@ -802,7 +802,7 @@ BOOST_AUTO_TEST_CASE(testPortableSerialization_cycle) {
     BOOST_REQUIRE_EQUAL(p1, p1->p2->p1);
 
     BOOST_REQUIRE_EQUAL(p1->val1, 10);
-    BOOST_REQUIRE_EQUAL(p2->val1, 10.5);
+    BOOST_REQUIRE_EQUAL(p1->p2->val1, 10.5);
 
     delete p1->p2;
     delete p1;
@@ -1062,7 +1062,7 @@ public:
     }
 
     void writePortable(GridPortableWriter& writer) const override {
-        writer.writeInt32("f1", 10);
+        writer.writeInt32("f1", f1);
         
         writer.writeVariant("obj1", obj1);
         writer.writeVariant("obj2", obj2);
@@ -1083,7 +1083,7 @@ public:
         f1 = reader.readInt32("f1");
 
         obj1 = reader.readVariant("obj1").getPortableObject().deserialize<TestPortableFieldNames2>();
-        obj2 = reader.readVariant("obj3").getPortableObject().deserialize<TestPortableFieldNames2>();
+        obj3 = reader.readVariant("obj3").getPortableObject().deserialize<TestPortableFieldNames2>();
 
         BOOST_REQUIRE_EQUAL(100, obj1->f1);
         BOOST_REQUIRE_EQUAL(100, obj1->f2);

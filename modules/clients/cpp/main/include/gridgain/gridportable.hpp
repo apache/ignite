@@ -60,6 +60,7 @@ public:
 
 class GridPortableReaderImpl;
 class GridPortableObjectBuilder;
+class PortableReadContext;
 
 class GRIDGAIN_API GridPortableObject {
 public:
@@ -85,7 +86,7 @@ public:
     bool operator==(const GridPortableObject& other) const;
 
 private:
-    GridPortableObject(const boost::shared_ptr<std::vector<int8_t>>& dataPtr, int32_t start, GridPortableIdResolver* idRslvr);
+    GridPortableObject(boost::shared_ptr<PortableReadContext>& ctxPtr, int32_t start);
 
     class Impl;
 

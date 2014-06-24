@@ -67,126 +67,25 @@ GridPortable* createPortable(int32_t typeId, GridPortableReader &reader);
 
 int32_t cStringHash(const char* str);
 
-class GridWriteHandleTable {
-public:
-    GridWriteHandleTable(int initCap, float loadFactor) : spine(initCap, -1), next(initCap, 0), objs(initCap, nullptr), size(0) {
-        this->loadFactor = loadFactor;
-
-        threshold = (int)(initCap * loadFactor);
-    }
-
-    void clear() {
-        std::fill(spine.begin(), spine.end(), -1);
-
-        std::fill(objs.begin(), objs.end(), nullptr);
-
-        size = 0;
-    }
-
-    int32_t lookup(void* obj) {
-        int idx = hash(obj) % spine.size();
-
-        if (size == 0) {
-            assign(obj, idx);
-
-            return -1;
-        }
-
-        for (int32_t i = spine[idx]; i >= 0; i = next[i]) {
-            if (objs[i] == obj)
-                return i;
-        }
-
-        assign(obj, idx);
-
-        return -1;
-    }
-
+class PortableReadContext {
 private:
-    int hash(void* ptr) {
-        return (size_t)ptr & 0x7FFFFFFF;
+    PortableReadContext(const PortableReadContext& other) {
     }
 
-    void assign(void* obj, int idx) {
-        if (size >= next.size())
-            growEntries();
-
-        if (size >= threshold) {
-            growSpine();
-
-            idx = hash(obj) % spine.size();
-        }
-
-        insert(obj, size, idx);
-
-        size++;
-    }
-
-    void growEntries() {
-        int newLen = (next.size() << 1) + 1;
-
-        objs.resize(newLen);
-
-        next.resize(newLen);
-    }
-
-    void growSpine() {
-        int newLen = (spine.size() << 1) + 1;
-
-        threshold = (int)(newLen * loadFactor);
-
-        std::fill(spine.begin(), spine.end(), -1);
-
-        spine.resize(newLen, -1);
-
-        for (int i = 0; i < this->size; i++) {
-            void* obj = objs[i];
-
-            int idx = hash(obj) % spine.size();
-
-            insert(objs[i], i, idx);
-        }
-    }
-
-    void insert(void* obj, int handle, int idx) {
-        objs[handle] = obj;
-        next[handle] = spine[idx];
-        spine[idx] = handle;
-    }
-
-    int size;
-
-    int threshold;
-
-    float loadFactor;
-
-    std::vector<int> spine;
-
-    std::vector<int> next;
-
-    std::vector<void*> objs;
-};
-
-class GridReadHandleTable {
 public:
-    GridReadHandleTable(int cap) {
-        handles.reserve(cap);
+    PortableReadContext(const boost::shared_ptr<std::vector<int8_t>>& dataPtr, GridPortableIdResolver* idRslvr) :
+        dataPtr(dataPtr), idRslvr(idRslvr) {
+    }
+    
+    ~PortableReadContext() {
+        std::cout << "Delete read context\n";
     }
 
-    int32_t assign(void* obj) {
-        int32_t res = handles.size();
+    boost::unordered_map<int32_t, void*> handles;
 
-        handles.push_back(obj);
-
-        return res;
-    }
-
-    void* lookup(int32_t handle) {
-        return handles[handle];
-    }
-
-private:
-    std::vector<void*> handles;
+    boost::shared_ptr<std::vector<int8_t>> dataPtr;
+        
+    GridPortableIdResolver* idRslvr;
 };
 
 #ifdef BOOST_BIG_ENDIAN
@@ -1708,7 +1607,7 @@ protected:
 #else
 class PortableInput {
 public:
-    PortableInput(const std::vector<int8_t>& data) : bytes(data) {
+    PortableInput(std::vector<int8_t>& data) : bytes(data) {
     }
 
     virtual ~PortableInput() {
@@ -2016,7 +1915,7 @@ public:
         return res;
     }
 
-    const std::vector<int8_t>& bytes;
+    std::vector<int8_t>& bytes;
 
 protected:
     void checkAvailable(int32_t off, size_t cnt) {
@@ -2025,17 +1924,24 @@ protected:
 };
 #endif;
 
+/*
 class ReadContext {
 public:
-    ReadContext(const boost::shared_ptr<std::vector<int8_t>>& dataPtr, GridPortableIdResolver* idRslvr) : dataPtr(dataPtr), in(*dataPtr.get()), idRslvr(idRslvr) {
+    ReadContext(const boost::shared_ptr<std::vector<int8_t>>& dataPtr, 
+        boost::unordered_map<int32_t, void*>& handles,
+        GridPortableIdResolver* idRslvr) 
+        : dataPtr(dataPtr), in(*dataPtr.get()), idRslvr(idRslvr) {
     }
 
     const boost::shared_ptr<std::vector<int8_t>>& dataPtr;
+
+    boost::unordered_map<int32_t, void*>& handles;
 
     PortableInput in;
 
     GridPortableIdResolver* idRslvr;
 };
+*/
 
 class GridPortableReaderImpl : public GridPortableReader, public GridPortableRawReader {
 public:
@@ -2051,17 +1957,33 @@ public:
 
     boost::unordered_map<int32_t, int32_t> fieldOffs;
 
-    GridPortableReaderImpl(ReadContext& ctx, int32_t start) : ctx(ctx), start(start), off(start), rawOff(0), curTypeId(0), offInit(false) {
+    GridPortableReaderImpl(boost::shared_ptr<PortableReadContext> ctxPtr, int32_t start) : ctxPtr(ctxPtr), 
+        in(*ctxPtr.get()->dataPtr.get()), start(start), off(start), rawOff(0), curTypeId(0), offInit(false) {
     }
 
     GridPortable* deserializePortable() {
-        curTypeId = ctx.in.readInt32(start + 2);
+        boost::unordered_map<int32_t, void*>& handles = ctxPtr.get()->handles;
 
-        rawOff = ctx.in.readInt32(start + 14);
+        boost::unordered_map<int32_t, void*>::const_iterator handle = handles.find(start);
 
-        GridPortable* portable = createPortable(curTypeId, *this);
+        curTypeId = in.readInt32(start + 2);
 
-        return portable;
+        rawOff = start + in.readInt32(start + 14);
+
+        if (handle == handles.end()) {
+            GridPortable* portable = createPortable(curTypeId, *this);
+
+            handles[start] = portable;
+
+            portable->readPortable(*this);
+
+            return portable;
+        }
+        else {
+            GridPortable* portable = reinterpret_cast<GridPortable*>((*handle).second);
+
+            return portable;
+        }
     }
 
     GridClientVariant unmarshal(bool raw) {
@@ -2077,7 +1999,7 @@ public:
 
                 // TODO standard types.
 
-                GridPortableObject obj(ctx.dataPtr, objStart, ctx.idRslvr);
+                GridPortableObject obj(ctxPtr, objStart);
 
                 return GridClientVariant(obj);
             }
@@ -2094,7 +2016,7 @@ public:
                 int32_t rawOff = doReadInt32(raw);
 
                 if (userType) {
-                    GridPortableObject obj(ctx.dataPtr, raw ? rawOff - 18 : off - 18, ctx.idRslvr);
+                    GridPortableObject obj(ctxPtr, raw ? rawOff - 18 : off - 18);
 
                     return GridClientVariant(obj);
                 }
@@ -2137,7 +2059,7 @@ public:
             int32_t rawOff = doReadInt32(false);
 
             if (userType) {
-                GridPortableObject obj(ctx.dataPtr, off - 18, ctx.idRslvr);
+                GridPortableObject obj(ctxPtr, off - 18);
 
                 return GridClientVariant(obj);
             }
@@ -2149,7 +2071,7 @@ public:
 
             // TODO standard types.
 
-            GridPortableObject obj(ctx.dataPtr, objStart, ctx.idRslvr);
+            GridPortableObject obj(ctxPtr, objStart);
 
             return GridClientVariant(obj);
         }
@@ -2377,8 +2299,10 @@ public:
     }
 
     int32_t fieldId(const char* fieldName) {
-        if (ctx.idRslvr != nullptr) {
-            boost::optional<int32_t> rslvrId = ctx.idRslvr->fieldId(curTypeId, fieldName);
+        GridPortableIdResolver* idRslvr = ctxPtr.get()->idRslvr;
+
+        if (idRslvr) {
+            boost::optional<int32_t> rslvrId = idRslvr->fieldId(curTypeId, fieldName);
 
             if (rslvrId.is_initialized())
                 return rslvrId.get();
@@ -2404,9 +2328,9 @@ public:
         if (!offInit) {
             int32_t off = start + 18;
 
-            int32_t rawOff = ctx.in.readInt32(start + 14);
+            int32_t rawOff = in.readInt32(start + 14);
 
-            int32_t len = ctx.in.readInt32(start + 10);
+            int32_t len = in.readInt32(start + 10);
 
             int32_t end = rawOff != 0 ? (start + rawOff) : (start + len);
 
@@ -2414,11 +2338,11 @@ public:
                 if (off >= end)
                     break;
 
-                int32_t id = ctx.in.readInt32(off);
+                int32_t id = in.readInt32(off);
 
                 off += 4;
 
-                int32_t len = ctx.in.readInt32(off);
+                int32_t len = in.readInt32(off);
 
                 off += 4;
 
@@ -2440,18 +2364,18 @@ public:
 
     int8_t doReadByte(bool raw) {
         if (raw)
-            return ctx.in.readByte(rawOff++);
+            return in.readByte(rawOff++);
         else
-            return ctx.in.readByte(off++);
+            return in.readByte(off++);
     }
 
     bool doReadBool(bool raw) {
         int8_t val;
 
         if (raw)
-            val = ctx.in.readByte(rawOff++);
+            val = in.readByte(rawOff++);
         else
-            val = ctx.in.readByte(off++);
+            val = in.readByte(off++);
 
         return val != 0;
     }
@@ -2460,12 +2384,12 @@ public:
         int16_t res;
 
         if (raw) {
-            res = ctx.in.readInt16(rawOff);
+            res = in.readInt16(rawOff);
 
             rawOff += 2;
         }
         else {
-            res = ctx.in.readInt16(off);
+            res = in.readInt16(off);
 
             off += 2;
         }
@@ -2477,12 +2401,12 @@ public:
         uint16_t res;
 
         if (raw) {
-            res = ctx.in.readChar(rawOff);
+            res = in.readChar(rawOff);
 
             rawOff += 2;
         }
         else {
-            res = ctx.in.readChar(off);
+            res = in.readChar(off);
 
             off += 2;
         }
@@ -2494,12 +2418,12 @@ public:
         int32_t res;
 
         if (raw) {
-            res = ctx.in.readInt32(rawOff);
+            res = in.readInt32(rawOff);
 
             rawOff += 4;
         }
         else {
-            res = ctx.in.readInt32(off);
+            res = in.readInt32(off);
 
             off += 4;
         }
@@ -2511,12 +2435,12 @@ public:
         int64_t res;
 
         if (raw) {
-            res = ctx.in.readInt64(rawOff);
+            res = in.readInt64(rawOff);
 
             rawOff += 8;
         }
         else {
-            res = ctx.in.readInt64(off);
+            res = in.readInt64(off);
 
             off += 8;
         }
@@ -2528,12 +2452,12 @@ public:
         float res;
 
         if (raw) {
-            res = ctx.in.readFloat(rawOff);
+            res = in.readFloat(rawOff);
 
             rawOff += 4;
         }
         else {
-            res = ctx.in.readFloat(off);
+            res = in.readFloat(off);
 
             off += 4;
         }
@@ -2545,12 +2469,12 @@ public:
         double res;
 
         if (raw) {
-            res = ctx.in.readDouble(rawOff);
+            res = in.readDouble(rawOff);
 
             rawOff += 8;
         }
         else {
-            res = ctx.in.readDouble(off);
+            res = in.readDouble(off);
 
             off += 8;
         }
@@ -2597,12 +2521,12 @@ public:
 
         if (len >= 0) {
             if (raw) {
-                res.reset(ctx.in.readByteCollection(rawOff, len));
+                res.reset(in.readByteCollection(rawOff, len));
 
                 rawOff += len;
             }
             else {
-                res.reset(ctx.in.readByteCollection(off, len));
+                res.reset(in.readByteCollection(off, len));
 
                 off += len;
             }
@@ -2628,14 +2552,14 @@ public:
 
         if (len >= 0) {
             if (raw) {
-                std::pair<int8_t*, int32_t> res(ctx.in.readByteArray(rawOff, len), len);
+                std::pair<int8_t*, int32_t> res(in.readByteArray(rawOff, len), len);
 
                 rawOff += len;
 
                 return res;
             }
             else {
-                std::pair<int8_t*, int32_t> res(ctx.in.readByteArray(off, len), len);
+                std::pair<int8_t*, int32_t> res(in.readByteArray(off, len), len);
 
                 off += len;
 
@@ -2679,14 +2603,14 @@ public:
 
         if (len >= 0) {
             if (raw) {
-                std::pair<int16_t*, int32_t> res(ctx.in.readInt16Array(rawOff, len), len);
+                std::pair<int16_t*, int32_t> res(in.readInt16Array(rawOff, len), len);
 
                 rawOff += len * 2;
 
                 return res;
             }
             else {
-                std::pair<int16_t*, int32_t> res(ctx.in.readInt16Array(off, len), len);
+                std::pair<int16_t*, int32_t> res(in.readInt16Array(off, len), len);
 
                 off += len * 2;
 
@@ -2718,12 +2642,12 @@ public:
 
         if (len >= 0) {
             if (raw) {
-                res.reset(ctx.in.readInt16Collection(rawOff, len));
+                res.reset(in.readInt16Collection(rawOff, len));
 
                 rawOff += len * 2;
             }
             else {
-                res.reset(ctx.in.readInt16Collection(off, len));
+                res.reset(in.readInt16Collection(off, len));
 
                 off += len * 2;
             }
@@ -2763,14 +2687,14 @@ public:
 
         if (len >= 0) {
             if (raw) {
-                std::pair<uint16_t*, int32_t> res(ctx.in.readCharArray(rawOff, len), len);
+                std::pair<uint16_t*, int32_t> res(in.readCharArray(rawOff, len), len);
 
                 rawOff += len * 2;
 
                 return res;
             }
             else {
-                std::pair<uint16_t*, int32_t> res(ctx.in.readCharArray(off, len), len);
+                std::pair<uint16_t*, int32_t> res(in.readCharArray(off, len), len);
 
                 off += len * 2;
 
@@ -2802,12 +2726,12 @@ public:
 
         if (len >= 0) {
             if (raw) {
-                res.reset(ctx.in.readCharCollection(rawOff, len));
+                res.reset(in.readCharCollection(rawOff, len));
 
                 rawOff += len * 2;
             }
             else {
-                res.reset(ctx.in.readCharCollection(off, len));
+                res.reset(in.readCharCollection(off, len));
 
                 off += len * 2;
             }
@@ -2848,14 +2772,14 @@ public:
 
         if (len >= 0) {
             if (raw) {
-                std::pair<int32_t*, int32_t> res(ctx.in.readInt32Array(rawOff, len), len);
+                std::pair<int32_t*, int32_t> res(in.readInt32Array(rawOff, len), len);
 
                 rawOff += len * 4;
 
                 return res;
             }
             else {
-                std::pair<int32_t*, int32_t> res(ctx.in.readInt32Array(off, len), len);
+                std::pair<int32_t*, int32_t> res(in.readInt32Array(off, len), len);
 
                 off += len * 4;
 
@@ -2887,12 +2811,12 @@ public:
 
         if (len >= 0) {
             if (raw) {
-                res.reset(ctx.in.readInt32Collection(rawOff, len));
+                res.reset(in.readInt32Collection(rawOff, len));
 
                 rawOff += len * 4;
             }
             else {
-                res.reset(ctx.in.readInt32Collection(off, len));
+                res.reset(in.readInt32Collection(off, len));
 
                 off += len * 4;
             }
@@ -2932,14 +2856,14 @@ public:
 
         if (len >= 0) {
             if (raw) {
-                std::pair<int64_t*, int32_t> res(ctx.in.readInt64Array(rawOff, len), len);
+                std::pair<int64_t*, int32_t> res(in.readInt64Array(rawOff, len), len);
 
                 rawOff += len * 8;
 
                 return res;
             }
             else {
-                std::pair<int64_t*, int32_t> res(ctx.in.readInt64Array(off, len), len);
+                std::pair<int64_t*, int32_t> res(in.readInt64Array(off, len), len);
 
                 off += len * 8;
 
@@ -2971,12 +2895,12 @@ public:
 
         if (len >= 0) {
             if (raw) {
-                res.reset(ctx.in.readInt64Collection(rawOff, len));
+                res.reset(in.readInt64Collection(rawOff, len));
 
                 rawOff += len * 8;
             }
             else {
-                res.reset(ctx.in.readInt64Collection(off, len));
+                res.reset(in.readInt64Collection(off, len));
 
                 off += len * 8;
             }
@@ -3016,14 +2940,14 @@ public:
 
         if (len >= 0) {
             if (raw) {
-                std::pair<float*, int32_t> res(ctx.in.readFloatArray(rawOff, len), len);
+                std::pair<float*, int32_t> res(in.readFloatArray(rawOff, len), len);
 
                 rawOff += len * 4;
 
                 return res;
             }
             else {
-                std::pair<float*, int32_t> res(ctx.in.readFloatArray(off, len), len);
+                std::pair<float*, int32_t> res(in.readFloatArray(off, len), len);
 
                 off += len * 4;
 
@@ -3055,12 +2979,12 @@ public:
 
         if (len >= 0) {
             if (raw) {
-                res.reset(ctx.in.readFloatCollection(rawOff, len));
+                res.reset(in.readFloatCollection(rawOff, len));
 
                 rawOff += len * 4;
             }
             else {
-                res.reset(ctx.in.readFloatCollection(off, len));
+                res.reset(in.readFloatCollection(off, len));
 
                 off += len * 4;
             }
@@ -3100,14 +3024,14 @@ public:
 
         if (len >= 0) {
             if (raw) {
-                std::pair<double*, int32_t> res(ctx.in.readDoubleArray(rawOff, len), len);
+                std::pair<double*, int32_t> res(in.readDoubleArray(rawOff, len), len);
 
                 rawOff += len * 8;
 
                 return res;
             }
             else {
-                std::pair<double*, int32_t> res(ctx.in.readDoubleArray(off, len), len);
+                std::pair<double*, int32_t> res(in.readDoubleArray(off, len), len);
 
                 off += len * 8;
 
@@ -3139,12 +3063,12 @@ public:
 
         if (len >= 0) {
             if (raw) {
-                res.reset(ctx.in.readDoubleCollection(rawOff, len));
+                res.reset(in.readDoubleCollection(rawOff, len));
 
                 rawOff += len * 8;
             }
             else {
-                res.reset(ctx.in.readDoubleCollection(off, len));
+                res.reset(in.readDoubleCollection(off, len));
 
                 off += len * 8;
             }
@@ -3661,7 +3585,9 @@ private:
         res.reset(map);
     }
 
-    ReadContext& ctx;
+    boost::shared_ptr<PortableReadContext> ctxPtr;
+
+    PortableInput in;
 };
 
 class GridPortableMarshaller {
@@ -3699,9 +3625,9 @@ public:
 	}
 
     GridClientVariant unmarshal(const boost::shared_ptr<std::vector<int8_t>>& data) {
-		ReadContext ctx(data, idRslvr);
+		boost::shared_ptr<PortableReadContext> ctxPtr(new PortableReadContext(data, idRslvr));
 
-        GridPortableReaderImpl reader(ctx, 0);
+        GridPortableReaderImpl reader(ctxPtr, 0);
 
         return reader.unmarshal(false);
     }

@@ -186,8 +186,6 @@ void registerPortableFactory(int32_t typeId, GridPortableFactory* factory);
         void* newInstance(GridPortableReader& reader) {\
             GridPortable* p = new TYPE;\
             \
-            p->readPortable(reader);\
-            \
             return p;\
         }\
     };\
