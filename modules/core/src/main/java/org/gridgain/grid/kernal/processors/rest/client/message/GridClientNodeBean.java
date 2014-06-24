@@ -358,7 +358,7 @@ public class GridClientNodeBean implements Externalizable, GridPortable {
         nodeId = reader.readUuid("nodeId");
 
         consistentId = reader.readObject("consistentId");
-        metrics = reader.readObject("metrics");
+        metrics = (GridClientNodeMetricsBean)reader.readObject("metrics");
     }
 
     /** {@inheritDoc} */

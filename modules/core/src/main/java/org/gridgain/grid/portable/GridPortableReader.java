@@ -25,23 +25,11 @@ public interface GridPortableReader {
     public byte readByte(String fieldName) throws GridPortableException;
 
     /**
-     * @return Byte value.
-     * @throws GridPortableException In case of error.
-     */
-    public byte readByte() throws GridPortableException;
-
-    /**
      * @param fieldName Field name.
      * @return Short value.
      * @throws GridPortableException In case of error.
      */
     public short readShort(String fieldName) throws GridPortableException;
-
-    /**
-     * @return Short value.
-     * @throws GridPortableException In case of error.
-     */
-    public short readShort() throws GridPortableException;
 
     /**
      * @param fieldName Field name.
@@ -51,23 +39,11 @@ public interface GridPortableReader {
     public int readInt(String fieldName) throws GridPortableException;
 
     /**
-     * @return Integer value.
-     * @throws GridPortableException In case of error.
-     */
-    public int readInt() throws GridPortableException;
-
-    /**
      * @param fieldName Field name.
      * @return Long value.
      * @throws GridPortableException In case of error.
      */
     public long readLong(String fieldName) throws GridPortableException;
-
-    /**
-     * @return Long value.
-     * @throws GridPortableException In case of error.
-     */
-    public long readLong() throws GridPortableException;
 
     /**
      * @param fieldName Field name.
@@ -77,23 +53,11 @@ public interface GridPortableReader {
     public float readFloat(String fieldName) throws GridPortableException;
 
     /**
-     * @throws GridPortableException In case of error.
-     * @return Float value.
-     */
-    public float readFloat() throws GridPortableException;
-
-    /**
      * @param fieldName Field name.
      * @return Double value.
      * @throws GridPortableException In case of error.
      */
     public double readDouble(String fieldName) throws GridPortableException;
-
-    /**
-     * @return Double value.
-     * @throws GridPortableException In case of error.
-     */
-    public double readDouble() throws GridPortableException;
 
     /**
      * @param fieldName Field name.
@@ -103,23 +67,11 @@ public interface GridPortableReader {
     public char readChar(String fieldName) throws GridPortableException;
 
     /**
-     * @return Char value.
-     * @throws GridPortableException In case of error.
-     */
-    public char readChar() throws GridPortableException;
-
-    /**
      * @param fieldName Field name.
      * @return Boolean value.
      * @throws GridPortableException In case of error.
      */
     public boolean readBoolean(String fieldName) throws GridPortableException;
-
-    /**
-     * @return Boolean value.
-     * @throws GridPortableException In case of error.
-     */
-    public boolean readBoolean() throws GridPortableException;
 
     /**
      * @param fieldName Field name.
@@ -129,12 +81,6 @@ public interface GridPortableReader {
     @Nullable public String readString(String fieldName) throws GridPortableException;
 
     /**
-     * @return String value.
-     * @throws GridPortableException In case of error.
-     */
-    @Nullable public String readString() throws GridPortableException;
-
-    /**
      * @param fieldName Field name.
      * @return UUID.
      * @throws GridPortableException In case of error.
@@ -142,23 +88,11 @@ public interface GridPortableReader {
     @Nullable public UUID readUuid(String fieldName) throws GridPortableException;
 
     /**
-     * @return UUID.
-     * @throws GridPortableException In case of error.
-     */
-    @Nullable public UUID readUuid() throws GridPortableException;
-
-    /**
      * @param fieldName Field name.
      * @return Object.
      * @throws GridPortableException In case of error.
      */
-    @Nullable public <T> T readObject(String fieldName) throws GridPortableException;
-
-    /**
-     * @return Object.
-     * @throws GridPortableException In case of error.
-     */
-    @Nullable public <T> T readObject() throws GridPortableException;
+    @Nullable public Object readObject(String fieldName) throws GridPortableException;
 
     /**
      * @param fieldName Field name.
@@ -168,23 +102,11 @@ public interface GridPortableReader {
     @Nullable public byte[] readByteArray(String fieldName) throws GridPortableException;
 
     /**
-     * @return Byte array.
-     * @throws GridPortableException In case of error.
-     */
-    @Nullable public byte[] readByteArray() throws GridPortableException;
-
-    /**
      * @param fieldName Field name.
      * @return Short array.
      * @throws GridPortableException In case of error.
      */
     @Nullable public short[] readShortArray(String fieldName) throws GridPortableException;
-
-    /**
-     * @return Short array.
-     * @throws GridPortableException In case of error.
-     */
-    @Nullable public short[] readShortArray() throws GridPortableException;
 
     /**
      * @param fieldName Field name.
@@ -194,23 +116,11 @@ public interface GridPortableReader {
     @Nullable public int[] readIntArray(String fieldName) throws GridPortableException;
 
     /**
-     * @return Integer array.
-     * @throws GridPortableException In case of error.
-     */
-    @Nullable public int[] readIntArray() throws GridPortableException;
-
-    /**
      * @param fieldName Field name.
      * @return Long array.
      * @throws GridPortableException In case of error.
      */
     @Nullable public long[] readLongArray(String fieldName) throws GridPortableException;
-
-    /**
-     * @return Long array.
-     * @throws GridPortableException In case of error.
-     */
-    @Nullable public long[] readLongArray() throws GridPortableException;
 
     /**
      * @param fieldName Field name.
@@ -220,23 +130,11 @@ public interface GridPortableReader {
     @Nullable public float[] readFloatArray(String fieldName) throws GridPortableException;
 
     /**
-     * @return Float array.
-     * @throws GridPortableException In case of error.
-     */
-    @Nullable public float[] readFloatArray() throws GridPortableException;
-
-    /**
      * @param fieldName Field name.
      * @return Byte array.
      * @throws GridPortableException In case of error.
      */
     @Nullable public double[] readDoubleArray(String fieldName) throws GridPortableException;
-
-    /**
-     * @return Byte array.
-     * @throws GridPortableException In case of error.
-     */
-    @Nullable public double[] readDoubleArray() throws GridPortableException;
 
     /**
      * @param fieldName Field name.
@@ -246,23 +144,11 @@ public interface GridPortableReader {
     @Nullable public char[] readCharArray(String fieldName) throws GridPortableException;
 
     /**
-     * @return Char array.
-     * @throws GridPortableException In case of error.
-     */
-    @Nullable public char[] readCharArray() throws GridPortableException;
-
-    /**
      * @param fieldName Field name.
      * @return Boolean array.
      * @throws GridPortableException In case of error.
      */
     @Nullable public boolean[] readBooleanArray(String fieldName) throws GridPortableException;
-
-    /**
-     * @return Boolean array.
-     * @throws GridPortableException In case of error.
-     */
-    @Nullable public boolean[] readBooleanArray() throws GridPortableException;
 
     /**
      * @param fieldName Field name.
@@ -272,23 +158,11 @@ public interface GridPortableReader {
     @Nullable public String[] readStringArray(String fieldName) throws GridPortableException;
 
     /**
-     * @return String array.
-     * @throws GridPortableException In case of error.
-     */
-    @Nullable public String[] readStringArray() throws GridPortableException;
-
-    /**
      * @param fieldName Field name.
      * @return UUID array.
      * @throws GridPortableException In case of error.
      */
     @Nullable public UUID[] readUuidArray(String fieldName) throws GridPortableException;
-
-    /**
-     * @return UUID array.
-     * @throws GridPortableException In case of error.
-     */
-    @Nullable public UUID[] readUuidArray() throws GridPortableException;
 
     /**
      * @param fieldName Field name.
@@ -298,23 +172,11 @@ public interface GridPortableReader {
     @Nullable public Object[] readObjectArray(String fieldName) throws GridPortableException;
 
     /**
-     * @return Object array.
-     * @throws GridPortableException In case of error.
-     */
-    @Nullable public Object[] readObjectArray() throws GridPortableException;
-
-    /**
      * @param fieldName Field name.
      * @return Collection.
      * @throws GridPortableException In case of error.
      */
     @Nullable public <T> Collection<T> readCollection(String fieldName) throws GridPortableException;
-
-    /**
-     * @return Collection.
-     * @throws GridPortableException In case of error.
-     */
-    @Nullable public <T> Collection<T> readCollection() throws GridPortableException;
 
     /**
      * @param fieldName Field name.
@@ -324,8 +186,9 @@ public interface GridPortableReader {
     @Nullable public <K, V> Map<K, V> readMap(String fieldName) throws GridPortableException;
 
     /**
-     * @return Map.
-     * @throws GridPortableException In case of error.
+     * Gets raw reader.
+     *
+     * @return Raw reader.
      */
-    @Nullable public <K, V> Map<K, V> readMap() throws GridPortableException;
+    public GridPortableRawReader rawReader();
 }

@@ -16,17 +16,17 @@ import org.jetbrains.annotations.*;
  */
 public interface GridPortableIdMapper {
     /**
-     * Gets type ID for provided type name.
+     * Gets type ID for provided class name.
      * <p>
-     * If {@code null} is returned, hash code of type name will be used.
+     * If {@code null} is returned, hash code of class simple name will be used.
      *
-     * @param typeName Type name.
+     * @param clsName Class name.
      * @return Type ID.
      */
-    @Nullable public Integer typeId(String typeName);
+    @Nullable public Integer typeId(String clsName);
 
     /**
-     * Gets type ID for provided field.
+     * Gets ID for provided field.
      * <p>
      * If {@code null} is returned, hash code of field name will be used.
      *

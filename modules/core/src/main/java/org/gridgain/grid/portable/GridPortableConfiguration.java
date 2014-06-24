@@ -22,7 +22,7 @@ public class GridPortableConfiguration {
     private GridPortableSerializer serializer;
 
     /** Types. */
-    private Collection<GridPortableTypeConfiguration> typesCfg;
+    private Collection<GridPortableTypeConfiguration> typeCfgs;
 
     /**
      * Gets ID mapper.
@@ -65,16 +65,16 @@ public class GridPortableConfiguration {
      *
      * @return Types configuration.
      */
-    public Collection<GridPortableTypeConfiguration> getTypesConfiguration() {
-        return typesCfg;
+    public Collection<GridPortableTypeConfiguration> getTypeConfigurations() {
+        return typeCfgs;
     }
 
     /**
-     * Sets types configuration.
+     * Sets type configurations.
      *
-     * @param typesCfg Types configuration.
+     * @param typeCfgs Type configurations.
      */
-    public void setTypesConfiguration(Collection<GridPortableTypeConfiguration> typesCfg) {
-        this.typesCfg = typesCfg;
+    public void setTypeConfigurations(Collection<GridPortableTypeConfiguration> typeCfgs) {
+        this.typeCfgs = typeCfgs;
     }
 }

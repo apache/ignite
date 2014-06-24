@@ -24,12 +24,12 @@ public @interface GridPortableType {
      *
      * @return ID mapper class.
      */
-    public Class<? extends GridPortableIdMapper> idMapperClass();
+    public Class<? extends GridPortableIdMapper> idMapper();
 
     /**
      * Gets serializer class.
      *
      * @return Serializer class.
      */
-    public Class<? extends GridPortableSerializer> serializerClass();
+    public Class<? extends GridPortableSerializer> serializer();
 }

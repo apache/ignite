@@ -19,6 +19,13 @@ import java.util.*;
  */
 public interface GridPortableObject extends Serializable, Cloneable {
     /**
+     * Gets user type flag value.
+     *
+     * @return Whether this is a user type object.
+     */
+    public boolean userType();
+
+    /**
      * Gets portable object type ID.
      *
      * @return Type ID.
@@ -26,41 +33,10 @@ public interface GridPortableObject extends Serializable, Cloneable {
     public int typeId();
 
     /**
-     * Gets portable object type name.
-     *
-     * @return Type name.
-     */
-    public String typeName();
-
-    /**
-     * Gets list of field names that are accessible in this portable object.
-     *
-     * @return Field names.
-     */
-    public Collection<String> fields();
-
-    /**
-     * Gets field type ID.
-     *
-     * @param fieldName Field name.
-     * @return Field type ID.
-     */
-    public int fieldTypeId(String fieldName);
-
-    /**
-     * Gets field type name.
-     *
-     * @param fieldName Field name.
-     * @return Field type name.
-     */
-    public String fieldTypeName(String fieldName);
-
-    /**
      * Gets field value.
      *
      * @param fieldName Field name.
      * @return Field value.
-     * @throws GridPortableInvalidFieldException If field doesn't exist.
      * @throws GridPortableException In case of any other error.
      */
     @Nullable public <F> F field(String fieldName) throws GridPortableException;
@@ -72,7 +48,7 @@ public interface GridPortableObject extends Serializable, Cloneable {
      * @throws GridPortableInvalidClassException If class doesn't exist.
      * @throws GridPortableException In case of any other error.
      */
-    @Nullable public <T extends GridPortable> T deserialize() throws GridPortableException;
+    @Nullable public <T> T deserialize() throws GridPortableException;
 
     /**
      * Creates a copy of this portable object and optionally changes field values
@@ -89,6 +65,5 @@ public interface GridPortableObject extends Serializable, Cloneable {
      *
      * @return Copy of this portable object.
      */
-    @SuppressWarnings("CloneDoesntDeclareCloneNotSupportedException")
-    public GridPortableObject clone();
+    public GridPortableObject clone() throws CloneNotSupportedException;
 }

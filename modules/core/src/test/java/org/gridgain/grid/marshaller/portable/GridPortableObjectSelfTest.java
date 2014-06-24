@@ -97,7 +97,7 @@ public class GridPortableObjectSelfTest extends GridCommonAbstractTest {
         @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
             a = reader.readByte("a");
             b = reader.readLong("b");
-            c = reader.readObject("c");
+            c = (Type3)reader.readObject("c");
         }
     }
 
@@ -121,7 +121,7 @@ public class GridPortableObjectSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
-            a = reader.readObject("a");
+            a = (Type2)reader.readObject("a");
         }
     }
 
