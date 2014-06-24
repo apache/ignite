@@ -19,14 +19,13 @@ import java.util.*;
  */
 public interface GridHadoopMapReducePlanner {
     /**
-     * Prepares map-reduce execution plan for the given collection of input splits and topology.
+     * Prepares map-reduce execution plan for the given job and topology.
      *
-     * @param splits Input splits.
-     * @param top Topology.
      * @param job Job.
+     * @param top Topology.
      * @param oldPlan Old plan in case of partial failure.
      * @return Map reduce plan.
      */
-    public GridHadoopMapReducePlan preparePlan(Collection<GridHadoopInputSplit> splits, Collection<GridNode> top,
-        GridHadoopJob job, @Nullable GridHadoopMapReducePlan oldPlan) throws GridException;
+    public GridHadoopMapReducePlan preparePlan(GridHadoopJob job, Collection<GridNode> top,
+        @Nullable GridHadoopMapReducePlan oldPlan) throws GridException;
 }

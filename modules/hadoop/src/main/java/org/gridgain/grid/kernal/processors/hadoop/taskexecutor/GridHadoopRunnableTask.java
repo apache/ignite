@@ -39,9 +39,6 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
     /** Task to run. */
     private final GridHadoopTaskInfo info;
 
-    /** */
-    private final GridHadoopJobClassLoadingContext clsLdrCtx;
-
     /** Submit time. */
     private long submitTs = System.currentTimeMillis();
 
@@ -65,15 +62,12 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
      * @param job Job.
      * @param mem Memory.
      * @param info Task info.
-     * @param clsLdrCtx Class loading context.
      */
-    public GridHadoopRunnableTask(GridLogger log, GridHadoopJob job, GridUnsafeMemory mem, GridHadoopTaskInfo info,
-        GridHadoopJobClassLoadingContext clsLdrCtx) {
+    public GridHadoopRunnableTask(GridLogger log, GridHadoopJob job, GridUnsafeMemory mem, GridHadoopTaskInfo info) {
         this.log = log;
         this.job = job;
         this.mem = mem;
         this.info = info;
-        this.clsLdrCtx = clsLdrCtx;
     }
 
     /**
@@ -94,10 +88,8 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
     @Override public Void call() throws GridException {
         execStartTs = System.currentTimeMillis();
 
-        boolean runCombiner = info.type() == MAP && job.hasCombiner() &&
-            !get(job, SINGLE_COMBINER_FOR_ALL_MAPPERS, false);
-
-        ClassLoader old = GridHadoopJobClassLoadingContext.prepareClassLoader(clsLdrCtx, job.info());
+        boolean runCombiner = info.type() == MAP && job.info().hasCombiner() &&
+            !get(job.info(), SINGLE_COMBINER_FOR_ALL_MAPPERS, false);
 
         GridHadoopTaskState state = GridHadoopTaskState.COMPLETED;
         Throwable err = null;
@@ -122,8 +114,6 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
             execEndTs = System.currentTimeMillis();
 
             onTaskFinished(state, err);
-
-            Thread.currentThread().setContextClassLoader(old);
 
             if (runCombiner)
                 local.close();
@@ -230,8 +220,8 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
                 if (localCombiner) {
                     assert local == null;
 
-                    local = get(job, SHUFFLE_COMBINER_NO_SORTING, false) ?
-                        new GridHadoopHashMultimap(job, mem, get(job, COMBINER_HASHMAP_SIZE, 8 * 1024)):
+                    local = get(job.info(), SHUFFLE_COMBINER_NO_SORTING, false) ?
+                        new GridHadoopHashMultimap(job, mem, get(job.info(), COMBINER_HASHMAP_SIZE, 8 * 1024)):
                         new GridHadoopSkipList(job, mem, job.sortComparator()); // TODO replace with red-black tree
 
                     return local.startAdding();

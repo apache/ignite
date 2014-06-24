@@ -53,7 +53,7 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
         GridHadoopV1OutputCollector collector = null;
 
         try {
-            collector = collector(jobConf, taskCtx, reduce || !jobImpl.hasReducer(), fileName(),
+            collector = collector(jobConf, taskCtx, reduce || !jobImpl.info().hasReducer(), fileName(),
                 jobImpl.attemptId(info()));
 
             try {

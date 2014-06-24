@@ -75,14 +75,14 @@ public class GridHadoopShuffle extends GridHadoopComponent {
         GridHadoopMapReducePlan plan = ctx.jobTracker().plan(jobId);
 
         GridHadoopShuffleJob<UUID> job = new GridHadoopShuffleJob<>(ctx.localNodeId(), log,
-            ctx.jobTracker().job(jobId), mem, plan.reducers(), !F.isEmpty(plan.mappers(ctx.localNodeId())));
+            ctx.jobTracker().job(jobId, null), mem, plan.reducers(), !F.isEmpty(plan.mappers(ctx.localNodeId())));
 
         UUID[] rdcAddrs = new UUID[plan.reducers()];
 
         for (int i = 0; i < rdcAddrs.length; i++) {
             UUID nodeId = plan.nodeForReducer(i);
 
-            assert nodeId != null : "Plan missing node for reducer [plan=" + plan + ", rdc=" + i + ']';
+            assert nodeId != null : "Plan is missing node for reducer [plan=" + plan + ", rdc=" + i + ']';
 
             rdcAddrs[i] = nodeId;
         }

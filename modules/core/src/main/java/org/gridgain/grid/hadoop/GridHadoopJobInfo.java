@@ -9,11 +9,46 @@
 
 package org.gridgain.grid.hadoop;
 
+import org.gridgain.grid.*;
+import org.jetbrains.annotations.*;
+
 import java.io.*;
 
 /**
- * Job description. Configured implementation of {@link GridHadoopJobFactory} must understand it.
+ * Compact job description.
  */
 public interface GridHadoopJobInfo extends Serializable {
-    // No-op.
+    /**
+     * Gets optional configuration property for the job.
+     *
+     * @param name Property name.
+     * @return Value or {@code null} if none.
+     */
+    @Nullable public String property(String name);
+
+    /**
+     * Checks whether job has combiner.
+     *
+     * @return {@code true} If job has combiner.
+     */
+    public boolean hasCombiner();
+
+    /**
+     * Checks whether job has reducer.
+     * Actual number of reducers will be in {@link GridHadoopMapReducePlan#reducers()}.
+     *
+     * @return Number of reducer.
+     */
+    public boolean hasReducer();
+
+    /**
+     * Creates new job instance for the given ID.
+     * {@link GridHadoopJobInfo} is reusable for multiple jobs while {@link GridHadoopJob} is for one job execution.
+     * This method will be called once for the same ID on one node, though it can be called on the same host
+     * multiple times from different processes (in case of multiple nodes on the same host or external execution).
+     *
+     * @return Job.
+     * @throws GridException If failed.
+     */
+    GridHadoopJob createJob(GridHadoopJobId jobId) throws GridException;
 }

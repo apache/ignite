@@ -29,9 +29,6 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
     /** */
     private final ConcurrentMap<GridHadoopJobId, Collection<GridHadoopRunnableTask>> jobs = new ConcurrentHashMap<>();
 
-    /** Tasks shared contexts. */
-    private final ConcurrentMap<GridHadoopJobId, GridHadoopJobClassLoadingContext> ctxs = new ConcurrentHashMap<>();
-
     /** Executor service to run tasks. */
     private ExecutorService exec;
 
@@ -84,14 +81,12 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
             assert extractedCol == null;
         }
 
-        GridHadoopJobClassLoadingContext clsLdrCtx = ctxs.get(job.id());
-
         final Collection<GridHadoopRunnableTask> finalExecutedTasks = executedTasks;
 
         for (final GridHadoopTaskInfo info : tasks) {
             assert info != null;
 
-            GridHadoopRunnableTask task = new GridHadoopRunnableTask(log, job, ctx.shuffle().memory(), info, clsLdrCtx) {
+            GridHadoopRunnableTask task = new GridHadoopRunnableTask(log, job, ctx.shuffle().memory(), info) {
                 @Override protected void onTaskFinished(GridHadoopTaskState state, Throwable err) {
                     if (log.isDebugEnabled())
                         log.debug("Finished task execution [jobId=" + job.id() + ", taskInfo=" + info + ", " +
@@ -137,30 +132,11 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public void onJobStateChanged(GridHadoopJob job, GridHadoopJobMetadata meta) throws GridException {
+    @Override public void onJobStateChanged(GridHadoopJobMetadata meta) throws GridException {
         if (meta.phase() == GridHadoopJobPhase.PHASE_COMPLETE) {
-            Collection<GridHadoopRunnableTask> executedTasks = jobs.remove(job.id());
+            Collection<GridHadoopRunnableTask> executedTasks = jobs.remove(meta.jobId());
 
             assert executedTasks == null || executedTasks.isEmpty();
-
-            GridHadoopJobClassLoadingContext ctx = ctxs.remove(job.id());
-
-            if (ctx != null)
-                ctx.destroy();
-        }
-        else if (meta.phase() != GridHadoopJobPhase.PHASE_CANCELLING) {
-            GridHadoopJobClassLoadingContext tctx = ctxs.get(job.id());
-
-            if (tctx == null && ctx.willRunTasks(meta.mapReducePlan())) {
-                tctx = new GridHadoopJobClassLoadingContext(ctx.localNodeId(), job, log);
-
-                tctx.prepareJobFiles();
-                tctx.initializeClassLoader();
-
-                GridHadoopJobClassLoadingContext old = ctxs.putIfAbsent(job.id(), tctx);
-
-                assert old == null;
-            }
         }
     }
 }

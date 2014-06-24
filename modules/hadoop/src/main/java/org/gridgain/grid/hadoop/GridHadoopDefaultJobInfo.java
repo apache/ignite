@@ -13,6 +13,8 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 
@@ -106,6 +108,34 @@ public class GridHadoopDefaultJobInfo implements GridHadoopJobInfo, Externalizab
                 ensureNotSet(MRJobConfig.REDUCE_CLASS_ATTR, mode);
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String property(String name) {
+        return cfg.get(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridHadoopJob createJob(GridHadoopJobId jobId) {
+        return new GridHadoopV2Job( jobId, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasCombiner() {
+        return cfg.get("mapred.combiner.class") != null ||
+            cfg.get(MRJobConfig.COMBINE_CLASS_ATTR) != null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasReducer() {
+        return reducers() > 0;
+    }
+
+    /**
+     * @return Number of reducers configured for job.
+     */
+    public int reducers() {
+        return cfg.getNumReduceTasks();
     }
 
     /**

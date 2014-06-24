@@ -49,7 +49,7 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
         this.job = job;
         this.mem = mem;
 
-        pageSize = get(job, SHUFFLE_OFFHEAP_PAGE_SIZE, 16 * 1024);
+        pageSize = get(job.info(), SHUFFLE_OFFHEAP_PAGE_SIZE, 16 * 1024);
     }
 
     /**

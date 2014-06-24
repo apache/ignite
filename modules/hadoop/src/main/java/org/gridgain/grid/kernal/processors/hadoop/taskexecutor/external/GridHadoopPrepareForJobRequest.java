@@ -28,15 +28,21 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
     /** Has mappers flag. */
     private boolean hasMappers;
 
+    /** */
+    private int reducers;
+
     /**
      * @param jobId Job ID.
      * @param jobInfo Job info.
      * @param hasMappers Has mappers flag.
+     * @param reducers Number of reducers in job.
      */
-    public GridHadoopPrepareForJobRequest(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo, boolean hasMappers) {
+    public GridHadoopPrepareForJobRequest(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo, boolean hasMappers,
+        int reducers) {
         this.jobId = jobId;
         this.jobInfo = jobInfo;
         this.hasMappers = hasMappers;
+        this.reducers = reducers;
     }
 
     /**
@@ -58,5 +64,12 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
      */
     public boolean hasMappers() {
         return hasMappers;
+    }
+
+    /**
+     * @return Number of reducers in job.
+     */
+    public int reducers() {
+        return reducers;
     }
 }

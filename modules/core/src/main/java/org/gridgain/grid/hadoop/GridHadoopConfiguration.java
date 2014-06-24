@@ -21,9 +21,6 @@ public class GridHadoopConfiguration {
     /** Default value for external execution flag. */
     public static final boolean DFLT_EXTERNAL_EXECUTION = true;
 
-    /** Job factory. */
-    private GridHadoopJobFactory jobFactory;
-
     /** Map reduce planner. */
     private GridHadoopMapReducePlanner planner;
 
@@ -53,7 +50,6 @@ public class GridHadoopConfiguration {
         embeddedExecutor = cfg.getEmbeddedExecutor();
         extExecution = cfg.isExternalExecution();
         finishedJobInfoTtl = cfg.getFinishedJobInfoTtl();
-        jobFactory = cfg.getJobFactory();
         planner = cfg.getMapReducePlanner();
     }
 
@@ -133,23 +129,5 @@ public class GridHadoopConfiguration {
      */
     public void setMapReducePlanner(GridHadoopMapReducePlanner planner) {
         this.planner = planner;
-    }
-
-    /**
-     * Gets Hadoop job factory.
-     *
-     * @return Hadoop job factory.
-     */
-    public GridHadoopJobFactory getJobFactory() {
-        return jobFactory;
-    }
-
-    /**
-     * Sets Hadoop job factory.
-     *
-     * @param jobFactory Job factory.
-     */
-    public void setJobFactory(GridHadoopJobFactory jobFactory) {
-        this.jobFactory = jobFactory;
     }
 }

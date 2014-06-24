@@ -38,17 +38,30 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
     private GridLogger log;
 
     /** {@inheritDoc} */
-    @Override public GridHadoopMapReducePlan preparePlan(Collection<GridHadoopInputSplit> splits,
-        Collection<GridNode> top, GridHadoopJob job, @Nullable GridHadoopMapReducePlan oldPlan) throws GridException {
+    @Override public GridHadoopMapReducePlan preparePlan(GridHadoopJob job, Collection<GridNode> top,
+        @Nullable GridHadoopMapReducePlan oldPlan) throws GridException {
         // Convert collection of topology nodes to collection of topology node IDs.
         Collection<UUID> topIds = new HashSet<>(top.size(), 1.0f);
 
         for (GridNode topNode : top)
             topIds.add(topNode.id());
 
-        Map<UUID, Collection<GridHadoopInputSplit>> mappers = mappers(top, topIds, splits);
+        Map<UUID, Collection<GridHadoopInputSplit>> mappers = mappers(top, topIds, job.input());
 
-        Map<UUID, int[]> reducers = reducers(top, mappers, job.reducers());
+        int rdcCnt = 0;
+
+        if (job.info().hasReducer()) {
+            rdcCnt = 1;
+
+            if (job.info() instanceof GridHadoopDefaultJobInfo) {
+                rdcCnt = ((GridHadoopDefaultJobInfo)job.info()).reducers();
+
+                if (rdcCnt < 1)
+                    throw new GridException("Number of reducers must be positive, actual: " + rdcCnt);
+            }
+        }
+
+        Map<UUID, int[]> reducers = reducers(top, mappers, rdcCnt);
 
         return new GridHadoopDefaultMapReducePlan(mappers, reducers);
     }

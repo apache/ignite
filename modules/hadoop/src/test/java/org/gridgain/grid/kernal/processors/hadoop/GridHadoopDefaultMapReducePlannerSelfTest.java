@@ -409,7 +409,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         top.add(node2);
         top.add(node3);
 
-        GridHadoopMapReducePlan plan = PLANNER.preparePlan(splitList, top, new MockJob(reducers), null);
+        GridHadoopMapReducePlan plan = PLANNER.preparePlan(new MockJob(reducers, splitList), top, null);
 
         PLAN.set(plan);
 
@@ -577,18 +577,18 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         /** Reducers count. */
         private final int reducers;
 
+        /** */
+        private Collection<GridHadoopInputSplit> splitList;
+
         /**
          * Constructor.
          *
          * @param reducers Reducers count.
+         * @param splitList Splits.
          */
-        private MockJob(int reducers) {
+        private MockJob(int reducers, Collection<GridHadoopInputSplit> splitList) {
             this.reducers = reducers;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int reducers() {
-            return reducers;
+            this.splitList = splitList;
         }
 
         /** {@inheritDoc} */
@@ -598,17 +598,16 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
         /** {@inheritDoc} */
         @Override public GridHadoopJobInfo info() {
-            return null;
+            return new GridHadoopDefaultJobInfo() {
+                @Override public int reducers() {
+                    return reducers;
+                }
+            };
         }
 
         /** {@inheritDoc} */
         @Override public Collection<GridHadoopInputSplit> input() throws GridException {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean hasCombiner() {
-            return false;
+            return splitList;
         }
 
         /** {@inheritDoc} */
@@ -647,8 +646,13 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public String property(String name) {
-            return null;
+        @Override public void initialize(boolean external) throws GridException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void dispose(boolean external) throws GridException {
+            // No-op.
         }
     }
 

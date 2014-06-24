@@ -87,7 +87,6 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
     @Override public GridHadoopConfiguration hadoopConfiguration(String gridName) {
         GridHadoopConfiguration cfg = super.hadoopConfiguration(gridName);
 
-        cfg.setJobFactory(new HadoopTestJobFactory());
         cfg.setMapReducePlanner(new GridHadoopTestRoundRobinMrPlanner());
         cfg.setExternalExecution(false);
 
@@ -109,7 +108,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
 
             GridHadoopJobId jobId = new GridHadoopJobId(globalId, 1);
 
-            grid(0).hadoop().submit(jobId, new GridHadoopDefaultJobInfo(cfg));
+            grid(0).hadoop().submit(jobId, new GridHadoopTestJobInfo(cfg));
 
             checkStatus(jobId, false);
 
@@ -184,7 +183,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
 
             GridHadoopJobId jobId = new GridHadoopJobId(globalId, 1);
 
-            grid(0).hadoop().submit(jobId, new GridHadoopDefaultJobInfo(cfg));
+            grid(0).hadoop().submit(jobId, new GridHadoopTestJobInfo(cfg));
 
             checkStatus(jobId, false);
 
@@ -276,12 +275,20 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
     }
 
     /**
-     * Test job factory.
+     * Test job info.
      */
-    private static class HadoopTestJobFactory implements GridHadoopJobFactory {
+    private static class GridHadoopTestJobInfo extends GridHadoopDefaultJobInfo {
+        /**
+         * @param cfg Config.
+         * @throws GridException If failed.
+         */
+        GridHadoopTestJobInfo(Configuration cfg) throws GridException {
+            super(cfg);
+        }
+
         /** {@inheritDoc} */
-        @Override public GridHadoopJob createJob(GridHadoopJobId id, GridHadoopJobInfo jobInfo) {
-            return new HadoopTestJob(id, (GridHadoopDefaultJobInfo)jobInfo);
+        @Override public GridHadoopJob createJob(GridHadoopJobId jobId) {
+            return new HadoopTestJob(jobId, this);
         }
     }
 

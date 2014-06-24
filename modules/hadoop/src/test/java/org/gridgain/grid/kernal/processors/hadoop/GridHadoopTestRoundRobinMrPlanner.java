@@ -21,8 +21,8 @@ import java.util.*;
  */
 public class GridHadoopTestRoundRobinMrPlanner implements GridHadoopMapReducePlanner {
     /** {@inheritDoc} */
-    @Override public GridHadoopMapReducePlan preparePlan(Collection<GridHadoopInputSplit> blocks,
-        Collection<GridNode> top, GridHadoopJob job, @Nullable GridHadoopMapReducePlan oldPlan) {
+    @Override public GridHadoopMapReducePlan preparePlan(GridHadoopJob job, Collection<GridNode> top,
+        @Nullable GridHadoopMapReducePlan oldPlan) throws GridException {
         if (top.isEmpty())
             throw new IllegalArgumentException("Topology is empty");
 
@@ -31,7 +31,7 @@ public class GridHadoopTestRoundRobinMrPlanner implements GridHadoopMapReducePla
 
         Map<UUID, Collection<GridHadoopInputSplit>> mappers = new HashMap<>();
 
-        for (GridHadoopInputSplit block : blocks) {
+        for (GridHadoopInputSplit block : job.input()) {
             GridNode node = it.next();
 
             Collection<GridHadoopInputSplit> nodeBlocks = mappers.get(node.id());
@@ -48,9 +48,9 @@ public class GridHadoopTestRoundRobinMrPlanner implements GridHadoopMapReducePla
                 it = top.iterator();
         }
 
-        int[] rdc = new int[job.reducers()];
+        int[] rdc = new int[((GridHadoopDefaultJobInfo)job.info()).reducers()];
 
-        for (int i = 0; i < job.reducers(); i++)
+        for (int i = 0; i < rdc.length; i++)
             rdc[i] = i;
 
         return new GridHadoopDefaultMapReducePlan(mappers, Collections.singletonMap(it.next().id(), rdc));

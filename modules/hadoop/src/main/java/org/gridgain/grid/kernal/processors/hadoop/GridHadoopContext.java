@@ -133,11 +133,16 @@ public class GridHadoopContext {
     }
 
     /**
-     * @param plan Map-reduce plan.
-     * @return {@code true} If local node will run any tasks.
+     * @param meta Job metadata.
+     * @return {@code true} If local node is participating in job execution.
      */
-    public boolean willRunTasks(GridHadoopMapReducePlan plan) {
+    public boolean isParticipating(GridHadoopJobMetadata meta) {
         UUID locNodeId = localNodeId();
+
+        if (locNodeId.equals(meta.submitNodeId()))
+            return true;
+
+        GridHadoopMapReducePlan plan = meta.mapReducePlan();
 
         return plan.mapperNodeIds().contains(locNodeId) || plan.reducerNodeIds().contains(locNodeId) || jobUpdateLeader();
     }
@@ -168,13 +173,6 @@ public class GridHadoopContext {
      */
     public GridHadoopMapReducePlanner planner() {
         return cfg.getMapReducePlanner();
-    }
-
-    /**
-     * @return Job factory.
-     */
-    public GridHadoopJobFactory jobFactory() {
-        return cfg.getJobFactory();
     }
 
     /**

@@ -40,20 +40,6 @@ public interface GridHadoopJob {
     public Collection<GridHadoopInputSplit> input() throws GridException;
 
     /**
-     * Gets number of reducers for this job.
-     *
-     * @return Number of reducers.
-     */
-    public int reducers();
-
-    /**
-     * Checks whether job has combiner.
-     *
-     * @return {@code True} if job has combiner.
-     */
-    public boolean hasCombiner();
-
-    /**
      * Gets partitioner for the job.
      *
      * @return Partitioner.
@@ -106,10 +92,25 @@ public interface GridHadoopJob {
     public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo);
 
     /**
-     * Gets optional configuration property for the job.
+     * Does all the needed initialization for the job. Will be called on each node where tasks for this job must
+     * be executed.
+     * <p>
+     * If job is running in external mode this method will be called on instance in GridGain node with parameter
+     * {@code false} and on instance in external process with parameter {@code true}.
      *
-     * @param name Property name.
-     * @return Value or {@code null} if none.
+     * @param external If {@code true} then this job instance resides in external process.
+     * @throws GridException If failed.
      */
-    @Nullable public String property(String name);
+    public void initialize(boolean external) throws GridException;
+
+    /**
+     * Release all the resources.
+     * <p>
+     * If job is running in external mode this method will be called on instance in GridGain node with parameter
+     * {@code false} and on instance in external process with parameter {@code true}.
+     *
+     * @param external If {@code true} then this job instance resides in external process.
+     * @throws GridException If failed.
+     */
+    public void dispose(boolean external) throws GridException;
 }

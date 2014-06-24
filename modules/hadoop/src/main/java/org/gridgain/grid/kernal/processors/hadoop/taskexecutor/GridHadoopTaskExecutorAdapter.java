@@ -43,8 +43,7 @@ public abstract class GridHadoopTaskExecutorAdapter extends GridHadoopComponent 
     /**
      * On job state change callback;
      *
-     * @param job Job instance.
      * @param meta Job metadata.
      */
-    public abstract void onJobStateChanged(GridHadoopJob job, GridHadoopJobMetadata meta) throws GridException;
+    public abstract void onJobStateChanged(GridHadoopJobMetadata meta) throws GridException;
 }

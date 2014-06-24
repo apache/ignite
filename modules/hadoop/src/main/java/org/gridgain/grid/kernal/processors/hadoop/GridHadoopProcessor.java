@@ -169,9 +169,6 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
     private void initializeDefaults(GridHadoopConfiguration cfg) {
         if (cfg.getMapReducePlanner() == null)
             cfg.setMapReducePlanner(new GridHadoopDefaultMapReducePlanner());
-
-        if (cfg.getJobFactory() == null)
-            cfg.setJobFactory(new GridHadoopDefaultJobFactory());
     }
 
     /**

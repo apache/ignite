@@ -59,8 +59,8 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
         GridHadoopV1OutputCollector collector = null;
 
         try {
-            collector = collector(jobConf, taskCtx, !jobImpl.hasCombinerOrReducer(), fileName(),
-                jobImpl.attemptId(info()));
+            collector = collector(jobConf, taskCtx, !jobImpl.info().hasCombiner() && !jobImpl.info().hasReducer(),
+                fileName(), jobImpl.attemptId(info()));
 
             RecordReader reader = inFormat.getRecordReader(nativeSplit, jobConf, reporter);
 

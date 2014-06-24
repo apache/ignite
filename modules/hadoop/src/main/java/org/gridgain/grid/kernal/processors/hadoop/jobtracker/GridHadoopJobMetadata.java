@@ -32,6 +32,9 @@ public class GridHadoopJobMetadata implements Externalizable {
     /** Job info. */
     private GridHadoopJobInfo jobInfo;
 
+    /** Node submitted job. */
+    private UUID submitNodeId;
+
     /** Map-reduce plan. */
     private GridHadoopMapReducePlan mrPlan;
 
@@ -83,12 +86,14 @@ public class GridHadoopJobMetadata implements Externalizable {
     /**
      * Constructor.
      *
+     * @param submitNodeId Submit node ID.
      * @param jobId Job ID.
      * @param jobInfo Job info.
      */
-    public GridHadoopJobMetadata(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo) {
+    public GridHadoopJobMetadata(UUID submitNodeId, GridHadoopJobId jobId, GridHadoopJobInfo jobInfo) {
         this.jobId = jobId;
         this.jobInfo = jobInfo;
+        this.submitNodeId = submitNodeId;
 
         startTs = System.currentTimeMillis();
     }
@@ -112,8 +117,16 @@ public class GridHadoopJobMetadata implements Externalizable {
         reducersAddrs = src.reducersAddrs;
         setupCompleteTs = src.setupCompleteTs;
         startTs = src.startTs;
+        submitNodeId = src.submitNodeId;
         taskNumMap = src.taskNumMap;
         ver = src.ver + 1;
+    }
+
+    /**
+     * @return Submit node ID.
+     */
+    public UUID submitNodeId() {
+        return submitNodeId;
     }
 
     /**
@@ -358,6 +371,7 @@ public class GridHadoopJobMetadata implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
+        U.writeUuid(out, submitNodeId);
         out.writeObject(jobId);
         out.writeObject(jobInfo);
         out.writeObject(mrPlan);
@@ -378,6 +392,7 @@ public class GridHadoopJobMetadata implements Externalizable {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        submitNodeId = U.readUuid(in);
         jobId = (GridHadoopJobId)in.readObject();
         jobInfo = (GridHadoopJobInfo)in.readObject();
         mrPlan = (GridHadoopMapReducePlan)in.readObject();

@@ -9,10 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.child;
 
-import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
@@ -69,14 +67,8 @@ public class GridHadoopChildProcessRunner {
     /** Number of uncompleted tasks. */
     private AtomicInteger pendingTasks = new AtomicInteger();
 
-    /** Job factory. */
-    private GridHadoopJobFactory jobFactory = new GridHadoopDefaultJobFactory();
-
     /** Shuffle job. */
     private GridHadoopShuffleJob<GridHadoopProcessDescriptor> shuffleJob;
-
-    /** Shared task context. */
-    private GridHadoopJobClassLoadingContext clsLdrCtx;
 
     /** Concurrent mappers. */
     private int concMappers;
@@ -114,13 +106,13 @@ public class GridHadoopChildProcessRunner {
                 if (log.isDebugEnabled())
                     log.debug("Initializing external hadoop task: " + req);
 
-                job = jobFactory.createJob(req.jobId(), req.jobInfo());
+                assert job == null;
 
-                clsLdrCtx = new GridHadoopJobClassLoadingContext(nodeDesc.parentNodeId(), job, log);
+                job = req.jobInfo().createJob(req.jobId());
 
-                clsLdrCtx.initializeClassLoader();
+                job.initialize(true);
 
-                shuffleJob = new GridHadoopShuffleJob<>(comm.localProcessDescriptor(), log, job, mem, job.reducers(),
+                shuffleJob = new GridHadoopShuffleJob<>(comm.localProcessDescriptor(), log, job, mem, req.reducers(),
                     req.hasMappers());
 
                 initializeExecutors(req);
@@ -132,7 +124,7 @@ public class GridHadoopChildProcessRunner {
                 initFut.onDone(null, null);
             }
             catch (GridException e) {
-                log.error("Failed to initialize process: " + req, e);
+                U.error(log, "Failed to initialize process: " + req, e);
 
                 initFut.onDone(e);
             }
@@ -175,7 +167,7 @@ public class GridHadoopChildProcessRunner {
                         if (log.isDebugEnabled())
                             log.debug("Submitted task for external execution: " + taskInfo);
 
-                        execSvc.submit(new GridHadoopRunnableTask(log, job, mem, taskInfo, clsLdrCtx) {
+                        execSvc.submit(new GridHadoopRunnableTask(log, job, mem, taskInfo) {
                             @Override protected void onTaskFinished(GridHadoopTaskState state, Throwable err) {
                                 onTaskFinished0(this, state, err);
                             }
@@ -206,20 +198,10 @@ public class GridHadoopChildProcessRunner {
      * @param req Init child process request.
      */
     private void initializeExecutors(GridHadoopPrepareForJobRequest req) {
-        concMappers = Runtime.getRuntime().availableProcessors();
-        concReducers = Runtime.getRuntime().availableProcessors();
+        int cpus = Runtime.getRuntime().availableProcessors();
 
-        GridHadoopJobInfo info = req.jobInfo();
-
-        if (info instanceof GridHadoopDefaultJobInfo) {
-            GridHadoopDefaultJobInfo dfltInfo = (GridHadoopDefaultJobInfo)info;
-
-            JobConf cfg = dfltInfo.configuration();
-
-            concMappers = cfg.getInt(EXTERNAL_CONCURRENT_MAPPERS.propertyName(), concMappers);
-
-            concReducers = cfg.getInt(EXTERNAL_CONCURRENT_REDUCERS.propertyName(), concReducers);
-        }
+        concMappers = get(req.jobInfo(), EXTERNAL_CONCURRENT_MAPPERS, cpus);
+        concReducers = get(req.jobInfo(), EXTERNAL_CONCURRENT_REDUCERS, cpus);
 
         execSvc = new ThreadPoolExecutor(concMappers, concMappers,
             1, TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
@@ -261,6 +243,13 @@ public class GridHadoopChildProcessRunner {
 
         if (msgExecSvc != null)
             msgExecSvc.shutdownNow();
+
+        try {
+            job.dispose(true);
+        }
+        catch (GridException e) {
+            U.error(log, "Failed to dispose job.", e);
+        }
     }
 
     /**
@@ -282,7 +271,7 @@ public class GridHadoopChildProcessRunner {
                 ", err=" + err + ']');
 
         boolean flush = pendingTasks0 == 0 && (info.type() == COMBINE || (info.type() == MAP &&
-            (!job.hasCombiner() || !GridHadoopJobProperty.get(job, SINGLE_COMBINER_FOR_ALL_MAPPERS, false))));
+            (!job.info().hasCombiner() || !GridHadoopJobProperty.get(job.info(), SINGLE_COMBINER_FOR_ALL_MAPPERS, false))));
 
         notifyTaskFinished(info, state, err, flush);
     }

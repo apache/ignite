@@ -98,37 +98,37 @@ public enum GridHadoopJobProperty {
     }
 
     /**
-     * @param job Job.
+     * @param jobInfo Job info.
      * @param pty Property.
      * @param dflt Default value.
      * @return Property value.
      */
-    public static String get(GridHadoopJob job, GridHadoopJobProperty pty, @Nullable String dflt) {
-        String res = job.property(pty.propertyName());
+    public static String get(GridHadoopJobInfo jobInfo, GridHadoopJobProperty pty, @Nullable String dflt) {
+        String res = jobInfo.property(pty.propertyName());
 
         return res == null ? dflt : res;
     }
 
     /**
-     * @param job Job.
+     * @param jobInfo Job info.
      * @param pty Property.
      * @param dflt Default value.
      * @return Property value.
      */
-    public static int get(GridHadoopJob job, GridHadoopJobProperty pty, int dflt) {
-        String res = job.property(pty.propertyName());
+    public static int get(GridHadoopJobInfo jobInfo, GridHadoopJobProperty pty, int dflt) {
+        String res = jobInfo.property(pty.propertyName());
 
         return res == null ? dflt : Integer.parseInt(res);
     }
 
     /**
-     * @param job Job.
+     * @param jobInfo Job info.
      * @param pty Property.
      * @param dflt Default value.
      * @return Property value.
      */
-    public static boolean get(GridHadoopJob job, GridHadoopJobProperty pty, boolean dflt) {
-        String res = job.property(pty.propertyName());
+    public static boolean get(GridHadoopJobInfo jobInfo, GridHadoopJobProperty pty, boolean dflt) {
+        String res = jobInfo.property(pty.propertyName());
 
         return res == null ? dflt : Boolean.parseBoolean(res);
     }

@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.io.serializer.*;
 import org.apache.hadoop.mapred.*;
@@ -23,11 +24,15 @@ import org.apache.hadoop.mapreduce.split.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v1.*;
+import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.net.*;
+import java.nio.file.*;
+import java.nio.file.attribute.*;
 import java.util.*;
 
 /**
@@ -76,6 +81,15 @@ public class GridHadoopV2Job implements GridHadoopJob {
     /** */
     private JobID hadoopJobID;
 
+    /** */
+    private File outBase;
+
+    /** */
+    private UUID uniqueWorkDir = UUID.randomUUID();
+
+    /** */
+    private ClassLoaderWrapper jobLdr;
+
     /**
      * @param jobId Job ID.
      * @param jobInfo Job info.
@@ -92,6 +106,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
         JobConf cfg = jobInfo.configuration();
 
         ctx = new JobContextImpl(cfg, hadoopJobID);
+
         useNewMapper = cfg.getUseNewMapper();
         useNewReducer = cfg.getUseNewReducer();
         useNewCombiner = cfg.getCombinerClass() == null;
@@ -176,10 +191,8 @@ public class GridHadoopV2Job implements GridHadoopJob {
             return ctx.getConfiguration().getClassByName(clsName);
         }
         catch (ClassNotFoundException e) {
-            // No-op.
+            throw new IOException(e);
         }
-
-        return null;
     }
 
     /**
@@ -219,25 +232,6 @@ public class GridHadoopV2Job implements GridHadoopJob {
     }
 
     /** {@inheritDoc} */
-    @Override public int reducers() {
-        return ctx.getNumReduceTasks();
-    }
-
-    /**
-     * @return {@code True} in case reducer exists.
-     */
-    public boolean hasReducer() {
-        return reducers() != 0;
-    }
-
-    /**
-     * @return {@code True} in case either combiner or reducer exists.
-     */
-    public boolean hasCombinerOrReducer() {
-        return hasCombiner() || hasReducer();
-    }
-
-        /** {@inheritDoc} */
     @Override public GridHadoopPartitioner partitioner() throws GridException {
         Class<?> partClsOld = ctx.getConfiguration().getClass("mapred.partitioner.class", null);
 
@@ -279,12 +273,6 @@ public class GridHadoopV2Job implements GridHadoopJob {
             default:
                 return null;
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasCombiner() {
-        return ctx.getJobConf().get("mapred.combiner.class") != null ||
-            ctx.getJobConf().get(MRJobConfig.COMBINE_CLASS_ATTR) != null;
     }
 
     /**
@@ -332,11 +320,6 @@ public class GridHadoopV2Job implements GridHadoopJob {
     /** {@inheritDoc} */
     @Override public Comparator<?> combineGroupComparator() {
         return COMBINE_KEY_GROUPING_SUPPORTED ? ctx.getCombinerKeyGroupingComparator() : null;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public String property(String name) {
-        return jobInfo.configuration().get(name);
     }
 
     /**
@@ -394,5 +377,156 @@ public class GridHadoopV2Job implements GridHadoopJob {
             return ((GridHadoopSplitWrapper)split).innerSplit();
 
         throw new IllegalStateException("Unknown split: " + split);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void initialize(boolean external) throws GridException {
+        if (!external)
+            prepareJobFiles();
+
+        initializeClassLoader();
+
+        if (jobLdr != null)
+            ctx.getJobConf().setClassLoader(jobLdr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void dispose(boolean external) throws GridException {
+        if (jobLdr != null)
+            jobLdr.destroy();
+    }
+
+    /**
+     * Prepares job files.
+     *
+     * @throws GridException If failed.
+     */
+    private void prepareJobFiles() throws GridException {
+        try {
+            outBase = U.resolveWorkDirectory("hadoop", false);
+
+            String mrDir = info().property("mapreduce.job.dir");
+
+            if (mrDir != null) {
+                Path path = new Path(new URI(mrDir));
+
+                JobConf cfg = ctx.getJobConf();
+
+                FileSystem fs = FileSystem.get(path.toUri(), cfg);
+
+                if (!fs.exists(path))
+                    throw new GridException("Failed to find map-reduce submission directory (does not exist): " +
+                        path);
+
+                File dir = jobJarsFolder(jobId, uniqueWorkDir);
+
+                FileUtil.fullyDeleteContents(dir);
+
+                if (!FileUtil.copy(fs, path, dir, false, cfg))
+                    throw new GridException("Failed to copy job submission directory contents to local file system " +
+                        "[path=" + path + ", locDir=" + dir.getAbsolutePath() + ", jobId=" + jobId + ']');
+            }
+        }
+        catch (URISyntaxException | IOException e) {
+            throw new GridException(e);
+        }
+    }
+
+    /**
+     * @param jobId Job ID.
+     * @return Job jars dir.
+     */
+    private File jobJarsFolder(GridHadoopJobId jobId, UUID locNodeId) {
+        File workDir = new File(outBase, "Job_" + jobId);
+
+        return new File(workDir, "jars-" + locNodeId);
+    }
+
+    /**
+     * Initializes class loader.
+     *
+     * @throws GridException
+     */
+    private void initializeClassLoader() throws GridException {
+        try {
+            outBase = U.resolveWorkDirectory("hadoop", false);
+
+            final Collection<URL> jars = new ArrayList<>();
+
+            File dir = jobJarsFolder(jobId, uniqueWorkDir);
+
+            if (!dir.exists())
+                return;
+
+            Files.walkFileTree(dir.toPath(), new SimpleFileVisitor<java.nio.file.Path>() {
+                @Override public FileVisitResult visitFile(java.nio.file.Path file, BasicFileAttributes attrs)
+                    throws IOException {
+                    if (file.getFileName().toString().endsWith(".jar"))
+                        jars.add(file.toUri().toURL());
+
+                    return super.visitFile(file, attrs);
+                }
+            });
+
+            URL[] urls = new URL[jars.size()];
+
+            jars.toArray(urls);
+
+            final URLClassLoader urlLdr = new URLClassLoader(urls);
+
+            jobLdr = new ClassLoaderWrapper(urlLdr, getClass().getClassLoader());
+        }
+        catch (IOException e) {
+            throw new GridException(e);
+        }
+    }
+
+    /**
+     * Class loader wrapper.
+     */
+    private static class ClassLoaderWrapper extends ClassLoader {
+        /** */
+        private URLClassLoader delegate;
+
+        /**
+         * Makes classes available for GC.
+         */
+        public void destroy() {
+            delegate = null;
+        }
+
+        /**
+         * @param delegate Delegate.
+         */
+        private ClassLoaderWrapper(URLClassLoader delegate, ClassLoader parent) {
+            super(parent);
+
+            this.delegate = delegate;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<?> loadClass(String name) throws ClassNotFoundException {
+            try {
+                return delegate.loadClass(name);
+            }
+            catch (ClassNotFoundException ignore) {
+                return super.loadClass(name);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public InputStream getResourceAsStream(String name) {
+            return delegate.getResourceAsStream(name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public URL findResource(final String name) {
+            return delegate.findResource(name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Enumeration<URL> findResources(final String name) throws IOException {
+            return delegate.findResources(name);
+        }
     }
 }
