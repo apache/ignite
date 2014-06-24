@@ -47,7 +47,7 @@ import static org.gridgain.grid.events.GridEventType.*;
 @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions"})
 public class GridServiceProcessor extends GridProcessorAdapter {
     /** Thread factory. */
-    private GridThreadFactory threadFactory = new GridThreadFactory(ctx.gridName());
+    private ThreadFactory threadFactory = new GridThreadFactory(ctx.gridName());
 
     /** Time to wait before reassignment retries. */
     private static final long RETRY_TIMEOUT = 1000;
@@ -62,7 +62,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private final Map<String, Collection<GridServiceContextImpl>> locSvcs = new HashMap<>();
 
     /** Topology listener. */
-    private TopologyListener topLsnr = new TopologyListener();
+    private GridLocalEventListener topLsnr = new TopologyListener();
 
     /** Deployment listener. */
     private GridCacheContinuousQueryAdapter<GridServiceConfigurationKey, GridServiceConfiguration> cfgQry;
@@ -72,6 +72,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
     /** Deployment futures. */
     private final ConcurrentMap<String, GridFutureAdapter<?>> futs = new ConcurrentHashMap8<>();
+
+    /** Deployment executor service. */
+    private final ExecutorService depExe = Executors.newSingleThreadExecutor();
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -151,6 +154,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         catch (GridException e) {
             log.error("Failed to unsubscribe service assignment notifications.", e);
         }
+
+        U.shutdownNow(GridServiceProcessor.class, depExe, log);
 
         Map<String, Collection<GridServiceContextImpl>> locSvcs;
 
@@ -336,7 +341,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             GridServiceDescriptorImpl desc = new GridServiceDescriptorImpl(cfg);
 
             try {
-                GridServiceAssignments assigns = assignCache.get(new GridServiceAssignmentsKey(cfg.getName()));
+                GridServiceAssignments assigns = assignCache.flagsOn(GridCacheFlag.GET_PRIMARY).
+                    get(new GridServiceAssignmentsKey(cfg.getName()));
 
                 if (assigns != null) {
                     desc.topologySnapshot(assigns.assigns());
@@ -420,7 +426,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     int cnt = perNodeCnt + 1;
 
                     if (oldAssigns != null) {
-                        Set<UUID> used = new HashSet<>();
+                        Collection<UUID> used = new HashSet<>();
 
                         // Avoid redundant moving of services.
                         for (Entry<UUID, Integer> e : oldAssigns.assigns().entrySet()) {
@@ -580,7 +586,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param ctxs Contexts to cancel.
      * @param cancelCnt Number of contexts to cancel.
      */
-    private void cancel(Collection<GridServiceContextImpl> ctxs, int cancelCnt) {
+    private void cancel(Iterable<GridServiceContextImpl> ctxs, int cancelCnt) {
         for (Iterator<GridServiceContextImpl> it = ctxs.iterator(); it.hasNext();) {
             GridServiceContextImpl ctx = it.next();
 
@@ -617,50 +623,46 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         implements GridBiPredicate<UUID, Collection<Entry<GridServiceConfigurationKey, GridServiceConfiguration>>> {
         @Override public boolean apply(
             UUID nodeId,
-            Collection<Entry<GridServiceConfigurationKey, GridServiceConfiguration>> cfgs) {
-            if (!busyLock.enterBusy())
-                return true;
+            final Collection<Entry<GridServiceConfigurationKey, GridServiceConfiguration>> cfgs) {
+            depExe.submit(new BusyRunnable() {
+                @Override public void run0() {
+                    for (Entry<GridServiceConfigurationKey, GridServiceConfiguration> e : cfgs) {
+                        GridServiceConfiguration cfg = e.getValue();
 
-            try {
-                for (Entry<GridServiceConfigurationKey, GridServiceConfiguration> e : cfgs) {
-                    GridServiceConfiguration cfg = e.getValue();
+                        if (cfg != null) {
+                            // Ignore other utility cache events.
+                            long topVer = ctx.discovery().topologyVersion();
 
-                    if (cfg != null) {
-                        // Ignore other utility cache events.
-                        long topVer = ctx.discovery().topologyVersion();
+                            GridNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
 
-                        GridNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
-
-                        if (oldest.isLocal())
-                            onDeployment(cfg, topVer);
-                    }
-                    // Handle undeployment.
-                    else {
-                        String svcName = e.getKey().name();
-
-                        Collection<GridServiceContextImpl> ctxs;
-
-                        synchronized (locSvcs) {
-                            ctxs = locSvcs.remove(svcName);
+                            if (oldest.isLocal())
+                                onDeployment(cfg, topVer);
                         }
+                        // Handle undeployment.
+                        else {
+                            String svcName = e.getKey().name();
 
-                        if (ctx != null) {
-                            synchronized (ctxs) {
-                                cancel(ctxs, ctxs.size());
+                            Collection<GridServiceContextImpl> ctxs;
+
+                            synchronized (locSvcs) {
+                                ctxs = locSvcs.remove(svcName);
                             }
+
+                            if (ctx != null) {
+                                synchronized (ctxs) {
+                                    cancel(ctxs, ctxs.size());
+                                }
+                            }
+
+                            GridFutureAdapter<?> fut = futs.get(cfg.getName());
+
+                            // Complete deployment future if undeployment happened.
+                            if (fut != null)
+                                fut.onDone();
                         }
-
-                        GridFutureAdapter<?> fut = futs.get(cfg.getName());
-
-                        // Complete deployment future if undeployment happened.
-                        if (fut != null)
-                            fut.onDone();
                     }
                 }
-            }
-            finally {
-                busyLock.leaveBusy();
-            }
+            });
 
             return true;
         }
@@ -672,9 +674,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
          * @param topVer Topology version.
          */
         private void onDeployment(final GridServiceConfiguration cfg, final long topVer) {
-            if (!busyLock.enterBusy())
-                return;
-
             // Retry forever.
             try {
                 long newTopVer = ctx.discovery().topologyVersion();
@@ -710,13 +709,18 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     }
 
                     @Override public void onTimeout() {
-                        // Try again.
-                        onDeployment(cfg, topVer);
+                        if (!busyLock.enterBusy())
+                            return;
+
+                        try {
+                            // Try again.
+                            onDeployment(cfg, topVer);
+                        }
+                        finally {
+                            busyLock.leaveBusy();
+                        }
                     }
                 });
-            }
-            finally {
-                busyLock.leaveBusy();
             }
         }
     }
@@ -726,39 +730,39 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      */
     private class TopologyListener implements GridLocalEventListener {
         /** {@inheritDoc} */
-        @Override public void onEvent(GridEvent evt) {
-            if (!busyLock.enterBusy())
-                return;
+        @Override public void onEvent(final GridEvent evt) {
+            depExe.submit(new BusyRunnable() {
+                @Override public void run0() {
+                    long topVer = ((GridDiscoveryEvent)evt).topologyVersion();
 
-            try {
-                long topVer = ((GridDiscoveryEvent)evt).topologyVersion();
+                    GridNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
 
-                GridNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
+                    if (oldest.isLocal()) {
+                        final Collection<GridServiceConfiguration> retries = new ConcurrentLinkedQueue<>();
 
-                if (oldest.isLocal()) {
-                    final Collection<GridServiceConfiguration> retries = new ConcurrentLinkedQueue<>();
+                        for (GridCacheEntry<GridServiceConfigurationKey, GridServiceConfiguration> e : cfgCache.entrySetx()) {
+                            GridServiceConfiguration cfg = e.getValue();
 
-                    for (GridCacheEntry<GridServiceConfigurationKey, GridServiceConfiguration> e : cfgCache.entrySetx()) {
-                        GridServiceConfiguration cfg = e.getValue();
+                            try {
+                                ctx.cache().internalCache(CU.UTILITY_CACHE_NAME).context().affinity().
+                                    affinityReadyFuture(topVer).get();
 
-                        try {
-                            reassign(cfg, topVer);
+                                reassign(cfg, topVer);
+                            }
+                            catch (GridException ex) {
+                                if (!(e instanceof GridTopologyException))
+                                    LT.error(log, ex,
+                                        "Failed to do service reassignment (will retry): " + cfg.getName());
+
+                                retries.add(cfg);
+                            }
                         }
-                        catch (GridException ex) {
-                            if (!(e instanceof GridTopologyException))
-                                LT.error(log, ex, "Failed to do service reassignment (will retry): " + cfg.getName());
 
-                            retries.add(cfg);
-                        }
+                        if (!retries.isEmpty())
+                            onReassignmentFailed(topVer, retries);
                     }
-
-                    if (!retries.isEmpty())
-                        onReassignmentFailed(topVer, retries);
                 }
-            }
-            finally {
-                busyLock.leaveBusy();
-            }
+            });
         }
 
         /**
@@ -824,45 +828,64 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public boolean apply(
             UUID nodeId,
-            Collection<Entry<GridServiceAssignmentsKey, GridServiceAssignments>> assignCol) {
-            if (!busyLock.enterBusy())
-                return true;
+            final Collection<Entry<GridServiceAssignmentsKey, GridServiceAssignments>> assignCol) {
+            depExe.submit(new BusyRunnable() {
+                @Override public void run0() {
+                    for (Entry<GridServiceAssignmentsKey, GridServiceAssignments> e : assignCol) {
+                        GridServiceAssignments assigns = e.getValue();
 
-            try {
-                for (Entry<GridServiceAssignmentsKey, GridServiceAssignments> e : assignCol) {
-                    GridServiceAssignments assigns = e.getValue();
+                        GridFutureAdapter<?> fut = futs.get(assigns.name());
 
-                    GridFutureAdapter<?> fut = futs.get(assigns.name());
+                        // Complete deployment futures once the assignments have been stored in cache.
+                        if (fut != null)
+                            fut.onDone();
 
-                    // Complete deployment futures once the assignments have been stored in cache.
-                    if (fut != null)
-                        fut.onDone();
+                        if (assigns != null)
+                            redeploy(assigns);
+                            // Handle undeployment.
+                        else {
+                            String svcName = e.getKey().name();
 
-                    if (assigns != null)
-                        redeploy(assigns);
-                    // Handle undeployment.
-                    else {
-                        String svcName = e.getKey().name();
+                            Collection<GridServiceContextImpl> ctxs;
 
-                        Collection<GridServiceContextImpl> ctxs;
+                            synchronized (locSvcs) {
+                                ctxs = locSvcs.remove(svcName);
+                            }
 
-                        synchronized (locSvcs) {
-                            ctxs = locSvcs.remove(svcName);
-                        }
-
-                        if (ctx != null) {
-                            synchronized (ctxs) {
-                                cancel(ctxs, ctxs.size());
+                            if (ctx != null) {
+                                synchronized (ctxs) {
+                                    cancel(ctxs, ctxs.size());
+                                }
                             }
                         }
                     }
                 }
+            });
+
+            return true;
+        }
+    }
+
+    /**
+     *
+     */
+    private abstract class BusyRunnable implements Runnable {
+        /** {@inheritDoc} */
+        @Override public void run() {
+            if (!busyLock.enterBusy())
+                return;
+
+            try {
+                run0();
             }
             finally {
                 busyLock.leaveBusy();
             }
-
-            return true;
         }
+
+        /**
+         * Abstract run method protected by busy lock.
+         */
+        public abstract void run0();
     }
 }
