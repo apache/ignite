@@ -15,6 +15,8 @@ namespace GridGain.Client.Impl.Portable
     using System.IO;
     using GridGain.Client.Impl.Portable;
     using GridGain.Client.Portable;
+
+    using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
     
     /**
      * <summary>Portable object implementation.</summary>
@@ -100,11 +102,40 @@ namespace GridGain.Client.Impl.Portable
         }        
        
         /** <inheritdoc /> */
-        public F Field<F>(string fieldName)
+        public T Field<T>(string fieldName)
+        {
+            if (userType) {
+                GridClientPortableTypeDescriptor desc;
+
+                if (marsh.IdToDescriptor.TryGetValue(PU.TypeKey(true, typeId), out desc))
+                {
+                    int? fieldIdRef = desc.Mapper.FieldId(typeId, fieldName);
+
+                    int fieldId = fieldIdRef.HasValue ? fieldIdRef.Value : (PU.StringHashCode(fieldName.ToLower()));
+
+                    int pos;
+
+                    return fields.TryGetValue(fieldId, out pos) ? Field0<T>(pos) : default(T);
+                }
+                else
+                    throw new GridClientPortableException("Unknown user type: " + typeId);
+                    
+            }
+            else {
+                throw new GridClientPortableException("Cannot get field by name on system type: " + typeId);
+            }
+        }
+
+        /**
+         * <summary>Gets field value on the given.</summary>
+         * <param name="pos">Position.</param>
+         * <returns>Field value.</returns>
+         */ 
+        private T Field0<T>(int pos)
         {
             throw new NotImplementedException();
         }
-
+             
         /** <inheritdoc /> */
         public T Deserialize<T>()
         {
@@ -114,7 +145,7 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public IGridClientPortableObject Copy(IDictionary<string, object> fields)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
         
         /**
