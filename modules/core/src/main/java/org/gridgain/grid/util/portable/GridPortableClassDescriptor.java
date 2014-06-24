@@ -20,7 +20,7 @@ import static java.lang.reflect.Modifier.*;
 /**
  * Portable class descriptor.
  */
-public class GridPortableClassDescriptor {
+class GridPortableClassDescriptor {
     /** */
     private final Class<?> cls;
 
@@ -44,12 +44,18 @@ public class GridPortableClassDescriptor {
 
     /**
      * @param cls Class.
+     * @param userType User type flag.
+     * @param typeId Type ID.
+     * @param idMapper ID mapper.
+     * @param serializer Serializer.
+     * @throws GridPortableException In case of error.
      */
-    public GridPortableClassDescriptor(Class<?> cls, int typeId, @Nullable GridPortableIdMapper idMapper,
+    GridPortableClassDescriptor(Class<?> cls, boolean userType, int typeId, @Nullable GridPortableIdMapper idMapper,
         @Nullable GridPortableSerializer serializer) throws GridPortableException {
         assert cls != null;
 
         this.cls = cls;
+        this.userType = userType;
         this.typeId = typeId;
         this.serializer = serializer;
 
@@ -81,21 +87,18 @@ public class GridPortableClassDescriptor {
             case OBJ_ARR:
             case COL:
             case MAP:
-                userType = false;
                 cons = null;
                 fields = null;
 
                 break;
 
             case PORTABLE:
-                userType = true;
                 cons = constructor(cls);
                 fields = null;
 
                 break;
 
             case OBJECT:
-                userType = true;
                 cons = constructor(cls);
 
                 fields = new ArrayList<>();

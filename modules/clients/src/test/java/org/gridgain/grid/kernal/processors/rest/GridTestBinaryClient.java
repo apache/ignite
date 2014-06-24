@@ -295,11 +295,11 @@ final class GridTestBinaryClient {
         throws GridException {
         assert entries != null;
 
-        GridClientCacheRequest<K, V> req = new GridClientCacheRequest<>(PUT_ALL);
+        GridClientCacheRequest req = new GridClientCacheRequest(PUT_ALL);
 
         req.requestId(idCntr.incrementAndGet());
         req.cacheName(cacheName);
-        req.values(entries);
+        req.values((Map<Object, Object>)entries);
 
         return makeRequest(req).<Boolean>getObject();
     }
@@ -314,7 +314,7 @@ final class GridTestBinaryClient {
         throws GridException {
         assert key != null;
 
-        GridClientCacheRequest<K, V> req = new GridClientCacheRequest<>(GET);
+        GridClientCacheRequest req = new GridClientCacheRequest(GET);
 
         req.requestId(idCntr.getAndIncrement());
         req.cacheName(cacheName);
@@ -334,11 +334,11 @@ final class GridTestBinaryClient {
         throws GridException {
         assert keys != null;
 
-        GridClientCacheRequest<K, V> req = new GridClientCacheRequest<>(GET_ALL);
+        GridClientCacheRequest req = new GridClientCacheRequest(GET_ALL);
 
         req.requestId(idCntr.getAndIncrement());
         req.cacheName(cacheName);
-        req.keys(Arrays.asList(keys));
+        req.keys((Iterable<Object>)Arrays.asList(keys));
 
         return makeRequest(req).getObject();
     }
@@ -353,7 +353,7 @@ final class GridTestBinaryClient {
     public <K> boolean cacheRemove(@Nullable String cacheName, K key) throws GridException {
         assert key != null;
 
-        GridClientCacheRequest<K, Object> req = new GridClientCacheRequest<>(RMV);
+        GridClientCacheRequest req = new GridClientCacheRequest(RMV);
 
         req.requestId(idCntr.getAndIncrement());
         req.cacheName(cacheName);
@@ -372,11 +372,11 @@ final class GridTestBinaryClient {
         throws GridException {
         assert keys != null;
 
-        GridClientCacheRequest<K, Object> req = new GridClientCacheRequest<>(RMV_ALL);
+        GridClientCacheRequest req = new GridClientCacheRequest(RMV_ALL);
 
         req.requestId(idCntr.getAndIncrement());
         req.cacheName(cacheName);
-        req.keys(Arrays.asList(keys));
+        req.keys((Iterable<Object>)Arrays.asList(keys));
 
         return makeRequest(req).isSuccess();
     }
@@ -393,7 +393,7 @@ final class GridTestBinaryClient {
         assert key != null;
         assert val != null;
 
-        GridClientCacheRequest<K, V> replace = new GridClientCacheRequest<>(REPLACE);
+        GridClientCacheRequest replace = new GridClientCacheRequest(REPLACE);
 
         replace.requestId(idCntr.getAndIncrement());
         replace.cacheName(cacheName);
@@ -415,7 +415,7 @@ final class GridTestBinaryClient {
         throws GridException {
         assert key != null;
 
-        GridClientCacheRequest<K, V> msg = new GridClientCacheRequest<>(CAS);
+        GridClientCacheRequest msg = new GridClientCacheRequest(CAS);
 
         msg.requestId(idCntr.getAndIncrement());
         msg.cacheName(cacheName);
@@ -432,7 +432,7 @@ final class GridTestBinaryClient {
      * @throws GridException In case of error.
      */
     public <K> Map<String, Long> cacheMetrics(@Nullable String cacheName) throws GridException {
-        GridClientCacheRequest<K, Object> metrics = new GridClientCacheRequest<>(METRICS);
+        GridClientCacheRequest metrics = new GridClientCacheRequest(METRICS);
 
         metrics.requestId(idCntr.getAndIncrement());
         metrics.cacheName(cacheName);
@@ -452,7 +452,7 @@ final class GridTestBinaryClient {
         assert key != null;
         assert val != null;
 
-        GridClientCacheRequest<K, V> add = new GridClientCacheRequest<>(APPEND);
+        GridClientCacheRequest add = new GridClientCacheRequest(APPEND);
 
         add.requestId(idCntr.getAndIncrement());
         add.cacheName(cacheName);
@@ -474,7 +474,7 @@ final class GridTestBinaryClient {
         assert key != null;
         assert val != null;
 
-        GridClientCacheRequest<K, V> add = new GridClientCacheRequest<>(PREPEND);
+        GridClientCacheRequest add = new GridClientCacheRequest(PREPEND);
 
         add.requestId(idCntr.getAndIncrement());
         add.cacheName(cacheName);

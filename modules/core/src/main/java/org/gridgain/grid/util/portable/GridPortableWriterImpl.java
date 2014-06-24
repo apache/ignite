@@ -974,9 +974,11 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
 
     /** {@inheritDoc} */
     @Override public GridPortableRawWriter rawWriter() {
-        PRIM.writeInt(wCtx.arr, start + RAW_DATA_OFF_POS, wCtx.off - start);
+        if (allowFields) {
+            PRIM.writeInt(wCtx.arr, start + RAW_DATA_OFF_POS, wCtx.off - start);
 
-        allowFields = false;
+            allowFields = false;
+        }
 
         return this;
     }

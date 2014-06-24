@@ -122,7 +122,7 @@ public abstract class GridClientConnection {
      * @throws GridClientConnectionResetException In case of error.
      * @throws GridClientClosedException If client was manually closed before request was sent over network.
      */
-    public GridClientFutureAdapter<Boolean> cachePut(String cacheName, Object key, Object val,
+    public <K, V> GridClientFutureAdapter<Boolean> cachePut(String cacheName, K key, V val,
         Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException {
         return cachePutAll(cacheName, Collections.singletonMap(key, val), flags, destNodeId);
@@ -139,13 +139,13 @@ public abstract class GridClientConnection {
      * @throws GridClientConnectionResetException In case of error.
      * @throws GridClientClosedException If client was manually closed before request was sent over network.
      */
-    public GridClientFutureAdapter<Object> cacheGet(String cacheName, final Object key, Set<GridClientCacheFlag> flags,
+    public <K, V> GridClientFutureAdapter<V> cacheGet(String cacheName, final K key, Set<GridClientCacheFlag> flags,
         UUID destNodeId) throws GridClientConnectionResetException, GridClientClosedException {
-        final GridClientFutureAdapter<Map<Object, Object>> res = cacheGetAll(cacheName, Collections.singleton(key),
-            flags, destNodeId);
+        final GridClientFutureAdapter<Map<K, V>> res = cacheGetAll(cacheName, Collections.singleton(key), flags,
+            destNodeId);
 
-        return res.chain(new GridClientFutureCallback<Map<Object, Object>, Object>() {
-            @Override public Object onComplete(GridClientFuture<Map<Object, Object>> fut) throws GridClientException {
+        return res.chain(new GridClientFutureCallback<Map<K, V>, V>() {
+            @Override public V onComplete(GridClientFuture<Map<K, V>> fut) throws GridClientException {
                 return fut.get().get(key);
             }
         });
@@ -162,7 +162,7 @@ public abstract class GridClientConnection {
      * @throws GridClientConnectionResetException In case of error.
      * @throws GridClientClosedException If client was manually closed before request was sent over network.
      */
-    public abstract GridClientFutureAdapter<Boolean> cacheRemove(String cacheName, Object key,
+    public abstract <K> GridClientFutureAdapter<Boolean> cacheRemove(String cacheName, K key,
         Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException;
 
@@ -178,7 +178,7 @@ public abstract class GridClientConnection {
      * @throws GridClientConnectionResetException In case of error.
      * @throws GridClientClosedException If client was manually closed before request was sent over network.
      */
-    public abstract GridClientFutureAdapter<Boolean> cachePutAll(String cacheName, Map<Object, Object> entries,
+    public abstract <K, V> GridClientFutureAdapter<Boolean> cachePutAll(String cacheName, Map<K, V> entries,
         Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException;
 
@@ -193,7 +193,7 @@ public abstract class GridClientConnection {
      * @throws GridClientConnectionResetException In case of error.
      * @throws GridClientClosedException If client was manually closed before request was sent over network.
      */
-    public abstract GridClientFutureAdapter<Map<Object, Object>> cacheGetAll(String cacheName, Collection<Object> keys,
+    public abstract <K, V> GridClientFutureAdapter<Map<K, V>> cacheGetAll(String cacheName, Collection<K> keys,
         Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException;
 
@@ -208,7 +208,7 @@ public abstract class GridClientConnection {
      * @throws GridClientConnectionResetException In case of error.
      * @throws GridClientClosedException If client was manually closed before request was sent over network.
      */
-    public abstract GridClientFutureAdapter<Boolean> cacheRemoveAll(String cacheName, Collection<Object> keys,
+    public abstract <K> GridClientFutureAdapter<Boolean> cacheRemoveAll(String cacheName, Collection<K> keys,
         Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException;
 
@@ -224,7 +224,7 @@ public abstract class GridClientConnection {
      * @throws GridClientConnectionResetException In case of error.
      * @throws GridClientClosedException If client was manually closed before request was sent over network.
      */
-    public abstract GridClientFutureAdapter<Boolean> cacheReplace(String cacheName, Object key, Object val,
+    public abstract <K, V> GridClientFutureAdapter<Boolean> cacheReplace(String cacheName, K key, V val,
         Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException;
 
@@ -247,8 +247,8 @@ public abstract class GridClientConnection {
      * @throws GridClientConnectionResetException In case of error.
      * @throws GridClientClosedException If client was manually closed before request was sent over network.
      */
-    public abstract GridClientFutureAdapter<Boolean> cacheCompareAndSet(String cacheName, Object key, Object newVal,
-        Object oldVal, Set<GridClientCacheFlag> flags, UUID destNodeId)
+    public abstract <K, V> GridClientFutureAdapter<Boolean> cacheCompareAndSet(String cacheName, K key, V newVal,
+        V oldVal, Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException;
 
     /**
@@ -260,7 +260,7 @@ public abstract class GridClientConnection {
      * @throws GridClientConnectionResetException In case of error.
      * @throws GridClientClosedException If client was manually closed before request was sent over network.
      */
-    public abstract GridClientFutureAdapter<GridClientDataMetrics> cacheMetrics(String cacheName, UUID destNodeId)
+    public abstract <K> GridClientFutureAdapter<GridClientDataMetrics> cacheMetrics(String cacheName, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException;
 
     /**
@@ -275,7 +275,7 @@ public abstract class GridClientConnection {
      * @throws GridClientConnectionResetException In case of error.
      * @throws GridClientClosedException If client was manually closed before request was sent over network.
      */
-    public abstract GridClientFutureAdapter<Boolean> cacheAppend(String cacheName, Object key, Object val,
+    public abstract <K, V> GridClientFutureAdapter<Boolean> cacheAppend(String cacheName, K key, V val,
         Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException;
 
@@ -291,7 +291,7 @@ public abstract class GridClientConnection {
      * @throws GridClientConnectionResetException In case of error.
      * @throws GridClientClosedException If client was manually closed before request was sent over network.
      */
-    public abstract GridClientFutureAdapter<Boolean> cachePrepend(String cacheName, Object key, Object val,
+    public abstract <K, V> GridClientFutureAdapter<Boolean> cachePrepend(String cacheName, K key, V val,
         Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException;
 

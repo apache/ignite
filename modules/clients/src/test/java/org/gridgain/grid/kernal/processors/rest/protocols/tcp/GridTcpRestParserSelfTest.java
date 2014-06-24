@@ -128,7 +128,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCustomMessages() throws Exception {
-        GridClientCacheRequest<String, Integer> req = new GridClientCacheRequest<>(CAS);
+        GridClientCacheRequest req = new GridClientCacheRequest(CAS);
 
         req.key("key");
         req.value(1);
@@ -168,7 +168,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
 
         GridTcpRestParser parser = new GridTcpRestParser(log);
 
-        GridClientCacheRequest<String, String> req = new GridClientCacheRequest<>(CAS);
+        GridClientCacheRequest req = new GridClientCacheRequest(CAS);
 
         req.key("key");
 
@@ -231,7 +231,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
     public void testParseContinuousSplit() throws Exception {
         ByteBuffer tmp = ByteBuffer.allocate(10 * 1024);
 
-        GridClientCacheRequest<String, Integer> req = new GridClientCacheRequest<>(CAS);
+        GridClientCacheRequest req = new GridClientCacheRequest(CAS);
 
         req.key("key");
         req.value(1);

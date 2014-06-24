@@ -21,8 +21,19 @@ import java.nio.*;
  * Client marshaller supporting {@link GridPortable}.
  */
 public class GridClientPortableMarshaller implements GridClientMarshaller {
-    /** */
-    private final GridPortableMarshaller marsh = new GridPortableMarshaller(null); // TODO: Context
+    /** Inner marshaller. */
+    private GridPortableMarshaller marsh;
+
+    public GridClientPortableMarshaller() {
+        GridPortableConfigurer configurer = new GridPortableConfigurer(null);
+
+        try {
+            marsh = new GridPortableMarshaller(configurer.configure(null));
+        }
+        catch (GridPortableException e) {
+            e.printStackTrace(); // TODO implement.
+        }
+    }
 
     /** {@inheritDoc} */
     @Override public ByteBuffer marshal(Object obj, int off) throws IOException {

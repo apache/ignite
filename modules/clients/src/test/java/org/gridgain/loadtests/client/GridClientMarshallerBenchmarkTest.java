@@ -36,7 +36,7 @@ public class GridClientMarshallerBenchmarkTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCacheRequestTime() throws Exception {
-        GridClientCacheRequest<String, Long> req = new GridClientCacheRequest<>(CAS);
+        GridClientCacheRequest req = new GridClientCacheRequest(CAS);
 
         req.clientId(UUID.randomUUID());
         req.cacheName("CacheName");
@@ -45,7 +45,7 @@ public class GridClientMarshallerBenchmarkTest extends GridCommonAbstractTest {
         req.value(1L);
         req.value2(2L);
 
-        Map<String, Long> additional = new HashMap<>();
+        Map<Object, Object> additional = new HashMap<>();
 
         for (int i = 0; i < 1000; i++)
             additional.put("key" + i, (long)i);
@@ -65,7 +65,7 @@ public class GridClientMarshallerBenchmarkTest extends GridCommonAbstractTest {
             assertEquals(req.value(), res.value());
             assertEquals(req.value2(), res.value2());
 
-            for (Map.Entry<String, Long> e : req.values().entrySet())
+            for (Map.Entry<Object, Object> e : req.values().entrySet())
                 assertEquals(e.getValue(), res.values().get(e.getKey()));
         }
 
