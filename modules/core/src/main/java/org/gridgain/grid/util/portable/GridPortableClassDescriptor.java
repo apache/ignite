@@ -66,6 +66,7 @@ public class GridPortableClassDescriptor {
             case BOOLEAN:
             case STRING:
             case UUID:
+            case DATE:
             case BYTE_ARR:
             case SHORT_ARR:
             case INT_ARR:
@@ -76,6 +77,7 @@ public class GridPortableClassDescriptor {
             case BOOLEAN_ARR:
             case STRING_ARR:
             case UUID_ARR:
+            case DATE_ARR:
             case OBJ_ARR:
             case COL:
             case MAP:
@@ -218,6 +220,11 @@ public class GridPortableClassDescriptor {
 
                 break;
 
+            case DATE:
+                writer.doWriteDate((Date)obj);
+
+                break;
+
             case BYTE_ARR:
                 writer.doWriteByteArray((byte[])obj);
 
@@ -265,6 +272,11 @@ public class GridPortableClassDescriptor {
 
             case UUID_ARR:
                 writer.doWriteUuidArray((UUID[])obj);
+
+                break;
+
+            case DATE_ARR:
+                writer.doWriteDateArray((Date[])obj);
 
                 break;
 
@@ -342,6 +354,9 @@ public class GridPortableClassDescriptor {
             case UUID:
                 return reader.readUuid();
 
+            case DATE:
+                return reader.readDate();
+
             case BYTE_ARR:
                 return reader.readByteArray();
 
@@ -371,6 +386,9 @@ public class GridPortableClassDescriptor {
 
             case UUID_ARR:
                 return reader.readUuidArray();
+
+            case DATE_ARR:
+                return reader.readDateArray();
 
             case OBJ_ARR:
                 return reader.readObjectArray();
@@ -469,6 +487,8 @@ public class GridPortableClassDescriptor {
             return Mode.STRING;
         else if (cls == UUID.class)
             return Mode.UUID;
+        else if (cls == Date.class)
+            return Mode.DATE;
         else if (cls == byte[].class)
             return Mode.BYTE_ARR;
         else if (cls == short[].class)
@@ -489,6 +509,8 @@ public class GridPortableClassDescriptor {
             return Mode.STRING_ARR;
         else if (cls == UUID[].class)
             return Mode.UUID_ARR;
+        else if (cls == Date[].class)
+            return Mode.DATE_ARR;
         else if (cls == Object[].class)
             return Mode.OBJ_ARR;
         else if (Collection.class.isAssignableFrom(cls))
@@ -626,6 +648,11 @@ public class GridPortableClassDescriptor {
 
                     break;
 
+                case DATE:
+                    writer.writeDateField((Date)val);
+
+                    break;
+
                 case BYTE_ARR:
                     writer.writeByteArrayField((byte[])val);
 
@@ -673,6 +700,11 @@ public class GridPortableClassDescriptor {
 
                 case UUID_ARR:
                     writer.writeUuidArrayField((UUID[])val);
+
+                    break;
+
+                case DATE_ARR:
+                    writer.writeDateArrayField((Date[])val);
 
                     break;
 
@@ -761,6 +793,11 @@ public class GridPortableClassDescriptor {
 
                     break;
 
+                case DATE:
+                    val = reader.readDate(id);
+
+                    break;
+
                 case BYTE_ARR:
                     val = reader.readByteArray(id);
 
@@ -808,6 +845,11 @@ public class GridPortableClassDescriptor {
 
                 case UUID_ARR:
                     val = reader.readUuidArray(id);
+
+                    break;
+
+                case DATE_ARR:
+                    val = reader.readDateArray(id);
 
                     break;
 
@@ -878,6 +920,9 @@ public class GridPortableClassDescriptor {
         UUID,
 
         /** */
+        DATE,
+
+        /** */
         BYTE_ARR,
 
         /** */
@@ -906,6 +951,9 @@ public class GridPortableClassDescriptor {
 
         /** */
         UUID_ARR,
+
+        /** */
+        DATE_ARR,
 
         /** */
         OBJ_ARR,

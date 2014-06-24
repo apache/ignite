@@ -78,6 +78,12 @@ public interface GridPortableRawReader {
     @Nullable public UUID readUuid() throws GridPortableException;
 
     /**
+     * @return Date.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public Date readDate() throws GridPortableException;
+
+    /**
      * @return Object.
      * @throws GridPortableException In case of error.
      */
@@ -144,6 +150,12 @@ public interface GridPortableRawReader {
     @Nullable public UUID[] readUuidArray() throws GridPortableException;
 
     /**
+     * @return Date array.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public Date[] readDateArray() throws GridPortableException;
+
+    /**
      * @return Object array.
      * @throws GridPortableException In case of error.
      */
@@ -156,8 +168,23 @@ public interface GridPortableRawReader {
     @Nullable public <T> Collection<T> readCollection() throws GridPortableException;
 
     /**
+     * @param colCls Collection class.
+     * @return Collection.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public <T> Collection<T> readCollection(Class<? extends Collection<T>> colCls)
+        throws GridPortableException;
+
+    /**
      * @return Map.
      * @throws GridPortableException In case of error.
      */
     @Nullable public <K, V> Map<K, V> readMap() throws GridPortableException;
+
+    /**
+     * @param mapCls Map class.
+     * @return Map.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public <K, V> Map<K, V> readMap(Class<? extends Map<K, V>> mapCls) throws GridPortableException;
 }

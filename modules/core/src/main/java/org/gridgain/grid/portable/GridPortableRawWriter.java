@@ -78,6 +78,12 @@ public interface GridPortableRawWriter {
     public void writeUuid(@Nullable UUID val) throws GridPortableException;
 
     /**
+     * @param val Date to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void writeDate(@Nullable Date val) throws GridPortableException;
+
+    /**
      * @param obj Value to write.
      * @throws GridPortableException In case of error.
      */
@@ -142,6 +148,12 @@ public interface GridPortableRawWriter {
      * @throws GridPortableException In case of error.
      */
     public void writeUuidArray(@Nullable UUID[] val) throws GridPortableException;
+
+    /**
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void writeDateArray(@Nullable Date[] val) throws GridPortableException;
 
     /**
      * @param val Value to write.

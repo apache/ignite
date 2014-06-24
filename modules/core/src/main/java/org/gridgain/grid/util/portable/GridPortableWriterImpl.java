@@ -220,6 +220,18 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     }
 
     /**
+    * @param date Date.
+    */
+   void doWriteDate(@Nullable Date date) {
+       if (date == null)
+           doWriteBoolean(false);
+       else {
+           doWriteBoolean(true);
+           doWriteLong(date.getTime());
+       }
+   }
+
+    /**
      * @param obj Object.
      * @throws GridPortableException In case of error.
      */
@@ -343,6 +355,18 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
         if (val != null) {
             for (UUID uuid : val)
                 doWriteUuid(uuid);
+        }
+    }
+
+    /**
+     * @param val Array of dates.
+     */
+    void doWriteDateArray(@Nullable Date[] val) {
+        doWriteInt(val != null ? val.length : -1);
+
+        if (val != null) {
+            for (Date date : val)
+                doWriteDate(date);
         }
     }
 
@@ -486,6 +510,15 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     }
 
     /**
+     * @param val Value.
+     */
+    void writeDateField(@Nullable Date val) {
+        doWriteInt(val != null ? 10 : 2);
+        doWriteByte(DATE);
+        doWriteDate(val);
+    }
+
+    /**
      * @param obj Object.
      * @throws GridPortableException In case of error.
      */
@@ -589,6 +622,18 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
 
         doWriteByte(UUID_ARR);
         doWriteUuidArray(val);
+
+        writeDelta(lenPos);
+    }
+
+    /**
+     * @param val Value.
+     */
+    void writeDateArrayField(@Nullable Date[] val) {
+        int lenPos = reserveAndMark(4);
+
+        doWriteByte(DATE_ARR);
+        doWriteDateArray(val);
 
         writeDelta(lenPos);
     }
@@ -743,6 +788,17 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     }
 
     /** {@inheritDoc} */
+    @Override public void writeDate(String fieldName, @Nullable Date val) throws GridPortableException {
+        writeFieldId(fieldName);
+        writeDateField(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeDate(@Nullable Date val) throws GridPortableException {
+        doWriteDate(val);
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeObject(String fieldName, @Nullable Object obj) throws GridPortableException {
         writeFieldId(fieldName);
         writeObjectField(obj);
@@ -864,6 +920,17 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     /** {@inheritDoc} */
     @Override public void writeUuidArray(@Nullable UUID[] val) throws GridPortableException {
         doWriteUuidArray(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeDateArray(String fieldName, @Nullable Date[] val) throws GridPortableException {
+        writeFieldId(fieldName);
+        writeDateArrayField(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeDateArray(@Nullable Date[] val) throws GridPortableException {
+        doWriteDateArray(val);
     }
 
     /** {@inheritDoc} */

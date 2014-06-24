@@ -163,6 +163,9 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             case UUID:
                 return doReadUuid(false);
 
+            case DATE:
+                return doReadDate(false);
+
             case BYTE_ARR:
                 return doReadByteArray(false);
 
@@ -192,6 +195,9 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
 
             case UUID_ARR:
                 return doReadUuidArray(false);
+
+            case DATE_ARR:
+                return doReadDateArray(false);
 
             case OBJ_ARR:
                 int arrLen = doReadInt(false);
@@ -445,6 +451,26 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
      * @return Value.
      * @throws GridPortableException In case of error.
      */
+    @Nullable Date readDate(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
+
+        if (off >= 0) {
+            byte flag = doReadByte(false);
+
+            if (flag != DATE)
+                throw new GridPortableException("Invalid flag value: " + flag);
+
+            return doReadDate(false);
+        }
+        else
+            return null;
+    }
+
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
     @Nullable Object readObject(int fieldId) throws GridPortableException {
         off = fieldOffset(fieldId);
 
@@ -656,6 +682,26 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
      * @return Value.
      * @throws GridPortableException In case of error.
      */
+    @Nullable Date[] readDateArray(int fieldId) throws GridPortableException {
+        off = fieldOffset(fieldId);
+
+        if (off >= 0) {
+            byte flag = doReadByte(false);
+
+            if (flag != DATE_ARR)
+                throw new GridPortableException("Invalid flag value: " + flag);
+
+            return doReadDateArray(false);
+        }
+        else
+            return null;
+    }
+
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
     @Nullable Object[] readObjectArray(int fieldId) throws GridPortableException {
         off = fieldOffset(fieldId);
 
@@ -812,6 +858,16 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public Date readDate(String fieldName) throws GridPortableException {
+        return readDate(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Date readDate() throws GridPortableException {
+        return doReadDate(true);
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public Object readObject(String fieldName) throws GridPortableException {
         return readObject(fieldId(fieldName));
     }
@@ -922,6 +978,16 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public Date[] readDateArray(String fieldName) throws GridPortableException {
+        return readDateArray(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Date[] readDateArray() throws GridPortableException {
+        return doReadDateArray(true);
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public Object[] readObjectArray(String fieldName) throws GridPortableException {
         return readObjectArray(fieldId(fieldName));
     }
@@ -942,6 +1008,18 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public <T> Collection<T> readCollection(String fieldName,
+        Class<? extends Collection<T>> colCls) throws GridPortableException {
+        return null; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> Collection<T> readCollection(
+        Class<? extends Collection<T>> colCls) throws GridPortableException {
+        return null; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public <K, V> Map<K, V> readMap(String fieldName) throws GridPortableException {
         return readMap(fieldId(fieldName));
     }
@@ -949,6 +1027,18 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     /** {@inheritDoc} */
     @Nullable @Override public <K, V> Map<K, V> readMap() throws GridPortableException {
         return (Map<K, V>)doReadMap(true);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <K, V> Map<K, V> readMap(String fieldName,
+        Class<? extends Map<K, V>> mapCls) throws GridPortableException {
+        return null; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <K, V> Map<K, V> readMap(
+        Class<? extends Map<K, V>> mapCls) throws GridPortableException {
+        return null; // TODO: implement.
     }
 
     /** {@inheritDoc} */
@@ -1082,6 +1172,20 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             long least = doReadLong(raw);
 
             return new UUID(most, least);
+        }
+        else
+            return null;
+    }
+
+    /**
+     * @param raw Raw flag.
+     * @return Value.
+     */
+    private Date doReadDate(boolean raw) {
+        if (doReadBoolean(raw)) {
+            long time = doReadLong(raw);
+
+            return new Date(time);
         }
         else
             return null;
@@ -1359,6 +1463,25 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
 
             for (int i = 0; i < len; i++)
                 arr[i] = doReadUuid(raw);
+
+            return arr;
+        }
+        else
+            return null;
+    }
+
+    /**
+     * @param raw Raw flag.
+     * @return Value.
+     */
+    private Date[] doReadDateArray(boolean raw) {
+        int len = doReadInt(raw);
+
+        if (len >= 0) {
+            Date[] arr = new Date[len];
+
+            for (int i = 0; i < len; i++)
+                arr[i] = doReadDate(raw);
 
             return arr;
         }

@@ -121,9 +121,20 @@ class GridPortableObjectImpl implements GridPortableObject, Externalizable {
         if (other == null || getClass() != other.getClass())
             return false;
 
-        GridPortableObjectImpl obj = (GridPortableObjectImpl)other;
+        GridPortableObjectImpl otherPo = (GridPortableObjectImpl)other;
 
-        return reader.equals(obj.reader);
+        int len = length();
+        int otherLen = otherPo.length();
+
+        if (len != otherLen)
+            return false;
+
+        for (int i = start, j = otherPo.start; i < len; i++, j++) {
+            if (arr[i] != otherPo.arr[j])
+                return false;
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -143,5 +154,12 @@ class GridPortableObjectImpl implements GridPortableObject, Externalizable {
         ctx = (GridPortableContext)in.readObject();
         arr = U.readByteArray(in);
         start = in.readInt();
+    }
+
+    /**
+     * @return Length.
+     */
+    private int length() {
+        return PRIM.readInt(arr, start + 10);
     }
 }

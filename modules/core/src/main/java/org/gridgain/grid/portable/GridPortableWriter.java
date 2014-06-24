@@ -89,6 +89,13 @@ public interface GridPortableWriter {
 
     /**
      * @param fieldName Field name.
+     * @param val Date to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void writeDate(String fieldName, @Nullable Date val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
      * @param obj Value to write.
      * @throws GridPortableException In case of error.
      */
@@ -163,6 +170,13 @@ public interface GridPortableWriter {
      * @throws GridPortableException In case of error.
      */
     public void writeUuidArray(String fieldName, @Nullable UUID[] val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void writeDateArray(String fieldName, @Nullable Date[] val) throws GridPortableException;
 
     /**
      * @param fieldName Field name.

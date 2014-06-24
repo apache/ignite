@@ -89,6 +89,13 @@ public interface GridPortableReader {
 
     /**
      * @param fieldName Field name.
+     * @return Date.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public Date readDate(String fieldName) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
      * @return Object.
      * @throws GridPortableException In case of error.
      */
@@ -166,6 +173,13 @@ public interface GridPortableReader {
 
     /**
      * @param fieldName Field name.
+     * @return Date array.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public Date[] readDateArray(String fieldName) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
      * @return Object array.
      * @throws GridPortableException In case of error.
      */
@@ -180,10 +194,28 @@ public interface GridPortableReader {
 
     /**
      * @param fieldName Field name.
+     * @param colCls Collection class.
+     * @return Collection.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public <T> Collection<T> readCollection(String fieldName, Class<? extends Collection<T>> colCls)
+        throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
      * @return Map.
      * @throws GridPortableException In case of error.
      */
     @Nullable public <K, V> Map<K, V> readMap(String fieldName) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param mapCls Map class.
+     * @return Map.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public <K, V> Map<K, V> readMap(String fieldName, Class<? extends Map<K, V>> mapCls)
+        throws GridPortableException;
 
     /**
      * Gets raw reader.
