@@ -10,7 +10,7 @@
 ::
 
 ::
-:: Grid command line loader with Hadoop classpath.
+:: Hadoop class path resolver.
 ::
 
 ::
@@ -18,8 +18,6 @@
 ::
 
 @echo off
-
-setlocal
 
 if not defined HADOOP_HOME (
     echo ERROR: HADOOP_HOME variable is not set.
@@ -53,15 +51,8 @@ for /f %%f in ('dir /B %HADOOP_HDFS_HOME%\hadoop-hdfs-*') do call :concat %HADOO
 for /f %%f in ('dir /B %HADOOP_MAPRED_HOME%\hadoop-mapreduce-client-common-*') do call :concat %HADOOP_MAPRED_HOME%\%%f
 for /f %%f in ('dir /B %HADOOP_MAPRED_HOME%\hadoop-mapreduce-client-core-*') do call :concat %HADOOP_MAPRED_HOME%\%%f
 
-endlocal & (
-    set GRIDGAIN_HADOOP_CLASSPATH=%CP%
-    set HADOOP_COMMON_HOME=%HADOOP_HOME%\share\hadoop\common
-)
-
-::
-:: Start grid node
-::
-call "%~dp0\ggstart.bat" %*
+set GRIDGAIN_HADOOP_CLASSPATH=%CP%
+set HADOOP_COMMON_HOME=%HADOOP_HOME%\share\hadoop\common
 
 goto :eof
 
