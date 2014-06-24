@@ -15,10 +15,28 @@ import java.util.*;
 
 /**
  * Portable object builder.
+ * <p>
+ * Type ID is required.
  */
 public interface GridPortableBuilder {
     /**
-     * Sets type ID (required).
+     * Sets type ID.
+     *
+     * @param cls Class.
+     * @return {@code this} instance for chaining.
+     */
+    public GridPortableBuilder typeId(Class<?> cls);
+
+    /**
+     * Sets type ID.
+     *
+     * @param clsName Class name.
+     * @return {@code this} instance for chaining.
+     */
+    public GridPortableBuilder typeId(String clsName);
+
+    /**
+     * Sets type ID.
      *
      * @param typeId Type ID.
      * @return {@code this} instance for chaining.
@@ -248,198 +266,6 @@ public interface GridPortableBuilder {
      * @return {@code this} instance for chaining.
      */
     public GridPortableBuilder mapField(String fieldName, @Nullable Map<?, ?> val);
-
-    /**
-     * Adds raw {@code byte} field.
-     *
-     * @param val Value.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder rawByteField(byte val);
-
-    /**
-     * Adds raw {@code short} field.
-     *
-     * @param val Value.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder rawShortField(short val);
-
-    /**
-     * Adds raw {@code int} field.
-     *
-     * @param val Value.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder rawIntField(int val);
-
-    /**
-     * Adds raw {@code long} field.
-     *
-     * @param val Value.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder rawLongField(long val);
-
-    /**
-     * Adds raw {@code float} field.
-     *
-     * @param val Value.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder rawFloatField(float val);
-
-    /**
-     * Adds raw {@code double} field.
-     *
-     * @param val Value.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder rawDoubleField(double val);
-
-    /**
-     * Adds raw {@code char} field.
-     *
-     * @param val Value.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder rawCharField(char val);
-
-    /**
-     * Adds raw {@code boolean} field.
-     *
-     * @param val Value.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder rawBooleanField(boolean val);
-
-    /**
-     * Adds raw {@link String} field.
-     *
-     * @param val Value.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder rawStringField(@Nullable String val);
-
-    /**
-     * Adds raw {@link UUID} field.
-     *
-     * @param val Value.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder rawUuidField(@Nullable UUID val);
-
-    /**
-     * Adds raw {@link Object} field.
-     *
-     * @param val Value.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder rawObjectField(@Nullable Object val);
-
-    /**
-     * Adds raw {@code byte array} field.
-     *
-     * @param val Value.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder rawByteArrayField(@Nullable byte[] val);
-
-    /**
-     * Adds raw {@code short array} field.
-     *
-     * @param val Value.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder rawShortArrayField(@Nullable short[] val);
-
-    /**
-     * Adds raw {@code int array} field.
-     *
-     * @param val Value.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder rawIntArrayField(@Nullable int[] val);
-
-    /**
-     * Adds raw {@code long array} field.
-     *
-     * @param val Value.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder rawLongArrayField(@Nullable long[] val);
-
-    /**
-     * Adds raw {@code float array} field.
-     *
-     * @param val Value.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder rawFloatArrayField(@Nullable float[] val);
-
-    /**
-     * Adds raw {@code double array} field.
-     *
-     * @param val Value.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder rawDoubleArrayField(@Nullable double[] val);
-
-    /**
-     * Adds raw {@code char array} field.
-     *
-     * @param val Value.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder rawCharArrayField(@Nullable char[] val);
-
-    /**
-     * Adds raw {@code boolean array} field.
-     *
-     * @param val Value.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder rawBooleanArrayField(@Nullable boolean[] val);
-
-    /**
-     * Adds raw {@code String array} field.
-     *
-     * @param val Value.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder rawStringArrayField(@Nullable String[] val);
-
-    /**
-     * Adds raw {@code UUID array} field.
-     *
-     * @param val Value.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder rawUuidArrayField(@Nullable UUID[] val);
-
-    /**
-     * Adds raw {@code Object array} field.
-     *
-     * @param val Value.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder rawObjectArrayField(@Nullable Object[] val);
-
-    /**
-     * Adds raw {@link Collection} field.
-     *
-     * @param val Value.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder rawCollectionField(@Nullable Collection<?> val);
-
-    /**
-     * Adds raw {@link Map} field.
-     *
-     * @param val Value.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder rawMapField(@Nullable Map<?, ?> val);
 
     /**
      * Builds portable object.
