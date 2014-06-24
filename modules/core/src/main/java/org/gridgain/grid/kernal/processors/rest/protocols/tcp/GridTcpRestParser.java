@@ -37,9 +37,6 @@ public class GridTcpRestParser implements GridNioParser {
     /** JDK marshaller. */
     private final GridMarshaller jdkMarshaller = new GridJdkMarshaller();
 
-    /** Protobuf marshaller. */
-    private final GridClientMarshaller protobufMarshaller;
-
     /** Logger. */
     private final GridLogger log;
 
@@ -48,8 +45,6 @@ public class GridTcpRestParser implements GridNioParser {
      */
     public GridTcpRestParser(GridLogger log) {
         this.log = log;
-
-        protobufMarshaller = U.createProtobufMarshaller(log);
     }
 
     /** {@inheritDoc} */
@@ -748,17 +743,7 @@ public class GridTcpRestParser implements GridNioParser {
     protected GridClientMarshaller marshaller(GridNioSession ses) throws GridException {
         GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
 
-        if (marsh == null) {
-            U.warn(log, "No marshaller defined for NIO session, using Protobuf as default [ses=" + ses + ']');
-
-            if (protobufMarshaller == null)
-                throw new GridException("Failed to use Protobuf marshaller (session will be closed). " +
-                    "Is gridgain-protobuf module added to classpath?");
-
-            marsh = protobufMarshaller;
-
-            ses.addMeta(MARSHALLER.ordinal(), marsh);
-        }
+        assert marsh != null;
 
         return marsh;
     }

@@ -593,8 +593,6 @@ public class GridClientConfiguration {
      * Options, that can be used out-of-the-box:
      * <ul>
      *     <li>{@link GridClientOptimizedMarshaller} (default) - GridGain's optimized marshaller.</li>
-     *     <li>{@code GridClientProtobufMarshaller} - marshaller, that uses
-     *       <a href="http://code.google.com/p/protobuf/">Google Protobuf</a>.</li>
      *     <li>{@link GridClientJdkMarshaller} - default JDK marshaller (not recommended).</li>
      * </ul>
      *

@@ -45,9 +45,6 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     /** JDK marshaller. */
     private final GridMarshaller jdkMarshaller = new GridJdkMarshaller();
 
-    /** Protobuf marshaller. */
-    private final GridClientMarshaller protobufMarshaller;
-
     /** Message reader. */
     private final GridNioMessageReader msgReader = new GridNioMessageReader() {
         @Override public boolean read(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf) {
@@ -100,8 +97,6 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     /** @param ctx Context. */
     public GridTcpRestProtocol(GridKernalContext ctx) {
         super(ctx);
-
-        protobufMarshaller = U.createProtobufMarshaller(log);
     }
 
     /**
@@ -121,17 +116,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     GridClientMarshaller marshaller(GridNioSession ses) throws GridException {
         GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
 
-        if (marsh == null) {
-            U.warn(log, "No marshaller defined for NIO session, using PROTOBUF as default [ses=" + ses + ']');
-
-            if (protobufMarshaller == null)
-                throw new GridException("Failed to use Protobuf marshaller (session will be closed). " +
-                    "Is gridgain-protobuf module added to classpath?");
-
-            marsh = protobufMarshaller;
-
-            ses.addMeta(MARSHALLER.ordinal(), marsh);
-        }
+        assert marsh != null;
 
         return marsh;
     }
@@ -152,8 +137,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
         validatePortableTypes(cfg);
 
-        GridNioServerListener<GridClientMessage> lsnr =
-            new GridTcpRestNioListener(log, this, hnd, ctx, protobufMarshaller);
+        GridNioServerListener<GridClientMessage> lsnr = new GridTcpRestNioListener(log, this, hnd, ctx);
 
         GridNioParser parser = new GridTcpRestDirectParser(this, msgReader);
 

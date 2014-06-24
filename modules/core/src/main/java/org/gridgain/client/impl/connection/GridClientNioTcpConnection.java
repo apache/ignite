@@ -566,7 +566,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         wrapper.clientId(clientId);
         wrapper.destinationId(msg.destinationId());
 
-        byte[] data = (msg instanceof GridRouterRequest) ? ((GridRouterRequest) msg).body() : marsh.marshal(msg);
+        byte[] data = (msg instanceof GridRouterRequest) ? ((GridRouterRequest)msg).body() : marsh.marshal(msg);
 
         wrapper.message(data);
 

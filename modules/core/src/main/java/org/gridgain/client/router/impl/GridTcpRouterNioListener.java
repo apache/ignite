@@ -57,19 +57,7 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
         tmpMap.put(U.OPTIMIZED_CLIENT_PROTO_ID, new GridClientOptimizedMarshaller());
         tmpMap.put(U.JDK_CLIENT_PROTO_ID, new GridClientJdkMarshaller());
 
-        addProtobufMarshaller(tmpMap);
-
         suppMarshMap = Collections.unmodifiableMap(tmpMap);
-    }
-
-    /**
-     * @param map Marshallers map.
-     */
-    private void addProtobufMarshaller(Map<Byte, GridClientMarshaller> map) {
-        GridClientMarshaller marsh = U.createProtobufMarshaller(log);
-
-        if (marsh != null)
-            map.put(marsh.getProtocolId(), marsh);
     }
 
     /** {@inheritDoc} */
@@ -97,14 +85,11 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
             final long reqId = routerMsg.requestId();
 
             try {
-                byte protoId = U.PROTOBUF_CLIENT_PROTO_ID;
-
                 GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
 
-                if (marsh != null)
-                    protoId = marsh.getProtocolId();
-                else
-                    U.warn(log, "No marshaller defined for session, using default Protobuf [ses=" + ses + ']');
+                assert marsh != null;
+
+                byte protoId = marsh.getProtocolId();
 
                 client.forwardMessage(routerMsg, routerMsg.destinationId(), protoId)
                     .listenAsync(new GridClientFutureListener() {

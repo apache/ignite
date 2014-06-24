@@ -10,14 +10,14 @@
 package org.gridgain.grid.kernal.processors.rest;
 
 import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.protobuf.*;
+import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.logger.java.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -35,8 +35,8 @@ final class GridTestBinaryClient {
     /** Logger. */
     private final GridLogger log = new GridJavaLogger();
 
-    /** Hessian marshaller. */
-    private final GridClientMarshaller protobufMarshaller = new GridClientProtobufMarshaller();
+    /** Marshaller. */
+    private final GridClientMarshaller marsh = new GridClientOptimizedMarshaller();
 
     /** Socket. */
     private final Socket sock;
@@ -76,7 +76,7 @@ final class GridTestBinaryClient {
             input = sock.getInputStream();
 
             // Write handshake.
-            sock.getOutputStream().write(new GridClientHandshakeRequest(protobufMarshaller.getProtocolId()).rawBytes());
+            sock.getOutputStream().write(new GridClientHandshakeRequest(marsh.getProtocolId()).rawBytes());
 
             byte[] buf = new byte[1];
 
@@ -145,7 +145,7 @@ final class GridTestBinaryClient {
                                     byte[] hdrBytes = Arrays.copyOfRange(bytes, 0, 40);
                                     byte[] msgBytes = Arrays.copyOfRange(bytes, 40, bytes.length);
 
-                                    GridClientResponse msg = protobufMarshaller.unmarshal(msgBytes);
+                                    GridClientResponse msg = marsh.unmarshal(msgBytes);
 
                                     long reqId = GridClientByteUtils.bytesToLong(hdrBytes, 0);
                                     UUID clientId = GridClientByteUtils.bytesToUuid(hdrBytes, 8);
@@ -254,7 +254,7 @@ final class GridTestBinaryClient {
     private byte[] createPacket(GridClientMessage msg) throws IOException {
         msg.clientId(id);
 
-        byte[] data = protobufMarshaller.marshal(msg);
+        byte[] data = marsh.marshal(msg);
 
         byte[] res = new byte[45 + data.length];
 

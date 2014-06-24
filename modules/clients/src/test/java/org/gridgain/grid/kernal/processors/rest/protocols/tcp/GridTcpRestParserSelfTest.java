@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
 import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.protobuf.*;
+import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.typedef.*;
@@ -31,8 +31,8 @@ import static org.gridgain.grid.kernal.processors.rest.protocols.tcp.GridMemcach
  * This class tests that parser confirms memcache extended specification.
  */
 public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
-    /** Protobuf marshaller. */
-    private GridClientMarshaller marshaller = new GridClientProtobufMarshaller();
+    /** Marshaller. */
+    private GridClientMarshaller marshaller = new GridClientOptimizedMarshaller();
 
     /** Extras value. */
     public static final byte[] EXTRAS = new byte[]{
