@@ -18,7 +18,7 @@ import java.io.*;
  * @version @java.version
  */
 public interface GridService extends Serializable {
-    public void cancel();
+    public void cancel(GridServiceContext ctx);
 
     public void execute(GridServiceContext ctx);
 }

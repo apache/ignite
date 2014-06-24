@@ -15,6 +15,7 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.*;
+import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.*;
@@ -30,6 +31,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static java.util.Map.*;
 import static org.gridgain.grid.GridDeploymentMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
@@ -62,10 +64,10 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private TopologyListener topLsnr = new TopologyListener();
 
     /** Deployment listener. */
-    private DeploymentListener depLsnr = new DeploymentListener();
+    private GridCacheContinuousQueryAdapter<GridServiceConfigurationKey, GridServiceConfiguration> cfgQry;
 
     /** Assignment listener. */
-    private AssignmentListener assignLsnr = new AssignmentListener();
+    private GridCacheContinuousQueryAdapter<GridServiceAssignmentsKey, GridServiceAssignments> assignQry;
 
     /** Deployment futures. */
     private final ConcurrentMap<String, GridFutureAdapter<?>> futs = new ConcurrentHashMap8<>();
@@ -76,7 +78,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    protected GridServiceProcessor(GridKernalContext ctx) {
+    public GridServiceProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 
@@ -97,21 +99,33 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         assignCache = ctx.cache().utilityCache(GridServiceAssignmentsKey.class, GridServiceAssignments.class);
 
         ctx.event().addLocalEventListener(topLsnr, EVTS_DISCOVERY);
-        ctx.event().addLocalEventListener(depLsnr, EVT_CACHE_OBJECT_PUT);
-        ctx.event().addLocalEventListener(assignLsnr, EVT_CACHE_OBJECT_PUT);
 
-        Collection<GridFuture<?>> futs = new ArrayList<>();
+        cfgQry = (GridCacheContinuousQueryAdapter<GridServiceConfigurationKey, GridServiceConfiguration>)
+            cfgCache.queries().createContinuousQuery();
 
-        for (GridServiceConfiguration c : ctx.config().getServiceConfiguration())
-            futs.add(deploy(c));
+        cfgQry.callback(new DeploymentListener());
 
-        // Await for services to deploy.
-        for (GridFuture<?> f : futs)
-            f.get();
+        cfgQry.execute(ctx.grid().forLocal(), true);
 
-        // Just in case if we missed an event, reprocess assignments.
-        for (GridServiceAssignments assigns : assignCache.values())
-            redeploy(assigns);
+        assignQry = (GridCacheContinuousQueryAdapter<GridServiceAssignmentsKey, GridServiceAssignments>)
+            assignCache.queries().createContinuousQuery();
+
+        assignQry.callback(new AssignmentListener());
+
+        assignQry.execute(ctx.grid().forLocal(), true);
+
+        GridServiceConfiguration[] cfgs = ctx.config().getServiceConfiguration();
+
+        if (cfgs != null) {
+            Collection<GridFuture<?>> futs = new ArrayList<>();
+
+            for (GridServiceConfiguration c : ctx.config().getServiceConfiguration())
+                futs.add(deploy(c));
+
+            // Await for services to deploy.
+            for (GridFuture<?> f : futs)
+                f.get();
+        }
 
         if (log.isDebugEnabled())
             log.debug("Started service processor.");
@@ -122,8 +136,20 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         busyLock.block();
 
         ctx.event().removeLocalEventListener(topLsnr);
-        ctx.event().removeLocalEventListener(depLsnr);
-        ctx.event().removeLocalEventListener(assignLsnr);
+
+        try {
+            cfgQry.close();
+        }
+        catch (GridException e) {
+            log.error("Failed to unsubscribe service configuration notifications.", e);
+        }
+
+        try {
+            assignQry.close();
+        }
+        catch (GridException e) {
+            log.error("Failed to unsubscribe service assignment notifications.", e);
+        }
 
         Map<String, Collection<GridServiceContextImpl>> locSvcs;
 
@@ -155,8 +181,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         if (cfg.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED))
             throw new GridRuntimeException("Cannot deploy services in PRIVATE or ISOLATED deployment mode: " + depMode);
 
-        ensure(c.getTotalCount() > 0, "getTotalCount() > 0", c.getTotalCount());
-        ensure(c.getMaxPerNodeCount() > 0, "getMaxPerNodeCount() > 0", c.getMaxPerNodeCount());
+        ensure(c.getTotalCount() >= 0, "getTotalCount() >= 0", c.getTotalCount());
+        ensure(c.getMaxPerNodeCount() >= 0, "getMaxPerNodeCount() >= 0", c.getMaxPerNodeCount());
         ensure(c.getService() != null, "getService() != null", c.getService());
     }
 
@@ -373,7 +399,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         Set<UUID> used = new HashSet<>();
 
                         // Avoid redundant moving of services.
-                        for (Map.Entry<UUID, Integer> e : oldAssigns.assigns().entrySet()) {
+                        for (Entry<UUID, Integer> e : oldAssigns.assigns().entrySet()) {
                             // If old count and new count match, then reuse the assignment.
                             if (e.getValue() == cnt) {
                                 cnts.put(e.getKey(), cnt);
@@ -386,12 +412,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         }
 
                         if (remainder > 0) {
-                            List<Map.Entry<UUID, Integer>> entries = new ArrayList<>(cnts.entrySet());
+                            List<Entry<UUID, Integer>> entries = new ArrayList<>(cnts.entrySet());
 
                             // Randomize.
                             Collections.shuffle(entries);
 
-                            for (Map.Entry<UUID, Integer> e : entries) {
+                            for (Entry<UUID, Integer> e : entries) {
                                 // Assign only the ones that have not been reused from previous assignments.
                                 if (!used.contains(e.getKey())) {
                                     e.setValue(e.getValue() + 1);
@@ -403,12 +429,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         }
                     }
                     else {
-                        List<Map.Entry<UUID, Integer>> entries = new ArrayList<>(cnts.entrySet());
+                        List<Entry<UUID, Integer>> entries = new ArrayList<>(cnts.entrySet());
 
                         // Randomize.
                         Collections.shuffle(entries);
 
-                        for (Map.Entry<UUID, Integer> e : entries) {
+                        for (Entry<UUID, Integer> e : entries) {
                             e.setValue(e.getValue() + 1);
 
                             if (--remainder == 0)
@@ -523,7 +549,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
             // Notify service about cancellation.
             try {
-                ctx.service().cancel();
+                ctx.service().cancel(ctx);
             }
             catch (Throwable e) {
                 log.error("Failed to cancel service (ignoring) [name=" + ctx.name() +
@@ -547,20 +573,20 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     /**
      * Service deployment listener.
      */
-    private class DeploymentListener implements GridLocalEventListener {
-        /** {@inheritDoc} */
-        @Override public void onEvent(GridEvent evt) {
+    private class DeploymentListener
+        implements GridBiPredicate<UUID, Collection<Entry<GridServiceConfigurationKey, GridServiceConfiguration>>> {
+        @Override public boolean apply(
+            UUID nodeId,
+            Collection<Entry<GridServiceConfigurationKey, GridServiceConfiguration>> cfgs) {
             if (!busyLock.enterBusy())
-                return;
+                return true;
 
             try {
-                if (evt.type() == EVT_CACHE_OBJECT_PUT) {
-                    Object val = ((GridCacheEvent)evt).newValue();
+                for (Entry<GridServiceConfigurationKey, GridServiceConfiguration> e : cfgs) {
+                    GridServiceConfiguration cfg = e.getValue();
 
-                    // Ignore other utility cache events.
-                    if (val instanceof GridServiceConfiguration) {
-                        GridServiceConfiguration cfg = (GridServiceConfiguration)val;
-
+                    if (cfg != null) {
+                        // Ignore other utility cache events.
                         long topVer = ctx.discovery().topologyVersion();
 
                         GridNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
@@ -568,16 +594,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         if (oldest.isLocal())
                             onDeployment(cfg, topVer);
                     }
-                }
-                // Handle undeployment.
-                else if (evt.type() == EVT_CACHE_OBJECT_REMOVED) {
-                    Object val = ((GridCacheEvent)evt).oldValue();
-
-                    // Ignore other utility cache events.
-                    if (val instanceof GridServiceConfiguration) {
-                        GridServiceConfiguration cfg = (GridServiceConfiguration)val;
-
-                        String svcName = cfg.getName();
+                    // Handle undeployment.
+                    else {
+                        String svcName = e.getKey().name();
 
                         Collection<GridServiceContextImpl> ctxs;
 
@@ -602,6 +621,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             finally {
                 busyLock.leaveBusy();
             }
+
+            return true;
         }
 
         /**
@@ -762,29 +783,24 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     /**
      * Assignment listener.
      */
-    private class AssignmentListener implements GridLocalEventListener {
+    private class AssignmentListener
+        implements GridBiPredicate<UUID, Collection<Entry<GridServiceAssignmentsKey, GridServiceAssignments>>> {
         /** {@inheritDoc} */
-        @Override public void onEvent(GridEvent evt) {
+        @Override public boolean apply(
+            UUID nodeId,
+            Collection<Entry<GridServiceAssignmentsKey, GridServiceAssignments>> assignCol) {
             if (!busyLock.enterBusy())
-                return;
+                return true;
 
             try {
-                if (evt.type() == EVT_CACHE_OBJECT_PUT) {
-                    Object val = ((GridCacheEvent)evt).newValue();
+                for (Entry<GridServiceAssignmentsKey, GridServiceAssignments> e : assignCol) {
+                    GridServiceAssignments assigns = e.getValue();
 
-                    // Ignore other utility cache events.
-                    if (val instanceof GridServiceAssignments)
-                        redeploy((GridServiceAssignments)val);
-                }
-                // Handle undeployment.
-                else if (evt.type() == EVT_CACHE_OBJECT_REMOVED) {
-                    Object val = ((GridCacheEvent)evt).oldValue();
-
-                    // Ignore other utility cache events.
-                    if (val instanceof GridServiceAssignments) {
-                        GridServiceAssignments assigns = (GridServiceAssignments)val;
-
-                        String svcName = assigns.name();
+                    if (assigns != null)
+                        redeploy(assigns);
+                    // Handle undeployment.
+                    else {
+                        String svcName = e.getKey().name();
 
                         Collection<GridServiceContextImpl> ctxs;
 
@@ -809,6 +825,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             finally {
                 busyLock.leaveBusy();
             }
+
+            return true;
         }
     }
 }

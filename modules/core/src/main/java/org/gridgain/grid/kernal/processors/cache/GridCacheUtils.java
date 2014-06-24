@@ -1453,7 +1453,7 @@ public class GridCacheUtils {
     private static void validateExternalizable(GridLogger log, Object obj) {
         Class<?> cls = obj.getClass();
 
-        if (!cls.isArray() && !U.isJdk(cls) && !(obj instanceof Externalizable))
+        if (!cls.isArray() && !U.isJdk(cls) && !(obj instanceof Externalizable) && !(obj instanceof GridCacheInternal))
             LT.warn(log, null, "For best performance you should implement " +
                 "java.io.Externalizable for all cache keys and values: " + cls.getName());
     }

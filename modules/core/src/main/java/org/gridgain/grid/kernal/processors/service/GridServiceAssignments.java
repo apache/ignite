@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.service;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.service.*;
 import org.gridgain.grid.util.tostring.*;
@@ -24,7 +25,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridServiceAssignments implements Serializable {
+public class GridServiceAssignments implements Serializable, GridCacheInternal {
     /** Serialization version. */
     private static final long serialVersionUID = 0L;
 

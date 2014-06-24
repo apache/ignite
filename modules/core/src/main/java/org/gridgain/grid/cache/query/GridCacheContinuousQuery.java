@@ -118,7 +118,7 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
     public static final boolean DFLT_AUTO_UNSUBSCRIBE = true;
 
     /**
-     * Sets mandatory local callback. This callback is called only
+     * Sets local callback. This callback is called only
      * in local node when new updates are received.
      * <p>
      * The callback predicate accepts ID of the node from where updates

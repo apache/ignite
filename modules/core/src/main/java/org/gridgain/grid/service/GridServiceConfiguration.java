@@ -21,7 +21,7 @@ import java.io.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridServiceConfiguration implements Serializable {
+public class GridServiceConfiguration implements Externalizable {
     private String name;
 
     private GridService svc;
@@ -90,6 +90,27 @@ public class GridServiceConfiguration implements Serializable {
 
     public void setNodeFilter(GridPredicate<GridNode> nodeFilter) {
         this.nodeFilter = nodeFilter;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeUTF(name);
+        out.writeObject(svc);
+        out.writeInt(maxPerNode);
+        out.writeUTF(cacheName);
+        out.writeObject(affKey);
+        out.writeObject(nodeFilter);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        name = in.readUTF();
+        svc = (GridService)in.readObject();
+        maxPerNode = in.readInt();
+        cacheName = in.readUTF();
+        affKey = in.readObject();
+        nodeFilter = (GridPredicate<GridNode>)in.readObject();
     }
 
     /** {@inheritDoc} */
