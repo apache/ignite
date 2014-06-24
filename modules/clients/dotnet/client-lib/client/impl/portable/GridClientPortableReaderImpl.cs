@@ -403,6 +403,140 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /** <inheritdoc /> */
+        public IDictionary ReadDictionary(string fieldName)
+        {
+            PositionField(fieldName);
+
+            ctx.Stream.Seek(4, SeekOrigin.Current);
+
+            byte hdr = (byte)ctx.Stream.ReadByte();
+
+            if (hdr != PU.TYPE_MAP)
+                throw new GridClientPortableInvalidFieldException("Written field is not dictionary: " + fieldName);
+
+            return ReadDictionary();
+        }
+
+        /** <inheritdoc /> */
+        public IDictionary ReadDictionary()
+        {
+            return ReadDictionary(PSH.CreateHashtable);
+        }
+
+        /** <inheritdoc /> */
+        public IDictionary ReadDictionary(string fieldName, GridClientPortableDictionaryFactory factory)
+        {
+            PositionField(fieldName);
+
+            ctx.Stream.Seek(4, SeekOrigin.Current);
+
+            byte hdr = (byte)ctx.Stream.ReadByte();
+
+            if (hdr != PU.TYPE_MAP)
+                throw new GridClientPortableInvalidFieldException("Written field is not dictionary: " + fieldName);
+
+            return ReadDictionary(factory);
+        }
+
+        /** <inheritdoc /> */
+        public IDictionary ReadDictionary(GridClientPortableDictionaryFactory factory)
+        {
+            int len = PU.ReadInt(ctx.Stream);
+
+            if (len >= 0)
+            {
+                // Doesn't support anything in non-generic mode.
+                ctx.Stream.Seek(1, SeekOrigin.Current);
+
+                IDictionary res = factory.Invoke(len);
+
+                for (int i = 0; i < len; i++)
+                {
+                    object key = ctx.Deserialize<object>(ctx.Stream);
+                    object val = ctx.Deserialize<object>(ctx.Stream);
+
+                    res[key] = val;
+                }                    
+
+                return res;
+            }
+            else
+                return null;
+        }
+
+        /** <inheritdoc /> */
+        public IDictionary<K, V> ReadGenericDictionary<K, V>(string fieldName)
+        {
+            PositionField(fieldName);
+
+            ctx.Stream.Seek(4, SeekOrigin.Current);
+
+            byte hdr = (byte)ctx.Stream.ReadByte();
+
+            if (hdr != PU.TYPE_MAP)
+                throw new GridClientPortableInvalidFieldException("Written field is not dictionary: " + fieldName);
+
+            return ReadGenericDictionary<K, V>();
+        }
+
+        /** <inheritdoc /> */
+        public IDictionary<K, V> ReadGenericDictionary<K, V>()
+        {
+            return ReadGenericDictionary<K, V>((GridClientPortableGenericDictionaryFactory<K, V>)null);
+        }
+
+        /** <inheritdoc /> */
+        public IDictionary<K, V> ReadGenericDictionary<K, V>(string fieldName, GridClientPortableGenericDictionaryFactory<K, V> factory)
+        {
+            PositionField(fieldName);
+
+            ctx.Stream.Seek(4, SeekOrigin.Current);
+
+            byte hdr = (byte)ctx.Stream.ReadByte();
+
+            if (hdr != PU.TYPE_MAP)
+                throw new GridClientPortableInvalidFieldException("Written field is not dictionary: " + fieldName);
+
+            return ReadGenericDictionary<K, V>(factory);
+        }
+
+        /** <inheritdoc /> */
+        public IDictionary<K, V> ReadGenericDictionary<K, V>(GridClientPortableGenericDictionaryFactory<K, V> factory)
+        {
+            int len = PU.ReadInt(ctx.Stream);
+
+            if (len >= 0)
+            {
+                byte colType = PU.ReadByte(ctx.Stream);
+
+                if (factory == null)
+                {
+                    // Need to detect factory automatically.
+                    if (colType == PU.MAP_SORTED_MAP)
+                        factory = PSH.CreateSortedDictionary<K, V>;
+                    else if (colType == PU.MAP_CONCURRENT_HASH_MAP)
+                        factory = PSH.CreateConcurrentDictionary<K, V>;
+                    else
+                        factory = PSH.CreateDictionary<K, V>;
+                }
+
+                IDictionary<K, V> res = factory.Invoke(len);
+
+                for (int i = 0; i < len; i++)
+                {
+                    K key = ctx.Deserialize<K>(ctx.Stream);
+                    V val = ctx.Deserialize<V>(ctx.Stream);
+
+                    res[key] = val;
+                }
+
+                return res;
+            }
+            else
+                return null;
+        }
+
+        /** <inheritdoc /> */
         public ICollection ReadCollection(string fieldName)
         {
             PositionField(fieldName);
@@ -460,24 +594,73 @@ namespace GridGain.Client.Impl.Portable
                 return null;
         }
 
+        /** <inheritdoc /> */
         public ICollection<T> ReadGenericCollection<T>(string fieldName)
         {
-            throw new NotImplementedException();
+            PositionField(fieldName);
+
+            ctx.Stream.Seek(4, SeekOrigin.Current);
+
+            byte hdr = (byte)ctx.Stream.ReadByte();
+
+            if (hdr != PU.TYPE_COLLECTION)
+                throw new GridClientPortableInvalidFieldException("Written field is not collection: " + fieldName);
+
+            return ReadGenericCollection<T>();
         }
 
+        /** <inheritdoc /> */
         public ICollection<T> ReadGenericCollection<T>()
         {
-            throw new NotImplementedException();
+            return ReadGenericCollection<T>((GridClientPortableGenericCollectionFactory<T>)null);
         }
 
+        /** <inheritdoc /> */
         public ICollection<T> ReadGenericCollection<T>(string fieldName, GridClientPortableGenericCollectionFactory<T> factory)
         {
-            throw new NotImplementedException();
+            PositionField(fieldName);
+
+            ctx.Stream.Seek(4, SeekOrigin.Current);
+
+            byte hdr = (byte)ctx.Stream.ReadByte();
+
+            if (hdr != PU.TYPE_COLLECTION)
+                throw new GridClientPortableInvalidFieldException("Written field is not collection: " + fieldName);
+
+            return ReadGenericCollection(factory);
         }
 
+        /** <inheritdoc /> */
         public ICollection<T> ReadGenericCollection<T>(GridClientPortableGenericCollectionFactory<T> factory)
         {
-            throw new NotImplementedException();
+            int len = PU.ReadInt(ctx.Stream);
+
+            if (len >= 0)
+            {
+                byte colType = PU.ReadByte(ctx.Stream);
+
+                if (factory == null)
+                {
+                    // Need to detect factory automatically.
+                    if (colType == PU.COLLECTION_LINKED_LIST)
+                        factory = PSH.CreateLinkedList<T>;
+                    else if (colType == PU.COLLECTION_HASH_SET)
+                        factory = PSH.CreateHashSet<T>;
+                    else if (colType == PU.COLLECTION_SORTED_SET)
+                        factory = PSH.CreateHashSet<T>;
+                    else 
+                        factory = PSH.CreateList<T>;
+                }
+
+                ICollection<T> res = factory.Invoke(len);
+
+                for (int i = 0; i < len; i++)
+                    res.Add(ctx.Deserialize<T>(ctx.Stream));
+
+                return res;
+            }
+            else
+                return null;
         }
         
         /**

@@ -176,5 +176,31 @@ namespace GridGain.Client.Portable
          * <returns>Collection.</returns>
          */
         ICollection<T> ReadGenericCollection<T>(GridClientPortableGenericCollectionFactory<T> factory);
+
+        /**
+         * <summary>Read dictionary.</summary>
+         * <returns>Dictionary.</returns>
+         */
+        IDictionary ReadDictionary();
+
+        /**
+         * <summary>Read dictionary.</summary>
+         * <param name="factory">Factory.</param>
+         * <returns>Dictionary.</returns>
+         */
+        IDictionary ReadDictionary(GridClientPortableDictionaryFactory factory);
+
+        /**
+         * <summary>Read generic dictionary.</summary>
+         * <returns>Dictionary.</returns>
+         */
+        IDictionary<K, V> ReadGenericDictionary<K, V>();
+
+        /**
+         * <summary>Read generic dictionary.</summary>
+         * <param name="factory">Factory.</param>
+         * <returns>Dictionary.</returns>
+         */
+        IDictionary<K, V> ReadGenericDictionary<K, V>(GridClientPortableGenericDictionaryFactory<K, V> factory);
     }
 }

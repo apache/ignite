@@ -15,9 +15,10 @@ namespace GridGain.Client.Portable
 
     /** 
      * <summary>Delegate for collection creation.</summary>
-     * <param name="len">Collection length.</param>
-     */ 
-    public delegate ICollection GridClientPortableCollectionFactory(int len);
+     * <param name="size">Collection size.</param>
+     * <returns>Collection.</returns>
+     */
+    public delegate ICollection GridClientPortableCollectionFactory(int size);
 
     /**
      * <summary>Delegate for adding element to collection.</summary>
@@ -28,8 +29,24 @@ namespace GridGain.Client.Portable
 
     /**
      * <summary>Delegate for generic collection creation.</summary>
-     */ 
-    public delegate ICollection<T> GridClientPortableGenericCollectionFactory<T>(int len);    
+     * <param name="size">Collection size.</param>
+     * <returns>Collection.</returns>
+     */
+    public delegate ICollection<T> GridClientPortableGenericCollectionFactory<T>(int size);
+
+    /** 
+     * <summary>Delegate for dictionary creation.</summary>
+     * <param name="size">Dictionary size.</param>
+     * <returns>Dictionary.</returns>
+     */
+    public delegate IDictionary GridClientPortableDictionaryFactory(int size);
+
+    /**
+     * <summary>Delegate for generic collection creation.</summary>
+     * <param name="size">Collection size.</param>
+     * <returns>Collection.</returns>
+     */
+    public delegate IDictionary<K, V> GridClientPortableGenericDictionaryFactory<K, V>(int size);
 
     /**
      * <summary>Reader for portable objects.</summary>
@@ -216,6 +233,36 @@ namespace GridGain.Client.Portable
          * <returns>Collection.</returns>
          */
         ICollection<T> ReadGenericCollection<T>(string fieldName, GridClientPortableGenericCollectionFactory<T> factory);
+
+        /**
+         * <summary>Read named dictionary.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <returns>Dictionary.</returns>
+         */
+        IDictionary ReadDictionary(string fieldName);
+
+        /**
+         * <summary>Read named dictionary.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <param name="factory">Factory.</param>
+         * <returns>Dictionary.</returns>
+         */
+        IDictionary ReadDictionary(string fieldName, GridClientPortableDictionaryFactory factory);
+
+        /**
+         * <summary>Read named generic dictionary.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <returns>Dictionary.</returns>
+         */
+        IDictionary<K, V> ReadGenericDictionary<K, V>(string fieldName);
+
+        /**
+         * <summary>Read named generic dictionary.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <param name="factory">Factory.</param>
+         * <returns>Dictionary.</returns>
+         */
+        IDictionary<K, V> ReadGenericDictionary<K, V>(string fieldName, GridClientPortableGenericDictionaryFactory<K, V> factory);
 
         /**
          * <summary>Get raw reader.</summary>

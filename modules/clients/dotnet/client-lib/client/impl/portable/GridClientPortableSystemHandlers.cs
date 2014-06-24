@@ -610,5 +610,45 @@ namespace GridGain.Client.Impl.Portable
         {
             (col as ArrayList).Add(elem);
         }
+
+        public static ICollection<T> CreateList<T>(int len)
+        {
+            return new List<T>(len);
+        }
+
+        public static ICollection<T> CreateLinkedList<T>(int len)
+        {
+            return new LinkedList<T>();
+        }
+
+        public static ICollection<T> CreateHashSet<T>(int len)
+        {
+            return new HashSet<T>();
+        }
+
+        public static ICollection<T> CreateSortedSet<T>(int len)
+        {
+            return new SortedSet<T>(); 
+        }
+
+        public static IDictionary CreateHashtable(int len)
+        {
+            return new Hashtable(len);
+        }
+
+        public static IDictionary<K, V> CreateDictionary<K, V>(int len)
+        {
+            return new Dictionary<K, V>(len);
+        }
+
+        public static IDictionary<K, V> CreateSortedDictionary<K, V>(int len)
+        {
+            return new SortedDictionary<K, V>();
+        }
+
+        public static IDictionary<K, V> CreateConcurrentDictionary<K, V>(int len)
+        {
+            return new ConcurrentDictionary<K, V>(Environment.ProcessorCount, len);
+        }
     }
 }

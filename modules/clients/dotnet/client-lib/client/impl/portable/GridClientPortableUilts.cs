@@ -24,85 +24,91 @@ namespace GridGain.Client.Impl.Portable
     static class GridClientPortableUilts
     {
         /** Header of NULL object. */
-        public const byte HDR_NULL = 0x80;
+        public const byte HDR_NULL = 80;
 
         /** Header of object handle. */
-        public const byte HDR_HND = 0x81;
+        public const byte HDR_HND = 81;
 
         /** Header of object in fully serialized form. */
-        public const byte HDR_FULL = 0x82;
+        public const byte HDR_FULL = 82;
 
         /** Header of object in fully serailized form with metadata. */
-        public const byte HDR_META = 0x83;
-
-        /** Type: boolean. */
-        public const byte TYPE_BOOL = 1;
+        public const byte HDR_META = 83;
 
         /** Type: unsigned byte. */
-        public const byte TYPE_BYTE = 2;
+        public const byte TYPE_BYTE = 1;
         
         /** Type: short. */
-        public const byte TYPE_SHORT = 5;
+        public const byte TYPE_SHORT = 2;
 
         /** Type: int. */
-        public const byte TYPE_INT = 7;
+        public const byte TYPE_INT = 3;
 
         /** Type: long. */
-        public const byte TYPE_LONG = 9;
-
-        /** Type: char. */
-        public const byte TYPE_CHAR = 10;
+        public const byte TYPE_LONG = 4;
 
         /** Type: float. */
-        public const byte TYPE_FLOAT = 11;
+        public const byte TYPE_FLOAT = 5;
 
         /** Type: double. */
-        public const byte TYPE_DOUBLE = 12;
+        public const byte TYPE_DOUBLE = 6;
+
+        /** Type: char. */
+        public const byte TYPE_CHAR = 7;
+
+        /** Type: boolean. */
+        public const byte TYPE_BOOL = 8;
 
         /** Type: string. */
-        public const byte TYPE_STRING = 13;
+        public const byte TYPE_STRING = 9;
 
         /** Type: GUID. */
-        public const byte TYPE_GUID = 14;
+        public const byte TYPE_GUID = 10;
 
-        /** Type: boolean array. */
-        public const byte TYPE_ARRAY_BOOL = 15;
+        /** Type: date. */
+        public const byte TYPE_DATE = 11;
 
         /** Type: unsigned byte array. */
-        public const byte TYPE_ARRAY_BYTE = 16;
+        public const byte TYPE_ARRAY_BYTE = 12;
 
         /** Type: short array. */
-        public const byte TYPE_ARRAY_SHORT = 17;
+        public const byte TYPE_ARRAY_SHORT = 13;
 
         /** Type: int array. */
-        public const byte TYPE_ARRAY_INT = 18;
+        public const byte TYPE_ARRAY_INT = 14;
 
         /** Type: long array. */
-        public const byte TYPE_ARRAY_LONG = 19;
-
-        /** Type: char array. */
-        public const byte TYPE_ARRAY_CHAR = 20;
+        public const byte TYPE_ARRAY_LONG = 15;
 
         /** Type: float array. */
-        public const byte TYPE_ARRAY_FLOAT = 21;
+        public const byte TYPE_ARRAY_FLOAT = 16;
 
         /** Type: double array. */
-        public const byte TYPE_ARRAY_DOUBLE = 22;
+        public const byte TYPE_ARRAY_DOUBLE = 17;
+
+        /** Type: char array. */
+        public const byte TYPE_ARRAY_CHAR = 18;
+
+        /** Type: boolean array. */
+        public const byte TYPE_ARRAY_BOOL = 19;
 
         /** Type: string array. */
-        public const byte TYPE_ARRAY_STRING = 23;
+        public const byte TYPE_ARRAY_STRING = 20;
 
         /** Type: GUID array. */
-        public const byte TYPE_ARRAY_GUID = 24;
+        public const byte TYPE_ARRAY_GUID = 21;
+
+        /** Type: date array. */
+        public const byte TYPE_ARRAY_DATE = 22;
 
         /** Type: object array. */
-        public const byte TYPE_ARRAY = 25;
+        public const byte TYPE_ARRAY = 23;
 
         /** Type: collection. */
-        public const byte TYPE_COLLECTION = 26; 
+        public const byte TYPE_COLLECTION = 24; 
 
         /** Type: map. */
-        public const byte TYPE_MAP = 27;
+        public const byte TYPE_MAP = 25;
 
         /** Type: authentication request. */
         public const byte TYPE_AUTH_REQ = 100;
@@ -150,7 +156,22 @@ namespace GridGain.Client.Impl.Portable
         public const byte COLLECTION_SORTED_SET = 5;
 
         /** Collection: concurrent bag. */
-        public const byte COLLECTION_CONCURRENT_BAG = 6; 
+        public const byte COLLECTION_CONCURRENT_BAG = 6;
+
+        /** Map: custom. */
+        public const byte MAP_CUSTOM = 0;
+
+        /** Map: hash map. */
+        public const byte MAP_HASH_MAP = 1;
+
+        /** Map: linked hash map. */
+        public const byte MAP_LINKED_HASH_MAP = 2;
+
+        /** Map: sorted map. */
+        public const byte MAP_SORTED_MAP = 3;
+
+        /** Map: concurrent hash map. */
+        public const byte MAP_CONCURRENT_HASH_MAP = 4;
 
         /** Byte "0". */
         public const byte BYTE_ZERO = (byte)0;
