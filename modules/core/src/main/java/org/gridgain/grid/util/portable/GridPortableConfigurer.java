@@ -13,10 +13,12 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.gridgain.grid.util.portable.GridPortableMarshaller.*;
 
@@ -25,10 +27,16 @@ import static org.gridgain.grid.util.portable.GridPortableMarshaller.*;
  */
 public class GridPortableConfigurer {
     /** */
-    private final Map<Class<?>, GridPortableClassDescriptor> descByCls = new HashMap<>();
+    private final ConcurrentMap<Class<?>, GridPortableClassDescriptor> descByCls = new ConcurrentHashMap8<>();
 
     /** */
     private final Map<DescriptorKey, GridPortableClassDescriptor> descById = new HashMap<>();
+
+    /** */
+    private final Map<Class<? extends Collection>, Byte> colTypes = new HashMap<>();
+
+    /** */
+    private final Map<Class<? extends Map>, Byte> mapTypes = new HashMap<>();
 
     /** */
     private final Map<Integer, GridPortableIdMapper> mappers = new HashMap<>();
@@ -113,8 +121,30 @@ public class GridPortableConfigurer {
         addDescriptor(UUID[].class, UUID_ARR);
         addDescriptor(Date[].class, DATE_ARR);
         addDescriptor(Object[].class, OBJ_ARR);
+
         addDescriptor(ArrayList.class, COL);
+        addDescriptor(LinkedList.class, COL);
+        addDescriptor(HashSet.class, COL);
+        addDescriptor(LinkedHashSet.class, COL);
+        addDescriptor(TreeSet.class, COL);
+        addDescriptor(ConcurrentSkipListSet.class, COL);
+
         addDescriptor(HashMap.class, MAP);
+        addDescriptor(LinkedHashMap.class, MAP);
+        addDescriptor(TreeMap.class, MAP);
+        addDescriptor(ConcurrentHashMap.class, MAP);
+
+        colTypes.put(ArrayList.class, ARR_LIST);
+        colTypes.put(LinkedList.class, LINKED_LIST);
+        colTypes.put(HashSet.class, HASH_SET);
+        colTypes.put(LinkedHashSet.class, LINKED_HASH_SET);
+        colTypes.put(TreeSet.class, TREE_SET);
+        colTypes.put(ConcurrentSkipListSet.class, CONC_SKIP_LIST_SET);
+
+        mapTypes.put(HashMap.class, HASH_MAP);
+        mapTypes.put(LinkedHashMap.class, LINKED_HASH_MAP);
+        mapTypes.put(TreeMap.class, TREE_MAP);
+        mapTypes.put(ConcurrentHashMap.class, CONC_HASH_MAP);
 
         // TODO: Configure from server and client?
         addDescriptor(GridClientAuthenticationRequest.class, 0x100);
@@ -162,6 +192,38 @@ public class GridPortableConfigurer {
         return new Context(gridName);
     }
 
+    /**
+     * @param cls Collection class.
+     * @return Descriptor.
+     * @throws GridPortableException In case of error.
+     */
+    private GridPortableClassDescriptor addCollectionDescriptor(Class<?> cls) throws GridPortableException {
+        assert cls != null;
+        assert Collection.class.isAssignableFrom(cls);
+
+        GridPortableClassDescriptor desc = new GridPortableClassDescriptor(cls, false, COL, null, null);
+
+        descByCls.put(cls, desc);
+
+        return desc;
+    }
+
+    /**
+     * @param cls Map class.
+     * @return Descriptor.
+     * @throws GridPortableException In case of error.
+     */
+    private GridPortableClassDescriptor addMapDescriptor(Class<?> cls) throws GridPortableException {
+        assert cls != null;
+        assert Map.class.isAssignableFrom(cls);
+
+        GridPortableClassDescriptor desc = new GridPortableClassDescriptor(cls, false, MAP, null, null);
+
+        descByCls.put(cls, desc);
+
+        return desc;
+    }
+
     /** */
     private class Context implements GridPortableContext, Externalizable {
         /** */
@@ -182,15 +244,43 @@ public class GridPortableConfigurer {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridPortableClassDescriptor descriptorForClass(Class<?> cls) {
+        @Nullable @Override public GridPortableClassDescriptor descriptorForClass(Class<?> cls)
+            throws GridPortableException {
             assert cls != null;
 
-            return descByCls.get(cls);
+            GridPortableClassDescriptor desc = descByCls.get(cls);
+
+            if (desc == null) {
+                if (Collection.class.isAssignableFrom(cls))
+                    desc = addCollectionDescriptor(cls);
+                else if (Map.class.isAssignableFrom(cls))
+                    desc = addMapDescriptor(cls);
+            }
+
+            return desc;
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public GridPortableClassDescriptor descriptorForTypeId(boolean userType, int typeId) {
             return descById.get(new DescriptorKey(userType, typeId));
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte collectionType(Class<? extends Collection> cls) {
+            assert cls != null;
+
+            Byte type = colTypes.get(cls);
+
+            return type != null ? type : USER_COL;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte mapType(Class<? extends Map> cls) {
+            assert cls != null;
+
+            Byte type = mapTypes.get(cls);
+
+            return type != null ? type : USER_COL;
         }
 
         /** {@inheritDoc} */

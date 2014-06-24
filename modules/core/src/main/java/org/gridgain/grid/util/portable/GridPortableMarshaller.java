@@ -103,6 +103,39 @@ public class GridPortableMarshaller {
     static final byte OBJ = (byte)0x82;
 
     /** */
+    static final byte USER_COL = (byte)0x00;
+
+    /** */
+    static final byte ARR_LIST = (byte)0x01;
+
+    /** */
+    static final byte LINKED_LIST = (byte)0x02;
+
+    /** */
+    static final byte HASH_SET = (byte)0x03;
+
+    /** */
+    static final byte LINKED_HASH_SET = (byte)0x04;
+
+    /** */
+    static final byte TREE_SET = (byte)0x05;
+
+    /** */
+    static final byte CONC_SKIP_LIST_SET = (byte)0x06;
+
+    /** */
+    static final byte HASH_MAP = (byte)0x01;
+
+    /** */
+    static final byte LINKED_HASH_MAP = (byte)0x02;
+
+    /** */
+    static final byte TREE_MAP = (byte)0x03;
+
+    /** */
+    static final byte CONC_HASH_MAP = (byte)0x04;
+
+    /** */
     private static final ByteBuffer NULL_BUF = ByteBuffer.wrap(new byte[] { NULL });
 
     /** */

@@ -12,7 +12,9 @@ package org.gridgain.grid.util.portable;
 import org.gridgain.grid.portable.*;
 import org.jetbrains.annotations.*;
 
+import java.lang.reflect.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static java.nio.charset.StandardCharsets.*;
 import static org.gridgain.grid.util.portable.GridPortableMarshaller.*;
@@ -200,46 +202,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
                 return doReadDateArray(false);
 
             case OBJ_ARR:
-                int arrLen = doReadInt(false);
-
-                if (arrLen >= 0) {
-                    Object[] arr = new Object[arrLen];
-
-                    for (int i = 0; i < arrLen; i++)
-                        arr[i] = doReadObject(false);
-
-                    return arr;
-                }
-                else
-                    return null;
+                return doReadObjectArray(false);
 
             case COL:
-                int colSize = doReadInt(false);
-
-                if (colSize >= 0) {
-                    Collection<Object> col = new ArrayList<>(colSize);
-
-                    for (int i = 0; i < colSize; i++)
-                        col.add(doReadObject(false));
-
-                    return col;
-                }
-                else
-                    return null;
+                return doReadCollection(false, null);
 
             case MAP:
-                int mapSize = doReadInt(false);
-
-                if (mapSize >= 0) {
-                    Map<Object, Object> map = new HashMap<>(mapSize);
-
-                    for (int i = 0; i < mapSize; i++)
-                        map.put(doReadObject(false), doReadObject(false));
-
-                    return map;
-                }
-                else
-                    return null;
+                return doReadMap(false, null);
 
             default:
                 throw new GridPortableException("Invalid flag value: " + flag);
@@ -719,10 +688,12 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
 
     /**
      * @param fieldId Field ID.
+     * @param cls Collection class.
      * @return Value.
      * @throws GridPortableException In case of error.
      */
-    @Nullable <T> Collection<T> readCollection(int fieldId) throws GridPortableException {
+    @Nullable <T> Collection<T> readCollection(int fieldId, @Nullable Class<? extends Collection> cls)
+        throws GridPortableException {
         off = fieldOffset(fieldId);
 
         if (off >= 0) {
@@ -731,7 +702,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             if (flag != COL)
                 throw new GridPortableException("Invalid flag value: " + flag);
 
-            return (Collection<T>)doReadCollection(false);
+            return (Collection<T>)doReadCollection(false, cls);
         }
         else
             return null;
@@ -739,10 +710,12 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
 
     /**
      * @param fieldId Field ID.
+     * @param cls Map class.
      * @return Value.
      * @throws GridPortableException In case of error.
      */
-    @Nullable <K, V> Map<K, V> readMap(int fieldId) throws GridPortableException {
+    @Nullable <K, V> Map<K, V> readMap(int fieldId, @Nullable Class<? extends Map> cls)
+        throws GridPortableException {
         off = fieldOffset(fieldId);
 
         if (off >= 0) {
@@ -751,7 +724,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             if (flag != MAP)
                 throw new GridPortableException("Invalid flag value: " + flag);
 
-            return (Map<K, V>)doReadMap(false);
+            return (Map<K, V>)doReadMap(false, cls);
         }
         else
             return null;
@@ -1009,46 +982,46 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> Collection<T> readCollection(String fieldName) throws GridPortableException {
-        return readCollection(fieldId(fieldName));
+        return readCollection(fieldId(fieldName), null);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> Collection<T> readCollection() throws GridPortableException {
-        return (Collection<T>)doReadCollection(true);
+        return (Collection<T>)doReadCollection(true, null);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> Collection<T> readCollection(String fieldName,
         Class<? extends Collection<T>> colCls) throws GridPortableException {
-        return null; // TODO: implement.
+        return readCollection(fieldId(fieldName), colCls);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> Collection<T> readCollection(
         Class<? extends Collection<T>> colCls) throws GridPortableException {
-        return null; // TODO: implement.
+        return (Collection<T>)doReadCollection(true, colCls);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <K, V> Map<K, V> readMap(String fieldName) throws GridPortableException {
-        return readMap(fieldId(fieldName));
+        return readMap(fieldId(fieldName), null);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <K, V> Map<K, V> readMap() throws GridPortableException {
-        return (Map<K, V>)doReadMap(true);
+        return (Map<K, V>)doReadMap(true, null);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <K, V> Map<K, V> readMap(String fieldName,
         Class<? extends Map<K, V>> mapCls) throws GridPortableException {
-        return null; // TODO: implement.
+        return readMap(fieldId(fieldName), mapCls);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <K, V> Map<K, V> readMap(
         Class<? extends Map<K, V>> mapCls) throws GridPortableException {
-        return null; // TODO: implement.
+        return (Map<K, V>)doReadMap(true, mapCls);
     }
 
     /** {@inheritDoc} */
@@ -1521,14 +1494,72 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
 
     /**
      * @param raw Raw flag.
+     * @param cls Collection class.
      * @return Value.
      * @throws GridPortableException In case of error.
      */
-    private Collection<?> doReadCollection(boolean raw) throws GridPortableException {
+    @SuppressWarnings("unchecked")
+    private Collection<?> doReadCollection(boolean raw, @Nullable Class<? extends Collection> cls)
+        throws GridPortableException {
         int size = doReadInt(raw);
 
         if (size >= 0) {
-            Collection<Object> col = new ArrayList<>(size);
+            byte colType = doReadByte(raw);
+
+            Collection<Object> col;
+
+            if (cls != null) {
+                try {
+                    Constructor<? extends Collection> cons = cls.getConstructor();
+
+                    col = cons.newInstance();
+                }
+                catch (NoSuchMethodException ignored) {
+                    throw new GridPortableException("Collection class doesn't have public default constructor: " +
+                        cls.getName());
+                }
+                catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
+                    throw new GridPortableException("Failed to instantiate collection: " + cls.getName(), e);
+                }
+            }
+            else {
+                switch (colType) {
+                    case ARR_LIST:
+                        col = new ArrayList<>(size);
+
+                        break;
+
+                    case LINKED_LIST:
+                        col = new LinkedList<>();
+
+                        break;
+
+                    case HASH_SET:
+                        col = new HashSet<>(size);
+
+                        break;
+
+                    case LINKED_HASH_SET:
+                        col = new LinkedHashSet<>(size);
+
+                        break;
+
+                    case TREE_SET:
+                        col = new TreeSet<>();
+
+                        break;
+
+                    case CONC_SKIP_LIST_SET:
+                        col = new ConcurrentSkipListSet<>();
+
+                        break;
+
+                    default:
+                        assert colType == USER_COL;
+
+                        col = new ArrayList<>(size);
+                }
+            }
 
             for (int i = 0; i < size; i++)
                 col.add(doReadObject(raw));
@@ -1541,19 +1572,66 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
 
     /**
      * @param raw Raw flag.
+     * @param cls Map class.
      * @return Value.
      * @throws GridPortableException In case of error.
      */
-    private Map<?, ?> doReadMap(boolean raw) throws GridPortableException {
+    @SuppressWarnings("unchecked")
+    private Map<?, ?> doReadMap(boolean raw, @Nullable Class<? extends Map> cls) throws GridPortableException {
         int size = doReadInt(raw);
 
         if (size >= 0) {
-            Map<Object, Object> col = new HashMap<>(size);
+            byte mapType = doReadByte(raw);
+
+            Map<Object, Object> map;
+
+            if (cls != null) {
+                try {
+                    Constructor<? extends Map> cons = cls.getConstructor();
+
+                    map = cons.newInstance();
+                }
+                catch (NoSuchMethodException ignored) {
+                    throw new GridPortableException("Map class doesn't have public default constructor: " +
+                        cls.getName());
+                }
+                catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
+                    throw new GridPortableException("Failed to instantiate map: " + cls.getName(), e);
+                }
+            }
+            else {
+                switch (mapType) {
+                    case HASH_MAP:
+                        map = new HashMap<>(size);
+
+                        break;
+
+                    case LINKED_HASH_MAP:
+                        map = new LinkedHashMap<>(size);
+
+                        break;
+
+                    case TREE_MAP:
+                        map = new TreeMap<>();
+
+                        break;
+
+                    case CONC_HASH_MAP:
+                        map = new ConcurrentHashMap<>(size);
+
+                        break;
+
+                    default:
+                        assert mapType == USER_COL;
+
+                        map = new HashMap<>(size);
+                }
+            }
 
             for (int i = 0; i < size; i++)
-                col.put(doReadObject(raw), doReadObject(raw));
+                map.put(doReadObject(raw), doReadObject(raw));
 
-            return col;
+            return map;
         }
         else
             return null;

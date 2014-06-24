@@ -395,6 +395,8 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
         doWriteInt(col != null ? col.size() : -1);
 
         if (col != null) {
+            doWriteByte(ctx.collectionType(col.getClass()));
+
             for (Object obj : col)
                 doWriteObject(obj);
         }
@@ -408,6 +410,8 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
         doWriteInt(map != null ? map.size() : -1);
 
         if (map != null) {
+            doWriteByte(ctx.mapType(map.getClass()));
+
             for (Map.Entry<K, V> e : map.entrySet()) {
                 doWriteObject(e.getKey());
                 doWriteObject(e.getValue());

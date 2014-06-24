@@ -862,12 +862,12 @@ class GridPortableClassDescriptor {
                     break;
 
                 case COL:
-                    val = reader.readCollection(id);
+                    val = reader.readCollection(id, null);
 
                     break;
 
                 case MAP:
-                    val = reader.readMap(id);
+                    val = reader.readMap(id, null);
 
                     break;
 
