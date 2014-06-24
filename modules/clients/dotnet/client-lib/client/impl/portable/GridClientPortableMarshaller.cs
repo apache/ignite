@@ -190,7 +190,7 @@ namespace GridGain.Client.Impl.Portable
                             userType + ", typeId=" + typeId + ", fieldId=" + fieldId + ']');
 
                     fields[fieldId] = fieldPos;
-
+                    
                     input.Seek(fieldLen, SeekOrigin.Current);
 
                     curPos = input.Position;

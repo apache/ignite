@@ -159,7 +159,7 @@ namespace GridGain.Client.Portable
                 {
                     Type type = field.FieldType;
 
-                    bool nullable = type.IsGenericTypeDefinition && type.GetGenericTypeDefinition() == typeof(Nullable<>);
+                    bool nullable = type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
 
                     Type nullableType = nullable ? type.GetGenericArguments()[0] : null;
 
@@ -175,16 +175,16 @@ namespace GridGain.Client.Portable
                         wActions.Add((obj, writer) => { writer.WriteString(name, (String)field.GetValue(obj)); });
                         rActions.Add((obj, reader) => { field.SetValue(obj, reader.ReadString(name)); });
                     }
-                    else if (type == typeof(Guid) || (nullable && nullableType == typeof(Guid)))
+                    else if (type == typeof(Guid))
                     {
                         wActions.Add((obj, writer) => { writer.WriteGuid(name, (Guid)field.GetValue(obj)); });
                         rActions.Add((obj, reader) => { field.SetValue(obj, reader.ReadGuid(name)); });
                     }
-                    else if (type.IsEnum)
+                    else if (nullable && nullableType == typeof(Guid))
                     {
-                        //wActions.Add((obj, writer) => { writer.WriteEnum(name, (Enum)field.GetValue(obj)); });
-                        //rActions.Add((obj, reader) => { field.SetValue(obj, reader.ReadEnum(name, type)); });
-                    }                        
+                        wActions.Add((obj, writer) => { writer.WriteGuid(name, (Guid?)field.GetValue(obj)); });
+                        rActions.Add((obj, reader) => { field.SetValue(obj, reader.ReadGuid(name)); });
+                    }
                     else if (type.IsArray)
                         HandleArray(field, type, name, wActions);
                     else if (type.IsGenericType && type.GetInterface(TYP_GENERIC_DICTIONARY.Name) != null)

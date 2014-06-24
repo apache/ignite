@@ -28,6 +28,13 @@ namespace GridGain {
 
             Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
 
+            // 4. Handling simple fields inside object. 
+            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsReflective());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsPortable());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsRawPortable());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsSerializer());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsRawSerializer());
+
             // 1. Handling primitives.
             Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveBool());
             Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveSbyte());
@@ -63,12 +70,7 @@ namespace GridGain {
             Test(new GridClientPortableSelfTest(), (test) => test.TestWriteGuid());
             Test(new GridClientPortableSelfTest(), (test) => test.TestWriteGuidArray());
 
-            // 
-            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsReflective());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsPortable());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsRawPortable());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsSerializer());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsRawSerializer());
+            
 
             Test(new GridClientPortableSelfTest(), (test) => test.TestObjectReflective());
 

@@ -363,7 +363,7 @@ namespace GridGain.Client.Impl.Portable
 
             long pos = ctx.Stream.Position;
 
-            PU.WriteInt(1 + 17, ctx.Stream);
+            PU.WriteInt(1 + 1 + (val.HasValue ? 16 : 0), ctx.Stream);
 
             PU.WriteByte(PU.TYPE_GUID, ctx.Stream);
 
@@ -500,7 +500,7 @@ namespace GridGain.Client.Impl.Portable
 
             stream.Seek(pos, SeekOrigin.Begin);
 
-            PU.WriteInt((int)(retPos - pos), stream);
+            PU.WriteInt((int)(retPos - pos - 4), stream);
 
             stream.Seek(retPos, SeekOrigin.Begin);
         }

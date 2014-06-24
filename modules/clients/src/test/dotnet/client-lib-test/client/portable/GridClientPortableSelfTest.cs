@@ -369,23 +369,6 @@ namespace GridGain.Client.Portable {
         }
 
         /**
-         * <summary>Check write of enum.</summary>
-         */
-        public void TestWriteEnum()
-        {
-            TestEnum? nEnum = TestEnum.ONE;
-
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(TestEnum.ONE)).Deserialize<TestEnum>(), TestEnum.ONE);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(nEnum)).Deserialize<TestEnum?>(), nEnum);
-            Assert.AreEqual(marsh.Unmarshal(marsh.Marshal(null)), null);
-        }
-
-        public enum TestEnum 
-        {
-            ONE
-        }
-
-        /**
          * <summary>Check write of primitive fields through reflection.</summary>
          */
         public void TestPrimitiveFieldsReflective()
@@ -403,7 +386,7 @@ namespace GridGain.Client.Portable {
 
             PrimitiveFieldType obj = new PrimitiveFieldType();
 
-            TestPrimitiveFields(marsh, obj);
+            CheckPrimitiveFields(marsh, obj);
         }
 
         /**
@@ -411,12 +394,10 @@ namespace GridGain.Client.Portable {
          */
         public void TestPrimitiveFieldsPortable()
         {
-            GridClientPortableTypeConfiguration typeCfg =
-                new GridClientPortableTypeConfiguration(typeof(PrimitiveFieldPortableType));
+            ICollection<GridClientPortableTypeConfiguration> typeCfgs = 
+                new List<GridClientPortableTypeConfiguration>();
 
-            ICollection<GridClientPortableTypeConfiguration> typeCfgs = new List<GridClientPortableTypeConfiguration>();
-
-            typeCfgs.Add(typeCfg);
+            typeCfgs.Add(new GridClientPortableTypeConfiguration(typeof(PrimitiveFieldPortableType)));
 
             GridClientPortableConfiguration cfg = new GridClientPortableConfiguration();
 
@@ -426,7 +407,7 @@ namespace GridGain.Client.Portable {
 
             PrimitiveFieldPortableType obj = new PrimitiveFieldPortableType();
 
-            TestPrimitiveFields(marsh, obj);
+            CheckPrimitiveFields(marsh, obj);
         }
 
         /**
@@ -434,12 +415,10 @@ namespace GridGain.Client.Portable {
          */
         public void TestPrimitiveFieldsRawPortable()
         {
-            GridClientPortableTypeConfiguration typeCfg =
-                new GridClientPortableTypeConfiguration(typeof(PrimitiveFieldRawPortableType));
+            ICollection<GridClientPortableTypeConfiguration> typeCfgs = 
+                new List<GridClientPortableTypeConfiguration>();
 
-            ICollection<GridClientPortableTypeConfiguration> typeCfgs = new List<GridClientPortableTypeConfiguration>();
-
-            typeCfgs.Add(typeCfg);
+            typeCfgs.Add(new GridClientPortableTypeConfiguration(typeof(PrimitiveFieldRawPortableType)));
 
             GridClientPortableConfiguration cfg = new GridClientPortableConfiguration();
 
@@ -449,7 +428,7 @@ namespace GridGain.Client.Portable {
 
             PrimitiveFieldRawPortableType obj = new PrimitiveFieldRawPortableType();
 
-            TestPrimitiveFields(marsh, obj);
+            CheckPrimitiveFields(marsh, obj);
         }
 
         /**
@@ -457,13 +436,14 @@ namespace GridGain.Client.Portable {
          */
         public void TestPrimitiveFieldsSerializer()
         {
+            ICollection<GridClientPortableTypeConfiguration> typeCfgs = 
+                new List<GridClientPortableTypeConfiguration>();
+
             GridClientPortableTypeConfiguration typeCfg =
                 new GridClientPortableTypeConfiguration(typeof(PrimitiveFieldType));
 
             typeCfg.Serializer = new PrimitiveFieldsSerializer();
-
-            ICollection<GridClientPortableTypeConfiguration> typeCfgs = new List<GridClientPortableTypeConfiguration>();
-
+            
             typeCfgs.Add(typeCfg);
 
             GridClientPortableConfiguration cfg = new GridClientPortableConfiguration();
@@ -474,7 +454,7 @@ namespace GridGain.Client.Portable {
 
             PrimitiveFieldType obj = new PrimitiveFieldType();
 
-            TestPrimitiveFields(marsh, obj);
+            CheckPrimitiveFields(marsh, obj);
         }
 
         /**
@@ -482,12 +462,13 @@ namespace GridGain.Client.Portable {
          */
         public void TestPrimitiveFieldsRawSerializer()
         {
+            ICollection<GridClientPortableTypeConfiguration> typeCfgs = 
+                new List<GridClientPortableTypeConfiguration>();
+
             GridClientPortableTypeConfiguration typeCfg =
                 new GridClientPortableTypeConfiguration(typeof(PrimitiveFieldType));
 
             typeCfg.Serializer = new PrimitiveFieldsRawSerializer();
-
-            ICollection<GridClientPortableTypeConfiguration> typeCfgs = new List<GridClientPortableTypeConfiguration>();
 
             typeCfgs.Add(typeCfg);
 
@@ -499,10 +480,10 @@ namespace GridGain.Client.Portable {
 
             PrimitiveFieldType obj = new PrimitiveFieldType();
 
-            TestPrimitiveFields(marsh, obj);
+            CheckPrimitiveFields(marsh, obj);
         }
 
-        private void TestPrimitiveFields(GridClientPortableMarshaller marsh, PrimitiveFieldType obj)
+        private void CheckPrimitiveFields(GridClientPortableMarshaller marsh, PrimitiveFieldType obj)
         {
             obj.PBool = true;
             obj.PByte = 2;
@@ -516,8 +497,27 @@ namespace GridGain.Client.Portable {
             obj.PChar = 'a';
             obj.PFloat = 10;
             obj.PDouble = 11;
-            obj.PString = "test";
+            obj.PString = "abc";
+            obj.PGuid = Guid.NewGuid();
+            obj.PNGuid = Guid.NewGuid();
+            
+            CheckPrimitiveFieldsSerialization(marsh, obj);
 
+            obj.PString = "";
+
+            CheckPrimitiveFieldsSerialization(marsh, obj);
+
+            obj.PString = null;
+
+            CheckPrimitiveFieldsSerialization(marsh, obj);
+
+            obj.PNGuid = null;
+
+            CheckPrimitiveFieldsSerialization(marsh, obj);
+        }
+
+        private void CheckPrimitiveFieldsSerialization(GridClientPortableMarshaller marsh, PrimitiveFieldType obj)
+        {
             byte[] bytes = marsh.Marshal(obj);
 
             IGridClientPortableObject portObj = marsh.Unmarshal(bytes);
@@ -546,10 +546,10 @@ namespace GridGain.Client.Portable {
 
             GridClientPortableMarshaller marsh = new GridClientPortableMarshaller(cfg);
 
-            TestObject(marsh, new OuterObjectType(), new InnerObjectType());
+            CheckObject(marsh, new OuterObjectType(), new InnerObjectType());
         }
 
-        private void TestObject(GridClientPortableMarshaller marsh, OuterObjectType outObj, InnerObjectType inObj)
+        private void CheckObject(GridClientPortableMarshaller marsh, OuterObjectType outObj, InnerObjectType inObj)
         {
             inObj.PInt1 = 1;
             inObj.PInt2 = 2;
@@ -793,20 +793,8 @@ namespace GridGain.Client.Portable {
             private double pDouble;
             private string pString;
             private Guid pGuid;
-
-            //private bool? rBool;
-            //private sbyte? rSbyte;
-            //private byte? rByte;
-            //private short? rShort;
-            //private ushort? rUshort;
-            //private char? rChar;
-            //private int? rInt;
-            //private uint? rUint;
-            //private long? rLong;
-            //private ulong? rUlong;
-            //private float? rFloat;
-            //private double? rDouble;
-
+            private Guid? pNguid;
+            
             public bool PBool
             {
                 get { return pBool; }
@@ -891,6 +879,12 @@ namespace GridGain.Client.Portable {
                 set { pGuid = value; }
             }
 
+            public Guid? PNGuid
+            {
+                get { return pNguid; }
+                set { pNguid = value; }
+            }
+
             /** <inheritdoc /> */
             public override bool Equals(object obj)
             {
@@ -900,7 +894,7 @@ namespace GridGain.Client.Portable {
                 if (obj != null && obj is PrimitiveFieldType)
                 {
                     PrimitiveFieldType that = (PrimitiveFieldType)obj;
-                    
+
                     return pBool == that.pBool &&
                         pByte == that.pByte &&
                         pSbyte == that.pSbyte &&
@@ -913,8 +907,9 @@ namespace GridGain.Client.Portable {
                         pChar == that.pChar &&
                         pFloat == that.pFloat &&
                         pDouble == that.pDouble &&
-                        pString == that.pString &&
-                        pGuid == that.pGuid;
+                        pString == null && that.pString == null || pString != null && pString.Equals(that.pString) &&
+                        pGuid.Equals(that.pGuid) &&
+                        pNguid == null && that.pNguid == null || pNguid != null && pNguid.Equals(that.pNguid);
                 }
                 else
                     return false;
@@ -925,78 +920,6 @@ namespace GridGain.Client.Portable {
             {
                 return pInt;
             }
-
-            //public bool? RBool
-            //{
-            //    get { return rBool; }
-            //    set { rBool = value; }
-            //}
-
-            //public sbyte? RSbyte
-            //{
-            //    get { return rSbyte; }
-            //    set { rSbyte = value; }
-            //}
-
-            //public byte? RByte
-            //{
-            //    get { return rByte; }
-            //    set { rByte = value; }
-            //}
-
-            //public short? RShort
-            //{
-            //    get { return rShort; }
-            //    set { rShort = value; }
-            //}
-
-            //public ushort? RUshort
-            //{
-            //    get { return rUshort; }
-            //    set { rUshort = value; }
-            //}
-
-            //public char? RChar
-            //{
-            //    get { return rChar; }
-            //    set { rChar = value; }
-            //}
-
-            //public int? RInt
-            //{
-            //    get { return rInt; }
-            //    set { rInt = value; }
-            //}
-
-            //public uint? RUint
-            //{
-            //    get { return rUint; }
-            //    set { rUint = value; }
-            //}
-
-            //public long? RLong
-            //{
-            //    get { return rLong; }
-            //    set { rLong = value; }
-            //}
-
-            //public ulong? RUlong
-            //{
-            //    get { return rUlong; }
-            //    set { rUlong = value; }
-            //}
-
-            //public float? RFloat
-            //{
-            //    get { return rFloat; }
-            //    set { rFloat = value; }
-            //}
-
-            //public double? RDouble
-            //{
-            //    get { return rDouble; }
-            //    set { rDouble = value; }
-            //}
         }
         
         public class PrimitiveFieldPortableType : PrimitiveFieldType, IGridClientPortable
