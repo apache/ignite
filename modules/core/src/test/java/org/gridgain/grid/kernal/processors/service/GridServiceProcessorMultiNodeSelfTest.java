@@ -22,7 +22,23 @@ import java.util.concurrent.*;
 public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
-        return 4;
+        return 1;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void startExtraNodes(int cnt) throws Exception {
+        for (int i = 0; i < cnt; i++)
+            startGrid(nodeCount() + i);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void stopExtraNodes(int cnt) throws Exception {
+        for (int i = 0; i < cnt; i++)
+            stopGrid(nodeCount() + i);
     }
 
     /**
@@ -50,21 +66,25 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
         assertEquals(1, DummyService.started());
         assertFalse(DummyService.isCancelled());
 
-        int newNodes = 2;
+        int nodeCnt = 1;
 
-        for (int i = 0; i < newNodes; i++)
-            startGrid(nodeCount() + i);
+        startExtraNodes(nodeCnt);
 
-        assertEquals(1, DummyService.started());
-        assertFalse(DummyService.isCancelled());
+        try {
+            assertEquals(1, DummyService.started());
+            assertFalse(DummyService.isCancelled());
 
-        checkCount(name, g.services().deployedServices(), 1);
-                                              }
+            checkCount(name, g.services().deployedServices(), 1);
+        }
+        finally {
+            stopExtraNodes(nodeCnt);
+        }
+    }
 
     /**
      * @throws Exception If failed.
      */
-    public void testDeployOnEachNode() throws Exception {
+    public void testDeployOnEachNodeUpdateTopology() throws Exception {
         Grid g = randomGrid();
 
         String name = "serviceOnEachNodeUpdateTopology";
@@ -86,20 +106,24 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
         assertEquals(nodeCount(), DummyService.started());
         assertFalse(DummyService.isCancelled());
 
-        int newNodes = 2;
+        int newNodes = 1;
 
         latch = new CountDownLatch(newNodes);
 
         DummyService.latch(latch);
 
-        for (int i = 0; i < newNodes; i++)
-            startGrid(nodeCount() + i);
+        startExtraNodes(newNodes);
 
-        latch.await();
+        try {
+            latch.await();
 
-        assertEquals(nodeCount() + newNodes, DummyService.started());
-        assertFalse(DummyService.isCancelled());
+            assertEquals(nodeCount() + newNodes, DummyService.started());
+            assertFalse(DummyService.isCancelled());
 
-        checkCount(name, g.services().deployedServices(), nodeCount() + newNodes);
+            checkCount(name, g.services().deployedServices(), nodeCount() + newNodes);
+        }
+        finally {
+            stopExtraNodes(newNodes);
+        }
     }
 }

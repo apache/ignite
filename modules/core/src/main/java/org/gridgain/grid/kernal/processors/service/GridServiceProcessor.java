@@ -468,6 +468,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 }
             }
 
+            assert cnts != null;
+
             assigns.assigns(cnts);
 
             assignCache.put(key, assigns);
@@ -484,7 +486,10 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private void redeploy(GridServiceAssignments assigns) {
         String svcName = assigns.name();
 
-        int assignCnt = assigns.assigns().get(ctx.localNodeId());
+        Integer assignCnt = assigns.assigns().get(ctx.localNodeId());
+
+        if (assignCnt == null)
+            assignCnt = 0;
 
         GridService svc = assigns.service();
 
@@ -507,32 +512,39 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 int createCnt = assignCnt - ctxs.size();
 
                 for (int i = 0; i < createCnt; i++) {
-                    final GridService copy = copy(svc);
+                    final GridService copy = copyAndInject(svc);
 
                     final ExecutorService exe = Executors.newSingleThreadExecutor(threadFactory);
 
-                    final GridServiceContextImpl ctx = new GridServiceContextImpl(assigns.name(),
+                    final GridServiceContextImpl svcCtx = new GridServiceContextImpl(assigns.name(),
                         UUID.randomUUID(), assigns.cacheName(), assigns.affinityKey(), copy, exe);
 
-                    ctxs.add(ctx);
+                    ctxs.add(svcCtx);
 
                     if (log.isInfoEnabled())
-                        log.info("Starting service instance [name=" + ctx.name() + ", execId=" +
-                            ctx.executionId() + ']');
+                        log.info("Starting service instance [name=" + svcCtx.name() + ", execId=" +
+                            svcCtx.executionId() + ']');
 
                     // Start service in its own thread.
                     exe.submit(new Runnable() {
                         @Override public void run() {
                             try {
-                                copy.execute(ctx);
+                                copy.execute(svcCtx);
                             }
                             catch (Throwable e) {
-                                log.error("Service execution stopped with error [name=" + ctx.name() +
-                                    ", execId=" + ctx.executionId() + ']', e);
+                                log.error("Service execution stopped with error [name=" + svcCtx.name() +
+                                    ", execId=" + svcCtx.executionId() + ']', e);
                             }
                             finally {
                                 // Suicide.
                                 exe.shutdownNow();
+
+                                try {
+                                    ctx.resource().cleanup(copy);
+                                }
+                                catch (GridException e) {
+                                    log.error("Failed to clean up service (will ignore): " + svcCtx.name(), e);
+                                }
                             }
                         }
                     });
@@ -545,13 +557,17 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param svc Service.
      * @return Copy of service.
      */
-    private GridService copy(GridService svc) {
+    private GridService copyAndInject(GridService svc) {
         GridMarshaller m = ctx.config().getMarshaller();
 
         try {
             byte[] bytes = m.marshal(svc);
 
-            return m.unmarshal(bytes, svc.getClass().getClassLoader());
+            GridService copy = m.unmarshal(bytes, svc.getClass().getClassLoader());
+
+            ctx.resource().inject(copy);
+
+            return copy;
         }
         catch (GridException e) {
             log.error("Failed to copy service (will reuse same instance): " + svc.getClass(), e);
@@ -722,13 +738,15 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 if (oldest.isLocal()) {
                     final Collection<GridServiceConfiguration> retries = new ConcurrentLinkedQueue<>();
 
-                    for (GridServiceConfiguration cfg : cfgCache.values()) {
+                    for (GridCacheEntry<GridServiceConfigurationKey, GridServiceConfiguration> e : cfgCache.entrySetx()) {
+                        GridServiceConfiguration cfg = e.getValue();
+
                         try {
                             reassign(cfg, topVer);
                         }
-                        catch (GridException e) {
+                        catch (GridException ex) {
                             if (!(e instanceof GridTopologyException))
-                                LT.error(log, e, "Failed to do service reassignment (will retry): " + cfg.getName());
+                                LT.error(log, ex, "Failed to do service reassignment (will retry): " + cfg.getName());
 
                             retries.add(cfg);
                         }
