@@ -34,5 +34,5 @@ public interface GridServices {
 
     public GridFuture<?> cancel(String name);
 
-    public Collection<? extends GridServiceDescriptor> deployedServices();
+    public Collection<GridServiceDescriptor> deployedServices();
 }

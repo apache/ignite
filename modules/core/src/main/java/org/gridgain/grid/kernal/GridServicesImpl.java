@@ -136,7 +136,7 @@ public class GridServicesImpl implements GridServices {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<? extends GridServiceDescriptor> deployedServices() {
+    @Override public Collection<GridServiceDescriptor> deployedServices() {
         guard();
 
         try {

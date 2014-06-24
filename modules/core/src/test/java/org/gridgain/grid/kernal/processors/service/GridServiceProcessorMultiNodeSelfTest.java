@@ -15,9 +15,9 @@ package org.gridgain.grid.kernal.processors.service;
  * @author @java.author
  * @version @java.version
  */
-public class GridServiceProcessorSingleNodeSelfTest extends GridServiceProcessorAbstractSelfTest {
+public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
-        return 1;
+        return 4;
     }
 }

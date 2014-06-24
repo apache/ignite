@@ -94,10 +94,11 @@ public class GridServiceConfiguration implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeUTF(name);
-        out.writeObject(svc);
+        U.writeString(out, name);
+        U.writeString(out, cacheName);
         out.writeInt(maxPerNode);
-        out.writeUTF(cacheName);
+        out.writeInt(totalCnt);
+        out.writeObject(svc);
         out.writeObject(affKey);
         out.writeObject(nodeFilter);
     }
@@ -105,10 +106,11 @@ public class GridServiceConfiguration implements Externalizable {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        name = in.readUTF();
-        svc = (GridService)in.readObject();
+        name = U.readString(in);
+        cacheName = U.readString(in);
         maxPerNode = in.readInt();
-        cacheName = in.readUTF();
+        totalCnt = in.readInt();
+        svc = (GridService)in.readObject();
         affKey = in.readObject();
         nodeFilter = (GridPredicate<GridNode>)in.readObject();
     }

@@ -15,6 +15,7 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
@@ -52,10 +53,10 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private static final long RETRY_TIMEOUT = 1000;
 
     /** Service configuration cache. */
-    private GridCacheProjection<GridServiceConfigurationKey, GridServiceConfiguration> cfgCache;
+    private GridCacheProjectionEx<GridServiceConfigurationKey, GridServiceConfiguration> cfgCache;
 
     /** Service assignments cache. */
-    private GridCacheProjection<GridServiceAssignmentsKey, GridServiceAssignments> assignCache;
+    private GridCacheProjectionEx<GridServiceAssignmentsKey, GridServiceAssignments> assignCache;
 
     /** Local service instances. */
     private final Map<String, Collection<GridServiceContextImpl>> locSvcs = new HashMap<>();
@@ -120,7 +121,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             Collection<GridFuture<?>> futs = new ArrayList<>();
 
             for (GridServiceConfiguration c : ctx.config().getServiceConfiguration())
-                futs.add(deploy(c));
+                futs.add(deploy(c, false));
 
             // Await for services to deploy.
             for (GridFuture<?> f : futs)
@@ -257,6 +258,15 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @return Future.
      */
     public GridFuture<?> deploy(GridServiceConfiguration cfg) {
+        return deploy(cfg, true);
+    }
+
+    /**
+     * @param cfg Service configuration.
+     * @param failDups Fail on duplicates.
+     * @return Future for deployment.
+     */
+    private GridFuture<?> deploy(GridServiceConfiguration cfg, boolean failDups) {
         validate(cfg);
 
         try {
@@ -265,13 +275,25 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             GridFutureAdapter<?> old;
 
             if ((old = futs.putIfAbsent(cfg.getName(), fut)) != null) {
+                if (failDups) {
+                    fut.onDone(new GridException("Failed to deploy service " +
+                        "(service already exists and must be undeployed first): " + cfg.getName()));
+
+                    return fut;
+                }
+
                 fut = old;
 
                 return fut;
             }
 
-            if (!cfgCache.putxIfAbsent(new GridServiceConfigurationKey(cfg.getName()), cfg))
-                fut.onDone();
+            if (!cfgCache.putxIfAbsent(new GridServiceConfigurationKey(cfg.getName()), cfg)) {
+                if (failDups)
+                    fut.onDone(new GridException("Failed to deploy service " +
+                        "(service already exists and must be undeployed first): " + cfg.getName()));
+                else
+                    fut.onDone();
+            }
 
             return fut;
         }
@@ -305,10 +327,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     /**
      * @return Collection of service descriptors.
      */
-    public Collection<? extends GridServiceDescriptor> deployedServices() {
+    public Collection<GridServiceDescriptor> deployedServices() {
         Collection<GridServiceDescriptor> descs = new ArrayList<>();
 
-        for (GridServiceConfiguration cfg : cfgCache.values()) {
+        for (GridCacheEntry<GridServiceConfigurationKey, GridServiceConfiguration> e : cfgCache.entrySetx()) {
+            GridServiceConfiguration cfg = e.getValue();
+
             GridServiceDescriptorImpl desc = new GridServiceDescriptorImpl(cfg);
 
             try {
@@ -320,8 +344,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     descs.add(desc);
                 }
             }
-            catch (GridException e) {
-                log.error("Failed to get assignments from replicated cache for service: " + cfg.getName(), e);
+            catch (GridException ex) {
+                log.error("Failed to get assignments from replicated cache for service: " + cfg.getName(), ex);
             }
         }
 
@@ -642,12 +666,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 // If topology version changed, reassignment will happen from topology event.
                 if (newTopVer == topVer)
                     reassign(cfg, topVer);
-
-                GridFutureAdapter<?> fut = futs.get(cfg.getName());
-
-                // Complete deployment futures once the assignments have been stored in cache.
-                if (fut != null)
-                    fut.onDone();
             }
             catch (GridException e) {
                 if (!(e instanceof GridTopologyException))
@@ -796,6 +814,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 for (Entry<GridServiceAssignmentsKey, GridServiceAssignments> e : assignCol) {
                     GridServiceAssignments assigns = e.getValue();
 
+                    GridFutureAdapter<?> fut = futs.get(assigns.name());
+
+                    // Complete deployment futures once the assignments have been stored in cache.
+                    if (fut != null)
+                        fut.onDone();
+
                     if (assigns != null)
                         redeploy(assigns);
                     // Handle undeployment.
@@ -813,12 +837,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 cancel(ctxs, ctxs.size());
                             }
                         }
-
-                        GridFutureAdapter<?> fut = futs.get(assigns.name());
-
-                        // Complete deployment future if undeployment happened.
-                        if (fut != null)
-                            fut.onDone();
                     }
                 }
             }

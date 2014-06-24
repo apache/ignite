@@ -885,7 +885,7 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
 
     /** {@inheritDoc} */
     @Override public Set<GridCacheEntry<K, V>> entrySetx(GridPredicate<GridCacheEntry<K, V>>... filter) {
-        return cache.entrySetx(filter);
+        return cache.entrySetx(F.and(filter, entryFilter(true)));
     }
 
     /** {@inheritDoc} */

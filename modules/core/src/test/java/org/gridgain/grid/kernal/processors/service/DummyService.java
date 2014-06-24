@@ -11,6 +11,9 @@ package org.gridgain.grid.kernal.processors.service;
 
 import org.gridgain.grid.service.*;
 
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
+
 /**
  * Dummy service.
  *
@@ -18,8 +21,10 @@ import org.gridgain.grid.service.*;
  * @version @java.version
  */
 public class DummyService implements GridService {
-    /** Started flag. */
-    public static volatile boolean started = false;
+    /** Started counter. */
+    public static final AtomicInteger started = new AtomicInteger();
+
+    private static CountDownLatch latch;
 
     /** Cancelled flag. */
     public static volatile boolean cancelled = false;
@@ -33,9 +38,12 @@ public class DummyService implements GridService {
 
     /** {@inheritDoc} */
     @Override public void execute(GridServiceContext ctx) {
-        started = true;
+        started.incrementAndGet();
 
         System.out.println("Executing service: " + ctx.name());
+
+        if (latch != null)
+            latch.countDown();
     }
 
     /**
@@ -46,9 +54,25 @@ public class DummyService implements GridService {
     }
 
     /**
-     * @return Started flag.
+     * @return Started counter.
      */
-    public static boolean isStarted() {
-        return started;
+    public static int started() {
+        return started.get();
+    }
+
+    /**
+     * Resets dummy service to initial state.
+     */
+    public static void reset() {
+        started.set(0);
+        latch = null;
+        cancelled = false;
+    }
+
+    /**
+     * @param latch Count down latch.
+     */
+    public static void latch(CountDownLatch latch) {
+        DummyService.latch = latch;
     }
 }
