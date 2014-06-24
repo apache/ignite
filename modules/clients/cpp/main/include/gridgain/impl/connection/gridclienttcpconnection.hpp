@@ -14,6 +14,7 @@
 #include <vector>
 #include <exception>
 #include <boost/asio.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 
 #include "gridgain/impl/connection/gridclientconnection.hpp"
@@ -66,10 +67,13 @@ public:
     static const size_t REGULAR_HEADER_SIZE = BASIC_HEADER_SIZE + ADDITIONAL_HEADERS_SIZE;
 
     /** First byte in binary protocol message. */
-    static const int8_t SIGNAL_CHAR = (int8_t) 0x90;
+    static const int8_t SIGNAL_CHAR = (int8_t)0x90;
 
     /** Fills packet with ping data. */
     static void createPingPacket(GridClientTcpPacket& pingPacket);
+
+    GridClientTcpPacket() : dataPtr(nullptr) {
+    }
 
     /**
      * Checks if this is a ping packet.
@@ -83,9 +87,9 @@ public:
      */
     size_t getHeaderSize() const;
 
-    void setData(std::vector<int8_t>& bytes);
+    void setData(boost::shared_ptr<std::vector<int8_t>> dataPtr);
 
-    std::vector<int8_t>& getData();
+    const boost::shared_ptr<std::vector<int8_t>>& getData() const;
 
     size_t getDataSize() const;
 
@@ -102,7 +106,7 @@ public:
     friend class GridClientRawSyncTcpConnection;
 
 private:
-    void setData(int8_t* start, int8_t* end);
+    void copyData(int8_t* start, int8_t* end);
 
     /**
      * Marshals 64-bit integer to byte vector.
@@ -140,7 +144,7 @@ private:
     std::vector<int8_t> destinationIdHeader;
 
     /** Data transferred. */
-    std::vector<int8_t> data;
+    boost::shared_ptr<std::vector<int8_t>> dataPtr;
 };
 
 /**

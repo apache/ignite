@@ -32,7 +32,8 @@ GridPortable* createPortable(int32_t typeId, GridPortableReader &reader) {
 
     GridPortableFactory* factory = factories[typeId];
 
-    assert(factory);
+    if(!factory)
+        throw GridClientPortableException("Unknown type id.");
 
     return static_cast<GridPortable*>(factory->newInstance(reader));
 }
@@ -44,7 +45,7 @@ int32_t cStringHash(const char* str) {
 
     while(str[i]) {
         hash = 31 * hash + str[i];
-    
+
         i++;
     }
 

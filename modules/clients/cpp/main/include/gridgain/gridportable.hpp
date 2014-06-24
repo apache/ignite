@@ -12,6 +12,7 @@
 
 #include <string>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <gridgain/gridconf.hpp>
 #include <gridgain/gridclienttypedef.hpp>
@@ -64,7 +65,7 @@ class GRIDGAIN_API GridPortableObject {
 public:
     GridPortableObject(const GridPortableObject& other);
 
-    GridPortableObject(const GridPortableObject&& other);
+    ~GridPortableObject();
 
     int32_t typeId() const;
 
@@ -84,11 +85,11 @@ public:
     bool operator==(const GridPortableObject& other) const;
 
 private:
-    GridPortableObject(std::vector<int8_t>&& bytes, GridPortableIdResolver* idRslvr);
+    GridPortableObject(const boost::shared_ptr<std::vector<int8_t>>& dataPtr, int32_t start, GridPortableIdResolver* idRslvr);
 
-    std::vector<int8_t> bytes;
-    
-    GridPortableIdResolver* idRslvr;
+    class Impl;
+
+    Impl* pImpl;
     
     friend class GridPortableReaderImpl;
 

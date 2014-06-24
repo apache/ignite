@@ -144,12 +144,12 @@ template<class C, class R> void GridClientTcpCommandExecutor::executeCmd(const G
 
     msg.sesTok = cmd.sessionToken();
 
-    std::vector<int8_t> data = marsh.marshal(msg);
+    boost::shared_ptr<std::vector<int8_t>> dataPtr = marsh.marshalUserObject(msg);
 
     GridClientTcpPacket tcpPacket;
     GridClientTcpPacket tcpResponse;
 
-    tcpPacket.setData(data);
+    tcpPacket.setData(dataPtr);
     tcpPacket.setAdditionalHeaders(cmd);
 
     try {

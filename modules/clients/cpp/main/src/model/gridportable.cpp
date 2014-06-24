@@ -10,14 +10,43 @@
 #include "gridgain/gridportable.hpp"
 #include "gridgain/impl/marshaller/portable/gridportablemarshaller.hpp"
 
-GridPortableObject::GridPortableObject(std::vector<int8_t>&& bytes, GridPortableIdResolver* idRslvr) : bytes(bytes), idRslvr(idRslvr) {
+class GridPortableObject::Impl {
+public:
+    Impl(const boost::shared_ptr<std::vector<int8_t>>& dataPtr, int32_t start, GridPortableIdResolver* idRslvr) : 
+        dataPtr(dataPtr), start(start), ctx(dataPtr, idRslvr), reader(ctx, start) {
+    }
+
+    Impl(const Impl& other) : dataPtr(other.dataPtr), start(other.start), ctx(dataPtr, other.ctx.idRslvr), reader(ctx, other.start) {
+    }
+    
+    GridClientVariant field(const std::string& fieldName) {
+        return reader.unmarshalFieldStr(fieldName);
+    }
+
+    GridPortable* deserialize() {
+        return reader.deserializePortable();
+    }
+
+private:
+    const boost::shared_ptr<std::vector<int8_t>> dataPtr;
+
+    ReadContext ctx;
+
+    GridPortableReaderImpl reader;
+
+    const int32_t start;
+};
+
+GridPortableObject::GridPortableObject(const boost::shared_ptr<std::vector<int8_t>>& dataPtr, int32_t start, GridPortableIdResolver* idRslvr) {
+    pImpl = new Impl(dataPtr, start, idRslvr);
 }
 
-GridPortableObject::GridPortableObject(const GridPortableObject& other) : bytes(other.bytes), idRslvr(other.idRslvr)  {
+GridPortableObject::GridPortableObject(const GridPortableObject& other) {
+    pImpl = new Impl(*other.pImpl);
 }
 
-GridPortableObject::GridPortableObject(const GridPortableObject&& other) : bytes(std::move(other.bytes)),
-    idRslvr(other.idRslvr) {
+GridPortableObject::~GridPortableObject() {
+    delete pImpl;
 }
 
 int32_t GridPortableObject::typeId() const {
@@ -29,19 +58,11 @@ int32_t GridPortableObject::hashCode() const {
 }
 
 GridClientVariant GridPortableObject::field(const std::string& fieldName) const {
-    ReadContext ctx(bytes, 10, idRslvr);
-
-    GridPortableReaderImpl reader(ctx);
-
-    return std::move(reader.unmarshalFieldStr(fieldName));
+    return pImpl->field(fieldName);
 }
 
 GridPortable* GridPortableObject::deserialize() const {
-    ReadContext ctx(bytes, 10, idRslvr);
-
-    GridPortableReaderImpl reader(ctx);
-
-    return reader.deserializePortable();
+    return pImpl->deserialize();
 }
 
 GridPortableObject GridPortableObject::copy(boost::unordered_map<std::string, GridClientVariant> fields) const {
@@ -64,7 +85,7 @@ void GridPortableObjectBuilder::set(boost::unordered_map<std::string, GridClient
 }
 
 GridPortableObject GridPortableObjectBuilder::build() {
-    std::vector<int8_t> bytes;
-
-    return GridPortableObject(std::move(bytes), nullptr);
+    boost::shared_ptr<std::vector<int8_t>> dataPtr;
+    
+    return GridPortableObject(dataPtr, 0, nullptr);
 }
