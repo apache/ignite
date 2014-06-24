@@ -9,11 +9,12 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
+import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.reduce.*;
+import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Hadoop reduce task implementation for v2 API.
@@ -42,7 +43,8 @@ public class GridHadoopV2ReduceTask extends GridHadoopV2Task {
         Exception err = null;
 
         try {
-            Reducer reducer = U.newInstance(reduce ? jobCtx.getReducerClass() : jobCtx.getCombinerClass());
+            Reducer reducer = ReflectionUtils.newInstance(reduce ? jobCtx.getReducerClass() : jobCtx.getCombinerClass(),
+                jobCtx.getConfiguration());
 
             outputFormat = reduce || !jobImpl.hasReducer() ? prepareWriter(jobCtx) : null;
 

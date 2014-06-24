@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.hadoop.v2;
 import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 
@@ -34,7 +33,7 @@ public class GridHadoopV2SetupTask extends GridHadoopV2Task {
     @Override protected void run0(GridHadoopV2Job job, JobContext jobCtx, GridHadoopTaskContext taskCtx)
         throws GridException {
         try {
-            OutputFormat outputFormat = U.newInstance(jobCtx.getOutputFormatClass());
+            OutputFormat outputFormat = getOutputFormat(jobCtx);
 
             outputFormat.checkOutputSpecs(jobCtx);
 

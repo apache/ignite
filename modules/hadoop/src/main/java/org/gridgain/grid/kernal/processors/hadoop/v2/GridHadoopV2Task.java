@@ -10,9 +10,9 @@
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -48,6 +48,7 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
      * Internal task routine.
      *
      * @param job Job.
+     * @param jobCtx Job context.
      * @param taskCtx Task context.
      * @throws GridException
      */
@@ -61,6 +62,18 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
         return hadoopCtx;
     }
 
+
+    /**
+     * Create and configure an OutputFormat instance.
+     *
+     * @param jobCtx Job context.
+     * @return Instance of OutputFormat is specified in job configuration.
+     * @throws ClassNotFoundException If specified class not found.
+     */
+    protected OutputFormat getOutputFormat(JobContext jobCtx) throws ClassNotFoundException {
+        return ReflectionUtils.newInstance(jobCtx.getOutputFormatClass(), jobCtx.getConfiguration());
+    }
+
     /**
      * Put write into Hadoop context and return associated output format instance.
      *
@@ -72,7 +85,7 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
     protected OutputFormat prepareWriter(JobContext jobCtx)
         throws GridException, InterruptedException {
         try {
-            OutputFormat outputFormat = U.newInstance(jobCtx.getOutputFormatClass());
+            OutputFormat outputFormat = getOutputFormat(jobCtx);
 
             assert outputFormat != null;
 

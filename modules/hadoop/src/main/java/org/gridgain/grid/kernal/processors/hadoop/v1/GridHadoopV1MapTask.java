@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.v1;
 
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
@@ -36,7 +37,7 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
 
         JobConf jobConf = new JobConf(jobImpl.hadoopJobContext().getJobConf());
 
-        Mapper mapper = U.newInstance(jobConf.getMapperClass());
+        Mapper mapper = ReflectionUtils.newInstance(jobConf.getMapperClass(), jobConf);
 
         InputFormat inFormat = jobConf.getInputFormat();
 
@@ -68,8 +69,6 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
             Object val = reader.createValue();
 
             assert mapper != null;
-
-            mapper.configure(jobConf);
 
             try {
                 while (reader.next(key, val)) {

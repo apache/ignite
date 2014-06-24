@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.*;
-import org.apache.hadoop.io.serializer.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
@@ -19,7 +18,6 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.hadoop.examples.*;
 
 import java.util.*;
@@ -34,11 +32,6 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
     }
 
     /**
-     * Custom serialization class that inherits behaviour of native {@link WritableSerialization}.
-     */
-    private static class CustomSerialization extends WritableSerialization { }
-
-    /**
      * Tests whole job execution with all phases in all combination of new and old versions of API.
      * @throws Exception If fails.
      */
@@ -51,18 +44,14 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
 
         generateTestFile(inFile.toString(), "red", 100000, "blue", 200000, "green", 150000, "yellow", 70000 );
 
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < 8; i++) {
             ggfs.delete(new GridGgfsPath(PATH_OUTPUT), true);
 
             boolean useNewMapper = (i & 1) == 0;
             boolean useNewCombiner = (i & 2) == 0;
             boolean useNewReducer = (i & 4) == 0;
-            boolean useCustomSerializer = (i & 8) == 0;
 
             JobConf jobConf = new JobConf();
-
-            if (useCustomSerializer)
-                jobConf.set(CommonConfigurationKeys.IO_SERIALIZATIONS_KEY, CustomSerialization.class.getName());
 
             //To split into about 40 items for v2
             jobConf.setInt(FileInputFormat.SPLIT_MAXSIZE, 65000);
@@ -93,14 +82,15 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
             fut.get();
 
             assertEquals("Use new mapper = " + useNewMapper + ", combiner = " + useNewCombiner + "reducer = " +
-                    useNewReducer,
+                useNewReducer,
                 "blue\t200000\n" +
                 "green\t150000\n" +
                 "red\t100000\n" +
                 "yellow\t70000\n",
-                readAndSortFile(PATH_OUTPUT + "/" + (useNewReducer ? "part-r-" : "part-") +
-                    "00000")
+                readAndSortFile(PATH_OUTPUT + "/" + (useNewReducer ? "part-r-" : "part-") + "00000")
             );
         }
     }
+
+
 }

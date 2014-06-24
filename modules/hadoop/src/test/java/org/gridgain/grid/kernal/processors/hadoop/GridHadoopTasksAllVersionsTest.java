@@ -255,9 +255,9 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
 
         assertEquals(
             "blue\t200\n" +
-                "green\t150\n" +
-                "red\t100\n" +
-                "yellow\t70\n",
+            "green\t150\n" +
+            "red\t100\n" +
+            "yellow\t70\n",
             readAndSortFile(PATH_OUTPUT + "/" + getOutputFileNamePrefix() + "00000")
         );
     }

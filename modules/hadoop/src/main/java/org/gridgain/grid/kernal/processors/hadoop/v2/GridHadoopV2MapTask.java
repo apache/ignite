@@ -9,13 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
+import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.map.*;
 import org.apache.hadoop.mapreduce.lib.input.*;
+import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Hadoop map task implementation for v2 API.
@@ -36,8 +37,8 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
         InputFormat inFormat;
 
         try {
-            mapper = U.newInstance(jobCtx.getMapperClass());
-            inFormat = U.newInstance(jobCtx.getInputFormatClass());
+            mapper = ReflectionUtils.newInstance(jobCtx.getMapperClass(), jobCtx.getConfiguration());
+            inFormat = ReflectionUtils.newInstance(jobCtx.getInputFormatClass(), jobCtx.getConfiguration());
         }
         catch (ClassNotFoundException e) {
             throw new GridException(e);

@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.v1;
 
 import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
@@ -42,11 +43,9 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
 
         JobConf jobConf = new JobConf(jobImpl.hadoopJobContext().getJobConf());
 
-        Reducer reducer = U.newInstance(reduce ? jobConf.getReducerClass() : jobConf.getCombinerClass());
+        Reducer reducer = ReflectionUtils.newInstance(reduce ? jobConf.getReducerClass() : jobConf.getCombinerClass(), jobConf);
 
         assert reducer != null;
-
-        reducer.configure(jobConf);
 
         GridHadoopTaskInput input = taskCtx.input();
 
