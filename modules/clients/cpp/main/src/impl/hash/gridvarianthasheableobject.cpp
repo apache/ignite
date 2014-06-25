@@ -29,6 +29,11 @@ int32_t gridHashCode<>(GridClientUuid val) {
 }
 
 template<>
+int32_t gridHashCode<>(GridClientDate val) {
+    return val.hashCode();
+}
+
+template<>
 int32_t gridHashCode<>(GridClientVariant val) {
     return val.hashCode();
 }
@@ -36,16 +41,6 @@ int32_t gridHashCode<>(GridClientVariant val) {
 template<>
 int32_t gridHashCode<>(uint16_t val) {
     return (int32_t)val;
-}
-
-template <class T> void getHashInfo(const T& val, int& hashCode, std::vector<int8_t>& bytes) {
-    TGridHasheableObjectPtr simpleHasheable = createHasheable(val);
-
-    bytes.clear();
-
-    hashCode = simpleHasheable->hashCode();
-
-    simpleHasheable->convertToBytes(bytes);
 }
 
 namespace {
@@ -142,6 +137,14 @@ public:
 
     virtual void visit(const GridClientUuid& uuid) const override {
         hashCode_ = uuid.hashCode();
+    }
+
+    virtual void visit(const GridClientDate& val) const override {
+        hashCode_ = val.hashCode();
+    }
+
+    virtual void visit(const std::vector<boost::optional<GridClientDate>>& val) const {
+        hashCode_ = gridOptionalCollectionHash(val);
     }
 
     virtual void visit(const TGridClientVariantMap& vmap) const override {

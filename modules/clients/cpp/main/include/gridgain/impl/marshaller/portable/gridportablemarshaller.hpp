@@ -38,34 +38,47 @@ const int8_t TYPE_ID_FLOAT = 5;
 const int8_t TYPE_ID_DOUBLE = 6;
 const int8_t TYPE_ID_CHAR = 7;
 const int8_t TYPE_ID_BOOLEAN = 8;
-
 const int8_t TYPE_ID_STRING = 9;
 const int8_t TYPE_ID_UUID = 10;
-
-const int8_t TYPE_ID_BYTE_ARR = 11;
-const int8_t TYPE_ID_SHORT_ARR = 12;
-const int8_t TYPE_ID_INT_ARR = 13;
-const int8_t TYPE_ID_LONG_ARR = 14;
-const int8_t TYPE_ID_FLOAT_ARR = 15;
-const int8_t TYPE_ID_DOUBLE_ARR = 16;
-const int8_t TYPE_ID_CHAR_ARR = 17;
-const int8_t TYPE_ID_BOOLEAN_ARR = 18;
-
-const int8_t TYPE_ID_STRING_ARR = 19;
-const int8_t TYPE_ID_UUID_ARR = 20;
-const int8_t TYPE_ID_OBJ_ARR = 21;
-
-const int8_t TYPE_ID_COLLECTION = 100;
-const int8_t TYPE_ID_MAP = 200;
+const int8_t TYPE_ID_DATE = 11;
+const int8_t TYPE_ID_BYTE_ARR = 12;
+const int8_t TYPE_ID_SHORT_ARR = 13;
+const int8_t TYPE_ID_INT_ARR = 14;
+const int8_t TYPE_ID_LONG_ARR = 15;
+const int8_t TYPE_ID_FLOAT_ARR = 16;
+const int8_t TYPE_ID_DOUBLE_ARR = 17;
+const int8_t TYPE_ID_CHAR_ARR = 18;
+const int8_t TYPE_ID_BOOLEAN_ARR = 19;
+const int8_t TYPE_ID_STRING_ARR = 20;
+const int8_t TYPE_ID_UUID_ARR = 21;
+const int8_t TYPE_ID_DATE_ARR = 22;
+const int8_t TYPE_ID_OBJ_ARR = 23;
+const int8_t TYPE_ID_COLLECTION = 24;
+const int8_t TYPE_ID_MAP = 25;
 
 const int8_t FLAG_NULL = 0x80;
 const int8_t FLAG_HANDLE = 0x81;
 const int8_t FLAG_OBJECT = 0x82;
-const int8_t FLAG_METADATA = 0x83;
+
+const int8_t USER_COL = 0;
+
+const int8_t ARR_LIST = 1;
+const int8_t LINKED_LIST = 2;
+const int8_t HASH_SET = 3;
+const int8_t LINKED_HASH_SET = 4;
+const int8_t TREE_SET = 5;
+const int8_t CONC_SKIP_LIST_SET = 6;
+
+const int8_t HASH_MAP = 1;
+const int8_t LINKED_HASH_MAP = 2;
+const int8_t TREE_MAP = 3;
+const int8_t CONC_HASH_MAP = 4;
 
 GridPortable* createPortable(int32_t typeId, GridPortableReader &reader);
 
-int32_t cStringHash(const char* str);
+int32_t getFieldId(const char* fieldName, int32_t typeId, GridPortableIdResolver* idRslvr);
+
+int32_t getFieldId(const std::string& fieldName, int32_t typeId, GridPortableIdResolver* idRslvr);
 
 class PortableReadContext {
 private:
@@ -76,7 +89,7 @@ public:
     PortableReadContext(const boost::shared_ptr<std::vector<int8_t>>& dataPtr, GridPortableIdResolver* idRslvr) :
         dataPtr(dataPtr), idRslvr(idRslvr) {
     }
-    
+
     ~PortableReadContext() {
         std::cout << "Delete read context\n";
     }
@@ -84,16 +97,16 @@ public:
     boost::unordered_map<int32_t, void*> handles;
 
     boost::shared_ptr<std::vector<int8_t>> dataPtr;
-        
+
     GridPortableIdResolver* idRslvr;
 };
 
 #ifdef BOOST_BIG_ENDIAN
 class PortableOutput {
 public:
-	PortableOutput(size_t cap) {
+    PortableOutput(size_t cap) {
         bytes.reserve(cap);
-	}
+    }
 
     virtual ~PortableOutput() {
     }
@@ -106,11 +119,11 @@ public:
         bytes.push_back(val);
     }
 
-	void writeBytes(const void* src, size_t size) {
+    void writeBytes(const void* src, size_t size) {
         const int8_t* ptr = reinterpret_cast<const int8_t*>(src);
 
         bytes.insert(bytes.end(), ptr, ptr + size);
-	}
+    }
 
     void writeInt16Array(const std::vector<int16_t>& val) {
         for (auto iter = val.begin(); iter != val.end(); ++iter)
@@ -182,7 +195,7 @@ public:
             writeByte(val[i] ? 1 : 0);
     }
 
-	void writeInt16(int16_t val) {
+    void writeInt16(int16_t val) {
         int8_t* ptr = reinterpret_cast<int8_t*>(&val);
 
         size_t size = bytes.size();
@@ -190,7 +203,7 @@ public:
         bytes.resize(size + 2);
 
         std::reverse_copy(ptr, ptr + 2, bytes.data() + size);
-	}
+    }
 
     void writeChar(uint16_t val) {
         int8_t* ptr = reinterpret_cast<int8_t*>(&val);
@@ -202,7 +215,7 @@ public:
         std::reverse_copy(ptr, ptr + 2, bytes.data() + size);
     }
 
-	void writeInt32(int32_t val) {
+    void writeInt32(int32_t val) {
         int8_t* ptr = reinterpret_cast<int8_t*>(&val);
 
         size_t size = bytes.size();
@@ -210,7 +223,7 @@ public:
         bytes.resize(size + 4);
 
         std::reverse_copy(ptr, ptr + 4, bytes.data() + size);
-	}
+    }
 
     void writeInt32(int32_t val, int32_t pos) {
         assert(pos < bytes.size());
@@ -230,7 +243,7 @@ public:
         bytes.resize(size + 8);
 
         std::reverse_copy(ptr, ptr + 8, bytes.data() + size);
-	}
+    }
 
     void writeFloat(float val) {
         int8_t* ptr = reinterpret_cast<int8_t*>(&val);
@@ -240,7 +253,7 @@ public:
         bytes.resize(size + 4);
 
         std::reverse_copy(ptr, ptr + 4, bytes.data() + size);
-	}
+    }
 
     void writeDouble(double val) {
         int8_t* ptr = reinterpret_cast<int8_t*>(&val);
@@ -250,15 +263,15 @@ public:
         bytes.resize(size + 8);
 
         std::reverse_copy(ptr, ptr + 8, bytes.data() + size);
-	}
+    }
 
     std::vector<int8_t> bytes;
 };
 #else
 class PortableOutput {
 public:
-	PortableOutput(std::vector<int8_t>& bytes) : bytes(bytes) {
-	}
+    PortableOutput(std::vector<int8_t>& bytes) : bytes(bytes) {
+    }
 
     virtual ~PortableOutput() {
     }
@@ -433,7 +446,7 @@ public:
         if (!allowFields)
             throw GridClientPortableException("Named fields are not allowed after raw data.");
 
-        int32_t fieldId = this->fieldId(fieldName);
+        int32_t fieldId = getFieldId(fieldName, curTypeId, ctx.idRslvr);
 
         std::pair<std::map<int32_t, char*>::iterator, bool> add = fieldIds.insert(std::pair<int32_t, char*>(fieldId, fieldName));
 
@@ -448,25 +461,6 @@ public:
         }
 
         ctx.out.writeInt32(fieldId);
-    }
-
-    int32_t fieldId(char* fieldName) {
-        if (ctx.idRslvr != nullptr) {
-            boost::optional<int32_t> id = ctx.idRslvr->fieldId(curTypeId, fieldName);
-
-            if (id.is_initialized())
-                return id.get();
-        }
-
-        /*
-        std::string str(fieldName);
-
-        boost::to_lower(str);
-
-        return gridStringHash(str);
-        */
-
-        return cStringHash(fieldName); // TODO 8536
     }
 
     void switchToRaw() {
@@ -879,6 +873,25 @@ public:
             ctx.out.writeBool(false);
 	}
 
+    void writeDate(char* fieldName, const boost::optional<GridClientDate>& val) override {
+		writeFieldName(fieldName);
+
+        doWriteInt32(val ? 10 : 2);
+        doWriteByte(TYPE_ID_DATE);
+
+        doWriteDate(val);
+    }
+
+    void doWriteDate(const boost::optional<GridClientDate>& val) {
+        if (val) {
+            doWriteBool(true);
+
+            doWriteInt64(val.get().getTime());
+        }
+        else
+            doWriteBool(false);
+    }
+
     void writeUuidCollection(char* fieldName, const std::vector<GridClientUuid>& val) override {
 		writeFieldName(fieldName);
 
@@ -902,6 +915,32 @@ public:
         }
     }
 
+    void writeDateCollection(char* fieldName, const std::vector<boost::optional<GridClientDate>>& val) override {
+		writeFieldName(fieldName);
+
+        ctx.out.writeInt32(0);
+
+        int32_t fieldStart = ctx.out.bytes.size();
+
+        ctx.out.writeByte(TYPE_ID_DATE_ARR);
+
+        doWriteDateCollection(val);
+
+        int32_t len = ctx.out.bytes.size() - fieldStart;
+
+        ctx.out.writeInt32To(fieldStart - 4, len);
+    }
+
+    void doWriteDateCollection(const std::vector<boost::optional<GridClientDate>>& val) {
+        doWriteInt32(val.size());
+
+        for (auto iter = val.begin(); iter != val.end(); ++iter) {
+            boost::optional<GridClientDate> val = *iter;
+
+            doWriteDate(val);
+        }
+    }
+
     void writeHeader(bool userType, int32_t typeId, const GridClientVariant& val) {
         ctx.out.writeBool(userType);
         ctx.out.writeInt32(typeId);
@@ -909,7 +948,7 @@ public:
 
         ctx.out.writeInt32(0); // Reserve space for length.
 
-        ctx.out.writeInt32(0); // Raw offset.
+        ctx.out.writeInt32(18); // Raw offset (header length).
     }
 
     void writeVariant(char* fieldName, const GridClientVariant& val) override {
@@ -1025,6 +1064,13 @@ public:
 
             doWriteUuid(val.getUuid());
         }
+        else if (val.hasDate()) {
+            ctx.out.writeByte(FLAG_OBJECT);
+
+            writeHeader(false, TYPE_ID_DATE, val);
+
+            doWriteDate(val.getDate());
+        }
         else if (val.hasByteArray()) {
             ctx.out.writeByte(FLAG_OBJECT);
 
@@ -1124,6 +1170,15 @@ public:
 
             doWriteUuidCollection(arr);
         }
+        else if (val.hasDateArray()) {
+            ctx.out.writeByte(FLAG_OBJECT);
+
+            writeHeader(false, TYPE_ID_DATE_ARR, val);
+
+            std::vector<boost::optional<GridClientDate>>& arr = val.getDateArray();
+
+            doWriteDateCollection(arr);
+        }
         else if (val.hasVariantVector()) {
             ctx.out.writeByte(FLAG_OBJECT);
 
@@ -1175,6 +1230,8 @@ public:
     void doWriteVariantCollection(const TGridClientVariantSet& col) {
         ctx.out.writeInt32(col.size());
 
+        ctx.out.writeByte(USER_COL);
+
         for (auto iter = col.begin(); iter != col.end(); ++iter) {
             GridClientVariant variant = *iter;
 
@@ -1200,6 +1257,8 @@ public:
 
     void doWriteVariantMap(const TGridClientVariantMap& map) {
         ctx.out.writeInt32(map.size());
+
+        ctx.out.writeByte(USER_COL);
 
         for (auto iter = map.begin(); iter != map.end(); ++iter) {
             GridClientVariant key = iter->first;
@@ -1256,6 +1315,12 @@ public:
         }
         else
             ctx.out.writeInt32(-1);
+    }
+
+    void writeChar(uint16_t val) override {
+        switchToRaw();
+
+        doWriteChar(val);
     }
 
     void writeCharCollection(const std::vector<uint16_t> val) override {
@@ -1410,6 +1475,18 @@ public:
         switchToRaw();
 
         doWriteUuidCollection(val);
+    }
+
+    void writeDate(const boost::optional<GridClientDate>& val) override {
+        switchToRaw();
+
+        doWriteDate(val);
+    }
+
+    void writeDateCollection(const std::vector<boost::optional<GridClientDate>>& val) override {
+        switchToRaw();
+
+        doWriteDateCollection(val);
     }
 
     void writeVariant(const GridClientVariant& val) override {
@@ -1927,9 +2004,9 @@ protected:
 /*
 class ReadContext {
 public:
-    ReadContext(const boost::shared_ptr<std::vector<int8_t>>& dataPtr, 
+    ReadContext(const boost::shared_ptr<std::vector<int8_t>>& dataPtr,
         boost::unordered_map<int32_t, void*>& handles,
-        GridPortableIdResolver* idRslvr) 
+        GridPortableIdResolver* idRslvr)
         : dataPtr(dataPtr), in(*dataPtr.get()), idRslvr(idRslvr) {
     }
 
@@ -1957,7 +2034,7 @@ public:
 
     boost::unordered_map<int32_t, int32_t> fieldOffs;
 
-    GridPortableReaderImpl(boost::shared_ptr<PortableReadContext> ctxPtr, int32_t start) : ctxPtr(ctxPtr), 
+    GridPortableReaderImpl(boost::shared_ptr<PortableReadContext> ctxPtr, int32_t start) : ctxPtr(ctxPtr),
         in(*ctxPtr.get()->dataPtr.get()), start(start), off(start), rawOff(0), curTypeId(0), offInit(false) {
     }
 
@@ -2030,7 +2107,7 @@ public:
     }
 
     GridClientVariant unmarshalFieldStr(const std::string& fieldName) {
-        off = fieldOffsetStr(fieldName);
+        off = fieldOffset(fieldName);
 
         return doUnmarshalField();
     }
@@ -2136,8 +2213,6 @@ public:
 
                 if (val.is_initialized())
                     return GridClientVariant(val.get());
-                else
-                    return GridClientVariant();
             }
 
             case TYPE_ID_UUID: {
@@ -2145,8 +2220,13 @@ public:
 
                 if (val.is_initialized())
                     return GridClientVariant(val.get());
-                else
-                    return GridClientVariant();
+            }
+
+            case TYPE_ID_DATE: {
+                boost::optional<GridClientDate> val = doReadDate(raw);
+
+                if (val.is_initialized())
+                    return GridClientVariant(val.get());
             }
 
             case TYPE_ID_BYTE_ARR: {
@@ -2239,6 +2319,15 @@ public:
                     return GridClientVariant(val.get());
             }
 
+            case TYPE_ID_DATE_ARR: {
+                boost::optional<std::vector<boost::optional<GridClientDate>>> val;
+
+                doReadDateCollection(raw, val);
+
+                if (val.is_initialized())
+                    return GridClientVariant(val.get());
+            }
+
             case TYPE_ID_OBJ_ARR: {
                 boost::optional<std::vector<GridClientVariant>> val;
 
@@ -2265,13 +2354,17 @@ public:
                 if (val.is_initialized())
                     return GridClientVariant(val.get());
             }
+
+            default: {
+                std::ostringstream msg;
+
+                msg << "Invalid type " << typeId;
+
+                throw GridClientPortableException(msg.str());
+            }
         }
 
-        std::ostringstream msg;
-
-        msg << "Invalid type " << typeId;
-
-        throw GridClientPortableException(msg.str());
+        return GridClientVariant();
     }
 
     void checkType(int8_t expFlag, int8_t flag) {
@@ -2294,32 +2387,14 @@ public:
        }
     }
 
-    int32_t fieldIdStr(const std::string& fieldName) {
-        return gridStringHash(fieldName); // TODO
-    }
-
-    int32_t fieldId(const char* fieldName) {
-        GridPortableIdResolver* idRslvr = ctxPtr.get()->idRslvr;
-
-        if (idRslvr) {
-            boost::optional<int32_t> rslvrId = idRslvr->fieldId(curTypeId, fieldName);
-
-            if (rslvrId.is_initialized())
-                return rslvrId.get();
-        }
-
-        return cStringHash(fieldName); // TODO
-    }
-
-
-    int32_t fieldOffsetStr(const std::string& fieldName) {
-        int32_t id = fieldIdStr(fieldName);
+    int32_t fieldOffset(const std::string& fieldName) {
+        int32_t id = getFieldId(fieldName, curTypeId, ctxPtr.get()->idRslvr);
 
         return fieldOffset(id);
     }
 
     int32_t fieldOffset(const char* fieldName) {
-        int32_t id = fieldId(fieldName);
+        int32_t id = getFieldId(fieldName, curTypeId, ctxPtr.get()->idRslvr);
 
         return fieldOffset(id);
     }
@@ -2328,11 +2403,11 @@ public:
         if (!offInit) {
             int32_t off = start + 18;
 
-            int32_t rawOff = in.readInt32(start + 14);
-
             int32_t len = in.readInt32(start + 10);
 
-            int32_t end = rawOff != 0 ? (start + rawOff) : (start + len);
+            int32_t rawOff = in.readInt32(start + 14);
+
+            int32_t end = rawOff != 18 ? (start + rawOff) : (start + len);
 
             while(true) {
                 if (off >= end)
@@ -3294,6 +3369,27 @@ public:
         return res;
     }
 
+    boost::optional<GridClientDate> readDate(char* fieldName) override {
+        off = fieldOffset(fieldName);
+
+        if (off >= 0) {
+            int8_t flag = doReadByte(false);
+
+            checkType(TYPE_ID_DATE, flag);
+
+            return doReadDate(false);
+        }
+        else
+            return boost::optional<GridClientDate>();
+    }
+
+    boost::optional<GridClientDate> doReadDate(bool raw) {
+        if (doReadBool(raw))
+            return boost::optional<GridClientDate>(GridClientDate(doReadInt64(raw)));
+
+        return boost::optional<GridClientDate>();
+    }
+
     boost::optional<std::vector<GridClientUuid>> readUuidCollection(char* fieldName) override {
         boost::optional<std::vector<GridClientUuid>> res;
 
@@ -3321,6 +3417,35 @@ public:
 
                 arr[i] = uuid ? uuid.get() : GridClientUuid(0, 0); // TODO 8536
             }
+
+            res.reset(arr);
+        }
+    }
+
+    boost::optional<std::vector<boost::optional<GridClientDate>>> readDateCollection(char* fieldName) override {
+        boost::optional<std::vector<boost::optional<GridClientDate>>> res;
+
+        off = fieldOffset(fieldName);
+
+        if (off >= 0) {
+            int8_t flag = doReadByte(false);
+
+            checkType(TYPE_ID_DATE_ARR, flag);
+
+            doReadDateCollection(false, res);
+        }
+
+        return res;
+    }
+
+    void doReadDateCollection(bool raw, boost::optional<std::vector<boost::optional<GridClientDate>>>& res) {
+        int32_t len = doReadInt32(raw);
+
+        if (len >= 0) {
+            std::vector<boost::optional<GridClientDate>> arr(len);
+
+            for (int i = 0; i < len; i++)
+                arr[i] = doReadDate(raw);
 
             res.reset(arr);
         }
@@ -3531,6 +3656,18 @@ public:
         return res;
     }
 
+    boost::optional<GridClientDate> readDate() override {
+        return doReadDate(true);
+    }
+
+    boost::optional<std::vector<boost::optional<GridClientDate>>> readDateCollection() override {
+        boost::optional<std::vector<boost::optional<GridClientDate>>> res;
+
+        doReadDateCollection(true, res);
+
+        return res;
+    }
+
     GridClientVariant readVariant() override {
         return unmarshal(true);
     }
@@ -3558,6 +3695,8 @@ private:
         if (size == -1)
             return;
 
+        int8_t type = doReadByte(raw);
+
         std::vector<GridClientVariant> vec;
 
         for (int i = 0; i < size; i++)
@@ -3571,6 +3710,8 @@ private:
 
         if (size == -1)
             return;
+
+        int8_t type = doReadByte(raw);
 
         boost::unordered_map<GridClientVariant, GridClientVariant> map;
 
@@ -3602,7 +3743,7 @@ public:
 
     boost::shared_ptr<std::vector<int8_t>> marshal(const GridClientVariant& var) {
         std::vector<int8_t>* bytes = new std::vector<int8_t>();
-        
+
         WriteContext ctx(*bytes, idRslvr);
 
         GridPortableWriterImpl writer(ctx, 0, 0);

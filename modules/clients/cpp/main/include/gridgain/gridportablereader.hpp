@@ -19,6 +19,7 @@
 #include <gridgain/gridclienttypedef.hpp>
 #include <gridgain/gridclientvariant.hpp>
 #include <gridgain/gridclientuuid.hpp>
+#include <gridgain/gridclientdate.hpp>
 
 class GridPortableRawReader;
 
@@ -86,6 +87,10 @@ public:
     virtual boost::optional<GridClientUuid> readUuid(char* fieldName) = 0;
 
     virtual boost::optional<std::vector<GridClientUuid>> readUuidCollection(char* fieldName) = 0;
+
+    virtual boost::optional<GridClientDate> readDate(char* fieldName) = 0;
+
+    virtual boost::optional<std::vector<boost::optional<GridClientDate>>> readDateCollection(char* fieldName) = 0;
 
     virtual GridClientVariant readVariant(char* fieldName) = 0;
 
@@ -160,6 +165,10 @@ public:
     virtual boost::optional<GridClientUuid> readUuid() = 0;
 
     virtual boost::optional<std::vector<GridClientUuid>> readUuidCollection() = 0;
+
+    virtual boost::optional<GridClientDate> readDate() = 0;
+
+    virtual boost::optional<std::vector<boost::optional<GridClientDate>>> readDateCollection() = 0;
 
     virtual GridClientVariant readVariant() = 0;
 

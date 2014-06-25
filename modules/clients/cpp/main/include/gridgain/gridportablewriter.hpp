@@ -19,6 +19,7 @@
 #include <gridgain/gridclienttypedef.hpp>
 #include <gridgain/gridclientvariant.hpp>
 #include <gridgain/gridclientuuid.hpp>
+#include <gridgain/gridclientdate.hpp>
 
 class GridPortableRawWriter;
 
@@ -87,6 +88,10 @@ public:
 
     virtual void writeUuidCollection(char* fieldName, const std::vector<GridClientUuid>& val) = 0;
 
+    virtual void writeDate(char* fieldName, const boost::optional<GridClientDate>& val) = 0;
+
+    virtual void writeDateCollection(char* fieldName, const std::vector<boost::optional<GridClientDate>>& val) = 0;
+
     virtual void writeVariant(char* fieldName, const GridClientVariant& val) = 0;
      
     virtual void writeVariantCollection(char* fieldName, const TGridClientVariantSet& val) = 0;
@@ -143,6 +148,8 @@ public:
 
     virtual void writeDoubleCollection(const std::vector<double>& val) = 0;
 
+    virtual void writeChar(uint16_t val) = 0;
+
     virtual void writeCharCollection(const std::vector<uint16_t> val) = 0;
 
     virtual void writeCharArray(const uint16_t* val, int32_t size) = 0;
@@ -158,6 +165,10 @@ public:
     virtual void writeUuid(const boost::optional<GridClientUuid>& val) = 0;
 
     virtual void writeUuidCollection(const std::vector<GridClientUuid>& val) = 0;
+
+    virtual void writeDate(const boost::optional<GridClientDate>& val) = 0;
+
+    virtual void writeDateCollection(const std::vector<boost::optional<GridClientDate>>& val) = 0;
 
     virtual void writeVariant(const GridClientVariant& val) = 0;
 

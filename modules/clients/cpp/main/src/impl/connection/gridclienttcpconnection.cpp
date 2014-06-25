@@ -120,8 +120,6 @@ void GridClientTcpPacket::setData(boost::shared_ptr<std::vector<int8_t>> ptr) {
 void GridClientTcpPacket::copyData(int8_t* start, int8_t* end) {
     std::vector<int8_t>* data = new std::vector<int8_t>();
 
-    data->assign(start, end);
-
     dataPtr.reset(data);
 }
 
@@ -280,16 +278,15 @@ void GridClientSyncTcpConnection::authenticate(const string& clientId, const str
 
     send(tcpPacket, tcpResponse);
 
-    //std::unique_ptr<GridClientResponse> resMsg(marsh.unmarshal<GridClientResponse>(tcpResponse.getData()));
-    GridClientVariant variant;// = marsh.unmarshal(tcpResponse.getData());
+    GridClientVariant res = marsh.unmarshal(tcpResponse.getData());
 
-    GridClientResponse* resMsg = variant.getPortable<GridClientResponse>();
+    std::unique_ptr<GridClientResponse> resMsg(res.getPortableObject().deserialize<GridClientResponse>());
 
     if (!resMsg->errorMsg.empty())
         throw GridClientCommandException(resMsg->errorMsg);
 
     sessToken = resMsg->sesTok;
-    /*
+    /* TODO 8536
     ObjectWrapper protoMsg;
 
     GridAuthenticationRequestCommand authReq;
@@ -784,16 +781,15 @@ void GridClientRawSyncTcpConnection::authenticate(const string& clientId, const 
 
     send(tcpPacket, tcpResponse);
 
-    // TODO 8536
-    GridClientVariant var;// = marsh.unmarshal(tcpResponse.getData());
+    GridClientVariant res = marsh.unmarshal(tcpResponse.getData());
 
-    GridClientResponse* resMsg = var.getPortable<GridClientResponse>();
+    std::unique_ptr<GridClientResponse> resMsg(res.getPortableObject().deserialize<GridClientResponse>());
 
     if (!resMsg->errorMsg.empty())
         throw GridClientCommandException(resMsg->errorMsg);
 
     sessToken = resMsg->sesTok;
-    /*
+    /* TODO 8536
     ObjectWrapper protoMsg;
 
     GridAuthenticationRequestCommand authReq;

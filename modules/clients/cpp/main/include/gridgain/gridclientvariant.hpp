@@ -16,6 +16,7 @@
 
 #include <gridgain/gridconf.hpp>
 #include <gridgain/gridclientuuid.hpp>
+#include <gridgain/gridclientdate.hpp>
 #include <gridgain/gridportable.hpp>
 
 #include <boost/variant.hpp>
@@ -185,6 +186,20 @@ public:
      * @param val Value for the variant.
      */
     GridClientVariant(const std::vector<GridClientUuid>& val);
+
+    /**
+     * Constructor with date argument.
+     *
+     * @param val Value for the variant.
+     */
+    GridClientVariant(const GridClientDate& val);
+
+    /**
+     * Constructor with date array argument.
+     *
+     * @param val Value for the variant.
+     */
+    GridClientVariant(const std::vector<boost::optional<GridClientDate>>& val);
 
     /**
      * Constructor with variant vector argument.
@@ -755,11 +770,53 @@ public:
     bool hasUuidArray() const;
 
     /**
-     * Returns a byte array value from this variant.
+     * Returns a uuid array value from this variant.
      *
      * @return Value held in the variant.
      */
     std::vector<GridClientUuid>& getUuidArray() const;
+
+    /**
+     * Assigns this variant a date array value.
+     *
+     * @param val New value for the variant.
+     */
+    void set(const std::vector<boost::optional<GridClientDate>>& val);
+
+    /**
+     * Checks if this variant holds a date array value.
+     *
+     * @return <tt>true</tt> if value is of date array type, <tt>false</tt> otherwise.
+     */
+    bool hasDateArray() const;
+
+    /**
+     * Returns a date array value from this variant.
+     *
+     * @return Value held in the variant.
+     */
+    std::vector<boost::optional<GridClientDate>>& getDateArray() const;
+
+    /**
+     * Assigns this variant a date value.
+     *
+     * @param val New value for the variant.
+     */
+    void set(const GridClientDate& val);
+
+    /**
+     * Checks if this variant holds a date value.
+     *
+     * @return <tt>true</tt> if value is of date type, <tt>false</tt> otherwise.
+     */
+    bool hasDate() const;
+
+    /**
+     * Returns a date value from this variant.
+     *
+     * @return Value held in the variant.
+     */
+    GridClientDate& getDate() const;
 
     /**
      * Checks if this variant holds a variant vector value.
@@ -874,6 +931,7 @@ private:
         STRING_TYPE,
         WIDE_STRING_TYPE,
         UUID_TYPE,
+        DATE_TYPE,
 
         PORTABLE_TYPE,
         HASHABLE_PORTABLE_TYPE,
@@ -889,6 +947,7 @@ private:
         BOOL_ARR_TYPE,
         STRING_ARR_TYPE,
         UUID_ARR_TYPE,
+        DATE_ARR_TYPE,
 
         VARIANT_ARR_TYPE,
         VARIANT_MAP_TYPE
@@ -917,6 +976,8 @@ private:
 
         GridClientUuid* uuidVal;
 
+        GridClientDate* dateVal;
+
         GridPortable* portableVal;
 
         GridHashablePortable* hashPortableVal;
@@ -942,6 +1003,8 @@ private:
         std::vector<std::string>* strArrVal;
 
         std::vector<GridClientUuid>* uuidArrVal;
+
+        std::vector<boost::optional<GridClientDate>>* dateArrVal;
 
         TGridClientVariantSet* variantArrVal;
 
@@ -1054,6 +1117,12 @@ public:
 
     /** */
     virtual void visit(const std::vector<GridClientUuid>&) const = 0;
+
+    /** */
+    virtual void visit(const GridClientDate&) const = 0;
+
+    /** */
+    virtual void visit(const std::vector<boost::optional<GridClientDate>>&) const = 0;
 
     /** */
     virtual void visit(const TGridClientVariantSet&) const = 0;

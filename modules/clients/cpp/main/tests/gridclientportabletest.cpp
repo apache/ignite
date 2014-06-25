@@ -248,7 +248,7 @@ REGISTER_TYPE_SERIALIZER(101, Person, PersonSerializer);
 
 class TestPortable1 : public GridPortable {
 public:
-    TestPortable1() : arraysSize(-1) {
+    TestPortable1() : arraysSize(-1), vDate(0) {
     }
 
     void writePortable(GridPortableWriter &writer) const {
@@ -295,6 +295,13 @@ public:
 
             raw.writeUuid(boost::optional<GridClientUuid>(vUuid));
             raw.writeUuidCollection(vUuidVector);
+
+            raw.writeChar(vChar);
+            raw.writeCharArray(vCharArray, arraysSize);
+            raw.writeCharCollection(vCharVector);
+
+            raw.writeDate(vDate);
+            raw.writeDateCollection(vDateVector);
         }
         else {
             writer.writeBool("1", vBool);
@@ -337,6 +344,13 @@ public:
 
             writer.writeUuid("29", vUuid);
             writer.writeUuidCollection("30", vUuidVector);
+
+            writer.writeChar("31", vChar);
+            writer.writeCharArray("32", vCharArray, arraysSize);
+            writer.writeCharCollection("33", vCharVector);
+
+            writer.writeDate("34", vDate);
+            writer.writeDateCollection("35", vDateVector);
         }
 	}
 
@@ -406,6 +420,15 @@ public:
 
             vUuid = raw.readUuid().get();
             vUuidVector = raw.readUuidCollection().get_value_or(vector<GridClientUuid>());
+
+            vChar = raw.readChar();
+            pair<uint16_t*, int32_t> charArr = raw.readCharArray();
+            BOOST_REQUIRE_EQUAL(arraysSize, charArr.second);
+            vCharArray = charArr.first;
+            vCharVector = raw.readCharCollection().get_value_or(vector<uint16_t>());
+
+            vDate = raw.readDate().get();
+            vDateVector = raw.readDateCollection().get_value_or(vector<boost::optional<GridClientDate>>());
         }
         else {
             vBool = reader.readBool("1");
@@ -462,6 +485,15 @@ public:
 
             vUuid = reader.readUuid("29").get();
             vUuidVector = reader.readUuidCollection("30").get_value_or(vector<GridClientUuid>());
+
+            vChar = reader.readChar("31");
+            pair<uint16_t*, int32_t> charArr = reader.readCharArray("32");
+            BOOST_REQUIRE_EQUAL(arraysSize, charArr.second);
+            vCharArray = charArr.first;
+            vCharVector = reader.readCharCollection("33").get_value_or(vector<uint16_t>());
+
+            vDate = reader.readDate("34").get();
+            vDateVector = reader.readDateCollection("35").get_value_or(vector<boost::optional<GridClientDate>>());
         }
 	}
 
@@ -497,6 +529,12 @@ public:
 
     vector<int32_t> vInt32Vector;
 
+    uint16_t vChar;
+
+    uint16_t* vCharArray;
+
+    vector<uint16_t> vCharVector;
+
     int64_t vInt64;
 
     int64_t* vInt64Array;
@@ -526,6 +564,10 @@ public:
     GridClientUuid vUuid;
 
     vector<GridClientUuid> vUuidVector;
+
+    GridClientDate vDate;
+
+    vector<boost::optional<GridClientDate>> vDateVector;
 
     GridClientVariant vVariant;
 
@@ -567,6 +609,12 @@ TestPortable1 createTestPortable1(int32_t arraysSize) {
         p.vInt32Array[i] = i % 2 == 0 ? 1 : -1;            
     p.vInt32Vector = vector<int32_t>(arraysSize, -1);
 
+    p.vChar = 1;
+    p.vCharArray = new uint16_t[arraysSize];
+    for (int i = 0; i < arraysSize; i++)
+        p.vCharArray[i] = i % 2 == 0 ? 1 : 2;            
+    p.vCharVector = vector<uint16_t>(arraysSize, 2);
+
     p.vInt64 = 1;
     p.vInt64Array = new int64_t[arraysSize];
     for (int i = 0; i < arraysSize; i++)
@@ -593,6 +641,9 @@ TestPortable1 createTestPortable1(int32_t arraysSize) {
 
     p.vUuid = GridClientUuid(1, 2);
     p.vUuidVector = vector<GridClientUuid>(arraysSize, GridClientUuid(3, 4));
+
+    p.vDate = GridClientDate(1);
+    p.vDateVector = vector<boost::optional<GridClientDate>>(arraysSize, boost::optional<GridClientDate>(GridClientDate(2)));
 
     p.vVariant = GridClientVariant(1);
     p.vVariantVector = vector<GridClientVariant>(arraysSize, GridClientVariant(2));
@@ -636,6 +687,12 @@ void validateTestPortable1(TestPortable1 p, int32_t arraysSize) {
         BOOST_REQUIRE_EQUAL(-1, p.vInt32Vector[i]);
     }
 
+    BOOST_REQUIRE_EQUAL(1, p.vChar);
+    for (int i = 0; i < arraysSize; i++) {
+        BOOST_REQUIRE_EQUAL(i % 2 == 0 ? 1 : 2, p.vCharArray[i]);
+        BOOST_REQUIRE_EQUAL(2, p.vCharVector[i]);
+    }
+
     BOOST_REQUIRE_EQUAL(1, p.vInt64);
     for (int i = 0; i < arraysSize; i++) {
         BOOST_REQUIRE_EQUAL(i % 2 == 0 ? 1 : -1, p.vInt64Array[i]);
@@ -677,6 +734,13 @@ void validateTestPortable1(TestPortable1 p, int32_t arraysSize) {
         BOOST_REQUIRE_EQUAL(3, p.vUuidVector[i].mostSignificantBits());
         BOOST_REQUIRE_EQUAL(4, p.vUuidVector[i].leastSignificantBits());
     }
+
+    BOOST_REQUIRE_EQUAL(1, p.vDate.getTime());
+
+    BOOST_REQUIRE_EQUAL(arraysSize, p.vDateVector.size());
+    
+    for (int i = 0; i < arraysSize; i++)
+        BOOST_REQUIRE_EQUAL(2, p.vDateVector[i].get().getTime());
 
     BOOST_REQUIRE_EQUAL(true, p.vVariant.hasInt());
 
@@ -1396,6 +1460,22 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
     }
 
     {
+        GridClientDate val1(1);
+        GridClientDate val2(2);
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasDate());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE_EQUAL(val1, var1.getDate());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
         vector<int8_t> val1(1, 1);
         vector<int8_t> val2(1, 2);
 
@@ -1551,6 +1631,22 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
         BOOST_REQUIRE(!var1.hasInt());
         
         BOOST_REQUIRE(val1 == var1.getUuidArray());
+        
+        checkVariants(var1, var2, var3);
+    }
+
+    {
+        vector<boost::optional<GridClientDate>> val1(1, boost::optional<GridClientDate>(GridClientDate(1)));
+        vector<boost::optional<GridClientDate>> val2(1, boost::optional<GridClientDate>(GridClientDate(2)));
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasDateArray());
+        BOOST_REQUIRE(!var1.hasInt());
+        
+        BOOST_REQUIRE(val1 == var1.getDateArray());
         
         checkVariants(var1, var2, var3);
     }
@@ -2084,6 +2180,20 @@ BOOST_AUTO_TEST_CASE(testMarshal_uuid) {
     BOOST_REQUIRE(GridClientUuid(10, 20) == varRead.getUuid());
 }
 
+BOOST_AUTO_TEST_CASE(testMarshal_date) {
+    GridClientDate val(10);
+
+    GridClientVariant var(val);
+
+    GridPortableMarshaller marsh;
+    
+    boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
+
+    GridClientVariant varRead = marsh.unmarshal(bytes);
+
+    BOOST_REQUIRE(GridClientDate(10) == varRead.getDate());
+}
+
 BOOST_AUTO_TEST_CASE(testMarshal_byteArr) {
     vector<int8_t> val;
     
@@ -2322,6 +2432,36 @@ BOOST_AUTO_TEST_CASE(testMarshal_uuidArr) {
 
     for (int i = 0; i < size; i++)
         BOOST_REQUIRE(GridClientUuid(i, i) == valRead[i]);
+}
+
+BOOST_AUTO_TEST_CASE(testMarshal_dateArr) {
+    vector<boost::optional<GridClientDate>> val;
+    
+    int size = 3;
+
+    for (int i = 0; i < size; i++)
+        val.push_back(boost::optional<GridClientDate>(GridClientDate(i)));
+
+    val.push_back(boost::optional<GridClientDate>());
+
+    GridClientVariant var(val);
+
+    GridPortableMarshaller marsh;
+    
+    boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
+
+    GridClientVariant varRead = marsh.unmarshal(bytes);
+
+    vector<boost::optional<GridClientDate>>& valRead = varRead.getDateArray();
+
+    BOOST_REQUIRE_EQUAL(size + 1, valRead.size());
+
+    for (int i = 0; i < size; i++)
+        BOOST_REQUIRE(GridClientDate(i) == valRead[i].get());
+
+    boost::optional<GridClientDate> d = valRead[size];
+
+    BOOST_REQUIRE(!d.is_initialized());
 }
 
 BOOST_AUTO_TEST_CASE(testMarshal_variantArr) {

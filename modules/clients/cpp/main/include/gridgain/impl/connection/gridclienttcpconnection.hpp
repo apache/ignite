@@ -51,6 +51,7 @@ class GridClientRawSyncTcpConnection;
  * |           DATA            |
  * -----------------------------
  */
+
 class GridClientTcpPacket {
 private:
     /** Size of UUID field. */
@@ -71,9 +72,6 @@ public:
 
     /** Fills packet with ping data. */
     static void createPingPacket(GridClientTcpPacket& pingPacket);
-
-    GridClientTcpPacket() : dataPtr(nullptr) {
-    }
 
     /**
      * Checks if this is a ping packet.

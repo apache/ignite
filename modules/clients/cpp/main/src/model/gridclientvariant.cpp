@@ -91,6 +91,11 @@ void GridClientVariant::copy(const GridClientVariant& other) {
 
             break;
 
+        case DATE_TYPE:
+            data.dateVal = new GridClientDate(*other.data.dateVal);
+
+            break;
+
         case PORTABLE_OBJ_TYPE:
             data.portableObjVal = new GridPortableObject(*other.data.portableObjVal);
 
@@ -143,6 +148,11 @@ void GridClientVariant::copy(const GridClientVariant& other) {
 
         case UUID_ARR_TYPE:
             data.uuidArrVal = new vector<GridClientUuid>(*other.data.uuidArrVal);
+
+            break;
+
+        case DATE_ARR_TYPE:
+            data.dateArrVal = new vector<boost::optional<GridClientDate>>(*other.data.dateArrVal);
 
             break;
 
@@ -269,6 +279,14 @@ GridClientVariant::GridClientVariant(const GridClientUuid& val) : type(UUID_TYPE
     data.uuidVal = new GridClientUuid(val);
 }
 
+GridClientVariant::GridClientVariant(const GridClientDate& val) : type(DATE_TYPE) {
+    data.dateVal = new GridClientDate(val);
+}
+
+GridClientVariant::GridClientVariant(const std::vector<boost::optional<GridClientDate>>& val) : type(DATE_ARR_TYPE) {
+    data.dateArrVal = new std::vector<boost::optional<GridClientDate>>(val);
+}
+
 void GridClientVariant::set(GridPortable* val) {
     clear();
 
@@ -337,6 +355,10 @@ string GridClientVariant::typeName(TypeEnum type) {
         case WIDE_STRING_TYPE: return "WideString";
 
         case UUID_TYPE: return "Uuid";
+
+        case DATE_TYPE: return "Date";
+
+        case DATE_ARR_TYPE: return "DateArray";
 
         case PORTABLE_OBJ_TYPE: return "PortableObject";
 
@@ -769,6 +791,40 @@ GridClientUuid& GridClientVariant::getUuid() const {
     return *data.uuidVal;
 }
 
+void GridClientVariant::set(const GridClientDate& val) {
+    clear();
+
+    data.dateVal = new GridClientDate(val);
+    type = DATE_TYPE;
+}
+
+bool GridClientVariant::hasDate() const {
+    return type == DATE_TYPE;
+}
+
+GridClientDate& GridClientVariant::getDate() const {
+    checkType(DATE_TYPE);
+
+    return *data.dateVal;
+}
+
+void GridClientVariant::set(const vector<boost::optional<GridClientDate>>& val) {
+    clear();
+
+    data.dateArrVal = new vector<boost::optional<GridClientDate>>(val);
+    type = DATE_ARR_TYPE;
+}
+
+bool GridClientVariant::hasDateArray() const {
+    return type == DATE_ARR_TYPE;
+}
+
+vector<boost::optional<GridClientDate>>& GridClientVariant::getDateArray() const {
+    checkType(DATE_ARR_TYPE);
+
+    return *data.dateArrVal;
+}
+
 GridPortable* GridClientVariant::getPortable() const {
     checkType(PORTABLE_TYPE);
 
@@ -817,6 +873,8 @@ string GridClientVariant::toString() const {
 
         case UUID_TYPE: os << *data.uuidVal; break;
 
+        case DATE_TYPE: os << *data.dateVal; break;
+
         case PORTABLE_OBJ_TYPE: os << "[PortableObject [typeId=" << data.portableObjVal->typeId() << "]]"; break;
 
         case BYTE_ARR_TYPE: os << "[ByteArray]"; break;
@@ -838,6 +896,8 @@ string GridClientVariant::toString() const {
         case STRING_ARR_TYPE: os << "[StringArray]"; break;
 
         case UUID_ARR_TYPE: os << "[UuidArray]"; break;
+
+        case DATE_ARR_TYPE: os << "[DateArray]"; break;
 
         case VARIANT_ARR_TYPE: os << "[VariantArray]"; break;
 
@@ -881,6 +941,8 @@ string GridClientVariant::debugString() const {
 
         case UUID_TYPE: os << ", val=" << *data.uuidVal; break;
 
+        case DATE_TYPE: os << ", val=" << *data.dateVal; break;
+
         case PORTABLE_OBJ_TYPE: os << "typeId=" << data.portableObjVal->typeId(); break;
 
         case BYTE_ARR_TYPE: os << ", size=" << data.byteArrVal->size(); break;
@@ -902,6 +964,8 @@ string GridClientVariant::debugString() const {
         case STRING_ARR_TYPE:  os << ", size=" << data.strArrVal->size(); break;
 
         case UUID_ARR_TYPE:  os << ", size=" << data.uuidArrVal->size(); break;
+      
+        case DATE_ARR_TYPE:  os << ", size=" << data.dateArrVal->size(); break;
 
         case VARIANT_ARR_TYPE:  os << ", size=" << data.variantArrVal->size(); break;
 
@@ -943,6 +1007,8 @@ void GridClientVariant::accept(const GridClientVariantVisitor& visitor) const {
 
         case UUID_TYPE: visitor.visit(*data.uuidVal); return;
 
+        case DATE_TYPE: visitor.visit(*data.dateVal); return;
+
         case PORTABLE_OBJ_TYPE: visitor.visit(*data.portableObjVal); return;
 
         case BYTE_ARR_TYPE: visitor.visit(*data.byteArrVal); return;
@@ -964,6 +1030,8 @@ void GridClientVariant::accept(const GridClientVariantVisitor& visitor) const {
         case STRING_ARR_TYPE: visitor.visit(*data.strArrVal); return;
 
         case UUID_ARR_TYPE: visitor.visit(*data.uuidArrVal); return;
+
+        case DATE_ARR_TYPE: visitor.visit(*data.dateArrVal); return;
 
         case VARIANT_ARR_TYPE: visitor.visit(*data.variantArrVal); return;
 
@@ -1011,6 +1079,8 @@ bool GridClientVariant::operator==(const GridClientVariant& other) const {
 
         case UUID_TYPE: return *data.uuidVal == *other.data.uuidVal;
 
+        case DATE_TYPE: return *data.dateVal == *other.data.dateVal;
+
         case PORTABLE_OBJ_TYPE: return *data.portableObjVal == *other.data.portableObjVal;
 
         case BYTE_ARR_TYPE: return *data.byteArrVal == *other.data.byteArrVal;
@@ -1032,6 +1102,8 @@ bool GridClientVariant::operator==(const GridClientVariant& other) const {
         case STRING_ARR_TYPE: return *data.strArrVal == *other.data.strArrVal;
 
         case UUID_ARR_TYPE: return *data.uuidArrVal == *other.data.uuidArrVal;
+
+        case DATE_ARR_TYPE: return *data.dateArrVal == *other.data.dateArrVal;
 
         case VARIANT_ARR_TYPE: return *data.variantArrVal == *other.data.variantArrVal;
 
@@ -1074,6 +1146,11 @@ void GridClientVariant::clear() {
 
         case UUID_TYPE:
             delete data.uuidVal;
+
+            break;
+
+        case DATE_TYPE:
+            delete data.dateVal;
 
             break;
 
@@ -1129,6 +1206,11 @@ void GridClientVariant::clear() {
 
         case UUID_ARR_TYPE:
             delete data.uuidArrVal;
+
+            break;
+
+        case DATE_ARR_TYPE:
+            delete data.dateArrVal;
 
             break;
 

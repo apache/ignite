@@ -15,6 +15,42 @@
 
 #include "gridgain/impl/marshaller/portable/gridportablemarshaller.hpp"
 
+int32_t cStringHash(const char* str) {
+    int32_t hash = 0;
+
+    int i = 0;
+
+    while(str[i]) {
+        hash = 31 * hash + str[i];
+
+        i++;
+    }
+
+    return hash;
+}
+
+int32_t getFieldId(const char* fieldName, int32_t typeId, GridPortableIdResolver* idRslvr) {
+    if (idRslvr) {
+        boost::optional<int32_t> rslvrId = idRslvr->fieldId(typeId, fieldName);
+
+        if (rslvrId.is_initialized())
+            return rslvrId.get();
+    }
+
+    return cStringHash(fieldName);
+}
+
+int32_t getFieldId(const std::string& fieldName, int32_t typeId, GridPortableIdResolver* idRslvr) {
+    if (idRslvr) {
+        boost::optional<int32_t> rslvrId = idRslvr->fieldId(typeId, fieldName);
+
+        if (rslvrId.is_initialized())
+            return rslvrId.get();
+    }
+
+    return gridStringHash(fieldName);
+}
+
 boost::unordered_map<int32_t, GridPortableFactory*>& portableFactories() {
     static boost::unordered_map<int32_t, GridPortableFactory*> portableFactories;
 
@@ -36,20 +72,6 @@ GridPortable* createPortable(int32_t typeId, GridPortableReader &reader) {
         throw GridClientPortableException("Unknown type id.");
 
     return static_cast<GridPortable*>(factory->newInstance(reader));
-}
-
-int32_t cStringHash(const char* str) {
-    int32_t hash = 0;
-
-    int i = 0;
-
-    while(str[i]) {
-        hash = 31 * hash + str[i];
-
-        i++;
-    }
-
-    return hash;
 }
 
 REGISTER_TYPE(-1, GridClientAuthenticationRequest);

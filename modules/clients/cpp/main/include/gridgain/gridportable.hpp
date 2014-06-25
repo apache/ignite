@@ -26,6 +26,10 @@ public:
         return boost::optional<int32_t>();
     }
 
+    virtual boost::optional<int32_t> fieldId(int32_t typeId, const std::string& fieldName) {
+        return boost::optional<int32_t>();
+    }
+
     virtual ~GridPortableIdResolver() {
     }
 };
