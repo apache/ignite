@@ -76,6 +76,8 @@ const int8_t CONC_HASH_MAP = 4;
 
 GridPortable* createPortable(int32_t typeId, GridPortableReader &reader);
 
+GridPortable* createSystemPortable(int32_t typeId, GridPortableReader &reader);
+
 int32_t getFieldId(const char* fieldName, int32_t typeId, GridPortableIdResolver* idRslvr);
 
 int32_t getFieldId(const std::string& fieldName, int32_t typeId, GridPortableIdResolver* idRslvr);
@@ -942,9 +944,13 @@ public:
     }
 
     void writeHeader(bool userType, int32_t typeId, const GridClientVariant& val) {
+        writeHeader(userType, typeId, val.hasPortable() ? 0 : val.hashCode());
+    }
+
+    void writeHeader(bool userType, int32_t typeId, int32_t hashCode) {
         ctx.out.writeBool(userType);
         ctx.out.writeInt32(typeId);
-        ctx.out.writeInt32(val.hasPortable() ? 0 : val.hashCode());
+        ctx.out.writeInt32(hashCode);
 
         ctx.out.writeInt32(0); // Reserve space for length.
 
@@ -965,7 +971,17 @@ public:
         ctx.out.writeInt32To(fieldStart - 4, len);
     }
 
-    void doWriteVariant(const GridClientVariant &val) {
+    void writeSystem(GridPortable& portable) {
+        ctx.out.writeByte(FLAG_OBJECT);
+
+        writeHeader(false, portable.typeId(), 0);
+
+        GridPortableWriterImpl writer(ctx, portable.typeId(), ctx.out.bytes.size() - 18);
+
+        portable.writePortable(writer);
+    }
+
+    void doWriteVariant(const GridClientVariant& val) {
         int32_t start = ctx.out.bytes.size();
         int32_t lenPos = start + 10;
 
@@ -2074,8 +2090,6 @@ public:
             case FLAG_HANDLE: {
                 int32_t objStart = doReadInt32(raw);
 
-                // TODO standard types.
-
                 GridPortableObject obj(ctxPtr, objStart);
 
                 return GridClientVariant(obj);
@@ -2146,8 +2160,6 @@ public:
         else if (flag == FLAG_HANDLE) {
             int32_t objStart = doReadInt32(false);
 
-            // TODO standard types.
-
             GridPortableObject obj(ctxPtr, objStart);
 
             return GridClientVariant(obj);
@@ -2159,6 +2171,11 @@ public:
     }
 
     GridClientVariant readStandard(int32_t typeId, bool raw) {
+        GridPortable* portable = createSystemPortable(typeId, *this);
+
+        if (portable)
+            return GridClientVariant(portable);
+
         switch (typeId) {
             case TYPE_ID_BYTE: {
                 int8_t val = doReadByte(raw);
@@ -3764,6 +3781,18 @@ public:
 
 		return boost::shared_ptr<std::vector<int8_t>>(bytes);
 	}
+
+    boost::shared_ptr<std::vector<int8_t>> marshalSystemObject(GridPortable& portable) {
+        std::vector<int8_t>* bytes = new std::vector<int8_t>();
+
+        WriteContext ctx(*bytes, idRslvr);
+
+        GridPortableWriterImpl writer(ctx, portable.typeId(), 0);
+
+		writer.writeSystem(portable);
+
+		return boost::shared_ptr<std::vector<int8_t>>(bytes);
+    }
 
     GridClientVariant unmarshal(const boost::shared_ptr<std::vector<int8_t>>& data) {
 		boost::shared_ptr<PortableReadContext> ctxPtr(new PortableReadContext(data, idRslvr));

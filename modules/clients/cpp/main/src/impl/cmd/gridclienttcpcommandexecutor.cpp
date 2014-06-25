@@ -144,7 +144,7 @@ template<class C, class R> void GridClientTcpCommandExecutor::executeCmd(const G
 
     msg.sesTok = cmd.sessionToken();
 
-    boost::shared_ptr<std::vector<int8_t>> dataPtr = marsh.marshalUserObject(msg);
+    boost::shared_ptr<std::vector<int8_t>> dataPtr = marsh.marshalSystemObject(msg);
 
     GridClientTcpPacket tcpPacket;
     GridClientTcpPacket tcpResponse;

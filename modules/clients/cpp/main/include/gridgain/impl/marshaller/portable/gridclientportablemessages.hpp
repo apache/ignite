@@ -24,12 +24,12 @@
 
 class GridClientPortableMessage : public GridPortable {
 public:
-    void writePortable(GridPortableWriter &writer) const override {
-        writer.writeByteCollection("sesTok", sesTok);
+    void writePortable(GridPortableWriter& writer) const override {
+        writer.rawWriter().writeByteCollection(sesTok);
     }
 
-    void readPortable(GridPortableReader &reader) override {
-        boost::optional<std::vector<int8_t>> bytes = reader.readByteCollection("sesTok");
+    void readPortable(GridPortableReader& reader) override {
+        boost::optional<std::vector<int8_t>> bytes = reader.rawReader().readByteCollection();
 
         if (bytes.is_initialized())
             sesTok = std::move(bytes.get());
@@ -40,29 +40,35 @@ public:
 
 class GridClientResponse : public GridClientPortableMessage {
 public:
+    static const int32_t TYPE_ID = 0x105;
+
     int32_t typeId() const {
-        return -6;
+        return TYPE_ID;
     }
 
-    void writePortable(GridPortableWriter &writer) const override {
+    void writePortable(GridPortableWriter& writer) const override {
         GridClientPortableMessage::writePortable(writer);
 
-        writer.writeInt32("status", status);
-        writer.writeString("errorMsg", errorMsg);
-        writer.writeVariant("res", res);
+        GridPortableRawWriter& raw = writer.rawWriter();
+
+        raw.writeInt32(status);
+        raw.writeString(errorMsg);
+        raw.writeVariant(res);
     }
 
-    void readPortable(GridPortableReader &reader) override {
+    void readPortable(GridPortableReader& reader) override {
         GridClientPortableMessage::readPortable(reader);
 
-        status = reader.readInt32("status");
+        GridPortableRawReader& raw = reader.rawReader();
 
-        boost::optional<std::string> msg = reader.readString("errorMsg");
+        status = raw.readInt32();
+
+        boost::optional<std::string> msg = raw.readString();
 
         if (msg.is_initialized())
             errorMsg = std::move(msg.get());
 
-        res = reader.readVariant("res");
+        res = raw.readVariant();
     }
 
     int32_t getStatus() {
@@ -86,118 +92,124 @@ public:
 
 class GridClientMetricsBean : public GridPortable {
 public:
+    static const int32_t TYPE_ID = 0x104;
+
     int32_t typeId() const {
-        return -5;
+        return TYPE_ID;
     }
 
-    void writePortable(GridPortableWriter &writer) const override {
-        writer.writeInt64("lastUpdateTime", lastUpdateTime);
-        writer.writeInt32("maxActiveJobs", maxActiveJobs);
-        writer.writeInt32("curActiveJobs", curActiveJobs);
-        writer.writeFloat("avgActiveJobs", avgActiveJobs);
-        writer.writeInt32("maxWaitingJobs", maxWaitingJobs);
-        writer.writeInt32("curWaitingJobs", curWaitingJobs);
-        writer.writeFloat("avgWaitingJobs", avgWaitingJobs);
-        writer.writeInt32("maxRejectedJobs", maxRejectedJobs);
-        writer.writeInt32("curRejectedJobs", curRejectedJobs);
-        writer.writeFloat("avgRejectedJobs", avgRejectedJobs);
-        writer.writeInt32("maxCancelledJobs", maxCancelledJobs);
-        writer.writeInt32("curCancelledJobs", curCancelledJobs);
-        writer.writeFloat("avgCancelledJobs", avgCancelledJobs);
-        writer.writeInt32("totalRejectedJobs", totalRejectedJobs);
-        writer.writeInt32("totalCancelledJobs", totalCancelledJobs);
-        writer.writeInt32("totalExecutedJobs", totalExecutedJobs);
-        writer.writeInt64("maxJobWaitTime", maxJobWaitTime);
-        writer.writeInt64("curJobWaitTime", curJobWaitTime);
-        writer.writeDouble("avgJobWaitTime", avgJobWaitTime);
-        writer.writeInt64("maxJobExecTime", maxJobExecTime);
-        writer.writeInt64("curJobExecTime", curJobExecTime);
-        writer.writeDouble("avgJobExecTime", avgJobExecTime);
-        writer.writeInt32("totalExecTasks", totalExecTasks);
-        writer.writeInt64("totalIdleTime", totalIdleTime);
-        writer.writeInt64("curIdleTime", curIdleTime);
-        writer.writeInt32("availProcs", availProcs);
-        writer.writeDouble("load", load);
-        writer.writeDouble("avgLoad", avgLoad);
-        writer.writeDouble("gcLoad", gcLoad);
-        writer.writeInt64("heapInit", heapInit);
-        writer.writeInt64("heapUsed", heapUsed);
-        writer.writeInt64("heapCommitted", heapCommitted);
-        writer.writeInt64("heapMax", heapMax);
-        writer.writeInt64("nonHeapInit", nonHeapInit);
-        writer.writeInt64("nonHeapUsed", nonHeapUsed);
-        writer.writeInt64("nonHeapCommitted", nonHeapCommitted);
-        writer.writeInt64("nonHeapMax", nonHeapMax);
-        writer.writeInt64("upTime", upTime);
-        writer.writeInt64("startTime", startTime);
-        writer.writeInt64("nodeStartTime", nodeStartTime);
-        writer.writeInt32("threadCnt", threadCnt);
-        writer.writeInt32("peakThreadCnt", peakThreadCnt);
-        writer.writeInt64("startedThreadCnt", startedThreadCnt);
-        writer.writeInt32("daemonThreadCnt", daemonThreadCnt);
-        writer.writeInt64("fileSysFreeSpace", fileSysFreeSpace);
-        writer.writeInt64("fileSysTotalSpace", fileSysTotalSpace);
-        writer.writeInt64("fileSysUsableSpace", fileSysUsableSpace);
-        writer.writeInt64("lastDataVer", lastDataVer);
-        writer.writeInt32("sentMsgsCnt", sentMsgsCnt);
-        writer.writeInt64("sentBytesCnt", sentBytesCnt);
-        writer.writeInt32("rcvdMsgsCnt", rcvdMsgsCnt);
-        writer.writeInt64("rcvdBytesCnt", rcvdBytesCnt);
+    void writePortable(GridPortableWriter& writer) const override {
+        GridPortableRawWriter& raw = writer.rawWriter();
+
+        raw.writeInt64(lastUpdateTime);
+        raw.writeInt32(maxActiveJobs);
+        raw.writeInt32(curActiveJobs);
+        raw.writeFloat(avgActiveJobs);
+        raw.writeInt32(maxWaitingJobs);
+        raw.writeInt32(curWaitingJobs);
+        raw.writeFloat(avgWaitingJobs);
+        raw.writeInt32(maxRejectedJobs);
+        raw.writeInt32(curRejectedJobs);
+        raw.writeFloat(avgRejectedJobs);
+        raw.writeInt32(maxCancelledJobs);
+        raw.writeInt32(curCancelledJobs);
+        raw.writeFloat(avgCancelledJobs);
+        raw.writeInt32(totalRejectedJobs);
+        raw.writeInt32(totalCancelledJobs);
+        raw.writeInt32(totalExecutedJobs);
+        raw.writeInt64(maxJobWaitTime);
+        raw.writeInt64(curJobWaitTime);
+        raw.writeDouble(avgJobWaitTime);
+        raw.writeInt64(maxJobExecTime);
+        raw.writeInt64(curJobExecTime);
+        raw.writeDouble(avgJobExecTime);
+        raw.writeInt32(totalExecTasks);
+        raw.writeInt64(totalIdleTime);
+        raw.writeInt64(curIdleTime);
+        raw.writeInt32(availProcs);
+        raw.writeDouble(load);
+        raw.writeDouble(avgLoad);
+        raw.writeDouble(gcLoad);
+        raw.writeInt64(heapInit);
+        raw.writeInt64(heapUsed);
+        raw.writeInt64(heapCommitted);
+        raw.writeInt64(heapMax);
+        raw.writeInt64(nonHeapInit);
+        raw.writeInt64(nonHeapUsed);
+        raw.writeInt64(nonHeapCommitted);
+        raw.writeInt64(nonHeapMax);
+        raw.writeInt64(upTime);
+        raw.writeInt64(startTime);
+        raw.writeInt64(nodeStartTime);
+        raw.writeInt32(threadCnt);
+        raw.writeInt32(peakThreadCnt);
+        raw.writeInt64(startedThreadCnt);
+        raw.writeInt32(daemonThreadCnt);
+        raw.writeInt64(fileSysFreeSpace);
+        raw.writeInt64(fileSysTotalSpace);
+        raw.writeInt64(fileSysUsableSpace);
+        raw.writeInt64(lastDataVer);
+        raw.writeInt32(sentMsgsCnt);
+        raw.writeInt64(sentBytesCnt);
+        raw.writeInt32(rcvdMsgsCnt);
+        raw.writeInt64(rcvdBytesCnt);
     }
 
-    void readPortable(GridPortableReader &reader) override {
-        lastUpdateTime = reader.readInt64("lastUpdateTime");
-        maxActiveJobs = reader.readInt32("maxActiveJobs");
-        curActiveJobs = reader.readInt32("curActiveJobs");
-        avgActiveJobs = reader.readFloat("avgActiveJobs");
-        maxWaitingJobs = reader.readInt32("maxWaitingJobs");
-        curWaitingJobs = reader.readInt32("curWaitingJobs");
-        avgWaitingJobs = reader.readFloat("avgWaitingJobs");
-        maxRejectedJobs = reader.readInt32("maxRejectedJobs");
-        curRejectedJobs = reader.readInt32("curRejectedJobs");
-        avgRejectedJobs = reader.readFloat("avgRejectedJobs");
-        maxCancelledJobs = reader.readInt32("maxCancelledJobs");
-        curCancelledJobs = reader.readInt32("curCancelledJobs");
-        avgCancelledJobs = reader.readFloat("avgCancelledJobs");
-        totalRejectedJobs = reader.readInt32("totalRejectedJobs");
-        totalCancelledJobs = reader.readInt32("totalCancelledJobs");
-        totalExecutedJobs = reader.readInt32("totalExecutedJobs");
-        maxJobWaitTime = reader.readInt64("maxJobWaitTime");
-        curJobWaitTime = reader.readInt64("curJobWaitTime");
-        avgJobWaitTime = reader.readDouble("avgJobWaitTime");
-        maxJobExecTime = reader.readInt64("maxJobExecTime");
-        curJobExecTime = reader.readInt64("curJobExecTime");
-        avgJobExecTime = reader.readDouble("avgJobExecTime");
-        totalExecTasks = reader.readInt32("totalExecTasks");
-        totalIdleTime = reader.readInt64("totalIdleTime");
-        curIdleTime = reader.readInt64("curIdleTime");
-        availProcs = reader.readInt32("availProcs");
-        load = reader.readDouble("load");
-        avgLoad = reader.readDouble("avgLoad");
-        gcLoad = reader.readDouble("gcLoad");
-        heapInit = reader.readInt64("heapInit");
-        heapUsed = reader.readInt64("heapUsed");
-        heapCommitted = reader.readInt64("heapCommitted");
-        heapMax = reader.readInt64("heapMax");
-        nonHeapInit = reader.readInt64("nonHeapInit");
-        nonHeapUsed = reader.readInt64("nonHeapUsed");
-        nonHeapCommitted = reader.readInt64("nonHeapCommitted");
-        nonHeapMax = reader.readInt64("nonHeapMax");
-        upTime = reader.readInt64("upTime");
-        startTime = reader.readInt64("startTime");
-        nodeStartTime = reader.readInt64("nodeStartTime");
-        threadCnt = reader.readInt32("threadCnt");
-        peakThreadCnt = reader.readInt32("peakThreadCnt");
-        startedThreadCnt = reader.readInt64("startedThreadCnt");
-        daemonThreadCnt = reader.readInt32("daemonThreadCnt");
-        fileSysFreeSpace = reader.readInt64("fileSysFreeSpace");
-        fileSysTotalSpace = reader.readInt64("fileSysTotalSpace");
-        fileSysUsableSpace = reader.readInt64("fileSysUsableSpace");
-        lastDataVer = reader.readInt64("lastDataVer");
-        sentMsgsCnt = reader.readInt32("sentMsgsCnt");
-        sentBytesCnt = reader.readInt64("sentBytesCnt");
-        rcvdMsgsCnt = reader.readInt32("rcvdMsgsCnt");
-        rcvdBytesCnt = reader.readInt64("rcvdBytesCnt");
+    void readPortable(GridPortableReader& reader) override {
+        GridPortableRawReader& raw = reader.rawReader();
+
+        lastUpdateTime = raw.readInt64();
+        maxActiveJobs = raw.readInt32();
+        curActiveJobs = raw.readInt32();
+        avgActiveJobs = raw.readFloat();
+        maxWaitingJobs = raw.readInt32();
+        curWaitingJobs = raw.readInt32();
+        avgWaitingJobs = raw.readFloat();
+        maxRejectedJobs = raw.readInt32();
+        curRejectedJobs = raw.readInt32();
+        avgRejectedJobs = raw.readFloat();
+        maxCancelledJobs = raw.readInt32();
+        curCancelledJobs = raw.readInt32();
+        avgCancelledJobs = raw.readFloat();
+        totalRejectedJobs = raw.readInt32();
+        totalCancelledJobs = raw.readInt32();
+        totalExecutedJobs = raw.readInt32();
+        maxJobWaitTime = raw.readInt64();
+        curJobWaitTime = raw.readInt64();
+        avgJobWaitTime = raw.readDouble();
+        maxJobExecTime = raw.readInt64();
+        curJobExecTime = raw.readInt64();
+        avgJobExecTime = raw.readDouble();
+        totalExecTasks = raw.readInt32();
+        totalIdleTime = raw.readInt64();
+        curIdleTime = raw.readInt64();
+        availProcs = raw.readInt32();
+        load = raw.readDouble();
+        avgLoad = raw.readDouble();
+        gcLoad = raw.readDouble();
+        heapInit = raw.readInt64();
+        heapUsed = raw.readInt64();
+        heapCommitted = raw.readInt64();
+        heapMax = raw.readInt64();
+        nonHeapInit = raw.readInt64();
+        nonHeapUsed = raw.readInt64();
+        nonHeapCommitted = raw.readInt64();
+        nonHeapMax = raw.readInt64();
+        upTime = raw.readInt64();
+        startTime = raw.readInt64();
+        nodeStartTime = raw.readInt64();
+        threadCnt = raw.readInt32();
+        peakThreadCnt = raw.readInt32();
+        startedThreadCnt = raw.readInt64();
+        daemonThreadCnt = raw.readInt32();
+        fileSysFreeSpace = raw.readInt64();
+        fileSysTotalSpace = raw.readInt64();
+        fileSysUsableSpace = raw.readInt64();
+        lastDataVer = raw.readInt64();
+        sentMsgsCnt = raw.readInt32();
+        sentBytesCnt = raw.readInt64();
+        rcvdMsgsCnt = raw.readInt32();
+        rcvdBytesCnt = raw.readInt64();
     }
 
     /** */
@@ -359,50 +371,56 @@ public:
 
 class GridClientNodeBean : public GridPortable {
 public:
+    static const int32_t TYPE_ID = 0x103;
+
     int32_t typeId() const {
-        return -4;
+        return TYPE_ID;
     }
 
-    void writePortable(GridPortableWriter &writer) const override {
-        writer.writeInt32("tcpPort", tcpPort);
-        writer.writeInt32("jettyPort", jettyPort);
-        writer.writeInt32("replicaCnt", replicaCnt);
+    void writePortable(GridPortableWriter& writer) const override {
+        GridPortableRawWriter& raw = writer.rawWriter();
 
-        writer.writeString("dfltCacheMode", dfltCacheMode);
+        raw.writeInt32(tcpPort);
+        raw.writeInt32(jettyPort);
+        raw.writeInt32(replicaCnt);
 
-        writer.writeVariantMap("attrs", attrs);
-        writer.writeVariantMap("caches", caches);
+        raw.writeString(dfltCacheMode);
 
-        writer.writeVariantCollection("tcpAddrs", tcpAddrs);
-        writer.writeVariantCollection("tcpHostNames", tcpHostNames);
-        writer.writeVariantCollection("jettyAddrs", jettyAddrs);
-        writer.writeVariantCollection("jettyHostNames", jettyHostNames);
+        raw.writeVariantMap(attrs);
+        raw.writeVariantMap(caches);
 
-        writer.writeUuid("nodeId", nodeId);
+        raw.writeVariantCollection(tcpAddrs);
+        raw.writeVariantCollection(tcpHostNames);
+        raw.writeVariantCollection(jettyAddrs);
+        raw.writeVariantCollection(jettyHostNames);
 
-        writer.writeVariant("consistentId", consistentId);
-        writer.writeVariant("metrics", metrics);
+        raw.writeUuid(nodeId);
+
+        raw.writeVariant(consistentId);
+        raw.writeVariant(metrics);
     }
 
-    void readPortable(GridPortableReader &reader) override {
-        tcpPort = reader.readInt32("tcpPort");
-        jettyPort = reader.readInt32("jettyPort");
-        replicaCnt = reader.readInt32("replicaCnt");
+    void readPortable(GridPortableReader& reader) override {
+        GridPortableRawReader& raw = reader.rawReader();
 
-        dfltCacheMode = reader.readString("dfltCacheMode").get_value_or(std::string());
+        tcpPort = raw.readInt32();
+        jettyPort = raw.readInt32();
+        replicaCnt = raw.readInt32();
 
-        attrs = reader.readVariantMap("attrs").get_value_or(TGridClientVariantMap());
-        caches = reader.readVariantMap("caches").get_value_or(TGridClientVariantMap());
+        dfltCacheMode = raw.readString().get_value_or(std::string());
 
-        tcpAddrs = reader.readVariantCollection("tcpAddrs").get_value_or(TGridClientVariantSet());
-        tcpHostNames = reader.readVariantCollection("tcpHostNames").get_value_or(TGridClientVariantSet());
-        jettyAddrs = reader.readVariantCollection("jettyAddrs").get_value_or(TGridClientVariantSet());
-        jettyHostNames = reader.readVariantCollection("jettyHostNames").get_value_or(TGridClientVariantSet());
+        attrs = raw.readVariantMap().get_value_or(TGridClientVariantMap());
+        caches = raw.readVariantMap().get_value_or(TGridClientVariantMap());
 
-        nodeId = reader.readUuid("nodeId");
+        tcpAddrs = raw.readVariantCollection().get_value_or(TGridClientVariantSet());
+        tcpHostNames = raw.readVariantCollection().get_value_or(TGridClientVariantSet());
+        jettyAddrs = raw.readVariantCollection().get_value_or(TGridClientVariantSet());
+        jettyHostNames = raw.readVariantCollection().get_value_or(TGridClientVariantSet());
 
-        consistentId = reader.readVariant("consistentId");
-        metrics = reader.readVariant("metrics");
+        nodeId = raw.readUuid();
+
+        consistentId = raw.readVariant();
+        metrics = raw.readVariant();
     }
 
     GridClientNode createNode() {
@@ -590,26 +608,32 @@ public:
 
 class GridClientTopologyRequest : public GridClientPortableMessage {
 public:
+    static const int32_t TYPE_ID = 0x108;
+
     int32_t typeId() const {
-        return -9;
+        return TYPE_ID;
     }
 
-    void writePortable(GridPortableWriter &writer) const override {
+    void writePortable(GridPortableWriter& writer) const override {
         GridClientPortableMessage::writePortable(writer);
 
-        writer.writeUuid("nodeId", nodeId);
-        writer.writeString("nodeIp", nodeIp);
-        writer.writeBool("includeMetrics", includeMetrics);
-        writer.writeBool("includeAttrs", includeAttrs);
+        GridPortableRawWriter& raw = writer.rawWriter();
+
+        raw.writeUuid(nodeId);
+        raw.writeString(nodeIp);
+        raw.writeBool(includeMetrics);
+        raw.writeBool(includeAttrs);
     }
 
-    void readPortable(GridPortableReader &reader) override {
+    void readPortable(GridPortableReader& reader) override {
         GridClientPortableMessage::readPortable(reader);
 
-        nodeId = reader.readUuid("nodeId");
-        nodeIp  = reader.readString("nodeIp").get_value_or(std::string());
-        includeMetrics = reader.readBool("includeMetrics");
-        includeAttrs = reader.readBool("includeAttrs");
+        GridPortableRawReader& raw = reader.rawReader();
+
+        nodeId = raw.readUuid();
+        nodeIp  = raw.readString().get_value_or(std::string());
+        includeMetrics = raw.readBool();
+        includeAttrs = raw.readBool();
     }
 
     /** Id of requested node. */
@@ -627,6 +651,12 @@ public:
 
 class GridClientCacheRequest : public GridClientPortableMessage {
 public:
+    static const int32_t TYPE_ID = 0x101;
+
+    int32_t typeId() const {
+        return TYPE_ID;
+    }
+
     void init(GridCacheRequestCommand& cacheCmd) {
         op = static_cast<int32_t>(cacheCmd.getOperation());
 
@@ -644,40 +674,40 @@ public:
         cacheFlagsOn = flags.empty() ? 0 : GridClientByteUtils::bitwiseOr(flags.begin(), flags.end(), 0);
     }
 
-    int32_t typeId() const {
-        return -2;
-    }
-
-    void writePortable(GridPortableWriter &writer) const override {
+    void writePortable(GridPortableWriter& writer) const override {
         GridClientPortableMessage::writePortable(writer);
 
-        writer.writeInt32("op", op);
+        GridPortableRawWriter& raw = writer.rawWriter();
 
-        writer.writeString("cacheName", cacheName);
+        raw.writeInt32(op);
 
-        writer.writeVariant("key", key);
-        writer.writeVariant("val", val);
-        writer.writeVariant("val2", val2);
+        raw.writeString(cacheName);
 
-        writer.writeVariantMap("vals", vals);
+        raw.writeVariant(key);
+        raw.writeVariant(val);
+        raw.writeVariant(val2);
 
-        writer.writeInt32("flags", cacheFlagsOn);
+        raw.writeVariantMap(vals);
+
+        raw.writeInt32(cacheFlagsOn);
     }
 
-    void readPortable(GridPortableReader &reader) override {
+    void readPortable(GridPortableReader& reader) override {
         GridClientPortableMessage::readPortable(reader);
 
-        op = reader.readInt32("op");
+        GridPortableRawReader& raw = reader.rawReader();
 
-        cacheName = reader.readString("cacheName").get_value_or(std::string());
+        op = raw.readInt32();
 
-        key = reader.readVariant("key");
-        val = reader.readVariant("val");
-        val2 = reader.readVariant("val2");
+        cacheName = raw.readString().get_value_or(std::string());
 
-        vals = reader.readVariantMap("vals").get_value_or(TGridClientVariantMap());
+        key = raw.readVariant();
+        val = raw.readVariant();
+        val2 = raw.readVariant();
 
-        cacheFlagsOn = reader.readInt32("flags");
+        vals = raw.readVariantMap().get_value_or(TGridClientVariantMap());
+
+        cacheFlagsOn = raw.readInt32();
     }
 
     int32_t op;
@@ -697,26 +727,32 @@ public:
 
 class GridClientLogRequest : public GridClientPortableMessage {
 public:
+    static const int32_t TYPE_ID = 0x102;
+
     int32_t typeId() const {
-        return -3;
+        return TYPE_ID;
     }
 
-    void writePortable(GridPortableWriter &writer) const override {
+    void writePortable(GridPortableWriter& writer) const override {
         GridClientPortableMessage::writePortable(writer);
 
-        writer.writeString("path", path);
+        GridPortableRawWriter& raw = writer.rawWriter();
 
-        writer.writeInt32("from", from);
-        writer.writeInt32("to", to);
+        raw.writeString(path);
+
+        raw.writeInt32(from);
+        raw.writeInt32(to);
     }
 
-    void readPortable(GridPortableReader &reader) override {
+    void readPortable(GridPortableReader& reader) override {
         GridClientPortableMessage::readPortable(reader);
 
-        path = reader.readString("path").get_value_or(std::string());
+        GridPortableRawReader& raw = reader.rawReader();
 
-        from = reader.readInt32("from");
-        to = reader.readInt32("to");
+        path = raw.readString().get_value_or(std::string());
+
+        from = raw.readInt32();
+        to = raw.readInt32();
     }
 
     std::string path;
@@ -728,24 +764,30 @@ public:
 
 class GridClientTaskRequest : public GridClientPortableMessage {
 public:
+    static const int32_t TYPE_ID = 0x106;
+
     int32_t typeId() const {
-        return -7;
+        return TYPE_ID;
     }
 
     void writePortable(GridPortableWriter &writer) const override {
         GridClientPortableMessage::writePortable(writer);
 
-        writer.writeString("taskName", taskName);
+        GridPortableRawWriter& raw = writer.rawWriter();
 
-        writer.writeVariant("arg", arg);
+        raw.writeString(taskName);
+
+        raw.writeVariant(arg);
     }
 
     void readPortable(GridPortableReader &reader) override {
         GridClientPortableMessage::readPortable(reader);
 
-        taskName = reader.readString("taskName").get_value_or(std::string());
+        GridPortableRawReader& raw = reader.rawReader();
 
-        arg = reader.readVariant("arg");
+        taskName = raw.readString().get_value_or(std::string());
+
+        arg = raw.readVariant();
     }
 
     std::string taskName;
@@ -755,28 +797,28 @@ public:
 
 class GridClientTaskResultBean : public GridPortable {
 public:
+    static const int32_t TYPE_ID = 0x107;
+
     int32_t typeId() const {
-        return -8;
+        return TYPE_ID;
     }
 
     void writePortable(GridPortableWriter &writer) const override {
-        writer.writeString("id", id);
+        GridPortableRawWriter& raw = writer.rawWriter();
 
-        writer.writeBool("finished", finished);
-
-        writer.writeVariant("res", res);
-
-        writer.writeString("error", error);
+        raw.writeString(id);
+        raw.writeBool(finished);
+        raw.writeVariant(res);
+        raw.writeString(error);
     }
 
     void readPortable(GridPortableReader &reader) override {
-        id = reader.readString("id").get_value_or(std::string());
+        GridPortableRawReader& raw = reader.rawReader();
 
-        finished = reader.readBool("finished");
-
-        res = reader.readVariant("res");
-
-        error = reader.readString("error").get_value_or(std::string());;
+        id = raw.readString().get_value_or(std::string());
+        finished = raw.readBool();
+        res = raw.readVariant();
+        error = raw.readString().get_value_or(std::string());;
     }
 
     std::string id;
@@ -790,26 +832,32 @@ public:
 
 class GridClientAuthenticationRequest : public GridClientPortableMessage {
 public:
+    static const int32_t TYPE_ID = 0x100;
+
+    int32_t typeId() const {
+        return TYPE_ID;
+    }
+
     GridClientAuthenticationRequest() {
     }
 
     GridClientAuthenticationRequest(std::string credStr) : cred(credStr) {
     }
 
-    int32_t typeId() const {
-        return -1; // TODO 8536
-    }
-
     void writePortable(GridPortableWriter &writer) const override {
         GridClientPortableMessage::writePortable(writer);
 
-        writer.writeVariant("cred", cred);
+        GridPortableRawWriter& raw = writer.rawWriter();
+
+        raw.writeVariant(cred);
     }
 
     void readPortable(GridPortableReader &reader) override {
         GridClientPortableMessage::readPortable(reader);
 
-        cred = reader.readVariant("cred");
+        GridPortableRawReader& raw = reader.rawReader();
+
+        cred = raw.readVariant();
     }
 
     GridClientVariant cred;
@@ -817,28 +865,34 @@ public:
 
 class GridClientCacheMetricsBean : public GridPortable {
 public:
-    int32_t typeId() const override {
-        return -8; // TODO 8536.
+    static const int32_t TYPE_ID = 0x109;
+
+    int32_t typeId() const {
+        return TYPE_ID;
     }
 
-    void writePortable(GridPortableWriter &writer) const override {
-        writer.writeInt64("createTime", createTime);
-        writer.writeInt64("readTime", readTime);
-        writer.writeInt64("writeTime", writeTime);
-        writer.writeInt32("reads", reads);
-        writer.writeInt32("writes", writes);
-        writer.writeInt32("hits", hits);
-        writer.writeInt32("misses", misses);
+    void writePortable(GridPortableWriter& writer) const override {
+        GridPortableRawWriter& raw = writer.rawWriter();
+
+        raw.writeInt64(createTime);
+        raw.writeInt64(readTime);
+        raw.writeInt64(writeTime);
+        raw.writeInt32(reads);
+        raw.writeInt32(writes);
+        raw.writeInt32(hits);
+        raw.writeInt32(misses);
     }
 
-    void readPortable(GridPortableReader &reader) override {
-        createTime = reader.readInt64("createTime");
-        readTime = reader.readInt64("readTime");
-        writeTime = reader.readInt64("writeTime");
-        reads = reader.readInt32("reads");
-        writes = reader.readInt32("writes");
-        hits = reader.readInt32("hots");
-        misses = reader.readInt32("misses");
+    void readPortable(GridPortableReader& reader) override {
+        GridPortableRawReader& raw = reader.rawReader();
+
+        createTime = raw.readInt64();
+        readTime = raw.readInt64();
+        writeTime = raw.readInt64();
+        reads = raw.readInt32();
+        writes = raw.readInt32();
+        hits = raw.readInt32();
+        misses = raw.readInt32();
     }
 
     int64_t createTime;
