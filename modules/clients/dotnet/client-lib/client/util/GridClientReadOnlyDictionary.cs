@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client.Impl.Portable
+namespace GridGain.Client.Util
 {
     using System;
     using System.Collections.Generic;
@@ -15,7 +15,7 @@ namespace GridGain.Client.Impl.Portable
     /**
      * <summary>Read only dictionary.</summary>
      */ 
-    internal class GridClientPortableReadOnlyDictionary<K, V> : IDictionary<K, V>
+    internal class GridClientReadOnlyDictionary<K, V> : IDictionary<K, V>
     {
         /** Underlying dictionary. */
         private readonly IDictionary<K, V> dict;
@@ -24,7 +24,7 @@ namespace GridGain.Client.Impl.Portable
          * <summary>Constructor.</summary>
          * <param name="dict">Dictionary.</param>
          */ 
-        public GridClientPortableReadOnlyDictionary(IDictionary<K, V> dict)
+        public GridClientReadOnlyDictionary(IDictionary<K, V> dict)
         {
             this.dict = dict;
         }

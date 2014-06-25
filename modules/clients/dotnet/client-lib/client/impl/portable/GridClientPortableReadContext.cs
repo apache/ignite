@@ -55,7 +55,7 @@ namespace GridGain.Client.Impl.Portable
         /**
          * <summary>Current frame.</summary>
          */
-        public GridClientPortableFrame CurrentFrame
+        public GridClientPortableReadFrame CurrentFrame
         {
             get;
             private set;
@@ -141,7 +141,7 @@ namespace GridGain.Client.Impl.Portable
                 int rawPos = PU.ReadInt(stream);
 
                 // 2. Preserve frame.
-                GridClientPortableFrame oldFrame = CurrentFrame;
+                GridClientPortableReadFrame oldFrame = CurrentFrame;
 
                 try
                 {
@@ -167,7 +167,7 @@ namespace GridGain.Client.Impl.Portable
                         throw new GridClientPortableException("Unknown type ID: " + typeId);
 
                     // 5. Set new frame.
-                    CurrentFrame = new GridClientPortableFrame(typeId, desc.Mapper, portObj);
+                    CurrentFrame = new GridClientPortableReadFrame(typeId, desc.Mapper, portObj);
 
                     // 6. Instantiate object. 
                     object obj;

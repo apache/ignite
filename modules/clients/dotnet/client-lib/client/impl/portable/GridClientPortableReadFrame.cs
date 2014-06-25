@@ -12,22 +12,34 @@ namespace GridGain.Client.Impl.Portable
     using GridGain.Client.Portable;
 
     /**
-     * <summary>Read frame.</summary>
+     * <summary>Write frame.</summary>
      */
-    internal struct GridClientPortableReadFrame
+    internal class GridClientPortableReadFrame
     {
+        /** Type ID. */
+        private int typeId;
+
+        /** Mapper. */
+        private GridClientPortableIdResolver mapper;
+
+        /** Portable object. */
+        private GridClientPortableObjectImpl portable;
+
+        /** Raw flag. */
+        private bool raw;
+
         /**
          * <summary>Constructor.</summary>
          * <param name="typeId">Type ID.</param>
          * <param name="mapper">Field mapper.</param>
          * <param name="portable">Underlying portable object.</param>
          */
-        public GridClientPortableReadFrame(int typeId, GridClientPortableIdResolver mapper, 
+        public GridClientPortableReadFrame(int typeId, GridClientPortableIdResolver mapper,
             GridClientPortableObjectImpl portable)
         {
-            TypeId = typeId;
-            Mapper = mapper;
-            Portable = portable;
+            this.typeId = typeId;
+            this.mapper = mapper;
+            this.portable = portable;
         }
 
         /**
@@ -35,8 +47,7 @@ namespace GridGain.Client.Impl.Portable
          */
         public int TypeId
         {
-            get;
-            private set;
+            get { return typeId; }
         }
 
         /**
@@ -44,8 +55,7 @@ namespace GridGain.Client.Impl.Portable
          */
         public GridClientPortableIdResolver Mapper
         {
-            get;
-            private set;
+            get { return mapper; }
         }
 
         /**
@@ -53,8 +63,7 @@ namespace GridGain.Client.Impl.Portable
          */
         public GridClientPortableObjectImpl Portable
         {
-            get;
-            private set;
+            get { return portable; }
         }
 
         /**
@@ -62,17 +71,8 @@ namespace GridGain.Client.Impl.Portable
          */
         public bool Raw
         {
-            get;
-            set;
-        }
-
-        /**
-         * <summary>Raw position.</summary>
-         */
-        public long RawPosition
-        {
-            get;
-            set;
+            get { return raw; }
+            set { raw = value; }
         }
     }
 }

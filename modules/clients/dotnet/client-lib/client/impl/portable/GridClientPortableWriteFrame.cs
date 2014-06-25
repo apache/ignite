@@ -14,20 +14,29 @@ namespace GridGain.Client.Impl.Portable
     /**
      * <summary>Write frame.</summary>
      */
-    internal struct GridClientPortableWriteFrame
+    internal class GridClientPortableWriteFrame
     {
+        /** Type ID. */
+        private int typeId;
+
+        /** Mapper. */
+        private GridClientPortableIdResolver mapper;
+
+        /** Raw flag. */
+        private bool raw;
+
+        /** Raw position. */
+        private long rawPos;
+
         /**
          * <summary>Constructor.</summary>
          * <param name="typeId">Type ID.</param>
          * <param name="mapper">Field mapper.</param>
-         * <param name="portable">Underlying portable object.</param>
          */
-        public GridClientPortableFrame(int typeId, GridClientPortableIdResolver mapper, 
-            GridClientPortableObjectImpl portable)
+        public GridClientPortableWriteFrame(int typeId, GridClientPortableIdResolver mapper)
         {
-            TypeId = typeId;
-            Mapper = mapper;
-            Portable = portable;
+            this.typeId = typeId;
+            this.mapper = mapper;
         }
 
         /**
@@ -35,8 +44,7 @@ namespace GridGain.Client.Impl.Portable
          */
         public int TypeId
         {
-            get;
-            private set;
+            get { return typeId; }
         }
 
         /**
@@ -44,26 +52,16 @@ namespace GridGain.Client.Impl.Portable
          */
         public GridClientPortableIdResolver Mapper
         {
-            get;
-            private set;
+            get { return mapper; }
         }
-
-        /**
-         * <summary>Portable object.</summary>
-         */
-        public GridClientPortableObjectImpl Portable
-        {
-            get;
-            private set;
-        }
-
+        
         /**
          * <summary>Raw mode.</summary>
          */
         public bool Raw
         {
-            get;
-            set;
+            get { return raw; }
+            set { raw = value; }
         }
 
         /**
@@ -71,8 +69,8 @@ namespace GridGain.Client.Impl.Portable
          */
         public long RawPosition
         {
-            get;
-            set;
+            get { return rawPos; }
+            set { rawPos = value; }
         }
     }
 }

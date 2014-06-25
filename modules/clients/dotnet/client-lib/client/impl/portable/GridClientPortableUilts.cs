@@ -1559,7 +1559,7 @@ namespace GridGain.Client.Impl.Portable
         /**
          * <summary>Convert Java ticks to date.</summary>
          * <param name="high">High part (milliseconds).</param>
-         * <param name="high">Low part (100ns chunks).</param>
+         * <param name="low">Low part (100ns chunks).</param>
          * <returns>Date.</returns>
          */
         private static DateTime ToDotNetDate(long high, short low)

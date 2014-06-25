@@ -15,6 +15,7 @@ namespace GridGain.Client.Impl.Portable
     using System.IO;
     using GridGain.Client.Impl.Portable;
     using GridGain.Client.Portable;
+    using GridGain.Client.Util;
 
     using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
     
@@ -25,7 +26,7 @@ namespace GridGain.Client.Impl.Portable
     {
         /** Empty fields collection. */
         private static readonly IDictionary<int, int> EMPTY_FIELDS = 
-            new GridClientPortableReadOnlyDictionary<int, int>(new Dictionary<int, int>());
+            new GridClientReadOnlyDictionary<int, int>(new Dictionary<int, int>());
 
         /** Marshaller. */
         private readonly GridClientPortableMarshaller marsh;
@@ -80,7 +81,7 @@ namespace GridGain.Client.Impl.Portable
             this.hashCode = hashCode;            
             this.rawDataOffset = rawDataOffset;
 
-            this.fields = fields == null ? EMPTY_FIELDS : new GridClientPortableReadOnlyDictionary<int, int>(fields);
+            this.fields = fields == null ? EMPTY_FIELDS : new GridClientReadOnlyDictionary<int, int>(fields);
         }
 
         /** <inheritdoc /> */

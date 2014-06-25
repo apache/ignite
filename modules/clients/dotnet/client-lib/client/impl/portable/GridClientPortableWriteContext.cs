@@ -54,7 +54,7 @@ namespace GridGain.Client.Impl.Portable
         /**
          * <summary>Current frame.</summary>
          */
-        public GridClientPortableFrame CurrentFrame
+        public GridClientPortableWriteFrame CurrentFrame
         {
             get;
             private set;
@@ -134,10 +134,10 @@ namespace GridGain.Client.Impl.Portable
             Stream.Seek(8, SeekOrigin.Current);
 
             // 7. Preserve old frame.
-            GridClientPortableFrame oldFrame = CurrentFrame;
+            GridClientPortableWriteFrame oldFrame = CurrentFrame;
 
             // 8. Push new frame.
-            CurrentFrame = new GridClientPortableFrame(desc.TypeId, desc.Mapper, null);
+            CurrentFrame = new GridClientPortableWriteFrame(desc.TypeId, desc.Mapper);
 
             // 9. Write object fields.
             desc.Serializer.WritePortable(obj, writer);
