@@ -88,16 +88,13 @@ enum HandshakeResultCode {
 void GridClientTcpPacket::createPingPacket(GridClientTcpPacket& pingPacket) {
     pingPacket.sizeHeader.assign(PING_PACKET_SIZE_HEADER,
             PING_PACKET_SIZE_HEADER + sizeof(PING_PACKET_SIZE_HEADER) / sizeof(*PING_PACKET_SIZE_HEADER));
+
+    pingPacket.ping = true;
 }
 
 /** Checks if this is a ping packet. */
 bool GridClientTcpPacket::isPingPacket() const {
-    GridClientTcpPacket pingPacket;
-
-    createPingPacket(pingPacket);
-
-    // TODO 8536.
-    return *dataPtr.get() == *pingPacket.dataPtr.get();
+    return ping;
 }
 
 size_t GridClientTcpPacket::getHeaderSize() const {
@@ -130,7 +127,9 @@ const boost::shared_ptr<std::vector<int8_t>>& GridClientTcpPacket::getData() con
 }
 
 size_t GridClientTcpPacket::getDataSize() const {
-    return dataPtr.get()->size();
+    std::vector<int8_t>* data = dataPtr.get();
+
+    return data ? data->size() : 0;
 }
 
 void GridClientTcpPacket::setAdditionalHeaders(const GridClientMessage& msg) {
@@ -456,7 +455,6 @@ void GridClientSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPacket,
 }
 
 void GridClientSyncTcpConnection::sendPing() {
-    /* TODO 8536
     GridClientTcpPacket pingPacket;
     GridClientTcpPacket::createPingPacket(pingPacket);
 
@@ -484,7 +482,6 @@ void GridClientSyncTcpConnection::sendPing() {
         GG_LOG_DEBUG("Skipping ping as write is already being performed [host=%s, port=%d]", host.c_str(), port);
 
     GG_LOG_DEBUG("Successfully sent a ping packet [host=%s, port=%d]", host.c_str(), port);
-    */
 }
 
 void GridClientSyncTcpConnection::handshake() {
@@ -561,7 +558,7 @@ void GridClientAsyncTcpConnection::send(const GridClientTcpPacket& gridTcpPacket
 
     request_stream << gridTcpPacket;
 
-    assert(request.size() == (size_t) nBytes + gridTcpPacket.getHeaderSize());
+    assert(request.size() == (size_t)nBytes + gridTcpPacket.getHeaderSize());
 
     pingMux.lock(); // Protect from concurrent ping write.
 

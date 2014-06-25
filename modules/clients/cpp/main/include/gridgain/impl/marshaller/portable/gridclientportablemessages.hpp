@@ -682,13 +682,21 @@ public:
 
         raw.writeString(cacheName);
 
+        raw.writeInt32(cacheFlagsOn);
+
         raw.writeVariant(key);
         raw.writeVariant(val);
         raw.writeVariant(val2);
 
-        raw.writeVariantMap(vals);
+        raw.writeInt32(vals.size());
 
-        raw.writeInt32(cacheFlagsOn);
+        for (auto iter = vals.begin(); iter != vals.end(); ++iter) {
+            GridClientVariant key = iter->first;
+            GridClientVariant val = iter->second;
+
+            raw.writeVariant(key);
+            raw.writeVariant(val);
+        }
     }
 
     void readPortable(GridPortableReader& reader) override {
@@ -698,15 +706,21 @@ public:
 
         op = raw.readInt32();
 
+        cacheFlagsOn = raw.readInt32();
+
         cacheName = raw.readString().get_value_or(std::string());
 
         key = raw.readVariant();
         val = raw.readVariant();
         val2 = raw.readVariant();
 
-        vals = raw.readVariantMap().get_value_or(TGridClientVariantMap());
+        int32_t valsSize = raw.readInt32();
 
-        cacheFlagsOn = raw.readInt32();
+        for (int32_t i = 0; i < valsSize; i++) {
+            GridClientVariant key = raw.readVariant();
+
+            vals[key] = raw.readVariant();
+        }
     }
 
     int32_t op;
@@ -860,53 +874,6 @@ public:
     }
 
     GridClientVariant cred;
-};
-
-class GridClientCacheMetricsBean : public GridPortable {
-public:
-    static const int32_t TYPE_ID = 0x109;
-
-    int32_t typeId() const {
-        return TYPE_ID;
-    }
-
-    void writePortable(GridPortableWriter& writer) const override {
-        GridPortableRawWriter& raw = writer.rawWriter();
-
-        raw.writeInt64(createTime);
-        raw.writeInt64(readTime);
-        raw.writeInt64(writeTime);
-        raw.writeInt32(reads);
-        raw.writeInt32(writes);
-        raw.writeInt32(hits);
-        raw.writeInt32(misses);
-    }
-
-    void readPortable(GridPortableReader& reader) override {
-        GridPortableRawReader& raw = reader.rawReader();
-
-        createTime = raw.readInt64();
-        readTime = raw.readInt64();
-        writeTime = raw.readInt64();
-        reads = raw.readInt32();
-        writes = raw.readInt32();
-        hits = raw.readInt32();
-        misses = raw.readInt32();
-    }
-
-    int64_t createTime;
-
-    int64_t readTime;
-
-    int64_t writeTime;
-
-    int32_t reads;
-
-    int32_t writes;
-
-    int32_t hits;
-
-    int32_t misses;
 };
 
 #endif // GRIDCLIENT_PORTABLE_MESSAGES_HPP_INCLUDED

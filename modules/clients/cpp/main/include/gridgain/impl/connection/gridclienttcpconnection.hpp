@@ -73,6 +73,9 @@ public:
     /** Fills packet with ping data. */
     static void createPingPacket(GridClientTcpPacket& pingPacket);
 
+    GridClientTcpPacket() : ping(false) {
+    }
+
     /**
      * Checks if this is a ping packet.
      *
@@ -143,6 +146,9 @@ private:
 
     /** Data transferred. */
     boost::shared_ptr<std::vector<int8_t>> dataPtr;
+
+    /** Ping packet flag. */
+    bool ping;
 };
 
 /**

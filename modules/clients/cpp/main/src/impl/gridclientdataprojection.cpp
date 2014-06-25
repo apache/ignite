@@ -424,14 +424,14 @@ TGridClientFutureVariantMap GridClientDataProjectionImpl::getAllAsync(const TGri
     return res;
 }
 
-static long doGetValue(const TCacheMetrics& metricsMap, std::string name) {
+static int64_t doGetValue(const TCacheMetrics& metricsMap, std::string name) {
     GridClientVariant v(name);
 
     TCacheMetrics::const_iterator it = metricsMap.find(name);
 
     assert(it != metricsMap.end());
 
-    long res = 0;
+    int64_t res = 0;
 
     if (it != metricsMap.end()) {
         GridClientVariant var = it->second;
@@ -441,7 +441,7 @@ static long doGetValue(const TCacheMetrics& metricsMap, std::string name) {
         if (var.hasInt())
             res = var.getInt();
         else
-            res = (long) var.getLong();
+            res = var.getLong();
     }
 
     return res;
@@ -451,10 +451,10 @@ static void fillMetricsBean(const TCacheMetrics& metricsMap, GridClientDataMetri
     metrics.createTime(doGetValue(metricsMap, "createTime"));
     metrics.readTime(doGetValue(metricsMap, "readTime"));
     metrics.writeTime(doGetValue(metricsMap, "writeTime"));
-    metrics.reads((int) doGetValue(metricsMap, "reads"));
-    metrics.writes((int) doGetValue(metricsMap, "writes"));
-    metrics.hits((int) doGetValue(metricsMap, "hits"));
-    metrics.misses((int) doGetValue(metricsMap, "misses"));
+    metrics.reads((int32_t)doGetValue(metricsMap, "reads"));
+    metrics.writes((int32_t)doGetValue(metricsMap, "writes"));
+    metrics.hits((int32_t)doGetValue(metricsMap, "hits"));
+    metrics.misses((int32_t)doGetValue(metricsMap, "misses"));
 }
 
 GridClientDataMetrics GridClientDataProjectionImpl::metrics() {

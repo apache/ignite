@@ -3924,21 +3924,9 @@ public:
     void parseResponse(GridClientResponse* msg, GridClientMessageCacheMetricResult& resp) {
         GridClientVariant res = msg->getResult();
 
-        assert(res.hasPortable());
+        assert(res.hasVariantMap());
 
-        std::unique_ptr<GridClientCacheMetricsBean> metricsBean(res.getPortable<GridClientCacheMetricsBean>());
-
-        TCacheMetrics metrics;
-
-        metrics["createTime"] = (*metricsBean).createTime;
-        metrics["readTime"] = (*metricsBean).readTime;
-        metrics["writeTime"] = (*metricsBean).writeTime;
-        metrics["reads"] = (*metricsBean).reads;
-        metrics["writes"] = (*metricsBean).writes;
-        metrics["hits"] = (*metricsBean).hits;
-        metrics["misses"] = (*metricsBean).misses;
-
-        resp.setCacheMetrics(metrics);
+        resp.setCacheMetrics(res.getVariantMap());
     }
 
     void parseResponse(GridClientResponse* msg, GridClientMessageTaskResult& resp) {

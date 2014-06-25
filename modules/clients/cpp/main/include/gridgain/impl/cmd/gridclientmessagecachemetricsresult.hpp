@@ -14,7 +14,7 @@
 #include "gridgain/impl/cmd/gridclientmessagecacheresult.hpp"
 
 /** Typedef for cache metrics map. */
-typedef boost::unordered_map<std::string, GridClientVariant> TCacheMetrics;
+typedef boost::unordered_map<GridClientVariant, GridClientVariant> TCacheMetrics;
 
 /**
  * Cache metrics result message.

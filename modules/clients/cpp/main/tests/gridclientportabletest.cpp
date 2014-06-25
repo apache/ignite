@@ -17,6 +17,8 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/test/unit_test.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/thread/thread.hpp> 
 
 #include <gridgain/gridgain.hpp>
 
@@ -67,6 +69,8 @@ GridClientConfiguration clientConfig() {
     dataCfg.affinity(shared_ptr<GridClientDataAffinity>(aff));
 
     dataCfgVec.push_back(dataCfg);
+
+    clientConfig.topologyRefreshFrequency(10 * 60000);
 
 	clientConfig.dataConfiguration(dataCfgVec);
 
@@ -2618,6 +2622,10 @@ public:
     float vFloat;
 };
 
+REGISTER_TYPE(800, TestNested1);
+REGISTER_TYPE(801, TestNested2);
+REGISTER_TYPE(802, TestNested3);
+
 BOOST_AUTO_TEST_CASE(testMarshal_nested) {
     GridPortableMarshaller marsh;
     
@@ -2679,10 +2687,79 @@ BOOST_AUTO_TEST_CASE(testMarshal_nested) {
     delete obj3;
 }
 
-REGISTER_TYPE(800, TestNested1);
+BOOST_AUTO_TEST_CASE(test1) {
+    GridClientConfiguration cfg = clientConfig();
 
-REGISTER_TYPE(801, TestNested2);
+	TGridClientPtr client = GridClientFactory::start(cfg);
 
-REGISTER_TYPE(802, TestNested3);
+    TGridClientDataPtr data = client->data("partitioned");
+
+    GridClientDataMetrics metrics = data->metrics();
+
+    cout << "Metrics time " << metrics.createTime() << "\n";
+
+    cout << "Metrics " << metrics << "\n";
+    /*
+    TGridClientVariantMap map;
+
+    map[0] = "v0";
+    map[1] = "v1";
+    map[2] = "v2";
+
+    data->putAll(map);
+    */
+
+    /*
+    TGridClientVariantSet keys;
+
+    keys.push_back(0);
+    keys.push_back(1);
+    keys.push_back(2);
+    keys.push_back(3);
+
+    TGridClientVariantMap vals = data->getAll(keys);
+    
+    cout << "Get total " << vals.size() << "\n";
+    
+    for (auto iter = vals.begin(); iter != vals.end(); ++iter) {
+        GridClientVariant key = iter->first;
+        GridClientVariant val = iter->second;
+        
+        cout << "Get: key=" << key.debugString() << " val=" << val.debugString() << "\n";
+    }
+    */
+
+    /*
+    bool put = data->put(1, 1);
+
+    cout << "Put: " << put << "\n";
+    */
+    
+    /*
+    GridClientVariant val = data->get(1);
+
+    cout << "Get: " << val.debugString() << "\n";
+    */
+
+    /*
+    TGridClientDataPtr data = client->data("partitioned");
+        
+    cout << "Sleep\n";
+
+    boost::this_thread::sleep(boost::posix_time::milliseconds(60000));   
+
+    cout << "End sleep\n";
+    */
+
+    // bool put = data->put(1, 1);
+    
+    /*
+    PortablePerson person1(10, "person1");
+    PortablePerson person2(20, "person2");
+    PortablePerson person3(30, "person3");
+
+    bool put = data->put(&person1, 100);
+    */
+}
 
 BOOST_AUTO_TEST_SUITE_END()
