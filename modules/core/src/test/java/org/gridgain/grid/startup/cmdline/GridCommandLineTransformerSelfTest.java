@@ -24,7 +24,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
     public void testTransformIfNoArguments() throws Exception {
         assertEquals(
             "\"INTERACTIVE=0\" \"QUIET=-DGRIDGAIN_QUIET=true\" \"NO_PAUSE=0\" " +
-                "\"HADOOP_LIB_DIR=hadoop2\" \"JVM_XOPTS=\" \"CONFIG=\"",
+            "\"JVM_XOPTS=\" \"CONFIG=\"",
             GridCommandLineTransformer.transform());
     }
 
