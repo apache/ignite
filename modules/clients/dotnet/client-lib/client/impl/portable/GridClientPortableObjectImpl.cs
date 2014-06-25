@@ -148,7 +148,15 @@ namespace GridGain.Client.Impl.Portable
         {
             throw new NotImplementedException();
         }
-        
+
+        /**
+         * <summary>Length.</summary>
+         */
+        public int Length
+        {
+            get { return len; }
+        }
+
         /**
          * <summary>Offset.</summary>
          */ 
@@ -169,7 +177,7 @@ namespace GridGain.Client.Impl.Portable
          * <summary>Gets portable object data as stream.</summary>
          * <returns>Stream.</returns>
          */ 
-        public MemoryStream Stream()
+        private MemoryStream Stream()
         {
             MemoryStream stream = new MemoryStream(data);
 

@@ -92,7 +92,7 @@ namespace GridGain.Client.Impl.Portable
 
             if (sysHandler != null)
             {
-                sysHandler.Invoke(this, Stream, pos, obj);
+                sysHandler.Invoke(this, pos, obj);
 
                 return;
             }

@@ -72,148 +72,176 @@ namespace GridGain.Client.Impl.Portable
 
         /**
          * <summary>Deserialize portable object.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>Desertialized object.</returns>
-         */
-        public T Deserialize<T>(MemoryStream stream)
-        {
-            long pos = stream.Position;
-
-            byte hdr = (byte)stream.ReadByte();
-
-            if (hdr == PU.HDR_NULL)
-                return default(T);
-            else if (hdr == PU.HDR_HND)
-            {
-                object hndObj;
-
-                int hndPos = PU.ReadInt(stream);
-
-                if (hnds.TryGetValue(hndPos, out hndObj))
-                    return (T)hndObj;
-                else
-                {
-                    // No such handle, i.e. we trying to deserialize inner object before deserializing outer.
-                    MemoryStream hndStream = new MemoryStream(stream.ToArray());
-
-                    hndStream.Seek(hndPos, SeekOrigin.Begin);
-
-                    return Deserialize<T>(hndStream);
-                }
-            }
-            else
-            {
-                GridClientPortableObjectImpl portObj = (GridClientPortableObjectImpl)marsh.Unmarshal0(stream, false, pos, hdr);
-
-                return Deserialize<T>(portObj);
-            }            
-        }
-
-        /**
-         * <summary>Deserialize portable object.</summary>
          * <param name="portObj">Portable object.</param>
          * <returns>Desertialized object.</returns>
          */ 
         public T Deserialize<T>(GridClientPortableObjectImpl portObj)
         {
-            // Lookup handle table first because the following scenario is possible:
-            // 1. Inner object meets handle of outer object.
-            // 2. Deserialization of outer object is triggered.
-            // 3. Outer object is trying to deserialize the same inner object again.
+            // 1. Lookup handle table first because the following scenario is possible:
+            // 1.1. Inner object meets handle of outer object.
+            // 1.2. Deserialization of outer object is triggered.
+            // 1.3. Outer object is trying to deserialize the same inner object again.
             object hndObj;
 
             if (hnds.TryGetValue(portObj.Offset, out hndObj))
                 return (T)hndObj;
 
-            MemoryStream stream = portObj.Stream();
-
-            byte hdr = (byte)stream.ReadByte();
-
-            if (hdr == PU.HDR_NULL)
-                return default(T);
-            if (hdr == PU.HDR_FULL)
+            try
             {
-                // 1. Read header.
-                bool userType = PU.ReadBoolean(stream);
-                int typeId = PU.ReadInt(stream);
-                int hashCode = PU.ReadInt(stream);
-                int len = PU.ReadInt(stream);
-                int rawPos = PU.ReadInt(stream);
+                // 2. Position stream before portable object.
+                Stream.Position = portObj.Offset;
 
-                // 2. Preserve frame.
-                GridClientPortableReadFrame oldFrame = CurrentFrame;
+                byte hdr = (byte)Stream.ReadByte();
 
-                try
+                if (hdr == PU.HDR_NULL)
+                    // 3. Handle null object.
+                    return default(T);
+                if (hdr == PU.HDR_FULL)
                 {
-                    if (!userType)
-                    {
-                        // 3. Try reading predefined type.
-                        object sysObj;
+                    // 4. Read header.
+                    bool userType = PU.ReadBoolean(Stream);
+                    int typeId = PU.ReadInt(Stream);
+                    int hashCode = PU.ReadInt(Stream);
+                    int len = PU.ReadInt(Stream);
+                    int rawPos = PU.ReadInt(Stream);
 
-                        GridClientPortableSystemReadDelegate handler = PSH.ReadHandler(typeId);
-
-                        if (handler != null)
-                        {
-                            handler.Invoke(this, stream, typeof(T), out sysObj);
-
-                            return (T)sysObj;
-                        }
-                    }
-
-                    // 4. Try getting gdescriptor.
-                    GridClientPortableTypeDescriptor desc;
-
-                    if (!descs.TryGetValue(PU.TypeKey(userType, typeId), out desc))
-                        throw new GridClientPortableException("Unknown type ID: " + typeId);
-
-                    // 5. Set new frame.
-                    CurrentFrame = new GridClientPortableReadFrame(typeId, desc.Mapper, portObj);
-
-                    // 6. Instantiate object. 
-                    object obj;
+                    // 5. Preserve frame.
+                    GridClientPortableReadFrame oldFrame = CurrentFrame;
 
                     try
                     {
-                        obj = FormatterServices.GetUninitializedObject(desc.Type);
+                        if (!userType)
+                        {
+                            // 6. Try reading predefined type.
+                            object sysObj;
 
-                        // 7. Save handle.
-                        hnds[portObj.Offset] = obj;
+                            GridClientPortableSystemReadDelegate handler = PSH.ReadHandler(typeId);
+
+                            if (handler != null)
+                            {
+                                handler.Invoke(this, typeof(T), out sysObj);
+
+                                return (T)sysObj;
+                            }
+                        }
+
+                        // 7. Try getting gdescriptor.
+                        GridClientPortableTypeDescriptor desc;
+
+                        if (!descs.TryGetValue(PU.TypeKey(userType, typeId), out desc))
+                            throw new GridClientPortableException("Unknown type ID: " + typeId);
+
+                        // 8. Set new frame.
+                        CurrentFrame = new GridClientPortableReadFrame(typeId, desc.Mapper, portObj);
+
+                        // 9. Instantiate object. 
+                        object obj;
+
+                        try
+                        {
+                            obj = FormatterServices.GetUninitializedObject(desc.Type);
+
+                            // 10. Save handle.
+                            hnds[portObj.Offset] = obj;
+                        }
+                        catch (Exception e)
+                        {
+                            throw new GridClientPortableException("Failed to create type instance: " +
+                                desc.Type.AssemblyQualifiedName, e);
+                        }
+
+                        // 11. Populate object fields.
+                        desc.Serializer.ReadPortable(obj, reader);
+
+                        return (T)obj;
                     }
-                    catch (Exception e)
+                    finally
                     {
-                        throw new GridClientPortableException("Failed to create type instance: " +
-                            desc.Type.AssemblyQualifiedName, e);
+                        // 12. Restore old frame.
+                        CurrentFrame = oldFrame;
                     }
-
-                    // 8. Populate object fields.
-                    desc.Serializer.ReadPortable(obj, reader);
-                    
-                    return (T)obj;
                 }
-                finally
+                else if (hdr == PU.HDR_HND)
                 {
-                    // 9. Restore old frame.
-                    CurrentFrame = oldFrame;
+                    // 13. Dealing with handles.
+                    int hndPos = PU.ReadInt(Stream);
+
+                    if (hnds.TryGetValue(hndPos, out hndObj))
+                        // 14. Already met this object, return immediately.
+                        return (T)hndObj;
+                    else
+                    {
+                        // 15. No such handler, i.e. we trying to deserialize inner object before deserializing outer.
+                        Stream.Seek(hndPos, SeekOrigin.Begin);
+
+                        return Deserialize<T>(Stream);
+                    }
                 }
+                else
+                    throw new GridClientPortableException("Invalid header: " + hdr);
+            }
+            finally
+            {
+                // 16. Position stream right after the object.
+                Stream.Position = portObj.Offset + portObj.Length;
+            }
+        }
+
+        /**
+         * <summary>Deserialize portable object.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Desertialized object.</returns>
+         */
+        public T Deserialize<T>(MemoryStream stream)
+        {
+            // 1. Read header.
+            byte hdr = (byte)stream.ReadByte();
+
+            if (hdr == PU.HDR_NULL)
+                // 2. Dealing with null.
+                return default(T);
+            else if (hdr == PU.HDR_FULL)
+            {
+                // 3. Dealing with full object.
+                GridClientPortableObjectImpl portObj = (GridClientPortableObjectImpl)marsh.Unmarshal0(stream, false, stream.Position - 1, hdr);
+
+                T res = Deserialize<T>(portObj);
+
+                // 4. Set correct position after deserialization.
+                stream.Seek(portObj.Offset + portObj.Length, SeekOrigin.Begin);
+
+                return res;
             }
             else if (hdr == PU.HDR_HND)
             {
+                // 5. Dealing with handle.
+                object hndObj;
+
                 int hndPos = PU.ReadInt(stream);
-                
-                if (hnds.TryGetValue(hndPos, out hndObj))
-                    return (T)hndObj;
-                else
+
+                long retPos = Stream.Position;
+
+                try
                 {
-                    // No such handle, i.e. we trying to deserialize inner object before deserializing outer.
-                    MemoryStream hndStream = new MemoryStream(stream.ToArray());
+                    if (hnds.TryGetValue(hndPos, out hndObj))
+                        // 6. Already met this object, return immediately.
+                        return (T)hndObj;
+                    else
+                    {
+                        // 7. No such handle, i.e. we trying to deserialize inner object before deserializing outer.
+                        Stream.Seek(hndPos, SeekOrigin.Begin);
 
-                    hndStream.Seek(hndPos, SeekOrigin.Begin);
-
-                    return Deserialize<T>(hndStream);
+                        return Deserialize<T>(Stream);
+                    }
+                }
+                finally
+                {
+                    // 8. Set correct stream position - right after handle.
+                    stream.Seek(retPos, SeekOrigin.Begin);
                 }
             }
             else
-                throw new GridClientPortableException("Invalid header: " + hdr);
+                throw new GridClientPortableException("Invalid header: " + hdr);            
         }
     }
 }
