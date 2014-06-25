@@ -88,16 +88,13 @@ enum HandshakeResultCode {
 void GridClientTcpPacket::createPingPacket(GridClientTcpPacket& pingPacket) {
     pingPacket.sizeHeader.assign(PING_PACKET_SIZE_HEADER,
             PING_PACKET_SIZE_HEADER + sizeof(PING_PACKET_SIZE_HEADER) / sizeof(*PING_PACKET_SIZE_HEADER));
+
+    pingPacket.ping = true;
 }
 
 /** Checks if this is a ping packet. */
 bool GridClientTcpPacket::isPingPacket() const {
-    GridClientTcpPacket pingPacket;
-
-    createPingPacket(pingPacket);
-
-    // TODO 8536.
-    return *dataPtr.get() == *pingPacket.dataPtr.get();
+    return ping;
 }
 
 size_t GridClientTcpPacket::getHeaderSize() const {
@@ -111,7 +108,7 @@ void GridClientTcpPacket::setPacketSize(int32_t size) {
     GridClientByteUtils::valueToBytes(size, &sizeHeader[0], sizeof(size));
 }
 
-void GridClientTcpPacket::setData(boost::shared_ptr<std::vector<int8_t>> ptr) {
+void GridClientTcpPacket::setData(boost::shared_ptr<std::vector<int8_t>>& ptr) {
     dataPtr = ptr;
 
     setPacketSize(ADDITIONAL_HEADERS_SIZE + ptr.get()->size());
@@ -119,6 +116,8 @@ void GridClientTcpPacket::setData(boost::shared_ptr<std::vector<int8_t>> ptr) {
 
 void GridClientTcpPacket::copyData(int8_t* start, int8_t* end) {
     std::vector<int8_t>* data = new std::vector<int8_t>();
+
+    data->assign(start, end);
 
     dataPtr.reset(data);
 }
@@ -128,7 +127,9 @@ const boost::shared_ptr<std::vector<int8_t>>& GridClientTcpPacket::getData() con
 }
 
 size_t GridClientTcpPacket::getDataSize() const {
-    return dataPtr.get()->size();
+    std::vector<int8_t>* data = dataPtr.get();
+
+    return data ? data->size() : 0;
 }
 
 void GridClientTcpPacket::setAdditionalHeaders(const GridClientMessage& msg) {
@@ -557,7 +558,7 @@ void GridClientAsyncTcpConnection::send(const GridClientTcpPacket& gridTcpPacket
 
     request_stream << gridTcpPacket;
 
-    assert(request.size() == (size_t) nBytes + gridTcpPacket.getHeaderSize());
+    assert(request.size() == (size_t)nBytes + gridTcpPacket.getHeaderSize());
 
     pingMux.lock(); // Protect from concurrent ping write.
 

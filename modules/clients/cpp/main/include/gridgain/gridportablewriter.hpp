@@ -156,6 +156,8 @@ public:
 
     virtual void writeString(const std::string& val) = 0;
 
+    virtual void writeString(const boost::optional<std::string>& val) = 0;
+
     virtual void writeStringCollection(const std::vector<std::string>& val) = 0;
 
     virtual void writeWString(const std::wstring& val) = 0;

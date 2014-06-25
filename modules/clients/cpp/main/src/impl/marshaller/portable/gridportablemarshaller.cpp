@@ -63,23 +63,71 @@ void registerPortableFactory(int32_t typeId, GridPortableFactory* factory) {
     factories[typeId] = factory;
 }
 
+boost::unordered_map<int32_t, GridPortableFactory*>& systemPortableFactories() {
+    static boost::unordered_map<int32_t, GridPortableFactory*> portableFactories;
+
+    return portableFactories;
+}
+
+void registerSystemPortableFactory(int32_t typeId, GridPortableFactory* factory) {
+    boost::unordered_map<int32_t, GridPortableFactory*>& factories = systemPortableFactories();
+
+    factories[typeId] = factory;
+}
+
 GridPortable* createPortable(int32_t typeId, GridPortableReader &reader) {
     boost::unordered_map<int32_t, GridPortableFactory*>& factories = portableFactories();
 
     GridPortableFactory* factory = factories[typeId];
 
-    if(!factory)
+    if (!factory)
         throw GridClientPortableException("Unknown type id.");
 
     return static_cast<GridPortable*>(factory->newInstance(reader));
 }
 
-REGISTER_TYPE(-1, GridClientAuthenticationRequest);
-REGISTER_TYPE(-2, GridClientCacheRequest);
-REGISTER_TYPE(-3, GridClientLogRequest);
-REGISTER_TYPE(-4, GridClientNodeBean);
-REGISTER_TYPE(-5, GridClientMetricsBean);
-REGISTER_TYPE(-6, GridClientResponse);
-REGISTER_TYPE(-7, GridClientTaskRequest);
-REGISTER_TYPE(-8, GridClientTaskResultBean);
-REGISTER_TYPE(-9, GridClientTopologyRequest);
+bool systemPortable(int32_t typeId) {
+    boost::unordered_map<int32_t, GridPortableFactory*>& factories = systemPortableFactories();
+    
+    boost::unordered_map<int32_t, GridPortableFactory*>::const_iterator factory = factories.find(typeId);
+    
+    return factory != factories.end();
+}
+
+GridPortable* createSystemPortable(int32_t typeId, GridPortableReader &reader) {
+    boost::unordered_map<int32_t, GridPortableFactory*>& factories = systemPortableFactories();
+
+    GridPortableFactory* factory = factories[typeId];
+
+    if (!factory)
+        throw GridClientPortableException("Unknown system type id.");
+
+    return static_cast<GridPortable*>(factory->newInstance(reader));
+}
+
+#define REGISTER_SYSTEM_TYPE(TYPE_ID, TYPE) \
+    class GridPortableFactory_##TYPE : public GridPortableFactory {\
+    public:\
+        \
+        GridPortableFactory_##TYPE() {\
+            registerSystemPortableFactory(TYPE_ID, this);\
+        }\
+        \
+        void* newInstance(GridPortableReader& reader) {\
+            GridPortable* p = new TYPE;\
+            \
+            return p;\
+        }\
+    };\
+    \
+    GridPortableFactory_##TYPE factory_##TYPE;
+
+REGISTER_SYSTEM_TYPE(GridClientAuthenticationRequest::TYPE_ID, GridClientAuthenticationRequest);
+REGISTER_SYSTEM_TYPE(GridClientCacheRequest::TYPE_ID, GridClientCacheRequest);
+REGISTER_SYSTEM_TYPE(GridClientLogRequest::TYPE_ID, GridClientLogRequest);
+REGISTER_SYSTEM_TYPE(GridClientNodeBean::TYPE_ID, GridClientNodeBean);
+REGISTER_SYSTEM_TYPE(GridClientMetricsBean::TYPE_ID, GridClientMetricsBean);
+REGISTER_SYSTEM_TYPE(GridClientResponse::TYPE_ID, GridClientResponse);
+REGISTER_SYSTEM_TYPE(GridClientTaskRequest::TYPE_ID, GridClientTaskRequest);
+REGISTER_SYSTEM_TYPE(GridClientTaskResultBean::TYPE_ID, GridClientTaskResultBean);
+REGISTER_SYSTEM_TYPE(GridClientTopologyRequest::TYPE_ID, GridClientTopologyRequest);
