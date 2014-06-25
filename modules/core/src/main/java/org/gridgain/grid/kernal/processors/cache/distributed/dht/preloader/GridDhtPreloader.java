@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -317,15 +318,17 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
         if (log.isDebugEnabled())
             log.debug("Finished waiting on local exchange: " + fut.exchangeId());
 
-        if (cctx.config().getPreloadMode() == SYNC) {
-            final long start = U.currentTimeMillis();
+        final long start = U.currentTimeMillis();
 
+        final GridCachePreloadMode preloadMode = cctx.config().getPreloadMode();
+
+        if (preloadMode != NONE) {
             if (cctx.config().getPreloadPartitionedDelay() >= 0) {
-                U.log(log, "Starting preloading in SYNC mode: " + cctx.name());
+                U.log(log, "Starting preloading in " + preloadMode + " mode: " + cctx.name());
 
                 demandPool.syncFuture().listenAsync(new CI1<Object>() {
                     @Override public void apply(Object t) {
-                        U.log(log, "Completed preloading in SYNC mode [cache=" + cctx.name() +
+                        U.log(log, "Completed preloading in " + preloadMode + " mode [cache=" + cctx.name() +
                             ", time=" + (U.currentTimeMillis() - start) + " ms]");
                     }
                 });

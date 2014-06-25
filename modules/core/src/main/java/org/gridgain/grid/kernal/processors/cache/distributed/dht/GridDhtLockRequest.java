@@ -63,6 +63,10 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     @GridDirectVersion(1)
     private UUID subjId;
 
+    /** Indexes of keys needed to be preloaded. */
+    @GridDirectVersion(2)
+    private BitSet preloadKeys;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -207,6 +211,25 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     }
 
     /**
+     * Marks last added key for preloading.
+     */
+    public void markLastKeyForPreload() {
+        assert idx > 0;
+
+        if (preloadKeys == null)
+            preloadKeys = new BitSet();
+
+        preloadKeys.set(idx - 1, true);
+    }
+
+    /**
+     * @return {@code True} if need to preload key with given index.
+     */
+    public boolean needPreloadKey(int idx) {
+        return preloadKeys != null && preloadKeys.get(idx);
+    }
+
+    /**
      * Sets owner and its mapped version.
      *
      * @param key Key.
@@ -288,6 +311,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         _clone.ownedBytes = ownedBytes;
         _clone.topVer = topVer;
         _clone.subjId = subjId;
+        _clone.preloadKeys = preloadKeys;
     }
 
     /** {@inheritDoc} */
@@ -359,6 +383,12 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
             case 28:
                 if (!commState.putUuid(subjId))
+                    return false;
+
+                commState.idx++;
+
+            case 29:
+                if (!commState.putBitSet(preloadKeys))
                     return false;
 
                 commState.idx++;
@@ -451,6 +481,16 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                     return false;
 
                 subjId = subjId0;
+
+                commState.idx++;
+
+            case 29:
+                BitSet preloadKeys0 = commState.getBitSet();
+
+                if (preloadKeys0 == BIT_SET_NOT_READ)
+                    return false;
+
+                preloadKeys = preloadKeys0;
 
                 commState.idx++;
 

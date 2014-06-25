@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
+import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
@@ -644,11 +645,16 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
                         req.invalidateNearEntry(idx, cached.readerId(n.id()) != null);
 
+                        if (cached.isNewLocked())
+                            req.markKeyForPreload(idx);
+
                         break;
                     }
                     catch (GridCacheEntryRemovedException ignore) {
                         assert false : "Got removed exception on entry with dht local candidate: " + entry;
                     }
+
+                    idx++;
                 }
 
                 if (!F.isEmpty(nearWrites)) {
@@ -997,6 +1003,34 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                         if (log.isDebugEnabled())
                             log.debug("Removed mapping for node entirely because all partitions are invalid [nodeId=" +
                                 nodeId + ", tx=" + tx + ']');
+                    }
+                }
+
+                long topVer = cctx.topology().topologyVersion();
+
+                GridDrType drType = cctx.isDrEnabled() ? GridDrType.DR_PRELOAD : GridDrType.DR_NONE;
+
+                for (GridCacheEntryInfo<K, V> info : res.preloadEntries()) {
+                    while (true) {
+                        GridCacheEntryEx<K, V> entry = cctx.cache().entryEx(info.key());
+
+                        try {
+                            entry.initialValue(info.value(), info.valueBytes(), info.version(),
+                                info.ttl(), info.expireTime(), true, topVer, drType);
+
+                            break;
+                        }
+                        catch (GridException e) {
+                            // Fail the whole thing.
+                            onDone(e);
+
+                            return;
+                        }
+                        catch (GridCacheEntryRemovedException ignore) {
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to set entry initial value (entry is obsolete, " +
+                                    "will retry): " + entry);
+                        }
                     }
                 }
 
