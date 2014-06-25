@@ -33,6 +33,18 @@ namespace GridGain.Client.Impl.Portable
 
         /** Handles. */
         private IDictionary<GridClientPortableObjectHandle, int> hnds;
+
+        /** Current type ID. */
+        private int curTypeId;
+
+        /** Current mapper. */
+        private GridClientPortableIdResolver curMapper;
+        
+        /** Current raw flag. */
+        private bool curRaw;
+
+        /** Current raw position. */
+        private long curRawPos;
                                 
         /**
             * <summary>Constructor.</summary>
@@ -50,14 +62,39 @@ namespace GridGain.Client.Impl.Portable
 
             writer = new GridClientPortableWriterImpl(this);
         }
+        
+        /**
+         * <summary>Current type ID.</summary>
+         */
+        public int CurrentTypeId
+        {
+            get { return curTypeId; }
+        }
 
         /**
-         * <summary>Current frame.</summary>
+         * <summary>Current ID mapper.</summary>
          */
-        public GridClientPortableWriteFrame CurrentFrame
+        public GridClientPortableIdResolver CurrentMapper
         {
-            get;
-            private set;
+            get { return curMapper; }
+        }
+
+        /**
+         * <summary>Current raw flag.</summary>
+         */
+        public bool CurrentRaw
+        {
+            get { return curRaw; }
+            set { curRaw = value; }
+        }
+
+        /**
+         * <summary>Current raw position.</summary>
+         */
+        public long CurrentRawPosition
+        {
+            get { return curRawPos; }
+            set { curRawPos = value; }
         }
 
         /**
@@ -134,19 +171,28 @@ namespace GridGain.Client.Impl.Portable
             Stream.Seek(8, SeekOrigin.Current);
 
             // 7. Preserve old frame.
-            GridClientPortableWriteFrame oldFrame = CurrentFrame;
+            int oldTypeId = curTypeId;
+            GridClientPortableIdResolver oldMapper = curMapper;
+            bool oldRaw = curRaw;
+            long oldRawPos = curRawPos;
 
             // 8. Push new frame.
-            CurrentFrame = new GridClientPortableWriteFrame(desc.TypeId, desc.Mapper);
+            curTypeId = desc.TypeId;
+            curMapper = desc.Mapper;
+            curRaw = false;
+            curRawPos = 0;
 
             // 9. Write object fields.
             desc.Serializer.WritePortable(obj, writer);
 
             // 10. Calculate and write length.
-            WriteLength(Stream, pos, Stream.Position, CurrentFrame.RawPosition);
+            WriteLength(Stream, pos, Stream.Position, CurrentRawPosition);
 
             // 11. Restore old frame.
-            CurrentFrame = oldFrame;
+            curTypeId = oldTypeId;
+            curMapper = oldMapper;
+            curRaw = oldRaw;
+            curRawPos = oldRawPos;
         }
 
         /**

@@ -470,11 +470,10 @@ namespace GridGain.Client.Impl.Portable
          */ 
         private void MarkRaw()
         {
-            if (!ctx.CurrentFrame.Raw)
+            if (!ctx.CurrentRaw)
             {
-                ctx.CurrentFrame.RawPosition = ctx.Stream.Position;
-
-                ctx.CurrentFrame.Raw = true;
+                ctx.CurrentRaw = true;
+                ctx.CurrentRawPosition = ctx.Stream.Position;
             }
         }
 
@@ -517,10 +516,10 @@ namespace GridGain.Client.Impl.Portable
          */ 
         private void WriteField(string fieldName)
         {
-            if (ctx.CurrentFrame.Raw)
+            if (ctx.CurrentRaw)
                 throw new GridClientPortableException("Cannot write named fields after raw data is written.");
 
-            int? fieldIdRef = ctx.CurrentFrame.Mapper.FieldId(ctx.CurrentFrame.TypeId, fieldName);
+            int? fieldIdRef = ctx.CurrentMapper.FieldId(ctx.CurrentTypeId, fieldName);
 
             int fieldId = fieldIdRef.HasValue ? fieldIdRef.Value : PU.StringHashCode(fieldName.ToLower());
 
