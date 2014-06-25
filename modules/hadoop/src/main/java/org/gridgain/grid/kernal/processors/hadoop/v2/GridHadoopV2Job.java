@@ -30,8 +30,6 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.net.*;
-import java.nio.file.*;
-import java.nio.file.attribute.*;
 import java.util.*;
 
 /**
@@ -81,7 +79,10 @@ public class GridHadoopV2Job implements GridHadoopJob {
     private JobID hadoopJobID;
 
     /** */
-    private File jobJarsDir;
+    private File jobLocalDir;
+
+    /** */
+    private GridHadoopV2JobResourceManager resourceManager;
 
     /** */
     private ClassLoaderWrapper jobLdr;
@@ -111,11 +112,6 @@ public class GridHadoopV2Job implements GridHadoopJob {
     /** {@inheritDoc} */
     @Override public GridHadoopJobId id() {
         return jobId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridHadoopJobInfo info() {
-        return jobInfo;
     }
 
     /** {@inheritDoc} */
@@ -169,6 +165,11 @@ public class GridHadoopV2Job implements GridHadoopJob {
         catch (IOException e) {
             throw new GridException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridHadoopJobInfo info() {
+        return jobInfo;
     }
 
     /**
@@ -377,13 +378,13 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public void initialize(boolean external, UUID locNodeId) throws GridException {
-        jobJarsDir = new File(new File(U.resolveWorkDirectory("hadoop", false), "Job_" + jobId),
-            "jars-" + locNodeId);
+        jobLocalDir = new File(new File(U.resolveWorkDirectory("hadoop", false), "Job_" + jobId), "local-" + locNodeId);
 
-        if (!external)
-            prepareJobFiles();
+        resourceManager = new GridHadoopV2JobResourceManager(jobId, ctx.getJobConf(), jobLocalDir);
 
-        initializeClassLoader();
+        resourceManager.processJobResources(!external);
+
+        initializeClassLoader(resourceManager.getClassPath());
 
         if (jobLdr != null)
             ctx.getJobConf().setClassLoader(jobLdr);
@@ -394,76 +395,27 @@ public class GridHadoopV2Job implements GridHadoopJob {
         if (jobLdr != null)
             jobLdr.destroy();
 
-        if (!external && jobJarsDir.exists())
-            U.delete(jobJarsDir);
-    }
-
-    /**
-     * Prepares job files.
-     *
-     * @throws GridException If failed.
-     */
-    private void prepareJobFiles() throws GridException {
-        try {
-            String mrDir = info().property("mapreduce.job.dir");
-
-            if (mrDir != null) {
-                Path path = new Path(new URI(mrDir));
-
-                JobConf cfg = ctx.getJobConf();
-
-                FileSystem fs = FileSystem.get(path.toUri(), cfg);
-
-                if (!fs.exists(path))
-                    throw new GridException("Failed to find map-reduce submission directory (does not exist): " +
-                        path);
-
-                if (jobJarsDir.exists())
-                    throw new GridException("Local work directory already exists: " + jobJarsDir.getAbsolutePath());
-
-                if (!FileUtil.copy(fs, path, jobJarsDir, false, cfg))
-                    throw new GridException("Failed to copy job submission directory contents to local file system " +
-                        "[path=" + path + ", locDir=" + jobJarsDir.getAbsolutePath() + ", jobId=" + jobId + ']');
-            }
-        }
-        catch (URISyntaxException | IOException e) {
-            throw new GridException(e);
-        }
+        if (!external && jobLocalDir.exists())
+            U.delete(jobLocalDir);
     }
 
     /**
      * Initializes class loader.
      *
      * @throws GridException
+     * @param classPath
      */
-    private void initializeClassLoader() throws GridException {
-        try {
-            if (!jobJarsDir.exists())
-                return;
+    private void initializeClassLoader(List<URL> classPath) {
+        if (!jobLocalDir.exists())
+            return;
 
-            final Collection<URL> jars = new ArrayList<>();
+        URL[] urls = new URL[classPath.size()];
 
-            Files.walkFileTree(jobJarsDir.toPath(), new SimpleFileVisitor<java.nio.file.Path>() {
-                @Override public FileVisitResult visitFile(java.nio.file.Path file, BasicFileAttributes attrs)
-                    throws IOException {
-                    if (file.getFileName().toString().endsWith(".jar"))
-                        jars.add(file.toUri().toURL());
+        classPath.toArray(urls);
 
-                    return super.visitFile(file, attrs);
-                }
-            });
+        final URLClassLoader urlLdr = new URLClassLoader(urls);
 
-            URL[] urls = new URL[jars.size()];
-
-            jars.toArray(urls);
-
-            final URLClassLoader urlLdr = new URLClassLoader(urls);
-
-            jobLdr = new ClassLoaderWrapper(urlLdr, getClass().getClassLoader());
-        }
-        catch (IOException e) {
-            throw new GridException(e);
-        }
+        jobLdr = new ClassLoaderWrapper(urlLdr, getClass().getClassLoader());
     }
 
     /**
