@@ -11,7 +11,7 @@
 #
 
 #
-# Grid command line loader with Hadoop classpath.
+# Hadoop class path resolver.
 #
 
 #
@@ -54,18 +54,6 @@ if [ "$HADOOP_MAPRED_HOME" == "" ]; then
 fi
 
 #
-# OS specific support.
-#
-SEP=":"
-
-case "`uname`" in
-    MINGW*)
-        SEP=";" ;;
-    CYGWIN*)
-        SEP=";" ;;
-esac
-
-#
 # Libraries included in classpath.
 #
 
@@ -83,8 +71,4 @@ for file in $files; do
     fi
 done
 
-CP=${CP}${SEP}$file
-
-export GRIDGAIN_HADOOP_CLASSPATH=$CP
-
-$(dirname $0)/ggstart.sh $@
+GRIDGAIN_HADOOP_CLASSPATH=$CP

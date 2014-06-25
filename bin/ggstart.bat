@@ -104,11 +104,6 @@ if %ERRORLEVEL% neq 0 (
 )
 
 ::
-:: Append hadoop libs to classpath after arguments are parsed.
-::
-set CP=%CP%;%GRIDGAIN_HOME%\libs\%HADOOP_LIB_DIR%\*
-
-::
 :: Process 'restart'.
 ::
 set RANDOM_NUMBER_COMMAND="%JAVA_HOME%\bin\java.exe" -cp %CP% org.gridgain.grid.startup.cmdline.GridCommandLineRandomNumberGenerator

@@ -37,11 +37,15 @@ set GRIDGAIN_LIBS=%GRIDGAIN_HOME%\libs\*
 
 for /D %%F in (%GRIDGAIN_HOME%\libs\*) do if not %%F == "%GRIDGAIN_HOME%\libs\optional" call :concat %%F\*
 
+if exist %GRIDGAIN_HOME%\libs\gridgain-hadoop-* set HADOOP_EDITION=1
+
 if defined USER_LIBS set GRIDGAIN_LIBS=%USER_LIBS%;%GRIDGAIN_LIBS%
+
+if "%HADOOP_EDITION%" == "1" call "%GRIDGAIN_HOME%\bin\include\hadoop-classpath.bat"
 
 set COMMON_HOME_LIB=%HADOOP_COMMON_HOME%\lib
 
-if defined GRIDGAIN_HADOOP_CLASSPATH (
+if "%HADOOP_EDITION%" == "1" (
     for /f %%f in ('dir /B %GRIDGAIN_HOME%\libs\gridgain-*.jar') do (
         if not exist %COMMON_HOME_LIB%\%%f echo WARNING: %%f doesn't exist in %COMMON_HOME_LIB%
     )
