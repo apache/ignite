@@ -500,17 +500,17 @@ namespace GridGain.Client.Impl.Portable
          */
         private void MarkRaw()
         {
-            if (!ctx.CurrentFrame.Raw)
+            if (!ctx.CurrentRaw)
             {
-                ctx.CurrentFrame.Raw = true;
+                ctx.CurrentRaw = true;
 
-                int rawDataOffset = ctx.CurrentFrame.Portable.RawDataOffset;
+                int rawDataOffset = ctx.CurrentPortable.RawDataOffset;
 
                 if (rawDataOffset == 0)
-                    throw new GridClientPortableException("Object doesn't contain raw data [typeId=" + 
-                        ctx.CurrentFrame.Portable.TypeId() + ']');
+                    throw new GridClientPortableException("Object doesn't contain raw data [typeId=" +
+                        ctx.CurrentPortable.TypeId() + ']');
 
-                ctx.Stream.Seek(ctx.CurrentFrame.Portable.Offset + rawDataOffset, SeekOrigin.Begin);
+                ctx.Stream.Seek(ctx.CurrentPortable.Offset + rawDataOffset, SeekOrigin.Begin);
             }            
         }
 
@@ -538,20 +538,20 @@ namespace GridGain.Client.Impl.Portable
          */ 
         private void Position(string fieldName)
         {
-            if (ctx.CurrentFrame.Raw)
+            if (ctx.CurrentRaw)
                 throw new GridClientPortableException("Cannot read named fields after raw data is read.");
 
-            int? fieldIdRef = ctx.CurrentFrame.Mapper.FieldId(ctx.CurrentFrame.TypeId, fieldName);
+            int? fieldIdRef = ctx.CurrentMapper.FieldId(ctx.CurrentTypeId, fieldName);
 
             int fieldId = fieldIdRef.HasValue ? fieldIdRef.Value : PU.StringHashCode(fieldName.ToLower());
 
-            int? fieldPosRef = ctx.CurrentFrame.Portable.Position(fieldId);
+            int? fieldPosRef = ctx.CurrentPortable.Position(fieldId);
 
             if (fieldPosRef.HasValue)
-                ctx.Stream.Seek(ctx.CurrentFrame.Portable.Offset + fieldPosRef.Value + 4, SeekOrigin.Begin);
+                ctx.Stream.Seek(ctx.CurrentPortable.Offset + fieldPosRef.Value + 4, SeekOrigin.Begin);
             else
                 throw new GridClientPortableInvalidFieldException("Cannot find field in portable object [typeId=" +
-                    ctx.CurrentFrame.Portable.TypeId() + ", field=" + fieldName + ']');
+                    ctx.CurrentPortable.TypeId() + ", field=" + fieldName + ']');
         }
     }
 }

@@ -35,6 +35,18 @@ namespace GridGain.Client.Impl.Portable
         /** Handles. */
         private readonly IDictionary<int, object> hnds = new Dictionary<int, object>();
 
+        /** Current type ID. */
+        private int curTypeId;
+
+        /** Current mapper. */
+        private GridClientPortableIdResolver curMapper;
+
+        /** Current portable object. */
+        private GridClientPortableObjectImpl curPort;
+
+        /** Current raw flag. */
+        private bool curRaw;
+
         /**
          * <summary>Constructor.</summary>
          * <param name="marsh">Marshaller.</param>
@@ -53,12 +65,36 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
-         * <summary>Current frame.</summary>
+         * <summary>Current type ID.</summary>
          */
-        public GridClientPortableReadFrame CurrentFrame
+        public int CurrentTypeId
         {
-            get;
-            private set;
+            get { return curTypeId; }
+        }
+
+        /**
+         * <summary>Current ID mapper.</summary>
+         */
+        public GridClientPortableIdResolver CurrentMapper
+        {
+            get { return curMapper; }
+        }
+
+        /**
+         * <summary>Current portable object.</summary>
+         */
+        public GridClientPortableObjectImpl CurrentPortable
+        {
+            get { return curPort; }
+        }
+
+        /**
+         * <summary>Current raw flag.</summary>
+         */
+        public bool CurrentRaw
+        {
+            get { return curRaw; }
+            set { curRaw = value; }
         }
 
         /**
@@ -72,10 +108,10 @@ namespace GridGain.Client.Impl.Portable
 
         /**
          * <summary>Deserialize portable object.</summary>
-         * <param name="portObj">Portable object.</param>
+         * <param name="port">Portable object.</param>
          * <returns>Desertialized object.</returns>
          */ 
-        public T Deserialize<T>(GridClientPortableObjectImpl portObj)
+        public T Deserialize<T>(GridClientPortableObjectImpl port)
         {
             // 1. Lookup handle table first because the following scenario is possible:
             // 1.1. Inner object meets handle of outer object.
@@ -83,13 +119,13 @@ namespace GridGain.Client.Impl.Portable
             // 1.3. Outer object is trying to deserialize the same inner object again.
             object hndObj;
 
-            if (hnds.TryGetValue(portObj.Offset, out hndObj))
+            if (hnds.TryGetValue(port.Offset, out hndObj))
                 return (T)hndObj;
 
             try
             {
                 // 2. Position stream before portable object.
-                Stream.Position = portObj.Offset;
+                Stream.Position = port.Offset;
 
                 byte hdr = (byte)Stream.ReadByte();
 
@@ -106,7 +142,10 @@ namespace GridGain.Client.Impl.Portable
                     int rawPos = PU.ReadInt(Stream);
 
                     // 5. Preserve frame.
-                    GridClientPortableReadFrame oldFrame = CurrentFrame;
+                    int oldTypeId = curTypeId;
+                    GridClientPortableIdResolver oldMapper = curMapper;
+                    GridClientPortableObjectImpl oldPort = curPort;
+                    bool oldRaw = curRaw;
 
                     try
                     {
@@ -132,7 +171,10 @@ namespace GridGain.Client.Impl.Portable
                             throw new GridClientPortableException("Unknown type ID: " + typeId);
 
                         // 8. Set new frame.
-                        CurrentFrame = new GridClientPortableReadFrame(typeId, desc.Mapper, portObj);
+                        curTypeId = typeId;
+                        curMapper = desc.Mapper;
+                        curPort = port;
+                        curRaw = false;
 
                         // 9. Instantiate object. 
                         object obj;
@@ -142,7 +184,7 @@ namespace GridGain.Client.Impl.Portable
                             obj = FormatterServices.GetUninitializedObject(desc.Type);
 
                             // 10. Save handle.
-                            hnds[portObj.Offset] = obj;
+                            hnds[port.Offset] = obj;
                         }
                         catch (Exception e)
                         {
@@ -158,7 +200,10 @@ namespace GridGain.Client.Impl.Portable
                     finally
                     {
                         // 12. Restore old frame.
-                        CurrentFrame = oldFrame;
+                        curTypeId = oldTypeId;
+                        curMapper = oldMapper;
+                        curPort = oldPort;
+                        curRaw = oldRaw;
                     }
                 }
                 else if (hdr == PU.HDR_HND)
@@ -183,7 +228,7 @@ namespace GridGain.Client.Impl.Portable
             finally
             {
                 // 16. Position stream right after the object.
-                Stream.Position = portObj.Offset + portObj.Length;
+                Stream.Position = port.Offset + port.Length;
             }
         }
 
