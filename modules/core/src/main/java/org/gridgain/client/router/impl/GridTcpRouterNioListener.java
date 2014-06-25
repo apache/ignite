@@ -13,6 +13,7 @@ import org.gridgain.client.*;
 import org.gridgain.client.marshaller.*;
 import org.gridgain.client.marshaller.jdk.*;
 import org.gridgain.client.marshaller.optimized.*;
+import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.*;
@@ -32,9 +33,6 @@ import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
  * and delegates their delivery to underlying client.
  */
 class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessage> {
-    /** Empty byte array. */
-    private static final ByteBuffer EMPTY_BUF = ByteBuffer.wrap(new byte[0]);
-
     /** Logger. */
     private final GridLogger log;
 
@@ -55,6 +53,7 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
 
         Map<Byte, GridClientMarshaller> tmpMap = new GridLeanMap<>(3);
 
+        tmpMap.put(U.PORTABLE_OBJECT_PROTO_ID, new GridClientPortableMarshaller());
         tmpMap.put(U.OPTIMIZED_CLIENT_PROTO_ID, new GridClientOptimizedMarshaller());
         tmpMap.put(U.JDK_CLIENT_PROTO_ID, new GridClientJdkMarshaller());
 
@@ -143,7 +142,7 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
                         U.warn(log, "Attempt to marshal a message with a stub " +
                             "(will output empty result): " + obj);
 
-                        return EMPTY_BUF;
+                        return ByteBuffer.allocate(off);
                     }
 
                     @Override public <T> T unmarshal(byte[] bytes) {

@@ -10,7 +10,7 @@
 package org.gridgain.client;
 
 import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.optimized.*;
+import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
@@ -83,7 +83,7 @@ public class GridClientTestRestServer {
     private volatile GridNioSession lastSes;
 
     /** */
-    private GridClientMarshaller optMarsh = new GridClientOptimizedMarshaller();
+    private GridClientMarshaller optMarsh = new GridClientPortableMarshaller();
 
     /**
      * @param port Port to listen on.
@@ -247,7 +247,7 @@ public class GridClientTestRestServer {
             else if (msg instanceof GridClientHandshakeRequest) {
                 GridClientHandshakeRequest hs = (GridClientHandshakeRequest)msg;
 
-                assert hs.protocolId() == U.OPTIMIZED_CLIENT_PROTO_ID;
+                assert hs.protocolId() == U.PORTABLE_OBJECT_PROTO_ID;
 
                 ses.addMeta(GridNioSessionMetaKey.MARSHALLER.ordinal(), optMarsh);
 
