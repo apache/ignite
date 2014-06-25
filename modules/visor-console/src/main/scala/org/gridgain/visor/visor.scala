@@ -910,7 +910,7 @@ object visor extends VisorTag {
 
             val sb = new StringBuilder()
 
-            for (i <- 0 until lst.size) {
+            for (i <- 0 until lst.size if lst(i).nonEmpty || sb.size != 0) {
                 val arg = sb.toString + lst(i)
 
                 arg match {
