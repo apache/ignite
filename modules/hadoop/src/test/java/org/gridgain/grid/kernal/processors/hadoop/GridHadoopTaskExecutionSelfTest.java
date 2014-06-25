@@ -316,12 +316,14 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
+                X.println("___ executed tasks: " + executedTasks.get());
+
                 return executedTasks.get() == 32;
             }
         }, 20000)) {
             U.dumpThreads(log);
 
-            assertTrue(false);
+            fail();
         }
 
         //Kill really ran job.

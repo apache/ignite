@@ -187,7 +187,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
-    @Override public void run(final GridHadoopJob job, final Collection<GridHadoopTaskInfo> tasks) {
+    @Override public void run(final GridHadoopJob job, final Collection<GridHadoopTaskInfo> tasks) throws GridException {
         if (!busyLock.tryReadLock()) {
             if (log.isDebugEnabled())
                 log.debug("Failed to start hadoop tasks (grid is stopping, will ignore).");
@@ -206,7 +206,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                     runningProcsByJobId.remove(job.id(), proc);
 
                     // Start new process for ABORT task since previous processes were killed.
-                    proc = startProcess(job, null);
+                    proc = startProcess(job, jobTracker.plan(job.id()));
 
                     if (log.isDebugEnabled())
                         log.debug("Starting new process for maintenance task [jobId=" + job.id() +
@@ -328,8 +328,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
         final GridHadoopProcessFuture fut = new GridHadoopProcessFuture(childProcId, jobId, ctx.kernalContext());
 
-        final HadoopProcess proc = new HadoopProcess(jobId, fut,
-            plan == null ? null : plan.reducers(ctx.localNodeId()));
+        final HadoopProcess proc = new HadoopProcess(jobId, fut, plan.reducers(ctx.localNodeId()));
 
         HadoopProcess old = runningProcsByJobId.put(jobId, proc);
 
@@ -601,12 +600,10 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
      * @param job Job.
      * @param plan Map reduce plan.
      */
-    private void prepareForJob(HadoopProcess proc, GridHadoopJob job, @Nullable GridHadoopMapReducePlan plan) {
+    private void prepareForJob(HadoopProcess proc, GridHadoopJob job, GridHadoopMapReducePlan plan) {
         try {
-            Collection<GridHadoopInputSplit> mappers = plan == null ? null : plan.mappers(ctx.localNodeId());
-
-            comm.sendMessage(proc.descriptor(),
-                new GridHadoopPrepareForJobRequest(job.id(), job.info(), !F.isEmpty(mappers), plan.reducers()));
+            comm.sendMessage(proc.descriptor(), new GridHadoopPrepareForJobRequest(job.id(), job.info(),
+                !F.isEmpty(plan.mappers(ctx.localNodeId())), plan.reducers()));
         }
         catch (GridException e) {
             U.error(log, "Failed to send job prepare request to remote process [proc=" + proc + ", job=" + job +

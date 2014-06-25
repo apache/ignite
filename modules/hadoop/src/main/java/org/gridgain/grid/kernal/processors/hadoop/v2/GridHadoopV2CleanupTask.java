@@ -41,10 +41,12 @@ public class GridHadoopV2CleanupTask extends GridHadoopV2Task {
 
             OutputCommitter committer = outputFormat.getOutputCommitter(hadoopContext());
 
-            if (abort)
-                committer.abortJob(jobCtx, JobStatus.State.FAILED);
-            else
-                committer.commitJob(jobCtx);
+            if (committer != null) {
+                if (abort)
+                    committer.abortJob(jobCtx, JobStatus.State.FAILED);
+                else
+                    committer.commitJob(jobCtx);
+            }
         }
         catch (ClassNotFoundException | IOException e) {
             throw new GridException(e);

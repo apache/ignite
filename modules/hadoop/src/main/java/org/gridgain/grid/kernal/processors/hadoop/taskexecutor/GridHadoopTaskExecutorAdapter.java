@@ -25,8 +25,9 @@ public abstract class GridHadoopTaskExecutorAdapter extends GridHadoopComponent 
      *
      * @param job Job.
      * @param tasks Tasks.
+     * @throws GridException If failed.
      */
-    public abstract void run(final GridHadoopJob job, Collection<GridHadoopTaskInfo> tasks);
+    public abstract void run(final GridHadoopJob job, Collection<GridHadoopTaskInfo> tasks) throws GridException;
 
     /**
      * Cancels all currently running tasks for given job ID and cancels scheduled execution of tasks
@@ -38,7 +39,7 @@ public abstract class GridHadoopTaskExecutorAdapter extends GridHadoopComponent 
      *
      * @param jobId Job ID to cancel.
      */
-    public abstract void cancelTasks(GridHadoopJobId jobId);
+    public abstract void cancelTasks(GridHadoopJobId jobId) throws GridException;
 
     /**
      * On job state change callback;

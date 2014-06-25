@@ -40,7 +40,7 @@ public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
 
         int[] levelsCnts = new int[32];
 
-        int all = 1000;
+        int all = 10000;
 
         for (int i = 0; i < all; i++) {
             int level = GridHadoopSkipList.randomLevel(rnd);

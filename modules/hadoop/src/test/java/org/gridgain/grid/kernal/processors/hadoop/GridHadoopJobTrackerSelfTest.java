@@ -286,6 +286,13 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
             super(cfg);
         }
 
+        /**
+         *
+         */
+        public GridHadoopTestJobInfo() {
+            // No-op.
+        }
+
         /** {@inheritDoc} */
         @Override public GridHadoopJob createJob(GridHadoopJobId jobId) {
             return new HadoopTestJob(jobId, this);
