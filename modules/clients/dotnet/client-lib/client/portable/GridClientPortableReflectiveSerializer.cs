@@ -200,7 +200,7 @@ namespace GridGain.Client.Portable
                         WriteArray(field, type, name);
                         ReadArray(field, type, name);
                     }
-                    else if (type.IsGenericType && type.GetInterface(PU.TYP_GENERIC_DICTIONARY.FullName) != null)
+                    else if (type.IsGenericType && type.GetGenericTypeDefinition() == PU.TYP_GENERIC_DICTIONARY || type.GetInterface(PU.TYP_GENERIC_DICTIONARY.FullName) != null)
                     {
                         wActions.Add((obj, writer) =>
                         {
@@ -219,7 +219,7 @@ namespace GridGain.Client.Portable
                             field.SetValue(obj, val);
                         });
                     }
-                    else if (type.IsGenericType && type.GetInterface(PU.TYP_GENERIC_COLLECTION.FullName) != null)
+                    else if (type.IsGenericType && type.GetGenericTypeDefinition() == PU.TYP_GENERIC_COLLECTION || type.GetInterface(PU.TYP_GENERIC_COLLECTION.FullName) != null)
                     {
                         wActions.Add((obj, writer) =>
                         {
@@ -238,7 +238,7 @@ namespace GridGain.Client.Portable
                             field.SetValue(obj, val);
                         });
                     }
-                    else if (type.GetInterface(PU.TYP_DICTIONARY.FullName) != null)
+                    else if (type == PU.TYP_DICTIONARY || type.GetInterface(PU.TYP_DICTIONARY.FullName) != null)
                     {
                         wActions.Add((obj, writer) =>
                         {
@@ -254,7 +254,7 @@ namespace GridGain.Client.Portable
                             field.SetValue(obj, val);
                         });
                     }
-                    else if (type.GetInterface(PU.TYP_COLLECTION.FullName) != null)
+                    else if (type == PU.TYP_COLLECTION || type.GetInterface(PU.TYP_COLLECTION.FullName) != null)
                     {
                         wActions.Add((obj, writer) =>
                         {

@@ -204,7 +204,13 @@ namespace GridGain.Client.Impl.Portable
 
         /** Whether little endian is set. */
         private static readonly bool LITTLE_ENDIAN = BitConverter.IsLittleEndian;
-        
+
+        /** Bindig flags for instance search. */
+        private static BindingFlags BIND_FLAGS_INSTANCE = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+        /** Bindig flags for static search. */
+        private static BindingFlags BIND_FLAGS_STATIC = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+
         /** Filed: MemoryStream byte buffer (array). */
         private static FieldInfo FIELD_MEM_BUF = typeof(MemoryStream).GetField("_buffer", BIND_FLAGS_INSTANCE);
 
@@ -231,14 +237,6 @@ namespace GridGain.Client.Impl.Portable
         /** Method: ReadGenericDictionary. */
         public static MethodInfo MTDH_READ_GENERIC_DICTIONARY =
             typeof(GridClientPortableUilts).GetMethod("ReadGenericDictionary", BIND_FLAGS_STATIC);
-
-        /** Bindig flags for instance search. */
-        private static BindingFlags BIND_FLAGS_INSTANCE =
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-
-        /** Bindig flags for static search. */
-        private static BindingFlags BIND_FLAGS_STATIC =
-            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         /**
          * <summary>Write boolean.</summary>
@@ -882,7 +880,13 @@ namespace GridGain.Client.Impl.Portable
             {
                 stream.WriteByte(BYTE_ONE);
 
-                WriteLong(ToJavaDate(val.Value), stream);
+                long high;
+                short low;
+
+                ToJavaDate(val.Value, out high, out low);
+
+                WriteLong(high, stream);
+                WriteShort(low, stream);
             }                
         }
 
@@ -893,7 +897,15 @@ namespace GridGain.Client.Impl.Portable
          */
         public static DateTime? ReadDate(Stream stream)
         {
-            return stream.ReadByte() == BYTE_ONE ? ToDotNetDate(ReadLong(stream)) : (DateTime?)null;
+            if (stream.ReadByte() == BYTE_ZERO)
+                return null;
+            else
+            {
+                long high = ReadLong(stream);
+                short low = ReadShort(stream);
+
+                return ToDotNetDate(high, low);
+            }
         }
 
         /**
@@ -1532,21 +1544,27 @@ namespace GridGain.Client.Impl.Portable
         /**
          * <summary>Convert date to Java ticks.</summary>
          * <param name="date">Date</param>
-         * <returns>Java ticks.</returns>
+         * <param name="high">High part (milliseconds).</param>
+         * <param name="low">Low part (100ns chunks)</param>
          */
-        private static long ToJavaDate(DateTime date)
+        private static void ToJavaDate(DateTime date, out long high, out short low)
         {
-            return (date.Ticks - JAVA_DATE_TICKS) / 10000;
+            long diff = date.Ticks - JAVA_DATE_TICKS;
+
+            high = diff / JAVA_DATE_MULTIPLIER;
+
+            low = (short)(diff % JAVA_DATE_MULTIPLIER); 
         }
 
         /**
          * <summary>Convert Java ticks to date.</summary>
-         * <param name="ticks">Java ticks.</param>
+         * <param name="high">High part (milliseconds).</param>
+         * <param name="high">Low part (100ns chunks).</param>
          * <returns>Date.</returns>
          */
-        private static DateTime ToDotNetDate(long ticks)
+        private static DateTime ToDotNetDate(long high, short low)
         {
-            return new DateTime(ticks * JAVA_DATE_MULTIPLIER + JAVA_DATE_TICKS);
+            return new DateTime(JAVA_DATE_TICKS + high * JAVA_DATE_MULTIPLIER + low);
         }
 
     }

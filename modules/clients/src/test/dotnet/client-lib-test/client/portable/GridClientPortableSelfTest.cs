@@ -568,7 +568,7 @@ namespace GridGain.Client.Portable {
 
             innerObj.PInt1 = 1;
             innerObj.PInt2 = 2;
-
+            
             list.Add(innerObj);
 
             obj.Col1 = list;
@@ -1104,6 +1104,10 @@ namespace GridGain.Client.Portable {
                 writer.WriteShort("ushort", *(short*)&uShort);
                 writer.WriteInt("uint", *(int*)&uInt);
                 writer.WriteLong("ulong", *(long*)&uLong);
+
+                writer.WriteString("string", PString);
+                writer.WriteGuid("guid", PGuid);
+                writer.WriteGuid("nguid", PNGuid);
             }
 
             public unsafe void ReadPortable(IGridClientPortableReader reader)
@@ -1127,6 +1131,10 @@ namespace GridGain.Client.Portable {
                 PUshort = *(ushort*)&uShort;
                 PUint = *(uint*)&uInt;
                 PUlong = *(ulong*)&uLong;
+
+                PString = reader.ReadString("string");
+                PGuid = reader.ReadGuid("guid").Value;
+                PNGuid = reader.ReadGuid("nguid");
             }
         }
 
@@ -1154,6 +1162,10 @@ namespace GridGain.Client.Portable {
                 rawWriter.WriteShort(*(short*)&uShort);
                 rawWriter.WriteInt(*(int*)&uInt);
                 rawWriter.WriteLong(*(long*)&uLong);
+
+                rawWriter.WriteString(PString);
+                rawWriter.WriteGuid(PGuid);
+                rawWriter.WriteGuid(PNGuid);
             }
 
             public unsafe void ReadPortable(IGridClientPortableReader reader)
@@ -1179,6 +1191,10 @@ namespace GridGain.Client.Portable {
                 PUshort = *(ushort*)&uShort;
                 PUint = *(uint*)&uInt;
                 PUlong = *(ulong*)&uLong;
+
+                PString = rawReader.ReadString();
+                PGuid = rawReader.ReadGuid().Value;
+                PNGuid = rawReader.ReadGuid();
             }
         }
 
@@ -1206,6 +1222,10 @@ namespace GridGain.Client.Portable {
                 writer.WriteShort("ushort", *(short*)&uShort);
                 writer.WriteInt("uint", *(int*)&uInt);
                 writer.WriteLong("ulong", *(long*)&uLong);
+
+                writer.WriteString("string", obj0.PString);
+                writer.WriteGuid("guid", obj0.PGuid);
+                writer.WriteGuid("nguid", obj0.PNGuid);
             }
 
             public unsafe void ReadPortable(object obj, IGridClientPortableReader reader)
@@ -1231,6 +1251,10 @@ namespace GridGain.Client.Portable {
                 obj0.PUshort = *(ushort*)&uShort;
                 obj0.PUint = *(uint*)&uInt;
                 obj0.PUlong = *(ulong*)&uLong;
+
+                obj0.PString = reader.ReadString("string");
+                obj0.PGuid = reader.ReadGuid("guid").Value;
+                obj0.PNGuid = reader.ReadGuid("nguid");
             }
         }
 
@@ -1260,6 +1284,10 @@ namespace GridGain.Client.Portable {
                 rawWriter.WriteShort(*(short*)&uShort);
                 rawWriter.WriteInt(*(int*)&uInt);
                 rawWriter.WriteLong(*(long*)&uLong);
+
+                rawWriter.WriteString(obj0.PString);
+                rawWriter.WriteGuid(obj0.PGuid);
+                rawWriter.WriteGuid(obj0.PNGuid);
             }
 
             public unsafe void ReadPortable(object obj, IGridClientPortableReader reader)
@@ -1286,6 +1314,10 @@ namespace GridGain.Client.Portable {
                 obj0.PUshort = *(ushort*)&uShort;
                 obj0.PUint = *(uint*)&uInt;
                 obj0.PUlong = *(ulong*)&uLong;
+
+                obj0.PString = rawReader.ReadString();
+                obj0.PGuid = rawReader.ReadGuid().Value;
+                obj0.PNGuid = rawReader.ReadGuid();
             }
         }
 
