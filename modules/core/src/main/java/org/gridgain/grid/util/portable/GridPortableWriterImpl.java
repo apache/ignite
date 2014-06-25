@@ -144,63 +144,81 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     void write(byte[] val) {
         assert val != null;
 
-        PRIM.writeByteArray(wCtx.arr, wCtx.requestFreeSize(val.length), val);
+        int off = wCtx.requestFreeSize(val.length);
+
+        PRIM.writeByteArray(wCtx.arr, off, val);
     }
 
     /**
      * @param val Value.
      */
     void doWriteByte(byte val) {
-        PRIM.writeByte(wCtx.arr, wCtx.requestFreeSize(1), val);
+        int off = wCtx.requestFreeSize(1);
+
+        PRIM.writeByte(wCtx.arr, off, val);
     }
 
     /**
      * @param val Value.
      */
     void doWriteShort(short val) {
-        PRIM.writeShort(wCtx.arr, wCtx.requestFreeSize(2), val);
+        int off = wCtx.requestFreeSize(2);
+
+        PRIM.writeShort(wCtx.arr, off, val);
     }
 
     /**
      * @param val Value.
      */
     void doWriteInt(int val) {
-        PRIM.writeInt(wCtx.arr, wCtx.requestFreeSize(4), val);
+        int off = wCtx.requestFreeSize(4);
+
+        PRIM.writeInt(wCtx.arr, off, val);
     }
 
     /**
      * @param val Value.
      */
     void doWriteLong(long val) {
-        PRIM.writeLong(wCtx.arr, wCtx.requestFreeSize(8), val);
+        int off = wCtx.requestFreeSize(8);
+
+        PRIM.writeLong(wCtx.arr, off, val);
     }
 
     /**
      * @param val Value.
      */
     void doWriteFloat(float val) {
-        PRIM.writeFloat(wCtx.arr, wCtx.requestFreeSize(4), val);
+        int off = wCtx.requestFreeSize(4);
+
+        PRIM.writeFloat(wCtx.arr, off, val);
     }
 
     /**
      * @param val Value.
      */
     void doWriteDouble(double val) {
-        PRIM.writeDouble(wCtx.arr, wCtx.requestFreeSize(8), val);
+        int off = wCtx.requestFreeSize(8);
+
+        PRIM.writeDouble(wCtx.arr, off, val);
     }
 
     /**
      * @param val Value.
      */
     void doWriteChar(char val) {
-        PRIM.writeChar(wCtx.arr, wCtx.requestFreeSize(2), val);
+        int off = wCtx.requestFreeSize(2);
+
+        PRIM.writeChar(wCtx.arr, off, val);
     }
 
     /**
      * @param val Value.
      */
     void doWriteBoolean(boolean val) {
-        PRIM.writeBoolean(wCtx.arr, wCtx.requestFreeSize(1), val);
+        int off = wCtx.requestFreeSize(1);
+
+        PRIM.writeBoolean(wCtx.arr, off, val);
     }
 
     /**
@@ -263,8 +281,11 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     void doWriteByteArray(@Nullable byte[] val) {
         doWriteInt(val != null ? val.length : -1);
 
-        if (val != null)
-            PRIM.writeByteArray(wCtx.arr, wCtx.requestFreeSize(val.length), val);
+        if (val != null) {
+            int off = wCtx.requestFreeSize(val.length);
+
+            PRIM.writeByteArray(wCtx.arr, off, val);
+        }
     }
 
     /**
@@ -273,8 +294,11 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     void doWriteShortArray(@Nullable short[] val) {
         doWriteInt(val != null ? val.length : -1);
 
-        if (val != null)
-            PRIM.writeShortArray(wCtx.arr, wCtx.requestFreeSize(val.length << 1), val);
+        if (val != null) {
+            int off = wCtx.requestFreeSize(val.length << 1);
+
+            PRIM.writeShortArray(wCtx.arr, off, val);
+        }
     }
 
     /**
@@ -283,8 +307,11 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     void doWriteIntArray(@Nullable int[] val) {
         doWriteInt(val != null ? val.length : -1);
 
-        if (val != null)
-            PRIM.writeIntArray(wCtx.arr, wCtx.requestFreeSize(val.length << 2), val);
+        if (val != null) {
+            int off = wCtx.requestFreeSize(val.length << 2);
+
+            PRIM.writeIntArray(wCtx.arr, off, val);
+        }
     }
 
     /**
@@ -294,8 +321,11 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     void doWriteLongArray(@Nullable long[] val) {
         doWriteInt(val != null ? val.length : -1);
 
-        if (val != null)
-            PRIM.writeLongArray(wCtx.arr, wCtx.requestFreeSize(val.length << 3), val);
+        if (val != null) {
+            int off = wCtx.requestFreeSize(val.length << 3);
+
+            PRIM.writeLongArray(wCtx.arr, off, val);
+        }
     }
 
     /**
@@ -304,8 +334,11 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     void doWriteFloatArray(@Nullable float[] val) {
         doWriteInt(val != null ? val.length : -1);
 
-        if (val != null)
-            PRIM.writeFloatArray(wCtx.arr, wCtx.requestFreeSize(val.length << 2), val);
+        if (val != null) {
+            int off = wCtx.requestFreeSize(val.length << 2);
+
+            PRIM.writeFloatArray(wCtx.arr, off, val);
+        }
     }
 
     /**
@@ -314,8 +347,11 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     void doWriteDoubleArray(@Nullable double[] val) {
         doWriteInt(val != null ? val.length : -1);
 
-        if (val != null)
-            PRIM.writeDoubleArray(wCtx.arr, wCtx.requestFreeSize(val.length << 3), val);
+        if (val != null) {
+            int off = wCtx.requestFreeSize(val.length << 3);
+
+            PRIM.writeDoubleArray(wCtx.arr, off, val);
+        }
     }
 
     /**
@@ -324,8 +360,11 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     void doWriteCharArray(@Nullable char[] val) {
         doWriteInt(val != null ? val.length : -1);
 
-        if (val != null)
-            PRIM.writeCharArray(wCtx.arr, wCtx.requestFreeSize(val.length << 1), val);
+        if (val != null) {
+            int off = wCtx.requestFreeSize(val.length << 1);
+
+            PRIM.writeCharArray(wCtx.arr, off, val);
+        }
     }
 
     /**
@@ -334,8 +373,11 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     void doWriteBooleanArray(@Nullable boolean[] val) {
         doWriteInt(val != null ? val.length : -1);
 
-        if (val != null)
-            PRIM.writeBooleanArray(wCtx.arr, wCtx.requestFreeSize(val.length), val);
+        if (val != null) {
+            int off = wCtx.requestFreeSize(val.length);
+
+            PRIM.writeBooleanArray(wCtx.arr, off, val);
+        }
     }
 
     /**

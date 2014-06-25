@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal.processors.rest;
 
 import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.optimized.*;
+import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.logger.*;
@@ -37,7 +37,7 @@ final class GridTestBinaryClient {
     private final GridLogger log = new GridJavaLogger();
 
     /** Marshaller. */
-    private final GridClientMarshaller marsh = new GridClientOptimizedMarshaller();
+    private final GridClientMarshaller marsh = new GridClientPortableMarshaller();
 
     /** Socket. */
     private final Socket sock;
