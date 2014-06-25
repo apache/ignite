@@ -92,10 +92,10 @@ public:
 
             msg.init(cmd);
 
-            vector<int8_t> bytes = marsh.marshal(msg);
+            //vector<int8_t> bytes = marsh.marshal(msg);
 
-            if (i == 0)
-                std::cout << "Size " << bytes.size() << "\n";
+            //if (i == 0)
+               // std::cout << "Size " << bytes.size() << "\n";
         }
     }
 
