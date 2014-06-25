@@ -1030,10 +1030,10 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
 
             off += bytes;
 
-            if (off > arr.length) {
+            if (off >= arr.length) {
                 byte[] arr0 = new byte[off << 1];
 
-                U.arrayCopy(arr, 0, arr0, 0, off0);
+                U.arrayCopy(arr, 0, arr0, 0, arr.length);
 
                 arr = arr0;
             }
