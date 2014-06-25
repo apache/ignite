@@ -26,6 +26,9 @@ import java.util.*;
 @GridInternal
 public class VisorGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, GridBiTuple<Long, Long>>,
     GridBiTuple<Long, Long>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorGcJob job(Boolean arg) {
         return new VisorGcJob(arg);
