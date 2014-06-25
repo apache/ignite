@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.resource;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
@@ -41,7 +42,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
     private final GridLogger log;
 
     /** Grid instance injector. */
-    private GridResourceBasicInjector<Grid> gridInjector;
+    private GridResourceBasicInjector<GridEx> gridInjector;
 
     /** GridGain home folder injector. */
     private GridResourceBasicInjector<String> ggHomeInjector;
@@ -98,7 +99,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
      *
      * @param gridInjector Grid instance.
      */
-    public void setGridInjector(GridResourceBasicInjector<Grid> gridInjector) {
+    public void setGridInjector(GridResourceBasicInjector<GridEx> gridInjector) {
         this.gridInjector = gridInjector;
     }
 

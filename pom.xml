@@ -60,17 +60,43 @@
         <testResources>
             <testResource>
                 <directory>src/test/java</directory>
+                <excludes>
+                    <exclude>**/*.java</exclude>
+                </excludes>
             </testResource>
         </testResources>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.4</version>
+                <inherited>false</inherited>
+                <executions>
+                    <execution>
+                        <id>core-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>assembly/core-jar.xml</descriptor>
+                            </descriptors>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <finalName>gridgain-${gridgain.version}</finalName>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 
     <profiles>
         <profile>
             <id>scala</id>
             <activation>
-                <property>
-                    <name>!noScala</name>
-                </property>
+                <activeByDefault>true</activeByDefault>
             </activation>
             <modules>
                 <module>modules/scalar</module>
@@ -80,6 +106,9 @@
 
         <profile>
             <id>examples</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
             <modules>
                 <module>examples</module>
             </modules>

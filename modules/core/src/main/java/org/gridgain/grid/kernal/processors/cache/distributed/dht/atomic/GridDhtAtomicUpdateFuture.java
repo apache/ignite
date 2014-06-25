@@ -209,7 +209,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
 
                 if (updateReq == null) {
                     updateReq = new GridDhtAtomicUpdateRequest<>(nodeId, futVer, writeVer, syncMode, topVer, ttl,
-                        forceTransformBackups && supportsForceTransformBackup);
+                        forceTransformBackups && supportsForceTransformBackup, this.updateReq.subjectId());
 
                     mappings.put(nodeId, updateReq);
                 }
@@ -248,7 +248,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
                 boolean supportsForceTransformBackup = node.version().compareTo(FORCE_TRANSFORM_BACKUP_SINCE) >= 0;
 
                 updateReq = new GridDhtAtomicUpdateRequest<>(nodeId, futVer, writeVer, syncMode, topVer, ttl,
-                    forceTransformBackups && supportsForceTransformBackup);
+                    forceTransformBackups && supportsForceTransformBackup, this.updateReq.subjectId());
 
                 mappings.put(nodeId, updateReq);
             }
