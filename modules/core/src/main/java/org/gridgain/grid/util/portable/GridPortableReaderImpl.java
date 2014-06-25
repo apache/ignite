@@ -100,119 +100,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     @Nullable Object unmarshal(String fieldName) throws GridPortableException {
         off = fieldOffset(fieldId(fieldName));
 
-        return off >= 0 ? unmarshal() : null;
-    }
-
-    /**
-     * @return Unmarshalled value.
-     * @throws GridPortableException In case of error.
-     */
-    @Nullable Object unmarshal() throws GridPortableException {
-        assert off >= 0;
-
-        int start = off;
-
-        byte flag = doReadByte(false);
-
-        switch (flag) {
-            case NULL:
-                return null;
-
-            case HANDLE:
-                int handle = doReadInt(false);
-
-                if (poHandles.containsKey(handle))
-                    return poHandles.get(handle);
-
-                off = handle;
-
-                return unmarshal();
-
-            case OBJ:
-                GridPortableObject po = new GridPortableObjectImpl(ctx, arr, start);
-
-                poHandles.put(start, po);
-
-                return po;
-
-            case BYTE:
-                return doReadByte(false);
-
-            case SHORT:
-                return doReadShort(false);
-
-            case INT:
-                return doReadInt(false);
-
-            case LONG:
-                return doReadLong(false);
-
-            case FLOAT:
-                return doReadFloat(false);
-
-            case DOUBLE:
-                return doReadDouble(false);
-
-            case CHAR:
-                return doReadChar(false);
-
-            case BOOLEAN:
-                return doReadBoolean(false);
-
-            case STRING:
-                return doReadString(false);
-
-            case UUID:
-                return doReadUuid(false);
-
-            case DATE:
-                return doReadDate(false);
-
-            case BYTE_ARR:
-                return doReadByteArray(false);
-
-            case SHORT_ARR:
-                return doReadShortArray(false);
-
-            case INT_ARR:
-                return doReadIntArray(false);
-
-            case LONG_ARR:
-                return doReadLongArray(false);
-
-            case FLOAT_ARR:
-                return doReadFloatArray(false);
-
-            case DOUBLE_ARR:
-                return doReadDoubleArray(false);
-
-            case CHAR_ARR:
-                return doReadCharArray(false);
-
-            case BOOLEAN_ARR:
-                return doReadBooleanArray(false);
-
-            case STRING_ARR:
-                return doReadStringArray(false);
-
-            case UUID_ARR:
-                return doReadUuidArray(false);
-
-            case DATE_ARR:
-                return doReadDateArray(false);
-
-            case OBJ_ARR:
-                return doReadObjectArray(false);
-
-            case COL:
-                return doReadCollection(false, null);
-
-            case MAP:
-                return doReadMap(false, null);
-
-            default:
-                throw new GridPortableException("Invalid flag value: " + flag);
-        }
+        return off >= 0 ? unmarshal(false) : null;
     }
 
     /**
@@ -857,7 +745,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
 
     /** {@inheritDoc} */
     @Nullable @Override public GridPortableObject readPortable() throws GridPortableException {
-        return (GridPortableObject)unmarshal();
+        return (GridPortableObject)unmarshal(true);
     }
 
     /** {@inheritDoc} */
@@ -1027,6 +915,120 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     /** {@inheritDoc} */
     @Override public GridPortableRawReader rawReader() {
         return this;
+    }
+
+    /**
+     * @param raw Raw flag.
+     * @return Unmarshalled value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable private Object unmarshal(boolean raw) throws GridPortableException {
+        int start = raw ? rawOff : off;
+
+        byte flag = doReadByte(raw);
+
+        switch (flag) {
+            case NULL:
+                return null;
+
+            case HANDLE:
+                int handle = doReadInt(raw);
+
+                if (poHandles.containsKey(handle))
+                    return poHandles.get(handle);
+
+                off = handle;
+
+                return unmarshal(false);
+
+            case OBJ:
+                GridPortableObjectImpl po = new GridPortableObjectImpl(ctx, arr, start);
+
+                poHandles.put(start, po);
+
+                if (raw)
+                    rawOff = start + po.length();
+
+                return po;
+
+            case BYTE:
+                return doReadByte(raw);
+
+            case SHORT:
+                return doReadShort(raw);
+
+            case INT:
+                return doReadInt(raw);
+
+            case LONG:
+                return doReadLong(raw);
+
+            case FLOAT:
+                return doReadFloat(raw);
+
+            case DOUBLE:
+                return doReadDouble(raw);
+
+            case CHAR:
+                return doReadChar(raw);
+
+            case BOOLEAN:
+                return doReadBoolean(raw);
+
+            case STRING:
+                return doReadString(raw);
+
+            case UUID:
+                return doReadUuid(raw);
+
+            case DATE:
+                return doReadDate(raw);
+
+            case BYTE_ARR:
+                return doReadByteArray(raw);
+
+            case SHORT_ARR:
+                return doReadShortArray(raw);
+
+            case INT_ARR:
+                return doReadIntArray(raw);
+
+            case LONG_ARR:
+                return doReadLongArray(raw);
+
+            case FLOAT_ARR:
+                return doReadFloatArray(raw);
+
+            case DOUBLE_ARR:
+                return doReadDoubleArray(raw);
+
+            case CHAR_ARR:
+                return doReadCharArray(raw);
+
+            case BOOLEAN_ARR:
+                return doReadBooleanArray(raw);
+
+            case STRING_ARR:
+                return doReadStringArray(raw);
+
+            case UUID_ARR:
+                return doReadUuidArray(raw);
+
+            case DATE_ARR:
+                return doReadDateArray(raw);
+
+            case OBJ_ARR:
+                return doReadObjectArray(raw);
+
+            case COL:
+                return doReadCollection(raw, null);
+
+            case MAP:
+                return doReadMap(raw, null);
+
+            default:
+                throw new GridPortableException("Invalid flag value: " + flag);
+        }
     }
 
     /**

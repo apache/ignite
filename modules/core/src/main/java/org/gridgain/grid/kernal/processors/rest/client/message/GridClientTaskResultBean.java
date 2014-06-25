@@ -106,7 +106,7 @@ public class GridClientTaskResultBean implements Externalizable, GridPortable {
 
         id = raw.readString();
         finished = raw.readBoolean();
-        res = raw.readPortable();
+        res = raw.readObject();
         error = raw.readString();
     }
 

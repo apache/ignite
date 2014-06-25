@@ -142,16 +142,18 @@ class GridPortableObjectImpl implements GridPortableObject, Externalizable {
         return PRIM.readInt(arr, start + 6);
     }
 
+    // TODO: context serialization.
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(ctx);
+//        out.writeObject(ctx);
         U.writeByteArray(out, arr);
         out.writeInt(start);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        ctx = (GridPortableContext)in.readObject();
+//        ctx = (GridPortableContext)in.readObject();
         arr = U.readByteArray(in);
         start = in.readInt();
     }
@@ -159,7 +161,7 @@ class GridPortableObjectImpl implements GridPortableObject, Externalizable {
     /**
      * @return Length.
      */
-    private int length() {
+    int length() {
         return PRIM.readInt(arr, start + 10);
     }
 }

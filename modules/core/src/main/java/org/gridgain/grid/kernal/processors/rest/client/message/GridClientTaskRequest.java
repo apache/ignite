@@ -92,7 +92,7 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
         GridPortableRawReader raw = reader.rawReader();
 
         taskName = raw.readString();
-        arg = raw.readPortable();
+        arg = raw.readObject();
     }
 
     /** {@inheritDoc} */

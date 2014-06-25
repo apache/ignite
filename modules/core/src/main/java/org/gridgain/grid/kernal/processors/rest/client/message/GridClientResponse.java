@@ -103,7 +103,7 @@ public class GridClientResponse extends GridClientAbstractMessage {
 
         successStatus = raw.readInt();
         errorMsg = raw.readString();
-        res = raw.readPortable();
+        res = raw.readObject();
     }
 
     /** {@inheritDoc} */
