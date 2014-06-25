@@ -231,6 +231,106 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     }
 
     /**
+     * @param name Service name.
+     * @throws Exception If failed.
+     */
+    protected void checkSingletonUpdateTopology(String name) throws Exception {
+        Grid g = randomGrid();
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        DummyService.latch(latch);
+
+        GridFuture<?> fut = g.services().deploySingleton(name, new DummyService());
+
+        info("Deployed service: " + name);
+
+        fut.get();
+
+        info("Finished waiting for service future: " + name);
+
+        latch.await();
+
+        assertEquals(1, DummyService.started());
+        assertFalse(DummyService.isCancelled());
+
+        int nodeCnt = 2;
+
+        startExtraNodes(nodeCnt);
+
+        try {
+            assertEquals(1, DummyService.started());
+            assertFalse(DummyService.isCancelled());
+
+            checkCount(name, g.services().deployedServices(), 1);
+        }
+        finally {
+            stopExtraNodes(nodeCnt);
+        }
+    }
+
+    /**
+     * @param name Service name.
+     * @throws Exception If failed.
+     */
+    protected void checkDeployOnEachNodeUpdateTopology(String name) throws Exception {
+        Grid g = randomGrid();
+
+        CountDownLatch latch = new CountDownLatch(nodeCount());
+
+        DummyService.latch(latch);
+
+        GridFuture<?> fut = g.services().deployOnEachNode(name, new DummyService());
+
+        info("Deployed service: " + name);
+
+        fut.get();
+
+        info("Finished waiting for service future: " + name);
+
+        latch.await();
+
+        assertEquals(nodeCount(), DummyService.started());
+        assertFalse(DummyService.isCancelled());
+
+        int newNodes = 2;
+
+        latch = new CountDownLatch(newNodes);
+
+        DummyService.latch(latch);
+
+        startExtraNodes(newNodes);
+
+        try {
+            latch.await();
+
+            assertEquals(nodeCount() + newNodes, DummyService.started());
+            assertFalse(DummyService.isCancelled());
+
+            checkCount(name, g.services().deployedServices(), nodeCount() + newNodes);
+        }
+        finally {
+            stopExtraNodes(newNodes);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    protected void startExtraNodes(int cnt) throws Exception {
+        for (int i = 0; i < cnt; i++)
+            startGrid(nodeCount() + i);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    protected void stopExtraNodes(int cnt) throws Exception {
+        for (int i = 0; i < cnt; i++)
+            stopGrid(nodeCount() + i);
+    }
+
+    /**
      * @param svcName Service name.
      * @param descs Descriptors.
      * @param cnt Expected count

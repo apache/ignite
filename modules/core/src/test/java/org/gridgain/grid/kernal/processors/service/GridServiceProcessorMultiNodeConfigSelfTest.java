@@ -9,9 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.service;
 
-import org.gridgain.grid.*;
-
-import java.util.concurrent.*;
+import org.gridgain.grid.service.*;
 
 /**
  * Single node services test.
@@ -25,31 +23,50 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
         return 4;
     }
 
+    /** {@inheritDoc} */
+    @Override protected GridServiceConfiguration[] services() {
+        GridServiceConfiguration[] arr = new GridServiceConfiguration[2];
+
+        GridServiceConfiguration cfg = new GridServiceConfiguration();
+
+        cfg.setName("serviceConfigSingleton");
+        cfg.setMaxPerNodeCount(1);
+        cfg.setTotalCount(1);
+
+        arr[0] = cfg;
+
+        cfg = new GridServiceConfiguration();
+
+        cfg.setName("serviceConfigEachNode");
+        cfg.setMaxPerNodeCount(1);
+
+        arr[1] = cfg;
+
+        return arr;
+    }
+
     /**
      * @throws Exception If failed.
      */
-    public void testUpdateTopology() throws Exception {
-        Grid g = randomGrid();
+    public void testSingletonUpdateTopology() throws Exception {
+        checkSingletonUpdateTopology("serviceConfigSingleton");
+    }
 
-        String name = "serviceSingleton";
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeployOnEachNodeUpdateTopology() throws Exception {
+        checkDeployOnEachNodeUpdateTopology("serviceConfigEachNode");
+    }
 
-        CountDownLatch latch = new CountDownLatch(1);
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAll() throws Exception {
+        checkSingletonUpdateTopology("serviceConfigAllSingleton");
 
-        DummyService.latch(latch);
+        DummyService.reset();
 
-        GridFuture<?> fut = g.services().deploySingleton(name, new DummyService());
-
-        info("Deployed service: " + name);
-
-        fut.get();
-
-        info("Finished waiting for service future: " + name);
-
-        latch.await();
-
-        assertEquals(1, DummyService.started());
-        assertFalse(DummyService.isCancelled());
-
-        checkCount(name, g.services().deployedServices(), 1);
+        checkDeployOnEachNodeUpdateTopology("serviceConfigAllEachNode");
     }
 }
