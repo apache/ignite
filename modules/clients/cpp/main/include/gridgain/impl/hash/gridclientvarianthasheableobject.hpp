@@ -28,14 +28,6 @@ public:
     GridClientVariantHasheableObject(const GridClientVariant& var);
 
     /**
-     * Public constructor.
-     *
-     * @param var Value to hold.
-     * @param calculatedHashCode Pre-calculated hashcode.
-     */
-    GridClientVariantHasheableObject(const GridClientVariant& var, int calculatedHashCode);
-
-    /**
      * Calculates hash code for the contained object.
      *
      * @return Hash code.

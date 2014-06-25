@@ -21,7 +21,6 @@
 #include "gridgain/impl/gridclientrecurringeventthread.hpp"
 #include "gridgain/gridclientconfiguration.hpp"
 #include "gridgain/impl/connection/gridclienttcpconnection.hpp"
-#include "gridgain/impl/connection/gridclienthttpconnection.hpp"
 
 /** Typedef of connection shared pointer. */
 typedef std::shared_ptr<GridClientConnection> TConnectionPtr;
@@ -72,21 +71,6 @@ public:
     std::shared_ptr<GridClientTcpConnection> rentTcpConnection(const std::string& host, int port);
 
     /**
-     * Gives an HTTP connection for rent.
-     *
-     * If no connection to the given host-port is currently available,
-     * a new one is returned.
-     *
-     * After no longer needed, the connection should be turned back
-     * using turnBack() method.
-     *
-     * @param host A host to connect to.
-     * @param port A port to connect to.
-     * @return An HTTP connection.
-     */
-    std::shared_ptr<GridClientHttpConnection> rentHttpConnection(const std::string& host, int port);
-
-    /**
      * Turns a connection back.
      *
      * After turned back, this connection is available to other
@@ -130,20 +114,9 @@ protected:
      *
      * @param host A host for the connection.
      * @param port A port for the connection.
-     * @returns A connection (either TCP or HTTP depending on template parameter), that is available for rent.
+     * @returns A connection that is available for rent.
      */
     template<class T> std::shared_ptr<T> availableConnection(const std::string& host, int port);
-
-    /**
-     * Assigns an existing session token to HTTP connection or authenticates connection if there's no session
-     * token yet.
-     *
-     * @param host Host for this connection.
-     * @port port Port for this connection.
-     * @param conn Shared pointer to HTTP connection.
-     */
-    void authenticateHttpConnection(const std::string& host, int port,
-            std::shared_ptr<GridClientHttpConnection> conn);
 
     /**
      * Action, performed by connection tracker for
