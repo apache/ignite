@@ -21,6 +21,9 @@ import org.gridgain.grid.util.typedef.internal.*;
  */
 @GridInternal
 public class VisorGgfsSamplingStateTask extends VisorOneNodeTask<GridBiTuple<String, Boolean>, Void> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Job that perform parsing of GGFS profiler logs.
      */

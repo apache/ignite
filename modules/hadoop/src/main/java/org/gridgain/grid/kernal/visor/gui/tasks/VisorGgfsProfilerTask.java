@@ -29,6 +29,9 @@ import java.util.*;
  */
 @GridInternal
 public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<VisorGgfsProfilerEntry>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Holder class for parsed data.
      */
