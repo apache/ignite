@@ -62,6 +62,20 @@ class GridPortableObjectImpl implements GridPortableObject, Externalizable {
         this.start = start;
     }
 
+    /**
+     * @param ctx Context.
+     */
+    void context(GridPortableContext ctx) {
+        this.ctx = ctx;
+    }
+
+    /**
+     * @return Length.
+     */
+    int length() {
+        return PRIM.readInt(arr, start + 10);
+    }
+
     /** {@inheritDoc} */
     @Override public boolean userType() {
         return PRIM.readBoolean(arr, start + 1);
@@ -142,26 +156,33 @@ class GridPortableObjectImpl implements GridPortableObject, Externalizable {
         return PRIM.readInt(arr, start + 6);
     }
 
-    // TODO: context serialization.
+    /** {@inheritDoc} */
+    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+        GridPortableRawWriter raw = writer.rawWriter();
+
+        raw.writeByteArray(arr);
+        raw.writeInt(start);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+        GridPortableRawReader raw = reader.rawReader();
+
+        arr = raw.readByteArray();
+        start = raw.readInt();
+    }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-//        out.writeObject(ctx);
+        out.writeObject(ctx);
         U.writeByteArray(out, arr);
         out.writeInt(start);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-//        ctx = (GridPortableContext)in.readObject();
+        ctx = (GridPortableContext)in.readObject();
         arr = U.readByteArray(in);
         start = in.readInt();
-    }
-
-    /**
-     * @return Length.
-     */
-    int length() {
-        return PRIM.readInt(arr, start + 10);
     }
 }

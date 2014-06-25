@@ -134,6 +134,8 @@ public class GridPortableConfigurer {
         addDescriptor(TreeMap.class, MAP);
         addDescriptor(ConcurrentHashMap.class, MAP);
 
+        addDescriptor(GridPortableObjectImpl.class, 0x50);
+
         colTypes.put(ArrayList.class, ARR_LIST);
         colTypes.put(LinkedList.class, LINKED_LIST);
         colTypes.put(HashSet.class, HASH_SET);

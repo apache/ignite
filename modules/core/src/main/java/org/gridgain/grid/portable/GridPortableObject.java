@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Wrapper for serialized portable object.
  */
-public interface GridPortableObject extends Serializable, Cloneable {
+public interface GridPortableObject extends GridPortable, Serializable, Cloneable {
     /**
      * Gets user type flag value.
      *
