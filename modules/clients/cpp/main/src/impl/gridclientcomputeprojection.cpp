@@ -434,7 +434,7 @@ TGridClientNodePtr GridClientComputeProjectionImpl::refreshNode(const GridClient
 
     cmd.setIncludeAttributes(includeAttrs);
     cmd.setIncludeMetrics(includeMetrics);
-    cmd.setNodeId(id.uuid());
+    cmd.setNodeId(id);
 
     TGridClientNodeList nodes = refreshTopology(cmd);
 

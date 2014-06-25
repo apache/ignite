@@ -18,7 +18,6 @@
 #include <gridgain/gridclientuuid.hpp>
 #include <gridgain/gridclienttypedef.hpp>
 #include <gridgain/gridsocketaddress.hpp>
-#include <gridgain/gridclientprotocol.hpp>
 
 /**
  * Grid client node bean.
@@ -102,14 +101,6 @@ public:
      * @return Default cache mode.
      */
     std::string getDefaultCacheMode() const;
-
-    /**
-     * Returns a list of available addresses by protocol.
-     *
-     * @param proto Protocol - TCP or HTTP
-     * @return List of host/port pairs.
-     */
-    const std::vector<GridClientSocketAddress> & availableAddresses(GridClientProtocol proto) const;
 
     /**
      * Returns the router TCP address.

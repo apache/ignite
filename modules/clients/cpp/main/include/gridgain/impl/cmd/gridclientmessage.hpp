@@ -13,8 +13,8 @@
 #include <cstdlib>
 #include <cstdint>
 
-#include <string>
 #include <iostream>
+#include <vector>
 
 #include "gridgain/gridclientuuid.hpp"
 
@@ -64,7 +64,7 @@ public:
      *
      * @return Session token.
      */
-    std::string sessionToken() const {
+    std::vector<int8_t> sessionToken() const {
         return sessTok;
     }
 
@@ -73,7 +73,7 @@ public:
      *
      * @param pSessTok Session token.
      */
-    void sessionToken(const std::string& pSessTok) {
+    void sessionToken(const std::vector<int8_t>& pSessTok) {
         sessTok = pSessTok;
     }
 
@@ -108,7 +108,7 @@ private:
     GridClientUuid clientId;
 
     /** Message sessio token. */
-    std::string sessTok;
+    std::vector<int8_t> sessTok;
 
     /** Message request id. */
     int64_t reqId;
