@@ -7,22 +7,51 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.portable;
-
-import java.util.*;
+package org.gridgain.portable;
 
 /**
- * Common portable configuration.
+ * Portable type configuration.
  */
-public class GridPortableConfiguration {
+public class GridPortableTypeConfiguration {
+    /** Class name. */
+    private String clsName;
+
     /** ID mapper. */
     private GridPortableIdMapper idMapper;
 
     /** Serializer. */
     private GridPortableSerializer serializer;
 
-    /** Types. */
-    private Collection<GridPortableTypeConfiguration> typeCfgs;
+    /**
+     */
+    public GridPortableTypeConfiguration() {
+        // No-op.
+    }
+
+    /**
+     * @param clsName Class name.
+     */
+    public GridPortableTypeConfiguration(String clsName) {
+        this.clsName = clsName;
+    }
+
+    /**
+     * Gets type name.
+     *
+     * @return Type name.
+     */
+    public String getClassName() {
+        return clsName;
+    }
+
+    /**
+     * Sets type name.
+     *
+     * @param clsName Type name.
+     */
+    public void setClassName(String clsName) {
+        this.clsName = clsName;
+    }
 
     /**
      * Gets ID mapper.
@@ -58,23 +87,5 @@ public class GridPortableConfiguration {
      */
     public void setSerializer(GridPortableSerializer serializer) {
         this.serializer = serializer;
-    }
-
-    /**
-     * Gets types configuration.
-     *
-     * @return Types configuration.
-     */
-    public Collection<GridPortableTypeConfiguration> getTypeConfigurations() {
-        return typeCfgs;
-    }
-
-    /**
-     * Sets type configurations.
-     *
-     * @param typeCfgs Type configurations.
-     */
-    public void setTypeConfigurations(Collection<GridPortableTypeConfiguration> typeCfgs) {
-        this.typeCfgs = typeCfgs;
     }
 }

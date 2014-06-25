@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util.portable;
 
-import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
@@ -257,6 +257,7 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
        else {
            doWriteBoolean(true);
            doWriteLong(date.getTime());
+           doWriteShort((short)0);
        }
    }
 

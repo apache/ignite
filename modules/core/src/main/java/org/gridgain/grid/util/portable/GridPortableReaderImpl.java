@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.portable;
 
-import org.gridgain.grid.portable.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.lang.reflect.*;
@@ -1178,6 +1178,12 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     private Date doReadDate(boolean raw) {
         if (doReadBoolean(raw)) {
             long time = doReadLong(raw);
+
+            // Skip remainder.
+            if (raw)
+                rawOff += 2;
+            else
+                off += 2;
 
             return new Date(time);
         }

@@ -10,7 +10,7 @@
 package org.gridgain.grid;
 
 import org.gridgain.client.ssl.*;
-import org.gridgain.grid.portable.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

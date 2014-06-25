@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.portable;
 
-import org.gridgain.grid.portable.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;

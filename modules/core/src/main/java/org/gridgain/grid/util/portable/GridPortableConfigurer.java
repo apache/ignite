@@ -11,8 +11,8 @@ package org.gridgain.grid.util.portable;
 
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
-import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.portable.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
