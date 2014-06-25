@@ -1606,7 +1606,15 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 else if (spiState == CHECK_FAILED) {
                     GridTcpDiscoveryCheckFailedMessage msg = (GridTcpDiscoveryCheckFailedMessage)joinRes.get();
 
-                    throw new GridSpiException(msg.error());
+                    if (msg.error().contains("versions are not compatible")) {
+                        String rmtVer = parseRemoteVersion(msg.error());
+
+                        String locVer = locNode.attribute(ATTR_BUILD_VER);
+
+                        throw new GridSpiVersionCheckException("");
+                    }
+                    else
+                        throw new GridSpiException(msg.error());
                 }
                 else if (spiState == LOOPBACK_PROBLEM) {
                     GridTcpDiscoveryLoopbackProblemMessage msg = (GridTcpDiscoveryLoopbackProblemMessage)joinRes.get();
@@ -1635,6 +1643,28 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
         if (log.isDebugEnabled())
             log.debug("Discovery SPI has been connected to topology with order: " + locNode.internalOrder());
+    }
+
+    /**
+     * @param msg Error message.
+     * @return Remote grid version parsed from error message.
+     */
+    @Deprecated
+    private String parseRemoteVersion(String msg) {
+        msg = msg.replaceAll("\\s", "");
+
+        final String verPrefix = "rmtBuildVer=";
+
+        int startIdx = msg.indexOf(verPrefix);
+        int endIdx = msg.indexOf(',', startIdx);
+
+        if (endIdx < 0)
+            endIdx = msg.indexOf(']', startIdx);
+
+        if (startIdx < 0 || endIdx < 0)
+            return null;
+
+        return msg.substring(startIdx + verPrefix.length() - 1, endIdx);
     }
 
     /**
