@@ -173,6 +173,6 @@ namespace GridGain.Client.Portable
          * <summary>Write generic dictionary.</summary>
          * <param name="val">Dictionary.</param>
          */
-        void WriteGenericCollection<K, V>(IDictionary<K, V> val);
+        void WriteGenericDictionary<K, V>(IDictionary<K, V> val);
     }
 }

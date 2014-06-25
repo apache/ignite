@@ -29,11 +29,12 @@ namespace GridGain {
     public static class Program {
         [STAThread]
         static void Main(/*string[] args*/) {
-            LList<string> l = new LList<string>();
+            IDictionary<string, int> dict = new Dictionary<string, int>();
 
-            l.Add("att");
+            Type type = dict.GetType();
 
-            l.GetType().GetInterface(typeof(ICollection<>).FullName);
+            type.GetInterface(typeof(ICollection<>).FullName);
+
 
             Debug.Listeners.Add(new TextWriterTraceListener(System.Console.Out));
             Debug.AutoFlush = true;

@@ -19,13 +19,21 @@ namespace GridGain.Client.Impl.Portable
 
     /**
      * <summary>Write delegate.</summary> 
+     * <param name="ctx">Write context.</param>
+     * <param name="stream">Stream to wrte to.</param>
+     * <param name="pos">Position where write started.</param>
+     * <param name="obj">Object to write.</param>
      */
-    internal delegate void GridClientPortableSystemWriteDelegate(Stream stream, int pos, object obj);
+    internal delegate void GridClientPortableSystemWriteDelegate(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj);
 
     /**
      * <summary>Read delegate.</summary> 
+     * <param name="ctx">Read context.</param>
+     * <param name="stream">Stream to wrte to.</param>
+     * <param name="type">Type.</param>
+     * <param name="obj">Object to read to.</param>
      */
-    internal delegate void GridClientPortableSystemReadDelegate(Stream stream, Type type, out object obj);
+    internal delegate void GridClientPortableSystemReadDelegate(GridClientPortableReadContext ctx, Stream stream, Type type, out object obj);
 
     /**
      * <summary>Collection of predefined handlers for various system types.</summary>
@@ -42,375 +50,663 @@ namespace GridGain.Client.Impl.Portable
         /** Write handlers. */
         private static readonly IDictionary<int, GridClientPortableSystemReadDelegate> READ_HANDLERS =
             new Dictionary<int, GridClientPortableSystemReadDelegate>();
-
+        
         /**
          * <summary>Static initializer.</summary>
          */ 
         static unsafe GridClientPortableSystemHandlers()
         {
             // 1. Primitives.
-            WRITE_HANDLERS[typeof(bool)] = (stream, pos, obj) => 
-                {
-                    WriteCommonHeader(stream, PU.TYPE_BOOL, obj.GetHashCode(), HDR_LEN + 1);
-                    PU.WriteBoolean((bool)obj, stream);
-                };
+            WRITE_HANDLERS[typeof(bool)] = WriteBool;
+            READ_HANDLERS[PU.TYPE_BOOL] = ReadBool;
 
-            READ_HANDLERS[PU.TYPE_BOOL] = delegate(Stream stream, Type type, out object obj) 
-            {
-                obj = PU.ReadBoolean(stream);
-            };
+            WRITE_HANDLERS[typeof(sbyte)] = WriteSbyte;
+            WRITE_HANDLERS[typeof(byte)] = WriteByte;
+            READ_HANDLERS[PU.TYPE_BYTE] = ReadByte;
 
-            WRITE_HANDLERS[typeof(sbyte)] = (stream, pos, obj) =>
-            {
-                WriteCommonHeader(stream, PU.TYPE_BYTE, obj.GetHashCode(), HDR_LEN + 1);
+            WRITE_HANDLERS[typeof(short)] = WriteShort;
+            WRITE_HANDLERS[typeof(ushort)] = WriteUshort;
+            READ_HANDLERS[PU.TYPE_SHORT] = ReadShort;
 
-                sbyte val = (sbyte)obj;
+            WRITE_HANDLERS[typeof(char)] = WriteChar;
+            READ_HANDLERS[PU.TYPE_CHAR] = ReadChar;
 
-                PU.WriteByte(*(byte*)&val, stream);
-            };
+            WRITE_HANDLERS[typeof(int)] = WriteInt;
+            WRITE_HANDLERS[typeof(uint)] = WriteUint;
+            READ_HANDLERS[PU.TYPE_INT] = ReadInt;
 
-            WRITE_HANDLERS[typeof(byte)] = (stream, pos, obj) =>
-            {
-                WriteCommonHeader(stream, PU.TYPE_BYTE, obj.GetHashCode(), HDR_LEN + 1);
+            WRITE_HANDLERS[typeof(long)] = WriteLong;
+            WRITE_HANDLERS[typeof(ulong)] = WriteUlong;
+            READ_HANDLERS[PU.TYPE_LONG] = ReadLong;
 
-                PU.WriteByte((byte)obj, stream);
-            };
+            WRITE_HANDLERS[typeof(float)] = WriteFloat;
+            READ_HANDLERS[PU.TYPE_FLOAT] = ReadFloat;
 
-            READ_HANDLERS[PU.TYPE_BYTE] = delegate(Stream stream, Type type, out object obj)
-            {
-                byte val = PU.ReadByte(stream);
+            WRITE_HANDLERS[typeof(double)] = WriteDouble;
+            READ_HANDLERS[PU.TYPE_DOUBLE] = ReadDouble;
 
-                if (type == typeof(sbyte) || type == typeof(sbyte?))
-                    obj = *(sbyte*)&val;
-                else
-                    obj = val;
-            };
+            // 2. Date.
+            WRITE_HANDLERS[typeof(DateTime)] = WriteDate;
+            READ_HANDLERS[PU.TYPE_DATE] = ReadDate;
 
-            WRITE_HANDLERS[typeof(short)] = (stream, pos, obj) =>
-            {
-                WriteCommonHeader(stream, PU.TYPE_SHORT, obj.GetHashCode(), HDR_LEN + 2);
+            // 3. String.
+            WRITE_HANDLERS[typeof(string)] = WriteString;
+            READ_HANDLERS[PU.TYPE_STRING] = ReadString;
 
-                PU.WriteShort((short)obj, stream);
-            };
+            // 4. Guid.
+            WRITE_HANDLERS[typeof(Guid)] = WriteGuid;
+            READ_HANDLERS[PU.TYPE_GUID] = ReadGuid;
 
-            WRITE_HANDLERS[typeof(ushort)] = (stream, pos, obj) =>
-            {
-                WriteCommonHeader(stream, PU.TYPE_SHORT, obj.GetHashCode(), HDR_LEN + 2);
+            // 5. Primitive arrays.
+            WRITE_HANDLERS[typeof(bool[])] = WriteBoolArray;
+            READ_HANDLERS[PU.TYPE_ARRAY_BOOL] = ReadBoolArray;
 
-                ushort val = (ushort)obj;
+            WRITE_HANDLERS[typeof(byte[])] = WriteByteArray;
+            WRITE_HANDLERS[typeof(sbyte[])] = WriteSbyteArray;
+            READ_HANDLERS[PU.TYPE_ARRAY_BYTE] = ReadByteArray;
 
-                PU.WriteShort(*(short*)&val, stream);
-            };
+            WRITE_HANDLERS[typeof(short[])] = WriteShortArray;
+            WRITE_HANDLERS[typeof(ushort[])] = WriteUshortArray;
+            READ_HANDLERS[PU.TYPE_ARRAY_SHORT] = ReadShortArray;
 
-            READ_HANDLERS[PU.TYPE_SHORT] = delegate(Stream stream, Type type, out object obj)
-            {
-                short val = PU.ReadShort(stream);
+            WRITE_HANDLERS[typeof(char[])] = WriteCharArray;
+            READ_HANDLERS[PU.TYPE_ARRAY_CHAR] = ReadCharArray;
 
-                if (type == typeof(ushort) || type == typeof(ushort?))
-                    obj = *(ushort*)&val;
-                else
-                    obj = val;
-            };
+            WRITE_HANDLERS[typeof(int[])] = WriteIntArray;
+            WRITE_HANDLERS[typeof(uint[])] = WriteUintArray;
+            READ_HANDLERS[PU.TYPE_ARRAY_INT] = ReadIntArray;
 
-            WRITE_HANDLERS[typeof(char)] = (stream, pos, obj) =>
-            {
-                WriteCommonHeader(stream, PU.TYPE_CHAR, obj.GetHashCode(), HDR_LEN + 2);
+            WRITE_HANDLERS[typeof(long[])] = WriteLongArray;
+            WRITE_HANDLERS[typeof(ulong[])] = WriteUlongArray;
+            READ_HANDLERS[PU.TYPE_ARRAY_LONG] = ReadLongArray;
 
-                char val = (char)obj;
+            WRITE_HANDLERS[typeof(float[])] = WriteFloatArray;
+            READ_HANDLERS[PU.TYPE_ARRAY_FLOAT] = ReadFloatArray;
 
-                PU.WriteShort(*(short*)&val, stream);
-            };
+            WRITE_HANDLERS[typeof(double[])] = WriteDoubleArray;
+            READ_HANDLERS[PU.TYPE_ARRAY_DOUBLE] = ReadDoubleArray;
 
-            READ_HANDLERS[PU.TYPE_CHAR] = delegate(Stream stream, Type type, out object obj)
-            {
-                short val = PU.ReadShort(stream);
+            // 6. Date array.
+            WRITE_HANDLERS[typeof(DateTime?[])] = WriteDateArray;
+            READ_HANDLERS[PU.TYPE_ARRAY_DATE] = ReadDateArray;
 
-                obj = *(char*)&val;
-            };
+            // 7. String array.
+            WRITE_HANDLERS[typeof(string[])] = WriteStringArray;
+            READ_HANDLERS[PU.TYPE_ARRAY_STRING] = ReadStringArray;
 
-            WRITE_HANDLERS[typeof(int)] = (stream, pos, obj) =>
-            {
-                WriteCommonHeader(stream, PU.TYPE_INT, obj.GetHashCode(), HDR_LEN + 4);
+            // 8. Guid array.
+            WRITE_HANDLERS[typeof(Guid?[])] = WriteGuidArray;
+            READ_HANDLERS[PU.TYPE_ARRAY_GUID] = ReadGuidArray;            
 
-                PU.WriteInt((int)obj, stream);
-            };
+            // 9. Object array.
 
-            WRITE_HANDLERS[typeof(uint)] = (stream, pos, obj) =>
-            {
-                WriteCommonHeader(stream, PU.TYPE_INT, obj.GetHashCode(), HDR_LEN + 4);
-
-                uint val = (uint)obj;
-
-                PU.WriteInt(*(int*)&val, stream);
-            };
-
-            READ_HANDLERS[PU.TYPE_INT] = delegate(Stream stream, Type type, out object obj)
-            {
-                int val = PU.ReadInt(stream);
-
-                if (type == typeof(uint) || type == typeof(uint?))
-                    obj = *(uint*)&val;
-                else
-                    obj = val;
-            };
-
-            WRITE_HANDLERS[typeof(long)] = (stream, pos, obj) =>
-            {
-                WriteCommonHeader(stream, PU.TYPE_LONG, obj.GetHashCode(), HDR_LEN + 8);
-
-                PU.WriteLong((long)obj, stream);
-            };
-
-            WRITE_HANDLERS[typeof(ulong)] = (stream, pos, obj) =>
-            {
-                WriteCommonHeader(stream, PU.TYPE_LONG, obj.GetHashCode(), HDR_LEN + 8);
-
-                ulong val = (ulong)obj;
-
-                PU.WriteLong(*(long*)&val, stream);
-            };
-
-            READ_HANDLERS[PU.TYPE_LONG] = delegate(Stream stream, Type type, out object obj)
-            {
-                long val = PU.ReadLong(stream);
-
-                if (type == typeof(ulong) || type == typeof(ulong?))
-                    obj = *(ulong*)&val;
-                else
-                    obj = val;
-            };
-
-            WRITE_HANDLERS[typeof(float)] = (stream, pos, obj) =>
-            {
-                WriteCommonHeader(stream, PU.TYPE_FLOAT, obj.GetHashCode(), HDR_LEN + 4);
-
-                PU.WriteFloat((float)obj, stream);
-            };
-
-            READ_HANDLERS[PU.TYPE_FLOAT] = delegate(Stream stream, Type type, out object obj)
-            {
-                obj = PU.ReadFloat(stream);
-            };
-
-            WRITE_HANDLERS[typeof(double)] = (stream, pos, obj) =>
-            {
-                WriteCommonHeader(stream, PU.TYPE_DOUBLE, obj.GetHashCode(), HDR_LEN + 8);
-
-                PU.WriteDouble((double)obj, stream);
-            };
-
-            READ_HANDLERS[PU.TYPE_DOUBLE] = delegate(Stream stream, Type type, out object obj)
-            {
-                obj = PU.ReadDouble(stream);
-            };
-
-            // 2. String.
-            WRITE_HANDLERS[typeof(string)] = (stream, pos, obj) =>
-            {
-                string obj0 = (string)obj;
-
-                WriteCommonHeader(stream, PU.TYPE_STRING, PU.StringHashCode(obj0));
-
-                PU.WriteString(obj0, stream);
-
-                WriteLength(stream, pos, stream.Position, 0);
-            };
-
-            // 3. Guid.
-            WRITE_HANDLERS[typeof(Guid)] = (stream, pos, obj) =>
-            {
-                Guid obj0 = (Guid)obj;
-
-                WriteCommonHeader(stream, PU.TYPE_GUID, obj0.GetHashCode(), HDR_LEN + 1 + 16);
-
-                PU.WriteGuid(obj0, stream);
-            };
-
-            // 4. Primitive arrays.
-            WRITE_HANDLERS[typeof(bool[])] = (stream, pos, obj) =>
-            {
-                bool[] arr = (bool[])obj;
-
-                WriteCommonHeader(stream, PU.TYPE_ARRAY_BOOL, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length : 0));
-
-                PU.WriteBooleanArray(arr, stream);
-            };
-
-            READ_HANDLERS[PU.TYPE_ARRAY_BOOL] = delegate(Stream stream, Type type, out object obj)
-            {
-                obj = PU.ReadBooleanArray(stream);
-            };
-
-            WRITE_HANDLERS[typeof(byte[])] = (stream, pos, obj) =>
-            {
-                byte[] arr = (byte[])obj;
-
-                WriteCommonHeader(stream, PU.TYPE_ARRAY_BYTE, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length : 0));
-
-                PU.WriteByteArray(arr, stream);
-            };
-
-            WRITE_HANDLERS[typeof(sbyte[])] = (stream, pos, obj) =>
-            {
-                byte[] arr = (byte[])(Array)obj;
-
-                WriteCommonHeader(stream, PU.TYPE_ARRAY_BYTE, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length : 0));
-
-                PU.WriteByteArray(arr, stream);
-            };
-
-            READ_HANDLERS[PU.TYPE_ARRAY_BYTE] = delegate(Stream stream, Type type, out object obj)
-            {
-                obj = PU.ReadByteArray(stream, type == typeof(sbyte[]));
-            };
-
-            WRITE_HANDLERS[typeof(short[])] = (stream, pos, obj) =>
-            {
-                short[] arr = (short[])obj;
-
-                WriteCommonHeader(stream, PU.TYPE_ARRAY_SHORT, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 2 : 0));
-
-                PU.WriteShortArray(arr, stream);
-            };
-
-            WRITE_HANDLERS[typeof(ushort[])] = (stream, pos, obj) =>
-            {
-                short[] arr = (short[])(Array)obj;
-
-                WriteCommonHeader(stream, PU.TYPE_ARRAY_SHORT, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 2 : 0));
-
-                PU.WriteShortArray(arr, stream);
-            };
-
-            READ_HANDLERS[PU.TYPE_ARRAY_SHORT] = delegate(Stream stream, Type type, out object obj)
-            {
-                obj = PU.ReadShortArray(stream, type == typeof(short[]));
-            };
-
-            WRITE_HANDLERS[typeof(char[])] = (stream, pos, obj) =>
-            {
-                char[] arr = (char[])obj;
-
-                WriteCommonHeader(stream, PU.TYPE_ARRAY_CHAR, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 2 : 0));
-
-                PU.WriteCharArray(arr, stream);
-            };
-
-            READ_HANDLERS[PU.TYPE_ARRAY_CHAR] = delegate(Stream stream, Type type, out object obj)
-            {
-                obj = PU.ReadCharArray(stream);
-            };
-
-            WRITE_HANDLERS[typeof(int[])] = (stream, pos, obj) =>
-            {
-                int[] arr = (int[])obj;
-
-                WriteCommonHeader(stream, PU.TYPE_ARRAY_INT, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 4 : 0));
-
-                PU.WriteIntArray(arr, stream);
-            };
-
-            WRITE_HANDLERS[typeof(uint[])] = (stream, pos, obj) =>
-            {
-                int[] arr = (int[])(Array)obj;
-
-                WriteCommonHeader(stream, PU.TYPE_ARRAY_INT, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 4 : 0));
-
-                PU.WriteIntArray(arr, stream);
-            };
-
-            READ_HANDLERS[PU.TYPE_ARRAY_INT] = delegate(Stream stream, Type type, out object obj)
-            {
-                obj = PU.ReadIntArray(stream, type == typeof(int[]));
-            };
-
-            WRITE_HANDLERS[typeof(long[])] = (stream, pos, obj) =>
-            {
-                long[] arr = (long[])obj;
-
-                WriteCommonHeader(stream, PU.TYPE_ARRAY_LONG, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 8 : 0));
-
-                PU.WriteLongArray(arr, stream);
-            };
-
-            WRITE_HANDLERS[typeof(ulong[])] = (stream, pos, obj) =>
-            {
-                long[] arr = (long[])(Array)obj;
-
-                WriteCommonHeader(stream, PU.TYPE_ARRAY_LONG, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 8 : 0));
-
-                PU.WriteLongArray(arr, stream);
-            };
-
-            READ_HANDLERS[PU.TYPE_ARRAY_LONG] = delegate(Stream stream, Type type, out object obj)
-            {
-                obj = PU.ReadLongArray(stream, type == typeof(long[]));
-            };
-
-            WRITE_HANDLERS[typeof(float[])] = (stream, pos, obj) =>
-            {
-                float[] arr = (float[])obj;
-
-                WriteCommonHeader(stream, PU.TYPE_ARRAY_FLOAT, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 4 : 0));
-
-                PU.WriteFloatArray(arr, stream);
-            };
-
-            READ_HANDLERS[PU.TYPE_ARRAY_FLOAT] = delegate(Stream stream, Type type, out object obj)
-            {
-                obj = PU.ReadFloatArray(stream);
-            };
-
-            WRITE_HANDLERS[typeof(double[])] = (stream, pos, obj) =>
-            {
-                double[] arr = (double[])obj;
-
-                WriteCommonHeader(stream, PU.TYPE_ARRAY_DOUBLE, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 8 : 0));
-
-                PU.WriteDoubleArray(arr, stream);
-            };
-
-            READ_HANDLERS[PU.TYPE_ARRAY_DOUBLE] = delegate(Stream stream, Type type, out object obj)
-            {
-                obj = PU.ReadDoubleArray(stream);
-            };
-
-            // 5. String array.
-            WRITE_HANDLERS[typeof(string[])] = (stream, pos, obj) =>
-            {
-                string[] arr = (string[])obj;
-
-                WriteCommonHeader(stream, PU.TYPE_ARRAY_STRING, obj.GetHashCode());
-
-                PU.WriteStringArray(arr, stream);
-
-                WriteLength(stream, pos, stream.Position, 0);
-            };
-
-            READ_HANDLERS[PU.TYPE_ARRAY_STRING] = delegate(Stream stream, Type type, out object obj)
-            {
-                obj = PU.ReadStringArray(stream);
-            };
-
-            // 6. Guid array.
-            WRITE_HANDLERS[typeof(Guid?[])] = (stream, pos, obj) =>
-            {
-                Guid?[] arr = (Guid?[])obj;
-
-                WriteCommonHeader(stream, PU.TYPE_ARRAY_GUID, obj.GetHashCode());
-
-                PU.WriteGuidArray(arr, stream);
-
-                WriteLength(stream, pos, stream.Position, 0);
-            };
-
-            READ_HANDLERS[PU.TYPE_ARRAY_GUID] = delegate(Stream stream, Type type, out object obj)
-            {
-                obj = PU.ReadGuidArray(stream);
-            };
-
-            // 7. Object array.
+            // 10. Predefined collections.
+            
+            // 11. Custom collections.
         }
+
+        /**
+         * <summary>Write boolean.</summary>
+         */
+        private static void WriteBool(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            WriteCommonHeader(stream, PU.TYPE_BOOL, obj.GetHashCode(), HDR_LEN + 1);
+            PU.WriteBoolean((bool)obj, stream);
+        }
+
+        /**
+         * <summary>Write sbyte.</summary>
+         */
+        private static unsafe void WriteSbyte(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            WriteCommonHeader(stream, PU.TYPE_BYTE, obj.GetHashCode(), HDR_LEN + 1);
+
+            sbyte val = (sbyte)obj;
+
+            PU.WriteByte(*(byte*)&val, stream);
+        }
+
+        /**
+         * <summary>Write byte.</summary>
+         */
+        private static unsafe void WriteByte(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            WriteCommonHeader(stream, PU.TYPE_BYTE, obj.GetHashCode(), HDR_LEN + 1);
+
+            PU.WriteByte((byte)obj, stream);
+        }
+
+        /**
+         * <summary>Write short.</summary>
+         */
+        private static unsafe void WriteShort(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            WriteCommonHeader(stream, PU.TYPE_SHORT, obj.GetHashCode(), HDR_LEN + 2);
+
+            PU.WriteShort((short)obj, stream);
+        }
+
+        /**
+         * <summary>Write ushort.</summary>
+         */
+        private static unsafe void WriteUshort(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            WriteCommonHeader(stream, PU.TYPE_SHORT, obj.GetHashCode(), HDR_LEN + 2);
+
+            ushort val = (ushort)obj;
+
+            PU.WriteShort(*(short*)&val, stream);
+        }
+
+        /**
+         * <summary>Write char.</summary>
+         */
+        private static unsafe void WriteChar(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            WriteCommonHeader(stream, PU.TYPE_CHAR, obj.GetHashCode(), HDR_LEN + 2);
+
+            char val = (char)obj;
+
+            PU.WriteShort(*(short*)&val, stream);
+        }
+
+        /**
+         * <summary>Write int.</summary>
+         */
+        private static unsafe void WriteInt(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            WriteCommonHeader(stream, PU.TYPE_INT, obj.GetHashCode(), HDR_LEN + 4);
+
+            PU.WriteInt((int)obj, stream);
+        }
+
+        /**
+         * <summary>Write uint.</summary>
+         */
+        private static unsafe void WriteUint(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            WriteCommonHeader(stream, PU.TYPE_INT, obj.GetHashCode(), HDR_LEN + 4);
+
+            uint val = (uint)obj;
+
+            PU.WriteInt(*(int*)&val, stream);
+        }
+
+        /**
+         * <summary>Write long.</summary>
+         */
+        private static unsafe void WriteLong(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            WriteCommonHeader(stream, PU.TYPE_LONG, obj.GetHashCode(), HDR_LEN + 8);
+
+            PU.WriteLong((long)obj, stream);
+        }
+
+        /**
+         * <summary>Write ulong.</summary>
+         */
+        private static unsafe void WriteUlong(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            WriteCommonHeader(stream, PU.TYPE_LONG, obj.GetHashCode(), HDR_LEN + 8);
+
+            ulong val = (ulong)obj;
+
+            PU.WriteLong(*(long*)&val, stream);
+        }
+
+        /**
+         * <summary>Write float.</summary>
+         */
+        private static unsafe void WriteFloat(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            WriteCommonHeader(stream, PU.TYPE_FLOAT, obj.GetHashCode(), HDR_LEN + 4);
+
+            PU.WriteFloat((float)obj, stream);
+        }
+
+        /**
+         * <summary>Write double.</summary>
+         */
+        private static unsafe void WriteDouble(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            WriteCommonHeader(stream, PU.TYPE_DOUBLE, obj.GetHashCode(), HDR_LEN + 8);
+
+            PU.WriteDouble((double)obj, stream);
+        }
+
+        /**
+         * <summary>Write date.</summary>
+         */
+        private static unsafe void WriteDate(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            DateTime obj0 = (DateTime)obj;
+
+            WriteCommonHeader(stream, PU.TYPE_DATE, obj0.GetHashCode(), HDR_LEN + 1 + 8);
+
+            PU.WriteDate(obj0, stream);
+        }
+
+        /**
+         * <summary>Write string.</summary>
+         */
+        private static unsafe void WriteString(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            string obj0 = (string)obj;
+
+            WriteCommonHeader(stream, PU.TYPE_STRING, PU.StringHashCode(obj0));
+
+            PU.WriteString(obj0, stream);
+
+            WriteLength(stream, pos, stream.Position, 0);
+        }
+
+        /**
+         * <summary>Write Guid.</summary>
+         */
+        private static unsafe void WriteGuid(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            Guid obj0 = (Guid)obj;
+
+            WriteCommonHeader(stream, PU.TYPE_GUID, obj0.GetHashCode(), HDR_LEN + 1 + 16);
+
+            PU.WriteGuid(obj0, stream);
+        }
+
+        /**
+         * <summary>Write bool array.</summary>
+         */
+        private static unsafe void WriteBoolArray(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            bool[] arr = (bool[])obj;
+
+            WriteCommonHeader(stream, PU.TYPE_ARRAY_BOOL, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length : 0));
+
+            PU.WriteBooleanArray(arr, stream);
+        }
+
+        /**
+         * <summary>Write byte array.</summary>
+         */
+        private static unsafe void WriteByteArray(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            byte[] arr = (byte[])obj;
+
+            WriteCommonHeader(stream, PU.TYPE_ARRAY_BYTE, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length : 0));
+
+            PU.WriteByteArray(arr, stream);
+        }
+
+        /**
+         * <summary>Write sbyte array.</summary>
+         */
+        private static unsafe void WriteSbyteArray(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            byte[] arr = (byte[])(Array)obj;
+
+            WriteCommonHeader(stream, PU.TYPE_ARRAY_BYTE, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length : 0));
+
+            PU.WriteByteArray(arr, stream);
+        }
+
+        /**
+         * <summary>Write short array.</summary>
+         */
+        private static unsafe void WriteShortArray(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            short[] arr = (short[])obj;
+
+            WriteCommonHeader(stream, PU.TYPE_ARRAY_SHORT, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 2 : 0));
+
+            PU.WriteShortArray(arr, stream);
+        }
+
+        /**
+         * <summary>Write ushort array.</summary>
+         */
+        private static unsafe void WriteUshortArray(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            short[] arr = (short[])(Array)obj;
+
+            WriteCommonHeader(stream, PU.TYPE_ARRAY_SHORT, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 2 : 0));
+
+            PU.WriteShortArray(arr, stream);
+        }
+
+        /**
+         * <summary>Write char array.</summary>
+         */
+        private static unsafe void WriteCharArray(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            char[] arr = (char[])obj;
+
+            WriteCommonHeader(stream, PU.TYPE_ARRAY_CHAR, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 2 : 0));
+
+            PU.WriteCharArray(arr, stream);
+        }
+
+        /**
+         * <summary>Write int array.</summary>
+         */
+        private static unsafe void WriteIntArray(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            int[] arr = (int[])obj;
+
+            WriteCommonHeader(stream, PU.TYPE_ARRAY_INT, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 4 : 0));
+
+            PU.WriteIntArray(arr, stream);
+        }
+
+        /**
+         * <summary>Write uint array.</summary>
+         */
+        private static unsafe void WriteUintArray(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            int[] arr = (int[])(Array)obj;
+
+            WriteCommonHeader(stream, PU.TYPE_ARRAY_INT, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 4 : 0));
+
+            PU.WriteIntArray(arr, stream);
+        }
+
+        /**
+         * <summary>Write long array.</summary>
+         */
+        private static unsafe void WriteLongArray(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            long[] arr = (long[])obj;
+
+            WriteCommonHeader(stream, PU.TYPE_ARRAY_LONG, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 8 : 0));
+
+            PU.WriteLongArray(arr, stream);
+        }
+
+        /**
+         * <summary>Write ulong array.</summary>
+         */
+        private static unsafe void WriteUlongArray(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            long[] arr = (long[])(Array)obj;
+
+            WriteCommonHeader(stream, PU.TYPE_ARRAY_LONG, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 8 : 0));
+
+            PU.WriteLongArray(arr, stream);
+        }
+
+        /**
+         * <summary>Write float array.</summary>
+         */
+        private static unsafe void WriteFloatArray(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            float[] arr = (float[])obj;
+
+            WriteCommonHeader(stream, PU.TYPE_ARRAY_FLOAT, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 4 : 0));
+
+            PU.WriteFloatArray(arr, stream);
+        }
+
+        /**
+         * <summary>Write double array.</summary>
+         */
+        private static unsafe void WriteDoubleArray(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            double[] arr = (double[])obj;
+
+            WriteCommonHeader(stream, PU.TYPE_ARRAY_DOUBLE, obj.GetHashCode(), HDR_LEN + 1 + (arr != null ? 4 + arr.Length * 8 : 0));
+
+            PU.WriteDoubleArray(arr, stream);
+        }
+
+        /**
+         * <summary>Write date array.</summary>
+         */
+        private static unsafe void WriteDateArray(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            DateTime?[] arr = (DateTime?[])obj;
+
+            WriteCommonHeader(stream, PU.TYPE_ARRAY_DATE, obj.GetHashCode());
+
+            PU.WriteDateArray(arr, stream);
+
+            WriteLength(stream, pos, stream.Position, 0);
+        }
+
+        /**
+         * <summary>Write string array.</summary>
+         */
+        private static unsafe void WriteStringArray(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            string[] arr = (string[])obj;
+
+            WriteCommonHeader(stream, PU.TYPE_ARRAY_STRING, obj.GetHashCode());
+
+            PU.WriteStringArray(arr, stream);
+
+            WriteLength(stream, pos, stream.Position, 0);
+        }
+
+        /**
+         * <summary>Write Guid array.</summary>
+         */
+        private static unsafe void WriteGuidArray(GridClientPortableWriteContext ctx, Stream stream, int pos, object obj)
+        {
+            Guid?[] arr = (Guid?[])obj;
+
+            WriteCommonHeader(stream, PU.TYPE_ARRAY_GUID, obj.GetHashCode());
+
+            PU.WriteGuidArray(arr, stream);
+
+            WriteLength(stream, pos, stream.Position, 0);
+        }
+
+        /**
+         * <summary>Read bool.</summary>
+         */
+        private static unsafe void ReadBool(GridClientPortableReadContext ctx, Stream stream, Type type, out object obj)
+        {
+            obj = PU.ReadBoolean(stream);
+        }
+
+        /**
+         * <summary>Read byte.</summary>
+         */
+        private static unsafe void ReadByte(GridClientPortableReadContext ctx, Stream stream, Type type, out object obj)
+        {
+            byte val = PU.ReadByte(stream);
+
+            if (type == typeof(sbyte) || type == typeof(sbyte?))
+                obj = *(sbyte*)&val;
+            else
+                obj = val;
+        }
+
+        /**
+         * <summary>Read short.</summary>
+         */
+        private static unsafe void ReadShort(GridClientPortableReadContext ctx, Stream stream, Type type, out object obj)
+        {
+            short val = PU.ReadShort(stream);
+
+            if (type == typeof(ushort) || type == typeof(ushort?))
+                obj = *(ushort*)&val;
+            else
+                obj = val;
+        }
+
+        /**
+         * <summary>Read char.</summary>
+         */
+        private static unsafe void ReadChar(GridClientPortableReadContext ctx, Stream stream, Type type, out object obj)
+        {
+            short val = PU.ReadShort(stream);
+
+            obj = *(char*)&val;
+        }
+
+        /**
+         * <summary>Read int.</summary>
+         */
+        private static unsafe void ReadInt(GridClientPortableReadContext ctx, Stream stream, Type type, out object obj)
+        {
+            int val = PU.ReadInt(stream);
+
+            if (type == typeof(uint) || type == typeof(uint?))
+                obj = *(uint*)&val;
+            else
+                obj = val;
+        }
+
+        /**
+         * <summary>Read long.</summary>
+         */
+        private static unsafe void ReadLong(GridClientPortableReadContext ctx, Stream stream, Type type, out object obj)
+        {
+            long val = PU.ReadLong(stream);
+
+            if (type == typeof(ulong) || type == typeof(ulong?))
+                obj = *(ulong*)&val;
+            else
+                obj = val;
+        }
+
+        /**
+         * <summary>Read float.</summary>
+         */
+        private static unsafe void ReadFloat(GridClientPortableReadContext ctx, Stream stream, Type type, out object obj)
+        {
+            obj = PU.ReadFloat(stream);
+        }
+
+        /**
+         * <summary>Read double.</summary>
+         */
+        private static unsafe void ReadDouble(GridClientPortableReadContext ctx, Stream stream, Type type, out object obj)
+        {
+            obj = PU.ReadDouble(stream);
+        }
+
+        /**
+         * <summary>Read date.</summary>
+         */
+        private static unsafe void ReadDate(GridClientPortableReadContext ctx, Stream stream, Type type, out object obj)
+        {
+            obj = PU.ReadDate(stream);
+        }
+
+        /**
+         * <summary>Read string.</summary>
+         */
+        private static unsafe void ReadString(GridClientPortableReadContext ctx, Stream stream, Type type, out object obj)
+        {
+            obj = PU.ReadString(stream);
+        }
+
+        /**
+         * <summary>Read Guid.</summary>
+         */
+        private static unsafe void ReadGuid(GridClientPortableReadContext ctx, Stream stream, Type type, out object obj)
+        {
+            obj = PU.ReadGuid(stream);
+        }
+
+        /**
+         * <summary>Read bool array.</summary>
+         */
+        private static unsafe void ReadBoolArray(GridClientPortableReadContext ctx, Stream stream, Type type, out object obj)
+        {
+            obj = PU.ReadBooleanArray(stream);
+        }
+
+        /**
+         * <summary>Read byte array.</summary>
+         */
+        private static unsafe void ReadByteArray(GridClientPortableReadContext ctx, Stream stream, Type type, out object obj)
+        {
+            obj = PU.ReadByteArray(stream, type == typeof(sbyte[]));
+        }
+
+        /**
+         * <summary>Read short array.</summary>
+         */
+        private static unsafe void ReadShortArray(GridClientPortableReadContext ctx, Stream stream, Type type, out object obj)
+        {
+            obj = PU.ReadShortArray(stream, type == typeof(short[]));
+        }
+
+        /**
+         * <summary>Read char array.</summary>
+         */
+        private static unsafe void ReadCharArray(GridClientPortableReadContext ctx, Stream stream, Type type, out object obj)
+        {
+            obj = PU.ReadCharArray(stream);
+        }
+
+        /**
+         * <summary>Read int array.</summary>
+         */
+        private static unsafe void ReadIntArray(GridClientPortableReadContext ctx, Stream stream, Type type, out object obj)
+        {
+            obj = PU.ReadIntArray(stream, type == typeof(int[]));
+        }
+
+        /**
+         * <summary>Read long array.</summary>
+         */
+        private static unsafe void ReadLongArray(GridClientPortableReadContext ctx, Stream stream, Type type, out object obj)
+        {
+            obj = PU.ReadLongArray(stream, type == typeof(long[]));
+        }
+
+        /**
+         * <summary>Read float array.</summary>
+         */
+        private static unsafe void ReadFloatArray(GridClientPortableReadContext ctx, Stream stream, Type type, out object obj)
+        {
+            obj = PU.ReadFloatArray(stream);
+        }
+
+        /**
+         * <summary>Read double array.</summary>
+         */
+        private static unsafe void ReadDoubleArray(GridClientPortableReadContext ctx, Stream stream, Type type, out object obj)
+        {
+            obj = PU.ReadDoubleArray(stream);
+        }
+
+        /**
+         * <summary>Read date array.</summary>
+         */
+        private static unsafe void ReadDateArray(GridClientPortableReadContext ctx, Stream stream, Type type, out object obj)
+        {
+            obj = PU.ReadDateArray(stream);
+        }
+
+        /**
+         * <summary>Read string array.</summary>
+         */
+        private static unsafe void ReadStringArray(GridClientPortableReadContext ctx, Stream stream, Type type, out object obj)
+        {
+            obj = PU.ReadStringArray(stream);
+        }
+
+        /**
+         * <summary>Read GUID array.</summary>
+         */
+        private static unsafe void ReadGuidArray(GridClientPortableReadContext ctx, Stream stream, Type type, out object obj)
+        {
+            obj = PU.ReadGuidArray(stream);
+        }
+
+
+
+
+
+
+
+
+
+
+
+
 
         public static void WriteCollection(GridClientPortableWriteContext ctx, Stream stream, int pos, ICollection col, byte type)
         {

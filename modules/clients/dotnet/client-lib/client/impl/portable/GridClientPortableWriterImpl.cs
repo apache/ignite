@@ -11,6 +11,7 @@ namespace GridGain.Client.Impl.Portable
 {
     using System;
     using System.Collections;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.IO;
     using GridGain.Client.Portable;
@@ -445,21 +446,139 @@ namespace GridGain.Client.Impl.Portable
                     ctx.Write(elem);
             }
             else
-            {
                 PU.WriteInt(-1, ctx.Stream);
-            }
         }
 
+        /** <inheritdoc /> */
         public void WriteGenericCollection<T>(string fieldName, ICollection<T> val)
         {
-            throw new NotImplementedException();
+            WriteField(fieldName);
+
+            long pos = ctx.Stream.Position;
+
+            ctx.Stream.Seek(4, SeekOrigin.Current);
+
+            PU.WriteByte(PU.TYPE_COLLECTION, ctx.Stream);
+
+            WriteGenericCollection<T>(val);
+
+            WriteLength(pos);
         }
 
+        /** <inheritdoc /> */
         public void WriteGenericCollection<T>(ICollection<T> val)
         {
-            throw new NotImplementedException();
+            if (val != null)
+            {
+                PU.WriteInt(val.Count, ctx.Stream);
+
+                Type type = val.GetType().GetGenericTypeDefinition();
+
+                byte colType;
+
+                if (type == typeof(List<>))
+                    colType = PU.COLLECTION_ARRAY_LIST;
+                else if (type == typeof(LinkedList<>))
+                    colType = PU.COLLECTION_LINKED_LIST;
+                else if (type == typeof(HashSet<>))
+                    colType = PU.COLLECTION_HASH_SET;
+                else if (type == typeof(SortedSet<>))
+                    colType = PU.COLLECTION_SORTED_SET;
+                else 
+                    colType = PU.COLLECTION_CUSTOM;
+
+                PU.WriteByte(colType, ctx.Stream);
+
+                foreach (T elem in val)
+                    ctx.Write(elem);
+            }
+            else
+                PU.WriteInt(-1, ctx.Stream);
         }
-            
+
+        /** <inheritdoc /> */
+        public void WriteDictionary(string fieldName, IDictionary val)
+        {
+            WriteField(fieldName);
+
+            long pos = ctx.Stream.Position;
+
+            ctx.Stream.Seek(4, SeekOrigin.Current);
+
+            PU.WriteByte(PU.TYPE_MAP, ctx.Stream);
+
+            WriteDictionary(val);
+
+            WriteLength(pos);
+        }
+
+        /** <inheritdoc /> */
+        public void WriteDictionary(IDictionary val)
+        {
+            if (val != null)
+            {
+                PU.WriteInt(val.Count, ctx.Stream);
+
+                PU.WriteByte(val.GetType() == typeof(Hashtable) ? PU.MAP_HASH_MAP : PU.MAP_CUSTOM, ctx.Stream);
+
+                foreach (DictionaryEntry entry in val)
+                {
+                    ctx.Write(entry.Key);
+                    ctx.Write(entry.Value);
+                }
+            }
+            else
+                PU.WriteInt(-1, ctx.Stream);
+        }
+
+        /** <inheritdoc /> */
+        public void WriteGenericDictionary<K, V>(string fieldName, IDictionary<K, V> val)
+        {
+            WriteField(fieldName);
+
+            long pos = ctx.Stream.Position;
+
+            ctx.Stream.Seek(4, SeekOrigin.Current);
+
+            PU.WriteByte(PU.TYPE_MAP, ctx.Stream);
+
+            WriteGenericDictionary(val);
+
+            WriteLength(pos);
+        }
+
+        /** <inheritdoc /> */
+        public void WriteGenericDictionary<K, V>(IDictionary<K, V> val)
+        {
+            if (val != null)
+            {
+                PU.WriteInt(val.Count, ctx.Stream);
+
+                Type type = val.GetType().GetGenericTypeDefinition();
+
+                byte dictType;
+
+                if (type == typeof(Dictionary<,>))
+                    dictType = PU.MAP_HASH_MAP;
+                else if (type == typeof(SortedDictionary<,>))
+                    dictType = PU.MAP_SORTED_MAP;
+                else if (type == typeof(ConcurrentDictionary<,>))
+                    dictType = PU.MAP_CONCURRENT_HASH_MAP;
+                else
+                    dictType = PU.MAP_CUSTOM;
+
+                PU.WriteByte(dictType, ctx.Stream);
+
+                foreach (KeyValuePair<K, V> entry in val)
+                {
+                    ctx.Write(entry.Key);
+                    ctx.Write(entry.Value);
+                }
+            }
+            else
+                PU.WriteInt(-1, ctx.Stream);
+        }
+
         /**
          * <summary>Mark current output as raw.</summary>
          */ 

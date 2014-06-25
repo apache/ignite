@@ -196,7 +196,7 @@ namespace GridGain.Client.Portable {
          * <param name="fieldName">Field name.</param>
          * <param name="val">Dictionary.</param>
          */
-        void WriteGenericCollection<K, V>(string fieldName, IDictionary<K, V> val);
+        void WriteGenericDictionary<K, V>(string fieldName, IDictionary<K, V> val);
         
         /**
          * <summary>Get raw writer.</summary>

@@ -39,8 +39,12 @@ namespace GridGain.Client.Portable
         private static readonly Type TYP_GENERIC_DICTIONARY = typeof(IDictionary<,>);
 
         /** Method: read generic collection. */
-        private static readonly MethodInfo MTHD_READ_GEN_COL = 
-            typeof(IGridClientPortableReader).GetMethod("ReadCollection", new Type[] { typeof(string), typeof(GridClientPortableGenericCollectionFactory<>) });
+        private static readonly MethodInfo MTHD_READ_GENERIC_COLLECTION = 
+            typeof(IGridClientPortableReader).GetMethod("ReadGenericCollection", new Type[] { typeof(string) });
+
+        /** Method: read generic dictionary. */
+        private static readonly MethodInfo MTHD_READ_GENERIC_DICTIONARY =
+            typeof(IGridClientPortableReader).GetMethod("ReadGenericDictionary", new Type[] { typeof(string) });
 
         /** Cached type descriptors. */
         private readonly IDictionary<Type, Descriptor> types = new Dictionary<Type, Descriptor>();
@@ -191,15 +195,77 @@ namespace GridGain.Client.Portable
                     }
                     else if (type.IsArray)
                         HandleArray(field, type, name, wActions);
-                    //else if (type.IsGenericType && type.GetInterface(TYP_GENERIC_DICTIONARY.Name) != null)
-                    //{
-                    //    wActions.Add((obj, writer) =>
-                    //    {
-                    //        dynamic val = field.GetValue(obj);
+                    else if (type.IsGenericType && type.GetInterface(TYP_GENERIC_DICTIONARY.FullName) != null)
+                    {
+                        wActions.Add((obj, writer) =>
+                        {
+                            dynamic val = field.GetValue(obj);
 
-                    //        //writer.WriteMap(name, val);
-                    //    });
-                    //}
+                            writer.WriteGenericDictionary(name, val);
+                        });
+
+                        rActions.Add((obj, reader) =>
+                        {
+                            object val = MTHD_READ_GENERIC_DICTIONARY
+                                .MakeGenericMethod(type.GetInterface(TYP_GENERIC_DICTIONARY.FullName)
+                                .GetGenericArguments())
+                                .Invoke(reader, new object[] { name });
+
+                            field.SetValue(obj, val);
+                        });
+                    }
+                    else if (type.IsGenericType && type.GetInterface(TYP_GENERIC_COLLECTION.FullName) != null)
+                    {
+                        wActions.Add((obj, writer) =>
+                        {
+                            dynamic val = field.GetValue(obj);
+
+                            writer.WriteGenericCollection(name, val);
+                        });
+
+                        rActions.Add((obj, reader) =>
+                        {
+                            object val = MTHD_READ_GENERIC_COLLECTION
+                                .MakeGenericMethod(type.GetInterface(TYP_GENERIC_COLLECTION.FullName)
+                                .GetGenericArguments())
+                                .Invoke(reader, new object[] { name });
+
+                            field.SetValue(obj, val);
+                        });
+                    }
+                    else if (type.GetInterface(TYP_DICTIONARY.FullName) != null)
+                    {
+                        wActions.Add((obj, writer) =>
+                        {
+                            IDictionary val = (IDictionary)field.GetValue(obj);
+
+                            writer.WriteDictionary(name, val);
+                        });
+
+                        rActions.Add((obj, reader) =>
+                        {
+                            object val = reader.ReadCollection(name);
+
+                            field.SetValue(obj, val);
+                        });
+                    }
+                    else if (type.GetInterface(TYP_COLLECTION.FullName) != null)
+                    {
+                        wActions.Add((obj, writer) =>
+                        {
+                            ICollection val = (ICollection)field.GetValue(obj);
+
+                            writer.WriteCollection(name, val);
+                        });
+
+                        rActions.Add((obj, reader) =>
+                        {
+                            object val = reader.ReadCollection(name);
+
+                            field.SetValue(obj, val);
+                        });
+                    }
+
                     else if (type.IsGenericType && type.GetInterface(TYP_GENERIC_COLLECTION.Name) != null)
                     {
                         wActions.Add((obj, writer) =>
@@ -211,7 +277,7 @@ namespace GridGain.Client.Portable
 
                         rActions.Add((obj, reader) => 
                         {
-                            object val = MTHD_READ_GEN_COL.MakeGenericMethod(type.GetGenericArguments()[0]).Invoke(reader, new object[] { name });
+                            object val = MTHD_READ_GENERIC_COLLECTION.MakeGenericMethod(type.GetGenericArguments()[0]).Invoke(reader, new object[] { name });
 
                             field.SetValue(obj, val);
                         });

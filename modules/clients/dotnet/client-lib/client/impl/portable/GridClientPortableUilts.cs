@@ -178,7 +178,13 @@ namespace GridGain.Client.Impl.Portable
 
         /** Byte "1". */
         public const byte BYTE_ONE = (byte)1;
-        
+
+        /** Ticks for Java epoch. */
+        private static readonly long JAVA_DATE_TICKS = new DateTime(1970, 1, 1, 0, 0, 0, 0).Ticks;
+
+        /** java date multiplier. */
+        private const long JAVA_DATE_MULTIPLIER = 10000;
+
         /** Whether little endian is set. */
         private static readonly bool LITTLE_ENDIAN = BitConverter.IsLittleEndian;
         
@@ -915,6 +921,75 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
+         * <summary>Write date.</summary>
+         * <param name="val">Date.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static void WriteDate(DateTime? val, Stream stream)
+        {
+            if (val.HasValue)
+            {
+                stream.WriteByte(BYTE_ONE);
+
+                WriteLong(ToJavaDate(val.Value), stream);
+            }
+            else
+                stream.WriteByte(BYTE_ZERO);
+        }
+
+        /**
+         * <summary>Read date.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Date</returns>
+         */
+        public static DateTime? ReadDate(Stream stream)
+        {
+            return stream.ReadByte() == BYTE_ONE ? ToDotNetDate(ReadLong(stream)) : (DateTime?)null;
+        }
+
+        /**
+         * <summary>Write date array.</summary>
+         * <param name="vals">Date array.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static void WriteDateArray(DateTime?[] vals, Stream stream)
+        {
+            if (vals != null)
+            {
+                stream.WriteByte(BYTE_ONE);
+
+                WriteInt(vals.Length, stream);
+
+                foreach (DateTime? val in vals)
+                    WriteDate(val, stream);
+            }
+            else
+                stream.WriteByte(BYTE_ZERO);
+        }
+
+        /**
+         * <summary>Read date array.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Date array.</returns>
+         */
+        public static DateTime?[] ReadDateArray(Stream stream)
+        {
+            if (stream.ReadByte() == BYTE_ONE)
+            {
+                int len = ReadInt(stream);
+
+                DateTime?[] vals = new DateTime?[len];
+
+                for (int i = 0; i < len; i++)
+                    vals[i] = ReadDate(stream);
+
+                return vals;
+            }
+            else
+                return null;
+        }
+
+        /**
          * <summary>Write GUID.</summary>
          * <param name="val">GUID.</param>
          * <param name="stream">Stream.</param>
@@ -1078,6 +1153,26 @@ namespace GridGain.Client.Impl.Portable
             long hilo = msb ^ lsb;
 
             return ((int)(hilo >> 32)) ^ (int)hilo;
+        }
+
+        /**
+         * <summary>Convert date to Java ticks.</summary>
+         * <param name="date">Date</param>
+         * <returns>Java ticks.</returns>
+         */
+        private static long ToJavaDate(DateTime date)
+        {
+            return (date.Ticks - JAVA_DATE_TICKS) / 10000;
+        }
+
+        /**
+         * <summary>Convert Java ticks to date.</summary>
+         * <param name="ticks">Java ticks.</param>
+         * <returns>Date.</returns>
+         */
+        private static DateTime ToDotNetDate(long ticks)
+        {
+            return new DateTime(ticks * JAVA_DATE_MULTIPLIER + JAVA_DATE_TICKS);
         }
 
     }
