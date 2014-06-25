@@ -1606,13 +1606,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 else if (spiState == CHECK_FAILED) {
                     GridTcpDiscoveryCheckFailedMessage msg = (GridTcpDiscoveryCheckFailedMessage)joinRes.get();
 
-                    if (msg.error().contains("versions are not compatible")) {
-                        String rmtVer = parseRemoteVersion(msg.error());
-
-                        String locVer = locNode.attribute(ATTR_BUILD_VER);
-
-                        throw new GridSpiVersionCheckException("");
-                    }
+                    if (versionCheckFailed(msg))
+                        throw new GridSpiVersionCheckException(msg.error());
                     else
                         throw new GridSpiException(msg.error());
                 }
@@ -1646,11 +1641,25 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     }
 
     /**
-     * @param msg Error message.
-     * @return Remote grid version parsed from error message.
+     * @param msg Failed message.
+     * @return {@code True} if specified failed message relates to version incompatibility, {@code false} otherwise.
+     * @deprecated Parsing of error message was used for preserving backward compatibility. We should remove it
+     *      and create separate message for failed version check with next major release.
      */
     @Deprecated
-    private String parseRemoteVersion(String msg) {
+    private static boolean versionCheckFailed(GridTcpDiscoveryCheckFailedMessage msg) {
+        return msg.error().contains("versions are not compatible");
+    }
+
+    /**
+     * @param msg Error message.
+     * @return Remote grid version parsed from error message.
+     * @deprecated This method was created for preserving backward compatibility. During major version update
+     *      parsing of error message should be replaced with new {@link GridTcpDiscoveryCheckFailedMessage}
+     *      which contains all necessary information.
+     */
+    @Deprecated
+    @Nullable private String parseRemoteVersion(String msg) {
         msg = msg.replaceAll("\\s", "");
 
         final String verPrefix = "rmtBuildVer=";
@@ -3555,6 +3564,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                         else {
                             String errMsg = "Local node's and remote node's build versions are not compatible " +
                                 "(node will not join, all nodes in topology should have compatible build versions) " +
+                                (rmtBuildVer.contains("-os") && locBuildVer.contains("-os") ?
+                                ". Compatibility between different GridGain versions " +
+                                "is supported in Enterprise Edition " : "") +
                                 "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
                                 ", locNodeAddrs=" + U.addressesAsString(locNode) +
                                 ", rmtNodeAddrs=" + U.addressesAsString(node) +
@@ -3568,8 +3580,12 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                             try {
                                 String sndMsg = "Local node's and remote node's build versions are not compatible " +
-                                    "(node will not join, all nodes in topology should have compatible build " +
-                                    "versions) [locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
+                                    "(node will not join, all nodes in topology should have " +
+                                    "compatible build versions) " +
+                                    (rmtBuildVer.contains("-os") && locBuildVer.contains("-os") ?
+                                    ". Compatibility between different GridGain versions " +
+                                    "is supported in Enterprise Edition " : "") +
+                                    "[locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
                                     ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
                                     ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
                                     ", rmtNodeId=" + locNode.id() + ']';
