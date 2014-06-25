@@ -371,6 +371,22 @@ namespace GridGain.Client.Portable {
         }
 
         /**
+         * <summary>Check generic collections.</summary>
+         */
+        public void TestGenericCollections()
+        {
+            ICollection<string> list = new List<string>();
+
+            list.Add("1");
+
+            byte[] data = marsh.Marshal(list);
+
+            ICollection<string> newList = marsh.Unmarshal(data).Deserialize<List<string>>();
+
+            CompareCollections<string>(list, newList);
+        }
+
+        /**
          * <summary>Check write of primitive fields through reflection.</summary>
          */
         public void TestPrimitiveFieldsReflective()
@@ -759,6 +775,48 @@ namespace GridGain.Client.Portable {
         }
 
         private static bool CompareCollections(ICollection col1, ICollection col2)
+        {
+            if (col1 == null && col2 == null)
+                return true;
+            else
+            {
+                if (col1 == null || col2 == null)
+                    return false;
+                else
+                {
+                    if (col1.Count != col2.Count)
+                        return false;
+                    else
+                    {
+                        IEnumerator enum1 = col1.GetEnumerator();
+
+                        while (enum1.MoveNext())
+                        {
+                            object elem = enum1.Current;
+
+                            bool contains = false;
+
+                            foreach (object thatElem in col2)
+                            {
+                                if (elem == null && thatElem == null || elem != null && elem.Equals(thatElem))
+                                {
+                                    contains = true;
+
+                                    break;
+                                }
+                            }
+
+                            if (!contains)
+                                return false;
+                        }
+
+                        return true;
+                    }
+                }
+            }
+        }
+
+        private static bool CompareCollections<T>(ICollection<T> col1, ICollection<T> col2)
         {
             if (col1 == null && col2 == null)
                 return true;

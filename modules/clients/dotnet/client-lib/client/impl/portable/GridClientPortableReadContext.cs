@@ -79,7 +79,7 @@ namespace GridGain.Client.Impl.Portable
         {
             long pos = stream.Position;
 
-            byte hdr =(byte)stream.ReadByte();
+            byte hdr = (byte)stream.ReadByte();
 
             if (hdr == PU.HDR_NULL)
                 return default(T);

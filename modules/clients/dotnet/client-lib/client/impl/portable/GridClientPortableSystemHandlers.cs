@@ -177,11 +177,11 @@ namespace GridGain.Client.Impl.Portable
                 if (type.IsGenericType)
                 {
                     // 2. Generic dictionary?
-                    if (type.GetGenericTypeDefinition().GetInterface(PU.TYP_GENERIC_DICTIONARY.FullName) != null)
+                    if (type.GetInterface(PU.TYP_GENERIC_DICTIONARY.FullName) != null)
                         return WriteGenericDictionary;
 
                     // 3. Generic collection?
-                    if (type.GetGenericTypeDefinition().GetInterface(PU.TYP_GENERIC_COLLECTION.FullName) != null)
+                    if (type.GetInterface(PU.TYP_GENERIC_COLLECTION.FullName) != null)
                         return WriteGenericCollection;
                 }
 
