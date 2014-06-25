@@ -69,6 +69,7 @@
     <Compile Include="client\balancer\IGridClientLoadBalancer.cs" />
     <Compile Include="client\balancer\GridClientLoadBalancer.cs" />
     <Compile Include="client\balancer\GridClientRoundRobinBalancer.cs" />
+    <Compile Include="client\impl\portable\GridClientPortableCollectionInfo.cs" />
     <Compile Include="client\impl\portable\GridClientPortableObjectImpl.cs" />
     <Compile Include="client\impl\portable\GridClientPortableReadContext.cs" />
     <Compile Include="client\impl\portable\GridClientPortableReaderImpl.cs" />

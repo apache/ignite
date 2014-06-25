@@ -35,7 +35,7 @@ namespace GridGain.Client.Impl.Portable
      * <param name="obj">Object to read to.</param>
      */
     internal delegate void GridClientPortableSystemReadDelegate(GridClientPortableReadContext ctx, Type type, out object obj);
-
+        
     /**
      * <summary>Collection of predefined handlers for various system types.</summary>
      */ 
