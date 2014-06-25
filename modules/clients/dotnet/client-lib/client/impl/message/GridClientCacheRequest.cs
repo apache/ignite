@@ -117,7 +117,7 @@ namespace GridGain.Client.Impl.Message {
             rawWriter.WriteObject(Value);
             rawWriter.WriteObject(Value2);
 
-            //rawWriter.WriteMap(Values);
+            rawWriter.WriteGenericDictionary(Values);
 
             rawWriter.WriteInt(CacheFlags);
         }
@@ -136,7 +136,7 @@ namespace GridGain.Client.Impl.Message {
             Value = rawReader.ReadObject<Object>();
             Value2 = rawReader.ReadObject<Object>();
 
-            //Values = rawReader.ReadMap<Object, Object>();
+            Values = rawReader.ReadGenericDictionary<object, object>();
 
             CacheFlags = rawReader.ReadInt();
         }

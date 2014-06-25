@@ -18,6 +18,8 @@ namespace GridGain.Client.Impl.Portable
     using System.Text;
     using GridGain.Client.Portable;
 
+    using PSH = GridGain.Client.Impl.Portable.GridClientPortableSystemHandlers;
+
     /**
      * <summary>Utilities for portable serialization.</summary>
      */ 
@@ -108,7 +110,7 @@ namespace GridGain.Client.Impl.Portable
         public const byte TYPE_COLLECTION = 24; 
 
         /** Type: map. */
-        public const byte TYPE_MAP = 25;
+        public const byte TYPE_DICTIONARY = 25;
 
         /** Type: authentication request. */
         public const byte TYPE_AUTH_REQ = 100;
@@ -179,6 +181,21 @@ namespace GridGain.Client.Impl.Portable
         /** Byte "1". */
         public const byte BYTE_ONE = (byte)1;
 
+        /** Size for null arrays/collections. */
+        public const int SIZE_NULL = -1;
+
+        /** Collection type. */
+        public static readonly Type TYP_COLLECTION = typeof(ICollection);
+
+        /** Dictionary type. */
+        public static readonly Type TYP_DICTIONARY = typeof(IDictionary);
+
+        /** Generic collection type. */
+        public static readonly Type TYP_GENERIC_COLLECTION = typeof(ICollection<>);
+
+        /** Generic dictionary type. */
+        public static readonly Type TYP_GENERIC_DICTIONARY = typeof(IDictionary<,>);
+
         /** Ticks for Java epoch. */
         private static readonly long JAVA_DATE_TICKS = new DateTime(1970, 1, 1, 0, 0, 0, 0).Ticks;
 
@@ -188,10 +205,41 @@ namespace GridGain.Client.Impl.Portable
         /** Whether little endian is set. */
         private static readonly bool LITTLE_ENDIAN = BitConverter.IsLittleEndian;
         
-        /** Memory stream buffer field info. */
-        private static FieldInfo MEM_BUF_FIELD = typeof(MemoryStream).GetField("_buffer", 
-            BindingFlags.Instance | BindingFlags.NonPublic);
-        
+        /** Filed: MemoryStream byte buffer (array). */
+        private static FieldInfo FIELD_MEM_BUF = typeof(MemoryStream).GetField("_buffer", BIND_FLAGS_INSTANCE);
+
+        /** Method: WriteGenericCollection. */
+        public static MethodInfo MTDH_WRITE_GENERIC_COLLECTION =
+            typeof(GridClientPortableUilts).GetMethod("WriteGenericCollection", BIND_FLAGS_STATIC);
+
+        /** Method: WriteTypedGenericCollection. */
+        public static MethodInfo MTDH_WRITE_TYPED_GENERIC_COLLECTION =
+            typeof(GridClientPortableUilts).GetMethod("WriteTypedGenericCollection", BIND_FLAGS_STATIC);
+
+        /** Method: ReadGenericCollection. */
+        public static MethodInfo MTDH_READ_GENERIC_COLLECTION =
+            typeof(GridClientPortableUilts).GetMethod("ReadGenericCollection", BIND_FLAGS_STATIC);
+
+        /** Method: WriteGenericDictionary. */
+        public static MethodInfo MTDH_WRITE_GENERIC_DICTIONARY = 
+            typeof(GridClientPortableUilts).GetMethod("WriteGenericDictionary", BIND_FLAGS_STATIC);
+
+        /** Method: WriteTypedGenericDictionary. */
+        public static MethodInfo MTDH_WRITE_TYPED_GENERIC_DICTIONARY = 
+            typeof(GridClientPortableUilts).GetMethod("WriteTypedGenericDictionary", BIND_FLAGS_STATIC);
+
+        /** Method: ReadGenericDictionary. */
+        public static MethodInfo MTDH_READ_GENERIC_DICTIONARY =
+            typeof(GridClientPortableUilts).GetMethod("ReadGenericDictionary", BIND_FLAGS_STATIC);
+
+        /** Bindig flags for instance search. */
+        private static BindingFlags BIND_FLAGS_INSTANCE =
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+        /** Bindig flags for static search. */
+        private static BindingFlags BIND_FLAGS_STATIC =
+            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+
         /**
          * <summary>Write boolean.</summary>
          * <param name="val">Value.</param>
@@ -220,16 +268,14 @@ namespace GridGain.Client.Impl.Portable
         public static void WriteBooleanArray(bool[] vals, Stream stream)
         {
             if (vals == null)
-                stream.WriteByte(BYTE_ZERO);
+                WriteInt(SIZE_NULL, stream);
             else
             {
-                stream.WriteByte(BYTE_ONE);
-
                 WriteInt(vals.Length, stream);
 
                 for (int i = 0; i < vals.Length; i++)
-                    stream.WriteByte(vals[i] ? BYTE_ONE : BYTE_ZERO);
-            }
+                    WriteBoolean(vals[i], stream);
+            }                
         }
 
         /**
@@ -239,14 +285,16 @@ namespace GridGain.Client.Impl.Portable
          */
         public static bool[] ReadBooleanArray(Stream stream)
         {
-            if (stream.ReadByte() == BYTE_ZERO)
+            int len = ReadInt(stream);
+
+            if (len == SIZE_NULL)
                 return null;
-            else 
-            {                
-                bool[] vals = new bool[ReadInt(stream)];
+            else
+            {
+                bool[] vals = new bool[len];
 
                 for (int i = 0; i < vals.Length; i++)
-                    vals[i] = stream.ReadByte() == BYTE_ONE;
+                    vals[i] = ReadBoolean(stream);
 
                 return vals;
             }
@@ -281,15 +329,13 @@ namespace GridGain.Client.Impl.Portable
         public static void WriteByteArray(byte[] vals, Stream stream)
         {
             if (vals == null)
-                stream.WriteByte(BYTE_ZERO);
+                WriteInt(SIZE_NULL, stream);
             else
             {
-                stream.WriteByte(BYTE_ONE);
-
                 WriteInt(vals.Length, stream);
 
                 stream.Write(vals, 0, vals.Length);
-            }
+            }  
         }
 
         /**
@@ -300,10 +346,12 @@ namespace GridGain.Client.Impl.Portable
          */
         public static unsafe object ReadByteArray(Stream stream, bool signed)
         {
-            if (stream.ReadByte() == BYTE_ONE)
-            {
-                int len = ReadInt(stream);
+            int len = ReadInt(stream);
 
+            if (len == SIZE_NULL)
+                return null;
+            else
+            {
                 if (signed)
                 {
                     sbyte[] vals = new sbyte[len];
@@ -326,8 +374,6 @@ namespace GridGain.Client.Impl.Portable
                     return vals;
                 }
             }
-            else
-                return null;
         }
 
         /**
@@ -380,16 +426,14 @@ namespace GridGain.Client.Impl.Portable
         public static void WriteShortArray(short[] vals, Stream stream)
         {
             if (vals == null)
-                stream.WriteByte(BYTE_ZERO);
+                WriteInt(SIZE_NULL, stream);
             else
             {
-                stream.WriteByte(BYTE_ONE);
-
                 WriteInt(vals.Length, stream);
 
                 for (int i = 0; i < vals.Length; i++)
-                    WriteShort(vals[i], stream);                   
-            }
+                    WriteShort(vals[i], stream);    
+            }  
         }
 
         /**
@@ -400,10 +444,12 @@ namespace GridGain.Client.Impl.Portable
          */
         public static unsafe object ReadShortArray(Stream stream, bool signed)
         {
-            if (stream.ReadByte() == BYTE_ONE)
-            {
-                int len = ReadInt(stream);
+            int len = ReadInt(stream);
 
+            if (len == SIZE_NULL)
+                return null;
+            else
+            {
                 if (signed)
                 {
                     short[] vals = new short[len];
@@ -422,13 +468,11 @@ namespace GridGain.Client.Impl.Portable
                         short val = ReadShort(stream);
 
                         vals[i] = *(ushort*)&val;
-                    }                        
+                    }
 
                     return vals;
                 }
             }
-            else
-                return null;
         }
 
         /**
@@ -489,16 +533,14 @@ namespace GridGain.Client.Impl.Portable
         public static void WriteIntArray(int[] vals, Stream stream)
         {
             if (vals == null)
-                stream.WriteByte(BYTE_ZERO);
+                WriteInt(SIZE_NULL, stream);
             else
             {
-                stream.WriteByte(BYTE_ONE);
-
                 WriteInt(vals.Length, stream);
 
                 for (int i = 0; i < vals.Length; i++)
                     WriteInt(vals[i], stream);
-            }
+            }  
         }
 
         /**
@@ -509,10 +551,12 @@ namespace GridGain.Client.Impl.Portable
          */
         public static unsafe object ReadIntArray(Stream stream, bool signed)
         {
-            if (stream.ReadByte() == BYTE_ONE)
-            {
-                int len = ReadInt(stream);
+            int len = ReadInt(stream);
 
+            if (len == SIZE_NULL)
+                return null;
+            else
+            {
                 if (signed)
                 {
                     int[] vals = new int[len];
@@ -534,10 +578,8 @@ namespace GridGain.Client.Impl.Portable
                     }
 
                     return vals;
-                }                
+                } 
             }
-            else
-                return null;
         }
 
         /**
@@ -614,16 +656,14 @@ namespace GridGain.Client.Impl.Portable
         public static void WriteLongArray(long[] vals, Stream stream)
         {
             if (vals == null)
-                stream.WriteByte(BYTE_ZERO);
+                WriteInt(SIZE_NULL, stream);
             else
             {
-                stream.WriteByte(BYTE_ONE);
-
                 WriteInt(vals.Length, stream);
 
                 for (int i = 0; i < vals.Length; i++)
                     WriteLong(vals[i], stream);
-            }
+            }  
         }
 
         /**
@@ -634,10 +674,12 @@ namespace GridGain.Client.Impl.Portable
          */
         public static unsafe object ReadLongArray(Stream stream, bool signed)
         {
-            if (stream.ReadByte() == BYTE_ONE)
-            {
-                int len = ReadInt(stream);
+            int len = ReadInt(stream);
 
+            if (len == SIZE_NULL)
+                return null;
+            else
+            {
                 if (signed)
                 {
                     long[] vals = new long[len];
@@ -660,10 +702,7 @@ namespace GridGain.Client.Impl.Portable
 
                     return vals;
                 }
-                
             }
-            else
-                return null;
         }
 
         /**
@@ -674,16 +713,14 @@ namespace GridGain.Client.Impl.Portable
         public static void WriteCharArray(char[] vals, Stream stream)
         {
             if (vals == null)
-                stream.WriteByte(BYTE_ZERO);
+                WriteInt(SIZE_NULL, stream);
             else
             {
-                stream.WriteByte(BYTE_ONE);
-
                 WriteInt(vals.Length, stream);
 
                 for (int i = 0; i < vals.Length; i++)
                     WriteShort((short)vals[i], stream);
-            }
+            }  
         }
 
         /**
@@ -693,10 +730,12 @@ namespace GridGain.Client.Impl.Portable
          */
         public static char[] ReadCharArray(Stream stream)
         {
-            if (stream.ReadByte() == BYTE_ONE)
-            {
-                int len = ReadInt(stream);
+            int len = ReadInt(stream);
 
+            if (len == SIZE_NULL)
+                return null;
+            else
+            {
                 char[] vals = new char[len];
 
                 for (int i = 0; i < len; i++)
@@ -704,8 +743,6 @@ namespace GridGain.Client.Impl.Portable
 
                 return vals;
             }
-            else
-                return null;
         }
 
         /**
@@ -738,16 +775,14 @@ namespace GridGain.Client.Impl.Portable
         public static void WriteFloatArray(float[] vals, Stream stream)
         {
             if (vals == null)
-                stream.WriteByte(BYTE_ZERO);
+                WriteInt(SIZE_NULL, stream);
             else
             {
-                stream.WriteByte(BYTE_ONE);
-
                 WriteInt(vals.Length, stream);
 
                 for (int i = 0; i < vals.Length; i++)
                     WriteFloat((float)vals[i], stream);
-            }
+            }  
         }
 
         /**
@@ -757,10 +792,12 @@ namespace GridGain.Client.Impl.Portable
          */
         public static float[] ReadFloatArray(Stream stream)
         {
-            if (stream.ReadByte() == BYTE_ONE)
-            {
-                int len = ReadInt(stream);
+            int len = ReadInt(stream);
 
+            if (len == SIZE_NULL)
+                return null;
+            else
+            {
                 float[] vals = new float[len];
 
                 for (int i = 0; i < len; i++)
@@ -768,8 +805,6 @@ namespace GridGain.Client.Impl.Portable
 
                 return vals;
             }
-            else
-                return null;
         }
 
         /**
@@ -802,16 +837,14 @@ namespace GridGain.Client.Impl.Portable
         public static void WriteDoubleArray(double[] vals, Stream stream)
         {
             if (vals == null)
-                stream.WriteByte(BYTE_ZERO);
+                WriteInt(SIZE_NULL, stream);
             else
             {
-                stream.WriteByte(BYTE_ONE);
-
                 WriteInt(vals.Length, stream);
 
                 for (int i = 0; i < vals.Length; i++)
                     WriteDouble((double)vals[i], stream);
-            }
+            }  
         }
 
         /**
@@ -821,10 +854,12 @@ namespace GridGain.Client.Impl.Portable
          */ 
         public static double[] ReadDoubleArray(Stream stream)
         {
-            if (stream.ReadByte() == BYTE_ONE)
-            {
-                int len = ReadInt(stream);
+            int len = ReadInt(stream);
 
+            if (len == SIZE_NULL)
+                return null;
+            else
+            {
                 double[] vals = new double[len];
 
                 for (int i = 0; i < len; i++)
@@ -832,8 +867,73 @@ namespace GridGain.Client.Impl.Portable
 
                 return vals;
             }
+        }
+
+        /**
+         * <summary>Write date.</summary>
+         * <param name="val">Date.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static void WriteDate(DateTime? val, Stream stream)
+        {
+            if (!val.HasValue)
+                stream.WriteByte(BYTE_ZERO);
             else
+            {
+                stream.WriteByte(BYTE_ONE);
+
+                WriteLong(ToJavaDate(val.Value), stream);
+            }                
+        }
+
+        /**
+         * <summary>Read date.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Date</returns>
+         */
+        public static DateTime? ReadDate(Stream stream)
+        {
+            return stream.ReadByte() == BYTE_ONE ? ToDotNetDate(ReadLong(stream)) : (DateTime?)null;
+        }
+
+        /**
+         * <summary>Write date array.</summary>
+         * <param name="vals">Date array.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static void WriteDateArray(DateTime?[] vals, Stream stream)
+        {
+            if (vals == null)
+                WriteInt(SIZE_NULL, stream);
+            else
+            {
+                WriteInt(vals.Length, stream);
+
+                for (int i = 0; i < vals.Length; i++)
+                    WriteDate(vals[i], stream);
+            }  
+        }
+
+        /**
+         * <summary>Read date array.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Date array.</returns>
+         */
+        public static DateTime?[] ReadDateArray(Stream stream)
+        {
+            int len = ReadInt(stream);
+
+            if (len == SIZE_NULL)
                 return null;
+            else
+            {
+                DateTime?[] vals = new DateTime?[len];
+
+                for (int i = 0; i < len; i++)
+                    vals[i] = ReadDate(stream);
+
+                return vals;
+            }
         }
 
         /**
@@ -885,17 +985,15 @@ namespace GridGain.Client.Impl.Portable
          */
         public static void WriteStringArray(string[] vals, Stream stream)
         {
-            if (vals != null)
+            if (vals == null)
+                WriteInt(SIZE_NULL, stream);
+            else
             {
-                stream.WriteByte(BYTE_ONE);
-
                 WriteInt(vals.Length, stream);
 
-                foreach (string val in vals)
-                    WriteString(val, stream);
+                for (int i = 0; i < vals.Length; i++)
+                    WriteString(vals[i], stream);
             }
-            else
-                stream.WriteByte(BYTE_ZERO);
         }
 
         /**
@@ -905,10 +1003,12 @@ namespace GridGain.Client.Impl.Portable
          */
         public static string[] ReadStringArray(Stream stream)
         {
-            if (stream.ReadByte() == BYTE_ONE)
-            {
-                int len = ReadInt(stream);
+            int len = ReadInt(stream);
 
+            if (len == SIZE_NULL)
+                return null;
+            else
+            {
                 string[] vals = new string[len];
 
                 for (int i = 0; i < len; i++)
@@ -916,77 +1016,6 @@ namespace GridGain.Client.Impl.Portable
 
                 return vals;
             }
-            else
-                return null;
-        }
-
-        /**
-         * <summary>Write date.</summary>
-         * <param name="val">Date.</param>
-         * <param name="stream">Stream.</param>
-         */
-        public static void WriteDate(DateTime? val, Stream stream)
-        {
-            if (val.HasValue)
-            {
-                stream.WriteByte(BYTE_ONE);
-
-                WriteLong(ToJavaDate(val.Value), stream);
-            }
-            else
-                stream.WriteByte(BYTE_ZERO);
-        }
-
-        /**
-         * <summary>Read date.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>Date</returns>
-         */
-        public static DateTime? ReadDate(Stream stream)
-        {
-            return stream.ReadByte() == BYTE_ONE ? ToDotNetDate(ReadLong(stream)) : (DateTime?)null;
-        }
-
-        /**
-         * <summary>Write date array.</summary>
-         * <param name="vals">Date array.</param>
-         * <param name="stream">Stream.</param>
-         */
-        public static void WriteDateArray(DateTime?[] vals, Stream stream)
-        {
-            if (vals != null)
-            {
-                stream.WriteByte(BYTE_ONE);
-
-                WriteInt(vals.Length, stream);
-
-                foreach (DateTime? val in vals)
-                    WriteDate(val, stream);
-            }
-            else
-                stream.WriteByte(BYTE_ZERO);
-        }
-
-        /**
-         * <summary>Read date array.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>Date array.</returns>
-         */
-        public static DateTime?[] ReadDateArray(Stream stream)
-        {
-            if (stream.ReadByte() == BYTE_ONE)
-            {
-                int len = ReadInt(stream);
-
-                DateTime?[] vals = new DateTime?[len];
-
-                for (int i = 0; i < len; i++)
-                    vals[i] = ReadDate(stream);
-
-                return vals;
-            }
-            else
-                return null;
         }
 
         /**
@@ -996,15 +1025,15 @@ namespace GridGain.Client.Impl.Portable
          */
         public static void WriteGuid(Guid? val, Stream stream)
         {
-            if (val.HasValue)
+            if (!val.HasValue)
+                stream.WriteByte(BYTE_ZERO);
+            else
             {
                 byte[] bytes = val.Value.ToByteArray();
 
                 stream.WriteByte(BYTE_ONE);
                 stream.Write(bytes, 0, bytes.Length);
             }
-            else
-                stream.WriteByte(BYTE_ZERO);
         }
 
         /**
@@ -1033,17 +1062,15 @@ namespace GridGain.Client.Impl.Portable
          */
         public static void WriteGuidArray(Guid?[] vals, Stream stream)
         {
-            if (vals != null)
+            if (vals == null)
+                WriteInt(SIZE_NULL, stream);
+            else
             {
-                stream.WriteByte(BYTE_ONE);
-
                 WriteInt(vals.Length, stream);
 
-                foreach (Guid? val in vals)
-                    WriteGuid(val, stream);
-            }
-            else
-                stream.WriteByte(BYTE_ZERO);
+                for (int i = 0; i < vals.Length; i++)
+                    WriteGuid(vals[i], stream);
+            }  
         }
 
         /**
@@ -1053,16 +1080,363 @@ namespace GridGain.Client.Impl.Portable
          */
         public static Guid?[] ReadGuidArray(Stream stream)
         {
-            if (stream.ReadByte() == BYTE_ONE)
-            {
-                int len = ReadInt(stream);
+            int len = ReadInt(stream);
 
+            if (len == SIZE_NULL)
+                return null;
+            else
+            {
                 Guid?[] vals = new Guid?[len];
 
                 for (int i = 0; i < len; i++)
                     vals[i] = ReadGuid(stream);
 
                 return vals;
+            }
+        }
+
+        /**
+         * <summary>Write array.</summary>
+         * <param name="val">Array.</param>
+         * <param name="ctx">Write context.</param>
+         */
+        public static void WriteArray(Array val, GridClientPortableWriteContext ctx)
+        {
+            Stream stream = ctx.Stream;
+
+            if (val == null)
+                WriteInt(SIZE_NULL, stream);
+            else
+            {
+                WriteInt(val.Length, stream);
+
+                for (int i = 0; i < val.Length; i++)
+                    ctx.Write(val.GetValue(i));
+            }
+        }
+
+        /**
+         * <summary>Write array.</summary>
+         * <param name="ctx">Read context.</param>
+         * <returns>Array.</returns>
+         */
+        public static Array ReadArray(GridClientPortableReadContext ctx)
+        {
+            MemoryStream stream = ctx.Stream;
+
+            int len = ReadInt(stream);
+
+            if (len == SIZE_NULL)
+                return null;
+            else
+            {
+                Array vals = Array.CreateInstance(typeof(object), len);
+
+                for (int i = 0; i < len; i++)
+                    vals.SetValue(ctx.Deserialize<object>(stream), i);
+
+                return vals;
+            }
+        }
+
+        /**
+         * <summary>Write collection.</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Write context.</param>
+         */
+        public static void WriteCollection(ICollection val, GridClientPortableWriteContext ctx) {
+            if (val != null)
+            {
+                byte colType = val.GetType() == typeof(ArrayList) ? COLLECTION_ARRAY_LIST : COLLECTION_CUSTOM;
+
+                WriteTypedCollection(val, ctx, colType);
+            }
+            else
+                WriteInt(SIZE_NULL, ctx.Stream);
+        }
+
+        /**
+         * <summary>Write non-null collection with known type.</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Write context.</param>
+         * <param name="colType">Collection type.</param>
+         */
+        public static void WriteTypedCollection(ICollection val, GridClientPortableWriteContext ctx, byte colType)
+        {
+            WriteInt(val.Count, ctx.Stream);
+
+            WriteByte(colType, ctx.Stream);
+
+            foreach (object elem in val)
+                ctx.Write(elem);
+        }
+
+        /**
+         * <summary>Read collection.</summary>
+         * <param name="ctx">Context.</param>
+         * <param name="factory">Factory delegate.</param>
+         * <param name="adder">Adder delegate.</param>
+         * <returns>Collection.</returns>
+         */
+        public static ICollection ReadCollection(GridClientPortableReadContext ctx, 
+            GridClientPortableCollectionFactory factory, GridClientPortableCollectionAdder adder)
+        {
+            MemoryStream stream = ctx.Stream;
+
+            int len = ReadInt(stream);
+
+            if (len == SIZE_NULL)
+                return null;
+            else 
+            {
+                ctx.Stream.Seek(1, SeekOrigin.Current);
+
+                ICollection res = factory.Invoke(len);
+
+                for (int i = 0; i < len; i++)
+                    adder.Invoke(res, ctx.Deserialize<object>(ctx.Stream));
+
+                return res;
+            }
+        }
+
+        /**
+         * <summary>Write generic collection.</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Write context.</param>
+         */
+        public static void WriteGenericCollection<T>(ICollection<T> val, GridClientPortableWriteContext ctx)
+        {
+            if (val != null)
+            {
+                Type type = val.GetType().GetGenericTypeDefinition();
+
+                byte colType;
+
+                if (type == typeof(List<>))
+                    colType = COLLECTION_ARRAY_LIST;
+                else if (type == typeof(LinkedList<>))
+                    colType = COLLECTION_LINKED_LIST;
+                else if (type == typeof(HashSet<>))
+                    colType = COLLECTION_HASH_SET;
+                else if (type == typeof(SortedSet<>))
+                    colType = COLLECTION_SORTED_SET;
+                else
+                    colType = COLLECTION_CUSTOM;
+
+                WriteTypedGenericCollection(val, ctx, colType);
+            }
+            else
+                WriteInt(SIZE_NULL, ctx.Stream);
+        }
+
+        /**
+         * <summary>Write generic non-null collection with known type.</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Write context.</param>
+         * <param name="colType">Collection type.</param>
+         */
+        public static void WriteTypedGenericCollection<T>(ICollection<T> val, GridClientPortableWriteContext ctx, byte colType)
+        {
+            WriteInt(val.Count, ctx.Stream);
+
+            WriteByte(colType, ctx.Stream);
+
+            foreach (T elem in val)
+                ctx.Write(elem);
+        }
+
+        /**
+         * <summary>Read generic collection.</summary>
+         * <param name="ctx">Context.</param>
+         * <param name="factory">Factory delegate.</param>
+         * <returns>Collection.</returns>
+         */
+        public static ICollection<T> ReadGenericCollection<T>(GridClientPortableReadContext ctx, GridClientPortableGenericCollectionFactory<T> factory)
+        {
+            int len = ReadInt(ctx.Stream);
+
+            if (len >= 0)
+            {
+                byte colType = ReadByte(ctx.Stream);
+
+                if (factory == null)
+                {
+                    // Need to detect factory automatically.
+                    if (colType == COLLECTION_LINKED_LIST)
+                        factory = PSH.CreateLinkedList<T>;
+                    else if (colType == COLLECTION_HASH_SET)
+                        factory = PSH.CreateHashSet<T>;
+                    else if (colType == COLLECTION_SORTED_SET)
+                        factory = PSH.CreateSortedSet<T>;
+                    else
+                        factory = PSH.CreateList<T>;
+                }
+
+                ICollection<T> res = factory.Invoke(len);
+
+                for (int i = 0; i < len; i++)
+                    res.Add(ctx.Deserialize<T>(ctx.Stream));
+
+                return res;
+            }
+            else
+                return null;
+        }
+
+        /**
+         * <summary>Write dictionary.</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Write context.</param>
+         */
+        public static void WriteDictionary(IDictionary val, GridClientPortableWriteContext ctx)
+        {
+            if (val != null)
+            {
+                byte dictType = val.GetType() == typeof(Hashtable) ? MAP_HASH_MAP : MAP_CUSTOM;
+
+                WriteTypedDictionary(val, ctx, dictType);
+            }
+            else
+                WriteInt(SIZE_NULL, ctx.Stream);
+        }
+
+        /**
+         * <summary>Write non-null dictionary with known type.</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Write context.</param>
+         * <param name="dictType">Dictionary type.</param>
+         */
+        public static void WriteTypedDictionary(IDictionary val, GridClientPortableWriteContext ctx, byte dictType)
+        {
+            WriteInt(val.Count, ctx.Stream);
+
+            WriteByte(dictType, ctx.Stream);
+
+            foreach (DictionaryEntry entry in val)
+            {
+                ctx.Write(entry.Key);
+                ctx.Write(entry.Value);
+            }
+        }
+
+        /**
+         * <summary>Read dictionary.</summary>
+         * <param name="ctx">Context.</param>
+         * <param name="factory">Factory delegate.</param>
+         * <returns>Dictionary.</returns>
+         */
+        public static IDictionary ReadDictionary(GridClientPortableReadContext ctx,
+            GridClientPortableDictionaryFactory factory)
+        {
+            MemoryStream stream = ctx.Stream;
+
+            int len = ReadInt(stream);
+
+            if (len == SIZE_NULL)
+                return null;
+            else
+            {
+                ctx.Stream.Seek(1, SeekOrigin.Current);
+
+                IDictionary res = factory.Invoke(len);
+
+                for (int i = 0; i < len; i++)
+                {
+                    object key = ctx.Deserialize<object>(ctx.Stream);
+                    object val = ctx.Deserialize<object>(ctx.Stream);
+
+                    res[key] = val;
+                }
+                    
+                return res;
+            }
+        }
+
+        /**
+         * <summary>Write generic dictionary.</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Write context.</param>
+         */
+        public static void WriteGenericDictionary<K, V>(IDictionary<K, V> val, GridClientPortableWriteContext ctx)
+        {
+            if (val != null)
+            {
+                Type type = val.GetType().GetGenericTypeDefinition();
+
+                byte dictType;
+
+                if (type == typeof(Dictionary<,>))
+                    dictType = MAP_HASH_MAP;
+                else if (type == typeof(SortedDictionary<,>))
+                    dictType = MAP_SORTED_MAP;
+                else if (type == typeof(ConcurrentDictionary<,>))
+                    dictType = MAP_CONCURRENT_HASH_MAP;
+                else
+                    dictType = MAP_CUSTOM;
+
+                WriteTypedGenericDictionary<K, V>(val, ctx, dictType);
+            }
+            else
+                WriteInt(SIZE_NULL, ctx.Stream);
+        }
+
+        /**
+         * <summary>Write generic non-null dictionary with known type.</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Write context.</param>
+         * <param name="dictType">Dictionary type.</param>
+         */
+        public static void WriteTypedGenericDictionary<K, V>(IDictionary<K, V> val, GridClientPortableWriteContext ctx, byte dictType)
+        {
+            WriteInt(val.Count, ctx.Stream);
+
+            WriteByte(dictType, ctx.Stream);
+
+            foreach (KeyValuePair<K, V> entry in val)
+            {
+                ctx.Write(entry.Key);
+                ctx.Write(entry.Value);
+            }
+        }
+
+        /**
+         * <summary>Read generic dictionary.</summary>
+         * <param name="ctx">Context.</param>
+         * <param name="factory">Factory delegate.</param>
+         * <returns>Collection.</returns>
+         */
+        public static IDictionary<K, V> ReadGenericDictionary<K, V>(GridClientPortableReadContext ctx, 
+            GridClientPortableGenericDictionaryFactory<K, V> factory)
+        {
+            int len = ReadInt(ctx.Stream);
+
+            if (len >= 0)
+            {
+                byte colType = ReadByte(ctx.Stream);
+
+                if (factory == null)
+                {
+                    // Need to detect factory automatically.
+                    if (colType == MAP_SORTED_MAP)
+                        factory = PSH.CreateSortedDictionary<K, V>;
+                    else if (colType == MAP_CONCURRENT_HASH_MAP)
+                        factory = PSH.CreateConcurrentDictionary<K, V>;
+                    else
+                        factory = PSH.CreateDictionary<K, V>;
+                }
+
+                IDictionary<K, V> res = factory.Invoke(len);
+
+                for (int i = 0; i < len; i++)
+                {
+                    K key = ctx.Deserialize<K>(ctx.Stream);
+                    V val = ctx.Deserialize<V>(ctx.Stream);
+
+                    res[key] = val;
+                }
+
+                return res;
             }
             else
                 return null;
@@ -1091,7 +1465,7 @@ namespace GridGain.Client.Impl.Portable
          */ 
         public static byte[] MemoryBuffer(MemoryStream stream)
         {
-            return (byte[])MEM_BUF_FIELD.GetValue(stream);
+            return (byte[])FIELD_MEM_BUF.GetValue(stream);
         }
         /**
          * <summary>Get string hash code.</summary> 
@@ -1100,7 +1474,7 @@ namespace GridGain.Client.Impl.Portable
          */
         public static int StringHashCode(string val)
         {
-            if (val.Length == 0)
+            if (val == null || val.Length == 0)
                 return 0;
             else
             {

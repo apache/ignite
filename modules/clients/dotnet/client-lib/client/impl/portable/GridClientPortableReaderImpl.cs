@@ -47,14 +47,7 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public bool ReadBoolean(string fieldName)
         {
-            PositionField(fieldName);
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            byte hdr = (byte)ctx.Stream.ReadByte();
-
-            if (hdr != PU.TYPE_BOOL)
-                throw new GridClientPortableInvalidFieldException("Written field is not bool: " + fieldName);
+            PositionAndCheck(fieldName, PU.TYPE_BOOL, "bool");
 
             return ReadBoolean();
         }
@@ -68,26 +61,21 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public bool[] ReadBooleanArray(string fieldName)
         {
-            throw new NotImplementedException();
+            PositionAndCheck(fieldName, PU.TYPE_ARRAY_BOOL, "bool array");
+
+            return ReadBooleanArray();
         }
 
         /** <inheritdoc /> */
         public bool[] ReadBooleanArray()
         {
-            throw new NotImplementedException();
+            return PU.ReadBooleanArray(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public byte ReadByte(string fieldName)
         {
-            PositionField(fieldName);
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            byte hdr = (byte)ctx.Stream.ReadByte();
-
-            if (hdr != PU.TYPE_BYTE)
-                throw new GridClientPortableInvalidFieldException("Written field is not byte: " + fieldName);
+            PositionAndCheck(fieldName, PU.TYPE_BYTE, "byte");
 
             return ReadByte();
         }
@@ -101,27 +89,22 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public byte[] ReadByteArray(string fieldName)
         {
-            throw new NotImplementedException();
+            PositionAndCheck(fieldName, PU.TYPE_ARRAY_BYTE, "byte array");
+
+            return ReadByteArray();
         }
 
         /** <inheritdoc /> */
         public byte[] ReadByteArray()
         {
-            throw new NotImplementedException();
+            return (byte[])PU.ReadByteArray(ctx.Stream, false);
         }
 
         /** <inheritdoc /> */
         public short ReadShort(string fieldName)
         {
-            PositionField(fieldName);
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            byte hdr = (byte)ctx.Stream.ReadByte();
-
-            if (hdr != PU.TYPE_SHORT)
-                throw new GridClientPortableInvalidFieldException("Written field is not short: " + fieldName);
-
+            PositionAndCheck(fieldName, PU.TYPE_SHORT, "short");
+            
             return ReadShort();
         }
 
@@ -134,26 +117,21 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public short[] ReadShortArray(string fieldName)
         {
-            throw new NotImplementedException();
+            PositionAndCheck(fieldName, PU.TYPE_ARRAY_SHORT, "short array");
+
+            return ReadShortArray();
         }
 
         /** <inheritdoc /> */
         public short[] ReadShortArray()
         {
-            throw new NotImplementedException();
+            return (short[])PU.ReadShortArray(ctx.Stream, true);
         }
 
         /** <inheritdoc /> */
         public char ReadChar(string fieldName)
         {
-            PositionField(fieldName);
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            byte hdr = (byte)ctx.Stream.ReadByte();
-
-            if (hdr != PU.TYPE_CHAR)
-                throw new GridClientPortableInvalidFieldException("Written field is not char: " + fieldName);
+            PositionAndCheck(fieldName, PU.TYPE_CHAR, "char");
 
             return ReadChar();
         }
@@ -167,26 +145,21 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public char[] ReadCharArray(string fieldName)
         {
-            throw new NotImplementedException();
+            PositionAndCheck(fieldName, PU.TYPE_ARRAY_CHAR, "char array");
+
+            return ReadCharArray();
         }
 
         /** <inheritdoc /> */
         public char[] ReadCharArray()
         {
-            throw new NotImplementedException();
+            return PU.ReadCharArray(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public int ReadInt(string fieldName)
         {
-            PositionField(fieldName);
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            byte hdr = (byte)ctx.Stream.ReadByte();
-
-            if (hdr != PU.TYPE_INT)
-                throw new GridClientPortableInvalidFieldException("Written field is not int: " + fieldName);
+            PositionAndCheck(fieldName, PU.TYPE_INT, "int");
 
             return ReadInt();
         }
@@ -200,26 +173,21 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public int[] ReadIntArray(string fieldName)
         {
-            throw new NotImplementedException();
+            PositionAndCheck(fieldName, PU.TYPE_ARRAY_INT, "int array");
+
+            return ReadIntArray();
         }
 
         /** <inheritdoc /> */
         public int[] ReadIntArray()
         {
-            throw new NotImplementedException();
+            return (int[])PU.ReadIntArray(ctx.Stream, true);
         }
 
         /** <inheritdoc /> */
         public long ReadLong(string fieldName)
         {
-            PositionField(fieldName);
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            byte hdr = (byte)ctx.Stream.ReadByte();
-
-            if (hdr != PU.TYPE_LONG)
-                throw new GridClientPortableInvalidFieldException("Written field is not long: " + fieldName);
+            PositionAndCheck(fieldName, PU.TYPE_LONG, "long");
 
             return ReadLong();
         }
@@ -233,26 +201,21 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public long[] ReadLongArray(string fieldName)
         {
-            throw new NotImplementedException();
+            PositionAndCheck(fieldName, PU.TYPE_ARRAY_LONG, "long array");
+
+            return ReadLongArray();
         }
 
         /** <inheritdoc /> */
         public long[] ReadLongArray()
         {
-            throw new NotImplementedException();
+            return (long[])PU.ReadLongArray(ctx.Stream, true);
         }
 
         /** <inheritdoc /> */
         public float ReadFloat(string fieldName)
         {
-            PositionField(fieldName);
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            byte hdr = (byte)ctx.Stream.ReadByte();
-
-            if (hdr != PU.TYPE_FLOAT)
-                throw new GridClientPortableInvalidFieldException("Written field is not float: " + fieldName);
+            PositionAndCheck(fieldName, PU.TYPE_FLOAT, "float");
 
             return ReadFloat();
         }
@@ -266,26 +229,21 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public float[] ReadFloatArray(string fieldName)
         {
-            throw new NotImplementedException();
+            PositionAndCheck(fieldName, PU.TYPE_ARRAY_FLOAT, "float array");
+
+            return ReadFloatArray();
         }
 
         /** <inheritdoc /> */
         public float[] ReadFloatArray()
         {
-            throw new NotImplementedException();
+            return PU.ReadFloatArray(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public double ReadDouble(string fieldName)
         {
-            PositionField(fieldName);
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            byte hdr = (byte)ctx.Stream.ReadByte();
-
-            if (hdr != PU.TYPE_DOUBLE)
-                throw new GridClientPortableInvalidFieldException("Written field is not double: " + fieldName);
+            PositionAndCheck(fieldName, PU.TYPE_DOUBLE, "double");
             
             return ReadDouble();
         }
@@ -299,26 +257,49 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public double[] ReadDoubleArray(string fieldName)
         {
-            throw new NotImplementedException();
+            PositionAndCheck(fieldName, PU.TYPE_ARRAY_DOUBLE, "double array");
+
+            return ReadDoubleArray();
         }
 
         /** <inheritdoc /> */
         public double[] ReadDoubleArray()
         {
-            throw new NotImplementedException();
+            return PU.ReadDoubleArray(ctx.Stream);
+        }
+
+        /** <inheritdoc /> */
+        public DateTime? ReadDate(string fieldName)
+        {
+            PositionAndCheck(fieldName, PU.TYPE_DATE, "date");
+
+            return ReadDate();
+        }
+
+        /** <inheritdoc /> */
+        public DateTime? ReadDate()
+        {
+            return PU.ReadDate(ctx.Stream);
+        }
+
+        /** <inheritdoc /> */
+        public DateTime?[] ReadDateArray(string fieldName)
+        {
+            PositionAndCheck(fieldName, PU.TYPE_ARRAY_DATE, "date array");
+
+            return ReadDateArray();
+        }
+
+        /** <inheritdoc /> */
+        public DateTime?[] ReadDateArray()
+        {
+            return PU.ReadDateArray(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public string ReadString(string fieldName)
         {
-            PositionField(fieldName);
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            byte hdr = (byte)ctx.Stream.ReadByte();
-
-            if (hdr != PU.TYPE_STRING)
-                throw new GridClientPortableInvalidFieldException("Written field is not string: " + fieldName);
+            PositionAndCheck(fieldName, PU.TYPE_STRING, "string");
 
             return ReadString();
         }
@@ -332,26 +313,21 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public string[] ReadStringArray(string fieldName)
         {
-            throw new NotImplementedException();
+            PositionAndCheck(fieldName, PU.TYPE_ARRAY_STRING, "string array");
+
+            return ReadStringArray();
         }
 
         /** <inheritdoc /> */
         public string[] ReadStringArray()
         {
-            throw new NotImplementedException();
+            return PU.ReadStringArray(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public Guid? ReadGuid(string fieldName)
         {
-            PositionField(fieldName);
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            byte hdr = (byte)ctx.Stream.ReadByte();
-
-            if (hdr != PU.TYPE_GUID)
-                throw new GridClientPortableInvalidFieldException("Written field is not Guid: " + fieldName);
+            PositionAndCheck(fieldName, PU.TYPE_GUID, "Guid");
 
             return ReadGuid();
         }
@@ -365,19 +341,21 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public Guid?[] ReadGuidArray(string fieldName)
         {
-            throw new NotImplementedException();
+            PositionAndCheck(fieldName, PU.TYPE_ARRAY_GUID, "Guid array");
+
+            return ReadGuidArray();
         }
 
         /** <inheritdoc /> */
         public Guid?[] ReadGuidArray()
         {
-            throw new NotImplementedException();
+            return PU.ReadGuidArray(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public T ReadObject<T>(string fieldName)
         {
-            PositionField(fieldName);
+            Position(fieldName);
 
             ctx.Stream.Seek(4, SeekOrigin.Current);
 
@@ -393,160 +371,21 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public T[] ReadObjectArray<T>(string fieldName)
         {
-            throw new NotImplementedException();
+            PositionAndCheck(fieldName, PU.TYPE_ARRAY, "array");
+
+            return ReadObjectArray<T>();
         }
 
         /** <inheritdoc /> */
         public T[] ReadObjectArray<T>()
         {
-            throw new NotImplementedException();
-        }
-
-        /** <inheritdoc /> */
-        public IDictionary ReadDictionary(string fieldName)
-        {
-            PositionField(fieldName);
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            byte hdr = (byte)ctx.Stream.ReadByte();
-
-            if (hdr != PU.TYPE_MAP)
-                throw new GridClientPortableInvalidFieldException("Written field is not dictionary: " + fieldName);
-
-            return ReadDictionary();
-        }
-
-        /** <inheritdoc /> */
-        public IDictionary ReadDictionary()
-        {
-            return ReadDictionary(PSH.CreateHashtable);
-        }
-
-        /** <inheritdoc /> */
-        public IDictionary ReadDictionary(string fieldName, GridClientPortableDictionaryFactory factory)
-        {
-            PositionField(fieldName);
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            byte hdr = (byte)ctx.Stream.ReadByte();
-
-            if (hdr != PU.TYPE_MAP)
-                throw new GridClientPortableInvalidFieldException("Written field is not dictionary: " + fieldName);
-
-            return ReadDictionary(factory);
-        }
-
-        /** <inheritdoc /> */
-        public IDictionary ReadDictionary(GridClientPortableDictionaryFactory factory)
-        {
-            int len = PU.ReadInt(ctx.Stream);
-
-            if (len >= 0)
-            {
-                // Doesn't support anything in non-generic mode.
-                ctx.Stream.Seek(1, SeekOrigin.Current);
-
-                IDictionary res = factory.Invoke(len);
-
-                for (int i = 0; i < len; i++)
-                {
-                    object key = ctx.Deserialize<object>(ctx.Stream);
-                    object val = ctx.Deserialize<object>(ctx.Stream);
-
-                    res[key] = val;
-                }                    
-
-                return res;
-            }
-            else
-                return null;
-        }
-
-        /** <inheritdoc /> */
-        public IDictionary<K, V> ReadGenericDictionary<K, V>(string fieldName)
-        {
-            PositionField(fieldName);
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            byte hdr = (byte)ctx.Stream.ReadByte();
-
-            if (hdr != PU.TYPE_MAP)
-                throw new GridClientPortableInvalidFieldException("Written field is not dictionary: " + fieldName);
-
-            return ReadGenericDictionary<K, V>();
-        }
-
-        /** <inheritdoc /> */
-        public IDictionary<K, V> ReadGenericDictionary<K, V>()
-        {
-            return ReadGenericDictionary<K, V>((GridClientPortableGenericDictionaryFactory<K, V>)null);
-        }
-
-        /** <inheritdoc /> */
-        public IDictionary<K, V> ReadGenericDictionary<K, V>(string fieldName, GridClientPortableGenericDictionaryFactory<K, V> factory)
-        {
-            PositionField(fieldName);
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            byte hdr = (byte)ctx.Stream.ReadByte();
-
-            if (hdr != PU.TYPE_MAP)
-                throw new GridClientPortableInvalidFieldException("Written field is not dictionary: " + fieldName);
-
-            return ReadGenericDictionary<K, V>(factory);
-        }
-
-        /** <inheritdoc /> */
-        public IDictionary<K, V> ReadGenericDictionary<K, V>(GridClientPortableGenericDictionaryFactory<K, V> factory)
-        {
-            int len = PU.ReadInt(ctx.Stream);
-
-            if (len >= 0)
-            {
-                byte colType = PU.ReadByte(ctx.Stream);
-
-                if (factory == null)
-                {
-                    // Need to detect factory automatically.
-                    if (colType == PU.MAP_SORTED_MAP)
-                        factory = PSH.CreateSortedDictionary<K, V>;
-                    else if (colType == PU.MAP_CONCURRENT_HASH_MAP)
-                        factory = PSH.CreateConcurrentDictionary<K, V>;
-                    else
-                        factory = PSH.CreateDictionary<K, V>;
-                }
-
-                IDictionary<K, V> res = factory.Invoke(len);
-
-                for (int i = 0; i < len; i++)
-                {
-                    K key = ctx.Deserialize<K>(ctx.Stream);
-                    V val = ctx.Deserialize<V>(ctx.Stream);
-
-                    res[key] = val;
-                }
-
-                return res;
-            }
-            else
-                return null;
+            return (T[])PU.ReadArray(ctx);
         }
 
         /** <inheritdoc /> */
         public ICollection ReadCollection(string fieldName)
         {
-            PositionField(fieldName);
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            byte hdr = (byte)ctx.Stream.ReadByte();
-
-            if (hdr != PU.TYPE_COLLECTION)
-                throw new GridClientPortableInvalidFieldException("Written field is not collection: " + fieldName);
+            PositionAndCheck(fieldName, PU.TYPE_COLLECTION, "collection");
 
             return ReadCollection();
         }
@@ -561,14 +400,7 @@ namespace GridGain.Client.Impl.Portable
         public ICollection ReadCollection(string fieldName, GridClientPortableCollectionFactory factory, 
             GridClientPortableCollectionAdder adder)
         {
-            PositionField(fieldName);
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            byte hdr = (byte)ctx.Stream.ReadByte();
-
-            if (hdr != PU.TYPE_COLLECTION)
-                throw new GridClientPortableInvalidFieldException("Written field is not collection: " + fieldName);
+            PositionAndCheck(fieldName, PU.TYPE_COLLECTION, "collection");
 
             return ReadCollection(factory, adder);
         }
@@ -576,35 +408,13 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public ICollection ReadCollection(GridClientPortableCollectionFactory factory, GridClientPortableCollectionAdder adder)
         {
-            int len = PU.ReadInt(ctx.Stream);
-
-            if (len >= 0)
-            {
-                // Doesn't support anything in non-generic mode.
-                ctx.Stream.Seek(1, SeekOrigin.Current);
-
-                ICollection res = factory.Invoke(len);
-
-                for (int i = 0; i < len; i++)
-                    adder.Invoke(res, ctx.Deserialize<object>(ctx.Stream));
-
-                return res;
-            }
-            else
-                return null;
+            return PU.ReadCollection(ctx, factory, adder);
         }
 
         /** <inheritdoc /> */
         public ICollection<T> ReadGenericCollection<T>(string fieldName)
         {
-            PositionField(fieldName);
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            byte hdr = (byte)ctx.Stream.ReadByte();
-
-            if (hdr != PU.TYPE_COLLECTION)
-                throw new GridClientPortableInvalidFieldException("Written field is not collection: " + fieldName);
+            PositionAndCheck(fieldName, PU.TYPE_COLLECTION, "collection");
 
             return ReadGenericCollection<T>();
         }
@@ -618,14 +428,7 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public ICollection<T> ReadGenericCollection<T>(string fieldName, GridClientPortableGenericCollectionFactory<T> factory)
         {
-            PositionField(fieldName);
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            byte hdr = (byte)ctx.Stream.ReadByte();
-
-            if (hdr != PU.TYPE_COLLECTION)
-                throw new GridClientPortableInvalidFieldException("Written field is not collection: " + fieldName);
+            PositionAndCheck(fieldName, PU.TYPE_COLLECTION, "collection");
 
             return ReadGenericCollection(factory);
         }
@@ -633,36 +436,65 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public ICollection<T> ReadGenericCollection<T>(GridClientPortableGenericCollectionFactory<T> factory)
         {
-            int len = PU.ReadInt(ctx.Stream);
-
-            if (len >= 0)
-            {
-                byte colType = PU.ReadByte(ctx.Stream);
-
-                if (factory == null)
-                {
-                    // Need to detect factory automatically.
-                    if (colType == PU.COLLECTION_LINKED_LIST)
-                        factory = PSH.CreateLinkedList<T>;
-                    else if (colType == PU.COLLECTION_HASH_SET)
-                        factory = PSH.CreateHashSet<T>;
-                    else if (colType == PU.COLLECTION_SORTED_SET)
-                        factory = PSH.CreateHashSet<T>;
-                    else 
-                        factory = PSH.CreateList<T>;
-                }
-
-                ICollection<T> res = factory.Invoke(len);
-
-                for (int i = 0; i < len; i++)
-                    res.Add(ctx.Deserialize<T>(ctx.Stream));
-
-                return res;
-            }
-            else
-                return null;
+            return PU.ReadGenericCollection<T>(ctx, factory);
         }
-        
+
+        /** <inheritdoc /> */
+        public IDictionary ReadDictionary(string fieldName)
+        {
+            PositionAndCheck(fieldName, PU.TYPE_DICTIONARY, "dictionary");
+
+            return ReadDictionary();
+        }
+
+        /** <inheritdoc /> */
+        public IDictionary ReadDictionary()
+        {
+            return ReadDictionary(PSH.CreateHashtable);
+        }
+
+        /** <inheritdoc /> */
+        public IDictionary ReadDictionary(string fieldName, GridClientPortableDictionaryFactory factory)
+        {
+            PositionAndCheck(fieldName, PU.TYPE_DICTIONARY, "dictionary");
+
+            return ReadDictionary(factory);
+        }
+
+        /** <inheritdoc /> */
+        public IDictionary ReadDictionary(GridClientPortableDictionaryFactory factory)
+        {
+            return PU.ReadDictionary(ctx, factory);
+        }
+
+        /** <inheritdoc /> */
+        public IDictionary<K, V> ReadGenericDictionary<K, V>(string fieldName)
+        {
+            PositionAndCheck(fieldName, PU.TYPE_DICTIONARY, "dictionary");
+
+            return ReadGenericDictionary<K, V>();
+        }
+
+        /** <inheritdoc /> */
+        public IDictionary<K, V> ReadGenericDictionary<K, V>()
+        {
+            return ReadGenericDictionary<K, V>((GridClientPortableGenericDictionaryFactory<K, V>)null);
+        }
+
+        /** <inheritdoc /> */
+        public IDictionary<K, V> ReadGenericDictionary<K, V>(string fieldName, GridClientPortableGenericDictionaryFactory<K, V> factory)
+        {
+            PositionAndCheck(fieldName, PU.TYPE_DICTIONARY, "dictionary");
+
+            return ReadGenericDictionary<K, V>(factory);
+        }
+
+        /** <inheritdoc /> */
+        public IDictionary<K, V> ReadGenericDictionary<K, V>(GridClientPortableGenericDictionaryFactory<K, V> factory)
+        {
+            return PU.ReadGenericDictionary<K, V>(ctx, factory);
+        }
+
         /**
          * <summary>Mark current output as raw.</summary>
          */
@@ -683,10 +515,28 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
+         * <summary>Position stream before field data and check it's type.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <param name="typeId">Expected type ID.</param>
+         * <param name="typeName">Type name</param>
+         */
+        private void PositionAndCheck(string fieldName, byte typeId, string typeName)
+        {
+            Position(fieldName);
+
+            ctx.Stream.Seek(4, SeekOrigin.Current);
+
+            byte hdr = (byte)ctx.Stream.ReadByte();
+
+            if (hdr != typeId)
+                throw new GridClientPortableInvalidFieldException("Written field is not " + typeName + ": " + fieldName);
+        }
+
+        /**
          * <summary>Position stream right after field ID.</summary>
          * <param name="fieldName">Field name.</param>
          */ 
-        private void PositionField(string fieldName)
+        private void Position(string fieldName)
         {
             if (ctx.CurrentFrame.Raw)
                 throw new GridClientPortableException("Cannot read named fields after raw data is read.");

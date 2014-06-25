@@ -84,15 +84,12 @@
     <Compile Include="client\portable\GridClientPortableId.cs" />
     <Compile Include="client\portable\GridClientPortableIdResolver.cs" />
     <Compile Include="client\impl\portable\GridClientPortableMarshaller.cs" />
-    <Compile Include="client\impl\portable\GridClientPortableClassMetadata.cs" />
     <Compile Include="client\portable\GridClientPortableException.cs" />
-    <Compile Include="client\impl\portable\GridClientPortableFieldMetadata.cs" />
     <Compile Include="client\portable\GridClientPortableInvalidClassException.cs" />
     <Compile Include="client\portable\GridClientPortableInvalidFieldException.cs" />
     <Compile Include="client\impl\portable\GridClientPortableUilts.cs" />
     <Compile Include="client\impl\portable\GridClientPortableObjectHandle.cs" />
     <Compile Include="client\portable\GridClientPortableReflectiveSerializer.cs" />
-    <Compile Include="client\impl\portable\GridClientPortableSerializationContext.cs" />
     <Compile Include="client\portable\IGridClientPortable.cs" />
     <Compile Include="client\portable\IGridClientPortableRawReader.cs" />
     <Compile Include="client\portable\IGridClientPortableRawWriter.cs" />

@@ -133,70 +133,66 @@ namespace GridGain.Client.Impl.Portable
                 return default(T);
             if (hdr == PU.HDR_FULL)
             {
+                // 1. Read header.
                 bool userType = PU.ReadBoolean(stream);
                 int typeId = PU.ReadInt(stream);
                 int hashCode = PU.ReadInt(stream);
                 int len = PU.ReadInt(stream);
                 int rawPos = PU.ReadInt(stream);
 
+                // 2. Preserve frame.
                 GridClientPortableFrame oldFrame = CurrentFrame;
 
                 try
                 {
-                    if (userType)
+                    if (!userType)
                     {
-                        // 1. Lookup type and instantiate it.
-                        GridClientPortableTypeDescriptor desc;
-
-                        if (!descs.TryGetValue(PU.TypeKey(userType, typeId), out desc))
-                            throw new GridClientPortableException("Unknown type ID: " + typeId);
-
-                        CurrentFrame = new GridClientPortableFrame(typeId, desc.Mapper, portObj);
-
-                        object obj;
-
-                        try
-                        {
-                            obj = FormatterServices.GetUninitializedObject(desc.Type);
-                            
-                            hnds[portObj.Offset] = obj;
-                        }
-                        catch (Exception e)
-                        {
-                            throw new GridClientPortableException("Failed to create type instance: " +
-                                desc.Type.AssemblyQualifiedName, e);
-                        }
-                        
-                        desc.Serializer.ReadPortable(obj, reader);
-
-                        return (T)obj;
-                    }
-                    else
-                    {
-                        object rrr;
+                        // 3. Try reading predefined type.
+                        object sysObj;
 
                         GridClientPortableSystemReadDelegate handler = PSH.ReadHandler(typeId);
 
                         if (handler != null)
                         {
-                            handler.Invoke(stream, typeof(T), out rrr);
+                            handler.Invoke(this, stream, typeof(T), out sysObj);
 
-                            return (T)rrr;
+                            return (T)sysObj;
                         }
-
-                        // 2. String?
-                        if (typeId == PU.TYPE_STRING)
-                            return (T)(object)PU.ReadString(stream);
-
-                        // 3. Guid?
-                        if (typeId == PU.TYPE_GUID) 
-                            return (T)(object)PU.ReadGuid(stream);
-                        
-                        return (T)(new object());
                     }
+
+                    // 4. Try getting gdescriptor.
+                    GridClientPortableTypeDescriptor desc;
+
+                    if (!descs.TryGetValue(PU.TypeKey(userType, typeId), out desc))
+                        throw new GridClientPortableException("Unknown type ID: " + typeId);
+
+                    // 5. Set new frame.
+                    CurrentFrame = new GridClientPortableFrame(typeId, desc.Mapper, portObj);
+
+                    // 6. Instantiate object. 
+                    object obj;
+
+                    try
+                    {
+                        obj = FormatterServices.GetUninitializedObject(desc.Type);
+
+                        // 7. Save handle.
+                        hnds[portObj.Offset] = obj;
+                    }
+                    catch (Exception e)
+                    {
+                        throw new GridClientPortableException("Failed to create type instance: " +
+                            desc.Type.AssemblyQualifiedName, e);
+                    }
+
+                    // 8. Populate object fields.
+                    desc.Serializer.ReadPortable(obj, reader);
+                    
+                    return (T)obj;
                 }
                 finally
                 {
+                    // 9. Restore old frame.
                     CurrentFrame = oldFrame;
                 }
             }

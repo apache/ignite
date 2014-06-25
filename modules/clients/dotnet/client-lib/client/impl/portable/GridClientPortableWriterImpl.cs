@@ -42,7 +42,7 @@ namespace GridGain.Client.Impl.Portable
 
             return this;
         }
-            
+
         /** <inheritdoc /> */
         public void WriteBoolean(string fieldName, bool val)
         {
@@ -80,10 +80,7 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public void WriteByte(string fieldName, byte val)
         {
-            WriteField(fieldName);
-
-            PU.WriteInt(1 + 1, ctx.Stream);
-            PU.WriteByte(PU.TYPE_BYTE, ctx.Stream);
+            WriteField(fieldName, PU.TYPE_BYTE, 1);
 
             WriteByte(val);
         }
@@ -97,10 +94,8 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public void WriteByteArray(string fieldName, byte[] val)
         {
-            WriteField(fieldName);
-                
-            PU.WriteInt(1 + 1 + (val == null ? 0 : val.Length), ctx.Stream);
-            PU.WriteByte(PU.TYPE_ARRAY_BYTE, ctx.Stream);
+            WriteField(fieldName, PU.TYPE_ARRAY_BYTE, 4 + (val == null ? 0 : val.Length));
+
             WriteByteArray(val);
         }
 
@@ -113,10 +108,8 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public void WriteShort(string fieldName, short val)
         {
-            WriteField(fieldName);
+            WriteField(fieldName, PU.TYPE_SHORT, 2);
 
-            PU.WriteInt(1 + 2, ctx.Stream);
-            PU.WriteByte(PU.TYPE_SHORT, ctx.Stream);
             WriteShort(val);
         }
 
@@ -129,10 +122,7 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public void WriteShortArray(string fieldName, short[] val)
         {
-            WriteField(fieldName);
-
-            PU.WriteInt(1 + (val == null ? 0 : 2 * val.Length), ctx.Stream);
-            PU.WriteByte(PU.TYPE_ARRAY_SHORT, ctx.Stream);
+            WriteField(fieldName, PU.TYPE_ARRAY_SHORT, 4 + (val == null ? 0 : 2 * val.Length));
 
             WriteShortArray(val);
         }
@@ -144,80 +134,9 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public void WriteInt(string fieldName, int val)
-        {
-            WriteField(fieldName);
-
-            PU.WriteInt(1 + 4, ctx.Stream);
-            PU.WriteByte(PU.TYPE_INT, ctx.Stream);
-
-            WriteInt(val);
-        }
-
-        /** <inheritdoc /> */
-        public void WriteInt(int val)
-        {
-            PU.WriteInt(val, ctx.Stream);
-        }
-
-        /** <inheritdoc /> */
-        public void WriteIntArray(string fieldName, int[] val)
-        {
-            WriteField(fieldName);
-
-            PU.WriteInt(1+ 1 + (val == null ? 0 : 4 * val.Length), ctx.Stream);
-            PU.WriteByte(PU.TYPE_ARRAY_INT, ctx.Stream);
-
-            WriteIntArray(val);
-        }
-
-        /** <inheritdoc /> */
-        public void WriteIntArray(int[] val)
-        {
-            PU.WriteIntArray(val, ctx.Stream);
-        }
-
-        /** <inheritdoc /> */
-        public void WriteLong(string fieldName, long val)
-        {
-            WriteField(fieldName);
-
-            PU.WriteInt(1 + 8, ctx.Stream);
-            PU.WriteByte(PU.TYPE_LONG, ctx.Stream);
-
-            WriteLong(val);
-        }
-
-        /** <inheritdoc /> */
-        public void WriteLong(long val)
-        {
-            PU.WriteLong(val, ctx.Stream);
-        }
-
-        /** <inheritdoc /> */
-        public void WriteLongArray(string fieldName, long[] val)
-        {
-            WriteField(fieldName);
-
-            PU.WriteInt(1 + 1 + (val == null ? 0 : 8 * val.Length), ctx.Stream);
-            PU.WriteByte(PU.TYPE_ARRAY_BYTE, ctx.Stream);
-
-            WriteLongArray(val);
-        }
-
-        /** <inheritdoc /> */
-        public void WriteLongArray(long[] val)
-        {
-            PU.WriteLongArray(val, ctx.Stream);
-        }
-
-        /** <inheritdoc /> */
         public void WriteChar(string fieldName, char val)
         {
-            WriteField(fieldName);
-
-            PU.WriteInt(1 + 2, ctx.Stream);
-            PU.WriteByte(PU.TYPE_CHAR, ctx.Stream);
+            WriteField(fieldName, PU.TYPE_CHAR, 2);
 
             WriteShort((short)val);
         }
@@ -231,12 +150,9 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public void WriteCharArray(string fieldName, char[] val)
         {
-            WriteField(fieldName);
+            WriteField(fieldName, PU.TYPE_ARRAY_CHAR, 4 + (val == null ? 0 : 2 * val.Length));
 
-            PU.WriteInt(1 + 1 + (val == null ? 0 : 2 * val.Length), ctx.Stream);
-            PU.WriteByte(PU.TYPE_ARRAY_CHAR, ctx.Stream);
-                 
-            WriteCharArray(val);  
+            WriteCharArray(val);
         }
 
         /** <inheritdoc /> */
@@ -246,12 +162,65 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /** <inheritdoc /> */
+        public void WriteInt(string fieldName, int val)
+        {
+            WriteField(fieldName, PU.TYPE_INT, 4);
+
+            WriteInt(val);
+        }
+
+        /** <inheritdoc /> */
+        public void WriteInt(int val)
+        {
+            PU.WriteInt(val, ctx.Stream);
+        }
+
+        /** <inheritdoc /> */
+        public void WriteIntArray(string fieldName, int[] val)
+        {
+            WriteField(fieldName, PU.TYPE_ARRAY_INT, 4 + (val == null ? 0 : 4 * val.Length));
+
+            WriteIntArray(val);
+        }
+
+        /** <inheritdoc /> */
+        public void WriteIntArray(int[] val)
+        {
+            PU.WriteIntArray(val, ctx.Stream);
+        }
+
+        /** <inheritdoc /> */
+        public void WriteLong(string fieldName, long val)
+        {
+            WriteField(fieldName, PU.TYPE_LONG, 8);
+
+            WriteLong(val);
+        }
+
+        /** <inheritdoc /> */
+        public void WriteLong(long val)
+        {
+            PU.WriteLong(val, ctx.Stream);
+        }
+
+        /** <inheritdoc /> */
+        public void WriteLongArray(string fieldName, long[] val)
+        {
+            WriteField(fieldName, PU.TYPE_ARRAY_LONG, 4 + (val == null ? 0 : 8 * val.Length));
+
+            WriteLongArray(val);
+        }
+
+        /** <inheritdoc /> */
+        public void WriteLongArray(long[] val)
+        {
+            PU.WriteLongArray(val, ctx.Stream);
+        }
+
+        /** <inheritdoc /> */
         public void WriteFloat(string fieldName, float val)
         {
-            WriteField(fieldName);
-
-            PU.WriteInt(1 + 4, ctx.Stream);
-            PU.WriteByte(PU.TYPE_FLOAT, ctx.Stream);
+            WriteField(fieldName, PU.TYPE_FLOAT, 4);
 
             WriteFloat(val);
         }
@@ -265,10 +234,7 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public void WriteFloatArray(string fieldName, float[] val)
         {
-            WriteField(fieldName);
-
-            PU.WriteInt(1 + 1 + (val == null ? 0 : 4 * val.Length), ctx.Stream);
-            PU.WriteByte(PU.TYPE_ARRAY_FLOAT, ctx.Stream);
+            WriteField(fieldName, PU.TYPE_ARRAY_FLOAT, 4 + (val == null ? 0 : 4 * val.Length));
 
             WriteFloatArray(val);
         }
@@ -282,10 +248,7 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public void WriteDouble(string fieldName, double val)
         {
-            WriteField(fieldName);
-
-            PU.WriteInt(1+ 8, ctx.Stream);
-            PU.WriteByte(PU.TYPE_DOUBLE, ctx.Stream);
+            WriteField(fieldName, PU.TYPE_DOUBLE, 8);
 
             WriteDouble(val);
         }
@@ -299,10 +262,7 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public void WriteDoubleArray(string fieldName, double[] val)
         {
-            WriteField(fieldName);
-
-            PU.WriteInt(1 + 1 + (val == null ? 0 : 8 * val.Length), ctx.Stream);
-            PU.WriteByte(PU.TYPE_ARRAY_DOUBLE, ctx.Stream);
+            WriteField(fieldName, PU.TYPE_ARRAY_DOUBLE, 4 + (val == null ? 0 : 8 * val.Length));
 
             WriteDoubleArray(val);
         }
@@ -314,15 +274,39 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /** <inheritdoc /> */
+        public void WriteDate(string fieldName, DateTime? val)
+        {
+            WriteField(fieldName, PU.TYPE_DATE, 1 + (val.HasValue ? 8 : 0));
+
+            WriteDate(val);
+        }
+
+        /** <inheritdoc /> */
+        public void WriteDate(DateTime? val)
+        {
+            PU.WriteDate(val, ctx.Stream);
+        }
+
+        /** <inheritdoc /> */
+        public void WriteDateArray(string fieldName, DateTime?[] val)
+        {
+            long pos = WriteField(fieldName, PU.TYPE_ARRAY_DATE);
+
+            WriteDateArray(val);
+
+            WriteLength(pos);
+        }
+
+        /** <inheritdoc /> */
+        public void WriteDateArray(DateTime?[] val)
+        {
+            PU.WriteDateArray(val, ctx.Stream);
+        }
+
+        /** <inheritdoc /> */
         public void WriteString(string fieldName, string val)
         {
-            WriteField(fieldName);
-
-            long pos = ctx.Stream.Position;
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            PU.WriteByte(PU.TYPE_STRING, ctx.Stream);
+            long pos = WriteField(fieldName, PU.TYPE_STRING);
 
             WriteString(val);
 
@@ -338,13 +322,7 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public void WriteStringArray(string fieldName, string[] val)
         {
-            WriteField(fieldName);
-
-            long pos = ctx.Stream.Position;
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            PU.WriteByte(PU.TYPE_ARRAY_STRING, ctx.Stream);
+            long pos = WriteField(fieldName, PU.TYPE_ARRAY_STRING);
 
             WriteStringArray(val);
 
@@ -360,13 +338,7 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public void WriteGuid(string fieldName, Guid? val)
         {
-            WriteField(fieldName);
-
-            long pos = ctx.Stream.Position;
-
-            PU.WriteInt(1 + 1 + (val.HasValue ? 16 : 0), ctx.Stream);
-
-            PU.WriteByte(PU.TYPE_GUID, ctx.Stream);
+            WriteField(fieldName, PU.TYPE_GUID, 1 + (val.HasValue ? 16 : 0));
 
             WriteGuid(val);
         }
@@ -377,14 +349,20 @@ namespace GridGain.Client.Impl.Portable
             PU.WriteGuid(val, ctx.Stream); 
         }
 
+        /** <inheritdoc /> */
         public void WriteGuidArray(string fieldName, Guid?[] val)
         {
-            throw new NotImplementedException();
+            long pos = WriteField(fieldName, PU.TYPE_ARRAY_GUID);
+
+            WriteGuidArray(val);
+
+            WriteLength(pos);
         }
 
+        /** <inheritdoc /> */
         public void WriteGuidArray(Guid?[] val)
         {
-            throw new NotImplementedException();
+            PU.WriteGuidArray(val, ctx.Stream);
         }
         
         /** <inheritdoc /> */
@@ -407,26 +385,26 @@ namespace GridGain.Client.Impl.Portable
             ctx.Write(val);
         }
 
+        /** <inheritdoc /> */
         public void WriteObjectArray<T>(string fieldName, T[] val)
         {
-            throw new NotImplementedException();
+            long pos = WriteField(fieldName, PU.TYPE_ARRAY);
+
+            WriteObjectArray<T>(val);
+
+            WriteLength(pos);
         }
 
+        /** <inheritdoc /> */
         public void WriteObjectArray<T>(T[] val)
         {
-            throw new NotImplementedException();
+            PU.WriteArray(val, ctx);
         }
 
         /** <inheritdoc /> */
         public void WriteCollection(string fieldName, ICollection val)
         {
-            WriteField(fieldName);
-
-            long pos = ctx.Stream.Position;
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            PU.WriteByte(PU.TYPE_COLLECTION, ctx.Stream);
+            long pos = WriteField(fieldName, PU.TYPE_COLLECTION);
 
             WriteCollection(val);
 
@@ -436,29 +414,13 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public void WriteCollection(ICollection val)
         {
-            if (val != null)
-            {
-                PU.WriteInt(val.Count, ctx.Stream);
-
-                PU.WriteByte(val.GetType() == typeof(ArrayList) ? PU.COLLECTION_ARRAY_LIST : PU.COLLECTION_CUSTOM, ctx.Stream);
-
-                foreach (Object elem in val)
-                    ctx.Write(elem);
-            }
-            else
-                PU.WriteInt(-1, ctx.Stream);
+            PU.WriteCollection(val, ctx);
         }
 
         /** <inheritdoc /> */
         public void WriteGenericCollection<T>(string fieldName, ICollection<T> val)
         {
-            WriteField(fieldName);
-
-            long pos = ctx.Stream.Position;
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            PU.WriteByte(PU.TYPE_COLLECTION, ctx.Stream);
+            long pos = WriteField(fieldName, PU.TYPE_COLLECTION);
 
             WriteGenericCollection<T>(val);
 
@@ -468,44 +430,13 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public void WriteGenericCollection<T>(ICollection<T> val)
         {
-            if (val != null)
-            {
-                PU.WriteInt(val.Count, ctx.Stream);
-
-                Type type = val.GetType().GetGenericTypeDefinition();
-
-                byte colType;
-
-                if (type == typeof(List<>))
-                    colType = PU.COLLECTION_ARRAY_LIST;
-                else if (type == typeof(LinkedList<>))
-                    colType = PU.COLLECTION_LINKED_LIST;
-                else if (type == typeof(HashSet<>))
-                    colType = PU.COLLECTION_HASH_SET;
-                else if (type == typeof(SortedSet<>))
-                    colType = PU.COLLECTION_SORTED_SET;
-                else 
-                    colType = PU.COLLECTION_CUSTOM;
-
-                PU.WriteByte(colType, ctx.Stream);
-
-                foreach (T elem in val)
-                    ctx.Write(elem);
-            }
-            else
-                PU.WriteInt(-1, ctx.Stream);
+            PU.WriteGenericCollection<T>(val, ctx);
         }
 
         /** <inheritdoc /> */
         public void WriteDictionary(string fieldName, IDictionary val)
         {
-            WriteField(fieldName);
-
-            long pos = ctx.Stream.Position;
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            PU.WriteByte(PU.TYPE_MAP, ctx.Stream);
+            long pos = WriteField(fieldName, PU.TYPE_DICTIONARY);
 
             WriteDictionary(val);
 
@@ -515,32 +446,13 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public void WriteDictionary(IDictionary val)
         {
-            if (val != null)
-            {
-                PU.WriteInt(val.Count, ctx.Stream);
-
-                PU.WriteByte(val.GetType() == typeof(Hashtable) ? PU.MAP_HASH_MAP : PU.MAP_CUSTOM, ctx.Stream);
-
-                foreach (DictionaryEntry entry in val)
-                {
-                    ctx.Write(entry.Key);
-                    ctx.Write(entry.Value);
-                }
-            }
-            else
-                PU.WriteInt(-1, ctx.Stream);
+            PU.WriteDictionary(val, ctx);
         }
 
         /** <inheritdoc /> */
         public void WriteGenericDictionary<K, V>(string fieldName, IDictionary<K, V> val)
         {
-            WriteField(fieldName);
-
-            long pos = ctx.Stream.Position;
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            PU.WriteByte(PU.TYPE_MAP, ctx.Stream);
+            long pos = WriteField(fieldName, PU.TYPE_DICTIONARY);
 
             WriteGenericDictionary(val);
 
@@ -550,33 +462,7 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public void WriteGenericDictionary<K, V>(IDictionary<K, V> val)
         {
-            if (val != null)
-            {
-                PU.WriteInt(val.Count, ctx.Stream);
-
-                Type type = val.GetType().GetGenericTypeDefinition();
-
-                byte dictType;
-
-                if (type == typeof(Dictionary<,>))
-                    dictType = PU.MAP_HASH_MAP;
-                else if (type == typeof(SortedDictionary<,>))
-                    dictType = PU.MAP_SORTED_MAP;
-                else if (type == typeof(ConcurrentDictionary<,>))
-                    dictType = PU.MAP_CONCURRENT_HASH_MAP;
-                else
-                    dictType = PU.MAP_CUSTOM;
-
-                PU.WriteByte(dictType, ctx.Stream);
-
-                foreach (KeyValuePair<K, V> entry in val)
-                {
-                    ctx.Write(entry.Key);
-                    ctx.Write(entry.Value);
-                }
-            }
-            else
-                PU.WriteInt(-1, ctx.Stream);
+            PU.WriteGenericDictionary<K, V>(val, ctx);
         }
 
         /**
@@ -593,6 +479,39 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
+         * <summary>Write field header with known length.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <param name="type">Field type.</param>
+         * <param name="len">Field length.</param>
+         */
+        private void WriteField(string fieldName, byte type, int len)
+        {
+            WriteField(fieldName);
+
+            PU.WriteInt(1 + len, ctx.Stream);
+            PU.WriteByte(type, ctx.Stream);
+        }
+
+        /**
+         * <summary>Write field header with unknown length.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <param name="type">Field type.</param>
+         * <returns>Position where length is to be written.</returns>
+         */
+        private long WriteField(string fieldName, byte type)
+        {
+            WriteField(fieldName);
+
+            long pos = ctx.Stream.Position;
+
+            ctx.Stream.Seek(4, SeekOrigin.Current);
+
+            PU.WriteByte(type, ctx.Stream);
+
+            return pos;
+        }
+
+        /**
          * <summary>Write field.</summary>
          * <param name="fieldName">Field name.</param>
          */ 
@@ -601,7 +520,6 @@ namespace GridGain.Client.Impl.Portable
             if (ctx.CurrentFrame.Raw)
                 throw new GridClientPortableException("Cannot write named fields after raw data is written.");
 
-            // TODO: GG-8535: Check string mode here.
             int? fieldIdRef = ctx.CurrentFrame.Mapper.FieldId(ctx.CurrentFrame.TypeId, fieldName);
 
             int fieldId = fieldIdRef.HasValue ? fieldIdRef.Value : PU.StringHashCode(fieldName.ToLower());

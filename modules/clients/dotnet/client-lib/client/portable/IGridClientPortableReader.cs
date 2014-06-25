@@ -159,7 +159,21 @@ namespace GridGain.Client.Portable
          * <param name="fieldName">Field name.</param>
          * <returns>Double array.</returns>
          */
-        double[] ReadDoubleArray(string fieldName);        
+        double[] ReadDoubleArray(string fieldName);
+
+        /**
+         * <summary>Read named date value.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <returns>Date value.</returns>
+         */
+        DateTime? ReadDate(string fieldName);
+
+        /**
+         * <summary>Read named date array.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <returns>Date array.</returns>
+         */
+        DateTime?[] ReadDateArray(string fieldName);
 
         /**
          * <summary>Read named string value.</summary>

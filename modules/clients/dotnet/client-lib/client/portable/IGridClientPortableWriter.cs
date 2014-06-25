@@ -129,6 +129,20 @@ namespace GridGain.Client.Portable {
         void WriteDoubleArray(string fieldName, double[] val);
 
         /**
+         * <summary>Write named date value.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <param name="val">Date value.</param>
+         */
+        void WriteDate(string fieldName, DateTime? val);
+
+        /**
+         * <summary>Write named date array.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <param name="val">Date array.</param>
+         */
+        void WriteDateArray(string fieldName, DateTime?[] val);
+
+        /**
          * <summary>Write named string value.</summary>
          * <param name="fieldName">Field name.</param>
          * <param name="val">String value.</param>

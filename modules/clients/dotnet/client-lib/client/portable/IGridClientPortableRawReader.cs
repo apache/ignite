@@ -115,6 +115,18 @@ namespace GridGain.Client.Portable
         double[] ReadDoubleArray();
 
         /**
+         * <summary>Read date value.</summary>
+         * <returns>Date value.</returns>
+         */
+        DateTime? ReadDate();
+
+        /**
+         * <summary>Read date array.</summary>
+         * <returns>Date array.</returns>
+         */
+        DateTime?[] ReadDateArray();
+
+        /**
          * <summary>Read string value.</summary>
          * <returns>String value.</returns>
          */

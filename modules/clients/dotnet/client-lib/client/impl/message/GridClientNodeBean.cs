@@ -107,11 +107,11 @@ namespace GridGain.Client.Impl.Message {
 
             rawWriter.WriteString(DefaultCacheMode);
 
-            //rawWriter.WriteMap(Attributes);
-            //rawWriter.WriteMap(Caches);
+            rawWriter.WriteGenericDictionary(Attributes);
+            rawWriter.WriteGenericDictionary(Caches);
 
-            //rawWriter.WriteCollection(TcpAddresses);
-            //rawWriter.WriteCollection(TcpHostNames);
+            rawWriter.WriteGenericCollection(TcpAddresses);
+            rawWriter.WriteGenericCollection(TcpHostNames);
 
             rawWriter.WriteGuid(NodeId);
 
@@ -128,11 +128,11 @@ namespace GridGain.Client.Impl.Message {
 
             DefaultCacheMode = rawReader.ReadString();
 
-            //Attributes = rawReader.ReadMap<String, Object>();
-            //Caches = rawReader.ReadMap<String, String>();
+            Attributes = rawReader.ReadGenericDictionary<string, object>();
+            Caches = rawReader.ReadGenericDictionary<string, string>();
 
-            //TcpAddresses = rawReader.ReadCollection<String>();
-            //TcpHostNames = rawReader.ReadCollection<String>();
+            TcpAddresses = rawReader.ReadGenericCollection<string>();
+            TcpHostNames = rawReader.ReadGenericCollection<string>();
 
             NodeId = rawReader.ReadGuid().Value;
 
@@ -140,7 +140,8 @@ namespace GridGain.Client.Impl.Message {
             Metrics = rawReader.ReadObject<GridClientNodeMetricsBean>();
 
             if (DefaultCacheMode != null) {
-                Caches = Caches == null ? new GridClientNullDictionary<string, string>() : new GridClientNullDictionary<string, string>(Caches);
+                Caches = Caches == null ? new GridClientNullDictionary<string, string>() : 
+                    new GridClientNullDictionary<string, string>(Caches);
 
                 Caches.Add(null, DefaultCacheMode);
             }

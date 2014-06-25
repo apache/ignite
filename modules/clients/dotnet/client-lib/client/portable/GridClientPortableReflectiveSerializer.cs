@@ -26,17 +26,9 @@ namespace GridGain.Client.Portable
         private static readonly BindingFlags FLAGS = BindingFlags.Instance | BindingFlags.Public | 
             BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
 
-        /** Collection type. */
-        private static readonly Type TYP_COLLECTION = typeof(ICollection);
-
-        /** Dictionary type. */
-        private static readonly Type TYP_DICTIONARY = typeof(IDictionary);
-
-        /** Generic collection type. */
-        private static readonly Type TYP_GENERIC_COLLECTION = typeof(ICollection<>);
-
-        /** Generic dictionary type. */
-        private static readonly Type TYP_GENERIC_DICTIONARY = typeof(IDictionary<,>);
+        /** Method: read array. */
+        private static readonly MethodInfo MTHD_READ_OBJ_ARRAY =
+            typeof(IGridClientPortableReader).GetMethod("ReadObjectArray", new Type[] { typeof(string) });
 
         /** Method: read generic collection. */
         private static readonly MethodInfo MTHD_READ_GENERIC_COLLECTION = 
@@ -178,6 +170,16 @@ namespace GridGain.Client.Portable
                         WritePrimitive(field, type, name);
                         ReadPrimitive(field, type, name);
                     }
+                    else if (type == typeof(DateTime))
+                    {
+                        wActions.Add((obj, writer) => { writer.WriteDate(name, (DateTime)field.GetValue(obj)); });
+                        rActions.Add((obj, reader) => { field.SetValue(obj, reader.ReadDate(name)); });
+                    }
+                    else if (nullable && nullableType == typeof(DateTime))
+                    {
+                        wActions.Add((obj, writer) => { writer.WriteDate(name, (DateTime?)field.GetValue(obj)); });
+                        rActions.Add((obj, reader) => { field.SetValue(obj, reader.ReadDate(name)); });
+                    }
                     else if (type == typeof(String))
                     {
                         wActions.Add((obj, writer) => { writer.WriteString(name, (String)field.GetValue(obj)); });
@@ -193,9 +195,12 @@ namespace GridGain.Client.Portable
                         wActions.Add((obj, writer) => { writer.WriteGuid(name, (Guid?)field.GetValue(obj)); });
                         rActions.Add((obj, reader) => { field.SetValue(obj, reader.ReadGuid(name)); });
                     }
-                    else if (type.IsArray)
-                        HandleArray(field, type, name, wActions);
-                    else if (type.IsGenericType && type.GetInterface(TYP_GENERIC_DICTIONARY.FullName) != null)
+                    else if (type.IsArray) 
+                    {
+                        WriteArray(field, type, name);
+                        ReadArray(field, type, name);
+                    }
+                    else if (type.IsGenericType && type.GetInterface(PU.TYP_GENERIC_DICTIONARY.FullName) != null)
                     {
                         wActions.Add((obj, writer) =>
                         {
@@ -207,14 +212,14 @@ namespace GridGain.Client.Portable
                         rActions.Add((obj, reader) =>
                         {
                             object val = MTHD_READ_GENERIC_DICTIONARY
-                                .MakeGenericMethod(type.GetInterface(TYP_GENERIC_DICTIONARY.FullName)
+                                .MakeGenericMethod(type.GetInterface(PU.TYP_GENERIC_DICTIONARY.FullName)
                                 .GetGenericArguments())
                                 .Invoke(reader, new object[] { name });
 
                             field.SetValue(obj, val);
                         });
                     }
-                    else if (type.IsGenericType && type.GetInterface(TYP_GENERIC_COLLECTION.FullName) != null)
+                    else if (type.IsGenericType && type.GetInterface(PU.TYP_GENERIC_COLLECTION.FullName) != null)
                     {
                         wActions.Add((obj, writer) =>
                         {
@@ -226,14 +231,14 @@ namespace GridGain.Client.Portable
                         rActions.Add((obj, reader) =>
                         {
                             object val = MTHD_READ_GENERIC_COLLECTION
-                                .MakeGenericMethod(type.GetInterface(TYP_GENERIC_COLLECTION.FullName)
+                                .MakeGenericMethod(type.GetInterface(PU.TYP_GENERIC_COLLECTION.FullName)
                                 .GetGenericArguments())
                                 .Invoke(reader, new object[] { name });
 
                             field.SetValue(obj, val);
                         });
                     }
-                    else if (type.GetInterface(TYP_DICTIONARY.FullName) != null)
+                    else if (type.GetInterface(PU.TYP_DICTIONARY.FullName) != null)
                     {
                         wActions.Add((obj, writer) =>
                         {
@@ -249,53 +254,11 @@ namespace GridGain.Client.Portable
                             field.SetValue(obj, val);
                         });
                     }
-                    else if (type.GetInterface(TYP_COLLECTION.FullName) != null)
+                    else if (type.GetInterface(PU.TYP_COLLECTION.FullName) != null)
                     {
                         wActions.Add((obj, writer) =>
                         {
                             ICollection val = (ICollection)field.GetValue(obj);
-
-                            writer.WriteCollection(name, val);
-                        });
-
-                        rActions.Add((obj, reader) =>
-                        {
-                            object val = reader.ReadCollection(name);
-
-                            field.SetValue(obj, val);
-                        });
-                    }
-
-                    else if (type.IsGenericType && type.GetInterface(TYP_GENERIC_COLLECTION.Name) != null)
-                    {
-                        wActions.Add((obj, writer) =>
-                        {
-                            dynamic val = field.GetValue(obj);
-
-                            writer.WriteGenericCollection(name, val);
-                        });
-
-                        rActions.Add((obj, reader) => 
-                        {
-                            object val = MTHD_READ_GENERIC_COLLECTION.MakeGenericMethod(type.GetGenericArguments()[0]).Invoke(reader, new object[] { name });
-
-                            field.SetValue(obj, val);
-                        });
-                    }
-                    //else if (type is IDictionary)
-                    //{
-                    //    wActions.Add((obj, writer) =>
-                    //    {
-                    //        dynamic val = (IDictionary)field.GetValue(obj);
-
-                    //        //writer.WriteMap(name, val);
-                    //    });
-                    //}
-                    else if (type == TYP_COLLECTION || type.GetInterface(TYP_COLLECTION.FullName) != null)
-                    {
-                        wActions.Add((obj, writer) =>
-                        {
-                            dynamic val = (ICollection)field.GetValue(obj);
 
                             writer.WriteCollection(name, val);
                         });
@@ -450,46 +413,38 @@ namespace GridGain.Client.Portable
              * <param name="field">Field.</param>
              * <param name="type">Field type.</param>
              * <param name="name">Field name.</param>
-             * <param name="actions">Actions.</param>
              */
-            private void HandleArray(FieldInfo field, Type type, string name, 
-                ICollection<Action<Object, IGridClientPortableWriter>> actions)
+            private void WriteArray(FieldInfo field, Type type, string name)
             {
                 unchecked
                 {
                     Type elemType = type.GetElementType();
-
-                    bool nullable = type.IsGenericTypeDefinition && type.GetGenericTypeDefinition() == typeof(Nullable<>);
-
-                    Type nullableElemType = nullable ? type.GetGenericArguments()[0] : null;
-
+                    
                     if (elemType == typeof(Boolean))
-                        actions.Add((obj, writer) => { writer.WriteBooleanArray(name, 
-                            (Boolean[])field.GetValue(obj)); });
+                        wActions.Add((obj, writer) => { writer.WriteBooleanArray(name, (Boolean[])field.GetValue(obj)); });
                     else if (elemType == typeof(Byte) || elemType == typeof(SByte))
-                        actions.Add((obj, writer) => { writer.WriteByteArray(name, (Byte[])field.GetValue(obj)); });
+                        wActions.Add((obj, writer) => { writer.WriteByteArray(name, (Byte[])field.GetValue(obj)); });
                     else if (elemType == typeof(Int16) || elemType == typeof(UInt16))
-                        actions.Add((obj, writer) => { writer.WriteShortArray(name, (Int16[])field.GetValue(obj)); });
-                    else if (elemType == typeof(Int32) || elemType == typeof(UInt32))
-                        actions.Add((obj, writer) => { writer.WriteIntArray(name, (Int32[])field.GetValue(obj)); });
-                    else if (elemType == typeof(Int64) || elemType == typeof(UInt64))
-                        actions.Add((obj, writer) => { writer.WriteLongArray(name, (Int64[])field.GetValue(obj)); });
+                        wActions.Add((obj, writer) => { writer.WriteShortArray(name, (Int16[])field.GetValue(obj)); });
                     else if (elemType == typeof(Char))
-                        actions.Add((obj, writer) => { writer.WriteCharArray(name, (Char[])field.GetValue(obj)); });
+                        wActions.Add((obj, writer) => { writer.WriteCharArray(name, (Char[])field.GetValue(obj)); });
+                    else if (elemType == typeof(Int32) || elemType == typeof(UInt32))
+                        wActions.Add((obj, writer) => { writer.WriteIntArray(name, (Int32[])field.GetValue(obj)); });
+                    else if (elemType == typeof(Int64) || elemType == typeof(UInt64))
+                        wActions.Add((obj, writer) => { writer.WriteLongArray(name, (Int64[])field.GetValue(obj)); });                    
                     else if (elemType == typeof(Single))
-                        actions.Add((obj, writer) => { writer.WriteFloatArray(name, 
-                            (Single[])field.GetValue(obj)); });
+                        wActions.Add((obj, writer) => { writer.WriteFloatArray(name, (Single[])field.GetValue(obj)); });
                     else if (elemType == typeof(Double))
-                        actions.Add((obj, writer) => { writer.WriteDoubleArray(name, 
-                            (Double[])field.GetValue(obj)); });
+                        wActions.Add((obj, writer) => { writer.WriteDoubleArray(name, (Double[])field.GetValue(obj)); });
+                    else if (elemType == typeof(DateTime?))
+                        wActions.Add((obj, writer) => { writer.WriteDateArray(name, (DateTime?[])field.GetValue(obj)); });
                     else if (elemType == typeof(String))
-                        actions.Add((obj, writer) => { writer.WriteStringArray(name, 
-                            (String[])field.GetValue(obj)); });
-                    else if (elemType == typeof(Guid) || (nullable && nullableElemType == typeof(Guid)))
-                        actions.Add((obj, writer) => { writer.WriteGuidArray(name, (Guid?[])field.GetValue(obj)); });
+                        wActions.Add((obj, writer) => { writer.WriteStringArray(name, (String[])field.GetValue(obj)); });
+                    else if (elemType == typeof(Guid?))
+                        wActions.Add((obj, writer) => { writer.WriteGuidArray(name, (Guid?[])field.GetValue(obj)); });
                     else
                     {
-                        actions.Add((obj, writer) =>
+                        wActions.Add((obj, writer) =>
                         {
                             dynamic val = field.GetValue(obj);
 
@@ -500,32 +455,141 @@ namespace GridGain.Client.Portable
             }
 
             /**
-             * <summary>Handle generic collection field write</summary>
+             * <summary>Handle array field read</summary>
              * <param name="field">Field.</param>
              * <param name="type">Field type.</param>
              * <param name="name">Field name.</param>
-             * <param name="actions">Actions.</param>
              */
-            private void HandleGeneric(FieldInfo field, Type type, string name, 
-                ICollection<Action<Object, IGridClientPortableWriter>> actions)
+            private unsafe void ReadArray(FieldInfo field, Type type, string name)
             {
-                if (type.IsGenericType && type.GetInterface(TYP_GENERIC_DICTIONARY.Name) != null)
+                unchecked
                 {
-                    actions.Add((obj, writer) => 
-                    {
-                        dynamic val = field.GetValue(obj);
+                    Type elemType = type.GetElementType();
 
-                        //writer.WriteMap(name, val); 
-                    });
-                }
-                else if (type.IsGenericType && type.GetInterface(TYP_GENERIC_COLLECTION.Name) != null)
-                {
-                    actions.Add((obj, writer) =>
+                    if (elemType == typeof(Boolean))
+                        rActions.Add((obj, reader) => { field.SetValue(obj, reader.ReadBooleanArray(name)); });
+                    else if (elemType == typeof(Byte))
+                        rActions.Add((obj, reader) => { field.SetValue(obj, reader.ReadByteArray(name)); });
+                    else if ( elemType == typeof(SByte)) 
                     {
-                        dynamic val = field.GetValue(obj);
+                        rActions.Add((obj, reader) =>
+                        {
+                            byte[] arr = reader.ReadByteArray(name);
 
-                        writer.WriteCollection(name, val);
-                    });
+                            if (arr == null)
+                                field.SetValue(obj, null);
+                            else
+                            {
+                                sbyte[] arr0 = new sbyte[arr.Length];
+
+                                for (int i = 0; i < arr.Length; i++)
+                                {
+                                    byte val = arr[i];
+
+                                    arr0[i] = *(sbyte*)&val;
+                                }
+
+                                field.SetValue(obj, arr0);
+                            }
+                        });
+                    }
+                    else if (elemType == typeof(Int16))
+                        rActions.Add((obj, reader) => { field.SetValue(obj, reader.ReadShortArray(name)); });
+                    else if (elemType == typeof(UInt16))
+                    {
+                        rActions.Add((obj, reader) =>
+                        {
+                            short[] arr = reader.ReadShortArray(name);
+
+                            if (arr == null)
+                                field.SetValue(obj, null);
+                            else
+                            {
+                                ushort[] arr0 = new ushort[arr.Length];
+
+                                for (int i = 0; i < arr.Length; i++)
+                                {
+                                    short val = arr[i];
+
+                                    arr0[i] = *(ushort*)&val;
+                                }
+
+                                field.SetValue(obj, arr0);
+                            }
+                        });
+                    }
+                    else if (elemType == typeof(Char))
+                        rActions.Add((obj, reader) => { field.SetValue(obj, reader.ReadCharArray(name)); });
+                    else if (elemType == typeof(Int32))
+                        rActions.Add((obj, reader) => { field.SetValue(obj, reader.ReadIntArray(name)); });
+                    else if (elemType == typeof(UInt32))
+                    {
+                        rActions.Add((obj, reader) =>
+                        {
+                            int[] arr = reader.ReadIntArray(name);
+
+                            if (arr == null)
+                                field.SetValue(obj, null);
+                            else
+                            {
+                                uint[] arr0 = new uint[arr.Length];
+
+                                for (int i = 0; i < arr.Length; i++)
+                                {
+                                    int val = arr[i];
+
+                                    arr0[i] = *(uint*)&val;
+                                }
+
+                                field.SetValue(obj, arr0);
+                            }
+                        });
+                    }
+                    else if (elemType == typeof(Int64))
+                        rActions.Add((obj, reader) => { field.SetValue(obj, reader.ReadLongArray(name)); });
+                    else if (elemType == typeof(UInt64))
+                    {
+                        rActions.Add((obj, reader) =>
+                        {
+                            long[] arr = reader.ReadLongArray(name);
+
+                            if (arr == null)
+                                field.SetValue(obj, null);
+                            else
+                            {
+                                ulong[] arr0 = new ulong[arr.Length];
+
+                                for (int i = 0; i < arr.Length; i++)
+                                {
+                                    long val = arr[i];
+
+                                    arr0[i] = *(ulong*)&val;
+                                }
+
+                                field.SetValue(obj, arr0);
+                            }
+                        });
+                    }
+                    else if (elemType == typeof(Single))
+                        rActions.Add((obj, reader) => { field.SetValue(obj, reader.ReadFloatArray(name)); });
+                    else if (elemType == typeof(Double))
+                        rActions.Add((obj, reader) => { field.SetValue(obj, reader.ReadDoubleArray(name)); });
+                    else if (elemType == typeof(DateTime?))
+                        rActions.Add((obj, reader) => { field.SetValue(obj, reader.ReadDateArray(name)); });
+                    else if (elemType == typeof(String))
+                        rActions.Add((obj, reader) => { field.SetValue(obj, reader.ReadStringArray(name)); });
+                    else if (elemType == typeof(Guid?))
+                        rActions.Add((obj, reader) => { field.SetValue(obj, reader.ReadGuidArray(name)); });
+                    else
+                    {
+                        rActions.Add((obj, reader) => 
+                        { 
+                            object val = MTHD_READ_OBJ_ARRAY.MakeGenericMethod(elemType)
+                                .Invoke(reader, new object[] { name });
+
+                            field.SetValue(obj, val);
+                        });
+                    }
                 }
             }
 

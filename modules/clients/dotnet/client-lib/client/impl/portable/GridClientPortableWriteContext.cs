@@ -83,7 +83,7 @@ namespace GridGain.Client.Impl.Portable
                 return;
             }
                 
-            // 2. Write primitive.
+            // 2. Try writting as well-known type.
             int pos = (int)Stream.Position;
 
             Type type = obj.GetType();
@@ -92,12 +92,12 @@ namespace GridGain.Client.Impl.Portable
 
             if (sysHandler != null)
             {
-                sysHandler.Invoke(Stream, pos, obj);
+                sysHandler.Invoke(this, Stream, pos, obj);
 
                 return;
             }
             
-            // 3. Try interpreting object as handle.
+            // 3. Dealing with handles.
             if (hnds == null)
                 hnds = new Dictionary<GridClientPortableObjectHandle, int>();
 
@@ -117,39 +117,35 @@ namespace GridGain.Client.Impl.Portable
                 // Handle position must be relative to the overall message start.
                 hnds.Add(hnd, (int)pos - startPos);
 
-            // 6. Write enum.
-
-            // 9. Write collection.
-            // TODO: GG-8535: Implement.
-
-            // 10. Write map.
-            // TODO: GG-8535: Implement.
-
-            // 8. Write object array.
-            // TODO: GG-8535: Implement.
-
-            // 11. Just object.
+            // 4. Get descriptor.
             GridClientPortableTypeDescriptor desc;
                 
             if (!descs.TryGetValue(type, out desc))
                 throw new GridClientPortableException("Unsupported object type [type=" + type +
                     ", object=" + obj + ']');
 
+            // 5. Write header.
             Stream.WriteByte(PU.HDR_FULL);
             PU.WriteBoolean(desc.UserType, Stream);
             PU.WriteInt(desc.TypeId, Stream);
             PU.WriteInt(obj.GetHashCode(), Stream);
 
+            // 6. Skip length as it is not known in the first place.
             Stream.Seek(8, SeekOrigin.Current);
 
+            // 7. Preserve old frame.
             GridClientPortableFrame oldFrame = CurrentFrame;
 
+            // 8. Push new frame.
             CurrentFrame = new GridClientPortableFrame(desc.TypeId, desc.Mapper, null);
 
+            // 9. Write object fields.
             desc.Serializer.WritePortable(obj, writer);
 
+            // 10. Calculate and write length.
             WriteLength(Stream, pos, Stream.Position, CurrentFrame.RawPosition);
 
+            // 11. Restore old frame.
             CurrentFrame = oldFrame;
         }
 
