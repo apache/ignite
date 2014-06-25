@@ -27,6 +27,9 @@ import static org.gridgain.grid.kernal.visor.cmd.tasks.VisorQueryUtils.*;
  */
 @GridInternal
 public class VisorQueryNextPageTask extends VisorOneNodeTask<GridBiTuple<String, Integer>, VisorQueryResult> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorQueryNextPageJob job(GridBiTuple<String, Integer> arg) {
         return new VisorQueryNextPageJob(arg);
