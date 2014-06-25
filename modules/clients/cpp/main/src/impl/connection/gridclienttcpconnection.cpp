@@ -111,7 +111,7 @@ void GridClientTcpPacket::setPacketSize(int32_t size) {
     GridClientByteUtils::valueToBytes(size, &sizeHeader[0], sizeof(size));
 }
 
-void GridClientTcpPacket::setData(boost::shared_ptr<std::vector<int8_t>> ptr) {
+void GridClientTcpPacket::setData(boost::shared_ptr<std::vector<int8_t>>& ptr) {
     dataPtr = ptr;
 
     setPacketSize(ADDITIONAL_HEADERS_SIZE + ptr.get()->size());
@@ -119,6 +119,8 @@ void GridClientTcpPacket::setData(boost::shared_ptr<std::vector<int8_t>> ptr) {
 
 void GridClientTcpPacket::copyData(int8_t* start, int8_t* end) {
     std::vector<int8_t>* data = new std::vector<int8_t>();
+
+    data->assign(start, end);
 
     dataPtr.reset(data);
 }
@@ -454,6 +456,7 @@ void GridClientSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPacket,
 }
 
 void GridClientSyncTcpConnection::sendPing() {
+    /* TODO 8536
     GridClientTcpPacket pingPacket;
     GridClientTcpPacket::createPingPacket(pingPacket);
 
@@ -481,6 +484,7 @@ void GridClientSyncTcpConnection::sendPing() {
         GG_LOG_DEBUG("Skipping ping as write is already being performed [host=%s, port=%d]", host.c_str(), port);
 
     GG_LOG_DEBUG("Successfully sent a ping packet [host=%s, port=%d]", host.c_str(), port);
+    */
 }
 
 void GridClientSyncTcpConnection::handshake() {

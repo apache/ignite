@@ -85,7 +85,7 @@ public:
      */
     size_t getHeaderSize() const;
 
-    void setData(boost::shared_ptr<std::vector<int8_t>> dataPtr);
+    void setData(boost::shared_ptr<std::vector<int8_t>>& dataPtr);
 
     const boost::shared_ptr<std::vector<int8_t>>& getData() const;
 

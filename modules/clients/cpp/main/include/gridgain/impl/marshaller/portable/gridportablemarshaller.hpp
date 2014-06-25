@@ -74,9 +74,11 @@ const int8_t LINKED_HASH_MAP = 2;
 const int8_t TREE_MAP = 3;
 const int8_t CONC_HASH_MAP = 4;
 
-GridPortable* createPortable(int32_t typeId, GridPortableReader &reader);
+GridPortable* createPortable(int32_t typeId, GridPortableReader& reader);
 
-GridPortable* createSystemPortable(int32_t typeId, GridPortableReader &reader);
+bool systemPortable(int32_t typeId);
+
+GridPortable* createSystemPortable(int32_t typeId, GridPortableReader& reader);
 
 int32_t getFieldId(const char* fieldName, int32_t typeId, GridPortableIdResolver* idRslvr);
 
@@ -972,6 +974,9 @@ public:
     }
 
     void writeSystem(GridPortable& portable) {
+        int32_t start = ctx.out.bytes.size();
+        int32_t lenPos = start + 10;
+
         ctx.out.writeByte(FLAG_OBJECT);
 
         writeHeader(false, portable.typeId(), 0);
@@ -979,6 +984,10 @@ public:
         GridPortableWriterImpl writer(ctx, portable.typeId(), ctx.out.bytes.size() - 18);
 
         portable.writePortable(writer);
+
+        int32_t len = ctx.out.bytes.size() - start;
+
+        ctx.out.writeInt32To(lenPos, len);
     }
 
     void doWriteVariant(const GridClientVariant& val) {
@@ -1220,8 +1229,6 @@ public:
             throw GridClientPortableException("Unknown object type.");
         }
 
-        assert(lenPos > 0);
-
         int32_t len = ctx.out.bytes.size() - start;
 
         ctx.out.writeInt32To(lenPos, len);
@@ -1422,6 +1429,15 @@ public:
 
         doWriteString(val);
 	}
+
+    void writeString(const boost::optional<std::string>& val) override {
+        switchToRaw();
+
+        if (!val)
+            doWriteInt32(-1);
+        else
+            doWriteString(val.get());
+    }
 
     void writeStringCollection(const std::vector<std::string>& val) override {
         switchToRaw();
@@ -2059,12 +2075,14 @@ public:
 
         boost::unordered_map<int32_t, void*>::const_iterator handle = handles.find(start);
 
+        bool userType = in.readByte(start + 1) != 0;
+
         curTypeId = in.readInt32(start + 2);
 
         rawOff = start + in.readInt32(start + 14);
 
         if (handle == handles.end()) {
-            GridPortable* portable = createPortable(curTypeId, *this);
+            GridPortable* portable = userType ? createPortable(curTypeId, *this) : createSystemPortable(curTypeId, *this);
 
             handles[start] = portable;
 
@@ -2089,6 +2107,16 @@ public:
 
             case FLAG_HANDLE: {
                 int32_t objStart = doReadInt32(raw);
+
+                bool userType = in.readByte(objStart + 1) != 0;
+
+                if (!userType) {
+                    int32_t typeId = in.readInt32(objStart + 2);
+
+                    off = objStart + 18;
+
+                    return readStandard(typeId, false);
+                }
 
                 GridPortableObject obj(ctxPtr, objStart);
 
@@ -2138,43 +2166,59 @@ public:
 
         int8_t flag = doReadByte(false);
 
-        if (flag == FLAG_OBJECT) {
-            bool userType = doReadBool(false);
+        switch(flag) {
+            case FLAG_OBJECT: {
+                bool userType = doReadBool(false);
 
-            int32_t typeId = doReadInt32(false);
+                int32_t typeId = doReadInt32(false);
 
-            int32_t hashCode = doReadInt32(false);
+                int32_t hashCode = doReadInt32(false);
 
-            int32_t len = doReadInt32(false);
+                int32_t len = doReadInt32(false);
 
-            int32_t rawOff = doReadInt32(false);
+                int32_t rawOff = doReadInt32(false);
 
-            if (userType) {
-                GridPortableObject obj(ctxPtr, off - 18);
+                if (userType) {
+                    GridPortableObject obj(ctxPtr, off - 18);
+
+                    return GridClientVariant(obj);
+                }
+                else
+                    return readStandard(typeId, false);
+            }
+
+            case FLAG_HANDLE: {
+                int32_t objStart = doReadInt32(false);
+
+                bool userType = in.readByte(objStart + 1) != 0;
+
+                if (!userType) {
+                    int32_t typeId = in.readInt32(objStart + 2);
+
+                    off = objStart + 18;
+
+                    return readStandard(typeId, false);
+                }
+
+                GridPortableObject obj(ctxPtr, objStart);
 
                 return GridClientVariant(obj);
             }
-            else
-                return readStandard(typeId, false);
-        }
-        else if (flag == FLAG_HANDLE) {
-            int32_t objStart = doReadInt32(false);
 
-            GridPortableObject obj(ctxPtr, objStart);
-
-            return GridClientVariant(obj);
+            case FLAG_NULL: {
+                return GridClientVariant();
+            }
         }
-        else if (flag == FLAG_NULL)
-            return GridClientVariant();
 
         return readStandard(flag, false);
     }
 
     GridClientVariant readStandard(int32_t typeId, bool raw) {
-        GridPortable* portable = createSystemPortable(typeId, *this);
+        if (systemPortable(typeId)) {
+            GridPortableObject obj(ctxPtr, raw ? rawOff - 18 : off - 18);
 
-        if (portable)
-            return GridClientVariant(portable);
+            return GridClientVariant(obj);
+        }
 
         switch (typeId) {
             case TYPE_ID_BYTE: {
@@ -3816,18 +3860,16 @@ public:
 
         assert(res.hasVariantVector());
 
-        std::vector<GridClientVariant> vec = res.getVariantVector();
+        std::vector<GridClientVariant>& vec = res.getVariantVector();
 
         std::vector<GridClientNode> nodes;
 
         for (auto iter = vec.begin(); iter != vec.end(); ++iter) {
-            GridClientVariant nodeVariant = *iter;
+            GridClientVariant var = *iter;
 
-            GridClientNodeBean* nodeBean = nodeVariant.getPortable<GridClientNodeBean>();
+            std::unique_ptr<GridClientNodeBean> nodeBean(var.getPortableObject().deserialize<GridClientNodeBean>());
 
             nodes.push_back(nodeBean->createNode());
-
-            delete nodeBean;
         }
 
         resp.setNodes(nodes);

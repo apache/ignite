@@ -444,7 +444,7 @@ public:
         boost::asio::ip::tcp::resolver resolver(ioSrvc);
 
         for (size_t i = 0; i < jettyAddrs.size(); ++i) {
-            GridClientVariant addr = jettyAddrs[i];
+            GridClientVariant& addr = jettyAddrs[i];
 
             GridClientSocketAddress newJettyAddress = GridClientSocketAddress(addr.getString(), jettyport);
 
@@ -461,10 +461,11 @@ public:
         }
 
         for (size_t i = 0; i < jettyHostNames.size(); ++i) {
-            GridClientSocketAddress newJettyAddress = GridClientSocketAddress(jettyHostNames[i].getString(), jettyport);
+            GridClientVariant& host = jettyHostNames[i];
 
-            boost::asio::ip::tcp::resolver::query queryHostname(jettyHostNames[i].getString(),
-                boost::lexical_cast<std::string>(jettyport));
+            GridClientSocketAddress newJettyAddress = GridClientSocketAddress(host.getString(), jettyport);
+
+            boost::asio::ip::tcp::resolver::query queryHostname(host.getString(), boost::lexical_cast<std::string>(jettyport));
 
             boost::system::error_code ec;
 
@@ -473,17 +474,18 @@ public:
             if (!ec)
                 addresses.push_back(newJettyAddress);
             else
-                GG_LOG_ERROR("Error resolving hostname: %s, %s", jettyHostNames[i].getString().c_str(), ec.message().c_str());
+                GG_LOG_ERROR("Error resolving hostname: %s, %s", host.getString().c_str(), ec.message().c_str());
         }
 
         helper.setJettyAddresses(addresses);
         addresses.clear();
 
         for (size_t i = 0; i < tcpAddrs.size(); ++i) {
-            GridClientSocketAddress newTCPAddress = GridClientSocketAddress(tcpAddrs[i].getString(), tcpport);
+            GridClientVariant& tcpAddr = tcpAddrs[i];
 
-            boost::asio::ip::tcp::resolver::query queryIp(tcpAddrs[i].getString(),
-                boost::lexical_cast<std::string>(tcpport));
+            GridClientSocketAddress newTCPAddress = GridClientSocketAddress(tcpAddr.getString(), tcpport);
+
+            boost::asio::ip::tcp::resolver::query queryIp(tcpAddr.getString(), boost::lexical_cast<std::string>(tcpport));
 
             boost::system::error_code ec;
 
@@ -492,14 +494,15 @@ public:
             if (!ec)
                 addresses.push_back(newTCPAddress);
             else
-                GG_LOG_ERROR("Error resolving hostname: %s, %s", tcpAddrs[i].getString().c_str(), ec.message().c_str());
+                GG_LOG_ERROR("Error resolving hostname: %s, %s", tcpAddr.getString().c_str(), ec.message().c_str());
         }
 
         for (size_t i = 0; i < tcpHostNames.size(); ++i) {
-            GridClientSocketAddress newTCPAddress = GridClientSocketAddress(tcpHostNames[i].getString(), tcpport);
+            GridClientVariant& tcpHost = tcpHostNames[i];
 
-            boost::asio::ip::tcp::resolver::query queryHostname(tcpHostNames[i].getString(),
-                boost::lexical_cast<std::string>(tcpport));
+            GridClientSocketAddress newTCPAddress = GridClientSocketAddress(tcpHost.getString(), tcpport);
+
+            boost::asio::ip::tcp::resolver::query queryHostname(tcpHost.getString(), boost::lexical_cast<std::string>(tcpport));
 
             boost::system::error_code ec;
 
@@ -508,7 +511,7 @@ public:
             if (!ec)
                 addresses.push_back(newTCPAddress);
             else
-                GG_LOG_ERROR("Error resolving hostname: %s, %s", tcpHostNames[i].getString().c_str(), ec.message().c_str());
+                GG_LOG_ERROR("Error resolving hostname: %s, %s", tcpHost.getString().c_str(), ec.message().c_str());
         }
 
         helper.setTcpAddresses(addresses);
@@ -517,10 +520,8 @@ public:
 
         helper.setAttributes(attrs);
 
-        if (metrics.hasPortable()) {
-            assert(metrics.getPortable()->typeId() == -5);
-
-            GridClientMetricsBean* pMetrics = metrics.getPortable<GridClientMetricsBean>();
+        if (metrics.hasPortableObject()) {
+            std::unique_ptr<GridClientMetricsBean> pMetrics(metrics.getPortableObject().deserialize<GridClientMetricsBean>());
 
             GridClientNodeMetricsBean metricsBean;
 
@@ -572,8 +573,6 @@ public:
             metricsBean.setUpTime(pMetrics->upTime);
 
             helper.setMetrics(metricsBean);
-
-            delete pMetrics;
         }
 
         return res;
@@ -640,7 +639,7 @@ public:
      boost::optional<GridClientUuid> nodeId;
 
     /** IP address of requested node. */
-     std::string nodeIp;
+     boost::optional<std::string> nodeIp;
 
     /** Include metrics flag. */
      bool includeMetrics;

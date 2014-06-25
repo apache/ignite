@@ -63,16 +63,16 @@ void registerPortableFactory(int32_t typeId, GridPortableFactory* factory) {
     factories[typeId] = factory;
 }
 
-void registerSystemPortableFactory(int32_t typeId, GridPortableFactory* factory) {
-    boost::unordered_map<int32_t, GridPortableFactory*>& factories = portableFactories();
-
-    factories[typeId] = factory;
-}
-
 boost::unordered_map<int32_t, GridPortableFactory*>& systemPortableFactories() {
     static boost::unordered_map<int32_t, GridPortableFactory*> portableFactories;
 
     return portableFactories;
+}
+
+void registerSystemPortableFactory(int32_t typeId, GridPortableFactory* factory) {
+    boost::unordered_map<int32_t, GridPortableFactory*>& factories = systemPortableFactories();
+
+    factories[typeId] = factory;
 }
 
 GridPortable* createPortable(int32_t typeId, GridPortableReader &reader) {
@@ -86,15 +86,23 @@ GridPortable* createPortable(int32_t typeId, GridPortableReader &reader) {
     return static_cast<GridPortable*>(factory->newInstance(reader));
 }
 
+bool systemPortable(int32_t typeId) {
+    boost::unordered_map<int32_t, GridPortableFactory*>& factories = systemPortableFactories();
+    
+    boost::unordered_map<int32_t, GridPortableFactory*>::const_iterator factory = factories.find(typeId);
+    
+    return factory != factories.end();
+}
+
 GridPortable* createSystemPortable(int32_t typeId, GridPortableReader &reader) {
-    boost::unordered_map<int32_t, GridPortableFactory*>& factories = portableFactories();
+    boost::unordered_map<int32_t, GridPortableFactory*>& factories = systemPortableFactories();
 
     GridPortableFactory* factory = factories[typeId];
 
-    if (factory)
-        return static_cast<GridPortable*>(factory->newInstance(reader));
+    if (!factory)
+        throw GridClientPortableException("Unknown system type id.");
 
-    return nullptr;
+    return static_cast<GridPortable*>(factory->newInstance(reader));
 }
 
 #define REGISTER_SYSTEM_TYPE(TYPE_ID, TYPE) \

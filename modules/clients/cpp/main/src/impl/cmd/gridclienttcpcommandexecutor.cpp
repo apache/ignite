@@ -167,7 +167,9 @@ template<class C, class R> void GridClientTcpCommandExecutor::executeCmd(const G
 
     GridClientVariant var = marsh.unmarshal(tcpResponse.getData());
 
-    std::unique_ptr<GridClientResponse> resMsg(var.getPortable<GridClientResponse>());
+    assert(var.hasPortableObject());
+
+    std::unique_ptr<GridClientResponse> resMsg(var.getPortableObject().deserialize<GridClientResponse>());
 
     response.setStatus(static_cast<GridClientMessageResult::StatusCode>(resMsg->status));
 
