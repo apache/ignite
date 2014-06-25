@@ -43,7 +43,8 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
 
         JobConf jobConf = new JobConf(jobImpl.hadoopJobContext().getJobConf());
 
-        Reducer reducer = ReflectionUtils.newInstance(reduce ? jobConf.getReducerClass() : jobConf.getCombinerClass(), jobConf);
+        Reducer reducer = ReflectionUtils.newInstance(reduce ? jobConf.getReducerClass() : jobConf.getCombinerClass(),
+            jobConf);
 
         assert reducer != null;
 

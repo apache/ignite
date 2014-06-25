@@ -55,5 +55,4 @@ public class GridHadoopV2CleanupTask extends GridHadoopV2Task {
             throw new GridInterruptedException(e);
         }
     }
-
 }

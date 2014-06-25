@@ -91,6 +91,4 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
             );
         }
     }
-
-
 }

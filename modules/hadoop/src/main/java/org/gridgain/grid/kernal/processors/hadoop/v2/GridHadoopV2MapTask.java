@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
-import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.map.*;

@@ -29,7 +29,7 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
      *
      * @param taskInfo Task info.
      */
-    public GridHadoopV2Task(GridHadoopTaskInfo taskInfo) {
+    protected GridHadoopV2Task(GridHadoopTaskInfo taskInfo) {
         super(taskInfo);
     }
 
@@ -61,7 +61,6 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
     protected GridHadoopV2Context hadoopContext() {
         return hadoopCtx;
     }
-
 
     /**
      * Create and configure an OutputFormat instance.
