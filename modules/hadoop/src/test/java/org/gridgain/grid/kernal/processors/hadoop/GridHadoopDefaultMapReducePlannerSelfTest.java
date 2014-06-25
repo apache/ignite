@@ -646,7 +646,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public void initialize(boolean external) throws GridException {
+        @Override public void initialize(boolean external, UUID nodeId) throws GridException {
             // No-op.
         }
 

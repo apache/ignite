@@ -99,9 +99,10 @@ public interface GridHadoopJob {
      * {@code false} and on instance in external process with parameter {@code true}.
      *
      * @param external If {@code true} then this job instance resides in external process.
+     * @param locNodeId Local node ID.
      * @throws GridException If failed.
      */
-    public void initialize(boolean external) throws GridException;
+    public void initialize(boolean external, UUID locNodeId) throws GridException;
 
     /**
      * Release all the resources.

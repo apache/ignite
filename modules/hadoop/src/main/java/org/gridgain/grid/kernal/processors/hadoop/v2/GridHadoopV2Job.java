@@ -24,7 +24,6 @@ import org.apache.hadoop.mapreduce.split.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v1.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -82,10 +81,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
     private JobID hadoopJobID;
 
     /** */
-    private File outBase;
-
-    /** */
-    private UUID uniqueWorkDir = UUID.randomUUID();
+    private File jobJarsDir;
 
     /** */
     private ClassLoaderWrapper jobLdr;
@@ -380,7 +376,10 @@ public class GridHadoopV2Job implements GridHadoopJob {
     }
 
     /** {@inheritDoc} */
-    @Override public void initialize(boolean external) throws GridException {
+    @Override public void initialize(boolean external, UUID locNodeId) throws GridException {
+        jobJarsDir = new File(new File(U.resolveWorkDirectory("hadoop", false), "Job_" + jobId),
+            "jars-" + locNodeId);
+
         if (!external)
             prepareJobFiles();
 
@@ -394,6 +393,9 @@ public class GridHadoopV2Job implements GridHadoopJob {
     @Override public void dispose(boolean external) throws GridException {
         if (jobLdr != null)
             jobLdr.destroy();
+
+        if (!external && jobJarsDir.exists())
+            U.delete(jobJarsDir);
     }
 
     /**
@@ -403,8 +405,6 @@ public class GridHadoopV2Job implements GridHadoopJob {
      */
     private void prepareJobFiles() throws GridException {
         try {
-            outBase = U.resolveWorkDirectory("hadoop", false);
-
             String mrDir = info().property("mapreduce.job.dir");
 
             if (mrDir != null) {
@@ -418,28 +418,17 @@ public class GridHadoopV2Job implements GridHadoopJob {
                     throw new GridException("Failed to find map-reduce submission directory (does not exist): " +
                         path);
 
-                File dir = jobJarsFolder(jobId, uniqueWorkDir);
+                if (jobJarsDir.exists())
+                    throw new GridException("Local work directory already exists: " + jobJarsDir.getAbsolutePath());
 
-                FileUtil.fullyDeleteContents(dir);
-
-                if (!FileUtil.copy(fs, path, dir, false, cfg))
+                if (!FileUtil.copy(fs, path, jobJarsDir, false, cfg))
                     throw new GridException("Failed to copy job submission directory contents to local file system " +
-                        "[path=" + path + ", locDir=" + dir.getAbsolutePath() + ", jobId=" + jobId + ']');
+                        "[path=" + path + ", locDir=" + jobJarsDir.getAbsolutePath() + ", jobId=" + jobId + ']');
             }
         }
         catch (URISyntaxException | IOException e) {
             throw new GridException(e);
         }
-    }
-
-    /**
-     * @param jobId Job ID.
-     * @return Job jars dir.
-     */
-    private File jobJarsFolder(GridHadoopJobId jobId, UUID locNodeId) {
-        File workDir = new File(outBase, "Job_" + jobId);
-
-        return new File(workDir, "jars-" + locNodeId);
     }
 
     /**
@@ -449,16 +438,12 @@ public class GridHadoopV2Job implements GridHadoopJob {
      */
     private void initializeClassLoader() throws GridException {
         try {
-            outBase = U.resolveWorkDirectory("hadoop", false);
+            if (!jobJarsDir.exists())
+                return;
 
             final Collection<URL> jars = new ArrayList<>();
 
-            File dir = jobJarsFolder(jobId, uniqueWorkDir);
-
-            if (!dir.exists())
-                return;
-
-            Files.walkFileTree(dir.toPath(), new SimpleFileVisitor<java.nio.file.Path>() {
+            Files.walkFileTree(jobJarsDir.toPath(), new SimpleFileVisitor<java.nio.file.Path>() {
                 @Override public FileVisitResult visitFile(java.nio.file.Path file, BasicFileAttributes attrs)
                     throws IOException {
                     if (file.getFileName().toString().endsWith(".jar"))

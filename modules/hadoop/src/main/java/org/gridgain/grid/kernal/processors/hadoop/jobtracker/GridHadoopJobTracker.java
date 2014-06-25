@@ -698,7 +698,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         finishFut.onDone(jobId, meta.failCause());
                     }
 
-                    if (jobs.remove(jobId, job))
+                    GridFutureAdapterEx<GridHadoopJob> jobFut = jobs.get(jobId);
+
+                    if (jobFut.get() == job && jobs.remove(jobId, jobFut))
                         job.dispose(false);
                     else
                         assert false;
@@ -846,7 +848,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             job = jobInfo.createJob(jobId);
 
-            job.initialize(false);
+            job.initialize(false, ctx.localNodeId());
 
             fut.onDone(job);
 

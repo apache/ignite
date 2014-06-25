@@ -74,6 +74,7 @@ public class GridHadoopSplitWrapper extends GridHadoopInputSplit {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         id = in.readInt();
 
@@ -82,6 +83,7 @@ public class GridHadoopSplitWrapper extends GridHadoopInputSplit {
         if (clsName == null)
             innerSplit = in.readObject();
         else {
+            // Split wrapper only used when classes available in our classpath, so Class.forName is ok here.
             Class<Writable> cls = (Class<Writable>)Class.forName(clsName);
 
             try {
