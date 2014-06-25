@@ -94,10 +94,6 @@ public:
         dataPtr(dataPtr), idRslvr(idRslvr) {
     }
 
-    ~PortableReadContext() {
-        std::cout << "Delete read context\n";
-    }
-
     boost::unordered_map<int32_t, void*> handles;
 
     boost::shared_ptr<std::vector<int8_t>> dataPtr;
@@ -2124,6 +2120,8 @@ public:
             }
 
             case FLAG_OBJECT: {
+                int32_t objStart = raw ? (rawOff - 1) : (off - 1);
+
                 bool userType = doReadBool(raw);
 
                 int32_t typeId = doReadInt32(raw);
@@ -2135,7 +2133,12 @@ public:
                 int32_t rawOff = doReadInt32(raw);
 
                 if (userType) {
-                    GridPortableObject obj(ctxPtr, raw ? rawOff - 18 : off - 18);
+                    GridPortableObject obj(ctxPtr, objStart);
+
+                    if (raw)
+                        this->rawOff = objStart + len;
+                    else
+                        this->off = objStart + len;
 
                     return GridClientVariant(obj);
                 }
@@ -2168,6 +2171,8 @@ public:
 
         switch(flag) {
             case FLAG_OBJECT: {
+                int32_t objStart = off - 1;
+
                 bool userType = doReadBool(false);
 
                 int32_t typeId = doReadInt32(false);
@@ -2179,7 +2184,9 @@ public:
                 int32_t rawOff = doReadInt32(false);
 
                 if (userType) {
-                    GridPortableObject obj(ctxPtr, off - 18);
+                    GridPortableObject obj(ctxPtr, objStart);
+
+                    this->off = objStart + len;
 
                     return GridClientVariant(obj);
                 }
@@ -2215,7 +2222,16 @@ public:
 
     GridClientVariant readStandard(int32_t typeId, bool raw) {
         if (systemPortable(typeId)) {
-            GridPortableObject obj(ctxPtr, raw ? rawOff - 18 : off - 18);
+            int32_t start = raw ? rawOff - 18 : off - 18;
+
+            GridPortableObject obj(ctxPtr, start);
+
+            int32_t len = in.readInt32(start + 10);
+
+            if (raw)
+                this->rawOff = start + len;
+            else
+                this->off = start + len;
 
             return GridClientVariant(obj);
         }
@@ -3858,16 +3874,21 @@ public:
     void parseResponse(GridClientResponse* msg, GridClientMessageTopologyResult& resp) {
         GridClientVariant res = msg->getResult();
 
-        assert(res.hasVariantVector());
-
-        std::vector<GridClientVariant>& vec = res.getVariantVector();
-
         std::vector<GridClientNode> nodes;
 
-        for (auto iter = vec.begin(); iter != vec.end(); ++iter) {
-            GridClientVariant var = *iter;
+        if (res.hasVariantVector()) {
+            std::vector<GridClientVariant>& vec = res.getVariantVector();
 
-            std::unique_ptr<GridClientNodeBean> nodeBean(var.getPortableObject().deserialize<GridClientNodeBean>());
+            for (auto iter = vec.begin(); iter != vec.end(); ++iter) {
+                GridClientVariant var = *iter;
+
+                std::unique_ptr<GridClientNodeBean> nodeBean(var.getPortableObject().deserialize<GridClientNodeBean>());
+
+                nodes.push_back(nodeBean->createNode());
+            }
+        }
+        else if (res.hasPortableObject()) {
+            std::unique_ptr<GridClientNodeBean> nodeBean(res.getPortableObject().deserialize<GridClientNodeBean>());
 
             nodes.push_back(nodeBean->createNode());
         }
@@ -3932,14 +3953,10 @@ public:
     void parseResponse(GridClientResponse* msg, GridClientMessageTaskResult& resp) {
         GridClientVariant res = msg->getResult();
 
-        if (res.hasPortable()) {
-            assert(res.getPortable()->typeId() == -8);
-
-            GridClientTaskResultBean* resBean = res.getPortable<GridClientTaskResultBean>();
+        if (res.hasPortableObject()) {
+            std::unique_ptr<GridClientTaskResultBean> resBean(res.getPortableObject().deserialize<GridClientTaskResultBean>());
 
             resp.setTaskResult(resBean->res);
-
-            delete resBean;
         }
     }
 

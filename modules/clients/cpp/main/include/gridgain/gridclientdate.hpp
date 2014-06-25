@@ -71,7 +71,7 @@ public:
      * @return Hash code.
      */
     int32_t hashCode() const {
-        return time;    // TODO
+        return (int32_t)time ^ (int32_t)(time >> 32);
     }
 
 private:

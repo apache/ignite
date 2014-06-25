@@ -44,6 +44,8 @@ BOOST_AUTO_TEST_CASE(testHashMethods) {
     BOOST_CHECK_EQUAL(1076166656, gridDoubleHash(10.5f));
 
     BOOST_CHECK_EQUAL(-1071316992, gridDoubleHash(-10.5f));
+
+    BOOST_CHECK_EQUAL(-738730625, GridClientDate(1403715574841).hashCode());
 }
 
 BOOST_AUTO_TEST_CASE(testVariantHash) {

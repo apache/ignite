@@ -411,8 +411,8 @@ TGridClientVariantMap GridClientDataProjectionImpl::getAll(const TGridClientVari
 }
 
 TGridClientFutureVariantMap GridClientDataProjectionImpl::getAllAsync(const TGridClientVariantSet& keys) {
-    if (invalidated) return TGridClientFutureVariantMap(
-            new GridFailFutureImpl<TGridClientVariantMap, GridClientClosedException>());
+    if (invalidated) 
+        return TGridClientFutureVariantMap(new GridFailFutureImpl<TGridClientVariantMap, GridClientClosedException>());
 
     GridFutureImpl<TGridClientVariantMap>* fut = new GridFutureImpl<TGridClientVariantMap>(threadPool);
     TGridClientFutureVariantMap res(fut);
@@ -458,7 +458,8 @@ static void fillMetricsBean(const TCacheMetrics& metricsMap, GridClientDataMetri
 }
 
 GridClientDataMetrics GridClientDataProjectionImpl::metrics() {
-    if (invalidated) throw GridClientClosedException();
+    if (invalidated) 
+        throw GridClientClosedException();
 
     GridCacheRequestCommand cmd(GridCacheRequestCommand::METRICS);
 
@@ -477,8 +478,8 @@ GridClientDataMetrics GridClientDataProjectionImpl::metrics() {
 }
 
 TGridClientFutureDataMetrics GridClientDataProjectionImpl::metricsAsync() {
-    if (invalidated) return TGridClientFutureDataMetrics(
-            new GridFailFutureImpl<GridClientDataMetrics, GridClientClosedException>());
+    if (invalidated) 
+        return TGridClientFutureDataMetrics(new GridFailFutureImpl<GridClientDataMetrics, GridClientClosedException>());
 
     GridFutureImpl<GridClientDataMetrics>* fut = new GridFutureImpl<GridClientDataMetrics>(threadPool);
     TGridClientFutureDataMetrics res(fut);

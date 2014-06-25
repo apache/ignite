@@ -272,7 +272,7 @@ void GridClientSyncTcpConnection::authenticate(const string& clientId, const str
 
     GridPortableMarshaller marsh;
 
-    boost::shared_ptr<vector<int8_t>> dataPtr = marsh.marshalUserObject(msg);
+    boost::shared_ptr<vector<int8_t>> dataPtr = marsh.marshalSystemObject(msg);
 
     tcpPacket.setData(dataPtr);
     tcpPacket.setAdditionalHeaders(authReq);
@@ -287,32 +287,6 @@ void GridClientSyncTcpConnection::authenticate(const string& clientId, const str
         throw GridClientCommandException(resMsg->errorMsg);
 
     sessToken = resMsg->sesTok;
-    /* TODO 8536
-    ObjectWrapper protoMsg;
-
-    GridAuthenticationRequestCommand authReq;
-    GridClientMessageAuthenticationResult authResult;
-
-    authReq.setClientId(clientId);
-    authReq.credentials(creds);
-    authReq.setRequestId(1);
-
-    GridClientProtobufMarshaller::wrap(authReq, protoMsg);
-
-    GridClientTcpPacket tcpPacket;
-    GridClientTcpPacket tcpResponse;
-    ProtoRequest req;
-
-    tcpPacket.setData(protoMsg);
-    tcpPacket.setAdditionalHeaders(authReq);
-
-    send(tcpPacket, tcpResponse);
-
-    ObjectWrapper respMsg = tcpResponse.getData();
-    GridClientProtobufMarshaller::unwrap(respMsg, authResult);
-
-    sessToken = authResult.sessionToken();
-    */
 }
 
 /**
@@ -406,6 +380,8 @@ void GridClientSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPacket,
 
     GG_LOG_DEBUG("Done reading the response header [nbytes=%d]", nBytes);
 
+    static boost::thread_specific_ptr<DummyBuffer> recvBuffer;
+
     if (packetSize < 512) {
         int8_t pBuffer[512];
 
@@ -423,8 +399,6 @@ void GridClientSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPacket,
         result.setAdditionalHeadersAndData((int8_t*)pBuffer, nBytes);
     }
     else {
-        static boost::thread_specific_ptr<DummyBuffer> recvBuffer;
-
         if (!recvBuffer.get()) {
             DummyBuffer * pDummyBuffer = new DummyBuffer;
             pDummyBuffer->pBuffer = new unsigned char[packetSize];
@@ -775,7 +749,7 @@ void GridClientRawSyncTcpConnection::authenticate(const string& clientId, const 
 
     GridPortableMarshaller marsh;
 
-    boost::shared_ptr<vector<int8_t>> dataPtr = marsh.marshalUserObject(msg);
+    boost::shared_ptr<vector<int8_t>> dataPtr = marsh.marshalSystemObject(msg);
 
     tcpPacket.setData(dataPtr);
     tcpPacket.setAdditionalHeaders(authReq);
@@ -790,33 +764,6 @@ void GridClientRawSyncTcpConnection::authenticate(const string& clientId, const 
         throw GridClientCommandException(resMsg->errorMsg);
 
     sessToken = resMsg->sesTok;
-    /* TODO 8536
-    ObjectWrapper protoMsg;
-
-    GridAuthenticationRequestCommand authReq;
-    GridClientMessageAuthenticationResult authResult;
-
-    authReq.setClientId(clientId);
-    authReq.credentials(creds);
-    authReq.setRequestId(1);
-
-    GridClientProtobufMarshaller::wrap(authReq, protoMsg);
-
-    GridClientTcpPacket tcpPacket;
-    GridClientTcpPacket tcpResponse;
-    ProtoRequest req;
-
-    tcpPacket.setData(protoMsg);
-    tcpPacket.setAdditionalHeaders(authReq);
-
-    send(tcpPacket, tcpResponse);
-
-    ObjectWrapper respMsg = tcpResponse.getData();
-
-    GridClientProtobufMarshaller::unwrap(respMsg, authResult);
-
-    sessToken = authResult.sessionToken();
-    */
 }
 
 /**

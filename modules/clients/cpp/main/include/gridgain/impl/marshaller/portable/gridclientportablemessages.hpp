@@ -789,7 +789,6 @@ public:
         GridPortableRawWriter& raw = writer.rawWriter();
 
         raw.writeString(taskName);
-
         raw.writeVariant(arg);
     }
 
@@ -799,7 +798,6 @@ public:
         GridPortableRawReader& raw = reader.rawReader();
 
         taskName = raw.readString().get_value_or(std::string());
-
         arg = raw.readVariant();
     }
 
@@ -828,10 +826,18 @@ public:
     void readPortable(GridPortableReader &reader) override {
         GridPortableRawReader& raw = reader.rawReader();
 
-        id = raw.readString().get_value_or(std::string());
+        boost::optional<std::string> idOpt = raw.readString();
+        
+        if (idOpt.is_initialized())
+            id = idOpt.get();
+        
         finished = raw.readBool();
         res = raw.readVariant();
-        error = raw.readString().get_value_or(std::string());;
+        
+        boost::optional<std::string> errOpt = raw.readString();
+
+        if (errOpt.is_initialized())
+            error = errOpt.get();
     }
 
     std::string id;

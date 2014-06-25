@@ -1049,7 +1049,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testPutBigEntries, CfgT, TestCfgsTcpOnly, GridC
     }
 }
 
-// TODO: enable for HTTP after fixing GG-3273
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(testPutBigEntriesMultithreaded, CfgT, TestCfgsTcpOnly, GridClientFactoryFixture2) {
     TGridClientDataPtr data = this->client(CfgT())->data(CACHE_NAME);
 

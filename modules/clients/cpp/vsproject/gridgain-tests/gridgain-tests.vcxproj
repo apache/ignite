@@ -92,7 +92,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>BOOST_DATE_TIME_NO_LIB;BOOST_REGEX_NO_LIB;GRIDGAIN_EXPORT;WIN32;_DEBUG;_WINDOWS;_WIN32_WINNT=0x0501;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(OPENSSL_HOME)\include;$(PROTOBUF_DEBUG_HOME)\include;$(BOOST_HOME)\include\boost-1_49;..\..\main\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OPENSSL_HOME)\include;$(BOOST_HOME)\include\boost-1_49;$(BOOST_HOME);..\..\main\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4345;4996;4290</DisableSpecificWarnings>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
@@ -100,8 +100,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(OutDir)..\;$(OPENSSL_HOME)\lib\VC\static;$(PROTOBUF_DEBUG_HOME)\lib;$(BOOST_HOME)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libgridgain-client.lib;libprotobuf.lib;ssleay32MD.lib;libeay32MD.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir);$(OutDir)..\;$(OPENSSL_HOME)\lib\VC\static;$(BOOST_HOME)\lib;$(BOOST_HOME)\lib32-msvc-10.0;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libgridgain-client.lib;ssleay32MD.lib;libeay32MD.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <UseLibraryDependencyInputs>
@@ -187,7 +187,8 @@
     <ClCompile Include="..\..\main\tests\gridclientconsistenthashtest.cpp" />
     <ClCompile Include="..\..\main\tests\gridclientexampletest.cpp" />
     <ClCompile Include="..\..\main\tests\gridclientfactoryselfttest.cpp" />
-    <ClCompile Include="..\..\main\tests\gridclientprotobufserializationsimpletest.cpp" />
+    <ClCompile Include="..\..\main\tests\gridclienthashtest.cpp" />
+    <ClCompile Include="..\..\main\tests\gridclientportabletest.cpp" />
     <ClCompile Include="..\..\main\tests\gridtestcommon.cpp" />
     <ClCompile Include="..\..\main\tests\gridthreadpoolselftest.cpp" />
     <ClCompile Include="..\..\main\tests\teamcity_boost.cpp" />

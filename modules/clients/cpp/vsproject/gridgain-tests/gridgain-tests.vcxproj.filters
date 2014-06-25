@@ -23,12 +23,6 @@
     <ClCompile Include="..\..\main\tests\gridclientfactoryselfttest.cpp">
       <Filter>Test source files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\main\tests\gridclienthashcodeselfttest.cpp">
-      <Filter>Test source files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\main\tests\gridclientprotobufserializationsimpletest.cpp">
-      <Filter>Test source files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\main\tests\gridclientaffinityselftest.cpp">
       <Filter>Test source files</Filter>
     </ClCompile>
@@ -45,6 +39,12 @@
       <Filter>Test source files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\main\tests\gridclientconnectionpoolselftest.cpp">
+      <Filter>Test source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\main\tests\gridclienthashtest.cpp">
+      <Filter>Test source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\main\tests\gridclientportabletest.cpp">
       <Filter>Test source files</Filter>
     </ClCompile>
   </ItemGroup>
