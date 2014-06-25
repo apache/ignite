@@ -33,7 +33,6 @@ GridClientConfiguration tcpClientConfiguration() {
     clientConfig.routers(routers);
 
     GridClientProtocolConfiguration protoCfg;
-    protoCfg.protocol(TCP);
     protoCfg.credentials("s3cret");
 
     clientConfig.protocolConfiguration(protoCfg);

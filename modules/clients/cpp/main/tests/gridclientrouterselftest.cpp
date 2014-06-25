@@ -54,14 +54,16 @@ public:
 
         GridPortableMarshaller marsh;
 
-        vector<int8_t> data = marsh.marshal(msg);    
+        boost::shared_ptr<vector<int8_t>> data = marsh.marshalUserObject(msg);
 
         tcpPacket.setData(data);
         tcpPacket.setAdditionalHeaders(authReq);
 
         send(tcpPacket, tcpResponse);
 
-        std::unique_ptr<GridClientResponse> resMsg(marsh.unmarshal<GridClientResponse>(tcpResponse.getData()));
+        GridClientVariant res = marsh.unmarshal(tcpResponse.getData());
+
+        std::unique_ptr<GridClientResponse> resMsg(res.getPortableObject().deserialize<GridClientResponse>());
 
         if (!resMsg->errorMsg.empty())
             throw GridClientCommandException(resMsg->errorMsg);
