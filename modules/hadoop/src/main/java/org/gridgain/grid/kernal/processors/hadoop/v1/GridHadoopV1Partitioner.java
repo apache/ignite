@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.v1;
 
+import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapred.*;
-import org.gridgain.grid.*;
+import org.apache.hadoop.util.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Hadoop partitioner adapter for v1 API.
@@ -23,9 +23,10 @@ public class GridHadoopV1Partitioner implements GridHadoopPartitioner {
 
     /**
      * @param cls Hadoop partitioner class.
+     * @param conf Job configuration.
      */
-    public GridHadoopV1Partitioner(Class<? extends Partitioner> cls) throws GridException {
-        part = (Partitioner<Object, Object>) U.newInstance(cls);
+    public GridHadoopV1Partitioner(Class<? extends Partitioner> cls, Configuration conf) {
+        part = (Partitioner<Object, Object>) ReflectionUtils.newInstance(cls, conf);
     }
 
     /** {@inheritDoc} */

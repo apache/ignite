@@ -25,8 +25,15 @@ public class GridHadoopWordCount1Map extends MapReduceBase implements Mapper<Lon
     /** Writable container for writing word. */
     private Text word = new Text();
 
+    /** Flag is to check that mapper was configured before run. */
+    private boolean wasConfigured;
+
+    /** {@inheritDoc} */
     @Override public void map(LongWritable key, Text val, OutputCollector<Text, IntWritable> output, Reporter reporter)
             throws IOException {
+
+        assert wasConfigured : "Mapper should be configured";
+
         String line = val.toString();
 
         StringTokenizer tokenizer = new StringTokenizer(line);
@@ -36,5 +43,12 @@ public class GridHadoopWordCount1Map extends MapReduceBase implements Mapper<Lon
 
             output.collect(word, one);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void configure(JobConf job) {
+        super.configure(job);
+
+        wasConfigured = true;
     }
 }

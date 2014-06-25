@@ -236,10 +236,10 @@ public class GridHadoopV2Job implements GridHadoopJob {
         Class<?> partClsOld = ctx.getConfiguration().getClass("mapred.partitioner.class", null);
 
         if (partClsOld != null)
-            return new GridHadoopV1Partitioner(ctx.getJobConf().getPartitionerClass());
+            return new GridHadoopV1Partitioner(ctx.getJobConf().getPartitionerClass(), ctx.getConfiguration());
 
         try {
-            return new GridHadoopV2Partitioner(ctx.getPartitionerClass());
+            return new GridHadoopV2Partitioner(ctx.getPartitionerClass(), ctx.getConfiguration());
         }
         catch (ClassNotFoundException e) {
             throw new GridException(e);
