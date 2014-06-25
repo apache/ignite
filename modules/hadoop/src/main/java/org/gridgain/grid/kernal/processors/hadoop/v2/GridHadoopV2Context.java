@@ -21,7 +21,6 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 
 import java.io.*;
-import java.net.*;
 import java.util.*;
 
 /**
@@ -88,7 +87,7 @@ public class GridHadoopV2Context extends JobContextImpl implements MapContext, R
                 inputSplit = new FileSplit(new Path(fileBlock.file()), fileBlock.start(), fileBlock.length(), null);
             }
             else if (split instanceof GridHadoopExternalSplit) {
-                // TODO
+                throw new UnsupportedOperationException(); // TODO
             }
             else if (split instanceof GridHadoopSplitWrapper) {
                 inputSplit = (InputSplit)((GridHadoopSplitWrapper)split).innerSplit();
@@ -220,48 +219,6 @@ public class GridHadoopV2Context extends JobContextImpl implements MapContext, R
      */
     public void writer(RecordWriter writer) {
         this.writer = writer;
-    }
-
-    /**
-     * Convert strings to URIs.
-     *
-     * @param strs Strings.
-     * @return URIs.
-     */
-    public static URI[] stringsToURIs(String[] strs){
-        if (strs == null)
-            return null;
-
-        URI[] uris = new URI[strs.length];
-
-        for (int i = 0; i < strs.length;i++){
-
-            try{
-                uris[i] = new URI(strs[i]);
-            }
-            catch(URISyntaxException e){
-                throw new IllegalArgumentException("Failed to create URI for string:" + strs[i], e);
-            }
-        }
-        return uris;
-    }
-
-    /**
-     * Convert strings to paths.
-     *
-     * @param strs Strings.
-     * @return Paths.
-     */
-    public static Path[] stringsToPaths(String[] strs){
-        if (strs == null)
-            return null;
-
-        Path[] paths = new Path[strs.length];
-
-        for (int i = 0; i < strs.length;i++)
-            paths[i] = new Path(strs[i]);
-
-        return paths;
     }
 
     /**

@@ -47,15 +47,7 @@ public class GridHadoopWritableSerialization implements GridHadoopSerialization 
 
     /** {@inheritDoc} */
     @Override public Object read(DataInput in, @Nullable Object obj) throws GridException {
-        Writable w;
-
-        if (obj == null)
-            w = U.newInstance(cls);
-        else {
-            assert cls.isAssignableFrom(obj.getClass()) : cls + " " + obj.getClass();
-
-            w = (Writable)obj;
-        }
+        Writable w = obj == null ? U.newInstance(cls) : cls.cast(obj);
 
         try {
             w.readFields(in);
