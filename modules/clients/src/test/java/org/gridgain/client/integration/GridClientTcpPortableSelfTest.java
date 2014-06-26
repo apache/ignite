@@ -12,7 +12,6 @@ package org.gridgain.client.integration;
 import org.gridgain.client.*;
 import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
@@ -27,11 +26,11 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
-        assert cfg.getClientConnectionConfiguration() != null;
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
 
-        cfg.getClientConnectionConfiguration().setPortableTypesMap(typesMap());
+        clientCfg.setMarshaller(new GridClientPortableMarshaller());
 
-        cfg.setMarshaller(new GridOptimizedMarshaller(false));
+        cfg.setClientConnectionConfiguration(clientCfg);
 
         return cfg;
     }

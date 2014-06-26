@@ -34,13 +34,4 @@ public interface GridClientMarshaller {
      * @throws IOException If unmarshalling failed.
      */
     public <T> T unmarshal(byte[] bytes) throws IOException;
-
-    /**
-     * Returns a unique ID of this marshaller's protocol, used
-     * to determine exchange protocol between client
-     * and server.
-     *
-     * @return A unique protocol ID.
-     */
-    public byte getProtocolId();
 }

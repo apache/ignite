@@ -10,13 +10,13 @@
 package org.gridgain.client;
 
 import org.gridgain.client.marshaller.*;
+import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.nio.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;
@@ -123,7 +123,7 @@ public class GridClientTestRestServer {
                 .directBuffer(false)
                 .filters(
                     new GridNioAsyncNotifyFilter(gridName, Executors.newFixedThreadPool(2), log),
-                    new GridNioCodecFilter(new GridTcpRestParser(log), log, false)
+                    new GridNioCodecFilter(new GridTcpRestParser(new GridClientOptimizedMarshaller()), log, false)
                 )
                 .build();
         }
@@ -243,15 +243,8 @@ public class GridClientTestRestServer {
 
                 ses.send(res);
             }
-            else if (msg instanceof GridClientHandshakeRequest) {
-                GridClientHandshakeRequest hs = (GridClientHandshakeRequest)msg;
-
-                assert hs.protocolId() == U.PORTABLE_OBJECT_PROTO_ID;
-
-                ses.addMeta(GridNioSessionMetaKey.MARSHALLER.ordinal(), optMarsh);
-
+            else if (msg instanceof GridClientHandshakeRequest)
                 ses.send(GridClientHandshakeResponse.OK);
-            }
         }
 
         /** {@inheritDoc} */

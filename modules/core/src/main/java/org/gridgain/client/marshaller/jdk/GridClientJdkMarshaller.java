@@ -11,7 +11,6 @@ package org.gridgain.client.marshaller.jdk;
 
 import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.util.io.*;
-import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.nio.*;
@@ -54,10 +53,5 @@ public class GridClientJdkMarshaller implements GridClientMarshaller {
         catch (ClassNotFoundException e) {
             throw new IOException("Failed to unmarshal target object: " + e.getMessage(), e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte getProtocolId() {
-        return U.JDK_CLIENT_PROTO_ID;
     }
 }

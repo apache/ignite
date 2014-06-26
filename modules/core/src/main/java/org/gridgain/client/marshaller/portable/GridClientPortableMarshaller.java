@@ -11,7 +11,6 @@ package org.gridgain.client.marshaller.portable;
 
 import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.util.portable.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.portable.*;
 
 import java.io.*;
@@ -55,10 +54,5 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
         catch (GridPortableException e) {
             throw new IOException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte getProtocolId() {
-        return U.PORTABLE_OBJECT_PROTO_ID;
     }
 }

@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.util.*;
@@ -37,14 +36,14 @@ public class GridTcpRestParser implements GridNioParser {
     /** JDK marshaller. */
     private final GridMarshaller jdkMarshaller = new GridJdkMarshaller();
 
-    /** Logger. */
-    private final GridLogger log;
+    /** Client marshaller. */
+    private final GridClientMarshaller marsh;
 
     /**
-     * @param log Logger.
+     * @param marsh Client marshaller..
      */
-    public GridTcpRestParser(GridLogger log) {
-        this.log = log;
+    public GridTcpRestParser(GridClientMarshaller marsh) {
+        this.marsh = marsh;
     }
 
     /** {@inheritDoc} */
@@ -130,7 +129,7 @@ public class GridTcpRestParser implements GridNioParser {
                 ((GridClientHandshakeResponse)msg).resultCode()
             });
         else {
-            GridClientMarshaller marsh = marshaller(ses);
+            GridClientMarshaller marsh = marshaller();
 
             ByteBuffer res = marsh.marshal(msg, 45);
 
@@ -268,7 +267,7 @@ public class GridTcpRestParser implements GridNioParser {
         int rem = buf.remaining();
 
         if (rem > 0) {
-            byte[] bbuf = new byte[5]; // Buffer to read data to.
+            byte[] bbuf = new byte[4]; // Buffer to read data to.
 
             int nRead = Math.min(rem, bbuf.length); // Number of bytes to read.
 
@@ -289,11 +288,8 @@ public class GridTcpRestParser implements GridNioParser {
             assert idx <= 4 : "Wrong idx: " + idx;
             assert nAvailable == 0 || nAvailable == 1 : "Wrong nav: " + nAvailable;
 
-            if (idx == 4 && nAvailable > 0) { // Read protocol ID.
-                packet.protocolId(bbuf[nRead - nAvailable]);
-
+            if (idx == 4)
                 return packet;
-            }
         }
 
         return null; // Wait for more data.
@@ -359,7 +355,7 @@ public class GridTcpRestParser implements GridNioParser {
                         tmp.write(bodyBytes);
                     }
 
-                    return parseClientMessage(ses, state);
+                    return parseClientMessage(state);
                 }
                 else
                     copyRemaining(buf, tmp);
@@ -427,15 +423,13 @@ public class GridTcpRestParser implements GridNioParser {
     /**
      * Parses {@link GridClientMessage} from raw bytes.
      *
-     * @param ses Nio session.
      * @param state Parser state.
      * @return A parsed client message.
      * @throws IOException On marshaller error.
      * @throws GridException If no marshaller was defined for the session.
      */
-    protected GridClientMessage parseClientMessage(GridNioSession ses, ParserState state)
-        throws IOException, GridException {
-        GridClientMarshaller marsh = marshaller(ses);
+    protected GridClientMessage parseClientMessage(ParserState state) throws IOException, GridException {
+        GridClientMarshaller marsh = marshaller();
 
         GridClientMessage msg = marsh.unmarshal(state.buffer().toByteArray());
 
@@ -730,17 +724,11 @@ public class GridTcpRestParser implements GridNioParser {
     }
 
     /**
-     * Returns marshaller from session, if no marshaller found - init it with default.
+     * Returns marshaller.
      *
-     * @param ses Current session.
-     * @return Current session's marshaller.
-     * @throws GridException If marshaller can't be found.
+     * @return Marshaller.
      */
-    protected GridClientMarshaller marshaller(GridNioSession ses) throws GridException {
-        GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
-
-        assert marsh != null;
-
+    protected GridClientMarshaller marshaller() {
         return marsh;
     }
 
