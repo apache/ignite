@@ -102,21 +102,25 @@ public class GridHadoopSetup {
 
             File winutilsFile = new File(hadoopBinDir, WINUTILS_EXE);
 
-            if (!winutilsFile.exists() && ask("File '" + WINUTILS_EXE + "' does not exist. " +
-                "It may be replaced by a stub. Create it?")) {
-                println("Creating file stub '" + winutilsFile.getAbsolutePath() + "'.");
+            if (!winutilsFile.exists()) {
+                if (ask("File '" + WINUTILS_EXE + "' does not exist. " +
+                    "It may be replaced by a stub. Create it?")) {
+                    println("Creating file stub '" + winutilsFile.getAbsolutePath() + "'.");
 
-                boolean ok = false;
+                    boolean ok = false;
 
-                try {
-                    ok = winutilsFile.createNewFile();
+                    try {
+                        ok = winutilsFile.createNewFile();
+                    }
+                    catch (IOException ignore) {
+                        // No-op.
+                    }
+
+                    if (!ok)
+                        exit("Failed to create '" + WINUTILS_EXE + "' file. Please check permissions.");
                 }
-                catch (IOException ignore) {
-                    // No-op.
-                }
-
-                if (!ok)
-                    exit("Failed to create '" + WINUTILS_EXE + "' file. Please check permissions.");
+                else
+                    println("Ok. But Hadoop client probably will not work on Windows this way...");
             }
 
             processCmdFiles(hadoopDir, "bin", "sbin", "libexec");
@@ -142,40 +146,41 @@ public class GridHadoopSetup {
                 jarsExist = false;
         }
 
-        if (!jarsExist && ask("GridGain JAR files are not found in Hadoop 'lib' directory. " +
-            "Create appropriate symbolic links?")) {
-            File[] oldGridGainJarFiles = hadoopCommonLibDir.listFiles(new FilenameFilter() {
-                @Override public boolean accept(File dir, String name) {
-                    return name.startsWith("gridgain-");
+        if (!jarsExist) {
+            if (ask("GridGain JAR files are not found in Hadoop 'lib' directory. " +
+                "Create appropriate symbolic links?")) {
+                File[] oldGridGainJarFiles = hadoopCommonLibDir.listFiles(new FilenameFilter() {
+                    @Override public boolean accept(File dir, String name) {
+                        return name.startsWith("gridgain-");
+                    }
+                });
+
+                if (oldGridGainJarFiles.length > 0 && ask("The Hadoop 'lib' directory contains JARs from other GridGain " +
+                    "installation. They must be deleted to continue. Continue?")) {
+                    for (File file : oldGridGainJarFiles) {
+                        println("Deleting file '" + file.getAbsolutePath() + "'.");
+
+                        if (!file.delete())
+                            exit("Failed to delete file '" + file.getPath() + "'.");
+                    }
                 }
-            });
 
-            if (oldGridGainJarFiles.length > 0 && ask("The Hadoop 'lib' directory contains JARs from other GridGain " +
-                "installation. They must be deleted to continue. Continue?")) {
-                for (File file : oldGridGainJarFiles) {
-                    println("Deleting file '" + file.getAbsolutePath() + "'.");
+                for (File file : jarFiles) {
+                    File targetFile = new File(hadoopCommonLibDir, file.getName());
 
-                    if (!file.delete())
-                        exit("Failed to delete file '" + file.getPath() + "'.");
+                    println("Creating symbolic link '" + targetFile.getAbsolutePath() + "'.");
+
+                    try {
+                        Files.createSymbolicLink(targetFile.toPath(), file.toPath());
+                    }
+                    catch (IOException e) {
+                        exit("Failed to create symbolic link '" + targetFile.getPath() + "'. Please check permissions.");
+                    }
                 }
             }
-
-            for (File file : jarFiles) {
-                File targetFile = new File(hadoopCommonLibDir, file.getName());
-
-                println("Creating symbolic link '" + targetFile.getAbsolutePath() + "'.");
-
-                try {
-                    Files.createSymbolicLink(targetFile.toPath(), file.toPath());
-                }
-                catch (IOException e) {
-                    exit("Failed to create symbolic link '" + targetFile.getPath() + "'. Please check permissions.");
-                }
-            }
+            else
+                println("Ok. But Hadoop client will not be able to talk to GridGain cluster without those JARs in classpath...");
         }
-
-        println("To run Hadoop client with GridGain cluster you need to configure 'core-site.xml' and " +
-            "'mapred-site.xml' files.");
 
         if (ask("Replace 'core-site.xml' and 'mapred-site.xml' files with preconfigured templates?")) {
             File gridgainDocs = new File(gridgainHome, "docs");
@@ -192,7 +197,7 @@ public class GridHadoopSetup {
             replace(new File(gridgainDocs, "mapred-site.xml.gridgain"), renameToBak(new File(hadoopEtc, "mapred-site.xml")));
         }
         else
-            println("Ok, you can configure them later. The templates are available at GridGain's 'docs' directory.");
+            println("Ok. You can configure them later, the templates are available at GridGain's 'docs' directory...");
 
         println("Hadoop setup is complete.");
     }
@@ -267,6 +272,7 @@ public class GridHadoopSetup {
      * @return {@code true} if user inputs 'Y' or 'y', {@code false} otherwise.
      */
     private static boolean ask(String question) {
+        X.println();
         X.print(" <  " + question + " (Y/N): ");
 
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -364,8 +370,11 @@ public class GridHadoopSetup {
                 if (invalid) {
                     answer = answer || ask("One or more *.CMD files has invalid new line character. Replace them?");
 
-                    if (!answer)
+                    if (!answer) {
+                        println("Ok. But Windows most probably will fail to execute them...");
+
                         return;
+                    }
 
                     println("Fixing newline characters in file '" + file.getAbsolutePath() + "'.");
 
