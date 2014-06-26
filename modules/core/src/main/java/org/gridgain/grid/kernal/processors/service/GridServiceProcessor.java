@@ -53,7 +53,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private static final long RETRY_TIMEOUT = 1000;
 
     /** Service configuration cache. */
-    private GridCacheProjectionEx<GridServiceConfigurationKey, GridServiceConfiguration> cfgCache;
+    private GridCacheProjectionEx<GridServiceDeploymentKey, GridServiceDeployment> depCache;
 
     /** Service assignments cache. */
     private GridCacheProjectionEx<GridServiceAssignmentsKey, GridServiceAssignments> assignCache;
@@ -65,7 +65,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private GridLocalEventListener topLsnr = new TopologyListener();
 
     /** Deployment listener. */
-    private GridCacheContinuousQueryAdapter<GridServiceConfigurationKey, GridServiceConfiguration> cfgQry;
+    private GridCacheContinuousQueryAdapter<GridServiceDeploymentKey, GridServiceDeployment> cfgQry;
 
     /** Assignment listener. */
     private GridCacheContinuousQueryAdapter<GridServiceAssignmentsKey, GridServiceAssignments> assignQry;
@@ -99,13 +99,13 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onKernalStart() throws GridException {
-        cfgCache = ctx.cache().utilityCache(GridServiceConfigurationKey.class, GridServiceConfiguration.class);
+        depCache = ctx.cache().utilityCache(GridServiceDeploymentKey.class, GridServiceDeployment.class);
         assignCache = ctx.cache().utilityCache(GridServiceAssignmentsKey.class, GridServiceAssignments.class);
 
         ctx.event().addLocalEventListener(topLsnr, EVTS_DISCOVERY);
 
-        cfgQry = (GridCacheContinuousQueryAdapter<GridServiceConfigurationKey, GridServiceConfiguration>)
-            cfgCache.queries().createContinuousQuery();
+        cfgQry = (GridCacheContinuousQueryAdapter<GridServiceDeploymentKey, GridServiceDeployment>)
+            depCache.queries().createContinuousQuery();
 
         cfgQry.callback(new DeploymentListener());
 
@@ -282,22 +282,31 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             if ((old = futs.putIfAbsent(cfg.getName(), fut)) != null) {
                 if (failDups) {
                     fut.onDone(new GridException("Failed to deploy service " +
-                        "(service already exists and must be undeployed first): " + cfg.getName()));
+                        "(service exists and must be undeployed first): " + cfg.getName()));
 
                     return fut;
                 }
 
                 fut = old;
-
-                return fut;
             }
+            else if (!depCache.putxIfAbsent(
+                new GridServiceDeploymentKey(cfg.getName()),
+                new GridServiceDeployment(ctx.localNodeId(), cfg))) {
+                // Remove future from local map.
+                futs.remove(cfg.getName());
 
-            if (!cfgCache.putxIfAbsent(new GridServiceConfigurationKey(cfg.getName()), cfg)) {
                 if (failDups)
                     fut.onDone(new GridException("Failed to deploy service " +
                         "(service already exists and must be undeployed first): " + cfg.getName()));
-                else
+                else {
                     fut.onDone();
+
+                    GridServiceDeployment dep = depCache.get(new GridServiceDeploymentKey(cfg.getName()));
+
+                    if (!dep.configuration().equals(cfg))
+                        U.warn(log, "Service already deployed with different configuration (will ignore) [deployed=" +
+                            dep.configuration() + ", new=" + cfg + ']');
+                }
             }
 
             return fut;
@@ -335,14 +344,14 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public Collection<GridServiceDescriptor> deployedServices() {
         Collection<GridServiceDescriptor> descs = new ArrayList<>();
 
-        for (GridCacheEntry<GridServiceConfigurationKey, GridServiceConfiguration> e : cfgCache.entrySetx()) {
-            GridServiceConfiguration cfg = e.getValue();
+        for (GridCacheEntry<GridServiceDeploymentKey, GridServiceDeployment> e : depCache.entrySetx()) {
+            GridServiceDeployment dep = e.getValue();
 
-            GridServiceDescriptorImpl desc = new GridServiceDescriptorImpl(cfg);
+            GridServiceDescriptorImpl desc = new GridServiceDescriptorImpl(dep);
 
             try {
                 GridServiceAssignments assigns = assignCache.flagsOn(GridCacheFlag.GET_PRIMARY).
-                    get(new GridServiceAssignmentsKey(cfg.getName()));
+                    get(new GridServiceAssignmentsKey(dep.configuration().getName()));
 
                 if (assigns != null) {
                     desc.topologySnapshot(assigns.assigns());
@@ -351,7 +360,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 }
             }
             catch (GridException ex) {
-                log.error("Failed to get assignments from replicated cache for service: " + cfg.getName(), ex);
+                log.error("Failed to get assignments from replicated cache for service: " +
+                    dep.configuration().getName(), ex);
             }
         }
 
@@ -371,11 +381,13 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     /**
      * Reassigns service to nodes.
      *
-     * @param cfg Configuration.
+     * @param dep Service deployment.
      * @param topVer Topology version.
      * @throws GridException If failed.
      */
-    private void reassign(GridServiceConfiguration cfg, long topVer) throws GridException {
+    private void reassign(GridServiceDeployment dep, long topVer) throws GridException {
+        GridServiceConfiguration cfg = dep.configuration();
+
         int totalCnt = cfg.getTotalCount();
         int maxPerNodeCnt = cfg.getMaxPerNodeCount();
         String cacheName = cfg.getCacheName();
@@ -387,7 +399,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             GridServiceAssignments oldAssigns = assignCache.get(key);
 
             GridServiceAssignments assigns = new GridServiceAssignments(cfg.getName(), cfg.getService(),
-                cfg.getCacheName(), cfg.getAffinityKey(), topVer, cfg.getNodeFilter());
+                cfg.getCacheName(), cfg.getAffinityKey(), dep.nodeId(), topVer, cfg.getNodeFilter());
 
             Map<UUID, Integer> cnts = new HashMap<>();
 
@@ -620,23 +632,23 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * Service deployment listener.
      */
     private class DeploymentListener
-        implements GridBiPredicate<UUID, Collection<Entry<GridServiceConfigurationKey, GridServiceConfiguration>>> {
+        implements GridBiPredicate<UUID, Collection<Entry<GridServiceDeploymentKey, GridServiceDeployment>>> {
         @Override public boolean apply(
             UUID nodeId,
-            final Collection<Entry<GridServiceConfigurationKey, GridServiceConfiguration>> cfgs) {
+            final Collection<Entry<GridServiceDeploymentKey, GridServiceDeployment>> deps) {
             depExe.submit(new BusyRunnable() {
                 @Override public void run0() {
-                    for (Entry<GridServiceConfigurationKey, GridServiceConfiguration> e : cfgs) {
-                        GridServiceConfiguration cfg = e.getValue();
+                    for (Entry<GridServiceDeploymentKey, GridServiceDeployment> e : deps) {
+                        GridServiceDeployment dep = e.getValue();
 
-                        if (cfg != null) {
+                        if (dep != null) {
                             // Ignore other utility cache events.
                             long topVer = ctx.discovery().topologyVersion();
 
                             GridNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
 
                             if (oldest.isLocal())
-                                onDeployment(cfg, topVer);
+                                onDeployment(dep, topVer);
                         }
                         // Handle undeployment.
                         else {
@@ -654,7 +666,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 }
                             }
 
-                            GridFutureAdapter<?> fut = futs.get(cfg.getName());
+                            GridFutureAdapter<?> fut = futs.remove(dep.configuration().getName());
 
                             // Complete deployment future if undeployment happened.
                             if (fut != null)
@@ -670,21 +682,21 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         /**
          * Deployment callback.
          *
-         * @param cfg Service configuration.
+         * @param dep Service deployment.
          * @param topVer Topology version.
          */
-        private void onDeployment(final GridServiceConfiguration cfg, final long topVer) {
+        private void onDeployment(final GridServiceDeployment dep, final long topVer) {
             // Retry forever.
             try {
                 long newTopVer = ctx.discovery().topologyVersion();
 
                 // If topology version changed, reassignment will happen from topology event.
                 if (newTopVer == topVer)
-                    reassign(cfg, topVer);
+                    reassign(dep, topVer);
             }
             catch (GridException e) {
                 if (!(e instanceof GridTopologyException))
-                    log.error("Failed to do service reassignment (will retry): " + cfg.getName(), e);
+                    log.error("Failed to do service reassignment (will retry): " + dep.configuration().getName(), e);
 
                 long newTopVer = ctx.discovery().topologyVersion();
 
@@ -714,7 +726,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                         try {
                             // Try again.
-                            onDeployment(cfg, topVer);
+                            onDeployment(dep, topVer);
                         }
                         finally {
                             busyLock.leaveBusy();
@@ -738,23 +750,23 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     GridNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
 
                     if (oldest.isLocal()) {
-                        final Collection<GridServiceConfiguration> retries = new ConcurrentLinkedQueue<>();
+                        final Collection<GridServiceDeployment> retries = new ConcurrentLinkedQueue<>();
 
-                        for (GridCacheEntry<GridServiceConfigurationKey, GridServiceConfiguration> e : cfgCache.entrySetx()) {
-                            GridServiceConfiguration cfg = e.getValue();
+                        for (GridCacheEntry<GridServiceDeploymentKey, GridServiceDeployment> e : depCache.entrySetx()) {
+                            GridServiceDeployment dep = e.getValue();
 
                             try {
                                 ctx.cache().internalCache(CU.UTILITY_CACHE_NAME).context().affinity().
                                     affinityReadyFuture(topVer).get();
 
-                                reassign(cfg, topVer);
+                                reassign(dep, topVer);
                             }
                             catch (GridException ex) {
                                 if (!(e instanceof GridTopologyException))
-                                    LT.error(log, ex,
-                                        "Failed to do service reassignment (will retry): " + cfg.getName());
+                                    LT.error(log, ex, "Failed to do service reassignment (will retry): " +
+                                        dep.configuration().getName());
 
-                                retries.add(cfg);
+                                retries.add(dep);
                             }
                         }
 
@@ -771,7 +783,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
          * @param topVer Topology version.
          * @param retries Retries.
          */
-        private void onReassignmentFailed(final long topVer, final Collection<GridServiceConfiguration> retries) {
+        private void onReassignmentFailed(final long topVer, final Collection<GridServiceDeployment> retries) {
             if (!busyLock.enterBusy())
                 return;
 
@@ -780,17 +792,18 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 if (ctx.discovery().topologyVersion() != topVer)
                     return;
 
-                for (Iterator<GridServiceConfiguration> it = retries.iterator(); it.hasNext(); ) {
-                    GridServiceConfiguration cfg = it.next();
+                for (Iterator<GridServiceDeployment> it = retries.iterator(); it.hasNext(); ) {
+                    GridServiceDeployment dep = it.next();
 
                     try {
-                        reassign(cfg, topVer);
+                        reassign(dep, topVer);
 
                         it.remove();
                     }
                     catch (GridException e) {
                         if (!(e instanceof GridTopologyException))
-                            LT.error(log, e, "Failed to do service reassignment (will retry): " + cfg.getName());
+                            LT.error(log, e, "Failed to do service reassignment (will retry): " +
+                                dep.configuration().getName());
                     }
                 }
 
@@ -834,11 +847,13 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     for (Entry<GridServiceAssignmentsKey, GridServiceAssignments> e : assignCol) {
                         GridServiceAssignments assigns = e.getValue();
 
-                        GridFutureAdapter<?> fut = futs.get(assigns.name());
+                        if (assigns.nodeId().equals(ctx.localNodeId())) {
+                            GridFutureAdapter<?> fut = futs.remove(assigns.name());
 
-                        // Complete deployment futures once the assignments have been stored in cache.
-                        if (fut != null)
-                            fut.onDone();
+                            // Complete deployment futures once the assignments have been stored in cache.
+                            if (fut != null)
+                                fut.onDone();
+                        }
 
                         if (assigns != null)
                             redeploy(assigns);

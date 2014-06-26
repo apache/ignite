@@ -18,14 +18,14 @@ import org.gridgain.grid.util.typedef.internal.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridServiceConfigurationKey extends GridCacheUtilityKey<GridServiceConfigurationKey> {
+public class GridServiceDeploymentKey extends GridCacheUtilityKey<GridServiceDeploymentKey> {
     /** Service name. */
     private final String name;
 
     /**
      * @param name Service ID.
      */
-    public GridServiceConfigurationKey(String name) {
+    public GridServiceDeploymentKey(String name) {
         assert name != null;
 
         this.name = name;
@@ -39,7 +39,7 @@ public class GridServiceConfigurationKey extends GridCacheUtilityKey<GridService
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean equalsx(GridServiceConfigurationKey that) {
+    @Override protected boolean equalsx(GridServiceDeploymentKey that) {
         return name.equals(that.name);
     }
 
@@ -50,6 +50,6 @@ public class GridServiceConfigurationKey extends GridCacheUtilityKey<GridService
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridServiceConfigurationKey.class, this);
+        return S.toString(GridServiceDeploymentKey.class, this);
     }
 }

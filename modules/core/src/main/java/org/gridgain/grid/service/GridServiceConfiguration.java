@@ -11,6 +11,7 @@ package org.gridgain.grid.service;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -21,9 +22,10 @@ import java.io.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridServiceConfiguration implements Externalizable {
+public class GridServiceConfiguration implements Serializable {
     private String name;
 
+    @GridToStringExclude
     private GridService svc;
 
     private int totalCnt;
@@ -34,6 +36,7 @@ public class GridServiceConfiguration implements Externalizable {
 
     private Object affKey;
 
+    @GridToStringExclude
     private GridPredicate<GridNode> nodeFilter;
 
     public String getName() {
@@ -93,30 +96,51 @@ public class GridServiceConfiguration implements Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, name);
-        U.writeString(out, cacheName);
-        out.writeInt(maxPerNode);
-        out.writeInt(totalCnt);
-        out.writeObject(svc);
-        out.writeObject(affKey);
-        out.writeObject(nodeFilter);
+    @Override public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        GridServiceConfiguration that = (GridServiceConfiguration)o;
+
+        if (maxPerNode != that.maxPerNode)
+            return false;
+
+        if (totalCnt != that.totalCnt)
+            return false;
+
+        if (affKey != null ? !affKey.equals(that.affKey) : that.affKey != null)
+            return false;
+
+        if (cacheName != null ? !cacheName.equals(that.cacheName) : that.cacheName != null)
+            return false;
+
+        if (name != null ? !name.equals(that.name) : that.name != null)
+            return false;
+
+        if (nodeFilter != null ? !nodeFilter.getClass().equals(that.nodeFilter.getClass()) : that.nodeFilter != null)
+            return false;
+
+        if (svc != null ? !svc.getClass().equals(that.svc.getClass()) : that.svc != null)
+            return false;
+
+        return true;
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        name = U.readString(in);
-        cacheName = U.readString(in);
-        maxPerNode = in.readInt();
-        totalCnt = in.readInt();
-        svc = (GridService)in.readObject();
-        affKey = in.readObject();
-        nodeFilter = (GridPredicate<GridNode>)in.readObject();
+    @Override public int hashCode() {
+        return name == null ? 0 : name.hashCode();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridServiceConfiguration.class, this);
+        String svcCls = svc == null ? "" : svc.getClass().getSimpleName();
+        String nodeFilterCls = nodeFilter == null ? "" : nodeFilter.getClass().getSimpleName();
+
+        return S.toString(GridServiceConfiguration.class, this, "svcCls", svcCls, "nodeFilterCls", nodeFilterCls);
     }
 }

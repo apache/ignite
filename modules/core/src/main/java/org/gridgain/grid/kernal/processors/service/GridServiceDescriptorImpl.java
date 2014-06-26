@@ -25,48 +25,53 @@ import java.util.*;
 public class GridServiceDescriptorImpl implements GridServiceDescriptor {
     /** Configuration. */
     @GridToStringInclude
-    private final GridServiceConfiguration cfg;
+    private final GridServiceDeployment dep;
 
     /** Topology snapshot. */
     @GridToStringInclude
     private Map<UUID, Integer> top;
 
     /**
-     * @param cfg Configuration.
+     * @param dep Deployment.
      */
-    public GridServiceDescriptorImpl(GridServiceConfiguration cfg) {
-        this.cfg = cfg;
+    public GridServiceDescriptorImpl(GridServiceDeployment dep) {
+        this.dep = dep;
     }
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return cfg.getName();
+        return dep.configuration().getName();
     }
 
     /** {@inheritDoc} */
     @Override public Class<? extends GridService> serviceClass() {
-        return cfg.getService().getClass();
+        return dep.configuration().getService().getClass();
     }
 
     /** {@inheritDoc} */
     @Override public int totalCount() {
-        return cfg.getTotalCount();
+        return dep.configuration().getTotalCount();
     }
 
     /** {@inheritDoc} */
     @Override public int maxPerNodeCount() {
-        return cfg.getMaxPerNodeCount();
+        return dep.configuration().getMaxPerNodeCount();
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public String cacheName() {
-        return cfg.getCacheName();
+        return dep.configuration().getCacheName();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <K> K affinityKey() {
-        return (K)cfg.getAffinityKey();
+        return (K)dep.configuration().getAffinityKey();
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID originNodeId() {
+        return dep.nodeId();
     }
 
     /** {@inheritDoc} */

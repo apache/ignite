@@ -34,6 +34,13 @@ public interface GridServiceDescriptor extends Serializable {
     @Nullable public <K> K affinityKey();
 
     /**
+     * Gets ID of grid node that initiated the deployment.
+     *
+     * @return ID of grid node that initiated the deployment.
+     */
+    public UUID originNodeId();
+
+    /**
      *
      * @return Map of number of service instances per node ID.
      */

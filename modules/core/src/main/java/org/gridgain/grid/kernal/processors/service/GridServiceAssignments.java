@@ -38,6 +38,9 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
     /** Affinity key. */
     private final Object affKey;
 
+    /** Node ID. */
+    private final UUID nodeId;
+
     /** Service. */
     private final GridService svc;
 
@@ -56,15 +59,17 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
      * @param svc Service.
      * @param cacheName Cache name.
      * @param affKey Affinity key.
+     * @param nodeId Node ID.
      * @param topVer Topology version.
      * @param nodeFilter Node filter.
      */
-    public GridServiceAssignments(String name, GridService svc, String cacheName, Object affKey, long topVer,
-        GridPredicate<GridNode> nodeFilter) {
+    public GridServiceAssignments(String name, GridService svc, String cacheName, Object affKey, UUID nodeId,
+        long topVer, GridPredicate<GridNode> nodeFilter) {
         this.name = name;
         this.svc = svc;
         this.cacheName = cacheName;
         this.affKey = affKey;
+        this.nodeId = nodeId;
         this.topVer = topVer;
         this.nodeFilter = nodeFilter;
     }
@@ -102,6 +107,13 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
      */
     public Object affinityKey() {
         return affKey;
+    }
+
+    /**
+     * @return Origin node ID.
+     */
+    public UUID nodeId() {
+        return nodeId;
     }
 
     /**
