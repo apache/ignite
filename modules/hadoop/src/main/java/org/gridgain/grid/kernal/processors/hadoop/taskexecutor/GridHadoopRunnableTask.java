@@ -95,13 +95,15 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
         Throwable err = null;
 
         try {
+            job.beforeTaskRun(info);
+
             runTask(info, runCombiner);
 
             if (runCombiner)
                 runTask(new GridHadoopTaskInfo(info.nodeId(), COMBINE, info.jobId(), info.taskNumber(), info.attempt(),
                     null), runCombiner);
         }
-        catch (GridHadoopTaskCancelledException e) {
+        catch (GridHadoopTaskCancelledException ignored) {
             state = GridHadoopTaskState.CANCELED;
         }
         catch (Throwable e) {
@@ -117,6 +119,8 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
 
             if (runCombiner)
                 local.close();
+
+            job.afterTaskRun(info);
         }
 
         return null;

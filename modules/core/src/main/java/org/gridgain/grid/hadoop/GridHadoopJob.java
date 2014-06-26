@@ -114,4 +114,20 @@ public interface GridHadoopJob {
      * @throws GridException If failed.
      */
     public void dispose(boolean external) throws GridException;
+
+    /**
+     * Prepare local environment for the task.
+     *
+     * @param info Task info.
+     * @throws GridException If failed.
+     */
+    public void beforeTaskRun(GridHadoopTaskInfo info) throws GridException;
+
+    /**
+     * Cleans up local environment of the task.
+     *
+     * @param info Task info.
+     * @throws GridException If failed.
+     */
+    public void afterTaskRun(GridHadoopTaskInfo info) throws GridException;
 }
