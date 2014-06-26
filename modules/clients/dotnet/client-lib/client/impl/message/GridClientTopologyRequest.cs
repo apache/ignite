@@ -56,7 +56,7 @@ namespace GridGain.Client.Impl.Message {
 
             IGridClientPortableRawWriter rawWriter = writer.RawWriter();
 
-            rawWriter.WriteGuid(NodeId == Guid.Empty ? (Guid?)null : NodeId);
+            rawWriter.WriteGuid(NodeId != Guid.Empty ? NodeId : (Guid?)null);
             rawWriter.WriteString(NodeIP);
 
             rawWriter.WriteBoolean(IncludeMetrics);

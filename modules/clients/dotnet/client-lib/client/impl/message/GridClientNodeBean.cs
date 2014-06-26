@@ -109,7 +109,7 @@ namespace GridGain.Client.Impl.Message {
             rawWriter.WriteGenericDictionary(Caches);
             rawWriter.WriteGenericCollection(TcpAddresses);
             rawWriter.WriteGenericCollection(TcpHostNames);
-            rawWriter.WriteGuid(NodeId);
+            rawWriter.WriteGuid(NodeId != Guid.Empty ? NodeId : (Guid?)null);
             rawWriter.WriteObject(ConsistentId);
             rawWriter.WriteObject(Metrics);
         }
@@ -129,7 +129,9 @@ namespace GridGain.Client.Impl.Message {
             TcpAddresses = rawReader.ReadGenericCollection<string>();
             TcpHostNames = rawReader.ReadGenericCollection<string>();
 
-            NodeId = rawReader.ReadGuid().Value;
+            Guid? nodeId0 = rawReader.ReadGuid();
+
+            NodeId = nodeId0.HasValue ? nodeId0.Value : Guid.Empty;
 
             ConsistentId = rawReader.ReadObject<Object>();
             Metrics = rawReader.ReadObject<GridClientNodeMetricsBean>();
