@@ -13,6 +13,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
+import java.net.*;
 import java.nio.file.*;
 import java.text.*;
 import java.util.*;
@@ -49,6 +50,8 @@ public class GridHadoopSetup {
         String gridgainHome = U.getGridGainHome();
 
         println("GRIDGAIN_HOME is set to '" + gridgainHome + "'.");
+
+        checkGridGainHome(gridgainHome);
 
         String hadoopHome = System.getenv("HADOOP_HOME");
 
@@ -200,6 +203,26 @@ public class GridHadoopSetup {
             println("Ok. You can configure them later, the templates are available at GridGain's 'docs' directory...");
 
         println("Hadoop setup is complete.");
+    }
+
+    /**
+     * Checks GridGain home.
+     *
+     * @param ggHome GridGain home.
+     */
+    private static void checkGridGainHome(String ggHome) {
+        URL jarUrl = U.class.getProtectionDomain().getCodeSource().getLocation();
+
+        try {
+            Path jar = Paths.get(jarUrl.toURI());
+            Path gg = Paths.get(ggHome);
+
+            if (!jar.startsWith(gg))
+                warn("GridGain JAR files are not under GRIDGAIN_HOME. Make sure GRIDGAIN_HOME is correct!");
+        }
+        catch (Exception e) {
+            exit(e.getMessage());
+        }
     }
 
     /**
