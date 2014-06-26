@@ -86,10 +86,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
     private JobID hadoopJobID;
 
     /** */
-    private File jobLocalDir;
-
-    /** */
-    private GridHadoopV2JobResourceManager resourceManager;
+    private File jobLocDir;
 
     /** */
     private ClassLoaderWrapper jobLdr;
@@ -211,11 +208,10 @@ public class GridHadoopV2Job implements GridHadoopJob {
     private Object readExternalSplit(GridHadoopExternalSplit split) throws GridException {
         Path jobDir = new Path(ctx.getConfiguration().get(MRJobConfig.MAPREDUCE_JOB_DIR));
 
-        Class<?> cls;
-
         try (FileSystem fs = FileSystem.get(jobDir.toUri(), ctx.getConfiguration());
             FSDataInputStream in = fs.open(JobSubmissionFiles.getJobSplitFile(jobDir))) {
-            cls = readSplitClass(in, split.offset());
+
+            Class<?> cls = readSplitClass(in, split.offset());
 
             assert cls != null;
 
@@ -388,13 +384,13 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public void initialize(boolean external, UUID locNodeId) throws GridException {
-        jobLocalDir = new File(new File(U.resolveWorkDirectory("hadoop", false), "node-" + locNodeId), "job_" + jobId);
+        jobLocDir = new File(new File(U.resolveWorkDirectory("hadoop", false), "node-" + locNodeId), "job_" + jobId);
 
-        resourceManager = new GridHadoopV2JobResourceManager(jobId, ctx.getJobConf(), jobLocalDir);
+        GridHadoopV2JobResourceManager rsrcMgr = new GridHadoopV2JobResourceManager(jobId, ctx.getJobConf(), jobLocDir);
 
-        resourceManager.processJobResources(!external);
+        rsrcMgr.processJobResources(!external);
 
-        initializeClassLoader(resourceManager.getClassPath());
+        initializeClassLoader(rsrcMgr.getClassPath());
 
         if (jobLdr != null)
             ctx.getJobConf().setClassLoader(jobLdr);
@@ -405,23 +401,37 @@ public class GridHadoopV2Job implements GridHadoopJob {
         if (jobLdr != null)
             jobLdr.destroy();
 
-        if (!external && jobLocalDir.exists())
-            U.delete(jobLocalDir);
+        if (!external && jobLocDir.exists())
+            U.delete(jobLocDir);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void beforeTaskRun(GridHadoopTaskInfo info) throws GridException {
+        try {
+            FileSystem.getLocal(ctx.getJobConf()).setWorkingDirectory(new Path(jobLocDir.getAbsolutePath()));
+        }
+        catch (IOException e) {
+            throw new GridException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void afterTaskRun(GridHadoopTaskInfo info) {
+        // No-op.
     }
 
     /**
      * Initializes class loader.
      *
-     * @param classPath List of URLs to add to class path.
-     * @throws GridException If failed.
+     * @param clsPath List of URLs to add to class path.
      */
-    private void initializeClassLoader(List<URL> classPath) {
-        if (!jobLocalDir.exists())
+    private void initializeClassLoader(List<URL> clsPath) {
+        if (!jobLocDir.exists())
             return;
 
-        URL[] urls = new URL[classPath.size()];
+        URL[] urls = new URL[clsPath.size()];
 
-        classPath.toArray(urls);
+        clsPath.toArray(urls);
 
         final URLClassLoader urlLdr = new URLClassLoader(urls);
 

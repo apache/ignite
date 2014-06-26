@@ -654,6 +654,16 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         @Override public void dispose(boolean external) throws GridException {
             // No-op.
         }
+
+        /** {@inheritDoc} */
+        @Override public void beforeTaskRun(GridHadoopTaskInfo info) throws GridException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void afterTaskRun(GridHadoopTaskInfo info) {
+            // No-op.
+        }
     }
 
     /**

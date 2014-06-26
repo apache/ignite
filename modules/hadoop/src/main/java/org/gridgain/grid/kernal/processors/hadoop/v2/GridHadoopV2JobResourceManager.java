@@ -132,9 +132,6 @@ public class GridHadoopV2JobResourceManager {
 
             FileSystem dstFs = FileSystem.getLocal(cfg);
 
-            //TODO: Replace this to the correct working directory redefinition.
-            dstFs.setWorkingDirectory(new Path(jobLocDir.getAbsolutePath()));
-
             FileSystem srcFs = srcPath.getFileSystem(cfg);
 
             if (extract) {

@@ -9,7 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.fs;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.FileAlreadyExistsException;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.*;
@@ -41,7 +43,7 @@ public class GridHadoopRawLocalFileSystem extends FileSystem {
         checkPath(path);
 
         if (path.isAbsolute())
-            return new File(path.toUri());
+            return new File(path.toUri().getPath());
 
         return new File(getWorkingDirectory().toUri().getPath(), path.toUri().getPath());
     }
@@ -49,6 +51,13 @@ public class GridHadoopRawLocalFileSystem extends FileSystem {
     /** {@inheritDoc} */
     @Override protected Path getInitialWorkingDirectory() {
         return makeQualified(new Path(System.getProperty("user.dir")));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void initialize(URI uri, Configuration conf) throws IOException {
+        super.initialize(uri, conf);
+
+        setConf(conf);
     }
 
     /** {@inheritDoc} */
@@ -116,7 +125,22 @@ public class GridHadoopRawLocalFileSystem extends FileSystem {
 
     /** {@inheritDoc} */
     @Override public boolean mkdirs(Path f, FsPermission permission) throws IOException {
-        return convert(f).mkdirs();
+        if(f == null)
+            throw new IllegalArgumentException("mkdirs path arg is null");
+
+        Path parent = f.getParent();
+
+        File p2f = convert(f);
+
+        if(parent != null) {
+            File parent2f = convert(parent);
+
+            if(parent2f != null && parent2f.exists() && !parent2f.isDirectory())
+                throw new FileAlreadyExistsException("Parent path is not a directory: " + parent);
+
+        }
+
+        return (parent == null || mkdirs(parent)) && (p2f.mkdir() || p2f.isDirectory());
     }
 
     /** {@inheritDoc} */
