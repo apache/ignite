@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util.portable;
 
-import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
@@ -86,18 +86,25 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     void marshal(Object obj) throws GridPortableException {
         assert obj != null;
 
-        doWriteByte(OBJ);
+        int handle = wCtx.handle(obj);
 
-        cls = obj.getClass();
+        if (handle >= 0) {
+            doWriteByte(HANDLE);
+            doWriteInt(handle);
+        }
+        else {
+            doWriteByte(OBJ);
 
-        GridPortableClassDescriptor desc = ctx.descriptorForClass(cls);
+            cls = obj.getClass();
 
-        if (desc == null)
-            throw new GridPortableException("Object is not portable: " + obj);
+            GridPortableClassDescriptor desc = ctx.descriptorForClass(cls);
 
-        typeId = desc.typeId();
+            if (desc == null) throw new GridPortableException("Object is not portable: " + obj);
 
-        desc.write(obj, this);
+            typeId = desc.typeId();
+
+            desc.write(obj, this);
+        }
     }
 
     /**
@@ -250,6 +257,7 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
        else {
            doWriteBoolean(true);
            doWriteLong(date.getTime());
+           doWriteShort((short)0);
        }
    }
 
@@ -261,17 +269,9 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
         if (obj == null)
             doWriteByte(NULL);
         else {
-            int handle = wCtx.handle(obj);
+            GridPortableWriterImpl writer = new GridPortableWriterImpl(ctx, wCtx);
 
-            if (handle >= 0) {
-                doWriteByte(HANDLE);
-                doWriteInt(handle);
-            }
-            else {
-                GridPortableWriterImpl writer = new GridPortableWriterImpl(ctx, wCtx);
-
-                writer.marshal(obj);
-            }
+            writer.marshal(obj);
         }
     }
 

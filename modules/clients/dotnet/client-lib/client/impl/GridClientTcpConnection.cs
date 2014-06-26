@@ -20,8 +20,8 @@ namespace GridGain.Client.Impl {
     using System.Security;
 
     using GridGain.Client;
-    using GridGain.Client.Impl.Marshaller;
     using GridGain.Client.Impl.Message;
+    using GridGain.Client.Impl.Portable;
     using GridGain.Client.Util;
     using GridGain.Client.Ssl;
 
@@ -75,7 +75,7 @@ namespace GridGain.Client.Impl {
         private volatile bool waitCompletion = true;
 
         /** <summary>Message marshaller</summary> */
-        private IGridClientMarshaller marshaller;
+        private GridClientPortableMarshaller marshaller;
 
         /** <summary>Underlying tcp client.</summary> */
         private readonly TcpClient tcp;
@@ -88,7 +88,7 @@ namespace GridGain.Client.Impl {
 
         /** <summary>SSL stream flag.</summary> */
         private readonly bool isSslStream;
-        
+                
         /** <summary>Last stream reading failed with timeout.</summary> */
         internal bool lastReadTimedOut = false;
 
@@ -128,7 +128,7 @@ namespace GridGain.Client.Impl {
          * <exception cref="IOException">If connection could not be established.</exception>
          */
         public GridClientTcpConnection(Guid clientId, IPEndPoint srvAddr, IGridClientSslContext sslCtx, int connectTimeout,
-            IGridClientMarshaller marshaller, Object credentials, GridClientTopology top)
+            GridClientPortableMarshaller marshaller, Object credentials, GridClientTopology top)
             : base(clientId, srvAddr, sslCtx, credentials, top) {
             this.marshaller = marshaller;
 
@@ -187,6 +187,20 @@ namespace GridGain.Client.Impl {
                     // Flush client authentication packets (if any).
                     outStream.Flush();
                 }
+            }
+
+            // Process handshake.
+            outStream.Write(GridClientHandshake.BYTES, 0, GridClientHandshake.BYTES.Length);
+
+            outStream.Flush();
+
+            int hndRes = inStream.ReadByte();
+
+            if (hndRes != GridClientHandshake.CODE_OK)
+            {
+                if (hndRes == GridClientHandshake.CODE_UNKNOWN_PROTO_ID)
+                    throw new GridClientException("Server doesn't support client's protocol [srvAddr=" + srvAddr + 
+                        ", protocolId=" + GridClientHandshake.PROTO_ID + ']'); 
             }
 
             // Avoid immediate attempt to close by idle.
@@ -490,7 +504,7 @@ namespace GridGain.Client.Impl {
         private void sendPacket(GridClientRequest msg) {
             try {
                 MemoryStream buf = new MemoryStream(1024);
-
+                
                 // Header.
                 buf.WriteByte((byte)0x90);
 
@@ -539,7 +553,7 @@ namespace GridGain.Client.Impl {
 
             req.CacheName = cacheName;
             req.CacheFlags = encodeCacheFlags(cacheFlags);
-            req.Values = entries.ToMap();
+            req.Values = (IDictionary<object, object>)entries.ToMap();
 
             return makeRequest<Boolean>(req);
         }
@@ -890,10 +904,8 @@ namespace GridGain.Client.Impl {
             GridClientNodeImpl node = new GridClientNodeImpl(nodeId);
 
             node.TcpAddresses.AddAll<String>(nodeBean.TcpAddresses);
-            node.JettyAddresses.AddAll<String>(nodeBean.JettyAddresses);
             node.TcpPort = nodeBean.TcpPort;
             node.ConsistentId = nodeBean.ConsistentId;
-            node.HttpPort = nodeBean.JettyPort;
             node.ReplicaCount = nodeBean.ReplicaCount;
 
             if (nodeBean.Caches != null && nodeBean.Caches.Count > 0)
@@ -902,7 +914,7 @@ namespace GridGain.Client.Impl {
             if (nodeBean.Attributes != null && nodeBean.Attributes.Count > 0)
                 node.Attributes.AddAll<KeyValuePair<String, Object>>(nodeBean.Attributes);
 
-            if (nodeBean.Metrics != null && nodeBean.Metrics.Count > 0)
+            if (nodeBean.Metrics != null)
                 node.Metrics = parseNodeMetrics(nodeBean.Metrics);
 
             return node;
@@ -1049,7 +1061,7 @@ namespace GridGain.Client.Impl {
 
                     U.ReadFully(inStream, msgBytes, 0, msgBytes.Length);
 
-                    GridClientResponse msg = marshaller.Unmarshal<GridClientResponse>(msgBytes);
+                    GridClientResponse msg = marshaller.Unmarshal(msgBytes).Deserialize<GridClientResponse>();
 
                     msg.RequestId = reqId;
                     msg.ClientId = clientId;

@@ -40,6 +40,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -90,7 +91,7 @@
     <Compile Include="client\GridClientTcpTest.cs" />
     <Compile Include="client\hasher\GridClientJavaHelperTest.cs" />
     <Compile Include="client\impl\GridClientTopologyTest.cs" />
-    <Compile Include="client\impl\marshaller\GridClientProtobufMarshallerTest.cs" />
+    <Compile Include="client\portable\GridClientPortableSelfTest.cs" />
     <Compile Include="client\util\NullDictionaryTest.cs" />
     <Compile Include="client\hasher\GridClientConsistentHashTest.cs" />
     <Compile Include="client\util\GridClientUtilsTest.cs" />

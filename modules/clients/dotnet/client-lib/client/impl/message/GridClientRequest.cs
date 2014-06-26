@@ -9,13 +9,14 @@
 
 namespace GridGain.Client.Impl.Message {
     using System;
+    using GridGain.Client.Portable;
 
     /**
      * <summary>
      * This class provides implementation for commit message fields
      * and cannot be used directly.</summary>
      */
-    internal abstract class GridClientRequest {
+    internal abstract class GridClientRequest : IGridClientPortable {
         /** <summary>Deny no-arg constructor for client requests.</summary> */
         private GridClientRequest() { 
         }
@@ -52,6 +53,16 @@ namespace GridGain.Client.Impl.Message {
         public byte[] SessionToken {
             get;
             set;
+        }
+
+        /** <inheritdoc /> */
+        public virtual void WritePortable(IGridClientPortableWriter writer) {
+            writer.RawWriter().WriteByteArray(SessionToken);
+        }
+
+        /** <inheritdoc /> */
+        public virtual void ReadPortable(IGridClientPortableReader reader) {
+            SessionToken = reader.RawReader().ReadByteArray();
         }
     }
 }

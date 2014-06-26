@@ -7,6 +7,9 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
+using System.Reflection;
+using GridGain.Client.Impl.Message;
+
 namespace GridGain.Client.Impl {
     using System;
     using System.IO;
@@ -15,8 +18,9 @@ namespace GridGain.Client.Impl {
     using System.Collections.Generic;
     using System.Collections.Concurrent;
     using GridGain.Client;
+    using GridGain.Client.Portable;
     using GridGain.Client.Ssl;
-    using GridGain.Client.Impl.Marshaller;
+    using GridGain.Client.Impl.Portable;
 
     using A = GridGain.Client.Util.GridClientArgumentCheck;
     using C = GridGain.Client.Impl.IGridClientConnection;
@@ -27,15 +31,12 @@ namespace GridGain.Client.Impl {
     internal class GridClientConnectionManager {
         /** <summary>Default timeout to close idle connections</summary> */
         private static readonly TimeSpan DefaultIdleTimeout = TimeSpan.FromSeconds(30);
-
+        
         /** <summary>Connect lock.</summary> */
         private readonly ReaderWriterLock guard = new ReaderWriterLock();
 
         /** <summary>Active connections.</summary> */
         private readonly IDictionary<IPEndPoint, C> conns = new Dictionary<IPEndPoint, C>();
-
-        /** <summary>Connection protocol.</summary> */
-        private readonly GridClientProtocol proto;
 
         /** <summary>SSL context.</summary> */
         private readonly IGridClientSslContext sslCtx;
@@ -55,6 +56,9 @@ namespace GridGain.Client.Impl {
         /** <summary>Router endpoints to use instead of topology info.</summary> */
         private readonly ICollection<IPEndPoint> routers;
 
+        /** <summary>Marshaller.</summary> */
+        private readonly GridClientPortableMarshaller marsh;
+
         /** <summary>Closed flag.</summary> */
         private volatile bool closed;
 
@@ -66,12 +70,12 @@ namespace GridGain.Client.Impl {
          * <param name="top">Topology.</param>
          * <param name="routers">Routers or empty collection to use endpoints from topology info.</param>
          * <param name="credentials">Connection credentials.</param>
-         * <param name="proto">Connection protocol.</param>
          * <param name="sslCtx">SSL context to enable secured connection or <c>null</c> to use unsecured one.</param>
          * <param name="connectTimeout">TCP connection timeout.</param>
+         * <param name="portableCfg">Portable configuration.</param>
          */
         public GridClientConnectionManager(Guid clientId, GridClientTopology top, ICollection<IPEndPoint> routers,
-            Object credentials, GridClientProtocol proto, IGridClientSslContext sslCtx, int connectTimeout) {
+            Object credentials, IGridClientSslContext sslCtx, int connectTimeout, GridClientPortableConfiguration portableCfg) {
             Dbg.Assert(clientId != null, "clientId != null");
             Dbg.Assert(top != null, "top != null");
             Dbg.Assert(routers != null, "routers != null");
@@ -81,9 +85,10 @@ namespace GridGain.Client.Impl {
             this.credentials = credentials;
             this.top = top;
             this.routers = routers;
-            this.proto = proto;
             this.sslCtx = sslCtx;
             this.connectTimeout = connectTimeout;
+
+            marsh = new GridClientPortableMarshaller(portableCfg);
         }
 
         /**
@@ -101,7 +106,7 @@ namespace GridGain.Client.Impl {
                 return connection(routers);
 
             // Use node's connection, if node is available over rest.
-            var srvs = node.AvailableAddresses(proto);
+            var srvs = node.AvailableAddresses();
 
             if (srvs.Count == 0) {
                 throw new GridClientServerUnreachableException("No available endpoints to connect " +
@@ -225,20 +230,7 @@ namespace GridGain.Client.Impl {
         private C connect(IPEndPoint srv) {
             Dbg.Assert(guard.IsReaderLockHeld);
 
-            switch (proto) {
-                case GridClientProtocol.Tcp: {
-                    return new GridClientTcpConnection(clientId, srv, sslCtx, connectTimeout,
-                        new GridClientProtobufMarshaller(), credentials, top);
-                }
-
-                case GridClientProtocol.Http: {
-                    return new GridClientHttpConnection(clientId, srv, sslCtx, credentials, top);
-                }
-
-                default:
-                    throw new GridClientServerUnreachableException("Failed to create client" +
-                        " (protocol is not supported): " + proto);
-            }
+            return new GridClientTcpConnection(clientId, srv, sslCtx, connectTimeout, marsh, credentials, top);
         }
 
         /**

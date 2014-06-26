@@ -12,6 +12,7 @@ package org.gridgain.loadtests.client;
 import org.gridgain.client.marshaller.*;
 import org.gridgain.client.marshaller.jdk.*;
 import org.gridgain.client.marshaller.optimized.*;
+import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
@@ -29,7 +30,8 @@ public class GridClientMarshallerBenchmarkTest extends GridCommonAbstractTest {
     /** Marshallers to test. */
     private GridClientMarshaller[] marshallers = new GridClientMarshaller[] {
         new GridClientJdkMarshaller(),
-        new GridClientOptimizedMarshaller()
+        new GridClientOptimizedMarshaller(),
+        new GridClientPortableMarshaller()
     };
 
     /**

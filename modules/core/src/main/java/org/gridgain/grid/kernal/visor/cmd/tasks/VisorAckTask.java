@@ -23,6 +23,9 @@ import java.util.*;
  */
 @GridInternal
 public class VisorAckTask extends VisorMultiNodeTask<String, Void, Void> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorAckJob job(String arg) {
         return new VisorAckJob(arg);

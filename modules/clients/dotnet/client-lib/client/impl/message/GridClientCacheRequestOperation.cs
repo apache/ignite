@@ -13,36 +13,36 @@ namespace GridGain.Client.Impl.Message {
     /** <summary>Available cache operations.</summary> */
     internal enum GridClientCacheRequestOperation {
         /** <summary>Cache put.</summary> */
-        Put = 0x01,
+        Put,
 
         /** <summary>Cache put all.</summary> */
-        PutAll = 0x02,
+        PutAll,
 
         /** <summary>Cache get.</summary> */
-        Get = 0x03,
+        Get,
 
         /** <summary>Cache get all.</summary> */
-        GetAll = 0x04,
+        GetAll,
 
         /** <summary>Cache remove.</summary> */
-        Rmv = 0x05,
+        Rmv,
 
         /** <summary>Cache remove all.</summary> */
-        RmvAll = 0x06,
+        RmvAll,
 
         /** <summary>Cache replace (put only if exists).</summary> */
-        Replace = 0x08,
-
-        /** <summary>Append requested value to already cached one.</summary> */
-        Append = 0x0B,
-
-        /** <summary>Prepend requested value to already cached one.</summary> */
-        Prepend = 0x0C,
+        Replace,
 
         /** <summary>Cache compare and set.</summary> */
-        Cas = 0x09,
+        Cas,
 
         /** <summary>Cache metrics request.</summary> */
-        Metrics = 0x0A
+        Metrics,
+
+        /** <summary>Append requested value to already cached one.</summary> */
+        Append,
+
+        /** <summary>Prepend requested value to already cached one.</summary> */
+        Prepend,
     }
 }

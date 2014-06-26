@@ -15,10 +15,10 @@ namespace GridGain.Client.Impl.Message {
         /**
          * <summary>
          * Constructs fictive ping packet.</summary>
-         * 
+         *
          * <param name="destNodeId">Node ID to route request to.</param>
          */
-        public GridClientPingRequest(Guid destNodeId) : base(destNodeId) { 
+        public GridClientPingRequest(Guid destNodeId) : base(destNodeId) {
         }
     }
 }

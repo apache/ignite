@@ -11,8 +11,8 @@ package org.gridgain.grid.util.portable;
 
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
-import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.portable.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -134,6 +134,8 @@ public class GridPortableConfigurer {
         addDescriptor(TreeMap.class, MAP);
         addDescriptor(ConcurrentHashMap.class, MAP);
 
+        addDescriptor(GridPortableObjectImpl.class, 0x50);
+
         colTypes.put(ArrayList.class, ARR_LIST);
         colTypes.put(LinkedList.class, LINKED_LIST);
         colTypes.put(HashSet.class, HASH_SET);
@@ -147,15 +149,15 @@ public class GridPortableConfigurer {
         mapTypes.put(ConcurrentHashMap.class, CONC_HASH_MAP);
 
         // TODO: Configure from server and client?
-        addDescriptor(GridClientAuthenticationRequest.class, 0x100);
-        addDescriptor(GridClientCacheRequest.class, 0x101);
-        addDescriptor(GridClientLogRequest.class, 0x102);
-        addDescriptor(GridClientNodeBean.class, 0x103);
-        addDescriptor(GridClientNodeMetricsBean.class, 0x104);
-        addDescriptor(GridClientResponse.class, 0x105);
-        addDescriptor(GridClientTaskRequest.class, 0x106);
-        addDescriptor(GridClientTaskResultBean.class, 0x107);
-        addDescriptor(GridClientTopologyRequest.class, 0x108);
+        addDescriptor(GridClientAuthenticationRequest.class, 51);
+        addDescriptor(GridClientTopologyRequest.class, 52);
+        addDescriptor(GridClientTaskRequest.class, 53);
+        addDescriptor(GridClientCacheRequest.class, 54);
+        addDescriptor(GridClientLogRequest.class, 55);
+        addDescriptor(GridClientResponse.class, 56);
+        addDescriptor(GridClientNodeBean.class, 57);
+        addDescriptor(GridClientNodeMetricsBean.class, 58);
+        addDescriptor(GridClientTaskResultBean.class, 59);
 
         if (portableCfg != null) {
             GridPortableIdMapper globalIdMapper = portableCfg.getIdMapper();

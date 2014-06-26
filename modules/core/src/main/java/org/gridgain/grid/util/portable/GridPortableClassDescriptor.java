@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.portable;
 
-import org.gridgain.grid.portable.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.lang.reflect.*;
@@ -405,6 +405,8 @@ class GridPortableClassDescriptor {
             case PORTABLE:
                 Object portable = newInstance();
 
+                reader.setHandler(portable);
+
                 if (serializer != null)
                     serializer.readPortable(portable, reader);
                 else
@@ -414,6 +416,8 @@ class GridPortableClassDescriptor {
 
             case OBJECT:
                 Object obj = newInstance();
+
+                reader.setHandler(obj);
 
                 for (FieldInfo info : fields)
                     info.read(obj, reader);

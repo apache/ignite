@@ -10,8 +10,12 @@
 namespace GridGain.Client.Impl.Message {
     using System;
     using System.Text;
+    using GridGain.Client.Portable;
+
+    using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
 
     /** <summary>Request for a log file.</summary> */
+    [GridClientPortableId(PU.TYPE_LOG_REQ)]
     internal class GridClientLogRequest : GridClientRequest {
         /** 
          * <summary>
@@ -41,6 +45,28 @@ namespace GridGain.Client.Impl.Message {
         public int To {
             get;
             set;
+        }
+
+        /** <inheritdoc /> */
+        public override void WritePortable(IGridClientPortableWriter writer) {
+            base.WritePortable(writer);
+
+            IGridClientPortableRawWriter rawWriter = writer.RawWriter();
+
+            rawWriter.WriteString(Path);
+            rawWriter.WriteInt(From);
+            rawWriter.WriteInt(To);
+        }
+
+        /** <inheritdoc /> */
+        public override void ReadPortable(IGridClientPortableReader reader) {
+            base.ReadPortable(reader);
+
+            IGridClientPortableRawReader rawReader = reader.RawReader();
+
+            Path = rawReader.ReadString();
+            From = rawReader.ReadInt();
+            To = rawReader.ReadInt();
         }
     }
 }

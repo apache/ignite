@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
 import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.optimized.*;
+import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.typedef.*;
@@ -32,7 +32,7 @@ import static org.gridgain.grid.kernal.processors.rest.protocols.tcp.GridMemcach
  */
 public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
     /** Marshaller. */
-    private GridClientMarshaller marshaller = new GridClientOptimizedMarshaller();
+    private GridClientMarshaller marshaller = new GridClientPortableMarshaller();
 
     /** Extras value. */
     public static final byte[] EXTRAS = new byte[]{

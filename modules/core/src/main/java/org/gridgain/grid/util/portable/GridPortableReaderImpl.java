@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.portable;
 
-import org.gridgain.grid.portable.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.lang.reflect.*;
@@ -618,6 +618,15 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             return null;
     }
 
+    /**
+     * @param obj New object.
+     */
+    void setHandler(Object obj) {
+        assert obj != null;
+
+        oHandles.put(start, obj);
+    }
+
     /** {@inheritDoc} */
     @Override public byte readByte(String fieldName) throws GridPortableException {
         return readByte(fieldId(fieldName));
@@ -1170,6 +1179,12 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
         if (doReadBoolean(raw)) {
             long time = doReadLong(raw);
 
+            // Skip remainder.
+            if (raw)
+                rawOff += 2;
+            else
+                off += 2;
+
             return new Date(time);
         }
         else
@@ -1221,14 +1236,15 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
                 Object obj = desc.read(new GridPortableReaderImpl(
                     ctx, poHandles, oHandles, arr, start, rawOff0, typeId));
 
+                if (obj instanceof GridPortableObjectImpl)
+                    ((GridPortableObjectImpl)obj).context(ctx);
+
                 int dataLen = len - HDR_LEN;
 
                 if (raw)
                     rawOff += dataLen;
                 else
                     off += dataLen;
-
-                oHandles.put(start, obj);
 
                 return obj;
 

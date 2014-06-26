@@ -9,19 +9,23 @@
 
 namespace GridGain.Client.Impl.Message {
     using System;
-    using System.Text;
     using System.Collections.Generic;
+    using GridGain.Client.Portable;
     using GridGain.Client.Util;
 
+    using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
+
     /** <summary>Node bean.</summary> */
-    internal class GridClientNodeBean {
+    [GridClientPortableId(PU.TYPE_NODE_BEAN)]
+    internal class GridClientNodeBean : IGridClientPortable {
+        /** Portable type ID. */
+        // TODO: GG-8535: Remove in favor of normal IDs.
+        public static readonly int PORTABLE_TYPE_ID = 0;
+
         /** <summary>Constructs client node bean.</summary> */
         public GridClientNodeBean() {
             TcpAddresses = new HashSet<String>();
             TcpHostNames = new HashSet<String>();
-            JettyAddresses = new HashSet<String>();
-            JettyHostNames = new HashSet<String>();
-            Metrics = new Dictionary<String, Object>();
             Attributes = new Dictionary<String, Object>();
             Caches = new GridClientNullDictionary<String, String>();
         }
@@ -43,19 +47,7 @@ namespace GridGain.Client.Impl.Message {
             get;
             private set;
         }
-
-        /** <summary>Jetty addresses.</summary> */
-        public ICollection<String> JettyAddresses {
-            get;
-            private set;
-        }
-
-        /** <summary>Jetty host names.</summary> */
-        public ICollection<String> JettyHostNames {
-            get;
-            private set;
-        }
-
+        
         /** <summary>Node replica count for consistent hash ring.</summary> */
         public int ReplicaCount {
             get;
@@ -63,7 +55,7 @@ namespace GridGain.Client.Impl.Message {
         }
 
         /** <summary>Gets metrics.</summary> */
-        public IDictionary<String, Object> Metrics {
+        public GridClientNodeMetricsBean Metrics {
             get;
             private set;
         }
@@ -79,19 +71,19 @@ namespace GridGain.Client.Impl.Message {
             get;
             set;
         }
-
-        /** <summary>REST http protocol port.</summary> */
-        public int JettyPort {
-            get;
-            set;
-        }
-
+        
         /**
          * <summary>
          * Consistent globally unique node ID. Unlike the Id property,
          * this property contains a consistent node ID which survives node restarts.</summary>
          */
         public Object ConsistentId {
+            get;
+            set;
+        }
+
+        /** <summary>Mode for cache with null name.</summary> */
+        public String DefaultCacheMode {
             get;
             set;
         }
@@ -104,6 +96,55 @@ namespace GridGain.Client.Impl.Message {
         public IDictionary<String, String> Caches {
             get;
             private set;
+        }
+        
+        /** <inheritdoc /> */
+        public void WritePortable(IGridClientPortableWriter writer) {
+            IGridClientPortableRawWriter rawWriter = writer.RawWriter();
+
+            rawWriter.WriteInt(TcpPort);
+            rawWriter.WriteInt(ReplicaCount);
+
+            rawWriter.WriteString(DefaultCacheMode);
+
+            rawWriter.WriteGenericDictionary(Attributes);
+            rawWriter.WriteGenericDictionary(Caches);
+
+            rawWriter.WriteGenericCollection(TcpAddresses);
+            rawWriter.WriteGenericCollection(TcpHostNames);
+
+            rawWriter.WriteGuid(NodeId);
+
+            rawWriter.WriteObject(ConsistentId);
+            rawWriter.WriteObject(Metrics);
+        }
+
+        /** <inheritdoc /> */
+        public void ReadPortable(IGridClientPortableReader reader) {
+            IGridClientPortableRawReader rawReader = reader.RawReader();
+
+            TcpPort = rawReader.ReadInt();
+            ReplicaCount = rawReader.ReadInt();
+
+            DefaultCacheMode = rawReader.ReadString();
+
+            Attributes = rawReader.ReadGenericDictionary<string, object>();
+            Caches = rawReader.ReadGenericDictionary<string, string>();
+
+            TcpAddresses = rawReader.ReadGenericCollection<string>();
+            TcpHostNames = rawReader.ReadGenericCollection<string>();
+
+            NodeId = rawReader.ReadGuid().Value;
+
+            ConsistentId = rawReader.ReadObject<Object>();
+            Metrics = rawReader.ReadObject<GridClientNodeMetricsBean>();
+
+            if (DefaultCacheMode != null) {
+                Caches = Caches == null ? new GridClientNullDictionary<string, string>() : 
+                    new GridClientNullDictionary<string, string>(Caches);
+
+                Caches.Add(null, DefaultCacheMode);
+            }
         }
     }
 }
