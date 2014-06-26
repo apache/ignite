@@ -70,19 +70,7 @@ fi
 if [ "$HADOOP_EDITION" == "1" ]; then
     . ${GRIDGAIN_HOME}/os/bin/include/hadoop-classpath.sh
 
-    COMMON_HOME_LIB=$HADOOP_COMMON_HOME/lib
-
-    for file in $(ls ${GRIDGAIN_HOME}/libs/gridgain-*.jar); do
-        GG_JAR=$(echo $file | tr -s /)
-
-        LINK=$COMMON_HOME_LIB/$(basename $GG_JAR)
-
-        LINK=$(readlink -n $LINK | tr -s /)
-
-        if [ "$LINK" != "$GG_JAR" ]; then
-            echo "WARNING: Symbolic link to $GG_JAR doesn't exist in $COMMON_HOME_LIB"
-        fi
-    done
-
-    GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}$GRIDGAIN_HADOOP_CLASSPATH
+    if [ "$GRIDGAIN_HADOOP_CLASSPATH" != "" ]; then
+        GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}$GRIDGAIN_HADOOP_CLASSPATH
+    fi
 fi
