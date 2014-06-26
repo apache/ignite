@@ -128,7 +128,7 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(OPENSSL_HOME)\include;$(PROTOBUF_DEBUG_HOME)\include;$(BOOST_HOME)\include\boost-1_49;$(BOOST_HOME)\include\boost-1_51;$(BOOST_HOME)\include\boost-1_52;..\main\include;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OPENSSL_HOME)\include;$(BOOST_HOME)\include\boost-1_49;$(BOOST_HOME)\include\boost-1_51;$(BOOST_HOME)\include\boost-1_52;$(BOOST_HOME);..\main\include;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4345;4996;4290;4267;4244</DisableSpecificWarnings>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
@@ -137,8 +137,8 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
-      <AdditionalLibraryDirectories>$(OPENSSL_HOME)\lib\VC\static;$(PROTOBUF_DEBUG_HOME)\lib;$(BOOST_HOME)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ssleay32MD.lib;libeay32MD.lib;libprotobuf.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OPENSSL_HOME)\lib\VC\static;$(BOOST_HOME)\lib;$(BOOST_HOME)\lib64-msvc-10.0;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>ssleay32MD.lib;libeay32MD.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>lib.exe /out:$(TargetDir)libgridgain-client.lib $(IntDir)*.obj</Command>

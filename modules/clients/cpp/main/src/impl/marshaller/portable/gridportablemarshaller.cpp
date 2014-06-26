@@ -113,6 +113,9 @@ GridPortable* createSystemPortable(int32_t typeId, GridPortableReader &reader) {
             registerSystemPortableFactory(TYPE_ID, this);\
         }\
         \
+        virtual ~GridPortableFactory_##TYPE() {\
+        }\
+        \
         void* newInstance(GridPortableReader& reader) {\
             GridPortable* p = new TYPE;\
             \

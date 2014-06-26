@@ -44,17 +44,6 @@ GridClientConfiguration clientConfiguration() {
 
     vector<GridClientSocketAddress> servers;
 
-//    To enable communication with GridGain instance by HTTP, not by TCP, uncomment the following lines
-//    and comment push_back with TCP.
-//    ================================
-//    GridClientProtocolConfiguration protoCfg;
-//
-//    protoCfg.protocol(HTTP);
-//
-//    clientConfig.setProtocolConfiguration(protoCfg);
-//
-//    servers.push_back(GridSocketAddress(SERVER_ADDRESS, GridClientProtocolConfiguration::DFLT_HTTP_PORT));
-
     for (int i = TCP_PORT; i < TCP_PORT + MAX_NODES; i++)
         servers.push_back(GridClientSocketAddress(SERVER_ADDRESS, i));
 

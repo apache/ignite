@@ -838,7 +838,7 @@ GridHashablePortable* GridClientVariant::getHashablePortable() const {
 }
 
 int32_t GridClientVariant::hashCode() const {
-    return hash_value(*this);
+    return GridClientVariantHasheableObject(*this).hashCode();
 }
 
 string GridClientVariant::toString() const {
@@ -1226,8 +1226,4 @@ void GridClientVariant::clear() {
     }
 
     type = NULL_TYPE;
-}
-
-std::size_t hash_value(GridClientVariant const& x) {
-    return GridClientVariantHasheableObject(x).hashCode();
 }

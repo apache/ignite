@@ -99,6 +99,9 @@ public:
     virtual void writeVariantMap(char* fieldName, const TGridClientVariantMap& map) = 0;
 
     virtual GridPortableRawWriter& rawWriter() = 0;
+
+    virtual ~GridPortableWriter() {
+    }
 };
 
 /**
@@ -177,6 +180,9 @@ public:
     virtual void writeVariantCollection(const TGridClientVariantSet& val) = 0;
 
     virtual void writeVariantMap(const TGridClientVariantMap& map) = 0;
+
+    virtual ~GridPortableRawWriter() {
+    }
 };
 
 #endif // GRIDPORTABLEWRITER_HPP_INCLUDED

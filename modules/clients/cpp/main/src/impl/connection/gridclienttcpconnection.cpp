@@ -294,7 +294,7 @@ void GridClientSyncTcpConnection::authenticate(const string& clientId, const str
  *
  * @return Session token or empty string if this is not a secure session.
  */
-std::vector<int8_t> GridClientSyncTcpConnection::sessionToken() {
+std::vector<int8_t>& GridClientSyncTcpConnection::sessionToken() {
     return sessToken;
 }
 
@@ -313,13 +313,13 @@ namespace {
  * @param result Binary response.
  */
 void GridClientSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPacket, GridClientTcpPacket& result) {
-    int nBytes = gridTcpPacket.getDataSize();
+	size_t nBytes = gridTcpPacket.getDataSize();
     system::error_code ec;
 
     {
         boost::lock_guard<boost::mutex> g(pingMux); // Protect from concurrent ping write.
 
-        int totalBytesWritten = 0;
+        size_t totalBytesWritten = 0;
 
         if (!gridTcpPacket.isPingPacket()) {
             std::vector<int8_t>* data = gridTcpPacket.dataPtr.get();
@@ -395,7 +395,7 @@ void GridClientSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPacket,
 
         GG_LOG_DEBUG("Done reading the response data [nbytes=%d]", nBytes);
 
-        //read headers from header buffer
+        // Read headers from header buffer.
         result.setAdditionalHeadersAndData((int8_t*)pBuffer, nBytes);
     }
     else {
@@ -423,7 +423,7 @@ void GridClientSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPacket,
 
         GG_LOG_DEBUG("Done reading the response data [nbytes=%d]", nBytes);
 
-        //read headers from header buffer
+        // Read headers from header buffer.
         result.setAdditionalHeadersAndData((int8_t*)recvBuffer->pBuffer, nBytes);
     }
 }
@@ -771,7 +771,7 @@ void GridClientRawSyncTcpConnection::authenticate(const string& clientId, const 
  *
  * @return Session token or empty string if this is not a secure session.
  */
-std::vector<int8_t> GridClientRawSyncTcpConnection::sessionToken() {
+std::vector<int8_t>& GridClientRawSyncTcpConnection::sessionToken() {
     return sessToken;
 }
 
@@ -815,7 +815,7 @@ void GridClientRawSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPack
     pBufferToConstruct += gridTcpPacket.destinationIdHeader.size();
     memcpy(pBufferToConstruct, data->data(), data->size());
 
-    int bytesSent = ::send(sock, (const char *) pBufferToSend, bytesToSend, 0);
+    size_t bytesSent = ::send(sock, (const char *) pBufferToSend, bytesToSend, 0);
 
     delete[] pBufferToSend;
 
@@ -924,7 +924,7 @@ void GridClientRawSyncTcpConnection::sendPing() {
     pBufferToConstruct += sizeof(GridClientTcpPacket::SIGNAL_CHAR);
     memcpy(pBufferToConstruct, (const void*) pingPacket.sizeHeader.data(), sizeof(int32_t));
 
-    int bytesSent = ::send(sock, (const char *) pBufferToSend, bytesToSend, 0);
+    size_t bytesSent = ::send(sock, (const char *) pBufferToSend, bytesToSend, 0);
 
     delete[] pBufferToSend;
 

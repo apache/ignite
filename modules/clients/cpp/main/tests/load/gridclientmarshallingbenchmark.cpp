@@ -65,7 +65,7 @@ public:
     void run(int seed) {
         srand(seed);
         
-        GridPortableMarshaller marsh(false);
+        GridPortableMarshaller marsh;
 
         GridCacheRequestCommand cmd = GridCacheRequestCommand(GridCacheRequestCommand::GridCacheOperation::PUT);
 
