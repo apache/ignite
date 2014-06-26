@@ -1533,8 +1533,31 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter0) {
         final List<K> keys = req.keys();
 
-        GridFuture<Object> keyFut = beforePessimisticLock != null ? beforePessimisticLock.apply(keys, req.inTx()) :
-            new GridFinishedFutureEx<>();
+        GridFuture<Object> keyFut = null;
+
+        if (req.onePhaseCommit()) {
+            boolean forceKeys = req.hasTransforms() || req.filter() != null;
+
+            if (!forceKeys) {
+                for (int i = 0; i < req.keysCount() && !forceKeys; i++)
+                    forceKeys |= req.returnValue(i);
+            }
+
+            if (forceKeys)
+                keyFut = ctx.dht().dhtPreloader().request(keys, req.topologyVersion());
+        }
+
+        if (keyFut == null)
+            keyFut = new GridFinishedFutureEx<>();
+
+        if (beforePessimisticLock != null) {
+            keyFut = new GridEmbeddedFuture<>(true, keyFut,
+                new C2<Object, Exception, GridFuture<Object>>() {
+                    @Override public GridFuture<Object> apply(Object o, Exception e) {
+                        return beforePessimisticLock.apply(keys, req.inTx());
+                    }
+                }, ctx.kernalContext());
+        }
 
         return new GridEmbeddedFuture<>(true, keyFut,
             new C2<Object, Exception, GridFuture<GridNearLockResponse<K,V>>>() {

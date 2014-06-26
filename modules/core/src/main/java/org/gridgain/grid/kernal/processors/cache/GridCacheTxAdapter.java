@@ -128,6 +128,9 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     /** */
     protected boolean onePhaseCommit;
 
+    /** If this transaction contains transform entries. */
+    protected boolean transform;
+
     /** Commit version. */
     private AtomicReference<GridCacheVersion> commitVer = new AtomicReference<>(null);
 
@@ -431,6 +434,11 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         this.topVer.compareAndSet(-1, topVer);
 
         return this.topVer.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasTransforms() {
+        return transform;
     }
 
     /** {@inheritDoc} */

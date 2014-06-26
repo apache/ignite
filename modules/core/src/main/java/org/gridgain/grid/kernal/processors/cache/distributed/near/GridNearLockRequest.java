@@ -67,6 +67,10 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     @GridDirectVersion(1)
     private UUID subjId;
 
+    /** Has transforms flag. */
+    @GridDirectVersion(2)
+    private boolean hasTransforms;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -218,6 +222,20 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     }
 
     /**
+     * @param hasTransforms {@code True} if originating transaction has transform entries.
+     */
+    public void hasTransforms(boolean hasTransforms) {
+        this.hasTransforms = hasTransforms;
+    }
+
+    /**
+     * @return {@code True} if originating transaction has transform entries.
+     */
+    public boolean hasTransforms() {
+        return hasTransforms;
+    }
+
+    /**
      * Adds a key.
      *
      * @param key Key.
@@ -295,6 +313,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         _clone.onePhaseCommit = onePhaseCommit;
         _clone.dhtVers = dhtVers;
         _clone.subjId = subjId;
+        _clone.hasTransforms = hasTransforms;
     }
 
     /** {@inheritDoc} */
@@ -411,6 +430,12 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
             case 32:
                 if (!commState.putUuid(subjId))
+                    return false;
+
+                commState.idx++;
+
+            case 33:
+                if (!commState.putBoolean(hasTransforms))
                     return false;
 
                 commState.idx++;
@@ -552,6 +577,14 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                     return false;
 
                 subjId = subjId0;
+
+                commState.idx++;
+
+            case 33:
+                if (buf.remaining() < 1)
+                    return false;
+
+                hasTransforms = commState.getBoolean();
 
                 commState.idx++;
 
