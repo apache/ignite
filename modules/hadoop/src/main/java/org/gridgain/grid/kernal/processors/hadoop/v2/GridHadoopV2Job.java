@@ -23,6 +23,7 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.split.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.fs.*;
 import org.gridgain.grid.kernal.processors.hadoop.v1.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -36,6 +37,12 @@ import java.util.*;
  * Hadoop job implementation for v2 API.
  */
 public class GridHadoopV2Job implements GridHadoopJob {
+    /** */
+    private static final String LOCAL_FS_V1 = "fs." + FsConstants.LOCAL_FS_URI.getScheme() + ".impl";
+
+    /** */
+    private static final String LOCAL_FS_V2 = "fs.AbstractFileSystem." + FsConstants.LOCAL_FS_URI.getScheme() + ".impl";
+
     /** */
     private static final boolean COMBINE_KEY_GROUPING_SUPPORTED;
 
@@ -103,6 +110,9 @@ public class GridHadoopV2Job implements GridHadoopJob {
         JobConf cfg = jobInfo.configuration();
 
         ctx = new JobContextImpl(cfg, hadoopJobID);
+
+        cfg.set(LOCAL_FS_V1, GridHadoopLocalFileSystemV1.class.getName());
+        cfg.set(LOCAL_FS_V2, GridHadoopLocalFileSystemV2.class.getName());
 
         useNewMapper = cfg.getUseNewMapper();
         useNewReducer = cfg.getUseNewReducer();
