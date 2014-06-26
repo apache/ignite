@@ -50,7 +50,9 @@ public class GridHadoopRawLocalFileSystem extends FileSystem {
 
     /** {@inheritDoc} */
     @Override protected Path getInitialWorkingDirectory() {
-        return makeQualified(new Path(System.getProperty("user.dir")));
+        File f = new File(System.getProperty("user.dir"));
+
+        return new Path(f.getAbsoluteFile().toURI()).makeQualified(getUri(), null);
     }
 
     /** {@inheritDoc} */
