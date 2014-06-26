@@ -92,7 +92,6 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
             !get(job.info(), SINGLE_COMBINER_FOR_ALL_MAPPERS, false);
 
         GridHadoopTaskState state = GridHadoopTaskState.COMPLETED;
-
         Throwable err = null;
 
         try {

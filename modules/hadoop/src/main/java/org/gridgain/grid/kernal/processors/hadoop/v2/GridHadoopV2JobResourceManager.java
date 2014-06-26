@@ -9,21 +9,25 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
-import org.apache.hadoop.filecache.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.util.typedef.F;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.net.*;
 import java.util.*;
 
+/**
+ * Provides all resources are needed to the job execution. Downloads the main jar, the configuration and additional
+ * files are needed to be placed on local files system.
+ */
 public class GridHadoopV2JobResourceManager {
-    /** Job config. */
-    private JobConf cfg;
+    /** Hadoop job context. */
+    private JobContextImpl ctx;
 
     /** Job ID. */
     private GridHadoopJobId jobId;
@@ -35,26 +39,27 @@ public class GridHadoopV2JobResourceManager {
     private List<URL> clsPath = new ArrayList<>();
 
     /**
-     * Provides all resources are needed to the job execution. Downloads the main jar, the configuration and additional
-     * files are needed to be placed on local files system.
-     *
+     * Creates new instance.
      * @param jobId Job ID.
-     * @param cfg Job config.
+     * @param ctx Hadoop job context.
      * @param jobLocDir Directory to place resources.
      */
-    public GridHadoopV2JobResourceManager(GridHadoopJobId jobId, JobConf cfg, File jobLocDir) {
+    public GridHadoopV2JobResourceManager(GridHadoopJobId jobId, JobContextImpl ctx, File jobLocDir) {
         this.jobId = jobId;
-        this.cfg = cfg;
+        this.ctx = ctx;
         this.jobLocDir = jobLocDir;
     }
 
     /**
      * Prepare job resources. Resolve the classpath list and download it if needed.
      *
+     * @param download {@code true} If need to download resource.
      * @throws GridException If failed.
      */
     public void processJobResources(boolean download) throws GridException {
         try {
+            JobConf cfg = ctx.getJobConf();
+            
             String mrDir = cfg.get("mapreduce.job.dir");
 
             if (mrDir != null) {
@@ -76,14 +81,14 @@ public class GridHadoopV2JobResourceManager {
                 }
 
                 clsPath.add(new File(jobLocDir, "job.jar").toURI().toURL());
+                
+                processFiles(ctx.getCacheFiles(), download, false, false);
 
-                processFiles(DistributedCache.getCacheFiles(cfg), download, false, false);
+                processFiles(ctx.getCacheArchives(), download, true, false);
 
-                processFiles(DistributedCache.getCacheArchives(cfg), download, true, false);
+                processFiles(ctx.getFileClassPaths(), download, false, true);
 
-                processFiles(DistributedCache.getFileClassPaths(cfg), download, false, true);
-
-                processFiles(DistributedCache.getArchiveClassPaths(cfg), download, true, true);
+                processFiles(ctx.getArchiveClassPaths(), download, true, true);
             }
         }
         catch (URISyntaxException | IOException e) {
@@ -102,7 +107,7 @@ public class GridHadoopV2JobResourceManager {
      */
     private void processFiles(@Nullable Object[] files, boolean download, boolean extract, boolean addToClsPath)
         throws IOException {
-        if (files==null)
+        if (F.isEmptyOrNulls(files))
             return;
 
         for (Object pathObj : files) {
@@ -129,6 +134,8 @@ public class GridHadoopV2JobResourceManager {
 
             if (!download)
                 return;
+
+            JobConf cfg = ctx.getJobConf();
 
             FileSystem dstFs = FileSystem.getLocal(cfg);
 

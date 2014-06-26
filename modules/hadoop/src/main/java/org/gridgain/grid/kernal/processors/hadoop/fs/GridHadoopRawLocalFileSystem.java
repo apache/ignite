@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.fs;
 
-import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.FileAlreadyExistsException;
 import org.apache.hadoop.fs.FileSystem;
@@ -49,7 +49,7 @@ public class GridHadoopRawLocalFileSystem extends FileSystem {
     }
 
     /** {@inheritDoc} */
-    @Override protected Path getInitialWorkingDirectory() {
+    @Override public Path getInitialWorkingDirectory() {
         File f = new File(System.getProperty("user.dir"));
 
         return new Path(f.getAbsoluteFile().toURI()).makeQualified(getUri(), null);

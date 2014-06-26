@@ -386,7 +386,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
     @Override public void initialize(boolean external, UUID locNodeId) throws GridException {
         jobLocDir = new File(new File(U.resolveWorkDirectory("hadoop", false), "node-" + locNodeId), "job_" + jobId);
 
-        GridHadoopV2JobResourceManager rsrcMgr = new GridHadoopV2JobResourceManager(jobId, ctx.getJobConf(), jobLocDir);
+        GridHadoopV2JobResourceManager rsrcMgr = new GridHadoopV2JobResourceManager(jobId, ctx, jobLocDir);
 
         rsrcMgr.processJobResources(!external);
 
@@ -416,8 +416,17 @@ public class GridHadoopV2Job implements GridHadoopJob {
     }
 
     /** {@inheritDoc} */
-    @Override public void afterTaskRun(GridHadoopTaskInfo info) {
-        // No-op.
+    @Override public void afterTaskRun(GridHadoopTaskInfo info) throws GridException {
+        GridHadoopRawLocalFileSystem fs;
+
+        try {
+            fs = (GridHadoopRawLocalFileSystem)FileSystem.getLocal(ctx.getJobConf()).getRaw();
+        }
+        catch (IOException e) {
+            throw new GridException(e);
+        }
+
+        fs.setWorkingDirectory(fs.getInitialWorkingDirectory());
     }
 
     /**
