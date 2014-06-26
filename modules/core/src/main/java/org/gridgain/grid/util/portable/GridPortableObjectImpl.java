@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * Portable object implementation.
  */
-class GridPortableObjectImpl implements GridPortableObject, Externalizable {
+public class GridPortableObjectImpl implements GridPortableObject, Externalizable {
     /** */
     private static final GridPortablePrimitives PRIM = GridPortablePrimitives.get();
 
@@ -53,7 +53,7 @@ class GridPortableObjectImpl implements GridPortableObject, Externalizable {
      * @param arr Array.
      * @param start Start.
      */
-    GridPortableObjectImpl(GridPortableContext ctx, byte[] arr, int start) {
+    public GridPortableObjectImpl(GridPortableContext ctx, byte[] arr, int start) {
         assert ctx != null;
         assert arr != null;
 

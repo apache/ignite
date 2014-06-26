@@ -25,7 +25,7 @@ import static org.gridgain.grid.util.portable.GridPortableMarshaller.*;
 /**
  * Portable configurer.
  */
-public class GridPortableConfigurer {
+public class GridPortableContextImpl implements GridPortableContext, Externalizable {
     /** */
     private final ConcurrentMap<Class<?>, GridPortableClassDescriptor> descByCls = new ConcurrentHashMap8<>();
 
@@ -42,53 +42,20 @@ public class GridPortableConfigurer {
     private final Map<Integer, GridPortableIdMapper> mappers = new HashMap<>();
 
     /** */
-    private final String gridName;
+    private String gridName;
+
+    /**
+     * For {@link Externalizable}.
+     */
+    public GridPortableContextImpl() {
+        // No-op.
+    }
 
     /**
      * @param gridName Grid name.
      */
-    public GridPortableConfigurer(String gridName) {
+    public GridPortableContextImpl(@Nullable String gridName) {
         this.gridName = gridName;
-    }
-
-    /**
-     * @param cls Class.
-     * @throws GridPortableException In case of error.
-     */
-    public void addDescriptor(Class<?> cls, int typeId) throws GridPortableException {
-        GridPortableClassDescriptor desc = new GridPortableClassDescriptor(cls, false, typeId, null, null);
-
-        descByCls.put(cls, desc);
-        descById.put(new DescriptorKey(false, typeId), desc);
-    }
-
-    /**
-     * @param cls Class.
-     * @param idMapper ID mapper.
-     * @param serializer Serializer.
-     * @throws GridPortableException In case of error.
-     */
-    public void addUserTypeDescriptor(Class<?> cls, @Nullable GridPortableIdMapper idMapper,
-        @Nullable GridPortableSerializer serializer) throws GridPortableException {
-        assert cls != null;
-
-        Integer id = null;
-
-        GridPortableId idAnn = cls.getAnnotation(GridPortableId.class);
-
-        if (idAnn != null)
-            id = idAnn.id();
-        else if (idMapper != null)
-            id = idMapper.typeId(cls.getName());
-
-        if (id == null)
-            id = cls.getSimpleName().hashCode();
-
-        GridPortableClassDescriptor desc = new GridPortableClassDescriptor(cls, true, id, idMapper, serializer);
-
-        descByCls.put(cls, desc);
-        descById.put(new DescriptorKey(true, id), desc);
-        mappers.put(id, idMapper);
     }
 
     /**
@@ -96,7 +63,7 @@ public class GridPortableConfigurer {
      * @return Portable context.
      * @throws GridPortableException In case of error.
      */
-    public GridPortableContext configure(@Nullable GridPortableConfiguration portableCfg)
+    public void configure(@Nullable GridPortableConfiguration portableCfg)
         throws GridPortableException {
         addDescriptor(Byte.class, BYTE);
         addDescriptor(Short.class, SHORT);
@@ -190,8 +157,89 @@ public class GridPortableConfigurer {
                 addUserTypeDescriptor(cls, idMapper, serializer);
             }
         }
+    }
 
-        return new Context(gridName);
+    /** {@inheritDoc} */
+    @Nullable @Override public GridPortableClassDescriptor descriptorForClass(Class<?> cls)
+        throws GridPortableException {
+        assert cls != null;
+
+        GridPortableClassDescriptor desc = descByCls.get(cls);
+
+        if (desc == null) {
+            if (Collection.class.isAssignableFrom(cls))
+                desc = addCollectionDescriptor(cls);
+            else if (Map.class.isAssignableFrom(cls))
+                desc = addMapDescriptor(cls);
+        }
+
+        return desc;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridPortableClassDescriptor descriptorForTypeId(boolean userType, int typeId) {
+        return descById.get(new DescriptorKey(userType, typeId));
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte collectionType(Class<? extends Collection> cls) {
+        assert cls != null;
+
+        Byte type = colTypes.get(cls);
+
+        return type != null ? type : USER_COL;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte mapType(Class<? extends Map> cls) {
+        assert cls != null;
+
+        Byte type = mapTypes.get(cls);
+
+        return type != null ? type : USER_COL;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int fieldId(int typeId, String fieldName) {
+        GridPortableIdMapper idMapper = mappers.get(typeId);
+
+        return idMapper != null ? idMapper.fieldId(typeId, fieldName) : fieldName.hashCode();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        U.writeString(out, gridName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        gridName = U.readString(in);
+    }
+
+    /**
+     * @return Portable context.
+     * @throws ObjectStreamException In case of error.
+     */
+    protected Object readResolve() throws ObjectStreamException {
+        try {
+            GridKernal g = GridGainEx.gridx(gridName);
+
+            return g.context().portable().portableContext();
+        }
+        catch (IllegalStateException e) {
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
+        }
+    }
+
+    /**
+     * @param cls Class.
+     * @throws GridPortableException In case of error.
+     */
+    private void addDescriptor(Class<?> cls, int typeId) throws GridPortableException {
+        GridPortableClassDescriptor desc = new GridPortableClassDescriptor(cls, false, typeId, null, null);
+
+        descByCls.put(cls, desc);
+        descById.put(new DescriptorKey(false, typeId), desc);
     }
 
     /**
@@ -226,96 +274,33 @@ public class GridPortableConfigurer {
         return desc;
     }
 
-    /** */
-    private class Context implements GridPortableContext, Externalizable {
-        /** */
-        private String gridName;
+    /**
+     * @param cls Class.
+     * @param idMapper ID mapper.
+     * @param serializer Serializer.
+     * @throws GridPortableException In case of error.
+     */
+    private void addUserTypeDescriptor(Class<?> cls, @Nullable GridPortableIdMapper idMapper,
+        @Nullable GridPortableSerializer serializer) throws GridPortableException {
+        assert cls != null;
 
-        /**
-         * For {@link Externalizable}.
-         */
-        public Context() {
-            // No-op.
-        }
+        Integer id = null;
 
-        /**
-         * @param gridName Grid name.
-         */
-        private Context(@Nullable String gridName) {
-            this.gridName = gridName;
-        }
+        GridPortableId idAnn = cls.getAnnotation(GridPortableId.class);
 
-        /** {@inheritDoc} */
-        @Nullable @Override public GridPortableClassDescriptor descriptorForClass(Class<?> cls)
-            throws GridPortableException {
-            assert cls != null;
+        if (idAnn != null)
+            id = idAnn.id();
+        else if (idMapper != null)
+            id = idMapper.typeId(cls.getName());
 
-            GridPortableClassDescriptor desc = descByCls.get(cls);
+        if (id == null)
+            id = cls.getSimpleName().hashCode();
 
-            if (desc == null) {
-                if (Collection.class.isAssignableFrom(cls))
-                    desc = addCollectionDescriptor(cls);
-                else if (Map.class.isAssignableFrom(cls))
-                    desc = addMapDescriptor(cls);
-            }
+        GridPortableClassDescriptor desc = new GridPortableClassDescriptor(cls, true, id, idMapper, serializer);
 
-            return desc;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public GridPortableClassDescriptor descriptorForTypeId(boolean userType, int typeId) {
-            return descById.get(new DescriptorKey(userType, typeId));
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte collectionType(Class<? extends Collection> cls) {
-            assert cls != null;
-
-            Byte type = colTypes.get(cls);
-
-            return type != null ? type : USER_COL;
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte mapType(Class<? extends Map> cls) {
-            assert cls != null;
-
-            Byte type = mapTypes.get(cls);
-
-            return type != null ? type : USER_COL;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int fieldId(int typeId, String fieldName) {
-            GridPortableIdMapper idMapper = mappers.get(typeId);
-
-            return idMapper != null ? idMapper.fieldId(typeId, fieldName) : fieldName.hashCode();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeString(out, gridName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            gridName = U.readString(in);
-        }
-
-        /**
-         * @return Portable context.
-         * @throws ObjectStreamException In case of error.
-         */
-        protected Object readResolve() throws ObjectStreamException {
-            try {
-                GridKernal g = GridGainEx.gridx(gridName);
-
-                return g.context().portable().portableContext();
-            }
-            catch (IllegalStateException e) {
-                throw U.withCause(new InvalidObjectException(e.getMessage()), e);
-            }
-        }
+        descByCls.put(cls, desc);
+        descById.put(new DescriptorKey(true, id), desc);
+        mappers.put(id, idMapper);
     }
 
     /** */

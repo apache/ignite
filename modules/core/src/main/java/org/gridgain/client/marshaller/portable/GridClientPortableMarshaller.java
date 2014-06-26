@@ -25,10 +25,12 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
     private GridPortableMarshaller marsh;
 
     public GridClientPortableMarshaller() {
-        GridPortableConfigurer configurer = new GridPortableConfigurer(null);
-
         try {
-            marsh = new GridPortableMarshaller(configurer.configure(null));
+            GridPortableContextImpl ctx = new GridPortableContextImpl(null);
+
+            ctx.configure(null);
+
+            marsh = new GridPortableMarshaller(ctx);
         }
         catch (GridPortableException e) {
             e.printStackTrace(); // TODO implement.
@@ -48,9 +50,7 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
     /** {@inheritDoc} */
     @Override public <T> T unmarshal(byte[] bytes) throws IOException {
         try {
-            GridPortableObject po = marsh.unmarshal(bytes);
-
-            return po.deserialize();
+            return marsh.unmarshal(bytes);
         }
         catch (GridPortableException e) {
             throw new IOException(e);

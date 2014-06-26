@@ -16,8 +16,6 @@ import org.gridgain.grid.util.portable.*;
 import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
-import java.nio.*;
-
 /**
  * No-op implementation of {@link GridPortableProcessor}.
  */
@@ -35,12 +33,17 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public ByteBuffer marshal(@Nullable Object obj) throws GridPortableException {
+    @Override public boolean isPortable(Class<?> cls) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridPortableObject marshal(@Nullable Object obj) throws GridPortableException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridPortableObject unmarshal(byte[] arr) throws GridPortableException {
+    @Nullable @Override public <T> T unmarshal(byte[] arr) throws GridPortableException {
         return null;
     }
 }
