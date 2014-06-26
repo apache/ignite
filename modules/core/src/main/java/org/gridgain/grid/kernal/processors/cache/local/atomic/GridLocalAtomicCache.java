@@ -486,21 +486,24 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     /** {@inheritDoc} */
 
     @SuppressWarnings("unchecked")
-    @Override @Nullable public V get(K key, @Nullable GridPredicate<GridCacheEntry<K, V>> filter) throws GridException {
+    @Override @Nullable public V get(K key, boolean deserializePortable,
+        @Nullable GridPredicate<GridCacheEntry<K, V>> filter) throws GridException {
         ctx.denyOnFlag(LOCAL);
 
         Map<K, V> m = getAllInternal(Collections.singleton(key),
             filter != null ? new GridPredicate[]{filter} : null,
             ctx.isSwapOrOffheapEnabled(),
             ctx.isStoreEnabled(),
-            ctx.hasFlag(CLONE));
+            ctx.hasFlag(CLONE),
+            deserializePortable);
 
         return m.get(key);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public final Map<K, V> getAll(Collection<? extends K> keys, GridPredicate<GridCacheEntry<K, V>> filter)
+    @Override public final Map<K, V> getAll(Collection<? extends K> keys, boolean deserializePortable,
+        GridPredicate<GridCacheEntry<K, V>> filter)
         throws GridException {
         ctx.denyOnFlag(LOCAL);
 
@@ -508,7 +511,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             filter != null ? new GridPredicate[]{filter} : null,
             ctx.isSwapOrOffheapEnabled(),
             ctx.isStoreEnabled(),
-            ctx.hasFlag(CLONE));
+            ctx.hasFlag(CLONE),
+            deserializePortable);
     }
 
 
@@ -520,6 +524,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         boolean skipTx,
         @Nullable final GridCacheEntryEx<K, V> entry,
         @Nullable UUID subjId,
+        final boolean deserializePortable,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         ctx.denyOnFlag(LOCAL);
@@ -530,7 +535,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         return asyncOp(new Callable<Map<K, V>>() {
             @Override public Map<K, V> call() throws Exception {
-                return getAllInternal(keys, filter, swapOrOffheap, storeEnabled, clone);
+                return getAllInternal(keys, filter, swapOrOffheap, storeEnabled, clone, deserializePortable);
             }
         });
     }
@@ -551,7 +556,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter,
         boolean swapOrOffheap,
         boolean storeEnabled,
-        boolean clone) throws GridException {
+        boolean clone,
+        boolean deserializePortable) throws GridException {
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         UUID subjId = ctx.subjectIdPerCall(null);
@@ -623,7 +629,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             return map;
         }
 
-        return getAllAsync(keys, null, false, subjId, filter).get();
+        return getAllAsync(keys, null, false, subjId, deserializePortable, filter).get();
     }
 
     /**

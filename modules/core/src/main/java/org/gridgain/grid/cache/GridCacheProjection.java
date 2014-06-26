@@ -389,8 +389,6 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      */
     @Nullable public V peek(K key);
 
-    @Nullable public GridPortableObject peekPortable(K key);
-
     /**
      * Peeks at cached value using optional set of peek modes. This method will sequentially
      * iterate over given peek modes in the order passed in, and try to peek at value using
@@ -409,9 +407,6 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws NullPointerException If key is {@code null}.
      */
     @Nullable public V peek(K key, @Nullable Collection<GridCachePeekMode> modes) throws GridException;
-
-    @Nullable public GridPortableObject peekPortable(K key, @Nullable Collection<GridCachePeekMode> modes)
-        throws GridException;
 
     /**
      * Retrieves value mapped to the specified key from cache. Value will only be returned if
@@ -438,6 +433,15 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      */
     @Nullable public V get(K key) throws GridException;
 
+    /**
+     * Retrieves portable object mapped to the specified key from cache.
+     *
+     * @param key Key to retrieve the value for.
+     * @return Portable object for the given key.
+     * @throws GridException If get operation failed.
+     * @throws GridCacheFlagException If failed projection flags validation.
+     * @throws NullPointerException if the key is {@code null}.
+     */
     @Nullable public GridPortableObject getPortable(K key) throws GridException;
 
     /**
@@ -464,6 +468,15 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      */
     public GridFuture<V> getAsync(K key);
 
+    /**
+     * Asynchronously retrieves portable object mapped to the specified key from cache.
+     *
+     * @param key Key to retrieve the value for.
+     * @return Portable object for the given key.
+     * @throws GridException If get operation failed.
+     * @throws GridCacheFlagException If failed projection flags validation.
+     * @throws NullPointerException if the key is {@code null}.
+     */
     public GridFuture<GridPortableObject> getPortableAsync(K key);
 
     /**
@@ -490,6 +503,14 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      */
     public Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws GridException;
 
+    /**
+     * Retrieves portable objects mapped to the specified keys from cache.
+     *
+     * @param keys Key to retrieve values for.
+     * @return Map of key-value pairs.
+     * @throws GridException If get operation failed.
+     * @throws GridCacheFlagException If failed projection flags validation.
+     */
     public Map<K, GridPortableObject> getAllPortable(@Nullable Collection<? extends K> keys) throws GridException;
 
     /**
@@ -515,6 +536,14 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      */
     public GridFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys);
 
+    /**
+     * Asynchronously retrieves portable objects mapped to the specified keys from cache.
+     *
+     * @param keys Key to retrieve values for.
+     * @return Map of key-value pairs.
+     * @throws GridException If get operation failed.
+     * @throws GridCacheFlagException If failed projection flags validation.
+     */
     public GridFuture<Map<K, GridPortableObject>> getAllPortableAsync(@Nullable Collection<? extends K> keys);
 
     /**

@@ -20,6 +20,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -83,6 +84,9 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     /** Subject ID. */
     private UUID subjId;
 
+    /** Whether to deserialize portable objects. */
+    private boolean deserializePortable;
+
     /**
      * Initializes max remap count.
      */
@@ -126,7 +130,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         boolean forcePrimary,
         @Nullable GridCacheTxLocalEx<K, V> tx,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filters,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        boolean deserializePortable
     ) {
         super(cctx.kernalContext(), CU.<K, V>mapsReducer(keys.size()));
 
@@ -140,6 +145,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         this.filters = filters;
         this.tx = tx;
         this.subjId = subjId;
+        this.deserializePortable = deserializePortable;
 
         futId = GridUuid.randomUuid();
 
@@ -299,7 +305,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             // If this is the primary or backup node for the keys.
             if (n.isLocal()) {
                 final GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
-                    dht().getDhtAsync(n.id(), -1, mappedKeys, reload, topVer, subjId, filters);
+                    dht().getDhtAsync(n.id(), -1, mappedKeys, reload, topVer, subjId, deserializePortable, filters);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -434,8 +440,18 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     }
                 }
 
-                if (v != null && !reload)
+                if (v != null && !reload) {
+                    if (deserializePortable && v instanceof GridPortableObject) {
+                        try {
+                            v = ((GridPortableObject)v).deserialize();
+                        }
+                        catch (GridPortableException e) {
+                            throw new GridRuntimeException(e); // TODO
+                        }
+                    }
+
                     add(new GridFinishedFuture<>(cctx.kernalContext(), Collections.singletonMap(key, v)));
+                }
                 else {
                     if (primary == null)
                         primary = cctx.affinity().primary(key, topVer);
@@ -568,7 +584,18 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     return Collections.emptyMap();
                 }
 
-                map.put(info.key(), info.value());
+                V val = info.value();
+
+                if (deserializePortable && val instanceof GridPortableObject) {
+                    try {
+                        val = ((GridPortableObject)val).deserialize();
+                    }
+                    catch (GridPortableException e) {
+                        throw new GridRuntimeException(e); // TODO
+                    }
+                }
+
+                map.put(info.key(), val);
             }
         }
 

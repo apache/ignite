@@ -21,6 +21,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -187,6 +188,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean skipTx,
         @Nullable final GridCacheEntryEx<K, V> entry,
         @Nullable UUID subjId,
+        boolean deserializePortable,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         ctx.denyOnFlag(LOCAL);
@@ -209,7 +211,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         subjId = ctx.subjectIdPerCall(subjId);
 
-        return loadAsync(keys, false, forcePrimary, topVer, subjId, filter);
+        return loadAsync(keys, false, forcePrimary, topVer, subjId, deserializePortable, filter);
     }
 
     /** {@inheritDoc} */
@@ -249,7 +251,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @return Loaded values.
      */
     public GridFuture<Map<K, V>> loadAsync(@Nullable Collection<? extends K> keys, boolean reload,
-        boolean forcePrimary, long topVer, @Nullable UUID subjId,
+        boolean forcePrimary, long topVer, @Nullable UUID subjId, boolean deserializePortable,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
@@ -294,8 +296,18 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                                 success = false;
                             }
-                            else
+                            else {
+                                if (deserializePortable && v instanceof GridPortableObject) {
+                                    try {
+                                        v = ((GridPortableObject)v).deserialize();
+                                    }
+                                    catch (GridPortableException e) {
+                                        throw new GridRuntimeException(e); // TODO
+                                    }
+                                }
+
                                 locVals.put(key, v);
+                            }
                         }
                         else
                             success = false;
@@ -333,7 +345,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         // Either reload or not all values are available locally.
         GridPartitionedGetFuture<K, V> fut = new GridPartitionedGetFuture<>(ctx, keys, reload, forcePrimary, filter,
-            subjId);
+            subjId, deserializePortable);
 
         fut.init();
 
