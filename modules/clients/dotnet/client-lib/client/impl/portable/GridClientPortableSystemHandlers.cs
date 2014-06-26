@@ -13,6 +13,7 @@ namespace GridGain.Client.Impl.Portable
     using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Reflection;
 
@@ -51,7 +52,7 @@ namespace GridGain.Client.Impl.Portable
         /** Write handlers. */
         private static readonly IDictionary<int, GridClientPortableSystemReadDelegate> READ_HANDLERS =
             new Dictionary<int, GridClientPortableSystemReadDelegate>();
-        
+
         /**
          * <summary>Static initializer.</summary>
          */ 
@@ -172,24 +173,11 @@ namespace GridGain.Client.Impl.Portable
                 if (type.IsArray)
                     return WriteArray;
 
-                if (type.IsGenericType)
-                {
-                    // 2. Generic dictionary?
-                    if (type.GetInterface(PU.TYP_GENERIC_DICTIONARY.FullName) != null)
-                        return WriteGenericDictionary;
+                // 2. Collection?
+                GridClientPortableCollectionInfo info = GridClientPortableCollectionInfo.Info(type);
 
-                    // 3. Generic collection?
-                    if (type.GetInterface(PU.TYP_GENERIC_COLLECTION.FullName) != null)
-                        return WriteGenericCollection;
-                }
-
-                // 4. Dictionary?
-                if (type.GetInterface(PU.TYP_DICTIONARY.FullName) != null)
-                    return WriteDictionary;
-
-                // 5. Collection?
-                if (type.GetInterface(PU.TYP_COLLECTION.FullName) != null)
-                    return WriteCollection;
+                if (info.IsAny)
+                    return info.WriteHandler;
             }
 
             // No special handler found.
@@ -589,29 +577,17 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
-         * <summary>Write ArrayList.</summary>
-         */
-        public static void WriteArrayList(GridClientPortableWriteContext ctx, int pos, object obj)
-        {
-            WriteCommonHeader(ctx.Stream, PU.TYPE_COLLECTION, obj.GetHashCode());
-
-            PU.WriteTypedCollection((ICollection)obj, ctx, PU.COLLECTION_ARRAY_LIST);
-
-            WriteLength(ctx.Stream, pos, ctx.Stream.Position, 0);
-        }
-
-        /**
          * <summary>Write generic collection.</summary>
          */
         public static void WriteGenericCollection(GridClientPortableWriteContext ctx, int pos, object obj)
         {
+            GridClientPortableCollectionInfo info = GridClientPortableCollectionInfo.Info(obj.GetType());
+
+            Debug.Assert(info.IsGenericCollection, "Not generic collection: " + obj.GetType().FullName);
+
             WriteCommonHeader(ctx.Stream, PU.TYPE_COLLECTION, obj.GetHashCode());
 
-            Type[] typArgs = obj.GetType().GetInterface(PU.TYP_GENERIC_COLLECTION.FullName).GetGenericArguments();
-
-            MethodInfo mthd = PU.MTDH_WRITE_GENERIC_COLLECTION.MakeGenericMethod(typArgs);
-
-            mthd.Invoke(null, new object[] { obj, ctx });
+            info.GenericWriteMethod.Invoke(null, new object[] { obj, ctx });
 
             WriteLength(ctx.Stream, pos, ctx.Stream.Position, 0);
         }
@@ -629,6 +605,34 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
+         * <summary>Write generic dictionary.</summary>
+         */
+        public static void WriteGenericDictionary(GridClientPortableWriteContext ctx, int pos, object obj)
+        {
+            GridClientPortableCollectionInfo info = GridClientPortableCollectionInfo.Info(obj.GetType());
+
+            Debug.Assert(info.IsGenericDictionary, "Not generic dictionary: " + obj.GetType().FullName);
+
+            WriteCommonHeader(ctx.Stream, PU.TYPE_DICTIONARY, obj.GetHashCode());
+
+            info.GenericWriteMethod.Invoke(null, new object[] { obj, ctx });
+
+            WriteLength(ctx.Stream, pos, ctx.Stream.Position, 0);
+        }
+
+        /**
+         * <summary>Write ArrayList.</summary>
+         */
+        public static void WriteArrayList(GridClientPortableWriteContext ctx, int pos, object obj)
+        {
+            WriteCommonHeader(ctx.Stream, PU.TYPE_COLLECTION, obj.GetHashCode());
+
+            PU.WriteTypedCollection((ICollection)obj, ctx, PU.COLLECTION_ARRAY_LIST);
+
+            WriteLength(ctx.Stream, pos, ctx.Stream.Position, 0);
+        }
+
+        /**
          * <summary>Write Hashtable.</summary>
          */
         public static void WriteHashtable(GridClientPortableWriteContext ctx, int pos, object obj)
@@ -636,22 +640,6 @@ namespace GridGain.Client.Impl.Portable
             WriteCommonHeader(ctx.Stream, PU.TYPE_DICTIONARY, obj.GetHashCode());
 
             PU.WriteTypedDictionary((IDictionary)obj, ctx, PU.MAP_HASH_MAP);
-
-            WriteLength(ctx.Stream, pos, ctx.Stream.Position, 0);
-        }
-
-        /**
-         * <summary>Write generic dictionary.</summary>
-         */
-        public static void WriteGenericDictionary(GridClientPortableWriteContext ctx, int pos, object obj)
-        {
-            WriteCommonHeader(ctx.Stream, PU.TYPE_DICTIONARY, obj.GetHashCode());
-            
-            Type[] typArgs = obj.GetType().GetInterface(PU.TYP_GENERIC_DICTIONARY.FullName).GetGenericArguments();
-
-            MethodInfo mthd = PU.MTDH_WRITE_GENERIC_DICTIONARY.MakeGenericMethod(typArgs);
-
-            mthd.Invoke(null, new object[] { obj, ctx });
 
             WriteLength(ctx.Stream, pos, ctx.Stream.Position, 0);
         }
@@ -867,21 +855,14 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void ReadCollection(GridClientPortableReadContext ctx, Type type, out object obj)
         {
-            // 1. Generic?
-            if (type.IsGenericType)
-            {
-                Type genTyp = type.GetInterface(PU.TYP_GENERIC_COLLECTION.FullName);
+            GridClientPortableCollectionInfo info = GridClientPortableCollectionInfo.Info(type);
 
-                if (genTyp != null)
-                {
-                    obj = PU.MTDH_READ_GENERIC_COLLECTION.MakeGenericMethod(genTyp.GetGenericArguments()).Invoke(null, new object[] { ctx, null });
+            Debug.Assert(info.IsGenericCollection || info.IsCollection, "Type is not collection.");
 
-                    return;
-                }
-            }
-
-            // 2. Non-generic.
-            obj = PU.ReadCollection(ctx, CreateArrayList, AddToArrayList);
+            if (info.IsGenericCollection)
+                obj = info.GenericReadMethod.Invoke(null, new object[] { ctx, null });
+            else
+                obj = PU.ReadCollection(ctx, CreateArrayList, AddToArrayList);
         }
 
         /**
@@ -889,21 +870,14 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void ReadDictionary(GridClientPortableReadContext ctx, Type type, out object obj)
         {
-            // 1. Generic?
-            if (type.IsGenericType)
-            {
-                Type genTyp = type.GetInterface(PU.TYP_GENERIC_DICTIONARY.FullName);
+            GridClientPortableCollectionInfo info = GridClientPortableCollectionInfo.Info(type);
 
-                if (genTyp != null)
-                {
-                    obj = PU.MTDH_READ_GENERIC_DICTIONARY.MakeGenericMethod(genTyp.GetGenericArguments()).Invoke(null, new object[] { ctx, null });
+            Debug.Assert(info.IsGenericDictionary || info.IsDictionary, "Type is not dictionary.");
 
-                    return;
-                }
-            }
-
-            // 2. Non-generic.
-            obj = PU.ReadDictionary(ctx, CreateHashtable);
+            if (info.IsGenericDictionary)
+                obj = info.GenericReadMethod.Invoke(null, new object[] { ctx, null });
+            else
+                obj = PU.ReadDictionary(ctx, CreateHashtable);
         }
         
         /**

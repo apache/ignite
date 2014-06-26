@@ -15,6 +15,7 @@ namespace GridGain.Client.Impl.Portable
     using System.Reflection;
 
     using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
+    using PSH = GridGain.Client.Impl.Portable.GridClientPortableSystemHandlers;
 
     /**
      * <summary>Collection info helper.</summary>
@@ -37,16 +38,16 @@ namespace GridGain.Client.Impl.Portable
         private const byte FLAG_COLLECTION = 4;
 
         /** Cache "none" value. */
-        private static GridClientPortableCollectionInfo NONE = new GridClientPortableCollectionInfo(FLAG_NONE, null);
+        private static GridClientPortableCollectionInfo NONE = new GridClientPortableCollectionInfo(FLAG_NONE, null, null, null);
 
         /** Cache "dictionary" value. */
-        private static GridClientPortableCollectionInfo DICTIONARY = new GridClientPortableCollectionInfo(FLAG_GENERIC_DICTIONARY, null);
+        private static GridClientPortableCollectionInfo DICTIONARY = new GridClientPortableCollectionInfo(FLAG_GENERIC_DICTIONARY, PSH.WriteDictionary, null, null);
 
         /** Cache "collection" value. */
-        private static GridClientPortableCollectionInfo COLLECTION = new GridClientPortableCollectionInfo(FLAG_GENERIC_COLLECTION, null);
+        private static GridClientPortableCollectionInfo COLLECTION = new GridClientPortableCollectionInfo(FLAG_GENERIC_COLLECTION, PSH.WriteCollection, null, null);
 
-        /** Cache infos. */
-        public static IDictionary<Type, GridClientPortableCollectionInfo> INFOS = new ConcurrentDictionary<Type, GridClientPortableCollectionInfo>();
+        /** Cached infos. */
+        private static IDictionary<Type, GridClientPortableCollectionInfo> INFOS = new ConcurrentDictionary<Type, GridClientPortableCollectionInfo>();
 
         /**
          * <summary>Get collection info for type.</summary>
@@ -78,34 +79,38 @@ namespace GridGain.Client.Impl.Portable
             {
                 if (type.GetGenericTypeDefinition() == PU.TYP_GENERIC_DICTIONARY)
                 {
-                    MethodInfo mthd = PU.MTDH_WRITE_GENERIC_DICTIONARY.MakeGenericMethod(type.GetGenericArguments());
+                    MethodInfo writeMthd = PU.MTDH_WRITE_GENERIC_DICTIONARY.MakeGenericMethod(type.GetGenericArguments());
+                    MethodInfo readMthd = PU.MTDH_READ_GENERIC_DICTIONARY.MakeGenericMethod(type.GetGenericArguments());
 
-                    return new GridClientPortableCollectionInfo(FLAG_GENERIC_DICTIONARY, mthd);
-                }
-
-                if (type.GetGenericTypeDefinition() == PU.TYP_GENERIC_COLLECTION)
-                {
-                    MethodInfo mthd = PU.MTDH_WRITE_GENERIC_COLLECTION.MakeGenericMethod(type.GetGenericArguments());
-
-                    return new GridClientPortableCollectionInfo(FLAG_GENERIC_COLLECTION, mthd);
+                    return new GridClientPortableCollectionInfo(FLAG_GENERIC_DICTIONARY, PSH.WriteGenericDictionary, writeMthd, readMthd);
                 }
 
                 Type genTyp = type.GetInterface(PU.TYP_GENERIC_DICTIONARY.FullName);
 
                 if (genTyp != null)
                 {
-                    MethodInfo mthd = PU.MTDH_WRITE_GENERIC_DICTIONARY.MakeGenericMethod(genTyp.GetGenericArguments());
+                    MethodInfo writeMthd = PU.MTDH_WRITE_GENERIC_DICTIONARY.MakeGenericMethod(genTyp.GetGenericArguments());
+                    MethodInfo readMthd = PU.MTDH_READ_GENERIC_DICTIONARY.MakeGenericMethod(genTyp.GetGenericArguments());
 
-                    return new GridClientPortableCollectionInfo(FLAG_GENERIC_DICTIONARY, mthd);
+                    return new GridClientPortableCollectionInfo(FLAG_GENERIC_DICTIONARY, PSH.WriteGenericDictionary, writeMthd, readMthd);
+                }
+
+                if (type.GetGenericTypeDefinition() == PU.TYP_GENERIC_COLLECTION)
+                {
+                    MethodInfo writeMthd = PU.MTDH_WRITE_GENERIC_COLLECTION.MakeGenericMethod(type.GetGenericArguments());
+                    MethodInfo readMthd = PU.MTDH_READ_GENERIC_COLLECTION.MakeGenericMethod(type.GetGenericArguments());
+
+                    return new GridClientPortableCollectionInfo(FLAG_GENERIC_COLLECTION, PSH.WriteGenericCollection, writeMthd, readMthd);
                 }
 
                 genTyp = type.GetInterface(PU.TYP_GENERIC_COLLECTION.FullName);
 
                 if (genTyp != null)
                 {
-                    MethodInfo mthd = PU.MTDH_WRITE_GENERIC_COLLECTION.MakeGenericMethod(genTyp.GetGenericArguments());
+                    MethodInfo writeMthd = PU.MTDH_WRITE_GENERIC_COLLECTION.MakeGenericMethod(genTyp.GetGenericArguments());
+                    MethodInfo readMthd = PU.MTDH_READ_GENERIC_COLLECTION.MakeGenericMethod(genTyp.GetGenericArguments());
 
-                    return new GridClientPortableCollectionInfo(FLAG_GENERIC_COLLECTION, mthd);
+                    return new GridClientPortableCollectionInfo(FLAG_GENERIC_COLLECTION, PSH.WriteGenericCollection, writeMthd, readMthd);
                 }              
             }
 
@@ -120,18 +125,28 @@ namespace GridGain.Client.Impl.Portable
         /** Flag. */
         private byte flag;
 
-        /** Generic method. */
-        private MethodInfo mthd;
+        /** Write handler. */
+        private GridClientPortableSystemWriteDelegate writeHnd;
+
+        /** Generic write method. */
+        private MethodInfo writeMthd;
+
+        /** Generic read method. */
+        private MethodInfo readMthd;
 
         /**
          * <summary>Constructor.</summary>
          * <param name="flag0">Flag.</param>
-         * <param name="mthd0">Generic method.</param>
+         * <param name="writeHnd0">Write handler.</param>
+         * <param name="writeMthd0">Generic write method.</param>
+         * <param name="readMthd0">Generic read method.</param>
          */
-        private GridClientPortableCollectionInfo(byte flag0, MethodInfo mthd0)
+        private GridClientPortableCollectionInfo(byte flag0, GridClientPortableSystemWriteDelegate writeHnd0, MethodInfo writeMthd0, MethodInfo readMthd0)
         {
             flag = flag0;
-            mthd = mthd0;
+            writeHnd = writeHnd0;
+            writeMthd = writeMthd0;
+            readMthd = readMthd0;
         }
 
         /**
@@ -175,11 +190,27 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
-         * <summary>Generic method.</summary>
-         */ 
-        public MethodInfo GenericMethod
+         * <summary>Write handler.</summary>
+         */
+        public GridClientPortableSystemWriteDelegate WriteHandler
         {
-            get { return mthd; }
+            get { return writeHnd; }
+        }
+
+        /**
+         * <summary>Generic write method.</summary>
+         */ 
+        public MethodInfo GenericWriteMethod
+        {
+            get { return writeMthd; }
+        }
+
+        /**
+         * <summary>Generic read method.</summary>
+         */
+        public MethodInfo GenericReadMethod
+        {
+            get { return readMthd; }
         }
     }
 }
