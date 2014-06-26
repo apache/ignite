@@ -149,15 +149,15 @@ public class GridPortableConfigurer {
         mapTypes.put(ConcurrentHashMap.class, CONC_HASH_MAP);
 
         // TODO: Configure from server and client?
-        addDescriptor(GridClientAuthenticationRequest.class, 100);
-        addDescriptor(GridClientTopologyRequest.class, 101);
-        addDescriptor(GridClientTaskRequest.class, 102);
-        addDescriptor(GridClientCacheRequest.class, 103);
-        addDescriptor(GridClientLogRequest.class, 104);
-        addDescriptor(GridClientResponse.class, 105);
-        addDescriptor(GridClientNodeBean.class, 106);
-        addDescriptor(GridClientNodeMetricsBean.class, 107);
-        addDescriptor(GridClientTaskResultBean.class, 108);
+        addDescriptor(GridClientAuthenticationRequest.class, 51);
+        addDescriptor(GridClientTopologyRequest.class, 52);
+        addDescriptor(GridClientTaskRequest.class, 53);
+        addDescriptor(GridClientCacheRequest.class, 54);
+        addDescriptor(GridClientLogRequest.class, 55);
+        addDescriptor(GridClientResponse.class, 56);
+        addDescriptor(GridClientNodeBean.class, 57);
+        addDescriptor(GridClientNodeMetricsBean.class, 58);
+        addDescriptor(GridClientTaskResultBean.class, 59);
 
         if (portableCfg != null) {
             GridPortableIdMapper globalIdMapper = portableCfg.getIdMapper();

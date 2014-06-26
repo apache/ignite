@@ -26,16 +26,16 @@ namespace GridGain.Client.Impl.Portable
     static class GridClientPortableUilts
     {
         /** Header of NULL object. */
-        public const byte HDR_NULL = 201;
+        public const byte HDR_NULL = 101;
 
         /** Header of object handle. */
-        public const byte HDR_HND = 202;
+        public const byte HDR_HND = 102;
 
         /** Header of object in fully serialized form. */
-        public const byte HDR_FULL = 203;
+        public const byte HDR_FULL = 103;
 
         /** Header of object in fully serailized form with metadata. */
-        public const byte HDR_META = 204;
+        public const byte HDR_META = 104;
 
         /** Type: unsigned byte. */
         public const byte TYPE_BYTE = 1;
@@ -113,31 +113,31 @@ namespace GridGain.Client.Impl.Portable
         public const byte TYPE_DICTIONARY = 25;
 
         /** Type: authentication request. */
-        public const byte TYPE_AUTH_REQ = 100;
+        public const byte TYPE_AUTH_REQ = 51;
 
         /** Type: topology request. */
-        public const byte TYPE_TOP_REQ = 101;
+        public const byte TYPE_TOP_REQ = 52;
 
         /** Type: task request. */
-        public const byte TYPE_TASK_REQ = 102;
+        public const byte TYPE_TASK_REQ = 53;
 
         /** Type: cache request. */
-        public const byte TYPE_CACHE_REQ = 103;
+        public const byte TYPE_CACHE_REQ = 54;
         
         /** Type: log request. */
-        public const byte TYPE_LOG_REQ = 104;
+        public const byte TYPE_LOG_REQ = 55;
 
         /** Type: response. */
-        public const byte TYPE_RESP = 105;
+        public const byte TYPE_RESP = 56;
 
         /** Type: node bean. */
-        public const byte TYPE_NODE_BEAN = 106;
+        public const byte TYPE_NODE_BEAN = 57;
 
         /** Type: node metrics bean. */
-        public const byte TYPE_NODE_METRICS_BEAN = 107;
+        public const byte TYPE_NODE_METRICS_BEAN = 58;
 
         /** Type: task result bean. */
-        public const byte TYPE_TASK_RES_BEAN = 108;
+        public const byte TYPE_TASK_RES_BEAN = 59;
 
         /** Collection: custom. */
         public const byte COLLECTION_CUSTOM = 0;

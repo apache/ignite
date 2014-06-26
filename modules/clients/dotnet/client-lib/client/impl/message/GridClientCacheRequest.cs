@@ -110,16 +110,22 @@ namespace GridGain.Client.Impl.Message {
             IGridClientPortableRawWriter rawWriter = writer.RawWriter();
 
             rawWriter.WriteInt((int)Operation);
-
             rawWriter.WriteString(CacheName);
-
+            rawWriter.WriteInt(CacheFlags);
             rawWriter.WriteObject(Key);
             rawWriter.WriteObject(Value);
             rawWriter.WriteObject(Value2);
 
-            rawWriter.WriteGenericDictionary(Values);
+            rawWriter.WriteInt(Values != null ? Values.Count : -1);
 
-            rawWriter.WriteInt(CacheFlags);
+            if (Values != null)
+            {
+                foreach (KeyValuePair<object, object> pair in Values)
+                {
+                    rawWriter.WriteObject<object>(pair.Key);
+                    rawWriter.WriteObject<object>(pair.Value);
+                }
+            }
         }
 
         /** <inheritdoc /> */
@@ -129,16 +135,26 @@ namespace GridGain.Client.Impl.Message {
             IGridClientPortableRawReader rawReader = reader.RawReader();
 
             Operation = (GridClientCacheRequestOperation)rawReader.ReadInt();
-
             CacheName = rawReader.ReadString();
-
+            CacheFlags = rawReader.ReadInt();
             Key = rawReader.ReadObject<Object>();
             Value = rawReader.ReadObject<Object>();
             Value2 = rawReader.ReadObject<Object>();
 
-            Values = rawReader.ReadGenericDictionary<object, object>();
+            int valsCnt = rawReader.ReadInt();
 
-            CacheFlags = rawReader.ReadInt();
+            if (valsCnt >= 0)
+            {
+                Values = new Dictionary<object, object>(valsCnt);
+
+                for (int i = 0; i < valsCnt; i++)
+                {
+                    object key = rawReader.ReadObject<object>();
+                    object val = rawReader.ReadObject<object>();
+
+                    Values[key] = val;
+                }
+            }
         }
     }
 }
