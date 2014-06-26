@@ -249,10 +249,8 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
         closeLock.lock();
 
         try {
-            if (routineId == null)
-                throw new IllegalStateException("Can't cancel query that was not executed.");
-
-            ctx.kernalContext().continuous().stopRoutine(routineId).get();
+            if (routineId != null)
+                ctx.kernalContext().continuous().stopRoutine(routineId).get();
         }
         finally {
             closeLock.unlock();

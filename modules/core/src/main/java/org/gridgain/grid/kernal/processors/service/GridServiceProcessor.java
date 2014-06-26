@@ -104,6 +104,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onKernalStart() throws GridException {
+        if (ctx.isDaemon())
+            return;
+
         depCache = ctx.cache().utilityCache(GridServiceDeploymentKey.class, GridServiceDeployment.class);
         assignCache = ctx.cache().utilityCache(GridServiceAssignmentsKey.class, GridServiceAssignments.class);
 
@@ -142,19 +145,24 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
+        if (ctx.isDaemon())
+            return;
+
         busyLock.block();
 
         ctx.event().removeLocalEventListener(topLsnr);
 
         try {
-            cfgQry.close();
+            if (cfgQry != null)
+                cfgQry.close();
         }
         catch (GridException e) {
             log.error("Failed to unsubscribe service configuration notifications.", e);
         }
 
         try {
-            assignQry.close();
+            if (assignQry != null)
+                assignQry.close();
         }
         catch (GridException e) {
             log.error("Failed to unsubscribe service assignment notifications.", e);
