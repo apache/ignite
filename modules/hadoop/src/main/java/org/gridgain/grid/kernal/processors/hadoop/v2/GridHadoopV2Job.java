@@ -115,6 +115,11 @@ public class GridHadoopV2Job implements GridHadoopJob {
     }
 
     /** {@inheritDoc} */
+    @Override public GridHadoopJobInfo info() {
+        return jobInfo;
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<GridHadoopInputSplit> input() throws GridException {
         String jobDirPath = ctx.getConfiguration().get(MRJobConfig.MAPREDUCE_JOB_DIR);
 
@@ -165,11 +170,6 @@ public class GridHadoopV2Job implements GridHadoopJob {
         catch (IOException e) {
             throw new GridException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridHadoopJobInfo info() {
-        return jobInfo;
     }
 
     /**
@@ -378,7 +378,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public void initialize(boolean external, UUID locNodeId) throws GridException {
-        jobLocalDir = new File(new File(U.resolveWorkDirectory("hadoop", false), "Job_" + jobId), "local-" + locNodeId);
+        jobLocalDir = new File(new File(U.resolveWorkDirectory("hadoop", false), "node-" + locNodeId), "job_" + jobId);
 
         resourceManager = new GridHadoopV2JobResourceManager(jobId, ctx.getJobConf(), jobLocalDir);
 
@@ -402,8 +402,8 @@ public class GridHadoopV2Job implements GridHadoopJob {
     /**
      * Initializes class loader.
      *
-     * @throws GridException
-     * @param classPath
+     * @param classPath List of URLs to add to class path.
+     * @throws GridException If failed.
      */
     private void initializeClassLoader(List<URL> classPath) {
         if (!jobLocalDir.exists())

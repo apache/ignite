@@ -15,6 +15,7 @@ import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.net.*;
@@ -34,12 +35,12 @@ public class GridHadoopV2JobResourceManager {
     private List<URL> clsPath = new ArrayList<>();
 
     /**
-     * Provides all resources are needed to the job execution. Downloads main jar and config and additional files
-     * are needed to be localized.
+     * Provides all resources are needed to the job execution. Downloads the main jar, the configuration and additional
+     * files are needed to be placed on local files system.
      *
      * @param jobId Job ID.
      * @param cfg Job config.
-     * @param jobLocDir Directory to place localized resources.
+     * @param jobLocDir Directory to place resources.
      */
     public GridHadoopV2JobResourceManager(GridHadoopJobId jobId, JobConf cfg, File jobLocDir) {
         this.jobId = jobId;
@@ -48,7 +49,7 @@ public class GridHadoopV2JobResourceManager {
     }
 
     /**
-     * Prepare job resources. Resolve class path list and download it if needed.
+     * Prepare job resources. Resolve the classpath list and download it if needed.
      *
      * @throws GridException If failed.
      */
@@ -71,10 +72,10 @@ public class GridHadoopV2JobResourceManager {
 
                     if (!FileUtil.copy(fs, path, jobLocDir, false, cfg))
                         throw new GridException("Failed to copy job submission directory contents to local file system " +
-                            "[path=" + path + ", locDir=" + jobLocDir.getAbsolutePath() + ", jobId=" + jobId + ']');
+                                "[path=" + path + ", locDir=" + jobLocDir.getAbsolutePath() + ", jobId=" + jobId + ']');
                 }
 
-                clsPath.add(new File(new File(jobLocDir, "job.jar"), "job.jar").toURI().toURL());
+                clsPath.add(new File(jobLocDir, "job.jar").toURI().toURL());
 
                 processFiles(DistributedCache.getCacheFiles(cfg), download, false, false);
 
@@ -91,10 +92,19 @@ public class GridHadoopV2JobResourceManager {
     }
 
     /**
-     * 
+     * Process list of resources.
+     *
+     * @param files Array of {@link URI} or {@link Path} to process resources.
+     * @param download {@code true}, if need to download. Process class path only else.
+     * @param extract {@code true}, if need to extract archive.
+     * @param addToClsPath {@code true}, if need to add the resource to class path.
+     * @throws IOException If errors.
      */
-    private void processFiles(Object[] files, boolean download, boolean extract, boolean addToClsPath)
-        throws IOException, GridException {
+    private void processFiles(@Nullable Object[] files, boolean download, boolean extract, boolean addToClsPath)
+        throws IOException {
+        if (files==null)
+            return;
+
         for (Object pathObj : files) {
             String locName = null;
             Path srcPath;
@@ -131,7 +141,7 @@ public class GridHadoopV2JobResourceManager {
                 File archivesPath = new File(jobLocDir.getAbsolutePath(), ".cached-archives");
 
                 if (!archivesPath.exists() && !archivesPath.mkdir())
-                    throw new GridException("Failed to create directory " +
+                    throw new IOException("Failed to create directory " +
                          "[path=" + archivesPath + ", jobId=" + jobId + ']');
 
                 File archiveFile = new File(archivesPath, locName);
@@ -152,8 +162,7 @@ public class GridHadoopV2JobResourceManager {
                     FileUtil.unTar(archiveFile, dstPath);
                 }
                 else {
-                    throw new GridException("Cannot unpack archive " +
-                            "[path=" + srcPath + ", jobId=" + jobId + ']');
+                    throw new IOException("Cannot unpack archive [path=" + srcPath + ", jobId=" + jobId + ']');
                 }
             }
             else
@@ -167,4 +176,5 @@ public class GridHadoopV2JobResourceManager {
     public List<URL> getClassPath() {
         return clsPath;
     }
+
 }
