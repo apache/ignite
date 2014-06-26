@@ -19,7 +19,7 @@ public class GridHadoopConfiguration {
     public static final long DFLT_FINISHED_JOB_INFO_TTL = 10_000;
 
     /** Default value for external execution flag. */
-    public static final boolean DFLT_EXTERNAL_EXECUTION = true;
+    public static final boolean DFLT_EXTERNAL_EXECUTION = false;
 
     /** Map reduce planner. */
     private GridHadoopMapReducePlanner planner;
