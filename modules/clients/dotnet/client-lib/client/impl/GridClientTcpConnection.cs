@@ -514,9 +514,9 @@ namespace GridGain.Client.Impl {
                 buf.WriteByte((byte)0);
                 buf.WriteByte((byte)0);
 
-                //buf.Write(GridClientUtils.ToBytes(msg.RequestId), 0, 8);
-                //buf.Write(GridClientUtils.ToBytes(msg.ClientId), 0, 16);
-                //buf.Write(GridClientUtils.ToBytes(msg.DestNodeId), 0, 16);
+                buf.Write(GridClientUtils.ToBytes(msg.RequestId), 0, 8);
+                buf.Write(GridClientUtils.ToBytes(msg.ClientId), 0, 16);
+                buf.Write(GridClientUtils.ToBytes(msg.DestNodeId), 0, 16);
 
                 marshaller.Marshal(msg, buf);
 
