@@ -51,7 +51,6 @@ public class GridClientTestRestServer {
             node.setNodeId(UUID.randomUUID());
             node.setConsistentId("127.0.0.1:" + port);
             node.setTcpPort(port);
-            node.setJettyAddresses(Arrays.asList("127.0.0.1"));
             node.setTcpAddresses(Arrays.asList("127.0.0.1"));
 
             top.add(node);
