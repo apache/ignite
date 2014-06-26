@@ -1228,6 +1228,6 @@ void GridClientVariant::clear() {
     type = NULL_TYPE;
 }
 
-std::size_t hash_value(GridClientVariant const& x) {
-    return GridClientVariantHasheableObject(x).hashCode();
+std::size_t hash_value(const GridClientVariant& variant) {
+    return GridClientVariantHasheableObject(variant).hashCode();
 }
