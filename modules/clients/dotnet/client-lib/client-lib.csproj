@@ -69,7 +69,7 @@
     <Compile Include="client\balancer\IGridClientLoadBalancer.cs" />
     <Compile Include="client\balancer\GridClientLoadBalancer.cs" />
     <Compile Include="client\balancer\GridClientRoundRobinBalancer.cs" />
-    <Compile Include="client\impl\message\GridClientHandshakeRequest.cs" />
+    <Compile Include="client\impl\message\GridClientHandshake.cs" />
     <Compile Include="client\impl\portable\GridClientPortableCollectionInfo.cs" />
     <Compile Include="client\impl\portable\GridClientPortableObjectImpl.cs" />
     <Compile Include="client\impl\portable\GridClientPortableReadContext.cs" />
@@ -140,9 +140,6 @@
     <Compile Include="client\impl\IGridClientProjectionConfig.cs" />
     <Compile Include="client\impl\GridClientTopology.cs" />
     <Compile Include="client\impl\GridClientConnectionIdleClosedException.cs" />
-    <Compile Include="client\impl\GridClientHttpConnection.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="client\impl\GridClientTcpConnection.cs" />
     <Compile Include="client\impl\message\GridClientResponseStatus.cs" />
     <Compile Include="client\impl\message\GridClientCacheRequestOperation.cs" />

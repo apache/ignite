@@ -375,6 +375,15 @@ namespace GridGain.Client.Portable {
          */
         public void TestGenericCollections()
         {
+            GridClientConfiguration cfg = new GridClientConfiguration();
+            
+            cfg.Servers.Add("127.0.0.1:11211");
+
+            IGridClient cli = GridClientFactory.Start(cfg);
+
+            if (true)
+                return;
+
             ICollection<string> list = new List<string>();
 
             list.Add("1");

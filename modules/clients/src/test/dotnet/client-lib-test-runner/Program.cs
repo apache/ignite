@@ -19,23 +19,11 @@ namespace GridGain {
     using GridGain.Client.Portable;
     
     using Dbg = System.Diagnostics.Debug;
-
-    public class LList<T> : List<T>
-    {
-
-    }
-
+    
     /** <summary>Start test suite main class.</summary> */
     public static class Program {
         [STAThread]
         static void Main(/*string[] args*/) {
-            IDictionary<string, int> dict = new Dictionary<string, int>();
-
-            Type type = dict.GetType();
-
-            type.GetInterface(typeof(ICollection<>).FullName);
-
-
             Debug.Listeners.Add(new TextWriterTraceListener(System.Console.Out));
             Debug.AutoFlush = true;
 

@@ -189,6 +189,20 @@ namespace GridGain.Client.Impl {
                 }
             }
 
+            // Process handshake.
+            outStream.Write(GridClientHandshake.BYTES, 0, GridClientHandshake.BYTES.Length);
+
+            outStream.Flush();
+
+            int hndRes = inStream.ReadByte();
+
+            if (hndRes != GridClientHandshake.CODE_OK)
+            {
+                if (hndRes == GridClientHandshake.CODE_UNKNOWN_PROTO_ID)
+                    throw new GridClientException("Server doesn't support client's protocol [srvAddr=" + srvAddr + 
+                        ", protocolId=" + GridClientHandshake.PROTO_ID + ']'); 
+            }
+
             // Avoid immediate attempt to close by idle.
             lastPacketSndTime = lastPacketRcvTime = lastPingSndTime = lastPingRcvTime = U.Now;
 
@@ -500,9 +514,9 @@ namespace GridGain.Client.Impl {
                 buf.WriteByte((byte)0);
                 buf.WriteByte((byte)0);
 
-                buf.Write(GridClientUtils.ToBytes(msg.RequestId), 0, 8);
-                buf.Write(GridClientUtils.ToBytes(msg.ClientId), 0, 16);
-                buf.Write(GridClientUtils.ToBytes(msg.DestNodeId), 0, 16);
+                //buf.Write(GridClientUtils.ToBytes(msg.RequestId), 0, 8);
+                //buf.Write(GridClientUtils.ToBytes(msg.ClientId), 0, 16);
+                //buf.Write(GridClientUtils.ToBytes(msg.DestNodeId), 0, 16);
 
                 marshaller.Marshal(msg, buf);
 
