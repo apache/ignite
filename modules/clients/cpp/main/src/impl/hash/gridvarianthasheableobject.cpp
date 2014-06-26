@@ -9,8 +9,8 @@
 #include "gridgain/impl/utils/gridclientdebug.hpp"
 
 #include <vector>
-#include <boost/unordered_map.hpp>
 #include <boost/foreach.hpp>
+#include <boost/unordered_map.hpp>
 
 #include "gridgain/gridclienthash.hpp"
 #include "gridgain/impl/hash/gridclientvarianthasheableobject.hpp"

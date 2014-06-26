@@ -12,6 +12,7 @@
 
 #include <vector>
 #include <memory>
+
 #include <boost/unordered_map.hpp>
 
 class GridClient;

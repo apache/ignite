@@ -221,6 +221,7 @@ public:
       * @return Portable id resolver.
       */
      GridPortableIdResolver* portableIdResolver() const;
+
 private:
     class Impl;
     Impl* pimpl;

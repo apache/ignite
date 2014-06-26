@@ -54,7 +54,7 @@ public:
 
         GridPortableMarshaller marsh;
 
-        boost::shared_ptr<vector<int8_t>> data = marsh.marshalUserObject(msg);
+        boost::shared_ptr<vector<int8_t>> data = marsh.marshalSystemObject(msg);
 
         tcpPacket.setData(data);
         tcpPacket.setAdditionalHeaders(authReq);
@@ -69,34 +69,6 @@ public:
             throw GridClientCommandException(resMsg->errorMsg);
 
         sessToken = resMsg->sesTok;
-        /*
-        ObjectWrapper protoMsg;
-
-        GridAuthenticationRequestCommand authReq;
-        GridClientMessageAuthenticationResult authResult;
-
-        authReq.setClientId(clientId);
-        authReq.credentials(creds);
-        authReq.setRequestId(1);
-        authReq.setDestinationId(GridClientUuid::randomUuid()); // Random unexistent ID.
-
-        GridClientProtobufMarshaller::wrap(authReq, protoMsg);
-
-        GridClientTcpPacket tcpPacket;
-        GridClientTcpPacket tcpResponse;
-        ProtoRequest req;
-
-        tcpPacket.setData(protoMsg);
-        tcpPacket.setAdditionalHeaders(authReq);
-
-        send(tcpPacket, tcpResponse);
-
-        ObjectWrapper respMsg = tcpResponse.getData();
-
-        GridClientProtobufMarshaller::unwrap(respMsg, authResult);
-
-        sessToken = authResult.sessionToken();
-        */
     }
 };
 

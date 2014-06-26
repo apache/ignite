@@ -101,7 +101,7 @@ BOOST_AUTO_TEST_CASE(testMultithreaded) {
     multithreaded(boost::bind(&doRentConnections, pool), nthreads);
 
     BOOST_CHECK_EQUAL( pool->getAvailableConnectionsCount(), 0 );
-    BOOST_CHECK_EQUAL( pool->getAllConnectionsCount(), nthreads * 2 );
+    BOOST_CHECK_EQUAL( pool->getAllConnectionsCount(), nthreads );
 
     pool->close();
 

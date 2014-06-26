@@ -51,7 +51,6 @@ class GridClientRawSyncTcpConnection;
  * |           DATA            |
  * -----------------------------
  */
-
 class GridClientTcpPacket {
 private:
     /** Size of UUID field. */
@@ -193,7 +192,7 @@ public:
      *
      * @return Session token or empty string if this is not a secure session.
      */
-    virtual std::vector<int8_t> sessionToken() = 0;
+    virtual std::vector<int8_t>& sessionToken() = 0;
 
     /**
      * Sends a TCP packet over connection and receives a reply.
@@ -252,7 +251,7 @@ public:
      *
      * @return Session token or empty string if this is not a secure session.
      */
-    virtual std::vector<int8_t> sessionToken();
+    virtual std::vector<int8_t>& sessionToken();
 
     /**
      * Sends a TCP packet over connection and receives a reply.
@@ -320,7 +319,7 @@ public:
      *
      * @return Session token or empty string if this is not a secure session.
      */
-    virtual std::vector<int8_t> sessionToken();
+    virtual std::vector<int8_t>& sessionToken();
 
     /**
      * Sends a TCP packet over connection and receives a reply.

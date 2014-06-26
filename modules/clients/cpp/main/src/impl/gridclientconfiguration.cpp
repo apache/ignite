@@ -28,7 +28,7 @@ public:
         loadBalancer(other.loadBalancer), protoCfg(other.protoCfg), srvrs(other.srvrs),
         threadPoolSize(DFLT_THREAD_POOL_SIZE),
         routers(other.routers), routerBalancer(other.routerBalancer),
-        maxConnectionIdleTime(other.maxConnectionIdleTime), topLsnrs(other.topLsnrs), dataCfgs(other.dataCfgs), 
+        maxConnectionIdleTime(other.maxConnectionIdleTime), topLsnrs(other.topLsnrs), dataCfgs(other.dataCfgs),
         portableIdRslvr(other.portableIdRslvr) {}
 
     /** Flag indicating if topology cache is enabled. */
@@ -63,6 +63,7 @@ public:
     /** Cache configuration. */
     std::vector<GridClientDataConfiguration> dataCfgs;
 
+    /** Portable field id resolver. */
     GridPortableIdResolver* portableIdRslvr;
 };
 
