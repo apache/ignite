@@ -20,7 +20,7 @@ public class GridClientTcpSslPortableSelfTest extends GridClientTcpSslSelfTest {
     @Override protected GridClientConfiguration clientConfiguration() {
         GridClientConfiguration ccfg = super.clientConfiguration();
 
-        ccfg.setMarshaller(new GridClientPortableMarshaller(null));
+        ccfg.setMarshaller(new GridClientPortableMarshaller());
 
         return ccfg;
     }

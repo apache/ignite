@@ -39,5 +39,10 @@
 #include <gridgain/gridclientdatametrics.hpp>
 #include <gridgain/gridclientconfiguration.hpp>
 #include <gridgain/gridfuture.hpp>
+#include <gridgain/gridclienthash.hpp>
+#include <gridgain/gridportable.hpp>
+#include <gridgain/gridportablewriter.hpp>
+#include <gridgain/gridportablereader.hpp>
+#include <gridgain/gridportableserializer.hpp>
 
 #endif // GRIDGAIN_HPP__INCLUDED

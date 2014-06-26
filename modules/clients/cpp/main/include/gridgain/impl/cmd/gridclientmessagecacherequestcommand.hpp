@@ -12,7 +12,7 @@
 
 #include <string>
 #include <exception>
-#include <map>
+#include <boost/unordered_map.hpp>
 #include <set>
 #include <cassert>
 
@@ -26,41 +26,38 @@
 class GridCacheRequestCommand  : public GridClientMessageCommand {
 public:
     /** Typedef for cache request. */
-    typedef std::map<GridClientVariant, GridClientVariant> TKeyValueMap;
+    typedef boost::unordered_map<GridClientVariant, GridClientVariant> TKeyValueMap;
 
     /**
      * Available cache operations
      */
     enum GridCacheOperation {
         /** Cache put. */
-        PUT= 0x01,
+        PUT= 0x00,
 
         /** Cache put all. */
-        PUT_ALL= 0x02,
+        PUT_ALL= 0x01,
 
         /** Cache get. */
-        GET = 0x03,
+        GET = 0x02,
 
         /** Cache get all. */
-        GET_ALL = 0x04,
+        GET_ALL = 0x03,
 
         /** Cache remove. */
-        RMV = 0x05,
+        RMV = 0x04,
 
         /** Cache remove all. */
-        RMV_ALL = 0x06,
-
-        /** Cache add (put only if not exists). */
-        ADD = 0x07,
+        RMV_ALL = 0x05,
 
         /** Cache replace (put only if exists).  */
-        REPLACE = 0x08,
+        REPLACE = 0x06,
 
         /** Cache compare and set. */
-        CAS = 0x09,
+        CAS = 0x07,
 
         /** Cache metrics request. */
-        METRICS = 0x0A
+        METRICS = 0x08
     };
 
     /**
@@ -84,12 +81,10 @@ public:
             case 6:
                 return RMV_ALL;
             case 7:
-                return ADD;
-            case 8:
                 return REPLACE;
-            case 9:
+            case 8:
                 return CAS;
-            case 10:
+            case 9:
                 return METRICS;
             default: {
                 assert(false);

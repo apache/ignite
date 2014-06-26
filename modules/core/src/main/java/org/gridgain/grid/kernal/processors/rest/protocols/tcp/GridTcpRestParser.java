@@ -37,9 +37,6 @@ public class GridTcpRestParser implements GridNioParser {
     /** JDK marshaller. */
     private final GridMarshaller jdkMarshaller = new GridJdkMarshaller();
 
-    /** Protobuf marshaller. */
-    private final GridClientMarshaller protobufMarshaller;
-
     /** Logger. */
     private final GridLogger log;
 
@@ -48,8 +45,6 @@ public class GridTcpRestParser implements GridNioParser {
      */
     public GridTcpRestParser(GridLogger log) {
         this.log = log;
-
-        protobufMarshaller = U.createProtobufMarshaller(log);
     }
 
     /** {@inheritDoc} */
@@ -137,19 +132,15 @@ public class GridTcpRestParser implements GridNioParser {
         else {
             GridClientMarshaller marsh = marshaller(ses);
 
-            byte[] data = marsh.marshal(msg);
+            ByteBuffer res = marsh.marshal(msg, 45);
 
-            assert data.length > 0;
+            ByteBuffer slice = res.slice();
 
-            ByteBuffer res = ByteBuffer.allocate(data.length + 45);
-
-            res.put(GRIDGAIN_REQ_FLAG);
-            res.put(U.intToBytes(data.length + 40));
-            res.put(U.longToBytes(msg.requestId()));
-            res.put(U.uuidToBytes(msg.clientId()));
-            res.put(U.uuidToBytes(msg.destinationId()));
-            res.put(data);
-            res.flip();
+            slice.put(GRIDGAIN_REQ_FLAG);
+            slice.putInt(res.remaining() - 5);
+            slice.putLong(msg.requestId());
+            slice.put(U.uuidToBytes(msg.clientId()));
+            slice.put(U.uuidToBytes(msg.destinationId()));
 
             return res;
         }
@@ -748,17 +739,7 @@ public class GridTcpRestParser implements GridNioParser {
     protected GridClientMarshaller marshaller(GridNioSession ses) throws GridException {
         GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
 
-        if (marsh == null) {
-            U.warn(log, "No marshaller defined for NIO session, using Protobuf as default [ses=" + ses + ']');
-
-            if (protobufMarshaller == null)
-                throw new GridException("Failed to use Protobuf marshaller (session will be closed). " +
-                    "Is gridgain-protobuf module added to classpath?");
-
-            marsh = protobufMarshaller;
-
-            ses.addMeta(MARSHALLER.ordinal(), marsh);
-        }
+        assert marsh != null;
 
         return marsh;
     }

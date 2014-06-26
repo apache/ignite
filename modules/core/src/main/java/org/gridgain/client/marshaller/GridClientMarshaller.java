@@ -10,6 +10,7 @@
 package org.gridgain.client.marshaller;
 
 import java.io.*;
+import java.nio.*;
 
 /**
  * Marshaller for binary protocol messages.
@@ -19,13 +20,14 @@ public interface GridClientMarshaller {
      * Marshals object to byte array.
      *
      * @param obj Object to marshal.
-     * @return Byte array.
+     * @param off Start offset.
+     * @return Byte buffer.
      * @throws IOException If marshalling failed.
      */
-    public byte[] marshal(Object obj) throws IOException;
+    public ByteBuffer marshal(Object obj, int off) throws IOException;
 
     /**
-     * Unmarshalls object from byte array.
+     * Unmarshals object from byte array.
      *
      * @param bytes Byte array.
      * @return Unmarshalled object.

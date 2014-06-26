@@ -12,19 +12,11 @@
 
 #include "gridgain/impl/cmd/gridclientcommandexecutorprivate.hpp"
 #include "gridgain/impl/connection/gridclienttcpconnection.hpp"
+#include "gridgain/impl/marshaller/portable/gridportablemarshaller.hpp"
 
 /** Forward declaration. */
 class GridClientConnectionPool;
 class GridClientSocketAddress;
-
-namespace org {
-namespace gridgain {
-namespace client {
-namespace message {
-/** Forward declaration. */
-class ObjectWrapper;
-
-}}}}
 
 /**
  * TCP command executor. Sends commands over HTTP transport.
@@ -47,7 +39,7 @@ public:
      * @param result Log request result.
      */
     virtual void executeLogCmd(const GridClientSocketAddress& nodeHost,
-            GridLogRequestCommand& logRequest, GridClientMessageLogResult& result);
+         GridLogRequestCommand& logRequest, GridClientMessageLogResult& result);
 
     /**
      * Execute topology command.
@@ -57,7 +49,7 @@ public:
      * @param result Topology request result.
      */
     virtual void executeTopologyCmd(const GridClientSocketAddress& nodeHost,
-            GridTopologyRequestCommand& topologyRequest, GridClientMessageTopologyResult& result);
+         GridTopologyRequestCommand& topologyRequest, GridClientMessageTopologyResult& result);
 
     /**
      * Execute cache get command.
@@ -67,7 +59,7 @@ public:
      * @param result Cache get request result.
      */
     virtual void executeGetCacheCmd(const GridClientSocketAddress& nodeHost,
-            GridCacheRequestCommand& cacheCmd, GridClientMessageCacheGetResult&);
+        GridCacheRequestCommand& cacheCmd, GridClientMessageCacheGetResult&);
 
     /**
      * Execute cache modify command.
@@ -77,7 +69,7 @@ public:
      * @param result Cache modify request result.
      */
     virtual void executeModifyCacheCmd(const GridClientSocketAddress& nodeHost,
-            GridCacheRequestCommand& cacheCmd, GridClientMessageCacheModifyResult&);
+        GridCacheRequestCommand& cacheCmd, GridClientMessageCacheModifyResult&);
 
     /**
      * Execute cache metrics command.
@@ -87,7 +79,7 @@ public:
      * @param result Cache metrics request result.
      */
     virtual void executeGetCacheMetricsCmd(const GridClientSocketAddress& nodeHost,
-            GridCacheRequestCommand& cacheCmd, GridClientMessageCacheMetricResult&);
+        GridCacheRequestCommand& cacheCmd, GridClientMessageCacheMetricResult&);
 
     /**
      * Execute task command.
@@ -97,7 +89,7 @@ public:
      * @param result task request result.
      */
     virtual void executeTaskCmd(const GridClientSocketAddress& nodeHost, GridTaskRequestCommand& taskCmd,
-            GridClientMessageTaskResult&);
+        GridClientMessageTaskResult&);
 
     /**
      * Stops the command executor freeing all resources
@@ -114,19 +106,24 @@ private:
      * @param tcpResponse Response TCP packet.
      */
     void sendPacket (std::shared_ptr<GridClientTcpConnection> conn, const GridClientTcpPacket& tcpPacket,
-            GridClientTcpPacket& tcpResponse);
+        GridClientTcpPacket& tcpResponse);
 
     /**
      * Execute generic command on the node.
      *
      * @param nodeHost Host/port pair.
-     * @param cmd Command to send.
+     * @param msg Message to send.
+     * @param cmd Command.
      * @param response Response to fill.
      */
-    template <class C, class R> void executeCmd(const GridClientSocketAddress& nodeHost, C& cmd, R& response);
+    template <class C, class R>
+    void executeCmd(const GridClientSocketAddress& nodeHost, GridClientPortableMessage& msg, C& cmd, R& response);
 
     /** Connection pool. */
     boost::shared_ptr<GridClientConnectionPool> connPool;
+
+	/** */
+	GridPortableMarshaller marsh;
 };
 
 #endif

@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
 import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
@@ -19,12 +18,12 @@ import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
-import org.gridgain.grid.portable.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.nio.ssl.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
@@ -45,9 +44,6 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
     /** JDK marshaller. */
     private final GridMarshaller jdkMarshaller = new GridJdkMarshaller();
-
-    /** */
-    private final GridClientPortableMarshaller portableMarshaller;
 
     /** Message reader. */
     private final GridNioMessageReader msgReader = new GridNioMessageReader() {
@@ -101,9 +97,6 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     /** @param ctx Context. */
     public GridTcpRestProtocol(GridKernalContext ctx) {
         super(ctx);
-
-        portableMarshaller = new GridClientPortableMarshaller(
-            ctx.config().getClientConnectionConfiguration().getPortableTypesMap());
     }
 
     /**
@@ -111,13 +104,6 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
      */
     GridMarshaller jdkMarshaller() {
         return jdkMarshaller;
-    }
-
-    /**
-     * @return Client portable marshaller.
-     */
-    GridClientPortableMarshaller portableMarshaller() {
-        return portableMarshaller;
     }
 
     /**
@@ -130,13 +116,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     GridClientMarshaller marshaller(GridNioSession ses) throws GridException {
         GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
 
-        if (marsh == null) {
-            U.warn(log, "No marshaller defined for NIO session, using portable as default [ses=" + ses + ']');
-
-            marsh = portableMarshaller;
-
-            ses.addMeta(MARSHALLER.ordinal(), marsh);
-        }
+        assert marsh != null;
 
         return marsh;
     }
@@ -157,8 +137,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
         validatePortableTypes(cfg);
 
-        GridNioServerListener<GridClientMessage> lsnr =
-            new GridTcpRestNioListener(log, this, hnd, ctx, protobufMarshaller);
+        GridNioServerListener<GridClientMessage> lsnr = new GridTcpRestNioListener(log, this, hnd, ctx);
 
         GridNioParser parser = new GridTcpRestDirectParser(this, msgReader);
 

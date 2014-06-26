@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
-import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.portable.*;
 
 import java.io.*;
 
@@ -20,10 +20,6 @@ import java.io.*;
 public class GridClientLogRequest extends GridClientAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    public static final int PORTABLE_TYPE_ID = -3;
-
 
     /** Task name. */
     private String path;
@@ -76,29 +72,26 @@ public class GridClientLogRequest extends GridClientAbstractMessage {
         this.to = to;
     }
 
-//    /** {@inheritDoc} */
-//    @Override public int typeId() {
-//        return PORTABLE_TYPE_ID;
-//    }
-
     /** {@inheritDoc} */
     @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
         super.writePortable(writer);
 
-        writer.writeString("path", path);
+        GridPortableRawWriter raw = writer.rawWriter();
 
-        writer.writeInt("from", from);
-        writer.writeInt("to", to);
+        raw.writeString(path);
+        raw.writeInt(from);
+        raw.writeInt(to);
     }
 
     /** {@inheritDoc} */
     @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
         super.readPortable(reader);
 
-        path = reader.readString("path");
+        GridPortableRawReader raw = reader.rawReader();
 
-        from = reader.readInt("from");
-        to = reader.readInt("to");
+        path = raw.readString();
+        from = raw.readInt();
+        to = raw.readInt();
     }
 
     /** {@inheritDoc} */

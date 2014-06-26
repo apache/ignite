@@ -8,7 +8,7 @@
  */
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
-import org.gridgain.client.marshaller.protobuf.*;
+import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.nio.*;
 
@@ -30,7 +30,7 @@ public class GridMockNioSession extends GridMetadataAwareAdapter implements Grid
      * Creates empty mock session.
      */
     public GridMockNioSession() {
-        addMeta(MARSHALLER.ordinal(), new GridClientProtobufMarshaller());
+        addMeta(MARSHALLER.ordinal(), new GridClientPortableMarshaller());
     }
 
     /**

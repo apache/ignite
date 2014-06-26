@@ -111,7 +111,7 @@ public class GridTcpRestDirectParser implements GridNioParser {
 
                 GridClientMarshaller marsh = proto.marshaller(ses);
 
-                GridClientMessage ret = marsh.unmarshal(clientMsg.message());
+                GridClientMessage ret = marsh.unmarshal(clientMsg.messageArray());
 
                 ret.requestId(clientMsg.requestId());
                 ret.clientId(clientMsg.clientId());

@@ -121,29 +121,6 @@ std::string GridClientNode::getDefaultCacheMode() const {
     return pimpl->dfltCacheMode;
 }
 
-/**
- * Returns a list of available addresses by protocol.
- *
- * @param proto Protocol - TCP or HTTP
- * @return List of host/port pairs.
- */
-const std::vector<GridClientSocketAddress> & GridClientNode::availableAddresses(GridClientProtocol proto) const {
-    std::vector<GridClientSocketAddress> sockAddrs;
-    std::vector<std::string>* addrs;
-    int port;
-
-    switch (proto) {
-        case TCP:
-            return getTcpAddresses();
-
-        case HTTP:
-            return getJettyAddresses();
-
-        default:
-            throw std::logic_error("Unknown protocol.");
-    }
-}
-
 const GridClientSocketAddress & GridClientNode::getRouterTcpAddress() const {
     return pimpl->routerTcpAddress;
 

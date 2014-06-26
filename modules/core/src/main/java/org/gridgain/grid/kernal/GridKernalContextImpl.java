@@ -26,6 +26,7 @@ import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.closure.*;
+import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.kernal.processors.spring.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
@@ -228,6 +229,10 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringExclude
+    private GridPortableProcessor portableProc;
+
+    /** */
+    @GridToStringExclude
     private GridSpringProcessor spring;
 
     /** */
@@ -393,6 +398,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             drProc = (GridDrProcessor)comp;
         else if (comp instanceof GridVersionProcessor)
             verProc = (GridVersionProcessor)comp;
+        else if (comp instanceof GridPortableProcessor)
+            portableProc = (GridPortableProcessor)comp;
         else
             assert false : "Unknown manager class: " + comp.getClass();
 
@@ -632,6 +639,11 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** {@inheritDoc} */
     @Override public GridVersionProcessor versionConverter() {
         return verProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridPortableProcessor portable() {
+        return portableProc;
     }
 
     /** {@inheritDoc} */

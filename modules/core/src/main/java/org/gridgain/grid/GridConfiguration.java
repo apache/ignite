@@ -48,6 +48,7 @@ import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.spi.swapspace.file.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;
@@ -514,6 +515,9 @@ public class GridConfiguration {
     /** Client access configuration. */
     private GridClientConnectionConfiguration clientCfg;
 
+    /** Portable configuration. */
+    private GridPortableConfiguration portableCfg;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -597,6 +601,7 @@ public class GridConfiguration {
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
         p2pSvc = cfg.getPeerClassLoadingExecutorService();
         p2pSvcShutdown = cfg.getPeerClassLoadingExecutorServiceShutdown();
+        portableCfg = cfg.getPortableConfiguration();
         restAccessibleFolders = cfg.getRestAccessibleFolders();
         restEnabled = cfg.isRestEnabled();
         restIdleTimeout = cfg.getRestIdleTimeout();
@@ -3070,6 +3075,20 @@ public class GridConfiguration {
      */
     public void setClientConnectionConfiguration(GridClientConnectionConfiguration clientCfg) {
         this.clientCfg = clientCfg;
+    }
+
+    /**
+     * @return Portable configuration.
+     */
+    public GridPortableConfiguration getPortableConfiguration() {
+        return portableCfg;
+    }
+
+    /**
+     * @param portableCfg Portable configuration.
+     */
+    public void setPortableConfiguration(GridPortableConfiguration portableCfg) {
+        this.portableCfg = portableCfg;
     }
 
     /** {@inheritDoc} */

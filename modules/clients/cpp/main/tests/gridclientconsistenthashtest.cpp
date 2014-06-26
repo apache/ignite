@@ -334,16 +334,6 @@ static void dumpHashObjectBytes(const char* testVal, const std::vector<int8_t>& 
 void checkHash(const char* testVal, const GridClientHasheableObject& o, const int8_t* bytes, size_t nBytes, int code) {
     std::vector<int8_t> hashBytes;
 
-    if (bytes != NULL) {
-        std::vector<int8_t> expectedBytes(bytes, bytes + nBytes);
-
-        o.convertToBytes(hashBytes);
-
-        dumpHashObjectBytes(testVal, hashBytes, expectedBytes);
-
-        BOOST_CHECK(hashBytes == expectedBytes);
-    }
-
     GridClientConsistentHashImpl hasher;
 
     int32_t hashCode = hasher.hash(o);

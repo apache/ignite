@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
 import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.protobuf.*;
+import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.typedef.*;
@@ -31,8 +31,8 @@ import static org.gridgain.grid.kernal.processors.rest.protocols.tcp.GridMemcach
  * This class tests that parser confirms memcache extended specification.
  */
 public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
-    /** Protobuf marshaller. */
-    private GridClientMarshaller marshaller = new GridClientProtobufMarshaller();
+    /** Marshaller. */
+    private GridClientMarshaller marshaller = new GridClientPortableMarshaller();
 
     /** Extras value. */
     public static final byte[] EXTRAS = new byte[]{
@@ -128,7 +128,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCustomMessages() throws Exception {
-        GridClientCacheRequest<String, Integer> req = new GridClientCacheRequest<>(CAS);
+        GridClientCacheRequest req = new GridClientCacheRequest(CAS);
 
         req.key("key");
         req.value(1);
@@ -168,7 +168,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
 
         GridTcpRestParser parser = new GridTcpRestParser(log);
 
-        GridClientCacheRequest<String, String> req = new GridClientCacheRequest<>(CAS);
+        GridClientCacheRequest req = new GridClientCacheRequest(CAS);
 
         req.key("key");
 
@@ -231,7 +231,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
     public void testParseContinuousSplit() throws Exception {
         ByteBuffer tmp = ByteBuffer.allocate(10 * 1024);
 
-        GridClientCacheRequest<String, Integer> req = new GridClientCacheRequest<>(CAS);
+        GridClientCacheRequest req = new GridClientCacheRequest(CAS);
 
         req.key("key");
         req.value(1);
@@ -347,18 +347,15 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
      * @throws IOException If serialization failed.
      */
     private ByteBuffer clientRequestPacket(GridClientMessage msg) throws IOException {
-        byte[] data = marshaller.marshal(msg);
+        ByteBuffer res = marshaller.marshal(msg, 45);
 
-        ByteBuffer res = ByteBuffer.allocate(data.length + 45);
+        ByteBuffer slice = res.slice();
 
-        res.put(GRIDGAIN_REQ_FLAG);
-        res.put(U.intToBytes(data.length + 40));
-        res.put(U.longToBytes(msg.requestId()));
-        res.put(U.uuidToBytes(msg.clientId()));
-        res.put(U.uuidToBytes(msg.destinationId()));
-        res.put(data);
-
-        res.flip();
+        slice.put(GRIDGAIN_REQ_FLAG);
+        slice.putInt(res.remaining() - 5);
+        slice.putLong(msg.requestId());
+        slice.put(U.uuidToBytes(msg.clientId()));
+        slice.put(U.uuidToBytes(msg.destinationId()));
 
         return res;
     }

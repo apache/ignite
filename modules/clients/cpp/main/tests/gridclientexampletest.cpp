@@ -17,8 +17,8 @@
 #include <string.h>
 #include <iostream>
 #include <sstream>
-#include <unordered_map>
 
+#include <boost/unordered_map.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/lexical_cast.hpp>
@@ -63,8 +63,6 @@ GridClientConfiguration clientConfig2() {
     vector<GridClientSocketAddress> servers;
 
     GridClientProtocolConfiguration protoCfg;
-
-    protoCfg.protocol(TCP);
 
     protoCfg.credentials(CREDS);
 
@@ -122,7 +120,7 @@ BOOST_FIXTURE_TEST_CASE(clientCacheExample, GridClientFactoryFixture1<clientConf
 
     TGridBoolFuturePtr futPut = prj->putAsync((int32_t) 0, "new value for 0");
 
-    unordered_map<GridClientUuid, TGridClientVariantMap> keyVals;
+    boost::unordered_map<GridClientUuid, TGridClientVariantMap> keyVals;
 
     GridClientVariant key0 = GridClientVariant((int32_t)0);
 
@@ -271,7 +269,7 @@ BOOST_FIXTURE_TEST_CASE(clientComputeExample, GridClientFactoryFixture1<clientCo
     // Nodes may also be refreshed by IP address.
     string clntAddr = SERVER_ADDRESS;
 
-    vector<GridClientSocketAddress> addrs = clntNode->availableAddresses(TCP);
+    vector<GridClientSocketAddress> addrs = clntNode->getTcpAddresses();
 
     if (addrs.size() > 0)
         clntAddr = addrs[0].host();

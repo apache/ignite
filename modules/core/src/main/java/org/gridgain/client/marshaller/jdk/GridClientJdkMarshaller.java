@@ -10,25 +10,35 @@
 package org.gridgain.client.marshaller.jdk;
 
 import org.gridgain.client.marshaller.*;
+import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
+import java.nio.*;
 
 /**
  * Simple marshaller that utilize JDK serialization features.
  */
 public class GridClientJdkMarshaller implements GridClientMarshaller {
     /** {@inheritDoc} */
-    @Override public byte[] marshal(Object obj) throws IOException {
-        ByteArrayOutputStream tmp = new ByteArrayOutputStream();
+    @Override public ByteBuffer marshal(Object obj, int off) throws IOException {
+        GridByteArrayOutputStream bOut = new GridByteArrayOutputStream();
 
-        ObjectOutputStream out = new ObjectOutputStream(tmp);
+        ObjectOutput out = new ObjectOutputStream(bOut);
 
         out.writeObject(obj);
 
         out.flush();
 
-        return tmp.toByteArray();
+        ByteBuffer buf = ByteBuffer.allocate(off + bOut.size());
+
+        buf.position(off);
+
+        buf.put(bOut.internalArray(), 0, bOut.size());
+
+        buf.flip();
+
+        return buf;
     }
 
     /** {@inheritDoc} */
@@ -36,7 +46,7 @@ public class GridClientJdkMarshaller implements GridClientMarshaller {
     @Override public <T> T unmarshal(byte[] bytes) throws IOException {
         ByteArrayInputStream tmp = new ByteArrayInputStream(bytes);
 
-        ObjectInputStream in = new ObjectInputStream(tmp);
+        ObjectInput in = new ObjectInputStream(tmp);
 
         try {
             return (T)in.readObject();

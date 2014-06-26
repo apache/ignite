@@ -36,25 +36,25 @@ public:
     }
 
     /** Create time. */
-    long createTime_;
+    int64_t createTime_;
 
     /** Last read time. */
-    long readTime_;
+    int64_t readTime_;
 
     /** Last update time. */
-    long writeTime_;
+    int64_t writeTime_;
 
     /** Number of reads. */
-    int reads_;
+    int32_t reads_;
 
     /** Number of writes. */
-    int writes_;
+    int32_t writes_;
 
     /** Number of hits. */
-    int hits_;
+    int32_t hits_;
 
     /** Number of misses. */
-    int misses_;
+    int32_t misses_;
 };
 
 
@@ -90,7 +90,7 @@ GridClientDataMetrics::~GridClientDataMetrics(){
 *
 * @return Create time.
 */
-long GridClientDataMetrics::createTime() const { 
+int64_t GridClientDataMetrics::createTime() const { 
     return pimpl->createTime_; 
 }
 
@@ -99,7 +99,7 @@ long GridClientDataMetrics::createTime() const {
 *
 * @return Last write time.
 */
-long GridClientDataMetrics::writeTime() const { 
+int64_t GridClientDataMetrics::writeTime() const { 
     return pimpl->writeTime_; 
 }
 
@@ -108,7 +108,7 @@ long GridClientDataMetrics::writeTime() const {
 *
 * @return Last read time.
 */
-long GridClientDataMetrics::readTime() const { 
+int64_t GridClientDataMetrics::readTime() const { 
     return pimpl->readTime_; 
 }
 
@@ -117,7 +117,7 @@ long GridClientDataMetrics::readTime() const {
 *
 * @return Total number of reads.
 */
-int GridClientDataMetrics::reads() const { 
+int32_t GridClientDataMetrics::reads() const { 
     return pimpl->reads_; 
 }
 
@@ -126,7 +126,7 @@ int GridClientDataMetrics::reads() const {
 *
 * @return Total number of writes.
 */
-int GridClientDataMetrics::writes() const { 
+int32_t GridClientDataMetrics::writes() const { 
     return pimpl->writes_; 
 }
 
@@ -135,7 +135,7 @@ int GridClientDataMetrics::writes() const {
 *
 * @return Number of hits.
 */
-int GridClientDataMetrics::hits() const { 
+int32_t GridClientDataMetrics::hits() const { 
     return pimpl->hits_; 
 }
 
@@ -144,7 +144,7 @@ int GridClientDataMetrics::hits() const {
 *
 * @return Number of misses.
 */
-int GridClientDataMetrics::misses() const { 
+int32_t GridClientDataMetrics::misses() const { 
     return pimpl->misses_; 
 }
 
@@ -153,7 +153,7 @@ int GridClientDataMetrics::misses() const {
 *
 * @param createTime Creation time.
 */
-void GridClientDataMetrics::createTime(long createTime) {
+void GridClientDataMetrics::createTime(int64_t createTime) {
     pimpl->createTime_ = createTime;
 }
 
@@ -162,7 +162,7 @@ void GridClientDataMetrics::createTime(long createTime) {
     *
     * @param readTime Read time.
     */
-void GridClientDataMetrics::readTime(long readTime) {
+void GridClientDataMetrics::readTime(int64_t readTime) {
     pimpl->readTime_ = readTime;
 }
 
@@ -171,7 +171,7 @@ void GridClientDataMetrics::readTime(long readTime) {
 *
 * @param writeTime Write time.
 */
-void GridClientDataMetrics::writeTime(long writeTime) {
+void GridClientDataMetrics::writeTime(int64_t writeTime) {
     pimpl->writeTime_ = writeTime;
 }
 
@@ -180,7 +180,7 @@ void GridClientDataMetrics::writeTime(long writeTime) {
 *
 * @param reads Number of reads.
 */
-void GridClientDataMetrics::reads(int reads) {
+void GridClientDataMetrics::reads(int32_t reads) {
     pimpl->reads_ = reads;
 }
 
@@ -189,7 +189,7 @@ void GridClientDataMetrics::reads(int reads) {
 *
 * @param writes Number of writes.
 */
-void GridClientDataMetrics::writes(int writes) {
+void GridClientDataMetrics::writes(int32_t writes) {
     pimpl->writes_ = writes;
 }
 
@@ -198,7 +198,7 @@ void GridClientDataMetrics::writes(int writes) {
 *
 * @param hits Number of hits.
 */
-void GridClientDataMetrics::hits(int hits) {
+void GridClientDataMetrics::hits(int32_t hits) {
     pimpl->hits_ = hits;
 }
 
@@ -207,6 +207,6 @@ void GridClientDataMetrics::hits(int hits) {
 *
 * @param misses Number of misses.
 */
-void GridClientDataMetrics::misses(const int& misses) {
+void GridClientDataMetrics::misses(int32_t misses) {
     pimpl->misses_ = misses;
 }

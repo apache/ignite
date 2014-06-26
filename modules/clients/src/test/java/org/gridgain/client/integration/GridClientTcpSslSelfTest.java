@@ -15,6 +15,8 @@ import org.gridgain.client.ssl.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 
+import java.nio.*;
+
 /**
  * Tests TCP binary protocol with client when SSL is enabled.
  */
@@ -49,7 +51,7 @@ public class GridClientTcpSslSelfTest extends GridClientAbstractSelfTest {
         GridClientConfiguration cfg = clientConfiguration();
 
         cfg.setMarshaller(new GridClientMarshaller() {
-            @Override public byte[] marshal(Object obj) {
+            @Override public ByteBuffer marshal(Object obj, int off) {
                 throw new UnsupportedOperationException();
             }
 

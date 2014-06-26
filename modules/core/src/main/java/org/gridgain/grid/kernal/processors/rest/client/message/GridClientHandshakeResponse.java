@@ -58,20 +58,6 @@ public class GridClientHandshakeResponse extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        out.writeByte(resCode);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        resCode = in.readByte();
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return getClass().getSimpleName() + " [resCode=" + resCode + ']';
     }

@@ -16,6 +16,7 @@ import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
+import java.nio.*;
 import java.util.*;
 
 /**
@@ -57,13 +58,23 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] marshal(Object obj) throws IOException {
+    @Override public ByteBuffer marshal(Object obj, int off) throws IOException {
         try {
             if (!(obj instanceof GridClientMessage))
                 throw new IOException("Message serialization of given type is not supported: " +
                     obj.getClass().getName());
 
-            return opMarsh.marshal(obj);
+            byte[] bytes = opMarsh.marshal(obj);
+
+            ByteBuffer buf = ByteBuffer.allocate(off + bytes.length);
+
+            buf.position(off);
+
+            buf.put(bytes);
+
+            buf.flip();
+
+            return buf;
         }
         catch (GridException e) {
             throw new IOException(e);

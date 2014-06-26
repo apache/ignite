@@ -183,7 +183,7 @@ protected:
     boost::shared_ptr<boost::asio::ssl::context> sslCtx;
 
     /** Session token associated with this connection. */
-    std::string sessToken;
+    std::vector<int8_t> sessToken;
 
     /** Connection timeout. */
     unsigned int connTimeout;

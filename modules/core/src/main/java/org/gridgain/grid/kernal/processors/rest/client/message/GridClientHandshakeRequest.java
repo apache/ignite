@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.rest.client.message;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.GridProductImpl.*;
@@ -143,24 +142,6 @@ public class GridClientHandshakeRequest extends GridClientAbstractMessage {
         ret[4] = protoId;
 
         return ret;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        U.writeByteArray(out, verArr);
-
-        out.writeByte(protoId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        verArr = U.readByteArray(in);
-
-        protoId = in.readByte();
     }
 
     /** {@inheritDoc} */

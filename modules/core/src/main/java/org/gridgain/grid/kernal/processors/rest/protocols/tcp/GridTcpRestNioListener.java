@@ -28,6 +28,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.nio.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.GridProductImpl.*;
@@ -84,10 +85,9 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
      * @param proto Protocol.
      * @param hnd Rest handler.
      * @param ctx Context.
-     * @param protobufMarshaller Protobuf marshaller.
      */
     public GridTcpRestNioListener(GridLogger log, GridTcpRestProtocol proto, GridRestProtocolHandler hnd,
-        GridKernalContext ctx, @Nullable GridClientMarshaller protobufMarshaller) {
+        GridKernalContext ctx) {
         memcachedLsnr = new GridTcpMemcachedNioListener(log, hnd, ctx);
 
         this.log = log;
@@ -97,11 +97,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         Map<Byte, GridClientMarshaller> tmpMap = new GridLeanMap<>(3);
 
         tmpMap.put(U.JDK_CLIENT_PROTO_ID, new GridClientJdkMarshaller());
-
-        if (protobufMarshaller != null)
-            tmpMap.put(U.PROTOBUF_CLIENT_PROTO_ID, protobufMarshaller);
-
-        tmpMap.put(U.PORTABLE_OBJECT_PROTO_ID, proto.portableMarshaller());
+        tmpMap.put(U.PORTABLE_OBJECT_PROTO_ID, new GridClientPortableMarshaller());
 
         // Special case for Optimized marshaller, which may throw exception.
         // This may happen, for example, if some Unsafe methods are unavailable.
@@ -212,11 +208,11 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                             wrapper.clientId(msg.clientId());
 
                             try {
-                                byte[] bytes = proto.marshaller(ses).marshal(res);
+                                ByteBuffer bytes = proto.marshaller(ses).marshal(res, 0);
 
                                 wrapper.message(bytes);
 
-                                wrapper.messageSize(bytes.length + 40);
+                                wrapper.messageSize(bytes.remaining() + 40);
                             }
                             catch (IOException | GridException e) {
                                 U.error(log, "Failed to marshal response: " + res, e);

@@ -13,6 +13,7 @@ import org.gridgain.client.balancer.*;
 import org.gridgain.client.marshaller.*;
 import org.gridgain.client.marshaller.jdk.*;
 import org.gridgain.client.marshaller.optimized.*;
+import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
@@ -102,7 +103,7 @@ public class GridClientConfiguration {
     private ExecutorService executor;
 
     /** Marshaller. */
-    private GridClientMarshaller marshaller = new GridClientOptimizedMarshaller();
+    private GridClientMarshaller marshaller = new GridClientPortableMarshaller();
 
     /**
      * Creates default configuration.
@@ -592,9 +593,8 @@ public class GridClientConfiguration {
      * <p>
      * Options, that can be used out-of-the-box:
      * <ul>
-     *     <li>{@link GridClientOptimizedMarshaller} (default) - GridGain's optimized marshaller.</li>
-     *     <li>{@code GridClientProtobufMarshaller} - marshaller, that uses
-     *       <a href="http://code.google.com/p/protobuf/">Google Protobuf</a>.</li>
+     *     <li>{@link GridClientPortableMarshaller} (default) - Marshaller that supports portable objects.</li>
+     *     <li>{@link GridClientOptimizedMarshaller} - GridGain's optimized marshaller.</li>
      *     <li>{@link GridClientJdkMarshaller} - default JDK marshaller (not recommended).</li>
      * </ul>
      *

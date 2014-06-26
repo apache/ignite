@@ -15,7 +15,6 @@
 #include "boost/date_time/posix_time/posix_time.hpp"
 
 #include "gridtestcommon.hpp"
-#include "gridgain/impl/marshaller/protobuf/ClientMessages.pb.h"
 #include "gridgain/gridclientnodemetricsbean.hpp"
 #include "gridgain/impl/cmd/gridclientmessagelogrequestcommand.hpp"
 #include "gridgain/impl/cmd/gridclientmessagelogresult.hpp"
@@ -28,8 +27,7 @@
 #include "gridgain/impl/cmd/gridclientmessagecachegetresult.hpp"
 #include "gridgain/impl/cmd/gridclientmessagetaskrequestcommand.hpp"
 #include "gridgain/impl/cmd/gridclientmessagetaskresult.hpp"
-#include "gridgain/impl/marshaller/protobuf/gridclientobjectwrapperconvertor.hpp"
-#include "gridgain/impl/marshaller/protobuf/gridclientprotobufmarshaller.hpp"
+#include "gridgain/impl/marshaller/portable/gridportablemarshaller.hpp"
 
 /** Map of command line arguments. */
 boost::program_options::variables_map vm;
@@ -41,8 +39,11 @@ boost::program_options::variables_map vm;
  * @param seed A seed to use. Modifiable. Needs to be passed each time.
  */
 int randomInt(int max, unsigned int* seed) {
-    return rand_r(seed) % (max + 1);
+    return rand() % (max + 1);
 }
+
+const long ITERS = 1000000;
+
 /**
  * Class representing one thread testing the marshalling.
  */
@@ -54,10 +55,48 @@ public:
      *
      * @param iterationCnt How many iterations to perform.
      */
-    TestThread(org::gridgain::grid::kernal::processors::rest::client::message::ObjectWrapperType messageType) {
-        seed = time(NULL);
+    TestThread(int seed) {
+        //seed = time(NULL);
 
-        thread = boost::thread(boost::bind(&TestThread::run, this, messageType));
+        thread = boost::thread(boost::bind(&TestThread::run, this, seed));
+    }
+
+    // TODO: 8536 change to portable marshal test .
+    void run(int seed) {
+        srand(seed);
+        
+        GridPortableMarshaller marsh(false);
+
+        GridCacheRequestCommand cmd = GridCacheRequestCommand(GridCacheRequestCommand::GridCacheOperation::PUT);
+
+        vector<int8_t> token(1000, 1);
+
+        cmd.sessionToken(token);
+        cmd.setCacheName("partitioned");
+        cmd.setClientId(GridClientUuid("550e8400-e29b-41d4-a716-446655440000"));
+        cmd.setDestinationId(GridClientUuid("550e8400-e29b-41d4-a716-446655440000"));
+        cmd.setKey(42.0f);
+        cmd.setRequestId(42);
+        cmd.setValue(42.0f);
+        
+        /*
+        std::cout << "Run " << seed << "\n";
+
+        for (int i = 0; i < 1000; i++)
+            std::cout << "Rnd " << seed << " it " << i << " " << randomInt(100, nullptr) << "\n";
+        */
+        
+        for (int i = 0; i < ITERS; i++) {
+            // randomInt(100, nullptr);
+            GridClientCacheRequest msg;
+
+            msg.init(cmd);
+
+            //vector<int8_t> bytes = marsh.marshal(msg);
+
+            //if (i == 0)
+               // std::cout << "Size " << bytes.size() << "\n";
+        }
     }
 
     /**
@@ -65,6 +104,7 @@ public:
      *
      * @param messageType Type of messages to marshal.
      */
+     /*
     void run(ObjectWrapperType messageType) {
 
         using namespace org::gridgain::grid::kernal::processors::rest::client::message;
@@ -218,6 +258,7 @@ public:
             exit(1);
         }
     }
+    */
 
     /** Joins the test thread. */
     void join() {
@@ -245,9 +286,9 @@ typedef std::shared_ptr<TestThread> TestThreadPtr;
 int main(int argc, const char** argv) {
     using namespace std;
     using namespace boost::program_options;
-    using namespace org::gridgain::grid::kernal::processors::rest::client::message;
 
     // initialize random seed
+    /*
     srand(time(NULL));
 
     // Declare the supported options.
@@ -264,10 +305,11 @@ int main(int argc, const char** argv) {
         std::cout << desc;
         exit(1);
     }
-
     int totalOps = 0;
     double totalSecs = 0.0f;
+    /*
 
+    /*
     if ((ObjectWrapperType) vm["messagetype"].as<int>() != NONE) {
         std::vector<TestThreadPtr> workers;
 
@@ -312,6 +354,30 @@ int main(int argc, const char** argv) {
             workers.clear();
         }
     }
+    */
+
+    int totalOps = 0;
+    double totalSecs = 0.0f;
+
+    std::vector<TestThreadPtr> workers;
+
+    for (int i = 0; i < 1; i++) {
+        workers.push_back(TestThreadPtr(new TestThread(i)));
+    }
+    
+    boost::posix_time::ptime time_start(boost::posix_time::microsec_clock::local_time());
+
+    for (std::vector<TestThreadPtr>::iterator i = workers.begin(); i != workers.end(); i++) {
+        (*i)->join();
+        
+        totalOps += ITERS;
+    }
+
+    boost::posix_time::ptime time_end(boost::posix_time::microsec_clock::local_time());
+    boost::posix_time::time_duration duration(time_end - time_start);
+    totalSecs += duration.total_milliseconds() / 1000.0f;
+
+    workers.clear();
 
     std::cout << "Total ops/sec " << totalOps / totalSecs << std::endl;
 

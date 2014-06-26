@@ -198,4 +198,18 @@ public:
     }
 };
 
+/**
+ * Thrown to indicate portable object serialization/deserialization error.
+ */
+class GRIDGAIN_API GridClientPortableException : public GridClientException {
+public:
+    /**
+     * Constructor of exception with message text.
+     *
+     * @param what Exception text.
+     */
+    GridClientPortableException(const std::string& what) : GridClientException(what) {
+    }
+};
+
 #endif // GRIDCLIENTEXCEPTION_HPP_INCLUDED

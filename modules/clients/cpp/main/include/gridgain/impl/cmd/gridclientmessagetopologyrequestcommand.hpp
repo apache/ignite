@@ -11,7 +11,10 @@
 #define GRIDTOPOLOGY_REQUEST_COMMAND_HPP_INCLUDED
 
 #include <string>
+#include <string>
+#include <boost/optional.hpp>
 
+#include <gridgain/gridclientuuid.hpp>
 #include "gridgain/impl/cmd/gridclientmessagecommand.hpp"
 
 /**
@@ -60,7 +63,7 @@ public:
      *
      * @return Node identifier, if specified, empty string otherwise.
      */
-     std::string getNodeId() const {
+     boost::optional<GridClientUuid> getNodeId() const {
         return nodeId;
      }
 
@@ -69,7 +72,7 @@ public:
      *
      * @param pNodeId Node identifier to lookup.
      */
-     void setNodeId(const std::string& nodeId) {
+     void setNodeId(const GridClientUuid& nodeId) {
         this->nodeId = nodeId;
      }
 
@@ -93,7 +96,7 @@ public:
 
 private:
     /** Id of requested node. */
-     std::string nodeId;
+     boost::optional<GridClientUuid> nodeId;
 
     /** IP address of requested node. */
      std::string nodeIp;
