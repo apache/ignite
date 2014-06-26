@@ -27,10 +27,14 @@ namespace GridGain {
             Debug.Listeners.Add(new TextWriterTraceListener(System.Console.Out));
             Debug.AutoFlush = true;
 
-            Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
+  
+            TestAll();
+
+            if (true)
+                return;
+
 
             Test(new GridClientPortableSelfTest(), (test) => test.TestGenericCollections());
-
             Test(new GridClientPortableSelfTest(), (test) => test.TestCollectionsReflective());
 
             // 4. Handling simple fields inside object. 
@@ -77,7 +81,7 @@ namespace GridGain {
 
             Test(new GridClientPortableSelfTest(), (test) => test.TestObjectReflective());
 
-            //TestAll();
+            TestAll();
 
             //TestOne(new GridClientRouterTcpSslTest(), test => test.TestAffinity());
             //TestOne(new GridClientRouterTcpSslTest(), test => test.TestAppendPrepend());
@@ -128,7 +132,7 @@ namespace GridGain {
         }
 
         private static void TestAll() {
-            string[] my_args = { Assembly.GetAssembly(typeof(GridClientHttpTest)).Location };
+            string[] my_args = { Assembly.GetAssembly(typeof(GridClientTcpTest)).Location };
 
             int returnCode = NUnit.ConsoleRunner.Runner.Main(my_args);
 
