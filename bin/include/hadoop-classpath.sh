@@ -30,7 +30,7 @@ if [ "$HADOOP_HOME" == "" ]; then
 fi
 
 if [ "$HADOOP_HOME" == "" ]; then
-    exit
+    return
 fi
 
 #
