@@ -56,38 +56,38 @@ To startup Visor, you should execute the following script:
 To configure GridGain nodes you can change configuration files at `config` directory of GridGain installation. Those
 are conventional Spring files. Please refer to shipped configuration files and GridGain javadocs for more details.
 
-### 3.1 Apache Hadoop Client Configuration
-
-To run Apache Hadoop jobs with GridGain cluster you need to configure `core-site.xml` and `mapred-site.xml` the same
-way as it is done in templates shipped with the Accelerator. You can find these templates at `docs/core-site.xml.gridgain` 
-and `docs/mapred-site.xml.gridgain` respectively.
-
-### 3.2 Distributed File System Configuration
+### 3.1 Distributed File System Configuration
 
 GridGain has it's own distributed in-memory file system called GGFS. Hadoop jobs can use it instead of HDFS to achieve
 maximum performance and scalability. Setting up GGFS is much simpler than HDFS, it requires just few tweaks of 
 GridGian node configuration and does not require starting any additional processes. Default configuration shipped 
 with the Accelerator contains one configured instance named "ggfs" which can be used as reference.
 
-Usually URI for GGFS should be:
+In common URI for GGFS looks like:
 
     ggfs://ggfs_name@host_name
 
 Where `ggfs_name` is GGFS instance name, `host_name` is any host running GridGain node with that GGFS instance configured. 
-For more details please refer to GGFS configuration.
+For more details please refer to GGFS documentation.
+
+### 3.2 Apache Hadoop Client Configuration
+
+To run Apache Hadoop jobs with GridGain cluster you need to configure `core-site.xml` and `mapred-site.xml` the same
+way as it is done in templates shipped with the Accelerator. You can find these templates at `docs/core-site.xml.gridgain` 
+and `docs/mapred-site.xml.gridgain` respectively.
 
 ## 4. Running Apache Hadoop Job With GridGain's In-Memory Accelerator
 
 When all the configuration is complete running Apache Hadoop job will be the same as with conventional Apache Hadoop
 distribution except that all GridGain nodes are equal and any of them can be treated as Job Tracker and DFS Name Node. 
 
-For example to run "Word Count" example you can load some text files to GGFS using standard tools:
+To run "Word Count" example you can load some text files to GGFS using standard Apache Hadoop tools:
  
     $HADOOP_HOME/bin/hadoop fs -mkdir /input
     
     $HADOOP_HOME/bin/hadoop fs -copyFromLocal /path/to/my/favorite/book.txt /input/my_book.txt
      
-Run the job as usual:
+Run the job:
 
     $HADOOP_HOME/bin/hadoop jar $HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar wordcount /input /output
 
@@ -95,9 +95,11 @@ Check results:
 
     $HADOOP_HOME/bin/hadoop fs -ls /output
     
-    $HADOOP_HOME/bin/hadoop fs -cat /output/
+    $HADOOP_HOME/bin/hadoop fs -cat /output/part-r-00000
 
-It can be ran on multiple nodes on local host or in cluster environment the same way.
+A job can be ran on multiple nodes on localhost or in cluster environment the same way. The only changes needed to 
+switch Apache Hadoop client to a cluster are to fix host in default DFS URI in `core-site.xml` and host in job tracker 
+address in `mapred-site.xml`.
 
 ## 5. Management & Monitoring with Visor
 GridGain comes with GUI and CLI (command) based DevOps Managements Consoles delivering advance set of management and 

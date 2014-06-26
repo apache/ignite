@@ -185,22 +185,24 @@ public class GridHadoopSetup {
                 println("Ok. But Hadoop client will not be able to talk to GridGain cluster without those JARs in classpath...");
         }
 
-        if (ask("Replace 'core-site.xml' and 'mapred-site.xml' files with preconfigured templates?")) {
-            File gridgainDocs = new File(gridgainHome, "docs");
+        File hadoopEtc = new File(hadoopDir, "etc" + File.separator + "hadoop");
 
-            if (!gridgainDocs.canRead())
-                exit("Failed to read GridGain 'docs' folder at '" + gridgainDocs.getAbsolutePath() + "'.");
+        if (hadoopEtc.canWrite()) { // TODO Bigtop
+            if (ask("Replace 'core-site.xml' and 'mapred-site.xml' files with preconfigured templates?")) {
+                File gridgainDocs = new File(gridgainHome, "docs");
 
-            File hadoopEtc = new File(hadoopDir, "etc" + File.separator + "hadoop");
+                if (!gridgainDocs.canRead())
+                    exit("Failed to read GridGain 'docs' folder at '" + gridgainDocs.getAbsolutePath() + "'.");
 
-            if (!hadoopEtc.canWrite())
-                exit("Failed to write to directory '" + hadoopEtc + "'.");
+                replace(new File(gridgainDocs, "core-site.xml.gridgain"),
+                    renameToBak(new File(hadoopEtc, "core-site.xml")));
 
-            replace(new File(gridgainDocs, "core-site.xml.gridgain"), renameToBak(new File(hadoopEtc, "core-site.xml")));
-            replace(new File(gridgainDocs, "mapred-site.xml.gridgain"), renameToBak(new File(hadoopEtc, "mapred-site.xml")));
+                replace(new File(gridgainDocs, "mapred-site.xml.gridgain"),
+                    renameToBak(new File(hadoopEtc, "mapred-site.xml")));
+            }
+            else
+                println("Ok. You can configure them later, the templates are available at GridGain's 'docs' directory...");
         }
-        else
-            println("Ok. You can configure them later, the templates are available at GridGain's 'docs' directory...");
 
         println("Hadoop setup is complete.");
     }
