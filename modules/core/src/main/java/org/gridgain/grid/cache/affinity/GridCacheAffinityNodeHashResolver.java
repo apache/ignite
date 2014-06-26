@@ -21,12 +21,8 @@ import java.io.*;
  * will help to map keys to the same nodes whenever possible.
  * <p>
  * Note that on case clients exist they will query this object from the server and use it for affinity calculation.
- * Therefore you must ensure that:
- * <ul>
- *     <li>Server and clients can marshal and unmarshal this object in portable format, i.e. all parties have
- *     object class(es) configured as portable.</li>
- *     <li>All parties must calculate hash code of returned object in the same way.</li>
- * </ul>
+ * Therefore you must ensure that server and clients can marshal and unmarshal this object in portable format,
+ * i.e. all parties have object class(es) configured as portable.
  */
 public interface GridCacheAffinityNodeHashResolver extends Serializable {
     /**
