@@ -19,6 +19,9 @@ import org.gridgain.grid.util.typedef.internal.*;
  */
 @GridInternal
 public class VisorComputeResetMetricsTask extends VisorOneNodeTask<Void, Void> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorComputeResetMetricsJob job(Void arg) {
         return new VisorComputeResetMetricsJob(arg);

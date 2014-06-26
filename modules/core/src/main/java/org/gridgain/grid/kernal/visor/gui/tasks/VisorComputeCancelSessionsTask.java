@@ -23,6 +23,9 @@ import java.util.*;
  */
 @GridInternal
 public class VisorComputeCancelSessionsTask extends VisorMultiNodeTask<Map<UUID, Set<GridUuid>>, Void, Void> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorComputeCancelSessionsJob job(Map<UUID, Set<GridUuid>> arg) {
         return new VisorComputeCancelSessionsJob(arg);

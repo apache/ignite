@@ -28,6 +28,9 @@ import static org.gridgain.grid.kernal.visor.gui.VisorTaskUtilsEnt.*;
 @GridInternal
 public class VisorFileBlockTask extends VisorOneNodeTask<VisorFileBlockTask.VisorFileBlockArg,
     GridBiTuple<? extends IOException, VisorFileBlock>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorFileBlockJob job(VisorFileBlockArg arg) {
         return new VisorFileBlockJob(arg);

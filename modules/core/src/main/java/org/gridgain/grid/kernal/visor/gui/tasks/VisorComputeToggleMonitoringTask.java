@@ -29,6 +29,9 @@ import static org.gridgain.grid.kernal.visor.gui.dto.VisorComputeMonitoringHolde
 @GridInternal
 public class VisorComputeToggleMonitoringTask extends
     VisorMultiNodeTask<GridBiTuple<String, Boolean>, Boolean, Boolean> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Nullable @Override public Boolean reduce(List<GridComputeJobResult> results) throws GridException {
         Collection<Boolean> toggles = new HashSet<>();

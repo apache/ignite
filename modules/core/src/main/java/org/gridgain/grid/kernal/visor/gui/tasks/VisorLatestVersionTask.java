@@ -19,6 +19,9 @@ import org.gridgain.grid.util.typedef.internal.*;
  */
 @GridInternal
 public class VisorLatestVersionTask extends VisorOneNodeTask<Void, String> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorLatestVersionJob job(Void arg) {
         return new VisorLatestVersionJob(arg);

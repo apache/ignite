@@ -20,6 +20,9 @@ import org.gridgain.grid.util.typedef.internal.*;
  */
 @GridInternal
 public class VisorDrSenderCacheBootstrapTask extends VisorOneNodeTask<GridBiTuple<String, byte[]>, Void> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorDrSenderCacheBootstrapJob job(GridBiTuple<String, byte[]> arg) {
         return new VisorDrSenderCacheBootstrapJob(arg);

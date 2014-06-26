@@ -23,6 +23,9 @@ import java.util.*;
  */
 @GridInternal
 public class VisorNodesStopTask extends VisorMultiNodeTask<Void, Void, Void> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorNodesStopJob job(Void arg) {
         return new VisorNodesStopJob(arg);

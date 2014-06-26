@@ -23,6 +23,9 @@ import java.lang.management.*;
  */
 @GridInternal
 public class VisorDumpThreadTask extends VisorOneNodeTask<Void, GridBiTuple<VisorThreadInfo[], long[]>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorDumpThreadJob job(Void arg) {
         return new VisorDumpThreadJob(arg);

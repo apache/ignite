@@ -21,6 +21,9 @@ import java.util.*;
  */
 @GridInternal
 public class VisorGgfsResetMetricsTask extends VisorOneNodeTask<Set<String>, Void> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorGgfsResetMetricsJob job(Set<String> arg) {
         return new VisorGgfsResetMetricsJob(arg);

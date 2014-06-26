@@ -25,6 +25,9 @@ import java.util.*;
 @GridInternal
 public class VisorCachesLoadTask extends
     VisorOneNodeTask<GridTuple3<Set<String>, Long, Object[]>, Map<String, Integer>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorCachesLoadJob job(GridTuple3<Set<String>, Long, Object[]> arg) {
         return new VisorCachesLoadJob(arg);

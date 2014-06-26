@@ -27,6 +27,9 @@ import static org.gridgain.grid.kernal.visor.gui.VisorTaskUtilsEnt.*;
  */
 @GridInternal
 public class VisorLatestTextFilesTask extends VisorOneNodeTask<GridBiTuple<String, String>, Collection<VisorLogFile>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorLatestTextFilesJob job(GridBiTuple<String, String> arg) {
         return new VisorLatestTextFilesJob(arg);

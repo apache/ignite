@@ -35,6 +35,8 @@ import static org.gridgain.grid.kernal.visor.gui.VisorTaskUtilsEnt.*;
 public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.VisorLogSearchArg,
     GridBiTuple<Iterable<GridBiTuple<Exception, UUID>>, Iterable<VisorLogSearchResult>>,
     Collection<VisorLogSearchResult>> {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /** How many lines to read around line with found text. */
     public static final int LINE_CNT = 21;

@@ -23,6 +23,9 @@ import org.gridgain.grid.util.typedef.internal.*;
 @GridInternal
 public class VisorDrSenderCacheChangeReplicationStateTask
     extends VisorOneNodeTask<GridBiTuple<String, Boolean>, GridDrStatus> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorDrSenderCacheChangeReplicationStateJob job(GridBiTuple<String, Boolean> arg) {
         return new VisorDrSenderCacheChangeReplicationStateJob(arg);

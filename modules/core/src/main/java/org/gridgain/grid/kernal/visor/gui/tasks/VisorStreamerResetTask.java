@@ -22,6 +22,9 @@ import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.*;
  */
 @GridInternal
 public class VisorStreamerResetTask extends VisorOneNodeTask<String, Void> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorStreamerResetJob job(String arg) {
         return new VisorStreamerResetJob(arg);

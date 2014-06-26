@@ -19,6 +19,9 @@ import org.gridgain.grid.util.typedef.internal.*;
  */
 @GridInternal
 public class VisorGgfsFormatTask extends VisorOneNodeTask<String, Void> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorGgfsFormatJob job(String arg) {
         return new VisorGgfsFormatJob(arg);

@@ -22,6 +22,9 @@ import java.util.*;
  */
 @GridInternal
 public class VisorCachesPreloadTask extends VisorOneNodeTask<Set<String>, Void> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorCachesPreloadJob job(Set<String> arg) {
         return new VisorCachesPreloadJob(arg);

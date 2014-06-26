@@ -24,6 +24,9 @@ import java.util.*;
  */
 @GridInternal
 public class VisorPingTask extends VisorOneNodeTask<UUID, GridTuple3<Boolean, Long, Long>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorPingJob job(UUID arg) {
         return new VisorPingJob(arg);

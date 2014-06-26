@@ -22,6 +22,9 @@ import org.gridgain.grid.util.typedef.internal.*;
  */
 @GridInternal
 public class VisorCacheMetadataTask extends VisorOneNodeTask<String, GridCacheSqlMetadata> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorCacheMetadataJob job(String arg) {
         return new VisorCacheMetadataJob(arg);

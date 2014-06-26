@@ -37,6 +37,9 @@ import static org.gridgain.grid.kernal.visor.gui.dto.VisorComputeMonitoringHolde
 @GridInternal
 public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollectorTask.VisorDataCollectorTaskArg,
         VisorDataCollectorTask.VisorDataCollectorTaskResult, VisorDataCollectorTask.VisorDataCollectorJobResult> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorDataCollectorJob job(VisorDataCollectorTaskArg arg) {
         return new VisorDataCollectorJob(arg);
