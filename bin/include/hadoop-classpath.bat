@@ -19,18 +19,13 @@
 
 @echo off
 
-if not defined HADOOP_HOME (
-    echo ERROR: HADOOP_HOME variable is not set.
-    goto :eof
-)
+if not defined HADOOP_HOME goto :eof
 
 set HADOOP_HOME=%HADOOP_HOME:"=%
 
 if %HADOOP_HOME:~-1,1% == \ (
     set HADOOP_HOME=%HADOOP_HOME:~0,-1%
 )
-
-echo INFO: Hadoop was found in %HADOOP_HOME%
 
 ::
 :: Setting all hadoop modules

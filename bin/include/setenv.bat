@@ -45,13 +45,9 @@ if "%HADOOP_EDITION%" == "1" call "%GRIDGAIN_HOME%\bin\include\hadoop-classpath.
 
 set COMMON_HOME_LIB=%HADOOP_COMMON_HOME%\lib
 
-if "%HADOOP_EDITION%" == "1" (
-    for /f %%f in ('dir /B %GRIDGAIN_HOME%\libs\gridgain-*.jar') do (
-        if not exist %COMMON_HOME_LIB%\%%f echo WARNING: %%f doesn't exist in %COMMON_HOME_LIB%
-    )
+if "%GRIDGAIN_HADOOP_CLASSPATH%" == "" goto :eof
 
-    set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%GRIDGAIN_HADOOP_CLASSPATH%
-)
+set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%GRIDGAIN_HADOOP_CLASSPATH%
 
 goto :eof
 

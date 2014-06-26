@@ -30,13 +30,8 @@ if [ "$HADOOP_HOME" == "" ]; then
 fi
 
 if [ "$HADOOP_HOME" == "" ]; then
-    echo ERROR: HADOOP_HOME variable is not set.
-    exit 1
+    exit
 fi
-
-echo
-echo "INFO: Hadoop was found in $HADOOP_HOME"
-echo
 
 #
 # Setting all hadoop modules if it's not set by /etc/default/hadoop
