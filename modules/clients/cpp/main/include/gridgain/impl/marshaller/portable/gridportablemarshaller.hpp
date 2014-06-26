@@ -518,7 +518,7 @@ public:
     void writeCharArray(char* fieldName, const uint16_t* val, int32_t size) override {
 		writeFieldName(fieldName);
 
-        if (val != nullptr) {
+        if (val) {
             ctx.out.writeInt32(5 + size * 2);
             ctx.out.writeByte(TYPE_ID_CHAR_ARR);
 
@@ -540,7 +540,7 @@ public:
     void writeInt16Array(char* fieldName, const int16_t* val, int32_t size) override {
 		writeFieldName(fieldName);
 
-        if (val != nullptr) {
+        if (val) {
             ctx.out.writeInt32(5 + size * 2);
             ctx.out.writeByte(TYPE_ID_SHORT_ARR);
 
@@ -575,7 +575,7 @@ public:
     void writeInt32Array(char* fieldName, const int32_t* val, int32_t size) override {
 		writeFieldName(fieldName);
 
-        if (val != nullptr) {
+        if (val) {
             ctx.out.writeInt32(5 + size * 4);
             ctx.out.writeByte(TYPE_ID_INT_ARR);
 
@@ -610,7 +610,7 @@ public:
     void writeInt64Array(char* fieldName, const int64_t* val, int32_t size) override {
 		writeFieldName(fieldName);
 
-        if (val != nullptr) {
+        if (val) {
             ctx.out.writeInt32(5 + size * 8);
             ctx.out.writeByte(TYPE_ID_LONG_ARR);
 
@@ -645,7 +645,7 @@ public:
     void writeFloatArray(char* fieldName, const float* val, int32_t size) override {
 		writeFieldName(fieldName);
 
-        if (val != nullptr) {
+        if (val) {
             ctx.out.writeInt32(5 + size * 4);
             ctx.out.writeByte(TYPE_ID_FLOAT_ARR);
 
@@ -680,7 +680,7 @@ public:
     void writeDoubleArray(char* fieldName, const double* val, int32_t size) override {
 		writeFieldName(fieldName);
 
-        if (val != nullptr) {
+        if (val) {
             ctx.out.writeInt32(5 + size * 8);
             ctx.out.writeByte(TYPE_ID_DOUBLE_ARR);
 
@@ -792,7 +792,7 @@ public:
     void writeByteArray(char* fieldName, const int8_t* val, int32_t size) override {
 		writeFieldName(fieldName);
 
-        ctx.out.writeInt32(val != nullptr ? 5 + size : 5);
+        ctx.out.writeInt32(val ? 5 + size : 5);
 
         ctx.out.writeByte(TYPE_ID_BYTE_ARR);
 
@@ -800,7 +800,7 @@ public:
     }
 
     void doWriteByteArray(const int8_t* val, int32_t size) {
-        if (val != nullptr) {
+        if (val) {
             ctx.out.writeInt32(size);
             ctx.out.writeBytes(val, size);
         }
@@ -836,7 +836,7 @@ public:
     void writeBoolArray(char* fieldName, const bool* val, int32_t size) override {
 		writeFieldName(fieldName);
 
-        if (val != nullptr) {
+        if (val) {
             ctx.out.writeInt32(size + 5);
             ctx.out.writeByte(TYPE_ID_BOOLEAN_ARR);
 
@@ -1310,7 +1310,7 @@ public:
     void writeInt16Array(const int16_t* val, int32_t size) override {
         switchToRaw();
 
-        if (val != nullptr) {
+        if (val) {
             ctx.out.writeInt32(size);
             ctx.out.writeInt16Array(val, size);
         }
@@ -1331,7 +1331,7 @@ public:
     void writeInt32Array(const int32_t* val, int32_t size) override {
         switchToRaw();
 
-        if (val != nullptr) {
+        if (val) {
             ctx.out.writeInt32(size);
             ctx.out.writeInt32Array(val, size);
         }
@@ -1352,7 +1352,7 @@ public:
     void writeCharArray(const uint16_t* val, int32_t size) override {
         switchToRaw();
 
-        if (val != nullptr) {
+        if (val) {
             ctx.out.writeInt32(size);
             ctx.out.writeCharArray(val, size);
         }
@@ -1373,7 +1373,7 @@ public:
     void writeInt64Array(const int64_t* val, int32_t size) override {
         switchToRaw();
 
-        if (val != nullptr) {
+        if (val) {
             ctx.out.writeInt32(size);
             ctx.out.writeInt64Array(val, size);
         }
@@ -1394,7 +1394,7 @@ public:
     void writeFloatArray(const float* val, int32_t size) override {
         switchToRaw();
 
-        if (val != nullptr) {
+        if (val) {
             ctx.out.writeInt32(size);
             ctx.out.writeFloatArray(val, size);
         }
@@ -1415,7 +1415,7 @@ public:
     void writeDoubleArray(const double* val, int32_t size) override {
         switchToRaw();
 
-        if (val != nullptr) {
+        if (val) {
             ctx.out.writeInt32(size);
             ctx.out.writeDoubleArray(val, size);
         }
@@ -1486,7 +1486,7 @@ public:
     void writeBoolArray(const bool* val, int32_t size) override {
         switchToRaw();
 
-        if (val != nullptr) {
+        if (val) {
             ctx.out.writeInt32(size);
 
             for (int i = 0; i < size; i++)
@@ -2680,7 +2680,7 @@ public:
             return doReadByteArray(false);
         }
 
-        return std::pair<int8_t*, int32_t>(nullptr, 0);
+        return std::pair<int8_t*, int32_t>((int8_t*)0, 0);
     }
 
     std::pair<int8_t*, int32_t> doReadByteArray(bool raw) {
@@ -2703,7 +2703,7 @@ public:
             }
         }
         else
-            return std::pair<int8_t*, int32_t>(nullptr, 0);
+            return std::pair<int8_t*, int32_t>((int8_t*)0, 0);
     }
 
     int16_t readInt16(char* fieldName) override {
@@ -2731,7 +2731,7 @@ public:
             return doReadInt16Array(false);
         }
 
-        return std::pair<int16_t*, int32_t>(nullptr, 0);
+        return std::pair<int16_t*, int32_t>((int16_t*)0, 0);
     }
 
     std::pair<int16_t*, int32_t> doReadInt16Array(bool raw) {
@@ -2754,7 +2754,7 @@ public:
             }
         }
         else
-            return std::pair<int16_t*, int32_t>(nullptr, 0);
+            return std::pair<int16_t*, int32_t>((int16_t*)0, 0);
     }
 
     boost::optional<std::vector<int16_t>> readInt16Collection(char* fieldName) override {
@@ -2815,7 +2815,7 @@ public:
             return doReadCharArray(false);
         }
 
-        return std::pair<uint16_t*, int32_t>(nullptr, 0);
+        return std::pair<uint16_t*, int32_t>((uint16_t*)0, 0);
     }
 
     std::pair<uint16_t*, int32_t> doReadCharArray(bool raw) {
@@ -2838,7 +2838,7 @@ public:
             }
         }
         else
-            return std::pair<uint16_t*, int32_t>(nullptr, 0);
+            return std::pair<uint16_t*, int32_t>((uint16_t*)0, 0);
     }
 
     boost::optional<std::vector<uint16_t>> readCharCollection(char* fieldName) override {
@@ -2900,7 +2900,7 @@ public:
             return doReadInt32Array(false);
         }
 
-        return std::pair<int32_t*, int32_t>(nullptr, 0);
+        return std::pair<int32_t*, int32_t>((int32_t*)0, 0);
     }
 
     std::pair<int32_t*, int32_t> doReadInt32Array(bool raw) {
@@ -2923,7 +2923,7 @@ public:
             }
         }
         else
-            return std::pair<int32_t*, int32_t>(nullptr, 0);
+            return std::pair<int32_t*, int32_t>((int32_t*)0, 0);
     }
 
     boost::optional<std::vector<int32_t>> readInt32Collection(char* fieldName) override {
@@ -2984,7 +2984,7 @@ public:
             return doReadInt64Array(false);
         }
 
-        return std::pair<int64_t*, int32_t>(nullptr, 0);
+        return std::pair<int64_t*, int32_t>((int64_t*)0, 0);
     }
 
     std::pair<int64_t*, int32_t> doReadInt64Array(bool raw) {
@@ -3007,7 +3007,7 @@ public:
             }
         }
         else
-            return std::pair<int64_t*, int32_t>(nullptr, 0);
+            return std::pair<int64_t*, int32_t>((int64_t*)0, 0);
     }
 
     boost::optional<std::vector<int64_t>> readInt64Collection(char* fieldName) override {
@@ -3068,7 +3068,7 @@ public:
             return doReadFloatArray(false);
         }
 
-        return std::pair<float*, int32_t>(nullptr, 0);
+        return std::pair<float*, int32_t>((float*)0, 0);
     }
 
     std::pair<float*, int32_t> doReadFloatArray(bool raw) {
@@ -3091,7 +3091,7 @@ public:
             }
         }
         else
-            return std::pair<float*, int32_t>(nullptr, 0);
+            return std::pair<float*, int32_t>((float*)0, 0);
     }
 
     boost::optional<std::vector<float>> readFloatCollection(char* fieldName) override {
@@ -3152,7 +3152,7 @@ public:
             return doReadDoubleArray(false);
         }
 
-        return std::pair<double*, int32_t>(nullptr, 0);
+        return std::pair<double*, int32_t>((double*)0, 0);
     }
 
     std::pair<double*, int32_t> doReadDoubleArray(bool raw) {
@@ -3175,7 +3175,7 @@ public:
             }
         }
         else
-            return std::pair<double*, int32_t>(nullptr, 0);
+            return std::pair<double*, int32_t>((double*)0, 0);
     }
 
     boost::optional<std::vector<double>> readDoubleCollection(char* fieldName) override {
@@ -3230,7 +3230,7 @@ public:
 
         std::pair<int8_t*, int32_t> data = doReadByteArray(raw);
 
-        if (data.first != nullptr) {
+        if (data.first) {
             res.reset(std::string(reinterpret_cast<char*>(data.first), data.second / sizeof(char)));
 
             delete[] data.first;
@@ -3290,7 +3290,7 @@ public:
 
         std::pair<int8_t*, int32_t> data = doReadByteArray(raw);
 
-        if (data.first != nullptr) {
+        if (data.first) {
             res.reset(std::wstring(reinterpret_cast<wchar_t*>(data.first), data.second / sizeof(wchar_t)));
 
             delete[] data.first;
@@ -3385,7 +3385,7 @@ public:
             return doReadBoolArray(false);
         }
 
-        return std::pair<bool*, int32_t>(nullptr, 0);
+        return std::pair<bool*, int32_t>((bool*)0, 0);
     }
 
     std::pair<bool*, int32_t> doReadBoolArray(bool raw)  {
@@ -3400,7 +3400,7 @@ public:
             return std::pair<bool*, int32_t>(arr, len);
         }
         else
-            return std::pair<bool*, int32_t>(nullptr, 0);
+            return std::pair<bool*, int32_t>((bool*)0, 0);
     }
 
     boost::optional<GridClientUuid> readUuid(char* fieldName) override {
@@ -3800,7 +3800,7 @@ class GridPortableMarshaller {
 public:
     GridPortableIdResolver* idRslvr;
 
-    GridPortableMarshaller() : idRslvr(nullptr) {
+    GridPortableMarshaller() : idRslvr(0) {
     }
 
     GridPortableMarshaller(GridPortableIdResolver* idRslvr) : idRslvr(idRslvr) {

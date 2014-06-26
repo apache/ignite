@@ -22,7 +22,7 @@ public:
         threadPoolSize(DFLT_THREAD_POOL_SIZE),
         routerBalancer(TGridClientRouterBalancerPtr(new GridClientRandomRouterBalancer())),
         maxConnectionIdleTime(DFLT_MAX_CONN_IDLE_TIME),
-        portableIdRslvr(nullptr) {}
+        portableIdRslvr(0) {}
 
     Impl(const Impl& other) : topologyCacheEnabled(other.topologyCacheEnabled),topRefreshFreq(other.topRefreshFreq),
         loadBalancer(other.loadBalancer), protoCfg(other.protoCfg), srvrs(other.srvrs),

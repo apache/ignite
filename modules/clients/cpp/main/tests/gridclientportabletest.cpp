@@ -833,9 +833,9 @@ BOOST_AUTO_TEST_CASE(testPortableSerialization_cycle) {
 
     p1 = marsh.unmarshalUserObject<TestPortableCycle1>(bytes);
 
-    BOOST_REQUIRE(p1 != nullptr);
-    BOOST_REQUIRE(p1->p2 != nullptr);
-    BOOST_REQUIRE(p2->p1 != nullptr);
+    BOOST_REQUIRE(p1);
+    BOOST_REQUIRE(p1->p2);
+    BOOST_REQUIRE(p2->p1);
 
     BOOST_REQUIRE_EQUAL(p1, p1->p2->p1);
 
@@ -1077,7 +1077,7 @@ public:
 
 class TestPortableFieldNames1 : public GridPortable {
 public:
-    TestPortableFieldNames1() : obj1(nullptr), obj2(nullptr), obj3(nullptr), f1(0) {
+    TestPortableFieldNames1() : obj1(0), obj2(0), obj3(0), f1(0) {
     }
 
     TestPortableFieldNames1(int32_t f1) : f1(f1) {
@@ -1087,11 +1087,11 @@ public:
     }
 
     ~TestPortableFieldNames1() {
-        if (obj1 != nullptr)
+        if (obj1)
             delete obj1;
-        if (obj2 != nullptr)
+        if (obj2)
             delete obj2;
-        if (obj3 != nullptr)
+        if (obj3)
             delete obj3;
     }
 
@@ -1153,9 +1153,9 @@ BOOST_AUTO_TEST_CASE(testPortableSerialization_fieldNames) {
     unique_ptr<TestPortableFieldNames1> p(marsh.unmarshalUserObject<TestPortableFieldNames1>(bytes));
 
     BOOST_REQUIRE_EQUAL(1000, (*p).f1);
-    BOOST_REQUIRE((*p).obj1 != nullptr);
-    BOOST_REQUIRE((*p).obj2 != nullptr);
-    BOOST_REQUIRE((*p).obj3 != nullptr);
+    BOOST_REQUIRE((*p).obj1);
+    BOOST_REQUIRE((*p).obj2);
+    BOOST_REQUIRE((*p).obj3);
 }
 
 void checkVariants(GridClientVariant& var1, GridClientVariant& var2, GridClientVariant& var3) {
@@ -2393,7 +2393,7 @@ public:
 
 class TestNested1 : public GridPortable {
 public:
-    TestNested1() : obj(nullptr) {
+    TestNested1() : obj(0) {
     }
 
     TestNested1(TestNested2* obj) : obj(obj) {
