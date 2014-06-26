@@ -126,7 +126,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         CountDownLatch latch = new CountDownLatch(nodeCount());
 
-        DummyService.latch(latch);
+        DummyService.exeLatch(name, latch);
 
         GridFuture<?> fut = g.services().deployOnEachNode(name, new DummyService());
 
@@ -138,8 +138,8 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         latch.await();
 
-        assertEquals(nodeCount(), DummyService.started());
-        assertFalse(DummyService.isCancelled());
+        assertEquals(name, nodeCount(), DummyService.started(name));
+        assertEquals(name, 0, DummyService.cancelled(name));
 
         checkCount(name, g.services().deployedServices(), nodeCount());
     }
@@ -154,7 +154,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         CountDownLatch latch = new CountDownLatch(1);
 
-        DummyService.latch(latch);
+        DummyService.exeLatch(name, latch);
 
         GridFuture<?> fut = g.services().deploySingleton(name, new DummyService());
 
@@ -166,8 +166,8 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         latch.await();
 
-        assertEquals(1, DummyService.started());
-        assertFalse(DummyService.isCancelled());
+        assertEquals(name, 1, DummyService.started(name));
+        assertEquals(name, 0, DummyService.cancelled(name));
 
         checkCount(name, g.services().deployedServices(), 1);
     }
@@ -182,7 +182,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         CountDownLatch latch = new CountDownLatch(nodeCount() * 2);
 
-        DummyService.latch(latch);
+        DummyService.exeLatch(name, latch);
 
         GridFuture<?> fut = g.services().deployMultiple(name, new DummyService(), nodeCount() * 2, 3);
 
@@ -194,8 +194,8 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         latch.await();
 
-        assertEquals(nodeCount() * 2, DummyService.started());
-        assertFalse(DummyService.isCancelled());
+        assertEquals(name, nodeCount() * 2, DummyService.started(name));
+        assertEquals(name, 0, DummyService.cancelled(name));
 
         checkCount(name, g.services().deployedServices(), nodeCount() * 2);
     }
@@ -212,7 +212,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         CountDownLatch latch = new CountDownLatch(cnt);
 
-        DummyService.latch(latch);
+        DummyService.exeLatch(name, latch);
 
         GridFuture<?> fut = g.services().deployMultiple(name, new DummyService(), cnt, 3);
 
@@ -224,94 +224,80 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         latch.await();
 
-        assertEquals(cnt, DummyService.started());
-        assertFalse(DummyService.isCancelled());
+        assertEquals(name, cnt, DummyService.started(name));
+        assertEquals(name, 0, DummyService.cancelled(name));
 
         checkCount(name, g.services().deployedServices(), cnt);
     }
 
     /**
-     * @param name Service name.
      * @throws Exception If failed.
      */
-    protected void checkSingletonUpdateTopology(String name) throws Exception {
+    public void testCancelSingleton() throws Exception {
         Grid g = randomGrid();
+
+        String name = "serviceCancel";
 
         CountDownLatch latch = new CountDownLatch(1);
 
-        DummyService.latch(latch);
+        DummyService.exeLatch(name, latch);
 
-        GridFuture<?> fut = g.services().deploySingleton(name, new DummyService());
+        g.services().deploySingleton(name, new DummyService()).get();
 
         info("Deployed service: " + name);
 
-        fut.get();
+        latch.await();
 
-        info("Finished waiting for service future: " + name);
+        assertEquals(name, 1, DummyService.started(name));
+        assertEquals(name, 0, DummyService.cancelled(name));
+
+        latch = new CountDownLatch(1);
+
+        DummyService.cancelLatch(name, latch);
+
+        g.services().cancel(name).get();
+
+        info("Cancelled service: " + name);
 
         latch.await();
 
-        assertEquals(1, DummyService.started());
-        assertFalse(DummyService.isCancelled());
-
-        int nodeCnt = 2;
-
-        startExtraNodes(nodeCnt);
-
-        try {
-            assertEquals(1, DummyService.started());
-            assertFalse(DummyService.isCancelled());
-
-            checkCount(name, g.services().deployedServices(), 1);
-        }
-        finally {
-            stopExtraNodes(nodeCnt);
-        }
+        assertEquals(name, 1, DummyService.started(name));
+        assertEquals(name, 1, DummyService.cancelled(name));
     }
 
     /**
-     * @param name Service name.
      * @throws Exception If failed.
      */
-    protected void checkDeployOnEachNodeUpdateTopology(String name) throws Exception {
+    public void testCancelEachNode() throws Exception {
         Grid g = randomGrid();
+
+        String name = "serviceCancelEachNode";
 
         CountDownLatch latch = new CountDownLatch(nodeCount());
 
-        DummyService.latch(latch);
+        DummyService.exeLatch(name, latch);
 
-        GridFuture<?> fut = g.services().deployOnEachNode(name, new DummyService());
+        g.services().deployOnEachNode(name, new DummyService()).get();
 
         info("Deployed service: " + name);
 
-        fut.get();
+        latch.await();
 
-        info("Finished waiting for service future: " + name);
+        assertEquals(name, nodeCount(), DummyService.started(name));
+        assertEquals(name, 0, DummyService.cancelled(name));
+
+        latch = new CountDownLatch(nodeCount());
+
+        DummyService.cancelLatch(name, latch);
+
+        g.services().cancel(name).get();
+
+        info("Cancelled service: " + name);
 
         latch.await();
 
-        assertEquals(nodeCount(), DummyService.started());
-        assertFalse(DummyService.isCancelled());
-
-        int newNodes = 2;
-
-        latch = new CountDownLatch(newNodes);
-
-        DummyService.latch(latch);
-
-        startExtraNodes(newNodes);
-
-        try {
-            latch.await();
-
-            assertEquals(nodeCount() + newNodes, DummyService.started());
-            assertFalse(DummyService.isCancelled());
-
-            checkCount(name, g.services().deployedServices(), nodeCount() + newNodes);
-        }
-        finally {
-            stopExtraNodes(newNodes);
-        }
+        assertEquals(name, nodeCount(), DummyService.started(name));
+        assertEquals(name, nodeCount(), DummyService.cancelled(name));
     }
 
     /**

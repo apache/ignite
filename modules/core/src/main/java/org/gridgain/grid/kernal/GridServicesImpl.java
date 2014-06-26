@@ -128,7 +128,19 @@ public class GridServicesImpl implements GridServices {
         guard();
 
         try {
-            return ctx.service().cancel(prj, name);
+            return ctx.service().cancel(name);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridFuture<?> cancelAll() {
+        guard();
+
+        try {
+            return ctx.service().cancelAll();
         }
         finally {
             unguard();

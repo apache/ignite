@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.service;
 
 import org.gridgain.grid.service.*;
+import org.jdk8.backport.*;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -21,26 +22,55 @@ import java.util.concurrent.atomic.*;
  * @version @java.version
  */
 public class DummyService implements GridService {
-    /** Started counter. */
-    public static final AtomicInteger started = new AtomicInteger();
+    /** Started counter per service. */
+    public static final ConcurrentMap<String, AtomicInteger> started = new ConcurrentHashMap8<>();
 
-    private static CountDownLatch latch;
+    /** Latches per service. */
+    private static final ConcurrentMap<String, CountDownLatch> exeLatches = new ConcurrentHashMap8<>();
 
-    /** Cancelled flag. */
-    public static volatile boolean cancelled = false;
+    /** Cancel latches per service. */
+    private static final ConcurrentMap<String, CountDownLatch> cancelLatches = new ConcurrentHashMap8<>();
+
+    /** Cancelled flags per service. */
+    private static final ConcurrentMap<String, AtomicInteger> cancelled = new ConcurrentHashMap8<>();
 
     /** {@inheritDoc} */
     @Override public void cancel(GridServiceContext ctx) {
-        cancelled = true;
+        AtomicInteger cntr = cancelled.get(ctx.name());
+
+        if (cntr == null) {
+            AtomicInteger old = cancelled.putIfAbsent(ctx.name(), cntr = new AtomicInteger());
+
+            if (old != null)
+                cntr = old;
+        }
+
+        cntr.incrementAndGet();
+
+        CountDownLatch latch = cancelLatches.get(ctx.name());
+
+        if (latch != null)
+            latch.countDown();
 
         System.out.println("Cancelling service: " + ctx.name());
     }
 
     /** {@inheritDoc} */
     @Override public void execute(GridServiceContext ctx) {
-        started.incrementAndGet();
+        AtomicInteger cntr = started.get(ctx.name());
+
+        if (cntr == null) {
+            AtomicInteger old = started.putIfAbsent(ctx.name(), cntr = new AtomicInteger());
+
+            if (old != null)
+                cntr = old;
+        }
+
+        cntr.incrementAndGet();
 
         System.out.println("Executing service: " + ctx.name());
+
+        CountDownLatch latch = exeLatches.get(ctx.name());
 
         if (latch != null)
             latch.countDown();
@@ -49,30 +79,43 @@ public class DummyService implements GridService {
     /**
      * @return Cancelled flag.
      */
-    public static boolean isCancelled() {
-        return cancelled;
+    public static int cancelled(String name) {
+        AtomicInteger cntr = cancelled.get(name);
+
+        return cntr == null ? 0 : cntr.get();
     }
 
     /**
      * @return Started counter.
      */
-    public static int started() {
-        return started.get();
+    public static int started(String name) {
+        AtomicInteger cntr = started.get(name);
+
+        return cntr == null ? 0 : cntr.get();
     }
 
     /**
      * Resets dummy service to initial state.
      */
     public static void reset() {
-        started.set(0);
-        latch = null;
-        cancelled = false;
+        System.out.println("Resetting dummy service.");
+
+        started.clear();
+        exeLatches.clear();
+        cancelled.clear();
     }
 
     /**
      * @param latch Count down latch.
      */
-    public static void latch(CountDownLatch latch) {
-        DummyService.latch = latch;
+    public static void exeLatch(String name, CountDownLatch latch) {
+        exeLatches.put(name, latch);
+    }
+
+    /**
+     * @param latch Cancel latch.
+     */
+    public static void cancelLatch(String name, CountDownLatch latch) {
+        cancelLatches.put(name, latch);
     }
 }

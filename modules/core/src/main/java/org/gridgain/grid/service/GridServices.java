@@ -34,5 +34,7 @@ public interface GridServices {
 
     public GridFuture<?> cancel(String name);
 
+    public GridFuture<?> cancelAll();
+
     public Collection<GridServiceDescriptor> deployedServices();
 }

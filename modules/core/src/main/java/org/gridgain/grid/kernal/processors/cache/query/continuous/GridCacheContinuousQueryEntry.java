@@ -30,7 +30,7 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheValueBytes.*;
 /**
  * Entry implementation.
  */
-class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>, GridCacheDeployable, Externalizable {
+public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>, GridCacheDeployable, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -161,6 +161,17 @@ class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>, GridC
     /** {@inheritDoc} */
     @Override public K getKey() {
         return key;
+    }
+
+    /**
+     * TODO: Hack.
+     * Remove this method after type projection is fixed to work with null values.
+     *
+     * @param cls Class to check.
+     * @return {@code True} if passed in class can be assigned to key class.
+     */
+    public boolean keyAssignableFrom(Class<?> cls) {
+        return key.getClass().isAssignableFrom(cls);
     }
 
     /** {@inheritDoc} */

@@ -9,7 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.service;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.service.*;
+
+import java.util.concurrent.*;
 
 /**
  * Single node services test.
@@ -18,6 +21,12 @@ import org.gridgain.grid.service.*;
  * @version @java.version
  */
 public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProcessorAbstractSelfTest {
+    /** Cluster singleton name. */
+    private static final String CLUSTER_SINGLE = "serviceConfigSingleton";
+
+    /** Node singleton name. */
+    private static final String NODE_SINGLE = "serviceConfigEachNode";
+
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
         return 4;
@@ -29,7 +38,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
 
         GridServiceConfiguration cfg = new GridServiceConfiguration();
 
-        cfg.setName("serviceConfigSingleton");
+        cfg.setName(CLUSTER_SINGLE);
         cfg.setMaxPerNodeCount(1);
         cfg.setTotalCount(1);
         cfg.setService(new DummyService());
@@ -38,7 +47,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
 
         cfg = new GridServiceConfiguration();
 
-        cfg.setName("serviceConfigEachNode");
+        cfg.setName(NODE_SINGLE);
         cfg.setMaxPerNodeCount(1);
         cfg.setService(new DummyService());
 
@@ -47,30 +56,93 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
         return arr;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        assertEquals(CLUSTER_SINGLE, 1, DummyService.started(CLUSTER_SINGLE));
+        assertEquals(CLUSTER_SINGLE, 0, DummyService.cancelled(CLUSTER_SINGLE));
+
+        assertEquals(NODE_SINGLE, nodeCount(), DummyService.started(NODE_SINGLE));
+        assertEquals(CLUSTER_SINGLE, 0, DummyService.cancelled(NODE_SINGLE));
+    }
+
     /**
      * @throws Exception If failed.
      */
     public void testSingletonUpdateTopology() throws Exception {
-        checkSingletonUpdateTopology("serviceConfigSingleton");
+        checkSingletonUpdateTopology(CLUSTER_SINGLE);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testDeployOnEachNodeUpdateTopology() throws Exception {
-        checkDeployOnEachNodeUpdateTopology("serviceConfigEachNode");
+        checkDeployOnEachNodeUpdateTopology(NODE_SINGLE);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAll() throws Exception {
-        checkSingletonUpdateTopology("serviceConfigAllSingleton");
+        checkSingletonUpdateTopology(CLUSTER_SINGLE);
 
         DummyService.reset();
 
-        checkDeployOnEachNodeUpdateTopology("serviceConfigAllEachNode");
+        checkDeployOnEachNodeUpdateTopology(NODE_SINGLE);
 
         DummyService.reset();
+    }
+
+    /**
+     * @param name Name.
+     * @throws Exception If failed.
+     */
+    private void checkSingletonUpdateTopology(String name) throws Exception {
+        Grid g = randomGrid();
+
+        int nodeCnt = 2;
+
+        startExtraNodes(nodeCnt);
+
+        try {
+            assertEquals(name, 0, DummyService.started(name));
+            assertEquals(name, 0, DummyService.cancelled(name));
+
+            info(">>> Passed checks.");
+
+            checkCount(name, g.services().deployedServices(), 1);
+        }
+        finally {
+            stopExtraNodes(nodeCnt);
+        }
+    }
+
+    /**
+     * @param name Name.
+     * @throws Exception If failed.
+     */
+    private void checkDeployOnEachNodeUpdateTopology(String name) throws Exception {
+        Grid g = randomGrid();
+
+        int newNodes = 2;
+
+        CountDownLatch latch = new CountDownLatch(newNodes);
+
+        DummyService.exeLatch(name, latch);
+
+        startExtraNodes(newNodes);
+
+        try {
+            latch.await();
+
+            assertEquals(name, newNodes, DummyService.started(name));
+            assertEquals(name, 0, DummyService.cancelled(name));
+
+            checkCount(name, g.services().deployedServices(), nodeCount() + newNodes);
+        }
+        finally {
+            stopExtraNodes(newNodes);
+        }
     }
 }
