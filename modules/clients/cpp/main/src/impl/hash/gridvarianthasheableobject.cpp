@@ -51,95 +51,95 @@ public:
         hashCode_ = -1;
     }
 
-    virtual void visit(const bool val) const override {
+    virtual void visit(const bool val) const {
         hashCode_ = gridBoolHash(val);
     }
 
-    virtual void visit(const int8_t val) const override {
+    virtual void visit(const int8_t val) const {
         hashCode_ = gridByteHash(val);
     }
 
-    virtual void visit(const uint16_t val) const override {
+    virtual void visit(const uint16_t val) const {
         hashCode_ = gridHashCode<uint16_t>(val);
     }
 
-    virtual void visit(const int16_t val) const override {
+    virtual void visit(const int16_t val) const {
         hashCode_ = gridInt16Hash(val);
     }
 
-    virtual void visit(const int32_t val) const override {
+    virtual void visit(const int32_t val) const {
         hashCode_ = gridInt32Hash(val);
     }
 
-    virtual void visit(const int64_t val) const override {
+    virtual void visit(const int64_t val) const {
         hashCode_ = gridInt64Hash(val);
     }
 
-    virtual void visit(const double val) const override {
+    virtual void visit(const double val) const {
         hashCode_ = gridDoubleHash(val);
     }
 
-    virtual void visit(const float val) const override {
+    virtual void visit(const float val) const {
         hashCode_ = gridFloatHash(val);
     }
 
-    virtual void visit(const string& val) const override {
+    virtual void visit(const string& val) const {
         hashCode_ = gridStringHash(val);
     }
 
-    virtual void visit(const std::wstring& val) const override {
+    virtual void visit(const std::wstring& val) const {
         hashCode_ = gridWStringHash(val);
     }
 
-    virtual void visit(const vector<int8_t>& val) const override {
+    virtual void visit(const vector<int8_t>& val) const {
         hashCode_ = gridCollectionHash(val);
     }
 
-    virtual void visit(const vector<bool>& val) const override {
+    virtual void visit(const vector<bool>& val) const {
         hashCode_ = gridCollectionHash(val);
     }
 
-    virtual void visit(const vector<int16_t>& val) const override {
+    virtual void visit(const vector<int16_t>& val) const {
         hashCode_ = gridCollectionHash(val);
     }
 
-    virtual void visit(const vector<uint16_t>& val) const override {
+    virtual void visit(const vector<uint16_t>& val) const {
         hashCode_ = gridCollectionHash(val);
     }
 
-    virtual void visit(const vector<int32_t>& val) const override {
+    virtual void visit(const vector<int32_t>& val) const {
         hashCode_ = gridCollectionHash(val);
     }
 
-    virtual void visit(const vector<int64_t>& val) const override {
+    virtual void visit(const vector<int64_t>& val) const {
         hashCode_ = gridCollectionHash(val);
     }
 
-    virtual void visit(const vector<float>& val) const override {
+    virtual void visit(const vector<float>& val) const {
         hashCode_ = gridCollectionHash(val);
     }
 
-    virtual void visit(const vector<double>& val) const override {
+    virtual void visit(const vector<double>& val) const {
         hashCode_ = gridCollectionHash(val);
     }
 
-    virtual void visit(const vector<string>& val) const override {
+    virtual void visit(const vector<string>& val) const {
         hashCode_ = gridCollectionHash(val);
     }
 
-    virtual void visit(const vector<GridClientUuid>& val) const override {
+    virtual void visit(const vector<GridClientUuid>& val) const {
         hashCode_ = gridCollectionHash(val);
     }
 
-    virtual void visit(const TGridClientVariantSet& val) const override {
+    virtual void visit(const TGridClientVariantSet& val) const {
         hashCode_ = gridCollectionHash(val);
     }
 
-    virtual void visit(const GridClientUuid& uuid) const override {
+    virtual void visit(const GridClientUuid& uuid) const {
         hashCode_ = uuid.hashCode();
     }
 
-    virtual void visit(const GridClientDate& val) const override {
+    virtual void visit(const GridClientDate& val) const {
         hashCode_ = val.hashCode();
     }
 
@@ -147,7 +147,7 @@ public:
         hashCode_ = gridOptionalCollectionHash(val);
     }
 
-    virtual void visit(const TGridClientVariantMap& vmap) const override {
+    virtual void visit(const TGridClientVariantMap& vmap) const {
         hashCode_ = 0;
 
         BOOST_FOREACH(TGridClientVariantMap::value_type pair, vmap) {
@@ -158,15 +158,15 @@ public:
         }
     }
 
-    virtual void visit(const GridPortable&) const override {
+    virtual void visit(const GridPortable&) const {
         throw runtime_error("Can not calculate hash code for GridClientVariant holding GridPortable.");
     }
 
-    virtual void visit(const GridHashablePortable& val) const override {
+    virtual void visit(const GridHashablePortable& val) const {
         hashCode_ = val.hashCode();
     }
 
-    virtual void visit(const GridPortableObject& val) const override {
+    virtual void visit(const GridPortableObject& val) const {
         hashCode_ = val.hashCode();
     }
 

@@ -439,7 +439,7 @@ public:
         doWriteVariant(GridClientVariant(&portable));
     }
 
-    GridPortableRawWriter& rawWriter() override {
+    GridPortableRawWriter& rawWriter() {
         return *this;
     }
 
@@ -472,7 +472,7 @@ public:
         }
     }
 
-    void writeByte(char* fieldName, int8_t val) override {
+    void writeByte(char* fieldName, int8_t val) {
 		writeFieldName(fieldName);
 
         ctx.out.writeInt32(2);
@@ -485,7 +485,7 @@ public:
         ctx.out.writeByte(val);
 	}
 
-    void writeInt16(char* fieldName, int16_t val) override {
+    void writeInt16(char* fieldName, int16_t val) {
 		writeFieldName(fieldName);
 
         ctx.out.writeInt32(3);
@@ -498,7 +498,7 @@ public:
         ctx.out.writeInt16(val);
 	}
 
-    void writeChar(char* fieldName, uint16_t val) override {
+    void writeChar(char* fieldName, uint16_t val) {
 		writeFieldName(fieldName);
 
         ctx.out.writeInt32(3);
@@ -511,11 +511,11 @@ public:
         ctx.out.writeChar(val);
 	}
 
-    void writeCharCollection(char* fieldName, const std::vector<uint16_t> val) override {
+    void writeCharCollection(char* fieldName, const std::vector<uint16_t> val) {
         writeCharArray(fieldName, val.data(), val.size());
     }
 
-    void writeCharArray(char* fieldName, const uint16_t* val, int32_t size) override {
+    void writeCharArray(char* fieldName, const uint16_t* val, int32_t size) {
 		writeFieldName(fieldName);
 
         if (val) {
@@ -533,11 +533,11 @@ public:
         }
     }
 
-    void writeInt16Collection(char* fieldName, const std::vector<int16_t>& val) override {
+    void writeInt16Collection(char* fieldName, const std::vector<int16_t>& val) {
         writeInt16Array(fieldName, val.data(), val.size());
     }
 
-    void writeInt16Array(char* fieldName, const int16_t* val, int32_t size) override {
+    void writeInt16Array(char* fieldName, const int16_t* val, int32_t size) {
 		writeFieldName(fieldName);
 
         if (val) {
@@ -555,7 +555,7 @@ public:
         }
     }
 
-    void writeInt32(char* fieldName, int32_t val) override {
+    void writeInt32(char* fieldName, int32_t val) {
 		writeFieldName(fieldName);
 
         ctx.out.writeInt32(5);
@@ -568,11 +568,11 @@ public:
         ctx.out.writeInt32(val);
 	}
 
-    void writeInt32Collection(char* fieldName, const std::vector<int32_t>& val) override {
+    void writeInt32Collection(char* fieldName, const std::vector<int32_t>& val) {
         writeInt32Array(fieldName, val.data(), val.size());
     }
 
-    void writeInt32Array(char* fieldName, const int32_t* val, int32_t size) override {
+    void writeInt32Array(char* fieldName, const int32_t* val, int32_t size) {
 		writeFieldName(fieldName);
 
         if (val) {
@@ -590,7 +590,7 @@ public:
         }
     }
 
-    void writeInt64(char* fieldName, int64_t val) override {
+    void writeInt64(char* fieldName, int64_t val) {
 		writeFieldName(fieldName);
 
         ctx.out.writeInt32(9);
@@ -603,11 +603,11 @@ public:
         ctx.out.writeInt64(val);
 	}
 
-    void writeInt64Collection(char* fieldName, const std::vector<int64_t>& val) override {
+    void writeInt64Collection(char* fieldName, const std::vector<int64_t>& val) {
         writeInt64Array(fieldName, val.data(), val.size());
     }
 
-    void writeInt64Array(char* fieldName, const int64_t* val, int32_t size) override {
+    void writeInt64Array(char* fieldName, const int64_t* val, int32_t size) {
 		writeFieldName(fieldName);
 
         if (val) {
@@ -625,7 +625,7 @@ public:
         }
     }
 
-    void writeFloat(char* fieldName, float val) override {
+    void writeFloat(char* fieldName, float val) {
 		writeFieldName(fieldName);
 
         ctx.out.writeInt32(5);
@@ -638,11 +638,11 @@ public:
         ctx.out.writeFloat(val);
 	}
 
-    void writeFloatCollection(char* fieldName, const std::vector<float>& val) override {
+    void writeFloatCollection(char* fieldName, const std::vector<float>& val) {
         writeFloatArray(fieldName, val.data(), val.size());
     }
 
-    void writeFloatArray(char* fieldName, const float* val, int32_t size) override {
+    void writeFloatArray(char* fieldName, const float* val, int32_t size) {
 		writeFieldName(fieldName);
 
         if (val) {
@@ -660,7 +660,7 @@ public:
         }
     }
 
-    void writeDouble(char* fieldName, double val) override {
+    void writeDouble(char* fieldName, double val) {
 		writeFieldName(fieldName);
 
         ctx.out.writeInt32(9);
@@ -673,11 +673,11 @@ public:
         ctx.out.writeDouble(val);
 	}
 
-    void writeDoubleCollection(char* fieldName, const std::vector<double>& val) override {
+    void writeDoubleCollection(char* fieldName, const std::vector<double>& val) {
         writeDoubleArray(fieldName, val.data(), val.size());
     }
 
-    void writeDoubleArray(char* fieldName, const double* val, int32_t size) override {
+    void writeDoubleArray(char* fieldName, const double* val, int32_t size) {
 		writeFieldName(fieldName);
 
         if (val) {
@@ -695,7 +695,7 @@ public:
         }
     }
 
-	void writeString(char* fieldName, const std::string &val) override {
+	void writeString(char* fieldName, const std::string &val) {
 		writeFieldName(fieldName);
 
         int32_t len = val.length() * sizeof(char);
@@ -714,7 +714,7 @@ public:
 		ctx.out.writeBytes(val.data(), len);
 	}
 
-    void writeStringCollection(char* fieldName, const std::vector<std::string>& val) override {
+    void writeStringCollection(char* fieldName, const std::vector<std::string>& val) {
 		writeFieldName(fieldName);
 
         ctx.out.writeInt32(0);
@@ -737,7 +737,7 @@ public:
             doWriteString(*iter);
     }
 
-    void writeWString(char* fieldName, const std::wstring& val) override {
+    void writeWString(char* fieldName, const std::wstring& val) {
 		writeFieldName(fieldName);
 
         int32_t len = val.length() * sizeof(wchar_t);
@@ -756,7 +756,7 @@ public:
 		ctx.out.writeBytes(str.data(), len);
 	}
 
-    void writeWStringCollection(char* fieldName, const std::vector<std::wstring>& val) override {
+    void writeWStringCollection(char* fieldName, const std::vector<std::wstring>& val) {
 		writeFieldName(fieldName);
 
         ctx.out.writeInt32(0);
@@ -779,7 +779,7 @@ public:
             doWriteWString(*iter);
     }
 
-    void writeByteCollection(char* fieldName, const std::vector<int8_t>& val) override {
+    void writeByteCollection(char* fieldName, const std::vector<int8_t>& val) {
         writeByteArray(fieldName, val.data(), val.size());
     }
 
@@ -789,7 +789,7 @@ public:
         ctx.out.writeBytes(val.data(), val.size());
     }
 
-    void writeByteArray(char* fieldName, const int8_t* val, int32_t size) override {
+    void writeByteArray(char* fieldName, const int8_t* val, int32_t size) {
 		writeFieldName(fieldName);
 
         ctx.out.writeInt32(val ? 5 + size : 5);
@@ -808,7 +808,7 @@ public:
             ctx.out.writeInt32(-1);
     }
 
-	void writeBool(char* fieldName, bool val) override {
+	void writeBool(char* fieldName, bool val) {
 		writeFieldName(fieldName);
 
         ctx.out.writeInt32(2);
@@ -821,7 +821,7 @@ public:
         ctx.out.writeBool(val);
 	}
 
-    void writeBoolCollection(char* fieldName, const std::vector<bool>& val) override {
+    void writeBoolCollection(char* fieldName, const std::vector<bool>& val) {
 		writeFieldName(fieldName);
 
         ctx.out.writeInt32(val.size() + 5);
@@ -833,7 +833,7 @@ public:
             doWriteBool(*iter);
     }
 
-    void writeBoolArray(char* fieldName, const bool* val, int32_t size) override {
+    void writeBoolArray(char* fieldName, const bool* val, int32_t size) {
 		writeFieldName(fieldName);
 
         if (val) {
@@ -853,7 +853,7 @@ public:
         }
     }
 
-	void writeUuid(char* fieldName, const boost::optional<GridClientUuid>& val) override {
+	void writeUuid(char* fieldName, const boost::optional<GridClientUuid>& val) {
 		writeFieldName(fieldName);
 
         ctx.out.writeInt32(val.is_initialized() ? 18 : 2);
@@ -874,7 +874,7 @@ public:
             ctx.out.writeBool(false);
 	}
 
-    void writeDate(char* fieldName, const boost::optional<GridClientDate>& val) override {
+    void writeDate(char* fieldName, const boost::optional<GridClientDate>& val) {
 		writeFieldName(fieldName);
 
         doWriteInt32(val ? 12 : 2);
@@ -895,7 +895,7 @@ public:
             doWriteBool(false);
     }
 
-    void writeUuidCollection(char* fieldName, const std::vector<GridClientUuid>& val) override {
+    void writeUuidCollection(char* fieldName, const std::vector<GridClientUuid>& val) {
 		writeFieldName(fieldName);
 
         ctx.out.writeInt32(5 + val.size() * 17);
@@ -918,7 +918,7 @@ public:
         }
     }
 
-    void writeDateCollection(char* fieldName, const std::vector<boost::optional<GridClientDate>>& val) override {
+    void writeDateCollection(char* fieldName, const std::vector<boost::optional<GridClientDate>>& val) {
 		writeFieldName(fieldName);
 
         ctx.out.writeInt32(0);
@@ -958,7 +958,7 @@ public:
         ctx.out.writeInt32(18); // Raw offset (header length).
     }
 
-    void writeVariant(char* fieldName, const GridClientVariant& val) override {
+    void writeVariant(char* fieldName, const GridClientVariant& val) {
 		writeFieldName(fieldName);
 
         ctx.out.writeInt32(0); // Reserve space for length.
@@ -1233,7 +1233,7 @@ public:
         ctx.out.writeInt32To(lenPos, len);
     }
 
-    void writeVariantCollection(char* fieldName, const TGridClientVariantSet &val) override {
+    void writeVariantCollection(char* fieldName, const TGridClientVariantSet &val) {
         writeFieldName(fieldName);
 
         ctx.out.writeInt32(0); // Reserve space for length.
@@ -1261,7 +1261,7 @@ public:
         }
     }
 
-    void writeVariantMap(char* fieldName, const TGridClientVariantMap &val) override {
+    void writeVariantMap(char* fieldName, const TGridClientVariantMap &val) {
         writeFieldName(fieldName);
 
         ctx.out.writeInt32(0); // Reserve space for length.
@@ -1291,23 +1291,23 @@ public:
         }
     }
 
-    void writeByte(int8_t val) override {
+    void writeByte(int8_t val) {
         switchToRaw();
 
         doWriteByte(val);
 	}
 
-    void writeInt16(int16_t val) override {
+    void writeInt16(int16_t val) {
         switchToRaw();
 
         doWriteInt16(val);
 	}
 
-    void writeInt16Collection(const std::vector<int16_t>& val) override {
+    void writeInt16Collection(const std::vector<int16_t>& val) {
         writeInt16Array(val.data(), val.size());
     }
 
-    void writeInt16Array(const int16_t* val, int32_t size) override {
+    void writeInt16Array(const int16_t* val, int32_t size) {
         switchToRaw();
 
         if (val) {
@@ -1318,17 +1318,17 @@ public:
             ctx.out.writeInt32(-1);
     }
 
-    void writeInt32(int32_t val) override {
+    void writeInt32(int32_t val) {
         switchToRaw();
 
         doWriteInt32(val);
 	}
 
-    void writeInt32Collection(const std::vector<int32_t>& val) override {
+    void writeInt32Collection(const std::vector<int32_t>& val) {
         writeInt32Array(val.data(), val.size());
     }
 
-    void writeInt32Array(const int32_t* val, int32_t size) override {
+    void writeInt32Array(const int32_t* val, int32_t size) {
         switchToRaw();
 
         if (val) {
@@ -1339,17 +1339,17 @@ public:
             ctx.out.writeInt32(-1);
     }
 
-    void writeChar(uint16_t val) override {
+    void writeChar(uint16_t val) {
         switchToRaw();
 
         doWriteChar(val);
     }
 
-    void writeCharCollection(const std::vector<uint16_t> val) override {
+    void writeCharCollection(const std::vector<uint16_t> val) {
         writeCharArray(val.data(), val.size());
     }
 
-    void writeCharArray(const uint16_t* val, int32_t size) override {
+    void writeCharArray(const uint16_t* val, int32_t size) {
         switchToRaw();
 
         if (val) {
@@ -1360,17 +1360,17 @@ public:
             ctx.out.writeInt32(-1);
     }
 
-    void writeInt64(int64_t val) override {
+    void writeInt64(int64_t val) {
         switchToRaw();
 
         doWriteInt64(val);
 	}
 
-    void writeInt64Collection(const std::vector<int64_t>& val) override {
+    void writeInt64Collection(const std::vector<int64_t>& val) {
         writeInt64Array(val.data(), val.size());
     }
 
-    void writeInt64Array(const int64_t* val, int32_t size) override {
+    void writeInt64Array(const int64_t* val, int32_t size) {
         switchToRaw();
 
         if (val) {
@@ -1381,17 +1381,17 @@ public:
             ctx.out.writeInt32(-1);
     }
 
-    void writeFloat(float val) override {
+    void writeFloat(float val) {
         switchToRaw();
 
         doWriteFloat(val);
 	}
 
-    void writeFloatCollection(const std::vector<float>& val) override {
+    void writeFloatCollection(const std::vector<float>& val) {
         writeFloatArray(val.data(), val.size());
     }
 
-    void writeFloatArray(const float* val, int32_t size) override {
+    void writeFloatArray(const float* val, int32_t size) {
         switchToRaw();
 
         if (val) {
@@ -1402,17 +1402,17 @@ public:
             ctx.out.writeInt32(-1);
     }
 
-    void writeDouble(double val) override {
+    void writeDouble(double val) {
         switchToRaw();
 
         doWriteDouble(val);
 	}
 
-    void writeDoubleCollection(const std::vector<double>& val) override {
+    void writeDoubleCollection(const std::vector<double>& val) {
         writeDoubleArray(val.data(), val.size());
     }
 
-    void writeDoubleArray(const double* val, int32_t size) override {
+    void writeDoubleArray(const double* val, int32_t size) {
         switchToRaw();
 
         if (val) {
@@ -1423,13 +1423,13 @@ public:
             ctx.out.writeInt32(-1);
     }
 
-	void writeString(const std::string& val) override {
+	void writeString(const std::string& val) {
         switchToRaw();
 
         doWriteString(val);
 	}
 
-    void writeString(const boost::optional<std::string>& val) override {
+    void writeString(const boost::optional<std::string>& val) {
         switchToRaw();
 
         if (!val)
@@ -1438,43 +1438,43 @@ public:
             doWriteString(val.get());
     }
 
-    void writeStringCollection(const std::vector<std::string>& val) override {
+    void writeStringCollection(const std::vector<std::string>& val) {
         switchToRaw();
 
         doWriteStringCollection(val);
     }
 
-    void writeWString(const std::wstring& val) override {
+    void writeWString(const std::wstring& val) {
         switchToRaw();
 
         doWriteWString(val);
     }
 
-    void writeWStringCollection(const std::vector<std::wstring>& val) override {
+    void writeWStringCollection(const std::vector<std::wstring>& val) {
         switchToRaw();
 
         doWriteWStringCollection(val);
     }
 
-    void writeByteCollection(const std::vector<int8_t>& val) override {
+    void writeByteCollection(const std::vector<int8_t>& val) {
         switchToRaw();
 
         doWriteByteCollection(val);
     }
 
-    void writeByteArray(const int8_t* val, int32_t size) override {
+    void writeByteArray(const int8_t* val, int32_t size) {
         switchToRaw();
 
         doWriteByteArray(val, size);
     }
 
-	void writeBool(bool val) override {
+	void writeBool(bool val) {
         switchToRaw();
 
         doWriteBool(val);
 	}
 
-    void writeBoolCollection(const std::vector<bool>& val) override {
+    void writeBoolCollection(const std::vector<bool>& val) {
         switchToRaw();
 
         ctx.out.writeInt32(val.size());
@@ -1483,7 +1483,7 @@ public:
             doWriteBool(*iter);
     }
 
-    void writeBoolArray(const bool* val, int32_t size) override {
+    void writeBoolArray(const bool* val, int32_t size) {
         switchToRaw();
 
         if (val) {
@@ -1496,43 +1496,43 @@ public:
             ctx.out.writeInt32(-1);
     }
 
-	void writeUuid(const boost::optional<GridClientUuid>& val) override {
+	void writeUuid(const boost::optional<GridClientUuid>& val) {
         switchToRaw();
 
         doWriteUuid(val);
 	}
 
-    void writeUuidCollection(const std::vector<GridClientUuid>& val) override {
+    void writeUuidCollection(const std::vector<GridClientUuid>& val) {
         switchToRaw();
 
         doWriteUuidCollection(val);
     }
 
-    void writeDate(const boost::optional<GridClientDate>& val) override {
+    void writeDate(const boost::optional<GridClientDate>& val) {
         switchToRaw();
 
         doWriteDate(val);
     }
 
-    void writeDateCollection(const std::vector<boost::optional<GridClientDate>>& val) override {
+    void writeDateCollection(const std::vector<boost::optional<GridClientDate>>& val) {
         switchToRaw();
 
         doWriteDateCollection(val);
     }
 
-    void writeVariant(const GridClientVariant& val) override {
+    void writeVariant(const GridClientVariant& val) {
         switchToRaw();
 
         doWriteVariant(val);
     }
 
-    void writeVariantCollection(const TGridClientVariantSet& val) override {
+    void writeVariantCollection(const TGridClientVariantSet& val) {
         switchToRaw();
 
         doWriteVariantCollection(val);
     }
 
-    void writeVariantMap(const TGridClientVariantMap& val) override {
+    void writeVariantMap(const TGridClientVariantMap& val) {
         switchToRaw();
 
         doWriteVariantMap(val);
@@ -2618,11 +2618,11 @@ public:
         return res;
     }
 
-    GridPortableRawReader& rawReader() override {
+    GridPortableRawReader& rawReader() {
         return *this;
     }
 
-    int8_t readByte(char* fieldName) override {
+    int8_t readByte(char* fieldName) {
         off = fieldOffset(fieldName);
 
         if (off >= 0) {
@@ -2636,7 +2636,7 @@ public:
             return 0;
     }
 
-    boost::optional<std::vector<int8_t>> readByteCollection(char* fieldName) override {
+    boost::optional<std::vector<int8_t>> readByteCollection(char* fieldName) {
         boost::optional<std::vector<int8_t>> res;
 
         off = fieldOffset(fieldName);
@@ -2669,7 +2669,7 @@ public:
         }
     }
 
-    std::pair<int8_t*, int32_t> readByteArray(char* fieldName) override {
+    std::pair<int8_t*, int32_t> readByteArray(char* fieldName) {
         off = fieldOffset(fieldName);
 
         if (off >= 0) {
@@ -2706,7 +2706,7 @@ public:
             return std::pair<int8_t*, int32_t>((int8_t*)0, 0);
     }
 
-    int16_t readInt16(char* fieldName) override {
+    int16_t readInt16(char* fieldName) {
         off = fieldOffset(fieldName);
 
         if (off >= 0) {
@@ -2720,7 +2720,7 @@ public:
             return 0;
     }
 
-    std::pair<int16_t*, int32_t> readInt16Array(char* fieldName) override {
+    std::pair<int16_t*, int32_t> readInt16Array(char* fieldName) {
         off = fieldOffset(fieldName);
 
         if (off >= 0) {
@@ -2757,7 +2757,7 @@ public:
             return std::pair<int16_t*, int32_t>((int16_t*)0, 0);
     }
 
-    boost::optional<std::vector<int16_t>> readInt16Collection(char* fieldName) override {
+    boost::optional<std::vector<int16_t>> readInt16Collection(char* fieldName) {
         boost::optional<std::vector<int16_t>> res;
 
         off = fieldOffset(fieldName);
@@ -2790,7 +2790,7 @@ public:
         }
     }
 
-    uint16_t readChar(char* fieldName) override {
+    uint16_t readChar(char* fieldName) {
         off = fieldOffset(fieldName);
 
         if (off >= 0) {
@@ -2804,7 +2804,7 @@ public:
             return 0;
     }
 
-    std::pair<uint16_t*, int32_t> readCharArray(char* fieldName) override {
+    std::pair<uint16_t*, int32_t> readCharArray(char* fieldName) {
         off = fieldOffset(fieldName);
 
         if (off >= 0) {
@@ -2841,7 +2841,7 @@ public:
             return std::pair<uint16_t*, int32_t>((uint16_t*)0, 0);
     }
 
-    boost::optional<std::vector<uint16_t>> readCharCollection(char* fieldName) override {
+    boost::optional<std::vector<uint16_t>> readCharCollection(char* fieldName) {
         boost::optional<std::vector<uint16_t>> res;
 
         off = fieldOffset(fieldName);
@@ -2875,7 +2875,7 @@ public:
     }
 
 
-    int32_t readInt32(char* fieldName) override {
+    int32_t readInt32(char* fieldName) {
         off = fieldOffset(fieldName);
 
         if (off >= 0) {
@@ -2889,7 +2889,7 @@ public:
             return 0;
     }
 
-    std::pair<int32_t*, int32_t> readInt32Array(char* fieldName) override {
+    std::pair<int32_t*, int32_t> readInt32Array(char* fieldName) {
         off = fieldOffset(fieldName);
 
         if (off >= 0) {
@@ -2926,7 +2926,7 @@ public:
             return std::pair<int32_t*, int32_t>((int32_t*)0, 0);
     }
 
-    boost::optional<std::vector<int32_t>> readInt32Collection(char* fieldName) override {
+    boost::optional<std::vector<int32_t>> readInt32Collection(char* fieldName) {
         boost::optional<std::vector<int32_t>> res;
 
         off = fieldOffset(fieldName);
@@ -2959,7 +2959,7 @@ public:
         }
     }
 
-    int64_t readInt64(char* fieldName) override {
+    int64_t readInt64(char* fieldName) {
         off = fieldOffset(fieldName);
 
         if (off >= 0) {
@@ -2973,7 +2973,7 @@ public:
             return 0;
     }
 
-    std::pair<int64_t*, int32_t> readInt64Array(char* fieldName) override {
+    std::pair<int64_t*, int32_t> readInt64Array(char* fieldName) {
         off = fieldOffset(fieldName);
 
         if (off >= 0) {
@@ -3010,7 +3010,7 @@ public:
             return std::pair<int64_t*, int32_t>((int64_t*)0, 0);
     }
 
-    boost::optional<std::vector<int64_t>> readInt64Collection(char* fieldName) override {
+    boost::optional<std::vector<int64_t>> readInt64Collection(char* fieldName) {
         boost::optional<std::vector<int64_t>> res;
 
         off = fieldOffset(fieldName);
@@ -3043,7 +3043,7 @@ public:
         }
     }
 
-    float readFloat(char* fieldName) override {
+    float readFloat(char* fieldName) {
         off = fieldOffset(fieldName);
 
         if (off >= 0) {
@@ -3057,7 +3057,7 @@ public:
             return 0;
     }
 
-    std::pair<float*, int32_t> readFloatArray(char* fieldName) override {
+    std::pair<float*, int32_t> readFloatArray(char* fieldName) {
         off = fieldOffset(fieldName);
 
         if (off >= 0) {
@@ -3094,7 +3094,7 @@ public:
             return std::pair<float*, int32_t>((float*)0, 0);
     }
 
-    boost::optional<std::vector<float>> readFloatCollection(char* fieldName) override {
+    boost::optional<std::vector<float>> readFloatCollection(char* fieldName) {
         boost::optional<std::vector<float>> res;
 
         off = fieldOffset(fieldName);
@@ -3127,7 +3127,7 @@ public:
         }
     }
 
-    double readDouble(char* fieldName) override {
+    double readDouble(char* fieldName) {
         off = fieldOffset(fieldName);
 
         if (off >= 0) {
@@ -3141,7 +3141,7 @@ public:
             return 0;
     }
 
-    std::pair<double*, int32_t> readDoubleArray(char* fieldName) override {
+    std::pair<double*, int32_t> readDoubleArray(char* fieldName) {
         off = fieldOffset(fieldName);
 
         if (off >= 0) {
@@ -3178,7 +3178,7 @@ public:
             return std::pair<double*, int32_t>((double*)0, 0);
     }
 
-    boost::optional<std::vector<double>> readDoubleCollection(char* fieldName) override {
+    boost::optional<std::vector<double>> readDoubleCollection(char* fieldName) {
         boost::optional<std::vector<double>> res;
 
         off = fieldOffset(fieldName);
@@ -3211,7 +3211,7 @@ public:
         }
     }
 
-    boost::optional<std::string> readString(char* fieldName) override {
+    boost::optional<std::string> readString(char* fieldName) {
         off = fieldOffset(fieldName);
 
         if (off >= 0) {
@@ -3239,7 +3239,7 @@ public:
         return res;
     }
 
-    boost::optional<std::vector<std::string>> readStringCollection(char* fieldName) override {
+    boost::optional<std::vector<std::string>> readStringCollection(char* fieldName) {
         boost::optional<std::vector<std::string>> res;
 
         off = fieldOffset(fieldName);
@@ -3271,7 +3271,7 @@ public:
         }
     }
 
-    boost::optional<std::wstring> readWString(char* fieldName) override {
+    boost::optional<std::wstring> readWString(char* fieldName) {
         off = fieldOffset(fieldName);
 
         if (off >= 0) {
@@ -3299,7 +3299,7 @@ public:
         return res;
     }
 
-    boost::optional<std::vector<std::wstring>> readWStringCollection(char* fieldName) override {
+    boost::optional<std::vector<std::wstring>> readWStringCollection(char* fieldName) {
         boost::optional<std::vector<std::wstring>> res;
 
         off = fieldOffset(fieldName);
@@ -3331,7 +3331,7 @@ public:
         }
     }
 
-    bool readBool(char* fieldName) override {
+    bool readBool(char* fieldName) {
         off = fieldOffset(fieldName);
 
         if (off >= 0) {
@@ -3345,7 +3345,7 @@ public:
             return 0;
     }
 
-    boost::optional<std::vector<bool>> readBoolCollection(char* fieldName) override {
+    boost::optional<std::vector<bool>> readBoolCollection(char* fieldName) {
         boost::optional<std::vector<bool>> res;
 
         off = fieldOffset(fieldName);
@@ -3374,7 +3374,7 @@ public:
         }
     }
 
-    std::pair<bool*, int32_t> readBoolArray(char* fieldName) override {
+    std::pair<bool*, int32_t> readBoolArray(char* fieldName) {
         off = fieldOffset(fieldName);
 
         if (off >= 0) {
@@ -3403,7 +3403,7 @@ public:
             return std::pair<bool*, int32_t>((bool*)0, 0);
     }
 
-    boost::optional<GridClientUuid> readUuid(char* fieldName) override {
+    boost::optional<GridClientUuid> readUuid(char* fieldName) {
         off = fieldOffset(fieldName);
 
         if (off >= 0) {
@@ -3430,7 +3430,7 @@ public:
         return res;
     }
 
-    boost::optional<GridClientDate> readDate(char* fieldName) override {
+    boost::optional<GridClientDate> readDate(char* fieldName) {
         off = fieldOffset(fieldName);
 
         if (off >= 0) {
@@ -3455,7 +3455,7 @@ public:
         return boost::optional<GridClientDate>();
     }
 
-    boost::optional<std::vector<GridClientUuid>> readUuidCollection(char* fieldName) override {
+    boost::optional<std::vector<GridClientUuid>> readUuidCollection(char* fieldName) {
         boost::optional<std::vector<GridClientUuid>> res;
 
         off = fieldOffset(fieldName);
@@ -3487,7 +3487,7 @@ public:
         }
     }
 
-    boost::optional<std::vector<boost::optional<GridClientDate>>> readDateCollection(char* fieldName) override {
+    boost::optional<std::vector<boost::optional<GridClientDate>>> readDateCollection(char* fieldName) {
         boost::optional<std::vector<boost::optional<GridClientDate>>> res;
 
         off = fieldOffset(fieldName);
@@ -3516,7 +3516,7 @@ public:
         }
     }
 
-    GridClientVariant readVariant(char* fieldName) override {
+    GridClientVariant readVariant(char* fieldName) {
         off = fieldOffset(fieldName);
 
         if (off >= 0)
@@ -3525,7 +3525,7 @@ public:
         return GridClientVariant();
     }
 
-    boost::optional<TGridClientVariantSet> readVariantCollection(char* fieldName) override {
+    boost::optional<TGridClientVariantSet> readVariantCollection(char* fieldName) {
         boost::optional<TGridClientVariantSet> res;
 
         off = fieldOffset(fieldName);
@@ -3541,7 +3541,7 @@ public:
         return res;
     }
 
-    boost::optional<TGridClientVariantMap> readVariantMap(char* fieldName) override {
+    boost::optional<TGridClientVariantMap> readVariantMap(char* fieldName) {
         boost::optional<TGridClientVariantMap> res;
 
         off = fieldOffset(fieldName);
@@ -3557,11 +3557,11 @@ public:
         return res;
     }
 
-    int8_t readByte() override {
+    int8_t readByte() {
         return doReadByte(true);
     }
 
-    boost::optional<std::vector<int8_t>> readByteCollection() override {
+    boost::optional<std::vector<int8_t>> readByteCollection() {
         boost::optional<std::vector<int8_t>> res;
 
         doReadByteCollection(true, res);
@@ -3569,19 +3569,19 @@ public:
         return res;
     }
 
-    std::pair<int8_t*, int32_t> readByteArray() override {
+    std::pair<int8_t*, int32_t> readByteArray() {
         return doReadByteArray(true);
     }
 
-    int16_t readInt16() override {
+    int16_t readInt16() {
         return doReadInt16(true);
     }
 
-    std::pair<int16_t*, int32_t> readInt16Array() override {
+    std::pair<int16_t*, int32_t> readInt16Array() {
         return doReadInt16Array(true);
     }
 
-    boost::optional<std::vector<int16_t>> readInt16Collection() override {
+    boost::optional<std::vector<int16_t>> readInt16Collection() {
         boost::optional<std::vector<int16_t>> res;
 
         doReadInt16Collection(true, res);
@@ -3589,15 +3589,15 @@ public:
         return res;
     }
 
-    int32_t readInt32() override {
+    int32_t readInt32() {
         return doReadInt32(true);
     }
 
-    std::pair<int32_t*, int32_t> readInt32Array() override {
+    std::pair<int32_t*, int32_t> readInt32Array() {
         return doReadInt32Array(true);
     }
 
-    boost::optional<std::vector<int32_t>> readInt32Collection() override {
+    boost::optional<std::vector<int32_t>> readInt32Collection() {
         boost::optional<std::vector<int32_t>> res;
 
         doReadInt32Collection(true, res);
@@ -3605,15 +3605,15 @@ public:
         return res;
     }
 
-    int64_t readInt64() override {
+    int64_t readInt64() {
         return doReadInt64(true);
     }
 
-    std::pair<int64_t*, int32_t> readInt64Array() override {
+    std::pair<int64_t*, int32_t> readInt64Array() {
         return doReadInt64Array(true);
     }
 
-    boost::optional<std::vector<int64_t>> readInt64Collection() override {
+    boost::optional<std::vector<int64_t>> readInt64Collection() {
         boost::optional<std::vector<int64_t>> res;
 
         doReadInt64Collection(true, res);
@@ -3621,15 +3621,15 @@ public:
         return res;
     }
 
-    float readFloat() override {
+    float readFloat() {
         return doReadFloat(true);
     }
 
-    std::pair<float*, int32_t> readFloatArray() override {
+    std::pair<float*, int32_t> readFloatArray() {
         return doReadFloatArray(true);
     }
 
-    boost::optional<std::vector<float>> readFloatCollection() override {
+    boost::optional<std::vector<float>> readFloatCollection() {
         boost::optional<std::vector<float>> res;
 
         doReadFloatCollection(true, res);
@@ -3637,15 +3637,15 @@ public:
         return res;
     }
 
-    double readDouble() override {
+    double readDouble() {
         return doReadDouble(true);
     }
 
-    std::pair<double*, int32_t> readDoubleArray() override {
+    std::pair<double*, int32_t> readDoubleArray() {
         return doReadDoubleArray(true);
     }
 
-    boost::optional<std::vector<double>> readDoubleCollection() override {
+    boost::optional<std::vector<double>> readDoubleCollection() {
         boost::optional<std::vector<double>> res;
 
         doReadDoubleCollection(true, res);
@@ -3653,11 +3653,11 @@ public:
         return res;
     }
 
-    boost::optional<std::string> readString() override {
+    boost::optional<std::string> readString() {
         return doReadString(true);
     }
 
-    boost::optional<std::vector<std::string>> readStringCollection() override {
+    boost::optional<std::vector<std::string>> readStringCollection() {
         boost::optional<std::vector<std::string>> res;
 
         doReadStringCollection(true, res);
@@ -3665,11 +3665,11 @@ public:
         return res;
     }
 
-    boost::optional<std::wstring> readWString() override {
+    boost::optional<std::wstring> readWString() {
         return doReadWString(true);
     }
 
-    boost::optional<std::vector<std::wstring>> readWStringCollection() override {
+    boost::optional<std::vector<std::wstring>> readWStringCollection() {
         boost::optional<std::vector<std::wstring>> res;
 
         doReadWStringCollection(true, res);
@@ -3677,11 +3677,11 @@ public:
         return res;
     }
 
-    bool readBool() override {
+    bool readBool() {
         return doReadBool(true);
     }
 
-    boost::optional<std::vector<bool>> readBoolCollection() override {
+    boost::optional<std::vector<bool>> readBoolCollection() {
         boost::optional<std::vector<bool>> res;
 
         doReadBoolCollection(true, res);
@@ -3689,19 +3689,19 @@ public:
         return res;
     }
 
-    std::pair<bool*, int32_t> readBoolArray() override {
+    std::pair<bool*, int32_t> readBoolArray() {
         return doReadBoolArray(true);
     }
 
-    uint16_t readChar() override {
+    uint16_t readChar() {
         return doReadChar(true);
     }
 
-    std::pair<uint16_t*, int32_t> readCharArray() override {
+    std::pair<uint16_t*, int32_t> readCharArray() {
         return doReadCharArray(true);
     }
 
-    boost::optional<std::vector<uint16_t>> readCharCollection() override {
+    boost::optional<std::vector<uint16_t>> readCharCollection() {
         boost::optional<std::vector<uint16_t>> res;
 
         doReadCharCollection(true, res);
@@ -3709,11 +3709,11 @@ public:
         return res;
     }
 
-    boost::optional<GridClientUuid> readUuid() override {
+    boost::optional<GridClientUuid> readUuid() {
         return doReadUuid(true);
     }
 
-    boost::optional<std::vector<GridClientUuid>> readUuidCollection() override {
+    boost::optional<std::vector<GridClientUuid>> readUuidCollection() {
         boost::optional<std::vector<GridClientUuid>> res;
 
         doReadUuidCollection(true, res);
@@ -3721,11 +3721,11 @@ public:
         return res;
     }
 
-    boost::optional<GridClientDate> readDate() override {
+    boost::optional<GridClientDate> readDate() {
         return doReadDate(true);
     }
 
-    boost::optional<std::vector<boost::optional<GridClientDate>>> readDateCollection() override {
+    boost::optional<std::vector<boost::optional<GridClientDate>>> readDateCollection() {
         boost::optional<std::vector<boost::optional<GridClientDate>>> res;
 
         doReadDateCollection(true, res);
@@ -3733,11 +3733,11 @@ public:
         return res;
     }
 
-    GridClientVariant readVariant() override {
+    GridClientVariant readVariant() {
         return unmarshal(true);
     }
 
-    boost::optional<TGridClientVariantSet> readVariantCollection() override {
+    boost::optional<TGridClientVariantSet> readVariantCollection() {
         boost::optional<TGridClientVariantSet> res;
 
         doReadVariantCollection(true, res);
@@ -3745,7 +3745,7 @@ public:
         return res;
     }
 
-    boost::optional<TGridClientVariantMap> readVariantMap() override {
+    boost::optional<TGridClientVariantMap> readVariantMap() {
         boost::optional<TGridClientVariantMap> res;
 
         doReadVariantMap(true, res);

@@ -116,7 +116,7 @@ GridPortable* createSystemPortable(int32_t typeId, GridPortableReader &reader) {
         virtual ~GridPortableFactory_##TYPE() {\
         }\
         \
-        void* newInstance(GridPortableReader& reader) override {\
+        void* newInstance(GridPortableReader& reader) {\
             GridPortable* p = new TYPE;\
             \
             return p;\

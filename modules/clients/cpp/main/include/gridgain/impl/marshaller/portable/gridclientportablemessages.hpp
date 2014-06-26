@@ -24,11 +24,11 @@
 
 class GridClientPortableMessage : public GridPortable {
 public:
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         writer.rawWriter().writeByteCollection(sesTok);
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         boost::optional<std::vector<int8_t>> bytes = reader.rawReader().readByteCollection();
 
         if (bytes.is_initialized())
@@ -46,7 +46,7 @@ public:
         return TYPE_ID;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         GridClientPortableMessage::writePortable(writer);
 
         GridPortableRawWriter& raw = writer.rawWriter();
@@ -56,7 +56,7 @@ public:
         raw.writeVariant(res);
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         GridClientPortableMessage::readPortable(reader);
 
         GridPortableRawReader& raw = reader.rawReader();
@@ -98,7 +98,7 @@ public:
         return TYPE_ID;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         GridPortableRawWriter& raw = writer.rawWriter();
 
         raw.writeInt64(lastUpdateTime);
@@ -155,7 +155,7 @@ public:
         raw.writeInt64(rcvdBytesCnt);
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         GridPortableRawReader& raw = reader.rawReader();
 
         lastUpdateTime = raw.readInt64();
@@ -377,7 +377,7 @@ public:
         return TYPE_ID;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         GridPortableRawWriter& raw = writer.rawWriter();
 
         raw.writeInt32(tcpPort);
@@ -397,7 +397,7 @@ public:
         raw.writeVariant(metrics);
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         GridPortableRawReader& raw = reader.rawReader();
 
         tcpPort = raw.readInt32();
@@ -580,7 +580,7 @@ public:
         return TYPE_ID;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         GridClientPortableMessage::writePortable(writer);
 
         GridPortableRawWriter& raw = writer.rawWriter();
@@ -591,7 +591,7 @@ public:
         raw.writeBool(includeAttrs);
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         GridClientPortableMessage::readPortable(reader);
 
         GridPortableRawReader& raw = reader.rawReader();
@@ -640,7 +640,7 @@ public:
         cacheFlagsOn = flags.empty() ? 0 : GridClientByteUtils::bitwiseOr(flags.begin(), flags.end(), 0);
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         GridClientPortableMessage::writePortable(writer);
 
         GridPortableRawWriter& raw = writer.rawWriter();
@@ -666,7 +666,7 @@ public:
         }
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         GridClientPortableMessage::readPortable(reader);
 
         GridPortableRawReader& raw = reader.rawReader();
@@ -713,7 +713,7 @@ public:
         return TYPE_ID;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         GridClientPortableMessage::writePortable(writer);
 
         GridPortableRawWriter& raw = writer.rawWriter();
@@ -724,7 +724,7 @@ public:
         raw.writeInt32(to);
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         GridClientPortableMessage::readPortable(reader);
 
         GridPortableRawReader& raw = reader.rawReader();
@@ -750,7 +750,7 @@ public:
         return TYPE_ID;
     }
 
-    void writePortable(GridPortableWriter &writer) const override {
+    void writePortable(GridPortableWriter &writer) const {
         GridClientPortableMessage::writePortable(writer);
 
         GridPortableRawWriter& raw = writer.rawWriter();
@@ -759,7 +759,7 @@ public:
         raw.writeVariant(arg);
     }
 
-    void readPortable(GridPortableReader &reader) override {
+    void readPortable(GridPortableReader &reader) {
         GridClientPortableMessage::readPortable(reader);
 
         GridPortableRawReader& raw = reader.rawReader();
@@ -781,7 +781,7 @@ public:
         return TYPE_ID;
     }
 
-    void writePortable(GridPortableWriter &writer) const override {
+    void writePortable(GridPortableWriter &writer) const {
         GridPortableRawWriter& raw = writer.rawWriter();
 
         raw.writeString(id);
@@ -790,7 +790,7 @@ public:
         raw.writeString(error);
     }
 
-    void readPortable(GridPortableReader &reader) override {
+    void readPortable(GridPortableReader &reader) {
         GridPortableRawReader& raw = reader.rawReader();
 
         boost::optional<std::string> idOpt = raw.readString();
@@ -830,7 +830,7 @@ public:
     GridClientAuthenticationRequest(std::string credStr) : cred(credStr) {
     }
 
-    void writePortable(GridPortableWriter &writer) const override {
+    void writePortable(GridPortableWriter &writer) const {
         GridClientPortableMessage::writePortable(writer);
 
         GridPortableRawWriter& raw = writer.rawWriter();
@@ -838,7 +838,7 @@ public:
         raw.writeVariant(cred);
     }
 
-    void readPortable(GridPortableReader &reader) override {
+    void readPortable(GridPortableReader &reader) {
         GridClientPortableMessage::readPortable(reader);
 
         GridPortableRawReader& raw = reader.rawReader();

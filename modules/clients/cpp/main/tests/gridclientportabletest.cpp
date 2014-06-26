@@ -49,15 +49,15 @@ BOOST_AUTO_TEST_SUITE(GridClientPortableSuite)
 
 class TestNonHashablePortable : public GridPortable {
 public:
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 0;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         BOOST_FAIL("Should not be called");
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         BOOST_FAIL("Should not be called");
     }
 };
@@ -70,23 +70,23 @@ public:
     TestHashablePortable(int32_t pId) : id(pId) {
     }
 
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 1000;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         BOOST_FAIL("Should not be called");
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         BOOST_FAIL("Should not be called");
     }
 
-    int hashCode() const override {
+    int hashCode() const {
         return id;
     }
 
-    bool operator==(const GridHashablePortable& other) const override {
+    bool operator==(const GridHashablePortable& other) const {
         return id == static_cast<const TestHashablePortable*>(&other)->id;
     }
 
@@ -101,23 +101,23 @@ public:
     TestHashablePortable2(int32_t pId) : id(pId) {
     }
 
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 1001;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         BOOST_FAIL("Should not be called");
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         BOOST_FAIL("Should not be called");
     }
 
-    int hashCode() const override {
+    int hashCode() const {
         return id;
     }
 
-    bool operator==(const GridHashablePortable& other) const override {
+    bool operator==(const GridHashablePortable& other) const {
         return id == static_cast<const TestHashablePortable*>(&other)->id;
     }
 
@@ -144,23 +144,23 @@ public:
 		return 100;
 	}
 
-    void writePortable(GridPortableWriter &writer) const override {
+    void writePortable(GridPortableWriter &writer) const {
         writer.writeString("name", name);
 		writer.writeInt32("id", id);
 	}
 
-    void readPortable(GridPortableReader &reader) override {
+    void readPortable(GridPortableReader &reader) {
 		name = reader.readString("name").get_value_or(std::string());
         id = reader.readInt32("id");
 	}
 
-    bool operator==(const GridHashablePortable& portable) const override {
+    bool operator==(const GridHashablePortable& portable) const {
         const PortablePerson* other = static_cast<const PortablePerson*>(&portable);
 
         return id == other->id;
     }
 
-    int hashCode() const override {
+    int hashCode() const {
         return id;
     }
 
@@ -193,27 +193,27 @@ private:
 
 class PersonSerializer : public GridPortableSerializer<Person> {
 public:
-    void writePortable(Person* obj, GridPortableWriter& writer) override {
+    void writePortable(Person* obj, GridPortableWriter& writer) {
         writer.writeInt32("id", obj->getId());
         writer.writeString("name", obj->getName());
     }
 
-    Person* readPortable(GridPortableReader& reader) override {
+    Person* readPortable(GridPortableReader& reader) {
         int32_t id = reader.readInt32("id");
         string name = reader.readString("name").get_value_or(std::string());
 
         return new Person(id, name);
     }
 
-    int32_t typeId(Person* obj) override {
+    int32_t typeId(Person* obj) {
         return 101;
     }
 
-    int32_t hashCode(Person* obj) override {
+    int32_t hashCode(Person* obj) {
         return obj->getId();
     }
 
-    bool compare(Person* obj1, Person* obj2) override {
+    bool compare(Person* obj1, Person* obj2) {
         return obj1->getId() == obj2->getId();
     }
 };
@@ -471,7 +471,7 @@ public:
         }
 	}
 
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 300;
     }
 
@@ -768,16 +768,16 @@ class TestPortableCycle2;
 
 class TestPortableCycle1 : public GridPortable {
 public:
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 400;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         writer.writeInt32("1", val1);
         writer.writeVariant("2", (GridPortable*)p2);
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         val1 = reader.readInt32("1");
         p2 = reader.readVariant("2").getPortableObject().deserialize<TestPortableCycle2>();
     }
@@ -791,16 +791,16 @@ REGISTER_TYPE(400, TestPortableCycle1);
 
 class TestPortableCycle2 : public GridPortable {
 public:
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 401;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         writer.writeFloat("1", val1);
         writer.writeVariant("2", p1);
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         val1 = reader.readFloat("1");
         p1 = reader.readVariant("2").getPortableObject().deserialize<TestPortableCycle1>();
     }
@@ -854,11 +854,11 @@ public:
     TestPortableCustom(int f) : flag(f) {
     }
 
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 500;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         if (rawMarshalling) {
             GridPortableRawWriter& raw = writer.rawWriter();
 
@@ -887,7 +887,7 @@ public:
         }
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         if (rawMarshalling) {
             GridPortableRawReader& raw = reader.rawReader();
 
@@ -959,11 +959,11 @@ public:
     TestPortableInvalid(bool invalidWrite, int32_t val1, int32_t val2) : invalidWrite(invalidWrite), val1(val1), val2(val2) {
     }
 
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 600;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         if (invalidWrite) {
             writer.rawWriter().writeInt32(val1);
 
@@ -976,7 +976,7 @@ public:
         }
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         val1 = reader.rawReader().readInt32();
 
         val2 = reader.readInt32("named");
@@ -1026,11 +1026,11 @@ public:
         readAllFlag(readAllFlag) {
     }
 
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 701;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         writer.writeBool("readAllFlag", readAllFlag);
         writer.writeInt32("f1", f1);
         writer.writeInt32("f2", f2);
@@ -1044,7 +1044,7 @@ public:
         writer.rawWriter().writeInt32(f3);
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         f2 = reader.readInt32("f2");
         f1 = reader.readInt32("f1");
 
@@ -1095,11 +1095,11 @@ public:
             delete obj3;
     }
 
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 700;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         writer.writeInt32("f1", f1);
 
         writer.writeVariant("obj1", obj1);
@@ -1107,7 +1107,7 @@ public:
         writer.writeVariant("obj3", obj3);
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         obj2 = reader.readVariant("obj2").getPortableObject().deserialize<TestPortableFieldNames2>();
 
         BOOST_REQUIRE_EQUAL(200, obj2->f1);
@@ -2335,17 +2335,17 @@ public:
     TestNested3() {
     }
 
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 802;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         writer.writeDouble("f1", 2.5);
 
         writer.rawWriter().writeString("str");
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         val = reader.readDouble("f1");
 
         string rawVal = reader.rawReader().readString().get();
@@ -2361,11 +2361,11 @@ public:
     TestNested2() {
     }
 
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 801;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         writer.writeInt32("f1", 1);
 
         writer.writeVariant("f3", new TestNested3());
@@ -2375,7 +2375,7 @@ public:
         writer.rawWriter().writeInt32(20);
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         val = reader.readInt32("f1");
         flag = reader.readBool("f2");
 
@@ -2404,11 +2404,11 @@ public:
             delete obj;
     }
 
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 800;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         writer.writeVariant("1", obj);
 
         writer.writeFloat("2", 1.5f);
@@ -2416,7 +2416,7 @@ public:
         writer.rawWriter().writeInt32(10);
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         GridClientVariant var = reader.readVariant("1");
 
         obj = var.getPortableObject().deserialize<TestNested2>();
@@ -2502,11 +2502,11 @@ class TestObjCollection : public GridPortable {
 public:
     static bool rawMarshalling;
 
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 900;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         if (rawMarshalling) {
             writer.rawWriter().writeInt32(1);
 
@@ -2523,7 +2523,7 @@ public:
         }
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         if (rawMarshalling) {
             val1 = reader.rawReader().readInt32();
 
