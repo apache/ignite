@@ -56,7 +56,7 @@ namespace GridGain.Client.Impl.Message {
 
             IGridClientPortableRawWriter rawWriter = writer.RawWriter();
 
-            rawWriter.WriteGuid(NodeId);
+            rawWriter.WriteGuid(NodeId == Guid.Empty ? (Guid?)null : NodeId);
             rawWriter.WriteString(NodeIP);
 
             rawWriter.WriteBoolean(IncludeMetrics);
@@ -69,7 +69,9 @@ namespace GridGain.Client.Impl.Message {
 
             IGridClientPortableRawReader rawReader = reader.RawReader();
 
-            NodeId = rawReader.ReadGuid().Value;
+            Guid? NodeId0 = rawReader.ReadGuid();
+
+            NodeId = NodeId0.HasValue ? NodeId0.Value : Guid.Empty;
             NodeIP = rawReader.ReadString();
 
             IncludeMetrics = rawReader.ReadBoolean();

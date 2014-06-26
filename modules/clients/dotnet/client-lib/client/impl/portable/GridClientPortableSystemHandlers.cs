@@ -857,8 +857,6 @@ namespace GridGain.Client.Impl.Portable
         {
             GridClientPortableCollectionInfo info = GridClientPortableCollectionInfo.Info(type);
 
-            Debug.Assert(info.IsGenericCollection || info.IsCollection, "Type is not collection.");
-
             if (info.IsGenericCollection)
                 obj = info.GenericReadMethod.Invoke(null, new object[] { ctx, null });
             else
@@ -871,8 +869,6 @@ namespace GridGain.Client.Impl.Portable
         private static void ReadDictionary(GridClientPortableReadContext ctx, Type type, out object obj)
         {
             GridClientPortableCollectionInfo info = GridClientPortableCollectionInfo.Info(type);
-
-            Debug.Assert(info.IsGenericDictionary || info.IsDictionary, "Type is not dictionary.");
 
             if (info.IsGenericDictionary)
                 obj = info.GenericReadMethod.Invoke(null, new object[] { ctx, null });
