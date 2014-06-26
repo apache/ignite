@@ -218,7 +218,7 @@ public class GridHadoopSetup {
             Path gg = Paths.get(ggHome);
 
             if (!jar.startsWith(gg))
-                warn("GridGain JAR files are not under GRIDGAIN_HOME. Make sure GRIDGAIN_HOME is correct!");
+                exit("GridGain JAR files are not under GRIDGAIN_HOME.");
         }
         catch (Exception e) {
             exit(e.getMessage());
