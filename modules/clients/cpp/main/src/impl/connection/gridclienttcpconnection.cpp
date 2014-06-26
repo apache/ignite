@@ -294,7 +294,7 @@ void GridClientSyncTcpConnection::authenticate(const string& clientId, const str
  *
  * @return Session token or empty string if this is not a secure session.
  */
-std::vector<int8_t> GridClientSyncTcpConnection::sessionToken() {
+std::vector<int8_t>& GridClientSyncTcpConnection::sessionToken() {
     return sessToken;
 }
 
@@ -395,7 +395,7 @@ void GridClientSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPacket,
 
         GG_LOG_DEBUG("Done reading the response data [nbytes=%d]", nBytes);
 
-        //read headers from header buffer
+        // Read headers from header buffer.
         result.setAdditionalHeadersAndData((int8_t*)pBuffer, nBytes);
     }
     else {
@@ -423,7 +423,7 @@ void GridClientSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPacket,
 
         GG_LOG_DEBUG("Done reading the response data [nbytes=%d]", nBytes);
 
-        //read headers from header buffer
+        // Read headers from header buffer.
         result.setAdditionalHeadersAndData((int8_t*)recvBuffer->pBuffer, nBytes);
     }
 }
@@ -771,7 +771,7 @@ void GridClientRawSyncTcpConnection::authenticate(const string& clientId, const 
  *
  * @return Session token or empty string if this is not a secure session.
  */
-std::vector<int8_t> GridClientRawSyncTcpConnection::sessionToken() {
+std::vector<int8_t>& GridClientRawSyncTcpConnection::sessionToken() {
     return sessToken;
 }
 
