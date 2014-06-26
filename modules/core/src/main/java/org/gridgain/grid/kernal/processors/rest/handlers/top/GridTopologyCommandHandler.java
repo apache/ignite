@@ -160,13 +160,10 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
 
         nodeBean.setNodeId(node.id());
         nodeBean.setConsistentId(node.consistentId());
-        nodeBean.setJettyPort(attribute(node, ATTR_REST_JETTY_PORT, 0));
         nodeBean.setTcpPort(attribute(node, ATTR_REST_TCP_PORT, 0));
 
         nodeBean.setTcpAddresses(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_ADDRS)));
         nodeBean.setTcpHostNames(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_HOST_NAMES)));
-        nodeBean.setJettyAddresses(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_JETTY_ADDRS)));
-        nodeBean.setJettyHostNames(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_JETTY_HOST_NAMES)));
 
         Integer dfltReplicaCnt = node.attribute(GridCacheConsistentHashAffinityFunction.DFLT_REPLICA_COUNT_ATTR_NAME);
 
