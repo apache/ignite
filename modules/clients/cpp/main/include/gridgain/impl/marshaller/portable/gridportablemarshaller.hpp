@@ -131,7 +131,7 @@ public:
     }
 
     void writeInt16Array(const int16_t* val, int32_t size) {
-        for (int i = 0; i < size; i++)
+        for (int32_t i = 0; i < size; i++)
             writeInt16(val[i]);
     }
 
@@ -141,7 +141,7 @@ public:
     }
 
     void writeInt32Array(const int32_t* val, int32_t size) {
-        for (int i = 0; i < size; i++)
+        for (int32_t i = 0; i < size; i++)
             writeInt32(val[i]);
     }
 
@@ -151,7 +151,7 @@ public:
     }
 
     void writeCharArray(const uint16_t* val, int32_t size) {
-        for (int i = 0; i < size; i++)
+        for (int32_t i = 0; i < size; i++)
             writeChar(val[i]);
     }
 
@@ -161,7 +161,7 @@ public:
     }
 
     void writeInt64Array(const int64_t* val, int32_t size) {
-        for (int i = 0; i < size; i++)
+        for (int32_t i = 0; i < size; i++)
             writeInt64(val[i]);
     }
 
@@ -171,7 +171,7 @@ public:
     }
 
     void writeFloatArray(const float* val, int32_t size) {
-        for (int i = 0; i < size; i++)
+        for (int32_t i = 0; i < size; i++)
             writeFloat(val[i]);
     }
 
@@ -181,17 +181,17 @@ public:
     }
 
     void writeDoubleArray(const double* val, int32_t size) {
-        for (int i = 0; i < size; i++)
+        for (int32_t i = 0; i < size; i++)
             writeDouble(val[i]);
     }
 
     void writeBoolArray(const std::vector<bool>& val) {
-        for (int i = 0; i < val.size(); i++)
+        for (int32_t i = 0; i < val.size(); i++)
             writeByte(val[i] ? 1 : 0);
     }
 
     void writeBoolArray(const bool* val, int32_t size) {
-        for (int i = 0; i < size; i++)
+        for (int32_t i = 0; i < size; i++)
             writeByte(val[i] ? 1 : 0);
     }
 
@@ -339,12 +339,12 @@ public:
     }
 
     void writeBoolArray(const std::vector<bool>& val) {
-        for (int i = 0; i < val.size(); i++)
+        for (size_t i = 0; i < val.size(); i++)
             writeByte(val[i] ? 1 : 0);
     }
 
     void writeBoolArray(const bool* val, int32_t size) {
-        for (int i = 0; i < size; i++)
+        for (int32_t i = 0; i < size; i++)
             writeByte(val[i] ? 1 : 0);
     }
 
@@ -361,8 +361,6 @@ public:
     }
 
     void writeInt32To(int32_t pos, int32_t val) {
-        assert(pos < bytes.size());
-
         int8_t* ptr = reinterpret_cast<int8_t*>(&val);
 
         int8_t* dst = reinterpret_cast<int8_t*>(bytes.data());
@@ -396,18 +394,18 @@ public:
 
     std::vector<int8_t>& bytes;
 };
-#endif;
+#endif
 
 class WriteContext {
 public:
     WriteContext(std::vector<int8_t>& bytes, GridPortableIdResolver* idRslvr) : out(bytes), idRslvr(idRslvr) {
     }
 
+    PortableOutput out;
+
     GridPortableIdResolver* idRslvr;
 
     boost::unordered_map<void*, int32_t> handles;
-
-    PortableOutput out;
 
     int32_t lookup(void* ptr, int32_t off) {
         boost::unordered_map<void*, int32_t>::const_iterator handle = handles.find(ptr);
@@ -432,6 +430,9 @@ public:
     std::map<int32_t, char*> fieldIds;
 
     GridPortableWriterImpl(WriteContext& ctx, int32_t curTypeId, int32_t objStart) : ctx(ctx), start(objStart), allowFields(true), curTypeId(curTypeId) {
+    }
+
+    virtual ~GridPortableWriterImpl() {
     }
 
     void writePortable(GridPortable& portable) {
@@ -2029,26 +2030,7 @@ protected:
         assert(off + cnt <= bytes.size());
     }
 };
-#endif;
-
-/*
-class ReadContext {
-public:
-    ReadContext(const boost::shared_ptr<std::vector<int8_t>>& dataPtr,
-        boost::unordered_map<int32_t, void*>& handles,
-        GridPortableIdResolver* idRslvr)
-        : dataPtr(dataPtr), in(*dataPtr.get()), idRslvr(idRslvr) {
-    }
-
-    const boost::shared_ptr<std::vector<int8_t>>& dataPtr;
-
-    boost::unordered_map<int32_t, void*>& handles;
-
-    PortableInput in;
-
-    GridPortableIdResolver* idRslvr;
-};
-*/
+#endif
 
 class GridPortableReaderImpl : public GridPortableReader, public GridPortableRawReader {
 public:

@@ -99,6 +99,9 @@ public:
     virtual boost::optional<TGridClientVariantMap> readVariantMap(char* fieldName) = 0;
 
     virtual GridPortableRawReader& rawReader() = 0;
+
+    virtual ~GridPortableReader() {
+    }
 };
 
 /**
@@ -175,11 +178,17 @@ public:
     virtual boost::optional<TGridClientVariantSet> readVariantCollection() = 0;
 
     virtual boost::optional<TGridClientVariantMap> readVariantMap() = 0;
+
+    virtual ~GridPortableRawReader() {
+    }
 };
 
 class GridPortableFactory {
 public: 
-    virtual void* newInstance(GridPortableReader& reader) = 0; 
+    virtual void* newInstance(GridPortableReader& reader) = 0;
+
+    virtual ~GridPortableFactory() {
+    }
 };
 
 void registerPortableFactory(int32_t typeId, GridPortableFactory* factory);
@@ -190,6 +199,9 @@ void registerPortableFactory(int32_t typeId, GridPortableFactory* factory);
         \
         GridPortableFactory_##TYPE() {\
             registerPortableFactory(TYPE_ID, this);\
+        }\
+        \
+        virtual ~GridPortableFactory_##TYPE() {\
         }\
         \
         void* newInstance(GridPortableReader& reader) {\
