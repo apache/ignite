@@ -94,13 +94,13 @@ public class GridPortableMarshaller {
     public static final byte MAP = 25;
 
     /** */
-    static final byte NULL = (byte)0x80;
+    static final byte NULL = (byte)201;
 
     /** */
-    static final byte HANDLE = (byte)0x81;
+    static final byte HANDLE = (byte)202;
 
     /** */
-    static final byte OBJ = (byte)0x82;
+    static final byte OBJ = (byte)203;
 
     /** */
     static final byte USER_COL = 0;
