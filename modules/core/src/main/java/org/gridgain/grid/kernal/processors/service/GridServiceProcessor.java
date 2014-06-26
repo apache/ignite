@@ -274,47 +274,55 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private GridFuture<?> deploy(GridServiceConfiguration cfg, boolean failDups) {
         validate(cfg);
 
-        try {
-            GridFutureAdapter<?> fut = new GridFutureAdapter<>(ctx);
+        while (true) {
+            try {
+                GridFutureAdapter<?> fut = new GridFutureAdapter<>(ctx);
 
-            GridFutureAdapter<?> old;
+                GridFutureAdapter<?> old;
 
-            if ((old = futs.putIfAbsent(cfg.getName(), fut)) != null) {
-                if (failDups) {
-                    fut.onDone(new GridException("Failed to deploy service " +
-                        "(service exists and must be undeployed first): " + cfg.getName()));
+                if ((old = futs.putIfAbsent(cfg.getName(), fut)) != null) {
+                    if (failDups) {
+                        fut.onDone(new GridException("Failed to deploy service " +
+                            "(service exists and must be undeployed first): " + cfg.getName()));
 
-                    return fut;
+                        return fut;
+                    }
+
+                    fut = old;
                 }
-
-                fut = old;
-            }
-            else if (!depCache.putxIfAbsent(
-                new GridServiceDeploymentKey(cfg.getName()),
-                new GridServiceDeployment(ctx.localNodeId(), cfg))) {
-                // Remove future from local map.
-                futs.remove(cfg.getName());
-
-                if (failDups)
-                    fut.onDone(new GridException("Failed to deploy service " +
-                        "(service already exists and must be undeployed first): " + cfg.getName()));
                 else {
-                    fut.onDone();
+                    GridServiceDeploymentKey key = new GridServiceDeploymentKey(cfg.getName());
 
-                    GridServiceDeployment dep = depCache.get(new GridServiceDeploymentKey(cfg.getName()));
+                    GridServiceDeployment dep;
 
-                    if (!dep.configuration().equals(cfg))
-                        U.warn(log, "Service already deployed with different configuration (will ignore) [deployed=" +
-                            dep.configuration() + ", new=" + cfg + ']');
+                    if ((dep = depCache.putIfAbsent(key, new GridServiceDeployment(ctx.localNodeId(), cfg))) != null) {
+                        // Remove future from local map.
+                        futs.remove(cfg.getName());
+
+                        if (failDups)
+                            fut.onDone(new GridException("Failed to deploy service " +
+                                "(service already exists and must be undeployed first): " + cfg.getName()));
+                        else {
+                            fut.onDone();
+
+                            if (!dep.configuration().equals(cfg))
+                                U.warn(log, "Service already deployed with different configuration (will ignore) " +
+                                    "[deployed=" + dep.configuration() + ", new=" + cfg + ']');
+                        }
+                    }
                 }
+
+                return fut;
             }
+            catch (GridTopologyException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Topology changed while deploying service (will retry): " + e.getMessage());
+            }
+            catch (GridException e) {
+                log.error("Failed to deploy service: " + cfg.getName(), e);
 
-            return fut;
-        }
-        catch (GridException e) {
-            log.error("Failed to deploy service: " + cfg.getName(), e);
-
-            return new GridFinishedFuture<>(ctx, e);
+                return new GridFinishedFuture<>(ctx, e);
+            }
         }
     }
 
@@ -393,107 +401,115 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         String cacheName = cfg.getCacheName();
         Object affKey = cfg.getAffinityKey();
 
-        try (GridCacheTx tx = assignCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            GridServiceAssignmentsKey key = new GridServiceAssignmentsKey(cfg.getName());
+        while (true) {
+            try (GridCacheTx tx = assignCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                GridServiceAssignmentsKey key = new GridServiceAssignmentsKey(cfg.getName());
 
-            GridServiceAssignments oldAssigns = assignCache.get(key);
+                GridServiceAssignments oldAssigns = assignCache.get(key);
 
-            GridServiceAssignments assigns = new GridServiceAssignments(cfg.getName(), cfg.getService(),
-                cfg.getCacheName(), cfg.getAffinityKey(), dep.nodeId(), topVer, cfg.getNodeFilter());
+                GridServiceAssignments assigns = new GridServiceAssignments(cfg.getName(), cfg.getService(),
+                    cfg.getCacheName(), cfg.getAffinityKey(), dep.nodeId(), topVer, cfg.getNodeFilter());
 
-            Map<UUID, Integer> cnts = new HashMap<>();
+                Map<UUID, Integer> cnts = new HashMap<>();
 
-            if (affKey != null) {
-                GridNode n = ctx.affinity().mapKeyToNode(cacheName, affKey, topVer);
+                if (affKey != null) {
+                    GridNode n = ctx.affinity().mapKeyToNode(cacheName, affKey, topVer);
 
-                assert n != null;
+                    assert n != null;
 
-                int cnt = maxPerNodeCnt == 0 ? totalCnt == 0 ? 1 : totalCnt : maxPerNodeCnt;
+                    int cnt = maxPerNodeCnt == 0 ? totalCnt == 0 ? 1 : totalCnt : maxPerNodeCnt;
 
-                cnts.put(n.id(), cnt);
-            }
-            else {
-                Collection<GridNode> nodes =
-                    assigns.nodeFilter() == null ?
-                        ctx.discovery().nodes(topVer) :
-                        F.view(ctx.discovery().nodes(topVer), assigns.nodeFilter());
-
-                int size = nodes.size();
-
-                int perNodeCnt = totalCnt != 0 ? totalCnt / size : maxPerNodeCnt;
-                int remainder = totalCnt != 0 ? totalCnt % size : 0;
-
-                if (perNodeCnt > maxPerNodeCnt) {
-                    perNodeCnt = maxPerNodeCnt;
-                    remainder = 0;
+                    cnts.put(n.id(), cnt);
                 }
+                else {
+                    Collection<GridNode> nodes =
+                        assigns.nodeFilter() == null ?
+                            ctx.discovery().nodes(topVer) :
+                            F.view(ctx.discovery().nodes(topVer), assigns.nodeFilter());
 
-                for (GridNode n : nodes)
-                    cnts.put(n.id(), perNodeCnt);
+                    int size = nodes.size();
 
-                assert perNodeCnt >= 0;
-                assert remainder >= 0;
+                    int perNodeCnt = totalCnt != 0 ? totalCnt / size : maxPerNodeCnt;
+                    int remainder = totalCnt != 0 ? totalCnt % size : 0;
 
-                if (remainder > 0) {
-                    int cnt = perNodeCnt + 1;
+                    if (perNodeCnt > maxPerNodeCnt) {
+                        perNodeCnt = maxPerNodeCnt;
+                        remainder = 0;
+                    }
 
-                    if (oldAssigns != null) {
-                        Collection<UUID> used = new HashSet<>();
+                    for (GridNode n : nodes)
+                        cnts.put(n.id(), perNodeCnt);
 
-                        // Avoid redundant moving of services.
-                        for (Entry<UUID, Integer> e : oldAssigns.assigns().entrySet()) {
-                            // If old count and new count match, then reuse the assignment.
-                            if (e.getValue() == cnt) {
-                                cnts.put(e.getKey(), cnt);
+                    assert perNodeCnt >= 0;
+                    assert remainder >= 0;
 
-                                used.add(e.getKey());
+                    if (remainder > 0) {
+                        int cnt = perNodeCnt + 1;
 
-                                if (--remainder == 0)
-                                    break;
+                        if (oldAssigns != null) {
+                            Collection<UUID> used = new HashSet<>();
+
+                            // Avoid redundant moving of services.
+                            for (Entry<UUID, Integer> e : oldAssigns.assigns().entrySet()) {
+                                // If old count and new count match, then reuse the assignment.
+                                if (e.getValue() == cnt) {
+                                    cnts.put(e.getKey(), cnt);
+
+                                    used.add(e.getKey());
+
+                                    if (--remainder == 0)
+                                        break;
+                                }
+                            }
+
+                            if (remainder > 0) {
+                                List<Entry<UUID, Integer>> entries = new ArrayList<>(cnts.entrySet());
+
+                                // Randomize.
+                                Collections.shuffle(entries);
+
+                                for (Entry<UUID, Integer> e : entries) {
+                                    // Assign only the ones that have not been reused from previous assignments.
+                                    if (!used.contains(e.getKey())) {
+                                        e.setValue(e.getValue() + 1);
+
+                                        if (--remainder == 0)
+                                            break;
+                                    }
+                                }
                             }
                         }
-
-                        if (remainder > 0) {
+                        else {
                             List<Entry<UUID, Integer>> entries = new ArrayList<>(cnts.entrySet());
 
                             // Randomize.
                             Collections.shuffle(entries);
 
                             for (Entry<UUID, Integer> e : entries) {
-                                // Assign only the ones that have not been reused from previous assignments.
-                                if (!used.contains(e.getKey())) {
-                                    e.setValue(e.getValue() + 1);
+                                e.setValue(e.getValue() + 1);
 
-                                    if (--remainder == 0)
-                                        break;
-                                }
+                                if (--remainder == 0)
+                                    break;
                             }
                         }
                     }
-                    else {
-                        List<Entry<UUID, Integer>> entries = new ArrayList<>(cnts.entrySet());
-
-                        // Randomize.
-                        Collections.shuffle(entries);
-
-                        for (Entry<UUID, Integer> e : entries) {
-                            e.setValue(e.getValue() + 1);
-
-                            if (--remainder == 0)
-                                break;
-                        }
-                    }
                 }
-            }
 
-            assert cnts != null;
+                assert cnts != null;
 
-            assigns.assigns(cnts);
+                assigns.assigns(cnts);
 
-            assignCache.put(key, assigns);
+                assignCache.put(key, assigns);
 
-            tx.commit();
-         }
+                tx.commit();
+
+                break;
+             }
+             catch (GridTopologyException e) {
+                 if (log.isDebugEnabled())
+                     log.debug("Topology changed while reassigning (will retry): " + e.getMessage());
+             }
+        }
     }
 
     /**

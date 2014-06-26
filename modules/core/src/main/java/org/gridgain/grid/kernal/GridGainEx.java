@@ -1317,6 +1317,7 @@ public class GridGainEx {
             myCfg.setNetworkSendRetryCount(cfg.getNetworkSendRetryCount());
             myCfg.setDataCenterId(cfg.getDataCenterId());
             myCfg.setSecurityCredentialsProvider(cfg.getSecurityCredentialsProvider());
+            myCfg.setServiceConfiguration(cfg.getServiceConfiguration());
 
             String ntfStr = X.getSystemOrEnv(GG_LIFECYCLE_EMAIL_NOTIFY);
 

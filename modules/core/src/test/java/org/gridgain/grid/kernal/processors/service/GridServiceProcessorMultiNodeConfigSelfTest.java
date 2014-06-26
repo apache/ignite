@@ -32,6 +32,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
         cfg.setName("serviceConfigSingleton");
         cfg.setMaxPerNodeCount(1);
         cfg.setTotalCount(1);
+        cfg.setService(new DummyService());
 
         arr[0] = cfg;
 
@@ -39,6 +40,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
 
         cfg.setName("serviceConfigEachNode");
         cfg.setMaxPerNodeCount(1);
+        cfg.setService(new DummyService());
 
         arr[1] = cfg;
 
@@ -68,5 +70,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
         DummyService.reset();
 
         checkDeployOnEachNodeUpdateTopology("serviceConfigAllEachNode");
+
+        DummyService.reset();
     }
 }
