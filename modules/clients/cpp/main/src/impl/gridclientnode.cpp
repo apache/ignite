@@ -22,16 +22,16 @@ using namespace std;
 class GridClientNode::Impl {
 public:
     /** Default constructor. */
-    Impl() : replicaCount(-1), routerTcpAddress("",-1), routerJettyAddress("",-1) {}
+    Impl() : replicaCount(-1), routerTcpAddress("",-1) {}
 
     /**
      * Copy costructor.
      *
      * @param other Node to copy data from.
      */
-    Impl(const Impl& other) : nodeId(other.nodeId), jettyAddrs(other.jettyAddrs), tcpAddrs(other.tcpAddrs),
+    Impl(const Impl& other) : nodeId(other.nodeId), tcpAddrs(other.tcpAddrs),
         metrics(other.metrics), attrs(other.attrs), routerTcpAddress(other.routerTcpAddress),
-        routerJettyAddress(other.routerJettyAddress), dfltCacheMode(other.dfltCacheMode), caches(other.caches),
+        dfltCacheMode(other.dfltCacheMode), caches(other.caches),
         replicaCount(other.replicaCount), consistentId(other.consistentId) {
     }
 
@@ -40,9 +40,6 @@ public:
 
     /** REST TCP addresses. */
     vector<GridClientSocketAddress> tcpAddrs;
-
-    /** REST HTTP addresses. */
-    vector<GridClientSocketAddress> jettyAddrs;
 
     /** Metrics. */
     GridClientNodeMetricsBean metrics;
@@ -58,9 +55,6 @@ public:
 
     /** Router TCP address. */
     GridClientSocketAddress routerTcpAddress;
-
-    /** Router HTTP address. */
-    GridClientSocketAddress routerJettyAddress;
 
     /** Replicas count. */
     int replicaCount;
@@ -101,10 +95,6 @@ const std::vector<GridClientSocketAddress> & GridClientNode::getTcpAddresses() c
     return pimpl->tcpAddrs;
 }
 
-const std::vector<GridClientSocketAddress> & GridClientNode::getJettyAddresses() const {
-    return pimpl->jettyAddrs;
-}
-
 GridClientNodeMetricsBean GridClientNode::getMetrics() const {
     return pimpl->metrics;
 }
@@ -126,10 +116,6 @@ const GridClientSocketAddress & GridClientNode::getRouterTcpAddress() const {
 
 }
 
-const GridClientSocketAddress & GridClientNode::getRouterJettyAddress() const {
-    return pimpl->routerJettyAddress;
-}
-
 int GridClientNode::getReplicaCount() const {
     return pimpl->replicaCount;
 }
@@ -144,17 +130,7 @@ std::ostream& operator<<(std::ostream &out, const GridClientNode &n){
         out << n.getTcpAddresses()[i].host() << ":" << n.getTcpAddresses()[i].port();
     }
 
-    out << ", jettyAddrs=";
-
-    for (size_t i = 1; i < n.getJettyAddresses().size(); ++i) {
-        if (i != 0)
-            out << ",";
-
-        out << n.getJettyAddresses()[i].host() << ":" << n.getJettyAddresses()[i].port();
-    }
-
     out << ", routerTcpAddress=" << n.getRouterTcpAddress().host() << ":" << n.getRouterTcpAddress().port();
-    out << ", routerJettyAddress=" << n.getRouterJettyAddress().host() << ":" << n.getRouterJettyAddress().port();
 
     out << ']';
 
@@ -175,10 +151,6 @@ void GridClientNodeMarshallerHelper::setNodeId(const GridClientUuid& pNodeId){
 
 void GridClientNodeMarshallerHelper::setTcpAddresses(std::vector<GridClientSocketAddress> & tcpAddrs) {
     node_.pimpl->tcpAddrs = tcpAddrs;
-}
-
-void GridClientNodeMarshallerHelper::setJettyAddresses(std::vector<GridClientSocketAddress> & jettyAddrs) {
-    node_.pimpl->jettyAddrs = jettyAddrs;
 }
 
 void GridClientNodeMarshallerHelper::setMetrics(const GridClientNodeMetricsBean& pMetrics) {
@@ -207,9 +179,5 @@ void GridClientNodeMarshallerHelper::setReplicaCount(int count) {
 
 void GridClientNodeMarshallerHelper::setRouterTcpAddress(GridClientSocketAddress& routerAddress) {
     node_.pimpl->routerTcpAddress = routerAddress;
-}
-
-void GridClientNodeMarshallerHelper::setRouterJettyAddress(GridClientSocketAddress& routerAddress) {
-    node_.pimpl->routerJettyAddress = routerAddress;
 }
 

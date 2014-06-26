@@ -18,7 +18,10 @@
  */
 class GRIDGAIN_API GridClientDate : public GridClientHasheableObject {
 public:
-    GridClientDate(int64_t time) : time(time) {
+    GridClientDate(int64_t time) : time(time), nanoTicks(0) {
+    }
+
+    GridClientDate(int64_t time, int16_t nanoTicks) : time(time), nanoTicks(nanoTicks) {
     }
 
     /**
@@ -26,7 +29,7 @@ public:
      *
      * @param other Another instance of date.
      */
-    GridClientDate(const GridClientDate& other) : time(other.time) {
+    GridClientDate(const GridClientDate& other) : time(other.time), nanoTicks(other.nanoTicks) {
     }
 
     /**
@@ -37,6 +40,7 @@ public:
      */
     GridClientDate& operator=(const GridClientDate& other) {
         time = other.time;
+        nanoTicks = other.nanoTicks;
 
         return *this;
     }
@@ -58,11 +62,15 @@ public:
      * @return <tt>true</tt> if this date equals another, <tt>false</tt> otherwise.
      */
     bool operator ==(const GridClientDate& other) const {
-        return time == other.time;
+        return time == other.time && nanoTicks == other.nanoTicks;
     }
 
     int64_t getTime() const {
         return time;
+    }
+
+    int16_t getNanoTicks() const {
+        return nanoTicks;
     }
 
     /**
@@ -76,6 +84,8 @@ public:
 
 private:
     int64_t time;
+
+    int16_t nanoTicks;
 
     /**
      * Prints date to stream

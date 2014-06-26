@@ -56,9 +56,9 @@ const int8_t TYPE_ID_OBJ_ARR = 23;
 const int8_t TYPE_ID_COLLECTION = 24;
 const int8_t TYPE_ID_MAP = 25;
 
-const int8_t FLAG_NULL = 0x80;
-const int8_t FLAG_HANDLE = 0x81;
-const int8_t FLAG_OBJECT = 0x82;
+const int8_t FLAG_NULL = 101;
+const int8_t FLAG_HANDLE = 102;
+const int8_t FLAG_OBJECT = 103;
 
 const int8_t USER_COL = 0;
 
@@ -876,7 +876,7 @@ public:
     void writeDate(char* fieldName, const boost::optional<GridClientDate>& val) override {
 		writeFieldName(fieldName);
 
-        doWriteInt32(val ? 10 : 2);
+        doWriteInt32(val ? 12 : 2);
         doWriteByte(TYPE_ID_DATE);
 
         doWriteDate(val);
@@ -887,6 +887,8 @@ public:
             doWriteBool(true);
 
             doWriteInt64(val.get().getTime());
+
+            doWriteInt16(val.get().getNanoTicks());
         }
         else
             doWriteBool(false);
@@ -3461,8 +3463,12 @@ public:
     }
 
     boost::optional<GridClientDate> doReadDate(bool raw) {
-        if (doReadBool(raw))
-            return boost::optional<GridClientDate>(GridClientDate(doReadInt64(raw)));
+        if (doReadBool(raw)) {
+            int64_t t1 = doReadInt64(raw);
+            int16_t t2 = doReadInt16(raw);
+
+            return boost::optional<GridClientDate>(GridClientDate(t1, t2));
+        }
 
         return boost::optional<GridClientDate>();
     }
