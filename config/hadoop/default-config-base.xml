@@ -54,7 +54,7 @@
     </bean>
 
     <!--
-        Base cache configuration.
+        Base cache configuration for GGFS.
     -->
     <bean id="cacheCfgBase" class="org.gridgain.grid.cache.GridCacheConfiguration" abstract="true">
         <property name="name" value="ggfs-data"/>
@@ -71,15 +71,35 @@
     </bean>
 
     <!--
-        Configuration below demonstrates how to setup a GGFS node with file data.
+        Configuration below demonstrates how to setup a GridGain node.
     -->
     <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
+        <!--
+            Hadoop Accelerator configuration.
+        -->
+        <property name="hadoopConfiguration">
+            <bean class="org.gridgain.grid.hadoop.GridHadoopConfiguration">
+                <property name="finishedJobInfoTtl" value="30000"/>
+            </bean>
+        </property>
+
+        <!--
+            This port will be used by Hadoop client to connect to GridGain node as if it was a job tracker.
+        -->
+        <property name="restTcpPort" value="11211"/>
+
+        <!--
+            Configure one GGFS instance on this node.
+        -->
         <property name="ggfsConfiguration">
             <list>
                 <ref bean="ggfsCfg"/>
             </list>
         </property>
 
+        <!--
+            List of caches needed by GGFS.
+        -->
         <property name="cacheConfiguration">
             <list>
                 <ref bean="cacheCfg"/>

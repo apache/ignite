@@ -17,6 +17,8 @@ import org.gridgain.grid.kernal.processors.hadoop.planner.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -72,6 +74,20 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
         hadoop = new GridHadoopImpl(this);
 
         id = ctx.localNodeId();
+
+        checkHadoopInstallation();
+    }
+
+    /**
+     * Checks Hadoop installation.
+     */
+    private void checkHadoopInstallation() {
+        String hadoopHome = System.getenv("HADOOP_HOME");
+
+        if (F.isEmpty(hadoopHome))
+            U.warn(log, "HADOOP_HOME environment variable is not set.");
+        else if (log.isInfoEnabled())
+            log.info("Apache Hadoop is found at " + hadoopHome);
     }
 
     /** {@inheritDoc} */

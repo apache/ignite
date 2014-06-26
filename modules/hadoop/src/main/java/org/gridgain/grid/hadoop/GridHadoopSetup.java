@@ -14,6 +14,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.nio.file.*;
+import java.text.*;
 import java.util.*;
 
 /**
@@ -31,27 +32,6 @@ public class GridHadoopSetup {
     public static void main(String[] ignore) throws IOException {
         //Ignore arguments. The only supported operation runs by default.
         configureHadoop();
-    }
-
-    /**
-     * Exit with message.
-     *
-     * @param msg Exit message.
-     */
-    private static void exit(String msg) {
-        X.println("### " + msg);
-        X.println("### Setup failed, exiting... ");
-
-        System.exit(1);
-    }
-
-    /**
-     * Prints message.
-     *
-     * @param msg Message.
-     */
-    private static void println(String msg) {
-        X.println(">>> " + msg);
     }
 
     /**
@@ -122,7 +102,7 @@ public class GridHadoopSetup {
 
             File winutilsFile = new File(hadoopBinDir, WINUTILS_EXE);
 
-            if (!winutilsFile.exists() && ask("File " + WINUTILS_EXE + " does not exist. " +
+            if (!winutilsFile.exists() && ask("File '" + WINUTILS_EXE + "' does not exist. " +
                 "It may be replaced by a stub. Create it?")) {
                 println("Creating file stub '" + winutilsFile.getAbsolutePath() + "'.");
 
@@ -142,12 +122,12 @@ public class GridHadoopSetup {
             processCmdFiles(hadoopDir, "bin", "sbin", "libexec");
         }
 
-        File gridGainLibs = new File(new File(gridgainHome), "libs");
+        File gridgainLibs = new File(new File(gridgainHome), "libs");
 
-        if (!gridGainLibs.exists())
+        if (!gridgainLibs.exists())
             exit("GridGain 'libs' folder is not found.");
 
-        File[] jarFiles = gridGainLibs.listFiles(new FilenameFilter() {
+        File[] jarFiles = gridgainLibs.listFiles(new FilenameFilter() {
             @Override public boolean accept(File dir, String name) {
                 return name.endsWith(".jar");
             }
@@ -158,11 +138,8 @@ public class GridHadoopSetup {
         for (File file : jarFiles) {
             File targetFile = new File(hadoopCommonLibDir, file.getName());
 
-            if (!linkTargetExists(targetFile) || !targetFile.exists()) {
+            if (!linkTargetExists(targetFile) || !targetFile.exists())
                 jarsExist = false;
-
-                break;
-            }
         }
 
         if (!jarsExist && ask("GridGain JAR files are not found in Hadoop 'lib' directory. " +
@@ -173,13 +150,10 @@ public class GridHadoopSetup {
                 }
             });
 
-            if (oldGridGainJarFiles.length > 0) {
-                if (!ask("The Hadoop 'lib' directory contains JARs from other GridGain installation. " +
-                    "They must be deleted to continue. Continue?"))
-                    return;
-
+            if (oldGridGainJarFiles.length > 0 && ask("The Hadoop 'lib' directory contains JARs from other GridGain " +
+                "installation. They must be deleted to continue. Continue?")) {
                 for (File file : oldGridGainJarFiles) {
-                    println("Deleting '" + file.getAbsolutePath() + "'.");
+                    println("Deleting file '" + file.getAbsolutePath() + "'.");
 
                     if (!file.delete())
                         exit("Failed to delete file '" + file.getPath() + "'.");
@@ -200,7 +174,62 @@ public class GridHadoopSetup {
             }
         }
 
+        println("To run Hadoop client with GridGain cluster you need to configure 'core-site.xml' and " +
+            "'mapred-site.xml' files.");
+
+        if (ask("Replace 'core-site.xml' and 'mapred-site.xml' files with preconfigured templates?")) {
+            File gridgainDocs = new File(gridgainHome, "docs");
+
+            if (!gridgainDocs.canRead())
+                exit("Failed to read GridGain 'docs' folder at '" + gridgainDocs.getAbsolutePath() + "'.");
+
+            File hadoopEtc = new File(hadoopDir, "etc" + File.separator + "hadoop");
+
+            if (!hadoopEtc.canWrite())
+                exit("Failed to write to directory '" + hadoopEtc + "'.");
+
+            replace(new File(gridgainDocs, "core-site.xml.gridgain"), renameToBak(new File(hadoopEtc, "core-site.xml")));
+            replace(new File(gridgainDocs, "mapred-site.xml.gridgain"), renameToBak(new File(hadoopEtc, "mapred-site.xml")));
+        }
+        else
+            println("Ok, you can configure them later. The templates are available at GridGain's 'docs' directory.");
+
         println("Hadoop setup is complete.");
+    }
+
+    /**
+     * Replaces target file with source file.
+     *
+     * @param from From.
+     * @param to To.
+     */
+    private static void replace(File from, File to) {
+        if (!from.canRead())
+            exit("Failed to read source file '" + from.getAbsolutePath() + "'.");
+
+        println("Replacing file '" + to.getAbsolutePath() + "'.");
+
+        try {
+            U.copy(from, renameToBak(to), true);
+        }
+        catch (IOException e) {
+            exit("Failed to replace file '" + to.getAbsolutePath() + "'.");
+        }
+    }
+
+    /**
+     * Renames file for backup.
+     *
+     * @param file File.
+     * @return File.
+     */
+    private static File renameToBak(File file) {
+        DateFormat fmt = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
+
+        if (file.exists() && !file.renameTo(new File(file.getAbsolutePath() + "." + fmt.format(new Date()) + ".bak")))
+            exit("Failed to rename file '" + file.getPath() + "'.");
+
+        return file;
     }
 
     /**
@@ -223,8 +252,7 @@ public class GridHadoopSetup {
         }
 
         if (Files.notExists(target)) {
-            println("Found link pointing to non-existing location: " + link.getAbsolutePath() + " -> " +
-                target.toAbsolutePath());
+            warn("Found link pointing to non-existing location: '" + link.getAbsolutePath() + "'.");
 
             return false;
         }
@@ -239,7 +267,7 @@ public class GridHadoopSetup {
      * @return {@code true} if user inputs 'Y' or 'y', {@code false} otherwise.
      */
     private static boolean ask(String question) {
-        X.print("  < " + question + " (Y/N): ");
+        X.print(" <  " + question + " (Y/N): ");
 
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
@@ -253,15 +281,45 @@ public class GridHadoopSetup {
         }
 
         if (answer != null && "Y".equals(answer.toUpperCase().trim())) {
-            X.println("  > Yes.");
+            X.println(" >  Yes.");
 
             return true;
         }
         else {
-            X.println("  > No.");
+            X.println(" >  No.");
 
             return false;
         }
+    }
+
+    /**
+     * Exit with message.
+     *
+     * @param msg Exit message.
+     */
+    private static void exit(String msg) {
+        X.println("  # " + msg);
+        X.println("  # Setup failed, exiting... ");
+
+        System.exit(1);
+    }
+
+    /**
+     * Prints message.
+     *
+     * @param msg Message.
+     */
+    private static void println(String msg) {
+        X.println("  > " + msg);
+    }
+
+    /**
+     * Prints warning.
+     *
+     * @param msg Message.
+     */
+    private static void warn(String msg) {
+        X.println("  ! " + msg);
     }
 
     /**
@@ -309,8 +367,9 @@ public class GridHadoopSetup {
                     if (!answer)
                         return;
 
-                    if (!file.renameTo(new File(file.getAbsolutePath() + ".bak")))
-                        exit("Failed to rename file '" + file.getPath() + "'.");
+                    println("Fixing newline characters in file '" + file.getAbsolutePath() + "'.");
+
+                    renameToBak(file);
 
                     try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
                         for (int i = 0; i < content.length(); i++) {

@@ -30,7 +30,7 @@ public class GridHadoopConfiguration {
     /** Finished job info TTL. */
     private long finishedJobInfoTtl = DFLT_FINISHED_JOB_INFO_TTL;
 
-    /**  */
+    /** */
     private ExecutorService embeddedExecutor;
 
     /**
