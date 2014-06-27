@@ -145,7 +145,7 @@ namespace GridGain.Client {
                 // Nodes may also be refreshed by IP address.
                 String clntAddr = "127.0.0.1";
 
-                foreach (var addr in clntNode.AvailableAddresses(GridClientProtocol.Tcp))
+                foreach (var addr in clntNode.AvailableAddresses())
                     if (addr != null)
                         clntAddr = addr.Address.ToString();
 
