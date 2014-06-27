@@ -194,12 +194,16 @@ namespace GridGain.Client.Impl.Portable
 
                         // 11. Populate object fields.
                         desc.Serializer.ReadPortable(obj, reader);
+                        
+                        // 12. Special case for portable object.
+                        if (obj is GridClientPortableObjectImpl)
+                            ((GridClientPortableObjectImpl)obj).Populate(marsh);
 
                         return (T)obj;
                     }
                     finally
                     {
-                        // 12. Restore old frame.
+                        // 13. Restore old frame.
                         curTypeId = oldTypeId;
                         curMapper = oldMapper;
                         curPort = oldPort;
@@ -208,15 +212,15 @@ namespace GridGain.Client.Impl.Portable
                 }
                 else if (hdr == PU.HDR_HND)
                 {
-                    // 13. Dealing with handles.
+                    // 14. Dealing with handles.
                     int hndPos = PU.ReadInt(Stream);
 
                     if (hnds.TryGetValue(hndPos, out hndObj))
-                        // 14. Already met this object, return immediately.
+                        // 15. Already met this object, return immediately.
                         return (T)hndObj;
                     else
                     {
-                        // 15. No such handler, i.e. we trying to deserialize inner object before deserializing outer.
+                        // 16. No such handler, i.e. we trying to deserialize inner object before deserializing outer.
                         Stream.Seek(hndPos, SeekOrigin.Begin);
 
                         return Deserialize<T>(Stream);
@@ -227,7 +231,7 @@ namespace GridGain.Client.Impl.Portable
             }
             finally
             {
-                // 16. Position stream right after the object.
+                // 17. Position stream right after the object.
                 Stream.Position = port.Offset + port.Length;
             }
         }

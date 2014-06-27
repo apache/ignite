@@ -98,7 +98,7 @@ namespace GridGain.Client.Impl.Portable
             // 4. Guid.
             WRITE_HANDLERS[typeof(Guid)] = WriteGuid;
             READ_HANDLERS[PU.TYPE_GUID] = ReadGuid;
-
+            
             // 5. Primitive arrays.
             WRITE_HANDLERS[typeof(bool[])] = WriteBoolArray;
             READ_HANDLERS[PU.TYPE_ARRAY_BOOL] = ReadBoolArray;
@@ -153,7 +153,7 @@ namespace GridGain.Client.Impl.Portable
             READ_HANDLERS[PU.TYPE_COLLECTION] = ReadCollection;    
 
             // 13. Arbitrary dictionary.
-            READ_HANDLERS[PU.TYPE_DICTIONARY] = ReadDictionary;    
+            READ_HANDLERS[PU.TYPE_DICTIONARY] = ReadDictionary;   
         }
 
         /**
