@@ -140,15 +140,17 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
         if (!flushed) {
             sender = new GridWorker(gridName, "hadoop-shuffle-" + job.id(), log) {
                 @Override protected void body() throws InterruptedException {
-                    while (!isCancelled()) {
-                        Thread.sleep(10);
+                    try {
+                        job.beforeTaskRun(null); // TODO
 
-                        try {
+                        while (!isCancelled()) {
+                            Thread.sleep(5);
+
                             collectUpdatesAndSend(false);
                         }
-                        catch (GridException e) {
-                            throw new IllegalStateException(e);
-                        }
+                    }
+                    catch (GridException e) {
+                        throw new IllegalStateException(e);
                     }
                 }
             };
