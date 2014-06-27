@@ -17,6 +17,7 @@ import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
@@ -511,6 +512,9 @@ public class GridConfiguration {
     /** Security credentials. */
     private GridSecurityCredentialsProvider securityCred;
 
+    /** Warmup closure. Will be invoked before actual grid start. */
+    private GridInClosure<GridConfiguration> warmupClos;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -630,6 +634,7 @@ public class GridConfiguration {
         timeSrvPortRange = cfg.getTimeServerPortRange();
         userAttrs = cfg.getUserAttributes();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
+        warmupClos = cfg.getWarmupClosure();
     }
 
     /**
@@ -2970,6 +2975,26 @@ public class GridConfiguration {
      */
     public void setSecurityCredentialsProvider(GridSecurityCredentialsProvider securityCred) {
         this.securityCred = securityCred;
+    }
+
+    /**
+     * Gets grid warmup closure. This closure will be executed before actual grid instance start. Configuration of
+     * a starting instance will be passed to the closure so it can decide what operations to warm up.
+     *
+     * @return Warmup closure to execute.
+     */
+    public GridInClosure<GridConfiguration> getWarmupClosure() {
+        return warmupClos;
+    }
+
+    /**
+     * Sets warmup closure to execute before grid startup.
+     *
+     * @param warmupClos Warmup closure to execute.
+     * @see #getWarmupClosure()
+     */
+    public void setWarmupClosure(GridInClosure<GridConfiguration> warmupClos) {
+        this.warmupClos = warmupClos;
     }
 
     /** {@inheritDoc} */

@@ -707,7 +707,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
                                 distributedKeys.add(key);
 
-                                if (inTx() && implicitTx() && mappings.size() == 1) {
+                                if (cctx.config().isOnePhaseCommitAllowed() && inTx() && implicitTx() &&
+                                    mappings.size() == 1) {
                                     tx.onePhaseCommit(true);
 
                                     req.onePhaseCommit(true);
@@ -957,7 +958,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             if (tx != null) {
                 tx.addKeyMapping(cctx.localNode(), distributedKeys);
 
-                if (tx.implicit())
+                if (cctx.config().isOnePhaseCommitAllowed() && tx.implicit())
                     tx.onePhaseCommit(true);
             }
 
