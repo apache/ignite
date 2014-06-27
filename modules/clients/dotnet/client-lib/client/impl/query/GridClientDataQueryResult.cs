@@ -14,9 +14,12 @@ namespace GridGain.Client.Impl.Query
     using System.Collections.ObjectModel;
     using GridGain.Client.Portable;
 
+    using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
+
     /**
      * 
      */
+    [GridClientPortableId(PU.TYPE_CACHE_QUERY_RESULT)]
     class GridClientDataQueryResult : IGridClientPortable {
         /**
          * 
@@ -52,20 +55,22 @@ namespace GridGain.Client.Impl.Query
 
         /** <inheritdoc /> */
         public void WritePortable(IGridClientPortableWriter writer) {
-            writer.WriteLong("queryId", QueryId);
+            IGridClientPortableRawWriter rawWriter = writer.RawWriter();
 
-            writer.WriteCollection("items", Items);
-            writer.WriteBoolean("last", Last);
-            writer.WriteGuid("nodeId", NodeId);
+            rawWriter.WriteLong(QueryId);
+            rawWriter.WriteCollection(Items);
+            rawWriter.WriteBoolean(Last);
+            rawWriter.WriteGuid(NodeId);
         }
 
         /** <inheritdoc /> */
         public void ReadPortable(IGridClientPortableReader reader) {
-            QueryId = reader.ReadLong("queryId");
+            IGridClientPortableRawReader rawReader = reader.RawReader();
 
-            Items = (ICollection)reader.ReadCollection("items");
-            Last = reader.ReadBoolean("last");
-            NodeId = reader.ReadGuid("nodeId").Value;
+            QueryId = rawReader.ReadLong();
+            Items = (ICollection)rawReader.ReadCollection();
+            Last = rawReader.ReadBoolean();
+            NodeId = rawReader.ReadGuid().Value;
         }
     }
 }

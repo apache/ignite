@@ -9,10 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
-import org.gridgain.grid.portable.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
-
-import java.io.*;
 
 /**
  * Cache query request.
@@ -316,42 +314,46 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws IOException {
+    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
         super.readPortable(reader);
 
-        qryId = reader.readLong("queryId");
-        op = GridQueryOperation.fromOrdinal(reader.readInt("op"));
-        type = GridQueryType.fromOrdinal(reader.readInt("type"));
-        cacheName = reader.readString("cacheName");
-        clause = reader.readString("clause");
-        pageSize = reader.readInt("pageSize");
-        timeout = reader.readLong("timeout");
-        includeBackups = reader.readBoolean("includeBackups");
-        enableDedup = reader.readBoolean("enableDedup");
-        clsName = reader.readString("className");
-        rmtReducerClsName = reader.readString("remoteReducerClassName");
-        rmtTransformerClsName = reader.readString("remoteTransformerClassName");
-        clsArgs = reader.readObjectArray("classArguments");
-        qryArgs = reader.readObjectArray("arguments");
+        GridPortableRawReader rawReader = reader.rawReader();
+
+        qryId = rawReader.readLong();
+        op = GridQueryOperation.fromOrdinal(rawReader.readInt());
+        type = GridQueryType.fromOrdinal(rawReader.readInt());
+        cacheName = rawReader.readString();
+        clause = rawReader.readString();
+        pageSize = rawReader.readInt();
+        timeout = rawReader.readLong();
+        includeBackups = rawReader.readBoolean();
+        enableDedup = rawReader.readBoolean();
+        clsName = rawReader.readString();
+        rmtReducerClsName = rawReader.readString();
+        rmtTransformerClsName = rawReader.readString();
+        clsArgs = rawReader.readObjectArray();
+        qryArgs = rawReader.readObjectArray();
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws IOException {
+    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
         super.writePortable(writer);
 
-        writer.writeLong("queryId", qryId);
-        writer.writeInt("op", op.ordinal());
-        writer.writeInt("type", type.ordinal());
-        writer.writeString("cacheName", cacheName);
-        writer.writeString("clause", clause);
-        writer.writeInt("pageSize", pageSize);
-        writer.writeLong("timeout", timeout);
-        writer.writeBoolean("includeBackups", includeBackups);
-        writer.writeBoolean("enableDedup", enableDedup);
-        writer.writeString("className", clsName);
-        writer.writeString("remoteReducerClassName", rmtReducerClsName);
-        writer.writeString("remoteTransformerClassName", rmtTransformerClsName);
-        writer.writeObjectArray("classArguments", clsArgs);
-        writer.writeObjectArray("arguments", qryArgs);
+        GridPortableRawWriter rawWriter = writer.rawWriter();
+
+        rawWriter.writeLong(qryId);
+        rawWriter.writeInt(op.ordinal());
+        rawWriter.writeInt(type.ordinal());
+        rawWriter.writeString(cacheName);
+        rawWriter.writeString(clause);
+        rawWriter.writeInt(pageSize);
+        rawWriter.writeLong(timeout);
+        rawWriter.writeBoolean(includeBackups);
+        rawWriter.writeBoolean(enableDedup);
+        rawWriter.writeString(clsName);
+        rawWriter.writeString(rmtReducerClsName);
+        rawWriter.writeString(rmtTransformerClsName);
+        rawWriter.writeObjectArray(clsArgs);
+        rawWriter.writeObjectArray(qryArgs);
     }
 }

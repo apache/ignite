@@ -222,6 +222,30 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
             restReq = restCacheReq;
         }
+        else if (msg instanceof GridClientCacheQueryRequest) {
+            GridClientCacheQueryRequest req = (GridClientCacheQueryRequest) msg;
+
+            restReq = new GridRestCacheQueryRequest(req);
+
+            switch (req.operation()) {
+                case EXECUTE:
+                    restReq.command(CACHE_QUERY_EXECUTE);
+
+                    break;
+
+                case FETCH:
+                    restReq.command(CACHE_QUERY_FETCH);
+                    break;
+
+                case REBUILD_INDEXES:
+                    restReq.command(CACHE_QUERY_REBUILD_INDEXES);
+
+                    break;
+
+                default:
+                    throw new IllegalArgumentException("Unknown query operation: " + req.operation());
+            }
+        }
         else if (msg instanceof GridClientTaskRequest) {
             GridClientTaskRequest req = (GridClientTaskRequest) msg;
 
@@ -275,9 +299,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             restReq.destinationId(msg.destinationId());
             restReq.clientId(msg.clientId());
             restReq.sessionToken(msg.sessionToken());
+            restReq.address(ses.remoteAddress());
         }
-
-        restReq.address(ses.remoteAddress());
 
         return restReq;
     }

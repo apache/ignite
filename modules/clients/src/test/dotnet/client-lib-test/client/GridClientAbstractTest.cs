@@ -11,10 +11,13 @@ namespace GridGain.Client {
     using System;
     using System.Linq;
     using System.Threading;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Collections.Concurrent;
     using NUnit.Framework;
     using GridGain.Client.Ssl;
+    using GridGain.Client.Query;
+    using GridGain.Client.Portable;
     using GridGain.Client.Util;
 
     using sc = System.Collections;
@@ -167,8 +170,18 @@ namespace GridGain.Client {
 
             withStore.Name = "replicated.store";
 
+            GridClientPortableConfiguration portableCfg = new GridClientPortableConfiguration();
+
+            ICollection<GridClientPortableTypeConfiguration> types = new List<GridClientPortableTypeConfiguration>();
+
+            types.Add(new GridClientPortableTypeConfiguration(typeof(GridPortablePerson)));
+
+            portableCfg.TypeConfigurations = types;
+
             GridClientConfiguration cfg = new GridClientConfiguration();
 
+            cfg.PortableConfiguration = portableCfg;
+            
             cfg.DataConfigurations.Add(nullCache);
             cfg.DataConfigurations.Add(invalidCache);
             cfg.DataConfigurations.Add(partitioned);
@@ -848,6 +861,97 @@ namespace GridGain.Client {
             }
 
             Assert.AreEqual(0, failed);
+        }
+
+        /**
+         * <summary>Tests SQL query.</summary>
+         */
+        [Test]
+        public void TestSqlQuery()
+        {
+            IGridClientData data = client.Data("partitioned");
+
+            Assert.IsNotNull(data);
+
+            for (int i = 0; i < 100; i++)
+            {
+                int key = i;
+
+                GridPortablePerson person = new GridPortablePerson("Person" + i, i * 10);
+
+                data.Put(key, person);
+            }
+
+            IGridClientDataQueries qrys = data.Queries();
+
+            IGridClientDataQuery<DictionaryEntry?> qry = qrys.createSqlQuery("org.gridgain.client.model.GridPortablePerson", "where age >= ?");
+
+            qry.IncludeBackups = false;
+            qry.EnableDedup = true;
+            qry.KeepAll = true;
+
+            IGridClientDataQueryFuture<DictionaryEntry?> qryFut = qry.Execute(500);
+
+            ICollection<DictionaryEntry?> res = qryFut.Result;
+
+            Assert.AreEqual(50, res.Count);
+
+            foreach (DictionaryEntry entry in res)
+            {
+                GridPortablePerson person = (GridPortablePerson)entry.Value;
+
+                Assert.GreaterOrEqual(person.Age, 500);
+            }
+        }
+
+        /**
+         * <summary>Tests SQL query.</summary>
+         */
+        [Test]
+        public void TestSqlQueryIterate()
+        {
+            IGridClientData data = client.Data("partitioned");
+
+            Assert.IsNotNull(data);
+
+            for (int i = 0; i < 100; i++)
+            {
+                int key = i;
+
+                GridPortablePerson person = new GridPortablePerson("Person" + i, i * 10);
+
+                data.Put(key, person);
+            }
+
+            IGridClientDataQueries qrys = data.Queries();
+
+            IGridClientDataQuery<DictionaryEntry?> qry = qrys.createSqlQuery("org.gridgain.client.model.GridPortablePerson", "where age >= ?");
+
+            qry.IncludeBackups = false;
+            qry.EnableDedup = true;
+            qry.KeepAll = true;
+            // Force multiple requests.
+            qry.PageSize = 10;
+
+            IGridClientDataQueryFuture<DictionaryEntry?> qryFut = qry.Execute(500);
+
+            int cnt = 0;
+
+            do {
+                DictionaryEntry? entry = qryFut.next();
+
+                if (!entry.HasValue)
+                    break;
+
+                GridPortablePerson person = (GridPortablePerson)entry.Value.Value;
+
+                Assert.GreaterOrEqual(person.Age, 500);
+
+                cnt++;
+            }
+            while (true);
+
+            Assert.AreEqual(50, cnt);
         }
 
         [Test]

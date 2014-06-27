@@ -25,16 +25,19 @@ namespace GridGain.Client.Util {
         /** <summary>Error callback, should always throw GridClientException.</summary> */
         private volatile Action err;
 
+        /** <summary>Done callback.</summary> */
+        private volatile Action _DoneCallback;
+
         /** <summary>Callback delegate to call on future finishes.</summary> */
         public Action DoneCallback {
             get {
-                return this.DoneCallback;
+                return _DoneCallback;
             }
 
             set {
                 Int32 state = 0;
 
-                this.DoneCallback = () => {
+                this._DoneCallback = () => {
                     if (Interlocked.CompareExchange(ref state, 0, 1) == 0) {
                         value();
                     }

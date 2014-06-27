@@ -22,7 +22,7 @@ namespace GridGain.Client
         /**
          * 
          */
-        IGridClientDataQuery<DictionaryEntry> createSqlQuery(String clsName, String clause);
+        IGridClientDataQuery<DictionaryEntry?> createSqlQuery(String clsName, String clause);
 
         /**
          * 
@@ -32,12 +32,12 @@ namespace GridGain.Client
         /**
          * 
          */
-        IGridClientDataQuery<DictionaryEntry> createFullTextQuery(String clsName, String clause);
+        IGridClientDataQuery<DictionaryEntry?> createFullTextQuery(String clsName, String clause);
 
         /**
          * 
          */
-        IGridClientDataQuery<DictionaryEntry> createScanQuery(String clsName, Object[] args);
+        IGridClientDataQuery<DictionaryEntry?> createScanQuery(String clsName, Object[] args);
 
         /**
          * 

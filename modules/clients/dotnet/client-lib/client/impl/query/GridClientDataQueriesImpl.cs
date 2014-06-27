@@ -34,8 +34,8 @@ namespace GridGain.Client.Impl.Query
         /**
          * 
          */
-        public IGridClientDataQuery<DictionaryEntry> createSqlQuery(String clsName, String clause) {
-            GridClientDataQueryBean<DictionaryEntry> qry = new GridClientDataQueryBean<DictionaryEntry>(this);
+        public IGridClientDataQuery<DictionaryEntry?> createSqlQuery(String clsName, String clause) {
+            GridClientDataQueryBean<DictionaryEntry?> qry = new GridClientDataQueryBean<DictionaryEntry?>(this);
 
             qry.Type = GridClientDataQueryType.Sql;
 
@@ -63,8 +63,8 @@ namespace GridGain.Client.Impl.Query
         /**
          * 
          */
-        public IGridClientDataQuery<DictionaryEntry> createFullTextQuery(String clsName, String clause) {
-            GridClientDataQueryBean<DictionaryEntry> qry = new GridClientDataQueryBean<DictionaryEntry>(this);
+        public IGridClientDataQuery<DictionaryEntry?> createFullTextQuery(String clsName, String clause) {
+            GridClientDataQueryBean<DictionaryEntry?> qry = new GridClientDataQueryBean<DictionaryEntry?>(this);
 
             qry.Type = GridClientDataQueryType.FullText;
 
@@ -78,8 +78,8 @@ namespace GridGain.Client.Impl.Query
         /**
          * 
          */
-        public IGridClientDataQuery<DictionaryEntry> createScanQuery(String clsName, Object[] args) {
-            GridClientDataQueryBean<DictionaryEntry> qry = new GridClientDataQueryBean<DictionaryEntry>(this);
+        public IGridClientDataQuery<DictionaryEntry?> createScanQuery(String clsName, Object[] args) {
+            GridClientDataQueryBean<DictionaryEntry?> qry = new GridClientDataQueryBean<DictionaryEntry?>(this);
 
             qry.Type = GridClientDataQueryType.Scan;
 

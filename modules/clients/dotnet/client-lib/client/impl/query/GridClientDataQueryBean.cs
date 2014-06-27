@@ -32,6 +32,7 @@ namespace GridGain.Client.Impl.Query
          */
         public GridClientDataQueryBean(GridClientDataQueryBean<T> src) {
             Type = src.Type;
+            CacheName = src.CacheName;
             Clause = src.Clause;
             PageSize = src.PageSize;
             Timeout = src.Timeout;
@@ -146,7 +147,7 @@ namespace GridGain.Client.Impl.Query
         /**
          * 
          */
-        public void remoteReducer(String clsName, Object[] args) {
+        public void RemoteReducer(String clsName, Object[] args) {
             RemoteTransformerClassName = null;
             RemoteReducerClassName = clsName;
             ClassArguments = args;
@@ -155,7 +156,7 @@ namespace GridGain.Client.Impl.Query
         /**
          * 
          */
-        public void remoteTransformer(String clsName, Object[] args) {
+        public void RemoteTransformer(String clsName, Object[] args) {
             RemoteReducerClassName = null;
             RemoteTransformerClassName = clsName;
             ClassArguments = args;
@@ -164,7 +165,7 @@ namespace GridGain.Client.Impl.Query
         /**
          * 
          */
-        public IGridClientDataQueryFuture<T> execute(Object[] args) {
+        public IGridClientDataQueryFuture<T> Execute(Object[] args) {
             GridClientDataQueryBean<T> cp = new GridClientDataQueryBean<T>(this);
 
             GridClientDataQueryFutureImpl<T> fut = new GridClientDataQueryFutureImpl<T>(rootPrj, cp);

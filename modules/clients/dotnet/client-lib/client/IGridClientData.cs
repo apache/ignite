@@ -318,6 +318,15 @@ namespace GridGain.Client {
 
         /**
          * <summary>
+         * Gets queries facade for this data projection. User can issue different queries against data 
+         * porjection with returned facade.</summary>
+         * 
+         * <returns>Queries facade</returns>
+         */
+        IGridClientDataQueries Queries();
+
+        /**
+         * <summary>
          * Gets metrics for default cache.</summary>
          *
          * <returns>Cache metrics.</returns>

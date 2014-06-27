@@ -9,15 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.rest.handlers.cache;
 
-import org.gridgain.grid.portable.*;
+import org.gridgain.portable.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
  * Client query result.
  */
-public class GridCacheClientQueryResult implements GridPortableEx {
+public class GridCacheClientQueryResult implements GridPortable {
     /** Query ID. */
     private long qryId;
 
@@ -87,18 +86,22 @@ public class GridCacheClientQueryResult implements GridPortableEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws IOException {
-        writer.writeLong("queryId", qryId);
-        writer.writeCollection("items", items);
-        writer.writeBoolean("last", last);
-        writer.writeUuid("nodeId", nodeId);
+    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+        GridPortableRawWriter rawWriter = writer.rawWriter();
+
+        rawWriter.writeLong(qryId);
+        rawWriter.writeCollection(items);
+        rawWriter.writeBoolean(last);
+        rawWriter.writeUuid(nodeId);
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws IOException {
-        qryId = reader.readLong("queryId");
-        items = reader.readCollection("items");
-        last = reader.readBoolean("last");
-        nodeId = reader.readUuid("nodeId");
+    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+        GridPortableRawReader rawReader = reader.rawReader();
+
+        qryId = rawReader.readLong();
+        items = rawReader.readCollection();
+        last = rawReader.readBoolean();
+        nodeId = rawReader.readUuid();
     }
 }

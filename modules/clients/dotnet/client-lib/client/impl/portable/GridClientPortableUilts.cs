@@ -142,6 +142,12 @@ namespace GridGain.Client.Impl.Portable
         /** Type: task result bean. */
         public const byte TYPE_TASK_RES_BEAN = 59;
 
+        /** Type: cache query request. */
+        public const byte TYPE_CACHE_QUERY_REQ = 60;
+
+        /** Type: cache query result. */
+        public const byte TYPE_CACHE_QUERY_RESULT = 61;
+
         /** Collection: custom. */
         public const byte COLLECTION_CUSTOM = 0;
 

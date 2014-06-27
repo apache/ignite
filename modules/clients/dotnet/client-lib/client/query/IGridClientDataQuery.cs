@@ -55,18 +55,16 @@ namespace GridGain.Client
         /**
          * 
          */
-        void remoteReducer(String clsName, Object[] args);
+        void RemoteReducer(String clsName, Object[] args);
 
         /**
          * 
          */
-        void remoteTransformer(String clsName, Object[] args);
+        void RemoteTransformer(String clsName, Object[] args);
 
         /**
          * 
          */
-        IGridClientDataQueryFuture<T> execute(Object[] args);
-
-        // TODO projection.
+        IGridClientDataQueryFuture<T> Execute(params Object[] args);
     }
 }

@@ -146,16 +146,20 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      */
     private static GridRestResponse fetchQueryResults(
         long queryId,
-        int num, QueryFutureWrapper wrapper,
+        int pageSize,
+        QueryFutureWrapper wrapper,
         ConcurrentMap<QueryExecutionKey, QueryFutureWrapper> locMap,
         UUID locNodeId
     ) throws GridException {
         if (wrapper == null)
             throw new GridException("Failed to find query future (query has been expired).");
 
+        if (pageSize <= 0)
+            pageSize = GridCacheQuery.DFLT_PAGE_SIZE;
+
         GridCacheQueryFuture<?> fut = wrapper.future();
 
-        Collection<Object> col = new ArrayList<>(num);
+        Collection<Object> col = new ArrayList<>(pageSize);
 
         int cnt = 0;
 
@@ -163,7 +167,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
         GridCacheClientQueryResult qryRes = new GridCacheClientQueryResult();
 
-        while (cnt < num) {
+        while (cnt < pageSize) {
             Object obj = fut.next();
 
             if (obj == null) {
@@ -290,8 +294,13 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
                     throw new GridException("Unsupported query type: " + req.type());
             }
 
-            qry = qry.pageSize(req.pageSize()).timeout(req.timeout()).includeBackups(req.includeBackups())
-                .enableDedup(req.enableDedup()).keepAll(false);
+            if (req.pageSize() > 0)
+                qry = qry.pageSize(req.pageSize());
+
+            if (req.timeout() > 0)
+                qry = qry.timeout(req.timeout());
+
+            qry = qry.includeBackups(req.includeBackups()).enableDedup(req.enableDedup()).keepAll(false);
 
             GridCacheQueryFuture<?> fut;
 

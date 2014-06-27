@@ -125,7 +125,8 @@
                         </bean>
                     </property>
 
-                    <property name="queryIndexEnabled" value="false"/>
+                    <!-- Enable queries for partitioned cache -->
+                    <property name="queryIndexEnabled" value="true"/>
                 </bean>
 
                 <!--

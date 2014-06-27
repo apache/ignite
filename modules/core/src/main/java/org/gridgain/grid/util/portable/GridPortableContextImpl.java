@@ -11,6 +11,7 @@ package org.gridgain.grid.util.portable;
 
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
+import org.gridgain.grid.kernal.processors.rest.handlers.cache.GridCacheClientQueryResult;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.portable.*;
 import org.jdk8.backport.*;
@@ -125,6 +126,8 @@ public class GridPortableContextImpl implements GridPortableContext, Externaliza
         addDescriptor(GridClientNodeBean.class, 57);
         addDescriptor(GridClientNodeMetricsBean.class, 58);
         addDescriptor(GridClientTaskResultBean.class, 59);
+        addDescriptor(GridClientCacheQueryRequest.class, 60);
+        addDescriptor(GridCacheClientQueryResult.class, 61);
 
         if (portableCfg != null) {
             GridPortableIdMapper globalIdMapper = portableCfg.getIdMapper();

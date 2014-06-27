@@ -13,6 +13,7 @@ namespace GridGain.Client.Impl {
     using GridGain.Client;
     using GridGain.Client.Balancer;
     using GridGain.Client.Util;
+    using GridGain.Client.Impl.Query;
     using System.Collections.Generic;
 
     using N = GridGain.Client.IGridClientNode;
@@ -86,6 +87,11 @@ namespace GridGain.Client.Impl {
         /** <inheritdoc /> */
         public ICollection<N> PinnedNodes() {
             return _nodes;
+        }
+
+        /** <inheritdoc /> */
+        public IGridClientDataQueries Queries() {
+            return new GridClientDataQueriesImpl(cfg, _nodes, _filter, _balancer, CacheName);
         }
 
         /** <inheritdoc /> */

@@ -18,8 +18,10 @@ namespace GridGain.Client.Impl.Message
     using GridGain.Client.Impl.Query;
 
     using A = GridGain.Client.Util.GridClientArgumentCheck;
+    using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
 
     /** <summary>Generic cache request.</summary> */
+    [GridClientPortableId(PU.TYPE_CACHE_QUERY_REQ)]
     internal class GridClientCacheQueryRequest : GridClientRequest {
         /**
          * <summary>
@@ -149,44 +151,48 @@ namespace GridGain.Client.Impl.Message
         public override void WritePortable(IGridClientPortableWriter writer) {
             base.WritePortable(writer);
 
-            writer.WriteLong("queryId", QueryId);
+            IGridClientPortableRawWriter rawWriter = writer.RawWriter();
 
-            writer.WriteInt("op", (int)Operation);
-            writer.WriteInt("type", (int)Type);
+            rawWriter.WriteLong(QueryId);
 
-            writer.WriteString("cacheName", CacheName);
-            writer.WriteString("clause", Clause);
-            writer.WriteInt("pageSize", PageSize);
-            writer.WriteLong("timeout", Timeout);
-            writer.WriteBoolean("includeBackups", IncludeBackups);
-            writer.WriteBoolean("enableDedup", EnableDedup);
-            writer.WriteString("className", ClassName);
-            writer.WriteString("remoteReducerClassName", RemoteReducerClassName);
-            writer.WriteString("remoteTransformerClassName", RemoteTransformerClassName);
-            writer.WriteObjectArray("classArguments", ClassArguments);
-            writer.WriteObjectArray("arguments", Arguments);
+            rawWriter.WriteInt((int)Operation);
+            rawWriter.WriteInt((int)Type);
+
+            rawWriter.WriteString(CacheName);
+            rawWriter.WriteString(Clause);
+            rawWriter.WriteInt(PageSize);
+            rawWriter.WriteLong(Timeout);
+            rawWriter.WriteBoolean(IncludeBackups);
+            rawWriter.WriteBoolean(EnableDedup);
+            rawWriter.WriteString(ClassName);
+            rawWriter.WriteString(RemoteReducerClassName);
+            rawWriter.WriteString(RemoteTransformerClassName);
+            rawWriter.WriteObjectArray(ClassArguments);
+            rawWriter.WriteObjectArray(Arguments);
         }
 
         /** <inheritdoc /> */
         public override void ReadPortable(IGridClientPortableReader reader) {
             base.ReadPortable(reader);
 
-            QueryId = reader.ReadLong("queryId");
+            IGridClientPortableRawReader rawReader = reader.RawReader();
 
-            Operation = (GridClientCacheQueryRequestOperation)reader.ReadInt("op");
-            Type = (GridClientDataQueryType)reader.ReadInt("type");
+            QueryId = rawReader.ReadLong();
 
-            CacheName = reader.ReadString("cacheName");
-            Clause = reader.ReadString("clause");
-            PageSize = reader.ReadInt("pageSize");
-            Timeout = reader.ReadLong("timeout");
-            IncludeBackups = reader.ReadBoolean("includeBackups");
-            EnableDedup = reader.ReadBoolean("enableDedup");
-            ClassName = reader.ReadString("className");
-            RemoteReducerClassName = reader.ReadString("remoteReducerClassName");
-            RemoteTransformerClassName = reader.ReadString("remoteTransformerClassName");
-            ClassArguments = reader.ReadObjectArray<Object>("classArguments");
-            Arguments = reader.ReadObjectArray<Object>("arguments");
+            Operation = (GridClientCacheQueryRequestOperation)rawReader.ReadInt();
+            Type = (GridClientDataQueryType)rawReader.ReadInt();
+
+            CacheName = rawReader.ReadString();
+            Clause = rawReader.ReadString();
+            PageSize = rawReader.ReadInt();
+            Timeout = rawReader.ReadLong();
+            IncludeBackups = rawReader.ReadBoolean();
+            EnableDedup = rawReader.ReadBoolean();
+            ClassName = rawReader.ReadString();
+            RemoteReducerClassName = rawReader.ReadString();
+            RemoteTransformerClassName = rawReader.ReadString();
+            ClassArguments = rawReader.ReadObjectArray<Object>();
+            Arguments = rawReader.ReadObjectArray<Object>();
         }
     }
 }

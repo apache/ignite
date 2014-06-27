@@ -15,6 +15,7 @@ namespace GridGain.Client.Impl.Portable
     using System.IO;
     using System.Reflection;
     using GridGain.Client.Impl.Message;
+    using GridGain.Client.Impl.Query;
     using GridGain.Client.Portable;    
 
     using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
@@ -48,6 +49,8 @@ namespace GridGain.Client.Impl.Portable
             SYS_TYPES.Add(typeof(GridClientNodeMetricsBean));
             SYS_TYPES.Add(typeof(GridClientTaskResultBean));
             SYS_TYPES.Add(typeof(GridClientPortableObjectImpl));
+            SYS_TYPES.Add(typeof(GridClientCacheQueryRequest));
+            SYS_TYPES.Add(typeof(GridClientDataQueryResult));
         }
 
         /**
