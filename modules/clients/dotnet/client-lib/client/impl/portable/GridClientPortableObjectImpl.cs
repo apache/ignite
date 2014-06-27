@@ -101,7 +101,7 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public bool UserType()
+        public bool IsUserType()
         {
             return userType;
         }
@@ -138,7 +138,7 @@ namespace GridGain.Client.Impl.Portable
 
         /**
          * <summary>Set hash code.</summary>
-         * <param name="typeId">Hash code.</param>
+         * <param name="hashCode">Hash code.</param>
          */
         public void HashCode(int hashCode)
         {

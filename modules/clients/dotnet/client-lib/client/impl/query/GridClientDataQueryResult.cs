@@ -63,9 +63,9 @@ namespace GridGain.Client.Impl.Query
         public void ReadPortable(IGridClientPortableReader reader) {
             QueryId = reader.ReadLong("queryId");
 
-            Items = (ICollection)reader.ReadCollection<Object>("items");
+            Items = (ICollection)reader.ReadCollection("items");
             Last = reader.ReadBoolean("last");
-            NodeId = reader.ReadGuid("nodeId");
+            NodeId = reader.ReadGuid("nodeId").Value;
         }
     }
 }

@@ -132,11 +132,11 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      * @param c Closure to execute.
      * @return Execution future.
      */
-    private GridFuture<GridRestResponse> broadcast(String cacheName, Callable<?> c) {
-        GridFuture<Collection<?>> fut = ctx.grid().forCache(cacheName).compute().broadcast(c);
+    private GridFuture<GridRestResponse> broadcast(String cacheName, Callable<Object> c) {
+        GridFuture<Collection<Object>> fut = ctx.grid().forCache(cacheName).compute().broadcast(c);
 
-        return fut.chain(new C1<GridFuture<Collection<?>>, GridRestResponse>() {
-            @Override public GridRestResponse apply(GridFuture<Collection<?>> fut) {
+        return fut.chain(new C1<GridFuture<Collection<Object>>, GridRestResponse>() {
+            @Override public GridRestResponse apply(GridFuture<Collection<Object>> fut) {
                 try {
                     fut.get();
 

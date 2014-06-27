@@ -81,13 +81,7 @@
     <Compile Include="client\portable\GridClientPortableTypeConfiguration.cs" />
     <Compile Include="client\portable\GridClientPortableId.cs" />
     <Compile Include="client\portable\GridClientPortableIdResolver.cs" />
-    <Compile Include="client\portable\GridClientPortableClassConfiguration.cs" />
-    <Compile Include="client\portable\GridClientPortableClassIdAttribute.cs" />
-    <Compile Include="client\portable\GridClientPortableFieldIdAttribute.cs" />
     <Compile Include="client\impl\portable\GridClientPortableMarshaller.cs" />
-    <Compile Include="client\impl\portable\GridClientPortableExternalSerializer.cs" />
-    <Compile Include="client\impl\portable\GridClientPortableByteArrayMarshallerOutput.cs" />
-    <Compile Include="client\impl\portable\GridClientPortableClassMetadata.cs" />
     <Compile Include="client\impl\message\GridClientCacheQueryRequest.cs" />
     <Compile Include="client\impl\message\GridClientCacheQueryRequestOperation.cs" />
     <Compile Include="client\impl\query\GridClientDataQueriesImpl.cs" />
