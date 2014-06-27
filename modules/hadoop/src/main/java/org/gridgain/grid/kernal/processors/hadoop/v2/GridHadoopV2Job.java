@@ -140,7 +140,9 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         Path jobDir = new Path(jobDirPath);
 
-        try (FileSystem fs = FileSystem.get(jobDir.toUri(), ctx.getConfiguration())) {
+        try {
+            FileSystem fs = FileSystem.get(jobDir.toUri(), ctx.getConfiguration());
+
             JobSplit.TaskSplitMetaInfo[] metaInfos = SplitMetaInfoReader.readSplitMetaInfo(hadoopJobID, fs,
                 ctx.getConfiguration(), jobDir);
 
@@ -208,26 +210,29 @@ public class GridHadoopV2Job implements GridHadoopJob {
     private Object readExternalSplit(GridHadoopExternalSplit split) throws GridException {
         Path jobDir = new Path(ctx.getConfiguration().get(MRJobConfig.MAPREDUCE_JOB_DIR));
 
-        try (FileSystem fs = FileSystem.get(jobDir.toUri(), ctx.getConfiguration());
-            FSDataInputStream in = fs.open(JobSubmissionFiles.getJobSplitFile(jobDir))) {
+        try {
+            FileSystem fs = FileSystem.get(jobDir.toUri(), ctx.getConfiguration());
 
-            Class<?> cls = readSplitClass(in, split.offset());
+            try (FSDataInputStream in = fs.open(JobSubmissionFiles.getJobSplitFile(jobDir))) {
 
-            assert cls != null;
+                Class<?> cls = readSplitClass(in, split.offset());
 
-            Serialization serialization = new SerializationFactory(ctx.getJobConf()).getSerialization(cls);
+                assert cls != null;
 
-            Deserializer deserializer = serialization.getDeserializer(cls);
+                Serialization serialization = new SerializationFactory(ctx.getJobConf()).getSerialization(cls);
 
-            deserializer.open(in);
+                Deserializer deserializer = serialization.getDeserializer(cls);
 
-            Object res = deserializer.deserialize(null);
+                deserializer.open(in);
 
-            deserializer.close();
+                Object res = deserializer.deserialize(null);
 
-            assert res != null;
+                deserializer.close();
 
-            return res;
+                assert res != null;
+
+                return res;
+            }
         }
         catch (IOException e) {
             throw new GridException(e);
