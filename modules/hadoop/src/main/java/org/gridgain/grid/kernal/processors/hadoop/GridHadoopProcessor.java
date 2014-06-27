@@ -20,6 +20,7 @@ import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -85,9 +86,19 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
         String hadoopHome = System.getenv("HADOOP_HOME");
 
         if (F.isEmpty(hadoopHome))
-            U.warn(log, "HADOOP_HOME environment variable is not set.");
-        else if (log.isInfoEnabled())
-            log.info("Apache Hadoop is found at " + hadoopHome);
+            U.quietAndWarn(log, "HADOOP_HOME environment variable is not set.");
+        else {
+            U.quietAndInfo(log, "Apache Hadoop is found at " + hadoopHome);
+
+            File dir = new File(hadoopHome);
+
+            if (!dir.exists())
+                U.quietAndWarn(log, "Apache Hadoop installation directory does not exist!");
+            else if (!dir.isDirectory())
+                U.quietAndWarn(log, "Apache Hadoop installation path is not a directory!");
+            else if (!dir.canRead())
+                U.quietAndWarn(log, "Apache Hadoop installation directory can not be read! Check permissions.");
+        }
     }
 
     /** {@inheritDoc} */
