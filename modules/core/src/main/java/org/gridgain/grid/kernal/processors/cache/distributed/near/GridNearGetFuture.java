@@ -441,14 +441,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 }
 
                 if (v != null && !reload) {
-                    if (deserializePortable && v instanceof GridPortableObject) {
-                        try {
-                            v = ((GridPortableObject)v).deserialize();
-                        }
-                        catch (GridPortableException e) {
-                            throw new GridRuntimeException(e); // TODO
-                        }
-                    }
+                    if (deserializePortable && v instanceof GridPortableObject)
+                        v = ((GridPortableObject)v).deserialize();
 
                     add(new GridFinishedFuture<>(cctx.kernalContext(), Collections.singletonMap(key, v)));
                 }
@@ -572,6 +566,13 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                             topVer,
                             subjId);
                     }
+
+                    V val = info.value();
+
+                    if (deserializePortable && val instanceof GridPortableObject)
+                        val = ((GridPortableObject)val).deserialize();
+
+                    map.put(info.key(), val);
                 }
                 catch (GridCacheEntryRemovedException ignore) {
                     if (log.isDebugEnabled())
@@ -583,19 +584,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
                     return Collections.emptyMap();
                 }
-
-                V val = info.value();
-
-                if (deserializePortable && val instanceof GridPortableObject) {
-                    try {
-                        val = ((GridPortableObject)val).deserialize();
-                    }
-                    catch (GridPortableException e) {
-                        throw new GridRuntimeException(e); // TODO
-                    }
-                }
-
-                map.put(info.key(), val);
             }
         }
 
