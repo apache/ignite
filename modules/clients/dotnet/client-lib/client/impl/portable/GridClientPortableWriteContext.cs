@@ -206,10 +206,16 @@ namespace GridGain.Client.Impl.Portable
         {
             stream.Seek(pos + 10, SeekOrigin.Begin);
 
-            PU.WriteInt((int)(retPos - pos), stream);
+            int len = (int)(retPos - pos);
+
+            PU.WriteInt(len, stream);
 
             if (rawPos != 0)
+                // When set, it is difference between object head and raw position.
                 PU.WriteInt((int)(rawPos - pos), stream);
+            else
+                // When no set, it is equal to object length. 
+                PU.WriteInt(len, stream);
 
             stream.Seek(retPos, SeekOrigin.Begin);
         }
