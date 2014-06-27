@@ -176,8 +176,8 @@ public class GridPortableMarshaller {
         if (arr[0] == NULL)
             return null;
 
-        GridPortableRawReader reader = new GridPortableReaderImpl(ctx, arr, 0);
+        GridPortableReaderImpl reader = new GridPortableReaderImpl(ctx, arr, 0);
 
-        return (T)reader.readObject();
+        return (T)reader.deserialize();
     }
 }

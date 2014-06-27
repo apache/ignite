@@ -9,6 +9,8 @@
 
 package org.gridgain.client;
 
+import org.gridgain.portable.*;
+
 import java.util.*;
 
 /**
@@ -129,6 +131,21 @@ public interface GridClientData {
     public <K, V> V get(K key) throws GridClientException;
 
     /**
+     * Gets portable object from cache on remote node.
+     * <p>
+     * Note that this operation is affinity-aware and will immediately contact
+     * exactly the remote node on which this key is supposed to be cached (unless
+     * some nodes were {@code pinned}).
+     *
+     * @param key Key to get from cache.
+     * @return Value for given key or {@code null} if no value was cached.
+     * @throws GridClientException In case of error.
+     * @throws GridServerUnreachableException If none of the servers can be reached.
+     * @throws GridClientClosedException If client was closed manually.
+     */
+    public <K> GridPortableObject getPortable(K key) throws GridClientException;
+
+    /**
      * Asynchronously gets value from cache on remote grid.
      * <p>
      * Note that this operation is affinity-aware and will immediately contact
@@ -139,6 +156,18 @@ public interface GridClientData {
      * @return Future with value for given key or with {@code null} if no value was cached.
      */
     public <K, V> GridClientFuture<V> getAsync(K key);
+
+    /**
+     * Asynchronously gets portable object from cache on remote grid.
+     * <p>
+     * Note that this operation is affinity-aware and will immediately contact
+     * exactly the remote node on which this key is supposed to be cached (unless
+     * some nodes were {@code pinned}).
+     *
+     * @param key Key to get from cache.
+     * @return Future with value for given key or with {@code null} if no value was cached.
+     */
+    public <K> GridClientFuture<GridPortableObject> getPortableAsync(K key);
 
     /**
      * Gets entries from cache on remote grid.
@@ -157,6 +186,22 @@ public interface GridClientData {
     public <K, V> Map<K, V> getAll(Collection<K> keys) throws GridClientException;
 
     /**
+     * Gets entries with portable objects as values from cache on remote grid.
+     * <p>
+     * Note that this operation is affinity-aware and will immediately contact
+     * exactly the remote nodes on which these keys are supposed to be cached (unless
+     * some nodes were {@code pinned}). If entries do not map to one node, then the node
+     * which has most mapped entries will be contacted.
+     *
+     * @param keys Keys to get.
+     * @throws GridClientException In case of error.
+     * @return Entries retrieved from remote cache nodes.
+     * @throws GridServerUnreachableException If none of the servers can be reached.
+     * @throws GridClientClosedException If client was closed manually.
+     */
+    public <K> Map<K, GridPortableObject> getAllPortable(Collection<K> keys) throws GridClientException;
+
+    /**
      * Asynchronously gets entries from cache on remote grid.
      * <p>
      * Note that this operation is affinity-aware and will immediately contact
@@ -168,6 +213,19 @@ public interface GridClientData {
      * @return Future with entries retrieved from remote cache nodes.
      */
     public <K, V> GridClientFuture<Map<K, V>> getAllAsync(Collection<K> keys);
+
+    /**
+     * Asynchronously gets portable objects as values from cache on remote grid.
+     * <p>
+     * Note that this operation is affinity-aware and will immediately contact
+     * exactly the remote nodes on which these keys are supposed to be cached (unless
+     * some nodes were {@code pinned}). If entries do not map to one node, then the node
+     * which has most mapped entries will be contacted.
+     *
+     * @param keys Keys to get.
+     * @return Future with entries retrieved from remote cache nodes.
+     */
+    public <K> GridClientFuture<Map<K, GridPortableObject>> getAllPortableAsync(Collection<K> keys);
 
     /**
      * Removes value from cache on remote node.

@@ -81,6 +81,11 @@ public:
     GridPortable* deserialize() const;
 
     template<typename T>
+    std::unique_ptr<T> deserializeUnique() const {
+        return std::unique_ptr<T>(deserialize<T>());
+    }
+
+    template<typename T>
     T* deserialize() const {
         return static_cast<T*>(deserialize());
     }
@@ -99,17 +104,6 @@ private:
     friend class GridPortableReaderImpl;
 
     friend class GridPortableObjectBuilder;
-};
-
-class GRIDGAIN_API GridPortableObjectBuilder {
-public:
-    GridPortableObjectBuilder(int32_t typeId);
-
-    void set(std::string fieldName, const GridClientVariant& val);
-
-    void set(boost::unordered_map<std::string, GridClientVariant> fieldVals);
-
-    GridPortableObject build();
 };
 
 #endif // GRIDPORTABLE_HPP_INCLUDED

@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include <cstdint>
+#include <memory>
 
 #include <gridgain/gridconf.hpp>
 #include <gridgain/gridclientuuid.hpp>
@@ -551,6 +552,16 @@ public:
      * @return Value held in the variant.
      */
     GridPortableObject& getPortableObject() const;
+
+    template<typename T> 
+    T* deserializePortable() const {
+        return getPortableObject().deserialize<T>();
+    }
+
+    template<typename T> 
+    std::unique_ptr<T> deserializePortableUnique() const {
+        return getPortableObject().deserializeUnique<T>();
+    }
 
     /**
      * Checks if this variant holds a wide string value.

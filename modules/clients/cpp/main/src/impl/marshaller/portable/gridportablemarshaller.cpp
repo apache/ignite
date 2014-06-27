@@ -80,8 +80,13 @@ GridPortable* createPortable(int32_t typeId, GridPortableReader &reader) {
 
     GridPortableFactory* factory = factories[typeId];
 
-    if (!factory)
-        throw GridClientPortableException("Unknown type id.");
+    if (!factory) {
+        std::ostringstream msg;
+
+        msg << "Unknown type id: " << typeId;
+        
+        throw GridClientPortableException(msg.str());
+    }
 
     return static_cast<GridPortable*>(factory->newInstance(reader));
 }
@@ -99,8 +104,13 @@ GridPortable* createSystemPortable(int32_t typeId, GridPortableReader &reader) {
 
     GridPortableFactory* factory = factories[typeId];
 
-    if (!factory)
-        throw GridClientPortableException("Unknown system type id.");
+    if (!factory) {
+        std::ostringstream msg;
+
+        msg << "Unknown system type id: " << typeId;
+        
+        throw GridClientPortableException(msg.str());
+    }
 
     return static_cast<GridPortable*>(factory->newInstance(reader));
 }

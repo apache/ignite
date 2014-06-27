@@ -21,9 +21,6 @@ import java.util.*;
  */
 public class GridPortableObjectImpl implements GridPortableObject, Externalizable {
     /** */
-    private static final GridPortablePrimitives PRIM = GridPortablePrimitives.get();
-
-    /** */
     private GridPortableContext ctx;
 
     /** */
@@ -73,17 +70,26 @@ public class GridPortableObjectImpl implements GridPortableObject, Externalizabl
      * @return Length.
      */
     int length() {
-        return PRIM.readInt(arr, start + 10);
+        if (reader == null)
+            reader = new GridPortableReaderImpl(ctx, arr, start);
+
+        return reader.length();
     }
 
     /** {@inheritDoc} */
     @Override public boolean userType() {
-        return PRIM.readBoolean(arr, start + 1);
+        if (reader == null)
+            reader = new GridPortableReaderImpl(ctx, arr, start);
+
+        return reader.userType();
     }
 
     /** {@inheritDoc} */
     @Override public int typeId() {
-        return PRIM.readInt(arr, start + 2);
+        if (reader == null)
+            reader = new GridPortableReaderImpl(ctx, arr, start);
+
+        return reader.typeId();
     }
 
     /** {@inheritDoc} */
@@ -111,7 +117,7 @@ public class GridPortableObjectImpl implements GridPortableObject, Externalizabl
             if (reader == null)
                 reader = new GridPortableReaderImpl(ctx, arr, start);
 
-            obj = reader.readObject();
+            obj = reader.deserialize();
         }
 
         return (T)obj;
@@ -153,7 +159,10 @@ public class GridPortableObjectImpl implements GridPortableObject, Externalizabl
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return PRIM.readInt(arr, start + 6);
+        if (reader == null)
+            reader = new GridPortableReaderImpl(ctx, arr, start);
+
+        return reader.objectHashCode();
     }
 
     /** {@inheritDoc} */

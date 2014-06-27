@@ -292,7 +292,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @return Value.
      * @throws GridException If failed.
      */
-    @Nullable public V get(K key, @Nullable GridCacheEntryEx<K, V> entry,
+    @Nullable public V get(K key, @Nullable GridCacheEntryEx<K, V> entry, boolean deserializePortable,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException;
 
     /**

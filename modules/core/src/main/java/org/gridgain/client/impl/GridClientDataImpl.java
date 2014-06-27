@@ -13,6 +13,7 @@ import org.gridgain.client.balancer.*;
 import org.gridgain.client.impl.connection.*;
 import org.gridgain.client.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.portable.*;
 
 import java.util.*;
 
@@ -123,11 +124,44 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
     }
 
     /** {@inheritDoc} */
+    @Override public <K> GridPortableObject getPortable(K key) throws GridClientException {
+        return getPortableAsync(key).get();
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> GridClientFuture<V> getAsync(final K key) {
         A.notNull(key, "key");
 
         return withReconnectHandling(new ClientProjectionClosure<V>() {
             @Override public GridClientFuture<V> apply(GridClientConnection conn, UUID destNodeId)
+                throws GridClientConnectionResetException, GridClientClosedException {
+                return conn.cacheGet(cacheName, key, flags, destNodeId).chain(
+                    new GridClientFutureCallback<Object, V>() {
+                        @Override public V onComplete(GridClientFuture<Object> fut) throws GridClientException {
+                            Object obj = fut.get();
+
+                            if (obj != null && obj instanceof GridPortableObject) {
+                                try {
+                                    obj = ((GridPortableObject)obj).deserialize();
+                                }
+                                catch (GridPortableException e) {
+                                    throw new GridClientException("Failed to deserialize portable object.", e);
+                                }
+                            }
+
+                            return (V)obj;
+                        }
+                    });
+            }
+        }, cacheName, key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K> GridClientFuture<GridPortableObject> getPortableAsync(final K key) {
+        A.notNull(key, "key");
+
+        return withReconnectHandling(new ClientProjectionClosure<GridPortableObject>() {
+            @Override public GridClientFuture<GridPortableObject> apply(GridClientConnection conn, UUID destNodeId)
                 throws GridClientConnectionResetException, GridClientClosedException {
                 return conn.cacheGet(cacheName, key, flags, destNodeId);
             }
@@ -140,6 +174,11 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
     }
 
     /** {@inheritDoc} */
+    @Override public <K> Map<K, GridPortableObject> getAllPortable(Collection<K> keys) throws GridClientException {
+        return getAllPortableAsync(keys).get();
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> GridClientFuture<Map<K, V>> getAllAsync(final Collection<K> keys) {
         A.notNull(keys, "keys");
 
@@ -149,9 +188,48 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
         K key = GridClientUtils.first(keys);
 
         return withReconnectHandling(new ClientProjectionClosure<Map<K, V>>() {
-            @Override
-            public GridClientFuture<Map<K, V>> apply(GridClientConnection conn, UUID destNodeId)
+            @Override public GridClientFuture<Map<K, V>> apply(GridClientConnection conn, UUID destNodeId)
                 throws GridClientConnectionResetException, GridClientClosedException {
+                return conn.cacheGetAll(cacheName, keys, flags, destNodeId).chain(
+                    new GridClientFutureCallback<Map<K, Object>, Map<K, V>>() {
+                        @Override public Map<K, V> onComplete(GridClientFuture<Map<K, Object>> fut)
+                            throws GridClientException {
+                            Map<K, Object> map = fut.get();
+
+                            if (map != null) {
+                                for (Map.Entry<K, Object> e : map.entrySet()) {
+                                    Object val = e.getValue();
+
+                                    if (val != null && val instanceof GridPortableObject) {
+                                        try {
+                                            e.setValue(((GridPortableObject)val).deserialize());
+                                        }
+                                        catch (GridPortableException ex) {
+                                            throw new GridClientException("Failed to deserialize portable object.", ex);
+                                        }
+                                    }
+                                }
+                            }
+
+                            return (Map<K, V>)map;
+                        }
+                    });
+            }
+        }, cacheName, key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K> GridClientFuture<Map<K, GridPortableObject>> getAllPortableAsync(final Collection<K> keys) {
+        A.notNull(keys, "keys");
+
+        if (keys.isEmpty())
+            return new GridClientFutureAdapter<>(Collections.<K, GridPortableObject>emptyMap());
+
+        K key = GridClientUtils.first(keys);
+
+        return withReconnectHandling(new ClientProjectionClosure<Map<K, GridPortableObject>>() {
+            @Override public GridClientFuture<Map<K, GridPortableObject>> apply(GridClientConnection conn,
+                UUID destNodeId) throws GridClientConnectionResetException, GridClientClosedException {
                 return conn.cacheGetAll(cacheName, keys, flags, destNodeId);
             }
         }, cacheName, key);
@@ -321,8 +399,8 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
         A.notNull(val, "val");
 
         return withReconnectHandling(new ClientProjectionClosure<Boolean>() {
-            @Override public GridClientFuture<Boolean> apply(GridClientConnection conn, UUID destNodeId)
-                throws GridClientConnectionResetException, GridClientClosedException {
+            @Override public GridClientFuture<Boolean> apply(GridClientConnection conn,
+                UUID destNodeId) throws GridClientConnectionResetException, GridClientClosedException {
                 return conn.cachePrepend(cacheName, key, val, flags, destNodeId);
             }
         }, cacheName, key);

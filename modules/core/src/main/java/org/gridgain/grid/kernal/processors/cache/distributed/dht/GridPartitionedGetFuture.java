@@ -20,6 +20,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -78,6 +79,9 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     /** Subject ID. */
     private UUID subjId;
 
+    /** Whether to deserialize portable objects. */
+    private boolean deserializePortable;
+
     /**
      * Initializes max remap count.
      */
@@ -119,7 +123,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         boolean reload,
         boolean forcePrimary,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filters,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        boolean deserializePortable
     ) {
         super(cctx.kernalContext(), CU.<K, V>mapsReducer(keys.size()));
 
@@ -132,6 +137,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         this.forcePrimary = forcePrimary;
         this.filters = filters;
         this.subjId = subjId;
+        this.deserializePortable = deserializePortable;
 
         futId = GridUuid.randomUuid();
 
@@ -295,7 +301,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
             // If this is the primary or backup node for the keys.
             if (n.isLocal()) {
                 final GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
-                    cache().getDhtAsync(n.id(), -1, mappedKeys, reload, topVer, subjId, filters);
+                    cache().getDhtAsync(n.id(), -1, mappedKeys, reload, topVer, subjId, deserializePortable, filters);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -404,6 +410,15 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                                     colocated.removeIfObsolete(key);
                             }
                             else {
+                                if (deserializePortable && v instanceof GridPortableObject) {
+                                    try {
+                                        v = ((GridPortableObject)v).deserialize();
+                                    }
+                                    catch (GridPortableException e) {
+                                        throw new GridRuntimeException(e); // TODO
+                                    }
+                                }
+
                                 locVals.put(key, v);
 
                                 return false;
@@ -482,7 +497,18 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 for (GridCacheEntryInfo<K, V> info : infos) {
                     info.unmarshalValue(cctx, cctx.deploy().globalLoader());
 
-                    map.put(info.key(), info.value());
+                    V val = info.value();
+
+                    if (deserializePortable && val instanceof GridPortableObject) {
+                        try {
+                            val = ((GridPortableObject)val).deserialize();
+                        }
+                        catch (GridPortableException e) {
+                            throw new GridRuntimeException(e); // TODO
+                        }
+                    }
+
+                    map.put(info.key(), val);
                 }
 
                 return map;

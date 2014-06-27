@@ -146,6 +146,13 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     }
 
     /**
+     */
+    void writeRawOffsetIfNeeded() {
+        if (allowFields)
+            PRIM.writeInt(wCtx.arr, start + RAW_DATA_OFF_POS, wCtx.off - start);
+    }
+
+    /**
      * @param val Byte array.
      */
     void write(byte[] val) {
@@ -563,7 +570,7 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
      * @param val Value.
      */
     void writeDateField(@Nullable Date val) {
-        doWriteInt(val != null ? 10 : 2);
+        doWriteInt(val != null ? 12 : 2);
         doWriteByte(DATE);
         doWriteDate(val);
     }

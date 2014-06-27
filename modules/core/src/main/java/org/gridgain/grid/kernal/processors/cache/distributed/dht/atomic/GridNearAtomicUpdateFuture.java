@@ -22,6 +22,7 @@ import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.portable.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -512,6 +513,14 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 return;
             }
 
+            try {
+                if (val != null && cctx.kernalContext().portable().isPortable(val.getClass()))
+                    val = cctx.kernalContext().portable().marshal(val);
+            }
+            catch (GridPortableException e) {
+                throw new GridRuntimeException(e); // TODO
+            }
+
             Collection<GridNode> primaryNodes = mapKey(key, topVer, fastMap);
 
             // One key and no backups.
@@ -605,6 +614,15 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
 
                 if (val == null && op != GridCacheOperation.DELETE)
                     continue;
+
+                try {
+                    if (val != null && cctx.kernalContext().portable().isPortable(val.getClass()))
+                        val = cctx.kernalContext().portable().marshal(val);
+                }
+                catch (GridPortableException e) {
+                    throw new GridRuntimeException(e); // TODO
+                }
+
 
                 Collection<GridNode> affNodes = mapKey(key, topVer, fastMap);
 

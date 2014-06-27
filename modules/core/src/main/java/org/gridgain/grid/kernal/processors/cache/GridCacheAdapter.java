@@ -1333,24 +1333,25 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public V get(K key, @Nullable GridCacheEntryEx<K, V> entry,
+    @Override public V get(K key, @Nullable GridCacheEntryEx<K, V> entry, boolean deserializePortable,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
-        return getAllAsync(F.asList(key), /*force primary*/false, /*skip tx*/false, entry, null, filter).get().get(key);
+        return getAllAsync(F.asList(key), /*force primary*/false, /*skip tx*/false, entry, null,
+            deserializePortable, filter).get().get(key);
     }
 
     /** {@inheritDoc} */
     @Override public V getForcePrimary(K key) throws GridException {
         ctx.denyOnFlag(LOCAL);
 
-        return getAllAsync(F.asList(key), /*force primary*/true, /*skip tx*/false, null, null).get().get(key);
+        return getAllAsync(F.asList(key), /*force primary*/true, /*skip tx*/false, null, null, true).get().get(key);
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<V> getForcePrimaryAsync(final K key) {
         ctx.denyOnFlag(LOCAL);
 
-        return getAllAsync(Collections.singletonList(key), /*force primary*/true, /*skip tx*/false, null, null).chain(
-            new CX1<GridFuture<Map<K, V>>, V>() {
+        return getAllAsync(Collections.singletonList(key), /*force primary*/true, /*skip tx*/false, null, null, true).
+            chain(new CX1<GridFuture<Map<K, V>>, V>() {
                 @Override
                 public V applyx(GridFuture<Map<K, V>> e) throws GridException {
                     return e.get().get(key);
@@ -1360,12 +1361,12 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Nullable @Override public Map<K, V> getAllOutTx(List<K> keys) throws GridException {
-        return getAllAsync(keys, /*force primary*/false, /*skip tx*/true, null, null).get();
+        return getAllAsync(keys, /*force primary*/false, /*skip tx*/true, null, null, true).get();
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<Map<K, V>> getAllOutTxAsync(List<K> keys) {
-        return getAllAsync(keys, /*force primary*/false, /*skip tx*/true, null, null);
+        return getAllAsync(keys, /*force primary*/false, /*skip tx*/true, null, null, true);
     }
 
     /** {@inheritDoc} */
@@ -1629,7 +1630,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Nullable @Override public V get(K key) throws GridException {
-        V val = get(key, null);
+        V val = get(key, true, null);
 
         if (ctx.config().getInterceptor() != null)
             val = (V)ctx.config().getInterceptor().onGet(key, val);
@@ -1639,7 +1640,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public GridFuture<V> getAsync(final K key) {
-        GridFuture<V> fut = getAsync(key, null);
+        GridFuture<V> fut = getAsync(key, true, null);
 
         if (ctx.config().getInterceptor() != null)
             return fut.chain(new CX1<GridFuture<V>, V>() {
@@ -1653,7 +1654,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws GridException {
-        Map<K, V> map = getAll(keys, null);
+        Map<K, V> map = getAll(keys, true, null);
 
         if (ctx.config().getInterceptor() != null)
             map = interceptGet(keys, map);
@@ -1663,7 +1664,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public GridFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys) {
-        GridFuture<Map<K, V>> fut = getAllAsync(keys, null);
+        GridFuture<Map<K, V>> fut = getAllAsync(keys, true, null);
 
         if (ctx.config().getInterceptor() != null)
             return fut.chain(new CX1<GridFuture<Map<K, V>>, Map<K, V>>() {
@@ -1723,17 +1724,18 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         boolean skipTx,
         @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable UUID subjId,
+        boolean deserializePortable,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter
     ) {
         subjId = ctx.subjectIdPerCall(subjId);
 
-        return getAllAsync(keys, entry, !skipTx, subjId, filter);
+        return getAllAsync(keys, entry, !skipTx, subjId, deserializePortable, filter);
     }
 
     /** {@inheritDoc} */
     public GridFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached, boolean checkTx, @Nullable final UUID subjId,
-        @Nullable final GridPredicate<GridCacheEntry<K, V>>... filter) {
+        final boolean deserializePortable, @Nullable final GridPredicate<GridCacheEntry<K, V>>... filter) {
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         ctx.denyOnFlag(LOCAL);
@@ -1800,7 +1802,12 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                                 misses.put(key, ver);
                             }
                             else {
-                                map.put(key, ctx.cloneOnFlag(val));
+                                val = ctx.cloneOnFlag(val);
+
+                                if (deserializePortable && val instanceof GridPortableObject)
+                                    val = ((GridPortableObject)val).deserialize();
+
+                                map.put(key, val);
 
                                 if (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED))
                                     ctx.evicts().touch(entry, topVer);
@@ -1946,7 +1953,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                                 if (!redos.isEmpty())
                                     // Future recursion.
                                     return getAllAsync(redos, /*force primary*/false, /*skip tx*/false,
-                                        /*entry*/null, subjId, filter);
+                                        /*entry*/null, subjId, deserializePortable, filter);
 
                                 // There were no misses.
                                 return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K,
@@ -3948,6 +3955,32 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         return ctx.dr().drPauseState();
     }
 
+    /** {@inheritDoc} */
+    @Nullable @Override public GridPortableObject getPortable(K key) throws GridException {
+        return (GridPortableObject)get(key, false, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridFuture<GridPortableObject> getPortableAsync(K key) {
+        return (GridFuture<GridPortableObject>)getAsync(key, false, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<K, GridPortableObject> getAllPortable(@Nullable Collection<? extends K> keys)
+        throws GridException {
+        return (Map<K, GridPortableObject>)getAll(keys, false, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridFuture<Map<K, GridPortableObject>> getAllPortableAsync(
+        @Nullable Collection<? extends K> keys) {
+        return getAllAsync(keys, false, null).chain(new CX1<GridFuture<Map<K, V>>, Map<K, GridPortableObject>>() {
+            @Override public Map<K, GridPortableObject> applyx(GridFuture<Map<K, V>> f) throws GridException {
+                return (Map<K, GridPortableObject>)f.get();
+            }
+        });
+    }
+
     /**
      * Check whether DR is enabled.
      */
@@ -4286,8 +4319,9 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @return Cached value.
      * @throws GridException If failed.
      */
-    @Nullable public V get(K key, @Nullable GridPredicate<GridCacheEntry<K, V>> filter) throws GridException {
-        return getAllAsync(F.asList(key), filter).get().get(key);
+    @Nullable public V get(K key, boolean deserializePortable, @Nullable GridPredicate<GridCacheEntry<K, V>> filter)
+        throws GridException {
+        return getAllAsync(F.asList(key), deserializePortable, filter).get().get(key);
     }
 
     /**
@@ -4295,7 +4329,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @param filter Filter to evaluate.
      * @return Read operation future.
      */
-    public final GridFuture<V> getAsync(final K key, @Nullable GridPredicate<GridCacheEntry<K, V>> filter) {
+    public final GridFuture<V> getAsync(final K key, boolean deserializePortable,
+        @Nullable GridPredicate<GridCacheEntry<K, V>> filter) {
         ctx.denyOnFlag(LOCAL);
 
         try {
@@ -4305,7 +4340,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             return new GridFinishedFuture<>(ctx.kernalContext(), e);
         }
 
-        return getAllAsync(Collections.singletonList(key), filter).chain(new CX1<GridFuture<Map<K, V>>, V>() {
+        return getAllAsync(Collections.singletonList(key), deserializePortable, filter).chain(new CX1<GridFuture<Map<K, V>>, V>() {
             @Override
             public V applyx(GridFuture<Map<K, V>> e) throws GridException {
                 return e.get().get(key);
@@ -4319,13 +4354,13 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @return Map of cached values.
      * @throws GridException If read failed.
      */
-    public Map<K, V> getAll(Collection<? extends K> keys,
+    public Map<K, V> getAll(Collection<? extends K> keys, boolean deserializePortable,
         GridPredicate<GridCacheEntry<K, V>> filter) throws GridException {
         ctx.denyOnFlag(LOCAL);
 
         checkJta();
 
-        return getAllAsync(keys, filter).get();
+        return getAllAsync(keys, deserializePortable, filter).get();
     }
 
     /**
@@ -4433,8 +4468,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @return Read future.
      */
     public GridFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys,
-        @Nullable GridPredicate<GridCacheEntry<K, V>> filter) {
-        return getAllAsync(keys, /*force primary*/false, /*skip tx*/false, null, null, filter);
+        boolean deserializePortable, @Nullable GridPredicate<GridCacheEntry<K, V>> filter) {
+        return getAllAsync(keys, /*force primary*/false, /*skip tx*/false, null, null, deserializePortable, filter);
     }
 
     /**
@@ -4901,32 +4936,5 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         public void future(@Nullable GridFuture fut) {
             this.fut = fut;
         }
-    }
-
-    @Nullable @Override public GridPortableObject peekPortable(K key) {
-        return null; // TODO: implement.
-    }
-
-    @Nullable @Override public GridPortableObject peekPortable(K key,
-        @Nullable Collection<GridCachePeekMode> modes) throws GridException {
-        return null; // TODO: implement.
-    }
-
-    @Nullable @Override public GridPortableObject getPortable(K key) throws GridException {
-        return null; // TODO: implement.
-    }
-
-    @Override public GridFuture<GridPortableObject> getPortableAsync(K key) {
-        return null; // TODO: implement.
-    }
-
-    @Override public Map<K, GridPortableObject> getAllPortable(
-        @Nullable Collection<? extends K> keys) throws GridException {
-        return null; // TODO: implement.
-    }
-
-    @Override public GridFuture<Map<K, GridPortableObject>> getAllPortableAsync(
-        @Nullable Collection<? extends K> keys) {
-        return null; // TODO: implement.
     }
 }
