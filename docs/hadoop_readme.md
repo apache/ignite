@@ -101,6 +101,10 @@ A job can be ran on multiple nodes on localhost or in cluster environment the sa
 switch Apache Hadoop client to a cluster are to fix host in default DFS URI in `core-site.xml` and host in job tracker 
 address in `mapred-site.xml`.
 
+> **NOTE:** On Windows platform Apache Hadoop client requires `JAVA_HOME` path to not contain space characters.
+> Java installed to `C:\\Program Files\` will not work, please make sure to install JRE to correct location
+> and point `JAVA_HOME` there.
+
 ## 5. Management & Monitoring with Visor
 GridGain comes with GUI and CLI (command) based DevOps Managements Consoles delivering advance set of management and 
 monitoring capabilities. Visor GUI is based on a standalone Java application and CLI version is built on top of 
