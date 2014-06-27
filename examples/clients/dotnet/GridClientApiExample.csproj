@@ -62,9 +62,6 @@
     <Reference Include="C5">
       <HintPath>..\..\..\modules\clients\dotnet\client-lib\libs\C5.dll</HintPath>
     </Reference>
-    <Reference Include="Google.ProtocolBuffers">
-      <HintPath>..\..\..\modules\clients\dotnet\client-lib\libs\Google.ProtocolBuffers.dll</HintPath>
-    </Reference>
     <Reference Include="GridGainClient">
       <HintPath>..\..\..\modules\clients\dotnet\client-lib\libs\GridGainClient.dll</HintPath>
     </Reference>

@@ -51,9 +51,6 @@
     <Reference Include="C5">
       <HintPath>libs\C5.dll</HintPath>
     </Reference>
-    <Reference Include="Google.ProtocolBuffers">
-      <HintPath>libs\Google.ProtocolBuffers.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Net" />
