@@ -1028,7 +1028,9 @@ private:
  *
  * @return Hash code for value held in this variant.
  */
-std::size_t hash_value(GridClientVariant const& variant);
+inline std::size_t hash_value(const GridClientVariant& variant) {
+    return variant.hashCode();        
+}
 
 /**
  * Prints variant to stream

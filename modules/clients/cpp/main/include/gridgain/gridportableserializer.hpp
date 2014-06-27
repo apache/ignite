@@ -42,23 +42,23 @@ public:
     GridExternalPortable(T* obj, GridPortableSerializer<T>& ser) : object(obj), serializer(ser) {
     }
 
-    void writePortable(GridPortableWriter &writer) const override {
+    void writePortable(GridPortableWriter &writer) const {
         serializer.writePortable(object, writer);
     }
 
-    void readPortable(GridPortableReader &reader) override {
+    void readPortable(GridPortableReader &reader) {
         object = serializer.readPortable(reader);
     }
 
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return serializer.typeId(object);
     }
 
-    int hashCode() const override {
+    int hashCode() const {
         return serializer.hashCode(object);
     }
 
-    bool operator==(const GridHashablePortable& other) const override {
+    bool operator==(const GridHashablePortable& other) const {
         const GridExternalPortable* externalPortable = static_cast<const GridExternalPortable*>(&other);
 
         return serializer.compare(object, externalPortable->object);

@@ -120,6 +120,88 @@ typedef boost::mpl::list<TcpConfig> TestCfgsTcpOnly;
 
 BOOST_AUTO_TEST_SUITE(GridClientAbstractSelfTest)
 
+static std::string getRandomUuid() {
+    boost::uuids::uuid u; // initialize uuid
+
+    std::string s = boost::lexical_cast<std::string>(u);
+
+    return s;
+}
+
+bool doSleep(const boost::posix_time::time_duration& time) {
+    boost::this_thread::sleep(time);
+
+    return true;
+}
+
+static void doCheckNodeDetails(TGridClientNodeList nodes, bool includeAttr, bool includeMetric) {
+    BOOST_CHECK(nodes.size() > 0);
+
+    for (size_t in = 0; in < nodes.size(); ++in) {
+        TGridClientNodePtr node = nodes[in];
+
+        BOOST_CHECK(node->getTcpAddresses().size() > 0);
+
+        TGridClientVariantMap caches = node->getCaches();
+
+        BOOST_CHECK_EQUAL(caches.size(), CACHE_CNT);
+
+        for (auto it = caches.begin(); it != caches.end(); ++it) {
+            GridClientVariant varName = it->first;
+            GridClientVariant varVal = it->second;
+
+            BOOST_CHECK(varName.hasString() || !varName.hasAnyValue());
+
+            if (!varName.hasAnyValue() || CACHE_NAME == varName.getString() ||
+                  LOCAL_CACHE_NAME == varName.getString()) {
+               BOOST_CHECK(varVal.hasLong() ?
+                    (GridClientCache::LOCAL == varVal.getLong()) :
+                     varVal.toString() == "LOCAL" || varVal.toString() == "PARTITIONED");
+            }
+            else if ("replicated" == varName.getString())
+               BOOST_CHECK(varVal.hasLong() ?
+                    GridClientCache::REPLICATED == varVal.getLong() :
+                    varVal.toString() == "REPLICATED");
+            else if ("partitioned" == varName.getString())
+               BOOST_CHECK(varVal.hasLong() ?
+                    GridClientCache::PARTITIONED == varVal.getLong() :
+                    varVal.toString() == "PARTITIONED");
+        }
+    }
+}
+
+static void doRefreshNode(TGridClientComputePtr compute, GridClientUuid id, bool includeAttr, bool includeMetric) {
+    TGridClientNodePtr node = compute->refreshNode(id, includeAttr, includeMetric);
+
+    BOOST_CHECK(node->getTcpAddresses().size() > 0);
+
+    TGridClientVariantMap caches = node->getCaches();
+
+    BOOST_CHECK_EQUAL(caches.size(), CACHE_CNT);
+
+    for (auto it = caches.begin(); it != caches.end(); ++it) {
+        GridClientVariant varName = it->first;
+        GridClientVariant varVal = it->second;
+
+        BOOST_CHECK(varName.hasString() || !varName.hasAnyValue());
+
+        if (!varName.hasAnyValue() || (CACHE_NAME == varName.getString()) ||
+              (LOCAL_CACHE_NAME == varName.getString())) {
+           BOOST_CHECK(varVal.hasLong() ?
+                (GridClientCache::LOCAL == varVal.getLong()) :
+                 varVal.toString() == "LOCAL" || varVal.toString() == "PARTITIONED");
+        }
+        else if ("replicated" == varName.getString())
+           BOOST_CHECK(varVal.hasLong() ?
+                GridClientCache::REPLICATED == varVal.getLong() :
+                varVal.toString() == "REPLICATED");
+        else if ("partitioned" == varName.getString())
+           BOOST_CHECK(varVal.hasLong() ?
+                GridClientCache::PARTITIONED == varVal.getLong() :
+                varVal.toString() == "PARTITIONED");
+    }
+}
+
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(testPut, CfgT, TestCfgs, GridClientFactoryFixture2) {
     TGridClientPtr client = this->client(CfgT());
 
@@ -616,82 +698,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testMetricsAsyncException, CfgT, TestCfgs, Grid
     BOOST_CHECK_THROW( fut->get(), GridClientClosedException );
 }
 
-static std::string getRandomUuid() {
-    boost::uuids::uuid u; // initialize uuid
-
-    std::string s = boost::lexical_cast<std::string>(u);
-
-    return s;
-}
-
-static void doCheckNodeDetails(TGridClientNodeList nodes, bool includeAttr, bool includeMetric) {
-    BOOST_CHECK(nodes.size() > 0);
-
-    for (size_t in = 0; in < nodes.size(); ++in) {
-        TGridClientNodePtr node = nodes[in];
-
-        BOOST_CHECK(node->getTcpAddresses().size() > 0);
-
-        TGridClientVariantMap caches = node->getCaches();
-
-        BOOST_CHECK_EQUAL(caches.size(), CACHE_CNT);
-
-        for (auto it = caches.begin(); it != caches.end(); ++it) {
-            GridClientVariant varName = it->first;
-            GridClientVariant varVal = it->second;
-
-            BOOST_CHECK(varName.hasString() || !varName.hasAnyValue());
-
-            if (!varName.hasAnyValue() || CACHE_NAME == varName.getString() ||
-                  LOCAL_CACHE_NAME == varName.getString()) {
-               BOOST_CHECK(varVal.hasLong() ?
-                    (GridClientCache::LOCAL == varVal.getLong()) :
-                     varVal.toString() == "LOCAL" || varVal.toString() == "PARTITIONED");
-            }
-            else if ("replicated" == varName.getString())
-               BOOST_CHECK(varVal.hasLong() ?
-                    GridClientCache::REPLICATED == varVal.getLong() :
-                    varVal.toString() == "REPLICATED");
-            else if ("partitioned" == varName.getString())
-               BOOST_CHECK(varVal.hasLong() ?
-                    GridClientCache::PARTITIONED == varVal.getLong() :
-                    varVal.toString() == "PARTITIONED");
-        }
-    }
-}
-
-static void doRefreshNode(TGridClientComputePtr compute, GridClientUuid id, bool includeAttr, bool includeMetric) {
-    TGridClientNodePtr node = compute->refreshNode(id, includeAttr, includeMetric);
-
-    BOOST_CHECK(node->getTcpAddresses().size() > 0);
-
-    TGridClientVariantMap caches = node->getCaches();
-
-    BOOST_CHECK_EQUAL(caches.size(), CACHE_CNT);
-
-    for (auto it = caches.begin(); it != caches.end(); ++it) {
-        GridClientVariant varName = it->first;
-        GridClientVariant varVal = it->second;
-
-        BOOST_CHECK(varName.hasString() || !varName.hasAnyValue());
-
-        if (!varName.hasAnyValue() || (CACHE_NAME == varName.getString()) ||
-              (LOCAL_CACHE_NAME == varName.getString())) {
-           BOOST_CHECK(varVal.hasLong() ?
-                (GridClientCache::LOCAL == varVal.getLong()) :
-                 varVal.toString() == "LOCAL" || varVal.toString() == "PARTITIONED");
-        }
-        else if ("replicated" == varName.getString())
-           BOOST_CHECK(varVal.hasLong() ?
-                GridClientCache::REPLICATED == varVal.getLong() :
-                varVal.toString() == "REPLICATED");
-        else if ("partitioned" == varName.getString())
-           BOOST_CHECK(varVal.hasLong() ?
-                GridClientCache::PARTITIONED == varVal.getLong() :
-                varVal.toString() == "PARTITIONED");
-    }
-}
-
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(testNodeRefresh, CfgT, TestCfgs, GridClientFactoryFixture2) {
     TGridClientPtr client = this->client(CfgT());
 
@@ -939,12 +945,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testFutureTimeoutNotExpired, CfgT, TestCfgs, Gr
     BOOST_CHECK_EQUAL(fut->result().getInt(), val1.getString().length());
 }
 
-bool doSleep(const boost::posix_time::time_duration& time) {
-    boost::this_thread::sleep(time);
-
-    return true;
-}
-
 BOOST_AUTO_TEST_CASE(testBoolFutureTimeoutExpired) {
     std::shared_ptr<GridThreadPool> threadPool(new GridThreadPool(1));
 
@@ -1049,7 +1049,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testPutBigEntries, CfgT, TestCfgsTcpOnly, GridC
     }
 }
 
-// TODO: enable for HTTP after fixing GG-3273
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(testPutBigEntriesMultithreaded, CfgT, TestCfgsTcpOnly, GridClientFactoryFixture2) {
     TGridClientDataPtr data = this->client(CfgT())->data(CACHE_NAME);
 

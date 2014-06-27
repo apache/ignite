@@ -11,11 +11,25 @@ package org.gridgain.client.integration;
 
 import org.gridgain.client.*;
 import org.gridgain.client.marshaller.portable.*;
+import org.gridgain.grid.*;
 
 /**
  * Tests TCP binary protocol with client when SSL is enabled.
  */
 public class GridClientTcpSslPortableSelfTest extends GridClientTcpSslSelfTest {
+    /** {@inheritDoc} */
+    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
+        GridConfiguration cfg = super.getConfiguration(gridName);
+
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+
+        clientCfg.setMarshaller(new GridClientPortableMarshaller());
+
+        cfg.setClientConnectionConfiguration(clientCfg);
+
+        return cfg;
+    }
+
     /** {@inheritDoc} */
     @Override protected GridClientConfiguration clientConfiguration() {
         GridClientConfiguration ccfg = super.clientConfiguration();

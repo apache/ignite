@@ -49,13 +49,6 @@ public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessa
         return bytes;
     }
 
-    /**
-     * @return Protocol ID.
-     */
-    public byte protocolId() {
-        return bytes[4];
-    }
-
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf) {
         commState.setBuffer(buf);
@@ -85,7 +78,7 @@ public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessa
 
         switch (commState.idx) {
             case 0:
-                byte[] bytes0 = commState.getByteArrayClient(5);
+                byte[] bytes0 = commState.getByteArrayClient(4);
 
                 if (bytes0 == BYTE_ARR_NOT_READ)
                     return false;

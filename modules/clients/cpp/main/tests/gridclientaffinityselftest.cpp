@@ -96,9 +96,9 @@ GridClientConfiguration affinityClientConfiguration() {
  *
  */
 class NoopProjectionListener : public GridClientProjectionListener {
-	virtual void onNodeIoFailed(const GridClientNode& n) {
-		// No-op.
-	}
+    virtual void onNodeIoFailed(const GridClientNode& n) {
+        // No-op.
+    }
 };
 
 BOOST_AUTO_TEST_SUITE(GridClientAffinitySelftTest)

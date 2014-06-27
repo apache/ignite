@@ -19,9 +19,6 @@
     <ClCompile Include="..\main\src\impl\cmd\gridclientcommandexecutorfactory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\main\src\impl\cmd\gridclienthttpcommandexecutor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\main\src\impl\cmd\gridclienttcpcommandexecutor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -32,9 +29,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\main\src\impl\connection\gridclientconnectionpool.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\main\src\impl\connection\gridclienthttpconnection.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\main\src\impl\connection\gridclienttcpconnection.cpp">
@@ -106,18 +100,6 @@
     <ClCompile Include="..\main\src\impl\hash\md5.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\main\src\impl\marshaller\json\gridclientjsonmarshaller.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\main\src\impl\marshaller\protobuf\ClientMessages.pb.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\main\src\impl\marshaller\protobuf\gridclientprotobufmarshaller.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\main\src\impl\marshaller\protobuf\gridclientprotobufutils.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\main\src\impl\utils\gridclientlog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -137,6 +119,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\main\src\impl\hash\gridclientwidestringhasheableobject.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\main\src\impl\marshaller\portable\gridportablemarshaller.cpp">
+      <Filter>Impl Headers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\main\src\impl\hash\gridclienthash.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\main\src\model\gridportable.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -261,9 +252,6 @@
     <ClInclude Include="..\main\include\gridgain\impl\cmd\gridclientcommandexecutorfactory.hpp">
       <Filter>Impl Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\main\include\gridgain\impl\cmd\gridclienthttpcommandexecutor.hpp">
-      <Filter>Impl Headers</Filter>
-    </ClInclude>
     <ClInclude Include="..\main\include\gridgain\impl\cmd\gridclientmessage.hpp">
       <Filter>Impl Headers</Filter>
     </ClInclude>
@@ -324,9 +312,6 @@
     <ClInclude Include="..\main\include\gridgain\impl\connection\gridclientconnectionpool.hpp">
       <Filter>Impl Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\main\include\gridgain\impl\connection\gridclienthttpconnection.hpp">
-      <Filter>Impl Headers</Filter>
-    </ClInclude>
     <ClInclude Include="..\main\include\gridgain\impl\connection\gridclienttcpconnection.hpp">
       <Filter>Impl Headers</Filter>
     </ClInclude>
@@ -345,18 +330,6 @@
     <ClInclude Include="..\main\include\gridgain\impl\hash\gridclientfloathasheableobject.hpp">
       <Filter>Impl Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\main\include\gridgain\impl\hash\gridclienthasherfactory.hpp">
-      <Filter>Impl Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\include\gridgain\impl\hash\gridclientmd5hasher.hpp">
-      <Filter>Impl Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\include\gridgain\impl\hash\gridclientmurmur2hasher.hpp">
-      <Filter>Impl Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\include\gridgain\impl\hash\gridclientsha1hasher.hpp">
-      <Filter>Impl Headers</Filter>
-    </ClInclude>
     <ClInclude Include="..\main\include\gridgain\impl\hash\gridclientsimpletypehasheableobject.hpp">
       <Filter>Impl Headers</Filter>
     </ClInclude>
@@ -366,25 +339,10 @@
     <ClInclude Include="..\main\include\gridgain\impl\hash\gridclientvarianthasheableobject.hpp">
       <Filter>Impl Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\main\include\gridgain\impl\hash\gridhasher.hpp">
-      <Filter>Impl Headers</Filter>
-    </ClInclude>
     <ClInclude Include="..\main\include\gridgain\impl\hash\md5.h">
       <Filter>Impl Headers</Filter>
     </ClInclude>
     <ClInclude Include="..\main\include\gridgain\impl\marshaller\gridnodemarshallerhelper.hpp">
-      <Filter>Impl Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\include\gridgain\impl\marshaller\json\gridclientjsonmarshaller.hpp">
-      <Filter>Impl Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\include\gridgain\impl\marshaller\protobuf\ClientMessages.pb.h">
-      <Filter>Impl Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\include\gridgain\impl\marshaller\protobuf\gridclientobjectwrapperconvertor.hpp">
-      <Filter>Impl Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\include\gridgain\impl\marshaller\protobuf\gridclientprotobufmarshaller.hpp">
       <Filter>Impl Headers</Filter>
     </ClInclude>
     <ClInclude Include="..\main\include\gridgain\impl\projectionclosure\gridclientmessageprojectionclosure.hpp">
@@ -417,6 +375,27 @@
     <ClInclude Include="..\main\include\gridgain\loadbalancer\gridclientrandomrouterbalancer.hpp" />
     <ClInclude Include="..\main\include\gridgain\loadbalancer\gridclientrouterbalancer.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\gridclientprojectionlistener.hpp">
+      <Filter>Impl Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\main\include\gridgain\gridportable.hpp">
+      <Filter>API Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\main\include\gridgain\gridportablereader.hpp">
+      <Filter>API Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\main\include\gridgain\gridportableserializer.hpp">
+      <Filter>API Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\main\include\gridgain\gridportablewriter.hpp">
+      <Filter>API Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\main\include\gridgain\gridclienthash.hpp">
+      <Filter>API Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\main\include\gridgain\gridclientdate.hpp">
+      <Filter>API Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\main\include\gridgain\impl\marshaller\portable\gridclientportablemessages.hpp">
       <Filter>Impl Headers</Filter>
     </ClInclude>
   </ItemGroup>

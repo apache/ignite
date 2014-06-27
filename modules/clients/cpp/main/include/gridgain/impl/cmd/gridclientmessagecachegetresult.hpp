@@ -25,7 +25,7 @@ public:
     *
     * @param The new value for keys and values.
     */
-    void setCacheValues (const TCacheValuesMap& pCacheValues) {
+    void setCacheValues(const TCacheValuesMap& pCacheValues) {
         cacheValues = pCacheValues;
     }
 

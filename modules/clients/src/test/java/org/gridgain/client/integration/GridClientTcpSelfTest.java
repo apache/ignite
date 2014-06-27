@@ -57,10 +57,6 @@ public class GridClientTcpSelfTest extends GridClientAbstractSelfTest {
             @Override public <T> T unmarshal(byte[] bytes) {
                 throw new UnsupportedOperationException();
             }
-
-            @Override public byte getProtocolId() {
-                return 42; // Non-existent marshaller ID.
-            }
         });
 
         GridClient c = GridClientFactory.start(cfg);

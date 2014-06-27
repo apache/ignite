@@ -13,7 +13,6 @@ import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.marshaller.optimized.*;
-import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.nio.*;
@@ -89,10 +88,5 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
         catch (GridException e) {
             throw new IOException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte getProtocolId() {
-        return U.OPTIMIZED_CLIENT_PROTO_ID;
     }
 }

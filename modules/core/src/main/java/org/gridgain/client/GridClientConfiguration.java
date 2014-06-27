@@ -103,7 +103,7 @@ public class GridClientConfiguration {
     private ExecutorService executor;
 
     /** Marshaller. */
-    private GridClientMarshaller marshaller = new GridClientPortableMarshaller();
+    private GridClientMarshaller marshaller = new GridClientOptimizedMarshaller();
 
     /**
      * Creates default configuration.
@@ -593,9 +593,9 @@ public class GridClientConfiguration {
      * <p>
      * Options, that can be used out-of-the-box:
      * <ul>
-     *     <li>{@link GridClientPortableMarshaller} (default) - Marshaller that supports portable objects.</li>
-     *     <li>{@link GridClientOptimizedMarshaller} - GridGain's optimized marshaller.</li>
-     *     <li>{@link GridClientJdkMarshaller} - default JDK marshaller (not recommended).</li>
+     *     <li>{@link GridClientOptimizedMarshaller} (default) - GridGain's optimized marshaller.</li>
+     *     <li>{@link GridClientPortableMarshaller} - Marshaller that supports portable objects.</li>
+     *     <li>{@link GridClientJdkMarshaller} - JDK marshaller (not recommended).</li>
      * </ul>
      *
      * @return A marshaller to use.

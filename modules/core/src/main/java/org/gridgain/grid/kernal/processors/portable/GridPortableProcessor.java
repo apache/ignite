@@ -14,8 +14,6 @@ import org.gridgain.grid.util.portable.*;
 import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
-import java.nio.*;
-
 /**
  * Portable processor.
  */
@@ -28,17 +26,24 @@ public interface GridPortableProcessor extends GridProcessor {
     public GridPortableContext portableContext();
 
     /**
-     * @param obj Object to marshal.
+     * Checks whether class is configured as portable.
      *
-     * @return Byte buffer.
+     * @param cls Class.
+     * @return If class is portable.
+     */
+    public boolean isPortable(Class<?> cls) throws GridPortableException;
+
+    /**
+     * @param obj Object to marshal.
+     * @return Portable object.
      * @throws GridPortableException In case of error.
      */
-    public ByteBuffer marshal(@Nullable Object obj) throws GridPortableException;
+    public GridPortableObject marshal(@Nullable Object obj) throws GridPortableException;
 
     /**
      * @param arr Byte array.
      * @return Portable object.
      * @throws GridPortableException
      */
-    @Nullable public GridPortableObject unmarshal(byte[] arr) throws GridPortableException;
+    @Nullable public <T> T unmarshal(byte[] arr) throws GridPortableException;
 }

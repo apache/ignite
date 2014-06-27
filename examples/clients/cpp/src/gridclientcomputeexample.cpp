@@ -162,7 +162,7 @@ void clientComputeExample(TGridClientPtr& client) {
     // Nodes may also be refreshed by IP address.
     string clntAddr = "127.0.0.1";
 
-    vector<GridClientSocketAddress> addrs = clntNode->availableAddresses(TCP);
+    vector<GridClientSocketAddress> addrs = clntNode->getTcpAddresses();
 
     if (addrs.size() > 0)
         clntAddr = addrs[0].host();

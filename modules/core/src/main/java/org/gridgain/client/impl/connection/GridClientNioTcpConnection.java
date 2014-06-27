@@ -109,7 +109,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      * @param marsh Marshaller to use in communication.
      * @param top Topology instance.
      * @param cred Client credentials.      @throws IOException If connection could not be established.
-     * @param protoId Custom protocol ID, if marshaller is not defined.
      * @throws IOException If IO error occurs.
      * @throws GridClientException If handshake error occurs.
      */
@@ -125,12 +124,11 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         boolean tcpNoDelay,
         GridClientMarshaller marsh,
         GridClientTopology top,
-        Object cred,
-        Byte protoId)
+        Object cred)
         throws IOException, GridClientException {
         super(clientId, srvAddr, sslCtx, top, cred);
 
-        assert marsh != null || protoId != null;
+        assert marsh != null;
 
         this.marsh = marsh;
 
@@ -166,8 +164,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             if (sslHandshakeFut != null)
                 sslHandshakeFut.get();
 
-            GridClientHandshakeRequest req =
-                new GridClientHandshakeRequest(marsh != null ? marsh.getProtocolId() : protoId);
+            GridClientHandshakeRequest req = new GridClientHandshakeRequest();
 
             GridClientHandshakeRequestWrapper wrapper = new GridClientHandshakeRequestWrapper(req);
 

@@ -64,7 +64,7 @@ public:
      *
      * @return Session token.
      */
-    std::vector<int8_t> sessionToken() const {
+    const std::vector<int8_t>& sessionToken() const {
         return sessTok;
     }
 

@@ -18,7 +18,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/thread/thread.hpp> 
+#include <boost/thread/thread.hpp>
 
 #include <gridgain/gridgain.hpp>
 
@@ -47,47 +47,17 @@ using namespace std;
 
 BOOST_AUTO_TEST_SUITE(GridClientPortableSuite)
 
-GridClientConfiguration clientConfig() {
-    GridClientConfiguration clientConfig;
-
-    vector<GridClientSocketAddress> servers;
-
-    servers.push_back(GridClientSocketAddress("127.0.0.1", 11212));
-
-    clientConfig.servers(servers);
-
-    GridClientProtocolConfiguration protoCfg;
-
-    clientConfig.protocolConfiguration(protoCfg);
-
-	vector<GridClientDataConfiguration> dataCfgVec;
-
-	GridClientDataConfiguration dataCfg;
-    GridClientPartitionAffinity* aff = new GridClientPartitionAffinity();
-
-    dataCfg.name("partitioned");
-    dataCfg.affinity(shared_ptr<GridClientDataAffinity>(aff));
-
-    dataCfgVec.push_back(dataCfg);
-
-    clientConfig.topologyRefreshFrequency(10 * 60000);
-
-	clientConfig.dataConfiguration(dataCfgVec);
-
-    return clientConfig;
-}
-
 class TestNonHashablePortable : public GridPortable {
 public:
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 0;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         BOOST_FAIL("Should not be called");
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         BOOST_FAIL("Should not be called");
     }
 };
@@ -100,23 +70,23 @@ public:
     TestHashablePortable(int32_t pId) : id(pId) {
     }
 
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 1000;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         BOOST_FAIL("Should not be called");
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         BOOST_FAIL("Should not be called");
     }
-    
-    int hashCode() const override {
+
+    int hashCode() const {
         return id;
     }
 
-    bool operator==(const GridHashablePortable& other) const override {
+    bool operator==(const GridHashablePortable& other) const {
         return id == static_cast<const TestHashablePortable*>(&other)->id;
     }
 
@@ -131,23 +101,23 @@ public:
     TestHashablePortable2(int32_t pId) : id(pId) {
     }
 
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 1001;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         BOOST_FAIL("Should not be called");
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         BOOST_FAIL("Should not be called");
     }
-    
-    int hashCode() const override {
+
+    int hashCode() const {
         return id;
     }
 
-    bool operator==(const GridHashablePortable& other) const override {
+    bool operator==(const GridHashablePortable& other) const {
         return id == static_cast<const TestHashablePortable*>(&other)->id;
     }
 
@@ -166,7 +136,7 @@ public:
         return id;
     }
 
-    string getName() {
+    string& getName() {
         return name;
     }
 
@@ -174,23 +144,23 @@ public:
 		return 100;
 	}
 
-    void writePortable(GridPortableWriter &writer) const override {
+    void writePortable(GridPortableWriter &writer) const {
         writer.writeString("name", name);
 		writer.writeInt32("id", id);
 	}
 
-    void readPortable(GridPortableReader &reader) override {
+    void readPortable(GridPortableReader &reader) {
 		name = reader.readString("name").get_value_or(std::string());
         id = reader.readInt32("id");
 	}
 
-    bool operator==(const GridHashablePortable& portable) const override {
+    bool operator==(const GridHashablePortable& portable) const {
         const PortablePerson* other = static_cast<const PortablePerson*>(&portable);
 
         return id == other->id;
     }
 
-    int hashCode() const override {
+    int hashCode() const {
         return id;
     }
 
@@ -223,27 +193,27 @@ private:
 
 class PersonSerializer : public GridPortableSerializer<Person> {
 public:
-    void writePortable(Person* obj, GridPortableWriter& writer) override {
+    void writePortable(Person* obj, GridPortableWriter& writer) {
         writer.writeInt32("id", obj->getId());
         writer.writeString("name", obj->getName());
     }
 
-    Person* readPortable(GridPortableReader& reader) override {
+    Person* readPortable(GridPortableReader& reader) {
         int32_t id = reader.readInt32("id");
         string name = reader.readString("name").get_value_or(std::string());
 
         return new Person(id, name);
     }
 
-    int32_t typeId(Person* obj) override {
+    int32_t typeId(Person* obj) {
         return 101;
     }
 
-    int32_t hashCode(Person* obj) override {
+    int32_t hashCode(Person* obj) {
         return obj->getId();
     }
 
-    bool compare(Person* obj1, Person* obj2) override {
+    bool compare(Person* obj1, Person* obj2) {
         return obj1->getId() == obj2->getId();
     }
 };
@@ -501,7 +471,7 @@ public:
         }
 	}
 
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 300;
     }
 
@@ -598,43 +568,43 @@ TestPortable1 createTestPortable1(int32_t arraysSize) {
     p.vByte = 1;
     p.vByteArray = new int8_t[arraysSize];
     for (int i = 0; i < arraysSize; i++)
-        p.vByteArray[i] = i % 2 == 0 ? 1 : -1;            
+        p.vByteArray[i] = i % 2 == 0 ? 1 : -1;
     p.vByteVector = vector<int8_t>(arraysSize, -1);
 
     p.vInt16 = 1;
     p.vInt16Array = new int16_t[arraysSize];
     for (int i = 0; i < arraysSize; i++)
-        p.vInt16Array[i] = i % 2 == 0 ? 1 : -1;            
+        p.vInt16Array[i] = i % 2 == 0 ? 1 : -1;
     p.vInt16Vector = vector<int16_t>(arraysSize, -1);
 
     p.vInt32 = 1;
     p.vInt32Array = new int32_t[arraysSize];
     for (int i = 0; i < arraysSize; i++)
-        p.vInt32Array[i] = i % 2 == 0 ? 1 : -1;            
+        p.vInt32Array[i] = i % 2 == 0 ? 1 : -1;
     p.vInt32Vector = vector<int32_t>(arraysSize, -1);
 
     p.vChar = 1;
     p.vCharArray = new uint16_t[arraysSize];
     for (int i = 0; i < arraysSize; i++)
-        p.vCharArray[i] = i % 2 == 0 ? 1 : 2;            
+        p.vCharArray[i] = i % 2 == 0 ? 1 : 2;
     p.vCharVector = vector<uint16_t>(arraysSize, 2);
 
     p.vInt64 = 1;
     p.vInt64Array = new int64_t[arraysSize];
     for (int i = 0; i < arraysSize; i++)
-        p.vInt64Array[i] = i % 2 == 0 ? 1 : -1;            
+        p.vInt64Array[i] = i % 2 == 0 ? 1 : -1;
     p.vInt64Vector = vector<int64_t>(arraysSize, -1);
 
     p.vFloat = 1.5;
     p.vFloatArray = new float[arraysSize];
     for (int i = 0; i < arraysSize; i++)
-        p.vFloatArray[i] = i % 2 == 0 ? 1.5f : -1.5f;            
+        p.vFloatArray[i] = i % 2 == 0 ? 1.5f : -1.5f;
     p.vFloatVector = vector<float>(arraysSize, -1);
 
     p.vDouble = 1.5;
     p.vDoubleArray = new double[arraysSize];
     for (int i = 0; i < arraysSize; i++)
-        p.vDoubleArray[i] = i % 2 == 0 ? 1.5 : -1.5;            
+        p.vDoubleArray[i] = i % 2 == 0 ? 1.5 : -1.5;
     p.vDoubleVector = vector<double>(arraysSize, -1);
 
     p.vStr = "str1";
@@ -665,69 +635,109 @@ void validateTestPortable1(TestPortable1 p, int32_t arraysSize) {
 
     BOOST_REQUIRE_EQUAL(true, p.vBool);
     for (int i = 0; i < arraysSize; i++) {
-        if (i % 2 == 0)
-            BOOST_REQUIRE(p.vBoolArray[i]);
-        else
-            BOOST_REQUIRE(!p.vBoolArray[i]);
-        
-        BOOST_REQUIRE_EQUAL(true, p.vBoolVector[i]);
+        bool exp = i % 2 == 0;
+
+        if (exp != p.vBoolArray[i])
+            BOOST_REQUIRE_EQUAL(exp, p.vBoolArray[i]);
+
+        if (!p.vBoolVector[i])
+            BOOST_REQUIRE_EQUAL(true, p.vBoolVector[i]);
     }
 
     BOOST_REQUIRE_EQUAL(1, p.vByte);
     for (int i = 0; i < arraysSize; i++) {
-        BOOST_REQUIRE_EQUAL(i % 2 == 0 ? 1 : -1, p.vByteArray[i]);
-        BOOST_REQUIRE_EQUAL(-1, p.vByteVector[i]);
+        int8_t exp = i % 2 == 0 ? 1 : -1;
+        
+        if (exp != p.vByteArray[i])
+            BOOST_REQUIRE_EQUAL(exp, p.vByteArray[i]);
+                
+        if (-1 != p.vByteVector[i])
+            BOOST_REQUIRE_EQUAL(-1, p.vByteVector[i]);
     }
 
     BOOST_REQUIRE_EQUAL(1, p.vInt16);
     for (int i = 0; i < arraysSize; i++) {
-        BOOST_REQUIRE_EQUAL(i % 2 == 0 ? 1 : -1, p.vInt16Array[i]);
-        BOOST_REQUIRE_EQUAL(-1, p.vInt16Vector[i]);
+        int16_t exp = i % 2 == 0 ? 1 : -1;
+
+        if (exp != p.vInt16Array[i])
+            BOOST_REQUIRE_EQUAL(exp, p.vInt16Array[i]);
+        
+        if (-1 != p.vInt16Vector[i])
+            BOOST_REQUIRE_EQUAL(-1, p.vInt16Vector[i]);
     }
 
     BOOST_REQUIRE_EQUAL(1, p.vInt32);
     for (int i = 0; i < arraysSize; i++) {
-        BOOST_REQUIRE_EQUAL(i % 2 == 0 ? 1 : -1, p.vInt32Array[i]);
-        BOOST_REQUIRE_EQUAL(-1, p.vInt32Vector[i]);
+        int32_t exp = i % 2 == 0 ? 1 : -1;
+
+        if (exp != p.vInt32Array[i])
+            BOOST_REQUIRE_EQUAL(exp, p.vInt32Array[i]);
+        
+        if (-1 != p.vInt32Vector[i])
+            BOOST_REQUIRE_EQUAL(-1, p.vInt32Vector[i]);
     }
 
     BOOST_REQUIRE_EQUAL(1, p.vChar);
     for (int i = 0; i < arraysSize; i++) {
-        BOOST_REQUIRE_EQUAL(i % 2 == 0 ? 1 : 2, p.vCharArray[i]);
-        BOOST_REQUIRE_EQUAL(2, p.vCharVector[i]);
+        uint16_t exp = i % 2 == 0 ? 1 : 2;
+
+        if (exp != p.vCharArray[i])
+            BOOST_REQUIRE_EQUAL(exp, p.vCharArray[i]);
+        
+        if (2 != p.vCharVector[i])
+            BOOST_REQUIRE_EQUAL(2, p.vCharVector[i]);
     }
 
     BOOST_REQUIRE_EQUAL(1, p.vInt64);
     for (int i = 0; i < arraysSize; i++) {
-        BOOST_REQUIRE_EQUAL(i % 2 == 0 ? 1 : -1, p.vInt64Array[i]);
-        BOOST_REQUIRE_EQUAL(-1, p.vInt64Vector[i]);
+        int64_t exp = i % 2 == 0 ? 1 : -1;
+
+        if (exp != p.vInt64Array[i])
+            BOOST_REQUIRE_EQUAL(exp, p.vInt64Array[i]);
+        
+        if (-1 != p.vInt64Vector[i])
+            BOOST_REQUIRE_EQUAL(-1, p.vInt64Vector[i]);
     }
 
     BOOST_REQUIRE_EQUAL(1.5, p.vFloat);
     for (int i = 0; i < arraysSize; i++) {
-        BOOST_REQUIRE_EQUAL(i % 2 == 0 ? 1.5 : -1.5, p.vFloatArray[i]);
-        BOOST_REQUIRE_EQUAL(-1, p.vFloatVector[i]);
+        float exp = i % 2 == 0 ? 1.5f : -1.5f;
+
+        if (exp != p.vFloatArray[i])
+            BOOST_REQUIRE_EQUAL(exp, p.vFloatArray[i]);
+        
+        if (-1 != p.vFloatVector[i])
+            BOOST_REQUIRE_EQUAL(-1, p.vFloatVector[i]);
     }
 
     BOOST_REQUIRE_EQUAL(1.5, p.vDouble);
     for (int i = 0; i < arraysSize; i++) {
-        BOOST_REQUIRE_EQUAL(i % 2 == 0 ? 1.5 : -1.5, p.vDoubleArray[i]);
-        BOOST_REQUIRE_EQUAL(-1, p.vDoubleVector[i]);
+        double exp = i % 2 == 0 ? 1.5 : -1.5;
+
+        if (exp != p.vDoubleArray[i])
+            BOOST_REQUIRE_EQUAL(exp, exp);
+        
+        if (-1 != p.vDoubleVector[i])
+            BOOST_REQUIRE_EQUAL(-1, p.vDoubleVector[i]);
     }
 
     BOOST_REQUIRE_EQUAL("str1", p.vStr);
 
     BOOST_REQUIRE_EQUAL(arraysSize, p.vStrVector.size());
 
-    for (int i = 0; i < arraysSize; i++)
-        BOOST_REQUIRE_EQUAL("str2", p.vStrVector[i]);
+    for (int i = 0; i < arraysSize; i++) {
+        if ("str2" != p.vStrVector[i])
+            BOOST_REQUIRE_EQUAL("str2", p.vStrVector[i]);
+    }
 
     BOOST_REQUIRE(L"wstr1" == p.vWStr);
 
     BOOST_REQUIRE_EQUAL(arraysSize, p.vWStrVector.size());
 
-    for (int i = 0; i < arraysSize; i++)
-        BOOST_REQUIRE(L"wstr2" == p.vWStrVector[i]);
+    for (int i = 0; i < arraysSize; i++) {
+        if (L"wstr2" != p.vWStrVector[i])        
+            BOOST_REQUIRE(L"wstr2" == p.vWStrVector[i]);
+    }
 
     BOOST_REQUIRE_EQUAL(1, p.vUuid.mostSignificantBits());
     BOOST_REQUIRE_EQUAL(2, p.vUuid.leastSignificantBits());
@@ -735,16 +745,21 @@ void validateTestPortable1(TestPortable1 p, int32_t arraysSize) {
     BOOST_REQUIRE_EQUAL(arraysSize, p.vUuidVector.size());
 
     for (int i = 0; i < arraysSize; i++) {
-        BOOST_REQUIRE_EQUAL(3, p.vUuidVector[i].mostSignificantBits());
-        BOOST_REQUIRE_EQUAL(4, p.vUuidVector[i].leastSignificantBits());
+        if (3 != p.vUuidVector[i].mostSignificantBits())
+            BOOST_REQUIRE_EQUAL(3, p.vUuidVector[i].mostSignificantBits());
+        
+        if (4 != p.vUuidVector[i].leastSignificantBits())
+            BOOST_REQUIRE_EQUAL(4, p.vUuidVector[i].leastSignificantBits());
     }
 
     BOOST_REQUIRE_EQUAL(1, p.vDate.getTime());
 
     BOOST_REQUIRE_EQUAL(arraysSize, p.vDateVector.size());
-    
-    for (int i = 0; i < arraysSize; i++)
-        BOOST_REQUIRE_EQUAL(2, p.vDateVector[i].get().getTime());
+
+    for (int i = 0; i < arraysSize; i++) {
+        if (2 != p.vDateVector[i].get().getTime())
+            BOOST_REQUIRE_EQUAL(2, p.vDateVector[i].get().getTime());
+    }
 
     BOOST_REQUIRE_EQUAL(true, p.vVariant.hasInt());
 
@@ -753,18 +768,20 @@ void validateTestPortable1(TestPortable1 p, int32_t arraysSize) {
     BOOST_REQUIRE_EQUAL(arraysSize, p.vVariantVector.size());
 
     for (int i = 0; i < arraysSize; i++) {
-        BOOST_REQUIRE_EQUAL(true, p.vVariantVector[i].hasInt());
-
-        BOOST_REQUIRE_EQUAL(2, p.vVariantVector[i].getInt());
+        if (2 != p.vVariantVector[i].getInt())
+            BOOST_REQUIRE_EQUAL(2, p.vVariantVector[i].getInt());
     }
 
     BOOST_REQUIRE_EQUAL(arraysSize, p.vVariantMap.size());
-    
+
     for (int i = 0; i < arraysSize; i++) {
         GridClientVariant val = p.vVariantMap[GridClientVariant(i)];
 
-        BOOST_REQUIRE_EQUAL(true, val.hasInt());
-        BOOST_REQUIRE_EQUAL(i, val.getInt());
+        if (!val.hasInt())
+            BOOST_REQUIRE_EQUAL(true, val.hasInt());
+        
+        if (i != val.getInt())
+            BOOST_REQUIRE_EQUAL(i, val.getInt());
     }
 }
 
@@ -798,16 +815,16 @@ class TestPortableCycle2;
 
 class TestPortableCycle1 : public GridPortable {
 public:
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 400;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         writer.writeInt32("1", val1);
         writer.writeVariant("2", (GridPortable*)p2);
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         val1 = reader.readInt32("1");
         p2 = reader.readVariant("2").getPortableObject().deserialize<TestPortableCycle2>();
     }
@@ -821,16 +838,16 @@ REGISTER_TYPE(400, TestPortableCycle1);
 
 class TestPortableCycle2 : public GridPortable {
 public:
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 401;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         writer.writeFloat("1", val1);
         writer.writeVariant("2", p1);
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         val1 = reader.readFloat("1");
         p1 = reader.readVariant("2").getPortableObject().deserialize<TestPortableCycle1>();
     }
@@ -846,7 +863,7 @@ BOOST_AUTO_TEST_CASE(testPortableSerialization_cycle) {
     GridPortableMarshaller marsh;
 
     TestPortableCycle1* p1 = new TestPortableCycle1();
-    
+
     p1->val1 = 10;
 
     TestPortableCycle2* p2 = new TestPortableCycle2();
@@ -863,9 +880,8 @@ BOOST_AUTO_TEST_CASE(testPortableSerialization_cycle) {
 
     p1 = marsh.unmarshalUserObject<TestPortableCycle1>(bytes);
 
-    BOOST_REQUIRE(p1 != nullptr);
-    BOOST_REQUIRE(p1->p2 != nullptr);
-    BOOST_REQUIRE(p2->p1 != nullptr);
+    BOOST_REQUIRE(p1);
+    BOOST_REQUIRE(p1->p2);
 
     BOOST_REQUIRE_EQUAL(p1, p1->p2->p1);
 
@@ -883,12 +899,12 @@ public:
 
     TestPortableCustom(int f) : flag(f) {
     }
-    
-    int32_t typeId() const override {
+
+    int32_t typeId() const {
         return 500;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         if (rawMarshalling) {
             GridPortableRawWriter& raw = writer.rawWriter();
 
@@ -917,7 +933,7 @@ public:
         }
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         if (rawMarshalling) {
             GridPortableRawReader& raw = reader.rawReader();
 
@@ -945,7 +961,7 @@ public:
                 BOOST_FAIL("Invalid flag");
         }
     }
-    
+
     static bool rawMarshalling;
 
     int32_t flag;
@@ -962,7 +978,7 @@ void testCustomSerialization(bool rawMarshalling) {
 
     for (int i = 0; i < 3; i++) {
         boost::shared_ptr<std::vector<int8_t>> bytes;
-    
+
         TestPortableCustom c(i);
 
         bytes = marsh.marshalUserObject(c);
@@ -985,15 +1001,15 @@ class TestPortableInvalid : public GridPortable {
 public:
     TestPortableInvalid() : invalidWrite(false) {
     }
-    
+
     TestPortableInvalid(bool invalidWrite, int32_t val1, int32_t val2) : invalidWrite(invalidWrite), val1(val1), val2(val2) {
     }
-    
-    int32_t typeId() const override {
+
+    int32_t typeId() const {
         return 600;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         if (invalidWrite) {
             writer.rawWriter().writeInt32(val1);
 
@@ -1006,7 +1022,7 @@ public:
         }
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         val1 = reader.rawReader().readInt32();
 
         val2 = reader.readInt32("named");
@@ -1023,7 +1039,7 @@ REGISTER_TYPE(600, TestPortableInvalid);
 
 BOOST_AUTO_TEST_CASE(testPortableSerialization_invalid) {
     GridPortableMarshaller marsh;
-    
+
     TestPortableInvalid invalid(true, 100, 200);
 
     try {
@@ -1042,7 +1058,7 @@ BOOST_AUTO_TEST_CASE(testPortableSerialization_invalid) {
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshalUserObject(valid);
 
     unique_ptr<TestPortableInvalid> p(marsh.unmarshalUserObject<TestPortableInvalid>(bytes));
-    
+
     BOOST_REQUIRE_EQUAL(100, (*p).val1);
     BOOST_REQUIRE_EQUAL(200, (*p).val2);
 }
@@ -1052,20 +1068,20 @@ public:
     TestPortableFieldNames2() {
     }
 
-    TestPortableFieldNames2(int32_t f1, int32_t f2, int32_t f3, bool readAllFlag) : f1(f1), f2(f2), f3(f3), 
+    TestPortableFieldNames2(int32_t f1, int32_t f2, int32_t f3, bool readAllFlag) : f1(f1), f2(f2), f3(f3),
         readAllFlag(readAllFlag) {
     }
 
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 701;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         writer.writeBool("readAllFlag", readAllFlag);
         writer.writeInt32("f1", f1);
         writer.writeInt32("f2", f2);
         writer.writeInt32("f3", f3);
-        
+
         writer.writeString("f4", "string");
         writer.writeFloat("f5", 10.5f);
 
@@ -1074,7 +1090,7 @@ public:
         writer.rawWriter().writeInt32(f3);
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         f2 = reader.readInt32("f2");
         f1 = reader.readInt32("f1");
 
@@ -1107,37 +1123,37 @@ public:
 
 class TestPortableFieldNames1 : public GridPortable {
 public:
-    TestPortableFieldNames1() : obj1(nullptr), obj2(nullptr), obj3(nullptr), f1(0) {
+    TestPortableFieldNames1() : obj1(0), obj2(0), obj3(0), f1(0) {
     }
 
-    TestPortableFieldNames1(int32_t f1) : f1(f1) {  
+    TestPortableFieldNames1(int32_t f1) : f1(f1) {
         obj1 = new TestPortableFieldNames2(100, 100, 100, true);
-        obj2 = new TestPortableFieldNames2(200, 200, 200, false); 
+        obj2 = new TestPortableFieldNames2(200, 200, 200, false);
         obj3 = new TestPortableFieldNames2(300, 300, 300, true);
     }
 
     ~TestPortableFieldNames1() {
-        if (obj1 != nullptr)
+        if (obj1)
             delete obj1;
-        if (obj2 != nullptr)
+        if (obj2)
             delete obj2;
-        if (obj3 != nullptr)
+        if (obj3)
             delete obj3;
     }
 
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 700;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         writer.writeInt32("f1", f1);
-        
+
         writer.writeVariant("obj1", obj1);
         writer.writeVariant("obj2", obj2);
         writer.writeVariant("obj3", obj3);
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         obj2 = reader.readVariant("obj2").getPortableObject().deserialize<TestPortableFieldNames2>();
 
         BOOST_REQUIRE_EQUAL(200, obj2->f1);
@@ -1181,11 +1197,11 @@ BOOST_AUTO_TEST_CASE(testPortableSerialization_fieldNames) {
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshalUserObject(obj);
 
     unique_ptr<TestPortableFieldNames1> p(marsh.unmarshalUserObject<TestPortableFieldNames1>(bytes));
-    
+
     BOOST_REQUIRE_EQUAL(1000, (*p).f1);
-    BOOST_REQUIRE((*p).obj1 != nullptr);
-    BOOST_REQUIRE((*p).obj2 != nullptr);
-    BOOST_REQUIRE((*p).obj3 != nullptr);
+    BOOST_REQUIRE((*p).obj1);
+    BOOST_REQUIRE((*p).obj2);
+    BOOST_REQUIRE((*p).obj3);
 }
 
 void checkVariants(GridClientVariant& var1, GridClientVariant& var2, GridClientVariant& var3) {
@@ -1206,7 +1222,7 @@ void checkVariants(GridClientVariant& var1, GridClientVariant& var2, GridClientV
     if (var1.hasPortable()) {
         try {
             var1.hashCode();
-            
+
             BOOST_FAIL("Exception must be thrown");
         }
         catch(runtime_error e) {
@@ -1215,7 +1231,7 @@ void checkVariants(GridClientVariant& var1, GridClientVariant& var2, GridClientV
 
         try {
             var1 == var2;
-            
+
             BOOST_FAIL("Exception must be thrown");
         }
         catch(runtime_error e) {
@@ -1299,7 +1315,7 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
         BOOST_REQUIRE(!var1.hasInt());
 
         BOOST_REQUIRE_EQUAL(val1, var1.getBool());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1313,9 +1329,9 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
 
         BOOST_REQUIRE(var1.hasByte());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE_EQUAL(val1, var1.getByte());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1329,9 +1345,9 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
 
         BOOST_REQUIRE(var1.hasShort());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE_EQUAL(val1, var1.getShort());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1347,7 +1363,7 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
         BOOST_REQUIRE(!var1.hasByte());
 
         BOOST_REQUIRE_EQUAL(val1, var1.getInt());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1361,9 +1377,9 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
 
         BOOST_REQUIRE(var1.hasLong());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE_EQUAL(val1, var1.getLong());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1377,9 +1393,9 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
 
         BOOST_REQUIRE(var1.hasFloat());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE_EQUAL(val1, var1.getFloat());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1393,9 +1409,9 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
 
         BOOST_REQUIRE(var1.hasDouble());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE_EQUAL(val1, var1.getDouble());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1409,9 +1425,9 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
 
         BOOST_REQUIRE(var1.hasChar());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE_EQUAL(val1, var1.getChar());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1425,9 +1441,9 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
 
         BOOST_REQUIRE(var1.hasString());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE(val1 == var1.getString());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1441,9 +1457,9 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
 
         BOOST_REQUIRE(var1.hasWideString());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE(val1 == var1.getWideString());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1457,9 +1473,9 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
 
         BOOST_REQUIRE(var1.hasUuid());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE_EQUAL(val1, var1.getUuid());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1473,9 +1489,9 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
 
         BOOST_REQUIRE(var1.hasDate());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE_EQUAL(val1, var1.getDate());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1489,9 +1505,9 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
 
         BOOST_REQUIRE(var1.hasByteArray());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE(val1 == var1.getByteArray());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1505,9 +1521,9 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
 
         BOOST_REQUIRE(var1.hasShortArray());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE(val1 == var1.getShortArray());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1521,9 +1537,9 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
 
         BOOST_REQUIRE(var1.hasIntArray());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE(val1 == var1.getIntArray());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1537,9 +1553,9 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
 
         BOOST_REQUIRE(var1.hasLongArray());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE(val1 == var1.getLongArray());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1553,9 +1569,9 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
 
         BOOST_REQUIRE(var1.hasFloatArray());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE(val1 == var1.getFloatArray());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1569,9 +1585,9 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
 
         BOOST_REQUIRE(var1.hasDoubleArray());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE(val1 == var1.getDoubleArray());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1585,9 +1601,9 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
 
         BOOST_REQUIRE(var1.hasCharArray());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE(val1 == var1.getCharArray());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1601,9 +1617,9 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
 
         BOOST_REQUIRE(var1.hasBoolArray());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE(val1 == var1.getBoolArray());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1617,9 +1633,9 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
 
         BOOST_REQUIRE(var1.hasStringArray());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE(val1 == var1.getStringArray());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1633,9 +1649,9 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
 
         BOOST_REQUIRE(var1.hasUuidArray());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE(val1 == var1.getUuidArray());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1649,9 +1665,9 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
 
         BOOST_REQUIRE(var1.hasDateArray());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE(val1 == var1.getDateArray());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1665,16 +1681,16 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
 
         BOOST_REQUIRE(var1.hasVariantVector());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE(val1 == var1.getVariantVector());
-        
+
         checkVariants(var1, var2, var3);
     }
 
     {
         TGridClientVariantMap val1;
         TGridClientVariantMap val2;
-        
+
         val1[GridClientVariant(1)] = GridClientVariant(1);
         val2[GridClientVariant(1)] = GridClientVariant(2);
 
@@ -1684,9 +1700,9 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
 
         BOOST_REQUIRE(var1.hasVariantMap());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE(val1 == var1.getVariantMap());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1701,9 +1717,9 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
         BOOST_REQUIRE(var1.hasHashablePortable());
         BOOST_REQUIRE(!var1.hasPortable());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE(val1.get() == var1.getHashablePortable());
-        
+
         checkVariants(var1, var2, var3);
     }
 
@@ -1718,9 +1734,9 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
         BOOST_REQUIRE(var1.hasPortable());
         BOOST_REQUIRE(!var1.hasHashablePortable());
         BOOST_REQUIRE(!var1.hasInt());
-        
+
         BOOST_REQUIRE(val1.get() == var1.getPortable());
-        
+
         checkVariants(var1, var2, var3);
     }
 }
@@ -1739,11 +1755,11 @@ BOOST_AUTO_TEST_CASE(testVariantMap) {
     GridClientVariant varInt_1(1);
     GridClientVariant varInt_2(2);
     GridClientVariant varInt_3(3);
-    
+
     GridClientVariant varP1_1(&p1_1);
     GridClientVariant varP1_2(&p1_2);
     GridClientVariant varP1_3(&p1_3);
-    
+
     GridClientVariant varP2_1(&p2_1);
     GridClientVariant varP2_2(&p2_2);
     GridClientVariant varP2_3(&p2_3);
@@ -1776,7 +1792,7 @@ BOOST_AUTO_TEST_CASE(testVariantMap) {
 BOOST_AUTO_TEST_CASE(testVariant) {
     TestNonHashablePortable nh1;
     TestNonHashablePortable nh2;
-    
+
     TestHashablePortable h1(1);
     TestHashablePortable h2(2);
     TestHashablePortable h3(1);
@@ -1825,172 +1841,11 @@ BOOST_AUTO_TEST_CASE(testVariant) {
     catch (exception e) {
         cout << "expected exception " << e.what() << "\n";
     }
-    
+
     BOOST_REQUIRE_EQUAL(false, hVar1 == hVar2);
-    
+
     BOOST_REQUIRE_EQUAL(true, hVar1 == hVar3);
 }
-
-/*
-BOOST_AUTO_TEST_CASE(testPortableTask) {
-    GridClientConfiguration cfg = clientConfig();
-
-	TGridClientPtr client = GridClientFactory::start(cfg);
-
-    TGridClientComputePtr compute = client->compute();
-
-    PortablePerson person(10, "person1");
-
-    GridClientVariant res = compute->execute("org.gridgain.client.integration.GridClientTcpPortableSelfTest$TestPortableTask", &person);
-
-    BOOST_REQUIRE(res.hasPortable());
-
-    PortablePerson* p = res.getPortable<PortablePerson>();
-
-    BOOST_CHECK_EQUAL(11, p->getId());
-    BOOST_CHECK_EQUAL("result", p->getName());
-
-    delete p;
-}
-
-BOOST_AUTO_TEST_CASE(testPortableKey) {
-    GridClientConfiguration cfg = clientConfig();
-
-	TGridClientPtr client = GridClientFactory::start(cfg);
-
-    TGridClientDataPtr data = client->data("partitioned");
-
-    PortablePerson person1(10, "person1");
-    PortablePerson person2(20, "person2");
-    PortablePerson person3(30, "person3");
-
-    bool put = data->put(&person1, 100);
-
-    BOOST_CHECK_EQUAL(true, put);
-
-    put = data->put(&person2, 200);
-
-    BOOST_CHECK_EQUAL(true, put);
-
-    GridClientVariant val = data->get(&person1);
-
-    BOOST_REQUIRE(val.hasInt());
-
-    BOOST_CHECK_EQUAL(100, val.getInt());
-
-    val = data->get(&person2);
-
-    BOOST_REQUIRE(val.hasInt());
-
-    BOOST_CHECK_EQUAL(200, val.getInt());
-
-    val = data->get(&person3);
-
-    BOOST_REQUIRE(!val.hasAnyValue());
-}
-
-BOOST_AUTO_TEST_CASE(testPortableCache) {
-    GridClientConfiguration cfg = clientConfig();
-
-	TGridClientPtr client = GridClientFactory::start(cfg);
-
-    TGridClientDataPtr data = client->data("partitioned");
-
-    PortablePerson person(10, "person1");
-
-    bool put = data->put(100, &person);
-
-    BOOST_CHECK_EQUAL(true, put);
-
-    PortablePerson* p = data->get(100).getPortable<PortablePerson>();
-
-    cout << "Get person: " << p->getId() << " " << p->getName() << "\n";
-
-    BOOST_CHECK_EQUAL(10, p->getId());
-    BOOST_CHECK_EQUAL("person1", p->getName());
-
-    delete p;
-}
-
-BOOST_AUTO_TEST_CASE(testPortableCachePutAllGetAll) {
-    GridClientConfiguration cfg = clientConfig();
-
-	TGridClientPtr client = GridClientFactory::start(cfg);
-
-    TGridClientDataPtr data = client->data("partitioned");
-
-    PortablePerson p1(100, "personAll1");
-    PortablePerson p2(200, "personAll2");
-    PortablePerson p3(300, "personAll3");
-
-    TGridClientVariantMap map;
-
-    map[GridClientVariant(&p1)] = GridClientVariant(&p1);
-    map[GridClientVariant(&p2)] = GridClientVariant(&p2);
-    map[GridClientVariant(&p3)] = GridClientVariant(&p3);
-
-    bool put = data->putAll(map);
-
-    BOOST_CHECK_EQUAL(true, put);
-
-    PortablePerson p4(400, "personAll4");
-
-    TGridClientVariantSet keys;
-
-    keys.push_back(GridClientVariant(&p1));
-    keys.push_back(GridClientVariant(&p2));
-    keys.push_back(GridClientVariant(&p3));
-    keys.push_back(GridClientVariant(&p4));
-
-    TGridClientVariantMap getMap = data->getAll(keys);
-
-    BOOST_CHECK_EQUAL(3, getMap.size());
-    
-    GridClientVariant var;
-    
-    var = getMap[keys[0]];
-    BOOST_CHECK_EQUAL(true, var.hasPortable());
-    BOOST_CHECK_EQUAL("personAll1", var.getPortable<PortablePerson>()->getName());
-    delete var.getPortable();
-
-    var = getMap[keys[1]];
-    BOOST_CHECK_EQUAL(true, var.hasPortable());
-    BOOST_CHECK_EQUAL("personAll2", var.getPortable<PortablePerson>()->getName());
-    delete var.getPortable();
-
-    var = getMap[keys[2]];
-    BOOST_CHECK_EQUAL(true, var.hasPortable());
-    BOOST_CHECK_EQUAL("personAll3", var.getPortable<PortablePerson>()->getName());
-    delete var.getPortable();
-
-    var = getMap[keys[3]];
-    BOOST_CHECK_EQUAL(false, var.hasAnyValue());
-}
-
-BOOST_AUTO_TEST_CASE(testExternalPortableCache) {
-    GridClientConfiguration cfg = clientConfig();
-
-	TGridClientPtr client = GridClientFactory::start(cfg);
-
-    TGridClientDataPtr data = client->data("partitioned");
-
-    PersonSerializer serializer;
-
-    Person person(20, "person2");
-
-    data->put(200, &GridExternalPortable<Person>(&person, serializer));
-
-    GridExternalPortable<Person>* p = data->get(200).getPortable<GridExternalPortable<Person>>();
-
-    cout << "Get person: " << (*p)->getId() << " " << (*p)->getName() << "\n";
-
-    BOOST_CHECK_EQUAL(20, (*p)->getId());
-    BOOST_CHECK_EQUAL("person2", (*p)->getName());
-
-    delete p->getObject();
-    delete p;
-}
-*/
 
 BOOST_AUTO_TEST_CASE(testPortableSerialization) {
     GridPortableMarshaller marsh;
@@ -2022,6 +1877,7 @@ BOOST_AUTO_TEST_CASE(testPortableSerialization) {
     BOOST_REQUIRE(!nullField.hasAnyValue());
 }
 
+/*
 BOOST_AUTO_TEST_CASE(testExternalSerialization) {
     GridPortableMarshaller marsh;
 
@@ -2043,6 +1899,7 @@ BOOST_AUTO_TEST_CASE(testExternalSerialization) {
     delete pRead->getObject();
     delete pRead;
 }
+*/
 
 BOOST_AUTO_TEST_CASE(testMarshal_byte) {
     int8_t val = 10;
@@ -2050,7 +1907,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_byte) {
     GridClientVariant var(val);
 
     GridPortableMarshaller marsh;
-    
+
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
@@ -2064,7 +1921,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_bool) {
     GridClientVariant var(val);
 
     GridPortableMarshaller marsh;
-    
+
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
@@ -2078,7 +1935,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_char) {
     GridClientVariant var(val);
 
     GridPortableMarshaller marsh;
-    
+
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
@@ -2092,7 +1949,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_chort) {
     GridClientVariant var(val);
 
     GridPortableMarshaller marsh;
-    
+
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
@@ -2106,7 +1963,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_int) {
     GridClientVariant var(val);
 
     GridPortableMarshaller marsh;
-    
+
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
@@ -2120,7 +1977,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_long) {
     GridClientVariant var(val);
 
     GridPortableMarshaller marsh;
-    
+
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
@@ -2134,7 +1991,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_float) {
     GridClientVariant var(val);
 
     GridPortableMarshaller marsh;
-    
+
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
@@ -2148,7 +2005,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_double) {
     GridClientVariant var(val);
 
     GridPortableMarshaller marsh;
-    
+
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
@@ -2162,7 +2019,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_str) {
     GridClientVariant var(val);
 
     GridPortableMarshaller marsh;
-    
+
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
@@ -2176,7 +2033,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_uuid) {
     GridClientVariant var(val);
 
     GridPortableMarshaller marsh;
-    
+
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
@@ -2190,7 +2047,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_date) {
     GridClientVariant var(val);
 
     GridPortableMarshaller marsh;
-    
+
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
@@ -2200,7 +2057,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_date) {
 
 BOOST_AUTO_TEST_CASE(testMarshal_byteArr) {
     vector<int8_t> val;
-    
+
     int size = 3;
 
     for (int i = 0; i < size; i++)
@@ -2209,7 +2066,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_byteArr) {
     GridClientVariant var(val);
 
     GridPortableMarshaller marsh;
-    
+
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
@@ -2224,7 +2081,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_byteArr) {
 
 BOOST_AUTO_TEST_CASE(testMarshal_boolArr) {
     vector<bool> val;
-    
+
     int size = 3;
 
     for (int i = 0; i < size; i++)
@@ -2233,7 +2090,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_boolArr) {
     GridClientVariant var(val);
 
     GridPortableMarshaller marsh;
-    
+
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
@@ -2248,7 +2105,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_boolArr) {
 
 BOOST_AUTO_TEST_CASE(testMarshal_int16Arr) {
     vector<int16_t> val;
-    
+
     int size = 3;
 
     for (int i = 0; i < size; i++)
@@ -2257,7 +2114,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_int16Arr) {
     GridClientVariant var(val);
 
     GridPortableMarshaller marsh;
-    
+
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
@@ -2272,7 +2129,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_int16Arr) {
 
 BOOST_AUTO_TEST_CASE(testMarshal_charArr) {
     vector<uint16_t> val;
-    
+
     int size = 3;
 
     for (int i = 0; i < size; i++)
@@ -2281,7 +2138,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_charArr) {
     GridClientVariant var(val);
 
     GridPortableMarshaller marsh;
-    
+
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
@@ -2296,7 +2153,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_charArr) {
 
 BOOST_AUTO_TEST_CASE(testMarshal_int32Arr) {
     vector<int32_t> val;
-    
+
     int size = 3;
 
     for (int i = 0; i < size; i++)
@@ -2305,7 +2162,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_int32Arr) {
     GridClientVariant var(val);
 
     GridPortableMarshaller marsh;
-    
+
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
@@ -2320,7 +2177,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_int32Arr) {
 
 BOOST_AUTO_TEST_CASE(testMarshal_int64Arr) {
     vector<int64_t> val;
-    
+
     int size = 3;
 
     for (int i = 0; i < size; i++)
@@ -2329,7 +2186,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_int64Arr) {
     GridClientVariant var(val);
 
     GridPortableMarshaller marsh;
-    
+
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
@@ -2344,7 +2201,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_int64Arr) {
 
 BOOST_AUTO_TEST_CASE(testMarshal_floatArr) {
     vector<float> val;
-    
+
     int size = 3;
 
     for (int i = 0; i < size; i++)
@@ -2353,7 +2210,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_floatArr) {
     GridClientVariant var(val);
 
     GridPortableMarshaller marsh;
-    
+
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
@@ -2368,7 +2225,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_floatArr) {
 
 BOOST_AUTO_TEST_CASE(testMarshal_doubleArr) {
     vector<double> val;
-    
+
     int size = 3;
 
     for (int i = 0; i < size; i++)
@@ -2377,7 +2234,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_doubleArr) {
     GridClientVariant var(val);
 
     GridPortableMarshaller marsh;
-    
+
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
@@ -2392,7 +2249,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_doubleArr) {
 
 BOOST_AUTO_TEST_CASE(testMarshal_stringArr) {
     vector<string> val;
-    
+
     int size = 3;
 
     for (int i = 0; i < size; i++)
@@ -2401,7 +2258,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_stringArr) {
     GridClientVariant var(val);
 
     GridPortableMarshaller marsh;
-    
+
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
@@ -2416,7 +2273,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_stringArr) {
 
 BOOST_AUTO_TEST_CASE(testMarshal_uuidArr) {
     vector<GridClientUuid> val;
-    
+
     int size = 3;
 
     for (int i = 0; i < size; i++)
@@ -2425,7 +2282,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_uuidArr) {
     GridClientVariant var(val);
 
     GridPortableMarshaller marsh;
-    
+
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
@@ -2440,7 +2297,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_uuidArr) {
 
 BOOST_AUTO_TEST_CASE(testMarshal_dateArr) {
     vector<boost::optional<GridClientDate>> val;
-    
+
     int size = 3;
 
     for (int i = 0; i < size; i++)
@@ -2451,7 +2308,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_dateArr) {
     GridClientVariant var(val);
 
     GridPortableMarshaller marsh;
-    
+
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
@@ -2470,7 +2327,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_dateArr) {
 
 BOOST_AUTO_TEST_CASE(testMarshal_variantArr) {
     vector<GridClientVariant> val;
-    
+
     int size = 3;
 
     for (int i = 0; i < size; i++)
@@ -2479,7 +2336,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_variantArr) {
     GridClientVariant var(val);
 
     GridPortableMarshaller marsh;
-    
+
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
@@ -2494,7 +2351,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_variantArr) {
 
 BOOST_AUTO_TEST_CASE(testMarshal_variantMap) {
     TGridClientVariantMap val;
-    
+
     int size = 3;
 
     for (int i = 0; i < size; i++)
@@ -2503,7 +2360,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_variantMap) {
     GridClientVariant var(val);
 
     GridPortableMarshaller marsh;
-    
+
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
@@ -2524,17 +2381,17 @@ public:
     TestNested3() {
     }
 
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 802;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         writer.writeDouble("f1", 2.5);
 
         writer.rawWriter().writeString("str");
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         val = reader.readDouble("f1");
 
         string rawVal = reader.rawReader().readString().get();
@@ -2550,11 +2407,11 @@ public:
     TestNested2() {
     }
 
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 801;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         writer.writeInt32("f1", 1);
 
         writer.writeVariant("f3", new TestNested3());
@@ -2564,7 +2421,7 @@ public:
         writer.rawWriter().writeInt32(20);
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         val = reader.readInt32("f1");
         flag = reader.readBool("f2");
 
@@ -2582,7 +2439,7 @@ public:
 
 class TestNested1 : public GridPortable {
 public:
-    TestNested1() : obj(nullptr) {
+    TestNested1() : obj(0) {
     }
 
     TestNested1(TestNested2* obj) : obj(obj) {
@@ -2593,19 +2450,19 @@ public:
             delete obj;
     }
 
-    int32_t typeId() const override {
+    int32_t typeId() const {
         return 800;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         writer.writeVariant("1", obj);
-        
+
         writer.writeFloat("2", 1.5f);
 
         writer.rawWriter().writeInt32(10);
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         GridClientVariant var = reader.readVariant("1");
 
         obj = var.getPortableObject().deserialize<TestNested2>();
@@ -2628,7 +2485,7 @@ REGISTER_TYPE(802, TestNested3);
 
 BOOST_AUTO_TEST_CASE(testMarshal_nested) {
     GridPortableMarshaller marsh;
-    
+
     TestNested1 obj(new TestNested2());
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshalUserObject(obj);
@@ -2638,14 +2495,14 @@ BOOST_AUTO_TEST_CASE(testMarshal_nested) {
     GridPortableObject& port1 = var1.getPortableObject();
 
     TestNested1* obj1 = port1.deserialize<TestNested1>();
-    
+
     BOOST_REQUIRE_EQUAL(1, obj1->obj->val);
     BOOST_REQUIRE_EQUAL(1.5, obj1->vFloat);
 
     delete obj1;
 
     GridClientVariant f1 = port1.field("1");
-    
+
     GridClientVariant f2 = port1.field("2");
 
     GridClientVariant invalid = port1.field("invalid");
@@ -2687,79 +2544,119 @@ BOOST_AUTO_TEST_CASE(testMarshal_nested) {
     delete obj3;
 }
 
-BOOST_AUTO_TEST_CASE(test1) {
-    GridClientConfiguration cfg = clientConfig();
+class TestObjCollection : public GridPortable {
+public:
+    static bool rawMarshalling;
 
-	TGridClientPtr client = GridClientFactory::start(cfg);
-
-    TGridClientDataPtr data = client->data("partitioned");
-
-    GridClientDataMetrics metrics = data->metrics();
-
-    cout << "Metrics time " << metrics.createTime() << "\n";
-
-    cout << "Metrics " << metrics << "\n";
-    /*
-    TGridClientVariantMap map;
-
-    map[0] = "v0";
-    map[1] = "v1";
-    map[2] = "v2";
-
-    data->putAll(map);
-    */
-
-    /*
-    TGridClientVariantSet keys;
-
-    keys.push_back(0);
-    keys.push_back(1);
-    keys.push_back(2);
-    keys.push_back(3);
-
-    TGridClientVariantMap vals = data->getAll(keys);
-    
-    cout << "Get total " << vals.size() << "\n";
-    
-    for (auto iter = vals.begin(); iter != vals.end(); ++iter) {
-        GridClientVariant key = iter->first;
-        GridClientVariant val = iter->second;
-        
-        cout << "Get: key=" << key.debugString() << " val=" << val.debugString() << "\n";
+    int32_t typeId() const {
+        return 900;
     }
-    */
 
-    /*
-    bool put = data->put(1, 1);
+    void writePortable(GridPortableWriter& writer) const {
+        if (rawMarshalling) {
+            writer.rawWriter().writeInt32(1);
 
-    cout << "Put: " << put << "\n";
-    */
-    
-    /*
-    GridClientVariant val = data->get(1);
+            writer.rawWriter().writeVariantCollection(col);
 
-    cout << "Get: " << val.debugString() << "\n";
-    */
+            writer.rawWriter().writeInt32(3);
+        }
+        else {
+            writer.writeInt32("1", 1);
 
-    /*
-    TGridClientDataPtr data = client->data("partitioned");
-        
-    cout << "Sleep\n";
+            writer.writeVariantCollection("2", col);
 
-    boost::this_thread::sleep(boost::posix_time::milliseconds(60000));   
+            writer.writeInt32("3", 3);
+        }
+    }
 
-    cout << "End sleep\n";
-    */
+    void readPortable(GridPortableReader& reader) {
+        if (rawMarshalling) {
+            val1 = reader.rawReader().readInt32();
 
-    // bool put = data->put(1, 1);
-    
-    /*
-    PortablePerson person1(10, "person1");
-    PortablePerson person2(20, "person2");
-    PortablePerson person3(30, "person3");
+            col = reader.rawReader().readVariantCollection().get();
 
-    bool put = data->put(&person1, 100);
-    */
+            val2 = reader.rawReader().readInt32();
+        }
+        else {
+            val1 = reader.readInt32("1");
+
+            col = reader.readVariantCollection("2").get();
+
+            val2 = reader.readInt32("3");
+        }
+    }
+
+    int32_t val1;
+
+    vector<GridClientVariant> col;
+
+    int32_t val2;
+};
+
+bool TestObjCollection::rawMarshalling = false;
+
+void testObjCollectionMarshal(bool raw)  {
+    TestObjCollection::rawMarshalling = raw;
+
+    TestObjCollection obj;
+
+    PortablePerson p1(1, "n1");
+    PortablePerson p2(2, "n2");
+
+    vector<GridClientVariant> col;
+
+    col.push_back(&p1);
+    col.push_back(&p2);
+    col.push_back(&p1);
+
+    obj.col = col;
+
+    GridPortableMarshaller marsh;
+
+    boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshalUserObject(obj);
+
+    GridClientVariant var = marsh.unmarshal(bytes);
+
+    GridPortableObject& port = var.getPortableObject();
+
+    TestObjCollection* objRead = port.deserialize<TestObjCollection>();
+
+    BOOST_REQUIRE_EQUAL(1, objRead->val1);
+    BOOST_REQUIRE_EQUAL(3, objRead->val2);
+
+    BOOST_REQUIRE_EQUAL(3, objRead->col.size());
+
+    GridClientVariant p1Var = objRead->col[0];
+
+    PortablePerson* p1Read = p1Var.getPortableObject().deserialize<PortablePerson>();
+
+    BOOST_REQUIRE_EQUAL(1, p1Read->getId());
+    BOOST_REQUIRE_EQUAL("n1", p1Read->getName());
+
+    GridClientVariant p2Var = objRead->col[1];
+
+    PortablePerson* p2Read = p2Var.getPortableObject().deserialize<PortablePerson>();
+
+    BOOST_REQUIRE_EQUAL(2, p2Read->getId());
+    BOOST_REQUIRE_EQUAL("n2", p2Read->getName());
+
+    GridClientVariant p3Var = objRead->col[2];
+
+    PortablePerson* p3Read = p3Var.getPortableObject().deserialize<PortablePerson>();
+
+    BOOST_REQUIRE(p1Read == p3Read);
+
+    delete p1Read;
+    delete p2Read;
+    delete objRead;
 }
+
+BOOST_AUTO_TEST_CASE(testObjCollection) {
+    testObjCollectionMarshal(false);
+
+    testObjCollectionMarshal(true);
+}
+
+REGISTER_TYPE(900, TestObjCollection);
 
 BOOST_AUTO_TEST_SUITE_END()

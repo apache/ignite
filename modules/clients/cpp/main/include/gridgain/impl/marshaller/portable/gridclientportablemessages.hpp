@@ -24,11 +24,11 @@
 
 class GridClientPortableMessage : public GridPortable {
 public:
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         writer.rawWriter().writeByteCollection(sesTok);
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         boost::optional<std::vector<int8_t>> bytes = reader.rawReader().readByteCollection();
 
         if (bytes.is_initialized())
@@ -40,13 +40,13 @@ public:
 
 class GridClientResponse : public GridClientPortableMessage {
 public:
-    static const int32_t TYPE_ID = 0x105;
+    static const int32_t TYPE_ID = 56;
 
     int32_t typeId() const {
         return TYPE_ID;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         GridClientPortableMessage::writePortable(writer);
 
         GridPortableRawWriter& raw = writer.rawWriter();
@@ -56,7 +56,7 @@ public:
         raw.writeVariant(res);
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         GridClientPortableMessage::readPortable(reader);
 
         GridPortableRawReader& raw = reader.rawReader();
@@ -92,13 +92,13 @@ public:
 
 class GridClientMetricsBean : public GridPortable {
 public:
-    static const int32_t TYPE_ID = 0x104;
+    static const int32_t TYPE_ID = 58;
 
     int32_t typeId() const {
         return TYPE_ID;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         GridPortableRawWriter& raw = writer.rawWriter();
 
         raw.writeInt64(lastUpdateTime);
@@ -155,7 +155,7 @@ public:
         raw.writeInt64(rcvdBytesCnt);
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         GridPortableRawReader& raw = reader.rawReader();
 
         lastUpdateTime = raw.readInt64();
@@ -371,17 +371,16 @@ public:
 
 class GridClientNodeBean : public GridPortable {
 public:
-    static const int32_t TYPE_ID = 0x103;
+    static const int32_t TYPE_ID = 57;
 
     int32_t typeId() const {
         return TYPE_ID;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         GridPortableRawWriter& raw = writer.rawWriter();
 
         raw.writeInt32(tcpPort);
-        raw.writeInt32(jettyPort);
         raw.writeInt32(replicaCnt);
 
         raw.writeString(dfltCacheMode);
@@ -391,8 +390,6 @@ public:
 
         raw.writeVariantCollection(tcpAddrs);
         raw.writeVariantCollection(tcpHostNames);
-        raw.writeVariantCollection(jettyAddrs);
-        raw.writeVariantCollection(jettyHostNames);
 
         raw.writeUuid(nodeId);
 
@@ -400,22 +397,31 @@ public:
         raw.writeVariant(metrics);
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         GridPortableRawReader& raw = reader.rawReader();
 
         tcpPort = raw.readInt32();
-        jettyPort = raw.readInt32();
         replicaCnt = raw.readInt32();
+        
+        boost::optional<std::string> optDfltCacheMode = raw.readString();
+        if (optDfltCacheMode.is_initialized())
+            dfltCacheMode = optDfltCacheMode.get();
 
-        dfltCacheMode = raw.readString().get_value_or(std::string());
+        boost::optional<TGridClientVariantMap> optAttrs = raw.readVariantMap();
+        if (optAttrs.is_initialized())
+            attrs = optAttrs.get();
+        
+        boost::optional<TGridClientVariantMap> optCaches = raw.readVariantMap();
+        if (optCaches.is_initialized())
+            caches = optCaches.get();
 
-        attrs = raw.readVariantMap().get_value_or(TGridClientVariantMap());
-        caches = raw.readVariantMap().get_value_or(TGridClientVariantMap());
+        boost::optional<TGridClientVariantSet> optAddrs = raw.readVariantCollection();
+        if (optAddrs.is_initialized())
+            tcpAddrs = optAddrs.get();
 
-        tcpAddrs = raw.readVariantCollection().get_value_or(TGridClientVariantSet());
-        tcpHostNames = raw.readVariantCollection().get_value_or(TGridClientVariantSet());
-        jettyAddrs = raw.readVariantCollection().get_value_or(TGridClientVariantSet());
-        jettyHostNames = raw.readVariantCollection().get_value_or(TGridClientVariantSet());
+        boost::optional<TGridClientVariantSet> optHosts = raw.readVariantCollection();
+        if (optHosts.is_initialized())
+            tcpHostNames = optHosts.get();
 
         nodeId = raw.readUuid();
 
@@ -436,49 +442,11 @@ public:
         helper.setConsistentId(consistentId);
 
         int tcpport = tcpPort;
-        int jettyport = jettyPort;
 
         std::vector<GridClientSocketAddress> addresses;
 
         boost::asio::io_service ioSrvc;
         boost::asio::ip::tcp::resolver resolver(ioSrvc);
-
-        for (size_t i = 0; i < jettyAddrs.size(); ++i) {
-            GridClientVariant& addr = jettyAddrs[i];
-
-            GridClientSocketAddress newJettyAddress = GridClientSocketAddress(addr.getString(), jettyport);
-
-            boost::asio::ip::tcp::resolver::query queryIp(addr.getString(), boost::lexical_cast<std::string>(jettyport));
-
-            boost::system::error_code ec;
-
-            boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryIp, ec);
-
-            if (!ec)
-                addresses.push_back(newJettyAddress);
-            else
-                GG_LOG_ERROR("Error resolving hostname: %s, %s", addr.getString().c_str(), ec.message().c_str());
-        }
-
-        for (size_t i = 0; i < jettyHostNames.size(); ++i) {
-            GridClientVariant& host = jettyHostNames[i];
-
-            GridClientSocketAddress newJettyAddress = GridClientSocketAddress(host.getString(), jettyport);
-
-            boost::asio::ip::tcp::resolver::query queryHostname(host.getString(), boost::lexical_cast<std::string>(jettyport));
-
-            boost::system::error_code ec;
-
-            boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryHostname, ec);
-
-            if (!ec)
-                addresses.push_back(newJettyAddress);
-            else
-                GG_LOG_ERROR("Error resolving hostname: %s, %s", host.getString().c_str(), ec.message().c_str());
-        }
-
-        helper.setJettyAddresses(addresses);
-        addresses.clear();
 
         for (size_t i = 0; i < tcpAddrs.size(); ++i) {
             GridClientVariant& tcpAddr = tcpAddrs[i];
@@ -516,8 +484,13 @@ public:
 
         helper.setTcpAddresses(addresses);
 
-        helper.setCaches(caches);
+        helper.setDefaultCacheMode(dfltCacheMode);
 
+        if (!dfltCacheMode.empty())
+            caches[GridClientVariant()] = GridClientVariant(dfltCacheMode);
+
+        helper.setCaches(caches);
+                
         helper.setAttributes(attrs);
 
         if (metrics.hasPortableObject()) {
@@ -580,8 +553,6 @@ public:
 
     int32_t tcpPort;
 
-    int32_t jettyPort;
-
     int32_t replicaCnt;
 
     std::string dfltCacheMode;
@@ -594,10 +565,6 @@ public:
 
     TGridClientVariantSet tcpHostNames;
 
-    TGridClientVariantSet jettyAddrs;
-
-    TGridClientVariantSet jettyHostNames;
-
     boost::optional<GridClientUuid> nodeId;
 
     GridClientVariant consistentId;
@@ -607,13 +574,13 @@ public:
 
 class GridClientTopologyRequest : public GridClientPortableMessage {
 public:
-    static const int32_t TYPE_ID = 0x108;
+    static const int32_t TYPE_ID = 52;
 
     int32_t typeId() const {
         return TYPE_ID;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         GridClientPortableMessage::writePortable(writer);
 
         GridPortableRawWriter& raw = writer.rawWriter();
@@ -624,7 +591,7 @@ public:
         raw.writeBool(includeAttrs);
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         GridClientPortableMessage::readPortable(reader);
 
         GridPortableRawReader& raw = reader.rawReader();
@@ -650,7 +617,7 @@ public:
 
 class GridClientCacheRequest : public GridClientPortableMessage {
 public:
-    static const int32_t TYPE_ID = 0x101;
+    static const int32_t TYPE_ID = 54;
 
     int32_t typeId() const {
         return TYPE_ID;
@@ -673,7 +640,7 @@ public:
         cacheFlagsOn = flags.empty() ? 0 : GridClientByteUtils::bitwiseOr(flags.begin(), flags.end(), 0);
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         GridClientPortableMessage::writePortable(writer);
 
         GridPortableRawWriter& raw = writer.rawWriter();
@@ -699,7 +666,7 @@ public:
         }
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         GridClientPortableMessage::readPortable(reader);
 
         GridPortableRawReader& raw = reader.rawReader();
@@ -740,13 +707,13 @@ public:
 
 class GridClientLogRequest : public GridClientPortableMessage {
 public:
-    static const int32_t TYPE_ID = 0x102;
+    static const int32_t TYPE_ID = 55;
 
     int32_t typeId() const {
         return TYPE_ID;
     }
 
-    void writePortable(GridPortableWriter& writer) const override {
+    void writePortable(GridPortableWriter& writer) const {
         GridClientPortableMessage::writePortable(writer);
 
         GridPortableRawWriter& raw = writer.rawWriter();
@@ -757,7 +724,7 @@ public:
         raw.writeInt32(to);
     }
 
-    void readPortable(GridPortableReader& reader) override {
+    void readPortable(GridPortableReader& reader) {
         GridClientPortableMessage::readPortable(reader);
 
         GridPortableRawReader& raw = reader.rawReader();
@@ -777,29 +744,27 @@ public:
 
 class GridClientTaskRequest : public GridClientPortableMessage {
 public:
-    static const int32_t TYPE_ID = 0x106;
+    static const int32_t TYPE_ID = 53;
 
     int32_t typeId() const {
         return TYPE_ID;
     }
 
-    void writePortable(GridPortableWriter &writer) const override {
+    void writePortable(GridPortableWriter &writer) const {
         GridClientPortableMessage::writePortable(writer);
 
         GridPortableRawWriter& raw = writer.rawWriter();
 
         raw.writeString(taskName);
-
         raw.writeVariant(arg);
     }
 
-    void readPortable(GridPortableReader &reader) override {
+    void readPortable(GridPortableReader &reader) {
         GridClientPortableMessage::readPortable(reader);
 
         GridPortableRawReader& raw = reader.rawReader();
 
         taskName = raw.readString().get_value_or(std::string());
-
         arg = raw.readVariant();
     }
 
@@ -810,13 +775,13 @@ public:
 
 class GridClientTaskResultBean : public GridPortable {
 public:
-    static const int32_t TYPE_ID = 0x107;
+    static const int32_t TYPE_ID = 59;
 
     int32_t typeId() const {
         return TYPE_ID;
     }
 
-    void writePortable(GridPortableWriter &writer) const override {
+    void writePortable(GridPortableWriter &writer) const {
         GridPortableRawWriter& raw = writer.rawWriter();
 
         raw.writeString(id);
@@ -825,13 +790,21 @@ public:
         raw.writeString(error);
     }
 
-    void readPortable(GridPortableReader &reader) override {
+    void readPortable(GridPortableReader &reader) {
         GridPortableRawReader& raw = reader.rawReader();
 
-        id = raw.readString().get_value_or(std::string());
+        boost::optional<std::string> idOpt = raw.readString();
+        
+        if (idOpt.is_initialized())
+            id = idOpt.get();
+        
         finished = raw.readBool();
         res = raw.readVariant();
-        error = raw.readString().get_value_or(std::string());;
+        
+        boost::optional<std::string> errOpt = raw.readString();
+
+        if (errOpt.is_initialized())
+            error = errOpt.get();
     }
 
     std::string id;
@@ -845,7 +818,7 @@ public:
 
 class GridClientAuthenticationRequest : public GridClientPortableMessage {
 public:
-    static const int32_t TYPE_ID = 0x100;
+    static const int32_t TYPE_ID = 51;
 
     int32_t typeId() const {
         return TYPE_ID;
@@ -857,7 +830,7 @@ public:
     GridClientAuthenticationRequest(std::string credStr) : cred(credStr) {
     }
 
-    void writePortable(GridPortableWriter &writer) const override {
+    void writePortable(GridPortableWriter &writer) const {
         GridClientPortableMessage::writePortable(writer);
 
         GridPortableRawWriter& raw = writer.rawWriter();
@@ -865,7 +838,7 @@ public:
         raw.writeVariant(cred);
     }
 
-    void readPortable(GridPortableReader &reader) override {
+    void readPortable(GridPortableReader &reader) {
         GridClientPortableMessage::readPortable(reader);
 
         GridPortableRawReader& raw = reader.rawReader();

@@ -182,55 +182,6 @@ template<class C, class R> void GridClientTcpCommandExecutor::executeCmd(const G
 }
 
 /**
- * Sends a general command to a remote host.
- *
- * @param host Host/port pair to connect to.
- * @param cmd Command to send.
- * @param rslt Response message to fill.
- */
-/*
-template<class C, class R> void GridClientTcpCommandExecutor::executeCmd(const GridClientSocketAddress& host, C& cmd,
-    R& rslt) {
-    ObjectWrapper protoMsg;
-
-    std::shared_ptr<GridClientTcpConnection> conn = connPool->rentTcpConnection(host.host(), host.port());
-
-    cmd.sessionToken(conn->sessionToken());
-
-    GridClientProtobufMarshaller::wrap(cmd, protoMsg);
-
-    GG_LOG_DEBUG("Trying to execute requestId [%lld] on [%s:%d], sending [%s] request.",
-            cmd.getRequestId(), host.host().c_str(), host.port(), GridClientProtobufMarshaller::msgType2Str(protoMsg).c_str());
-
-    GridClientTcpPacket tcpPacket;
-    GridClientTcpPacket tcpResponse;
-    ProtoRequest req;
-
-    tcpPacket.setData(protoMsg);
-    tcpPacket.setAdditionalHeaders(cmd);
-
-    try {
-        sendPacket(conn, tcpPacket, tcpResponse);
-
-        connPool->turnBack(conn);
-    }
-    catch (GridClientException& e) {
-        GG_LOG_DEBUG("Failed to execute requestId [%lld] on [%s:%d]: %s",
-                cmd.getRequestId(), host.host().c_str(), host.port(), e.what());
-
-        throw;
-    }
-
-    ObjectWrapper respMsg = tcpResponse.getData();
-
-    GG_LOG_DEBUG("Successfully executed requestId [%lld] on [%s:%d], received [%s] response.",
-            cmd.getRequestId(), host.host().c_str(), host.port(), GridClientProtobufMarshaller::msgType2Str(respMsg).c_str());
-
-    GridClientProtobufMarshaller::unwrap(respMsg, rslt);
-}
-*/
-
-/**
  * Stops the command executor freeing all resources
  * and closing all connections.
  */

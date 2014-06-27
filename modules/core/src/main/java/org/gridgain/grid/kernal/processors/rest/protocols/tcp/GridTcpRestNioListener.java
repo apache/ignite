@@ -9,10 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
-import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.jdk.*;
-import org.gridgain.client.marshaller.optimized.*;
-import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
@@ -20,9 +16,7 @@ import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.cache.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.nio.*;
-import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -51,10 +45,6 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
     /** Handler for all memcache requests */
     private GridTcpMemcachedNioListener memcachedLsnr;
-
-    /** Supported marshallers. */
-    @GridToStringExclude
-    private final Map<Byte, GridClientMarshaller> suppMarshMap;
 
     /** Mapping of {@code GridCacheOperation} to {@code GridRestCommand}. */
     private static final Map<GridClientCacheRequest.GridCacheOperation, GridRestCommand> cacheCmdMap =
@@ -93,27 +83,6 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         this.log = log;
         this.proto = proto;
         this.hnd = hnd;
-
-        Map<Byte, GridClientMarshaller> tmpMap = new GridLeanMap<>(3);
-
-        tmpMap.put(U.JDK_CLIENT_PROTO_ID, new GridClientJdkMarshaller());
-        tmpMap.put(U.PORTABLE_OBJECT_PROTO_ID, new GridClientPortableMarshaller());
-
-        // Special case for Optimized marshaller, which may throw exception.
-        // This may happen, for example, if some Unsafe methods are unavailable.
-        try {
-            tmpMap.put(U.OPTIMIZED_CLIENT_PROTO_ID, new GridClientOptimizedMarshaller());
-        }
-        catch (Exception e) {
-            U.warn(
-                log,
-                "Failed to create " + GridClientOptimizedMarshaller.class.getSimpleName() +
-                    " for handling client communication (" + e.getMessage() +
-                    "). Local node will operate without this marshaller.",
-                "Failed to create " + GridClientOptimizedMarshaller.class.getSimpleName() + '.');
-        }
-
-        suppMarshMap = Collections.unmodifiableMap(tmpMap);
     }
 
     /** {@inheritDoc} */
@@ -148,24 +117,6 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                     U.warn(log, "Client version check failed [ses=" + ses +
                         ", expected=" + Arrays.toString(VER_BYTES)
                         + ", actual=" + Arrays.toString(verBytes) + ']');
-
-                GridClientMarshaller marsh = suppMarshMap.get(hs.protocolId());
-
-                if (marsh == null) {
-                    log.error("No marshaller found with given protocol ID [protocolId=" + hs.protocolId() + ']');
-
-                    ses.send(new GridClientHandshakeResponseWrapper(CODE_UNKNOWN_PROTO_ID)).listenAsync(
-                        new CI1<GridNioFuture<?>>() {
-                            @Override public void apply(GridNioFuture<?> fut) {
-                                ses.close();
-                            }
-                        }
-                    );
-
-                    return;
-                }
-
-                ses.addMeta(GridNioSessionMetaKey.MARSHALLER.ordinal(), marsh);
 
                 ses.send(new GridClientHandshakeResponseWrapper(CODE_OK));
             }
@@ -208,13 +159,13 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                             wrapper.clientId(msg.clientId());
 
                             try {
-                                ByteBuffer bytes = proto.marshaller(ses).marshal(res, 0);
+                                ByteBuffer bytes = proto.marshaller().marshal(res, 0);
 
                                 wrapper.message(bytes);
 
                                 wrapper.messageSize(bytes.remaining() + 40);
                             }
-                            catch (IOException | GridException e) {
+                            catch (IOException e) {
                                 U.error(log, "Failed to marshal response: " + res, e);
 
                                 ses.close();

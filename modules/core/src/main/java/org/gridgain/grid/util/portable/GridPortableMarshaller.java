@@ -169,13 +169,15 @@ public class GridPortableMarshaller {
      * @return Portable object.
      * @throws GridPortableException
      */
-    @Nullable public GridPortableObject unmarshal(byte[] arr) throws GridPortableException {
+    @Nullable public <T> T unmarshal(byte[] arr) throws GridPortableException {
         assert arr != null;
         assert arr.length > 0;
 
-        if (arr.length == 1 && arr[0] == NULL)
+        if (arr[0] == NULL)
             return null;
 
-        return new GridPortableObjectImpl(ctx, arr, 0);
+        GridPortableRawReader reader = new GridPortableReaderImpl(ctx, arr, 0);
+
+        return (T)reader.readObject();
     }
 }
