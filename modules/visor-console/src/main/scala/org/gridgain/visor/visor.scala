@@ -1315,6 +1315,10 @@ object visor extends VisorTag {
         if (!has(argLst)) {
             val t = VisorTextTable()
 
+            t.autoBorder = false
+
+            t.maxCellWidth = 55
+
             t #= ("Command", "Description")
 
             cmdLst foreach (hlp => t += (hlp.nameWithAliases, hlp.shortInfo))
