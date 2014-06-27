@@ -80,6 +80,19 @@
         <!-- Configure HTTPs rest protocol. -->
         <property name="restJettyPath" value="${CLIENTS_MODULE_PATH}/src/test/resources/jetty/rest-jetty-ssl.xml"/>
 
+        <!-- Client configuration. -->
+        <property name="clientConnectionConfiguration">
+            <bean class="org.gridgain.grid.GridClientConnectionConfiguration">
+                <!-- Configure TCP rest protocol. -->
+                <property name="restTcpPort" value="10080"/>
+
+                <!-- Configure marshaller. -->
+                <property name="marshaller">
+                    <bean class="org.gridgain.client.marshaller.portable.GridClientPortableMarshaller" />
+                </property>
+            </bean>
+        </property>
+
         <property name="cacheConfiguration">
             <!--
                 Specify list of cache configurations here. Any property from

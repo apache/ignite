@@ -20,22 +20,69 @@ namespace GridGain.Client.Portable {
 
     using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
 
-    [TestFixture]
-    public class GridClientPortableSelfTest : GridClientAbstractTest {
+    //[TestFixture]
+    public class GridClientPortableSelfTest { //: GridClientAbstractTest {
+
+        //override protected String ServerAddress()
+        //{
+        //    return Host + ":" + TcpPort;
+        //}
 
         private GridClientPortableMarshaller marsh;
         
-        [TestFixtureSetUp]
-        override public void InitClient()
-        {
-            marsh = new GridClientPortableMarshaller(null);
-        }
+        ////[TestFixtureSetUp]
+        //override public void InitClient()
+        //{
+        //    marsh = new GridClientPortableMarshaller(null);
+        //}
 
-        [TestFixtureTearDown]
-        override public void StopClient()
-        {
-           // No-op.
-        }
+        ////[TestFixtureTearDown]
+        //override public void StopClient()
+        //{
+        //   // No-op.
+        //}
+
+        //public void TestClient()
+        //{
+        //    GridClientConfiguration cfg = CreateClientConfig();
+
+        //    GridClientDataConfiguration dataCfg = new GridClientDataConfiguration();
+
+        //    dataCfg.Name = "replicated_tx";
+
+        //    cfg.DataConfigurations = new List<GridClientDataConfiguration>();
+
+        //    cfg.DataConfigurations.Add(dataCfg);
+
+        //    IGridClient client = GridClientFactory.Start(cfg);
+
+        //    IGridClientData data = client.Data("replicated_tx");
+
+        //    Assert.IsNotNull(data);
+
+        //    string key = Guid.NewGuid().ToString();
+
+        //    data.Remove(key);
+
+        //    Assert.IsFalse(data.Append(key, ".suffix"));
+        //    Assert.IsTrue(data.Put(key, "val"));
+        //    Assert.IsTrue(data.Append(key, ".suffix"));
+
+        //    data.GetItem<String, String>(key);
+
+        //    Assert.AreEqual("val.suffix", data.GetItem<String, String>(key));
+        //    Assert.IsTrue(data.Remove(key));
+        //    Assert.IsFalse(data.Append(key, ".suffix"));
+
+        //    data.Remove(key);
+
+        //    Assert.IsFalse(data.Prepend(key, "postfix."));
+        //    Assert.IsTrue(data.Put(key, "val"));
+        //    Assert.IsTrue(data.Prepend(key, "postfix."));
+        //    Assert.AreEqual("postfix.val", data.GetItem<String, String>(key));
+        //    Assert.IsTrue(data.Remove(key));
+        //    Assert.IsFalse(data.Prepend(key, "postfix."));
+        //}
 
         /**
          * <summary>Check write of primitive boolean.</summary>
@@ -375,14 +422,14 @@ namespace GridGain.Client.Portable {
          */
         public void TestGenericCollections()
         {
-            GridClientConfiguration cfg = new GridClientConfiguration();
+            //GridClientConfiguration cfg = new GridClientConfiguration();
             
-            cfg.Servers.Add("127.0.0.1:11211");
+            //cfg.Servers.Add("127.0.0.1:11211");
 
-            IGridClient cli = GridClientFactory.Start(cfg);
+            //IGridClient cli = GridClientFactory.Start(cfg);
 
-            if (true)
-                return;
+            //if (true)
+            //    return;
 
             ICollection<string> list = new List<string>();
 

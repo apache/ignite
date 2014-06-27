@@ -72,6 +72,11 @@
             </list>
         </property>
 
+        <!-- Configure portable marshaller. -->
+        <property name="marshaller">
+            <bean class="org.gridgain.client.marshaller.portable.GridClientPortableMarshaller" />
+        </property>
+
         <!-- Sets flag indicating whether or not SSL client authentication is required. -->
         <property name="sslClientAuth" value="true"/>
 
