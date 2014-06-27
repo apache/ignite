@@ -39,9 +39,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
     private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(
         CACHE_QUERY_EXECUTE,
         CACHE_QUERY_FETCH,
-        CACHE_QUERY_REBUILD_INDEXES,
-        CACHE_QUERY_GET_METRICS,
-        CACHE_QUERY_RESET_METRICS
+        CACHE_QUERY_REBUILD_INDEXES
     );
 
     /** Query ID sequence. */
@@ -80,14 +78,6 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
             case CACHE_QUERY_REBUILD_INDEXES: {
                 return broadcast(qryReq.cacheName(), new RebuildIndexes(qryReq.cacheName(), qryReq.className()));
-            }
-
-            case CACHE_QUERY_RESET_METRICS: {
-                return broadcast(qryReq.cacheName(), new ResetQueryMetrics(qryReq.cacheName()));
-            }
-
-            case CACHE_QUERY_GET_METRICS: {
-                // TODO.
             }
 
             default:
@@ -154,8 +144,12 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      * @param wrapper Query future wrapper.
      * @return Rest response.
      */
-    private static GridRestResponse fetchQueryResults(long queryId, int num, QueryFutureWrapper wrapper,
-        ConcurrentMap<QueryExecutionKey, QueryFutureWrapper> locMap) throws GridException {
+    private static GridRestResponse fetchQueryResults(
+        long queryId,
+        int num, QueryFutureWrapper wrapper,
+        ConcurrentMap<QueryExecutionKey, QueryFutureWrapper> locMap,
+        UUID locNodeId
+    ) throws GridException {
         if (wrapper == null)
             throw new GridException("Failed to find query future (query has been expired).");
 
@@ -165,13 +159,15 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
         int cnt = 0;
 
-        GridCacheQueryRestResponse res = new GridCacheQueryRestResponse();
+        GridCacheRestResponse res = new GridCacheRestResponse();
+
+        GridCacheClientQueryResult qryRes = new GridCacheClientQueryResult();
 
         while (cnt < num) {
             Object obj = fut.next();
 
             if (obj == null) {
-                res.last(true);
+                qryRes.last(true);
 
                 locMap.remove(new QueryExecutionKey(queryId), wrapper);
 
@@ -181,9 +177,11 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
             col.add(obj);
         }
 
-        res.setResponse(col);
+        qryRes.items(col);
+        qryRes.queryId(queryId);
+        qryRes.nodeId(locNodeId);
 
-        res.queryId(queryId);
+        res.setResponse(qryRes);
 
         return res;
     }
@@ -320,7 +318,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
             assert old == null;
 
-            return fetchQueryResults(qryId, req.pageSize(), wrapper, locMap);
+            return fetchQueryResults(qryId, req.pageSize(), wrapper, locMap, g.localNode().id());
         }
     }
 
@@ -348,7 +346,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
                 g.nodeLocalMap();
 
             return fetchQueryResults(req.queryId(), req.pageSize(), locMap.get(new QueryExecutionKey(req.queryId())),
-                locMap);
+                locMap, g.localNode().id());
         }
     }
 
@@ -381,32 +379,6 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
                 g.cache(cacheName).queries().rebuildAllIndexes();
             else
                 g.cache(cacheName).queries().rebuildIndexes(Class.forName(clsName));
-
-            return null;
-        }
-    }
-
-    /**
-     * Rest query metrics closure.
-     */
-    private static class ResetQueryMetrics implements GridCallable<Object> {
-        /** Injected grid. */
-        @GridInstanceResource
-        private Grid g;
-
-        /** Cache name. */
-        private String cacheName;
-
-        /**
-         * @param cacheName Cache name.
-         */
-        private ResetQueryMetrics(String cacheName) {
-            this.cacheName = cacheName;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object call() throws Exception {
-            g.cache(cacheName).queries().resetMetrics();
 
             return null;
         }
