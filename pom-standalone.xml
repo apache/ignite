@@ -19,7 +19,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <gridgain.version>6.1.9</gridgain.version>
+        <gridgain.version>6.2.0-rc1</gridgain.version>
         <gridgain.edition>platform</gridgain.edition>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.7</maven.compiler.source>
