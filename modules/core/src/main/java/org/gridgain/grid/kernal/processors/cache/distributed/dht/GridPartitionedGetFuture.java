@@ -410,6 +410,15 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                                     colocated.removeIfObsolete(key);
                             }
                             else {
+                                if (deserializePortable && v instanceof GridPortableObject) {
+                                    try {
+                                        v = ((GridPortableObject)v).deserialize();
+                                    }
+                                    catch (GridPortableException e) {
+                                        throw new GridRuntimeException(e); // TODO
+                                    }
+                                }
+
                                 locVals.put(key, v);
 
                                 return false;

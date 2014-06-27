@@ -311,11 +311,15 @@ public class GridPortableClassDescriptor {
                 else
                     ((GridPortable)obj).writePortable(writer);
 
+                writer.writeRawOffsetIfNeeded();
+
                 break;
 
             case OBJECT:
                 for (FieldInfo info : fields)
                     info.write(obj, writer);
+
+                writer.writeRawOffsetIfNeeded();
 
                 break;
 

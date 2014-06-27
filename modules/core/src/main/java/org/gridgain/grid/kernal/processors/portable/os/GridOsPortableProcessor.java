@@ -38,7 +38,7 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public GridPortableObject marshal(@Nullable Object obj) throws GridPortableException {
+    @Nullable @Override public GridPortableObject marshal(@Nullable Object obj) throws GridPortableException {
         return null;
     }
 
