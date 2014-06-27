@@ -20,13 +20,11 @@ import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.ggfs.GridGgfs.*;
 import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
@@ -79,12 +77,6 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
     /** Empty array of file statuses. */
     public static final FileStatus[] EMPTY_FILE_STATUS = new FileStatus[0];
-
-    /** Busy lock. */
-    private final GridBusyLock busyLock = new GridBusyLock();
-
-    /** Ensures that close routine is invoked at most once. */
-    private final AtomicBoolean closeGuard = new AtomicBoolean();
 
     /** Grid remote client. */
     private GridGgfsHadoopWrapper rmtClient;
@@ -143,15 +135,14 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
      * @throws IOException If file system is stopped.
      */
     private void enterBusy() throws IOException {
-        if (!busyLock.enterBusy())
-            throw new IOException("File system is stopped.");
+        // No-op.
     }
 
     /**
      * Leave busy state.
      */
     private void leaveBusy() {
-        busyLock.leaveBusy();
+        // No-op.
     }
 
     /**
@@ -315,29 +306,42 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
-        if (closeGuard.compareAndSet(false, true)) {
-            if (LOG.isDebugEnabled())
-                LOG.debug("File system closed [uri=" + uri + ", endpoint=" + uriAuthority + ']');
+        // No-op. Because FS instance can be cached and reused from other threads thinking that they are separate
+        // processes and that it is safe to close it.
+    }
 
-            busyLock.block();
+    /** {@inheritDoc} */
+    @Override protected void finalize() throws Throwable {
+        super.finalize();
 
-            if (rmtClient == null)
-                return;
+        close0();
+    }
 
-            super.close();
+    /**
+     * Closes file system.
+     *
+     * @throws IOException If failed.
+     */
+    private void close0() throws IOException {
+        if (LOG.isDebugEnabled())
+            LOG.debug("File system closed [uri=" + uri + ", endpoint=" + uriAuthority + ']');
 
-            rmtClient.close(false);
+        if (rmtClient == null)
+            return;
 
-            if (clientLog.isLogEnabled())
-                clientLog.close();
+        super.close();
 
-            if (secondaryFs != null)
-                U.closeQuiet(secondaryFs);
+        rmtClient.close(false);
 
-            // Reset initialized resources.
-            uri = null;
-            rmtClient = null;
-        }
+        if (clientLog.isLogEnabled())
+            clientLog.close();
+
+        if (secondaryFs != null)
+            U.closeQuiet(secondaryFs);
+
+        // Reset initialized resources.
+        uri = null;
+        rmtClient = null;
     }
 
     /** {@inheritDoc} */

@@ -83,11 +83,8 @@ public class GridHadoopV2JobResourceManager {
                 clsPath.add(new File(jobLocDir, "job.jar").toURI().toURL());
                 
                 processFiles(ctx.getCacheFiles(), download, false, false);
-
                 processFiles(ctx.getCacheArchives(), download, true, false);
-
                 processFiles(ctx.getFileClassPaths(), download, false, true);
-
                 processFiles(ctx.getArchiveClassPaths(), download, true, true);
             }
         }
