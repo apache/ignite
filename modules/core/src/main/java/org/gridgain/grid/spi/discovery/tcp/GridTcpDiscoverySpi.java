@@ -1600,8 +1600,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     GridTcpDiscoveryAuthFailedMessage msg =
                         (GridTcpDiscoveryAuthFailedMessage)joinRes.get();
 
-                    throw new GridSpiException("Authentication failed [nodeId=" + msg.creatorNodeId() +
-                        ", addr=" + msg.address().getHostAddress() + ']');
+                    throw new GridSpiException(new GridAuthenticationException("Authentication failed [nodeId=" +
+                        msg.creatorNodeId() + ", addr=" + msg.address().getHostAddress() + ']'));
                 }
                 else if (spiState == CHECK_FAILED) {
                     GridTcpDiscoveryCheckFailedMessage msg = (GridTcpDiscoveryCheckFailedMessage)joinRes.get();
