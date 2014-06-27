@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.service;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
@@ -115,14 +116,14 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         cfgQry = (GridCacheContinuousQueryAdapter<GridServiceDeploymentKey, GridServiceDeployment>)
             depCache.queries().createContinuousQuery();
 
-        cfgQry.callback(new DeploymentListener());
+        cfgQry.localCallback(new DeploymentListener());
 
         cfgQry.execute(ctx.grid().forLocal(), true);
 
         assignQry = (GridCacheContinuousQueryAdapter<GridServiceAssignmentsKey, GridServiceAssignments>)
             assignCache.queries().createContinuousQuery();
 
-        assignQry.callback(new AssignmentListener());
+        assignQry.localCallback(new AssignmentListener());
 
         assignQry.execute(ctx.grid().forLocal(), true);
 
@@ -674,10 +675,10 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * Service deployment listener.
      */
     private class DeploymentListener
-        implements GridBiPredicate<UUID, Collection<Entry<GridServiceDeploymentKey, GridServiceDeployment>>> {
+        implements GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<GridServiceDeploymentKey, GridServiceDeployment>>> {
         @Override public boolean apply(
             UUID nodeId,
-            final Collection<Entry<GridServiceDeploymentKey, GridServiceDeployment>> deps) {
+            final Collection<GridCacheContinuousQueryEntry<GridServiceDeploymentKey, GridServiceDeployment>> deps) {
             depExe.submit(new BusyRunnable() {
                 @Override public void run0() {
                     for (Entry<GridServiceDeploymentKey, GridServiceDeployment> e : deps) {
@@ -695,8 +696,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 onDeployment(dep, topVer);
                         }
                         // Handle undeployment.
-                        // TODO: Dirty hack to check key type because typed projection cannot work with null values.
-                        else if (((GridCacheContinuousQueryEntry)e).keyAssignableFrom(GridServiceDeploymentKey.class)) {
+                        else {
                             String name = e.getKey().name();
 
                             svcName.set(name);
@@ -894,11 +894,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * Assignment listener.
      */
     private class AssignmentListener
-        implements GridBiPredicate<UUID, Collection<Entry<GridServiceAssignmentsKey, GridServiceAssignments>>> {
+        implements GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<GridServiceAssignmentsKey, GridServiceAssignments>>> {
         /** {@inheritDoc} */
         @Override public boolean apply(
             UUID nodeId,
-            final Collection<Entry<GridServiceAssignmentsKey, GridServiceAssignments>> assignCol) {
+            final Collection<GridCacheContinuousQueryEntry<GridServiceAssignmentsKey, GridServiceAssignments>> assignCol) {
             depExe.submit(new BusyRunnable() {
                 @Override public void run0() {
                     for (Entry<GridServiceAssignmentsKey, GridServiceAssignments> e : assignCol) {
@@ -918,10 +918,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                             redeploy(assigns);
                         }
                         // Handle undeployment.
-                        // TODO: Dirty hack because type projection does not work with null values.
-                        else if (((GridCacheContinuousQueryEntry)e).keyAssignableFrom(GridServiceAssignmentsKey.class)) {
-                            GridCacheContinuousQueryEntry e1 = (GridCacheContinuousQueryEntry)e;
-
+                        else {
                             String name = e.getKey().name();
 
                             svcName.set(name);

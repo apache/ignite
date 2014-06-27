@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -30,7 +31,8 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheValueBytes.*;
 /**
  * Entry implementation.
  */
-public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>, GridCacheDeployable, Externalizable {
+public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>, GridCacheDeployable, Externalizable,
+    org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -47,16 +49,24 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     @GridToStringInclude
     private K key;
 
-    /** Value. */
+    /** New value. */
     @GridToStringInclude
-    private V val;
+    private V newVal;
+
+    /** Old value. */
+    @GridToStringInclude
+    private V oldVal;
 
     /** Serialized key. */
     private byte[] keyBytes;
 
     /** Serialized value. */
     @GridToStringExclude
-    private GridCacheValueBytes valBytes;
+    private GridCacheValueBytes newValBytes;
+
+    /** Serialized value. */
+    @GridToStringExclude
+    private GridCacheValueBytes oldValBytes;
 
     /** Cache name. */
     private String cacheName;
@@ -76,11 +86,13 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
      * @param ctx Cache context.
      * @param impl Cache entry.
      * @param key Key.
-     * @param val Value.
-     * @param valBytes Value bytes.
+     * @param newVal Value.
+     * @param newValBytes Value bytes.
+     * @param oldVal Old value.
+     * @param oldValBytes Old value bytes.
      */
-    GridCacheContinuousQueryEntry(GridCacheContext<K, V> ctx, GridCacheEntry<K, V> impl, K key, @Nullable V val,
-        @Nullable GridCacheValueBytes valBytes) {
+    GridCacheContinuousQueryEntry(GridCacheContext<K, V> ctx, GridCacheEntry<K, V> impl, K key, @Nullable V newVal,
+        @Nullable GridCacheValueBytes newValBytes, @Nullable V oldVal, @Nullable GridCacheValueBytes oldValBytes) {
         assert ctx != null;
         assert impl != null;
         assert key != null;
@@ -88,8 +100,10 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
         this.ctx = ctx;
         this.impl = impl;
         this.key = key;
-        this.val = val;
-        this.valBytes = valBytes;
+        this.newVal = newVal;
+        this.newValBytes = newValBytes;
+        this.oldVal = oldVal;
+        this.oldValBytes = oldValBytes;
     }
 
     /**
@@ -102,8 +116,8 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     void initValue(GridMarshaller marsh, @Nullable ClassLoader ldr) throws GridException {
         assert marsh != null;
 
-        if (val == null && valBytes != null && !valBytes.isNull())
-            val = valBytes.isPlain() ? (V)valBytes.get() : marsh.<V>unmarshal(valBytes.get(), ldr);
+        if (newVal == null && newValBytes != null && !newValBytes.isNull())
+            newVal = newValBytes.isPlain() ? (V)newValBytes.get() : marsh.<V>unmarshal(newValBytes.get(), ldr);
     }
 
     /**
@@ -131,8 +145,8 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
 
         keyBytes = marsh.marshal(key);
 
-        if (valBytes == null || valBytes.isNull())
-            valBytes = val != null ? val instanceof byte[] ? plain(val) : marshaled(marsh.marshal(val)) : null;
+        if (newValBytes == null || newValBytes.isNull())
+            newValBytes = newVal != null ? newVal instanceof byte[] ? plain(newVal) : marshaled(marsh.marshal(newVal)) : null;
     }
 
     /**
@@ -144,13 +158,13 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
         assert marsh != null;
 
         assert key == null;
-        assert val == null;
+        assert newVal == null;
         assert keyBytes != null;
 
         key = marsh.unmarshal(keyBytes, ldr);
 
-        if (valBytes != null && !valBytes.isNull())
-            val = valBytes.isPlain() ? (V)valBytes.get() : marsh.<V>unmarshal(valBytes.get(), ldr);
+        if (newValBytes != null && !newValBytes.isNull())
+            newVal = newValBytes.isPlain() ? (V)newValBytes.get() : marsh.<V>unmarshal(newValBytes.get(), ldr);
     }
 
     /** {@inheritDoc} */
@@ -176,7 +190,12 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
 
     /** {@inheritDoc} */
     @Override public V getValue() {
-        return val;
+        return newVal;
+    }
+
+    /** {@inheritDoc} */
+    @Override public V getOldValue() {
+        return oldVal;
     }
 
     /** {@inheritDoc} */
@@ -190,7 +209,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     @Nullable @Override public V peek() {
         assert impl != null;
 
-        return val;
+        return newVal;
     }
 
     /** {@inheritDoc} */
@@ -671,6 +690,8 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
+        boolean compatibilityMode = GridContinuousProcessor.COMPATIBILITY_MODE.get();
+
         boolean b = keyBytes != null;
 
         out.writeBoolean(b);
@@ -678,39 +699,64 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
         if (b) {
             U.writeByteArray(out, keyBytes);
 
-            if (valBytes != null && !valBytes.isNull()) {
+            if (newValBytes != null && !newValBytes.isNull()) {
                 out.writeBoolean(true);
-                out.writeBoolean(valBytes.isPlain());
-                U.writeByteArray(out, valBytes.get());
+                out.writeBoolean(newValBytes.isPlain());
+                U.writeByteArray(out, newValBytes.get());
             }
             else
                 out.writeBoolean(false);
+
+            if (!compatibilityMode) {
+                if (oldValBytes != null && !oldValBytes.isNull()) {
+                    out.writeBoolean(true);
+                    out.writeBoolean(oldValBytes.isPlain());
+                    U.writeByteArray(out, oldValBytes.get());
+                }
+                else
+                    out.writeBoolean(false);
+            }
 
             U.writeString(out, cacheName);
             out.writeObject(depInfo);
         }
         else {
             out.writeObject(key);
-            out.writeObject(val);
+            out.writeObject(newVal);
+
+            if (!compatibilityMode)
+                out.writeObject(oldVal);
         }
+
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        boolean compatibilityMode = GridContinuousProcessor.COMPATIBILITY_MODE.get();
+
         boolean b = in.readBoolean();
 
         if (b) {
             keyBytes = U.readByteArray(in);
 
             if (in.readBoolean())
-                valBytes = in.readBoolean() ? plain(U.readByteArray(in)) : marshaled(U.readByteArray(in));
+                newValBytes = in.readBoolean() ? plain(U.readByteArray(in)) : marshaled(U.readByteArray(in));
+
+            if (!compatibilityMode) {
+                if (in.readBoolean())
+                    oldValBytes = in.readBoolean() ? plain(U.readByteArray(in)) : marshaled(U.readByteArray(in));
+            }
 
             cacheName = U.readString(in);
             depInfo = (GridDeploymentInfo)in.readObject();
         }
         else {
             key = (K)in.readObject();
-            val = (V)in.readObject();
+            newVal = (V)in.readObject();
+
+            if (!compatibilityMode)
+                oldVal = (V)in.readObject();
         }
     }
 

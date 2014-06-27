@@ -38,10 +38,10 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
     /** Local callback. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private GridBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb;
+    private GridBiPredicate<UUID, Collection<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>> cb;
 
     /** Filter. */
-    private GridBiPredicate<K, V> filter;
+    private GridPredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> filter;
 
     /** Projection predicate */
     private GridPredicate<GridCacheEntry<K, V>> prjPred;
@@ -71,7 +71,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
      * @param internal If {@code true} then query is notified about internal entries updates.
      */
     GridCacheContinuousQueryHandler(@Nullable String cacheName, Object topic,
-        GridBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb, @Nullable GridBiPredicate<K, V> filter,
+        GridBiPredicate<UUID, Collection<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>> cb,
+        @Nullable GridPredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> filter,
         @Nullable GridPredicate<GridCacheEntry<K, V>> prjPred, boolean internal) {
         assert topic != null;
         assert cb != null;
@@ -106,8 +107,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 GridCacheFlag[] f = cacheContext(ctx).forceLocalRead();
 
                 try {
-                    notify = (prjPred == null || prjPred.apply(e)) &&
-                        (filter == null || filter.apply(e.getKey(), e.getValue()));
+                    notify = (prjPred == null || checkProjection(e)) &&
+                        (filter == null || filter.apply(e));
                 }
                 finally {
                     cacheContext(ctx).forceFlags(f);
@@ -115,7 +116,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
                 if (notify) {
                     if (loc) {
-                        if (!cb.apply(nodeId, F.<Map.Entry<K, V>>asList(e)))
+                        if (!cb.apply(nodeId, F.<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>asList(e)))
                             ctx.continuous().stopRoutine(routineId);
                     }
                     else {
@@ -140,14 +141,40 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                     }
                 }
             }
+
+            private boolean checkProjection(GridCacheContinuousQueryEntry<K, V> e) {
+                GridCacheProjectionImpl.FullFilter<K, V> filter = (GridCacheProjectionImpl.FullFilter<K, V>)prjPred;
+
+                GridCacheProjectionImpl.KeyValueFilter<K, V> kvFilter = filter.keyValueFilter();
+                GridPredicate<? super GridCacheEntry<K, V>> entryFilter = filter.entryFilter();
+
+                boolean ret = true;
+
+                if (kvFilter != null) {
+                    if (kvFilter.filter() instanceof GridCacheUtils.TypeFilter) {
+                        GridCacheUtils.TypeFilter<K, V> typeFilter = (GridCacheUtils.TypeFilter<K, V>)kvFilter.filter();
+
+                        V v = e.getValue() == null ? e.getOldValue() : e.getValue();
+
+                        ret = v != null && typeFilter.apply(e.getKey(), v);
+                    }
+                    else
+                        ret = e.getValue() != null && kvFilter.apply(e.getKey(), e.getValue());
+                }
+
+                if (entryFilter != null)
+                    ret = ret && entryFilter.apply(e);
+
+                return ret;
+            }
         };
 
-        return cacheContext(ctx).continuousQueries().registerListener(routineId, lsnr, internal);
+        return manager(ctx).registerListener(routineId, lsnr, internal);
     }
 
     /** {@inheritDoc} */
     @Override public void onListenerRegistered(UUID routineId, GridKernalContext ctx) {
-        cacheContext(ctx).continuousQueries().iterate(internal, routineId);
+        manager(ctx).iterate(internal, routineId);
     }
 
     /** {@inheritDoc} */
@@ -155,17 +182,27 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         assert routineId != null;
         assert ctx != null;
 
-        cacheContext(ctx).continuousQueries().unregisterListener(internal, routineId);
+        manager(ctx).unregisterListener(internal, routineId);
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @return Continuous query manager.
+     */
+    private GridCacheContinuousQueryManager<K, V> manager(GridKernalContext ctx) {
+        return cacheContext(ctx).continuousQueries();
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void notifyCallback(UUID nodeId, UUID routineId, Collection<?> objs, GridKernalContext ctx) {
         assert nodeId != null;
         assert routineId != null;
         assert objs != null;
         assert ctx != null;
 
-        Collection<Map.Entry<K, V>> entries = (Collection<Map.Entry<K, V>>)objs;
+        Collection<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> entries =
+            (Collection<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>)objs;
 
         if (ctx.config().isPeerClassLoadingEnabled()) {
             for (Map.Entry<K, V> e : entries) {
@@ -213,8 +250,22 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
-        if (filter != null)
-            filterDep = new DeployableObject(filter, ctx);
+        if (filter != null) {
+            boolean compatibilityMode = GridContinuousProcessor.COMPATIBILITY_MODE.get();
+
+            if (compatibilityMode) {
+                GridBiPredicate<K, V> f;
+
+                if (filter instanceof GridCacheContinuousQueryAdapter.FilterWrapper)
+                    f = ((GridCacheContinuousQueryAdapter.FilterWrapper<K, V>)filter).filter();
+                else
+                    f = new FilterConverter<>(filter);
+
+                filterDep = new DeployableObject(f, ctx);
+            }
+            else
+                filterDep = new DeployableObject(filter, ctx);
+        }
 
         if (prjPred != null)
             prjPredDep = new DeployableObject(prjPred, ctx);
@@ -226,8 +277,20 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
-        if (filterDep != null)
-            filter = filterDep.unmarshal(nodeId, ctx);
+        if (filterDep != null) {
+            boolean compatibilityMode = GridContinuousProcessor.COMPATIBILITY_MODE.get();
+
+            if (compatibilityMode) {
+                GridBiPredicate<K, V> f = filterDep.unmarshal(nodeId, ctx);
+
+                if (f instanceof FilterConverter)
+                    filter = ((FilterConverter<K, V>)f).filter();
+                else
+                    filter = new GridCacheContinuousQueryAdapter.FilterWrapper<>(f);
+            }
+            else
+                filter = filterDep.unmarshal(nodeId, ctx);
+        }
 
         if (prjPredDep != null)
             prjPred = prjPredDep.unmarshal(nodeId, ctx);
@@ -249,8 +312,22 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
         if (b)
             out.writeObject(filterDep);
-        else
-            out.writeObject(filter);
+        else {
+            boolean compatibilityMode = GridContinuousProcessor.COMPATIBILITY_MODE.get();
+
+            if (compatibilityMode) {
+                GridBiPredicate<K, V> f;
+
+                if (filter instanceof GridCacheContinuousQueryAdapter.FilterWrapper)
+                    f = ((GridCacheContinuousQueryAdapter.FilterWrapper<K, V>)filter).filter();
+                else
+                    f = new FilterConverter<>(filter);
+
+                out.writeObject(f);
+            }
+            else
+                out.writeObject(filter);
+        }
 
         b = prjPredDep != null;
 
@@ -265,6 +342,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         cacheName = U.readString(in);
         topic = in.readObject();
@@ -273,8 +351,23 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
         if (b)
             filterDep = (DeployableObject)in.readObject();
-        else
-            filter = (GridBiPredicate<K, V>)in.readObject();
+        else {
+            boolean compatibilityMode = GridContinuousProcessor.COMPATIBILITY_MODE.get();
+
+            if (compatibilityMode) {
+                GridBiPredicate<K, V> f = (GridBiPredicate<K, V>)in.readObject();
+
+                if (f != null) {
+                    if (f instanceof FilterConverter)
+                        filter = ((FilterConverter<K, V>)f).filter();
+                    else
+                        filter = new GridCacheContinuousQueryAdapter.FilterWrapper<>(f);
+
+                }
+            }
+            else
+                filter = (GridPredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K,V>>)in.readObject();
+        }
 
         b = in.readBoolean();
 
@@ -372,6 +465,52 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             bytes = U.readByteArray(in);
             clsName = U.readString(in);
             depInfo = (GridDeploymentInfo)in.readObject();
+        }
+    }
+
+    /**
+     * New to old filter converter.
+     */
+    static class FilterConverter<K, V> implements GridBiPredicate<K, V> {
+        /** Serialization ID. */
+        public static final long serialVersionUID = 0L;
+
+        /** New filter. */
+        private final GridPredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> f;
+
+        /**
+         * @param f New filter.
+         */
+        FilterConverter(GridPredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> f) {
+            this.f = f;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(final K k, final V v) {
+            return f.apply(new org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>() {
+                @Override public K getKey() {
+                    return k;
+                }
+
+                @Nullable @Override public V getValue() {
+                    return v;
+                }
+
+                @Nullable @Override public V getOldValue() {
+                    return null;
+                }
+
+                @Override public V setValue(V value) {
+                    throw new UnsupportedOperationException("Can't change continuous query entry.");
+                }
+            });
+        }
+
+        /**
+         * @return New filter.
+         */
+        GridPredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> filter() {
+            return f;
         }
     }
 }

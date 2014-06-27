@@ -69,13 +69,13 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
      * @param revTs Revision timestamp.
      * @param revHash Revision hash.
      */
-    public GridProductVersion(byte major, byte minor, byte maintenance, long revTs, byte[] revHash) {
+    public GridProductVersion(int major, int minor, int maintenance, long revTs, byte[] revHash) {
         if (revHash != null && revHash.length != 20)
             throw new IllegalArgumentException("Invalid length for SHA1 hash (must be 20): " + revHash.length);
 
-        this.major = major;
-        this.minor = minor;
-        this.maintenance = maintenance;
+        this.major = (byte)major;
+        this.minor = (byte)minor;
+        this.maintenance = (byte)maintenance;
         this.revTs = revTs;
         this.revHash = revHash != null ? revHash : new byte[20];
     }
@@ -134,6 +134,24 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
         return new Date(revTs);
     }
 
+    /**
+     * @param major Major version number.
+     * @param minor Minor version number.
+     * @param maintenance Maintenance version number.
+     * @return {@code True} if this version is greater or equal than the one passed in.
+     */
+    public boolean greaterThanEqual(int major, int minor, int maintenance) {
+        // NOTE: Unknown version is less than any other version.
+        if (major == this.major) {
+            if (minor == this.minor) {
+                return this.maintenance >= maintenance;
+            }
+            else
+                return this.minor > minor;
+        }
+        else
+            return this.major > major;
+    }
 
     /** {@inheritDoc} */
     @Override public int compareTo(GridProductVersion o) {

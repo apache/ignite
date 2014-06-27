@@ -14,6 +14,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -56,15 +57,26 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
     }
 
     /**
+     * Checks if any continuous queries have been created.
+     *
+     * @param internal Internal flag.
+     * @return {@code True} if continuous query has been created.
+     */
+    public boolean hasListeners(boolean internal) {
+        return internal ? intLsnrCnt.get() > 0 : lsnrCnt.get() > 0;
+    }
+
+    /**
      * @param e Cache entry.
      * @param key Key.
-     * @param val Value.
-     * @param valBytes Value bytes.
-     * @param unwind Whether to unwind after entry is added to buffer.
+     * @param newVal New value.
+     * @param newBytes New value bytes.
+     * @param oldVal Old value.
+     * @param oldBytes Old value bytes.
      * @throws GridException In case of error.
      */
-    public void onEntryUpdate(GridCacheEntryEx<K, V> e, K key, @Nullable V val, @Nullable GridCacheValueBytes valBytes,
-        boolean unwind) throws GridException {
+    public void onEntryUpdate(GridCacheEntryEx<K, V> e, K key, @Nullable V newVal,
+        @Nullable GridCacheValueBytes newBytes, V oldVal, @Nullable GridCacheValueBytes oldBytes) throws GridException {
         assert e != null;
         assert key != null;
 
@@ -75,13 +87,15 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
         else
             lsnrCol = lsnrCnt.get() > 0 ? lsnrs : null;
 
-        if (lsnrCol == null)
+        if (F.isEmpty(lsnrCol))
             return;
 
         GridCacheContinuousQueryEntry<K, V> e0 = new GridCacheContinuousQueryEntry<>(
-            cctx, e.wrap(false), key, val, valBytes);
+            cctx, e.wrap(false), key, newVal, newBytes, oldVal, oldBytes);
 
         e0.initValue(cctx.marshaller(), cctx.deploy().globalLoader());
+
+        assert lsnrCol != null;
 
         for (ListenerInfo<K, V> lsnr : lsnrCol.values())
             lsnr.onEntryUpdate(e0);
@@ -141,7 +155,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
         assert info != null;
 
         for (GridCacheEntry<K, V> e : cctx.cache().primaryEntrySet())
-            info.onIterate(new GridCacheContinuousQueryEntry<>(cctx, e, e.getKey(), e.getValue(), null));
+            info.onIterate(new GridCacheContinuousQueryEntry<>(cctx, e, e.getKey(), e.getValue(), null, null, null));
 
         info.flushPending();
     }
