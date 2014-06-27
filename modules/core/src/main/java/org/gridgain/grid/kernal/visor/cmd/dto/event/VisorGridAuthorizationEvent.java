@@ -23,7 +23,11 @@ public class VisorGridAuthorizationEvent extends VisorGridEvent {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Requested operation. */
     private final GridSecurityPermission operation;
+
+    /** Authenticated subject authorized to perform operation. */
+    private final GridSecuritySubject subject;
 
     /**
      * Create event with given parameters.
@@ -44,18 +48,31 @@ public class VisorGridAuthorizationEvent extends VisorGridEvent {
         long timestamp,
         String message,
         String shortDisplay,
-        GridSecurityPermission operation
+        GridSecurityPermission operation,
+        GridSecuritySubject subject
     ) {
         super(typeId, id, name, nid, timestamp, message, shortDisplay);
 
         this.operation = operation;
+        this.subject = subject;
     }
 
     /**
-     * @return Permission.
+     * Gets requested operation.
+     *
+     * @return Requested operation.
      */
     public GridSecurityPermission operation() {
         return operation;
+    }
+
+    /**
+     * Gets authenticated subject.
+     *
+     * @return Authenticated subject.
+     */
+    public GridSecuritySubject subject() {
+        return subject;
     }
 
     /** {@inheritDoc} */

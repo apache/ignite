@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.visor.cmd.dto.event;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
@@ -22,8 +23,13 @@ public class VisorGridAuthenticationEvent extends VisorGridEvent {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /**  Subject type. */
+    private final GridSecuritySubjectType subjType;
+
+    /** Subject ID. */
     private final UUID subjID;
 
+    /** Login. */
     private final Object login;
 
     /**
@@ -36,6 +42,9 @@ public class VisorGridAuthenticationEvent extends VisorGridEvent {
      * @param timestamp Event timestamp.
      * @param message Event message.
      * @param shortDisplay Shortened version of {@code toString()} result.
+     * @param subjType Subject type.
+     * @param subjId Subject ID.
+     * @param login Login object.
      */
     public VisorGridAuthenticationEvent(
         int typeId,
@@ -45,27 +54,42 @@ public class VisorGridAuthenticationEvent extends VisorGridEvent {
         long timestamp,
         String message,
         String shortDisplay,
+        GridSecuritySubjectType subjType,
         UUID subjId,
         Object login
     ) {
         super(typeId, id, name, nid, timestamp, message, shortDisplay);
 
+        this.subjType = subjType;
         this.subjID = subjId;
         this.login = login;
     }
 
     /**
-     * @return Subj id.
+     * Gets subject ID that triggered the event.
+     *
+     * @return Subject ID that triggered the event.
      */
     public UUID subjID() {
         return subjID;
     }
 
     /**
-     * @return Login.
+     * Gets login that triggered event.
+     *
+     * @return Login object.
      */
     public Object login() {
         return login;
+    }
+
+    /**
+     * Gets subject type that triggered the event.
+     *
+     * @return Subject type that triggered the event.
+     */
+    public GridSecuritySubjectType subjType() {
+        return subjType;
     }
 
     /** {@inheritDoc} */
