@@ -57,7 +57,7 @@ public class GridHadoopSetup {
 
         if (hadoopHome == null || hadoopHome.isEmpty())
             exit("HADOOP_HOME environment variable is not set. Please set HADOOP_HOME to " +
-                "valid Hadoop installation folder and run setup tool again.");
+                "valid Hadoop installation folder and run setup tool again.", null);
 
         hadoopHome = hadoopHome.replaceAll("\"", "");
 
@@ -66,13 +66,13 @@ public class GridHadoopSetup {
         File hadoopDir = new File(hadoopHome);
         
         if (!hadoopDir.exists())
-            exit("Hadoop installation folder does not exist.");
+            exit("Hadoop installation folder does not exist.", null);
 
         if (!hadoopDir.isDirectory())
-            exit("HADOOP_HOME must point to a directory.");
+            exit("HADOOP_HOME must point to a directory.", null);
 
         if (!hadoopDir.canRead())
-            exit("Hadoop installation folder can not be read. Please check permissions.");
+            exit("Hadoop installation folder can not be read. Please check permissions.", null);
 
         File hadoopCommonDir;
 
@@ -90,18 +90,18 @@ public class GridHadoopSetup {
         }
 
         if (!hadoopCommonDir.canRead())
-            exit("Failed to read Hadoop common dir in '" + hadoopCommonHome + "'.");
+            exit("Failed to read Hadoop common dir in '" + hadoopCommonHome + "'.", null);
 
         File hadoopCommonLibDir = new File(hadoopCommonDir, "lib");
 
         if (!hadoopCommonLibDir.canRead())
-            exit("Failed to read Hadoop 'lib' folder in '" + hadoopCommonLibDir.getPath() + "'.");
+            exit("Failed to read Hadoop 'lib' folder in '" + hadoopCommonLibDir.getPath() + "'.", null);
 
         if (U.isWindows()) {
             File hadoopBinDir = new File(hadoopDir, "bin");
 
             if (!hadoopBinDir.canRead())
-                exit("Failed to read subdirectory 'bin' in HADOOP_HOME.");
+                exit("Failed to read subdirectory 'bin' in HADOOP_HOME.", null);
 
             File winutilsFile = new File(hadoopBinDir, WINUTILS_EXE);
 
@@ -120,7 +120,7 @@ public class GridHadoopSetup {
                     }
 
                     if (!ok)
-                        exit("Failed to create '" + WINUTILS_EXE + "' file. Please check permissions.");
+                        exit("Failed to create '" + WINUTILS_EXE + "' file. Please check permissions.", null);
                 }
                 else
                     println("Ok. But Hadoop client probably will not work on Windows this way...");
@@ -132,7 +132,7 @@ public class GridHadoopSetup {
         File gridgainLibs = new File(new File(gridgainHome), "libs");
 
         if (!gridgainLibs.exists())
-            exit("GridGain 'libs' folder is not found.");
+            exit("GridGain 'libs' folder is not found.", null);
 
         File[] jarFiles = gridgainLibs.listFiles(new FilenameFilter() {
             @Override public boolean accept(File dir, String name) {
@@ -164,20 +164,29 @@ public class GridHadoopSetup {
                         println("Deleting file '" + file.getAbsolutePath() + "'.");
 
                         if (!file.delete())
-                            exit("Failed to delete file '" + file.getPath() + "'.");
+                            exit("Failed to delete file '" + file.getPath() + "'.", null);
                     }
                 }
 
                 for (File file : jarFiles) {
                     File targetFile = new File(hadoopCommonLibDir, file.getName());
 
-                    println("Creating symbolic link '" + targetFile.getAbsolutePath() + "'.");
-
                     try {
+                        println("Creating symbolic link '" + targetFile.getAbsolutePath() + "'.");
+
                         Files.createSymbolicLink(targetFile.toPath(), file.toPath());
                     }
                     catch (IOException e) {
-                        exit("Failed to create symbolic link '" + targetFile.getPath() + "'. Please check permissions.");
+                        warn("Creating symbolic link failed! (Windows NTFS requires Admin rights to create symlinks.)");
+
+                        println("Copying file to '" + targetFile.getAbsolutePath() + "'.");
+
+                        try {
+                            U.copy(file, targetFile, false);
+                        }
+                        catch (IOException e1) {
+                            exit("Failed to copy file to '" + targetFile + "'. Check permissions.", e1);
+                        }
                     }
                 }
             }
@@ -192,7 +201,7 @@ public class GridHadoopSetup {
                 File gridgainDocs = new File(gridgainHome, "docs");
 
                 if (!gridgainDocs.canRead())
-                    exit("Failed to read GridGain 'docs' folder at '" + gridgainDocs.getAbsolutePath() + "'.");
+                    exit("Failed to read GridGain 'docs' folder at '" + gridgainDocs.getAbsolutePath() + "'.", null);
 
                 replace(new File(gridgainDocs, "core-site.xml.gridgain"),
                     renameToBak(new File(hadoopEtc, "core-site.xml")));
@@ -220,10 +229,10 @@ public class GridHadoopSetup {
             Path gg = Paths.get(ggHome);
 
             if (!jar.startsWith(gg))
-                exit("GridGain JAR files are not under GRIDGAIN_HOME.");
+                exit("GridGain JAR files are not under GRIDGAIN_HOME.", null);
         }
         catch (Exception e) {
-            exit(e.getMessage());
+            exit(e.getMessage(), e);
         }
     }
 
@@ -235,7 +244,7 @@ public class GridHadoopSetup {
      */
     private static void replace(File from, File to) {
         if (!from.canRead())
-            exit("Failed to read source file '" + from.getAbsolutePath() + "'.");
+            exit("Failed to read source file '" + from.getAbsolutePath() + "'.", null);
 
         println("Replacing file '" + to.getAbsolutePath() + "'.");
 
@@ -243,7 +252,7 @@ public class GridHadoopSetup {
             U.copy(from, renameToBak(to), true);
         }
         catch (IOException e) {
-            exit("Failed to replace file '" + to.getAbsolutePath() + "'.");
+            exit("Failed to replace file '" + to.getAbsolutePath() + "'.", e);
         }
     }
 
@@ -257,7 +266,7 @@ public class GridHadoopSetup {
         DateFormat fmt = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
 
         if (file.exists() && !file.renameTo(new File(file.getAbsolutePath() + "." + fmt.format(new Date()) + ".bak")))
-            exit("Failed to rename file '" + file.getPath() + "'.");
+            exit("Failed to rename file '" + file.getPath() + "'.", null);
 
         return file;
     }
@@ -278,7 +287,7 @@ public class GridHadoopSetup {
             target = Files.readSymbolicLink(link.toPath());
         }
         catch (IOException e) {
-            exit("Failed to read symbolic link: " + link.getAbsolutePath());
+            exit("Failed to read symbolic link: " + link.getAbsolutePath(), e);
         }
 
         if (Files.notExists(target)) {
@@ -308,7 +317,7 @@ public class GridHadoopSetup {
             answer = br.readLine();
         }
         catch (IOException e) {
-            exit("Failed to read answer: " + e.getMessage());
+            exit("Failed to read answer: " + e.getMessage(), e);
         }
 
         if (answer != null && "Y".equals(answer.toUpperCase().trim())) {
@@ -328,9 +337,12 @@ public class GridHadoopSetup {
      *
      * @param msg Exit message.
      */
-    private static void exit(String msg) {
+    private static void exit(String msg, Exception e) {
         X.println("  # " + msg);
         X.println("  # Setup failed, exiting... ");
+
+        if (e != null && !F.isEmpty(System.getenv("GRIDGAIN_HADOOP_SETUP_DEBUG")))
+            e.printStackTrace();
 
         System.exit(1);
     }
@@ -379,7 +391,7 @@ public class GridHadoopSetup {
                     content = scanner.useDelimiter("\\Z").next();
                 }
                 catch (FileNotFoundException e) {
-                    exit("Failed to read file '" + file + "'.");
+                    exit("Failed to read file '" + file + "'.", e);
                 }
 
                 boolean invalid = false;
@@ -414,7 +426,7 @@ public class GridHadoopSetup {
                         }
                     }
                     catch (IOException e) {
-                        exit("Failed to write file '" + file.getPath() + "': " + e.getMessage());
+                        exit("Failed to write file '" + file.getPath() + "': " + e.getMessage(), e);
                     }
                 }
             }
