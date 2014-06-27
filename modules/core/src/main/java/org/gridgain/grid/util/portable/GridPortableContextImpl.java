@@ -101,7 +101,7 @@ public class GridPortableContextImpl implements GridPortableContext, Externaliza
         addDescriptor(TreeMap.class, MAP);
         addDescriptor(ConcurrentHashMap.class, MAP);
 
-        addDescriptor(GridPortableObjectImpl.class, 0x50);
+        addDescriptor(GridPortableObjectImpl.class, PORTABLE);
 
         colTypes.put(ArrayList.class, ARR_LIST);
         colTypes.put(LinkedList.class, LINKED_LIST);
