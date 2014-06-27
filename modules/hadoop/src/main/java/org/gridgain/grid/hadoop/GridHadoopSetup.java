@@ -98,6 +98,8 @@ public class GridHadoopSetup {
             exit("Failed to read Hadoop 'lib' folder in '" + hadoopCommonLibDir.getPath() + "'.", null);
 
         if (U.isWindows()) {
+            checkJavaPathSpaces();
+
             File hadoopBinDir = new File(hadoopDir, "bin");
 
             if (!hadoopBinDir.canRead())
@@ -214,6 +216,19 @@ public class GridHadoopSetup {
         }
 
         println("Hadoop setup is complete.");
+    }
+
+    /**
+     * Checks that JAVA_HOME does not contain space characters.
+     */
+    private static void checkJavaPathSpaces() {
+        String javaHome = System.getProperty("java.home");
+
+        if (javaHome.contains(" ")) {
+            warn("Java installation path contains space characters!");
+            warn("Hadoop client will not be able to start using '" + javaHome + "'.");
+            warn("Please install JRE to path which does not contain spaces and point JAVA_HOME to that installation.");
+        }
     }
 
     /**
