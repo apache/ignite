@@ -94,6 +94,8 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
         this.mem = mem;
         this.log = log;
 
+        job.beforeTaskRun(null); // TODO
+
         partitioner = reducers > 1 ? job.partitioner() : null;
 
         maps = new AtomicReferenceArray<>(reducers);
