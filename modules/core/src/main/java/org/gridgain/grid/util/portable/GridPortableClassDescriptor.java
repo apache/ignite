@@ -20,7 +20,7 @@ import static java.lang.reflect.Modifier.*;
 /**
  * Portable class descriptor.
  */
-class GridPortableClassDescriptor {
+public class GridPortableClassDescriptor {
     /** */
     private final Class<?> cls;
 
@@ -144,6 +144,13 @@ class GridPortableClassDescriptor {
                 // Should never happen.
                 throw new GridPortableException("Invalid mode: " + mode);
         }
+    }
+
+    /**
+     * @return User type flag.
+     */
+    public boolean userType() {
+        return userType;
     }
 
     /**

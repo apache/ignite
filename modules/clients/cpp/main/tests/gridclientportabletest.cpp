@@ -635,69 +635,109 @@ void validateTestPortable1(TestPortable1 p, int32_t arraysSize) {
 
     BOOST_REQUIRE_EQUAL(true, p.vBool);
     for (int i = 0; i < arraysSize; i++) {
-        if (i % 2 == 0)
-            BOOST_REQUIRE(p.vBoolArray[i]);
-        else
-            BOOST_REQUIRE(!p.vBoolArray[i]);
+        bool exp = i % 2 == 0;
 
-        BOOST_REQUIRE_EQUAL(true, p.vBoolVector[i]);
+        if (exp != p.vBoolArray[i])
+            BOOST_REQUIRE_EQUAL(exp, p.vBoolArray[i]);
+
+        if (!p.vBoolVector[i])
+            BOOST_REQUIRE_EQUAL(true, p.vBoolVector[i]);
     }
 
     BOOST_REQUIRE_EQUAL(1, p.vByte);
     for (int i = 0; i < arraysSize; i++) {
-        BOOST_REQUIRE_EQUAL(i % 2 == 0 ? 1 : -1, p.vByteArray[i]);
-        BOOST_REQUIRE_EQUAL(-1, p.vByteVector[i]);
+        int8_t exp = i % 2 == 0 ? 1 : -1;
+        
+        if (exp != p.vByteArray[i])
+            BOOST_REQUIRE_EQUAL(exp, p.vByteArray[i]);
+                
+        if (-1 != p.vByteVector[i])
+            BOOST_REQUIRE_EQUAL(-1, p.vByteVector[i]);
     }
 
     BOOST_REQUIRE_EQUAL(1, p.vInt16);
     for (int i = 0; i < arraysSize; i++) {
-        BOOST_REQUIRE_EQUAL(i % 2 == 0 ? 1 : -1, p.vInt16Array[i]);
-        BOOST_REQUIRE_EQUAL(-1, p.vInt16Vector[i]);
+        int16_t exp = i % 2 == 0 ? 1 : -1;
+
+        if (exp != p.vInt16Array[i])
+            BOOST_REQUIRE_EQUAL(exp, p.vInt16Array[i]);
+        
+        if (-1 != p.vInt16Vector[i])
+            BOOST_REQUIRE_EQUAL(-1, p.vInt16Vector[i]);
     }
 
     BOOST_REQUIRE_EQUAL(1, p.vInt32);
     for (int i = 0; i < arraysSize; i++) {
-        BOOST_REQUIRE_EQUAL(i % 2 == 0 ? 1 : -1, p.vInt32Array[i]);
-        BOOST_REQUIRE_EQUAL(-1, p.vInt32Vector[i]);
+        int32_t exp = i % 2 == 0 ? 1 : -1;
+
+        if (exp != p.vInt32Array[i])
+            BOOST_REQUIRE_EQUAL(exp, p.vInt32Array[i]);
+        
+        if (-1 != p.vInt32Vector[i])
+            BOOST_REQUIRE_EQUAL(-1, p.vInt32Vector[i]);
     }
 
     BOOST_REQUIRE_EQUAL(1, p.vChar);
     for (int i = 0; i < arraysSize; i++) {
-        BOOST_REQUIRE_EQUAL(i % 2 == 0 ? 1 : 2, p.vCharArray[i]);
-        BOOST_REQUIRE_EQUAL(2, p.vCharVector[i]);
+        uint16_t exp = i % 2 == 0 ? 1 : 2;
+
+        if (exp != p.vCharArray[i])
+            BOOST_REQUIRE_EQUAL(exp, p.vCharArray[i]);
+        
+        if (2 != p.vCharVector[i])
+            BOOST_REQUIRE_EQUAL(2, p.vCharVector[i]);
     }
 
     BOOST_REQUIRE_EQUAL(1, p.vInt64);
     for (int i = 0; i < arraysSize; i++) {
-        BOOST_REQUIRE_EQUAL(i % 2 == 0 ? 1 : -1, p.vInt64Array[i]);
-        BOOST_REQUIRE_EQUAL(-1, p.vInt64Vector[i]);
+        int64_t exp = i % 2 == 0 ? 1 : -1;
+
+        if (exp != p.vInt64Array[i])
+            BOOST_REQUIRE_EQUAL(exp, p.vInt64Array[i]);
+        
+        if (-1 != p.vInt64Vector[i])
+            BOOST_REQUIRE_EQUAL(-1, p.vInt64Vector[i]);
     }
 
     BOOST_REQUIRE_EQUAL(1.5, p.vFloat);
     for (int i = 0; i < arraysSize; i++) {
-        BOOST_REQUIRE_EQUAL(i % 2 == 0 ? 1.5 : -1.5, p.vFloatArray[i]);
-        BOOST_REQUIRE_EQUAL(-1, p.vFloatVector[i]);
+        float exp = i % 2 == 0 ? 1.5f : -1.5f;
+
+        if (exp != p.vFloatArray[i])
+            BOOST_REQUIRE_EQUAL(exp, p.vFloatArray[i]);
+        
+        if (-1 != p.vFloatVector[i])
+            BOOST_REQUIRE_EQUAL(-1, p.vFloatVector[i]);
     }
 
     BOOST_REQUIRE_EQUAL(1.5, p.vDouble);
     for (int i = 0; i < arraysSize; i++) {
-        BOOST_REQUIRE_EQUAL(i % 2 == 0 ? 1.5 : -1.5, p.vDoubleArray[i]);
-        BOOST_REQUIRE_EQUAL(-1, p.vDoubleVector[i]);
+        double exp = i % 2 == 0 ? 1.5 : -1.5;
+
+        if (exp != p.vDoubleArray[i])
+            BOOST_REQUIRE_EQUAL(exp, exp);
+        
+        if (-1 != p.vDoubleVector[i])
+            BOOST_REQUIRE_EQUAL(-1, p.vDoubleVector[i]);
     }
 
     BOOST_REQUIRE_EQUAL("str1", p.vStr);
 
     BOOST_REQUIRE_EQUAL(arraysSize, p.vStrVector.size());
 
-    for (int i = 0; i < arraysSize; i++)
-        BOOST_REQUIRE_EQUAL("str2", p.vStrVector[i]);
+    for (int i = 0; i < arraysSize; i++) {
+        if ("str2" != p.vStrVector[i])
+            BOOST_REQUIRE_EQUAL("str2", p.vStrVector[i]);
+    }
 
     BOOST_REQUIRE(L"wstr1" == p.vWStr);
 
     BOOST_REQUIRE_EQUAL(arraysSize, p.vWStrVector.size());
 
-    for (int i = 0; i < arraysSize; i++)
-        BOOST_REQUIRE(L"wstr2" == p.vWStrVector[i]);
+    for (int i = 0; i < arraysSize; i++) {
+        if (L"wstr2" != p.vWStrVector[i])        
+            BOOST_REQUIRE(L"wstr2" == p.vWStrVector[i]);
+    }
 
     BOOST_REQUIRE_EQUAL(1, p.vUuid.mostSignificantBits());
     BOOST_REQUIRE_EQUAL(2, p.vUuid.leastSignificantBits());
@@ -705,16 +745,21 @@ void validateTestPortable1(TestPortable1 p, int32_t arraysSize) {
     BOOST_REQUIRE_EQUAL(arraysSize, p.vUuidVector.size());
 
     for (int i = 0; i < arraysSize; i++) {
-        BOOST_REQUIRE_EQUAL(3, p.vUuidVector[i].mostSignificantBits());
-        BOOST_REQUIRE_EQUAL(4, p.vUuidVector[i].leastSignificantBits());
+        if (3 != p.vUuidVector[i].mostSignificantBits())
+            BOOST_REQUIRE_EQUAL(3, p.vUuidVector[i].mostSignificantBits());
+        
+        if (4 != p.vUuidVector[i].leastSignificantBits())
+            BOOST_REQUIRE_EQUAL(4, p.vUuidVector[i].leastSignificantBits());
     }
 
     BOOST_REQUIRE_EQUAL(1, p.vDate.getTime());
 
     BOOST_REQUIRE_EQUAL(arraysSize, p.vDateVector.size());
 
-    for (int i = 0; i < arraysSize; i++)
-        BOOST_REQUIRE_EQUAL(2, p.vDateVector[i].get().getTime());
+    for (int i = 0; i < arraysSize; i++) {
+        if (2 != p.vDateVector[i].get().getTime())
+            BOOST_REQUIRE_EQUAL(2, p.vDateVector[i].get().getTime());
+    }
 
     BOOST_REQUIRE_EQUAL(true, p.vVariant.hasInt());
 
@@ -723,9 +768,8 @@ void validateTestPortable1(TestPortable1 p, int32_t arraysSize) {
     BOOST_REQUIRE_EQUAL(arraysSize, p.vVariantVector.size());
 
     for (int i = 0; i < arraysSize; i++) {
-        BOOST_REQUIRE_EQUAL(true, p.vVariantVector[i].hasInt());
-
-        BOOST_REQUIRE_EQUAL(2, p.vVariantVector[i].getInt());
+        if (2 != p.vVariantVector[i].getInt())
+            BOOST_REQUIRE_EQUAL(2, p.vVariantVector[i].getInt());
     }
 
     BOOST_REQUIRE_EQUAL(arraysSize, p.vVariantMap.size());
@@ -733,8 +777,11 @@ void validateTestPortable1(TestPortable1 p, int32_t arraysSize) {
     for (int i = 0; i < arraysSize; i++) {
         GridClientVariant val = p.vVariantMap[GridClientVariant(i)];
 
-        BOOST_REQUIRE_EQUAL(true, val.hasInt());
-        BOOST_REQUIRE_EQUAL(i, val.getInt());
+        if (!val.hasInt())
+            BOOST_REQUIRE_EQUAL(true, val.hasInt());
+        
+        if (i != val.getInt())
+            BOOST_REQUIRE_EQUAL(i, val.getInt());
     }
 }
 
@@ -835,7 +882,6 @@ BOOST_AUTO_TEST_CASE(testPortableSerialization_cycle) {
 
     BOOST_REQUIRE(p1);
     BOOST_REQUIRE(p1->p2);
-    BOOST_REQUIRE(p2->p1);
 
     BOOST_REQUIRE_EQUAL(p1, p1->p2->p1);
 

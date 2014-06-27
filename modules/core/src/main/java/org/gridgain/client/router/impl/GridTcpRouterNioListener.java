@@ -10,23 +10,15 @@
 package org.gridgain.client.router.impl;
 
 import org.gridgain.client.*;
-import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.jdk.*;
-import org.gridgain.client.marshaller.optimized.*;
-import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.nio.*;
-import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import java.nio.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.GridProductImpl.*;
-import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
 
 /**
  * Nio listener for the router. Extracts necessary meta information from messages
@@ -39,10 +31,6 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
     /** Client for grid access. */
     private final GridRouterClientImpl client;
 
-    /** Supported marshallers. */
-    @GridToStringExclude
-    private final Map<Byte, GridClientMarshaller> suppMarshMap;
-
     /**
      * @param log Logger.
      * @param client Client for grid access.
@@ -50,14 +38,6 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
     GridTcpRouterNioListener(GridLogger log, GridRouterClientImpl client) {
         this.log = log;
         this.client = client;
-
-        Map<Byte, GridClientMarshaller> tmpMap = new GridLeanMap<>(3);
-
-        tmpMap.put(U.PORTABLE_OBJECT_PROTO_ID, new GridClientPortableMarshaller());
-        tmpMap.put(U.OPTIMIZED_CLIENT_PROTO_ID, new GridClientOptimizedMarshaller());
-        tmpMap.put(U.JDK_CLIENT_PROTO_ID, new GridClientJdkMarshaller());
-
-        suppMarshMap = Collections.unmodifiableMap(tmpMap);
     }
 
     /** {@inheritDoc} */
@@ -85,13 +65,7 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
             final long reqId = routerMsg.requestId();
 
             try {
-                GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
-
-                assert marsh != null;
-
-                byte protoId = marsh.getProtocolId();
-
-                client.forwardMessage(routerMsg, routerMsg.destinationId(), protoId)
+                client.forwardMessage(routerMsg, routerMsg.destinationId())
                     .listenAsync(new GridClientFutureListener() {
                         @Override public void onDone(GridClientFuture fut) {
                             try {
@@ -128,36 +102,6 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
                 U.warn(log, "Client version check failed [ses=" + ses +
                     ", expected=" + Arrays.toString(VER_BYTES)
                     + ", actual=" + Arrays.toString(verBytes) + ']');
-
-            final byte protoId = hs.protocolId();
-
-            GridClientMarshaller marsh = suppMarshMap.get(protoId);
-
-            if (marsh == null) {
-                U.warn(log, "No marshaller found for a given protocol ID (will use a stub): " + protoId);
-
-                // Use a marshaller stub to just save protocol ID.
-                ses.addMeta(MARSHALLER.ordinal(), new GridClientMarshaller() {
-                    @Override public ByteBuffer marshal(Object obj, int off) {
-                        U.warn(log, "Attempt to marshal a message with a stub " +
-                            "(will output empty result): " + obj);
-
-                        return ByteBuffer.allocate(off);
-                    }
-
-                    @Override public <T> T unmarshal(byte[] bytes) {
-                        assert false : "Attempt to unmarshal a message with a stub.";
-
-                        return null;
-                    }
-
-                    @Override public byte getProtocolId() {
-                        return protoId;
-                    }
-                });
-            }
-            else
-                ses.addMeta(MARSHALLER.ordinal(), marsh);
 
             ses.send(GridClientHandshakeResponse.OK);
         }

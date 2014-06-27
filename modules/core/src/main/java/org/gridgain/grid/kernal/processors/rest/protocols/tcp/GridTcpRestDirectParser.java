@@ -109,7 +109,7 @@ public class GridTcpRestDirectParser implements GridNioParser {
                 if (clientMsg.messageSize() == 0)
                     return GridClientPingPacket.PING_MESSAGE;
 
-                GridClientMarshaller marsh = proto.marshaller(ses);
+                GridClientMarshaller marsh = proto.marshaller();
 
                 GridClientMessage ret = marsh.unmarshal(clientMsg.messageArray());
 
@@ -126,8 +126,7 @@ public class GridTcpRestDirectParser implements GridNioParser {
 
                 GridClientHandshakeRequest ret = new GridClientHandshakeRequest();
 
-                ret.putVersionBytes(req.bytes(), 0 ,4);
-                ret.protocolId(req.protocolId());
+                ret.putVersionBytes(req.bytes(), 0, 4);
 
                 return ret;
             }

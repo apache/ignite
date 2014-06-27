@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
 import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.portable.*;
+import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.typedef.*;
@@ -32,7 +32,7 @@ import static org.gridgain.grid.kernal.processors.rest.protocols.tcp.GridMemcach
  */
 public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
     /** Marshaller. */
-    private GridClientMarshaller marshaller = new GridClientPortableMarshaller();
+    private GridClientMarshaller marshaller = new GridClientOptimizedMarshaller();
 
     /** Extras value. */
     public static final byte[] EXTRAS = new byte[]{
@@ -46,7 +46,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
     public void testSimplePacketParsing() throws Exception {
         GridNioSession ses = new GridMockNioSession();
 
-        GridTcpRestParser parser = new GridTcpRestParser(log);
+        GridTcpRestParser parser = new GridTcpRestParser(new GridClientOptimizedMarshaller());
 
         byte hdr = MEMCACHE_REQ_FLAG;
 
@@ -81,7 +81,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
     public void testIncorrectPackets() throws Exception {
         final GridNioSession ses = new GridMockNioSession();
 
-        final GridTcpRestParser parser = new GridTcpRestParser(log);
+        final GridTcpRestParser parser = new GridTcpRestParser(new GridClientOptimizedMarshaller());
 
         final byte[] opaque = new byte[] {0x01, 0x02, 0x03, (byte)0xFF};
 
@@ -139,7 +139,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
 
         GridNioSession ses = new GridMockNioSession();
 
-        GridTcpRestParser parser = new GridTcpRestParser(log);
+        GridTcpRestParser parser = new GridTcpRestParser(new GridClientOptimizedMarshaller());
 
         GridClientMessage msg = parser.decode(ses, raw);
 
@@ -166,7 +166,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
 
         GridNioSession ses2 = new GridMockNioSession();
 
-        GridTcpRestParser parser = new GridTcpRestParser(log);
+        GridTcpRestParser parser = new GridTcpRestParser(new GridClientOptimizedMarshaller());
 
         GridClientCacheRequest req = new GridClientCacheRequest(CAS);
 
@@ -250,7 +250,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
 
             GridNioSession ses = new GridMockNioSession();
 
-            GridTcpRestParser parser = new GridTcpRestParser(log);
+            GridTcpRestParser parser = new GridTcpRestParser(new GridClientOptimizedMarshaller());
 
             Collection<GridClientCacheRequest> lst = new ArrayList<>(5);
 
@@ -284,13 +284,13 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
         for (int splitPos = 1; splitPos < 5; splitPos++) {
             log.info("Checking split position: " + splitPos);
 
-            ByteBuffer tmp = clientHandshakePacket(U.OPTIMIZED_CLIENT_PROTO_ID);
+            ByteBuffer tmp = clientHandshakePacket();
 
             ByteBuffer[] split = split(tmp, splitPos);
 
             GridNioSession ses = new GridMockNioSession();
 
-            GridTcpRestParser parser = new GridTcpRestParser(log);
+            GridTcpRestParser parser = new GridTcpRestParser(new GridClientOptimizedMarshaller());
 
             Collection<GridClientMessage> lst = new ArrayList<>(1);
 
@@ -308,7 +308,6 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
             GridClientHandshakeRequest req = (GridClientHandshakeRequest)F.first(lst);
 
             assertNotNull(req);
-            assertEquals(U.OPTIMIZED_CLIENT_PROTO_ID, req.protocolId());
             assertTrue(Arrays.equals(new byte[]{5,0,0,0}, req.versionBytes()));
         }
     }
@@ -363,14 +362,13 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
     /**
      * Assembles GridGain client handshake packet.
      *
-     * @param protoId Protocol ID.
      * @return Raw message bytes.
      */
-    private ByteBuffer clientHandshakePacket(byte protoId) {
-        ByteBuffer res = ByteBuffer.allocate(6);
+    private ByteBuffer clientHandshakePacket() {
+        ByteBuffer res = ByteBuffer.allocate(5);
 
         res.put(new byte[] {
-            GRIDGAIN_HANDSHAKE_FLAG, 5, 0, 0, 0, protoId
+            GRIDGAIN_HANDSHAKE_FLAG, 5, 0, 0, 0
         });
 
         res.flip();
@@ -387,7 +385,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
      * @param key Key data.
      * @param val Value data.
      * @param extras Extras data.
-     * @return Bute buffer containing assembled packet.
+     * @return Byte buffer containing assembled packet.
      */
     private ByteBuffer rawPacket(byte magic, byte opCode, byte[] opaque, @Nullable byte[] key, @Nullable byte[] val,
         @Nullable byte[] extras) {

@@ -32,32 +32,13 @@ public class GridClientHandshakeRequest extends GridClientAbstractMessage {
     private static final long serialVersionUID = 0L;
 
     /** Packet size. */
-    private static final int PACKET_SIZE = 6;
+    private static final int PACKET_SIZE = 5;
 
     /** Signal char. */
     public static final byte SIGNAL_CHAR = (byte)0x91;
 
     /** Version info byte array. */
     private byte[] verArr;
-
-    /** Protocol ID. */
-    private byte protoId;
-
-    /**
-     * Default constructor.
-     */
-    public GridClientHandshakeRequest() {
-        // No-op.
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param protoId A protocol ID to use.
-     */
-    public GridClientHandshakeRequest(byte protoId) {
-        this.protoId = protoId;
-    }
 
     /**
      * @return Copy of version bytes or {@code null}, if version
@@ -100,20 +81,6 @@ public class GridClientHandshakeRequest extends GridClientAbstractMessage {
     }
 
     /**
-     * @param protoId New protocol ID.
-     */
-    public void protocolId(byte protoId) {
-        this.protoId = protoId;
-    }
-
-    /**
-     * @return Protocol ID.
-     */
-    public byte protocolId() {
-        return protoId;
-    }
-
-    /**
      * @return Raw representation of this packet.
      */
     public byte[] rawBytes() {
@@ -124,7 +91,6 @@ public class GridClientHandshakeRequest extends GridClientAbstractMessage {
         ret[2] = VER_BYTES[1];
         ret[3] = VER_BYTES[2];
         ret[4] = VER_BYTES[3];
-        ret[5] = protoId;
 
         return ret;
     }
@@ -139,14 +105,12 @@ public class GridClientHandshakeRequest extends GridClientAbstractMessage {
         ret[1] = VER_BYTES[1];
         ret[2] = VER_BYTES[2];
         ret[3] = VER_BYTES[3];
-        ret[4] = protoId;
 
         return ret;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return getClass().getSimpleName() + " [verArr=" + Arrays.toString(verArr) +
-            ", protoId=" + protoId + ']';
+        return getClass().getSimpleName() + " [verArr=" + Arrays.toString(verArr) + ']';
     }
 }

@@ -112,15 +112,6 @@ public abstract class GridUtils {
     /** Secure socket protocol to use. */
     private static final String HTTPS_PROTOCOL = "TLS";
 
-    /** Optimized client marshaller ID. */
-    public static final byte OPTIMIZED_CLIENT_PROTO_ID = 1;
-
-    /** JDK client marshaller ID. */
-    public static final byte JDK_CLIENT_PROTO_ID = 3;
-
-    /** Portable object protocol ID. */
-    public static final byte PORTABLE_OBJECT_PROTO_ID = 4;
-
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
 
