@@ -18,6 +18,9 @@ import org.gridgain.grid.lang.*;
  */
 @SuppressWarnings("unchecked")
 public class GridChainedFuture<X> extends GridFutureAdapter<X> implements GridInClosure<GridFuture<?>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Future completion callback. */
     private GridClosure<?, X> completionCb;
 

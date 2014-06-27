@@ -21,6 +21,9 @@ import java.util.*;
  */
 public class GridHadoopFileBlock extends GridHadoopInputSplit {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     @GridToStringInclude
     protected URI file;
 

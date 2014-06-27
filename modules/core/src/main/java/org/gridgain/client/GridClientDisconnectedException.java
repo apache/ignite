@@ -13,6 +13,9 @@ package org.gridgain.client;
  * This exception is thrown when client has no Grid topology and (probably temporary) can't obtain it.
  */
 public class GridClientDisconnectedException extends GridClientException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Creates exception with given message and cause.
      *

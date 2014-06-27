@@ -17,6 +17,9 @@ import java.util.concurrent.*;
  */
 public class GridRandom extends Random {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private long rnd;
 
     /**

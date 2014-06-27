@@ -18,6 +18,9 @@ import java.io.*;
  */
 public class GridHadoopExternalSplit extends GridHadoopInputSplit {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private long off;
 
     /**

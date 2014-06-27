@@ -15,6 +15,9 @@ import org.jetbrains.annotations.*;
  * Exception thrown if NIO channel bind failed.
  */
 public class GridNioBindException extends GridNioException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * @param msg Error message.
      */
