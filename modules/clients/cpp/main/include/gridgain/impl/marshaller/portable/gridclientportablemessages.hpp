@@ -415,11 +415,11 @@ public:
         if (optCaches.is_initialized())
             caches = optCaches.get();
 
-        boost::optional<TGridClientVariantSet> optAddrs = raw.readVariantCollection();
+        boost::optional<TGridClientVariantSet> optAddrs = raw.readCollection();
         if (optAddrs.is_initialized())
             tcpAddrs = optAddrs.get();
 
-        boost::optional<TGridClientVariantSet> optHosts = raw.readVariantCollection();
+        boost::optional<TGridClientVariantSet> optHosts = raw.readCollection();
         if (optHosts.is_initialized())
             tcpHostNames = optHosts.get();
 

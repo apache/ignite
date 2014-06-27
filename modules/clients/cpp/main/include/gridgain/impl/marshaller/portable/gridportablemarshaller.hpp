@@ -2093,9 +2093,21 @@ public:
                 if (!userType) {
                     int32_t typeId = in.readInt32(objStart + 2);
 
-                    off = objStart + 18;
+                    int32_t curOff = raw ? rawOff : off;
 
-                    return readStandard(typeId, false);
+                    if (raw)
+                        rawOff = objStart + 18;
+                    else
+                        off = objStart + 18;
+
+                    GridClientVariant res = readStandard(typeId, raw);
+
+                    if (raw)
+                        rawOff = curOff;
+                    else
+                        off = curOff;
+
+                    return res;
                 }
 
                 GridPortableObject obj(ctxPtr, objStart);
@@ -2186,9 +2198,13 @@ public:
                 if (!userType) {
                     int32_t typeId = in.readInt32(objStart + 2);
 
-                    off = objStart + 18;
+                    int32_t curOff = off;
 
-                    return readStandard(typeId, false);
+                    GridClientVariant res = readStandard(typeId, false);
+
+                    off = curOff;
+
+                    return res;
                 }
 
                 GridPortableObject obj(ctxPtr, objStart);
@@ -2392,7 +2408,7 @@ public:
             case TYPE_ID_OBJ_ARR: {
                 boost::optional<std::vector<GridClientVariant>> val;
 
-                doReadVariantCollection(raw, val);
+                doReadVariantCollection(raw, false, val);
 
                 if (val.is_initialized())
                     return GridClientVariant(val.get());
@@ -2401,7 +2417,7 @@ public:
             case TYPE_ID_COLLECTION: {
                 boost::optional<std::vector<GridClientVariant>> val;
 
-                doReadVariantCollection(raw, val);
+                doReadVariantCollection(raw, true, val);
 
                 if (val.is_initialized())
                     return GridClientVariant(val.get());
@@ -3535,7 +3551,7 @@ public:
 
             checkType(TYPE_ID_COLLECTION, TYPE_ID_OBJ_ARR, flag);
 
-            doReadVariantCollection(false, res);
+            doReadVariantCollection(false, flag == TYPE_ID_COLLECTION, res);
         }
 
         return res;
@@ -3740,7 +3756,15 @@ public:
     boost::optional<TGridClientVariantSet> readVariantCollection() {
         boost::optional<TGridClientVariantSet> res;
 
-        doReadVariantCollection(true, res);
+        doReadVariantCollection(true, false, res);
+
+        return res;
+    }
+
+    boost::optional<TGridClientVariantSet> readCollection() {
+        boost::optional<TGridClientVariantSet> res;
+
+        doReadVariantCollection(true, true, res);
 
         return res;
     }
@@ -3754,13 +3778,14 @@ public:
     }
 
 private:
-    void doReadVariantCollection(bool raw, boost::optional<TGridClientVariantSet>& res) {
+    void doReadVariantCollection(bool raw, bool readType, boost::optional<TGridClientVariantSet>& res) {
         int32_t size = doReadInt32(raw);
 
         if (size == -1)
             return;
 
-        int8_t type = doReadByte(raw);
+        if (readType)
+            doReadByte(raw);
 
         std::vector<GridClientVariant> vec;
 

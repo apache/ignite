@@ -177,6 +177,8 @@ public:
 
     virtual boost::optional<TGridClientVariantSet> readVariantCollection() = 0;
 
+    virtual boost::optional<TGridClientVariantSet> readCollection() = 0;
+
     virtual boost::optional<TGridClientVariantMap> readVariantMap() = 0;
 
     virtual ~GridPortableRawReader() {
