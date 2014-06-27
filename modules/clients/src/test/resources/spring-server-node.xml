@@ -60,12 +60,6 @@
         <!-- Enable rest protocol. -->
         <property name="restEnabled" value="true"/>
 
-        <!-- Configure TCP rest protocol. -->
-        <property name="restTcpPort" value="10080"/>
-
-        <!-- Configure HTTP rest protocol. -->
-        <property name="restJettyPath" value="${CLIENTS_MODULE_PATH}/src/test/resources/jetty/rest-jetty.xml"/>
-
         <!-- Configure to skip all events for better performance. -->
         <property name="includeEventTypes">
             <list>
@@ -73,6 +67,19 @@
                 <util:constant static-field="org.gridgain.grid.events.GridEventType.EVT_TASK_FINISHED"/>
                 <util:constant static-field="org.gridgain.grid.events.GridEventType.EVT_JOB_MAPPED"/>
             </list>
+        </property>
+
+        <!-- Client configuration. -->
+        <property name="clientConnectionConfiguration">
+            <bean class="org.gridgain.grid.GridClientConnectionConfiguration">
+                <!-- Configure TCP rest protocol. -->
+                <property name="restTcpPort" value="10080"/>
+
+                <!-- Configure marshaller. -->
+                <property name="marshaller">
+                    <bean class="org.gridgain.client.marshaller.portable.GridClientPortableMarshaller" />
+                </property>
+            </bean>
         </property>
 
         <property name="cacheConfiguration">
