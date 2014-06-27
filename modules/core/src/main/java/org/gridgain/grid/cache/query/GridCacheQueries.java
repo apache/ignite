@@ -108,4 +108,9 @@ public interface GridCacheQueries<K, V> {
      * Resets accumulated metrics.
      */
     public void resetMetrics();
+
+    public void addQueryField(String typeName, String fieldName);
+    public void addIndex(String typeName, String fieldName, boolean asc);
+    public void addTextIndex(String typeName, String fieldName);
+    public void addGroupIndex(LinkedHashMap<String, Boolean> grpFields);
 }
