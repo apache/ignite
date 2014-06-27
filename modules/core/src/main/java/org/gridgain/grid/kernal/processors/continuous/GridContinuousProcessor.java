@@ -43,13 +43,6 @@ import static org.gridgain.grid.kernal.processors.continuous.GridContinuousMessa
  * Processor for continuous routines.
  */
 public class GridContinuousProcessor extends GridProcessorAdapter {
-    /** Compatibility mode flag. */
-    public static final ThreadLocal<Boolean> COMPATIBILITY_MODE = new ThreadLocal<Boolean>() {
-        @Override protected Boolean initialValue() {
-            return false;
-        }
-    };
-
     /** Local infos. */
     private final ConcurrentMap<UUID, LocalRoutineInfo> locInfos = new ConcurrentHashMap8<>();
 
@@ -223,15 +216,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 GridContinuousMessage msg = (GridContinuousMessage)obj;
 
                 if (msg.data() == null && msg.dataBytes() != null) {
-                    GridNode n = ctx.discovery().node(nodeId);
-
-                    // Must ignore since we don't know the version.
-                    if (n == null)
-                        return;
-
-                    if (!n.version().greaterThanEqual(6, 2, 0))
-                        COMPATIBILITY_MODE.set(true);
-
                     try {
                         msg.data(marsh.unmarshal(msg.dataBytes(), null));
                     }
@@ -239,9 +223,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         U.error(log, "Failed to process message (ignoring): " + msg, e);
 
                         return;
-                    }
-                    finally {
-                        COMPATIBILITY_MODE.set(false);
                     }
                 }
 
@@ -416,9 +397,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         if (n == null)
                             return;
 
-                        if (!n.version().greaterThanEqual(6, 2, 0))
-                            COMPATIBILITY_MODE.set(true);
-
                         try {
                             msg.data(marsh.unmarshal(msg.dataBytes(), null));
                         }
@@ -426,9 +404,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                             U.error(log, "Failed to process message (ignoring): " + msg, e);
 
                             return;
-                        }
-                        finally {
-                            COMPATIBILITY_MODE.set(false);
                         }
                     }
 
@@ -688,17 +663,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         assert toSnd != null;
         assert !toSnd.isEmpty();
 
-        GridNode n = ctx.discovery().node(nodeId);
-
-        if (n != null && !n.version().greaterThanEqual(6, 2, 0))
-            COMPATIBILITY_MODE.set(true);
-
-        try {
-            sendWithRetries(nodeId, new GridContinuousMessage(MSG_EVT_NOTIFICATION, routineId, toSnd), orderedTopic);
-        }
-        finally {
-            COMPATIBILITY_MODE.set(false);
-        }
+        sendWithRetries(nodeId, new GridContinuousMessage(MSG_EVT_NOTIFICATION, routineId, toSnd), orderedTopic);
     }
 
     /**

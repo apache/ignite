@@ -250,22 +250,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
-        if (filter != null) {
-            boolean compatibilityMode = GridContinuousProcessor.COMPATIBILITY_MODE.get();
-
-            if (compatibilityMode) {
-                GridBiPredicate<K, V> f;
-
-                if (filter instanceof GridCacheContinuousQueryAdapter.FilterWrapper)
-                    f = ((GridCacheContinuousQueryAdapter.FilterWrapper<K, V>)filter).filter();
-                else
-                    f = new FilterConverter<>(filter);
-
-                filterDep = new DeployableObject(f, ctx);
-            }
-            else
-                filterDep = new DeployableObject(filter, ctx);
-        }
+        if (filter != null)
+            filterDep = new DeployableObject(filter, ctx);
 
         if (prjPred != null)
             prjPredDep = new DeployableObject(prjPred, ctx);
@@ -277,20 +263,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
-        if (filterDep != null) {
-            boolean compatibilityMode = GridContinuousProcessor.COMPATIBILITY_MODE.get();
-
-            if (compatibilityMode) {
-                GridBiPredicate<K, V> f = filterDep.unmarshal(nodeId, ctx);
-
-                if (f instanceof FilterConverter)
-                    filter = ((FilterConverter<K, V>)f).filter();
-                else
-                    filter = new GridCacheContinuousQueryAdapter.FilterWrapper<>(f);
-            }
-            else
-                filter = filterDep.unmarshal(nodeId, ctx);
-        }
+        if (filterDep != null)
+            filter = filterDep.unmarshal(nodeId, ctx);
 
         if (prjPredDep != null)
             prjPred = prjPredDep.unmarshal(nodeId, ctx);
@@ -312,22 +286,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
         if (b)
             out.writeObject(filterDep);
-        else {
-            boolean compatibilityMode = GridContinuousProcessor.COMPATIBILITY_MODE.get();
-
-            if (compatibilityMode) {
-                GridBiPredicate<K, V> f;
-
-                if (filter instanceof GridCacheContinuousQueryAdapter.FilterWrapper)
-                    f = ((GridCacheContinuousQueryAdapter.FilterWrapper<K, V>)filter).filter();
-                else
-                    f = new FilterConverter<>(filter);
-
-                out.writeObject(f);
-            }
-            else
-                out.writeObject(filter);
-        }
+        else
+            out.writeObject(filter);
 
         b = prjPredDep != null;
 
@@ -351,23 +311,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
         if (b)
             filterDep = (DeployableObject)in.readObject();
-        else {
-            boolean compatibilityMode = GridContinuousProcessor.COMPATIBILITY_MODE.get();
-
-            if (compatibilityMode) {
-                GridBiPredicate<K, V> f = (GridBiPredicate<K, V>)in.readObject();
-
-                if (f != null) {
-                    if (f instanceof FilterConverter)
-                        filter = ((FilterConverter<K, V>)f).filter();
-                    else
-                        filter = new GridCacheContinuousQueryAdapter.FilterWrapper<>(f);
-
-                }
-            }
-            else
-                filter = (GridPredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K,V>>)in.readObject();
-        }
+        else
+            filter = (GridPredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K,V>>)in.readObject();
 
         b = in.readBoolean();
 
@@ -465,52 +410,6 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             bytes = U.readByteArray(in);
             clsName = U.readString(in);
             depInfo = (GridDeploymentInfo)in.readObject();
-        }
-    }
-
-    /**
-     * New to old filter converter.
-     */
-    static class FilterConverter<K, V> implements GridBiPredicate<K, V> {
-        /** Serialization ID. */
-        public static final long serialVersionUID = 0L;
-
-        /** New filter. */
-        private final GridPredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> f;
-
-        /**
-         * @param f New filter.
-         */
-        FilterConverter(GridPredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> f) {
-            this.f = f;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(final K k, final V v) {
-            return f.apply(new org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>() {
-                @Override public K getKey() {
-                    return k;
-                }
-
-                @Nullable @Override public V getValue() {
-                    return v;
-                }
-
-                @Nullable @Override public V getOldValue() {
-                    return null;
-                }
-
-                @Override public V setValue(V value) {
-                    throw new UnsupportedOperationException("Can't change continuous query entry.");
-                }
-            });
-        }
-
-        /**
-         * @return New filter.
-         */
-        GridPredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> filter() {
-            return f;
         }
     }
 }

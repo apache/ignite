@@ -11,6 +11,7 @@ package org.gridgain.grid.cache.query;
 
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -19,7 +20,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public interface GridCacheContinuousQueryEntry<K, V> extends Map.Entry<K, V> {
+public interface GridCacheContinuousQueryEntry<K, V> extends Map.Entry<K, V>, Serializable {
     /**
      * Gets entry key.
      *

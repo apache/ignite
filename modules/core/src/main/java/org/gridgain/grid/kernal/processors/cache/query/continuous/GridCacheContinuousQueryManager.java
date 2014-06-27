@@ -46,6 +46,19 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
     /** Query sequence number for message topic. */
     private final AtomicLong seq = new AtomicLong();
 
+    /** {@inheritDoc} */
+    @Override protected void onKernalStart0() throws GridException {
+        if (intLsnrCnt.get() > 0 || intLsnrCnt.get() > 0) {
+            Collection<GridNode> nodes = cctx.discovery().cacheNodes(cctx.name(), -1);
+
+            for (GridNode n : nodes) {
+                if (!n.version().greaterThanEqual(6, 2, 0))
+                    throw new GridException("Rolling update is not supported for continuous queries " +
+                        "for versions below 6.2.0");
+            }
+        }
+    }
+
     /**
      * @param prjPred Projection predicate.
      * @return New continuous query.
@@ -54,16 +67,6 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
         Object topic = TOPIC_CACHE.topic(TOPIC_PREFIX, cctx.localNodeId(), seq.getAndIncrement());
 
         return new GridCacheContinuousQueryAdapter<>(cctx, topic, prjPred);
-    }
-
-    /**
-     * Checks if any continuous queries have been created.
-     *
-     * @param internal Internal flag.
-     * @return {@code True} if continuous query has been created.
-     */
-    public boolean hasListeners(boolean internal) {
-        return internal ? intLsnrCnt.get() > 0 : lsnrCnt.get() > 0;
     }
 
     /**

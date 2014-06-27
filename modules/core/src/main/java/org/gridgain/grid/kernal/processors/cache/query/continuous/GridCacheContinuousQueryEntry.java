@@ -13,12 +13,11 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -175,17 +174,6 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     /** {@inheritDoc} */
     @Override public K getKey() {
         return key;
-    }
-
-    /**
-     * TODO: Hack.
-     * Remove this method after type projection is fixed to work with null values.
-     *
-     * @param cls Class to check.
-     * @return {@code True} if passed in class can be assigned to key class.
-     */
-    public boolean keyAssignableFrom(Class<?> cls) {
-        return key.getClass().isAssignableFrom(cls);
     }
 
     /** {@inheritDoc} */
@@ -690,8 +678,6 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        boolean compatibilityMode = GridContinuousProcessor.COMPATIBILITY_MODE.get();
-
         boolean b = keyBytes != null;
 
         out.writeBoolean(b);
@@ -707,15 +693,13 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
             else
                 out.writeBoolean(false);
 
-            if (!compatibilityMode) {
-                if (oldValBytes != null && !oldValBytes.isNull()) {
-                    out.writeBoolean(true);
-                    out.writeBoolean(oldValBytes.isPlain());
-                    U.writeByteArray(out, oldValBytes.get());
-                }
-                else
-                    out.writeBoolean(false);
+            if (oldValBytes != null && !oldValBytes.isNull()) {
+                out.writeBoolean(true);
+                out.writeBoolean(oldValBytes.isPlain());
+                U.writeByteArray(out, oldValBytes.get());
             }
+            else
+                out.writeBoolean(false);
 
             U.writeString(out, cacheName);
             out.writeObject(depInfo);
@@ -723,9 +707,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
         else {
             out.writeObject(key);
             out.writeObject(newVal);
-
-            if (!compatibilityMode)
-                out.writeObject(oldVal);
+            out.writeObject(oldVal);
         }
 
     }
@@ -733,8 +715,6 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        boolean compatibilityMode = GridContinuousProcessor.COMPATIBILITY_MODE.get();
-
         boolean b = in.readBoolean();
 
         if (b) {
@@ -743,10 +723,8 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
             if (in.readBoolean())
                 newValBytes = in.readBoolean() ? plain(U.readByteArray(in)) : marshaled(U.readByteArray(in));
 
-            if (!compatibilityMode) {
-                if (in.readBoolean())
-                    oldValBytes = in.readBoolean() ? plain(U.readByteArray(in)) : marshaled(U.readByteArray(in));
-            }
+            if (in.readBoolean())
+                oldValBytes = in.readBoolean() ? plain(U.readByteArray(in)) : marshaled(U.readByteArray(in));
 
             cacheName = U.readString(in);
             depInfo = (GridDeploymentInfo)in.readObject();
@@ -754,9 +732,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
         else {
             key = (K)in.readObject();
             newVal = (V)in.readObject();
-
-            if (!compatibilityMode)
-                oldVal = (V)in.readObject();
+            oldVal = (V)in.readObject();
         }
     }
 
