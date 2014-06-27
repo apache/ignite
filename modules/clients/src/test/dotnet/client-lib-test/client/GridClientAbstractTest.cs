@@ -70,7 +70,7 @@ namespace GridGain.Client {
 
         /** <summary>Random strings generation lock.</summary> */
         private static Object rndLock = new Object();
-        
+
         /**
          * <summary>
          * Whether SSL should be used in test.</summary>
@@ -147,7 +147,7 @@ namespace GridGain.Client {
         protected String ServerNodeType() {
             IGridClientSslContext sslCtx = this.SslContext();
 
-            return sslCtx == null ? "tcp" : "tcp+ssl";            
+            return sslCtx == null ? "tcp" : "tcp+ssl";
         }
 
         protected GridClientConfiguration CreateClientConfig() {

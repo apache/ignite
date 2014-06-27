@@ -84,8 +84,6 @@
     <Compile Include="client\GridClientRouterTcpTest.cs" />
     <Compile Include="client\GridClientRouterTcpSslTest.cs" />
     <Compile Include="client\GridClientPartitionAffinityTest.cs" />
-    <Compile Include="client\GridClientHttpSslTest.cs" />
-    <Compile Include="client\GridClientHttpTest.cs" />
     <Compile Include="client\GridClientTcpSslTest.cs" />
     <Compile Include="client\GridClientAbstractTest.cs" />
     <Compile Include="client\GridClientTcpTest.cs" />

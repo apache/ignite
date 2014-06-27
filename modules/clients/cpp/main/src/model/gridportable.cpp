@@ -70,18 +70,3 @@ GridPortableObject GridPortableObject::copy(boost::unordered_map<std::string, Gr
 bool GridPortableObject::operator==(const GridPortableObject& other) const {
     return false;
 }
-
-GridPortableObjectBuilder::GridPortableObjectBuilder(int32_t typeId) {
-}
-
-void GridPortableObjectBuilder::set(std::string fieldName, const GridClientVariant& val) {
-}
-
-void GridPortableObjectBuilder::set(boost::unordered_map<std::string, GridClientVariant> fieldVals) {
-}
-
-GridPortableObject GridPortableObjectBuilder::build() {
-    boost::shared_ptr<PortableReadContext> ctxPtr;
-    
-    return GridPortableObject(ctxPtr, 0);
-}

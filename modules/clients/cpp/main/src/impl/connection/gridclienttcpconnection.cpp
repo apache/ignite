@@ -66,8 +66,7 @@ const uint8_t HANDSHAKE_PACKET[] = {
         (uint8_t)verByteVec[0],                          // Version.
         (uint8_t)verByteVec[1],                          //
         (uint8_t)verByteVec[2],                          //
-        (uint8_t)verByteVec[3],                          //
-        4                                                // GridClientPortableMarshaller.PROTOCOL_ID
+        (uint8_t)verByteVec[3]                          //
 };
 
 /**

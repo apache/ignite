@@ -90,7 +90,7 @@ namespace GridGain.Client.Impl.Message {
             SessionToken = rawReader.ReadByteArray();
             Status = (GridClientResponseStatus)rawReader.ReadInt();
             ErrorMessage = rawReader.ReadString();
-            Result = rawReader.ReadObject<Object>();
+            Result = rawReader.ReadObject<object>();
         }
     }
 }
