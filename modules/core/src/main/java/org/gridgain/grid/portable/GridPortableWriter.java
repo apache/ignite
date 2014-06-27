@@ -136,33 +136,29 @@ public interface GridPortableWriter {
 
     /**
      * @param fieldName Field name.
-     * @param uuid UUID to write.
+     * @param val UUID to write.
      * @throws GridPortableException In case of error.
      */
-    public void writeUuid(String fieldName, @Nullable UUID uuid) throws GridPortableException;
+    public void writeUuid(String fieldName, @Nullable UUID val) throws GridPortableException;
 
     /**
-     * @param uuid UUID to write.
+     * @param val UUID to write.
      * @throws GridPortableException In case of error.
      */
-    public void writeUuid(@Nullable UUID uuid) throws GridPortableException;
+    public void writeUuid(@Nullable UUID val) throws GridPortableException;
 
     /**
      * @param fieldName Field name.
      * @param obj Value to write.
-     * @throws GridPortableNotSupportedClassException If class that doesn't
-     *      implement {@link GridPortable} is being serialized.
      * @throws GridPortableException In case of error.
      */
-    public <T> void writeObject(String fieldName, @Nullable T obj) throws GridPortableException;
+    public void writeObject(String fieldName, @Nullable Object obj) throws GridPortableException;
 
     /**
      * @param obj Value to write.
-     * @throws GridPortableNotSupportedClassException If class that doesn't
-     *      implement {@link GridPortable} is being serialized.
      * @throws GridPortableException In case of error.
      */
-    public <T> void writeObject(@Nullable T obj) throws GridPortableException;
+    public void writeObject(@Nullable Object obj) throws GridPortableException;
 
     /**
      * @param fieldName Field name.
@@ -310,16 +306,12 @@ public interface GridPortableWriter {
     /**
      * @param fieldName Field name.
      * @param col Collection to write.
-     * @throws GridPortableNotSupportedClassException If class that doesn't
-     *      implement {@link GridPortable} is being serialized.
      * @throws GridPortableException In case of error.
      */
     public <T> void writeCollection(String fieldName, @Nullable Collection<T> col) throws GridPortableException;
 
     /**
      * @param col Collection to write.
-     * @throws GridPortableNotSupportedClassException If class that doesn't
-     *      implement {@link GridPortable} is being serialized.
      * @throws GridPortableException In case of error.
      */
     public <T> void writeCollection(@Nullable Collection<T> col) throws GridPortableException;
@@ -327,16 +319,12 @@ public interface GridPortableWriter {
     /**
      * @param fieldName Field name.
      * @param map Map to write.
-     * @throws GridPortableNotSupportedClassException If class that doesn't
-     *      implement {@link GridPortable} is being serialized.
      * @throws GridPortableException In case of error.
      */
     public <K, V> void writeMap(String fieldName, @Nullable Map<K, V> map) throws GridPortableException;
 
     /**
      * @param map Map to write.
-     * @throws GridPortableNotSupportedClassException If class that doesn't
-     *      implement {@link GridPortable} is being serialized.
      * @throws GridPortableException In case of error.
      */
     public <K, V> void writeMap(@Nullable Map<K, V> map) throws GridPortableException;

@@ -12,16 +12,16 @@ namespace GridGain.Client.Portable
     using System;
 
     /**
-     * <summary>Portable class ID.</summary>
+     * <summary>Portable ID.</summary>
      */
-    [AttributeUsage(AttributeTargets.Field)]
-    public class GridClientPortableClassIdAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Field)]
+    public class GridClientPortableId : Attribute
     {
         /**
          * <summary>Constructor.</summary>
          * <param name="id">Class ID.</param>
-         */ 
-        public GridClientPortableClassIdAttribute(int id)
+         */
+        public GridClientPortableId(int id)
         {
             Id = id;
         }

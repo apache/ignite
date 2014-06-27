@@ -1,4 +1,4 @@
-﻿/* @csharp.file.header */
+﻿﻿/* @csharp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,43 +9,65 @@
 
 namespace GridGain.Client.Portable
 {
+    using System;
+
     /**
-     * <summary>Portable class configuration.</summary>
+     * <summary>Portable type configuration.</summary>
      */ 
-    public class GridClientPortableClassConfiguration
+    public class GridClientPortableTypeConfiguration
     {
         /**
          * <summary>Constructor.</summary>
          */ 
-        public GridClientPortableClassConfiguration()
+        public GridClientPortableTypeConfiguration()
         {
-
+            // No-op.
         }
-
+        
         /**
          * <summary>Constructor.</summary>
-         * <param name="className">Class name.</param>
+         * <param name="type">Type.</param>
          */ 
-        public GridClientPortableClassConfiguration(string className)
+        public GridClientPortableTypeConfiguration(Type type)
         {
-            ClassName = className;
+            AssemblyName = type.Assembly.GetName().Name;
+            AssemblyVersion = type.Assembly.GetName().Version.ToString();
+            TypeName = type.FullName;
         }
 
         /**
          * <summary>Copying constructor.</summary>
          * <param name="cfg">Configuration to copy.</param>
          */
-        public GridClientPortableClassConfiguration(GridClientPortableClassConfiguration cfg)
+        public GridClientPortableTypeConfiguration(GridClientPortableTypeConfiguration cfg)
         {
-            ClassName = cfg.ClassName;
+            TypeName = cfg.TypeName;
             IdMapper = cfg.IdMapper;
             Serializer = cfg.Serializer;
         }
 
         /**
-         * <summary>Fully qualified class name.</summary>
+         * <summary>Assembly name.</summary>
+         */ 
+        public string AssemblyName
+        {
+            get;
+            set;
+        }
+
+        /**
+         * <summary>Assembly version.</summary>
          */
-        public string ClassName
+        public string AssemblyVersion
+        {
+            get;
+            set;
+        }
+
+        /**
+         * <summary>Fully qualified type name.</summary>
+         */
+        public string TypeName
         {
             get;
             set;
@@ -57,7 +79,7 @@ namespace GridGain.Client.Portable
          * (GridClientPortableFieldIdAttribute) will be checked in class through reflection. If required
          * attribute is not set, then ID will be hash code of the class (field) simple name in lower case.</summary>
          */
-        public string IdMapper
+        public GridClientPortableIdResolver IdMapper
         {
             get;
             set;
@@ -73,6 +95,14 @@ namespace GridGain.Client.Portable
         {
             get;
             set;
+        }
+
+        /** {@inheritDoc} */
+        override public String ToString()
+        {
+            return typeof(GridClientPortableTypeConfiguration).Name + " [assemblyName=" + AssemblyName + 
+                ", assemblyVersion=" + AssemblyVersion + ", typeName=" + TypeName + ", IdMapper=" + IdMapper +
+                ", Serializer=" + Serializer + ']';
         }
     }
 }

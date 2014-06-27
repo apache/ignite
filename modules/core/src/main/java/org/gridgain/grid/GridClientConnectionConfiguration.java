@@ -102,7 +102,7 @@ public class GridClientConnectionConfiguration {
     private GridClientMessageInterceptor clientMsgInterceptor;
 
     /** */
-    private Map<Integer, Class<? extends GridPortableEx>> portableTypesMap;
+    private Map<Integer, Class<? extends GridPortable>> portableTypesMap;
 
     /**
      * Creates client connection configuration with all default values.
@@ -573,14 +573,14 @@ public class GridClientConnectionConfiguration {
     /**
      * @return Map associating portable type identifiers with java classes.
      */
-    @Nullable public Map<Integer, Class<? extends GridPortableEx>> getPortableTypesMap() {
+    @Nullable public Map<Integer, Class<? extends GridPortable>> getPortableTypesMap() {
         return portableTypesMap;
     }
 
     /**
      * @param portableTypesMap Map associating portable type identifiers with java classes.
      */
-    public void setPortableTypesMap(Map<Integer, Class<? extends GridPortableEx>> portableTypesMap) {
+    public void setPortableTypesMap(Map<Integer, Class<? extends GridPortable>> portableTypesMap) {
         this.portableTypesMap = portableTypesMap;
     }
 }

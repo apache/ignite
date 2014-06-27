@@ -17,23 +17,23 @@ namespace GridGain.Client.Portable
      */
     public interface IGridClientPortableObject {
         /**
+         * <summary>Gets hash code.</summary> 
+         * <returns>Hash code.</returns>
+         */
+        int HashCode();
+        
+        /**
+         * <summary>Checks whether object type ID is user type.</summary> 
+         * <returns>Type ID.</returns>
+         */
+        bool IsUserType();
+
+        /**
          * <summary>Gets portable object type ID.</summary> 
          * <returns>Type ID.</returns>
          */
-        int TypeId { get; }
-
-        /**
-         * <summary>Gets portable object type name.</summary>
-         * <returns>Type name.</returns>
-         */
-        string TypeName();
-
-        /**
-         * <summary>Gets list of field names that are accessible in this portable object.</summary>
-         * <returns>Field names.</returns>
-         */
-        ICollection<string> Fields();
-
+        int TypeId();
+                        
         /**
          * <summary>Gets field value.</summary>
          * <param name="fieldName">Field name.</param>

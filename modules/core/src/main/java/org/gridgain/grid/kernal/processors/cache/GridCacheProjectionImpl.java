@@ -16,6 +16,7 @@ import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
@@ -585,6 +586,10 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         return cache.get(key, entryFilter(false));
     }
 
+    @Nullable @Override public GridPortableObject getPortable(K key) throws GridException {
+        return null; // TODO: implement.
+    }
+
     /** {@inheritDoc} */
     @Override public V get(K key, @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
@@ -594,6 +599,10 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     /** {@inheritDoc} */
     @Override public GridFuture<V> getAsync(K key) {
         return cache.getAsync(key, entryFilter(false));
+    }
+
+    @Override public GridFuture<GridPortableObject> getPortableAsync(K key) {
+        return null; // TODO: implement.
     }
 
     /** {@inheritDoc} */
@@ -651,9 +660,19 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         return cache.getAll(keys, entryFilter(false));
     }
 
+    @Override public Map<K, GridPortableObject> getAllPortable(
+        @Nullable Collection<? extends K> keys) throws GridException {
+        return null; // TODO: implement.
+    }
+
     /** {@inheritDoc} */
     @Override public GridFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys) {
         return cache.getAllAsync(keys, entryFilter(false));
+    }
+
+    @Override public GridFuture<Map<K, GridPortableObject>> getAllPortableAsync(
+        @Nullable Collection<? extends K> keys) {
+        return null; // TODO: implement.
     }
 
     /** {@inheritDoc} */
@@ -935,11 +954,20 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         return cache.peek(key, entryFilter(true));
     }
 
+    @Nullable @Override public GridPortableObject peekPortable(K key) {
+        return null; // TODO: implement.
+    }
+
     /** {@inheritDoc} */
     @Override public V peek(K key, @Nullable Collection<GridCachePeekMode> modes) throws GridException {
         V val = cache.peek(key, modes);
 
         return isAll(key, val, true) ? val : null;
+    }
+
+    @Nullable @Override public GridPortableObject peekPortable(K key,
+        @Nullable Collection<GridCachePeekMode> modes) throws GridException {
+        return null; // TODO: implement.
     }
 
     /** {@inheritDoc} */

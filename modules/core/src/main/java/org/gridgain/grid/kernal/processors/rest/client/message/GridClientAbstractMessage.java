@@ -18,9 +18,19 @@ import java.util.concurrent.atomic.*;
 /**
  * This class provides implementation for commit message fields and cannot be used directly.
  */
-public abstract class GridClientAbstractMessage implements GridClientMessage, Externalizable, GridPortableEx {
+public abstract class GridClientAbstractMessage implements GridClientMessage, Externalizable, GridPortable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static AtomicInteger typeIdGen = new AtomicInteger();
+
+    /**
+     * @return Portable type identifier for internal client messages classes.
+     */
+    static int nextSystemTypeId() {
+        return typeIdGen.decrementAndGet();
+    }
 
     /** Request ID (transient). */
     private long reqId;
@@ -89,12 +99,12 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws IOException {
+    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
         writer.writeByteArray("sesTok", sesTok);
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws IOException {
+    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
         sesTok = reader.readByteArray("sesTok");
     }
 }

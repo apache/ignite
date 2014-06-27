@@ -22,7 +22,7 @@ namespace GridGain {
     /** <summary>Client load tests.</summary> */
     class GridClientLoadTest {
         static void Main(string[] args) {
-            var cfg = CreateConfig(GridClientProtocol.Tcp, "127.0.0.1:10080");
+            var cfg = CreateConfig("127.0.0.1:10080");
 
             IGridClient client = G.Start(cfg);
 
@@ -135,7 +135,7 @@ namespace GridGain {
             G.StopAll();
         }
 
-        private static GridClientConfiguration CreateConfig(GridClientProtocol proto, String srv) {
+        private static GridClientConfiguration CreateConfig(String srv) {
             var atomic = new GridClientDataConfiguration();
             atomic.Name = "atomic";
             atomic.Affinity = new GridClientPartitionAffinity();

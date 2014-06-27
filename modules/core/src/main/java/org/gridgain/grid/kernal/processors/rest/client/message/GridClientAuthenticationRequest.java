@@ -54,20 +54,20 @@ public class GridClientAuthenticationRequest extends GridClientAbstractMessage {
         cred = in.readObject();
     }
 
-    /** {@inheritDoc} */
-    @Override public int typeId() {
-        return PORTABLE_TYPE_ID;
-    }
+//    /** {@inheritDoc} */
+//    @Override public int typeId() {
+//        return PORTABLE_TYPE_ID;
+//    }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws IOException {
+    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
         super.writePortable(writer);
 
         writer.writeObject("cred", cred);
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws IOException {
+    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
         super.readPortable(reader);
 
         cred = reader.readObject("cred");

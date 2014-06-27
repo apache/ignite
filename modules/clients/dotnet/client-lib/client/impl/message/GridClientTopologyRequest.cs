@@ -12,7 +12,10 @@ namespace GridGain.Client.Impl.Message {
     using System.Text;
     using GridGain.Client.Portable;
 
+    using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
+
     /** <summary><c>Topology</c> command request.</summary> */
+    [GridClientPortableId(PU.TYPE_TOP_REQ)]
     internal class GridClientTopologyRequest : GridClientRequest {
         /**
          * <summary>
@@ -51,24 +54,26 @@ namespace GridGain.Client.Impl.Message {
         public override void WritePortable(IGridClientPortableWriter writer) {
             base.WritePortable(writer);
 
-            writer.WriteGuid("nodeId", NodeId);
+            IGridClientPortableRawWriter rawWriter = writer.RawWriter();
 
-            writer.WriteString("nodeIp", NodeIP);
+            rawWriter.WriteGuid(NodeId);
+            rawWriter.WriteString(NodeIP);
 
-            writer.WriteBoolean("includeMetrics", IncludeMetrics);
-            writer.WriteBoolean("includeAttrs", IncludeAttributes);
+            rawWriter.WriteBoolean(IncludeMetrics);
+            rawWriter.WriteBoolean(IncludeAttributes);
         }
 
         /** <inheritdoc /> */
         public override void ReadPortable(IGridClientPortableReader reader) {
             base.ReadPortable(reader);
 
-            NodeId = reader.ReadGuid("nodeId");
+            IGridClientPortableRawReader rawReader = reader.RawReader();
 
-            NodeIP = reader.ReadString("nodeIp");
+            NodeId = rawReader.ReadGuid().Value;
+            NodeIP = rawReader.ReadString();
 
-            IncludeMetrics = reader.ReadBoolean("includeMetrics");
-            IncludeAttributes = reader.ReadBoolean("includeAttrs");
+            IncludeMetrics = rawReader.ReadBoolean();
+            IncludeAttributes = rawReader.ReadBoolean();
         }
     }
 }

@@ -10,9 +10,23 @@
 package org.gridgain.grid.portable;
 
 /**
- * Marker interface for all portable objects. All non-transient
- * fields are serialized.
+ * Interface that allows to implement custom serialization/deserialization
+ * logic for portable objects.
  */
 public interface GridPortable {
-    // No-op.
+    /**
+     * Writes fields to provided writer.
+     *
+     * @param writer Portable object writer.
+     * @throws GridPortableException In case of error.
+     */
+    public void writePortable(GridPortableWriter writer) throws GridPortableException;
+
+    /**
+     * Reads fields from provided reader.
+     *
+     * @param reader Portable object reader.
+     * @throws GridPortableException In case of error.
+     */
+    public void readPortable(GridPortableReader reader) throws GridPortableException;
 }

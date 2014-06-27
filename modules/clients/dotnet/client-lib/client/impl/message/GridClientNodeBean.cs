@@ -13,7 +13,10 @@ namespace GridGain.Client.Impl.Message {
     using GridGain.Client.Portable;
     using GridGain.Client.Util;
 
+    using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
+
     /** <summary>Node bean.</summary> */
+    [GridClientPortableId(PU.TYPE_NODE_BEAN)]
     internal class GridClientNodeBean : IGridClientPortable {
         /** Portable type ID. */
         // TODO: GG-8535: Remove in favor of normal IDs.
@@ -97,43 +100,48 @@ namespace GridGain.Client.Impl.Message {
         
         /** <inheritdoc /> */
         public void WritePortable(IGridClientPortableWriter writer) {
-            writer.WriteInt("tcpPort", TcpPort);
-            writer.WriteInt("replicaCnt", ReplicaCount);
+            IGridClientPortableRawWriter rawWriter = writer.RawWriter();
 
-            writer.WriteString("dfltCacheMode", DefaultCacheMode);
+            rawWriter.WriteInt(TcpPort);
+            rawWriter.WriteInt(ReplicaCount);
 
-            writer.WriteMap("attrs", Attributes);
-            writer.WriteMap("caches", Caches);
+            rawWriter.WriteString(DefaultCacheMode);
 
-            writer.WriteCollection("tcpAddrs", TcpAddresses);
-            writer.WriteCollection("tcpHostNames", TcpHostNames);
+            rawWriter.WriteGenericDictionary(Attributes);
+            rawWriter.WriteGenericDictionary(Caches);
 
-            writer.WriteGuid("nodeId", NodeId);
+            rawWriter.WriteGenericCollection(TcpAddresses);
+            rawWriter.WriteGenericCollection(TcpHostNames);
 
-            writer.WriteObject("consistentId", ConsistentId);
-            writer.WriteObject("metrics", Metrics);
+            rawWriter.WriteGuid(NodeId);
+
+            rawWriter.WriteObject(ConsistentId);
+            rawWriter.WriteObject(Metrics);
         }
 
         /** <inheritdoc /> */
         public void ReadPortable(IGridClientPortableReader reader) {
-            TcpPort = reader.ReadInt("tcpPort");
-            ReplicaCount = reader.ReadInt("replicaCnt");
+            IGridClientPortableRawReader rawReader = reader.RawReader();
 
-            DefaultCacheMode = reader.ReadString("dfltCacheMode");
+            TcpPort = rawReader.ReadInt();
+            ReplicaCount = rawReader.ReadInt();
 
-            Attributes = reader.ReadMap<String, Object>("attrs");
-            Caches = reader.ReadMap<String, String>("caches");
+            DefaultCacheMode = rawReader.ReadString();
 
-            TcpAddresses = reader.ReadCollection<String>("tcpAddrs");
-            TcpHostNames = reader.ReadCollection<String>("tcpHostNames");
+            Attributes = rawReader.ReadGenericDictionary<string, object>();
+            Caches = rawReader.ReadGenericDictionary<string, string>();
 
-            NodeId = reader.ReadGuid("nodeId");
+            TcpAddresses = rawReader.ReadGenericCollection<string>();
+            TcpHostNames = rawReader.ReadGenericCollection<string>();
 
-            ConsistentId = reader.ReadObject<Object>("consistentId");
-            Metrics = reader.ReadObject<GridClientNodeMetricsBean>("metrics");
+            NodeId = rawReader.ReadGuid().Value;
+
+            ConsistentId = rawReader.ReadObject<Object>();
+            Metrics = rawReader.ReadObject<GridClientNodeMetricsBean>();
 
             if (DefaultCacheMode != null) {
-                Caches = Caches == null ? new GridClientNullDictionary<string, string>() : new GridClientNullDictionary<string, string>(Caches);
+                Caches = Caches == null ? new GridClientNullDictionary<string, string>() : 
+                    new GridClientNullDictionary<string, string>(Caches);
 
                 Caches.Add(null, DefaultCacheMode);
             }

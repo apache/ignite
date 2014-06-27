@@ -15,7 +15,7 @@ namespace GridGain.Client.Impl.Portable
     /**
      * <summary>Object handle. Wraps a single value.</summary>
      */ 
-    class GridClientPortableObjectHandle
+    internal class GridClientPortableObjectHandle
     {        
         /**
          * <summary>Constructor.</summary>

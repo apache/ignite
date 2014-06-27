@@ -24,23 +24,11 @@ namespace GridGain.Client.Portable {
         void WriteByte(string fieldName, byte val);
 
         /**
-         * <summary>Write byte value.</summary>
-         * <param name="val">Byte value.</param>
-         */
-        void WriteByte(byte val);
-
-        /**
          * <summary>Write named byte array.</summary>
          * <param name="fieldName">Field name.</param>
          * <param name="val">Byte array.</param>
          */
         void WriteByteArray(string fieldName, byte[] val);
-
-        /**
-         * <summary>Write byte array.</summary>
-         * <param name="val">Byte array.</param>
-         */
-        void WriteByteArray(byte[] val);
 
         /**
          * <summary>Write named char value.</summary>
@@ -50,23 +38,11 @@ namespace GridGain.Client.Portable {
         void WriteChar(string fieldName, char val);
 
         /**
-         * <summary>Write char value.</summary>
-         * <param name="val">Char value.</param>
-         */
-        void WriteChar(char val);
-
-        /**
          * <summary>Write named char array.</summary>
          * <param name="fieldName">Field name.</param>
          * <param name="val">Char array.</param>
          */
         void WriteCharArray(string fieldName, char[] val);
-
-        /**
-         * <summary>Write char array.</summary>
-         * <param name="val">Char array.</param>
-         */
-        void WriteCharArray(char[] val);
 
         /**
          * <summary>Write named short value.</summary>
@@ -76,23 +52,11 @@ namespace GridGain.Client.Portable {
         void WriteShort(string fieldName, short val);
 
         /**
-         * <summary>Write short value.</summary>
-         * <param name="val">Short value.</param>
-         */
-        void WriteShort(short val);
-
-        /**
          * <summary>Write named short array.</summary>
          * <param name="fieldName">Field name.</param>
          * <param name="val">Short array.</param>
          */
         void WriteShortArray(string fieldName, short[] val);
-
-        /**
-         * <summary>Write short array.</summary>
-         * <param name="val">Short array.</param>
-         */
-        void WriteShortArray(short[] val);
 
         /**
          * <summary>Write named int value.</summary>
@@ -102,23 +66,11 @@ namespace GridGain.Client.Portable {
         void WriteInt(string fieldName, int val);
 
         /**
-         * <summary>Write int value.</summary>
-         * <param name="val">Int value.</param>
-         */
-        void WriteInt(int val);
-
-        /**
          * <summary>Write named int array.</summary>
          * <param name="fieldName">Field name.</param>
          * <param name="val">Int array.</param>
          */
         void WriteIntArray(string fieldName, int[] val);
-
-        /**
-         * <summary>Write int array.</summary>
-         * <param name="val">Int array.</param>
-         */
-        void WriteIntArray(int[] val);
 
         /**
          * <summary>Write named long value.</summary>
@@ -128,23 +80,11 @@ namespace GridGain.Client.Portable {
         void WriteLong(string fieldName, long val);
 
         /**
-         * <summary>Write long value.</summary>
-         * <param name="val">Long value.</param>
-         */
-        void WriteLong(long val);
-
-        /**
          * <summary>Write named long array.</summary>
          * <param name="fieldName">Field name.</param>
          * <param name="val">Long array.</param>
          */
         void WriteLongArray(string fieldName, long[] val);
-
-        /**
-         * <summary>Write long array.</summary>
-         * <param name="val">Long array.</param>
-         */
-        void WriteLongArray(long[] val);
 
         /**
          * <summary>Write named boolean value.</summary>
@@ -154,23 +94,11 @@ namespace GridGain.Client.Portable {
         void WriteBoolean(string fieldName, bool val);
 
         /**
-         * <summary>Write boolean value.</summary>
-         * <param name="val">Boolean value.</param>
-         */
-        void WriteBoolean(bool val);
-
-        /**
          * <summary>Write named boolean array.</summary>
          * <param name="fieldName">Field name.</param>
          * <param name="val">Boolean array.</param>
          */
         void WriteBooleanArray(string fieldName, bool[] val);
-
-        /**
-         * <summary>Write boolean array.</summary>
-         * <param name="val">Boolean array.</param>
-         */
-        void WriteBooleanArray(bool[] val);
 
         /**
          * <summary>Write named float value.</summary>
@@ -180,23 +108,11 @@ namespace GridGain.Client.Portable {
         void WriteFloat(string fieldName, float val);
 
         /**
-         * <summary>Write float value.</summary>
-         * <param name="val">Float value.</param>
-         */
-        void WriteFloat(float val);
-
-        /**
          * <summary>Write named float array.</summary>
          * <param name="fieldName">Field name.</param>
          * <param name="val">Float array.</param>
          */
         void WriteFloatArray(string fieldName, float[] val);
-
-        /**
-         * <summary>Write float array.</summary>
-         * <param name="val">Float array.</param>
-         */
-        void WriteFloatArray(float[] val);
 
         /**
          * <summary>Write named double value.</summary>
@@ -206,12 +122,6 @@ namespace GridGain.Client.Portable {
         void WriteDouble(string fieldName, double val);
 
         /**
-         * <summary>Write double value.</summary>
-         * <param name="val">Double value.</param>
-         */
-        void WriteDouble(double val);
-
-        /**
          * <summary>Write named double array.</summary>
          * <param name="fieldName">Field name.</param>
          * <param name="val">Double array.</param>
@@ -219,10 +129,18 @@ namespace GridGain.Client.Portable {
         void WriteDoubleArray(string fieldName, double[] val);
 
         /**
-         * <summary>Write double array.</summary>
-         * <param name="val">Double array.</param>
+         * <summary>Write named date value.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <param name="val">Date value.</param>
          */
-        void WriteDoubleArray(double[] val);
+        void WriteDate(string fieldName, DateTime? val);
+
+        /**
+         * <summary>Write named date array.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <param name="val">Date array.</param>
+         */
+        void WriteDateArray(string fieldName, DateTime?[] val);
 
         /**
          * <summary>Write named string value.</summary>
@@ -232,12 +150,6 @@ namespace GridGain.Client.Portable {
         void WriteString(string fieldName, string val);
 
         /**
-         * <summary>Write string value.</summary>
-         * <param name="val">String value.</param>
-         */
-        void WriteString(string val);
-
-        /**
          * <summary>Write named string array.</summary>
          * <param name="fieldName">Field name.</param>
          * <param name="val">String array.</param>
@@ -245,62 +157,18 @@ namespace GridGain.Client.Portable {
         void WriteStringArray(string fieldName, string[] val);
 
         /**
-         * <summary>Write string array.</summary>
-         * <param name="val">String array.</param>
-         */
-        void WriteStringArray(string[] val);
-
-        /**
          * <summary>Write named GUID value.</summary>
          * <param name="fieldName">Field name.</param>
          * <param name="val">GUID value.</param>
          */
-        void WriteGuid(string fieldName, Guid val);
-
-        /**
-         * <summary>Write GUID value.</summary>
-         * <param name="val">GUID value.</param>
-         */
-        void WriteGuid(Guid val);
+        void WriteGuid(string fieldName, Guid? val);
 
         /**
          * <summary>Write named GUID array.</summary>
          * <param name="fieldName">Field name.</param>
          * <param name="val">GUID array.</param>
          */
-        void WriteGuidArray(string fieldName, Guid[] val);
-
-        /**
-         * <summary>Write GUID array.</summary>
-         * <param name="val">GUID array.</param>
-         */
-        void WriteGuidArray(Guid[] val);
-
-        /**
-         * <summary>Write named enum value.</summary>
-         * <param name="fieldName">Field name.</param>
-         * <param name="val">Enum value.</param>
-         */
-        void WriteEnum(string fieldName, Enum val);
-
-        /**
-        * <summary>Write enum value.</summary>
-        * <param name="val">Enumvalue.</param>
-        */
-        void WriteEnum(Enum val);
-
-        /**
-         * <summary>Write named enum array.</summary>
-         * <param name="fieldName">Field name.</param>
-         * <param name="val">Enum array.</param>
-         */
-        void WriteEnumArray(string fieldName, Enum[] val);
-
-        /**
-         * <summary>Write enum array.</summary>
-         * <param name="val">Enum array.</param>
-         */
-        void WriteEnumArray(Enum[] val);
+        void WriteGuidArray(string fieldName, Guid?[] val);
 
         /**
          * <summary>Write named object value.</summary>
@@ -310,23 +178,11 @@ namespace GridGain.Client.Portable {
         void WriteObject<T>(string fieldName, T val);
 
         /**
-         * <summary>Write object value.</summary>
-         * <param name="val">Object value.</param>
-         */
-        void WriteObject<T>(T val);
-
-        /**
          * <summary>Write named object array.</summary>
          * <param name="fieldName">Field name.</param>
          * <param name="val">Object array.</param>
          */
         void WriteObjectArray<T>(string fieldName, T[] val);
-
-        /**
-         * <summary>Write object array.</summary>
-         * <param name="val">Object array.</param>
-         */
-        void WriteObjectArray<T>(T[] val);
 
         /**
          * <summary>Write named collection.</summary>
@@ -336,48 +192,30 @@ namespace GridGain.Client.Portable {
         void WriteCollection(string fieldName, ICollection val);
 
         /**
-         * <summary>Write collection.</summary>
-         * <param name="val">Collection.</param>
-         */
-        void WriteCollection(ICollection val);
-
-        /**
          * <summary>Write named generic collection.</summary>
          * <param name="fieldName">Field name.</param>
          * <param name="val">Collection.</param>
          */
-        void WriteCollection<T>(string fieldName, ICollection<T> val);
+        void WriteGenericCollection<T>(string fieldName, ICollection<T> val);
 
         /**
-         * <summary>Write generic collection.</summary>
-         * <param name="val">Collection.</param>
-         */
-        void WriteCollection<T>(ICollection<T> val);
-
-        /**
-         * <summary>Write named map.</summary>
+         * <summary>Write named dictionary.</summary>
          * <param name="fieldName">Field name.</param>
-         * <param name="val">Map.</param>
+         * <param name="val">Dictionary.</param>
          */
-        void WriteMap(string fieldName, IDictionary val);
+        void WriteDictionary(string fieldName, IDictionary val);
 
         /**
-         * <summary>Write map.</summary>
-         * <param name="val">Map.</param>
-         */
-        void WriteMap(IDictionary val);
-
-        /**
-         * <summary>Write named generic map.</summary>
+         * <summary>Write named generic dictionary.</summary>
          * <param name="fieldName">Field name.</param>
-         * <param name="val">Map.</param>
+         * <param name="val">Dictionary.</param>
          */
-        void WriteMap<K, V>(string fieldName, IDictionary<K, V> val);
-
+        void WriteGenericDictionary<K, V>(string fieldName, IDictionary<K, V> val);
+        
         /**
-         * <summary>Write generic map.</summary>
-         * <param name="val">Map.</param>
+         * <summary>Get raw writer.</summary>
+         * <returns>Raw writer.</returns>
          */
-        void WriteMap<K, V>(IDictionary<K, V> val);
+        IGridClientPortableRawWriter RawWriter();
     }
 }

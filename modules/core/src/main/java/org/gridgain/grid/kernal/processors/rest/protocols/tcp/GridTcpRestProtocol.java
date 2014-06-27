@@ -211,9 +211,9 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
         if (cfg.getPortableTypesMap() == null)
             return;
 
-        for (Map.Entry<Integer, Class<? extends GridPortableEx>> entry : cfg.getPortableTypesMap().entrySet()) {
+        for (Map.Entry<Integer, Class<? extends GridPortable>> entry : cfg.getPortableTypesMap().entrySet()) {
             Integer typeId = entry.getKey();
-            Class<? extends GridPortableEx> cls = entry.getValue();
+            Class<? extends GridPortable> cls = entry.getValue();
 
             if (typeId < 0)
                 throw new GridException("Negative portable types identifiers reserved for system use " +

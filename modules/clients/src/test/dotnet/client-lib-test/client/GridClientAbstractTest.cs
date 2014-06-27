@@ -70,25 +70,23 @@ namespace GridGain.Client {
 
         /** <summary>Random strings generation lock.</summary> */
         private static Object rndLock = new Object();
-
-        /**
-         * <summary>
-         * Gets protocol which should be used in client connection.</summary>
-         *
-         * <returns>Protocol.</returns>
-         */
-        abstract protected GridClientProtocol Protocol();
-
+        
         /**
          * <summary>
          * Whether SSL should be used in test.</summary>
          *
          * <returns>SSL context used in tests or null to disable SSL.</returns>
          */
-        abstract protected IGridClientSslContext SslContext();
+        virtual protected IGridClientSslContext SslContext()
+        {
+            return null;
+        }
 
         /** <summary>Server address "host:port" to which client should connect.</summary> */
-        abstract protected String ServerAddress();
+        virtual protected String ServerAddress()
+        {
+            return null;
+        }
 
         /** <summary>Router address "host:port" to which client should connect.</summary> */
         virtual protected String RouterAddress() {
@@ -116,7 +114,7 @@ namespace GridGain.Client {
         }
 
         [TestFixtureSetUp]
-        public void InitClient() {
+        public virtual void InitClient() {
             // Bypass all certificates.
             System.Net.ServicePointManager.ServerCertificateValidationCallback = (sender, cert, chain, error) => true;
 
@@ -131,7 +129,7 @@ namespace GridGain.Client {
         }
 
         [TestFixtureTearDown]
-        public void StopClient() {
+        public virtual void StopClient() {
             lock (this) {
                 if (client != null)
                     GridClientFactory.Stop(client.Id);
@@ -149,16 +147,7 @@ namespace GridGain.Client {
         protected String ServerNodeType() {
             IGridClientSslContext sslCtx = this.SslContext();
 
-            switch (this.Protocol()) {
-                case GridClientProtocol.Http:
-                    return sslCtx == null ? "http" : "http+ssl";
-
-                case GridClientProtocol.Tcp:
-                    return sslCtx == null ? "tcp" : "tcp+ssl";
-
-                default:
-                    throw new ArgumentException("Unsupported protocol: " + this.Protocol());
-            }
+            return sslCtx == null ? "tcp" : "tcp+ssl";            
         }
 
         protected GridClientConfiguration CreateClientConfig() {
@@ -186,7 +175,6 @@ namespace GridGain.Client {
             cfg.DataConfigurations.Add(replicated);
             cfg.DataConfigurations.Add(withStore);
 
-            cfg.Protocol = Protocol();
             cfg.SslContext = SslContext();
 
             if (RouterAddress() != null)
@@ -620,10 +608,6 @@ namespace GridGain.Client {
                 Assert.IsTrue(data.Remove(key));
                 Assert.IsFalse(data.Prepend(key, "postfix."));
             }
-
-            // TCP protocol supports work with collections.
-            if (Protocol() != GridClientProtocol.Tcp)
-                return;
 
             IList<String> origList = U.List<String>("1", "2");
             IList<String> newList = U.List<String>("3", "4");

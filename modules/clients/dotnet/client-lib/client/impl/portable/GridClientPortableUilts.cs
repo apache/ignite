@@ -10,274 +10,312 @@
 namespace GridGain.Client.Impl.Portable
 {
     using System;
+    using System.Collections;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.IO;
+    using System.Reflection;
+    using System.Text;
     using GridGain.Client.Portable;
 
-    /*
-    sysPortableTypes.Add(GridClientAuthenticationRequest.PORTABLE_TYPE_ID, typeof(GridClientAuthenticationRequest));
-           sysPortableTypes.Add(GridClientCacheRequest.PORTABLE_TYPE_ID, typeof(GridClientCacheRequest));
-            sysPortableTypes.Add(GridClientLogRequest.PORTABLE_TYPE_ID, typeof(GridClientLogRequest));
-            sysPortableTypes.Add(GridClientNodeBean.PORTABLE_TYPE_ID, typeof(GridClientNodeBean));
-            sysPortableTypes.Add(GridClientNodeMetricsBean.PORTABLE_TYPE_ID, typeof(GridClientNodeMetricsBean));
-            sysPortableTypes.Add(GridClientResponse.PORTABLE_TYPE_ID, typeof(GridClientResponse));
-            sysPortableTypes.Add(GridClientTaskRequest.PORTABLE_TYPE_ID, typeof(GridClientTaskRequest));
-            sysPortableTypes.Add(GridClientTopologyRequest.PORTABLE_TYPE_ID, typeof(GridClientTopologyRequest));
+    using PSH = GridGain.Client.Impl.Portable.GridClientPortableSystemHandlers;
 
-     */
- 
     /**
      * <summary>Utilities for portable serialization.</summary>
      */ 
     static class GridClientPortableUilts
     {
-        /** Type: boolean. */
-        private const int TYPE_BOOL = 1;
+        /** Header of NULL object. */
+        public const byte HDR_NULL = 80;
+
+        /** Header of object handle. */
+        public const byte HDR_HND = 81;
+
+        /** Header of object in fully serialized form. */
+        public const byte HDR_FULL = 82;
+
+        /** Header of object in fully serailized form with metadata. */
+        public const byte HDR_META = 83;
 
         /** Type: unsigned byte. */
-        private const int TYPE_BYTE = 2;
+        public const byte TYPE_BYTE = 1;
         
         /** Type: short. */
-        private const int TYPE_SHORT = 5;
+        public const byte TYPE_SHORT = 2;
 
         /** Type: int. */
-        private const int TYPE_INT = 7;
+        public const byte TYPE_INT = 3;
 
         /** Type: long. */
-        private const int TYPE_LONG = 9;
-
-        /** Type: char. */
-        private const int TYPE_CHAR = 10;
+        public const byte TYPE_LONG = 4;
 
         /** Type: float. */
-        private const int TYPE_FLOAT = 11;
+        public const byte TYPE_FLOAT = 5;
 
         /** Type: double. */
-        private const int TYPE_DOUBLE = 12;
+        public const byte TYPE_DOUBLE = 6;
+
+        /** Type: char. */
+        public const byte TYPE_CHAR = 7;
+
+        /** Type: boolean. */
+        public const byte TYPE_BOOL = 8;
 
         /** Type: string. */
-        private const int TYPE_STRING = 13;
+        public const byte TYPE_STRING = 9;
 
         /** Type: GUID. */
-        private const int TYPE_GUID = 14;
+        public const byte TYPE_GUID = 10;
 
-        /** Type: boolean array. */
-        private const int TYPE_ARRAY_BOOL = 101;
+        /** Type: date. */
+        public const byte TYPE_DATE = 11;
 
         /** Type: unsigned byte array. */
-        private const int TYPE_ARRAY_BYTE = 102;
+        public const byte TYPE_ARRAY_BYTE = 12;
 
         /** Type: short array. */
-        private const int TYPE_ARRAY_SHORT = 105;
+        public const byte TYPE_ARRAY_SHORT = 13;
 
         /** Type: int array. */
-        private const int TYPE_ARRAY_INT = 107;
+        public const byte TYPE_ARRAY_INT = 14;
 
         /** Type: long array. */
-        private const int TYPE_ARRAY_LONG = 109;
-
-        /** Type: char array. */
-        private const int TYPE_ARRAY_CHAR = 110;
+        public const byte TYPE_ARRAY_LONG = 15;
 
         /** Type: float array. */
-        private const int TYPE_ARRAY_FLOAT = 111;
+        public const byte TYPE_ARRAY_FLOAT = 16;
 
         /** Type: double array. */
-        private const int TYPE_ARRAY_DOUBLE = 112;
+        public const byte TYPE_ARRAY_DOUBLE = 17;
+
+        /** Type: char array. */
+        public const byte TYPE_ARRAY_CHAR = 18;
+
+        /** Type: boolean array. */
+        public const byte TYPE_ARRAY_BOOL = 19;
 
         /** Type: string array. */
-        private const int TYPE_ARRAY_STRING = 113;
+        public const byte TYPE_ARRAY_STRING = 20;
 
         /** Type: GUID array. */
-        private const int TYPE_ARRA_GUID = 114;
+        public const byte TYPE_ARRAY_GUID = 21;
+
+        /** Type: date array. */
+        public const byte TYPE_ARRAY_DATE = 22;
 
         /** Type: object array. */
-        private const int TYPE_ARRAY = 200;
+        public const byte TYPE_ARRAY = 23;
 
         /** Type: collection. */
-        private const int TYPE_COLLECTION = 201;
+        public const byte TYPE_COLLECTION = 24; 
 
         /** Type: map. */
-        private const int TYPE_MAP = 202;
+        public const byte TYPE_DICTIONARY = 25;
+
+        /** Type: authentication request. */
+        public const byte TYPE_AUTH_REQ = 100;
+
+        /** Type: topology request. */
+        public const byte TYPE_TOP_REQ = 101;
+
+        /** Type: task request. */
+        public const byte TYPE_TASK_REQ = 102;
+
+        /** Type: cache request. */
+        public const byte TYPE_CACHE_REQ = 103;
+        
+        /** Type: log request. */
+        public const byte TYPE_LOG_REQ = 104;
+
+        /** Type: response. */
+        public const byte TYPE_RESP = 105;
+
+        /** Type: node bean. */
+        public const byte TYPE_NODE_BEAN = 106;
+
+        /** Type: node metrics bean. */
+        public const byte TYPE_NODE_METRICS_BEAN = 107;
+
+        /** Type: task result bean. */
+        public const byte TYPE_TASK_RES_BEAN = 108;
+
+        /** Collection: custom. */
+        public const byte COLLECTION_CUSTOM = 0;
+
+        /** Collection: array list. */
+        public const byte COLLECTION_ARRAY_LIST = 1;
+
+        /** Collection: linked list. */
+        public const byte COLLECTION_LINKED_LIST = 2;
+
+        /** Collection: hash set. */
+        public const byte COLLECTION_HASH_SET = 3;
+
+        /** Collection: hash set. */
+        public const byte COLLECTION_LINKED_HASH_SET = 4;
+
+        /** Collection: sorted set. */
+        public const byte COLLECTION_SORTED_SET = 5;
+
+        /** Collection: concurrent bag. */
+        public const byte COLLECTION_CONCURRENT_BAG = 6;
+
+        /** Map: custom. */
+        public const byte MAP_CUSTOM = 0;
+
+        /** Map: hash map. */
+        public const byte MAP_HASH_MAP = 1;
+
+        /** Map: linked hash map. */
+        public const byte MAP_LINKED_HASH_MAP = 2;
+
+        /** Map: sorted map. */
+        public const byte MAP_SORTED_MAP = 3;
+
+        /** Map: concurrent hash map. */
+        public const byte MAP_CONCURRENT_HASH_MAP = 4;
 
         /** Byte "0". */
-        private const byte BYTE_ZERO = (byte)0;
+        public const byte BYTE_ZERO = (byte)0;
 
         /** Byte "1". */
-        private const byte BYTE_ONE = (byte)1;
-        
+        public const byte BYTE_ONE = (byte)1;
+
+        /** Size for null arrays/collections. */
+        public const int SIZE_NULL = -1;
+
+        /** Collection type. */
+        public static readonly Type TYP_COLLECTION = typeof(ICollection);
+
+        /** Dictionary type. */
+        public static readonly Type TYP_DICTIONARY = typeof(IDictionary);
+
+        /** Generic collection type. */
+        public static readonly Type TYP_GENERIC_COLLECTION = typeof(ICollection<>);
+
+        /** Generic dictionary type. */
+        public static readonly Type TYP_GENERIC_DICTIONARY = typeof(IDictionary<,>);
+
+        /** Ticks for Java epoch. */
+        private static readonly long JAVA_DATE_TICKS = new DateTime(1970, 1, 1, 0, 0, 0, 0).Ticks;
+
+        /** java date multiplier. */
+        private const long JAVA_DATE_MULTIPLIER = 10000;
+
         /** Whether little endian is set. */
         private static readonly bool LITTLE_ENDIAN = BitConverter.IsLittleEndian;
 
-        private static readonly Dictionary<Type, int> SYSTEM_TYPES = new Dictionary<Type,int>();
+        /** Bindig flags for instance search. */
+        private static BindingFlags BIND_FLAGS_INSTANCE = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
-        /**
-         * Static initializer.
-         */ 
-        static GridClientPortableUilts()
-        {
-            // 1. Add primitive types.
-            SYSTEM_TYPES[typeof(bool)] = TYPE_BOOL;
-            SYSTEM_TYPES[typeof(sbyte)] = TYPE_BYTE;
-            SYSTEM_TYPES[typeof(byte)] = TYPE_BYTE;
-            SYSTEM_TYPES[typeof(short)] = TYPE_SHORT;
-            SYSTEM_TYPES[typeof(ushort)] = TYPE_SHORT;
-            SYSTEM_TYPES[typeof(int)] = TYPE_INT;
-            SYSTEM_TYPES[typeof(uint)] = TYPE_INT;            
-            SYSTEM_TYPES[typeof(long)] = TYPE_LONG;
-            SYSTEM_TYPES[typeof(ulong)] = TYPE_LONG;
-            SYSTEM_TYPES[typeof(char)] = TYPE_CHAR;
-            SYSTEM_TYPES[typeof(float)] = TYPE_FLOAT;
-            SYSTEM_TYPES[typeof(double)] = TYPE_DOUBLE;
-            
-        }   
+        /** Bindig flags for static search. */
+        private static BindingFlags BIND_FLAGS_STATIC = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
-        
+        /** Filed: MemoryStream byte buffer (array). */
+        private static FieldInfo FIELD_MEM_BUF = typeof(MemoryStream).GetField("_buffer", BIND_FLAGS_INSTANCE);
 
-        /**
-         * <summary>Get primitive type ID.</summary>
-         * <param name="type">Type.</param>
-         * <returns>Primitive type ID.</returns>
-         */ 
-        public static int PrimitiveTypeId(Type type)
-        {
-            if (type == typeof(Boolean))
-                return TYPE_BOOL;
-            else if (type == typeof(Byte) || type == typeof(SByte))
-                return TYPE_BYTE;
-            else if (type == typeof(Int16) || type == typeof(UInt16))
-                return TYPE_SHORT;
-            else if (type == typeof(Int32) || type == typeof(Int32))
-                return TYPE_INT;
-            else if (type == typeof(Int64) || type == typeof(Int64))
-                return TYPE_LONG;
-            else if (type == typeof(Char))
-                return TYPE_CHAR;
-            else if (type == typeof(Single))
-                return TYPE_FLOAT;
-            else if (type == typeof(Double))
-                return TYPE_DOUBLE;
-            else
-                return 0;
-        }
+        /** Method: WriteGenericCollection. */
+        public static MethodInfo MTDH_WRITE_GENERIC_COLLECTION =
+            typeof(GridClientPortableUilts).GetMethod("WriteGenericCollection", BIND_FLAGS_STATIC);
 
-        /**
-         * <summary>Get primitive type length.</summary>
-         * <param name="typeId">Type ID.</param>
-         * <returns>Primitive type length.</returns>
-         */
-        public static int PrimitiveLength(int typeId)
-        {
-            switch (typeId) {
-                case TYPE_BOOL:
-                case TYPE_BYTE:
-                    return 1;
-                case TYPE_SHORT:
-                case TYPE_CHAR:
-                    return 2;
-                case TYPE_INT:
-                case TYPE_FLOAT:
-                    return 4;
-                case TYPE_LONG:
-                case TYPE_DOUBLE:
-                    return 8;
-                default:
-                    throw new GridClientPortableException("Type ID doesn't refer to primitive type: " + typeId);
-            }
-        }
+        /** Method: WriteTypedGenericCollection. */
+        public static MethodInfo MTDH_WRITE_TYPED_GENERIC_COLLECTION =
+            typeof(GridClientPortableUilts).GetMethod("WriteTypedGenericCollection", BIND_FLAGS_STATIC);
 
-        /**
-         * <summary>Write primitive value to the underlying output.</summary>
-         * <param name="typeId">Primitive type ID</param>
-         * <param name="obj">Object.</param>
-         * <param name="stream">Output stream.</param>
-         * <returns>Length of written data.</returns>
-         */
-        public static unsafe int WritePrimitive(int typeId, object obj, Stream stream)
-        {
-            unchecked
-            {
-                switch (typeId)
-                {
-                    case TYPE_BOOL:
-                        return WriteBoolean((bool)obj, stream);
+        /** Method: ReadGenericCollection. */
+        public static MethodInfo MTDH_READ_GENERIC_COLLECTION =
+            typeof(GridClientPortableUilts).GetMethod("ReadGenericCollection", BIND_FLAGS_STATIC);
 
-                    case TYPE_BYTE:
-                        stream.WriteByte((byte)obj);
+        /** Method: WriteGenericDictionary. */
+        public static MethodInfo MTDH_WRITE_GENERIC_DICTIONARY = 
+            typeof(GridClientPortableUilts).GetMethod("WriteGenericDictionary", BIND_FLAGS_STATIC);
 
-                        return 1;
+        /** Method: WriteTypedGenericDictionary. */
+        public static MethodInfo MTDH_WRITE_TYPED_GENERIC_DICTIONARY = 
+            typeof(GridClientPortableUilts).GetMethod("WriteTypedGenericDictionary", BIND_FLAGS_STATIC);
 
-                    case TYPE_SHORT:
-                    case TYPE_CHAR:
-                        return WriteShort((short)obj, stream);
-
-                    case TYPE_INT:
-                        return WriteInt((int)obj, stream);
-
-                    case TYPE_LONG:
-                        return WriteLong((long)obj, stream);
-
-                    case TYPE_FLOAT:
-                        float floatVal = (float)obj;
-
-                        return WriteInt(*(int*)&floatVal, stream);
-
-                    case TYPE_DOUBLE:
-                        double doubleVal = (double)obj;
-
-                        return WriteLong(*(long*)&doubleVal, stream);
-
-                    default:
-                        throw new GridClientPortableException("Type ID doesn't refer to primitive type: " + typeId);
-                }
-            }
-        }
+        /** Method: ReadGenericDictionary. */
+        public static MethodInfo MTDH_READ_GENERIC_DICTIONARY =
+            typeof(GridClientPortableUilts).GetMethod("ReadGenericDictionary", BIND_FLAGS_STATIC);
 
         /**
          * <summary>Write boolean.</summary>
          * <param name="val">Value.</param>
          * <param name="stream">Output stream.</param>
-         * <returns>Length of written data.</returns>
          */
-        public static int WriteBoolean(bool val, Stream stream)
+        public static void WriteBoolean(bool val, Stream stream)
         {
             stream.WriteByte(val ? BYTE_ONE : BYTE_ZERO);
+        }
 
-            return 1;
+        /**
+         * <summary>Read boolean.</summary>
+         * <param name="stream">Output stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static bool ReadBoolean(Stream stream)
+        {
+            return stream.ReadByte() == BYTE_ONE;
         }
 
         /**
          * <summary>Write boolean array.</summary>
          * <param name="vals">Value.</param>
          * <param name="stream">Output stream.</param>
-         * <returns>Length of written data.</returns>
          */
-        public static int WriteBooleanArray(bool[] vals, Stream stream)
+        public static void WriteBooleanArray(bool[] vals, Stream stream)
         {
-            byte[] bytes = new byte[vals.Length];
-
-            for (int i = 0; i < vals.Length; i++) 
+            if (vals == null)
+                WriteInt(SIZE_NULL, stream);
+            else
             {
-                if (vals[i])
-                    bytes[i] = BYTE_ONE;
+                WriteInt(vals.Length, stream);
+
+                for (int i = 0; i < vals.Length; i++)
+                    WriteBoolean(vals[i], stream);
+            }                
+        }
+
+        /**
+         * <summary>Read boolean array.</summary>
+         * <param name="stream">Output stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static bool[] ReadBooleanArray(Stream stream)
+        {
+            int len = ReadInt(stream);
+
+            if (len == SIZE_NULL)
+                return null;
+            else
+            {
+                bool[] vals = new bool[len];
+
+                for (int i = 0; i < vals.Length; i++)
+                    vals[i] = ReadBoolean(stream);
+
+                return vals;
             }
-
-            stream.Write(bytes, 0, bytes.Length);
-
-            return vals.Length;
         }
 
         /**
          * <summary>Write byte.</summary>
          * <param name="val">Value.</param>
          * <param name="stream">Output stream.</param>
-         * <returns>Length of written data.</returns>
          */
-        public static int writeByte(byte val, Stream stream)
+        public static void WriteByte(byte val, Stream stream)
         {
             stream.WriteByte(val);
+        }
 
-            return 1;
+        /**
+         * <summary>Read byte.</summary>
+         * <param name="stream">Output stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static byte ReadByte(Stream stream)
+        {
+            return (byte)stream.ReadByte();
         }
 
         /**
@@ -286,42 +324,153 @@ namespace GridGain.Client.Impl.Portable
          * <param name="stream">Output stream.</param>
          * <returns>Length of written data.</returns>
          */
-        public static int WriteByteArray(byte[] vals, Stream stream)
+        public static void WriteByteArray(byte[] vals, Stream stream)
         {
-            stream.Write(vals, 0, vals.Length);
+            if (vals == null)
+                WriteInt(SIZE_NULL, stream);
+            else
+            {
+                WriteInt(vals.Length, stream);
 
-            return vals.Length;
+                stream.Write(vals, 0, vals.Length);
+            }  
+        }
+
+        /**
+         * <summary>Read byte array.</summary>
+         * <param name="stream">Output stream.</param>
+         * <param name="signed">Signed flag.</param>
+         * <returns>Value.</returns>
+         */
+        public static unsafe object ReadByteArray(Stream stream, bool signed)
+        {
+            int len = ReadInt(stream);
+
+            if (len == SIZE_NULL)
+                return null;
+            else
+            {
+                if (signed)
+                {
+                    sbyte[] vals = new sbyte[len];
+
+                    for (int i = 0; i < len; i++)
+                    {
+                        byte val = (byte)stream.ReadByte();
+
+                        vals[i] = *(sbyte*)&val;
+                    }
+
+                    return vals;
+                }
+                else
+                {
+                    byte[] vals = new byte[len];
+
+                    stream.Read(vals, 0, len);
+
+                    return vals;
+                }
+            }
         }
 
         /**
          * <summary>Write short value.</summary>
          * <param name="val">Value.</param>
          * <param name="stream">Output stream.</param>
-         * <returns>Length of written data.</returns>
          */
-        public static unsafe int WriteShort(short val, Stream stream)
+        public static void WriteShort(short val, Stream stream)
         {
-            byte[] bytes = new byte[2];
-
-            unchecked
+            if (LITTLE_ENDIAN)
             {
-                if (LITTLE_ENDIAN)
+                stream.WriteByte((byte)(val & 0xFF));
+                stream.WriteByte((byte)(val >> 8 & 0xFF));
+            }
+            else
+            {
+                stream.WriteByte((byte)(val >> 8 & 0xFF));
+                stream.WriteByte((byte)(val & 0xFF));
+            }
+        }
+
+        /**
+         * <summary>Read short value.</summary>
+         * <param name="stream">Output stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static short ReadShort(Stream stream)
+        {
+            short val = 0;
+
+            if (LITTLE_ENDIAN)
+            {
+                val |= (short)stream.ReadByte();
+                val |= (short)(stream.ReadByte() << 8);
+            }
+            else
+            {
+                val |= (short)(stream.ReadByte() << 8);
+                val |= (short)stream.ReadByte();
+            }
+
+            return val;
+        }
+
+        /**
+         * <summary>Write short array.</summary>
+         * <param name="vals">Value.</param>
+         * <param name="stream">Output stream.</param>
+         */
+        public static void WriteShortArray(short[] vals, Stream stream)
+        {
+            if (vals == null)
+                WriteInt(SIZE_NULL, stream);
+            else
+            {
+                WriteInt(vals.Length, stream);
+
+                for (int i = 0; i < vals.Length; i++)
+                    WriteShort(vals[i], stream);    
+            }  
+        }
+
+        /**
+         * <summary>Read short array.</summary>
+         * <param name="stream">Stream.</param>
+         * <param name="signed">Signed flag.</param>
+         * <returns>Value.</returns>
+         */
+        public static unsafe object ReadShortArray(Stream stream, bool signed)
+        {
+            int len = ReadInt(stream);
+
+            if (len == SIZE_NULL)
+                return null;
+            else
+            {
+                if (signed)
                 {
-                    fixed (byte* b = bytes)
-                    {
-                        *((short*)b) = val;
-                    }
+                    short[] vals = new short[len];
+
+                    for (int i = 0; i < len; i++)
+                        vals[i] = ReadShort(stream);
+
+                    return vals;
                 }
                 else
                 {
-                    bytes[0] = (byte)(val & 0xFF);
-                    bytes[1] = (byte)(val >> 8 & 0xFF);
+                    ushort[] vals = new ushort[len];
+
+                    for (int i = 0; i < len; i++)
+                    {
+                        short val = ReadShort(stream);
+
+                        vals[i] = *(ushort*)&val;
+                    }
+
+                    return vals;
                 }
-
-                stream.Write(bytes, 0, 2);
             }
-
-            return 2;
         }
 
         /**
@@ -329,31 +478,106 @@ namespace GridGain.Client.Impl.Portable
          * <param name="val">Value.</param>
          * <param name="stream">Output stream.</param>
          */
-        public static unsafe int WriteInt(int val, Stream stream)
+        public static void WriteInt(int val, Stream stream)
         {
-            unchecked
+            if (LITTLE_ENDIAN)
             {
-                byte[] bytes = new byte[4];
+                stream.WriteByte((byte)(val & 0xFF));
+                stream.WriteByte((byte)(val >> 8 & 0xFF));
+                stream.WriteByte((byte)(val >> 16 & 0xFF));
+                stream.WriteByte((byte)(val >> 24 & 0xFF));
+            }
+            else
+            {
+                stream.WriteByte((byte)(val >> 24 & 0xFF));
+                stream.WriteByte((byte)(val >> 16 & 0xFF));
+                stream.WriteByte((byte)(val >> 8 & 0xFF));
+                stream.WriteByte((byte)(val & 0xFF));                
+            }
+        }
 
-                if (LITTLE_ENDIAN)
+        /**
+         * <summary>Read int value.</summary>
+         * <param name="stream">Output stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static int ReadInt(Stream stream)
+        {
+            int val = 0;
+
+            if (LITTLE_ENDIAN)
+            {
+                val |= stream.ReadByte();
+                val |= stream.ReadByte() << 8;
+                val |= stream.ReadByte() << 16;
+                val |= stream.ReadByte() << 24;
+            }
+            else
+            {
+                val |= stream.ReadByte() << 24;
+                val |= stream.ReadByte() << 16;
+                val |= stream.ReadByte() << 8;
+                val |= stream.ReadByte();                
+            }
+
+            return val;
+        }
+
+        /**
+         * <summary>Write int array.</summary>
+         * <param name="vals">Value.</param>
+         * <param name="stream">Output stream.</param>
+         */
+        public static void WriteIntArray(int[] vals, Stream stream)
+        {
+            if (vals == null)
+                WriteInt(SIZE_NULL, stream);
+            else
+            {
+                WriteInt(vals.Length, stream);
+
+                for (int i = 0; i < vals.Length; i++)
+                    WriteInt(vals[i], stream);
+            }  
+        }
+
+        /**
+         * <summary>Read int array.</summary>
+         * <param name="stream">Stream.</param>
+         * <param name="signed">Signed flag.</param>
+         * <returns>Value.</returns>
+         */
+        public static unsafe object ReadIntArray(Stream stream, bool signed)
+        {
+            int len = ReadInt(stream);
+
+            if (len == SIZE_NULL)
+                return null;
+            else
+            {
+                if (signed)
                 {
-                    fixed (byte* b = bytes)
-                    {
-                        *((int*)b) = val;
-                    }
+                    int[] vals = new int[len];
+
+                    for (int i = 0; i < len; i++)
+                        vals[i] = ReadInt(stream);
+
+                    return vals;
                 }
                 else
                 {
-                    bytes[0] = (byte)(val & 0xFF);
-                    bytes[1] = (byte)(val >> 8 & 0xFF);
-                    bytes[2] = (byte)(val >> 16 & 0xFF);
-                    bytes[3] = (byte)(val >> 24 & 0xFF);
-                }
+                    uint[] vals = new uint[len];
 
-                stream.Write(bytes, 0, 4);
+                    for (int i = 0; i < len; i++)
+                    {
+                        int val = ReadInt(stream);
+
+                        vals[i] = *(uint*)&val;
+                    }
+
+                    return vals;
+                } 
             }
-
-            return 4;
         }
 
         /**
@@ -361,35 +585,987 @@ namespace GridGain.Client.Impl.Portable
          * <param name="val">Value.</param>
          * <param name="stream">Output stream.</param>
          */
-        public static unsafe int WriteLong(long val, Stream stream)
+        public static void WriteLong(long val, Stream stream)
         {
-            unchecked
+            if (LITTLE_ENDIAN)
             {
-                byte[] bytes = new byte[8];
+                stream.WriteByte((byte)(val & 0xFF));
+                stream.WriteByte((byte)(val >> 8 & 0xFF));
+                stream.WriteByte((byte)(val >> 16 & 0xFF));
+                stream.WriteByte((byte)(val >> 24 & 0xFF));
+                stream.WriteByte((byte)(val >> 32 & 0xFF));
+                stream.WriteByte((byte)(val >> 40 & 0xFF));
+                stream.WriteByte((byte)(val >> 48 & 0xFF));
+                stream.WriteByte((byte)(val >> 56 & 0xFF));
+            }
+            else
+            {
+                stream.WriteByte((byte)(val >> 56 & 0xFF));
+                stream.WriteByte((byte)(val >> 48 & 0xFF));
+                stream.WriteByte((byte)(val >> 40 & 0xFF));
+                stream.WriteByte((byte)(val >> 32 & 0xFF));
+                stream.WriteByte((byte)(val >> 24 & 0xFF));
+                stream.WriteByte((byte)(val >> 16 & 0xFF));
+                stream.WriteByte((byte)(val >> 8 & 0xFF));
+                stream.WriteByte((byte)(val & 0xFF));
+            }
+        }
 
-                if (LITTLE_ENDIAN)
+        /**
+         * <summary>Read long value.</summary>
+         * <param name="stream">Output stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static long ReadLong(Stream stream)
+        {
+            long val = 0;
+
+            if (LITTLE_ENDIAN)
+            {
+                val |= (long)(stream.ReadByte()) << 0;
+                val |= (long)(stream.ReadByte()) << 8;
+                val |= (long)(stream.ReadByte()) << 16;
+                val |= (long)(stream.ReadByte()) << 24;
+                val |= (long)(stream.ReadByte()) << 32;
+                val |= (long)(stream.ReadByte()) << 40;
+                val |= (long)(stream.ReadByte()) << 48;
+                val |= (long)(stream.ReadByte()) << 56; 
+            }
+            else
+            {
+                val |= (long)(stream.ReadByte()) << 56;
+                val |= (long)(stream.ReadByte()) << 48;
+                val |= (long)(stream.ReadByte()) << 40;
+                val |= (long)(stream.ReadByte()) << 32;
+                val |= (long)(stream.ReadByte()) << 24;
+                val |= (long)(stream.ReadByte()) << 16;
+                val |= (long)(stream.ReadByte()) << 8;
+                val |= (long)(stream.ReadByte()) << 0;              
+            }
+
+            return val;
+        }
+
+        /**
+         * <summary>Write long array.</summary>
+         * <param name="vals">Value.</param>
+         * <param name="stream">Output stream.</param>
+         */
+        public static void WriteLongArray(long[] vals, Stream stream)
+        {
+            if (vals == null)
+                WriteInt(SIZE_NULL, stream);
+            else
+            {
+                WriteInt(vals.Length, stream);
+
+                for (int i = 0; i < vals.Length; i++)
+                    WriteLong(vals[i], stream);
+            }  
+        }
+
+        /**
+         * <summary>Read long array.</summary>
+         * <param name="stream">Stream.</param>
+         * <param name="signed">Signed flag.</param>
+         * <returns>Value.</returns>
+         */
+        public static unsafe object ReadLongArray(Stream stream, bool signed)
+        {
+            int len = ReadInt(stream);
+
+            if (len == SIZE_NULL)
+                return null;
+            else
+            {
+                if (signed)
                 {
-                    fixed (byte* b = bytes)
-                    {
-                        *((long*)b) = val;
-                    }
+                    long[] vals = new long[len];
+
+                    for (int i = 0; i < len; i++)
+                        vals[i] = ReadLong(stream);
+
+                    return vals;
                 }
                 else
                 {
-                    bytes[0] = (byte)(val & 0xFF);
-                    bytes[1] = (byte)(val >> 8 & 0xFF);
-                    bytes[2] = (byte)(val >> 16 & 0xFF);
-                    bytes[3] = (byte)(val >> 24 & 0xFF);
-                    bytes[4] = (byte)(val >> 32 & 0xFF);
-                    bytes[5] = (byte)(val >> 40 & 0xFF);
-                    bytes[6] = (byte)(val >> 48 & 0xFF);
-                    bytes[7] = (byte)(val >> 54 & 0xFF);
+                    ulong[] vals = new ulong[len];
+
+                    for (int i = 0; i < len; i++)
+                    {
+                        long val = ReadLong(stream);
+
+                        vals[i] = *(ulong*)&val;
+                    }
+
+                    return vals;
+                }
+            }
+        }
+
+        /**
+         * <summary>Write char array.</summary>
+         * <param name="vals">Value.</param>
+         * <param name="stream">Output stream.</param>
+         */
+        public static void WriteCharArray(char[] vals, Stream stream)
+        {
+            if (vals == null)
+                WriteInt(SIZE_NULL, stream);
+            else
+            {
+                WriteInt(vals.Length, stream);
+
+                for (int i = 0; i < vals.Length; i++)
+                    WriteShort((short)vals[i], stream);
+            }  
+        }
+
+        /**
+         * <summary>Read char array.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static char[] ReadCharArray(Stream stream)
+        {
+            int len = ReadInt(stream);
+
+            if (len == SIZE_NULL)
+                return null;
+            else
+            {
+                char[] vals = new char[len];
+
+                for (int i = 0; i < len; i++)
+                    vals[i] = (char)ReadShort(stream);
+
+                return vals;
+            }
+        }
+
+        /**
+         * <summary>Write float value.</summary>
+         * <param name="val">Value.</param>
+         * <param name="stream">Output stream.</param>
+         */
+        public static unsafe void WriteFloat(float val, Stream stream)
+        {
+            WriteInt(*(int*)&val, stream);
+        }
+
+        /**
+         * <summary>Read float value.</summary>
+         * <param name="stream">Output stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static unsafe float ReadFloat(Stream stream)
+        {
+            int val = ReadInt(stream);
+
+            return *(float*)&val;
+        }
+
+        /**
+         * <summary>Write float array.</summary>
+         * <param name="vals">Value.</param>
+         * <param name="stream">Output stream.</param>
+         */
+        public static void WriteFloatArray(float[] vals, Stream stream)
+        {
+            if (vals == null)
+                WriteInt(SIZE_NULL, stream);
+            else
+            {
+                WriteInt(vals.Length, stream);
+
+                for (int i = 0; i < vals.Length; i++)
+                    WriteFloat((float)vals[i], stream);
+            }  
+        }
+
+        /**
+         * <summary>Read float array.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static float[] ReadFloatArray(Stream stream)
+        {
+            int len = ReadInt(stream);
+
+            if (len == SIZE_NULL)
+                return null;
+            else
+            {
+                float[] vals = new float[len];
+
+                for (int i = 0; i < len; i++)
+                    vals[i] = ReadFloat(stream);
+
+                return vals;
+            }
+        }
+
+        /**
+         * <summary>Write double value.</summary>
+         * <param name="val">Value.</param>
+         * <param name="stream">Output stream.</param>
+         */
+        public static unsafe void WriteDouble(double val, Stream stream)
+        {
+            WriteLong(*(long*)&val, stream);
+        }
+
+        /**
+         * <summary>Read double value.</summary>
+         * <param name="stream">Output stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static unsafe double ReadDouble(Stream stream)
+        {
+            long val = ReadLong(stream);
+
+            return *(double*)&val;
+        }
+
+        /**
+         * <summary>Write double array.</summary>
+         * <param name="vals">Value.</param>
+         * <param name="stream">Output stream.</param>
+         */
+        public static void WriteDoubleArray(double[] vals, Stream stream)
+        {
+            if (vals == null)
+                WriteInt(SIZE_NULL, stream);
+            else
+            {
+                WriteInt(vals.Length, stream);
+
+                for (int i = 0; i < vals.Length; i++)
+                    WriteDouble((double)vals[i], stream);
+            }  
+        }
+
+        /**
+         * <summary>Read double array.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Value.</returns>
+         */ 
+        public static double[] ReadDoubleArray(Stream stream)
+        {
+            int len = ReadInt(stream);
+
+            if (len == SIZE_NULL)
+                return null;
+            else
+            {
+                double[] vals = new double[len];
+
+                for (int i = 0; i < len; i++)
+                    vals[i] = ReadDouble(stream);
+
+                return vals;
+            }
+        }
+
+        /**
+         * <summary>Write date.</summary>
+         * <param name="val">Date.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static void WriteDate(DateTime? val, Stream stream)
+        {
+            if (!val.HasValue)
+                stream.WriteByte(BYTE_ZERO);
+            else
+            {
+                stream.WriteByte(BYTE_ONE);
+
+                long high;
+                short low;
+
+                ToJavaDate(val.Value, out high, out low);
+
+                WriteLong(high, stream);
+                WriteShort(low, stream);
+            }                
+        }
+
+        /**
+         * <summary>Read date.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Date</returns>
+         */
+        public static DateTime? ReadDate(Stream stream)
+        {
+            if (stream.ReadByte() == BYTE_ZERO)
+                return null;
+            else
+            {
+                long high = ReadLong(stream);
+                short low = ReadShort(stream);
+
+                return ToDotNetDate(high, low);
+            }
+        }
+
+        /**
+         * <summary>Write date array.</summary>
+         * <param name="vals">Date array.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static void WriteDateArray(DateTime?[] vals, Stream stream)
+        {
+            if (vals == null)
+                WriteInt(SIZE_NULL, stream);
+            else
+            {
+                WriteInt(vals.Length, stream);
+
+                for (int i = 0; i < vals.Length; i++)
+                    WriteDate(vals[i], stream);
+            }  
+        }
+
+        /**
+         * <summary>Read date array.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Date array.</returns>
+         */
+        public static DateTime?[] ReadDateArray(Stream stream)
+        {
+            int len = ReadInt(stream);
+
+            if (len == SIZE_NULL)
+                return null;
+            else
+            {
+                DateTime?[] vals = new DateTime?[len];
+
+                for (int i = 0; i < len; i++)
+                    vals[i] = ReadDate(stream);
+
+                return vals;
+            }
+        }
+
+        /**
+         * <summary>Write string in UTF8 encoding.</summary>
+         * <param name="val">String.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static void WriteString(string val, Stream stream)
+        {
+            if (val == null)
+                stream.WriteByte(BYTE_ZERO);
+            else
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(val);
+
+                stream.WriteByte(BYTE_ONE);
+
+                WriteInt(bytes.Length, stream);
+
+                stream.Write(bytes, 0, bytes.Length);
+            }
+        }
+
+        /**
+         * <summary>Read string in UTF8 encoding.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>String.</returns>
+         */
+        public static string ReadString(Stream stream)
+        {
+            if (stream.ReadByte() == BYTE_ZERO)
+                return null;
+            else
+            {
+                int len = ReadInt(stream);
+
+                byte[] bytes = new byte[len];
+
+                stream.Read(bytes, 0, len);
+
+                return Encoding.UTF8.GetString(bytes);
+            }
+        }
+
+        /**
+         * <summary>Write string array in UTF8 encoding.</summary>
+         * <param name="vals">String array.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static void WriteStringArray(string[] vals, Stream stream)
+        {
+            if (vals == null)
+                WriteInt(SIZE_NULL, stream);
+            else
+            {
+                WriteInt(vals.Length, stream);
+
+                for (int i = 0; i < vals.Length; i++)
+                    WriteString(vals[i], stream);
+            }
+        }
+
+        /**
+         * <summary>Read string array in UTF8 encoding.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>String array.</returns>
+         */
+        public static string[] ReadStringArray(Stream stream)
+        {
+            int len = ReadInt(stream);
+
+            if (len == SIZE_NULL)
+                return null;
+            else
+            {
+                string[] vals = new string[len];
+
+                for (int i = 0; i < len; i++)
+                    vals[i] = ReadString(stream);
+
+                return vals;
+            }
+        }
+
+        /**
+         * <summary>Write GUID.</summary>
+         * <param name="val">GUID.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static void WriteGuid(Guid? val, Stream stream)
+        {
+            if (!val.HasValue)
+                stream.WriteByte(BYTE_ZERO);
+            else
+            {
+                byte[] bytes = val.Value.ToByteArray();
+
+                stream.WriteByte(BYTE_ONE);
+                stream.Write(bytes, 0, bytes.Length);
+            }
+        }
+
+        /**
+         * <summary>Read GUID.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>GUID</returns>
+         */
+        public static Guid? ReadGuid(Stream stream)
+        {
+            if (stream.ReadByte() == BYTE_ZERO)
+                return null;
+            else
+            {
+                byte[] bytes = new byte[16];
+
+                stream.Read(bytes, 0, 16);
+
+                return new Guid(bytes);
+            }
+        }
+
+        /**
+         * <summary>Write GUID array.</summary>
+         * <param name="vals">GUID array.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static void WriteGuidArray(Guid?[] vals, Stream stream)
+        {
+            if (vals == null)
+                WriteInt(SIZE_NULL, stream);
+            else
+            {
+                WriteInt(vals.Length, stream);
+
+                for (int i = 0; i < vals.Length; i++)
+                    WriteGuid(vals[i], stream);
+            }  
+        }
+
+        /**
+         * <summary>Read GUID array.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>GUID array.</returns>
+         */
+        public static Guid?[] ReadGuidArray(Stream stream)
+        {
+            int len = ReadInt(stream);
+
+            if (len == SIZE_NULL)
+                return null;
+            else
+            {
+                Guid?[] vals = new Guid?[len];
+
+                for (int i = 0; i < len; i++)
+                    vals[i] = ReadGuid(stream);
+
+                return vals;
+            }
+        }
+
+        /**
+         * <summary>Write array.</summary>
+         * <param name="val">Array.</param>
+         * <param name="ctx">Write context.</param>
+         */
+        public static void WriteArray(Array val, GridClientPortableWriteContext ctx)
+        {
+            Stream stream = ctx.Stream;
+
+            if (val == null)
+                WriteInt(SIZE_NULL, stream);
+            else
+            {
+                WriteInt(val.Length, stream);
+
+                for (int i = 0; i < val.Length; i++)
+                    ctx.Write(val.GetValue(i));
+            }
+        }
+
+        /**
+         * <summary>Write array.</summary>
+         * <param name="ctx">Read context.</param>
+         * <returns>Array.</returns>
+         */
+        public static Array ReadArray(GridClientPortableReadContext ctx)
+        {
+            MemoryStream stream = ctx.Stream;
+
+            int len = ReadInt(stream);
+
+            if (len == SIZE_NULL)
+                return null;
+            else
+            {
+                Array vals = Array.CreateInstance(typeof(object), len);
+
+                for (int i = 0; i < len; i++)
+                    vals.SetValue(ctx.Deserialize<object>(stream), i);
+
+                return vals;
+            }
+        }
+
+        /**
+         * <summary>Write collection.</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Write context.</param>
+         */
+        public static void WriteCollection(ICollection val, GridClientPortableWriteContext ctx) {
+            if (val != null)
+            {
+                byte colType = val.GetType() == typeof(ArrayList) ? COLLECTION_ARRAY_LIST : COLLECTION_CUSTOM;
+
+                WriteTypedCollection(val, ctx, colType);
+            }
+            else
+                WriteInt(SIZE_NULL, ctx.Stream);
+        }
+
+        /**
+         * <summary>Write non-null collection with known type.</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Write context.</param>
+         * <param name="colType">Collection type.</param>
+         */
+        public static void WriteTypedCollection(ICollection val, GridClientPortableWriteContext ctx, byte colType)
+        {
+            WriteInt(val.Count, ctx.Stream);
+
+            WriteByte(colType, ctx.Stream);
+
+            foreach (object elem in val)
+                ctx.Write(elem);
+        }
+
+        /**
+         * <summary>Read collection.</summary>
+         * <param name="ctx">Context.</param>
+         * <param name="factory">Factory delegate.</param>
+         * <param name="adder">Adder delegate.</param>
+         * <returns>Collection.</returns>
+         */
+        public static ICollection ReadCollection(GridClientPortableReadContext ctx, 
+            GridClientPortableCollectionFactory factory, GridClientPortableCollectionAdder adder)
+        {
+            MemoryStream stream = ctx.Stream;
+
+            int len = ReadInt(stream);
+
+            if (len == SIZE_NULL)
+                return null;
+            else 
+            {
+                ctx.Stream.Seek(1, SeekOrigin.Current);
+
+                ICollection res = factory.Invoke(len);
+
+                for (int i = 0; i < len; i++)
+                    adder.Invoke(res, ctx.Deserialize<object>(ctx.Stream));
+
+                return res;
+            }
+        }
+
+        /**
+         * <summary>Write generic collection.</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Write context.</param>
+         */
+        public static void WriteGenericCollection<T>(ICollection<T> val, GridClientPortableWriteContext ctx)
+        {
+            if (val != null)
+            {
+                Type type = val.GetType().GetGenericTypeDefinition();
+
+                byte colType;
+
+                if (type == typeof(List<>))
+                    colType = COLLECTION_ARRAY_LIST;
+                else if (type == typeof(LinkedList<>))
+                    colType = COLLECTION_LINKED_LIST;
+                else if (type == typeof(HashSet<>))
+                    colType = COLLECTION_HASH_SET;
+                else if (type == typeof(SortedSet<>))
+                    colType = COLLECTION_SORTED_SET;
+                else
+                    colType = COLLECTION_CUSTOM;
+
+                WriteTypedGenericCollection(val, ctx, colType);
+            }
+            else
+                WriteInt(SIZE_NULL, ctx.Stream);
+        }
+
+        /**
+         * <summary>Write generic non-null collection with known type.</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Write context.</param>
+         * <param name="colType">Collection type.</param>
+         */
+        public static void WriteTypedGenericCollection<T>(ICollection<T> val, GridClientPortableWriteContext ctx, byte colType)
+        {
+            WriteInt(val.Count, ctx.Stream);
+
+            WriteByte(colType, ctx.Stream);
+
+            foreach (T elem in val)
+                ctx.Write(elem);
+        }
+
+        /**
+         * <summary>Read generic collection.</summary>
+         * <param name="ctx">Context.</param>
+         * <param name="factory">Factory delegate.</param>
+         * <returns>Collection.</returns>
+         */
+        public static ICollection<T> ReadGenericCollection<T>(GridClientPortableReadContext ctx, GridClientPortableGenericCollectionFactory<T> factory)
+        {
+            int len = ReadInt(ctx.Stream);
+
+            if (len >= 0)
+            {
+                byte colType = ReadByte(ctx.Stream);
+
+                if (factory == null)
+                {
+                    // Need to detect factory automatically.
+                    if (colType == COLLECTION_LINKED_LIST)
+                        factory = PSH.CreateLinkedList<T>;
+                    else if (colType == COLLECTION_HASH_SET)
+                        factory = PSH.CreateHashSet<T>;
+                    else if (colType == COLLECTION_SORTED_SET)
+                        factory = PSH.CreateSortedSet<T>;
+                    else
+                        factory = PSH.CreateList<T>;
                 }
 
-                stream.Write(bytes, 0, 8);
+                ICollection<T> res = factory.Invoke(len);
+
+                for (int i = 0; i < len; i++)
+                    res.Add(ctx.Deserialize<T>(ctx.Stream));
+
+                return res;
+            }
+            else
+                return null;
+        }
+
+        /**
+         * <summary>Write dictionary.</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Write context.</param>
+         */
+        public static void WriteDictionary(IDictionary val, GridClientPortableWriteContext ctx)
+        {
+            if (val != null)
+            {
+                byte dictType = val.GetType() == typeof(Hashtable) ? MAP_HASH_MAP : MAP_CUSTOM;
+
+                WriteTypedDictionary(val, ctx, dictType);
+            }
+            else
+                WriteInt(SIZE_NULL, ctx.Stream);
+        }
+
+        /**
+         * <summary>Write non-null dictionary with known type.</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Write context.</param>
+         * <param name="dictType">Dictionary type.</param>
+         */
+        public static void WriteTypedDictionary(IDictionary val, GridClientPortableWriteContext ctx, byte dictType)
+        {
+            WriteInt(val.Count, ctx.Stream);
+
+            WriteByte(dictType, ctx.Stream);
+
+            foreach (DictionaryEntry entry in val)
+            {
+                ctx.Write(entry.Key);
+                ctx.Write(entry.Value);
+            }
+        }
+
+        /**
+         * <summary>Read dictionary.</summary>
+         * <param name="ctx">Context.</param>
+         * <param name="factory">Factory delegate.</param>
+         * <returns>Dictionary.</returns>
+         */
+        public static IDictionary ReadDictionary(GridClientPortableReadContext ctx,
+            GridClientPortableDictionaryFactory factory)
+        {
+            MemoryStream stream = ctx.Stream;
+
+            int len = ReadInt(stream);
+
+            if (len == SIZE_NULL)
+                return null;
+            else
+            {
+                ctx.Stream.Seek(1, SeekOrigin.Current);
+
+                IDictionary res = factory.Invoke(len);
+
+                for (int i = 0; i < len; i++)
+                {
+                    object key = ctx.Deserialize<object>(ctx.Stream);
+                    object val = ctx.Deserialize<object>(ctx.Stream);
+
+                    res[key] = val;
+                }
+                    
+                return res;
+            }
+        }
+
+        /**
+         * <summary>Write generic dictionary.</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Write context.</param>
+         */
+        public static void WriteGenericDictionary<K, V>(IDictionary<K, V> val, GridClientPortableWriteContext ctx)
+        {
+            if (val != null)
+            {
+                Type type = val.GetType().GetGenericTypeDefinition();
+
+                byte dictType;
+
+                if (type == typeof(Dictionary<,>))
+                    dictType = MAP_HASH_MAP;
+                else if (type == typeof(SortedDictionary<,>))
+                    dictType = MAP_SORTED_MAP;
+                else if (type == typeof(ConcurrentDictionary<,>))
+                    dictType = MAP_CONCURRENT_HASH_MAP;
+                else
+                    dictType = MAP_CUSTOM;
+
+                WriteTypedGenericDictionary<K, V>(val, ctx, dictType);
+            }
+            else
+                WriteInt(SIZE_NULL, ctx.Stream);
+        }
+
+        /**
+         * <summary>Write generic non-null dictionary with known type.</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Write context.</param>
+         * <param name="dictType">Dictionary type.</param>
+         */
+        public static void WriteTypedGenericDictionary<K, V>(IDictionary<K, V> val, GridClientPortableWriteContext ctx, byte dictType)
+        {
+            WriteInt(val.Count, ctx.Stream);
+
+            WriteByte(dictType, ctx.Stream);
+
+            foreach (KeyValuePair<K, V> entry in val)
+            {
+                ctx.Write(entry.Key);
+                ctx.Write(entry.Value);
+            }
+        }
+
+        /**
+         * <summary>Read generic dictionary.</summary>
+         * <param name="ctx">Context.</param>
+         * <param name="factory">Factory delegate.</param>
+         * <returns>Collection.</returns>
+         */
+        public static IDictionary<K, V> ReadGenericDictionary<K, V>(GridClientPortableReadContext ctx, 
+            GridClientPortableGenericDictionaryFactory<K, V> factory)
+        {
+            int len = ReadInt(ctx.Stream);
+
+            if (len >= 0)
+            {
+                byte colType = ReadByte(ctx.Stream);
+
+                if (factory == null)
+                {
+                    // Need to detect factory automatically.
+                    if (colType == MAP_SORTED_MAP)
+                        factory = PSH.CreateSortedDictionary<K, V>;
+                    else if (colType == MAP_CONCURRENT_HASH_MAP)
+                        factory = PSH.CreateConcurrentDictionary<K, V>;
+                    else
+                        factory = PSH.CreateDictionary<K, V>;
+                }
+
+                IDictionary<K, V> res = factory.Invoke(len);
+
+                for (int i = 0; i < len; i++)
+                {
+                    K key = ctx.Deserialize<K>(ctx.Stream);
+                    V val = ctx.Deserialize<V>(ctx.Stream);
+
+                    res[key] = val;
+                }
+
+                return res;
+            }
+            else
+                return null;
+        }
+
+        /**
+         * <summary>Gets type key.</summary>
+         * <param name="userType">User type flag.</param>
+         * <param name="typeId">Type ID.</param>
+         * <returns>Type key.</returns>
+         */ 
+        public static long TypeKey(bool userType, int typeId)
+        {
+            long res = typeId;
+
+            if (userType)
+                res |= 1 << 32;
+
+            return res;
+        }
+        
+        /**
+         * <summary>Extract underlying array from memory stream.</summary>
+         * <param name="stream">Memory stream.</param>
+         * <returns>Extracted array.</returns>
+         */ 
+        public static byte[] MemoryBuffer(MemoryStream stream)
+        {
+            return (byte[])FIELD_MEM_BUF.GetValue(stream);
+        }
+        /**
+         * <summary>Get string hash code.</summary> 
+         * <param name="val">Value.</param>
+         * <returns>Hash code.</returns>
+         */
+        public static int StringHashCode(string val)
+        {
+            if (val == null || val.Length == 0)
+                return 0;
+            else
+            {
+                char[] arr = val.ToCharArray();
+
+                int hash = 0;
+
+                foreach (char c in val.ToCharArray())
+                    hash = 31 * hash + c;
+
+                return hash;
+            }
+        }
+
+        /**
+         * 
+         */
+        public static int ArrayHashCode<T>(T[] arr)
+        {
+            int hash = 1;
+
+            for (int i = 0; i < arr.Length; i++)
+            {
+                T item = arr[i];
+
+                hash = 31 * hash + (item == null ? 0 : item.GetHashCode());
             }
 
-            return 8;
+            return hash;
         }
+
+        /**
+         * <summary>Get Guid hash code.</summary> 
+         * <param name="val">Value.</param>
+         * <returns>Hash code.</returns>
+         */
+        public static int GuidHashCode(Guid val)
+        {
+            byte[] arr = val.ToByteArray();
+
+            long msb = 0;
+            long lsb = 0;
+
+            for (int i = 0; i < 8; i++)
+                msb = (msb << 8) | ((uint)arr[i] & 0xff);
+
+            for (int i = 8; i < 16; i++)
+                lsb = (lsb << 8) | ((uint)arr[i] & 0xff);
+
+            long hilo = msb ^ lsb;
+
+            return ((int)(hilo >> 32)) ^ (int)hilo;
+        }
+
+        /**
+         * <summary>Convert date to Java ticks.</summary>
+         * <param name="date">Date</param>
+         * <param name="high">High part (milliseconds).</param>
+         * <param name="low">Low part (100ns chunks)</param>
+         */
+        private static void ToJavaDate(DateTime date, out long high, out short low)
+        {
+            long diff = date.Ticks - JAVA_DATE_TICKS;
+
+            high = diff / JAVA_DATE_MULTIPLIER;
+
+            low = (short)(diff % JAVA_DATE_MULTIPLIER); 
+        }
+
+        /**
+         * <summary>Convert Java ticks to date.</summary>
+         * <param name="high">High part (milliseconds).</param>
+         * <param name="low">Low part (100ns chunks).</param>
+         * <returns>Date.</returns>
+         */
+        private static DateTime ToDotNetDate(long high, short low)
+        {
+            return new DateTime(JAVA_DATE_TICKS + high * JAVA_DATE_MULTIPLIER + low);
+        }
+
     }
 }

@@ -10,7 +10,43 @@
 namespace GridGain.Client.Portable
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
+
+    /** 
+     * <summary>Delegate for collection creation.</summary>
+     * <param name="size">Collection size.</param>
+     * <returns>Collection.</returns>
+     */
+    public delegate ICollection GridClientPortableCollectionFactory(int size);
+
+    /**
+     * <summary>Delegate for adding element to collection.</summary>
+     * <param name="col">Collection.</param>
+     * <param name="elem">Element to add.</param>
+     */
+    public delegate void GridClientPortableCollectionAdder(ICollection col, object elem);
+
+    /**
+     * <summary>Delegate for generic collection creation.</summary>
+     * <param name="size">Collection size.</param>
+     * <returns>Collection.</returns>
+     */
+    public delegate ICollection<T> GridClientPortableGenericCollectionFactory<T>(int size);
+
+    /** 
+     * <summary>Delegate for dictionary creation.</summary>
+     * <param name="size">Dictionary size.</param>
+     * <returns>Dictionary.</returns>
+     */
+    public delegate IDictionary GridClientPortableDictionaryFactory(int size);
+
+    /**
+     * <summary>Delegate for generic collection creation.</summary>
+     * <param name="size">Collection size.</param>
+     * <returns>Collection.</returns>
+     */
+    public delegate IDictionary<K, V> GridClientPortableGenericDictionaryFactory<K, V>(int size);
 
     /**
      * <summary>Reader for portable objects.</summary>
@@ -22,25 +58,13 @@ namespace GridGain.Client.Portable
          * <returns>Byte value.</returns>
          */
         byte ReadByte(string fieldName);
-
-        /**
-         * <summary>Read byte value.</summary>
-         * <returns>Byte value.</returns>
-         */
-        byte ReadByte();
-
+        
         /**
          * <summary>Read named byte array.</summary>
          * <returns>Byte array.</returns>
          */
         byte[] ReadByteArray(string fieldName);
-
-        /**
-         * <summary>Read byte array.</summary>
-         * <returns>Byte array.</returns>
-         */
-        byte[] ReadByteArray();
-
+        
         /**
          * <summary>Read named char value.</summary>
          * <param name="fieldName">Field name.</param>
@@ -49,22 +73,10 @@ namespace GridGain.Client.Portable
         char ReadChar(string fieldName);
 
         /**
-         * <summary>Read char value.</summary>
-         * <returns>Char value.</returns>
-         */
-        char ReadChar();
-
-        /**
          * <summary>Read named char array.</summary>
          * <returns>Char array.</returns>
          */
         char[] ReadCharArray(string fieldName);
-
-        /**
-         * <summary>Read char array.</summary>
-         * <returns>Char array.</returns>
-         */
-        char[] ReadCharArray();
 
         /**
          * <summary>Read named short value.</summary>
@@ -74,22 +86,10 @@ namespace GridGain.Client.Portable
         short ReadShort(string fieldName);
 
         /**
-         * <summary>Read short value.</summary>
-         * <returns>Short value.</returns>
-         */
-        short ReadShort();
-
-        /**
          * <summary>Read named short array.</summary>
          * <returns>Short array.</returns>
          */
-        short[] ReadShortArray(string fieldName);
-
-        /**
-         * <summary>Read short array.</summary>
-         * <returns>Short array.</returns>
-         */
-        short[] ReadShortArray();
+        short[] ReadShortArray(string fieldName);        
 
         /**
          * <summary>Read named int value.</summary>
@@ -99,23 +99,11 @@ namespace GridGain.Client.Portable
         int ReadInt(string fieldName);
 
         /**
-         * <summary>Read int value.</summary>
-         * <returns>Int value.</returns>
-         */
-        int ReadInt();
-
-        /**
          * <summary>Read named int array.</summary>
          * <param name="fieldName">Field name.</param>
          * <returns>Int array.</returns>
          */
         int[] ReadIntArray(string fieldName);
-
-        /**
-         * <summary>Read int array.</summary>
-         * <returns>Int array.</returns>
-         */
-        int[] ReadIntArray();
 
         /**
          * <summary>Read named long value.</summary>
@@ -125,23 +113,11 @@ namespace GridGain.Client.Portable
         long ReadLong(string fieldName);
 
         /**
-         * <summary>Read long value.</summary>
-         * <returns>Long value.</returns>
-         */
-        long ReadLong();
-
-        /**
          * <summary>Read named long array.</summary>
          * <param name="fieldName">Field name.</param>
          * <returns>Long array.</returns>
          */
         long[] ReadLongArray(string fieldName);
-
-        /**
-         * <summary>Read long array.</summary>
-         * <returns>Long array.</returns>
-         */
-        long[] ReadLongArray();
 
         /**
          * <summary>Read named boolean value.</summary>
@@ -151,23 +127,11 @@ namespace GridGain.Client.Portable
         bool ReadBoolean(string fieldName);
 
         /**
-         * <summary>Read boolean value.</summary>
-         * <returns>Boolean value.</returns>
-         */
-        bool ReadBoolean();
-
-        /**
          * <summary>Read named boolean array.</summary>
          * <param name="fieldName">Field name.</param>
          * <returns>Boolean array.</returns>
          */
         bool[] ReadBooleanArray(string fieldName);
-
-        /**
-         * <summary>Read boolean array.</summary>
-         * <returns>Boolean array.</returns>
-         */
-        bool[] ReadBooleanArray();
 
         /**
          * <summary>Read named float value.</summary>
@@ -177,12 +141,6 @@ namespace GridGain.Client.Portable
         float ReadFloat(string fieldName);
 
         /**
-         * <summary>Read float value.</summary>
-         * <returns>Float value.</returns>
-         */
-        float ReadFloat();
-
-        /**
          * <summary>Read named float array.</summary>
          * <param name="fieldName">Field name.</param>
          * <returns>Float array.</returns>
@@ -190,23 +148,11 @@ namespace GridGain.Client.Portable
         float[] ReadFloatArray(string fieldName);
 
         /**
-         * <summary>Read float array.</summary>
-         * <returns>Float array.</returns>
-         */
-        float[] ReadFloatArray();
-
-        /**
          * <summary>Read named double value.</summary>
          * <param name="fieldName">Field name.</param>
          * <returns>Double value.</returns>
          */
-        double ReadDouble(string fieldName);
-
-        /**
-         * <summary>Read double value.</summary>
-         * <returns>Double value.</returns>
-         */
-        double ReadDouble();
+        double ReadDouble(string fieldName);        
 
         /**
          * <summary>Read named double array.</summary>
@@ -216,10 +162,18 @@ namespace GridGain.Client.Portable
         double[] ReadDoubleArray(string fieldName);
 
         /**
-         * <summary>Read double array.</summary>
-         * <returns>Double array.</returns>
+         * <summary>Read named date value.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <returns>Date value.</returns>
          */
-        double[] ReadDoubleArray();
+        DateTime? ReadDate(string fieldName);
+
+        /**
+         * <summary>Read named date array.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <returns>Date array.</returns>
+         */
+        DateTime?[] ReadDateArray(string fieldName);
 
         /**
          * <summary>Read named string value.</summary>
@@ -229,12 +183,6 @@ namespace GridGain.Client.Portable
         string ReadString(string fieldName);
 
         /**
-         * <summary>Read string value.</summary>
-         * <returns>String value.</returns>
-         */
-        string ReadString();
-
-        /**
          * <summary>Read named string array.</summary>
          * <param name="fieldName">Field name.</param>
          * <returns>String array.</returns>
@@ -242,49 +190,25 @@ namespace GridGain.Client.Portable
         string[] ReadStringArray(string fieldName);
 
         /**
-         * <summary>Read string array.</summary>
-         * <returns>String array.</returns>
-         */
-        string[] ReadStringArray();
-
-        /**
          * <summary>Read named GUID value.</summary>
          * <param name="fieldName">Field name.</param>
          * <returns>GUID value.</returns>
          */
-        Guid ReadGuid(string fieldName);
-
-        /**
-         * <summary>Read GUID value.</summary>
-         * <returns>GUID value.</returns>
-         */
-        Guid ReadGuid();
+        Guid? ReadGuid(string fieldName);
 
         /**
          * <summary>Read named GUID array.</summary>
          * <param name="fieldName">Field name.</param>
          * <returns>GUID array.</returns>
          */
-        Guid[] ReadGuidArray(string fieldName);
-
-        /**
-         * <summary>Read GUID array.</summary>
-         * <returns>GUID array.</returns>
-         */
-        Guid[] ReadGuidArray();
-
+        Guid?[] ReadGuidArray(string fieldName);
+        
         /**
          * <summary>Read named object.</summary>
          * <param name="fieldName">Field name.</param>
          * <returns>Object.</returns>
          */
         T ReadObject<T>(string fieldName);
-
-        /**
-         * <summary>Read object.</summary>
-         * <returns>Object.</returns>
-         */
-        T ReadObject<T>();
 
         /**
          * <summary>Read named object array.</summary>
@@ -294,35 +218,70 @@ namespace GridGain.Client.Portable
         T[] ReadObjectArray<T>(string fieldName);
 
         /**
-         * <summary>Read object array.</summary>
-         * <returns>Object array.</returns>
-         */
-        T[] ReadObjectArray<T>();
-
-        /**
          * <summary>Read named collection.</summary>
          * <param name="fieldName">Field name.</param>
          * <returns>Collection.</returns>
          */
-        ICollection<T> ReadCollection<T>(string fieldName);
+        ICollection ReadCollection(string fieldName);
 
         /**
-         * <summary>Read collection.</summary>
+         * <summary>Read named collection.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <param name="factory">Factory.</param>
+         * <param name="adder">Adder.</param>
          * <returns>Collection.</returns>
          */
-        ICollection<T> ReadCollection<T>();
+        ICollection ReadCollection(string fieldName, GridClientPortableCollectionFactory factory, GridClientPortableCollectionAdder adder);
 
         /**
-         * <summary>Read named map.</summary>
+         * <summary>Read named generic collection.</summary>
          * <param name="fieldName">Field name.</param>
-         * <returns>Map.</returns>
+         * <returns>Collection.</returns>
          */
-        IDictionary<K, V> ReadMap<K, V>(string fieldName);
+        ICollection<T> ReadGenericCollection<T>(string fieldName);
 
         /**
-         * <summary>Read map.</summary>
-         * <returns>Map.</returns>
+         * <summary>Read named generic collection.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <param name="factory">Factory.</param>
+         * <returns>Collection.</returns>
          */
-        IDictionary<K, V> ReadMap<K, V>();
+        ICollection<T> ReadGenericCollection<T>(string fieldName, GridClientPortableGenericCollectionFactory<T> factory);
+
+        /**
+         * <summary>Read named dictionary.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <returns>Dictionary.</returns>
+         */
+        IDictionary ReadDictionary(string fieldName);
+
+        /**
+         * <summary>Read named dictionary.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <param name="factory">Factory.</param>
+         * <returns>Dictionary.</returns>
+         */
+        IDictionary ReadDictionary(string fieldName, GridClientPortableDictionaryFactory factory);
+
+        /**
+         * <summary>Read named generic dictionary.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <returns>Dictionary.</returns>
+         */
+        IDictionary<K, V> ReadGenericDictionary<K, V>(string fieldName);
+
+        /**
+         * <summary>Read named generic dictionary.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <param name="factory">Factory.</param>
+         * <returns>Dictionary.</returns>
+         */
+        IDictionary<K, V> ReadGenericDictionary<K, V>(string fieldName, GridClientPortableGenericDictionaryFactory<K, V> factory);
+
+        /**
+         * <summary>Get raw reader.</summary>
+         * <returns>Raw reader.</returns>
+         */
+        IGridClientPortableRawReader RawReader();
     }
 }

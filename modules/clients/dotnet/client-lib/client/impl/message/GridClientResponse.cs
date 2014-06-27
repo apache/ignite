@@ -11,12 +11,11 @@ namespace GridGain.Client.Impl.Message {
     using System;
     using GridGain.Client.Portable;
 
-    /** <summary>Bean representing client operation result.</summary> */
-    internal class GridClientResponse : IGridClientPortable {
-        /** Portable type ID. */
-        // TODO: GG-8535: Remove in favor of normal IDs.
-        public static readonly int PORTABLE_TYPE_ID = 0;
+    using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
 
+    /** <summary>Bean representing client operation result.</summary> */
+    [GridClientPortableId(PU.TYPE_RESP)]
+    internal class GridClientResponse : IGridClientPortable {
         /**
          * <summary>
          * Tries to find enum value by operation code.</summary>
@@ -76,24 +75,22 @@ namespace GridGain.Client.Impl.Message {
 
         /** <inheritdoc /> */
         public void WritePortable(IGridClientPortableWriter writer) {
-            writer.WriteByteArray("sesTok", SessionToken);
+            IGridClientPortableRawWriter rawWriter = writer.RawWriter();
 
-            writer.WriteInt("successStatus", (int)Status);
-
-            writer.WriteString("errorMsg", ErrorMessage);
-
-            writer.WriteObject("res", Result);
+            rawWriter.WriteByteArray(SessionToken);
+            rawWriter.WriteInt((int)Status);
+            rawWriter.WriteString(ErrorMessage);
+            rawWriter.WriteObject(Result);
         }
 
         /** <inheritdoc /> */
         public void ReadPortable(IGridClientPortableReader reader) {
-            SessionToken = reader.ReadByteArray("sesTok");
+            IGridClientPortableRawReader rawReader = reader.RawReader();
 
-            Status = (GridClientResponseStatus)reader.ReadInt("successStatus");
-
-            ErrorMessage = reader.ReadString("errorMsg");
-
-            Result = reader.ReadObject<Object>("res");
+            SessionToken = rawReader.ReadByteArray();
+            Status = (GridClientResponseStatus)rawReader.ReadInt();
+            ErrorMessage = rawReader.ReadString();
+            Result = rawReader.ReadObject<Object>();
         }
     }
 }

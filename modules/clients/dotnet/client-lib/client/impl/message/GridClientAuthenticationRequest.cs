@@ -11,7 +11,10 @@ namespace GridGain.Client.Impl.Message {
     using System;
     using GridGain.Client.Portable;
 
+    using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
+
     /** <summary>Client authentication request.</summary> */
+    [GridClientPortableId(PU.TYPE_AUTH_REQ)]
     internal class GridClientAuthenticationRequest : GridClientRequest {
         /** 
          * <summary>
@@ -33,14 +36,14 @@ namespace GridGain.Client.Impl.Message {
         {
             base.WritePortable(writer);
 
-            writer.WriteObject("cred", Credentials);
+            writer.RawWriter().WriteObject(Credentials);
         }
 
         /** <inheritdoc /> */
         public override void ReadPortable(IGridClientPortableReader reader) {
             base.ReadPortable(reader);
 
-            Credentials = reader.ReadObject<Object>("cred");
+            Credentials = reader.RawReader().ReadObject<Object>();
         }
     }
 }

@@ -12,6 +12,8 @@ package org.gridgain.grid.kernal.portable;
 import org.gridgain.grid.portable.*;
 import org.jetbrains.annotations.*;
 
+import java.nio.*;
+
 /**
  * Portable objects marshaller.
  */
@@ -26,22 +28,22 @@ public class GridPortableMarshaller {
     static final byte OBJ = (byte)0x82;
 
     /** */
-    private static final byte[] NULL_ARR = new byte[] {NULL};
+    private static final ByteBuffer NULL_BUF = ByteBuffer.wrap(new byte[] { NULL });
 
     /**
-     * @param portable Portable object.
-     * @return Byte array.
+     * @param obj Object to marshal.
+     * @return Byte buffer.
      * @throws GridPortableException In case of error.
      */
-    public byte[] marshal(@Nullable GridPortable portable) throws GridPortableException {
-        if (portable == null)
-            return NULL_ARR;
+    public ByteBuffer marshal(@Nullable Object obj) throws GridPortableException {
+        if (obj == null)
+            return NULL_BUF;
 
-        GridPortableWriterAdapter writer = new GridUnsafePortableWriter();
+        GridPortableWriterImpl writer = new GridPortableWriterImpl();
 
-        writer.writeObject(portable);
+        writer.marshal(obj);
 
-        return writer.array();
+        return writer.buffer();
     }
 
     /**
@@ -49,7 +51,7 @@ public class GridPortableMarshaller {
      * @return Portable object.
      * @throws GridPortableException
      */
-    @Nullable public GridPortable unmarshal(byte[] arr) throws GridPortableException {
+    @Nullable public <T> T unmarshal(byte[] arr) throws GridPortableException {
         return null;
     }
 }

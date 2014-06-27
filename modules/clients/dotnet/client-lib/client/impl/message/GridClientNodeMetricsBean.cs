@@ -10,7 +10,10 @@
 namespace GridGain.Client.Impl.Message {
     using GridGain.Client.Portable;
 
+    using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
+
     /** <summary>Node metrics bean.</summary> */
+    [GridClientPortableId(PU.TYPE_NODE_METRICS_BEAN)]
     internal class GridClientNodeMetricsBean : IGridClientPortable {
         /** Portable type ID. */
         // TODO: GG-8535: Remove in favor of normal IDs.
@@ -178,115 +181,119 @@ namespace GridGain.Client.Impl.Message {
         /** <inheritdoc /> */
         public void WritePortable(IGridClientPortableWriter writer)
         {
-            writer.WriteLong("lastUpdateTime", lastUpdateTime);
-            writer.WriteInt("maxActiveJobs", maxActiveJobs);
-            writer.WriteInt("curActiveJobs", curActiveJobs);
-            writer.WriteFloat("avgActiveJobs", avgActiveJobs);
-            writer.WriteInt("maxWaitingJobs", maxWaitingJobs);
-            writer.WriteInt("curWaitingJobs", curWaitingJobs);
-            writer.WriteFloat("avgWaitingJobs", avgWaitingJobs);
-            writer.WriteInt("maxRejectedJobs", maxRejectedJobs);
-            writer.WriteInt("curRejectedJobs", curRejectedJobs);
-            writer.WriteFloat("avgRejectedJobs", avgRejectedJobs);
-            writer.WriteInt("maxCancelledJobs", maxCancelledJobs);
-            writer.WriteInt("curCancelledJobs", curCancelledJobs);
-            writer.WriteFloat("avgCancelledJobs", avgCancelledJobs);
-            writer.WriteInt("totalRejectedJobs", totalRejectedJobs);
-            writer.WriteInt("totalCancelledJobs", totalCancelledJobs);
-            writer.WriteInt("totalExecutedJobs", totalExecutedJobs);
-            writer.WriteLong("maxJobWaitTime", maxJobWaitTime);
-            writer.WriteLong("curJobWaitTime", curJobWaitTime);
-            writer.WriteDouble("avgJobWaitTime", avgJobWaitTime);
-            writer.WriteLong("maxJobExecTime", maxJobExecTime);
-            writer.WriteLong("curJobExecTime", curJobExecTime);
-            writer.WriteDouble("avgJobExecTime", avgJobExecTime);
-            writer.WriteInt("totalExecTasks", totalExecTasks);
-            writer.WriteLong("totalIdleTime", totalIdleTime);
-            writer.WriteLong("curIdleTime", curIdleTime);
-            writer.WriteInt("availProcs", availProcs);
-            writer.WriteDouble("load", load);
-            writer.WriteDouble("avgLoad", avgLoad);
-            writer.WriteDouble("gcLoad", gcLoad);
-            writer.WriteLong("heapInit", heapInit);
-            writer.WriteLong("heapUsed", heapUsed);
-            writer.WriteLong("heapCommitted", heapCommitted);
-            writer.WriteLong("heapMax", heapMax);
-            writer.WriteLong("nonHeapInit", nonHeapInit);
-            writer.WriteLong("nonHeapUsed", nonHeapUsed);
-            writer.WriteLong("nonHeapCommitted", nonHeapCommitted);
-            writer.WriteLong("nonHeapMax", nonHeapMax);
-            writer.WriteLong("upTime", upTime);
-            writer.WriteLong("startTime", startTime);
-            writer.WriteLong("nodeStartTime", nodeStartTime);
-            writer.WriteInt("threadCnt", threadCnt);
-            writer.WriteInt("peakThreadCnt", peakThreadCnt);
-            writer.WriteLong("startedThreadCnt", startedThreadCnt);
-            writer.WriteInt("daemonThreadCnt", daemonThreadCnt);
-            writer.WriteLong("fileSysFreeSpace", fileSysFreeSpace);
-            writer.WriteLong("fileSysTotalSpace", fileSysTotalSpace);
-            writer.WriteLong("fileSysUsableSpace", fileSysUsableSpace);
-            writer.WriteLong("lastDataVer", lastDataVer);
-            writer.WriteInt("sentMsgsCnt", sentMsgsCnt);
-            writer.WriteLong("sentBytesCnt", sentBytesCnt);
-            writer.WriteInt("rcvdMsgsCnt", rcvdMsgsCnt);
-            writer.WriteLong("rcvdBytesCnt", rcvdBytesCnt);
+            IGridClientPortableRawWriter rawWriter = writer.RawWriter();
+
+            rawWriter.WriteLong(lastUpdateTime);
+            rawWriter.WriteInt(maxActiveJobs);
+            rawWriter.WriteInt(curActiveJobs);
+            rawWriter.WriteFloat(avgActiveJobs);
+            rawWriter.WriteInt(maxWaitingJobs);
+            rawWriter.WriteInt(curWaitingJobs);
+            rawWriter.WriteFloat(avgWaitingJobs);
+            rawWriter.WriteInt(maxRejectedJobs);
+            rawWriter.WriteInt(curRejectedJobs);
+            rawWriter.WriteFloat(avgRejectedJobs);
+            rawWriter.WriteInt(maxCancelledJobs);
+            rawWriter.WriteInt(curCancelledJobs);
+            rawWriter.WriteFloat(avgCancelledJobs);
+            rawWriter.WriteInt(totalRejectedJobs);
+            rawWriter.WriteInt(totalCancelledJobs);
+            rawWriter.WriteInt(totalExecutedJobs);
+            rawWriter.WriteLong(maxJobWaitTime);
+            rawWriter.WriteLong(curJobWaitTime);
+            rawWriter.WriteDouble(avgJobWaitTime);
+            rawWriter.WriteLong(maxJobExecTime);
+            rawWriter.WriteLong(curJobExecTime);
+            rawWriter.WriteDouble(avgJobExecTime);
+            rawWriter.WriteInt(totalExecTasks);
+            rawWriter.WriteLong(totalIdleTime);
+            rawWriter.WriteLong(curIdleTime);
+            rawWriter.WriteInt(availProcs);
+            rawWriter.WriteDouble(load);
+            rawWriter.WriteDouble(avgLoad);
+            rawWriter.WriteDouble(gcLoad);
+            rawWriter.WriteLong(heapInit);
+            rawWriter.WriteLong(heapUsed);
+            rawWriter.WriteLong(heapCommitted);
+            rawWriter.WriteLong(heapMax);
+            rawWriter.WriteLong(nonHeapInit);
+            rawWriter.WriteLong(nonHeapUsed);
+            rawWriter.WriteLong(nonHeapCommitted);
+            rawWriter.WriteLong(nonHeapMax);
+            rawWriter.WriteLong(upTime);
+            rawWriter.WriteLong(startTime);
+            rawWriter.WriteLong(nodeStartTime);
+            rawWriter.WriteInt(threadCnt);
+            rawWriter.WriteInt(peakThreadCnt);
+            rawWriter.WriteLong(startedThreadCnt);
+            rawWriter.WriteInt(daemonThreadCnt);
+            rawWriter.WriteLong(fileSysFreeSpace);
+            rawWriter.WriteLong(fileSysTotalSpace);
+            rawWriter.WriteLong(fileSysUsableSpace);
+            rawWriter.WriteLong(lastDataVer);
+            rawWriter.WriteInt(sentMsgsCnt);
+            rawWriter.WriteLong(sentBytesCnt);
+            rawWriter.WriteInt(rcvdMsgsCnt);
+            rawWriter.WriteLong(rcvdBytesCnt);
         }
 
         /** <inheritdoc /> */
         public void ReadPortable(IGridClientPortableReader reader)
         {
-            lastUpdateTime = reader.ReadLong("lastUpdateTime");
-            maxActiveJobs = reader.ReadInt("maxActiveJobs");
-            curActiveJobs = reader.ReadInt("curActiveJobs");
-            avgActiveJobs = reader.ReadFloat("avgActiveJobs");
-            maxWaitingJobs = reader.ReadInt("maxWaitingJobs");
-            curWaitingJobs = reader.ReadInt("curWaitingJobs");
-            avgWaitingJobs = reader.ReadFloat("avgWaitingJobs");
-            maxRejectedJobs = reader.ReadInt("maxRejectedJobs");
-            curRejectedJobs = reader.ReadInt("curRejectedJobs");
-            avgRejectedJobs = reader.ReadFloat("avgRejectedJobs");
-            maxCancelledJobs = reader.ReadInt("maxCancelledJobs");
-            curCancelledJobs = reader.ReadInt("curCancelledJobs");
-            avgCancelledJobs = reader.ReadFloat("avgCancelledJobs");
-            totalRejectedJobs = reader.ReadInt("totalRejectedJobs");
-            totalCancelledJobs = reader.ReadInt("totalCancelledJobs");
-            totalExecutedJobs = reader.ReadInt("totalExecutedJobs");
-            maxJobWaitTime = reader.ReadLong("maxJobWaitTime");
-            curJobWaitTime = reader.ReadLong("curJobWaitTime");
-            avgJobWaitTime = reader.ReadDouble("avgJobWaitTime");
-            maxJobExecTime = reader.ReadLong("maxJobExecTime");
-            curJobExecTime = reader.ReadLong("curJobExecTime");
-            avgJobExecTime = reader.ReadDouble("avgJobExecTime");
-            totalExecTasks = reader.ReadInt("totalExecTasks");
-            totalIdleTime = reader.ReadLong("totalIdleTime");
-            curIdleTime = reader.ReadLong("curIdleTime");
-            availProcs = reader.ReadInt("availProcs");
-            load = reader.ReadDouble("load");
-            avgLoad = reader.ReadDouble("avgLoad");
-            gcLoad = reader.ReadDouble("gcLoad");
-            heapInit = reader.ReadLong("heapInit");
-            heapUsed = reader.ReadLong("heapUsed");
-            heapCommitted = reader.ReadLong("heapCommitted");
-            heapMax = reader.ReadLong("heapMax");
-            nonHeapInit = reader.ReadLong("nonHeapInit");
-            nonHeapUsed = reader.ReadLong("nonHeapUsed");
-            nonHeapCommitted = reader.ReadLong("nonHeapCommitted");
-            nonHeapMax = reader.ReadLong("nonHeapMax");
-            upTime = reader.ReadLong("upTime");
-            startTime = reader.ReadLong("startTime");
-            nodeStartTime = reader.ReadLong("nodeStartTime");
-            threadCnt = reader.ReadInt("threadCnt");
-            peakThreadCnt = reader.ReadInt("peakThreadCnt");
-            startedThreadCnt = reader.ReadLong("startedThreadCnt");
-            daemonThreadCnt = reader.ReadInt("daemonThreadCnt");
-            fileSysFreeSpace = reader.ReadLong("fileSysFreeSpace");
-            fileSysTotalSpace = reader.ReadLong("fileSysTotalSpace");
-            fileSysUsableSpace = reader.ReadLong("fileSysUsableSpace");
-            lastDataVer = reader.ReadLong("lastDataVer");
-            sentMsgsCnt = reader.ReadInt("sentMsgsCnt");
-            sentBytesCnt = reader.ReadLong("sentBytesCnt");
-            rcvdMsgsCnt = reader.ReadInt("rcvdMsgsCnt");
-            rcvdBytesCnt = reader.ReadLong("rcvdBytesCnt");
+            IGridClientPortableRawReader rawReader = reader.RawReader();
+
+            lastUpdateTime = rawReader.ReadLong();
+            maxActiveJobs = rawReader.ReadInt();
+            curActiveJobs = rawReader.ReadInt();
+            avgActiveJobs = rawReader.ReadFloat();
+            maxWaitingJobs = rawReader.ReadInt();
+            curWaitingJobs = rawReader.ReadInt();
+            avgWaitingJobs = rawReader.ReadFloat();
+            maxRejectedJobs = rawReader.ReadInt();
+            curRejectedJobs = rawReader.ReadInt();
+            avgRejectedJobs = rawReader.ReadFloat();
+            maxCancelledJobs = rawReader.ReadInt();
+            curCancelledJobs = rawReader.ReadInt();
+            avgCancelledJobs = rawReader.ReadFloat();
+            totalRejectedJobs = rawReader.ReadInt();
+            totalCancelledJobs = rawReader.ReadInt();
+            totalExecutedJobs = rawReader.ReadInt();
+            maxJobWaitTime = rawReader.ReadLong();
+            curJobWaitTime = rawReader.ReadLong();
+            avgJobWaitTime = rawReader.ReadDouble();
+            maxJobExecTime = rawReader.ReadLong();
+            curJobExecTime = rawReader.ReadLong();
+            avgJobExecTime = rawReader.ReadDouble();
+            totalExecTasks = rawReader.ReadInt();
+            totalIdleTime = rawReader.ReadLong();
+            curIdleTime = rawReader.ReadLong();
+            availProcs = rawReader.ReadInt();
+            load = rawReader.ReadDouble();
+            avgLoad = rawReader.ReadDouble();
+            gcLoad = rawReader.ReadDouble();
+            heapInit = rawReader.ReadLong();
+            heapUsed = rawReader.ReadLong();
+            heapCommitted = rawReader.ReadLong();
+            heapMax = rawReader.ReadLong();
+            nonHeapInit = rawReader.ReadLong();
+            nonHeapUsed = rawReader.ReadLong();
+            nonHeapCommitted = rawReader.ReadLong();
+            nonHeapMax = rawReader.ReadLong();
+            upTime = rawReader.ReadLong();
+            startTime = rawReader.ReadLong();
+            nodeStartTime = rawReader.ReadLong();
+            threadCnt = rawReader.ReadInt();
+            peakThreadCnt = rawReader.ReadInt();
+            startedThreadCnt = rawReader.ReadLong();
+            daemonThreadCnt = rawReader.ReadInt();
+            fileSysFreeSpace = rawReader.ReadLong();
+            fileSysTotalSpace = rawReader.ReadLong();
+            fileSysUsableSpace = rawReader.ReadLong();
+            lastDataVer = rawReader.ReadLong();
+            sentMsgsCnt = rawReader.ReadInt();
+            sentBytesCnt = rawReader.ReadLong();
+            rcvdMsgsCnt = rawReader.ReadInt();
+            rcvdBytesCnt = rawReader.ReadLong();
         }
     }
 }
