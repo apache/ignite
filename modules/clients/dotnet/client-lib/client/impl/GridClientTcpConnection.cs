@@ -553,7 +553,7 @@ namespace GridGain.Client.Impl {
 
             req.CacheName = cacheName;
             req.CacheFlags = encodeCacheFlags(cacheFlags);
-            req.Values = (IDictionary<object, object>)entries.ToMap();
+            req.Values = entries.ToObjectMap();
 
             return makeRequest<Boolean>(req);
         }
