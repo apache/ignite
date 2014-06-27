@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
-import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.portable.*;
 
 import java.io.*;
 import java.util.*;
@@ -21,9 +21,6 @@ import java.util.*;
 public class GridClientNodeBean implements Externalizable, GridPortable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    public static final int PORTABLE_TYPE_ID = -4;
 
     /** Node ID */
     private UUID nodeId;
@@ -37,17 +34,8 @@ public class GridClientNodeBean implements Externalizable, GridPortable {
     /** REST TCP server host names. */
     private Collection<String> tcpHostNames;
 
-    /** REST HTTP server addresses. */
-    private Collection<String> jettyAddrs;
-
-    /** REST HTTP server host names. */
-    private Collection<String> jettyHostNames;
-
     /** Rest binary port. */
     private int tcpPort;
-
-    /** Rest HTTP(S) port. */
-    private int jettyPort;
 
     /** Metrics. */
     private GridClientNodeMetricsBean metrics;
@@ -133,42 +121,6 @@ public class GridClientNodeBean implements Externalizable, GridPortable {
     }
 
     /**
-     * Gets REST HTTP server addresses.
-     *
-     * @return REST HTTP server addresses.
-     */
-    public Collection<String> getJettyAddresses() {
-        return jettyAddrs;
-    }
-
-    /**
-     * Gets REST HTTP server host names.
-     *
-     * @return REST HTTP server host names.
-     */
-    public Collection<String> getJettyHostNames() {
-        return jettyHostNames;
-    }
-
-    /**
-     * Sets REST HTTP server addresses.
-     *
-     * @param jettyAddrs REST HTTP server addresses.
-     */
-    public void setJettyAddresses(Collection<String> jettyAddrs) {
-        this.jettyAddrs = jettyAddrs;
-    }
-
-    /**
-     * Sets REST HTTP server host names.
-     *
-     * @param jettyHostNames REST HTTP server host names.
-     */
-    public void setJettyHostNames(Collection<String> jettyHostNames) {
-        this.jettyHostNames = jettyHostNames;
-    }
-
-    /**
      * Gets metrics.
      *
      * @return Metrics.
@@ -211,24 +163,6 @@ public class GridClientNodeBean implements Externalizable, GridPortable {
      */
     public int getTcpPort() {
         return tcpPort;
-    }
-
-    /**
-     * Gets REST http protocol port.
-     *
-     * @return Http port.
-     */
-    public int getJettyPort() {
-        return jettyPort;
-    }
-
-    /**
-     * Sets REST http port.
-     *
-     * @param jettyPort REST http port.
-     */
-    public void setJettyPort(int jettyPort) {
-        this.jettyPort = jettyPort;
     }
 
     /**
@@ -312,59 +246,46 @@ public class GridClientNodeBean implements Externalizable, GridPortable {
         return nodeId == null ? other.nodeId == null : nodeId.equals(other.nodeId);
     }
 
-//    /** {@inheritDoc} */
-//    @Override public int typeId() {
-//        return PORTABLE_TYPE_ID;
-//    }
-
     /** {@inheritDoc} */
     @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
-        writer.writeInt("tcpPort", tcpPort);
-        writer.writeInt("jettyPort", jettyPort);
-        writer.writeInt("replicaCnt", replicaCnt);
+        GridPortableRawWriter raw = writer.rawWriter();
 
-        writer.writeString("dfltCacheMode", dfltCacheMode);
-
-        writer.writeMap("attrs", attrs);
-        writer.writeMap("caches", caches);
-
-        writer.writeCollection("tcpAddrs", tcpAddrs);
-        writer.writeCollection("tcpHostNames", tcpHostNames);
-        writer.writeCollection("jettyAddrs", jettyAddrs);
-        writer.writeCollection("jettyHostNames", jettyHostNames);
-
-        writer.writeUuid("nodeId", nodeId);
-
-        writer.writeObject("consistentId", consistentId);
-        writer.writeObject("metrics", metrics);
+        raw.writeInt(tcpPort);
+        raw.writeInt(replicaCnt);
+        raw.writeString(dfltCacheMode);
+        raw.writeMap(attrs);
+        raw.writeMap(caches);
+        raw.writeCollection(tcpAddrs);
+        raw.writeCollection(tcpHostNames);
+        raw.writeUuid(nodeId);
+        raw.writeObject(consistentId);
+        raw.writeObject(metrics);
     }
 
     /** {@inheritDoc} */
     @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
-        tcpPort = reader.readInt("tcpPort");
-        jettyPort = reader.readInt("jettyPort");
-        replicaCnt = reader.readInt("replicaCnt");
+        GridPortableRawReader raw = reader.rawReader();
 
-        dfltCacheMode = reader.readString("dfltCacheMode");
+        tcpPort = raw.readInt();
+        replicaCnt = raw.readInt();
 
-        attrs = reader.readMap("attrs");
-        caches = reader.readMap("caches");
+        dfltCacheMode = raw.readString();
 
-        tcpAddrs = reader.readCollection("tcpAddrs");
-        tcpHostNames = reader.readCollection("tcpHostNames");
-        jettyAddrs = reader.readCollection("jettyAddrs");
-        jettyHostNames = reader.readCollection("jettyHostNames");
+        attrs = raw.readMap();
+        caches = raw.readMap();
 
-        nodeId = reader.readUuid("nodeId");
+        tcpAddrs = raw.readCollection();
+        tcpHostNames = raw.readCollection();
 
-        consistentId = reader.readObject("consistentId");
-        metrics = reader.readObject("metrics");
+        nodeId = raw.readUuid();
+
+        consistentId = raw.readObject();
+        metrics = (GridClientNodeMetricsBean)raw.readObject();
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(tcpPort);
-        out.writeInt(jettyPort);
         out.writeInt(replicaCnt);
 
         U.writeString(out, dfltCacheMode);
@@ -374,8 +295,6 @@ public class GridClientNodeBean implements Externalizable, GridPortable {
 
         U.writeCollection(out, tcpAddrs);
         U.writeCollection(out, tcpHostNames);
-        U.writeCollection(out, jettyAddrs);
-        U.writeCollection(out, jettyHostNames);
 
         U.writeUuid(out, nodeId);
 
@@ -386,7 +305,6 @@ public class GridClientNodeBean implements Externalizable, GridPortable {
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         tcpPort = in.readInt();
-        jettyPort = in.readInt();
         replicaCnt = in.readInt();
 
         dfltCacheMode = U.readString(in);
@@ -396,8 +314,6 @@ public class GridClientNodeBean implements Externalizable, GridPortable {
 
         tcpAddrs = U.readCollection(in);
         tcpHostNames = U.readCollection(in);
-        jettyAddrs = U.readCollection(in);
-        jettyHostNames = U.readCollection(in);
 
         nodeId = U.readUuid(in);
 

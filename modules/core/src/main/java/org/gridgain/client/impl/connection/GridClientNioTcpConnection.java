@@ -22,6 +22,7 @@ import org.jetbrains.annotations.*;
 import javax.net.ssl.*;
 import java.io.*;
 import java.net.*;
+import java.nio.*;
 import java.nio.channels.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -108,7 +109,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      * @param marsh Marshaller to use in communication.
      * @param top Topology instance.
      * @param cred Client credentials.      @throws IOException If connection could not be established.
-     * @param protoId Custom protocol ID, if marshaller is not defined.
      * @throws IOException If IO error occurs.
      * @throws GridClientException If handshake error occurs.
      */
@@ -124,12 +124,11 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         boolean tcpNoDelay,
         GridClientMarshaller marsh,
         GridClientTopology top,
-        Object cred,
-        Byte protoId)
+        Object cred)
         throws IOException, GridClientException {
         super(clientId, srvAddr, sslCtx, top, cred);
 
-        assert marsh != null || protoId != null;
+        assert marsh != null;
 
         this.marsh = marsh;
 
@@ -165,8 +164,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             if (sslHandshakeFut != null)
                 sslHandshakeFut.get();
 
-            GridClientHandshakeRequest req =
-                new GridClientHandshakeRequest(marsh != null ? marsh.getProtocolId() : protoId);
+            GridClientHandshakeRequest req = new GridClientHandshakeRequest();
 
             GridClientHandshakeRequestWrapper wrapper = new GridClientHandshakeRequestWrapper(req);
 
@@ -436,7 +434,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         }
 
         if (fut.forward()) {
-            GridRouterResponse msg = new GridRouterResponse(req.message(),
+            GridRouterResponse msg = new GridRouterResponse(
+                req.messageArray(),
                 req.requestId(),
                 clientId,
                 req.destinationId());
@@ -449,7 +448,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             GridClientMessage msg;
 
             try {
-                msg = marsh.unmarshal(req.message());
+                msg = marsh.unmarshal(req.messageArray());
             }
             catch (IOException e) {
                 fut.onDone(new GridClientException("Failed to unmarshal message.", e));
@@ -566,11 +565,11 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         wrapper.clientId(clientId);
         wrapper.destinationId(msg.destinationId());
 
-        byte[] data = (msg instanceof GridRouterRequest) ? ((GridRouterRequest) msg).body() : marsh.marshal(msg);
+        ByteBuffer data = (msg instanceof GridRouterRequest) ? ByteBuffer.wrap(((GridRouterRequest)msg).body()) :
+            marsh.marshal(msg, 0);
 
         wrapper.message(data);
-
-        wrapper.messageSize(data.length + 40);
+        wrapper.messageSize(data.remaining() + 40);
 
         return wrapper;
     }
@@ -608,10 +607,10 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         throws GridClientConnectionResetException, GridClientClosedException {
         assert entries != null;
 
-        GridClientCacheRequest<K, V> req = new GridClientCacheRequest<>(PUT_ALL);
+        GridClientCacheRequest req = new GridClientCacheRequest(PUT_ALL);
 
         req.cacheName(cacheName);
-        req.values(entries);
+        req.values((Map<Object, Object>)entries);
         req.cacheFlagsOn(encodeCacheFlags(flags));
 
         return makeRequest(req, destNodeId);
@@ -623,10 +622,10 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         throws GridClientConnectionResetException, GridClientClosedException {
         assert keys != null;
 
-        GridClientCacheRequest<K, V> req = new GridClientCacheRequest<>(GET_ALL);
+        GridClientCacheRequest req = new GridClientCacheRequest(GET_ALL);
 
         req.cacheName(cacheName);
-        req.keys(new HashSet<>(keys));
+        req.keys(new HashSet<>((Collection<Object>)keys));
         req.cacheFlagsOn(encodeCacheFlags(flags));
 
         return makeRequest(req, destNodeId);
@@ -636,7 +635,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     @Override public <K> GridClientFutureAdapter<Boolean> cacheRemove(String cacheName, K key,
         Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException {
-        GridClientCacheRequest<K, Object> req = new GridClientCacheRequest<>(RMV);
+        GridClientCacheRequest req = new GridClientCacheRequest(RMV);
 
         req.cacheName(cacheName);
         req.key(key);
@@ -651,10 +650,10 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         throws GridClientConnectionResetException, GridClientClosedException {
         assert keys != null;
 
-        GridClientCacheRequest<K, Object> req = new GridClientCacheRequest<>(RMV_ALL);
+        GridClientCacheRequest req = new GridClientCacheRequest(RMV_ALL);
 
         req.cacheName(cacheName);
-        req.keys(new HashSet<>(keys));
+        req.keys(new HashSet<>((Collection<Object>)keys));
         req.cacheFlagsOn(encodeCacheFlags(flags));
 
         return makeRequest(req, destNodeId);
@@ -667,7 +666,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         assert key != null;
         assert val != null;
 
-        GridClientCacheRequest<K, V> replace = new GridClientCacheRequest<>(REPLACE);
+        GridClientCacheRequest replace = new GridClientCacheRequest(REPLACE);
 
         replace.cacheName(cacheName);
         replace.key(key);
@@ -683,7 +682,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         throws GridClientConnectionResetException, GridClientClosedException {
         assert key != null;
 
-        GridClientCacheRequest<K, V> msg = new GridClientCacheRequest<>(CAS);
+        GridClientCacheRequest msg = new GridClientCacheRequest(CAS);
 
         msg.cacheName(cacheName);
         msg.key(key);
@@ -698,7 +697,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     @SuppressWarnings("unchecked")
     @Override public <K> GridClientFutureAdapter<GridClientDataMetrics> cacheMetrics(String cacheName, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException {
-        GridClientCacheRequest<K, Object> metrics = new GridClientCacheRequest<>(METRICS);
+        GridClientCacheRequest metrics = new GridClientCacheRequest(METRICS);
 
         metrics.cacheName(cacheName);
         metrics.destinationId(destNodeId);
@@ -719,7 +718,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         assert key != null;
         assert val != null;
 
-        GridClientCacheRequest<K, Object> append = new GridClientCacheRequest<>(APPEND);
+        GridClientCacheRequest append = new GridClientCacheRequest(APPEND);
 
         append.cacheName(cacheName);
         append.key(key);
@@ -736,7 +735,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         assert key != null;
         assert val != null;
 
-        GridClientCacheRequest<K, Object> prepend = new GridClientCacheRequest<>(PREPEND);
+        GridClientCacheRequest prepend = new GridClientCacheRequest(PREPEND);
 
         prepend.cacheName(cacheName);
         prepend.key(key);

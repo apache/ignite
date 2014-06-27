@@ -16,7 +16,6 @@
 #include "gridgain/impl/gridclientimpl.hpp"
 #include "gridgain/impl/connection/gridclientconnectionpool.hpp"
 #include "gridgain/impl/cmd/gridclienttcpcommandexecutor.hpp"
-#include "gridgain/impl/cmd/gridclienthttpcommandexecutor.hpp"
 #include "gridgain/impl/connection/gridclientconnectionpool.hpp"
 #include "gridgain/impl/utils/gridclientlog.hpp"
 
@@ -28,24 +27,7 @@ public:
 
         std::shared_ptr<GridClientCommandExecutorPrivate> exec;
 
-        switch (cfg.protocolConfiguration().protocol()) {
-            case TCP:
-                exec.reset(new GridClientTcpCommandExecutor(connPool));
-
-                break;
-
-            case HTTP:
-                exec.reset(new GridClientHttpCommandExecutor(connPool));
-
-                break;
-
-            default: {
-                assert(false);
-
-                exec.reset(new GridClientTcpCommandExecutor(connPool));
-            }
-            break;
-        }
+        exec.reset(new GridClientTcpCommandExecutor(connPool));
 
         std::shared_ptr<GridClientImpl> client(new GridClientImpl(cfg, exec));
 
@@ -53,8 +35,8 @@ public:
 
         clients[client->id()] = client;
 
-        GG_LOG_INFO("Client started [id=%s, protocol=%s]",
-            client->id().uuid().c_str(), cfg.protocolConfiguration().protocol() == TCP ? "TCP" : "HTTP");
+        GG_LOG_INFO("Client started [id=%s, protocol=TCP]",
+            client->id().uuid().c_str());
 
         return client;
     }

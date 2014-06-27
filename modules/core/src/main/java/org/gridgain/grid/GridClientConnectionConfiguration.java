@@ -9,11 +9,14 @@
 
 package org.gridgain.grid;
 
+import org.gridgain.client.marshaller.*;
+import org.gridgain.client.marshaller.jdk.*;
+import org.gridgain.client.marshaller.optimized.*;
+import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.client.ssl.*;
-import org.gridgain.grid.portable.*;
 import org.jetbrains.annotations.*;
 
-import java.util.*;
+import java.net.Socket;
 import java.util.concurrent.*;
 
 /**
@@ -101,8 +104,8 @@ public class GridClientConnectionConfiguration {
     /** Client message interceptor. */
     private GridClientMessageInterceptor clientMsgInterceptor;
 
-    /** */
-    private Map<Integer, Class<? extends GridPortable>> portableTypesMap;
+    /** Marshaller. */
+    private GridClientMarshaller marsh = new GridClientOptimizedMarshaller();
 
     /**
      * Creates client connection configuration with all default values.
@@ -139,8 +142,7 @@ public class GridClientConnectionConfiguration {
         restTcpSslClientAuth = cfg.isRestTcpSslClientAuth();
         restTcpSslCtxFactory = cfg.getRestTcpSslContextFactory();
         restTcpSslEnabled = cfg.isRestTcpSslEnabled();
-        if (cfg.getPortableTypesMap() != null)
-            portableTypesMap = new HashMap<>(cfg.getPortableTypesMap());
+        marsh = cfg.getMarshaller();
     }
 
     /**
@@ -239,7 +241,7 @@ public class GridClientConnectionConfiguration {
     /**
      * Gets flag indicating whether {@code TCP_NODELAY} option should be set for accepted client connections.
      * Setting this option reduces network latency and should be set to {@code true} in majority of cases.
-     * For more information, see {@link java.net.Socket#setTcpNoDelay(boolean)}
+     * For more information, see {@link Socket#setTcpNoDelay(boolean)}
      * <p/>
      * If not specified, default value is {@link #DFLT_TCP_NODELAY}.
      *
@@ -571,16 +573,27 @@ public class GridClientConnectionConfiguration {
     }
 
     /**
-     * @return Map associating portable type identifiers with java classes.
+     * Gets the marshaller, that is used to communicate between client and server.
+     * <p>
+     * Options, that can be used out-of-the-box:
+     * <ul>
+     *     <li>{@link GridClientOptimizedMarshaller} (default) - GridGain's optimized marshaller.</li>
+     *     <li>{@link GridClientPortableMarshaller} - Marshaller that supports portable objects.</li>
+     *     <li>{@link GridClientJdkMarshaller} - JDK marshaller (not recommended).</li>
+     * </ul>
+     *
+     * @return A marshaller to use.
      */
-    @Nullable public Map<Integer, Class<? extends GridPortable>> getPortableTypesMap() {
-        return portableTypesMap;
+    public GridClientMarshaller getMarshaller() {
+        return marsh;
     }
 
     /**
-     * @param portableTypesMap Map associating portable type identifiers with java classes.
+     * Sets the marshaller to use for communication.
+     *
+     * @param marsh A marshaller to use.
      */
-    public void setPortableTypesMap(Map<Integer, Class<? extends GridPortable>> portableTypesMap) {
-        this.portableTypesMap = portableTypesMap;
+    public void setMarshaller(GridClientMarshaller marsh) {
+        this.marsh = marsh;
     }
 }

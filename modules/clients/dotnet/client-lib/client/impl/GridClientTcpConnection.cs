@@ -190,6 +190,19 @@ namespace GridGain.Client.Impl {
                 }
             }
 
+            // Process handshake.
+            outStream.Write(GridClientHandshake.BYTES, 0, GridClientHandshake.BYTES.Length);
+
+            outStream.Flush();
+
+            int hndRes = inStream.ReadByte();
+
+            if (hndRes != GridClientHandshake.CODE_OK)
+            {
+                throw new GridClientException("Failed to perform handshake with server [srvAddr=" + srvAddr + 
+                    ", errorCode=" + hndRes + ']'); 
+            }
+
             // Avoid immediate attempt to close by idle.
             lastPacketSndTime = lastPacketRcvTime = lastPingSndTime = lastPingRcvTime = U.Now;
 
@@ -540,7 +553,7 @@ namespace GridGain.Client.Impl {
 
             req.CacheName = cacheName;
             req.CacheFlags = encodeCacheFlags(cacheFlags);
-            req.Values = (IDictionary<object, object>)entries.ToMap();
+            req.Values = entries.ToObjectMap();
 
             return makeRequest<Boolean>(req);
         }

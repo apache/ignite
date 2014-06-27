@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest.handlers.cache;
 
+import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
@@ -75,11 +76,18 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     /** */
     private static final GridCacheFlag[] EMPTY_FLAGS = new GridCacheFlag[0];
 
+    /** */
+    private final boolean portable;
+
     /**
      * @param ctx Context.
      */
     public GridCacheCommandHandler(GridKernalContext ctx) {
         super(ctx);
+
+        GridClientConnectionConfiguration cfg = ctx.config().getClientConnectionConfiguration();
+
+        portable = cfg != null && cfg.getMarshaller() instanceof GridClientPortableMarshaller;
     }
 
     /** {@inheritDoc} */
@@ -146,7 +154,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             switch (cmd) {
                 case CACHE_GET: {
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
-                        new GetCommand(key));
+                        new GetCommand(key, portable));
 
                     break;
                 }
@@ -161,7 +169,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     keys = new HashSet<>(keys);
 
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
-                        new GetAllCommand(keys));
+                        new GetAllCommand(keys, portable));
 
                     break;
                 }
@@ -741,16 +749,21 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         /** */
         private final Object key;
 
+        /** */
+        private final boolean portable;
+
         /**
          * @param key Key.
+         * @param portable Portable flag.
          */
-        GetCommand(Object key) {
+        GetCommand(Object key, boolean portable) {
             this.key = key;
+            this.portable = portable;
         }
 
         /** {@inheritDoc} */
         @Override public GridFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
-            return c.getAsync(key);
+            return portable ? c.getPortableAsync(key) : c.getAsync(key);
         }
     }
 
@@ -762,16 +775,21 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         /** */
         private final Collection<Object> keys;
 
+        /** */
+        private final boolean portable;
+
         /**
          * @param keys Keys.
+         * @param portable Portable flag.
          */
-        GetAllCommand(Collection<Object> keys) {
+        GetAllCommand(Collection<Object> keys, boolean portable) {
             this.keys = keys;
+            this.portable = portable;
         }
 
         /** {@inheritDoc} */
         @Override public GridFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
-            return c.getAllAsync(keys);
+            return portable ? c.getAllPortableAsync(keys) : c.getAllAsync(keys);
         }
     }
 

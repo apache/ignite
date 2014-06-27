@@ -20,11 +20,11 @@ class GridClientProtocolConfiguration::Impl {
 public:
     Impl() : maxConnIdleTime_(DFLT_MAX_CONN_IDLE_TIME), 
         connTimeout_(DFLT_MAX_CONN_TIMEOUT),
-        protType_(DFLT_CLIENT_PROTOCOL), sslEnabled_(false), cred_(""), uuid_(GridClientUuid::randomUuid()) {
+        sslEnabled_(false), cred_(""), uuid_(GridClientUuid::randomUuid()) {
     }
 
     Impl(const Impl& other) : maxConnIdleTime_(other.maxConnIdleTime_), connTimeout_(other.connTimeout_), 
-        protType_(other.protType_), sslEnabled_(other.sslEnabled_), cred_(other.cred_), cert_(other.cert_), 
+        sslEnabled_(other.sslEnabled_), cred_(other.cred_), cert_(other.cert_), 
         pass_(other.pass_), uuid_(other.uuid_) {
     }
 
@@ -33,9 +33,6 @@ public:
 
     /** Connection timeout. */
     int connTimeout_;
-
-    /** Protocol. */
-    GridClientProtocol protType_;
 
     /** Ssl enabled flag. */
     bool sslEnabled_;
@@ -79,24 +76,6 @@ GridClientProtocolConfiguration& GridClientProtocolConfiguration::operator=(cons
 GridClientProtocolConfiguration::~GridClientProtocolConfiguration() {
     delete pimpl;
 }
-
-/**
-* Gets protocol for communication between client and remote grid.
-*
-* @return Protocol for communication between client and remote grid.
-*/
-GridClientProtocol GridClientProtocolConfiguration::protocol() const {
-    return pimpl->protType_;
-};
-
-/**
-* Sets protocol for communication between client and remote grid.
-*
-* @param p Protocol for communication between client and remote grid.
-*/
-void GridClientProtocolConfiguration::protocol(GridClientProtocol p) {
-    pimpl->protType_ = p;
-};
 
 /**
 * Gets timeout for socket connect operation.

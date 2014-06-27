@@ -419,7 +419,12 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
 
         assert snapshot != null;
 
-        map0(snapshot, keys, remap, oldNodeId);
+        try {
+            map0(snapshot, keys, remap, oldNodeId);
+        }
+        catch (GridException e) {
+            onDone(e);
+        }
     }
 
     /**
@@ -443,7 +448,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
      * @param oldNodeId Old node ID if was remap.
      */
     private void map0(GridDiscoveryTopologySnapshot topSnapshot, Collection<? extends K> keys, boolean remap,
-        @Nullable UUID oldNodeId) {
+        @Nullable UUID oldNodeId) throws GridException {
         assert oldNodeId == null || remap;
 
         long topVer = topSnapshot.topologyVersion();
@@ -511,6 +516,9 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
 
                 return;
             }
+
+            if (val != null && cctx.kernalContext().portable().isPortable(val.getClass()))
+                val = cctx.kernalContext().portable().marshal(val);
 
             Collection<GridNode> primaryNodes = mapKey(key, topVer, fastMap);
 
@@ -605,6 +613,9 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
 
                 if (val == null && op != GridCacheOperation.DELETE)
                     continue;
+
+                if (val != null && cctx.kernalContext().portable().isPortable(val.getClass()))
+                    val = cctx.kernalContext().portable().marshal(val);
 
                 Collection<GridNode> affNodes = mapKey(key, topVer, fastMap);
 

@@ -327,6 +327,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         boolean skipTx,
         @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable UUID subjId,
+        boolean deserializePortable,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter
     ) {
         ctx.denyOnFlag(LOCAL);
@@ -337,7 +338,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
         subjId = ctx.subjectIdPerCall(subjId);
 
-        return loadAsync(null, keys, false, forcePrimary, filter, subjId);
+        return loadAsync(null, keys, false, forcePrimary, filter, subjId, deserializePortable);
     }
 
     /** {@inheritDoc} */

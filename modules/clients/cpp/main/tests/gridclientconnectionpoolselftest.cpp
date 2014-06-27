@@ -75,15 +75,10 @@ void doRentTurnBackConnections(std::shared_ptr<GridClientConnectionPool> pool) {
     TConnectionPtr conn = pool->rentTcpConnection(TEST_HOST, TEST_TCP_PORT);
 
     pool->turnBack(conn);
-
-    conn = pool->rentHttpConnection(TEST_HOST, TEST_HTTP_PORT);
-
-    pool->turnBack(conn);
 }
 
 void doRentConnections(std::shared_ptr<GridClientConnectionPool> pool) {
     pool->rentTcpConnection(TEST_HOST, TEST_TCP_PORT);
-    pool->rentHttpConnection(TEST_HOST, TEST_HTTP_PORT);
 }
 
 BOOST_AUTO_TEST_CASE(testMultithreaded) {
@@ -106,7 +101,7 @@ BOOST_AUTO_TEST_CASE(testMultithreaded) {
     multithreaded(boost::bind(&doRentConnections, pool), nthreads);
 
     BOOST_CHECK_EQUAL( pool->getAvailableConnectionsCount(), 0 );
-    BOOST_CHECK_EQUAL( pool->getAllConnectionsCount(), nthreads * 2 );
+    BOOST_CHECK_EQUAL( pool->getAllConnectionsCount(), nthreads );
 
     pool->close();
 

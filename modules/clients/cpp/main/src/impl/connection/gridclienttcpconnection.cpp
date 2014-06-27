@@ -31,8 +31,7 @@
 #include "gridgain/impl/connection/gridclientconnectionpool.hpp"
 #include "gridgain/impl/cmd/gridclientmessageauthrequestcommand.hpp"
 #include "gridgain/impl/cmd/gridclientmessageauthresult.hpp"
-#include "gridgain/impl/marshaller/protobuf/gridclientprotobufmarshaller.hpp"
-#include "gridgain/impl/marshaller/protobuf/ClientMessages.pb.h"
+#include "gridgain/impl/marshaller/portable/gridportablemarshaller.hpp"
 #include "gridgain/gridclientexception.hpp"
 
 #include "gridgain/impl/utils/gridclientlog.hpp"
@@ -67,8 +66,7 @@ const uint8_t HANDSHAKE_PACKET[] = {
         (uint8_t)verByteVec[0],                          // Version.
         (uint8_t)verByteVec[1],                          //
         (uint8_t)verByteVec[2],                          //
-        (uint8_t)verByteVec[3],                          //
-        2                                                // GridClientProtobufMarshaller.PROTOCOL_ID
+        (uint8_t)verByteVec[3]                          //
 };
 
 /**
@@ -85,21 +83,17 @@ enum HandshakeResultCode {
     ERR_UNKNOWN_PROTO_ID = 2
 };
 
-using namespace org::gridgain::grid::kernal::processors::rest::client::message;
-
 /** Fills packet with ping data. */
 void GridClientTcpPacket::createPingPacket(GridClientTcpPacket& pingPacket) {
     pingPacket.sizeHeader.assign(PING_PACKET_SIZE_HEADER,
             PING_PACKET_SIZE_HEADER + sizeof(PING_PACKET_SIZE_HEADER) / sizeof(*PING_PACKET_SIZE_HEADER));
+
+    pingPacket.ping = true;
 }
 
 /** Checks if this is a ping packet. */
 bool GridClientTcpPacket::isPingPacket() const {
-    GridClientTcpPacket pingPacket;
-
-    createPingPacket(pingPacket);
-
-    return data == pingPacket.data;
+    return ping;
 }
 
 size_t GridClientTcpPacket::getHeaderSize() const {
@@ -113,31 +107,45 @@ void GridClientTcpPacket::setPacketSize(int32_t size) {
     GridClientByteUtils::valueToBytes(size, &sizeHeader[0], sizeof(size));
 }
 
-void GridClientTcpPacket::setData(const ObjectWrapper& protoMsg) {
-    GridClientProtobufMarshaller::marshal(protoMsg, data);
-    setPacketSize(ADDITIONAL_HEADERS_SIZE + data.size());
+void GridClientTcpPacket::setData(boost::shared_ptr<std::vector<int8_t>>& ptr) {
+    dataPtr = ptr;
+
+    setPacketSize(ADDITIONAL_HEADERS_SIZE + ptr.get()->size());
 }
 
-void GridClientTcpPacket::setData(int8_t* start, int8_t* end) {
-    data.assign(start, end);
+void GridClientTcpPacket::copyData(int8_t* start, int8_t* end) {
+    std::vector<int8_t>* data = new std::vector<int8_t>();
+
+    data->assign(start, end);
+
+    dataPtr.reset(data);
 }
 
-ObjectWrapper GridClientTcpPacket::getData() const {
-    ObjectWrapper ret;
-
-    GridClientProtobufMarshaller::unmarshal(data, ret);
-
-    return ret;
+const boost::shared_ptr<std::vector<int8_t>>& GridClientTcpPacket::getData() const {
+    return dataPtr;
 }
 
 size_t GridClientTcpPacket::getDataSize() const {
-    return data.size();
+    std::vector<int8_t>* data = dataPtr.get();
+
+    return data ? data->size() : 0;
 }
 
 void GridClientTcpPacket::setAdditionalHeaders(const GridClientMessage& msg) {
-    GridClientProtobufMarshaller::marshal(msg.getRequestId(), requestIdHeader);
-    GridClientProtobufMarshaller::marshal(msg.getClientId(), clientIdHeader);
-    GridClientProtobufMarshaller::marshal(msg.getDestinationId(), destinationIdHeader);
+    marshal(msg.getRequestId(), requestIdHeader);
+    marshal(msg.getClientId(), clientIdHeader);
+    marshal(msg.getDestinationId(), destinationIdHeader);
+}
+
+void GridClientTcpPacket::marshal(int64_t i64, std::vector<int8_t>& bytes) {
+    bytes.resize(sizeof(i64));
+    memset(&bytes[0], 0, sizeof(i64));
+
+    GridClientByteUtils::valueToBytes(i64, &bytes[0], sizeof(i64));
+}
+
+void GridClientTcpPacket::marshal(const GridClientUuid& uuid, std::vector<int8_t>& bytes) {
+    uuid.rawBytes(bytes);
 }
 
 void GridClientTcpPacket::setAdditionalHeaders(int8_t* pBuf) {
@@ -154,8 +162,8 @@ void GridClientTcpPacket::setAdditionalHeaders(int8_t* pBuf) {
 void GridClientTcpPacket::setAdditionalHeadersAndData(int8_t* pBuf, size_t size) {
     setAdditionalHeaders(pBuf);
 
-    setData(pBuf + ADDITIONAL_HEADERS_SIZE, pBuf + size);
-    setPacketSize(ADDITIONAL_HEADERS_SIZE + data.size());
+    copyData(pBuf + ADDITIONAL_HEADERS_SIZE, pBuf + size);
+    setPacketSize(size);
 }
 
 std::ostream& operator <<(std::ostream& stream, const GridClientTcpPacket& packet) {
@@ -165,12 +173,13 @@ std::ostream& operator <<(std::ostream& stream, const GridClientTcpPacket& packe
     stream.write((const char*) packet.sizeHeader.data(), sizeof(int32_t));
 
     if (!packet.isPingPacket()) {
-        stream.write((const char*) packet.requestIdHeader.data(), sizeof(int64_t));
-        stream.write((const char*) packet.clientIdHeader.data(), packet.clientIdHeader.size());
-        stream.write((const char*) packet.destinationIdHeader.data(),
-                packet.destinationIdHeader.size());
+        stream.write((const char*)packet.requestIdHeader.data(), sizeof(int64_t));
+        stream.write((const char*)packet.clientIdHeader.data(), packet.clientIdHeader.size());
+        stream.write((const char*)packet.destinationIdHeader.data(), packet.destinationIdHeader.size());
 
-        stream.write((const char*) packet.data.data(), packet.data.size());
+        std::vector<int8_t>* data = packet.getData().get();
+
+        stream.write((const char*)data->data(), data->size());
     }
 
     return stream;
@@ -248,7 +257,7 @@ void GridClientSyncTcpConnection::connect(const string& pHost, int pPort) {
  * @param creds Credentials to use.
  */
 void GridClientSyncTcpConnection::authenticate(const string& clientId, const string& creds) {
-    ObjectWrapper protoMsg;
+    GridClientAuthenticationRequest msg(creds);
 
     GridAuthenticationRequestCommand authReq;
     GridClientMessageAuthenticationResult authResult;
@@ -257,21 +266,26 @@ void GridClientSyncTcpConnection::authenticate(const string& clientId, const str
     authReq.credentials(creds);
     authReq.setRequestId(1);
 
-    GridClientProtobufMarshaller::wrap(authReq, protoMsg);
-
     GridClientTcpPacket tcpPacket;
     GridClientTcpPacket tcpResponse;
-    ProtoRequest req;
 
-    tcpPacket.setData(protoMsg);
+    GridPortableMarshaller marsh;
+
+    boost::shared_ptr<vector<int8_t>> dataPtr = marsh.marshalSystemObject(msg);
+
+    tcpPacket.setData(dataPtr);
     tcpPacket.setAdditionalHeaders(authReq);
 
     send(tcpPacket, tcpResponse);
 
-    ObjectWrapper respMsg = tcpResponse.getData();
-    GridClientProtobufMarshaller::unwrap(respMsg, authResult);
+    GridClientVariant res = marsh.unmarshal(tcpResponse.getData());
 
-    sessToken = authResult.sessionToken();
+    std::unique_ptr<GridClientResponse> resMsg(res.getPortableObject().deserialize<GridClientResponse>());
+
+    if (!resMsg->errorMsg.empty())
+        throw GridClientCommandException(resMsg->errorMsg);
+
+    sessToken = resMsg->sesTok;
 }
 
 /**
@@ -279,7 +293,7 @@ void GridClientSyncTcpConnection::authenticate(const string& clientId, const str
  *
  * @return Session token or empty string if this is not a secure session.
  */
-std::string GridClientSyncTcpConnection::sessionToken() {
+std::vector<int8_t>& GridClientSyncTcpConnection::sessionToken() {
     return sessToken;
 }
 
@@ -298,33 +312,33 @@ namespace {
  * @param result Binary response.
  */
 void GridClientSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPacket, GridClientTcpPacket& result) {
-    int nBytes = gridTcpPacket.getDataSize();
+	size_t nBytes = gridTcpPacket.getDataSize();
     system::error_code ec;
 
     {
         boost::lock_guard<boost::mutex> g(pingMux); // Protect from concurrent ping write.
 
-        int totalBytesWritten = 0;
+        size_t totalBytesWritten = 0;
 
         if (!gridTcpPacket.isPingPacket()) {
+            std::vector<int8_t>* data = gridTcpPacket.dataPtr.get();
+
             boost::array<boost::asio::const_buffer, 6> bufsToSend = {
                 boost::asio::buffer(
-                    (const void*) &GridClientTcpPacket::SIGNAL_CHAR, sizeof(GridClientTcpPacket::SIGNAL_CHAR)),
-                    boost::asio::buffer((const void*) gridTcpPacket.sizeHeader.data(), sizeof(int32_t)),
-                    boost::asio::buffer(gridTcpPacket.requestIdHeader.data(), sizeof(int64_t)), boost::asio::buffer(
-                        gridTcpPacket.clientIdHeader.data(), gridTcpPacket.clientIdHeader.size()),
-                    boost::asio::buffer(gridTcpPacket.destinationIdHeader.data(),
-                        gridTcpPacket.destinationIdHeader.size()), boost::asio::buffer(
-                        gridTcpPacket.data.data(), gridTcpPacket.data.size())
+                    (const void*)&GridClientTcpPacket::SIGNAL_CHAR, sizeof(GridClientTcpPacket::SIGNAL_CHAR)),
+                    boost::asio::buffer((const void*)gridTcpPacket.sizeHeader.data(), sizeof(int32_t)),
+                    boost::asio::buffer(gridTcpPacket.requestIdHeader.data(), sizeof(int64_t)),
+                    boost::asio::buffer(gridTcpPacket.clientIdHeader.data(), gridTcpPacket.clientIdHeader.size()),
+                    boost::asio::buffer(gridTcpPacket.destinationIdHeader.data(), gridTcpPacket.destinationIdHeader.size()),
+                    boost::asio::buffer(data->data(), data->size())
             };
 
             totalBytesWritten += asio::write(getSocket(), bufsToSend, ec);
         }
         else {
             boost::array<boost::asio::const_buffer, 2> bufsToSend = {
-                boost::asio::buffer(
-                    (const void*) &GridClientTcpPacket::SIGNAL_CHAR, sizeof(GridClientTcpPacket::SIGNAL_CHAR)),
-                    boost::asio::buffer((const void*) gridTcpPacket.sizeHeader.data(), sizeof(int32_t))
+                boost::asio::buffer((const void*)&GridClientTcpPacket::SIGNAL_CHAR, sizeof(GridClientTcpPacket::SIGNAL_CHAR)),
+                boost::asio::buffer((const void*) gridTcpPacket.sizeHeader.data(), sizeof(int32_t))
             };
 
             totalBytesWritten += asio::write(getSocket(), bufsToSend, ec);
@@ -366,9 +380,10 @@ void GridClientSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPacket,
     GG_LOG_DEBUG("Done reading the response header [nbytes=%d]", nBytes);
 
     static boost::thread_specific_ptr<DummyBuffer> recvBuffer;
-    int8_t pBuffer[512];
 
     if (packetSize < 512) {
+        int8_t pBuffer[512];
+
         nBytes = asio::read(getSocket(), boost::asio::buffer(pBuffer, 512), asio::transfer_exactly(packetSize), ec);
 
         if (ec) {
@@ -379,8 +394,8 @@ void GridClientSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPacket,
 
         GG_LOG_DEBUG("Done reading the response data [nbytes=%d]", nBytes);
 
-        //read headers from header buffer
-        result.setAdditionalHeadersAndData((int8_t*) pBuffer, nBytes);
+        // Read headers from header buffer.
+        result.setAdditionalHeadersAndData((int8_t*)pBuffer, nBytes);
     }
     else {
         if (!recvBuffer.get()) {
@@ -407,8 +422,8 @@ void GridClientSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPacket,
 
         GG_LOG_DEBUG("Done reading the response data [nbytes=%d]", nBytes);
 
-        //read headers from header buffer
-        result.setAdditionalHeadersAndData((int8_t*) recvBuffer->pBuffer, nBytes);
+        // Read headers from header buffer.
+        result.setAdditionalHeadersAndData((int8_t*)recvBuffer->pBuffer, nBytes);
     }
 }
 
@@ -516,7 +531,7 @@ void GridClientAsyncTcpConnection::send(const GridClientTcpPacket& gridTcpPacket
 
     request_stream << gridTcpPacket;
 
-    assert(request.size() == (size_t) nBytes + gridTcpPacket.getHeaderSize());
+    assert(request.size() == (size_t)nBytes + gridTcpPacket.getHeaderSize());
 
     pingMux.lock(); // Protect from concurrent ping write.
 
@@ -719,7 +734,7 @@ void GridClientRawSyncTcpConnection::connect(const string& pHost, int pPort) {
  * @param creds Credentials to use.
  */
 void GridClientRawSyncTcpConnection::authenticate(const string& clientId, const string& creds) {
-    ObjectWrapper protoMsg;
+    GridClientAuthenticationRequest msg(creds);
 
     GridAuthenticationRequestCommand authReq;
     GridClientMessageAuthenticationResult authResult;
@@ -728,22 +743,26 @@ void GridClientRawSyncTcpConnection::authenticate(const string& clientId, const 
     authReq.credentials(creds);
     authReq.setRequestId(1);
 
-    GridClientProtobufMarshaller::wrap(authReq, protoMsg);
-
     GridClientTcpPacket tcpPacket;
     GridClientTcpPacket tcpResponse;
-    ProtoRequest req;
 
-    tcpPacket.setData(protoMsg);
+    GridPortableMarshaller marsh;
+
+    boost::shared_ptr<vector<int8_t>> dataPtr = marsh.marshalSystemObject(msg);
+
+    tcpPacket.setData(dataPtr);
     tcpPacket.setAdditionalHeaders(authReq);
 
     send(tcpPacket, tcpResponse);
 
-    ObjectWrapper respMsg = tcpResponse.getData();
+    GridClientVariant res = marsh.unmarshal(tcpResponse.getData());
 
-    GridClientProtobufMarshaller::unwrap(respMsg, authResult);
+    std::unique_ptr<GridClientResponse> resMsg(res.getPortableObject().deserialize<GridClientResponse>());
 
-    sessToken = authResult.sessionToken();
+    if (!resMsg->errorMsg.empty())
+        throw GridClientCommandException(resMsg->errorMsg);
+
+    sessToken = resMsg->sesTok;
 }
 
 /**
@@ -751,7 +770,7 @@ void GridClientRawSyncTcpConnection::authenticate(const string& clientId, const 
  *
  * @return Session token or empty string if this is not a secure session.
  */
-std::string GridClientRawSyncTcpConnection::sessionToken() {
+std::vector<int8_t>& GridClientRawSyncTcpConnection::sessionToken() {
     return sessToken;
 }
 
@@ -771,12 +790,14 @@ void GridClientRawSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPack
 
     int nBytes = gridTcpPacket.getDataSize();
 
+    std::vector<int8_t>* data = gridTcpPacket.dataPtr.get();
+
     int bytesToSend = sizeof(GridClientTcpPacket::SIGNAL_CHAR);
     bytesToSend += sizeof(int32_t);
     bytesToSend += sizeof(int64_t);
     bytesToSend += gridTcpPacket.clientIdHeader.size();
     bytesToSend += gridTcpPacket.destinationIdHeader.size();
-    bytesToSend += gridTcpPacket.data.size();
+    bytesToSend += data->size();
 
     unsigned char * pBufferToSend = new unsigned char[bytesToSend];
     unsigned char * pBufferToConstruct = pBufferToSend;
@@ -791,9 +812,9 @@ void GridClientRawSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPack
     pBufferToConstruct += gridTcpPacket.clientIdHeader.size();
     memcpy(pBufferToConstruct, gridTcpPacket.destinationIdHeader.data(), gridTcpPacket.destinationIdHeader.size());
     pBufferToConstruct += gridTcpPacket.destinationIdHeader.size();
-    memcpy(pBufferToConstruct, gridTcpPacket.data.data(), gridTcpPacket.data.size());
+    memcpy(pBufferToConstruct, data->data(), data->size());
 
-    int bytesSent = ::send(sock, (const char *) pBufferToSend, bytesToSend, 0);
+    size_t bytesSent = ::send(sock, (const char *) pBufferToSend, bytesToSend, 0);
 
     delete[] pBufferToSend;
 
@@ -902,7 +923,7 @@ void GridClientRawSyncTcpConnection::sendPing() {
     pBufferToConstruct += sizeof(GridClientTcpPacket::SIGNAL_CHAR);
     memcpy(pBufferToConstruct, (const void*) pingPacket.sizeHeader.data(), sizeof(int32_t));
 
-    int bytesSent = ::send(sock, (const char *) pBufferToSend, bytesToSend, 0);
+    size_t bytesSent = ::send(sock, (const char *) pBufferToSend, bytesToSend, 0);
 
     delete[] pBufferToSend;
 

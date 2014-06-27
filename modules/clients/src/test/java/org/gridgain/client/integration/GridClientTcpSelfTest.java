@@ -14,6 +14,8 @@ import org.gridgain.client.marshaller.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.util.typedef.*;
 
+import java.nio.*;
+
 /**
  * Tests TCP protocol.
  */
@@ -48,16 +50,12 @@ public class GridClientTcpSelfTest extends GridClientAbstractSelfTest {
         GridClientConfiguration cfg = clientConfiguration();
 
         cfg.setMarshaller(new GridClientMarshaller() {
-            @Override public byte[] marshal(Object obj) {
+            @Override public ByteBuffer marshal(Object obj, int off) {
                 throw new UnsupportedOperationException();
             }
 
             @Override public <T> T unmarshal(byte[] bytes) {
                 throw new UnsupportedOperationException();
-            }
-
-            @Override public byte getProtocolId() {
-                return 42; // Non-existent marshaller ID.
             }
         });
 

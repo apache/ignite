@@ -34,7 +34,7 @@ public:
      *
      * @param taskRslt Task result.
      */
-    void setTaskResult(GridClientVariant taskRslt) {
+    void setTaskResult(const GridClientVariant& taskRslt) {
         taskRslt_ = taskRslt;
     }
 };

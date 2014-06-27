@@ -237,6 +237,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void start() throws GridException {
         if (isRestEnabled()) {
+            assertParameter(config().getMarshaller() != null,
+                "cfg.getClientConnectionConfiguration().getMarshaller() != null");
+
             // Register handlers.
             addHandler(new GridCacheCommandHandler(ctx));
             addHandler(new GridCacheQueryCommandHandler(ctx));
@@ -389,7 +392,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 case EXE:
                     if (res.getResponse() instanceof GridClientTaskResultBean) {
-                        GridClientTaskResultBean taskRes = (GridClientTaskResultBean) res.getResponse();
+                        GridClientTaskResultBean taskRes = (GridClientTaskResultBean)res.getResponse();
 
                         taskRes.setResult(interceptor.onSend(taskRes.getResult()));
                     }

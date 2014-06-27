@@ -477,17 +477,15 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         assertFalse(node.getAttributes().isEmpty());
         assertNotNull(node.getMetrics());
         assertNotNull(node.getTcpAddresses());
-        assertNotNull(node.getJettyAddresses());
         assertEquals(PORT,  node.getTcpPort());
         assertEquals(grid().localNode().id(), node.getNodeId());
 
         node = client.node(grid().localNode().id(), false, false);
 
         assertNotNull(node);
-        assertTrue(node.getAttributes().isEmpty());
+        assertNull(node.getAttributes());
         assertNull(node.getMetrics());
         assertNotNull(node.getTcpAddresses());
-        assertNotNull(node.getJettyAddresses());
         assertEquals(PORT,  node.getTcpPort());
         assertEquals(grid().localNode().id(), node.getNodeId());
 
@@ -497,17 +495,15 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         assertFalse(node.getAttributes().isEmpty());
         assertNotNull(node.getMetrics());
         assertNotNull(node.getTcpAddresses());
-        assertNotNull(node.getJettyAddresses());
         assertEquals(PORT,  node.getTcpPort());
         assertEquals(grid().localNode().id(), node.getNodeId());
 
         node = client.node(HOST, false, false);
 
         assertNotNull(node);
-        assertTrue(node.getAttributes().isEmpty());
+        assertNull(node.getAttributes());
         assertNull(node.getMetrics());
         assertNotNull(node.getTcpAddresses());
-        assertNotNull(node.getJettyAddresses());
         assertEquals(PORT,  node.getTcpPort());
         assertEquals(grid().localNode().id(), node.getNodeId());
     }
@@ -527,7 +523,6 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         assertFalse(node.getAttributes().isEmpty());
         assertNotNull(node.getMetrics());
         assertNotNull(node.getTcpAddresses());
-        assertNotNull(node.getJettyAddresses());
         assertEquals(grid().localNode().id(), node.getNodeId());
 
         top = client.topology(false, false);
@@ -538,10 +533,9 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         node = F.first(top);
 
         assertNotNull(node);
-        assertTrue(node.getAttributes().isEmpty());
+        assertNull(node.getAttributes());
         assertNull(node.getMetrics());
         assertNotNull(node.getTcpAddresses());
-        assertNotNull(node.getJettyAddresses());
         assertEquals(grid().localNode().id(), node.getNodeId());
     }
 

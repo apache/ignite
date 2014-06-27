@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
-import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.portable.*;
 
 import java.io.*;
 
@@ -20,9 +20,6 @@ import java.io.*;
 public class GridClientResponse extends GridClientAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    public static final int PORTABLE_TYPE_ID = -6;
 
     /** Command succeeded. */
     public static final int STATUS_SUCCESS = 0;
@@ -87,31 +84,26 @@ public class GridClientResponse extends GridClientAbstractMessage {
         this.res = res;
     }
 
-//    /** {@inheritDoc} */
-//    @Override public int typeId() {
-//        return PORTABLE_TYPE_ID;
-//    }
-
     /** {@inheritDoc} */
     @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
         super.writePortable(writer);
 
-        writer.writeInt("successStatus", successStatus);
+        GridPortableRawWriter raw = writer.rawWriter();
 
-        writer.writeString("errorMsg", errorMsg);
-
-        writer.writeObject("res", res);
+        raw.writeInt(successStatus);
+        raw.writeString(errorMsg);
+        raw.writeObject(res);
     }
 
     /** {@inheritDoc} */
     @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
         super.readPortable(reader);
 
-        successStatus = reader.readInt("successStatus");
+        GridPortableRawReader raw = reader.rawReader();
 
-        errorMsg = reader.readString("errorMsg");
-
-        res = reader.readObject("res");
+        successStatus = raw.readInt();
+        errorMsg = raw.readString();
+        res = raw.readObject();
     }
 
     /** {@inheritDoc} */

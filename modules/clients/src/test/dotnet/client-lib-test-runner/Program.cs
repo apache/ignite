@@ -17,35 +17,26 @@ namespace GridGain {
     using GridGain.Client;
     using GridGain.Client.Hasher;
     using GridGain.Client.Portable;
-    
+
     using Dbg = System.Diagnostics.Debug;
-
-    public class LList<T> : List<T>
-    {
-
-    }
 
     /** <summary>Start test suite main class.</summary> */
     public static class Program {
         [STAThread]
         static void Main(/*string[] args*/) {
-            IDictionary<string, int> dict = new Dictionary<string, int>();
-
-            Type type = dict.GetType();
-
-            type.GetInterface(typeof(ICollection<>).FullName);
-
-
             Debug.Listeners.Add(new TextWriterTraceListener(System.Console.Out));
             Debug.AutoFlush = true;
 
-            Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
+            //TestAll();
+
+            //return;
+
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestClient());
 
             Test(new GridClientPortableSelfTest(), (test) => test.TestGenericCollections());
-
             Test(new GridClientPortableSelfTest(), (test) => test.TestCollectionsReflective());
 
-            // 4. Handling simple fields inside object. 
+            // 4. Handling simple fields inside object.
             Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsReflective());
             Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsPortable());
             Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsRawPortable());
@@ -85,7 +76,7 @@ namespace GridGain {
 
             // 3. Handling Guids.
             Test(new GridClientPortableSelfTest(), (test) => test.TestWriteGuid());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWriteGuidArray());            
+            Test(new GridClientPortableSelfTest(), (test) => test.TestWriteGuidArray());
 
             Test(new GridClientPortableSelfTest(), (test) => test.TestObjectReflective());
 
@@ -140,7 +131,7 @@ namespace GridGain {
         }
 
         private static void TestAll() {
-            string[] my_args = { Assembly.GetAssembly(typeof(GridClientHttpTest)).Location };
+            string[] my_args = { Assembly.GetAssembly(typeof(GridClientTcpTest)).Location };
 
             int returnCode = NUnit.ConsoleRunner.Runner.Main(my_args);
 

@@ -61,9 +61,6 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Google.ProtocolBuffers">
-      <HintPath>..\..\..\..\dotnet\client-lib\libs\Google.ProtocolBuffers.dll</HintPath>
-    </Reference>
     <Reference Include="GridGainClient">
       <HintPath>..\..\..\..\dotnet\client-lib\libs\GridGainClient.dll</HintPath>
     </Reference>

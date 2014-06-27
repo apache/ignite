@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
 import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
@@ -19,7 +18,6 @@ import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
-import org.gridgain.grid.portable.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.nio.*;
@@ -29,12 +27,9 @@ import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
 import java.io.*;
-import java.lang.reflect.*;
 import java.net.*;
 import java.nio.*;
 import java.util.*;
-
-import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
 
 /**
  * TCP binary protocol implementation.
@@ -46,8 +41,8 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     /** JDK marshaller. */
     private final GridMarshaller jdkMarshaller = new GridJdkMarshaller();
 
-    /** */
-    private final GridClientPortableMarshaller portableMarshaller;
+    /** Client marshaller. */
+    private GridClientMarshaller marsh;
 
     /** Message reader. */
     private final GridNioMessageReader msgReader = new GridNioMessageReader() {
@@ -101,9 +96,6 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     /** @param ctx Context. */
     public GridTcpRestProtocol(GridKernalContext ctx) {
         super(ctx);
-
-        portableMarshaller = new GridClientPortableMarshaller(
-            ctx.config().getClientConnectionConfiguration().getPortableTypesMap());
     }
 
     /**
@@ -114,30 +106,11 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     }
 
     /**
-     * @return Client portable marshaller.
-     */
-    GridClientPortableMarshaller portableMarshaller() {
-        return portableMarshaller;
-    }
-
-    /**
-     * Returns marshaller from session, if no marshaller found - init it with default.
+     * Returns marshaller.
      *
-     * @param ses Current session.
-     * @return Current session's marshaller.
-     * @throws GridException If marshaller can't be found.
+     * @return Marshaller.
      */
-    GridClientMarshaller marshaller(GridNioSession ses) throws GridException {
-        GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
-
-        if (marsh == null) {
-            U.warn(log, "No marshaller defined for NIO session, using portable as default [ses=" + ses + ']');
-
-            marsh = portableMarshaller;
-
-            ses.addMeta(MARSHALLER.ordinal(), marsh);
-        }
-
+    GridClientMarshaller marshaller() {
         return marsh;
     }
 
@@ -155,10 +128,9 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
         assert cfg != null;
 
-        validatePortableTypes(cfg);
+        marsh = cfg.getMarshaller();
 
-        GridNioServerListener<GridClientMessage> lsnr =
-            new GridTcpRestNioListener(log, this, hnd, ctx, protobufMarshaller);
+        GridNioServerListener<GridClientMessage> lsnr = new GridTcpRestNioListener(log, this, hnd, ctx);
 
         GridNioParser parser = new GridTcpRestDirectParser(this, msgReader);
 
@@ -200,42 +172,6 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
             U.warn(log, "Failed to start " + name() + " protocol on port " + port + ": " + e.getMessage(),
                 "Failed to start " + name() + " protocol on port " + port + ". " +
                     "Check restTcpHost configuration property.");
-        }
-    }
-
-    /**
-     * @param cfg Configuration.
-     * @throws GridException If validation fails.
-     */
-    private void validatePortableTypes(GridClientConnectionConfiguration cfg) throws GridException {
-        if (cfg.getPortableTypesMap() == null)
-            return;
-
-        for (Map.Entry<Integer, Class<? extends GridPortable>> entry : cfg.getPortableTypesMap().entrySet()) {
-            Integer typeId = entry.getKey();
-            Class<? extends GridPortable> cls = entry.getValue();
-
-            if (typeId < 0)
-                throw new GridException("Negative portable types identifiers reserved for system use " +
-                    "[typeId=" + typeId + ", cls=" + cls + ']');
-
-            Constructor<?> ctor;
-
-            try {
-                ctor = cls.getConstructor();
-            }
-            catch (NoSuchMethodException e) {
-                throw new GridException("Portable object class must define public no-arg constructor " +
-                    "[typeId=" + typeId + ", cls=" + cls + ']', e);
-            }
-
-            try {
-                ctor.newInstance();
-            }
-            catch (Exception e) {
-                throw new GridException("Can not instantiate portable object instance using public no-arg constructor "
-                    + "[typeId=" + typeId + ", cls=" + cls + ']', e);
-            }
         }
     }
 

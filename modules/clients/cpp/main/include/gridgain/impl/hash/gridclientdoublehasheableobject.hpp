@@ -68,6 +68,7 @@ public:
      * @return True if the right operand is greater than this object.
      */
     virtual bool operator<(const GridDoubleHasheableObject& right) const;
+
 protected:
     /**
      * Returns a representation of the specified floating-point value

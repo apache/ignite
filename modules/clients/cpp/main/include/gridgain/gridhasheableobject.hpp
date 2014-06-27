@@ -29,13 +29,6 @@ public:
      * @return Hash code.
      */
     virtual int32_t hashCode() const = 0;
-
-    /**
-     * Converts contained object to byte vector.
-     *
-     * @param bytes Vector to fill.
-     */
-    virtual void convertToBytes(std::vector<int8_t>& bytes) const = 0;
 };
 
 

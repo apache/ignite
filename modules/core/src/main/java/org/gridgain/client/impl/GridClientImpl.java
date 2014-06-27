@@ -145,7 +145,7 @@ public class GridClientImpl implements GridClient {
                 throw new GridClientException("Servers addresses and routers addresses cannot both be provided " +
                     "for client (please fix configuration and restart): " + this);
 
-            connMgr = new GridClientConnectionManagerImpl(id, sslCtx, cfg, routers, top, null);
+            connMgr = new GridClientConnectionManagerImpl(id, sslCtx, cfg, routers, top);
 
             try {
                 // Init connection manager, it should cause topology update.
@@ -369,12 +369,11 @@ public class GridClientImpl implements GridClient {
     }
 
     /**
-     * @param protoId Protocol ID to use in this connection manager.
      * @return New connection manager based on current client settings.
      * @throws GridClientException If failed to start connection server.
      */
-    public GridClientConnectionManager newConnectionManager(Byte protoId) throws GridClientException {
-        return new GridClientConnectionManagerImpl(id, sslCtx, cfg, routers, top, protoId);
+    public GridClientConnectionManager newConnectionManager() throws GridClientException {
+        return new GridClientConnectionManagerImpl(id, sslCtx, cfg, routers, top);
     }
 
     /**

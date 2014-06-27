@@ -26,16 +26,16 @@ namespace GridGain.Client.Impl.Portable
     static class GridClientPortableUilts
     {
         /** Header of NULL object. */
-        public const byte HDR_NULL = 80;
+        public const byte HDR_NULL = 101;
 
         /** Header of object handle. */
-        public const byte HDR_HND = 81;
+        public const byte HDR_HND = 102;
 
         /** Header of object in fully serialized form. */
-        public const byte HDR_FULL = 82;
+        public const byte HDR_FULL = 103;
 
         /** Header of object in fully serailized form with metadata. */
-        public const byte HDR_META = 83;
+        public const byte HDR_META = 104;
 
         /** Type: unsigned byte. */
         public const byte TYPE_BYTE = 1;
@@ -112,32 +112,35 @@ namespace GridGain.Client.Impl.Portable
         /** Type: map. */
         public const byte TYPE_DICTIONARY = 25;
 
+        /** Type: portable object. */
+        public const byte TYPE_PORTABLE = 26;
+
         /** Type: authentication request. */
-        public const byte TYPE_AUTH_REQ = 100;
+        public const byte TYPE_AUTH_REQ = 51;
 
         /** Type: topology request. */
-        public const byte TYPE_TOP_REQ = 101;
+        public const byte TYPE_TOP_REQ = 52;
 
         /** Type: task request. */
-        public const byte TYPE_TASK_REQ = 102;
+        public const byte TYPE_TASK_REQ = 53;
 
         /** Type: cache request. */
-        public const byte TYPE_CACHE_REQ = 103;
+        public const byte TYPE_CACHE_REQ = 54;
         
         /** Type: log request. */
-        public const byte TYPE_LOG_REQ = 104;
+        public const byte TYPE_LOG_REQ = 55;
 
         /** Type: response. */
-        public const byte TYPE_RESP = 105;
+        public const byte TYPE_RESP = 56;
 
         /** Type: node bean. */
-        public const byte TYPE_NODE_BEAN = 106;
+        public const byte TYPE_NODE_BEAN = 57;
 
         /** Type: node metrics bean. */
-        public const byte TYPE_NODE_METRICS_BEAN = 107;
+        public const byte TYPE_NODE_METRICS_BEAN = 58;
 
         /** Type: task result bean. */
-        public const byte TYPE_TASK_RES_BEAN = 108;
+        public const byte TYPE_TASK_RES_BEAN = 59;
 
         /** Collection: custom. */
         public const byte COLLECTION_CUSTOM = 0;
@@ -201,10 +204,7 @@ namespace GridGain.Client.Impl.Portable
 
         /** java date multiplier. */
         private const long JAVA_DATE_MULTIPLIER = 10000;
-
-        /** Whether little endian is set. */
-        private static readonly bool LITTLE_ENDIAN = BitConverter.IsLittleEndian;
-
+        
         /** Bindig flags for instance search. */
         private static BindingFlags BIND_FLAGS_INSTANCE = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
@@ -381,16 +381,8 @@ namespace GridGain.Client.Impl.Portable
          */
         public static void WriteShort(short val, Stream stream)
         {
-            if (LITTLE_ENDIAN)
-            {
-                stream.WriteByte((byte)(val & 0xFF));
-                stream.WriteByte((byte)(val >> 8 & 0xFF));
-            }
-            else
-            {
-                stream.WriteByte((byte)(val >> 8 & 0xFF));
-                stream.WriteByte((byte)(val & 0xFF));
-            }
+            stream.WriteByte((byte)(val & 0xFF));
+            stream.WriteByte((byte)(val >> 8 & 0xFF));
         }
 
         /**
@@ -400,18 +392,8 @@ namespace GridGain.Client.Impl.Portable
          */
         public static short ReadShort(Stream stream)
         {
-            short val = 0;
-
-            if (LITTLE_ENDIAN)
-            {
-                val |= (short)stream.ReadByte();
-                val |= (short)(stream.ReadByte() << 8);
-            }
-            else
-            {
-                val |= (short)(stream.ReadByte() << 8);
-                val |= (short)stream.ReadByte();
-            }
+            short val = (short)stream.ReadByte();
+            val |= (short)(stream.ReadByte() << 8);
 
             return val;
         }
@@ -479,21 +461,11 @@ namespace GridGain.Client.Impl.Portable
          * <param name="stream">Output stream.</param>
          */
         public static void WriteInt(int val, Stream stream)
-        {
-            if (LITTLE_ENDIAN)
-            {
-                stream.WriteByte((byte)(val & 0xFF));
-                stream.WriteByte((byte)(val >> 8 & 0xFF));
-                stream.WriteByte((byte)(val >> 16 & 0xFF));
-                stream.WriteByte((byte)(val >> 24 & 0xFF));
-            }
-            else
-            {
-                stream.WriteByte((byte)(val >> 24 & 0xFF));
-                stream.WriteByte((byte)(val >> 16 & 0xFF));
-                stream.WriteByte((byte)(val >> 8 & 0xFF));
-                stream.WriteByte((byte)(val & 0xFF));                
-            }
+        {            
+            stream.WriteByte((byte)(val & 0xFF));
+            stream.WriteByte((byte)(val >> 8 & 0xFF));
+            stream.WriteByte((byte)(val >> 16 & 0xFF));
+            stream.WriteByte((byte)(val >> 24 & 0xFF));
         }
 
         /**
@@ -503,22 +475,10 @@ namespace GridGain.Client.Impl.Portable
          */
         public static int ReadInt(Stream stream)
         {
-            int val = 0;
-
-            if (LITTLE_ENDIAN)
-            {
-                val |= stream.ReadByte();
-                val |= stream.ReadByte() << 8;
-                val |= stream.ReadByte() << 16;
-                val |= stream.ReadByte() << 24;
-            }
-            else
-            {
-                val |= stream.ReadByte() << 24;
-                val |= stream.ReadByte() << 16;
-                val |= stream.ReadByte() << 8;
-                val |= stream.ReadByte();                
-            }
+            int val = stream.ReadByte();
+            val |= stream.ReadByte() << 8;
+            val |= stream.ReadByte() << 16;
+            val |= stream.ReadByte() << 24;
 
             return val;
         }
@@ -586,29 +546,15 @@ namespace GridGain.Client.Impl.Portable
          * <param name="stream">Output stream.</param>
          */
         public static void WriteLong(long val, Stream stream)
-        {
-            if (LITTLE_ENDIAN)
-            {
-                stream.WriteByte((byte)(val & 0xFF));
-                stream.WriteByte((byte)(val >> 8 & 0xFF));
-                stream.WriteByte((byte)(val >> 16 & 0xFF));
-                stream.WriteByte((byte)(val >> 24 & 0xFF));
-                stream.WriteByte((byte)(val >> 32 & 0xFF));
-                stream.WriteByte((byte)(val >> 40 & 0xFF));
-                stream.WriteByte((byte)(val >> 48 & 0xFF));
-                stream.WriteByte((byte)(val >> 56 & 0xFF));
-            }
-            else
-            {
-                stream.WriteByte((byte)(val >> 56 & 0xFF));
-                stream.WriteByte((byte)(val >> 48 & 0xFF));
-                stream.WriteByte((byte)(val >> 40 & 0xFF));
-                stream.WriteByte((byte)(val >> 32 & 0xFF));
-                stream.WriteByte((byte)(val >> 24 & 0xFF));
-                stream.WriteByte((byte)(val >> 16 & 0xFF));
-                stream.WriteByte((byte)(val >> 8 & 0xFF));
-                stream.WriteByte((byte)(val & 0xFF));
-            }
+        {            
+            stream.WriteByte((byte)(val & 0xFF));
+            stream.WriteByte((byte)(val >> 8 & 0xFF));
+            stream.WriteByte((byte)(val >> 16 & 0xFF));
+            stream.WriteByte((byte)(val >> 24 & 0xFF));
+            stream.WriteByte((byte)(val >> 32 & 0xFF));
+            stream.WriteByte((byte)(val >> 40 & 0xFF));
+            stream.WriteByte((byte)(val >> 48 & 0xFF));
+            stream.WriteByte((byte)(val >> 56 & 0xFF));            
         }
 
         /**
@@ -618,30 +564,14 @@ namespace GridGain.Client.Impl.Portable
          */
         public static long ReadLong(Stream stream)
         {
-            long val = 0;
-
-            if (LITTLE_ENDIAN)
-            {
-                val |= (long)(stream.ReadByte()) << 0;
-                val |= (long)(stream.ReadByte()) << 8;
-                val |= (long)(stream.ReadByte()) << 16;
-                val |= (long)(stream.ReadByte()) << 24;
-                val |= (long)(stream.ReadByte()) << 32;
-                val |= (long)(stream.ReadByte()) << 40;
-                val |= (long)(stream.ReadByte()) << 48;
-                val |= (long)(stream.ReadByte()) << 56; 
-            }
-            else
-            {
-                val |= (long)(stream.ReadByte()) << 56;
-                val |= (long)(stream.ReadByte()) << 48;
-                val |= (long)(stream.ReadByte()) << 40;
-                val |= (long)(stream.ReadByte()) << 32;
-                val |= (long)(stream.ReadByte()) << 24;
-                val |= (long)(stream.ReadByte()) << 16;
-                val |= (long)(stream.ReadByte()) << 8;
-                val |= (long)(stream.ReadByte()) << 0;              
-            }
+            long val = (long)(stream.ReadByte()) << 0;
+            val |= (long)(stream.ReadByte()) << 8;
+            val |= (long)(stream.ReadByte()) << 16;
+            val |= (long)(stream.ReadByte()) << 24;
+            val |= (long)(stream.ReadByte()) << 32;
+            val |= (long)(stream.ReadByte()) << 40;
+            val |= (long)(stream.ReadByte()) << 48;
+            val |= (long)(stream.ReadByte()) << 56; 
 
             return val;
         }
@@ -955,18 +885,7 @@ namespace GridGain.Client.Impl.Portable
          */
         public static void WriteString(string val, Stream stream)
         {
-            if (val == null)
-                stream.WriteByte(BYTE_ZERO);
-            else
-            {
-                byte[] bytes = Encoding.UTF8.GetBytes(val);
-
-                stream.WriteByte(BYTE_ONE);
-
-                WriteInt(bytes.Length, stream);
-
-                stream.Write(bytes, 0, bytes.Length);
-            }
+            WriteByteArray(val != null ? Encoding.UTF8.GetBytes(val) : null, stream);
         }
 
         /**
@@ -976,18 +895,9 @@ namespace GridGain.Client.Impl.Portable
          */
         public static string ReadString(Stream stream)
         {
-            if (stream.ReadByte() == BYTE_ZERO)
-                return null;
-            else
-            {
-                int len = ReadInt(stream);
+            byte[] bytes = (byte[])ReadByteArray(stream, false);
 
-                byte[] bytes = new byte[len];
-
-                stream.Read(bytes, 0, len);
-
-                return Encoding.UTF8.GetString(bytes);
-            }
+            return bytes != null ? Encoding.UTF8.GetString(bytes) : null;
         }
 
         /**
@@ -1044,7 +954,23 @@ namespace GridGain.Client.Impl.Portable
                 byte[] bytes = val.Value.ToByteArray();
 
                 stream.WriteByte(BYTE_ONE);
-                stream.Write(bytes, 0, bytes.Length);
+
+                // .Net returns bytes in the following order: _a(4), _b(2), _c(2), _d, _e, _g, _h, _i, _j, _k.
+                // And _a, _b and _c are always in little endian format irrespective of system configuration.
+                // To be compliant with Java we rearrange them as follows: _c, _b_, a_, _k, _j, _i, _h, _g, _e, _d.
+                stream.Write(bytes, 6, 2);   // _c
+                stream.Write(bytes, 4, 2);   // _b
+                stream.Write(bytes, 0, 4);   // _a
+
+                stream.WriteByte(bytes[15]); // _k
+                stream.WriteByte(bytes[14]); // _j
+                stream.WriteByte(bytes[13]); // _i
+                stream.WriteByte(bytes[12]); // _h
+
+                stream.WriteByte(bytes[11]); // _g
+                stream.WriteByte(bytes[10]); // _f
+                stream.WriteByte(bytes[9]);  // _e
+                stream.WriteByte(bytes[8]);  // _d
             }
         }
 
@@ -1061,7 +987,28 @@ namespace GridGain.Client.Impl.Portable
             {
                 byte[] bytes = new byte[16];
 
-                stream.Read(bytes, 0, 16);
+                // Perform conversion opposite to what write does.
+
+                bytes[6] = (byte)stream.ReadByte();  // _c
+                bytes[7] = (byte)stream.ReadByte();
+
+                bytes[4] = (byte)stream.ReadByte();  // _b
+                bytes[5] = (byte)stream.ReadByte();
+
+                bytes[0] = (byte)stream.ReadByte();  // _a
+                bytes[1] = (byte)stream.ReadByte();
+                bytes[2] = (byte)stream.ReadByte();
+                bytes[3] = (byte)stream.ReadByte();
+
+                bytes[15] = (byte)stream.ReadByte();  // _k
+                bytes[14] = (byte)stream.ReadByte();  // _j
+                bytes[13] = (byte)stream.ReadByte();  // _i
+                bytes[12] = (byte)stream.ReadByte();  // _h
+
+                bytes[11] = (byte)stream.ReadByte();  // _g
+                bytes[10] = (byte)stream.ReadByte();  // _f
+                bytes[9] = (byte)stream.ReadByte();   // _e
+                bytes[8] = (byte)stream.ReadByte();   // _d
 
                 return new Guid(bytes);
             }
@@ -1566,6 +1513,5 @@ namespace GridGain.Client.Impl.Portable
         {
             return new DateTime(JAVA_DATE_TICKS + high * JAVA_DATE_MULTIPLIER + low);
         }
-
     }
 }

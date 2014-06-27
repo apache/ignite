@@ -22,38 +22,38 @@ namespace GridGain.Client.Impl.Portable
     /**
      * <summary>Portable object implementation.</summary>
      */ 
-    internal class GridClientPortableObjectImpl : IGridClientPortableObject
+    internal class GridClientPortableObjectImpl : IGridClientPortableObject, IGridClientPortable
     {
         /** Empty fields collection. */
         private static readonly IDictionary<int, int> EMPTY_FIELDS = 
             new GridClientReadOnlyDictionary<int, int>(new Dictionary<int, int>());
 
-        /** Marshaller. */
-        private readonly GridClientPortableMarshaller marsh;
-        
-        /** User type. */
-        private readonly bool userType;
-
-        /** Type ID. */
-        private readonly int typeId;
-
-        /** Hash code. */
-        private readonly int hashCode;
-
         /** Raw data of this portable object. */
-        private readonly byte[] data;
+        private byte[] data;
 
         /** Offset in data array. */
-        private readonly int offset;
+        private int offset;
+
+        /** Marshaller. */
+        private GridClientPortableMarshaller marsh;
+        
+        /** User type. */
+        private bool userType;
+
+        /** Type ID. */
+        private int typeId;
+
+        /** Hash code. */
+        private int hashCode;
 
         /** Data length. */
-        private readonly int len;
+        private int len;
 
         /** Raw data offset. */
-        private readonly int rawDataOffset;
+        private int rawDataOffset;
 
         /** Fields. */
-        private readonly IDictionary<int, int> fields;
+        private IDictionary<int, int> fields;
 
         /**
          * <summary>Constructor.</summary>
@@ -83,25 +83,95 @@ namespace GridGain.Client.Impl.Portable
 
             this.fields = fields == null ? EMPTY_FIELDS : new GridClientReadOnlyDictionary<int, int>(fields);
         }
-
-        /** <inheritdoc /> */
-        public int HashCode()
+        
+        /**
+         * <summary>Data.</summary>
+         */
+        public byte[] Data
         {
-            return hashCode;
+            get { return data; }
+        }
+
+        /**
+         * <summary>Offset.</summary>
+         */
+        public int Offset
+        {
+            get { return offset; }
         }
 
         /** <inheritdoc /> */
-        public bool IsUserType()
+        public bool UserType()
         {
             return userType;
         }
+
+        /**
+         * <summary>Set user type flag.</summary>
+         * <param name="userType">User type.</param>
+         */
+        public void UserType(bool userType)
+        {
+            this.userType = userType;
+        } 
 
         /** <inheritdoc /> */
         public int TypeId()
         {
             return typeId;
-        }        
-       
+        }
+
+        /**
+         * <summary>Set type ID.</summary>
+         * <param name="typeId">Type ID.</param>
+         */ 
+        public void TypeId(int typeId)
+        {
+            this.typeId = typeId;
+        } 
+
+        /** <inheritdoc /> */
+        public int HashCode()
+        {
+            return hashCode; 
+        }
+
+        /**
+         * <summary>Set hash code.</summary>
+         * <param name="typeId">Hash code.</param>
+         */
+        public void HashCode(int hashCode)
+        {
+            this.hashCode = hashCode;
+        } 
+
+        /**
+         * <summary>Length.</summary>
+         */
+        public int Length
+        {
+            get { return len; }
+            set { len = value; }
+        }
+
+        /**
+         * <summary>Raw data offset.</summary>
+         */
+        public int RawDataOffset
+        {
+            get { return rawDataOffset; }
+            set { rawDataOffset = value; }
+        }
+
+        /**
+         * <summary>Fields.</summary>
+         */
+        public IDictionary<int, int> Fields
+        {
+            set { fields = value == null ? EMPTY_FIELDS : value is GridClientReadOnlyDictionary<int, int> ? 
+                value : new GridClientReadOnlyDictionary<int, int>(value); }
+        }
+
         /** <inheritdoc /> */
         public T Field<T>(string fieldName)
         {
@@ -140,50 +210,17 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public T Deserialize<T>()
         {
-            return new GridClientPortableReadContext(marsh, marsh.IdToDescriptor, Stream()).Deserialize<T>(this);
+            MemoryStream stream = new MemoryStream(data);
+
+            stream.Position = offset;
+
+            return new GridClientPortableReadContext(marsh, marsh.IdToDescriptor, stream).Deserialize<T>(this);
         }
 
         /** <inheritdoc /> */
         public IGridClientPortableObject Copy(IDictionary<string, object> fields)
         {
             throw new NotImplementedException();
-        }
-
-        /**
-         * <summary>Length.</summary>
-         */
-        public int Length
-        {
-            get { return len; }
-        }
-
-        /**
-         * <summary>Offset.</summary>
-         */ 
-        public int Offset
-        {
-            get { return offset; }
-        }
-
-        /**
-         * <summary>Raw data offset.</summary>
-         */
-        public int RawDataOffset
-        {
-            get { return rawDataOffset;  }
-        }
-
-        /**
-         * <summary>Gets portable object data as stream.</summary>
-         * <returns>Stream.</returns>
-         */ 
-        private MemoryStream Stream()
-        {
-            MemoryStream stream = new MemoryStream(data);
-
-            stream.Position = offset;
-
-            return stream;
         }
 
         /**
@@ -196,6 +233,35 @@ namespace GridGain.Client.Impl.Portable
             int pos;
 
             return fields.TryGetValue(fieldId, out pos) ? pos : (int?)null;
+        }
+
+        /**
+         * <summary>Populates portable object with data.</summary>
+         * <param name="marsh">Marshaller.</param>
+         */ 
+        public void Populate(GridClientPortableMarshaller marsh)
+        {
+            this.marsh = marsh;
+
+            marsh.PreparePortable(this);
+        }
+
+        /** <inheritdoc /> */
+        public void WritePortable(IGridClientPortableWriter writer)
+        {
+            IGridClientPortableRawWriter rawWriter = writer.RawWriter();
+
+            rawWriter.WriteByteArray(data);
+            rawWriter.WriteInt(offset);
+        }
+
+        /** <inheritdoc /> */
+        public void ReadPortable(IGridClientPortableReader reader)
+        {
+            IGridClientPortableRawReader rawReader = reader.RawReader();
+
+            data = rawReader.ReadByteArray();
+            offset = rawReader.ReadInt();
         }
     }
 }

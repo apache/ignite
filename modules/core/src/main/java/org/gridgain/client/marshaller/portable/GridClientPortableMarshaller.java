@@ -10,49 +10,36 @@
 package org.gridgain.client.marshaller.portable;
 
 import org.gridgain.client.marshaller.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.portable.*;
-import org.gridgain.grid.kernal.processors.rest.client.message.*;
-import org.gridgain.grid.portable.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+import org.gridgain.grid.util.portable.*;
+import org.gridgain.portable.*;
 
 import java.io.*;
-import java.util.*;
+import java.nio.*;
 
 /**
  * Client marshaller supporting {@link GridPortable}.
  */
 public class GridClientPortableMarshaller implements GridClientMarshaller {
-    /** */
-    private final GridPortableMarshaller marsh;
+    /** Inner marshaller. */
+    private GridPortableMarshaller marsh;
 
-    /**
-     * @param typesMap Map associating portable type identifiers with java classes..
-     */
-    public GridClientPortableMarshaller(@Nullable Map<Integer, Class<? extends GridPortable>> typesMap) {
-        Map<Integer, Class<? extends GridPortable>> types = new HashMap<>();
+    public GridClientPortableMarshaller() {
+        try {
+            GridPortableContextImpl ctx = new GridPortableContextImpl(null);
 
-        if (typesMap != null)
-            types.putAll(typesMap);
+            ctx.configure(null);
 
-        types.put(GridClientAuthenticationRequest.PORTABLE_TYPE_ID, GridClientAuthenticationRequest.class);
-        types.put(GridClientCacheRequest.PORTABLE_TYPE_ID, GridClientCacheRequest.class);
-        types.put(GridClientLogRequest.PORTABLE_TYPE_ID, GridClientLogRequest.class);
-        types.put(GridClientNodeBean.PORTABLE_TYPE_ID, GridClientNodeBean.class);
-        types.put(GridClientNodeMetricsBean.PORTABLE_TYPE_ID, GridClientNodeMetricsBean.class);
-        types.put(GridClientResponse.PORTABLE_TYPE_ID, GridClientResponse.class);
-        types.put(GridClientTaskRequest.PORTABLE_TYPE_ID, GridClientTaskRequest.class);
-        types.put(GridClientTaskResultBean.PORTABLE_TYPE_ID, GridClientTaskResultBean.class);
-        types.put(GridClientTopologyRequest.PORTABLE_TYPE_ID, GridClientTopologyRequest.class);
-
-        marsh = null;//new GridPortableMarshaller(types);
+            marsh = new GridPortableMarshaller(ctx);
+        }
+        catch (GridPortableException e) {
+            e.printStackTrace(); // TODO implement.
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] marshal(Object obj) throws IOException {
+    @Override public ByteBuffer marshal(Object obj, int off) throws IOException {
         try {
-            return marsh.marshal(obj).array();
+            return marsh.marshal(obj, off);
         }
         catch (GridPortableException e) {
             throw new IOException(e);
@@ -64,13 +51,8 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
         try {
             return marsh.unmarshal(bytes);
         }
-        catch (GridException e) {
+        catch (GridPortableException e) {
             throw new IOException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte getProtocolId() {
-        return U.PORTABLE_OBJECT_PROTO_ID;
     }
 }

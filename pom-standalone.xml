@@ -52,7 +52,6 @@
         <module>modules/urideploy</module>
         <module>modules/indexing</module>
         <module>modules/ssh</module>
-        <module>modules/protobuf</module>
         <module>modules/rest-http</module>
         <module>modules/email</module>
         <module>modules/jta</module>
@@ -418,7 +417,7 @@
                                 </group>
                                 <group>
                                     <title>Marshallers</title>
-                                    <packages>org.gridgain.client.marshaller:org.gridgain.client.marshaller.jdk:org.gridgain.client.marshaller.optimized:org.gridgain.client.marshaller.protobuf</packages>
+                                    <packages>org.gridgain.client.marshaller:org.gridgain.client.marshaller.jdk:org.gridgain.client.marshaller.optimized:org.gridgain.client.marshaller.portable</packages>
                                 </group>
                             </groups>
                             <header>
@@ -544,7 +543,6 @@
                                         <path location="${project.basedir}/modules/jcl/target/classes"/>
                                         <path location="${project.basedir}/modules/jta/target/classes"/>
                                         <path location="${project.basedir}/modules/log4j/target/classes"/>
-                                        <path location="${project.basedir}/modules/protobuf/target/classes"/>
                                         <path location="${project.basedir}/modules/rest-http/target/classes"/>
                                         <path location="${project.basedir}/modules/schedule/target/classes"/>
                                         <path location="${project.basedir}/modules/slf4j/target/classes"/>

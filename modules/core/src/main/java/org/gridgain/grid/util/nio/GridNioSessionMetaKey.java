@@ -24,9 +24,6 @@ public enum GridNioSessionMetaKey {
     /** NIO operation (request type). */
     NIO_OPERATION,
 
-    /** Client marshaller. */
-    MARSHALLER,
-
     /** Last future. */
     LAST_FUT;
 

@@ -14,15 +14,13 @@
 #include <vector>
 #include <exception>
 #include <boost/asio.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 
 #include "gridgain/impl/connection/gridclientconnection.hpp"
 #include "gridgain/impl/cmd/gridclientmessage.hpp"
 #include "gridgain/gridclientexception.hpp"
 
-#include "gridgain/impl/marshaller/protobuf/ClientMessages.pb.h"
-
-using org::gridgain::grid::kernal::processors::rest::client::message::ObjectWrapper;
 
 /** Forward declaration. */
 class GridClientConnectionPool;
@@ -69,10 +67,13 @@ public:
     static const size_t REGULAR_HEADER_SIZE = BASIC_HEADER_SIZE + ADDITIONAL_HEADERS_SIZE;
 
     /** First byte in binary protocol message. */
-    static const int8_t SIGNAL_CHAR = (int8_t) 0x90;
+    static const int8_t SIGNAL_CHAR = (int8_t)0x90;
 
     /** Fills packet with ping data. */
     static void createPingPacket(GridClientTcpPacket& pingPacket);
+
+    GridClientTcpPacket() : ping(false) {
+    }
 
     /**
      * Checks if this is a ping packet.
@@ -86,9 +87,9 @@ public:
      */
     size_t getHeaderSize() const;
 
-    void setData(const ObjectWrapper& protoMsg);
+    void setData(boost::shared_ptr<std::vector<int8_t>>& dataPtr);
 
-    ObjectWrapper getData() const;
+    const boost::shared_ptr<std::vector<int8_t>>& getData() const;
 
     size_t getDataSize() const;
 
@@ -105,7 +106,23 @@ public:
     friend class GridClientRawSyncTcpConnection;
 
 private:
-    void setData(int8_t* start, int8_t* end);
+    void copyData(int8_t* start, int8_t* end);
+
+    /**
+     * Marshals 64-bit integer to byte vector.
+     *
+     * @param i64 64-bit integer to marshal.
+     * @param bytes Vector to fill.
+     */
+    static void marshal(int64_t i64, std::vector<int8_t>& bytes);
+
+    /**
+     * Marshals UUID to byte vector.
+     *
+     * @param uuid An UUID to marshal.
+     * @param bytes Vector to fill.
+     */
+    static void marshal(const GridClientUuid& uuid, std::vector<int8_t>& bytes);
 
     /**
      * Sets the size header of this packet.
@@ -127,7 +144,10 @@ private:
     std::vector<int8_t> destinationIdHeader;
 
     /** Data transferred. */
-    std::vector<int8_t> data;
+    boost::shared_ptr<std::vector<int8_t>> dataPtr;
+
+    /** Ping packet flag. */
+    bool ping;
 };
 
 /**
@@ -172,7 +192,7 @@ public:
      *
      * @return Session token or empty string if this is not a secure session.
      */
-    virtual std::string sessionToken() = 0;
+    virtual std::vector<int8_t>& sessionToken() = 0;
 
     /**
      * Sends a TCP packet over connection and receives a reply.
@@ -231,7 +251,7 @@ public:
      *
      * @return Session token or empty string if this is not a secure session.
      */
-    virtual std::string sessionToken();
+    virtual std::vector<int8_t>& sessionToken();
 
     /**
      * Sends a TCP packet over connection and receives a reply.
@@ -299,7 +319,7 @@ public:
      *
      * @return Session token or empty string if this is not a secure session.
      */
-    virtual std::string sessionToken();
+    virtual std::vector<int8_t>& sessionToken();
 
     /**
      * Sends a TCP packet over connection and receives a reply.

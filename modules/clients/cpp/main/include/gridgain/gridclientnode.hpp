@@ -18,7 +18,6 @@
 #include <gridgain/gridclientuuid.hpp>
 #include <gridgain/gridclienttypedef.hpp>
 #include <gridgain/gridsocketaddress.hpp>
-#include <gridgain/gridclientprotocol.hpp>
 
 /**
  * Grid client node bean.
@@ -65,14 +64,7 @@ public:
      *
      * @return List of address strings.
      */
-    const std::vector<GridClientSocketAddress> & getTcpAddresses() const;
-
-    /**
-     * Gets REST HTTP server addresses.
-     *
-     * @return List of address strings.
-     */
-    const std::vector<GridClientSocketAddress> & getJettyAddresses() const;
+    const std::vector<GridClientSocketAddress>& getTcpAddresses() const;
 
     /**
      * Gets metrics.
@@ -104,26 +96,11 @@ public:
     std::string getDefaultCacheMode() const;
 
     /**
-     * Returns a list of available addresses by protocol.
-     *
-     * @param proto Protocol - TCP or HTTP
-     * @return List of host/port pairs.
-     */
-    const std::vector<GridClientSocketAddress> & availableAddresses(GridClientProtocol proto) const;
-
-    /**
      * Returns the router TCP address.
      *
      * @return Router address (host name and port).
      */
-    const GridClientSocketAddress & getRouterTcpAddress() const;
-
-    /**
-     * Returns the router Jetty address.
-     *
-     * @return Router address (host name and port).
-     */
-    const GridClientSocketAddress & getRouterJettyAddress() const;
+    const GridClientSocketAddress& getRouterTcpAddress() const;
 
     /**
      * Returns the number of replicas for this node.
