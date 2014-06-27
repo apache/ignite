@@ -198,9 +198,8 @@ namespace GridGain.Client.Impl {
 
             if (hndRes != GridClientHandshake.CODE_OK)
             {
-                if (hndRes == GridClientHandshake.CODE_UNKNOWN_PROTO_ID)
-                    throw new GridClientException("Server doesn't support client's protocol [srvAddr=" + srvAddr + 
-                        ", protocolId=" + GridClientHandshake.PROTO_ID + ']'); 
+                throw new GridClientException("Failed to perform handshake with server [srvAddr=" + srvAddr + 
+                    ", errorCode=" + hndRes + ']'); 
             }
 
             // Avoid immediate attempt to close by idle.

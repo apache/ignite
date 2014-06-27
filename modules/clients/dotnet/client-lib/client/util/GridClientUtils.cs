@@ -449,10 +449,8 @@ namespace GridGain.Client.Util {
                 collection.Add(item);
         }
 
-/**
-         * <summary>
-         * Convert generic dictionary of one type to generic dictionary of another type.
-         *
+        /**
+         * <summary>Convert generic dictionary of one type to generic dictionary of another type.</summary>         
          * <param name="src">Source dictionary.</param>
          * <returns>New dictionary.</returns>
          */

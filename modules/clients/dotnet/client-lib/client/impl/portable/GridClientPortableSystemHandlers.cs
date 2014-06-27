@@ -153,7 +153,7 @@ namespace GridGain.Client.Impl.Portable
             READ_HANDLERS[PU.TYPE_COLLECTION] = ReadCollection;    
 
             // 13. Arbitrary dictionary.
-            READ_HANDLERS[PU.TYPE_ARRAY] = ReadDictionary;    
+            READ_HANDLERS[PU.TYPE_DICTIONARY] = ReadDictionary;    
         }
 
         /**
@@ -351,7 +351,7 @@ namespace GridGain.Client.Impl.Portable
 
             PU.WriteString(obj0, ctx.Stream);
 
-            WriteLength(ctx.Stream, pos, ctx.Stream.Position, 0);
+            WriteLength(ctx.Stream, pos, ctx.Stream.Position, pos + HDR_LEN);
         }
 
         /**
@@ -521,7 +521,7 @@ namespace GridGain.Client.Impl.Portable
 
             PU.WriteDateArray(arr, ctx.Stream);
 
-            WriteLength(ctx.Stream, pos, ctx.Stream.Position, 0);
+            WriteLength(ctx.Stream, pos, ctx.Stream.Position, pos + HDR_LEN);
         }
 
         /**
@@ -535,7 +535,7 @@ namespace GridGain.Client.Impl.Portable
 
             PU.WriteStringArray(arr, ctx.Stream);
 
-            WriteLength(ctx.Stream, pos, ctx.Stream.Position, 0);
+            WriteLength(ctx.Stream, pos, ctx.Stream.Position, pos + HDR_LEN);
         }
 
         /**
@@ -549,7 +549,7 @@ namespace GridGain.Client.Impl.Portable
 
             PU.WriteGuidArray(arr, ctx.Stream);
 
-            WriteLength(ctx.Stream, pos, ctx.Stream.Position, 0);
+            WriteLength(ctx.Stream, pos, ctx.Stream.Position, pos + HDR_LEN);
         }
 
         /**
@@ -561,7 +561,7 @@ namespace GridGain.Client.Impl.Portable
 
             PU.WriteArray((Array)obj, ctx);
 
-            WriteLength(ctx.Stream, pos, ctx.Stream.Position, 0);
+            WriteLength(ctx.Stream, pos, ctx.Stream.Position, pos + HDR_LEN);
         }
 
         /**
@@ -573,7 +573,7 @@ namespace GridGain.Client.Impl.Portable
 
             PU.WriteCollection((ICollection)obj, ctx);
 
-            WriteLength(ctx.Stream, pos, ctx.Stream.Position, 0);
+            WriteLength(ctx.Stream, pos, ctx.Stream.Position, pos + HDR_LEN);
         }
 
         /**
@@ -589,7 +589,7 @@ namespace GridGain.Client.Impl.Portable
 
             info.GenericWriteMethod.Invoke(null, new object[] { obj, ctx });
 
-            WriteLength(ctx.Stream, pos, ctx.Stream.Position, 0);
+            WriteLength(ctx.Stream, pos, ctx.Stream.Position, pos + HDR_LEN);
         }
 
         /**
@@ -601,7 +601,7 @@ namespace GridGain.Client.Impl.Portable
 
             PU.WriteDictionary((IDictionary)obj, ctx);
 
-            WriteLength(ctx.Stream, pos, ctx.Stream.Position, 0);
+            WriteLength(ctx.Stream, pos, ctx.Stream.Position, pos + HDR_LEN);
         }
 
         /**
@@ -617,7 +617,7 @@ namespace GridGain.Client.Impl.Portable
 
             info.GenericWriteMethod.Invoke(null, new object[] { obj, ctx });
 
-            WriteLength(ctx.Stream, pos, ctx.Stream.Position, 0);
+            WriteLength(ctx.Stream, pos, ctx.Stream.Position, pos + HDR_LEN);
         }
 
         /**
@@ -629,7 +629,7 @@ namespace GridGain.Client.Impl.Portable
 
             PU.WriteTypedCollection((ICollection)obj, ctx, PU.COLLECTION_ARRAY_LIST);
 
-            WriteLength(ctx.Stream, pos, ctx.Stream.Position, 0);
+            WriteLength(ctx.Stream, pos, ctx.Stream.Position, pos + HDR_LEN);
         }
 
         /**
@@ -641,7 +641,7 @@ namespace GridGain.Client.Impl.Portable
 
             PU.WriteTypedDictionary((IDictionary)obj, ctx, PU.MAP_HASH_MAP);
 
-            WriteLength(ctx.Stream, pos, ctx.Stream.Position, 0);
+            WriteLength(ctx.Stream, pos, ctx.Stream.Position, pos + HDR_LEN);
         }
 
         /**
