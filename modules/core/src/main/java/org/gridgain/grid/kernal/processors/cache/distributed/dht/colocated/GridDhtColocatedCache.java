@@ -298,7 +298,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             }
                             else {
                                 if (deserializePortable && v instanceof GridPortableObject)
-                                    v = ((GridPortableObject)v).deserialize();
+                                    v = ((GridPortableObject<V>)v).deserialize();
 
                                 locVals.put(key, v);
                             }

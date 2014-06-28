@@ -18,14 +18,14 @@ import java.util.*;
  * <p>
  * Type ID is required.
  */
-public interface GridPortableBuilder {
+public interface GridPortableBuilder<T> {
     /**
      * Sets type ID.
      *
      * @param cls Class.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder typeId(Class<?> cls);
+    public GridPortableBuilder<T> typeId(Class<?> cls);
 
     /**
      * Sets type ID.
@@ -33,7 +33,7 @@ public interface GridPortableBuilder {
      * @param clsName Class name.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder typeId(String clsName);
+    public GridPortableBuilder<T> typeId(String clsName);
 
     /**
      * Sets type ID.
@@ -41,7 +41,7 @@ public interface GridPortableBuilder {
      * @param typeId Type ID.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder typeId(int typeId);
+    public GridPortableBuilder<T> typeId(int typeId);
 
     /**
      * Sets hash code.
@@ -49,7 +49,7 @@ public interface GridPortableBuilder {
      * @param hashCode Hash code.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder hashCode(int hashCode);
+    public GridPortableBuilder<T> hashCode(int hashCode);
 
     /**
      * Adds {@code byte} field.
@@ -58,7 +58,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder byteField(String fieldName, byte val);
+    public GridPortableBuilder<T> byteField(String fieldName, byte val);
 
     /**
      * Adds {@code short} field.
@@ -67,7 +67,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder shortField(String fieldName, short val);
+    public GridPortableBuilder<T> shortField(String fieldName, short val);
 
     /**
      * Adds {@code int} field.
@@ -76,7 +76,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder intField(String fieldName, int val);
+    public GridPortableBuilder<T> intField(String fieldName, int val);
 
     /**
      * Adds {@code long} field.
@@ -85,7 +85,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder longField(String fieldName, long val);
+    public GridPortableBuilder<T> longField(String fieldName, long val);
 
     /**
      * Adds {@code float} field.
@@ -94,7 +94,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder floatField(String fieldName, float val);
+    public GridPortableBuilder<T> floatField(String fieldName, float val);
 
     /**
      * Adds {@code double} field.
@@ -103,7 +103,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder doubleField(String fieldName, double val);
+    public GridPortableBuilder<T> doubleField(String fieldName, double val);
 
     /**
      * Adds {@code char} field.
@@ -112,7 +112,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder charField(String fieldName, char val);
+    public GridPortableBuilder<T> charField(String fieldName, char val);
 
     /**
      * Adds {@code boolean} field.
@@ -121,7 +121,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder booleanField(String fieldName, boolean val);
+    public GridPortableBuilder<T> booleanField(String fieldName, boolean val);
 
     /**
      * Adds {@link String} field.
@@ -130,7 +130,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder stringField(String fieldName, @Nullable String val);
+    public GridPortableBuilder<T> stringField(String fieldName, @Nullable String val);
 
     /**
      * Adds {@link UUID} field.
@@ -139,7 +139,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder uuidField(String fieldName, @Nullable UUID val);
+    public GridPortableBuilder<T> uuidField(String fieldName, @Nullable UUID val);
 
     /**
      * Adds {@link Object} field.
@@ -148,7 +148,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder objectField(String fieldName, @Nullable Object val);
+    public GridPortableBuilder<T> objectField(String fieldName, @Nullable Object val);
 
     /**
      * Adds {@code byte array} field.
@@ -157,7 +157,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder byteArrayField(String fieldName, @Nullable byte[] val);
+    public GridPortableBuilder<T> byteArrayField(String fieldName, @Nullable byte[] val);
 
     /**
      * Adds {@code short array} field.
@@ -166,7 +166,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder shortArrayField(String fieldName, @Nullable short[] val);
+    public GridPortableBuilder<T> shortArrayField(String fieldName, @Nullable short[] val);
 
     /**
      * Adds {@code int array} field.
@@ -175,7 +175,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder intArrayField(String fieldName, @Nullable int[] val);
+    public GridPortableBuilder<T> intArrayField(String fieldName, @Nullable int[] val);
 
     /**
      * Adds {@code long array} field.
@@ -184,7 +184,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder longArrayField(String fieldName, @Nullable long[] val);
+    public GridPortableBuilder<T> longArrayField(String fieldName, @Nullable long[] val);
 
     /**
      * Adds {@code float array} field.
@@ -193,7 +193,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder floatArrayField(String fieldName, @Nullable float[] val);
+    public GridPortableBuilder<T> floatArrayField(String fieldName, @Nullable float[] val);
 
     /**
      * Adds {@code double array} field.
@@ -202,7 +202,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder doubleArrayField(String fieldName, @Nullable double[] val);
+    public GridPortableBuilder<T> doubleArrayField(String fieldName, @Nullable double[] val);
 
     /**
      * Adds {@code char array} field.
@@ -211,7 +211,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder charArrayField(String fieldName, @Nullable char[] val);
+    public GridPortableBuilder<T> charArrayField(String fieldName, @Nullable char[] val);
 
     /**
      * Adds {@code boolean array} field.
@@ -220,7 +220,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder booleanArrayField(String fieldName, @Nullable boolean[] val);
+    public GridPortableBuilder<T> booleanArrayField(String fieldName, @Nullable boolean[] val);
 
     /**
      * Adds {@code String array} field.
@@ -229,7 +229,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder stringArrayField(String fieldName, @Nullable String[] val);
+    public GridPortableBuilder<T> stringArrayField(String fieldName, @Nullable String[] val);
 
     /**
      * Adds {@code UUID array} field.
@@ -238,7 +238,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder uuidArrayField(String fieldName, @Nullable UUID[] val);
+    public GridPortableBuilder<T> uuidArrayField(String fieldName, @Nullable UUID[] val);
 
     /**
      * Adds {@code Object array} field.
@@ -247,7 +247,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder objectArrayField(String fieldName, @Nullable Object[] val);
+    public GridPortableBuilder<T> objectArrayField(String fieldName, @Nullable Object[] val);
 
     /**
      * Adds {@link Collection} field.
@@ -256,7 +256,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder collectionField(String fieldName, @Nullable Collection<?> val);
+    public GridPortableBuilder<T> collectionField(String fieldName, @Nullable Collection<?> val);
 
     /**
      * Adds {@link Map} field.
@@ -265,12 +265,12 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder mapField(String fieldName, @Nullable Map<?, ?> val);
+    public GridPortableBuilder<T> mapField(String fieldName, @Nullable Map<?, ?> val);
 
     /**
      * Builds portable object.
      *
      * @return Portable object.
      */
-    public GridPortableObject build();
+    public GridPortableObject<T> build();
 }

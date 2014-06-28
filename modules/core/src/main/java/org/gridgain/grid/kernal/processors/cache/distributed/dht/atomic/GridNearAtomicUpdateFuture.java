@@ -517,7 +517,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 return;
             }
 
-            if (val != null && cctx.kernalContext().portable().isPortable(val.getClass()))
+            if (cctx.kernalContext().portable().isPortable(val))
                 val = cctx.kernalContext().portable().marshal(val);
 
             Collection<GridNode> primaryNodes = mapKey(key, topVer, fastMap);
@@ -614,7 +614,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 if (val == null && op != GridCacheOperation.DELETE)
                     continue;
 
-                if (val != null && cctx.kernalContext().portable().isPortable(val.getClass()))
+                if (cctx.kernalContext().portable().isPortable(val))
                     val = cctx.kernalContext().portable().marshal(val);
 
                 Collection<GridNode> affNodes = mapKey(key, topVer, fastMap);

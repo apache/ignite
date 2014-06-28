@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * Portable object implementation.
  */
-public class GridPortableObjectImpl implements GridPortableObject, Externalizable {
+public class GridPortableObjectImpl<T> implements GridPortableObject<T>, Externalizable {
     /** */
     private GridPortableContext ctx;
 
@@ -112,7 +112,7 @@ public class GridPortableObjectImpl implements GridPortableObject, Externalizabl
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> T deserialize() throws GridPortableException {
+    @Nullable @Override public T deserialize() throws GridPortableException {
         if (obj == null) {
             if (reader == null)
                 reader = new GridPortableReaderImpl(ctx, arr, start);
@@ -124,13 +124,13 @@ public class GridPortableObjectImpl implements GridPortableObject, Externalizabl
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridPortableObject copy(@Nullable Map<String, Object> fields) {
-        return null; // TODO: implement.
+    @Nullable @Override public GridPortableObject<T> copy(@Nullable Map<String, Object> fields) {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override public GridPortableObject clone() throws CloneNotSupportedException {
-        return (GridPortableObject)super.clone();
+    @Override public GridPortableObject<T> clone() throws CloneNotSupportedException {
+        return (GridPortableObject<T>)super.clone();
     }
 
     /** {@inheritDoc} */

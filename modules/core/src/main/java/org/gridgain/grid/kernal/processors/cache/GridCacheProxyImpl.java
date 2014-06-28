@@ -510,7 +510,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridPortableObject getPortable(K key) throws GridException {
+    @Nullable @Override public GridPortableObject<V> getPortable(K key) throws GridException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -547,7 +547,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<GridPortableObject> getPortableAsync(K key) {
+    @Override public GridFuture<GridPortableObject<V>> getPortableAsync(K key) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -691,7 +691,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public Map<K, GridPortableObject> getAllPortable(
+    @Override public Map<K, GridPortableObject<V>> getAllPortable(
         @Nullable Collection<? extends K> keys) throws GridException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -716,7 +716,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Map<K, GridPortableObject>> getAllPortableAsync(
+    @Override public GridFuture<Map<K, GridPortableObject<V>>> getAllPortableAsync(
         @Nullable Collection<? extends K> keys) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 

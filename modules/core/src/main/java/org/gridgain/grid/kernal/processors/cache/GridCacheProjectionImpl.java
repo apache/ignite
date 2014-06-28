@@ -587,8 +587,8 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridPortableObject getPortable(K key) throws GridException {
-        return (GridPortableObject)cache.get(key, false, entryFilter(false));
+    @Nullable @Override public GridPortableObject<V> getPortable(K key) throws GridException {
+        return (GridPortableObject<V>)cache.get(key, false, entryFilter(false));
     }
 
     /** {@inheritDoc} */
@@ -603,8 +603,8 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<GridPortableObject> getPortableAsync(K key) {
-        return (GridFuture<GridPortableObject>)cache.getAsync(key, false, entryFilter(false));
+    @Override public GridFuture<GridPortableObject<V>> getPortableAsync(K key) {
+        return (GridFuture<GridPortableObject<V>>)cache.getAsync(key, false, entryFilter(false));
     }
 
     /** {@inheritDoc} */
@@ -663,9 +663,9 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public Map<K, GridPortableObject> getAllPortable(
+    @Override public Map<K, GridPortableObject<V>> getAllPortable(
         @Nullable Collection<? extends K> keys) throws GridException {
-        return (Map<K, GridPortableObject>)cache.getAll(keys, false, entryFilter(false));
+        return (Map<K, GridPortableObject<V>>)cache.getAll(keys, false, entryFilter(false));
     }
 
     /** {@inheritDoc} */
@@ -674,12 +674,12 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Map<K, GridPortableObject>> getAllPortableAsync(
+    @Override public GridFuture<Map<K, GridPortableObject<V>>> getAllPortableAsync(
         @Nullable Collection<? extends K> keys) {
         return cache.getAllAsync(keys, false, entryFilter(false)).chain(
-            new CX1<GridFuture<Map<K, V>>, Map<K, GridPortableObject>>() {
-                @Override public Map<K, GridPortableObject> applyx(GridFuture<Map<K, V>> f) throws GridException {
-                    return (Map<K, GridPortableObject>)f.get();
+            new CX1<GridFuture<Map<K, V>>, Map<K, GridPortableObject<V>>>() {
+                @Override public Map<K, GridPortableObject<V>> applyx(GridFuture<Map<K, V>> f) throws GridException {
+                    return (Map<K, GridPortableObject<V>>)f.get();
                 }
             });
     }

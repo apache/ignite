@@ -411,7 +411,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                             }
                             else {
                                 if (deserializePortable && v instanceof GridPortableObject)
-                                    v = ((GridPortableObject)v).deserialize();
+                                    v = ((GridPortableObject<V>)v).deserialize();
 
                                 locVals.put(key, v);
 
@@ -494,7 +494,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                     V val = info.value();
 
                     if (deserializePortable && val instanceof GridPortableObject)
-                        val = ((GridPortableObject)val).deserialize();
+                        val = ((GridPortableObject<V>)val).deserialize();
 
                     map.put(info.key(), val);
                 }
