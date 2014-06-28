@@ -252,8 +252,8 @@ public class GridClientCacheRequest extends GridClientAbstractMessage {
         cacheName = raw.readString();
         cacheFlagsOn = raw.readInt();
         key = raw.readObject();
-        val = raw.readPortable();
-        val2 = raw.readPortable();
+        val = raw.readObject();
+        val2 = raw.readObject();
 
         int valsSize = raw.readInt();
 
@@ -261,7 +261,7 @@ public class GridClientCacheRequest extends GridClientAbstractMessage {
             vals = new HashMap<>(valsSize);
 
             for (int i = 0; i < valsSize; i++)
-                vals.put(raw.readObject(), raw.readPortable());
+                vals.put(raw.readObject(), raw.readObject());
         }
     }
 

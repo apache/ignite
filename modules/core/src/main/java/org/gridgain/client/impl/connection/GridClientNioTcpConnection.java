@@ -11,6 +11,7 @@ package org.gridgain.client.impl.connection;
 import org.gridgain.client.*;
 import org.gridgain.client.impl.*;
 import org.gridgain.client.marshaller.*;
+import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.util.nio.*;
@@ -607,10 +608,28 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         throws GridClientConnectionResetException, GridClientClosedException {
         assert entries != null;
 
+        Map<Object, Object> entries0 = (Map<Object, Object>)entries;
+
+        if (marsh instanceof GridClientPortableMarshaller) {
+            try {
+                entries0 = new HashMap<>(entries.size());
+
+                for (Map.Entry<K, V> e : entries.entrySet()) {
+                    Object v = ((GridClientPortableMarshaller)marsh).convertToPortable(e.getValue());
+                    Object k = ((GridClientPortableMarshaller)marsh).convertToPortable(e.getKey());
+
+                    entries0.put(k, v);
+                }
+            }
+            catch (IOException ex) {
+                return new GridClientFutureAdapter<>(ex);
+            }
+        }
+
         GridClientCacheRequest req = new GridClientCacheRequest(PUT_ALL);
 
         req.cacheName(cacheName);
-        req.values((Map<Object, Object>)entries);
+        req.values(entries0);
         req.cacheFlagsOn(encodeCacheFlags(flags));
 
         return makeRequest(req, destNodeId);

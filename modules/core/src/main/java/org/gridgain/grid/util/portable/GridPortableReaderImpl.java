@@ -809,16 +809,6 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> GridPortableObject<T> readPortable(String fieldName) throws GridPortableException {
-        return (GridPortableObject<T>)unmarshal(fieldName);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public <T> GridPortableObject<T> readPortable() throws GridPortableException {
-        return (GridPortableObject<T>)unmarshal(true);
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public byte[] readByteArray(String fieldName) throws GridPortableException {
         return readByteArray(fieldId(fieldName));
     }
