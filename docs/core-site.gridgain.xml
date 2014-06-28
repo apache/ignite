@@ -14,11 +14,25 @@
   limitations under the License. See accompanying LICENSE file.
 -->
 
-<!-- Put site-specific property overrides in this file. -->
+<!--
+    This template file contains settings needed to run Apache Hadoop jobs
+    with GridGain's distributed in-memory file system GGFS.
+
+    You can replace '$HADOOP_HOME/etc/hadoop/core-site.xml' file with this one
+    to work with GridGain GGFS nodes running on localhost (these local nodes can be
+    a part of distributed cluster though). To work with file system on remote
+    hosts you need to change the host of file system URI to any host running
+    GridGain's GGFS node.
+
+    Note that GridGain jars must be in Apache Hadoop client classpath to work
+    with this configuration.
+
+    Run script '$GRIDGAIN_HOME/bin/setup-hadoop.{sh|bat}' for Apache Hadoop client setup.
+-->
 
 <configuration>
     <!--
-        Set default file system to GGFS instance configured in GridGain.
+        Set default file system to GGFS instance named "ggfs" configured in GridGain.
     -->
     <property>
         <name>fs.default.name</name>
@@ -42,7 +56,7 @@
     </property>
 
     <!--
-        Disallow data node replacement.
+        Disallow data node replacement since it does not make sense for GridGain's GGFS nodes.
     -->
     <property>
         <name>dfs.client.block.write.replace-datanode-on-failure.policy</name>

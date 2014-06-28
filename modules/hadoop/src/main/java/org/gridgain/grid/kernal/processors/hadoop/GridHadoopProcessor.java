@@ -81,23 +81,25 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
 
     /**
      * Checks Hadoop installation.
+     *
+     * @throws GridException If failed.
      */
-    private void checkHadoopInstallation() {
+    private void checkHadoopInstallation() throws GridException {
         String hadoopHome = System.getenv("HADOOP_HOME");
 
         if (F.isEmpty(hadoopHome))
-            U.quietAndWarn(log, "HADOOP_HOME environment variable is not set.");
+            throw new GridException("HADOOP_HOME environment variable is not set.");
         else {
             U.quietAndInfo(log, "Apache Hadoop is found at " + hadoopHome);
 
             File dir = new File(hadoopHome);
 
             if (!dir.exists())
-                U.quietAndWarn(log, "Apache Hadoop installation directory does not exist!");
+                throw new GridException("Apache Hadoop installation directory does not exist!");
             else if (!dir.isDirectory())
-                U.quietAndWarn(log, "Apache Hadoop installation path is not a directory!");
+                throw new GridException("Apache Hadoop installation path is not a directory!");
             else if (!dir.canRead())
-                U.quietAndWarn(log, "Apache Hadoop installation directory can not be read! Check permissions.");
+                throw new GridException("Apache Hadoop installation directory can not be read! Check permissions.");
         }
     }
 

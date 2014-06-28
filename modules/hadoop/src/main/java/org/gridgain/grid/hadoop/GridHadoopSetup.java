@@ -199,16 +199,17 @@ public class GridHadoopSetup {
         File hadoopEtc = new File(hadoopDir, "etc" + File.separator + "hadoop");
 
         if (hadoopEtc.canWrite()) { // TODO Bigtop
-            if (ask("Replace 'core-site.xml' and 'mapred-site.xml' files with preconfigured templates?")) {
+            if (ask("Replace 'core-site.xml' and 'mapred-site.xml' files with preconfigured templates " +
+                "(existing files will be backed up)?")) {
                 File gridgainDocs = new File(gridgainHome, "docs");
 
                 if (!gridgainDocs.canRead())
                     exit("Failed to read GridGain 'docs' folder at '" + gridgainDocs.getAbsolutePath() + "'.", null);
 
-                replace(new File(gridgainDocs, "core-site.xml.gridgain"),
+                replace(new File(gridgainDocs, "core-site.gridgain.xml"),
                     renameToBak(new File(hadoopEtc, "core-site.xml")));
 
-                replace(new File(gridgainDocs, "mapred-site.xml.gridgain"),
+                replace(new File(gridgainDocs, "mapred-site.gridgain.xml"),
                     renameToBak(new File(hadoopEtc, "mapred-site.xml")));
             }
             else
@@ -324,15 +325,19 @@ public class GridHadoopSetup {
         X.println();
         X.print(" <  " + question + " (Y/N): ");
 
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-
         String answer = null;
 
-        try {
-            answer = br.readLine();
-        }
-        catch (IOException e) {
-            exit("Failed to read answer: " + e.getMessage(), e);
+        if (!F.isEmpty(System.getenv("GRIDGAIN_HADOOP_SETUP_YES")))
+            answer = "Y";
+        else {
+            BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+
+            try {
+                answer = br.readLine();
+            }
+            catch (IOException e) {
+                exit("Failed to read answer: " + e.getMessage(), e);
+            }
         }
 
         if (answer != null && "Y".equals(answer.toUpperCase().trim())) {

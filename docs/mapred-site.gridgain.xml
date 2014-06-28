@@ -14,7 +14,20 @@
   limitations under the License. See accompanying LICENSE file.
 -->
 
-<!-- Put site-specific property overrides in this file. -->
+<!--
+    This template file contains settings needed to run Apache Hadoop jobs
+    with GridGain In-Memory Accelerator.
+
+    You can replace '$HADOOP_HOME/etc/hadoop/mapred-site.xml' file with this one
+    to run jobs on localhost (local node can be a part of distributed cluster though).
+    To run jobs on remote host you have to change jobtracker address to the REST address
+    of any running GridGain node.
+
+    Note that GridGain jars must be in Apache Hadoop client classpath to work
+    with this configuration.
+
+    Run script '$GRIDGAIN_HOME/bin/setup-hadoop.{sh|bat}' for Apache Hadoop client setup.
+-->
 
 <configuration>
     <!-- 
