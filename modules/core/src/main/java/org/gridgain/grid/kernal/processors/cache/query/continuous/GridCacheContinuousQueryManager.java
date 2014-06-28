@@ -29,7 +29,7 @@ import static org.gridgain.grid.kernal.GridTopic.*;
  */
 public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Ordered topic prefix. */
-    private static final String TOPIC_PREFIX = "CONTINUOUS_QUERY";
+    private String topicPrefix;
 
     /** Listeners. */
     private final ConcurrentMap<UUID, ListenerInfo<K, V>> lsnrs = new ConcurrentHashMap8<>();
@@ -47,8 +47,14 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
     private final AtomicLong seq = new AtomicLong();
 
     /** {@inheritDoc} */
+    @Override protected void start0() throws GridException {
+        // Append cache name to the topic.
+        topicPrefix = "CONTINUOUS_QUERY" + (cctx.name() == null ? "" : "_" + cctx.name());
+    }
+
+    /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws GridException {
-        if (intLsnrCnt.get() > 0 || intLsnrCnt.get() > 0) {
+        if (intLsnrCnt.get() > 0 || lsnrCnt.get() > 0) {
             Collection<GridNode> nodes = cctx.discovery().cacheNodes(cctx.name(), -1);
 
             for (GridNode n : nodes) {
@@ -64,7 +70,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
      * @return New continuous query.
      */
     public GridCacheContinuousQuery<K, V> createQuery(@Nullable GridPredicate<GridCacheEntry<K, V>> prjPred) {
-        Object topic = TOPIC_CACHE.topic(TOPIC_PREFIX, cctx.localNodeId(), seq.getAndIncrement());
+        Object topic = TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement());
 
         return new GridCacheContinuousQueryAdapter<>(cctx, topic, prjPred);
     }

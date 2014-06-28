@@ -340,13 +340,6 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
             this.filter = filter;
         }
 
-        /**
-         * @return Filter.
-         */
-        GridBiPredicate<K, V> filter() {
-            return filter;
-        }
-
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public boolean apply(GridCacheContinuousQueryEntry<K, V> entry) {

@@ -362,15 +362,17 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                     String clsName = cls.getName();
 
-                    GridDeployment dep = ctx.deploy().deploy(cls, U.detectClassLoader(cls));
+                    if (!U.isGrid(cls)) {
+                        GridDeployment dep = ctx.deploy().deploy(cls, U.detectClassLoader(cls));
 
-                    if (dep == null)
-                        throw new GridDeploymentException("Failed to deploy projection predicate: " + prjPred);
+                        if (dep == null)
+                            throw new GridDeploymentException("Failed to deploy projection predicate: " + prjPred);
 
-                    reqData.clsName = clsName;
-                    reqData.depInfo = new GridDeploymentInfoBean(dep);
+                        reqData.clsName = clsName;
+                        reqData.depInfo = new GridDeploymentInfoBean(dep);
 
-                    reqData.p2pMarshal(marsh);
+                        reqData.p2pMarshal(marsh);
+                    }
                 }
 
                 // Handle peer deployment for other handler-specific objects.
@@ -391,12 +393,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     assert msg.type() == MSG_EVT_NOTIFICATION;
 
                     if (msg.data() == null && msg.dataBytes() != null) {
-                        GridNode n = ctx.discovery().node(nodeId);
-
-                        // Must ignore since we don't know the version.
-                        if (n == null)
-                            return;
-
                         try {
                             msg.data(marsh.unmarshal(msg.dataBytes(), null));
                         }
@@ -892,6 +888,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         if (doRegister) {
             if (interval > 0) {
                 GridThread checker = new GridThread(new GridWorker(ctx.gridName(), "continuous-buffer-checker", log) {
+                    @SuppressWarnings("ConstantConditions")
                     @Override protected void body() {
                         long interval0 = interval;
 

@@ -30,6 +30,7 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheValueBytes.*;
 /**
  * Entry implementation.
  */
+@SuppressWarnings("TypeParameterHidesVisibleType")
 public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>, GridCacheDeployable, Externalizable,
     org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V> {
     /** */
@@ -37,6 +38,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
 
     /** Cache context. */
     @SuppressWarnings("TransientFieldNotInitialized")
+    @GridToStringExclude
     private final transient GridCacheContext ctx;
 
     /** Cache entry. */
@@ -71,6 +73,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     private String cacheName;
 
     /** Deployment info. */
+    @GridToStringExclude
     private GridDeploymentInfo depInfo;
 
     /**
@@ -145,7 +148,12 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
         keyBytes = marsh.marshal(key);
 
         if (newValBytes == null || newValBytes.isNull())
-            newValBytes = newVal != null ? newVal instanceof byte[] ? plain(newVal) : marshaled(marsh.marshal(newVal)) : null;
+            newValBytes = newVal != null ?
+                newVal instanceof byte[] ? plain(newVal) : marshaled(marsh.marshal(newVal)) : null;
+
+        if (oldValBytes == null || oldValBytes.isNull())
+            oldValBytes = oldVal != null ?
+                oldVal instanceof byte[] ? plain(oldVal) : marshaled(marsh.marshal(oldVal)) : null;
     }
 
     /**
@@ -156,14 +164,18 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     void p2pUnmarshal(GridMarshaller marsh, @Nullable ClassLoader ldr) throws GridException {
         assert marsh != null;
 
-        assert key == null;
-        assert newVal == null;
+        assert key == null : "Key should be null: " + key;
+        assert newVal == null : "New value should be null: " + newVal;
+        assert oldVal == null : "Old value should be null: " + oldVal;
         assert keyBytes != null;
 
         key = marsh.unmarshal(keyBytes, ldr);
 
         if (newValBytes != null && !newValBytes.isNull())
             newVal = newValBytes.isPlain() ? (V)newValBytes.get() : marsh.<V>unmarshal(newValBytes.get(), ldr);
+
+        if (oldValBytes != null && !oldValBytes.isNull())
+            oldVal = oldValBytes.isPlain() ? (V)oldValBytes.get() : marsh.<V>unmarshal(oldValBytes.get(), ldr);
     }
 
     /** {@inheritDoc} */
@@ -709,7 +721,6 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
             out.writeObject(newVal);
             out.writeObject(oldVal);
         }
-
     }
 
     /** {@inheritDoc} */

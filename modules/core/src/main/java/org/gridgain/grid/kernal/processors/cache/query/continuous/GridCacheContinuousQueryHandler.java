@@ -151,15 +151,9 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 boolean ret = true;
 
                 if (kvFilter != null) {
-                    if (kvFilter.filter() instanceof GridCacheUtils.TypeFilter) {
-                        GridCacheUtils.TypeFilter<K, V> typeFilter = (GridCacheUtils.TypeFilter<K, V>)kvFilter.filter();
+                    V v = e.getValue() == null ? e.getOldValue() : e.getValue();
 
-                        V v = e.getValue() == null ? e.getOldValue() : e.getValue();
-
-                        ret = v != null && typeFilter.apply(e.getKey(), v);
-                    }
-                    else
-                        ret = e.getValue() != null && kvFilter.apply(e.getKey(), e.getValue());
+                    ret = v != null && kvFilter.apply(e.getKey(), v);
                 }
 
                 if (entryFilter != null)
@@ -250,10 +244,10 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
-        if (filter != null)
+        if (filter != null && !U.isGrid(filter.getClass()))
             filterDep = new DeployableObject(filter, ctx);
 
-        if (prjPred != null)
+        if (prjPred != null && !U.isGrid(prjPred.getClass()))
             prjPredDep = new DeployableObject(prjPred, ctx);
     }
 
