@@ -146,13 +146,14 @@ namespace GridGain.Client.Impl.Portable
             {
                 Stream.WriteByte(PU.HDR_HND);
 
-                PU.WriteInt(hndPos, Stream);
+                // Handle is written as difference between current position and handle position.
+                PU.WriteInt((int)Stream.Position - hndPos, Stream);
 
                 return;
             }
             else
-                // Handle position must be relative to the overall message start.
-                hnds.Add(hnd, (int)pos - startPos);
+                // Cache absolute handle position.
+                hnds.Add(hnd, (int)Stream.Position);
 
             // 4. Get descriptor.
             GridClientPortableTypeDescriptor desc;

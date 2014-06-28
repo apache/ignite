@@ -164,7 +164,7 @@ namespace GridGain.Client.Impl.Portable
                             }
                         }
 
-                        // 7. Try getting gdescriptor.
+                        // 7. Try getting descriptor.
                         GridClientPortableTypeDescriptor desc;
 
                         if (!descs.TryGetValue(PU.TypeKey(userType, typeId), out desc))
@@ -213,15 +213,17 @@ namespace GridGain.Client.Impl.Portable
                 else if (hdr == PU.HDR_HND)
                 {
                     // 14. Dealing with handles.
-                    int hndPos = PU.ReadInt(Stream);
+                    int curPos = (int)Stream.Position;
 
-                    if (hnds.TryGetValue(hndPos, out hndObj))
+                    int hndDelta = PU.ReadInt(Stream);
+
+                    if (hnds.TryGetValue(curPos - hndDelta, out hndObj))
                         // 15. Already met this object, return immediately.
                         return (T)hndObj;
                     else
                     {
                         // 16. No such handler, i.e. we trying to deserialize inner object before deserializing outer.
-                        Stream.Seek(hndPos, SeekOrigin.Begin);
+                        Stream.Seek(curPos = hndDelta, SeekOrigin.Current);
 
                         return Deserialize<T>(Stream);
                     }
@@ -266,19 +268,21 @@ namespace GridGain.Client.Impl.Portable
                 // 5. Dealing with handle.
                 object hndObj;
 
-                int hndPos = PU.ReadInt(stream);
+                int curPos = (int)Stream.Position;
+
+                int hndDelta = PU.ReadInt(stream);
 
                 long retPos = Stream.Position;
 
                 try
                 {
-                    if (hnds.TryGetValue(hndPos, out hndObj))
+                    if (hnds.TryGetValue(curPos - hndDelta, out hndObj))
                         // 6. Already met this object, return immediately.
                         return (T)hndObj;
                     else
                     {
                         // 7. No such handle, i.e. we trying to deserialize inner object before deserializing outer.
-                        Stream.Seek(hndPos, SeekOrigin.Begin);
+                        Stream.Seek(curPos - hndDelta, SeekOrigin.Current);
 
                         return Deserialize<T>(Stream);
                     }

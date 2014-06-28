@@ -12,6 +12,7 @@ namespace GridGain.Client.Impl.Portable
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Diagnostics;
     using System.IO;
     using GridGain.Client.Impl.Portable;
     using GridGain.Client.Portable;
@@ -22,6 +23,7 @@ namespace GridGain.Client.Impl.Portable
     /**
      * <summary>Portable object implementation.</summary>
      */ 
+    [GridClientPortableId(PU.TYPE_PORTABLE)]
     internal class GridClientPortableObjectImpl : IGridClientPortableObject, IGridClientPortable
     {
         /** Empty fields collection. */
@@ -101,7 +103,7 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public bool UserType()
+        public bool IsUserType()
         {
             return userType;
         }
@@ -138,7 +140,7 @@ namespace GridGain.Client.Impl.Portable
 
         /**
          * <summary>Set hash code.</summary>
-         * <param name="typeId">Hash code.</param>
+         * <param name="hashCode">Hash code.</param>
          */
         public void HashCode(int hashCode)
         {
@@ -192,9 +194,8 @@ namespace GridGain.Client.Impl.Portable
                     throw new GridClientPortableException("Unknown user type: " + typeId);
                     
             }
-            else {
+            else 
                 throw new GridClientPortableException("Cannot get field by name on system type: " + typeId);
-            }
         }
 
         /**
@@ -204,7 +205,31 @@ namespace GridGain.Client.Impl.Portable
          */ 
         private T Field0<T>(int pos)
         {
-            throw new NotImplementedException();
+            // 1. Read field length.
+            MemoryStream stream = new MemoryStream(data);
+
+            stream.Seek(pos + 4, SeekOrigin.Begin); // Skip 4 additional bytes (field ID).
+
+            int len = PU.ReadInt(stream);
+
+            byte hdr = PU.ReadByte(stream);
+
+            if (hdr == PU.HDR_NULL)
+                return default(T);
+            else if (hdr == PU.HDR_HND)
+            {
+                // For handle we must navigate to that point and read it as portable.
+                throw new NotImplementedException();
+            }
+            else if (hdr == PU.HDR_FULL)
+                return (T)marsh.Unmarshal0(stream, false, stream.Position - 1, hdr);
+            else
+            {
+                Debug.Assert(userType == false);
+
+                // Dealing with primitive types.
+                throw new NotImplementedException();
+            }
         }
              
         /** <inheritdoc /> */
