@@ -761,7 +761,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache transaction manager.
      */
     public GridCacheTxManager<K, V> tm() {
-        return txMgr;
+         return txMgr;
     }
 
     /**
@@ -1714,6 +1714,13 @@ public class GridCacheContext<K, V> implements Externalizable {
 
             return false;
         }
+    }
+
+    /**
+     * @return Portable enabled flag.
+     */
+    public boolean portableEnabled() {
+        return cacheCfg.isPortableEnabled();
     }
 
     /**

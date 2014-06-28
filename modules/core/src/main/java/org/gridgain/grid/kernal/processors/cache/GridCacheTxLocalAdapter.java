@@ -1889,7 +1889,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 break; // While.
                             }
 
-                            if (cctx.kernalContext().portable().isPortable(val))
+                            if (cctx.portableEnabled() && cctx.kernalContext().portable().isPortable(val))
                                 val = (V)cctx.kernalContext().portable().marshal(val);
 
                             txEntry = addEntry(lockOnly ? NOOP : rmv ? DELETE : transformClos != null ? TRANSFORM :
