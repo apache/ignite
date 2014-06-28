@@ -47,10 +47,10 @@ namespace GridGain.Client.Impl.Portable
         private long curRawPos;
                                 
         /**
-            * <summary>Constructor.</summary>
-            * <param name="descs">Type descriptors.</param>
-            * <param name="stream">Output stream.</param>
-            */
+         * <summary>Constructor.</summary>
+         * <param name="descs">Type descriptors.</param>
+         * <param name="stream">Output stream.</param>
+         */
         public GridClientPortableWriteContext(IDictionary<Type, GridClientPortableTypeDescriptor> descs,
             Stream stream)
         {
