@@ -112,6 +112,9 @@ namespace GridGain.Client.Impl.Portable
         /** Type: map. */
         public const byte TYPE_DICTIONARY = 25;
 
+        /** Type: portable object. */
+        public const byte TYPE_PORTABLE = 26;
+
         /** Type: authentication request. */
         public const byte TYPE_AUTH_REQ = 51;
 

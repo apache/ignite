@@ -20,8 +20,8 @@ namespace GridGain.Client.Portable {
 
     using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
 
-    //[TestFixture]
-    public class GridClientPortableSelfTest { //: GridClientAbstractTest {
+    [TestFixture]
+    public class GridClientPortableSelfTest : GridClientAbstractTest {
 
         //override protected String ServerAddress()
         //{
@@ -29,18 +29,18 @@ namespace GridGain.Client.Portable {
         //}
 
         private GridClientPortableMarshaller marsh;
-        
-        ////[TestFixtureSetUp]
-        //override public void InitClient()
-        //{
-        //    marsh = new GridClientPortableMarshaller(null);
-        //}
 
-        ////[TestFixtureTearDown]
-        //override public void StopClient()
-        //{
-        //   // No-op.
-        //}
+        [TestFixtureSetUp]
+        override public void InitClient()
+        {
+            marsh = new GridClientPortableMarshaller(null);
+        }
+
+        [TestFixtureTearDown]
+        override public void StopClient()
+        {
+            // No-op.
+        }
 
         //public void TestClient()
         //{

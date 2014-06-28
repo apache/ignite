@@ -47,6 +47,7 @@ namespace GridGain.Client.Impl.Portable
             SYS_TYPES.Add(typeof(GridClientNodeBean));
             SYS_TYPES.Add(typeof(GridClientNodeMetricsBean));
             SYS_TYPES.Add(typeof(GridClientTaskResultBean));
+            SYS_TYPES.Add(typeof(GridClientPortableObjectImpl));
         }
 
         /**
@@ -173,25 +174,86 @@ namespace GridGain.Client.Impl.Portable
                 throw new GridClientPortableException("Unexpected header: " + hdr);
 
             // Read header.
-            bool userType = PU.ReadBoolean(input);
-            int typeId = PU.ReadInt(input);
-            int hashCode = PU.ReadInt(input);
-            int len = PU.ReadInt(input);
-            int rawDataOffset = PU.ReadInt(input);
+            bool userType;
+            int typeId;
+            int hashCode;
+            int len;
+            int rawDataOffset;
 
             // Read fields.
-            Dictionary<int, int> fields = null;
+            Dictionary<int, int> fields;
+
+            ReadMetadata(input, out userType, out typeId, out hashCode, out len, out rawDataOffset, out fields);
+
+            input.Seek(pos + len, SeekOrigin.Begin); // Position input after object.
+
+            byte[] data = top ? input.ToArray() : PU.MemoryBuffer(input);
+
+            return new GridClientPortableObjectImpl(this, data, (int)pos, len, userType, typeId,
+                hashCode, rawDataOffset, fields);
+        }
+
+        /**
+         * <summary>Prepare portable object.</summary>
+         * <param name="port">Portable object.</param>
+         */ 
+        public void PreparePortable(GridClientPortableObjectImpl port)
+        {
+            bool userType;
+            int typeId;
+            int hashCode;
+            int len;
+            int rawDataOffset;
+            Dictionary<int, int> fields;
+
+            MemoryStream stream = new MemoryStream(port.Data);
+
+            stream.Seek(port.Offset + 1, SeekOrigin.Begin);
+
+            ReadMetadata(stream, out userType, out typeId, out hashCode, out len, out rawDataOffset, out fields);
+
+            port.UserType(userType);
+            port.TypeId(typeId);
+            port.HashCode(hashCode);
+            port.Length = len;
+            port.RawDataOffset = rawDataOffset;
+            port.Fields = fields;
+        }
+
+        /**
+         * <summary>Read metadata.</summary>
+         * <param name="stream">Stream position right after object's header first byte.</param>
+         * <param name="userType">User type flag.</param>
+         * <param name="typeId">Type ID.</param>
+         * <param name="hashCode">Hash code.</param>
+         * <param name="len">Length.</param>
+         * <param name="rawDataOffset">Raw data offset.</param>
+         * <param name="fields">Fields in this object.</param>
+         */
+        private void ReadMetadata(MemoryStream stream, out bool userType, out int typeId, out int hashCode, 
+            out int len, out int rawDataOffset, out Dictionary<int, int> fields)
+        {
+            int pos = (int)stream.Position - 1; // Header byte is already read.
+
+            userType = PU.ReadBoolean(stream);
+            typeId = PU.ReadInt(stream);
+            hashCode = PU.ReadInt(stream);
+            len = PU.ReadInt(stream);
+            rawDataOffset = PU.ReadInt(stream);
+
+            // Read fields.
+            fields = null;
 
             if (userType)
             {
-                long curPos = input.Position;
+                long curPos = stream.Position;
                 long endPos = pos + (rawDataOffset == 0 ? len : rawDataOffset);
 
                 while (curPos < endPos)
                 {
-                    int fieldPos = (int)(input.Position - pos);
-                    int fieldId = PU.ReadInt(input);
-                    int fieldLen = PU.ReadInt(input);
+                    int fieldPos = (int)(stream.Position - pos);
+                    int fieldId = PU.ReadInt(stream);
+                    int fieldLen = PU.ReadInt(stream);
 
                     Console.WriteLine("Read field: " + fieldId + " " + fieldLen + " " + fieldPos);
 
@@ -204,18 +266,11 @@ namespace GridGain.Client.Impl.Portable
 
                     fields[fieldId] = fieldPos;
 
-                    input.Seek(fieldLen, SeekOrigin.Current);
+                    stream.Seek(fieldLen, SeekOrigin.Current);
 
-                    curPos = input.Position;
+                    curPos = stream.Position;
                 }
             }
-
-            input.Seek(pos + len, SeekOrigin.Begin); // Position input after read data.
-
-            byte[] data = top ? input.ToArray() : PU.MemoryBuffer(input);
-
-            return new GridClientPortableObjectImpl(this, data, (int)pos, len, userType, typeId,
-                hashCode, rawDataOffset, fields);
         }
 
         /**
