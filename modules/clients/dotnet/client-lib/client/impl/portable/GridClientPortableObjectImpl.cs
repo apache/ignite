@@ -19,6 +19,7 @@ namespace GridGain.Client.Impl.Portable
     using GridGain.Client.Util;
 
     using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
+    using PSH = GridGain.Client.Impl.Portable.GridClientPortableSystemHandlers;
     
     /**
      * <summary>Portable object implementation.</summary>
@@ -188,7 +189,7 @@ namespace GridGain.Client.Impl.Portable
 
                     int pos;
 
-                    return fields.TryGetValue(fieldId, out pos) ? Field0<T>(pos) : default(T);
+                    return fields.TryGetValue(fieldId, out pos) ? Field0<T>(offset + pos) : default(T);
                 }
                 else
                     throw new GridClientPortableException("Unknown user type: " + typeId);
@@ -217,18 +218,19 @@ namespace GridGain.Client.Impl.Portable
             if (hdr == PU.HDR_NULL)
                 return default(T);
             else if (hdr == PU.HDR_HND)
-            {
-                // For handle we must navigate to that point and read it as portable.
-                throw new NotImplementedException();
-            }
+                return (T)marsh.Unmarshal0(stream, false, stream.Position - 1, PU.HDR_HND);
             else if (hdr == PU.HDR_FULL)
-                return (T)marsh.Unmarshal0(stream, false, stream.Position - 1, hdr);
+                return (T)marsh.Unmarshal0(stream, false, stream.Position - 1, PU.HDR_FULL);
             else
             {
                 Debug.Assert(userType == false);
 
-                // Dealing with primitive types.
-                throw new NotImplementedException();
+                GridClientPortableSystemFieldDelegate hnd = PSH.FieldHandler(hdr);
+
+                if (hnd == null)
+                    throw new GridClientPortableException("Invalid system type: " + hdr);
+
+                return (T)hnd.Invoke(stream, marsh);
             }
         }
              

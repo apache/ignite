@@ -165,12 +165,24 @@ namespace GridGain.Client.Impl.Portable
             if (hdr == PU.HDR_NULL)
                 return null;
             else if (hdr == PU.HDR_META)
-            {
                 throw new NotImplementedException();
-            }
 
-            // Reading full object.
-            if (hdr != PU.HDR_FULL)
+            long retPos = 0;
+            
+            if (hdr == PU.HDR_HND)
+            {
+                pos = input.Position - PU.ReadInt(input);
+
+                retPos = input.Position; // Return position is set after handle.
+
+                input.Seek(pos, SeekOrigin.Begin);
+
+                byte hndObjHdr = PU.ReadByte(input);
+
+                if (hndObjHdr != PU.HDR_FULL)
+                    throw new GridClientPortableException("Invalid handler header: " + hndObjHdr);
+            }
+            else if (hdr != PU.HDR_FULL)
                 throw new GridClientPortableException("Unexpected header: " + hdr);
 
             // Read header.
@@ -185,7 +197,10 @@ namespace GridGain.Client.Impl.Portable
 
             ReadMetadata(input, out userType, out typeId, out hashCode, out len, out rawDataOffset, out fields);
 
-            input.Seek(pos + len, SeekOrigin.Begin); // Position input after object.
+            if (hdr == PU.HDR_FULL)
+                retPos = pos + len; // Return position right after the full object.
+
+            input.Seek(retPos, SeekOrigin.Begin); // Correct stream positioning.
 
             byte[] data = top ? input.ToArray() : PU.MemoryBuffer(input);
 

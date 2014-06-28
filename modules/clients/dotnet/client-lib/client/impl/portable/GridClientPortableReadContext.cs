@@ -63,7 +63,7 @@ namespace GridGain.Client.Impl.Portable
 
             reader = new GridClientPortableReaderImpl(this);
         }
-
+        
         /**
          * <summary>Current type ID.</summary>
          */
@@ -254,7 +254,8 @@ namespace GridGain.Client.Impl.Portable
             else if (hdr == PU.HDR_FULL)
             {
                 // 3. Dealing with full object.
-                GridClientPortableObjectImpl portObj = (GridClientPortableObjectImpl)marsh.Unmarshal0(stream, false, stream.Position - 1, hdr);
+                GridClientPortableObjectImpl portObj = 
+                    (GridClientPortableObjectImpl)marsh.Unmarshal0(stream, false, stream.Position - 1, hdr);
 
                 T res = Deserialize<T>(portObj);
 
@@ -282,7 +283,7 @@ namespace GridGain.Client.Impl.Portable
                     else
                     {
                         // 7. No such handle, i.e. we trying to deserialize inner object before deserializing outer.
-                        Stream.Seek(curPos - hndDelta, SeekOrigin.Current);
+                        Stream.Seek(curPos - hndDelta, SeekOrigin.Begin);
 
                         return Deserialize<T>(Stream);
                     }
