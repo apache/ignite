@@ -442,7 +442,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
                 if (v != null && !reload) {
                     if (deserializePortable && v instanceof GridPortableObject)
-                        v = ((GridPortableObject)v).deserialize();
+                        v = ((GridPortableObject<V>)v).deserialize();
 
                     add(new GridFinishedFuture<>(cctx.kernalContext(), Collections.singletonMap(key, v)));
                 }
@@ -570,7 +570,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     V val = info.value();
 
                     if (deserializePortable && val instanceof GridPortableObject)
-                        val = ((GridPortableObject)val).deserialize();
+                        val = ((GridPortableObject<V>)val).deserialize();
 
                     map.put(info.key(), val);
                 }

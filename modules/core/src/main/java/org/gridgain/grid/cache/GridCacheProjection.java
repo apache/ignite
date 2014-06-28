@@ -442,7 +442,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridCacheFlagException If failed projection flags validation.
      * @throws NullPointerException if the key is {@code null}.
      */
-    @Nullable public GridPortableObject getPortable(K key) throws GridException;
+    @Nullable public GridPortableObject<V> getPortable(K key) throws GridException;
 
     /**
      * Asynchronously retrieves value mapped to the specified key from cache. Value will only be returned if
@@ -477,7 +477,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridCacheFlagException If failed projection flags validation.
      * @throws NullPointerException if the key is {@code null}.
      */
-    public GridFuture<GridPortableObject> getPortableAsync(K key);
+    public GridFuture<GridPortableObject<V>> getPortableAsync(K key);
 
     /**
      * Retrieves values mapped to the specified keys from cache. Value will only be returned if
@@ -511,7 +511,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridException If get operation failed.
      * @throws GridCacheFlagException If failed projection flags validation.
      */
-    public Map<K, GridPortableObject> getAllPortable(@Nullable Collection<? extends K> keys) throws GridException;
+    public Map<K, GridPortableObject<V>> getAllPortable(@Nullable Collection<? extends K> keys) throws GridException;
 
     /**
      * Asynchronously retrieves values mapped to the specified keys from cache. Value will only be returned if
@@ -544,7 +544,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridException If get operation failed.
      * @throws GridCacheFlagException If failed projection flags validation.
      */
-    public GridFuture<Map<K, GridPortableObject>> getAllPortableAsync(@Nullable Collection<? extends K> keys);
+    public GridFuture<Map<K, GridPortableObject<V>>> getAllPortableAsync(@Nullable Collection<? extends K> keys);
 
     /**
      * Stores given key-value pair in cache. If filters are provided, then entries will
