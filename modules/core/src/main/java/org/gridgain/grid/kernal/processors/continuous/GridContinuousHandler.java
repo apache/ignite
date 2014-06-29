@@ -79,4 +79,19 @@ public interface GridContinuousHandler extends Externalizable {
      * will be sent in non-ordered messages.
      */
     @Nullable public Object orderedTopic();
+
+    /**
+     * @return {@code True} if for events.
+     */
+    public boolean isForEvents();
+
+    /**
+     * @return {@code True} if for messaging.
+     */
+    public boolean isForMessaging();
+
+    /**
+     * @return {@code True} if for continuous queries.
+     */
+    public boolean isForQuery();
 }

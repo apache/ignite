@@ -86,6 +86,21 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isForEvents() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isForMessaging() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isForQuery() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean register(final UUID nodeId, final UUID routineId, final GridKernalContext ctx)
         throws GridException {
         assert nodeId != null;
