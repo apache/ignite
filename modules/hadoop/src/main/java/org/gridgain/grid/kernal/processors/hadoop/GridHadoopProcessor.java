@@ -17,10 +17,11 @@ import org.gridgain.grid.kernal.processors.hadoop.planner.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.io.*;
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -31,13 +32,12 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
     /** Job ID counter. */
     private final AtomicInteger idCtr = new AtomicInteger();
 
-    /** Unique ID of this processor. */
-    private UUID id;
-
     /** Hadoop context. */
+    @GridToStringExclude
     private GridHadoopContext hctx;
 
     /** Hadoop facade for public API. */
+    @GridToStringExclude
     private GridHadoop hadoop;
 
     /**
@@ -74,8 +74,6 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
 
         hadoop = new GridHadoopImpl(this);
 
-        id = ctx.localNodeId();
-
         checkHadoopInstallation();
     }
 
@@ -88,19 +86,28 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
         String hadoopHome = System.getenv("HADOOP_HOME");
 
         if (F.isEmpty(hadoopHome))
-            throw new GridException("HADOOP_HOME environment variable is not set.");
-        else {
+            U.quietAndWarn(log, "HADOOP_HOME environment variable is not set.");
+        else
             U.quietAndInfo(log, "Apache Hadoop is found at " + hadoopHome);
 
-            File dir = new File(hadoopHome);
+        URL location;
 
-            if (!dir.exists())
-                throw new GridException("Apache Hadoop installation directory does not exist!");
-            else if (!dir.isDirectory())
-                throw new GridException("Apache Hadoop installation path is not a directory!");
-            else if (!dir.canRead())
-                throw new GridException("Apache Hadoop installation directory can not be read! Check permissions.");
+        try {
+            location = Class.forName("org.apache.hadoop.conf.Configuration").getProtectionDomain().getCodeSource()
+                .getLocation();
         }
+        catch (ClassNotFoundException | NoClassDefFoundError e) {
+            throw new GridException("Apache Hadoop is not in classpath. Check if HADOOP_HOME environment variable " +
+                "points to Apache Hadoop installation directory.", e);
+        }
+
+        if (log.isDebugEnabled())
+            log.debug("Hadoop classes are loaded from " + location);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridHadoopProcessor.class, this);
     }
 
     /** {@inheritDoc} */
@@ -167,7 +174,7 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public GridHadoopJobId nextJobId() {
-        return new GridHadoopJobId(id, idCtr.incrementAndGet());
+        return new GridHadoopJobId(ctx.localNodeId(), idCtr.incrementAndGet());
     }
 
     /** {@inheritDoc} */

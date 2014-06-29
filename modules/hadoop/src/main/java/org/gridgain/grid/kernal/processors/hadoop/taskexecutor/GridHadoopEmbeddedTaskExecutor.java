@@ -46,18 +46,20 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        exec.shutdown();
+        if (exec != null) {
+            exec.shutdown();
 
-        if (cancel) {
-            for (GridHadoopJobId jobId : jobs.keySet())
-                cancelTasks(jobId);
+            if (cancel) {
+                for (GridHadoopJobId jobId : jobs.keySet())
+                    cancelTasks(jobId);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
         try {
-            if (!exec.awaitTermination(30, TimeUnit.SECONDS))
+            if (exec != null && !exec.awaitTermination(30, TimeUnit.SECONDS))
                 U.warn(log, "Failed to finish running tasks in 30 sec.");
         }
         catch (InterruptedException e) {
