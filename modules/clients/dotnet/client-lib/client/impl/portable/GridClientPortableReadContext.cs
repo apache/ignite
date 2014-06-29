@@ -223,7 +223,7 @@ namespace GridGain.Client.Impl.Portable
                     else
                     {
                         // 16. No such handler, i.e. we trying to deserialize inner object before deserializing outer.
-                        Stream.Seek(curPos = hndDelta, SeekOrigin.Current);
+                        Stream.Seek(curPos - hndDelta, SeekOrigin.Current);
 
                         return Deserialize<T>(Stream);
                     }
