@@ -225,12 +225,24 @@ public class GridGgfsServer {
 
                 byte[] hdr = new byte[GridGgfsMarshaller.HEADER_SIZE];
 
+                boolean first = true;
+
                 while (!Thread.currentThread().isInterrupted()) {
                     dis.readFully(hdr);
 
                     final long reqId = U.bytesToLong(hdr, 0);
 
                     int ordinal = U.bytesToInt(hdr, 8);
+
+                    if (first) { // First message must be HANDSHAKE.
+                        if (reqId != 0 || ordinal != GridGgfsIpcCommand.HANDSHAKE.ordinal()) {
+                            U.warn(log, "Handshake failed.");
+
+                            return;
+                        }
+
+                        first = false;
+                    }
 
                     final GridGgfsIpcCommand cmd = GridGgfsIpcCommand.valueOf(ordinal);
 
