@@ -44,6 +44,14 @@
             <source>docs/hadoop_readme.pdf</source>
             <outputDirectory>/docs</outputDirectory>
         </file>
+        <file>
+            <source>docs/core-site.gridgain.xml</source>
+            <outputDirectory>/docs</outputDirectory>
+        </file>
+        <file>
+            <source>docs/mapred-site.gridgain.xml</source>
+            <outputDirectory>/docs</outputDirectory>
+        </file>
     </files>
 
     <fileSets>
