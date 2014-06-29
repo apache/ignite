@@ -619,11 +619,6 @@ public:
 
         cacheName = cacheCmd.getCacheName();
 
-        key = cacheCmd.getKey();
-        val = cacheCmd.getValue();
-        val2 = cacheCmd.getValue2();
-        vals = cacheCmd.getValues();
-
         std::set<GridClientCacheFlag> flags = cacheCmd.getFlags();
 
         cacheFlagsOn = flags.empty() ? 0 : GridClientByteUtils::bitwiseOr(flags.begin(), flags.end(), 0);

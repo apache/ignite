@@ -57,7 +57,8 @@ public:
 	GridClientTestPortable() : portable1(0), portable2(0), portableRaw1(0), portableRaw2(0), date(0), dateRaw(0) {
     }
 
-    GridClientTestPortable(int32_t val, bool createNested) : date(val), dateRaw(val + 1) {
+    GridClientTestPortable(int32_t val, bool createNested) : b(val), s(val), i(val), l(val), date(val),
+        dateRaw(val + 1) {
         if (createNested) {
             portable1 = new GridClientTestPortable(val + 1, false);
             portable2 = portable1;
@@ -125,7 +126,7 @@ public:
         writer.writeVariantArray("_objArr", objArr.begin(), objArr.end());
         writer.writeVariantCollection("_col", col);
         writer.writeVariantMap("_map", map);
-        
+
         if (portable1)
             writer.writeVariant("_portable1", portable1);
         if (portable2)
@@ -145,24 +146,29 @@ public:
         raw.writeUuid(uuidRaw);
         raw.writeDate(dateRaw);
         raw.writeByteArray(bArrRaw.begin(), bArrRaw.end());
-        raw.writeInt16Array(sArrRaw.begin(), sArr.end());
-        raw.writeInt32Array(iArrRaw.begin(), iArr.end());
-        raw.writeInt64Array(lArrRaw.begin(), lArr.end());
-        raw.writeFloatArray(fArrRaw.begin(), fArr.end());
-        raw.writeDoubleArray(dArrRaw.begin(), dArr.end());
-        raw.writeCharArray(cArrRaw.begin(), cArr.end());
-        raw.writeBoolArray(boolArrRaw.begin(), boolArr.end());
-        raw.writeStringArray(strArrRaw.begin(), strArr.end());
-        raw.writeUuidArray(uuidArrRaw.begin(), uuidArr.end());
-        raw.writeDateArray(dateArrRaw.begin(), dateArr.end());
-        raw.writeVariantArray(objArrRaw.begin(), objArr.end());
+        raw.writeInt16Array(sArrRaw.begin(), sArrRaw.end());
+        raw.writeInt32Array(iArrRaw.begin(), iArrRaw.end());
+        raw.writeInt64Array(lArrRaw.begin(), lArrRaw.end());
+        raw.writeFloatArray(fArrRaw.begin(), fArrRaw.end());
+        raw.writeDoubleArray(dArrRaw.begin(), dArrRaw.end());
+        raw.writeCharArray(cArrRaw.begin(), cArrRaw.end());
+        raw.writeBoolArray(boolArrRaw.begin(), boolArrRaw.end());
+        raw.writeStringArray(strArrRaw.begin(), strArrRaw.end());
+        raw.writeUuidArray(uuidArrRaw.begin(), uuidArrRaw.end());
+        raw.writeDateArray(dateArrRaw.begin(), dateArrRaw.end());
+        raw.writeVariantArray(objArrRaw.begin(), objArrRaw.end());
         raw.writeVariantCollection(colRaw);
         raw.writeVariantMap(mapRaw);
 
         if (portableRaw1)
             raw.writeVariant(portableRaw1);
+        else
+            raw.writeVariant(GridClientVariant());
+
         if (portableRaw2)
             raw.writeVariant(portableRaw2);
+        else
+            raw.writeVariant(GridClientVariant());
 	}
 
     void readPortable(GridPortableReader &reader) {
@@ -191,7 +197,7 @@ public:
         reader.readVariantArray("_objArr", objArr);
         reader.readVariantCollection("_col", col);
         reader.readVariantMap("_map", map);
-        
+
         GridClientVariant var = reader.readVariant("_portable1");
         if (var.hasPortableObject())
             portable1 = var.deserializePortable<GridClientTestPortable>();
@@ -231,7 +237,7 @@ public:
         var = raw.readVariant();
         if (var.hasPortableObject())
             portableRaw1 = var.deserializePortable<GridClientTestPortable>();
-    
+
         var = raw.readVariant();
         if (var.hasPortableObject())
             portableRaw2 = var.deserializePortable<GridClientTestPortable>();
@@ -436,7 +442,7 @@ public:
 REGISTER_TYPE(10001, TestPortableKey);
 
 class TestPortableValue : public GridPortable {
-public:    
+public:
     TestPortableValue() {
     }
 
@@ -454,7 +460,7 @@ public:
 
     void readPortable(GridPortableReader& reader) {
         i = reader.readInt32("i");
-        
+
         boost::optional<string> sOpt = reader.readString("s");
 
         if (sOpt.is_initialized())
@@ -462,11 +468,13 @@ public:
     }
 
     int32_t i;
-    
+
     string s;
 };
 
 REGISTER_TYPE(10002, TestPortableValue);
+
+boost::mutex testCheckMux;
 
 void checkGridClientTestPortable(int32_t val, int32_t arrSize, GridClientTestPortable* ptr, bool nested) {
     BOOST_REQUIRE_EQUAL(val, ptr->b);
@@ -528,7 +536,7 @@ void checkGridClientTestPortable(int32_t val, int32_t arrSize, GridClientTestPor
         BOOST_REQUIRE(ptr->portable2);
         BOOST_REQUIRE(ptr->portableRaw1);
         BOOST_REQUIRE(ptr->portableRaw2);
-    
+
         BOOST_REQUIRE_EQUAL(ptr->portable1, ptr->portable2);
         BOOST_REQUIRE_EQUAL(ptr->portableRaw1, ptr->portableRaw2);
 
@@ -561,16 +569,15 @@ BOOST_FIXTURE_TEST_CASE(testPutGetPortable, GridClientFactoryFixture1<clientConf
     TGridClientDataPtr data = client->data(CACHE_NAME);
 
     multithreaded([&] {
-        // TODO 
         for (int i = 0; i < 1000; i++) {
             TestPortableKey key(i);
             TestPortableValue val(i, "string");
-        
+
             GridClientVariant varKey(&key);
             GridClientVariant varValue(&val);
 
             data->put(varKey, varValue);
-            
+
             GridClientVariant getVal = data->get(varKey);
 
             if (!getVal.hasAnyValue())
@@ -584,22 +591,24 @@ BOOST_FIXTURE_TEST_CASE(testPutGetPortable, GridClientFactoryFixture1<clientConf
                 if (val->s != "string")
                     BOOST_FAIL("Read invalid s.");
             }
+
+            if (i % 100 == 0)
+                cout << "Run iteration " << i << "\n";
         }
-    }, 1);
+    });
 }
 
 BOOST_FIXTURE_TEST_CASE(testPutAllGetAllPortable, GridClientFactoryFixture1<clientConfig>) {
     TGridClientDataPtr data = client->data(CACHE_NAME);
 
     multithreaded([&] {
-        // TODO 
         TestPortableKey invalidKey(-1);
 
-        for (int i = 0; i < 1; i++) {
-            vector<TestPortableKey> keys(100);
+        for (int i = 0; i < 100; i++) {
+            vector<TestPortableKey> keys;
 
-            vector<TestPortableValue> vals(100);
-            
+            vector<TestPortableValue> vals;
+
             for (int j = i; j < i + 100; j++) {
                 keys.push_back(TestPortableKey(j));
 
@@ -607,13 +616,13 @@ BOOST_FIXTURE_TEST_CASE(testPutAllGetAllPortable, GridClientFactoryFixture1<clie
             }
 
             TGridClientVariantMap map;
-            
+
             for (int j = 0; j < 100; j++)
                 map[GridClientVariant(&keys[j])] = GridClientVariant(&vals[j]);
-        
+
             data->putAll(map);
-            
-            TGridClientVariantSet keyVars(101);
+
+            TGridClientVariantSet keyVars;
 
             for (int j = 0; j < 100; j++)
                 keyVars.push_back(GridClientVariant(&keys[j]));
@@ -625,8 +634,22 @@ BOOST_FIXTURE_TEST_CASE(testPutAllGetAllPortable, GridClientFactoryFixture1<clie
             if (getMap.size() != 100)
                 BOOST_FAIL("Unexpected result size.");
             else {
+                TGridClientVariantMap map;
+
+                vector<std::shared_ptr<TestPortableKey>> keyPtrs;
+
+                for (auto iter = getMap.begin(); iter != getMap.end(); ++iter) {
+                    std::shared_ptr<TestPortableKey> keyPtr(iter->first.deserializePortable<TestPortableKey>());
+
+                    GridClientVariant key = GridClientVariant(keyPtr.get());
+
+                    map.emplace(std::make_pair(std::move(key), iter->second));
+
+                    keyPtrs.push_back(keyPtr);
+                }
+
                 for (int j = 0; j < 100; j++) {
-                    GridClientVariant getVal = getMap[keyVars[j]];
+                    GridClientVariant getVal = map[keyVars[j]];
 
                     if (!getVal.hasAnyValue())
                         BOOST_FAIL("Failed to get value.");
@@ -640,32 +663,41 @@ BOOST_FIXTURE_TEST_CASE(testPutAllGetAllPortable, GridClientFactoryFixture1<clie
                             BOOST_FAIL("Read invalid s.");
                     }
                 }
+                
+                if (i % 5 == 0)
+                    cout << "Run iteration " << i << "\n";
             }
         }
-    }, 1);
+    });
 }
 
 BOOST_FIXTURE_TEST_CASE(testPortableTaskArg, GridClientFactoryFixture1<clientConfig>) {
     TGridClientComputePtr compute = client->compute();
 
     multithreaded([&] {
-        // TODO 
-        for (int i = 0; i < 1; i++) {
-            GridClientTestPortable arg(i, true);
-        
+        for (int i = 0; i < 500; i++) {
+            int testVal = i % 100;
+
+            GridClientTestPortable arg(testVal, true);
+
             GridClientVariant taskArg(&arg);
 
             GridClientVariant res = compute->execute("org.gridgain.client.GridClientPortableArgumentTask", taskArg);
-            
+
             if (!res.hasAnyValue())
                 BOOST_FAIL("Failed to get value.");
             else {
                 std::unique_ptr<GridClientTestPortable> val = res.deserializePortableUnique<GridClientTestPortable>();
+            
+                boost::lock_guard<boost::mutex> g(testCheckMux);
 
-                checkGridClientTestPortable(i + 1, 2, val.get(), true);
+                checkGridClientTestPortable(testVal + 1, 2, val.get(), true);
             }
+
+            if (i % 100 == 0)
+                cout << "Run iteration " << i << "\n";
         }
-    }, 1);
+    });
 }
 
 BOOST_AUTO_TEST_SUITE_END()

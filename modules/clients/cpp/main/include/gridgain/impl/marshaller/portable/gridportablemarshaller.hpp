@@ -55,6 +55,7 @@ const int8_t TYPE_ID_DATE_ARR = 22;
 const int8_t TYPE_ID_OBJ_ARR = 23;
 const int8_t TYPE_ID_COLLECTION = 24;
 const int8_t TYPE_ID_MAP = 25;
+const int8_t TYPE_ID_PORTABLE = 26;
 
 const int8_t FLAG_NULL = 101;
 const int8_t FLAG_HANDLE = 102;
@@ -991,6 +992,8 @@ public:
             int32_t handle = ctx.lookup(portable, ctx.out.bytes.size());
 
             if (handle >= 0) {
+                handle = start - handle;
+
                 ctx.out.writeByte(FLAG_HANDLE);
 
                 ctx.out.writeInt32(handle);
@@ -1010,7 +1013,17 @@ public:
             }
         }
         else if (val.hasPortableObject()) {
-            // TODO
+            GridPortableObject& obj = val.getPortableObject();
+
+            ctx.out.writeByte(FLAG_OBJECT);
+
+            writeHeader(false, TYPE_ID_PORTABLE, val);
+
+            std::vector<int8_t>* data = obj.data();
+
+            ctx.out.writeInt32(data->size());
+            ctx.out.writeBytes(data->data(), data->size());
+            ctx.out.writeInt32(obj.start());
         }
         else if (val.hasByte()) {
             ctx.out.writeByte(FLAG_OBJECT);
@@ -2019,6 +2032,10 @@ public:
 
     boost::unordered_map<int32_t, int32_t> fieldOffs;
 
+    boost::shared_ptr<PortableReadContext> ctxPtr;
+
+    PortableInput in;
+
     GridPortableReaderImpl(boost::shared_ptr<PortableReadContext> ctxPtr, int32_t start) : ctxPtr(ctxPtr),
         in(*ctxPtr.get()->dataPtr.get()), start(start), off(start), rawOff(0), curTypeId(0), offInit(false) {
     }
@@ -2064,6 +2081,8 @@ public:
 
             case FLAG_HANDLE: {
                 int32_t objStart = doReadInt32(raw);
+
+                objStart = (raw ? rawOff : off) - objStart - 5;
 
                 bool userType = in.readByte(objStart + 1) != 0;
 
@@ -2170,6 +2189,8 @@ public:
             case FLAG_HANDLE: {
                 int32_t objStart = doReadInt32(false);
 
+                objStart = off - objStart - 5;
+
                 bool userType = in.readByte(objStart + 1) != 0;
 
                 if (!userType) {
@@ -2198,7 +2219,46 @@ public:
     }
 
     GridClientVariant readStandard(int32_t typeId, bool raw) {
-        if (systemPortable(typeId)) {
+        if (typeId == TYPE_ID_PORTABLE) {
+            int32_t arrLen = doReadInt32(raw);
+
+            int32_t start = raw ? rawOff : off;
+
+            if (raw)
+                this->rawOff += arrLen;
+            else
+                this->off += arrLen;
+
+            int32_t portableStart = start + doReadInt32(raw);
+
+            bool userType = in.readByte(portableStart + 1) != 0;
+
+            if (!userType) {
+                int32_t typeId = in.readInt32(portableStart + 2);
+
+                int32_t curOff = raw ? rawOff : off;
+
+                if (raw)
+                    rawOff = portableStart + 18;
+                else
+                    off = portableStart + 18;
+
+                GridClientVariant res = readStandard(typeId, raw);
+
+                if (raw)
+                    rawOff = curOff;
+                else
+                    off = curOff;
+
+                return res;
+            }
+            else {
+                GridPortableObject obj(ctxPtr, portableStart);
+
+                return GridClientVariant(obj);
+            }
+        }
+        else if (systemPortable(typeId)) {
             int32_t start = raw ? rawOff - 18 : off - 18;
 
             GridPortableObject obj(ctxPtr, start);
@@ -3857,10 +3917,6 @@ private:
 
         return true;
     }
-
-    boost::shared_ptr<PortableReadContext> ctxPtr;
-
-    PortableInput in;
 };
 
 class GridPortableMarshaller {
@@ -3883,6 +3939,35 @@ public:
 		writer.doWriteVariant(var);
 
 		return boost::shared_ptr<std::vector<int8_t>>(bytes);
+    }
+
+    void createMessage(GridClientCacheRequest& msg, GridCacheRequestCommand& cacheCmd) {
+        msg.key = createPortableObject(cacheCmd.getKey());
+
+        msg.val = createPortableObject(cacheCmd.getValue());
+        msg.val2 = createPortableObject(cacheCmd.getValue2());
+        
+        const TGridClientVariantMap& vals = cacheCmd.getValues();
+
+        for (auto iter = vals.begin(); iter != vals.end(); ++iter) {
+            const GridClientVariant key = createPortableObject(iter->first);
+            const GridClientVariant val = createPortableObject(iter->second);
+
+            msg.vals.emplace(std::make_pair(std::move(key), std::move(val)));
+        }
+
+        msg.init(cacheCmd);
+    }
+
+    GridClientVariant createPortableObject(const GridClientVariant& var) {
+        if (var.hasPortableObject() || !var.hasAnyValue())
+            return var;
+
+        boost::shared_ptr<std::vector<int8_t>> data = marshal(var);
+
+        boost::shared_ptr<PortableReadContext> ctxPtr(new PortableReadContext(data, idRslvr));
+
+        return GridClientVariant(GridPortableObject(ctxPtr, 0));
     }
 
     boost::shared_ptr<std::vector<int8_t>> marshalUserObject(GridPortable& portable) {

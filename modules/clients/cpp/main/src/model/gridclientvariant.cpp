@@ -1084,6 +1084,9 @@ bool GridClientVariant::operator==(const GridClientVariant& other) const {
 
             return *data.hashPortableVal == *other.data.hashPortableVal;
 
+        case PORTABLE_OBJ_TYPE: 
+            return *data.portableObjVal == *other.data.portableObjVal;
+
         case STRING_TYPE: return *data.strVal == *other.data.strVal;
 
         case WIDE_STRING_TYPE: return *data.wideStrVal == *other.data.wideStrVal;
@@ -1091,8 +1094,6 @@ bool GridClientVariant::operator==(const GridClientVariant& other) const {
         case UUID_TYPE: return *data.uuidVal == *other.data.uuidVal;
 
         case DATE_TYPE: return *data.dateVal == *other.data.dateVal;
-
-        case PORTABLE_OBJ_TYPE: return *data.portableObjVal == *other.data.portableObjVal;
 
         case BYTE_ARR_TYPE: return *data.byteArrVal == *other.data.byteArrVal;
 
