@@ -27,6 +27,12 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
     /** Node singleton name. */
     private static final String NODE_SINGLE = "serviceConfigEachNode";
 
+    /** Affinity service name. */
+    private static final String AFFINITY = "serviceConfigAffinity";
+
+    /** Affinity key. */
+    private final Integer affKey = 1;
+
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
         return 4;
@@ -34,7 +40,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
 
     /** {@inheritDoc} */
     @Override protected GridServiceConfiguration[] services() {
-        GridServiceConfiguration[] arr = new GridServiceConfiguration[2];
+        GridServiceConfiguration[] arr = new GridServiceConfiguration[3];
 
         GridServiceConfiguration cfg = new GridServiceConfiguration();
 
@@ -52,6 +58,15 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
         cfg.setService(new DummyService());
 
         arr[1] = cfg;
+
+        cfg = new GridServiceConfiguration();
+
+        cfg.setName(AFFINITY);
+        cfg.setCacheName(CACHE_NAME);
+        cfg.setAffinityKey(affKey);
+        cfg.setService(new AffinityService(new CountDownLatch(1), affKey));
+
+        arr[2] = cfg;
 
         return arr;
     }
@@ -95,11 +110,33 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testAffinityUpdateTopology() throws Exception {
+        Grid g = randomGrid();
+
+        checkCount(AFFINITY, g.services().deployedServices(), 1);
+
+        int nodeCnt = 2;
+
+        startExtraNodes(nodeCnt);
+
+        try {
+            checkCount(AFFINITY, g.services().deployedServices(), 1);
+        }
+        finally {
+            stopExtraNodes(nodeCnt);
+        }
+    }
+
+    /**
      * @param name Name.
      * @throws Exception If failed.
      */
     private void checkSingletonUpdateTopology(String name) throws Exception {
         Grid g = randomGrid();
+
+        checkCount(name, g.services().deployedServices(), 1);
 
         int nodeCnt = 2;
 

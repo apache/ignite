@@ -10,7 +10,9 @@
 package org.gridgain.grid.kernal.processors.service;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.affinity.*;
+import org.gridgain.grid.resources.*;
 import org.gridgain.grid.service.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -25,6 +27,9 @@ import java.util.concurrent.*;
  */
 @GridCommonTest(group = "Service Processor")
 public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbstractTest {
+    /** Cache name. */
+    public static final String CACHE_NAME = "testServiceCache";
+
     /** IP finder. */
     private static final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
@@ -33,20 +38,27 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = super.getConfiguration(gridName);
+        GridConfiguration c = super.getConfiguration(gridName);
 
         GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 
         discoSpi.setIpFinder(ipFinder);
 
-        cfg.setDiscoverySpi(discoSpi);
+        c.setDiscoverySpi(discoSpi);
 
         GridServiceConfiguration[] svcs = services();
 
         if (svcs != null)
-            cfg.setServiceConfiguration(services());
+            c.setServiceConfiguration(services());
 
-        return cfg;
+        GridCacheConfiguration cc = new GridCacheConfiguration();
+
+        cc.setName(CACHE_NAME);
+        cc.setCacheMode(GridCacheMode.PARTITIONED);
+
+        c.setCacheConfiguration(cc);
+
+        return c;
     }
 
     /**
@@ -168,6 +180,35 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         assertEquals(name, 1, DummyService.started(name));
         assertEquals(name, 0, DummyService.cancelled(name));
+
+        checkCount(name, g.services().deployedServices(), 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAffinityDeploy() throws Exception {
+        Grid g = randomGrid();
+
+        String name = "serviceAffinity";
+
+        final Integer affKey = 1;
+
+        // Store a cache key.
+        g.cache(CACHE_NAME).put(affKey, affKey.toString());
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        GridFuture<?> fut = g.services().deployForAffinityKey(name, new AffinityService(latch, affKey),
+            CACHE_NAME, affKey);
+
+        info("Deployed service: " + name);
+
+        fut.get();
+
+        info("Finished waiting for service future: " + name);
+
+        latch.await();
 
         checkCount(name, g.services().deployedServices(), 1);
     }
@@ -332,5 +373,43 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         }
 
         assertEquals(cnt, sum);
+    }
+
+    /**
+     * Affinity service.
+     */
+    protected static class AffinityService implements GridService {
+        /** Latch. */
+        private static CountDownLatch latch;
+
+        /** Affinity key. */
+        private final Object affKey;
+
+        @GridInstanceResource
+        private Grid g;
+
+        /**
+         * @param latch Latch.
+         * @param affKey Affinity key.
+         */
+        public AffinityService(CountDownLatch latch, Object affKey) {
+            AffinityService.latch = latch;
+
+            this.affKey = affKey;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel(GridServiceContext ctx) {
+            assert false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute(GridServiceContext ctx) {
+            System.out.println("Executing affinity service for key: " + affKey);
+
+            assertNotNull(g.cache(CACHE_NAME).peek(affKey));
+
+            latch.countDown();
+        }
     }
 }

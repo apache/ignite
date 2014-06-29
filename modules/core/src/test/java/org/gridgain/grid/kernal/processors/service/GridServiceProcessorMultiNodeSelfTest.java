@@ -70,6 +70,46 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     /**
      * @throws Exception If failed.
      */
+    public void testAffinityDeployUpdateTopology() throws Exception {
+        Grid g = randomGrid();
+
+        String name = "serviceAffinityUpdateTopology";
+
+        final Integer affKey = 1;
+
+        // Store a cache key.
+        g.cache(CACHE_NAME).put(affKey, affKey.toString());
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        GridFuture<?> fut = g.services().deployForAffinityKey(name, new AffinityService(latch, affKey),
+            CACHE_NAME, affKey);
+
+        info("Deployed service: " + name);
+
+        fut.get();
+
+        info("Finished waiting for service future: " + name);
+
+        latch.await();
+
+        checkCount(name, g.services().deployedServices(), 1);
+
+        int nodeCnt = 2;
+
+        startExtraNodes(nodeCnt);
+
+        try {
+            checkCount(name, g.services().deployedServices(), 1);
+        }
+        finally {
+            stopExtraNodes(nodeCnt);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testDeployOnEachNodeUpdateTopology() throws Exception {
         String name = "serviceOnEachNodeUpdateTopology";
 
