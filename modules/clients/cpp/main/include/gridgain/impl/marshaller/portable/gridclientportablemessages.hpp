@@ -25,14 +25,11 @@
 class GridClientPortableMessage : public GridPortable {
 public:
     void writePortable(GridPortableWriter& writer) const {
-        writer.rawWriter().writeByteCollection(sesTok);
+        writer.rawWriter().writeByteArray(sesTok.data(), sesTok.size());
     }
 
     void readPortable(GridPortableReader& reader) {
-        boost::optional<std::vector<int8_t>> bytes = reader.rawReader().readByteCollection();
-
-        if (bytes.is_initialized())
-            sesTok = std::move(bytes.get());
+        reader.rawReader().readByteArray(std::back_insert_iterator<std::vector<int8_t>>(sesTok));
     }
 
     std::vector<int8_t> sesTok;
@@ -407,21 +404,13 @@ public:
         if (optDfltCacheMode.is_initialized())
             dfltCacheMode = optDfltCacheMode.get();
 
-        boost::optional<TGridClientVariantMap> optAttrs = raw.readVariantMap();
-        if (optAttrs.is_initialized())
-            attrs = optAttrs.get();
+        raw.readVariantMap(attrs);
         
-        boost::optional<TGridClientVariantMap> optCaches = raw.readVariantMap();
-        if (optCaches.is_initialized())
-            caches = optCaches.get();
+        raw.readVariantMap(caches);
 
-        boost::optional<TGridClientVariantSet> optAddrs = raw.readCollection();
-        if (optAddrs.is_initialized())
-            tcpAddrs = optAddrs.get();
+        raw.readVariantCollection(tcpAddrs);
 
-        boost::optional<TGridClientVariantSet> optHosts = raw.readCollection();
-        if (optHosts.is_initialized())
-            tcpHostNames = optHosts.get();
+        raw.readVariantCollection(tcpHostNames);
 
         nodeId = raw.readUuid();
 

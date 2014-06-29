@@ -14,6 +14,7 @@
 
 #include <iostream>
 #include <string>
+#include <forward_list>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/test/unit_test.hpp>
@@ -212,100 +213,104 @@ public:
 
             raw.writeBool(vBool);
             raw.writeBoolArray(vBoolArray, arraysSize);
-            raw.writeBoolCollection(vBoolVector);
+            raw.writeBoolArray(vBoolVector.begin(), vBoolVector.end());
 
             raw.writeByte(vByte);
             raw.writeByteArray(vByteArray, arraysSize);
-            raw.writeByteCollection(vByteVector);
+            raw.writeByteArray(vByteVector.begin(), vByteVector.end());
 
             raw.writeInt16(vInt16);
             raw.writeInt16Array(vInt16Array, arraysSize);
-            raw.writeInt16Collection(vInt16Vector);
+            raw.writeInt16Array(vInt16Vector.begin(), vInt16Vector.end());
 
             raw.writeInt32(vInt32);
             raw.writeInt32Array(vInt32Array, arraysSize);
-            raw.writeInt32Collection(vInt32Vector);
+            raw.writeInt32Array(vInt32Vector.begin(), vInt32Vector.end());
 
             raw.writeInt64(vInt64);
             raw.writeInt64Array(vInt64Array, arraysSize);
-            raw.writeInt64Collection(vInt64Vector);
+            raw.writeInt64Array(vInt64Vector.begin(), vInt64Vector.end());
 
             raw.writeFloat(vFloat);
             raw.writeFloatArray(vFloatArray, arraysSize);
-            raw.writeFloatCollection(vFloatVector);
+            raw.writeFloatArray(vFloatVector.begin(), vFloatVector.end());
 
             raw.writeDouble(vDouble);
             raw.writeDoubleArray(vDoubleArray, arraysSize);
-            raw.writeDoubleCollection(vDoubleVector);
+            raw.writeDoubleArray(vDoubleVector.begin(), vDoubleVector.end());
 
             raw.writeString(vStr);
-            raw.writeStringCollection(vStrVector);
+            raw.writeStringArray(vStrVector.begin(), vStrVector.end());
 
             raw.writeWString(vWStr);
-            raw.writeWStringCollection(vWStrVector);
+            raw.writeWStringArray(vWStrVector.begin(), vWStrVector.end());
 
             raw.writeVariant(vVariant);
             raw.writeVariantCollection(vVariantVector);
             raw.writeVariantMap(vVariantMap);
 
             raw.writeUuid(boost::optional<GridClientUuid>(vUuid));
-            raw.writeUuidCollection(vUuidVector);
+            raw.writeUuidArray(vUuidVector.begin(), vUuidVector.end());
 
             raw.writeChar(vChar);
             raw.writeCharArray(vCharArray, arraysSize);
-            raw.writeCharCollection(vCharVector);
+            raw.writeCharArray(vCharVector.begin(), vCharVector.end());
 
             raw.writeDate(vDate);
-            raw.writeDateCollection(vDateVector);
+            raw.writeDateArray(vCharVector.begin(), vCharVector.end());
+
+            raw.writeVariantArray(vVariantVector.begin(), vVariantVector.end());
         }
         else {
             writer.writeBool("1", vBool);
             writer.writeBoolArray("2", vBoolArray, arraysSize);
-            writer.writeBoolCollection("3", vBoolVector);
+            writer.writeBoolArray("3", vBoolVector.begin(), vBoolVector.end());
 
             writer.writeByte("4", vByte);
             writer.writeByteArray("5", vByteArray, arraysSize);
-            writer.writeByteCollection("6", vByteVector);
+            writer.writeByteArray("6", vByteVector.begin(), vByteVector.end());
 
             writer.writeInt16("7", vInt16);
             writer.writeInt16Array("8", vInt16Array, arraysSize);
-            writer.writeInt16Collection("9", vInt16Vector);
+            writer.writeInt16Array("9", vInt16Vector.begin(), vInt16Vector.end());
 
             writer.writeInt32("10", vInt32);
             writer.writeInt32Array("11", vInt32Array, arraysSize);
-            writer.writeInt32Collection("12", vInt32Vector);
+            writer.writeInt32Array("12", vInt32Vector.begin(), vInt32Vector.end());
 
             writer.writeInt64("13", vInt64);
             writer.writeInt64Array("14", vInt64Array, arraysSize);
-            writer.writeInt64Collection("15", vInt64Vector);
+            writer.writeInt64Array("15", vInt64Vector.begin(), vInt64Vector.end());
 
             writer.writeFloat("16", vFloat);
             writer.writeFloatArray("17", vFloatArray, arraysSize);
-            writer.writeFloatCollection("18", vFloatVector);
+            writer.writeFloatArray("18", vFloatVector.begin(), vFloatVector.end());
 
             writer.writeDouble("19", vDouble);
             writer.writeDoubleArray("20", vDoubleArray, arraysSize);
-            writer.writeDoubleCollection("21", vDoubleVector);
+            writer.writeDoubleArray("21", vDoubleVector.begin(), vDoubleVector.end());
 
             writer.writeString("22", vStr);
-            writer.writeStringCollection("23", vStrVector);
+            writer.writeStringArray("23", vStrVector.begin(), vStrVector.end());
 
             writer.writeWString("24", vWStr);
-            writer.writeWStringCollection("25", vWStrVector);
+            writer.writeWStringArray("25", vWStrVector.begin(), vWStrVector.end());
 
             writer.writeVariant("26", vVariant);
             writer.writeVariantCollection("27", vVariantVector);
             writer.writeVariantMap("28", vVariantMap);
 
             writer.writeUuid("29", vUuid);
-            writer.writeUuidCollection("30", vUuidVector);
+            writer.writeUuidArray("30", vUuidVector.begin(), vUuidVector.end());
 
             writer.writeChar("31", vChar);
             writer.writeCharArray("32", vCharArray, arraysSize);
-            writer.writeCharCollection("33", vCharVector);
+            writer.writeCharArray("33", vCharVector.begin(), vCharVector.end());
 
             writer.writeDate("34", vDate);
-            writer.writeDateCollection("35", vDateVector);
+            writer.writeDateArray("35", vDateVector.begin(), vDateVector.end());
+
+            writer.writeVariantArray("36", vVariantArray.begin(), vVariantArray.end());
         }
 	}
 
@@ -319,76 +324,79 @@ public:
             pair<bool*, int32_t> boolArr = raw.readBoolArray();
             arraysSize = boolArr.second;
             vBoolArray = boolArr.first;
-            vBoolVector = raw.readBoolCollection().get_value_or(vector<bool>());
+            raw.readBoolArray(vBoolVector);
 
             vByte = raw.readByte();
             pair<int8_t*, int32_t> byteArr = raw.readByteArray();
             BOOST_REQUIRE_EQUAL(arraysSize, byteArr.second);
             vByteArray = byteArr.first;
-            vByteVector = raw.readByteCollection().get_value_or(vector<int8_t>());
+            raw.readByteArray(vByteVector);
 
             vInt16 = raw.readInt16();
             pair<int16_t*, int32_t> int16Arr = raw.readInt16Array();
             BOOST_REQUIRE_EQUAL(arraysSize, int16Arr.second);
             vInt16Array = int16Arr.first;
-            vInt16Vector = raw.readInt16Collection().get_value_or(vector<int16_t>());
+            raw.readInt16Array(vInt16Vector);
 
             vInt32 = raw.readInt32();
             pair<int32_t*, int32_t> int32Arr = raw.readInt32Array();
             BOOST_REQUIRE_EQUAL(arraysSize, int32Arr.second);
             vInt32Array = int32Arr.first;
-            vInt32Vector = raw.readInt32Collection().get_value_or(vector<int32_t>());
+            raw.readInt32Array(vInt32Vector);
 
             vInt64 = raw.readInt64();
             pair<int64_t*, int32_t> int64Arr = raw.readInt64Array();
             BOOST_REQUIRE_EQUAL(arraysSize, int64Arr.second);
             vInt64Array = int64Arr.first;
-            vInt64Vector = raw.readInt64Collection().get_value_or(vector<int64_t>());
+            raw.readInt64Array(vInt64Vector);
 
             vFloat = raw.readFloat();
             pair<float*, int32_t> floatArr = raw.readFloatArray();
             BOOST_REQUIRE_EQUAL(arraysSize, floatArr.second);
             vFloatArray = floatArr.first;
-            vFloatVector = raw.readFloatCollection().get_value_or(vector<float>());
+            raw.readFloatArray(vFloatVector);
 
             vDouble = raw.readDouble();
             pair<double*, int32_t> doubleArr = raw.readDoubleArray();
             BOOST_REQUIRE_EQUAL(arraysSize, doubleArr.second);
             vDoubleArray = doubleArr.first;
-            vDoubleVector = raw.readDoubleCollection().get_value_or(vector<double>());
+            raw.readDoubleArray(vDoubleVector);
 
-            vStr = raw.readString().get();
-            vStrVector = raw.readStringCollection().get();
+            vStr = string(raw.readString().get());
+            raw.readStringArray(vStrVector);
             BOOST_REQUIRE_EQUAL(arraysSize, vStrVector.size());
 
-            vWStr = raw.readWString().get();
-            vWStrVector = raw.readWStringCollection().get();
+            vWStr = wstring(raw.readWString().get());
+            raw.readWStringArray(vWStrVector);
             BOOST_REQUIRE_EQUAL(arraysSize, vWStrVector.size());
 
             vVariant = raw.readVariant();
 
-            vVariantVector = raw.readCollection().get_value_or(TGridClientVariantSet());
+            raw.readVariantCollection(vVariantVector);
             BOOST_REQUIRE_EQUAL(arraysSize, vVariantVector.size());
 
-            vVariantMap = raw.readVariantMap().get_value_or(TGridClientVariantMap());
+            raw.readVariantMap(vVariantMap);
             BOOST_REQUIRE_EQUAL(arraysSize, vVariantMap.size());
 
-            vUuid = raw.readUuid().get();
-            vUuidVector = raw.readUuidCollection().get_value_or(vector<GridClientUuid>());
+            vUuid = GridClientUuid(raw.readUuid().get());
+            raw.readUuidArray(vUuidVector);
 
             vChar = raw.readChar();
             pair<uint16_t*, int32_t> charArr = raw.readCharArray();
             BOOST_REQUIRE_EQUAL(arraysSize, charArr.second);
             vCharArray = charArr.first;
-            vCharVector = raw.readCharCollection().get_value_or(vector<uint16_t>());
+            raw.readCharArray(vCharVector);
 
-            vDate = raw.readDate().get();
-            vDateVector = raw.readDateCollection().get_value_or(vector<boost::optional<GridClientDate>>());
+            vDate = GridClientDate(raw.readDate().get());
+            raw.readDateArray(vDateVector);
+
+            raw.readVariantArray(vVariantArray);
+            BOOST_REQUIRE_EQUAL(arraysSize, vVariantArray.size());
         }
         else {
             vBool = reader.readBool("1");
             pair<bool*, int32_t> boolArr = reader.readBoolArray("2");
-            vBoolVector = reader.readBoolCollection("3").get_value_or(vector<bool>());
+            reader.readBoolArray("3", vBoolVector);
             vBoolArray = boolArr.first;
             arraysSize = boolArr.second;
 
@@ -396,59 +404,61 @@ public:
             pair<int8_t*, int32_t> byteArr = reader.readByteArray("5");
             BOOST_REQUIRE_EQUAL(arraysSize, byteArr.second);
             vByteArray = byteArr.first;
-            vByteVector = reader.readByteCollection("6").get_value_or(vector<int8_t>());
+            reader.readByteArray("6", vByteVector);
 
             vInt16 = reader.readInt16("7");
             pair<int16_t*, int32_t> int16Arr = reader.readInt16Array("8");
             BOOST_REQUIRE_EQUAL(arraysSize, int16Arr.second);
             vInt16Array = int16Arr.first;
-            vInt16Vector = reader.readInt16Collection("9").get_value_or(vector<int16_t>());
+            reader.readInt16Array("9", vInt16Vector);
 
             vInt32 = reader.readInt32("10");
             pair<int32_t*, int32_t> int32Arr = reader.readInt32Array("11");
             BOOST_REQUIRE_EQUAL(arraysSize, int32Arr.second);
             vInt32Array = int32Arr.first;
-            vInt32Vector = reader.readInt32Collection("12").get_value_or(vector<int32_t>());
+            reader.readInt32Array("12", vInt32Vector);
 
             vInt64 = reader.readInt64("13");
             pair<int64_t*, int32_t> int64Arr = reader.readInt64Array("14");
             BOOST_REQUIRE_EQUAL(arraysSize, int64Arr.second);
             vInt64Array = int64Arr.first;
-            vInt64Vector = reader.readInt64Collection("15").get_value_or(vector<int64_t>());
+            reader.readInt64Array("15", vInt64Vector);
 
             vFloat = reader.readFloat("16");
             pair<float*, int32_t> floatArr = reader.readFloatArray("17");
             BOOST_REQUIRE_EQUAL(arraysSize, floatArr.second);
             vFloatArray = floatArr.first;
-            vFloatVector = reader.readFloatCollection("18").get_value_or(vector<float>());
+            reader.readFloatArray("18", vFloatVector);
 
             vDouble = reader.readDouble("19");
             pair<double*, int32_t> doubleArr = reader.readDoubleArray("20");
             BOOST_REQUIRE_EQUAL(arraysSize, doubleArr.second);
             vDoubleArray = doubleArr.first;
-            vDoubleVector = reader.readDoubleCollection("21").get_value_or(vector<double>());
+            reader.readDoubleArray("21", vDoubleVector);
 
-            vStr = reader.readString("22").get();
-            vStrVector = reader.readStringCollection("23").get();
+            vStr = string(reader.readString("22").get());
+            reader.readStringArray("23", vStrVector);
 
-            vWStr = reader.readWString("24").get();
-            vWStrVector = reader.readWStringCollection("25").get();
+            vWStr = wstring(reader.readWString("24").get());
+            reader.readWStringArray("25", vWStrVector);
 
             vVariant = reader.readVariant("26");
-            vVariantVector = reader.readVariantCollection("27").get_value_or(TGridClientVariantSet());
-            vVariantMap = reader.readVariantMap("28").get_value_or(TGridClientVariantMap());
+            reader.readVariantCollection("27", vVariantVector);
+            reader.readVariantMap("28", vVariantMap);
 
-            vUuid = reader.readUuid("29").get();
-            vUuidVector = reader.readUuidCollection("30").get_value_or(vector<GridClientUuid>());
+            vUuid = GridClientUuid(reader.readUuid("29").get());
+            reader.readUuidArray("30", vUuidVector);
 
             vChar = reader.readChar("31");
             pair<uint16_t*, int32_t> charArr = reader.readCharArray("32");
             BOOST_REQUIRE_EQUAL(arraysSize, charArr.second);
             vCharArray = charArr.first;
-            vCharVector = reader.readCharCollection("33").get_value_or(vector<uint16_t>());
+            reader.readCharArray("33", vCharVector);
 
-            vDate = reader.readDate("34").get();
-            vDateVector = reader.readDateCollection("35").get_value_or(vector<boost::optional<GridClientDate>>());
+            vDate = GridClientDate(reader.readDate("34").get());
+            reader.readDateArray("35", vDateVector);
+            
+            reader.readVariantArray("36", vVariantArray);
         }
 	}
 
@@ -522,9 +532,11 @@ public:
 
     GridClientDate vDate;
 
-    vector<boost::optional<GridClientDate>> vDateVector;
+    vector<GridClientDate> vDateVector;
 
     GridClientVariant vVariant;
+
+    vector<GridClientVariant> vVariantArray;
 
     vector<GridClientVariant> vVariantVector;
 
@@ -598,10 +610,11 @@ TestPortable1 createTestPortable1(int32_t arraysSize) {
     p.vUuidVector = vector<GridClientUuid>(arraysSize, GridClientUuid(3, 4));
 
     p.vDate = GridClientDate(1);
-    p.vDateVector = vector<boost::optional<GridClientDate>>(arraysSize, boost::optional<GridClientDate>(GridClientDate(2)));
+    p.vDateVector = vector<GridClientDate>(arraysSize, GridClientDate(2));
 
     p.vVariant = GridClientVariant(1);
     p.vVariantVector = vector<GridClientVariant>(arraysSize, GridClientVariant(2));
+    p.vVariantArray = vector<GridClientVariant>(arraysSize, GridClientVariant(3));
 
     p.vVariantMap = TGridClientVariantMap();
 
@@ -738,8 +751,8 @@ void validateTestPortable1(TestPortable1 p, int32_t arraysSize) {
     BOOST_REQUIRE_EQUAL(arraysSize, p.vDateVector.size());
 
     for (int i = 0; i < arraysSize; i++) {
-        if (2 != p.vDateVector[i].get().getTime())
-            BOOST_REQUIRE_EQUAL(2, p.vDateVector[i].get().getTime());
+        if (2 != p.vDateVector[i].getTime())
+            BOOST_REQUIRE_EQUAL(2, p.vDateVector[i].getTime());
     }
 
     BOOST_REQUIRE_EQUAL(true, p.vVariant.hasInt());
@@ -748,9 +761,14 @@ void validateTestPortable1(TestPortable1 p, int32_t arraysSize) {
 
     BOOST_REQUIRE_EQUAL(arraysSize, p.vVariantVector.size());
 
+    BOOST_REQUIRE_EQUAL(arraysSize, p.vVariantArray.size());
+
     for (int i = 0; i < arraysSize; i++) {
         if (2 != p.vVariantVector[i].getInt())
             BOOST_REQUIRE_EQUAL(2, p.vVariantVector[i].getInt());
+
+        if (3 != p.vVariantArray[i].getInt())
+            BOOST_REQUIRE_EQUAL(2, p.vVariantArray[i].getInt());
     }
 
     BOOST_REQUIRE_EQUAL(arraysSize, p.vVariantMap.size());
@@ -766,7 +784,7 @@ void validateTestPortable1(TestPortable1 p, int32_t arraysSize) {
     }
 }
 
-void testTestPortable1Marshalling(bool rawMarshalling, int32_t arraysSize) {
+void testPortable1Marshalling(bool rawMarshalling, int32_t arraysSize) {
     GridPortableMarshaller marsh;
 
     TestPortable1 p = createTestPortable1(arraysSize);
@@ -783,13 +801,13 @@ void testTestPortable1Marshalling(bool rawMarshalling, int32_t arraysSize) {
 }
 
 BOOST_AUTO_TEST_CASE(testPortableSerialization_allTypes) {
-    testTestPortable1Marshalling(false, 10);
-    testTestPortable1Marshalling(false, 1000);
-    testTestPortable1Marshalling(false, 0);
+    testPortable1Marshalling(false, 10);
+    testPortable1Marshalling(false, 1000);
+    testPortable1Marshalling(false, 0);
 
-    testTestPortable1Marshalling(true, 10);
-    testTestPortable1Marshalling(true, 1000);
-    testTestPortable1Marshalling(true, 0);
+    testPortable1Marshalling(true, 10);
+    testPortable1Marshalling(true, 1000);
+    testPortable1Marshalling(true, 0);
 }
 
 class TestPortableCycle2;
@@ -1637,8 +1655,8 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
     }
 
     {
-        vector<boost::optional<GridClientDate>> val1(1, boost::optional<GridClientDate>(GridClientDate(1)));
-        vector<boost::optional<GridClientDate>> val2(1, boost::optional<GridClientDate>(GridClientDate(2)));
+        vector<GridClientDate> val1(1, GridClientDate(1));
+        vector<GridClientDate> val2(1, GridClientDate(2));
 
         GridClientVariant var1(val1);
         GridClientVariant var2(val2);
@@ -2277,14 +2295,12 @@ BOOST_AUTO_TEST_CASE(testMarshal_uuidArr) {
 }
 
 BOOST_AUTO_TEST_CASE(testMarshal_dateArr) {
-    vector<boost::optional<GridClientDate>> val;
+    vector<GridClientDate> val;
 
     int size = 3;
 
     for (int i = 0; i < size; i++)
-        val.push_back(boost::optional<GridClientDate>(GridClientDate(i)));
-
-    val.push_back(boost::optional<GridClientDate>());
+        val.push_back(GridClientDate(i));
 
     GridClientVariant var(val);
 
@@ -2294,16 +2310,12 @@ BOOST_AUTO_TEST_CASE(testMarshal_dateArr) {
 
     GridClientVariant varRead = marsh.unmarshal(bytes);
 
-    vector<boost::optional<GridClientDate>>& valRead = varRead.getDateArray();
+    vector<GridClientDate> valRead = varRead.getDateArray();
 
-    BOOST_REQUIRE_EQUAL(size + 1, valRead.size());
+    BOOST_REQUIRE_EQUAL(size, valRead.size());
 
     for (int i = 0; i < size; i++)
-        BOOST_REQUIRE(GridClientDate(i) == valRead[i].get());
-
-    boost::optional<GridClientDate> d = valRead[size];
-
-    BOOST_REQUIRE(!d.is_initialized());
+        BOOST_REQUIRE(GridClientDate(i) == valRead[i]);
 }
 
 BOOST_AUTO_TEST_CASE(testMarshal_variantArr) {
@@ -2554,14 +2566,14 @@ public:
         if (rawMarshalling) {
             val1 = reader.rawReader().readInt32();
 
-            col = reader.rawReader().readCollection().get();
+            reader.rawReader().readVariantCollection(col);
 
             val2 = reader.rawReader().readInt32();
         }
         else {
             val1 = reader.readInt32("1");
 
-            col = reader.readVariantCollection("2").get();
+            reader.readVariantCollection("2", col);
 
             val2 = reader.readInt32("3");
         }

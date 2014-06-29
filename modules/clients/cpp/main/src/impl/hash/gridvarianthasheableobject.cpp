@@ -143,8 +143,8 @@ public:
         hashCode_ = val.hashCode();
     }
 
-    virtual void visit(const std::vector<boost::optional<GridClientDate>>& val) const {
-        hashCode_ = gridOptionalCollectionHash(val);
+    virtual void visit(const std::vector<GridClientDate>& val) const {
+        hashCode_ = gridCollectionHash(val);
     }
 
     virtual void visit(const TGridClientVariantMap& vmap) const {

@@ -111,18 +111,18 @@ public:
         writer.writeString("_str", str);
         writer.writeUuid("_uuid", uuid);
         writer.writeDate("_date", date);
-        writer.writeByteCollection("_bArr", bArr);
-        writer.writeInt16Collection("_sArr", sArr);
-        writer.writeInt32Collection("_iArr", iArr);
-        writer.writeInt64Collection("_lArr", lArr);
-        writer.writeFloatCollection("_fArr", fArr);
-        writer.writeDoubleCollection("_dArr", dArr);
-        writer.writeCharCollection("_cArr", cArr);
-        writer.writeBoolCollection("_boolArr", boolArr);
-        writer.writeStringCollection("_strArr", strArr);
-        writer.writeUuidCollection("_uuidArr", uuidArr);
-        writer.writeDateCollection("_dateArr", dateArr);
-        writer.writeVariantCollection("_objArr", objArr);
+        writer.writeByteArray("_bArr", bArr.data(), bArr.size());
+        writer.writeInt16Array("_sArr", sArr.begin(), sArr.end());
+        writer.writeInt32Array("_iArr", iArr.begin(), iArr.end());
+        writer.writeInt64Array("_lArr", lArr.begin(), lArr.end());
+        writer.writeFloatArray("_fArr", fArr.begin(), fArr.end());
+        writer.writeDoubleArray("_dArr", dArr.begin(), dArr.end());
+        writer.writeCharArray("_cArr", cArr.begin(), cArr.end());
+        writer.writeBoolArray("_boolArr", boolArr.begin(), boolArr.end());
+        writer.writeStringArray("_strArr", strArr.begin(), strArr.end());
+        writer.writeUuidArray("_uuidArr", uuidArr.begin(), uuidArr.end());
+        writer.writeDateArray("_dateArr", dateArr.begin(), dateArr.end());
+        writer.writeVariantArray("_objArr", objArr.begin(), objArr.end());
         writer.writeVariantCollection("_col", col);
         writer.writeVariantMap("_map", map);
         
@@ -144,18 +144,18 @@ public:
         raw.writeString(strRaw);
         raw.writeUuid(uuidRaw);
         raw.writeDate(dateRaw);
-        raw.writeByteCollection(bArrRaw);
-        raw.writeInt16Collection(sArrRaw);
-        raw.writeInt32Collection(iArrRaw);
-        raw.writeInt64Collection(lArrRaw);
-        raw.writeFloatCollection(fArrRaw);
-        raw.writeDoubleCollection(dArrRaw);
-        raw.writeCharCollection(cArrRaw);
-        raw.writeBoolCollection(boolArrRaw);
-        raw.writeStringCollection(strArrRaw);
-        raw.writeUuidCollection(uuidArrRaw);
-        raw.writeDateCollection(dateArrRaw);
-        raw.writeVariantCollection(objArrRaw);
+        raw.writeByteArray(bArrRaw.begin(), bArrRaw.end());
+        raw.writeInt16Array(sArrRaw.begin(), sArr.end());
+        raw.writeInt32Array(iArrRaw.begin(), iArr.end());
+        raw.writeInt64Array(lArrRaw.begin(), lArr.end());
+        raw.writeFloatArray(fArrRaw.begin(), fArr.end());
+        raw.writeDoubleArray(dArrRaw.begin(), dArr.end());
+        raw.writeCharArray(cArrRaw.begin(), cArr.end());
+        raw.writeBoolArray(boolArrRaw.begin(), boolArr.end());
+        raw.writeStringArray(strArrRaw.begin(), strArr.end());
+        raw.writeUuidArray(uuidArrRaw.begin(), uuidArr.end());
+        raw.writeDateArray(dateArrRaw.begin(), dateArr.end());
+        raw.writeVariantArray(objArrRaw.begin(), objArr.end());
         raw.writeVariantCollection(colRaw);
         raw.writeVariantMap(mapRaw);
 
@@ -177,20 +177,20 @@ public:
         str = reader.readString("_str").get();
         uuid = reader.readUuid("_uuid").get();
         date = reader.readDate("_date").get();
-        bArr = reader.readByteCollection("_bArr").get();
-        sArr = reader.readInt16Collection("_sArr").get();
-        iArr = reader.readInt32Collection("_iArr").get();
-        lArr = reader.readInt64Collection("_lArr").get();
-        fArr = reader.readFloatCollection("_fArr").get();
-        dArr = reader.readDoubleCollection("_dArr").get();
-        cArr = reader.readCharCollection("_cArr").get();
-        boolArr = reader.readBoolCollection("_boolArr").get();
-        strArr = reader.readStringCollection("_strArr").get();
-        uuidArr = reader.readUuidCollection("_uuidArr").get();
-        dateArr = reader.readDateCollection("_dateArr").get();
-        objArr = reader.readVariantCollection("_objArr").get();
-        col = reader.readVariantCollection("_col").get();
-        map = reader.readVariantMap("_map").get();
+        reader.readByteArray("_bArr", bArr);
+        reader.readInt16Array("_sArr", sArr);
+        reader.readInt32Array("_iArr", iArr);
+        reader.readInt64Array("_lArr", lArr);
+        reader.readFloatArray("_fArr", fArr);
+        reader.readDoubleArray("_dArr", dArr);
+        reader.readCharArray("_cArr", cArr);
+        reader.readBoolArray("_boolArr", boolArr);
+        reader.readStringArray("_strArr", strArr);
+        reader.readUuidArray("_uuidArr", uuidArr);
+        reader.readDateArray("_dateArr", dateArr);
+        reader.readVariantArray("_objArr", objArr);
+        reader.readVariantCollection("_col", col);
+        reader.readVariantMap("_map", map);
         
         GridClientVariant var = reader.readVariant("_portable1");
         if (var.hasPortableObject())
@@ -213,20 +213,20 @@ public:
         strRaw = raw.readString().get();
         uuidRaw = raw.readUuid().get();
         dateRaw = raw.readDate().get();
-        bArrRaw = raw.readByteCollection().get();
-        sArrRaw = raw.readInt16Collection().get();
-        iArrRaw = raw.readInt32Collection().get();
-        lArrRaw = raw.readInt64Collection().get();
-        fArrRaw = raw.readFloatCollection().get();
-        dArrRaw = raw.readDoubleCollection().get();
-        cArrRaw = raw.readCharCollection().get();
-        boolArrRaw = raw.readBoolCollection().get();
-        strArrRaw = raw.readStringCollection().get();
-        uuidArrRaw = raw.readUuidCollection().get();
-        dateArrRaw = raw.readDateCollection().get();
-        objArrRaw = raw.readVariantCollection().get();
-        colRaw = raw.readCollection().get();
-        mapRaw = raw.readVariantMap().get();
+        raw.readByteArray(bArrRaw);
+        raw.readInt16Array(sArrRaw);
+        raw.readInt32Array(iArrRaw);
+        raw.readInt64Array(lArrRaw);
+        raw.readFloatArray(fArrRaw);
+        raw.readDoubleArray(dArrRaw);
+        raw.readCharArray(cArrRaw);
+        raw.readBoolArray(boolArrRaw);
+        raw.readStringArray(strArrRaw);
+        raw.readUuidArray(uuidArrRaw);
+        raw.readDateArray(dateArrRaw);
+        raw.readVariantArray(objArrRaw);
+        raw.readVariantCollection(colRaw);
+        raw.readVariantMap(mapRaw);
 
         var = raw.readVariant();
         if (var.hasPortableObject())
@@ -364,10 +364,10 @@ public:
     vector<GridClientUuid> uuidArrRaw;
 
     /** */
-    vector<boost::optional<GridClientDate>> dateArr;
+    vector<GridClientDate> dateArr;
 
     /** */
-    vector<boost::optional<GridClientDate>> dateArrRaw;
+    vector<GridClientDate> dateArrRaw;
 
     /** */
     TGridClientVariantSet objArr;
