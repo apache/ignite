@@ -787,14 +787,6 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
 
             this.isOldest = isOldest;
 
-            PN pn = new PN() {
-                @Override public boolean apply(GridNode n) {
-                    return node != null && n.id().equals(node.id());
-                }
-            };
-
-            p = p == null ? pn : F.and(p, pn);
-
             reset();
         }
 
