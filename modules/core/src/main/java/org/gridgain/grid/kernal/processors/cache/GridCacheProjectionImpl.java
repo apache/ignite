@@ -16,13 +16,12 @@ import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
-import org.gridgain.portable.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -587,11 +586,6 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridPortableObject<V> getPortable(K key) throws GridException {
-        return (GridPortableObject<V>)cache.get(key, false, entryFilter(false));
-    }
-
-    /** {@inheritDoc} */
     @Override public V get(K key, @Nullable GridCacheEntryEx<K, V> entry, boolean deserializePortable,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
         return cache.get(key, entry, deserializePortable, and(filter, false));
@@ -600,11 +594,6 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     /** {@inheritDoc} */
     @Override public GridFuture<V> getAsync(K key) {
         return cache.getAsync(key, true, entryFilter(false));
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<GridPortableObject<V>> getPortableAsync(K key) {
-        return (GridFuture<GridPortableObject<V>>)cache.getAsync(key, false, entryFilter(false));
     }
 
     /** {@inheritDoc} */
@@ -663,25 +652,8 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public Map<K, GridPortableObject<V>> getAllPortable(
-        @Nullable Collection<? extends K> keys) throws GridException {
-        return (Map<K, GridPortableObject<V>>)cache.getAll(keys, false, entryFilter(false));
-    }
-
-    /** {@inheritDoc} */
     @Override public GridFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys) {
         return cache.getAllAsync(keys, true, entryFilter(false));
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Map<K, GridPortableObject<V>>> getAllPortableAsync(
-        @Nullable Collection<? extends K> keys) {
-        return cache.getAllAsync(keys, false, entryFilter(false)).chain(
-            new CX1<GridFuture<Map<K, V>>, Map<K, GridPortableObject<V>>>() {
-                @Override public Map<K, GridPortableObject<V>> applyx(GridFuture<Map<K, V>> f) throws GridException {
-                    return (Map<K, GridPortableObject<V>>)f.get();
-                }
-            });
     }
 
     /** {@inheritDoc} */

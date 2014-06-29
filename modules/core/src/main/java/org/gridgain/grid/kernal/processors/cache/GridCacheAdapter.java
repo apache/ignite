@@ -3955,32 +3955,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         return ctx.dr().drPauseState();
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public GridPortableObject<V> getPortable(K key) throws GridException {
-        return (GridPortableObject<V>)get(key, false, null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<GridPortableObject<V>> getPortableAsync(K key) {
-        return (GridFuture<GridPortableObject<V>>)getAsync(key, false, null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<K, GridPortableObject<V>> getAllPortable(@Nullable Collection<? extends K> keys)
-        throws GridException {
-        return (Map<K, GridPortableObject<V>>)getAll(keys, false, null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Map<K, GridPortableObject<V>>> getAllPortableAsync(
-        @Nullable Collection<? extends K> keys) {
-        return getAllAsync(keys, false, null).chain(new CX1<GridFuture<Map<K, V>>, Map<K, GridPortableObject<V>>>() {
-            @Override public Map<K, GridPortableObject<V>> applyx(GridFuture<Map<K, V>> f) throws GridException {
-                return (Map<K, GridPortableObject<V>>)f.get();
-            }
-        });
-    }
-
     /**
      * Check whether DR is enabled.
      */
