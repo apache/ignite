@@ -1066,7 +1066,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /**
      * Local routine info.
      */
-    private static class LocalRoutineInfo {
+    static class LocalRoutineInfo {
         /** Projection predicate. */
         private final GridPredicate<GridNode> prjPred;
 
@@ -1095,6 +1095,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             this.hnd = hnd;
             this.bufSize = bufSize;
             this.interval = interval;
+        }
+
+        /**
+         * @return Handler.
+         */
+        GridContinuousHandler handler() {
+            return hnd;
         }
     }
 

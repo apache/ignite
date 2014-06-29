@@ -31,7 +31,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
     private static final String AFFINITY = "serviceConfigAffinity";
 
     /** Affinity key. */
-    private final Integer affKey = 1;
+    private static final Integer AFFINITY_KEY = 1;
 
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
@@ -63,8 +63,8 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
 
         cfg.setName(AFFINITY);
         cfg.setCacheName(CACHE_NAME);
-        cfg.setAffinityKey(affKey);
-        cfg.setService(new AffinityService(new CountDownLatch(1), affKey));
+        cfg.setAffinityKey(AFFINITY_KEY);
+        cfg.setService(new AffinityService(new CountDownLatch(1), AFFINITY_KEY));
 
         arr[2] = cfg;
 
@@ -80,6 +80,8 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
 
         assertEquals(NODE_SINGLE, nodeCount(), DummyService.started(NODE_SINGLE));
         assertEquals(CLUSTER_SINGLE, 0, DummyService.cancelled(NODE_SINGLE));
+
+        checkCount(AFFINITY, randomGrid().services().deployedServices(), 1);
     }
 
     /**

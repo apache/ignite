@@ -407,7 +407,10 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         @Override public void execute(GridServiceContext ctx) {
             System.out.println("Executing affinity service for key: " + affKey);
 
-            assertNotNull(g.cache(CACHE_NAME).peek(affKey));
+            GridNode n = g.cache(CACHE_NAME).affinity().mapKeyToNode(affKey);
+
+            assertNotNull(n);
+            assertTrue(n.isLocal());
 
             latch.countDown();
         }
