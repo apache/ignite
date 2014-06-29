@@ -10,6 +10,7 @@ package org.gridgain.client.impl.connection;
 
 import org.gridgain.client.*;
 import org.gridgain.client.impl.*;
+import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
@@ -146,7 +147,9 @@ public abstract class GridClientConnection {
 
         return res.chain(new GridClientFutureCallback<Map<K, V>, V>() {
             @Override public V onComplete(GridClientFuture<Map<K, V>> fut) throws GridClientException {
-                return fut.get().get(key);
+                Map<K, V> map = fut.get();
+
+                return F.firstValue(map);
             }
         });
     }

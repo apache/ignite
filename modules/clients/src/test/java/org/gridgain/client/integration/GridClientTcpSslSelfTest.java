@@ -10,12 +10,8 @@
 package org.gridgain.client.integration;
 
 import org.gridgain.client.*;
-import org.gridgain.client.marshaller.*;
 import org.gridgain.client.ssl.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
-
-import java.nio.*;
 
 /**
  * Tests TCP binary protocol with client when SSL is enabled.
@@ -39,39 +35,5 @@ public class GridClientTcpSslSelfTest extends GridClientAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected GridSslContextFactory sslContextFactory() {
         return GridTestUtils.sslContextFactory();
-    }
-
-    /**
-     * Checks if incorrect marshaller configuration leads to
-     * handshake error.
-     *
-     * @throws Exception If failed.
-     */
-    public void testHandshakeFailed() throws Exception {
-        GridClientConfiguration cfg = clientConfiguration();
-
-        cfg.setMarshaller(new GridClientMarshaller() {
-            @Override public ByteBuffer marshal(Object obj, int off) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override public <T> T unmarshal(byte[] bytes) {
-                throw new UnsupportedOperationException();
-            }
-        });
-
-        GridClient c = GridClientFactory.start(cfg);
-
-        Exception err = null;
-
-        try {
-            c.compute().refreshTopology(false, false);
-        }
-        catch (Exception e) {
-            err = e;
-        }
-
-        assertNotNull(err);
-        assertTrue(X.hasCause(err, GridClientHandshakeException.class));
     }
 }
