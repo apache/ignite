@@ -15,7 +15,6 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.deployment.local.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -426,7 +425,8 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
 
             assert res == 1 : "Method gridifyDefault returned wrong value [result=" + res + ", expected=1]";
 
-            assert locDepCnt.get() == 1 : "Invalid local deployment count [expected=1, got=" + locDepCnt.get() + ']';
+            // 2 local deployments because 1 belongs to internal utility cache started by default.
+            assert locDepCnt.get() == 2 : "Invalid local deployment count [expected=1, got=" + locDepCnt.get() + ']';
             assert rmtDepCnt.get() == 1 : "Invalid remote deployment count [expected=1, got=" + rmtDepCnt.get() + ']';
         }
         finally {
@@ -745,11 +745,8 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean apply(GridEvent evt) {
-            if (evt.type() == EVT_TASK_DEPLOYED || evt.type() == EVT_CLASS_DEPLOYED) {
+            if (evt.type() == EVT_TASK_DEPLOYED || evt.type() == EVT_CLASS_DEPLOYED)
                 cnt.addAndGet(1);
-
-                U.debug(">>> Task deploy event: " + evt);
-            }
 
             return true;
         }
