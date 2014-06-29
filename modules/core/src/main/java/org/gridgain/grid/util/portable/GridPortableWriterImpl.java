@@ -1100,7 +1100,7 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
             Integer h = handles.get(obj);
 
             if (h != null)
-                return h;
+                return off - h;
             else {
                 handles.put(obj, off);
 
