@@ -18,6 +18,8 @@ import java.nio.file.*;
 import java.text.*;
 import java.util.*;
 
+import static org.gridgain.grid.kernal.GridProductImpl.*;
+
 /**
  * Setup tool to configure Hadoop client.
  */
@@ -31,7 +33,16 @@ public class GridHadoopSetup {
      * @throws IOException If fails.
      */
     public static void main(String[] ignore) throws IOException {
-        //Ignore arguments. The only supported operation runs by default.
+        X.println(
+            "  _____     _     _______      _         ",
+            " / ___/____(_)___/ / ___/___ _(_)___     ",
+            "/ (_ // __/ // _  / (_ // _ `/ // _ \\   ",
+            "\\___//_/ /_/ \\_,_/\\___/ \\_,_/_//_//_/",
+            "                for Apache Hadoop        ",
+            "  ");
+
+        println("Version " + ACK_VER);
+
         configureHadoop();
     }
 
@@ -57,7 +68,7 @@ public class GridHadoopSetup {
 
         if (hadoopHome == null || hadoopHome.isEmpty())
             exit("HADOOP_HOME environment variable is not set. Please set HADOOP_HOME to " +
-                "valid Hadoop installation folder and run setup tool again.", null);
+                "valid Hadoop installation directory and run setup tool again.", null);
 
         hadoopHome = hadoopHome.replaceAll("\"", "");
 
@@ -216,7 +227,7 @@ public class GridHadoopSetup {
                 println("Ok. You can configure them later, the templates are available at GridGain's 'docs' directory...");
         }
 
-        println("Hadoop setup is complete.");
+        println("Apache Hadoop setup is complete.");
     }
 
     /**
@@ -393,7 +404,7 @@ public class GridHadoopSetup {
      * @param dirs Directories inside of the root to process.
      */
     private static void processCmdFiles(File rootDir, String... dirs) {
-        Boolean answer = false;
+        boolean answer = false;
 
         for (String dir : dirs) {
             File subDir = new File(rootDir, dir);
