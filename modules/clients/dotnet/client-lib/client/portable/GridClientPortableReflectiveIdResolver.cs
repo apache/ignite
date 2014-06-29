@@ -17,7 +17,8 @@ namespace GridGain.Client.Portable
     using GridGain.Client.Portable;
 
     /**
-     * <summary>ID mapper which uses reflection to calculate type/field IDs and delegates to hash code otherwise.</summary>
+     * <summary>ID mapper which uses reflection to calculate type/field IDs and delegates to hash code 
+     * otherwise.</summary>
      */ 
     class GridClientPortableReflectiveIdResolver : GridClientPortableIdResolver 
     {

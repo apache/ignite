@@ -17,7 +17,9 @@ namespace GridGain.Client.Portable
     public class GridClientPortableException : Exception
     {
         /** <summary>Constructs an exception.</summary> */
-        public GridClientPortableException() {
+        public GridClientPortableException() 
+        {
+            // No-op.
         }
 
         /**

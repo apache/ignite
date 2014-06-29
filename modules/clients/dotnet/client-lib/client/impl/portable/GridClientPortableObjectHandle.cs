@@ -15,15 +15,18 @@ namespace GridGain.Client.Impl.Portable
     /**
      * <summary>Object handle. Wraps a single value.</summary>
      */ 
-    internal class GridClientPortableObjectHandle
-    {        
+    internal struct GridClientPortableObjectHandle
+    {
+        /** Value. */
+        private object val;
+
         /**
          * <summary>Constructor.</summary>
          * <param name="val">Value.</param>
          */ 
         public GridClientPortableObjectHandle(object val)
         {
-            Value = val;
+            this.val = val;
         }
 
         /**
@@ -31,16 +34,12 @@ namespace GridGain.Client.Impl.Portable
          */
         public object Value
         {
-            get;
-            private set;
+            get { return val; }
         }
 
         /** <inheritdoc /> */
         public override bool Equals(object obj)
         {
-            if (this == obj)
-                return true;
-
             if (obj != null && obj is GridClientPortableObjectHandle)
             {
                 GridClientPortableObjectHandle that = (GridClientPortableObjectHandle)obj;
