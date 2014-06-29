@@ -154,6 +154,15 @@ public class GridPortableClassDescriptor {
     }
 
     /**
+     * Gets portable type name.
+     *
+     * @return Type name.
+     */
+    public String name() {
+        return cls.getName();
+    }
+
+    /**
      * @return Type ID.
      */
     int typeId() {

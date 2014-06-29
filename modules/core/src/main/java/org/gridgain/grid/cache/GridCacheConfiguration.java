@@ -15,6 +15,7 @@ import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.cloner.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.eviction.*;
+import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.dr.cache.receiver.*;
 import org.gridgain.grid.dr.cache.sender.*;
@@ -381,6 +382,9 @@ public class GridCacheConfiguration {
     /** */
     private GridCacheInterceptor<?, ?> interceptor;
 
+    /** Query configuration. */
+    private GridCacheQueryConfiguration qryCfg;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public GridCacheConfiguration() {
         /* No-op. */
@@ -399,6 +403,7 @@ public class GridCacheConfiguration {
         aff = cc.getAffinity();
         affMapper = cc.getAffinityMapper();
         atomicityMode = cc.getAtomicityMode();
+        atomicWriteOrderMode = cc.getAtomicWriteOrderMode();
         backups = cc.getBackups();
         cacheMode = cc.getCacheMode();
         cloner = cc.getCloner();
@@ -443,8 +448,9 @@ public class GridCacheConfiguration {
         preloadPoolSize = cc.getPreloadThreadPoolSize();
         preloadTimeout = cc.getPreloadTimeout();
         preloadThrottle = cc.getPreloadThrottle();
-        qryIdxEnabled = cc.isQueryIndexEnabled();
+        qryCfg = cc.getQueryConfiguration();
         refreshAheadRatio = cc.getRefreshAheadRatio();
+        qryIdxEnabled = cc.isQueryIndexEnabled();
         seqReserveSize = cc.getAtomicSequenceReserveSize();
         startSize = cc.getStartSize();
         store = cc.getStore();
@@ -459,7 +465,6 @@ public class GridCacheConfiguration {
         writeBehindFlushFreq = cc.getWriteBehindFlushFrequency();
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cc.getWriteBehindFlushThreadCount();
-        atomicWriteOrderMode = cc.getAtomicWriteOrderMode();
         writeSync = cc.getWriteSynchronizationMode();
     }
 
@@ -1971,6 +1976,26 @@ public class GridCacheConfiguration {
      */
     public <K, V> void setInterceptor(GridCacheInterceptor<K, V> interceptor) {
         this.interceptor = interceptor;
+    }
+
+    /**
+     * Gets query configuration. Query configuration defines which fields should be indexed for objects
+     * without annotations or portable objects.
+     *
+     * @return Cache query configuration.
+     */
+    public GridCacheQueryConfiguration getQueryConfiguration() {
+        return qryCfg;
+    }
+
+    /**
+     * Sets query configuration.
+     *
+     * @param qryCfg Query configuration.
+     * @see GridCacheQueryConfiguration
+     */
+    public void setQueryConfiguration(GridCacheQueryConfiguration qryCfg) {
+        this.qryCfg = qryCfg;
     }
 
     /** {@inheritDoc} */

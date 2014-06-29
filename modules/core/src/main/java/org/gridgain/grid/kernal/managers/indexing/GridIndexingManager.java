@@ -20,10 +20,12 @@ import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.portable.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
+import org.gridgain.portable.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -56,6 +58,9 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
     /** */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
+
+    /** Configuration-declared types. */
+    private Map<TypeId, GridCacheQueryTypeMetadata> declaredTypes = new HashMap<>();
 
     /** */
     private ExecutorService execSvc;
@@ -91,6 +96,15 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         execSvc = ctx.config().getExecutorService();
 
         startSpi();
+
+        for (GridCacheConfiguration ccfg : ctx.config().getCacheConfiguration()){
+            GridCacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
+
+            if (qryCfg != null) {
+                for (GridCacheQueryTypeMetadata meta : qryCfg.getTypeMetadata())
+                    declaredTypes.put(new TypeId(ccfg.getName(), meta.getType()), meta);
+            }
+        }
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
@@ -148,15 +162,15 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      *
      * @param spi SPI name.
      * @param space Space.
-     * @param valType Value type.
+     * @param valTypeName Value type name.
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
-    public GridFuture<?> rebuildIndexes(@Nullable final String spi, @Nullable final String space, Class<?> valType) {
+    public GridFuture<?> rebuildIndexes(@Nullable final String spi, @Nullable final String space, String valTypeName) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to rebuild indexes (grid is stopping).");
 
         try {
-            final TypeDescriptor desc = types.get(new TypeId(space, valType));
+            final TypeDescriptor desc = types.get(new TypeId(space, valTypeName));
 
             if (desc == null || !desc.registered())
                 return new GridFinishedFuture<Void>(ctx);
@@ -207,7 +221,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             GridCompoundFuture<?, ?> fut = new GridCompoundFuture<Object, Object>(ctx);
 
             for (TypeId type : types.keySet())
-                fut.add((GridFuture)rebuildIndexes(spi, type.space, type.valType));
+                fut.add((GridFuture)rebuildIndexes(spi, type.space, type.valTypeName));
 
             fut.markInitialized();
 
@@ -239,10 +253,10 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
     /**
      * @param x Value.
      * @param bytes Serialized value.
-     * @param <X> Value type.
+     * @param <T> Value type.
      * @return Index entry.
      */
-    private <X> GridIndexingEntity<X> entry(X x, @Nullable byte[] bytes) {
+    private <T> GridIndexingEntity<T> entry(T x, @Nullable byte[] bytes) {
         return new GridIndexingEntityAdapter<>(x, bytes);
     }
 
@@ -260,7 +274,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @throws GridException In case of error.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> void store(final String spi, final String space, final K key, @Nullable byte[] keyBytes, V val,
+    public <K, V> void store(final String spi, final String space, final K key, @Nullable byte[] keyBytes, final V val,
         @Nullable byte[] valBytes, byte[] ver, long expirationTime) throws GridException {
         assert key != null;
         assert val != null;
@@ -273,6 +287,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                 log.debug("Storing key to cache query index [key=" + key + ", value=" + val + "]");
 
             final Class<?> valCls = val.getClass();
+            final Class<?> keyCls = key.getClass();
 
             TypeId id = new TypeId(space, valCls);
 
@@ -292,25 +307,68 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
                 d.init(new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        String typeName = valCls.getSimpleName();
-
-                        // To protect from failure on anonymous classes.
-                        if (F.isEmpty(typeName))
-                            typeName = valCls.getName().substring(valCls.getPackage().getName().length());
-
-                        if (valCls.isArray()) {
-                            assert typeName.endsWith("[]");
-
-                            typeName = typeName.substring(0, typeName.length() - 2) + "_array";
-                        }
-
-                        d.name(typeName);
-
-                        d.keyClass(key.getClass());
+                        d.keyClass(keyCls);
                         d.valueClass(valCls);
 
-                        processAnnotationsInClass(true, d.keyCls, d, null);
-                        processAnnotationsInClass(false, d.valCls, d, null);
+                        if (GridPortableObject.class.isAssignableFrom(keyCls)) {
+                            GridPortableObject portableKey = (GridPortableObject)key;
+
+                            GridPortableClassDescriptor desc = ctx.portable().portableContext().
+                                descriptorForTypeId(false, portableKey.typeId());
+
+                            if (desc == null)
+                                desc = ctx.portable().portableContext().descriptorForTypeId(true, portableKey.typeId());
+
+                            if (desc != null) {
+                                GridCacheQueryTypeMetadata keyMeta = declaredTypes.get(new TypeId(space, desc.name()));
+
+                                if (keyMeta != null)
+                                    processPortableMeta(true, keyMeta, d);
+                            }
+                        }
+                        else {
+                            GridCacheQueryTypeMetadata keyMeta = declaredTypes.get(new TypeId(space, typeName(keyCls)));
+
+                            if (keyMeta == null) {
+                                processAnnotationsInClass(true, d.keyCls, d, null);
+                            }
+                            else {
+                                processClassMeta(true, d.keyCls, keyMeta, d, null);
+                            }
+                        }
+
+                        if (GridPortableObject.class.isAssignableFrom(valCls)) {
+                            GridPortableObject portableVal = (GridPortableObject)val;
+
+                            GridPortableClassDescriptor desc = ctx.portable().portableContext().
+                                descriptorForTypeId(false, portableVal.typeId());
+
+                            if (desc == null)
+                                desc = ctx.portable().portableContext().descriptorForTypeId(true, portableVal.typeId());
+
+                            if (desc != null) {
+                                GridCacheQueryTypeMetadata valMeta = declaredTypes.get(new TypeId(space, desc.name()));
+
+                                d.name(desc.name());
+
+                                if (valMeta != null)
+                                    processPortableMeta(true, valMeta, d);
+                            }
+                        }
+                        else {
+                            String valTypeName = typeName(valCls);
+
+                            d.name(valTypeName);
+
+                            GridCacheQueryTypeMetadata typeMeta = declaredTypes.get(new TypeId(space, valTypeName));
+
+                            if (typeMeta == null) {
+                                processAnnotationsInClass(false, d.valCls, d, null);
+                            }
+                            else {
+                                processClassMeta(false, d.valCls, typeMeta, d, null);
+                            }
+                        }
 
                         d.registered(getSpi(spi).registerType(space, d));
 
@@ -330,6 +388,28 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * Gets type name by class.
+     *
+     * @param cls Class.
+     * @return Type name.
+     */
+    private String typeName(Class<?> cls) {
+        String typeName = cls.getSimpleName();
+
+        // To protect from failure on anonymous classes.
+        if (F.isEmpty(typeName))
+            typeName = cls.getName().substring(cls.getPackage().getName().length());
+
+        if (cls.isArray()) {
+            assert typeName.endsWith("[]");
+
+            typeName = typeName.substring(0, typeName.length() - 2) + "_array";
+        }
+
+        return typeName;
     }
 
     /**
@@ -581,7 +661,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @throws GridException In case of error.
      */
     static void processAnnotationsInClass(boolean key, Class<?> cls, @Nullable TypeDescriptor type,
-        @Nullable Property parent) throws GridException {
+        @Nullable ClassProperty parent) throws GridException {
         if (U.isJdk(cls))
             return;
 
@@ -613,7 +693,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                 GridCacheQueryTextField txtAnn = field.getAnnotation(GridCacheQueryTextField.class);
 
                 if (sqlAnn != null || txtAnn != null) {
-                    Property prop = new Property(field);
+                    ClassProperty prop = new ClassProperty(field);
 
                     prop.parent(parent);
 
@@ -632,7 +712,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                         throw new GridException("Getter with GridCacheQuerySqlField " +
                             "annotation cannot have parameters: " + mtd);
 
-                    Property prop = new Property(mtd);
+                    ClassProperty prop = new ClassProperty(mtd);
 
                     prop.parent(parent);
 
@@ -656,7 +736,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @throws GridException In case of error.
      */
     static void processAnnotation(boolean key, GridCacheQuerySqlField sqlAnn, GridCacheQueryTextField txtAnn,
-        Class<?> cls, Property prop, TypeDescriptor desc) throws GridException {
+        Class<?> cls, ClassProperty prop, TypeDescriptor desc) throws GridException {
         if (sqlAnn != null) {
             processAnnotationsInClass(key, cls, desc, prop);
 
@@ -684,6 +764,84 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
         if (txtAnn != null)
             desc.addFieldToTextIndex(prop.name());
+    }
+
+    /**
+     * Processes declarative metadata for class.
+     *
+     * @param key Key or value flag.
+     * @param cls Class to process.
+     * @param typeMeta Type metadata.
+     * @param d Type descriptor.
+     * @param parent Parent property if this is embeddable element.
+     */
+    static void processClassMeta(boolean key, Class<?> cls, GridCacheQueryTypeMetadata typeMeta, TypeDescriptor d,
+        @Nullable Property parent) {
+        // TODO.
+    }
+
+    /**
+     * Processes declarative metadata for portable object.
+     *
+     * @param key Key or value flag.
+     * @param meta Declared metadata.
+     * @param d Type descriptor.
+     */
+    static void processPortableMeta(boolean key, GridCacheQueryTypeMetadata meta, TypeDescriptor d)
+        throws GridException {
+        for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
+            PortableProperty prop = buildPortableProperty(entry.getKey(), entry.getValue());
+
+            d.addProperty(key, prop);
+
+            String idxName = prop.name() + "_idx";
+
+            d.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
+
+            d.addFieldToIndex(idxName, prop.name(), 0, false);
+        }
+
+        for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet()) {
+            PortableProperty prop = buildPortableProperty(entry.getKey(), entry.getValue());
+
+            d.addProperty(key, prop);
+
+            String idxName = prop.name() + "_idx";
+
+            d.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
+
+            d.addFieldToIndex(idxName, prop.name(), 0, true);
+        }
+
+        for (String txtIdx : meta.getTextFields())
+            d.addFieldToTextIndex(txtIdx);
+
+        for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
+            PortableProperty prop = buildPortableProperty(entry.getKey(), entry.getValue());
+
+            d.addProperty(key, prop);
+        }
+
+        // TODO group indexes.
+    }
+
+    /**
+     * Builds portable object property.
+     *
+     * @param pathStr String representing path to the property. May contains dots '.' to identify
+     *      nested fields.
+     * @param resType Result type.
+     * @return Portable property.
+     */
+    static PortableProperty buildPortableProperty(String pathStr, Class<?> resType) {
+        String[] path = pathStr.split("\\.");
+
+        PortableProperty res = null;
+
+        for (String prop : path)
+            res = new PortableProperty(prop, res, resType);
+
+        return res;
     }
 
     /**
@@ -732,14 +890,38 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
     }
 
     /**
+     * Abstract property extractor.
+     */
+    private abstract static class Property {
+        /**
+         * Gets this property value from the given object.
+         *
+         * @param x Object with this property.
+         * @return Property value.
+         * @throws GridSpiException If failed.
+         */
+        public abstract Object value(Object x) throws GridSpiException;
+
+        /**
+         * @return Property name.
+         */
+        public abstract String name();
+
+        /**
+         * @return Class member type.
+         */
+        public abstract Class<?> type();
+    }
+
+    /**
      * Description of type property.
      */
-    private static class Property {
+    private static class ClassProperty extends Property {
         /** */
         private final Member member;
 
         /** */
-        private Property parent;
+        private ClassProperty parent;
 
         /** */
         private String name;
@@ -749,21 +931,15 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
          *
          * @param member Element.
          */
-        Property(Member member) {
+        ClassProperty(Member member) {
             this.member = member;
 
             name = member instanceof Method && member.getName().startsWith("get") && member.getName().length() > 3 ?
                 member.getName().substring(3) : member.getName();
         }
 
-        /**
-         * Gets this property value from the given object.
-         *
-         * @param x Object with this property.
-         * @return Property value.
-         * @throws GridSpiException If failed.
-         */
-        public Object value(Object x) throws GridSpiException {
+        /** {@inheritDoc} */
+        @Override public Object value(Object x) throws GridSpiException {
             if (parent != null)
                 x = parent.value(x);
 
@@ -798,30 +974,26 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             this.name = name;
         }
 
-        /**
-         * @return Property name.
-         */
-        public String name() {
+        /** {@inheritDoc} */
+        @Override public String name() {
             return name;
         }
 
-        /**
-         * @return Class member type.
-         */
-        public Class<?> type() {
+        /** {@inheritDoc} */
+        @Override public Class<?> type() {
             return member instanceof Field ? ((Field)member).getType() : ((Method)member).getReturnType();
         }
 
         /**
          * @param parent Parent property if this is embeddable element.
          */
-        public void parent(Property parent) {
+        public void parent(ClassProperty parent) {
             this.parent = parent;
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(Property.class, this);
+            return S.toString(ClassProperty.class, this);
         }
 
         /**
@@ -830,6 +1002,60 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
          */
         public boolean knowsClass(Class<?> cls) {
             return member.getDeclaringClass() == cls || (parent != null && parent.knowsClass(cls));
+        }
+    }
+
+    private static class PortableProperty extends Property {
+        /** Property name. */
+        private String propName;
+
+        /** Parent property. */
+        private PortableProperty parent;
+
+        /** Result class. */
+        private Class<?> type;
+
+        /**
+         * Constructor.
+         *
+         * @param propName Property name.
+         * @param parent Parent property.
+         * @param type Result type.
+         */
+        private PortableProperty(String propName, PortableProperty parent, Class<?> type) {
+            this.propName = propName;
+            this.parent = parent;
+            this.type = type;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object value(Object obj) throws GridSpiException {
+            if (parent != null)
+                obj = parent.value(obj);
+
+            if (obj == null)
+                return null;
+
+            if (!(obj instanceof GridPortableObject))
+                throw new GridSpiException("Non-portable object received as a result of property extraction " +
+                    "[parent=" + parent + ", propName=" + propName + ", obj=" + obj + ']');
+
+            try {
+                return ((GridPortableObject)obj).field(propName);
+            }
+            catch (GridPortableException e) {
+                throw new GridSpiException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return propName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<?> type() {
+            return type;
         }
     }
 
@@ -1079,12 +1305,10 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         private final Collection<T2<String, Integer>> fields = new TreeSet<>(
             new Comparator<T2<String, Integer>>() {
                 @Override public int compare(T2<String, Integer> o1, T2<String, Integer> o2) {
-                    int d = o1.get2() - o2.get2();
-
-                    if (d == 0) // Order is equal, compare field names to avoid replace in Set.
+                    if (o1.get2().equals(o2.get2())) // Order is equal, compare field names to avoid replace in Set.
                         return o1.get1().compareTo(o2.get1());
 
-                    return d;
+                    return o1.get2() < o2.get2() ? -1 : 1;
                 }
             });
 
@@ -1154,8 +1378,8 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         /** */
         private final String space;
 
-        /** */
-        private final Class<?> valType;
+        /** Value type name. */
+        private final String valTypeName;
 
         /**
          * Constructor.
@@ -1167,23 +1391,38 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             assert valType != null;
 
             this.space = space;
-            this.valType = valType;
+
+            valTypeName = valType.getName();
+        }
+
+        /**
+         * Constructor.
+         *
+         * @param space Space name.
+         * @param valTypeName Value type name.
+         */
+        private TypeId(String space, String valTypeName) {
+            this.space = space;
+            this.valTypeName = valTypeName;
         }
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
 
             TypeId typeId = (TypeId)o;
 
             return (space != null ? space.equals(typeId.space) : typeId.space == null) &&
-                valType.equals(typeId.valType);
+                valTypeName.equals(typeId.valTypeName);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return 31 * (space != null ? space.hashCode() : 0) + valType.hashCode();
+            return 31 * (space != null ? space.hashCode() : 0) + valTypeName.hashCode();
         }
 
         /** {@inheritDoc} */

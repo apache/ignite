@@ -18,7 +18,5 @@ package org.gridgain.grid.cache.query;
 public interface GridCacheQueryTypeResolver {
     public String resolveTypeName(Object key, Object val);
 
-    public Class<?> resolveFieldType(String field, Object key, Object val);
-
     public Object valueOf(String field, Object key, Object val);
 }

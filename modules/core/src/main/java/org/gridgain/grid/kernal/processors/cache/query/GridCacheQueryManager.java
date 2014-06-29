@@ -188,7 +188,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             throw new IllegalStateException("Failed to rebuild indexes (grid is stopping).");
 
         try {
-            return idxMgr.rebuildIndexes(spi, space, valType);
+            return idxMgr.rebuildIndexes(spi, space, valType.getName());
         }
         finally {
             leaveBusy();

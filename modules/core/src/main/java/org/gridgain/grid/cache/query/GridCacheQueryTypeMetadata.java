@@ -9,13 +9,14 @@
 
 package org.gridgain.grid.cache.query;
 
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 
 /**
- * TODO: Add class description.
+ * Cache query type metadata.
  *
  * @author @java.author
  * @version @java.version
@@ -27,79 +28,160 @@ public class GridCacheQueryTypeMetadata {
 
     /** Fields to be queried, in addition to indexed fields. */
     @GridToStringInclude
-    private Collection<String> qryFlds;
+    private Map<String, Class<?>> qryFlds = new HashMap<>();
 
     /** Fields to index in ascending order. */
     @GridToStringInclude
-    private Collection<String> ascFlds;
+    private Map<String, Class<?>> ascFlds = new HashMap<>();
 
     /** Fields to index in descending order. */
     @GridToStringInclude
-    private Collection<String> descFlds;
+    private Map<String, Class<?>> descFlds = new HashMap<>();
 
     /** Fields to index as text. */
     @GridToStringInclude
-    private Collection<String> txtFlds;
+    private Collection<String> txtFlds = new LinkedHashSet<>();
 
     /** Fields to create group indexes for. */
     @GridToStringInclude
-    private Collection<LinkedHashMap<String, Boolean>> grps;
+    private Collection<LinkedHashMap<String, GridBiTuple<Class<?>, Boolean>>> grps;
 
+    /**
+     * Default constructor.
+     */
+    public GridCacheQueryTypeMetadata(String type) {
+        this.type = type;
+    }
+
+    /**
+     *
+     */
+    public GridCacheQueryTypeMetadata(GridCacheQueryTypeMetadata src) {
+        type = src.getType();
+
+        qryFlds = new HashMap<>(src.getQueryFields());
+        ascFlds = new HashMap<>(src.getAscendingFields());
+        descFlds = new HashMap<>(src.getDescendingFields());
+        txtFlds = new HashSet<>(src.getTextFields());
+
+        grps = new HashSet<>(src.getGroups());
+    }
+
+    /**
+     * Gets type (e.g. class name).
+     *
+     * @return Type name.
+     */
     public String getType() {
         return type;
     }
 
+    /**
+     * Sets type.
+     *
+     * @param cls Type class.
+     */
     public void setType(Class<?> cls) {
         type = cls.getSimpleName();
     }
 
+    /**
+     * Sets type.
+     *
+     * @param type Type name.
+     */
     public void setType(String type) {
         this.type = type;
     }
 
     /**
-     * Gets queryable fields. If {@code '*'}, then all fields will be queryable.
+     * Gets query-enabled fields.
      *
-     * @return
+     * @return Collection of fields available for query.
      */
-    public Collection<String> getQueryFields() {
+    public Map<String, Class<?>> getQueryFields() {
         return qryFlds;
     }
 
-    public void setQueryFields(String... qryFlds) {
-        this.qryFlds = Arrays.asList(qryFlds);
+    /**
+     * Sets query fields map.
+     *
+     * @param qryFlds Query fields.
+     */
+    public void setQueryFields(Map<String, Class<?>> qryFlds) {
+        this.qryFlds = qryFlds;
     }
 
-    public Collection<String> getAscendingFields() {
+    /**
+     * Gets ascending-indexed fields.
+     *
+     * @return Map of ascending-indexed fields.
+     */
+    public Map<String, Class<?>> getAscendingFields() {
         return ascFlds;
     }
 
-    public void setAscendingFields(String... ascFlds) {
-        this.ascFlds = Arrays.asList(ascFlds);
+    /**
+     * Sets ascending-indexed fields.
+     *
+     * @param ascFlds Map of ascending-indexed fields.
+     */
+    public void setAscendingFields(Map<String, Class<?>> ascFlds) {
+        this.ascFlds = ascFlds;
     }
 
-    public Collection<String> getDescendingFields() {
+    /**
+     * Gets descending-indexed fields.
+     *
+     * @return Map of descending-indexed fields.
+     */
+    public Map<String, Class<?>> getDescendingFields() {
         return descFlds;
     }
 
-    public void setDescendingFields(String... descFlds) {
-        this.descFlds = Arrays.asList(descFlds);
+    /**
+     * Sets descending-indexed fields.
+     *
+     * @param descFlds Map of descending-indexed fields.
+     */
+    public void setDescendingFields(Map<String, Class<?>> descFlds) {
+        this.descFlds = descFlds;
     }
 
+    /**
+     * Gets text-indexed fields.
+     *
+     * @return Collection of text indexed fields.
+     */
     public Collection<String> getTextFields() {
         return txtFlds;
     }
 
+    /**
+     * Sets text-indexed fields.
+     *
+     * @param txtFlds Text-indexed fields.
+     */
     public void setTextFields(Collection<String> txtFlds) {
         this.txtFlds = txtFlds;
     }
 
-    public Collection<LinkedHashMap<String, Boolean>> getGroups() {
+    /**
+     * Gets group-indexed fields.
+     *
+     * @return Collection of group-indexed fields.
+     */
+    public Collection<LinkedHashMap<String, GridBiTuple<Class<?>, Boolean>>> getGroups() {
         return grps;
     }
 
-    public void setGroups(LinkedHashMap<String, Boolean>... grps) {
-        this.grps = Arrays.asList(grps);
+    /**
+     * Sets group-indexed fields.
+     *
+     * @param grps Collection of group-indexed fields.
+     */
+    public void setGroups(Collection<LinkedHashMap<String, GridBiTuple<Class<?>, Boolean>>> grps) {
+        this.grps = grps;
     }
 
     /** {@inheritDoc} */
