@@ -109,7 +109,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
                 break;
 
             case HANDLE:
-                handle = doReadInt(false);
+                handle = start - doReadInt(false);
                 len = 5;
 
                 break;
@@ -992,7 +992,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
                 return null;
 
             case HANDLE:
-                int handle = doReadInt(raw);
+                int handle = start - doReadInt(raw);
 
                 if (poHandles.containsKey(handle))
                     return poHandles.get(handle);
