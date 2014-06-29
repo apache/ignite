@@ -136,8 +136,6 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
     private void checkSingletonUpdateTopology(String name) throws Exception {
         Grid g = randomGrid();
 
-        checkCount(name, g.services().deployedServices(), 1);
-
         int nodeCnt = 2;
 
         startExtraNodes(nodeCnt);
