@@ -140,7 +140,7 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
                         @Override public V onComplete(GridClientFuture<Object> fut) throws GridClientException {
                             Object obj = fut.get();
 
-                            if (obj != null && obj instanceof GridPortableObject) {
+                            if (obj instanceof GridPortableObject) {
                                 try {
                                     obj = ((GridPortableObject)obj).deserialize();
                                 }
@@ -200,7 +200,7 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
                                 for (Map.Entry<K, Object> e : map.entrySet()) {
                                     Object val = e.getValue();
 
-                                    if (val != null && val instanceof GridPortableObject) {
+                                    if (val instanceof GridPortableObject) {
                                         try {
                                             e.setValue(((GridPortableObject)val).deserialize());
                                         }

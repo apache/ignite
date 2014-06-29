@@ -280,7 +280,7 @@ public class GridPortableContextImpl implements GridPortableContext, Externaliza
      * @param serializer Serializer.
      * @throws GridPortableException In case of error.
      */
-    private void addUserTypeDescriptor(Class<?> cls, @Nullable GridPortableIdMapper idMapper,
+    public void addUserTypeDescriptor(Class<?> cls, @Nullable GridPortableIdMapper idMapper,
         @Nullable GridPortableSerializer serializer) throws GridPortableException {
         assert cls != null;
 

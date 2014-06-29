@@ -22,6 +22,7 @@ import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -1889,9 +1890,6 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 break; // While.
                             }
 
-                            if (cctx.kernalContext().portable().isPortable(val))
-                                val = (V)cctx.kernalContext().portable().marshal(val);
-
                             txEntry = addEntry(lockOnly ? NOOP : rmv ? DELETE : transformClos != null ? TRANSFORM :
                                 old != null ? UPDATE : CREATE, val, transformClos, entry, ttl, filter, true, drTtl,
                                 drExpireTime, drVer);
@@ -2156,18 +2154,34 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         cctx.checkSecurity(GridSecurityPermission.CACHE_PUT);
 
         // Cached entry may be passed only from entry wrapper.
-        final Map<? extends K, ? extends V> map0;
+        final Map<K, V> map0;
+
         if (drMap != null) {
             assert map == null;
 
-            map0 = F.viewReadOnly(drMap, new GridClosure<GridCacheDrInfo<V>, V>() {
+            map0 = (Map<K, V>)F.viewReadOnly(drMap, new GridClosure<GridCacheDrInfo<V>, V>() {
                 @Override public V apply(GridCacheDrInfo<V> val) {
                     return val.value();
                 }
             });
         }
+        else if (cctx.portableEnabled()) {
+            map0 = new HashMap<>(map.size());
+
+            try {
+                for (Map.Entry<? extends K, ? extends V> e : map.entrySet()) {
+                    K key = (K)cctx.marshalToPortable(e.getKey());
+                    V val = (V)cctx.marshalToPortable(e.getValue());
+
+                    map0.put(key, val);
+                }
+            }
+            catch (GridPortableException e) {
+                return new GridFinishedFuture<>(cctx.kernalContext(), e);
+            }
+        }
         else
-            map0 = map;
+            map0 = (Map<K, V>)map;
 
         if (log.isDebugEnabled())
             log.debug("Called putAllAsync(...) [tx=" + this + ", map=" + map0 + ", retval=" + retval + "]");

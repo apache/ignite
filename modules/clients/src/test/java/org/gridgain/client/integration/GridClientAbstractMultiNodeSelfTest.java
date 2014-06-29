@@ -640,7 +640,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
     /**
      * @return Client configuration for the test.
      */
-    protected GridClientConfiguration clientConfiguration() {
+    protected GridClientConfiguration clientConfiguration() throws GridClientException {
         GridClientConfiguration cfg = new GridClientConfiguration();
 
         cfg.setBalancer(getBalancer());

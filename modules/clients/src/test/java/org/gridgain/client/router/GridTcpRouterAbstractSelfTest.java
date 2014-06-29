@@ -79,7 +79,7 @@ public abstract class GridTcpRouterAbstractSelfTest extends GridClientAbstractSe
     }
 
     /** {@inheritDoc} */
-    @Override protected GridClientConfiguration clientConfiguration() {
+    @Override protected GridClientConfiguration clientConfiguration() throws GridClientException {
         GridClientConfiguration cfg = super.clientConfiguration();
 
         cfg.setServers(Collections.<String>emptySet());

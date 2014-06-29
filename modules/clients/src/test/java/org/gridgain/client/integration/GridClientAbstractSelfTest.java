@@ -270,7 +270,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
     /**
      * @return Test client configuration.
      */
-    protected GridClientConfiguration clientConfiguration() {
+    protected GridClientConfiguration clientConfiguration() throws GridClientException {
         GridClientConfiguration cfg = new GridClientConfiguration();
 
         GridClientDataConfiguration nullCache = new GridClientDataConfiguration();
