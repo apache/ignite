@@ -12,16 +12,19 @@ namespace GridGain.Client.Impl.Portable
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Diagnostics;
     using System.IO;
     using GridGain.Client.Impl.Portable;
     using GridGain.Client.Portable;
     using GridGain.Client.Util;
 
     using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
+    using PSH = GridGain.Client.Impl.Portable.GridClientPortableSystemHandlers;
     
     /**
      * <summary>Portable object implementation.</summary>
      */ 
+    [GridClientPortableId(PU.TYPE_PORTABLE)]
     internal class GridClientPortableObjectImpl : IGridClientPortableObject, IGridClientPortable
     {
         /** Empty fields collection. */
@@ -186,15 +189,14 @@ namespace GridGain.Client.Impl.Portable
 
                     int pos;
 
-                    return fields.TryGetValue(fieldId, out pos) ? Field0<T>(pos) : default(T);
+                    return fields.TryGetValue(fieldId, out pos) ? Field0<T>(offset + pos) : default(T);
                 }
                 else
                     throw new GridClientPortableException("Unknown user type: " + typeId);
                     
             }
-            else {
+            else 
                 throw new GridClientPortableException("Cannot get field by name on system type: " + typeId);
-            }
         }
 
         /**
@@ -204,7 +206,32 @@ namespace GridGain.Client.Impl.Portable
          */ 
         private T Field0<T>(int pos)
         {
-            throw new NotImplementedException();
+            // 1. Read field length.
+            MemoryStream stream = new MemoryStream(data);
+
+            stream.Seek(pos + 4, SeekOrigin.Begin); // Skip 4 additional bytes (field ID).
+
+            int len = PU.ReadInt(stream);
+
+            byte hdr = PU.ReadByte(stream);
+
+            if (hdr == PU.HDR_NULL)
+                return default(T);
+            else if (hdr == PU.HDR_HND)
+                return (T)marsh.Unmarshal0(stream, false, stream.Position - 1, PU.HDR_HND);
+            else if (hdr == PU.HDR_FULL)
+                return (T)marsh.Unmarshal0(stream, false, stream.Position - 1, PU.HDR_FULL);
+            else
+            {
+                Debug.Assert(userType == false);
+
+                GridClientPortableSystemFieldDelegate hnd = PSH.FieldHandler(hdr);
+
+                if (hnd == null)
+                    throw new GridClientPortableException("Invalid system type: " + hdr);
+
+                return (T)hnd.Invoke(stream, marsh);
+            }
         }
              
         /** <inheritdoc /> */

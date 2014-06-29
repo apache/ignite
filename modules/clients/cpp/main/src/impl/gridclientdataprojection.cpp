@@ -238,7 +238,7 @@ TGridBoolFuturePtr GridClientDataProjectionImpl::removeAsync(const GridClientVar
 bool GridClientDataProjectionImpl::removeAll(const TGridClientVariantSet& keys) {
     if (invalidated) throw GridClientClosedException();
 
-    GridCacheRequestCommand::TKeyValueMap keyValues;
+    TGridClientVariantMap keyValues;
     GridCacheRequestCommand cmd(GridCacheRequestCommand::RMV_ALL);
 
     for (size_t i = 0; i < keys.size(); i++)
@@ -384,7 +384,7 @@ TGridClientVariantMap GridClientDataProjectionImpl::getAll(const TGridClientVari
     TGridClientVariantMap ret;
 
     GridCacheRequestCommand cmd(GridCacheRequestCommand::GET_ALL);
-    GridCacheRequestCommand::TKeyValueMap keyValues;
+    TGridClientVariantMap keyValues;
 
     for (size_t i = 0; i < keys.size(); i++)
         keyValues[keys[i]] = GridClientVariant();

@@ -33,7 +33,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     private final GridPortableContext ctx;
 
     /** */
-    private final Map<Integer, GridPortableObject> poHandles;
+    private final Map<Integer, GridPortableObject<?>> poHandles;
 
     /** */
     private final Map<Integer, Object> oHandles;
@@ -80,7 +80,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
      * @param start Start.
      */
     GridPortableReaderImpl(GridPortableContext ctx, byte[] arr, int start) {
-        this(ctx, arr, start, new HashMap<Integer, GridPortableObject>(), new HashMap<Integer, Object>());
+        this(ctx, arr, start, new HashMap<Integer, GridPortableObject<?>>(), new HashMap<Integer, Object>());
     }
 
     /**
@@ -91,7 +91,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
      * @param oHandles Object handles.
      */
     private GridPortableReaderImpl(GridPortableContext ctx, byte[] arr, int start,
-        Map<Integer, GridPortableObject> poHandles, Map<Integer, Object> oHandles) {
+        Map<Integer, GridPortableObject<?>> poHandles, Map<Integer, Object> oHandles) {
         this.ctx = ctx;
         this.arr = arr;
         this.start = start;
@@ -109,7 +109,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
                 break;
 
             case HANDLE:
-                handle = doReadInt(false);
+                handle = start - doReadInt(false);
                 len = 5;
 
                 break;
@@ -809,16 +809,6 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridPortableObject readPortable(String fieldName) throws GridPortableException {
-        return (GridPortableObject)unmarshal(fieldName);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public GridPortableObject readPortable() throws GridPortableException {
-        return (GridPortableObject)unmarshal(true);
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public byte[] readByteArray(String fieldName) throws GridPortableException {
         return readByteArray(fieldId(fieldName));
     }
@@ -1002,7 +992,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
                 return null;
 
             case HANDLE:
-                int handle = doReadInt(raw);
+                int handle = start - doReadInt(raw);
 
                 if (poHandles.containsKey(handle))
                     return poHandles.get(handle);
@@ -1012,7 +1002,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
                 return unmarshal(false);
 
             case OBJ:
-                GridPortableObjectImpl po = new GridPortableObjectImpl(ctx, arr, start);
+                GridPortableObjectImpl<?> po = new GridPortableObjectImpl<>(ctx, arr, start);
 
                 poHandles.put(start, po);
 

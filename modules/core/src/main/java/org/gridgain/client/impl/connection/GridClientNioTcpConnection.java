@@ -11,6 +11,7 @@ package org.gridgain.client.impl.connection;
 import org.gridgain.client.*;
 import org.gridgain.client.impl.*;
 import org.gridgain.client.marshaller.*;
+import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.util.nio.*;
@@ -607,10 +608,28 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         throws GridClientConnectionResetException, GridClientClosedException {
         assert entries != null;
 
+        Map<Object, Object> entries0 = (Map<Object, Object>)entries;
+
+        if (marsh instanceof GridClientPortableMarshaller) {
+            try {
+                entries0 = new HashMap<>(entries.size());
+
+                for (Map.Entry<K, V> e : entries.entrySet()) {
+                    Object v = ((GridClientPortableMarshaller)marsh).convertToPortable(e.getValue());
+                    Object k = ((GridClientPortableMarshaller)marsh).convertToPortable(e.getKey());
+
+                    entries0.put(k, v);
+                }
+            }
+            catch (IOException ex) {
+                return new GridClientFutureAdapter<>(ex);
+            }
+        }
+
         GridClientCacheRequest req = new GridClientCacheRequest(PUT_ALL);
 
         req.cacheName(cacheName);
-        req.values((Map<Object, Object>)entries);
+        req.values(entries0);
         req.cacheFlagsOn(encodeCacheFlags(flags));
 
         return makeRequest(req, destNodeId);
@@ -622,10 +641,24 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         throws GridClientConnectionResetException, GridClientClosedException {
         assert keys != null;
 
+        Collection<Object> keys0 = new HashSet<>((Collection<Object>)keys);
+
+        if (marsh instanceof GridClientPortableMarshaller) {
+            try {
+                keys0 = new HashSet<>(keys.size());
+
+                for (K key : keys)
+                    keys0.add(((GridClientPortableMarshaller)marsh).convertToPortable(key));
+            }
+            catch (IOException ex) {
+                return new GridClientFutureAdapter<>(ex);
+            }
+        }
+
         GridClientCacheRequest req = new GridClientCacheRequest(GET_ALL);
 
         req.cacheName(cacheName);
-        req.keys(new HashSet<>((Collection<Object>)keys));
+        req.keys(keys0);
         req.cacheFlagsOn(encodeCacheFlags(flags));
 
         return makeRequest(req, destNodeId);
@@ -635,10 +668,21 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     @Override public <K> GridClientFutureAdapter<Boolean> cacheRemove(String cacheName, K key,
         Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException {
+        Object key0 = key;
+
+        if (marsh instanceof GridClientPortableMarshaller) {
+            try {
+                key0 = ((GridClientPortableMarshaller)marsh).convertToPortable(key);
+            }
+            catch (IOException e) {
+                return new GridClientFutureAdapter<>(e);
+            }
+        }
+
         GridClientCacheRequest req = new GridClientCacheRequest(RMV);
 
         req.cacheName(cacheName);
-        req.key(key);
+        req.key(key0);
         req.cacheFlagsOn(encodeCacheFlags(flags));
 
         return makeRequest(req, destNodeId);
@@ -650,10 +694,24 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         throws GridClientConnectionResetException, GridClientClosedException {
         assert keys != null;
 
+        Collection<Object> keys0 = new HashSet<>((Collection<Object>)keys);
+
+        if (marsh instanceof GridClientPortableMarshaller) {
+            try {
+                keys0 = new HashSet<>(keys.size());
+
+                for (K key : keys)
+                    keys0.add(((GridClientPortableMarshaller)marsh).convertToPortable(key));
+            }
+            catch (IOException ex) {
+                return new GridClientFutureAdapter<>(ex);
+            }
+        }
+
         GridClientCacheRequest req = new GridClientCacheRequest(RMV_ALL);
 
         req.cacheName(cacheName);
-        req.keys(new HashSet<>((Collection<Object>)keys));
+        req.keys(keys0);
         req.cacheFlagsOn(encodeCacheFlags(flags));
 
         return makeRequest(req, destNodeId);
@@ -666,28 +724,56 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         assert key != null;
         assert val != null;
 
+        Object key0 = key;
+        Object val0 = val;
+
+        if (marsh instanceof GridClientPortableMarshaller) {
+            try {
+                key0 = ((GridClientPortableMarshaller)marsh).convertToPortable(key);
+                val0 = ((GridClientPortableMarshaller)marsh).convertToPortable(val);
+            }
+            catch (IOException e) {
+                return new GridClientFutureAdapter<>(e);
+            }
+        }
+
         GridClientCacheRequest replace = new GridClientCacheRequest(REPLACE);
 
         replace.cacheName(cacheName);
-        replace.key(key);
-        replace.value(val);
+        replace.key(key0);
+        replace.value(val0);
         replace.cacheFlagsOn(encodeCacheFlags(flags));
 
         return makeRequest(replace, destNodeId);
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridClientFutureAdapter<Boolean> cacheCompareAndSet(String cacheName, K key, V newVal, V oldVal,
-        Set<GridClientCacheFlag> flags, UUID destNodeId)
+    @Override public <K, V> GridClientFutureAdapter<Boolean> cacheCompareAndSet(String cacheName, K key, V newVal,
+        V oldVal, Set<GridClientCacheFlag> flags, UUID destNodeId)
         throws GridClientConnectionResetException, GridClientClosedException {
         assert key != null;
+
+        Object key0 = key;
+        Object newVal0 = newVal;
+        Object oldVal0 = oldVal;
+
+        if (marsh instanceof GridClientPortableMarshaller) {
+            try {
+                key0 = ((GridClientPortableMarshaller)marsh).convertToPortable(key);
+                newVal0 = ((GridClientPortableMarshaller)marsh).convertToPortable(newVal);
+                oldVal0 = ((GridClientPortableMarshaller)marsh).convertToPortable(oldVal);
+            }
+            catch (IOException e) {
+                return new GridClientFutureAdapter<>(e);
+            }
+        }
 
         GridClientCacheRequest msg = new GridClientCacheRequest(CAS);
 
         msg.cacheName(cacheName);
-        msg.key(key);
-        msg.value(newVal);
-        msg.value2(oldVal);
+        msg.key(key0);
+        msg.value(newVal0);
+        msg.value2(oldVal0);
         msg.cacheFlagsOn(encodeCacheFlags(flags));
 
         return makeRequest(msg, destNodeId);
@@ -718,11 +804,24 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         assert key != null;
         assert val != null;
 
+        Object key0 = key;
+        Object val0 = val;
+
+        if (marsh instanceof GridClientPortableMarshaller) {
+            try {
+                key0 = ((GridClientPortableMarshaller)marsh).convertToPortable(key);
+                val0 = ((GridClientPortableMarshaller)marsh).convertToPortable(val);
+            }
+            catch (IOException e) {
+                return new GridClientFutureAdapter<>(e);
+            }
+        }
+
         GridClientCacheRequest append = new GridClientCacheRequest(APPEND);
 
         append.cacheName(cacheName);
-        append.key(key);
-        append.value(val);
+        append.key(key0);
+        append.value(val0);
         append.cacheFlagsOn(encodeCacheFlags(flags));
 
         return makeRequest(append, destNodeId);
@@ -735,11 +834,24 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         assert key != null;
         assert val != null;
 
+        Object key0 = key;
+        Object val0 = val;
+
+        if (marsh instanceof GridClientPortableMarshaller) {
+            try {
+                key0 = ((GridClientPortableMarshaller)marsh).convertToPortable(key);
+                val0 = ((GridClientPortableMarshaller)marsh).convertToPortable(val);
+            }
+            catch (IOException e) {
+                return new GridClientFutureAdapter<>(e);
+            }
+        }
+
         GridClientCacheRequest prepend = new GridClientCacheRequest(PREPEND);
 
         prepend.cacheName(cacheName);
-        prepend.key(key);
-        prepend.value(val);
+        prepend.key(key0);
+        prepend.value(val0);
         prepend.cacheFlagsOn(encodeCacheFlags(flags));
 
         return makeRequest(prepend, destNodeId);

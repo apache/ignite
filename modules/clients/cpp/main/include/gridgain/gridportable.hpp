@@ -62,8 +62,6 @@ public:
     virtual bool operator==(const GridHashablePortable& other) const = 0;
 };
 
-class GridPortableReaderImpl;
-class GridPortableObjectBuilder;
 class PortableReadContext;
 
 class GRIDGAIN_API GridPortableObject {
@@ -71,6 +69,8 @@ public:
     GridPortableObject(const GridPortableObject& other);
 
     ~GridPortableObject();
+
+    bool userType() const;
 
     int32_t typeId() const;
 
@@ -90,8 +90,6 @@ public:
         return static_cast<T*>(deserialize());
     }
 
-    GridPortableObject copy(boost::unordered_map<std::string, GridClientVariant> fields) const;
-
     bool operator==(const GridPortableObject& other) const;
 
 private:
@@ -101,9 +99,13 @@ private:
 
     Impl* pImpl;
     
-    friend class GridPortableReaderImpl;
+    std::vector<int8_t>* data();
 
-    friend class GridPortableObjectBuilder;
+    int32_t start();
+
+    friend class GridPortableReaderImpl;
+    friend class GridPortableWriterImpl;
+    friend class GridPortableMarshaller;
 };
 
 #endif // GRIDPORTABLE_HPP_INCLUDED

@@ -21,6 +21,7 @@ import org.gridgain.grid.dr.cache.receiver.*;
 import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -382,6 +383,9 @@ public class GridCacheConfiguration {
     /** */
     private GridCacheInterceptor<?, ?> interceptor;
 
+    /** */
+    private boolean portableEnabled;
+
     /** Query configuration. */
     private GridCacheQueryConfiguration qryCfg;
 
@@ -441,6 +445,7 @@ public class GridCacheConfiguration {
         distro = cc.getDistributionMode();
         pessimisticTxLogLinger = cc.getPessimisticTxLogLinger();
         pessimisticTxLogSize = cc.getPessimisticTxLogSize();
+        portableEnabled = cc.isPortableEnabled();
         preloadMode = cc.getPreloadMode();
         preloadBatchSize = cc.getPreloadBatchSize();
         preloadDelay = cc.getPreloadPartitionedDelay();
@@ -1976,6 +1981,25 @@ public class GridCacheConfiguration {
      */
     public <K, V> void setInterceptor(GridCacheInterceptor<K, V> interceptor) {
         this.interceptor = interceptor;
+    }
+
+    /**
+     * Flag indicating whether GridGain should store portable keys and values
+     * as instances of {@link GridPortableObject}.
+     *
+     * @return Portable enabled flag.
+     */
+    public boolean isPortableEnabled() {
+        return portableEnabled;
+    }
+
+    /**
+     * Gets portable enabled flag value.
+     *
+     * @param portableEnabled Portable enabled flag value.
+     */
+    public void setPortableEnabled(boolean portableEnabled) {
+        this.portableEnabled = portableEnabled;
     }
 
     /**

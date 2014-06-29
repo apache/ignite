@@ -14,7 +14,6 @@ import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -434,17 +433,6 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
     @Nullable public V get(K key) throws GridException;
 
     /**
-     * Retrieves portable object mapped to the specified key from cache.
-     *
-     * @param key Key to retrieve the value for.
-     * @return Portable object for the given key.
-     * @throws GridException If get operation failed.
-     * @throws GridCacheFlagException If failed projection flags validation.
-     * @throws NullPointerException if the key is {@code null}.
-     */
-    @Nullable public GridPortableObject getPortable(K key) throws GridException;
-
-    /**
      * Asynchronously retrieves value mapped to the specified key from cache. Value will only be returned if
      * its entry passed the optional filter provided. Filter check is atomic, and therefore the
      * returned value is guaranteed to be consistent with the filter. The return value of {@code null}
@@ -467,17 +455,6 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridCacheFlagException If projection flags validation failed.
      */
     public GridFuture<V> getAsync(K key);
-
-    /**
-     * Asynchronously retrieves portable object mapped to the specified key from cache.
-     *
-     * @param key Key to retrieve the value for.
-     * @return Portable object for the given key.
-     * @throws GridException If get operation failed.
-     * @throws GridCacheFlagException If failed projection flags validation.
-     * @throws NullPointerException if the key is {@code null}.
-     */
-    public GridFuture<GridPortableObject> getPortableAsync(K key);
 
     /**
      * Retrieves values mapped to the specified keys from cache. Value will only be returned if
@@ -504,16 +481,6 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
     public Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws GridException;
 
     /**
-     * Retrieves portable objects mapped to the specified keys from cache.
-     *
-     * @param keys Key to retrieve values for.
-     * @return Map of key-value pairs.
-     * @throws GridException If get operation failed.
-     * @throws GridCacheFlagException If failed projection flags validation.
-     */
-    public Map<K, GridPortableObject> getAllPortable(@Nullable Collection<? extends K> keys) throws GridException;
-
-    /**
      * Asynchronously retrieves values mapped to the specified keys from cache. Value will only be returned if
      * its entry passed the optional filter provided. Filter check is atomic, and therefore the
      * returned value is guaranteed to be consistent with the filter. If requested key-value pair
@@ -535,16 +502,6 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridCacheFlagException If projection flags validation failed.
      */
     public GridFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys);
-
-    /**
-     * Asynchronously retrieves portable objects mapped to the specified keys from cache.
-     *
-     * @param keys Key to retrieve values for.
-     * @return Map of key-value pairs.
-     * @throws GridException If get operation failed.
-     * @throws GridCacheFlagException If failed projection flags validation.
-     */
-    public GridFuture<Map<K, GridPortableObject>> getAllPortableAsync(@Nullable Collection<? extends K> keys);
 
     /**
      * Stores given key-value pair in cache. If filters are provided, then entries will

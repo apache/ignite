@@ -220,7 +220,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testPut, CfgT, TestCfgs, GridClientFactoryFixtu
         SYNC_CHECK_EQUAL(v, val);
     });
 }
-
+/*
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(testPutAsync, CfgT, TestCfgs, GridClientFactoryFixture2) {
     TGridClientDataPtr data = this->client(CfgT())->data(CACHE_NAME);
 
@@ -1113,5 +1113,5 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testCacheFlags, CfgT, TestCfgs, GridClientFacto
         BOOST_CHECK(!writeData->get(key).hasAnyValue());
     }
 }
-
+*/
 BOOST_AUTO_TEST_SUITE_END()

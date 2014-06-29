@@ -36,27 +36,12 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridClientConfiguration clientConfiguration() {
+    @Override protected GridClientConfiguration clientConfiguration() throws GridClientException {
         GridClientConfiguration cfg = super.clientConfiguration();
 
         cfg.setMarshaller(new GridClientPortableMarshaller());
 
         return cfg;
-    }
-
-    /**
-     * @return Portable types map.
-     */
-    private Map<Integer, Class<? extends GridPortable>> typesMap() {
-        Map<Integer, Class<? extends GridPortable>> map = new HashMap<>();
-
-        map.put(TestKey1.TYPE_ID, TestKey1.class);
-        map.put(TestKey2.TYPE_ID, TestKey2.class);
-        map.put(TestValue1.TYPE_ID, TestValue1.class);
-        map.put(TestValue2.TYPE_ID, TestValue2.class);
-        map.put(TestPortable.TYPE_ID, TestPortable.class);
-
-        return map;
     }
 
     /**

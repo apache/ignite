@@ -741,8 +741,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 success = false;
                             }
                             else {
-                                if (deserializePortable && v instanceof GridPortableObject)
-                                    v = ((GridPortableObject)v).deserialize();
+                                if (ctx.portableEnabled() && deserializePortable && v instanceof GridPortableObject)
+                                    v = ((GridPortableObject<V>)v).deserialize();
 
                                 locVals.put(key, v);
                             }

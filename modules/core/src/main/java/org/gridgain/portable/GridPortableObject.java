@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Wrapper for serialized portable object.
  */
-public interface GridPortableObject extends GridPortable, Serializable, Cloneable {
+public interface GridPortableObject<T> extends GridPortable, Serializable, Cloneable {
     /**
      * Gets user type flag value.
      *
@@ -48,7 +48,7 @@ public interface GridPortableObject extends GridPortable, Serializable, Cloneabl
      * @throws GridPortableInvalidClassException If class doesn't exist.
      * @throws GridPortableException In case of any other error.
      */
-    @Nullable public <T> T deserialize() throws GridPortableException;
+    @Nullable public T deserialize() throws GridPortableException;
 
     /**
      * Creates a copy of this portable object and optionally changes field values
@@ -58,12 +58,12 @@ public interface GridPortableObject extends GridPortable, Serializable, Cloneabl
      * @param fields Fields to modify in copy.
      * @return Copy of this portable object.
      */
-    public GridPortableObject copy(@Nullable Map<String, Object> fields);
+    public GridPortableObject<T> copy(@Nullable Map<String, Object> fields);
 
     /**
      * Copies this portable object.
      *
      * @return Copy of this portable object.
      */
-    public GridPortableObject clone() throws CloneNotSupportedException;
+    public GridPortableObject<T> clone() throws CloneNotSupportedException;
 }

@@ -18,18 +18,25 @@
 using namespace std;
 
 GridClientVariant::GridClientVariant() : type(NULL_TYPE) {
+    //cout << "Create empty\n";
 }
 
 GridClientVariant::~GridClientVariant() {
+    //cout << "Delete, null=" << (type == NULL_TYPE ? "true" : "false") << "\n";
+
     clear();
 }
 
 GridClientVariant::GridClientVariant(const GridClientVariant& other) {
+    //cout << "Copy const from " << other.toString() << "\n";
+
     copy(other);
 }
 
 GridClientVariant& GridClientVariant::operator=(const GridClientVariant& other) {
     if (this != &other) {
+        //cout << "Copy from " << other.toString() << "\n";
+
         clear();
 
         copy(other);
@@ -40,6 +47,8 @@ GridClientVariant& GridClientVariant::operator=(const GridClientVariant& other) 
 
 GridClientVariant& GridClientVariant::operator=(GridClientVariant&& other) {
     if (this != &other) {
+        //cout << "Move from " << other.toString() << "\n";
+    
         clear();
 
         type = other.type;
@@ -52,6 +61,8 @@ GridClientVariant& GridClientVariant::operator=(GridClientVariant&& other) {
 }
 
 GridClientVariant::GridClientVariant(GridClientVariant&& other) : type(other.type), data(other.data) {
+    //cout << "Move const from " << other.toString() << "\n";
+
     other.type = NULL_TYPE;
 }
 
@@ -152,7 +163,7 @@ void GridClientVariant::copy(const GridClientVariant& other) {
             break;
 
         case DATE_ARR_TYPE:
-            data.dateArrVal = new vector<boost::optional<GridClientDate>>(*other.data.dateArrVal);
+            data.dateArrVal = new vector<GridClientDate>(*other.data.dateArrVal);
 
             break;
 
@@ -283,8 +294,8 @@ GridClientVariant::GridClientVariant(const GridClientDate& val) : type(DATE_TYPE
     data.dateVal = new GridClientDate(val);
 }
 
-GridClientVariant::GridClientVariant(const std::vector<boost::optional<GridClientDate>>& val) : type(DATE_ARR_TYPE) {
-    data.dateArrVal = new std::vector<boost::optional<GridClientDate>>(val);
+GridClientVariant::GridClientVariant(const std::vector<GridClientDate>& val) : type(DATE_ARR_TYPE) {
+    data.dateArrVal = new std::vector<GridClientDate>(val);
 }
 
 void GridClientVariant::set(GridPortable* val) {
@@ -808,10 +819,10 @@ GridClientDate& GridClientVariant::getDate() const {
     return *data.dateVal;
 }
 
-void GridClientVariant::set(const vector<boost::optional<GridClientDate>>& val) {
+void GridClientVariant::set(const vector<GridClientDate>& val) {
     clear();
 
-    data.dateArrVal = new vector<boost::optional<GridClientDate>>(val);
+    data.dateArrVal = new vector<GridClientDate>(val);
     type = DATE_ARR_TYPE;
 }
 
@@ -819,7 +830,7 @@ bool GridClientVariant::hasDateArray() const {
     return type == DATE_ARR_TYPE;
 }
 
-vector<boost::optional<GridClientDate>>& GridClientVariant::getDateArray() const {
+vector<GridClientDate>& GridClientVariant::getDateArray() const {
     checkType(DATE_ARR_TYPE);
 
     return *data.dateArrVal;
@@ -1073,6 +1084,9 @@ bool GridClientVariant::operator==(const GridClientVariant& other) const {
 
             return *data.hashPortableVal == *other.data.hashPortableVal;
 
+        case PORTABLE_OBJ_TYPE: 
+            return *data.portableObjVal == *other.data.portableObjVal;
+
         case STRING_TYPE: return *data.strVal == *other.data.strVal;
 
         case WIDE_STRING_TYPE: return *data.wideStrVal == *other.data.wideStrVal;
@@ -1080,8 +1094,6 @@ bool GridClientVariant::operator==(const GridClientVariant& other) const {
         case UUID_TYPE: return *data.uuidVal == *other.data.uuidVal;
 
         case DATE_TYPE: return *data.dateVal == *other.data.dateVal;
-
-        case PORTABLE_OBJ_TYPE: return *data.portableObjVal == *other.data.portableObjVal;
 
         case BYTE_ARR_TYPE: return *data.byteArrVal == *other.data.byteArrVal;
 

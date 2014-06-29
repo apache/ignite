@@ -26,19 +26,11 @@ public interface GridPortableProcessor extends GridProcessor {
     public GridPortableContext portableContext();
 
     /**
-     * Checks whether class is configured as portable.
-     *
-     * @param cls Class.
-     * @return If class is portable.
-     */
-    public boolean isPortable(Class<?> cls) throws GridPortableException;
-
-    /**
      * @param obj Object to marshal.
      * @return Portable object.
      * @throws GridPortableException In case of error.
      */
-    public GridPortableObject marshal(@Nullable Object obj) throws GridPortableException;
+    public <T> GridPortableObject<T> marshal(@Nullable T obj) throws GridPortableException;
 
     /**
      * @param arr Byte array.

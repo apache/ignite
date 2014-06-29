@@ -12,7 +12,8 @@ namespace GridGain.Client.Portable
     using System;
     using System.Runtime.Serialization;
 
-    /** <summary>Exception indicating that class needed for deserialization of portable object doesn't exist.</summary> */
+    /** <summary>Exception indicating that class needed for deserialization of portable object doesn't 
+     * exist.</summary> */
     [Serializable]
     public class GridClientPortableInvalidClassException : GridClientPortableException
     {

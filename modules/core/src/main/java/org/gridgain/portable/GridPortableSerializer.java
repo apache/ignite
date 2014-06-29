@@ -14,7 +14,7 @@ package org.gridgain.portable;
  * logic for portable objects.
  * <p>
  * Can be used instead of {@link GridPortable} in case serialized
- * class can be changed.
+ * class can not be changed.
  */
 public interface GridPortableSerializer {
     /**

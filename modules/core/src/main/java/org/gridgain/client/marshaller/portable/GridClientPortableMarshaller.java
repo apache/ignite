@@ -9,9 +9,11 @@
 
 package org.gridgain.client.marshaller.portable;
 
+import org.gridgain.client.*;
 import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.util.portable.*;
 import org.gridgain.portable.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -20,19 +22,47 @@ import java.nio.*;
  * Client marshaller supporting {@link GridPortable}.
  */
 public class GridClientPortableMarshaller implements GridClientMarshaller {
-    /** Inner marshaller. */
-    private GridPortableMarshaller marsh;
+    /** Context. */
+    private final GridPortableContext ctx;
 
-    public GridClientPortableMarshaller() {
+    /** Marshaller. */
+    private final GridPortableMarshaller marsh;
+
+    /**
+     * @throws GridClientException If failed to initialize marshaller.
+     */
+    public GridClientPortableMarshaller() throws GridClientException {
+        this(null);
+    }
+
+    /**
+     * @param portableCfg Portable configuration.
+     * @throws GridClientException If failed to initialize marshaller.
+     */
+    public GridClientPortableMarshaller(@Nullable GridPortableConfiguration portableCfg) throws GridClientException {
         try {
             GridPortableContextImpl ctx = new GridPortableContextImpl(null);
 
-            ctx.configure(null);
+            ctx.configure(portableCfg);
+
+            this.ctx = ctx;
 
             marsh = new GridPortableMarshaller(ctx);
         }
         catch (GridPortableException e) {
-            e.printStackTrace(); // TODO implement.
+            throw new GridClientException("Failed to initialize portable marshaller.", e);
+        }
+    }
+
+    public <T> GridPortableObject<T> convertToPortable(@Nullable Object obj) throws IOException {
+        if (obj instanceof GridPortableObject)
+            return (GridPortableObject<T>)obj;
+        else {
+            ByteBuffer buf = marshal(obj, 0);
+
+            assert buf.hasArray();
+
+            return new GridPortableObjectImpl<>(ctx, buf.array(), buf.position());
         }
     }
 

@@ -25,9 +25,6 @@
  */
 class GridCacheRequestCommand  : public GridClientMessageCommand {
 public:
-    /** Typedef for cache request. */
-    typedef boost::unordered_map<GridClientVariant, GridClientVariant> TKeyValueMap;
-
     /**
      * Available cache operations
      */
@@ -132,7 +129,7 @@ public:
     /**
      * @return Key.
      */
-    GridClientVariant getKey() const {
+    const GridClientVariant& getKey() const {
         return key;
     }
 
@@ -146,7 +143,7 @@ public:
     /**
      * @return Value1.
      */
-    GridClientVariant getValue() const {
+    const GridClientVariant& getValue() const {
         return val;
     }
 
@@ -160,7 +157,7 @@ public:
     /**
      * @return Value 2.
      */
-    GridClientVariant getValue2() const {
+    const GridClientVariant& getValue2() const {
         return val2;
     }
 
@@ -174,14 +171,14 @@ public:
     /**
      * @return Values map for batch operations.
      */
-    TKeyValueMap getValues() const {
+    const TGridClientVariantMap& getValues() const {
         return vals;
     }
 
     /**
      * @param vals Values map for batch operations.
      */
-    void setValues(const TKeyValueMap& vals) {
+    void setValues(const TGridClientVariantMap& vals) {
         this->vals = vals;
     }
 
@@ -216,7 +213,7 @@ private:
     GridClientVariant val2;
 
     /** Keys and values for put all, get all, remove all operations. */
-    TKeyValueMap vals;
+    TGridClientVariantMap vals;
 
     /** Cache flags. */
     std::set<GridClientCacheFlag> flags;

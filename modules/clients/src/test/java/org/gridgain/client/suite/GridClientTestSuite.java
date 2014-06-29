@@ -61,9 +61,9 @@ public class GridClientTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridClientTcpDirectSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpSslSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpSslDirectSelfTest.class));
-        suite.addTest(new TestSuite(GridClientTcpPortableSelfTest.class));
-        suite.addTest(new TestSuite(GridClientTcpSslPortableSelfTest.class));
-        suite.addTest(new TestSuite(GridClientTcpDirectPortableSelfTest.class));
+//        suite.addTest(new TestSuite(GridClientTcpPortableSelfTest.class));
+//        suite.addTest(new TestSuite(GridClientTcpSslPortableSelfTest.class));
+//        suite.addTest(new TestSuite(GridClientTcpDirectPortableSelfTest.class));
 
         // Test client with many nodes.
         suite.addTest(new TestSuite(GridClientTcpMultiNodeSelfTest.class));
@@ -72,7 +72,7 @@ public class GridClientTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridClientTcpSslDirectMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpUnreachableMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridClientPreferDirectSelfTest.class));
-        suite.addTest(new TestSuite(GridClientTcpMultiNodePortableSelfTest.class));
+//        suite.addTest(new TestSuite(GridClientTcpMultiNodePortableSelfTest.class));
 
         // Test client with many nodes and in multithreaded scenarios
         suite.addTest(new TestSuite(GridClientTcpMultiThreadedSelfTest.class));

@@ -20,9 +20,8 @@ import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
-import org.gridgain.portable.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -510,18 +509,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridPortableObject getPortable(K key) throws GridException {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.getPortable(key);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public V get(K key, @Nullable GridCacheEntryEx<K, V> entry, boolean deserializePortable,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
@@ -540,18 +527,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
         try {
             return delegate.getAsync(key);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<GridPortableObject> getPortableAsync(K key) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.getPortableAsync(key);
         }
         finally {
             gate.leave(prev);
@@ -691,37 +666,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public Map<K, GridPortableObject> getAllPortable(
-        @Nullable Collection<? extends K> keys) throws GridException {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.getAllPortable(keys);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public GridFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
             return delegate.getAllAsync(keys);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Map<K, GridPortableObject>> getAllPortableAsync(
-        @Nullable Collection<? extends K> keys) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.getAllPortableAsync(keys);
         }
         finally {
             gate.leave(prev);

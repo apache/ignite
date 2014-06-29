@@ -23,6 +23,7 @@ namespace GridGain.Client.Impl {
     using GridGain.Client.Impl.Message;
     using GridGain.Client.Impl.Portable;
     using GridGain.Client.Impl.Query;
+    using GridGain.Client.Portable;
     using GridGain.Client.Util;
     using GridGain.Client.Ssl;
 
@@ -584,7 +585,16 @@ namespace GridGain.Client.Impl {
                 if (map == null)
                     throw new ArgumentException("Expects dictionary, but received: " + o);
 
-                return map.ToMap<K, V>();
+                IDictionary<K, V> res = new Dictionary<K, V>(map.Count);
+
+                foreach (DictionaryEntry entry in map)
+                {
+                    V val = ((IGridClientPortableObject)entry.Value).Deserialize<V>();
+
+                    res.Add((K)(entry.Key), val);
+                }
+
+                return res;
             };
 
             makeRequest<IDictionary<K, V>>(fut);

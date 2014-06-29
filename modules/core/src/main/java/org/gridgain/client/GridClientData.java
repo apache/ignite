@@ -143,7 +143,7 @@ public interface GridClientData {
      * @throws GridServerUnreachableException If none of the servers can be reached.
      * @throws GridClientClosedException If client was closed manually.
      */
-    public <K> GridPortableObject getPortable(K key) throws GridClientException;
+    public <K, V> GridPortableObject<V> getPortable(K key) throws GridClientException;
 
     /**
      * Asynchronously gets value from cache on remote grid.
@@ -167,7 +167,7 @@ public interface GridClientData {
      * @param key Key to get from cache.
      * @return Future with value for given key or with {@code null} if no value was cached.
      */
-    public <K> GridClientFuture<GridPortableObject> getPortableAsync(K key);
+    public <K, V> GridClientFuture<GridPortableObject<V>> getPortableAsync(K key);
 
     /**
      * Gets entries from cache on remote grid.
@@ -199,7 +199,7 @@ public interface GridClientData {
      * @throws GridServerUnreachableException If none of the servers can be reached.
      * @throws GridClientClosedException If client was closed manually.
      */
-    public <K> Map<K, GridPortableObject> getAllPortable(Collection<K> keys) throws GridClientException;
+    public <K, V> Map<K, GridPortableObject<V>> getAllPortable(Collection<K> keys) throws GridClientException;
 
     /**
      * Asynchronously gets entries from cache on remote grid.
@@ -225,7 +225,7 @@ public interface GridClientData {
      * @param keys Keys to get.
      * @return Future with entries retrieved from remote cache nodes.
      */
-    public <K> GridClientFuture<Map<K, GridPortableObject>> getAllPortableAsync(Collection<K> keys);
+    public <K, V> GridClientFuture<Map<K, GridPortableObject<V>>> getAllPortableAsync(Collection<K> keys);
 
     /**
      * Removes value from cache on remote node.
