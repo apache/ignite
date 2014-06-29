@@ -11,7 +11,6 @@ package org.gridgain.client;
 
 import org.gridgain.client.marshaller.*;
 import org.gridgain.client.marshaller.optimized.*;
-import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
@@ -82,7 +81,7 @@ public class GridClientTestRestServer {
     private volatile GridNioSession lastSes;
 
     /** */
-    private GridClientMarshaller optMarsh = new GridClientPortableMarshaller();
+    private GridClientMarshaller optMarsh = new GridClientOptimizedMarshaller();
 
     /**
      * @param port Port to listen on.
