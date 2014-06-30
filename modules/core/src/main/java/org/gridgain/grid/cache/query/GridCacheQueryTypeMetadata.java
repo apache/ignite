@@ -49,8 +49,8 @@ public class GridCacheQueryTypeMetadata {
     /**
      * Default constructor.
      */
-    public GridCacheQueryTypeMetadata(String type) {
-        this.type = type;
+    public GridCacheQueryTypeMetadata() {
+        // No-op.
     }
 
     /**
@@ -82,7 +82,7 @@ public class GridCacheQueryTypeMetadata {
      * @param cls Type class.
      */
     public void setType(Class<?> cls) {
-        type = cls.getSimpleName();
+        type = cls.getName();
     }
 
     /**

@@ -289,7 +289,25 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             final Class<?> valCls = val.getClass();
             final Class<?> keyCls = key.getClass();
 
-            TypeId id = new TypeId(space, valCls);
+            TypeId id;
+
+            if (GridPortableObject.class.isAssignableFrom(valCls)) {
+                GridPortableObject portable = (GridPortableObject)val;
+
+                GridPortableClassDescriptor desc = ctx.portable().portableContext().
+                    descriptorForTypeId(false, portable.typeId());
+
+                if (desc == null)
+                    desc = ctx.portable().portableContext().
+                        descriptorForTypeId(true, portable.typeId());
+
+                if (desc == null)
+                    return;
+
+                id = new TypeId(space, desc.name());
+            }
+            else
+                id = new TypeId(space, valCls);
 
             TypeDescriptor desc = types.get(id);
 
@@ -327,7 +345,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                             }
                         }
                         else {
-                            GridCacheQueryTypeMetadata keyMeta = declaredTypes.get(new TypeId(space, typeName(keyCls)));
+                            GridCacheQueryTypeMetadata keyMeta = declaredTypes.get(new TypeId(space, keyCls.getName()));
 
                             if (keyMeta == null) {
                                 processAnnotationsInClass(true, d.keyCls, d, null);
@@ -349,10 +367,10 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                             if (desc != null) {
                                 GridCacheQueryTypeMetadata valMeta = declaredTypes.get(new TypeId(space, desc.name()));
 
-                                d.name(desc.name());
+                                d.name(desc.simpleName());
 
                                 if (valMeta != null)
-                                    processPortableMeta(true, valMeta, d);
+                                    processPortableMeta(false, valMeta, d);
                             }
                         }
                         else {
@@ -360,7 +378,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
                             d.name(valTypeName);
 
-                            GridCacheQueryTypeMetadata typeMeta = declaredTypes.get(new TypeId(space, valTypeName));
+                            GridCacheQueryTypeMetadata typeMeta = declaredTypes.get(new TypeId(space, valCls.getName()));
 
                             if (typeMeta == null) {
                                 processAnnotationsInClass(false, d.valCls, d, null);
@@ -890,7 +908,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
     }
 
     /**
-     * Abstract property extractor.
+     *
      */
     private abstract static class Property {
         /**
