@@ -40,8 +40,8 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     /** */
     private final GridLogger log;
 
-    /** */
-    private final Class<?> cls;
+    /** Class name in case of portable query. */
+    private final String clsName;
 
     /** */
     private final String clause;
@@ -76,21 +76,20 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     /**
      * @param cctx Context.
      * @param type Query type.
-     * @param cls Class.
      * @param clause Clause.
      * @param filter Scan filter.
      * @param incMeta Include metadata flag.
      * @param prjPred Cache projection filter.
      */
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx, GridCacheQueryType type,
-        @Nullable GridPredicate<GridCacheEntry<Object, Object>> prjPred, @Nullable Class<?> cls,
+        @Nullable GridPredicate<GridCacheEntry<Object, Object>> prjPred, @Nullable String clsName,
         @Nullable String clause, @Nullable GridBiPredicate<Object, Object> filter, boolean incMeta) {
         assert cctx != null;
         assert type != null;
 
         this.cctx = cctx;
         this.type = type;
-        this.cls = cls;
+        this.clsName = clsName;
         this.clause = clause;
         this.prjPred = prjPred;
         this.filter = filter;
@@ -120,14 +119,13 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
      * @param dedup Enable dedup flag.
      * @param prj Grid projection.
      * @param filter Key-value filter.
-     * @param cls Class.
      * @param clause Clause.
      * @param incMeta Include metadata flag.
      */
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx, GridPredicate<GridCacheEntry<Object, Object>> prjPred,
         GridCacheQueryType type, GridLogger log, int pageSize, long timeout, boolean keepAll, boolean incBackups,
-        boolean dedup, GridProjection prj, GridBiPredicate<Object, Object> filter, Class<?> cls, String clause,
-        boolean incMeta) {
+        boolean dedup, GridProjection prj, GridBiPredicate<Object, Object> filter, @Nullable String clsName,
+        String clause, boolean incMeta) {
         this.cctx = cctx;
         this.prjPred = prjPred;
         this.type = type;
@@ -139,7 +137,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         this.dedup = dedup;
         this.prj = prj;
         this.filter = filter;
-        this.cls = cls;
+        this.clsName = clsName;
         this.clause = clause;
         this.incMeta = incMeta;
     }
@@ -159,10 +157,10 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     }
 
     /**
-     * @return Class.
+     * @return Class name.
      */
-    @Nullable public Class<?> queryClass() {
-        return cls;
+    @Nullable public String queryClassName() {
+        return clsName;
     }
 
     /**
@@ -343,7 +341,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
 
         if (cctx.deploymentEnabled()) {
             try {
-                cctx.deploy().registerClasses(cls, filter, rmtReducer, rmtTransform);
+                cctx.deploy().registerClasses(filter, rmtReducer, rmtTransform);
                 cctx.deploy().registerClasses(args);
             }
             catch (GridException e) {

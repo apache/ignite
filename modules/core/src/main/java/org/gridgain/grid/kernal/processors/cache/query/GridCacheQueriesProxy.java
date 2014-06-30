@@ -61,6 +61,18 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public GridCacheQuery<Map.Entry<K, V>> createSqlQuery(String clsName, String clause) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.createSqlQuery(clsName, clause);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -78,6 +90,18 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V> {
 
         try {
             return delegate.createFullTextQuery(cls, search);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName, String search) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.createFullTextQuery(clsName, search);
         }
         finally {
             gate.leave(prev);

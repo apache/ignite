@@ -304,7 +304,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                 if (desc == null)
                     return;
 
-                id = new TypeId(space, desc.name());
+                id = new TypeId(space, desc.simpleName());
             }
             else
                 id = new TypeId(space, valCls);
@@ -338,7 +338,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                                 desc = ctx.portable().portableContext().descriptorForTypeId(true, portableKey.typeId());
 
                             if (desc != null) {
-                                GridCacheQueryTypeMetadata keyMeta = declaredTypes.get(new TypeId(space, desc.name()));
+                                GridCacheQueryTypeMetadata keyMeta = declaredTypes.get(new TypeId(space, desc.simpleName()));
 
                                 if (keyMeta != null)
                                     processPortableMeta(true, keyMeta, d);
@@ -365,7 +365,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                                 desc = ctx.portable().portableContext().descriptorForTypeId(true, portableVal.typeId());
 
                             if (desc != null) {
-                                GridCacheQueryTypeMetadata valMeta = declaredTypes.get(new TypeId(space, desc.name()));
+                                GridCacheQueryTypeMetadata valMeta = declaredTypes.get(new TypeId(space, desc.simpleName()));
 
                                 d.name(desc.simpleName());
 
@@ -497,7 +497,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      */
     @SuppressWarnings("unchecked")
     public <K, V> GridCloseableIterator<GridIndexingKeyValueRow<K, V>> query(String spi, String space, String clause,
-        Collection<Object> params, Class<? extends V> resType, boolean includeBackups,
+        Collection<Object> params, String resType, boolean includeBackups,
         GridIndexingQueryFilter<K, V>... filters) throws GridException {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
@@ -532,7 +532,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      */
     @SuppressWarnings("unchecked")
     public <K, V> GridCloseableIterator<GridIndexingKeyValueRow<K, V>> queryText(String spi, String space,
-        String clause, Class<? extends V> resType, boolean includeBackups,
+        String clause, String resType, boolean includeBackups,
         GridIndexingQueryFilter<K, V>... filters) throws GridException {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");

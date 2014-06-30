@@ -82,7 +82,7 @@ public class GridCacheQueryTypeMetadata {
      * @param cls Type class.
      */
     public void setType(Class<?> cls) {
-        type = cls.getName();
+        type = cls.getSimpleName();
     }
 
     /**

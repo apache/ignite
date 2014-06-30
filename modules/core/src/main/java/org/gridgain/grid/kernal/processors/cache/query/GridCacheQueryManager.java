@@ -428,13 +428,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         switch (qry.type()) {
             case SQL:
                 return idxMgr.query(spi, space, qry.clause(), F.asList(args),
-                    (Class<? extends V>)U.box(qry.queryClass()), qry.includeBackups(), projectionFilter(qry));
+                    qry.queryClassName(), qry.includeBackups(), projectionFilter(qry));
 
             case SCAN:
                 return scanIterator(qry);
 
             case TEXT:
-                return idxMgr.queryText(spi, space, qry.clause(), (Class<? extends V>)U.box(qry.queryClass()),
+                return idxMgr.queryText(spi, space, qry.clause(), qry.queryClassName(),
                     qry.includeBackups(), projectionFilter(qry));
 
             case SET:
@@ -1208,8 +1208,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
     /**
      * Checks if a given query class is a Java primitive or wrapper
-     * and throws {@link IllegalStateException} if there is configured {@link GridH2IndexingSpi}
-     * with disabled {@link GridH2IndexingSpi#isDefaultIndexPrimitiveKey()}.
+     * and throws {@link IllegalStateException} if there is configured {@code GridH2IndexingSpi}
+     * with disabled {@code GridH2IndexingSpi#isDefaultIndexPrimitiveKey()}.
      *
      * @param cls Query class. May be {@code null}.
      * @throws IllegalStateException If checking failed.
