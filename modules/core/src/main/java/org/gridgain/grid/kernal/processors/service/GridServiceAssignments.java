@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * Service per-node assignment.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridServiceAssignments implements Serializable, GridCacheInternal {
     /** Serialization version. */

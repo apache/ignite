@@ -18,11 +18,11 @@ import java.util.*;
 
 /**
  * Service descriptor.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridServiceDescriptorImpl implements GridServiceDescriptor {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Configuration. */
     @GridToStringInclude
     private final GridServiceDeployment dep;

@@ -17,11 +17,11 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Dummy service.
- *
- * @author @java.author
- * @version @java.version
  */
 public class DummyService implements GridService {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Started counter per service. */
     public static final ConcurrentMap<String, AtomicInteger> started = new ConcurrentHashMap8<>();
 

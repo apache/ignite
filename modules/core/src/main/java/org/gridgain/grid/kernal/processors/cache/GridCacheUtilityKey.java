@@ -12,12 +12,12 @@ package org.gridgain.grid.kernal.processors.cache;
 import java.io.*;
 
 /**
- * TODO: Add interface description.
- *
- * @author @java.author
- * @version @java.version
+ * Key for system utility cache.
  */
 public abstract class GridCacheUtilityKey<K extends GridCacheUtilityKey> implements GridCacheInternal, Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked") @Override
     public final boolean equals(Object obj) {

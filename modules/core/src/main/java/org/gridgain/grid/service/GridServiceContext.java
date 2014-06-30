@@ -18,9 +18,6 @@ import java.util.*;
  * Service execution context. Execution context is provided into {@link GridService#execute(GridServiceContext)}
  * and {@link GridService#cancel(GridServiceContext)} methods and contains information about specific service
  * execution.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridServiceContext extends Serializable {
     /**

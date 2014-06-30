@@ -109,9 +109,6 @@ import java.util.*;
  * // Wait for deployment to complete.
  * fut.get();
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridServices {
     /**

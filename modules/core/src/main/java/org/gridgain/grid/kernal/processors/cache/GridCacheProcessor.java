@@ -374,8 +374,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         boolean ggfsCache = CU.isGgfsCache(c, cc.getName());
+        boolean utilityCache = CU.isUtilityCache(cc.getName());
 
-        if (!ggfsCache && !cc.isQueryIndexEnabled())
+        if (!ggfsCache && !utilityCache && !cc.isQueryIndexEnabled())
             U.warn(log, "Query indexing is disabled (queries will not work) for cache: '" + cc.getName() + "'. " +
                 "To enable change GridCacheConfiguration.isQueryIndexEnabled() property.",
                 "Query indexing is disabled (queries will not work) for cache: " + cc.getName());

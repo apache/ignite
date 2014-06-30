@@ -18,11 +18,11 @@ import java.util.*;
 
 /**
  * Service deployment.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridServiceDeployment implements GridCacheInternal, Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Node ID. */
     private UUID nodeId;
 

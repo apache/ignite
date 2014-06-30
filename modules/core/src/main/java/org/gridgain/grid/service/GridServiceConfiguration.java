@@ -42,11 +42,11 @@ import java.io.*;
  * GridGain.start(gridCfg);
  * </pre>
  * The above configuration can also be specified in a Spring configuration file.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridServiceConfiguration implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Service name. */
     private String name;
 

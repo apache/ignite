@@ -19,11 +19,11 @@ import java.util.concurrent.*;
 
 /**
  * Service context implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridServiceContextImpl implements GridServiceContext {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Service name. */
     private final String name;
 

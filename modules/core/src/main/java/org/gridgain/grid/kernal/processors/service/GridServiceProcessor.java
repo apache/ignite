@@ -41,9 +41,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Grid service processor.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions"})
 public class GridServiceProcessor extends GridProcessorAdapter {
@@ -265,6 +262,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         cfg.setService(svc);
         cfg.setCacheName(cacheName);
         cfg.setAffinityKey(affKey);
+        cfg.setTotalCount(1);
+        cfg.setMaxPerNodeCount(1);
 
         return deploy(cfg);
     }

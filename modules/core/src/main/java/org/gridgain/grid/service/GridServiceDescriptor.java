@@ -19,9 +19,6 @@ import java.util.*;
  * deployment topology snapshot as well as origin node ID.
  * <p>
  * Service descriptors can be retrieved by calling {@link GridServices#deployedServices()} method.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridServiceDescriptor extends Serializable {
     /**

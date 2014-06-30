@@ -76,9 +76,6 @@ import java.io.*;
  * Note that GridGain cannot guarantee that the service exits from {@link GridService#execute(GridServiceContext)}
  * method whenever {@link #cancel(GridServiceContext)} is called. It is up to the user to
  * make sure that the service code properly reacts to cancellations.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridService extends Serializable {
     /**

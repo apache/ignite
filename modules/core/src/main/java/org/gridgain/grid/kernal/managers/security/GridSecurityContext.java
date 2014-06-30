@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Security context.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridSecurityContext implements Externalizable {
     /** */

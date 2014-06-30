@@ -14,11 +14,11 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Service configuration key.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridServiceAssignmentsKey extends GridCacheUtilityKey<GridServiceAssignmentsKey> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Service name. */
     private final String name;
 

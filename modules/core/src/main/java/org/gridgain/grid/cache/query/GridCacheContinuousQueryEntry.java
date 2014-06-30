@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Entry used for continuous query notifications.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheContinuousQueryEntry<K, V> extends Map.Entry<K, V>, Serializable {
     /**
