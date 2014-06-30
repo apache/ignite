@@ -17,85 +17,217 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * TODO: Add class description.
+ * Managed service configuration. In addition to deploying managed services by
+ * calling any of the provided {@code deploy(...)} methods, managed services
+ * can also be automatically deployed on startup by specifying them in {@link GridConfiguration}
+ * like so:
+ * <pre name="code" class="java">
+ * GridConfiguration gridCfg = new GridConfiguration();
+ *
+ * GridServiceConfiguration svcCfg1 = new GridServiceConfiguration();
+ *
+ * svcCfg1.setName("myClusterSingletonService");
+ * svcCfg1.setMaxPerNodeCount(1);
+ * svcCfg1.setTotalCount(1);
+ * svcCfg1.setService(new MyClusterSingletonService());
+ *
+ * GridServiceConfiguration svcCfg2 = new GridServiceConfiguration();
+ *
+ * svcCfg2.setName("myNodeSingletonService");
+ * svcCfg2.setMaxPerNodeCount(1);
+ * svcCfg2.setService(new MyNodeSingletonService());
+ *
+ * gridCfg.setServiceConfiguration(svcCfg1, svcCfg2);
+ * ...
+ * GridGain.start(gridCfg);
+ * </pre>
+ * The above configuration can also be specified in a Spring configuration file.
  *
  * @author @java.author
  * @version @java.version
  */
 public class GridServiceConfiguration implements Serializable {
+    /** Service name. */
     private String name;
 
+    /** Service instance. */
     @GridToStringExclude
     private GridService svc;
 
+    /** Total count. */
     private int totalCnt;
 
-    private int maxPerNode;
+    /** Max per-node count. */
+    private int maxPerNodeCnt;
 
+    /** Cache name. */
     private String cacheName;
 
+    /** Affinity key. */
     private Object affKey;
 
+    /** Node filter. */
     @GridToStringExclude
     private GridPredicate<GridNode> nodeFilter;
 
+    /**
+     * Gets service name.
+     * <p>
+     * This parameter is mandatory when deploying a service.
+     *
+     * @return Service name.
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * Sets service name.
+     * <p>
+     * This parameter is mandatory when deploying a service.
+     *
+     * @param name Service name.
+     */
     public void setName(String name) {
         this.name = name;
     }
 
+    /**
+     * Gets service instance.
+     * <p>
+     * This parameter is mandatory when deploying a service.
+     *
+     * @return Service instance.
+     */
     public GridService getService() {
         return svc;
     }
 
+    /**
+     * Sets service instance.
+     * <p>
+     * This parameter is mandatory when deploying a service.
+     *
+     * @param svc Service instance.
+     */
     public void setService(GridService svc) {
         this.svc = svc;
     }
 
+    /**
+     * Gets total number of deployed service instances in the cluster, {@code 0} for unlimited.
+     * <p>
+     * At least one of {@code getTotalCount()} or {@link #getMaxPerNodeCount()} values must be positive.
+     *
+     * @return Total number of deployed service instances in the cluster, {@code 0} for unlimited.
+     */
     public int getTotalCount() {
         return totalCnt;
     }
 
+    /**
+     * Sets total number of deployed service instances in the cluster, {@code 0} for unlimited.
+     * <p>
+     * At least one of {@code getTotalCount()} or {@link #getMaxPerNodeCount()} values must be positive.
+     *
+     * @param totalCnt Total number of deployed service instances in the cluster, {@code 0} for unlimited.
+     */
     public void setTotalCount(int totalCnt) {
         this.totalCnt = totalCnt;
     }
 
+    /**
+     * Gets maximum number of deployed service instances on each node, {@code 0} for unlimited.
+     * <p>
+     * At least one of {@code getMaxPerNodeCount()} or {@link #getTotalCount()} values must be positive.
+     *
+     * @return Maximum number of deployed service instances on each node, {@code 0} for unlimited.
+     */
     public int getMaxPerNodeCount() {
-        return maxPerNode;
+        return maxPerNodeCnt;
     }
 
-    public void setMaxPerNodeCount(int maxPerNode) {
-        this.maxPerNode = maxPerNode;
+    /**
+     * Sets maximum number of deployed service instances on each node, {@code 0} for unlimited.
+     * <p>
+     * At least one of {@code getMaxPerNodeCount()} or {@link #getTotalCount()} values must be positive.
+     *
+     * @param maxPerNodeCnt Maximum number of deployed service instances on each node, {@code 0} for unlimited.
+     */
+    public void setMaxPerNodeCount(int maxPerNodeCnt) {
+        this.maxPerNodeCnt = maxPerNodeCnt;
     }
 
+    /**
+     * Gets cache name used for key-to-node affinity calculation.
+     * <p>
+     * This parameter is optional and is set only when deploying service based on key-affinity.
+     *
+     * @return Cache name, possibly {@code null}.
+     */
     public String getCacheName() {
         return cacheName;
     }
 
+    /**
+     * Sets cache name used for key-to-node affinity calculation.
+     * <p>
+     * This parameter is optional and is set only when deploying service based on key-affinity.
+     *
+     * @param cacheName Cache name, possibly {@code null}.
+     */
     public void setCacheName(String cacheName) {
         this.cacheName = cacheName;
     }
 
+    /**
+     * Gets affinity key used for key-to-node affinity calculation.
+     * <p>
+     * This parameter is optional and is set only when deploying service based on key-affinity.
+     *
+     * @return Affinity key, possibly {@code null}.
+     */
     public Object getAffinityKey() {
         return affKey;
     }
 
+    /**
+     * Sets affinity key used for key-to-node affinity calculation.
+     * <p>
+     * This parameter is optional and is set only when deploying service based on key-affinity.
+     *
+     * @param affKey Affinity key, possibly {@code null}.
+     */
     public void setAffinityKey(Object affKey) {
         this.affKey = affKey;
     }
 
+    /**
+     * Gets node filter used to filter nodes on which the service will be deployed.
+     * <p>
+     * This parameter is optional. If not provided service may be deployed on any or all
+     * nodes in the grid, based on configuration.
+     *
+     * @return Node filter used to filter nodes on which the service will be deployed, possibly {@code null}.
+     */
     public GridPredicate<GridNode> getNodeFilter() {
         return nodeFilter;
     }
 
+    /**
+     * Sets node filter used to filter nodes on which the service will be deployed.
+     * <p>
+     * This parameter is optional. If not provided service may be deployed on any or all
+     * nodes in the grid, based on configuration.
+     *
+     * @param nodeFilter Node filter used to filter nodes on which the service will be deployed, possibly {@code null}.
+     */
     public void setNodeFilter(GridPredicate<GridNode> nodeFilter) {
         this.nodeFilter = nodeFilter;
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("RedundantIfStatement")
     @Override public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -107,7 +239,7 @@ public class GridServiceConfiguration implements Serializable {
 
         GridServiceConfiguration that = (GridServiceConfiguration)o;
 
-        if (maxPerNode != that.maxPerNode)
+        if (maxPerNodeCnt != that.maxPerNodeCnt)
             return false;
 
         if (totalCnt != that.totalCnt)

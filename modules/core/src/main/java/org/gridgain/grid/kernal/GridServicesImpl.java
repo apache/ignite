@@ -46,14 +46,14 @@ public class GridServicesImpl implements GridServices {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> deployOnEachNode(String name, GridService svc) {
+    @Override public GridFuture<?> deployNodeSingleton(String name, GridService svc) {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
 
         guard();
 
         try {
-            return ctx.service().deployOnEachNode(prj, name, svc);
+            return ctx.service().deployNodeSingleton(prj, name, svc);
         }
         finally {
             unguard();
@@ -61,14 +61,14 @@ public class GridServicesImpl implements GridServices {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> deploySingleton(String name, GridService svc) {
+    @Override public GridFuture<?> deployClusterSingleton(String name, GridService svc) {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
 
         guard();
 
         try {
-            return ctx.service().deploySingleton(prj, name, svc);
+            return ctx.service().deployClusterSingleton(prj, name, svc);
         }
         finally {
             unguard();
@@ -91,7 +91,7 @@ public class GridServicesImpl implements GridServices {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> deployForAffinityKey(String name, GridService svc, @Nullable String cacheName,
+    @Override public GridFuture<?> deployKeyAffinitySingleton(String name, GridService svc, @Nullable String cacheName,
         Object affKey) {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
@@ -100,7 +100,7 @@ public class GridServicesImpl implements GridServices {
         guard();
 
         try {
-            return ctx.service().deployForAffinityKey(name, svc, cacheName, affKey);
+            return ctx.service().deployKeyAffinitySingleton(name, svc, cacheName, affKey);
         }
         finally {
             unguard();

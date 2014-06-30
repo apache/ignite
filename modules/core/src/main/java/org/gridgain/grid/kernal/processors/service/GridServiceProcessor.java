@@ -28,6 +28,7 @@ import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -189,9 +190,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         if (cfg.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED))
             throw new GridRuntimeException("Cannot deploy services in PRIVATE or ISOLATED deployment mode: " + depMode);
 
+        ensure(c.getName() != null, "getName() != null", null);
         ensure(c.getTotalCount() >= 0, "getTotalCount() >= 0", c.getTotalCount());
         ensure(c.getMaxPerNodeCount() >= 0, "getMaxPerNodeCount() >= 0", c.getMaxPerNodeCount());
         ensure(c.getService() != null, "getService() != null", c.getService());
+        ensure(c.getTotalCount() > 0 || c.getMaxPerNodeCount() > 0,
+            "c.getTotalCount() > 0 || c.getMaxPerNodeCount() > 0", null);
     }
 
     /**
@@ -199,9 +203,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param desc Description.
      * @param v Value.
      */
-    private void ensure(boolean cond, String desc, Object v) {
+    private void ensure(boolean cond, String desc, @Nullable Object v) {
         if (!cond)
-            throw new GridRuntimeException("Service configuration check failed (" + desc + "): " + v);
+            if (v != null)
+                throw new GridRuntimeException("Service configuration check failed (" + desc + "): " + v);
+            else
+                throw new GridRuntimeException("Service configuration check failed (" + desc + ")");
     }
 
     /**
@@ -209,7 +216,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param svc Service.
      * @return Future.
      */
-    public GridFuture<?> deployOnEachNode(GridProjection prj, String name, GridService svc) {
+    public GridFuture<?> deployNodeSingleton(GridProjection prj, String name, GridService svc) {
         return deployMultiple(prj, name, svc, 0, 1);
     }
 
@@ -218,7 +225,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param svc Service.
      * @return Future.
      */
-    public GridFuture<?> deploySingleton(GridProjection prj, String name, GridService svc) {
+    public GridFuture<?> deployClusterSingleton(GridProjection prj, String name, GridService svc) {
         return deployMultiple(prj, name, svc, 1, 1);
     }
 
@@ -249,7 +256,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param  affKey Affinity key.
      * @return Future.
      */
-    public GridFuture<?> deployForAffinityKey(String name, GridService svc, String cacheName, Object affKey) {
+    public GridFuture<?> deployKeyAffinitySingleton(String name, GridService svc, String cacheName, Object affKey) {
+        A.notNull(affKey, "affKey");
+
         GridServiceConfiguration cfg = new GridServiceConfiguration();
 
         cfg.setName(name);
@@ -274,6 +283,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @return Future for deployment.
      */
     private GridFuture<?> deploy(GridServiceConfiguration cfg, boolean failDups) {
+        A.notNull(cfg, "cfg");
+
         validate(cfg);
 
         while (true) {
