@@ -11,21 +11,21 @@
 
 package org.gridgain.visor.commands.deploy
 
-import org.gridgain.grid.util.io.GridFilenameUtils
-import org.gridgain.grid.util.{GridUtils => U}
-
 import java.io._
+import java.net.UnknownHostException
 import java.util.concurrent._
 
-import scala.language.{implicitConversions, reflectiveCalls}
-import scala.util.control.Breaks._
-
 import com.jcraft.jsch._
-
+import org.gridgain.grid.util.io.GridFilenameUtils
+import org.gridgain.grid.util.typedef.X
+import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.VisorConsoleCommand
 import org.gridgain.visor.visor._
+
+import scala.language.{implicitConversions, reflectiveCalls}
+import scala.util.control.Breaks._
 
 /**
  * Host data.
@@ -114,7 +114,14 @@ private case class VisorCopier(
             }
         }
         catch {
-            case e: Exception => warn(e.getMessage)
+            case e: JSchException if X.hasCause(e, classOf[UnknownHostException]) =>
+                println("fail(unknown host) => " + host.name)
+
+            case e: JSchException =>
+                println("fail(" + e.getMessage +") => " + host.name)
+
+            case e: Exception =>
+                warn(e.getMessage)
         }
         finally {
             if (ses.isConnected)
