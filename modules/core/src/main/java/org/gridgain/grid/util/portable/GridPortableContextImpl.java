@@ -284,16 +284,16 @@ public class GridPortableContextImpl implements GridPortableContext, Externaliza
         @Nullable GridPortableSerializer serializer) throws GridPortableException {
         assert cls != null;
 
-        Integer id = null;
-
         GridPortableId idAnn = cls.getAnnotation(GridPortableId.class);
+
+        int id = 0;
 
         if (idAnn != null)
             id = idAnn.id();
         else if (idMapper != null)
             id = idMapper.typeId(cls.getName());
 
-        if (id == null)
+        if (id == 0)
             id = cls.getSimpleName().hashCode();
 
         GridPortableClassDescriptor desc = new GridPortableClassDescriptor(cls, true, id, idMapper, serializer);

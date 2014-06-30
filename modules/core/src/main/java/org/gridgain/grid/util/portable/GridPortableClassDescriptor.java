@@ -118,16 +118,16 @@ public class GridPortableClassDescriptor {
                             if (!names.add(name))
                                 throw new GridPortableException("Duplicate field name: " + name);
 
-                            Integer fieldId = null;
-
                             GridPortableId idAnn = f.getAnnotation(GridPortableId.class);
+
+                            int fieldId = 0;
 
                             if (idAnn != null)
                                 fieldId = idAnn.id();
                             else if (idMapper != null)
                                 fieldId = idMapper.fieldId(typeId, f.getName());
 
-                            if (fieldId == null)
+                            if (fieldId == 0)
                                 fieldId = f.getName().hashCode();
 
                             if (!ids.add(fieldId))
