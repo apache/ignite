@@ -1507,6 +1507,8 @@ namespace GridGain.Client.Impl.Portable
             return (byte[])FIELD_MEM_BUF.GetValue(stream);
         }
 
+
+
         /**
          * <summary>Get string hash code.</summary> 
          * <param name="val">Value.</param>
@@ -1528,24 +1530,7 @@ namespace GridGain.Client.Impl.Portable
                 return hash;
             }
         }
-
-        /**
-         * 
-         */
-        public static int ArrayHashCode<T>(T[] arr)
-        {
-            int hash = 1;
-
-            for (int i = 0; i < arr.Length; i++)
-            {
-                T item = arr[i];
-
-                hash = 31 * hash + (item == null ? 0 : item.GetHashCode());
-            }
-
-            return hash;
-        }
-
+        
         /**
          * <summary>Get Guid hash code.</summary> 
          * <param name="val">Value.</param>
@@ -1570,6 +1555,46 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
+         * <summary>Check whether this is predefined type.</summary>
+         * <param name="hdr">Header.</param>
+         * <returns>True is this is one of predefined types with special semantics.</returns>
+         */
+        public static bool IsPredefinedType(byte hdr)
+        {
+            switch (hdr)
+            {
+                case TYPE_BYTE:
+                case TYPE_SHORT:
+                case TYPE_INT:
+                case TYPE_LONG:
+                case TYPE_FLOAT:
+                case TYPE_DOUBLE:
+                case TYPE_CHAR:
+                case TYPE_BOOL:
+                case TYPE_STRING:
+                case TYPE_GUID:
+                case TYPE_DATE:
+                case TYPE_ARRAY_BYTE:
+                case TYPE_ARRAY_SHORT:
+                case TYPE_ARRAY_INT:
+                case TYPE_ARRAY_LONG:
+                case TYPE_ARRAY_FLOAT:
+                case TYPE_ARRAY_DOUBLE:
+                case TYPE_ARRAY_CHAR:
+                case TYPE_ARRAY_BOOL:
+                case TYPE_ARRAY_STRING:
+                case TYPE_ARRAY_GUID:
+                case TYPE_ARRAY_DATE:
+                case TYPE_ARRAY:
+                case TYPE_COLLECTION:
+                case TYPE_DICTIONARY:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        /**
          * <summary>Read portable object.</summary>
          * <param name="stream">Stream.</param>
          * <param name="marsh">Marshaller.</param>
@@ -1584,7 +1609,7 @@ namespace GridGain.Client.Impl.Portable
 
             if (hdr == HDR_NULL)
                 obj = null;
-            else if (hdr == HDR_HND || hdr == HDR_FULL)
+            else if (hdr == HDR_HND || hdr == HDR_FULL || IsPredefinedType(hdr))
                 obj = marsh.Unmarshal0(stream, false, stream.Position - 1, hdr);
             else
                 throw new GridClientPortableException("Unexpected header: " + hdr);
