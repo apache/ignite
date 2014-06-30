@@ -86,10 +86,22 @@ public class GridHadoopV2Job implements GridHadoopJob {
     private JobID hadoopJobID;
 
     /** */
-    private File jobLocDir;
+    private GridHadoopV2JobResourceManager rsrcMgr;
 
     /** */
     private ClassLoaderWrapper jobLdr;
+
+    /** */
+    private GridHadoopPartitioner part;
+
+    /** */
+    private Comparator<?> sortComp;
+
+    /** */
+    private Comparator<?> combineGrpComp;
+
+    /** */
+    private Comparator<?> reduceGrpComp;
 
     /**
      * @param jobId Job ID.
@@ -241,17 +253,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public GridHadoopPartitioner partitioner() throws GridException {
-        Class<?> partClsOld = ctx.getConfiguration().getClass("mapred.partitioner.class", null);
-
-        if (partClsOld != null)
-            return new GridHadoopV1Partitioner(ctx.getJobConf().getPartitionerClass(), ctx.getConfiguration());
-
-        try {
-            return new GridHadoopV2Partitioner(ctx.getPartitionerClass(), ctx.getConfiguration());
-        }
-        catch (ClassNotFoundException e) {
-            throw new GridException(e);
-        }
+        return part;
     }
 
     /** {@inheritDoc} */
@@ -317,17 +319,17 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public Comparator<?> sortComparator() {
-        return ctx.getSortComparator();
+        return sortComp;
     }
 
     /** {@inheritDoc} */
     @Override public Comparator<?> reduceGroupComparator() {
-        return ctx.getGroupingComparator();
+        return reduceGrpComp;
     }
 
     /** {@inheritDoc} */
     @Override public Comparator<?> combineGroupComparator() {
-        return COMBINE_KEY_GROUPING_SUPPORTED ? ctx.getCombinerKeyGroupingComparator() : null;
+        return combineGrpComp;
     }
 
     /**
@@ -389,16 +391,34 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public void initialize(boolean external, UUID locNodeId) throws GridException {
-        jobLocDir = new File(new File(U.resolveWorkDirectory("hadoop", false), "node-" + locNodeId), "job_" + jobId);
+        rsrcMgr = new GridHadoopV2JobResourceManager(jobId, ctx, locNodeId);
 
-        GridHadoopV2JobResourceManager rsrcMgr = new GridHadoopV2JobResourceManager(jobId, ctx, jobLocDir);
-
-        rsrcMgr.processJobResources(!external);
+        rsrcMgr.prepareJobEnvironment(!external);
 
         initializeClassLoader(rsrcMgr.getClassPath());
 
         if (jobLdr != null)
             ctx.getJobConf().setClassLoader(jobLdr);
+
+        prepareTaskEnvironment(null);
+
+        Class<?> partClsOld = ctx.getConfiguration().getClass("mapred.partitioner.class", null);
+
+        if (partClsOld != null)
+            part = new GridHadoopV1Partitioner(ctx.getJobConf().getPartitionerClass(), ctx.getConfiguration());
+
+        try {
+            part = new GridHadoopV2Partitioner(ctx.getPartitionerClass(), ctx.getConfiguration());
+        }
+        catch (ClassNotFoundException e) {
+            throw new GridException(e);
+        }
+
+        sortComp = ctx.getSortComparator();
+
+        combineGrpComp = COMBINE_KEY_GROUPING_SUPPORTED ? ctx.getCombinerKeyGroupingComparator() : null;
+
+        reduceGrpComp = ctx.getGroupingComparator();
     }
 
     /** {@inheritDoc} */
@@ -406,32 +426,30 @@ public class GridHadoopV2Job implements GridHadoopJob {
         if (jobLdr != null)
             jobLdr.destroy();
 
-        if (!external && jobLocDir.exists())
-            U.delete(jobLocDir);
+        if (!external && rsrcMgr != null)
+            rsrcMgr.releaseJobEnvironment();
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeTaskRun(GridHadoopTaskInfo info) throws GridException {
-        try {
-            FileSystem.getLocal(ctx.getJobConf()).setWorkingDirectory(new Path(jobLocDir.getAbsolutePath()));
+    @Override public void prepareTaskEnvironment(@Nullable GridHadoopTaskInfo info) throws GridException {
+        if (info != null && (info.type() == GridHadoopTaskType.MAP || info.type() == GridHadoopTaskType.REDUCE)) {
+            rsrcMgr.prepareTaskEnvironment(info);
+
+            return;
         }
-        catch (IOException e) {
-            throw new GridException(e);
-        }
+
+        rsrcMgr.prepareTaskEnvironment(null);
     }
 
     /** {@inheritDoc} */
-    @Override public void afterTaskRun(GridHadoopTaskInfo info) throws GridException {
-        GridHadoopRawLocalFileSystem fs;
+    @Override public void releaseTaskEnvironment(@Nullable GridHadoopTaskInfo info) throws GridException {
+        if (info != null && (info.type() == GridHadoopTaskType.MAP || info.type() == GridHadoopTaskType.REDUCE)) {
+            rsrcMgr.releaseTaskEnvironment(info);
 
-        try {
-            fs = (GridHadoopRawLocalFileSystem)FileSystem.getLocal(ctx.getJobConf()).getRaw();
-        }
-        catch (IOException e) {
-            throw new GridException(e);
+            return;
         }
 
-        fs.setWorkingDirectory(fs.getInitialWorkingDirectory());
+        rsrcMgr.releaseTaskEnvironment(null);
     }
 
     /**
@@ -440,7 +458,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
      * @param clsPath List of URLs to add to class path.
      */
     private void initializeClassLoader(List<URL> clsPath) {
-        if (!jobLocDir.exists())
+        if (clsPath.isEmpty())
             return;
 
         URL[] urls = new URL[clsPath.size()];
