@@ -65,42 +65,43 @@ public class GridPortableContext implements Externalizable {
      */
     public void configure(@Nullable GridPortableConfiguration portableCfg)
         throws GridPortableException {
-        addDescriptor(Byte.class, BYTE);
-        addDescriptor(Short.class, SHORT);
-        addDescriptor(Integer.class, INT);
-        addDescriptor(Long.class, LONG);
-        addDescriptor(Float.class, FLOAT);
-        addDescriptor(Double.class, DOUBLE);
-        addDescriptor(Character.class, CHAR);
-        addDescriptor(Boolean.class, BOOLEAN);
-        addDescriptor(String.class, STRING);
-        addDescriptor(UUID.class, UUID);
-        addDescriptor(Date.class, DATE);
-        addDescriptor(byte[].class, BYTE_ARR);
-        addDescriptor(short[].class, SHORT_ARR);
-        addDescriptor(int[].class, INT_ARR);
-        addDescriptor(long[].class, LONG_ARR);
-        addDescriptor(float[].class, FLOAT_ARR);
-        addDescriptor(double[].class, DOUBLE_ARR);
-        addDescriptor(char[].class, CHAR_ARR);
-        addDescriptor(boolean[].class, BOOLEAN_ARR);
-        addDescriptor(String[].class, STRING_ARR);
-        addDescriptor(UUID[].class, UUID_ARR);
-        addDescriptor(Date[].class, DATE_ARR);
-        addDescriptor(Object[].class, OBJ_ARR);
+        addDescriptor(Byte.class, 0);
+        addDescriptor(Short.class, 0);
+        addDescriptor(Integer.class, 0);
+        addDescriptor(Long.class, 0);
+        addDescriptor(Float.class, 0);
+        addDescriptor(Double.class, 0);
+        addDescriptor(Character.class, 0);
+        addDescriptor(Boolean.class, 0);
+        addDescriptor(String.class, 0);
+        addDescriptor(UUID.class, 0);
+        addDescriptor(Date.class, 0);
+        addDescriptor(byte[].class, 0);
+        addDescriptor(short[].class, 0);
+        addDescriptor(int[].class, 0);
+        addDescriptor(long[].class, 0);
+        addDescriptor(float[].class, 0);
+        addDescriptor(double[].class, 0);
+        addDescriptor(char[].class, 0);
+        addDescriptor(boolean[].class, 0);
+        addDescriptor(String[].class, 0);
+        addDescriptor(UUID[].class, 0);
+        addDescriptor(Date[].class, 0);
+        addDescriptor(Object[].class, 0);
 
-        addDescriptor(ArrayList.class, COL);
-        addDescriptor(LinkedList.class, COL);
-        addDescriptor(HashSet.class, COL);
-        addDescriptor(LinkedHashSet.class, COL);
-        addDescriptor(TreeSet.class, COL);
-        addDescriptor(ConcurrentSkipListSet.class, COL);
+        addDescriptor(ArrayList.class, 0);
+        addDescriptor(LinkedList.class, 0);
+        addDescriptor(HashSet.class, 0);
+        addDescriptor(LinkedHashSet.class, 0);
+        addDescriptor(TreeSet.class, 0);
+        addDescriptor(ConcurrentSkipListSet.class, 0);
 
-        addDescriptor(HashMap.class, MAP);
-        addDescriptor(LinkedHashMap.class, MAP);
-        addDescriptor(TreeMap.class, MAP);
-        addDescriptor(ConcurrentHashMap.class, MAP);
+        addDescriptor(HashMap.class, 0);
+        addDescriptor(LinkedHashMap.class, 0);
+        addDescriptor(TreeMap.class, 0);
+        addDescriptor(ConcurrentHashMap.class, 0);
 
+        // TODO - support
         addDescriptor(GridPortableObjectImpl.class, PORTABLE);
 
         addDescriptor(GridClientAuthenticationRequest.class, 51);
@@ -260,7 +261,9 @@ public class GridPortableContext implements Externalizable {
         GridPortableClassDescriptor desc = new GridPortableClassDescriptor(cls, false, typeId, null, null, false);
 
         descByCls.put(cls, desc);
-        descById.put(new DescriptorKey(false, typeId), desc);
+
+        if (typeId != 0)
+            descById.put(new DescriptorKey(false, typeId), desc);
     }
 
     /**

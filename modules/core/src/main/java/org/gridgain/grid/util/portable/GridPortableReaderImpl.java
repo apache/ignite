@@ -120,6 +120,11 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
                 hashCode = doReadInt(false);
                 len = doReadInt(false);
                 rawStart = start + doReadInt(false);
+
+                break;
+
+            default:
+                rawStart = start + 1;
         }
 
         rawOff = rawStart;
@@ -1255,12 +1260,14 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     @Nullable private Object doReadObject(boolean raw) throws GridPortableException {
         GridPortableReaderImpl reader = new GridPortableReaderImpl(ctx, arr, raw ? rawOff : off, poHandles, oHandles);
 
+        Object obj = reader.deserialize();
+
         if (raw)
             rawOff += reader.length();
         else
             off += reader.length();
 
-        return reader.deserialize();
+        return obj;
     }
 
     /**
@@ -1268,6 +1275,8 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
      * @throws GridPortableException
      */
     Object deserialize() throws GridPortableException {
+        Object obj;
+
         switch (flag) {
             case NULL:
                 return null;
@@ -1278,7 +1287,9 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
 
                 off = handle;
 
-                return doReadObject(false);
+                obj = doReadObject(false);
+
+                break;
 
             case OBJ:
                 GridPortableClassDescriptor desc = ctx.descriptorForTypeId(userType, typeId);
@@ -1286,16 +1297,146 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
                 if (desc == null)
                     throw new GridPortableInvalidClassException("Unknown type ID: " + typeId);
 
-                Object obj = desc.read(this);
+                obj = desc.read(this);
 
                 if (obj instanceof GridPortableObjectImpl)
                     ((GridPortableObjectImpl)obj).context(ctx);
 
-                return obj;
+                break;
+
+            case BYTE:
+                obj = doReadByte(true);
+
+                break;
+
+            case SHORT:
+                obj = doReadShort(true);
+
+                break;
+
+            case INT:
+                obj = doReadInt(true);
+
+                break;
+
+            case LONG:
+                obj = doReadLong(true);
+
+                break;
+
+            case FLOAT:
+                obj = doReadFloat(true);
+
+                break;
+
+            case DOUBLE:
+                obj = doReadDouble(true);
+
+                break;
+
+            case CHAR:
+                obj = doReadChar(true);
+
+                break;
+
+            case BOOLEAN:
+                obj = doReadBoolean(true);
+
+                break;
+
+            case STRING:
+                obj = doReadString(true);
+
+                break;
+
+            case UUID:
+                obj = doReadUuid(true);
+
+                break;
+
+            case DATE:
+                obj = doReadDate(true);
+
+                break;
+
+            case BYTE_ARR:
+                obj = doReadByteArray(true);
+
+                break;
+
+            case SHORT_ARR:
+                obj = doReadShortArray(true);
+
+                break;
+
+            case INT_ARR:
+                obj = doReadIntArray(true);
+
+                break;
+
+            case LONG_ARR:
+                obj = doReadLongArray(true);
+
+                break;
+
+            case FLOAT_ARR:
+                obj = doReadFloatArray(true);
+
+                break;
+
+            case DOUBLE_ARR:
+                obj = doReadDoubleArray(true);
+
+                break;
+
+            case CHAR_ARR:
+                obj = doReadCharArray(true);
+
+                break;
+
+            case BOOLEAN_ARR:
+                obj = doReadBooleanArray(true);
+
+                break;
+
+            case STRING_ARR:
+                obj = doReadStringArray(true);
+
+                break;
+
+            case UUID_ARR:
+                obj = doReadUuidArray(true);
+
+                break;
+
+            case DATE_ARR:
+                obj = doReadDateArray(true);
+
+                break;
+
+            case OBJ_ARR:
+                obj = doReadObjectArray(true);
+
+                break;
+
+            case COL:
+                obj = doReadCollection(true, null);
+
+                break;
+
+            case MAP:
+                obj = doReadMap(true, null);
+
+                break;
 
             default:
                 throw new GridPortableException("Invalid flag value: " + flag);
         }
+
+        if (len == 0)
+            len = rawOff - start;
+
+        return obj;
     }
 
     /**

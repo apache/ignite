@@ -87,29 +87,29 @@ class GridPortableWriterImpl implements GridPortableWriter, GridPortableRawWrite
     void marshal(Object obj, boolean detached) throws GridPortableException {
         assert obj != null;
 
-        int handle = wCtx.handle(obj);
+        cls = obj.getClass();
 
-        if (handle >= 0) {
-            doWriteByte(HANDLE);
-            doWriteInt(handle);
-        }
-        else {
-            doWriteByte(OBJ);
+        GridPortableClassDescriptor desc = ctx.descriptorForClass(cls);
 
-            cls = obj.getClass();
+        if (desc == null)
+            throw new GridPortableException("Object is not portable: " + obj);
 
-            GridPortableClassDescriptor desc = ctx.descriptorForClass(cls);
+        typeId = desc.typeId();
 
-            if (desc == null)
-                throw new GridPortableException("Object is not portable: " + obj);
+        if (detached)
+            wCtx.resetHandles();
 
-            typeId = desc.typeId();
+        desc.write(obj, this);
+    }
 
-            if (detached)
-                wCtx.resetHandles();
+    /**
+     * @param obj Object.
+     * @return Handle.
+     */
+    int handle(Object obj) {
+        assert obj != null;
 
-            desc.write(obj, this);
-        }
+        return wCtx.handle(obj);
     }
 
     /**
