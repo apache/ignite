@@ -26,6 +26,9 @@ import static org.gridgain.grid.kernal.visor.gui.tasks.VisorHadoopTaskUtilsEnt.*
  */
 @GridInternal
 public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<String, GridBiTuple<Integer, Integer>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Job to clear profiler logs.
      */
