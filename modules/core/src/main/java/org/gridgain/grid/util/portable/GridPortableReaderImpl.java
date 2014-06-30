@@ -22,7 +22,7 @@ import static org.gridgain.grid.util.portable.GridPortableMarshaller.*;
 /**
  * Portable reader implementation.
  */
-class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReader {
+class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReaderEx {
     /** */
     private static final GridPortablePrimitives PRIM = GridPortablePrimitives.get();
 
@@ -806,6 +806,11 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     /** {@inheritDoc} */
     @Nullable @Override public Object readObject() throws GridPortableException {
         return doReadObject(true);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Object readObjectDetached() throws GridPortableException {
+        return unmarshal(true);
     }
 
     /** {@inheritDoc} */

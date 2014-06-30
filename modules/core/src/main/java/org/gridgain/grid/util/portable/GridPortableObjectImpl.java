@@ -57,20 +57,43 @@ public class GridPortableObjectImpl<T> implements GridPortableObject<T>, Externa
     }
 
     /**
-     * @param ctx Context.
-     */
-    void context(GridPortableContext ctx) {
-        this.ctx = ctx;
-    }
-
-    /**
      * @return Length.
      */
-    int length() {
+    public int length() {
         if (reader == null)
             reader = new GridPortableReaderImpl(ctx, arr, start);
 
         return reader.length();
+    }
+
+    /**
+     * @return Detached portable object.
+     */
+    public GridPortableObject<T> detach() {
+        if (detached())
+            return this;
+
+        int len = length();
+
+        byte[] arr0 = new byte[len];
+
+        U.arrayCopy(arr, start, arr0, 0, len);
+
+        return new GridPortableObjectImpl<>(ctx, arr0, 0);
+    }
+
+    /**
+     * @return Detached or not.
+     */
+    public boolean detached() {
+        return start == 0 && length() == arr.length;
+    }
+
+    /**
+     * @param ctx Context.
+     */
+    void context(GridPortableContext ctx) {
+        this.ctx = ctx;
     }
 
     /** {@inheritDoc} */
