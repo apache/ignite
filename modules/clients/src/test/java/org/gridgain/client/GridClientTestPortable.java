@@ -12,6 +12,7 @@ package org.gridgain.client;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.portable.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -19,7 +20,7 @@ import java.util.*;
  */
 @SuppressWarnings("PublicField")
 @GridPortableId(id = 10_000)
-public class GridClientTestPortable implements GridPortable {
+public class GridClientTestPortable implements GridPortable, Serializable {
     /** */
     public byte b;
 

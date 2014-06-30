@@ -11,6 +11,7 @@ namespace GridGain.Client.Impl.Portable
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Runtime.Serialization;
     using GridGain.Client.Portable;
@@ -132,7 +133,7 @@ namespace GridGain.Client.Impl.Portable
                 if (hdr == PU.HDR_NULL)
                     // 3. Handle null object.
                     return default(T);
-                if (hdr == PU.HDR_FULL)
+                else if (hdr == PU.HDR_FULL)
                 {
                     // 4. Read header.
                     bool userType = PU.ReadBoolean(Stream);
@@ -213,7 +214,7 @@ namespace GridGain.Client.Impl.Portable
                 else if (hdr == PU.HDR_HND)
                 {
                     // 14. Dealing with handles.
-                    int curPos = (int)Stream.Position;
+                    int curPos = (int)Stream.Position - 1;
 
                     int hndDelta = PU.ReadInt(Stream);
 
@@ -223,10 +224,20 @@ namespace GridGain.Client.Impl.Portable
                     else
                     {
                         // 16. No such handler, i.e. we trying to deserialize inner object before deserializing outer.
-                        Stream.Seek(curPos = hndDelta, SeekOrigin.Current);
+                        Stream.Seek(curPos - hndDelta, SeekOrigin.Current);
 
                         return Deserialize<T>(Stream);
                     }
+                }
+                else if (PU.IsPredefinedType(hdr))
+                {
+                    GridClientPortableSystemFieldDelegate handler = PSH.FieldHandler(hdr);
+
+                    Debug.Assert(handler != null, "Cannot find predefined read handler: " + hdr);
+
+                    object val = handler.Invoke(Stream, marsh);
+
+                    return (T)val;
                 }
                 else
                     throw new GridClientPortableException("Invalid header: " + hdr);
@@ -251,7 +262,7 @@ namespace GridGain.Client.Impl.Portable
             if (hdr == PU.HDR_NULL)
                 // 2. Dealing with null.
                 return default(T);
-            else if (hdr == PU.HDR_FULL)
+            else if (hdr == PU.HDR_FULL || PU.IsPredefinedType(hdr))
             {
                 // 3. Dealing with full object.
                 GridClientPortableObjectImpl portObj = 
@@ -269,7 +280,7 @@ namespace GridGain.Client.Impl.Portable
                 // 5. Dealing with handle.
                 object hndObj;
 
-                int curPos = (int)Stream.Position;
+                int curPos = (int)Stream.Position - 1;
 
                 int hndDelta = PU.ReadInt(stream);
 

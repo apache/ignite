@@ -130,6 +130,15 @@
     <ClCompile Include="..\main\src\model\gridportable.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\main\src\model\gridportablereader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\main\src\model\gridportablewriter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\main\src\impl\marshaller\portable\gridclientportablemessages.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\main\include\gridgain\gridclient.hpp">

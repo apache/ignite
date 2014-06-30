@@ -24,22 +24,22 @@
 using namespace std;
 
 template<>
-int32_t gridHashCode<>(GridClientUuid val) {
+int32_t gridHashCode<>(const GridClientUuid& val) {
     return val.hashCode();
 }
 
 template<>
-int32_t gridHashCode<>(GridClientDate val) {
+int32_t gridHashCode<>(const GridClientDate& val) {
     return val.hashCode();
 }
 
 template<>
-int32_t gridHashCode<>(GridClientVariant val) {
+int32_t gridHashCode<>(const GridClientVariant& val) {
     return val.hashCode();
 }
 
 template<>
-int32_t gridHashCode<>(uint16_t val) {
+int32_t gridHashCode<>(const uint16_t& val) {
     return (int32_t)val;
 }
 
@@ -143,16 +143,16 @@ public:
         hashCode_ = val.hashCode();
     }
 
-    virtual void visit(const std::vector<boost::optional<GridClientDate>>& val) const {
-        hashCode_ = gridOptionalCollectionHash(val);
+    virtual void visit(const std::vector<GridClientDate>& val) const {
+        hashCode_ = gridCollectionHash(val);
     }
 
     virtual void visit(const TGridClientVariantMap& vmap) const {
         hashCode_ = 0;
 
         BOOST_FOREACH(TGridClientVariantMap::value_type pair, vmap) {
-            GridClientVariant key = pair.first;
-            GridClientVariant value = pair.second;
+            const GridClientVariant& key = pair.first;
+            const GridClientVariant& value = pair.second;
 
             hashCode_ += hash_value(key) ^ hash_value(value);
         }

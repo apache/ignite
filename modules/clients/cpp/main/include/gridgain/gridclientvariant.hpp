@@ -200,7 +200,7 @@ public:
      *
      * @param val Value for the variant.
      */
-    GridClientVariant(const std::vector<boost::optional<GridClientDate>>& val);
+    GridClientVariant(const std::vector<GridClientDate>& val);
 
     /**
      * Constructor with variant vector argument.
@@ -555,12 +555,12 @@ public:
 
     template<typename T> 
     T* deserializePortable() const {
-        return getPortableObject().deserialize<T>();
+        return static_cast<T*>(deserializePortable0());
     }
 
     template<typename T> 
     std::unique_ptr<T> deserializePortableUnique() const {
-        return getPortableObject().deserializeUnique<T>();
+        return std::unique_ptr<T>(deserializePortable<T>());
     }
 
     /**
@@ -792,7 +792,7 @@ public:
      *
      * @param val New value for the variant.
      */
-    void set(const std::vector<boost::optional<GridClientDate>>& val);
+    void set(const std::vector<GridClientDate>& val);
 
     /**
      * Checks if this variant holds a date array value.
@@ -806,7 +806,7 @@ public:
      *
      * @return Value held in the variant.
      */
-    std::vector<boost::optional<GridClientDate>>& getDateArray() const;
+    std::vector<GridClientDate>& getDateArray() const;
 
     /**
      * Assigns this variant a date value.
@@ -927,6 +927,8 @@ public:
     bool hasAnyValue() const;
 
 private:
+    GridPortable* deserializePortable0() const;
+
     /** Enum for possible types of values. */
     enum TypeEnum {
         NULL_TYPE,
@@ -1015,7 +1017,7 @@ private:
 
         std::vector<GridClientUuid>* uuidArrVal;
 
-        std::vector<boost::optional<GridClientDate>>* dateArrVal;
+        std::vector<GridClientDate>* dateArrVal;
 
         TGridClientVariantSet* variantArrVal;
 
@@ -1135,7 +1137,7 @@ public:
     virtual void visit(const GridClientDate&) const = 0;
 
     /** */
-    virtual void visit(const std::vector<boost::optional<GridClientDate>>&) const = 0;
+    virtual void visit(const std::vector<GridClientDate>&) const = 0;
 
     /** */
     virtual void visit(const TGridClientVariantSet&) const = 0;

@@ -68,7 +68,7 @@ public:
         if (!resMsg->errorMsg.empty())
             throw GridClientCommandException(resMsg->errorMsg);
 
-        sessToken = resMsg->sesTok;
+        sessToken = resMsg->rcvTok;
     }
 };
 

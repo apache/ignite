@@ -82,6 +82,17 @@ GridClientCacheTestType testTypeFromString(std::string typeName) {
     return NUM_TEST_TYPES;
 }
 
+#if defined(_MSC_VER)
+/**
+ * Returns a random int between 0 and max, thread safe.
+ *
+ * @param max A maximum value of a random integer.
+ * @param seed A seed to use. Modifiable. Needs to be passed each time.
+ */
+int randomInt(int max, unsigned int* seed) {
+    return rand() % (max + 1);
+}
+#else
 /**
  * Returns a random int between 0 and max, thread safe.
  *
@@ -91,6 +102,7 @@ GridClientCacheTestType testTypeFromString(std::string typeName) {
 int randomInt(int max, unsigned int* seed) {
     return rand_r(seed) % (max + 1);
 }
+#endif
 
 /**
  * Class representing one thread working with the client.
@@ -117,6 +129,12 @@ public:
      */
     void run(GridClientCacheTestType opType) {
         try {
+            #if defined(_MSC_VER)
+            
+            srand(seed);
+            
+            #endif
+
             TGridClientDataPtr data = client->data(vm["cachename"].as<string>());
 
             switch (opType) {

@@ -32,76 +32,288 @@ public:
 
     virtual std::pair<bool*, int32_t> readBoolArray(char* fieldName) = 0;
 
-    virtual boost::optional<std::vector<bool>> readBoolCollection(char* fieldName) = 0;
+    template<class OutputIterator>
+    bool readBoolArray(char* fieldName, OutputIterator out) {
+        return readArray<OutputIterator, bool>(fieldName, out);
+    }
+
+    virtual bool readBoolArray(char* fieldName, std::vector<bool>& arr) = 0;
 
     virtual int8_t readByte(char* fieldName) = 0;
 
     virtual std::pair<int8_t*, int32_t> readByteArray(char* fieldName) = 0;
 
-    virtual boost::optional<std::vector<int8_t>> readByteCollection(char* fieldName) = 0;
+    template<class OutputIterator>
+    bool readByteArray(char* fieldName, OutputIterator out) {
+        return readArray<OutputIterator, int8_t>(fieldName, out);
+    }
+
+    virtual bool readByteArray(char* fieldName, std::vector<int8_t>& arr) = 0;
 
     virtual int16_t readInt16(char* fieldName) = 0;
 
     virtual std::pair<int16_t*, int32_t> readInt16Array(char* fieldName) = 0;
 
-    virtual boost::optional<std::vector<int16_t>> readInt16Collection(char* fieldName) = 0;
+    template<class OutputIterator>
+    bool readInt16Array(char* fieldName, OutputIterator out) {
+        return readArray<OutputIterator, int16_t>(fieldName, out);
+    }
+
+    virtual bool readInt16Array(char* fieldName, std::vector<int16_t>& arr) = 0;
 
     virtual int32_t readInt32(char* fieldName) = 0;
 
     virtual std::pair<int32_t*, int32_t> readInt32Array(char* fieldName) = 0;
 
-    virtual boost::optional<std::vector<int32_t>> readInt32Collection(char* fieldName) = 0;
+    template<class OutputIterator>
+    bool readInt32Array(char* fieldName, OutputIterator out) {
+        return readArray<OutputIterator, int32_t>(fieldName, out);
+    }
+
+    virtual bool readInt32Array(char* fieldName, std::vector<int32_t>& arr) = 0;
 
     virtual int64_t readInt64(char* fieldName) = 0;
 
     virtual std::pair<int64_t*, int32_t> readInt64Array(char* fieldName) = 0;
 
-    virtual boost::optional<std::vector<int64_t>> readInt64Collection(char* fieldName) = 0;
+    virtual bool readInt64Array(char* fieldName, std::vector<int64_t>& arr) = 0;
+
+    template<class OutputIterator>
+    bool readInt64Array(char* fieldName, OutputIterator out) {
+        return readArray<OutputIterator, int64_t>(fieldName, out);
+    }
 
     virtual float readFloat(char* fieldName) = 0;
 
     virtual std::pair<float*, int32_t> readFloatArray(char* fieldName) = 0;
 
-    virtual boost::optional<std::vector<float>> readFloatCollection(char* fieldName) = 0;
+    template<class OutputIterator>
+    bool readFloatArray(char* fieldName, OutputIterator out) {
+        return readArray<OutputIterator, float>(fieldName, out);
+    }
+
+    virtual bool readFloatArray(char* fieldName, std::vector<float>& arr) = 0;
 
     virtual double readDouble(char* fieldName) = 0;
 
     virtual std::pair<double*, int32_t> readDoubleArray(char* fieldName) = 0;
 
+    template<class OutputIterator>
+    bool readDoubleArray(char* fieldName, OutputIterator out) {
+        return readArray<OutputIterator, double>(fieldName, out);
+    }
+
+    virtual bool readDoubleArray(char* fieldName, std::vector<double>& arr) = 0;
+
     virtual uint16_t readChar(char* fieldName) = 0;
 
     virtual std::pair<uint16_t*, int32_t> readCharArray(char* fieldName) = 0;
 
-    virtual boost::optional<std::vector<uint16_t>> readCharCollection(char* fieldName) = 0;
+    template<class OutputIterator>
+    bool readCharArray(char* fieldName, OutputIterator out) {
+        return readArray<OutputIterator, uint16_t>(fieldName, out);
+    }
 
-    virtual boost::optional<std::vector<double>> readDoubleCollection(char* fieldName) = 0;
+    virtual bool readCharArray(char* fieldName, std::vector<uint16_t>& arr) = 0;
 
     virtual boost::optional<std::string> readString(char* fieldName) = 0;
 
-    virtual boost::optional<std::vector<std::string>> readStringCollection(char* fieldName) = 0;
+    template<class OutputIterator>
+    bool readStringArray(char* fieldName, OutputIterator out) {
+        return readStringArray<OutputIterator, std::string>(fieldName, out);
+    }
+
+    virtual bool readStringArray(char* fieldName, std::vector<std::string>& arr) = 0;
 
     virtual boost::optional<std::wstring> readWString(char* fieldName) = 0;
 
-    virtual boost::optional<std::vector<std::wstring>> readWStringCollection(char* fieldName) = 0;
+    template<class OutputIterator>
+    bool readWStringArray(char* fieldName, OutputIterator out) {
+        return readWStringArray<OutputIterator, std::wstring>(fieldName, out);
+    }
+
+    virtual bool readWStringArray(char* fieldName, std::vector<std::wstring>& arr) = 0;
 
     virtual boost::optional<GridClientUuid> readUuid(char* fieldName) = 0;
 
-    virtual boost::optional<std::vector<GridClientUuid>> readUuidCollection(char* fieldName) = 0;
+    template<class OutputIterator>
+    bool readUuidArray(char* fieldName, OutputIterator out) {
+        return readObjectArray<OutputIterator, GridClientUuid>(fieldName, out);
+    }
+
+    virtual bool readUuidArray(char* fieldName, std::vector<GridClientUuid>& arr) = 0;
 
     virtual boost::optional<GridClientDate> readDate(char* fieldName) = 0;
 
-    virtual boost::optional<std::vector<boost::optional<GridClientDate>>> readDateCollection(char* fieldName) = 0;
+    template<class OutputIterator>
+    bool readDateCollection(char* fieldName, OutputIterator out) {
+        return readObjectArray<OutputIterator, GridClientDate>(fieldName, out);
+    }
+
+    virtual bool readDateArray(char* fieldName, std::vector<GridClientDate>& arr) = 0;
 
     virtual GridClientVariant readVariant(char* fieldName) = 0;
 
-    virtual boost::optional<TGridClientVariantSet> readVariantCollection(char* fieldName) = 0;
+    virtual bool readVariantArray(char* fieldName, std::vector<GridClientVariant>& res) = 0;
 
-    virtual boost::optional<TGridClientVariantMap> readVariantMap(char* fieldName) = 0;
+    virtual bool readVariantCollection(char* fieldName, std::vector<GridClientVariant>& res) = 0;
+
+    template<class OutputIterator>
+    bool readVariantCollection(char* fieldName, OutputIterator out) {
+        return readCollection(fieldName, out);   
+    }
+
+    virtual bool readVariantMap(char* fieldName, TGridClientVariantMap& map) = 0;
 
     virtual GridPortableRawReader& rawReader() = 0;
 
     virtual ~GridPortableReader() {
     }
+
+private:
+    template<typename OutputIterator, typename T>
+    bool readArray(char* fieldName, OutputIterator out) {
+        if (!startReadArray<T>(fieldName))
+            return false;
+
+        int32_t size = readArraySize(false);
+
+        if (size < 0)
+            return false;
+
+        for (int32_t i = 0; i < size; i++) {
+            *out = readArrayElement<T>(false);
+
+            out++;
+        }
+
+        return true;
+    }
+
+    template<typename OutputIterator, typename T>
+    bool readStringArray(char* fieldName, OutputIterator out) {
+        if (!startReadArray<T>(fieldName))
+            return false;
+
+        int32_t size = readArraySize(false);
+
+        if (size < 0)
+            return false;
+
+        for (int32_t i = 0; i < size; i++) {
+            int32_t len = doReadInt32(false);
+
+            if (len >= 0)
+                *out = std::move(readString<T>(len, false));
+
+            out++;
+        }
+
+        return true;
+    }
+
+    template<typename OutputIterator, typename T>
+    bool readObjectArray(char* fieldName, OutputIterator out) {
+        if (!startReadArray<T>(fieldName))
+            return false;
+
+        int32_t size = readArraySize(false);
+
+        if (size < 0)
+            return false;
+
+        for (int32_t i = 0; i < size; i++) {
+            if (doReadBool(false))
+                *out = std::move(readObject<T>(false));
+
+            out++;
+        }
+
+        return true;
+    }
+
+    template<typename OutputIterator>
+    bool readCollection(char* fieldName, OutputIterator out) {
+        if (!startReadVariantCollection(fieldName))
+            return false;
+
+        int32_t size = readArraySize(false);
+
+        if (size < 0)
+            return false;
+
+        doReadByte(false);
+
+        for (int32_t i = 0; i < size; i++) {
+            *out = std::move(doReadVariant(false));
+
+            out++;
+        }
+
+        return true;
+    }
+
+    template<typename T>
+    T readArrayElement(bool raw);
+
+    template<typename T>
+    bool startReadArray(char* fieldName);
+
+    virtual int32_t readArraySize(bool) = 0;
+
+    virtual bool doReadBool(bool) = 0;
+
+    virtual int8_t doReadByte(bool) = 0;
+
+    virtual int16_t doReadInt16(bool) = 0;
+
+    virtual int32_t doReadInt32(bool) = 0;
+
+    virtual float doReadFloat(bool) = 0;
+
+    virtual double doReadDouble(bool) = 0;
+
+    virtual uint16_t doReadChar(bool) = 0;
+
+    virtual GridClientVariant doReadVariant(bool) = 0;
+
+    template<typename T>
+    T readString(int32_t len, bool raw);
+
+    template<typename T>
+    T readObject(bool raw);
+
+    virtual std::string doReadString(int32_t, bool) = 0;
+
+    virtual std::wstring doReadWString(int32_t, bool) = 0;
+
+    virtual GridClientUuid doReadUuidObject(bool) = 0;
+
+    virtual GridClientDate doReadDateObject(bool) = 0;
+
+    virtual bool startReadBoolArray(char* fieldName) = 0;
+
+    virtual bool startReadByteArray(char* fieldName) = 0;
+
+    virtual bool startReadInt16Array(char* fieldName) = 0;
+
+    virtual bool startReadCharArray(char* fieldName) = 0;
+
+    virtual bool startReadInt32Array(char* fieldName) = 0;
+
+    virtual bool startReadInt64Array(char* fieldName) = 0;
+
+    virtual bool startReadFloatArray(char* fieldName) = 0;
+
+    virtual bool startReadDoubleArray(char* fieldName) = 0;
+
+    virtual bool startReadUuidArray(char* fieldName) = 0;
+
+    virtual bool startReadDateArray(char* fieldName) = 0;
+
+    virtual bool startReadStringArray(char* fieldName) = 0;
+
+    virtual bool startReadVariantCollection(char* fieldName) = 0;
 };
 
 /**
@@ -113,76 +325,248 @@ public:
 
     virtual std::pair<bool*, int32_t> readBoolArray() = 0;
 
-    virtual boost::optional<std::vector<bool>> readBoolCollection() = 0;
+    virtual bool readBoolArray(std::vector<bool>& arr) = 0;
+
+    template<class OutputIterator>
+    bool readBoolArray(OutputIterator out) {
+        return readArray<OutputIterator, bool>(out);
+    }
 
     virtual int8_t readByte() = 0;
 
     virtual std::pair<int8_t*, int32_t> readByteArray() = 0;
 
-    virtual boost::optional<std::vector<int8_t>> readByteCollection() = 0;
+    virtual bool readByteArray(std::vector<int8_t>& res) = 0;
+
+    template<class OutputIterator>
+    bool readByteArray(OutputIterator out) {
+        return readArray<OutputIterator, int8_t>(out);
+    }
 
     virtual int16_t readInt16() = 0;
 
     virtual std::pair<int16_t*, int32_t> readInt16Array() = 0;
 
-    virtual boost::optional<std::vector<int16_t>> readInt16Collection() = 0;
+    virtual bool readInt16Array(std::vector<int16_t>& res) = 0;
+
+    template<class OutputIterator>
+    bool readInt16Array(OutputIterator out) {
+        return readArray<OutputIterator, int16_t>(out);
+    }
 
     virtual int32_t readInt32() = 0;
 
     virtual std::pair<int32_t*, int32_t> readInt32Array() = 0;
 
-    virtual boost::optional<std::vector<int32_t>> readInt32Collection() = 0;
+    virtual bool readInt32Array(std::vector<int32_t>& arr) = 0;
+
+    template<class OutputIterator>
+    bool readInt32Collection(OutputIterator out) {
+        return readArray<OutputIterator, int32_t>(out);
+    }
 
     virtual int64_t readInt64() = 0;
 
     virtual std::pair<int64_t*, int32_t> readInt64Array() = 0;
 
-    virtual boost::optional<std::vector<int64_t>> readInt64Collection() = 0;
+    virtual bool readInt64Array(std::vector<int64_t>& arr) = 0;
+
+    template<class OutputIterator>
+    bool readInt64Array(OutputIterator out) {
+        return readArray<OutputIterator, int64_t>(out);
+    }
 
     virtual float readFloat() = 0;
 
     virtual std::pair<float*, int32_t> readFloatArray() = 0;
 
-    virtual boost::optional<std::vector<float>> readFloatCollection() = 0;
+    virtual bool readFloatArray(std::vector<float>& arr) = 0;
+
+    template<class OutputIterator>
+    bool readFloatArray(OutputIterator out) {
+        return readArray<OutputIterator, float>(out);
+    }
 
     virtual double readDouble() = 0;
 
     virtual std::pair<double*, int32_t> readDoubleArray() = 0;
 
-    virtual boost::optional<std::vector<double>> readDoubleCollection() = 0;
+    virtual bool readDoubleArray(std::vector<double>& arr) = 0;
+
+    template<class OutputIterator>
+    bool readDoubleArray(OutputIterator out) {
+        return readArray<OutputIterator, double>(out);
+    }
 
     virtual uint16_t readChar() = 0;
 
     virtual std::pair<uint16_t*, int32_t> readCharArray() = 0;
 
-    virtual boost::optional<std::vector<uint16_t>> readCharCollection() = 0;
+    virtual bool readCharArray(std::vector<uint16_t>& arr) = 0;
+
+    template<class OutputIterator>
+    bool readCharArray(OutputIterator out) {
+        return readArray<OutputIterator, uint16_t>(out);
+    }
 
     virtual boost::optional<std::string> readString() = 0;
 
-    virtual boost::optional<std::vector<std::string>> readStringCollection() = 0;
+    template<class OutputIterator>
+    bool readStringArray(OutputIterator out) {
+        return readStringArray<OutputIterator, std::string>(out);
+    }
+
+    virtual bool readStringArray(std::vector<std::string>& arr) = 0;
 
     virtual boost::optional<std::wstring> readWString() = 0;
 
-    virtual boost::optional<std::vector<std::wstring>> readWStringCollection() = 0;
+    template<class OutputIterator>
+    bool readWStringArray(OutputIterator out) {
+        return readWStringArray<OutputIterator, std::wstring>(out);
+    }
+
+    virtual bool readWStringArray(std::vector<std::wstring>& arr) = 0;
 
     virtual boost::optional<GridClientUuid> readUuid() = 0;
 
-    virtual boost::optional<std::vector<GridClientUuid>> readUuidCollection() = 0;
+    template<class OutputIterator>
+    bool readUuidArray(OutputIterator out) {
+        return readObjectArray<OutputIterator, GridClientUuid>(out);
+    }
+
+    virtual bool readUuidArray(std::vector<GridClientUuid>& arr) = 0;
 
     virtual boost::optional<GridClientDate> readDate() = 0;
 
-    virtual boost::optional<std::vector<boost::optional<GridClientDate>>> readDateCollection() = 0;
+    template<class OutputIterator>
+    bool readDateArray(OutputIterator out) {
+        return readObjectArray<OutputIterator, GridClientDate>(out);
+    }
+
+    virtual bool readDateArray(std::vector<GridClientDate>& arr) = 0;
 
     virtual GridClientVariant readVariant() = 0;
 
-    virtual boost::optional<TGridClientVariantSet> readVariantCollection() = 0;
+    virtual bool readVariantArray(TGridClientVariantSet& res) = 0;
 
-    virtual boost::optional<TGridClientVariantSet> readCollection() = 0;
+    virtual bool readVariantCollection(TGridClientVariantSet& res) = 0;
 
-    virtual boost::optional<TGridClientVariantMap> readVariantMap() = 0;
+    template<class OutputIterator>
+    bool readVariantCollection(OutputIterator out) {
+        return readCollection(out);
+    }
+
+    virtual bool readVariantMap(TGridClientVariantMap& res) = 0;
 
     virtual ~GridPortableRawReader() {
     }
+
+private:
+    template<typename OutputIterator, typename T>
+    bool readArray(OutputIterator out) {
+        int32_t size = readArraySize(true);
+
+        if (size < 0)
+            return false;
+
+        for (int32_t i = 0; i < size; i++) {
+            *out = readArrayElement<T>(true);
+
+            out++;
+        }
+
+        return true;
+    }
+
+    template<typename OutputIterator, typename T>
+    bool readStringArray(OutputIterator out) {
+        int32_t size = readArraySize(true);
+
+        if (size < 0)
+            return false;
+
+        for (int32_t i = 0; i < size; i++) {
+            int32_t len = doReadInt32(true);
+
+            if (len >= 0)
+                *out = std::move(readString<T>(len, true));
+
+            out++;
+        }
+
+        return true;
+    }
+
+    template<typename OutputIterator, typename T>
+    bool readObjectArray(OutputIterator out) {
+        int32_t size = readArraySize(true);
+
+        if (size < 0)
+            return false;
+
+        for (int32_t i = 0; i < size; i++) {
+            if (doReadBool(true))
+                *out = std::move(readObject<T>(true));
+
+            out++;
+        }
+
+        return true;
+    }
+
+    template<typename OutputIterator>
+    bool readCollection(OutputIterator out) {
+        int32_t size = readArraySize(true);
+
+        if (size < 0)
+            return false;
+
+        doReadByte(true);
+
+        for (int32_t i = 0; i < size; i++) {
+            if (doReadBool(true))
+                *out = std::move(doReadVariant(true));
+
+            out++;
+        }
+
+        return true;
+    }
+
+    template<typename T>
+    T readArrayElement(bool raw);
+
+    virtual int32_t readArraySize(bool) = 0;
+
+    virtual bool doReadBool(bool) = 0;
+
+    virtual int8_t doReadByte(bool) = 0;
+
+    virtual int16_t doReadInt16(bool) = 0;
+
+    virtual int32_t doReadInt32(bool) = 0;
+
+    virtual float doReadFloat(bool) = 0;
+
+    virtual double doReadDouble(bool) = 0;
+
+    virtual uint16_t doReadChar(bool) = 0;
+
+    template<typename T>
+    T readString(int32_t len, bool raw);
+
+    template<typename T>
+    T readObject(bool raw);
+
+    virtual std::string doReadString(int32_t, bool) = 0;
+
+    virtual std::wstring doReadWString(int32_t, bool) = 0;
+
+    virtual GridClientUuid doReadUuidObject(bool) = 0;
+
+    virtual GridClientDate doReadDateObject(bool) = 0;
+
+    virtual GridClientVariant doReadVariant(bool) = 0;
 };
 
 class GridPortableFactory {

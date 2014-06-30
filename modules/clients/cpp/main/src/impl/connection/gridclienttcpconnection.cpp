@@ -55,18 +55,18 @@ const size_t GridClientTcpPacket::REGULAR_HEADER_SIZE;
 #endif
 
 /** Ping packet contents. */
-static const int8_t PING_PACKET_SIZE_HEADER[] = { 0x0, 0x0, 0x0, 0x0 };
+static const int8_t PING_PACKET_SIZE_HEADER[] = {0x0, 0x0, 0x0, 0x0};
 
 /** Version numeric array. */
 const vector<int8_t> verByteVec = GridUtil::getVersionNumeric();
 
 /** Client hint packet. */
 const uint8_t HANDSHAKE_PACKET[] = {
-        0x91,                                            // Signal char.
-        (uint8_t)verByteVec[0],                          // Version.
-        (uint8_t)verByteVec[1],                          //
-        (uint8_t)verByteVec[2],                          //
-        (uint8_t)verByteVec[3]                          //
+        0x91,                   // Signal char.
+        (uint8_t)verByteVec[0], // Version.
+        (uint8_t)verByteVec[1], //
+        (uint8_t)verByteVec[2], //
+        (uint8_t)verByteVec[3]  //
 };
 
 /**
@@ -285,7 +285,7 @@ void GridClientSyncTcpConnection::authenticate(const string& clientId, const str
     if (!resMsg->errorMsg.empty())
         throw GridClientCommandException(resMsg->errorMsg);
 
-    sessToken = resMsg->sesTok;
+    sessToken = resMsg->rcvTok;
 }
 
 /**
@@ -762,7 +762,7 @@ void GridClientRawSyncTcpConnection::authenticate(const string& clientId, const 
     if (!resMsg->errorMsg.empty())
         throw GridClientCommandException(resMsg->errorMsg);
 
-    sessToken = resMsg->sesTok;
+    sessToken = resMsg->rcvTok;
 }
 
 /**

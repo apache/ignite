@@ -37,6 +37,9 @@ namespace GridGain.Client.Impl.Portable
         /** Offset in data array. */
         private int offset;
 
+        /** Predefined value. */
+        private object val;
+
         /** Marshaller. */
         private GridClientPortableMarshaller marsh;
         
@@ -63,6 +66,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="marsh">Marshaller.</param>
          * <param name="data">Data bytes.</param>
          * <param name="offset">Offset.</param>
+         * <param name="val">Value.</param>
          * <param name="len">Length.</param>
          * <param name="userType">User type flag.</param>
          * <param name="typeId">Type ID.</param>
@@ -70,7 +74,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="rawDataOffset">Raw data offset.</param>
          * <param name="fields">Fields.</param>
          */
-        public GridClientPortableObjectImpl(GridClientPortableMarshaller marsh, byte[] data, int offset,
+        public GridClientPortableObjectImpl(GridClientPortableMarshaller marsh, byte[] data, int offset, object val,
             int len, bool userType, int typeId, int hashCode, int rawDataOffset, IDictionary<int, int> fields)
         {
             this.marsh = marsh;
@@ -78,6 +82,7 @@ namespace GridGain.Client.Impl.Portable
             this.data = data;
             this.offset = offset;
             this.len = len;
+            this.val = val;
 
             this.userType = userType;
             this.typeId = typeId;
@@ -101,6 +106,15 @@ namespace GridGain.Client.Impl.Portable
         public int Offset
         {
             get { return offset; }
+        }
+
+        /**
+         * <summary>Deserialized value (set only for predefined types).</summary>
+         */
+        public object Value
+        {
+            get { return val; }
+            set { val = value; }
         }
 
         /** <inheritdoc /> */
@@ -219,8 +233,8 @@ namespace GridGain.Client.Impl.Portable
                 return default(T);
             else if (hdr == PU.HDR_HND)
                 return (T)marsh.Unmarshal0(stream, false, stream.Position - 1, PU.HDR_HND);
-            else if (hdr == PU.HDR_FULL)
-                return (T)marsh.Unmarshal0(stream, false, stream.Position - 1, PU.HDR_FULL);
+            else if (hdr == PU.HDR_FULL || PU.IsPredefinedType(hdr))
+                return (T)marsh.Unmarshal0(stream, false, stream.Position - 1, hdr);
             else
             {
                 Debug.Assert(userType == false);
@@ -235,13 +249,107 @@ namespace GridGain.Client.Impl.Portable
         }
              
         /** <inheritdoc /> */
-        public T Deserialize<T>()
+        public unsafe T Deserialize<T>()
         {
-            MemoryStream stream = new MemoryStream(data);
+            if (val != null) {
+                // 1. Handle special conversions first.
+                if (typeof(T) == typeof(sbyte) || typeof(T) == typeof(sbyte?))
+                {
+                    byte val0 = (byte)val;
 
-            stream.Position = offset;
+                    return (T)(object)(*(sbyte*)&val0);
+                }
+                else if (typeof(T) == typeof(ushort) || typeof(T) == typeof(ushort?))
+                {
+                    short val0 = (short)val;
 
-            return new GridClientPortableReadContext(marsh, marsh.IdToDescriptor, stream).Deserialize<T>(this);
+                    return (T)(object)(*(ushort*)&val0);
+                }
+                else if (typeof(T) == typeof(uint) || typeof(T) == typeof(uint?))
+                {
+                    int val0 = (int)val;
+
+                    return (T)(object)(*(uint*)&val0);
+                }
+                else if (typeof(T) == typeof(ulong) || typeof(T) == typeof(ulong?))
+                {
+                    long val0 = (long)val;
+
+                    return (T)(object)(*(ulong*)&val0);
+                }
+                else if (typeof(T) == typeof(sbyte[])) 
+                {
+                    byte[] val0 = (byte[])val;
+
+                    sbyte[] res = new sbyte[val0.Length];
+
+                    for (int i = 0; i < val0.Length; i++)
+                    {
+                        byte curVal = val0[i];
+
+                        res[i] = *(sbyte*)&curVal;
+                    }
+
+                    return (T)(object)res;
+                }
+                else if (typeof(T) == typeof(ushort[]))
+                {
+                    short[] val0 = (short[])val;
+
+                    ushort[] res = new ushort[val0.Length];
+
+                    for (int i = 0; i < val0.Length; i++)
+                    {
+                        short curVal = val0[i];
+
+                        res[i] = *(ushort*)&curVal;
+                    }
+
+                    return (T)(object)res;
+                }
+                else if (typeof(T) == typeof(uint[]))
+                {
+                    int[] val0 = (int[])val;
+
+                    uint[] res = new uint[val0.Length];
+
+                    for (int i = 0; i < val0.Length; i++)
+                    {
+                        int curVal = val0[i];
+
+                        res[i] = *(uint*)&curVal;
+                    }
+
+                    return (T)(object)res;
+                }
+                else if (typeof(T) == typeof(ulong[]))
+                {
+                    long[] val0 = (long[])val;
+
+                    ulong[] res = new ulong[val0.Length];
+
+                    for (int i = 0; i < val0.Length; i++)
+                    {
+                        long curVal = val0[i];
+
+                        res[i] = *(ulong*)&curVal;
+                    }
+
+                    return (T)(object)res;
+                }
+
+                // 2. Nothing special, so regular conversion.
+                return (T)val;
+            }
+            else
+            {
+                // 3. Full deserialization.
+                MemoryStream stream = new MemoryStream(data);
+
+                stream.Position = offset;
+
+                return new GridClientPortableReadContext(marsh, marsh.IdToDescriptor, stream).Deserialize<T>(this);
+            }
         }
 
         /** <inheritdoc /> */
