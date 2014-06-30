@@ -351,7 +351,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                                 processAnnotationsInClass(true, d.keyCls, d, null);
                             }
                             else {
-                                processClassMeta(true, d.keyCls, keyMeta, d, null);
+                                processClassMeta(true, d.keyCls, keyMeta, d);
                             }
                         }
 
@@ -384,7 +384,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                                 processAnnotationsInClass(false, d.valCls, d, null);
                             }
                             else {
-                                processClassMeta(false, d.valCls, typeMeta, d, null);
+                                processClassMeta(false, d.valCls, typeMeta, d);
                             }
                         }
 
@@ -789,13 +789,45 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      *
      * @param key Key or value flag.
      * @param cls Class to process.
-     * @param typeMeta Type metadata.
+     * @param meta Type metadata.
      * @param d Type descriptor.
-     * @param parent Parent property if this is embeddable element.
      */
-    static void processClassMeta(boolean key, Class<?> cls, GridCacheQueryTypeMetadata typeMeta, TypeDescriptor d,
-        @Nullable Property parent) {
-        // TODO.
+    static void processClassMeta(boolean key, Class<?> cls, GridCacheQueryTypeMetadata meta, TypeDescriptor d)
+        throws GridException {
+        for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
+            ClassProperty prop = buildClassProperty(cls, entry.getKey(), entry.getValue());
+
+            d.addProperty(key, prop);
+
+            String idxName = prop.name() + "_idx";
+
+            d.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
+
+            d.addFieldToIndex(idxName, prop.name(), 0, false);
+        }
+
+        for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet()) {
+            ClassProperty prop = buildClassProperty(cls, entry.getKey(), entry.getValue());
+
+            d.addProperty(key, prop);
+
+            String idxName = prop.name() + "_idx";
+
+            d.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
+
+            d.addFieldToIndex(idxName, prop.name(), 0, true);
+        }
+
+        for (String txtIdx : meta.getTextFields())
+            d.addFieldToTextIndex(txtIdx);
+
+        for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
+            ClassProperty prop = buildClassProperty(cls, entry.getKey(), entry.getValue());
+
+            d.addProperty(key, prop);
+        }
+
+        // TODO group indexes.
     }
 
     /**
@@ -858,6 +890,55 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
         for (String prop : path)
             res = new PortableProperty(prop, res, resType);
+
+        return res;
+    }
+
+    /**
+     * @param cls Source type class.
+     * @param pathStr String representing path to the property. May contains dots '.' to identify nested fields.
+     * @param resType Expected result type.
+     * @return Property instance corresponding to the given path.
+     * @throws GridException If property cannot be created.
+     */
+    static ClassProperty buildClassProperty(Class<?> cls, String pathStr, Class<?> resType) throws GridException {
+        String[] path = pathStr.split("\\.");
+
+        ClassProperty res = null;
+
+        for (String prop : path) {
+            ClassProperty tmp;
+
+            try {
+                StringBuilder bld = new StringBuilder("get");
+
+                bld.append(prop);
+
+                bld.setCharAt(3, Character.toUpperCase(bld.charAt(3)));
+
+                tmp = new ClassProperty(cls.getMethod(bld.toString()));
+            }
+            catch (NoSuchMethodException ignore) {
+                try {
+                    tmp = new ClassProperty(cls.getDeclaredField(prop));
+                }
+                catch (NoSuchFieldException ignored) {
+                    throw new GridException("Failed to find getter method or field for property named " +
+                        "'" + prop + "': " + cls.getName());
+                }
+            }
+
+            tmp.parent(res);
+
+            cls = tmp.type();
+
+            res = tmp;
+        }
+
+        if (!U.box(resType).isAssignableFrom(U.box(res.type())))
+            throw new GridException("Failed to create property for given path (actual property type is not assignable" +
+                " to declared type [path=" + pathStr + ", actualType=" + res.type().getName() +
+                ", declaredType=" + resType.getName() + ']');
 
         return res;
     }
