@@ -220,45 +220,45 @@ int32_t gridDoubleHash(double val) {
 }
 
 template<typename T>
-int32_t gridHashCode(T val);
+int32_t gridHashCode(const T& val);
 
 template<>
-int32_t gridHashCode<>(int8_t val) {
+int32_t gridHashCode<>(const int8_t& val) {
     return gridByteHash(val);
 }
 
 template<>
-int32_t gridHashCode<>(int16_t val) {
+int32_t gridHashCode<>(const int16_t& val) {
     return gridInt16Hash(val);
 }
 
 template<>
-int32_t gridHashCode<>(int32_t val) {
+int32_t gridHashCode<>(const int32_t& val) {
     return gridInt32Hash(val);
 }
 
 template<>
-int32_t gridHashCode<>(int64_t val) {
+int32_t gridHashCode<>(const int64_t& val) {
     return gridInt64Hash(val);
 }
 
 template<>
-int32_t gridHashCode<>(bool val) {
+int32_t gridHashCode<>(const bool& val) {
     return gridBoolHash(val);
 }
 
 template<>
-int32_t gridHashCode<>(float val) {
+int32_t gridHashCode<>(const float& val) {
     return gridFloatHash(val);
 }
 
 template<>
-int32_t gridHashCode<>(double val) {
+int32_t gridHashCode<>(const double& val) {
     return gridDoubleHash(val);
 }
 
 template<>
-int32_t gridHashCode<>(std::string val) {
+int32_t gridHashCode<>(const std::string& val) {
     return gridStringHash(val);
 }
 

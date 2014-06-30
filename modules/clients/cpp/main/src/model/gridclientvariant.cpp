@@ -333,6 +333,10 @@ GridPortableObject& GridClientVariant::getPortableObject() const {
     return *data.portableObjVal;
 }
 
+GridPortable* GridClientVariant::deserializePortable0() const {
+    return getPortableObject().deserialize();
+}
+
 bool GridClientVariant::hasPortableObject() const {
     return type == PORTABLE_OBJ_TYPE;
 }

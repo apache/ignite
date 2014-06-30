@@ -237,6 +237,8 @@
     <ClCompile Include="..\main\src\model\gridclientuuid.cpp" />
     <ClCompile Include="..\main\src\model\gridclientvariant.cpp" />
     <ClCompile Include="..\main\src\model\gridportable.cpp" />
+    <ClCompile Include="..\main\src\model\gridportablereader.cpp" />
+    <ClCompile Include="..\main\src\model\gridportablewriter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\main\include\gridgain\gridclient.hpp" />

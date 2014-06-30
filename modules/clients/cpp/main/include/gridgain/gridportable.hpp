@@ -34,6 +34,9 @@ public:
     }
 };
 
+class GridPortableReader;
+class GridPortableWriter;
+
 /**
  * C++ client API.
  */
