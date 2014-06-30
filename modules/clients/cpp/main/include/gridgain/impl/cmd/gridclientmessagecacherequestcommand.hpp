@@ -97,7 +97,8 @@ public:
      *
      * @param op Requested operation.
     */
-    GridCacheRequestCommand(GridCacheOperation op) {
+    GridCacheRequestCommand(GridCacheOperation op, const std::string& cacheName) : key(0), val(0), val2(0), vals(0),
+        cacheName(cacheName) {
         this->op = op;
     }
 
@@ -113,23 +114,14 @@ public:
      *
      * @return Cache name, or null if not set.
      */
-    std::string getCacheName() const {
+    const std::string& getCacheName() const {
         return cacheName;
-    }
-
-    /**
-     * Sets cache name.
-     *
-     * @param cacheName Cache name.
-     */
-    void setCacheName(const std::string& cacheName) {
-        this->cacheName = cacheName;
     }
 
     /**
      * @return Key.
      */
-    const GridClientVariant& getKey() const {
+    const GridClientVariant* getKey() {
         return key;
     }
 
@@ -137,13 +129,13 @@ public:
      * @param key Key.
      */
     void setKey(const GridClientVariant& key) {
-        this->key = key;
+        this->key = &key;
     }
 
     /**
      * @return Value1.
      */
-    const GridClientVariant& getValue() const {
+    const GridClientVariant* getValue() const {
         return val;
     }
 
@@ -151,13 +143,13 @@ public:
      * @param val Value1.
      */
     void setValue(const GridClientVariant& val) {
-        this->val = val;
+        this->val = &val;
     }
 
     /**
      * @return Value 2.
      */
-    const GridClientVariant& getValue2() const {
+    const GridClientVariant* getValue2() const {
         return val2;
     }
 
@@ -165,13 +157,13 @@ public:
      * @param val2 Value 2.
      */
     void setValue2(const GridClientVariant& val2) {
-        this->val2 = val2;
+        this->val2 = &val2;
     }
 
     /**
      * @return Values map for batch operations.
      */
-    const TGridClientVariantMap& getValues() const {
+    const TGridClientVariantMap* getValues() const {
         return vals;
     }
 
@@ -179,7 +171,7 @@ public:
      * @param vals Values map for batch operations.
      */
     void setValues(const TGridClientVariantMap& vals) {
-        this->vals = vals;
+        this->vals = &vals;
     }
 
     /**
@@ -192,7 +184,7 @@ public:
     /**
      * @return Cache flags for this command.
      */
-    std::set<GridClientCacheFlag> getFlags() const {
+    const std::set<GridClientCacheFlag>& getFlags() const {
         return flags;
     }
 
@@ -201,19 +193,19 @@ private:
     GridCacheOperation op;
 
     /** Cache name. */
-    std::string cacheName;
+    const std::string& cacheName;
 
     /** Key */
-    GridClientVariant key;
+    const GridClientVariant* key;
 
     /** Value (expected value for CAS). */
-    GridClientVariant val;
+    const GridClientVariant* val;
 
     /** New value for CAS. */
-    GridClientVariant val2;
+    const GridClientVariant* val2;
 
     /** Keys and values for put all, get all, remove all operations. */
-    TGridClientVariantMap vals;
+    const TGridClientVariantMap* vals;
 
     /** Cache flags. */
     std::set<GridClientCacheFlag> flags;

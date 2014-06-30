@@ -22,6 +22,8 @@
 #include "gridgain/impl/cmd/gridclientmessagecacherequestcommand.hpp"
 #include "gridgain/impl/utils/gridclientlog.hpp"
 
+const GridClientVariant nullVariant;
+
 class GridClientPortableMessage : public GridPortable {
 public:
     void writePortable(GridPortableWriter& writer) const {
@@ -612,14 +614,16 @@ public:
         return TYPE_ID;
     }
 
-    void init(GridCacheRequestCommand& cacheCmd) {
+    GridClientCacheRequest() : key(0), val(0), val2(0), vals(0), cacheName("") {
+    }
+
+    GridClientCacheRequest(GridCacheRequestCommand& cacheCmd) : key(cacheCmd.getKey()), val(cacheCmd.getValue()), 
+        val2(cacheCmd.getValue2()), vals(cacheCmd.getValues()), cacheName(cacheCmd.getCacheName())  {
         op = static_cast<int32_t>(cacheCmd.getOperation());
 
         sesTok = cacheCmd.sessionToken();
 
-        cacheName = cacheCmd.getCacheName();
-
-        std::set<GridClientCacheFlag> flags = cacheCmd.getFlags();
+        const std::set<GridClientCacheFlag>& flags = cacheCmd.getFlags();
 
         cacheFlagsOn = flags.empty() ? 0 : GridClientByteUtils::bitwiseOr(flags.begin(), flags.end(), 0);
     }
@@ -635,58 +639,42 @@ public:
 
         raw.writeInt32(cacheFlagsOn);
 
-        raw.writeVariant(key);
-        raw.writeVariant(val);
-        raw.writeVariant(val2);
+        raw.writeVariant(key ? *key : nullVariant);
+        raw.writeVariant(val ? *val : nullVariant);
+        raw.writeVariant(val2 ? *val2 : nullVariant);
 
-        raw.writeInt32(vals.size());
+        if (vals) {
+            raw.writeInt32(vals->size());
 
-        for (auto iter = vals.begin(); iter != vals.end(); ++iter) {
-            GridClientVariant key = iter->first;
-            GridClientVariant val = iter->second;
+            for (auto iter = vals->begin(); iter != vals->end(); ++iter) {
+                const GridClientVariant& key = iter->first;
+                const GridClientVariant& val = iter->second;
 
-            raw.writeVariant(key);
-            raw.writeVariant(val);
+                raw.writeVariant(key);
+                raw.writeVariant(val);
+            }
         }
+        else 
+            raw.writeInt32(0);
     }
 
     void readPortable(GridPortableReader& reader) {
-        GridClientPortableMessage::readPortable(reader);
-
-        GridPortableRawReader& raw = reader.rawReader();
-
-        op = raw.readInt32();
-
-        cacheFlagsOn = raw.readInt32();
-
-        cacheName = raw.readString().get_value_or(std::string());
-
-        key = raw.readVariant();
-        val = raw.readVariant();
-        val2 = raw.readVariant();
-
-        int32_t valsSize = raw.readInt32();
-
-        for (int32_t i = 0; i < valsSize; i++) {
-            GridClientVariant key = raw.readVariant();
-
-            vals[key] = raw.readVariant();
-        }
+        assert(false);
     }
 
     int32_t op;
 
-    std::string cacheName;
+    const std::string& cacheName;
 
-    GridClientVariant key;
+    const GridClientVariant* key;
 
-    GridClientVariant val;
+    const GridClientVariant* val;
 
-    GridClientVariant val2;
+    const GridClientVariant* val2;
 
     int32_t cacheFlagsOn;
 
-    TGridClientVariantMap vals;
+    const TGridClientVariantMap* vals;
 };
 
 class GridClientLogRequest : public GridClientPortableMessage {

@@ -76,9 +76,7 @@ void GridClientTcpCommandExecutor::executeTopologyCmd(const GridClientSocketAddr
  */
 void GridClientTcpCommandExecutor::executeGetCacheCmd(const GridClientSocketAddress& host, GridCacheRequestCommand& cacheCmd,
     GridClientMessageCacheGetResult& rslt) {
-    GridClientCacheRequest msg;
-
-    marsh.createMessage(msg, cacheCmd);
+    GridClientCacheRequest msg(cacheCmd);
 
     executeCmd(host, msg, cacheCmd, rslt);
 }
@@ -92,9 +90,7 @@ void GridClientTcpCommandExecutor::executeGetCacheCmd(const GridClientSocketAddr
  */
 void GridClientTcpCommandExecutor::executeModifyCacheCmd(const GridClientSocketAddress& host,
     GridCacheRequestCommand& cacheCmd, GridClientMessageCacheModifyResult& rslt) {
-    GridClientCacheRequest msg;
-
-    marsh.createMessage(msg, cacheCmd);
+    GridClientCacheRequest msg(cacheCmd);
 
     executeCmd(host, msg, cacheCmd, rslt);
 }
@@ -108,9 +104,7 @@ void GridClientTcpCommandExecutor::executeModifyCacheCmd(const GridClientSocketA
  */
 void GridClientTcpCommandExecutor::executeGetCacheMetricsCmd(const GridClientSocketAddress& host,
     GridCacheRequestCommand& cacheCmd, GridClientMessageCacheMetricResult& rslt) {
-    GridClientCacheRequest msg;
-
-    msg.init(cacheCmd);
+    GridClientCacheRequest msg(cacheCmd);
 
     executeCmd(host, msg, cacheCmd, rslt);
 }

@@ -54,16 +54,16 @@ public:
         try {
             GridPortableMarshaller marsh;
 
-            GridCacheRequestCommand cmd = GridCacheRequestCommand(GridCacheRequestCommand::GridCacheOperation::PUT);
+            std::string cacheName("partitioned");
+
+            GridCacheRequestCommand cmd = GridCacheRequestCommand(GridCacheRequestCommand::GridCacheOperation::PUT, cacheName);
 
             vector<int8_t> token(100, 1);
 
-            int64_t key = 1000;
-            int64_t val = 1000;
-            //std::string val("string string string");
+            GridClientVariant key = GridClientVariant((int64_t)1000);
+            GridClientVariant val = GridClientVariant((int64_t)1000);
 
             cmd.sessionToken(token);
-            cmd.setCacheName("partitioned");
             cmd.setClientId(GridClientUuid("550e8400-e29b-41d4-a716-446655440000"));
             cmd.setDestinationId(GridClientUuid("550e8400-e29b-41d4-a716-446655440000"));
             cmd.setKey(key);
@@ -75,9 +75,7 @@ public:
             iters = 0;
 
             while (++iters != maxiterations) {
-                GridClientCacheRequest msg;
-
-                marsh.createMessage(msg, cmd);
+                GridClientCacheRequest msg(cmd);
 
                 boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshalSystemObject(msg);
             }
