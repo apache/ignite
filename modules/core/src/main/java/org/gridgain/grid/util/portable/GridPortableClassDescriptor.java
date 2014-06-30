@@ -48,10 +48,11 @@ public class GridPortableClassDescriptor {
      * @param typeId Type ID.
      * @param idMapper ID mapper.
      * @param serializer Serializer.
+     * @param ignoreAnn Whether to ignore {@link GridPortableId} annotations.
      * @throws GridPortableException In case of error.
      */
     GridPortableClassDescriptor(Class<?> cls, boolean userType, int typeId, @Nullable GridPortableIdMapper idMapper,
-        @Nullable GridPortableSerializer serializer) throws GridPortableException {
+        @Nullable GridPortableSerializer serializer, boolean ignoreAnn) throws GridPortableException {
         assert cls != null;
 
         this.cls = cls;
@@ -118,7 +119,7 @@ public class GridPortableClassDescriptor {
                             if (!names.add(name))
                                 throw new GridPortableException("Duplicate field name: " + name);
 
-                            GridPortableId idAnn = f.getAnnotation(GridPortableId.class);
+                            GridPortableId idAnn = ignoreAnn ? null : f.getAnnotation(GridPortableId.class);
 
                             int fieldId = 0;
 

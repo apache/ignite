@@ -147,14 +147,18 @@ public class GridPortableContextImpl implements GridPortableContext, Externaliza
 
                 GridPortableIdMapper idMapper = globalIdMapper;
                 GridPortableSerializer serializer = globalSerializer;
+                boolean ignoreAnn = false;
 
-                if (typeCfg.getIdMapper() != null)
+                if (typeCfg.getIdMapper() != null) {
                     idMapper = typeCfg.getIdMapper();
+
+                    ignoreAnn = true;
+                }
 
                 if (typeCfg.getSerializer() != null)
                     serializer = typeCfg.getSerializer();
 
-                addUserTypeDescriptor(cls, idMapper, serializer);
+                addUserTypeDescriptor(cls, idMapper, serializer, ignoreAnn);
             }
         }
     }
@@ -236,7 +240,7 @@ public class GridPortableContextImpl implements GridPortableContext, Externaliza
      * @throws GridPortableException In case of error.
      */
     private void addDescriptor(Class<?> cls, int typeId) throws GridPortableException {
-        GridPortableClassDescriptor desc = new GridPortableClassDescriptor(cls, false, typeId, null, null);
+        GridPortableClassDescriptor desc = new GridPortableClassDescriptor(cls, false, typeId, null, null, false);
 
         descByCls.put(cls, desc);
         descById.put(new DescriptorKey(false, typeId), desc);
@@ -251,7 +255,7 @@ public class GridPortableContextImpl implements GridPortableContext, Externaliza
         assert cls != null;
         assert Collection.class.isAssignableFrom(cls);
 
-        GridPortableClassDescriptor desc = new GridPortableClassDescriptor(cls, false, COL, null, null);
+        GridPortableClassDescriptor desc = new GridPortableClassDescriptor(cls, false, COL, null, null, false);
 
         descByCls.put(cls, desc);
 
@@ -267,7 +271,7 @@ public class GridPortableContextImpl implements GridPortableContext, Externaliza
         assert cls != null;
         assert Map.class.isAssignableFrom(cls);
 
-        GridPortableClassDescriptor desc = new GridPortableClassDescriptor(cls, false, MAP, null, null);
+        GridPortableClassDescriptor desc = new GridPortableClassDescriptor(cls, false, MAP, null, null, false);
 
         descByCls.put(cls, desc);
 
@@ -278,13 +282,14 @@ public class GridPortableContextImpl implements GridPortableContext, Externaliza
      * @param cls Class.
      * @param idMapper ID mapper.
      * @param serializer Serializer.
+     * @param ignoreAnn Whether to ignore {@link GridPortableId} annotations.
      * @throws GridPortableException In case of error.
      */
     public void addUserTypeDescriptor(Class<?> cls, @Nullable GridPortableIdMapper idMapper,
-        @Nullable GridPortableSerializer serializer) throws GridPortableException {
+        @Nullable GridPortableSerializer serializer, boolean ignoreAnn) throws GridPortableException {
         assert cls != null;
 
-        GridPortableId idAnn = cls.getAnnotation(GridPortableId.class);
+        GridPortableId idAnn = ignoreAnn ? null : cls.getAnnotation(GridPortableId.class);
 
         int id = 0;
 
@@ -296,7 +301,8 @@ public class GridPortableContextImpl implements GridPortableContext, Externaliza
         if (id == 0)
             id = cls.getSimpleName().hashCode();
 
-        GridPortableClassDescriptor desc = new GridPortableClassDescriptor(cls, true, id, idMapper, serializer);
+        GridPortableClassDescriptor desc = new GridPortableClassDescriptor(
+            cls, true, id, idMapper, serializer, ignoreAnn);
 
         descByCls.put(cls, desc);
         descById.put(new DescriptorKey(true, id), desc);

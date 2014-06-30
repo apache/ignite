@@ -35,9 +35,6 @@ public class GridPortableObjectImpl<T> implements GridPortableObject<T>, Externa
     /** */
     private transient Object obj;
 
-    /** */
-    private transient Map<String, Object> fields;
-
     /**
      * For {@link Externalizable}.
      */
@@ -94,21 +91,10 @@ public class GridPortableObjectImpl<T> implements GridPortableObject<T>, Externa
 
     /** {@inheritDoc} */
     @Nullable @Override public <F> F field(String fieldName) throws GridPortableException {
-        if (fields != null) {
-            if (fields.containsKey(fieldName))
-                return (F)fields.get(fieldName);
-        }
-        else
-            fields = new HashMap<>();
-
         if (reader == null)
             reader = new GridPortableReaderImpl(ctx, arr, start);
 
-        Object field = reader.unmarshal(fieldName);
-
-        fields.put(fieldName, field);
-
-        return (F)field;
+        return (F)reader.unmarshal(fieldName);
     }
 
     /** {@inheritDoc} */
