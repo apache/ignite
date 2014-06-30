@@ -130,7 +130,7 @@ void GridPortableWriter::writeArrayElement(const std::string& val) {
 }
 
 template<>
-void GridPortableWriter::GridPortableWriter::writeArrayElement(const std::wstring& val) {
+void GridPortableWriter::writeArrayElement(const std::wstring& val) {
     doWriteWString(val);
 }
 

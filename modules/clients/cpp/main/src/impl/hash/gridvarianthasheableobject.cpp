@@ -24,22 +24,22 @@
 using namespace std;
 
 template<>
-int32_t gridHashCode<>(GridClientUuid val) {
+int32_t gridHashCode<>(const GridClientUuid& val) {
     return val.hashCode();
 }
 
 template<>
-int32_t gridHashCode<>(GridClientDate val) {
+int32_t gridHashCode<>(const GridClientDate& val) {
     return val.hashCode();
 }
 
 template<>
-int32_t gridHashCode<>(GridClientVariant val) {
+int32_t gridHashCode<>(const GridClientVariant& val) {
     return val.hashCode();
 }
 
 template<>
-int32_t gridHashCode<>(uint16_t val) {
+int32_t gridHashCode<>(const uint16_t& val) {
     return (int32_t)val;
 }
 

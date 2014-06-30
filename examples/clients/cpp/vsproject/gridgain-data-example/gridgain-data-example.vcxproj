@@ -73,8 +73,9 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(OPENSSL_HOME)\lib\VC\static;$(BOOST_HOME)\lib;$(BOOST_HOME)/lib32-msvc-10.0;../../../../../modules\clients\cpp\vsproject\$(Platform)\$(TargetName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OPENSSL_HOME)\lib\VC\static;$(BOOST_HOME)\lib;$(BOOST_HOME)/lib32-msvc-10.0;.\..\..\..\..\modules\clients\cpp\vsproject\$(Platform)\$(TargetName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AddModuleNamesToAssembly>ssleay32MD.lib;libeay32MD.lib;libgridgain-client.lib;%(AddModuleNamesToAssembly)</AddModuleNamesToAssembly>
+      <AdditionalDependencies>libgridgain-client.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">

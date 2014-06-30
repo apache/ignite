@@ -38,7 +38,7 @@ int32_t gridWStringHash(const std::wstring& val);
 int32_t gridByteArrayHash(const std::vector<int8_t>& val); 
 
 template<typename T>
-int32_t gridHashCode(T val);
+int32_t gridHashCode(const T& val);
 
 template<typename T>
 int32_t gridCollectionHash(const std::vector<T>& val) {
