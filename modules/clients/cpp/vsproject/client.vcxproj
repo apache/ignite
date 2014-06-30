@@ -230,6 +230,7 @@
     <ClCompile Include="..\main\src\impl\hash\gridclientwidestringhasheableobject.cpp" />
     <ClCompile Include="..\main\src\impl\hash\gridvarianthasheableobject.cpp" />
     <ClCompile Include="..\main\src\impl\hash\md5.cpp" />
+    <ClCompile Include="..\main\src\impl\marshaller\portable\gridclientportablemessages.cpp" />
     <ClCompile Include="..\main\src\impl\marshaller\portable\gridportablemarshaller.cpp" />
     <ClCompile Include="..\main\src\impl\utils\gridclientlog.cpp" />
     <ClCompile Include="..\main\src\impl\utils\gridthreadpool.cpp" />

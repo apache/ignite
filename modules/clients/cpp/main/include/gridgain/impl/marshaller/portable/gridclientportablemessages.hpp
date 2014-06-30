@@ -20,21 +20,30 @@
 #include "gridgain/gridportablewriter.hpp"
 #include "gridgain/impl/marshaller/gridnodemarshallerhelper.hpp"
 #include "gridgain/impl/cmd/gridclientmessagecacherequestcommand.hpp"
+#include "gridgain/impl/utils/gridclientbyteutils.hpp"
 #include "gridgain/impl/utils/gridclientlog.hpp"
 
 const GridClientVariant nullVariant;
 
 class GridClientPortableMessage : public GridPortable {
 public:
+    GridClientPortableMessage() : sndTok(0) {
+    }
+
     void writePortable(GridPortableWriter& writer) const {
-        writer.rawWriter().writeByteArray(sesTok.data(), sesTok.size());
+        if (sndTok)
+            writer.rawWriter().writeByteArray(sndTok->data(), sndTok->size());
+        else
+            writer.rawWriter().writeByteArray((int8_t*)0, 0);
     }
 
     void readPortable(GridPortableReader& reader) {
-        reader.rawReader().readByteArray(std::back_insert_iterator<std::vector<int8_t>>(sesTok));
+        reader.rawReader().readByteArray(rcvTok);
     }
 
-    std::vector<int8_t> sesTok;
+    std::vector<int8_t>* sndTok;
+
+    std::vector<int8_t> rcvTok;
 };
 
 class GridClientResponse : public GridClientPortableMessage {
@@ -401,13 +410,13 @@ public:
 
         tcpPort = raw.readInt32();
         replicaCnt = raw.readInt32();
-        
+
         boost::optional<std::string> optDfltCacheMode = raw.readString();
         if (optDfltCacheMode.is_initialized())
             dfltCacheMode = optDfltCacheMode.get();
 
         raw.readVariantMap(attrs);
-        
+
         raw.readVariantMap(caches);
 
         raw.readVariantCollection(tcpAddrs);
@@ -481,7 +490,7 @@ public:
             caches[GridClientVariant()] = GridClientVariant(dfltCacheMode);
 
         helper.setCaches(caches);
-                
+
         helper.setAttributes(attrs);
 
         if (metrics.hasPortableObject()) {
@@ -614,49 +623,19 @@ public:
         return TYPE_ID;
     }
 
-    GridClientCacheRequest() : key(0), val(0), val2(0), vals(0), cacheName("") {
+    GridClientCacheRequest() : key(0), val(0), val2(0), vals(0), cacheName(0) {
     }
 
-    GridClientCacheRequest(GridCacheRequestCommand& cacheCmd) : key(cacheCmd.getKey()), val(cacheCmd.getValue()), 
-        val2(cacheCmd.getValue2()), vals(cacheCmd.getValues()), cacheName(cacheCmd.getCacheName())  {
+    GridClientCacheRequest(GridCacheRequestCommand& cacheCmd) : key(cacheCmd.getKey()), val(cacheCmd.getValue()),
+        val2(cacheCmd.getValue2()), vals(cacheCmd.getValues()), cacheName(&cacheCmd.getCacheName())  {
         op = static_cast<int32_t>(cacheCmd.getOperation());
-
-        sesTok = cacheCmd.sessionToken();
 
         const std::set<GridClientCacheFlag>& flags = cacheCmd.getFlags();
 
         cacheFlagsOn = flags.empty() ? 0 : GridClientByteUtils::bitwiseOr(flags.begin(), flags.end(), 0);
     }
 
-    void writePortable(GridPortableWriter& writer) const {
-        GridClientPortableMessage::writePortable(writer);
-
-        GridPortableRawWriter& raw = writer.rawWriter();
-
-        raw.writeInt32(op);
-
-        raw.writeString(cacheName);
-
-        raw.writeInt32(cacheFlagsOn);
-
-        raw.writeVariant(key ? *key : nullVariant);
-        raw.writeVariant(val ? *val : nullVariant);
-        raw.writeVariant(val2 ? *val2 : nullVariant);
-
-        if (vals) {
-            raw.writeInt32(vals->size());
-
-            for (auto iter = vals->begin(); iter != vals->end(); ++iter) {
-                const GridClientVariant& key = iter->first;
-                const GridClientVariant& val = iter->second;
-
-                raw.writeVariant(key);
-                raw.writeVariant(val);
-            }
-        }
-        else 
-            raw.writeInt32(0);
-    }
+    void writePortable(GridPortableWriter& writer) const;
 
     void readPortable(GridPortableReader& reader) {
         assert(false);
@@ -664,7 +643,7 @@ public:
 
     int32_t op;
 
-    const std::string& cacheName;
+    const std::string* cacheName;
 
     const GridClientVariant* key;
 
@@ -766,13 +745,13 @@ public:
         GridPortableRawReader& raw = reader.rawReader();
 
         boost::optional<std::string> idOpt = raw.readString();
-        
+
         if (idOpt.is_initialized())
             id = idOpt.get();
-        
+
         finished = raw.readBool();
         res = raw.readVariant();
-        
+
         boost::optional<std::string> errOpt = raw.readString();
 
         if (errOpt.is_initialized())
@@ -792,14 +771,14 @@ class GridClientAuthenticationRequest : public GridClientPortableMessage {
 public:
     static const int32_t TYPE_ID = 51;
 
-    int32_t typeId() const {
-        return TYPE_ID;
-    }
-
     GridClientAuthenticationRequest() {
     }
 
     GridClientAuthenticationRequest(std::string credStr) : cred(credStr) {
+    }
+
+    int32_t typeId() const {
+        return TYPE_ID;
     }
 
     void writePortable(GridPortableWriter &writer) const {

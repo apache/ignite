@@ -88,8 +88,7 @@ void GridClientProjectionImpl::withReconnectHandling(ClientProjectionClosure& c)
  * @throws GridClientException In case of problems.
  */
 void GridClientProjectionImpl::withReconnectHandling(ClientProjectionClosure& c, const std::string& cacheName,
-        const GridClientHasheableObject& affKey) {
-
+    const GridClientHasheableObject& affKey) {
     // First, we try the affinity node.
     TGridClientNodePtr node = affinityNode(cacheName, affKey);
 

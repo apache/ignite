@@ -58,11 +58,11 @@ private:
 class CacheMetricProjectionClosure: public ClientMessageProjectionClosure {
 public:
     CacheMetricProjectionClosure(const char* clientId, GridCacheRequestCommand& cacheCmd)
-            : ClientMessageProjectionClosure(clientId), cmd(cacheCmd) {
+        : ClientMessageProjectionClosure(clientId), cmd(cacheCmd) {
     }
 
     CacheMetricProjectionClosure(std::string clientId, GridCacheRequestCommand& cacheCmd)
-            : ClientMessageProjectionClosure(clientId.c_str()), cmd(cacheCmd) {
+        : ClientMessageProjectionClosure(clientId.c_str()), cmd(cacheCmd) {
     }
 
     virtual void apply(TGridClientNodePtr node, GridClientSocketAddress connParams, GridClientCommandExecutor& cmdExecutor) {
@@ -83,12 +83,12 @@ private:
 class CacheGetProjectionClosure: public ClientMessageProjectionClosure {
 public:
     CacheGetProjectionClosure(const char* clientId, GridCacheRequestCommand& cacheCmd)
-            : ClientMessageProjectionClosure(clientId), cmd(cacheCmd) {
+        : ClientMessageProjectionClosure(clientId), cmd(cacheCmd) {
 
     }
 
     CacheGetProjectionClosure(std::string clientId, GridCacheRequestCommand& cacheCmd)
-            : ClientMessageProjectionClosure(clientId.c_str()), cmd(cacheCmd) {
+        : ClientMessageProjectionClosure(clientId.c_str()), cmd(cacheCmd) {
 
     }
 

@@ -151,8 +151,8 @@ public:
         hashCode_ = 0;
 
         BOOST_FOREACH(TGridClientVariantMap::value_type pair, vmap) {
-            GridClientVariant key = pair.first;
-            GridClientVariant value = pair.second;
+            const GridClientVariant& key = pair.first;
+            const GridClientVariant& value = pair.second;
 
             hashCode_ += hash_value(key) ^ hash_value(value);
         }

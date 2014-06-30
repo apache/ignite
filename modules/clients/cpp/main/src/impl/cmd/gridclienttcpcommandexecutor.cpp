@@ -136,7 +136,7 @@ void GridClientTcpCommandExecutor::executeTaskCmd(const GridClientSocketAddress&
 template<class C, class R> void GridClientTcpCommandExecutor::executeCmd(const GridClientSocketAddress& host, GridClientPortableMessage& msg, C& cmd, R& response) {
     std::shared_ptr<GridClientTcpConnection> conn = connPool->rentTcpConnection(host.host(), host.port());
 
-    msg.sesTok = cmd.sessionToken();
+    msg.sndTok = &conn->sessionToken();
 
     boost::shared_ptr<std::vector<int8_t>> dataPtr = marsh.marshalSystemObject(msg);
 
@@ -169,8 +169,6 @@ template<class C, class R> void GridClientTcpCommandExecutor::executeCmd(const G
 
     if (!resMsg->errorMsg.empty())
         throw GridClientCommandException(resMsg->errorMsg);
-
-    response.sessionToken(resMsg->sesTok);
 
     marsh.parseResponse(resMsg.get(), response);
 }

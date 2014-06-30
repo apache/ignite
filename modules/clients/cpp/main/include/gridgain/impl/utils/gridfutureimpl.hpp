@@ -80,12 +80,10 @@ public:
     virtual bool get(const boost::posix_time::time_duration& timeout) const {
         bool waitRes = const_cast<GridBoolFutureImpl*>(this)->fut_.timed_wait(timeout);
 
-        if(waitRes) {
+        if (waitRes)
             return const_cast<GridBoolFutureImpl*>(this)->fut_.get();
-        }
-        else {
+        else
             throw GridClientFutureTimeoutException();
-        }
     }
 
     /**

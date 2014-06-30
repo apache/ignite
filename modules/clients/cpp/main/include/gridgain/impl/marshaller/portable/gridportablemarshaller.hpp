@@ -405,6 +405,10 @@ public:
         else
             return (*handle).second;
     }
+
+    void resetHandles() {
+        handles.clear();
+    }
 };
 
 const int32_t TOTAL_LENGTH_POS = 10;
@@ -1477,6 +1481,14 @@ public:
 
     void writeVariant(const GridClientVariant& val) {
         switchToRaw();
+
+        doWriteVariant(val);
+    }
+
+    void writeVariantEx(const GridClientVariant& val) {
+        switchToRaw();
+
+        ctx.resetHandles();
 
         doWriteVariant(val);
     }
@@ -3875,18 +3887,6 @@ public:
 
 		return boost::shared_ptr<std::vector<int8_t>>(bytes);
     }
-
-    boost::shared_ptr<std::vector<int8_t>> marshalUserObject(GridPortable& portable) {
-        std::vector<int8_t>* bytes = new std::vector<int8_t>();
-
-        WriteContext ctx(*bytes, idRslvr);
-
-        GridPortableWriterImpl writer(ctx, portable.typeId(), 0);
-
-		writer.writePortable(portable);
-
-		return boost::shared_ptr<std::vector<int8_t>>(bytes);
-	}
 
     boost::shared_ptr<std::vector<int8_t>> marshalSystemObject(GridPortable& portable) {
         std::vector<int8_t>* bytes = new std::vector<int8_t>();
