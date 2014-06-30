@@ -171,7 +171,7 @@ namespace GridGain.Client.Impl.Portable
             
             if (hdr == PU.HDR_HND)
             {
-                pos = input.Position - PU.ReadInt(input);
+                pos = pos - PU.ReadInt(input); // Relative jump.
 
                 retPos = input.Position; // Return position is set after handle.
 

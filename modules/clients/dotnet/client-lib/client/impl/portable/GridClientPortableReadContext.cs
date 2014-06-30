@@ -213,7 +213,7 @@ namespace GridGain.Client.Impl.Portable
                 else if (hdr == PU.HDR_HND)
                 {
                     // 14. Dealing with handles.
-                    int curPos = (int)Stream.Position;
+                    int curPos = (int)Stream.Position - 1;
 
                     int hndDelta = PU.ReadInt(Stream);
 
@@ -269,7 +269,7 @@ namespace GridGain.Client.Impl.Portable
                 // 5. Dealing with handle.
                 object hndObj;
 
-                int curPos = (int)Stream.Position;
+                int curPos = (int)Stream.Position - 1;
 
                 int hndDelta = PU.ReadInt(stream);
 

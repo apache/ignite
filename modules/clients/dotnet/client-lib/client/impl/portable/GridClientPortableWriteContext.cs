@@ -144,10 +144,12 @@ namespace GridGain.Client.Impl.Portable
 
             if (hnds.TryGetValue(hnd, out hndPos))
             {
+                int curPos = (int)Stream.Position;
+
                 Stream.WriteByte(PU.HDR_HND);
 
-                // Handle is written as difference between current position and handle position.
-                PU.WriteInt((int)Stream.Position - hndPos, Stream);
+                // Handle is written as difference between position before header and handle position.
+                PU.WriteInt(curPos - hndPos, Stream);
 
                 return;
             }
