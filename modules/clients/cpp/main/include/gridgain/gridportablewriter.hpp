@@ -285,138 +285,8 @@ protected:
     template<typename T>
     int32_t startArray();
 
-    template<>
-    int32_t startArray<bool>() {
-        return startBoolArray();
-    }
-
-    template<>
-    int32_t startArray<int8_t>() {
-        return startByteArray();
-    }
-
-    template<>
-    int32_t startArray<int16_t>() {
-        return startInt16Array();
-    }
-
-    template<>
-    int32_t startArray<uint16_t>() {
-        return startCharArray();
-    }
-
-    template<>
-    int32_t startArray<int32_t>() {
-        return startInt32Array();
-    }
-
-    template<>
-    int32_t startArray<int64_t>() {
-        return startInt64Array();
-    }
-
-    template<>
-    int32_t startArray<float>() {
-        return startFloatArray();
-    }
-
-    template<>
-    int32_t startArray<double>() {
-        return startDoubleArray();
-    }
-
-    template<>
-    int32_t startArray<GridClientUuid>() {
-        return startUuidArray();
-    }
-
-    template<>
-    int32_t startArray<GridClientDate>() {
-        return startDateArray();
-    }
-
-    template<>
-    int32_t startArray<std::string>() {
-        return startStringArray();
-    }
-
-    template<>
-    int32_t startArray<std::wstring>() {
-        return startStringArray();
-    }
-
-    template<>
-    int32_t startArray<GridClientVariant>() {
-        return startVariantArray();
-    }
-
     template<class T>
     void writeArrayElement(const T& val);
-
-    template<>
-    void writeArrayElement(const bool& val) {
-        doWriteBool(val);
-    }
-
-    template<>
-    void writeArrayElement(const int8_t& val) {
-        doWriteByte(val);
-    }
-
-    template<>
-    void writeArrayElement(const int16_t& val) {
-        doWriteInt16(val);
-    }
-
-    template<>
-    void writeArrayElement(const int32_t& val) {
-        doWriteInt32(val);
-    }
-
-    template<>
-    void writeArrayElement(const int64_t& val) {
-        doWriteInt64(val);
-    }
-
-    template<>
-    void writeArrayElement(const float& val) {
-        doWriteFloat(val);
-    }
-
-    template<>
-    void writeArrayElement(const double& val) {
-        doWriteDouble(val);
-    }
-
-    template<>
-    void writeArrayElement(const uint16_t& val) {
-        doWriteChar(val);
-    }
-
-    template<>
-    void writeArrayElement(const GridClientUuid& val) {
-        doWriteUuid(val);
-    }
-
-    template<>
-    void writeArrayElement(const GridClientDate& val) {
-        doWriteDate(val);
-    }
-
-    template<>
-    void writeArrayElement(const std::string& val) {
-        doWriteString(val);
-    }
-
-    template<>
-    void writeArrayElement(const std::wstring& val) {
-        doWriteWString(val);
-    }
-
-    template<>
-    void writeArrayElement(const GridClientVariant& val) {
-        doWriteVariant(val);
-    }
 
     virtual void writeFieldName(char* fieldName) = 0;
 
@@ -624,7 +494,7 @@ private:
         while (first != last) {
             const T& val = *first;
             
-            writeArrayElement<T>(val);
+            writeArrayElementRaw<T>(val);
 
             first++;
             
@@ -641,10 +511,10 @@ private:
         int32_t cnt = 0;
 
         while (first != last) {
-            const optional<T>& val = *first;
+            const boost::optional<T>& val = *first;
             
             if (val)
-                writeArrayElement<T>(val.get());
+                writeArrayElementRaw<T>(val.get());
             else
                 doWriteBool(false);
 
@@ -682,72 +552,7 @@ private:
     virtual void endArrayRaw(int32_t, int32_t) = 0;
 
     template<class T>
-    void writeArrayElement(const T& val);
-
-    template<>
-    void writeArrayElement(const bool& val) {
-        doWriteBool(val);
-    }
-
-    template<>
-    void writeArrayElement(const int8_t& val) {
-        doWriteByte(val);
-    }
-
-    template<>
-    void writeArrayElement(const int16_t& val) {
-        doWriteInt16(val);
-    }
-
-    template<>
-    void writeArrayElement(const int32_t& val) {
-        doWriteInt32(val);
-    }
-
-    template<>
-    void writeArrayElement(const int64_t& val) {
-        doWriteInt64(val);
-    }
-
-    template<>
-    void writeArrayElement(const float& val) {
-        doWriteFloat(val);
-    }
-
-    template<>
-    void writeArrayElement(const double& val) {
-        doWriteDouble(val);
-    }
-
-    template<>
-    void writeArrayElement(const uint16_t& val) {
-        doWriteChar(val);
-    }
-
-    template<>
-    void writeArrayElement(const GridClientUuid& val) {
-        doWriteUuid(val);
-    }
-
-    template<>
-    void writeArrayElement(const GridClientDate& val) {
-        doWriteDate(val);
-    }
-
-    template<>
-    void writeArrayElement(const std::string& val) {
-        doWriteString(val);
-    }
-
-    template<>
-    void writeArrayElement(const std::wstring& val) {
-        doWriteWString(val);
-    }
-
-    template<>
-    void writeArrayElement(const GridClientVariant& val) {
-        doWriteVariant(val);
-    }
+    void writeArrayElementRaw(const T& val);
 
     virtual void doWriteBool(bool val) = 0;
 

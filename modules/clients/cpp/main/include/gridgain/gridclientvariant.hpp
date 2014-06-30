@@ -555,12 +555,12 @@ public:
 
     template<typename T> 
     T* deserializePortable() const {
-        return getPortableObject().deserialize<T>();
+        return static_cast<T*>(deserializePortable0());
     }
 
     template<typename T> 
     std::unique_ptr<T> deserializePortableUnique() const {
-        return getPortableObject().deserializeUnique<T>();
+        return std::unique_ptr<T>(deserializePortable<T>());
     }
 
     /**
@@ -927,6 +927,8 @@ public:
     bool hasAnyValue() const;
 
 private:
+    GridPortable* deserializePortable0() const;
+
     /** Enum for possible types of values. */
     enum TypeEnum {
         NULL_TYPE,
