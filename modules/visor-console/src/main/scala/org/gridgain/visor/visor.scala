@@ -1805,7 +1805,7 @@ object visor extends VisorTag {
 
         val t = VisorTextTable()
 
-        t #= (">", "Node ID8(@), IP", "Up Time", "CPUs", "CPU Load", "Free Heap")
+        t #= ("#", "Node ID8(@), IP", "Up Time", "CPUs", "CPU Load", "Free Heap")
 
         val nodes = grid.nodes().toList
 
@@ -1869,7 +1869,7 @@ object visor extends VisorTag {
 
         val t = VisorTextTable()
 
-        t #= (">", "Int./Ext. IPs", "Node ID8(@)", "OS", "CPUs", "MACs", "CPU Load")
+        t #= ("#", "Int./Ext. IPs", "Node ID8(@)", "OS", "CPUs", "MACs", "CPU Load")
 
         val neighborhood = U.neighborhood(grid.nodes()).values().toIndexedSeq
 
@@ -1956,7 +1956,7 @@ object visor extends VisorTag {
         else {
             val t = VisorTextTable()
 
-            t #= (">", "Configuration File")
+            t #= ("#", "Configuration File")
 
             (0 until files.size).foreach(i => t += (i, files(i)._1))
 
