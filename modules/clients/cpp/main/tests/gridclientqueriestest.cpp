@@ -23,7 +23,7 @@ BOOST_AUTO_TEST_SUITE(GridClientQueriesSuite)
 
 BOOST_FIXTURE_TEST_CASE(testSqlQuery, GridClientFactoryFixture1<clientConfig>) {
     // TODO 8491
-
+    /*
     TGridClientDataPtr data = client->data(CACHE_NAME);
 
     TGridClientDataQueriesPtr qrys = data->queries();
@@ -43,11 +43,13 @@ BOOST_FIXTURE_TEST_CASE(testSqlQuery, GridClientFactoryFixture1<clientConfig>) {
     for (auto iter = res.begin(); iter != res.end(); ++iter) {
         pair<GridClientVariant, GridClientVariant>& res = *iter;
     }
+    */
 }
 
 BOOST_FIXTURE_TEST_CASE(testSqlQueryIterate, GridClientFactoryFixture1<clientConfig>) {
     // TODO 8491
 
+    /*
     TGridClientDataPtr data = client->data(CACHE_NAME);
 
     TGridClientDataQueriesPtr qrys = data->queries();
@@ -69,6 +71,7 @@ BOOST_FIXTURE_TEST_CASE(testSqlQueryIterate, GridClientFactoryFixture1<clientCon
         if (!next.second.hasAnyValue())
             break;
     }
+    */
 }
 
 BOOST_AUTO_TEST_SUITE_END()

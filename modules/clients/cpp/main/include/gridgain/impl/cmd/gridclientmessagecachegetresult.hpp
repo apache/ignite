@@ -20,36 +20,6 @@ typedef boost::unordered_map<GridClientVariant, GridClientVariant> TCacheValuesM
  */
 class GridClientMessageCacheGetResult : public GridClientMessageCacheResult {
 public:
-   /**
-    * Set the cache values.
-    *
-    * @param The new value for keys and values.
-    */
-    void setCacheValues(const TCacheValuesMap& pCacheValues) {
-        cacheValues = pCacheValues;
-    }
-
-   /**
-    * Get the cache values.
-    *
-    * @return Retrieved key/value map.
-    */
-    TCacheValuesMap getCacheValue() const {
-        return cacheValues;
-    }
-
-   /**
-    * Add the specified key and value to the existed cache value.
-    *
-    * @param pKey The added key.
-    * @param pValue The added value.
-    */
-    void add(const GridClientVariant& pKey, const GridClientVariant& pValue) {
-        cacheValues[pKey] = pValue;
-    }
-
-private:
-    /** Stored values. */
-    TCacheValuesMap cacheValues;
+    GridClientVariant res;
 };
 #endif

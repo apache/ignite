@@ -88,7 +88,7 @@ public:
         return errorMsg;
     }
 
-    GridClientVariant getResult() {
+    GridClientVariant& getResult() {
         return res;
     }
 

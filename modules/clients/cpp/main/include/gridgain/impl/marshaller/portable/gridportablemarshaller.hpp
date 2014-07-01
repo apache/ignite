@@ -1086,6 +1086,13 @@ public:
 
             return;
         }
+        else if (val.hasWideString()) {
+            ctx.out.writeByte(TYPE_ID_STRING);
+
+            doWriteWString(val.getWideString());
+
+            return;
+        }
         else if (val.hasBool()) {
             ctx.out.writeByte(TYPE_ID_BOOLEAN);
 
@@ -2159,7 +2166,7 @@ public:
                         off = curOff;
 
                     return res;
-                } 
+                }
                 else {
                     GridPortableObject obj(ctxPtr, objStart);
 
@@ -3964,20 +3971,9 @@ public:
     }
 
     void parseResponse(GridClientResponse* msg, GridClientMessageCacheGetResult& resp) {
-        GridClientVariant res = msg->getResult();
+        GridClientVariant& res = msg->getResult();
 
-        if (res.hasVariantMap()) {
-            TCacheValuesMap keyValues = res.getVariantMap();
-
-            resp.setCacheValues(keyValues);
-        }
-        else {
-            TCacheValuesMap keyValues;
-
-            keyValues.insert(std::make_pair(GridClientVariant(), res));
-
-            resp.setCacheValues(keyValues);
-        }
+        resp.res = std::move(res);
     }
 
     void parseResponse(GridClientResponse* msg, GridClientMessageCacheModifyResult& resp) {
