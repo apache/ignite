@@ -158,7 +158,7 @@ public class GridPortableClassDescriptor {
     /**
      * @return Type ID.
      */
-    int typeId() {
+    public int typeId() {
         return typeId;
     }
 

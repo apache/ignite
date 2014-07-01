@@ -905,6 +905,14 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     }
 
     /** {@inheritDoc} */
+    @Override public GridCacheProjectionEx<?, ?> forPortables() {
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, noNullKvFilter.kvFilter,
+            noNullEntryFilter.entryFilter, flags, subjId, portableKeys, true);
+
+        return new GridCacheProxyImpl<>(cctx, prj, prj);
+    }
+
+    /** {@inheritDoc} */
     @Override public Set<GridCacheEntry<K, V>> entrySet(int part) {
         // TODO pass entry filter.
         return cache.entrySet(part);

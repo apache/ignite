@@ -2170,8 +2170,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
             try {
                 for (Map.Entry<? extends K, ? extends V> e : map.entrySet()) {
-                    K key = (K)cctx.marshalToPortable(e.getKey());
-                    V val = (V)cctx.marshalToPortable(e.getValue());
+                    K key = (K)cctx.marshalToPortableIfNeeded(e.getKey());
+                    V val = (V)cctx.marshalToPortableIfNeeded(e.getValue());
 
                     map0.put(key, val);
                 }
@@ -2278,7 +2278,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         // Write-through.
                         if (isSingleUpdate()) {
                             if (transformMap == null) {
-                                cctx.store().putAllToStore(GridCacheTxLocalAdapter.this, F.viewReadOnly((Map<K, V>)map0,
+                                cctx.store().putAllToStore(GridCacheTxLocalAdapter.this, F.viewReadOnly(map0,
                                     new C1<V, GridBiTuple<V, GridCacheVersion>>() {
                                     @Override public GridBiTuple<V, GridCacheVersion> apply(V v) {
                                         return F.t(v, writeVersion());
@@ -2372,7 +2372,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                                 try {
                                     cctx.store().putAllToStore(GridCacheTxLocalAdapter.this,
-                                        F.viewReadOnly((Map<K,V>)map0,
+                                        F.viewReadOnly(map0,
                                         new C1<V, GridBiTuple<V, GridCacheVersion>>() {
                                             @Override public GridBiTuple<V, GridCacheVersion> apply(V v) {
                                                 return F.t(v, writeVersion());
