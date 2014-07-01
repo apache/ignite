@@ -1791,7 +1791,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                         }
                         else {
                             if (key0 == null)
-                                key0 = ctx.portableEnabled() ? (K)ctx.marshalToPortable(key) : key;
+                                key0 = ctx.portableEnabled() ? (K)ctx.marshalToPortableIfNeeded(key) : key;
 
                             entry = entryEx(key0);
                         }
@@ -3961,6 +3961,14 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         checkDrEnabled();
 
         return ctx.dr().drPauseState();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheProjectionEx<?, ?> forPortables() {
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, ctx, null, null,
+            null, null, false, true);
+
+        return new GridCacheProxyImpl<>(ctx, prj, prj);
     }
 
     /**

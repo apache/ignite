@@ -167,7 +167,7 @@ object visor extends VisorTag {
     private final val dtFmt = new SimpleDateFormat("MM/dd/yy, HH:mm:ss", LOC)
 
     /** Date format. */
-    private final val dFmt = new SimpleDateFormat("MM/dd/yy", LOC)
+    private final val dFmt = new SimpleDateFormat("dd MMM yyyy", LOC)
 
     private final val DEC_FMT_SYMS = new DecimalFormatSymbols(LOC)
 
@@ -910,7 +910,7 @@ object visor extends VisorTag {
 
             val sb = new StringBuilder()
 
-            for (i <- 0 until lst.size) {
+            for (i <- 0 until lst.size if lst(i).nonEmpty || sb.size != 0) {
                 val arg = sb.toString + lst(i)
 
                 arg match {
@@ -1314,6 +1314,10 @@ object visor extends VisorTag {
 
         if (!has(argLst)) {
             val t = VisorTextTable()
+
+            t.autoBorder = false
+
+            t.maxCellWidth = 55
 
             t #= ("Command", "Description")
 
@@ -1805,7 +1809,7 @@ object visor extends VisorTag {
 
         val t = VisorTextTable()
 
-        t #= (">", "Node ID8(@), IP", "Up Time", "CPUs", "CPU Load", "Free Heap")
+        t #= ("#", "Node ID8(@), IP", "Up Time", "CPUs", "CPU Load", "Free Heap")
 
         val nodes = grid.nodes().toList
 
@@ -1840,7 +1844,7 @@ object visor extends VisorTag {
 
             t.render()
 
-            val a = ask("\nChoose node ('c' to cancel) [c]: ", "c")
+            val a = ask("\nChoose node number ('c' to cancel) [c]: ", "c")
 
             if (a.toLowerCase == "c")
                 None
@@ -1869,7 +1873,7 @@ object visor extends VisorTag {
 
         val t = VisorTextTable()
 
-        t #= (">", "Int./Ext. IPs", "Node ID8(@)", "OS", "CPUs", "MACs", "CPU Load")
+        t #= ("#", "Int./Ext. IPs", "Node ID8(@)", "OS", "CPUs", "MACs", "CPU Load")
 
         val neighborhood = U.neighborhood(grid.nodes()).values().toIndexedSeq
 
@@ -1923,7 +1927,7 @@ object visor extends VisorTag {
 
             t.render()
 
-            val a = ask("\nChoose host ('c' to cancel) [c]: ", "c")
+            val a = ask("\nChoose host number ('c' to cancel) [c]: ", "c")
 
             if (a.toLowerCase == "c")
                 None
@@ -1956,7 +1960,7 @@ object visor extends VisorTag {
         else {
             val t = VisorTextTable()
 
-            t #= (">", "Configuration File")
+            t #= ("#", "Configuration File")
 
             (0 until files.size).foreach(i => t += (i, files(i)._1))
 
@@ -1964,7 +1968,7 @@ object visor extends VisorTag {
 
             t.render()
 
-            val a = ask("\nChoose configuration file ('c' to cancel) [0]: ", "0")
+            val a = ask("\nChoose configuration file number ('c' to cancel) [0]: ", "0")
 
             if (a.toLowerCase == "c")
                 None

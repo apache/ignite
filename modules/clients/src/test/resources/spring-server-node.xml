@@ -90,17 +90,6 @@
                 <!-- Configure marshaller. -->
                 <property name="marshaller">
                     <bean class="org.gridgain.client.marshaller.portable.GridClientPortableMarshaller">
-                        <constructor-arg index="0">
-                            <bean class="org.gridgain.portable.GridPortableConfiguration">
-                                <property name="typeConfigurations">
-                                    <list>
-                                        <bean class="org.gridgain.portable.GridPortableTypeConfiguration">
-                                            <property name="className" value="org.gridgain.client.GridClientTestPortable"/>
-                                        </bean>
-                                    </list>
-                                </property>
-                            </bean>
-                        </constructor-arg>
                     </bean>
                 </property>
             </bean>

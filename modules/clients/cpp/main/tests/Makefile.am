@@ -20,7 +20,7 @@ gridgain_marshalling_benchmark_SOURCES = load/gridclientmarshallingbenchmark.cpp
 gridgain_marshalling_benchmark_LDADD = $(PARENT_DIR)/libgridgain-client.la -lboost_system -lboost_thread -lboost_program_options -lcrypto -lssl
 gridgain_marshalling_benchmark_LDFLAGS = -static-libtool-libs -L/usr/local/lib
 
-gridgain_tests_SOURCES = gridtestcommon.cpp gridclientaffinityselftest.cpp gridclientabstractselftest.cpp gridclientconsistenthashtest.cpp gridclientexampletest.cpp gridclientfactoryfixture.hpp gridclientfactoryselfttest.cpp gridthreadpoolselftest.cpp gridclientconnectionpoolselftest.cpp gridclientportabletest.cpp gridclienthashtest.cpp gridportablemarshallertest.cpp \
+gridgain_tests_SOURCES = gridtestcommon.cpp gridclientaffinityselftest.cpp gridclientabstractselftest.cpp gridclientconsistenthashtest.cpp gridclientexampletest.cpp gridclientfactoryfixture.hpp gridclientfactoryselfttest.cpp gridthreadpoolselftest.cpp gridclientconnectionpoolselftest.cpp gridclientportabletest.cpp gridclienthashtest.cpp gridportablemarshallertest.cpp gridclientqueriestest.cpp \
     teamcity_messages.cpp teamcity_boost.cpp
 gridgain_tests_LDADD = $(PARENT_DIR)/libgridgain-client.la -lboost_system -lboost_thread -lcrypto -lssl -lboost_unit_test_framework
 gridgain_tests_LDFLAGS = -static-libtool-libs -L/usr/local/lib

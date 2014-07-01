@@ -11,6 +11,7 @@ namespace GridGain.Client.Impl.Portable
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using GridGain.Client.Portable;
 
@@ -45,6 +46,12 @@ namespace GridGain.Client.Impl.Portable
 
         /** Current raw position. */
         private long curRawPos;
+
+        /** Ignore handles flag. */
+        private bool detach;
+
+        /** Object started ognore mode. */
+        private bool detachMode;
                                 
         /**
          * <summary>Constructor.</summary>
@@ -107,93 +114,148 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
+         * <summary>Enable detach mode for the next object.</summary>
+         */ 
+        public void DetachNext()
+        {
+            if (!detachMode)
+                detach = true;
+        }
+
+        /**
          * <summary>Write object to the context.</summary>
          * <param name="obj">Object.</param>
          */ 
         public void Write(object obj)
         {
-            // 1. Write null.
-            if (obj == null)
+            // 1. Apply detach mode if needed.
+            IDictionary<GridClientPortableObjectHandle, int> oldHnds = null;
+
+            bool resetDetach = false;
+
+            if (detach)
             {
-                Stream.WriteByte(PU.HDR_NULL);
+                detach = false;
+                detachMode = true;
+                resetDetach = true;
 
-                return;
+                oldHnds = hnds;
+
+                hnds = null;
             }
-                
-            // 2. Try writting as well-known type.
-            int pos = (int)Stream.Position;
 
-            Type type = obj.GetType();
-
-            GridClientPortableSystemWriteDelegate sysHandler = PSH.WriteHandler(type);
-
-            if (sysHandler != null)
+            try
             {
-                sysHandler.Invoke(this, pos, obj);
+                // 2. Write null.
+                if (obj == null)
+                {
+                    Stream.WriteByte(PU.HDR_NULL);
 
-                return;
+                    return;
+                }
+
+                // 3. Try writting as well-known type.
+                int pos = (int)Stream.Position;
+
+                Type type = obj.GetType();
+
+                GridClientPortableSystemWriteDelegate sysHandler = PSH.WriteHandler(type);
+
+                if (sysHandler != null)
+                {
+                    sysHandler.Invoke(this, pos, obj);
+
+                    return;
+                }
+
+                // 4. Dealing with handles.
+                if (hnds == null)
+                    hnds = new Dictionary<GridClientPortableObjectHandle, int>();
+
+                GridClientPortableObjectHandle hnd = new GridClientPortableObjectHandle(obj);
+
+                int hndPos;
+
+                if (hnds.TryGetValue(hnd, out hndPos))
+                {
+                    int curPos = (int)Stream.Position;
+
+                    Stream.WriteByte(PU.HDR_HND);
+
+                    // Handle is written as difference between position before header and handle position.
+                    PU.WriteInt(curPos - hndPos, Stream);
+
+                    return;
+                }
+                else
+                    // Cache absolute handle position.
+                    hnds.Add(hnd, (int)Stream.Position);
+
+                // 5. Get descriptor.
+                GridClientPortableTypeDescriptor desc;
+
+                if (!descs.TryGetValue(type, out desc))
+                    throw new GridClientPortableException("Unsupported object type [type=" + type +
+                        ", object=" + obj + ']');
+
+                // 6. Write header.
+                Stream.WriteByte(PU.HDR_FULL);
+                PU.WriteBoolean(desc.UserType, Stream);
+                PU.WriteInt(desc.TypeId, Stream);
+                PU.WriteInt(obj.GetHashCode(), Stream);
+
+                // 7. Skip length as it is not known in the first place.
+                Stream.Seek(8, SeekOrigin.Current);
+
+                // 8. Preserve old frame.
+                int oldTypeId = curTypeId;
+                GridClientPortableIdResolver oldMapper = curMapper;
+                bool oldRaw = curRaw;
+                long oldRawPos = curRawPos;
+
+                // 9. Push new frame.
+                curTypeId = desc.TypeId;
+                curMapper = desc.Mapper;
+                curRaw = false;
+                curRawPos = 0;
+
+                // 10. Write object fields.
+                desc.Serializer.WritePortable(obj, writer);
+
+                // 11. Calculate and write length.
+                WriteLength(Stream, pos, Stream.Position, CurrentRawPosition);
+
+                // 12. Restore old frame.
+                curTypeId = oldTypeId;
+                curMapper = oldMapper;
+                curRaw = oldRaw;
+                curRawPos = oldRawPos;
             }
-            
-            // 3. Dealing with handles.
-            if (hnds == null)
-                hnds = new Dictionary<GridClientPortableObjectHandle, int>();
-
-            GridClientPortableObjectHandle hnd = new GridClientPortableObjectHandle(obj);
-
-            int hndPos;
-
-            if (hnds.TryGetValue(hnd, out hndPos))
+            finally
             {
-                Stream.WriteByte(PU.HDR_HND);
+                // 13. Restore handles if needed.
+                if (resetDetach)
+                {
+                    // Add newly recorded handles without overriding already existing ones.
+                    if (hnds != null)
+                    {
+                        if (oldHnds == null)
+                            oldHnds = hnds;
+                        else
+                        {
+                            foreach (KeyValuePair<GridClientPortableObjectHandle, int> hndEntry in hnds)
+                            {
+                                if (!oldHnds.ContainsKey(hndEntry.Key))
+                                    oldHnds.Add(hndEntry);
+                            }
+                        }
+                    }
 
-                // Handle is written as difference between current position and handle position.
-                PU.WriteInt((int)Stream.Position - hndPos, Stream);
+                    hnds = oldHnds;
 
-                return;
+                    detachMode = false;
+                }
             }
-            else
-                // Cache absolute handle position.
-                hnds.Add(hnd, (int)Stream.Position);
-
-            // 4. Get descriptor.
-            GridClientPortableTypeDescriptor desc;
-                
-            if (!descs.TryGetValue(type, out desc))
-                throw new GridClientPortableException("Unsupported object type [type=" + type +
-                    ", object=" + obj + ']');
-
-            // 5. Write header.
-            Stream.WriteByte(PU.HDR_FULL);
-            PU.WriteBoolean(desc.UserType, Stream);
-            PU.WriteInt(desc.TypeId, Stream);
-            PU.WriteInt(obj.GetHashCode(), Stream);
-
-            // 6. Skip length as it is not known in the first place.
-            Stream.Seek(8, SeekOrigin.Current);
-
-            // 7. Preserve old frame.
-            int oldTypeId = curTypeId;
-            GridClientPortableIdResolver oldMapper = curMapper;
-            bool oldRaw = curRaw;
-            long oldRawPos = curRawPos;
-
-            // 8. Push new frame.
-            curTypeId = desc.TypeId;
-            curMapper = desc.Mapper;
-            curRaw = false;
-            curRawPos = 0;
-
-            // 9. Write object fields.
-            desc.Serializer.WritePortable(obj, writer);
-
-            // 10. Calculate and write length.
-            WriteLength(Stream, pos, Stream.Position, CurrentRawPosition);
-
-            // 11. Restore old frame.
-            curTypeId = oldTypeId;
-            curMapper = oldMapper;
-            curRaw = oldRaw;
-            curRawPos = oldRawPos;
         }
 
         /**

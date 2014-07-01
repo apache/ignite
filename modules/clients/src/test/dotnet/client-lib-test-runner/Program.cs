@@ -46,7 +46,6 @@ namespace GridGain {
             Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsSerializer());
             Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsRawSerializer());
 
-            // 1. Handling primitives.
             Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveBool());
             Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveSbyte());
             Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveByte());
@@ -73,42 +72,46 @@ namespace GridGain {
             Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveFloatArray());
             Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveDoubleArray());
 
-            // 2. Handling strings.
             Test(new GridClientPortableSelfTest(), (test) => test.TestWriteString());
             Test(new GridClientPortableSelfTest(), (test) => test.TestWriteStringArray());
 
-            // 3. Handling Guids.
             Test(new GridClientPortableSelfTest(), (test) => test.TestWriteGuid());
             Test(new GridClientPortableSelfTest(), (test) => test.TestWriteGuidArray());
 
             Test(new GridClientPortableSelfTest(), (test) => test.TestObjectReflective());
 
-            //TestAll();
+            Test(new GridClientPortableSelfTest(), (test) => test.TestCollectionsReflective());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestGenericCollections());
 
-            //TestOne(new GridClientRouterTcpSslTest(), test => test.TestAffinity());
-            //TestOne(new GridClientRouterTcpSslTest(), test => test.TestAppendPrepend());
-            //TestOne(new GridClientRouterTcpSslTest(), test => test.TestCacheFlags());
-            //TestOne(new GridClientRouterTcpSslTest(), test => test.TestDataProjection());
-            //TestOne(new GridClientRouterTcpSslTest(), test => test.TestExecuteAsync());
-            //TestOne(new GridClientRouterTcpSslTest(), test => test.TestExecuteSync());
-            //TestOne(new GridClientRouterTcpSslTest(), test => test.TestGracefulShutdown());
-            //TestOne(new GridClientRouterTcpSslTest(), test => test.TestHaltShutdown());
-            //TestOne(new GridClientRouterTcpSslTest(), test => test.TestLogAsync());
-            //TestOne(new GridClientRouterTcpSslTest(), test => test.TestLogSync());
-            //TestOne(new GridClientRouterTcpSslTest(), test => test.TestMetricsAsync());
-            //TestOne(new GridClientRouterTcpSslTest(), test => test.TestMetricsSync());
-            //TestOne(new GridClientRouterTcpSslTest(), test => test.TestMultithreadedAccessToOneClient());
-            //TestOne(new GridClientRouterTcpSslTest(), test => test.TestNoAsyncExceptions());
-            //TestOne(new GridClientRouterTcpSslTest(), test => test.TestNodeMetricsAsync());
-            //TestOne(new GridClientRouterTcpSslTest(), test => test.TestNodeMetricsSync());
-            //TestOne(new GridClientRouterTcpSslTest(), test => test.TestOpenClose());
-            //TestOne(new GridClientRouterTcpSslTest(), test => test.TestPutAllAsync());
-            //TestOne(new GridClientRouterTcpSslTest(), test => test.TestPutAllSync());
-            //TestOne(new GridClientRouterTcpSslTest(), test => test.TestPutAsync());
-            //TestOne(new GridClientTcpTest(), test => test.TestPutSync());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestHandles());
+            Test(new GridClientPortableSelfTest(), (test) => test.TestHandlesExclusive());
+
+            TestAll();
+
+            TestOne(new GridClientRouterTcpSslTest(), test => test.TestAffinity());
+            TestOne(new GridClientRouterTcpSslTest(), test => test.TestAppendPrepend());
+            TestOne(new GridClientRouterTcpSslTest(), test => test.TestCacheFlags());
+            TestOne(new GridClientRouterTcpSslTest(), test => test.TestDataProjection());
+            TestOne(new GridClientRouterTcpSslTest(), test => test.TestExecuteAsync());
+            TestOne(new GridClientRouterTcpSslTest(), test => test.TestExecuteSync());
+            TestOne(new GridClientRouterTcpSslTest(), test => test.TestGracefulShutdown());
+            TestOne(new GridClientRouterTcpSslTest(), test => test.TestHaltShutdown());
+            TestOne(new GridClientRouterTcpSslTest(), test => test.TestLogAsync());
+            TestOne(new GridClientRouterTcpSslTest(), test => test.TestLogSync());
+            TestOne(new GridClientRouterTcpSslTest(), test => test.TestMetricsAsync());
+            TestOne(new GridClientRouterTcpSslTest(), test => test.TestMetricsSync());
+            TestOne(new GridClientRouterTcpSslTest(), test => test.TestMultithreadedAccessToOneClient());
+            TestOne(new GridClientRouterTcpSslTest(), test => test.TestNoAsyncExceptions());
+            TestOne(new GridClientRouterTcpSslTest(), test => test.TestNodeMetricsAsync());
+            TestOne(new GridClientRouterTcpSslTest(), test => test.TestNodeMetricsSync());
+            TestOne(new GridClientRouterTcpSslTest(), test => test.TestOpenClose());
+            TestOne(new GridClientRouterTcpSslTest(), test => test.TestPutAllAsync());
+            TestOne(new GridClientRouterTcpSslTest(), test => test.TestPutAllSync());
+            TestOne(new GridClientRouterTcpSslTest(), test => test.TestPutAsync());
+            TestOne(new GridClientTcpTest(), test => test.TestPutSync());
         }
 
-        private static void Test<T>(T test, Action<T> job) where T : GridClientAbstractTest
+        private static void Test<T>(T test, Action<T> job) where T : GridClientPortableSelfTest
         {
             test.InitClient();
 

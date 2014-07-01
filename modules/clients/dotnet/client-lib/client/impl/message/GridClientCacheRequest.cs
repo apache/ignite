@@ -13,6 +13,7 @@ namespace GridGain.Client.Impl.Message {
     using System;
     using System.Text;
     using System.Collections;
+    using GridGain.Client.Impl.Portable;
     using GridGain.Client.Portable;
 
     using A = GridGain.Client.Util.GridClientArgumentCheck;
@@ -107,13 +108,19 @@ namespace GridGain.Client.Impl.Message {
         public override void WritePortable(IGridClientPortableWriter writer) {
             base.WritePortable(writer);
 
-            IGridClientPortableRawWriter rawWriter = writer.RawWriter();
+            GridClientPortableWriterImpl rawWriter = (GridClientPortableWriterImpl)writer.RawWriter();
 
             rawWriter.WriteInt((int)Operation);
             rawWriter.WriteString(CacheName);
             rawWriter.WriteInt(CacheFlags);
+
+            rawWriter.DetachNext();
             rawWriter.WriteObject(Key);
+
+            rawWriter.DetachNext();
             rawWriter.WriteObject(Value);
+
+            rawWriter.DetachNext();
             rawWriter.WriteObject(Value2);
 
             rawWriter.WriteInt(Values != null ? Values.Count : -1);
@@ -122,7 +129,10 @@ namespace GridGain.Client.Impl.Message {
             {
                 foreach (KeyValuePair<object, object> pair in Values)
                 {
+                    rawWriter.DetachNext();
                     rawWriter.WriteObject<object>(pair.Key);
+
+                    rawWriter.DetachNext();
                     rawWriter.WriteObject<object>(pair.Value);
                 }
             }
@@ -132,14 +142,20 @@ namespace GridGain.Client.Impl.Message {
         public override void ReadPortable(IGridClientPortableReader reader) {
             base.ReadPortable(reader);
 
-            IGridClientPortableRawReader rawReader = reader.RawReader();
+            GridClientPortableReaderImpl rawReader = (GridClientPortableReaderImpl)reader.RawReader();
 
             Operation = (GridClientCacheRequestOperation)rawReader.ReadInt();
             CacheName = rawReader.ReadString();
             CacheFlags = rawReader.ReadInt();
-            Key = rawReader.ReadObject<Object>();
-            Value = rawReader.ReadObject<Object>();
-            Value2 = rawReader.ReadObject<Object>();
+
+            rawReader.DetachNext();
+            Key = PU.PortableOrPredefined<object>(rawReader.ReadPortable());
+
+            rawReader.DetachNext();
+            Value = PU.PortableOrPredefined<object>(rawReader.ReadPortable());
+
+            rawReader.DetachNext();
+            Value2 = PU.PortableOrPredefined<object>(rawReader.ReadPortable());
 
             int valsCnt = rawReader.ReadInt();
 
@@ -149,8 +165,11 @@ namespace GridGain.Client.Impl.Message {
 
                 for (int i = 0; i < valsCnt; i++)
                 {
-                    object key = rawReader.ReadObject<object>();
-                    object val = rawReader.ReadObject<object>();
+                    rawReader.DetachNext();
+                    object key = PU.PortableOrPredefined<object>(rawReader.ReadPortable());
+
+                    rawReader.DetachNext();
+                    object val = PU.PortableOrPredefined<object>(rawReader.ReadPortable());
 
                     Values[key] = val;
                 }

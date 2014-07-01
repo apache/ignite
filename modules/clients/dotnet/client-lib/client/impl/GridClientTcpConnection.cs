@@ -589,9 +589,12 @@ namespace GridGain.Client.Impl {
 
                 foreach (DictionaryEntry entry in map)
                 {
-                    V val = ((IGridClientPortableObject)entry.Value).Deserialize<V>();
+                    K key = entry.Key is IGridClientPortableObject ? 
+                        ((IGridClientPortableObject)entry.Key).Deserialize<K>() : (K)entry.Key;
+                    V val = entry.Value is IGridClientPortableObject ? 
+                        ((IGridClientPortableObject)entry.Value).Deserialize<V>() : (V)entry.Value;
 
-                    res.Add((K)(entry.Key), val);
+                    res.Add(key, val);
                 }
 
                 return res;
@@ -727,15 +730,21 @@ namespace GridGain.Client.Impl {
                 if (o == null)
                     return null;
 
-                var map = o as IDictionary;
+                var map = o as IDictionary<object, object>;
 
                 if (map == null)
                     throw new ArgumentException("Expects dictionary, but received: " + o);
 
                 var m = new Dictionary<String, Object>();
 
-                foreach (DictionaryEntry entry in map)
-                    m[(String)entry.Key] = entry.Value;
+                foreach (KeyValuePair<object, object> entry in map)
+                {
+                    String key = ((string)entry.Key);
+                    Object val = entry.Value is IGridClientPortableObject ? 
+                        ((IGridClientPortableObject)entry.Value).Deserialize<object>() : entry.Value;
+
+                    m[key] = val;
+                }                    
 
                 return parseCacheMetrics(m);
             };
@@ -853,7 +862,7 @@ namespace GridGain.Client.Impl {
 
                 IList<IGridClientNode> nodes = new List<IGridClientNode>();
 
-                foreach (Object bean in it)
+                foreach (object bean in it) 
                     nodes.Add(nodeBeanToNode((GridClientNodeBean)bean));
 
                 Top.UpdateTopology(nodes);

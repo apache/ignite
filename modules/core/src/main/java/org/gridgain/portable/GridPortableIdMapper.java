@@ -9,8 +9,6 @@
 
 package org.gridgain.portable;
 
-import org.jetbrains.annotations.*;
-
 /**
  * Field mapper.
  */
@@ -18,21 +16,21 @@ public interface GridPortableIdMapper {
     /**
      * Gets type ID for provided class name.
      * <p>
-     * If {@code null} is returned, hash code of class simple name will be used.
+     * If {@code 0} is returned, hash code of class simple name will be used.
      *
      * @param clsName Class name.
      * @return Type ID.
      */
-    @Nullable public Integer typeId(String clsName);
+    public int typeId(String clsName);
 
     /**
      * Gets ID for provided field.
      * <p>
-     * If {@code null} is returned, hash code of field name will be used.
+     * If {@code 0} is returned, hash code of field name will be used.
      *
      * @param typeId Type ID.
      * @param fieldName Field name.
      * @return Field ID.
      */
-    @Nullable public Integer fieldId(int typeId, String fieldName);
+    public int fieldId(int typeId, String fieldName);
 }

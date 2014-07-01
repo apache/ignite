@@ -202,6 +202,353 @@ static void doRefreshNode(TGridClientComputePtr compute, GridClientUuid id, bool
     }
 }
 
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(testPutGetStandardTypes, CfgT, TestCfgs, GridClientFactoryFixture2) {
+    TGridClientPtr client = this->client(CfgT());
+
+    TGridClientDataPtr data = client->data(CACHE_NAME);
+
+    {
+        bool val = true;
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(val);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE_EQUAL(val, getVal.getBool());
+    }
+
+    {
+        int8_t val = 10;
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(val);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE_EQUAL(val, getVal.getByte());
+    }
+
+    {
+        int16_t val = 10;
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(val);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE_EQUAL(val, getVal.getShort());
+    }
+
+    {
+        uint16_t val = 10;
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(val);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE_EQUAL(val, getVal.getChar());
+    }
+
+    {
+        int32_t val = 10;
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(val);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE_EQUAL(val, getVal.getInt());
+    }
+
+    {
+        int64_t val = 10;
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(val);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE_EQUAL(val, getVal.getLong());
+    }
+
+    {
+        float val = 10.5f;
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(val);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE_EQUAL(val, getVal.getFloat());
+    }
+
+    {
+        double val = 100.5;
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(val);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE_EQUAL(val, getVal.getDouble());
+    }
+
+    {
+        string val = "str1";
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(val);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE_EQUAL(val, getVal.getString());
+    }
+
+    {
+        wstring val = L"str2";
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(val);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE(getVal.hasString());
+    }
+
+    {
+        GridClientUuid val = GridClientUuid(10, 10);
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(val);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE_EQUAL(val, getVal.getUuid());
+    }
+
+    {
+        GridClientDate val = GridClientDate(10, 0);
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(val);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE_EQUAL(val, getVal.getDate());
+    }
+
+    {
+        vector<bool> val(10, true);
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(1);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE(10 == getVal.getBoolArray().size());
+        BOOST_REQUIRE(val == getVal.getBoolArray());
+    }
+
+    {
+        vector<int8_t> val(10, 1);
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(1);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE(10 == getVal.getByteArray().size());
+        BOOST_REQUIRE(val == getVal.getByteArray());
+    }
+
+    {
+        vector<int16_t> val(10, 1);
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(1);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE(10 == getVal.getShortArray().size());
+        BOOST_REQUIRE(val == getVal.getShortArray());
+    }
+
+    {
+        vector<uint16_t> val(10, 1);
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(1);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE(10 == getVal.getCharArray().size());
+        BOOST_REQUIRE(val == getVal.getCharArray());
+    }
+
+    {
+        vector<int32_t> val(10, 1);
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(1);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE(10 == getVal.getIntArray().size());
+        BOOST_REQUIRE(val == getVal.getIntArray());
+    }
+
+    {
+        vector<int64_t> val(10, 1);
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(1);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE(10 == getVal.getLongArray().size());
+        BOOST_REQUIRE(val == getVal.getLongArray());
+    }
+
+    {
+        vector<float> val(10, 1.5f);
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(1);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE(10 == getVal.getFloatArray().size());
+        BOOST_REQUIRE(val == getVal.getFloatArray());
+    }
+
+    {
+        vector<double> val(10, 1.5);
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(1);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE(10 == getVal.getDoubleArray().size());
+        BOOST_REQUIRE(val == getVal.getDoubleArray());
+    }
+
+    {
+        vector<string> val(10, "str");
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(1);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE(10 == getVal.getStringArray().size());
+        BOOST_REQUIRE(val == getVal.getStringArray());
+    }
+
+    {
+        vector<GridClientUuid> val(10, GridClientUuid(1, 2));
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(1);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE(10 == getVal.getUuidArray().size());
+        BOOST_REQUIRE(val == getVal.getUuidArray());
+    }
+
+    {
+        vector<GridClientDate> val(10, GridClientDate(2, 0));
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(1);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE(10 == getVal.getDateArray().size());
+        BOOST_REQUIRE(val == getVal.getDateArray());
+    }
+
+    {
+        vector<GridClientVariant> val(10, GridClientVariant(10));
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(1);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE(10 == getVal.getVariantVector().size());
+        BOOST_REQUIRE(val == getVal.getVariantVector());
+    }
+
+    {
+        TGridClientVariantMap val;
+
+        for (int32_t i = 0; i < 10; i++)
+            val[i] = i;
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(1);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE(10 == getVal.getVariantMap().size());
+        BOOST_REQUIRE(val == getVal.getVariantMap());
+    }
+}
+
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(testPut, CfgT, TestCfgs, GridClientFactoryFixture2) {
     TGridClientPtr client = this->client(CfgT());
 
@@ -220,7 +567,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testPut, CfgT, TestCfgs, GridClientFactoryFixtu
         SYNC_CHECK_EQUAL(v, val);
     });
 }
-/*
+
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(testPutAsync, CfgT, TestCfgs, GridClientFactoryFixture2) {
     TGridClientDataPtr data = this->client(CfgT())->data(CACHE_NAME);
 
@@ -1113,5 +1460,5 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testCacheFlags, CfgT, TestCfgs, GridClientFacto
         BOOST_CHECK(!writeData->get(key).hasAnyValue());
     }
 }
-*/
+
 BOOST_AUTO_TEST_SUITE_END()

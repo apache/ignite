@@ -24,8 +24,24 @@ namespace GridGain.Client.Hasher {
          * <returns>Java hash code for passed object.</returns>
          */
         public static int GetJavaHashCode(Object val) {
+            return GetJavaHashCode(val, false);
+        }
+
+        /** 
+         * <summary>
+         * Calculate Java hash code for the passed object.</summary>
+         * 
+         * <param name="val">Object to calculate Java hash code for.</param>
+         *  <param name="anyType">If any type is allowed.</param>
+         * <returns>Java hash code for passed object.</returns>
+         */
+        public static int GetJavaHashCode(Object val, bool anyType)
+        {
             if (val == null)
                 return 0;
+
+            if (val is bool)
+                return (bool)val ? 1 : 0;
 
             if (val is byte)
                 return (byte)val;
@@ -53,7 +69,7 @@ namespace GridGain.Client.Hasher {
 
             // Should be checked BEFORE double.
             if (val is float)
-                val = (double)val;
+                val = Convert.ToDouble(val);
 
             // Should be checked BEFORE long.
             if (val is double)
@@ -78,8 +94,11 @@ namespace GridGain.Client.Hasher {
             if (hashObj != null)
                 return hashObj.GetHashCode();
 
-            throw new InvalidOperationException("Unsupported value (does object implement GridCLientConsistentHashObject?)" +
-                " [obj=" + val + ", type=" + val.GetType() + "]");
+            if (anyType)
+                return val.GetHashCode();
+            else
+                throw new InvalidOperationException("Unsupported value (does object implement " + 
+                    "GridCLientConsistentHashObject?) [obj=" + val + ", type=" + val.GetType() + "]");
         }
 
         /** <inheritdoc /> */

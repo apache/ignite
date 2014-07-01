@@ -9,11 +9,9 @@
 
 package org.gridgain.client.marshaller.portable;
 
-import org.gridgain.client.*;
 import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.util.portable.*;
 import org.gridgain.portable.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -22,48 +20,16 @@ import java.nio.*;
  * Client marshaller supporting {@link GridPortable}.
  */
 public class GridClientPortableMarshaller implements GridClientMarshaller {
-    /** Context. */
-    private final GridPortableContext ctx;
-
     /** Marshaller. */
-    private final GridPortableMarshaller marsh;
+    private GridPortableMarshaller marsh;
 
     /**
-     * @throws GridClientException If failed to initialize marshaller.
+     * @param ctx Portable context.
      */
-    public GridClientPortableMarshaller() throws GridClientException {
-        this(null);
-    }
+    public void portableContext(GridPortableContext ctx) {
+        assert ctx != null;
 
-    /**
-     * @param portableCfg Portable configuration.
-     * @throws GridClientException If failed to initialize marshaller.
-     */
-    public GridClientPortableMarshaller(@Nullable GridPortableConfiguration portableCfg) throws GridClientException {
-        try {
-            GridPortableContextImpl ctx = new GridPortableContextImpl(null);
-
-            ctx.configure(portableCfg);
-
-            this.ctx = ctx;
-
-            marsh = new GridPortableMarshaller(ctx);
-        }
-        catch (GridPortableException e) {
-            throw new GridClientException("Failed to initialize portable marshaller.", e);
-        }
-    }
-
-    public <T> GridPortableObject<T> convertToPortable(@Nullable Object obj) throws IOException {
-        if (obj instanceof GridPortableObject)
-            return (GridPortableObject<T>)obj;
-        else {
-            ByteBuffer buf = marshal(obj, 0);
-
-            assert buf.hasArray();
-
-            return new GridPortableObjectImpl<>(ctx, buf.array(), buf.position());
-        }
+        marsh = new GridPortableMarshaller(ctx);
     }
 
     /** {@inheritDoc} */

@@ -19,11 +19,15 @@ import org.jetbrains.annotations.*;
  */
 public interface GridPortableProcessor extends GridProcessor {
     /**
-     * Gets portable context.
-     *
      * @return Portable context.
      */
     public GridPortableContext portableContext();
+
+    /**
+     * @param obj Object.
+     * @return Whether object is portable.
+     */
+    public boolean isPortable(Object obj) throws GridPortableException;
 
     /**
      * @param obj Object to marshal.

@@ -26,15 +26,15 @@ using namespace std;
 class CacheRequestProjectionClosure: public ClientMessageProjectionClosure {
 public:
     CacheRequestProjectionClosure(const char* clientId, GridCacheRequestCommand& cacheCmd)
-            : ClientMessageProjectionClosure(clientId), cmd(cacheCmd) {
+        : ClientMessageProjectionClosure(clientId), cmd(cacheCmd) {
     }
 
     CacheRequestProjectionClosure(GridClientUuid & clientId, GridCacheRequestCommand& cacheCmd)
-            : ClientMessageProjectionClosure(clientId), cmd(cacheCmd) {
+        : ClientMessageProjectionClosure(clientId), cmd(cacheCmd) {
     }
 
     CacheRequestProjectionClosure(std::string clientId, GridCacheRequestCommand& cacheCmd)
-            : ClientMessageProjectionClosure(clientId.c_str()), cmd(cacheCmd) {
+        : ClientMessageProjectionClosure(clientId.c_str()), cmd(cacheCmd) {
     }
 
     virtual void apply(TGridClientNodePtr node, GridClientSocketAddress connParams, GridClientCommandExecutor& cmdExecutor) {
@@ -58,11 +58,11 @@ private:
 class CacheMetricProjectionClosure: public ClientMessageProjectionClosure {
 public:
     CacheMetricProjectionClosure(const char* clientId, GridCacheRequestCommand& cacheCmd)
-            : ClientMessageProjectionClosure(clientId), cmd(cacheCmd) {
+        : ClientMessageProjectionClosure(clientId), cmd(cacheCmd) {
     }
 
     CacheMetricProjectionClosure(std::string clientId, GridCacheRequestCommand& cacheCmd)
-            : ClientMessageProjectionClosure(clientId.c_str()), cmd(cacheCmd) {
+        : ClientMessageProjectionClosure(clientId.c_str()), cmd(cacheCmd) {
     }
 
     virtual void apply(TGridClientNodePtr node, GridClientSocketAddress connParams, GridClientCommandExecutor& cmdExecutor) {
@@ -83,12 +83,12 @@ private:
 class CacheGetProjectionClosure: public ClientMessageProjectionClosure {
 public:
     CacheGetProjectionClosure(const char* clientId, GridCacheRequestCommand& cacheCmd)
-            : ClientMessageProjectionClosure(clientId), cmd(cacheCmd) {
+        : ClientMessageProjectionClosure(clientId), cmd(cacheCmd) {
 
     }
 
     CacheGetProjectionClosure(std::string clientId, GridCacheRequestCommand& cacheCmd)
-            : ClientMessageProjectionClosure(clientId.c_str()), cmd(cacheCmd) {
+        : ClientMessageProjectionClosure(clientId.c_str()), cmd(cacheCmd) {
 
     }
 
@@ -115,7 +115,7 @@ GridClientDataProjectionImpl::GridClientDataProjectionImpl(
     TGridThreadPoolPtr& threadPool,
     const std::set<GridClientCacheFlag>& flags)
     : GridClientProjectionImpl(sharedData, prjLsnr, filter), prjCacheName(cacheName), invalidated(false),
-    threadPool(threadPool), prjFlags(flags) {
+    threadPool(threadPool), prjFlags(flags), qrys(new GridClientDataQueriesImpl(this)) {
 }
 
 string GridClientDataProjectionImpl::cacheName() const {
@@ -144,13 +144,13 @@ TGridClientDataPtr GridClientDataProjectionImpl::pinNodes(const TGridClientNodeL
 }
 
 bool GridClientDataProjectionImpl::put(const GridClientVariant& key, const GridClientVariant& val) {
-    if (invalidated) throw GridClientClosedException();
+    if (invalidated) 
+        throw GridClientClosedException();
 
-    GridCacheRequestCommand cmd(GridCacheRequestCommand::PUT);
+    GridCacheRequestCommand cmd(GridCacheRequestCommand::PUT, prjCacheName);
 
     cmd.setKey(key);
     cmd.setValue(val);
-    cmd.setCacheName(prjCacheName);
     cmd.setFlags(prjFlags);
 
     CacheRequestProjectionClosure c(clientUniqueUuid(), cmd);
@@ -161,7 +161,8 @@ bool GridClientDataProjectionImpl::put(const GridClientVariant& key, const GridC
 }
 
 TGridBoolFuturePtr GridClientDataProjectionImpl::putAsync(const GridClientVariant& key, const GridClientVariant& val) {
-    if (invalidated) return TGridBoolFuturePtr(new GridBoolFailFutureImpl<GridClientClosedException>());
+    if (invalidated) 
+        return TGridBoolFuturePtr(new GridBoolFailFutureImpl<GridClientClosedException>());
 
     GridBoolFutureImpl* fut = new GridBoolFutureImpl(threadPool);
     TGridBoolFuturePtr res(fut);
@@ -174,12 +175,12 @@ TGridBoolFuturePtr GridClientDataProjectionImpl::putAsync(const GridClientVarian
 }
 
 bool GridClientDataProjectionImpl::putAll(const TGridClientVariantMap& entries) {
-    if (invalidated) throw GridClientClosedException();
+    if (invalidated) 
+        throw GridClientClosedException();
 
-    GridCacheRequestCommand cmd(GridCacheRequestCommand::PUT_ALL);
+    GridCacheRequestCommand cmd(GridCacheRequestCommand::PUT_ALL, prjCacheName);
 
     cmd.setValues(entries);
-    cmd.setCacheName(prjCacheName);
     cmd.setFlags(prjFlags);
 
     CacheRequestProjectionClosure c(clientUniqueId(), cmd);
@@ -191,7 +192,8 @@ bool GridClientDataProjectionImpl::putAll(const TGridClientVariantMap& entries) 
 }
 
 TGridBoolFuturePtr GridClientDataProjectionImpl::putAllAsync(const TGridClientVariantMap& entries) {
-    if (invalidated) return TGridBoolFuturePtr(new GridBoolFailFutureImpl<GridClientClosedException>());
+    if (invalidated) 
+        return TGridBoolFuturePtr(new GridBoolFailFutureImpl<GridClientClosedException>());
 
     GridBoolFutureImpl* fut = new GridBoolFutureImpl(threadPool);
     TGridBoolFuturePtr res(fut);
@@ -204,11 +206,11 @@ TGridBoolFuturePtr GridClientDataProjectionImpl::putAllAsync(const TGridClientVa
 }
 
 bool GridClientDataProjectionImpl::remove(const GridClientVariant& key) {
-    if (invalidated) throw GridClientClosedException();
+    if (invalidated) 
+        throw GridClientClosedException();
 
-    GridCacheRequestCommand cmd(GridCacheRequestCommand::RMV);
+    GridCacheRequestCommand cmd(GridCacheRequestCommand::RMV, prjCacheName);
 
-    cmd.setCacheName(prjCacheName);
     cmd.setKey(key);
     cmd.setFlags(prjFlags);
 
@@ -223,7 +225,8 @@ bool GridClientDataProjectionImpl::remove(const GridClientVariant& key) {
 }
 
 TGridBoolFuturePtr GridClientDataProjectionImpl::removeAsync(const GridClientVariant& key) {
-    if (invalidated) return TGridBoolFuturePtr(new GridBoolFailFutureImpl<GridClientClosedException>());
+    if (invalidated) 
+        return TGridBoolFuturePtr(new GridBoolFailFutureImpl<GridClientClosedException>());
 
     GridBoolFutureImpl* fut = new GridBoolFutureImpl(threadPool);
     TGridBoolFuturePtr res(fut);
@@ -236,15 +239,15 @@ TGridBoolFuturePtr GridClientDataProjectionImpl::removeAsync(const GridClientVar
 }
 
 bool GridClientDataProjectionImpl::removeAll(const TGridClientVariantSet& keys) {
-    if (invalidated) throw GridClientClosedException();
+    if (invalidated) 
+        throw GridClientClosedException();
 
     TGridClientVariantMap keyValues;
-    GridCacheRequestCommand cmd(GridCacheRequestCommand::RMV_ALL);
+    GridCacheRequestCommand cmd(GridCacheRequestCommand::RMV_ALL, prjCacheName);
 
     for (size_t i = 0; i < keys.size(); i++)
         keyValues[keys[i]] = GridClientVariant();
 
-    cmd.setCacheName(prjCacheName);
     cmd.setValues(keyValues);
     cmd.setFlags(prjFlags);
 
@@ -259,7 +262,8 @@ bool GridClientDataProjectionImpl::removeAll(const TGridClientVariantSet& keys) 
 }
 
 TGridBoolFuturePtr GridClientDataProjectionImpl::removeAllAsync(const TGridClientVariantSet& keys) {
-    if (invalidated) return TGridBoolFuturePtr(new GridBoolFailFutureImpl<GridClientClosedException>());
+    if (invalidated) 
+        return TGridBoolFuturePtr(new GridBoolFailFutureImpl<GridClientClosedException>());
 
     GridBoolFutureImpl* fut = new GridBoolFutureImpl(threadPool);
     TGridBoolFuturePtr res(fut);
@@ -272,11 +276,11 @@ TGridBoolFuturePtr GridClientDataProjectionImpl::removeAllAsync(const TGridClien
 }
 
 bool GridClientDataProjectionImpl::replace(const GridClientVariant& key, const GridClientVariant& val) {
-    if (invalidated) throw GridClientClosedException();
+    if (invalidated) 
+        throw GridClientClosedException();
 
-    GridCacheRequestCommand cmd(GridCacheRequestCommand::REPLACE);
+    GridCacheRequestCommand cmd(GridCacheRequestCommand::REPLACE, prjCacheName);
 
-    cmd.setCacheName(prjCacheName);
     cmd.setKey(key);
     cmd.setValue(val);
     cmd.setFlags(prjFlags);
@@ -292,8 +296,9 @@ bool GridClientDataProjectionImpl::replace(const GridClientVariant& key, const G
 }
 
 TGridBoolFuturePtr GridClientDataProjectionImpl::replaceAsync(const GridClientVariant& key,
-        const GridClientVariant& val) {
-    if (invalidated) return TGridBoolFuturePtr(new GridBoolFailFutureImpl<GridClientClosedException>());
+    const GridClientVariant& val) {
+    if (invalidated) 
+        return TGridBoolFuturePtr(new GridBoolFailFutureImpl<GridClientClosedException>());
 
     GridBoolFutureImpl* fut = new GridBoolFutureImpl(threadPool);
     TGridBoolFuturePtr res(fut);
@@ -306,12 +311,12 @@ TGridBoolFuturePtr GridClientDataProjectionImpl::replaceAsync(const GridClientVa
 }
 
 bool GridClientDataProjectionImpl::cas(const GridClientVariant& key, const GridClientVariant& val1,
-        const GridClientVariant& val2) {
-    if (invalidated) throw GridClientClosedException();
+    const GridClientVariant& val2) {
+    if (invalidated) 
+        throw GridClientClosedException();
 
-    GridCacheRequestCommand cmd(GridCacheRequestCommand::CAS);
+    GridCacheRequestCommand cmd(GridCacheRequestCommand::CAS, prjCacheName);
 
-    cmd.setCacheName(prjCacheName);
     cmd.setKey(key);
     cmd.setValue(val1);
     cmd.setValue2(val2);
@@ -328,8 +333,9 @@ bool GridClientDataProjectionImpl::cas(const GridClientVariant& key, const GridC
 }
 
 TGridBoolFuturePtr GridClientDataProjectionImpl::casAsync(const GridClientVariant& key, const GridClientVariant& val1,
-        const GridClientVariant& val2) {
-    if (invalidated) return TGridBoolFuturePtr(new GridBoolFailFutureImpl<GridClientClosedException>());
+    const GridClientVariant& val2) {
+    if (invalidated) 
+        return TGridBoolFuturePtr(new GridBoolFailFutureImpl<GridClientClosedException>());
 
     GridBoolFutureImpl* fut = new GridBoolFutureImpl(threadPool);
     TGridBoolFuturePtr res(fut);
@@ -342,31 +348,24 @@ TGridBoolFuturePtr GridClientDataProjectionImpl::casAsync(const GridClientVarian
 }
 
 GridClientVariant GridClientDataProjectionImpl::get(const GridClientVariant& key) {
-    if (invalidated) throw GridClientClosedException();
+    if (invalidated) 
+        throw GridClientClosedException();
 
-    GridCacheRequestCommand cmd(GridCacheRequestCommand::GET);
+    GridCacheRequestCommand cmd(GridCacheRequestCommand::GET, prjCacheName);
 
     cmd.setKey(key);
-    cmd.setCacheName(prjCacheName);
     cmd.setFlags(prjFlags);
 
     CacheGetProjectionClosure c(clientUniqueId(), cmd);
 
     this->withReconnectHandling(c, prjCacheName, GridClientVariantHasheableObject(key));
 
-    const TCacheValuesMap& res = c.getResult().getCacheValue();
-
-    if (res.size() == 0)
-        return GridClientVariant();
-
-    TCacheValuesMap::const_iterator iter = res.begin();
-
-    return iter->second;
+    return std::move(c.getResult().res);
 }
 
 TGridClientFutureVariant GridClientDataProjectionImpl::getAsync(const GridClientVariant& key) {
-    if (invalidated) return TGridClientFutureVariant(
-            new GridFailFutureImpl<GridClientVariant, GridClientClosedException>());
+    if (invalidated) 
+        return TGridClientFutureVariant(new GridFailFutureImpl<GridClientVariant, GridClientClosedException>());
 
     GridFutureImpl<GridClientVariant>* fut = new GridFutureImpl<GridClientVariant>(threadPool);
     TGridClientFutureVariant res(fut);
@@ -379,17 +378,17 @@ TGridClientFutureVariant GridClientDataProjectionImpl::getAsync(const GridClient
 }
 
 TGridClientVariantMap GridClientDataProjectionImpl::getAll(const TGridClientVariantSet& keys) {
-    if (invalidated) throw GridClientClosedException();
+    if (invalidated) 
+        throw GridClientClosedException();
 
     TGridClientVariantMap ret;
 
-    GridCacheRequestCommand cmd(GridCacheRequestCommand::GET_ALL);
+    GridCacheRequestCommand cmd(GridCacheRequestCommand::GET_ALL, prjCacheName);
     TGridClientVariantMap keyValues;
 
     for (size_t i = 0; i < keys.size(); i++)
         keyValues[keys[i]] = GridClientVariant();
 
-    cmd.setCacheName(prjCacheName);
     cmd.setValues(keyValues);
     cmd.setFlags(prjFlags);
 
@@ -400,14 +399,13 @@ TGridClientVariantMap GridClientDataProjectionImpl::getAll(const TGridClientVari
     else
         this->withReconnectHandling(c);
 
-    const TCacheValuesMap& res = c.getResult().getCacheValue();
+    const GridClientVariant& res = c.getResult().res;
 
-    GG_LOG_DEBUG("Get ALL result size: %d", res.size());
+    assert(res.hasVariantMap());
 
-    for (auto iter = res.begin(); iter != res.end(); ++iter)
-        ret[iter->first] = iter->second;
+    GG_LOG_DEBUG("Get ALL result size: %d", res.getVariantMap().size());
 
-    return ret;
+    return std::move(c.getResult().res.getVariantMap());
 }
 
 TGridClientFutureVariantMap GridClientDataProjectionImpl::getAllAsync(const TGridClientVariantSet& keys) {
@@ -422,6 +420,22 @@ TGridClientFutureVariantMap GridClientDataProjectionImpl::getAllAsync(const TGri
     fut->task(pt);
 
     return res;
+}
+
+std::shared_ptr<GridClientFuture<GridClientDataQueryResult*>> GridClientDataProjectionImpl::executeQueryAsync(GridDataQueryBean& qry) {
+    GridFutureImpl<GridClientDataQueryResult*>* fut = new GridFutureImpl<GridClientDataQueryResult*>(threadPool);
+
+    std::shared_ptr<GridClientFuture<GridClientDataQueryResult*>> res(fut);
+
+    boost::packaged_task<GridClientDataQueryResult*> pt(boost::bind(&GridClientDataProjectionImpl::executeQuery, this, qry));
+
+    fut->task(pt);
+
+    return res;
+}
+
+GridClientDataQueryResult* GridClientDataProjectionImpl::executeQuery(GridDataQueryBean& qry) {
+    return 0;
 }
 
 static int64_t doGetValue(const TCacheMetrics& metricsMap, std::string name) {
@@ -461,9 +475,8 @@ GridClientDataMetrics GridClientDataProjectionImpl::metrics() {
     if (invalidated) 
         throw GridClientClosedException();
 
-    GridCacheRequestCommand cmd(GridCacheRequestCommand::METRICS);
+    GridCacheRequestCommand cmd(GridCacheRequestCommand::METRICS, prjCacheName);
 
-    cmd.setCacheName(prjCacheName);
     cmd.setFlags(prjFlags);
 
     CacheMetricProjectionClosure c(clientUniqueId(), cmd);
@@ -485,9 +498,7 @@ TGridClientFutureDataMetrics GridClientDataProjectionImpl::metricsAsync() {
     TGridClientFutureDataMetrics res(fut);
 
     boost::packaged_task<GridClientDataMetrics> pt(
-            boost::bind(
-                    static_cast<GridClientDataMetrics (GridClientDataProjectionImpl::*)(
-                            void)> (&GridClientDataProjectionImpl::metrics), this));
+        boost::bind(static_cast<GridClientDataMetrics(GridClientDataProjectionImpl::*)(void)>(&GridClientDataProjectionImpl::metrics), this));
 
     fut->task(pt);
 
@@ -533,6 +544,9 @@ TGridClientDataPtr GridClientDataProjectionImpl::flagsOff(const std::set<GridCli
     return clientDataPtr;
 }
 
+const TGridClientDataQueriesPtr& GridClientDataProjectionImpl::queries() {
+    return qrys;
+}
 
 /**
  * Invalidates this data instance. This is done by the client to indicate

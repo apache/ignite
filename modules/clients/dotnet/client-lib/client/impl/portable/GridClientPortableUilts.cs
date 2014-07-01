@@ -1110,7 +1110,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="marsh">Marshaller.</param>
          * <returns>Array.</returns>
          */
-        public static IGridClientPortableObject[] ReadArrayPortable(MemoryStream stream, 
+        public static T[] ReadArrayPortable<T>(MemoryStream stream, 
             GridClientPortableMarshaller marsh)
         {
             int len = ReadInt(stream);
@@ -1119,10 +1119,14 @@ namespace GridGain.Client.Impl.Portable
                 return null;
             else
             {
-                IGridClientPortableObject[] vals = new IGridClientPortableObject[len];
+                T[] vals = new T[len];
 
-                for (int i = 0; i < len; i++) 
-                    vals.SetValue(ReadPortable(stream, marsh), i);
+                for (int i = 0; i < len; i++)
+                {
+                    IGridClientPortableObject portObj = ReadPortable(stream, marsh, false);
+
+                    vals.SetValue(PortableOrPredefined<T>(portObj), i);
+                }
 
                 return vals;
             }
@@ -1195,7 +1199,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="marsh">Marshaller.</param>
          * <returns>Collection.</returns>
          */
-        public static ICollection<IGridClientPortableObject> ReadCollectionPortable(MemoryStream stream, 
+        public static ICollection<T> ReadCollectionPortable<T>(MemoryStream stream, 
             GridClientPortableMarshaller marsh)
         {
             int len = ReadInt(stream);
@@ -1206,10 +1210,14 @@ namespace GridGain.Client.Impl.Portable
             {
                 stream.Seek(1, SeekOrigin.Current); // Skip collection type.
 
-                ICollection<IGridClientPortableObject> res = new List<IGridClientPortableObject>(len);
+                ICollection<T> res = new List<T>(len);
 
                 for (int i = 0; i < len; i++)
-                    res.Add(ReadPortable(stream, marsh));
+                {
+                    IGridClientPortableObject portObj = ReadPortable(stream, marsh, false);
+
+                    res.Add(PortableOrPredefined<T>(portObj));
+                }
 
                 return res;
             }
@@ -1376,7 +1384,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="marsh">Marshaller.</param>
          * <returns>Dictionary.</returns>
          */
-        public static IDictionary<IGridClientPortableObject, IGridClientPortableObject> ReadDictionaryPortable(
+        public static IDictionary<K, V> ReadDictionaryPortable<K, V>(
             MemoryStream stream, GridClientPortableMarshaller marsh)
         {
             int len = ReadInt(stream);
@@ -1387,11 +1395,16 @@ namespace GridGain.Client.Impl.Portable
             {
                 stream.Seek(1, SeekOrigin.Current); // Skip dictionary type.
 
-                IDictionary<IGridClientPortableObject, IGridClientPortableObject> res =
-                    new Dictionary<IGridClientPortableObject, IGridClientPortableObject>(len);
+                IDictionary<K, V> res = new Dictionary<K, V>(len);
 
                 for (int i = 0; i < len; i++)
-                    res.Add(ReadPortable(stream, marsh), ReadPortable(stream, marsh));
+                {
+                    IGridClientPortableObject keyPortObj = ReadPortable(stream, marsh, false);
+                    IGridClientPortableObject valPortObj = ReadPortable(stream, marsh, false);
+
+                    res.Add(PortableOrPredefined<K>(keyPortObj), PortableOrPredefined<V>(valPortObj));
+                }
+                    
 
                 return res;
             }
@@ -1513,6 +1526,8 @@ namespace GridGain.Client.Impl.Portable
             return (byte[])FIELD_MEM_BUF.GetValue(stream);
         }
 
+
+
         /**
          * <summary>Get string hash code.</summary> 
          * <param name="val">Value.</param>
@@ -1534,24 +1549,7 @@ namespace GridGain.Client.Impl.Portable
                 return hash;
             }
         }
-
-        /**
-         * 
-         */
-        public static int ArrayHashCode<T>(T[] arr)
-        {
-            int hash = 1;
-
-            for (int i = 0; i < arr.Length; i++)
-            {
-                T item = arr[i];
-
-                hash = 31 * hash + (item == null ? 0 : item.GetHashCode());
-            }
-
-            return hash;
-        }
-
+        
         /**
          * <summary>Get Guid hash code.</summary> 
          * <param name="val">Value.</param>
@@ -1576,13 +1574,67 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
+         * <summary>Check whether this is predefined type.</summary>
+         * <param name="hdr">Header.</param>
+         * <returns>True is this is one of predefined types with special semantics.</returns>
+         */
+        public static bool IsPredefinedType(byte hdr)
+        {
+            switch (hdr)
+            {
+                case TYPE_BYTE:
+                case TYPE_SHORT:
+                case TYPE_INT:
+                case TYPE_LONG:
+                case TYPE_FLOAT:
+                case TYPE_DOUBLE:
+                case TYPE_CHAR:
+                case TYPE_BOOL:
+                case TYPE_STRING:
+                case TYPE_GUID:
+                case TYPE_DATE:
+                case TYPE_ARRAY_BYTE:
+                case TYPE_ARRAY_SHORT:
+                case TYPE_ARRAY_INT:
+                case TYPE_ARRAY_LONG:
+                case TYPE_ARRAY_FLOAT:
+                case TYPE_ARRAY_DOUBLE:
+                case TYPE_ARRAY_CHAR:
+                case TYPE_ARRAY_BOOL:
+                case TYPE_ARRAY_STRING:
+                case TYPE_ARRAY_GUID:
+                case TYPE_ARRAY_DATE:
+                case TYPE_ARRAY:
+                case TYPE_COLLECTION:
+                case TYPE_DICTIONARY:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        /**
+         * <summary>Return either portable object as is or it's deserialized object or predefined type.</summary>
+         * <param name="portObj">Portable object.</param>
+         * <returns>Portable object or one of predefined types.</returns>
+         */ 
+        public static T PortableOrPredefined<T>(IGridClientPortableObject portObj)
+        {
+            if (portObj != null && !portObj.IsUserType() && IsPredefinedType((byte)portObj.TypeId()))
+                return portObj.Deserialize<T>();
+            else
+                return (T)(object)portObj;
+        }
+
+        /**
          * <summary>Read portable object.</summary>
          * <param name="stream">Stream.</param>
          * <param name="marsh">Marshaller.</param>
+         * <param name="detach">Detach flag.</param>
          * <returns>Portable object.</returns>
          */
-        private static IGridClientPortableObject ReadPortable(MemoryStream stream,
-            GridClientPortableMarshaller marsh)
+        public static IGridClientPortableObject ReadPortable(MemoryStream stream,
+            GridClientPortableMarshaller marsh, bool detach)
         {
             IGridClientPortableObject obj;
 
@@ -1590,8 +1642,13 @@ namespace GridGain.Client.Impl.Portable
 
             if (hdr == HDR_NULL)
                 obj = null;
-            else if (hdr == HDR_HND || hdr == HDR_FULL)
+            else if (hdr == HDR_HND || hdr == HDR_FULL || IsPredefinedType(hdr))
+            {
                 obj = marsh.Unmarshal0(stream, false, stream.Position - 1, hdr);
+
+                if (detach)
+                    ((GridClientPortableObjectImpl)obj).Detachable = true;
+            }
             else
                 throw new GridClientPortableException("Unexpected header: " + hdr);
 

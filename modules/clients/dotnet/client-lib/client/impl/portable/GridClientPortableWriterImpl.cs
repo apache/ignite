@@ -466,6 +466,14 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
+         * <summary>Enable detach mode for the next object write.</summary>
+         */ 
+        public void DetachNext()
+        {
+            ctx.DetachNext();
+        }
+
+        /**
          * <summary>Mark current output as raw.</summary>
          */ 
         private void MarkRaw()
@@ -519,9 +527,9 @@ namespace GridGain.Client.Impl.Portable
             if (ctx.CurrentRaw)
                 throw new GridClientPortableException("Cannot write named fields after raw data is written.");
 
-            int? fieldIdRef = ctx.CurrentMapper.FieldId(ctx.CurrentTypeId, fieldName);
+            int fieldIdRef = ctx.CurrentMapper.FieldId(ctx.CurrentTypeId, fieldName);
 
-            int fieldId = fieldIdRef.HasValue ? fieldIdRef.Value : PU.StringHashCode(fieldName.ToLower());
+            int fieldId = fieldIdRef != 0 ? fieldIdRef : PU.StringHashCode(fieldName.ToLower());
 
             Console.WriteLine("Write field: " + fieldName + " " + fieldId + " " + ctx.Stream.Position);
 

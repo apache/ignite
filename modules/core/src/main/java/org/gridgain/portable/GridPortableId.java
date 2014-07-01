@@ -14,6 +14,9 @@ import java.lang.annotation.*;
 /**
  * ID annotation for portable objects. Allows to provide
  * custom ID for a type or a field.
+ * <p>
+ * If {@code 0} is returned, hash code of class simple name
+ * or field name will be used.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

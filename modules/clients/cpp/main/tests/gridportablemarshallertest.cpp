@@ -53,7 +53,7 @@ public:
     }
 
     int32_t typeId() const {
-        return 1000;
+        return 10;
     }
 
     void writePortable(GridPortableWriter& writer) const {
@@ -84,7 +84,7 @@ public:
     }
 
     int32_t typeId() const {
-        return 1001;
+        return 11;
     }
 
     void writePortable(GridPortableWriter& writer) const {
@@ -106,12 +106,50 @@ public:
     int32_t id;
 };
 
-class PortablePerson : public GridHashablePortable {
+class PortableAddress : public GridHashablePortable {
 public:
-    PortablePerson() {
+    PortableAddress() {
     }
 
-    PortablePerson(int id, string name) : name(name), id(id) {
+    PortableAddress(const string& addr) : addr(addr) {
+
+    }
+	int32_t typeId() const {
+		return 10;
+	}
+
+    void writePortable(GridPortableWriter &writer) const {
+        writer.writeString("addr", addr);
+	}
+
+    void readPortable(GridPortableReader &reader) {
+		addr = reader.readString("addr").get_value_or(std::string());
+	}
+
+    bool operator==(const GridHashablePortable& portable) const {
+        const PortableAddress* other = static_cast<const PortableAddress*>(&portable);
+
+        return addr == other->addr;
+    }
+
+    int hashCode() const {
+        return gridStringHash(addr);
+    }
+
+    string addr;
+};
+
+REGISTER_TYPE(PortableAddress);
+
+class PortablePerson : public GridHashablePortable {
+public:
+    PortablePerson() : addr(0) {
+    }
+
+    PortablePerson(int id, string name, PortableAddress* addr) : name(name), id(id), addr(addr) {
+    }
+
+    PortablePerson(int id, string name) : name(name), id(id), addr(0) {
     }
 
     int32_t getId() {
@@ -123,17 +161,25 @@ public:
     }
 
 	int32_t typeId() const {
-		return 100;
+		return 11;
 	}
 
     void writePortable(GridPortableWriter &writer) const {
         writer.writeString("name", name);
 		writer.writeInt32("id", id);
+        
+        if (addr)
+            writer.writeVariant("addr", addr);
 	}
 
     void readPortable(GridPortableReader &reader) {
 		name = reader.readString("name").get_value_or(std::string());
         id = reader.readInt32("id");
+        
+        GridClientVariant addrVar = reader.readVariant("addr");
+
+        if (addrVar.hasPortableObject())
+            addr = addrVar.deserializePortable<PortableAddress>();
 	}
 
     bool operator==(const GridHashablePortable& portable) const {
@@ -150,9 +196,11 @@ private:
     string name;
 
     int32_t id;
+
+    PortableAddress* addr;
 };
 
-REGISTER_TYPE(100, PortablePerson);
+REGISTER_TYPE(PortablePerson);
 
 class Person {
 public :
@@ -188,7 +236,7 @@ public:
     }
 
     int32_t typeId(Person* obj) {
-        return 101;
+        return 12;
     }
 
     int32_t hashCode(Person* obj) {
@@ -200,7 +248,7 @@ public:
     }
 };
 
-REGISTER_TYPE_SERIALIZER(101, Person, PersonSerializer);
+REGISTER_TYPE_SERIALIZER(12, Person, PersonSerializer);
 
 class TestPortable1 : public GridPortable {
 public:
@@ -463,7 +511,7 @@ public:
 	}
 
     int32_t typeId() const {
-        return 300;
+        return 30;
     }
 
     static bool rawMarshalling;
@@ -545,7 +593,7 @@ public:
 
 bool TestPortable1::rawMarshalling = false;
 
-REGISTER_TYPE(300, TestPortable1);
+REGISTER_TYPE(TestPortable1);
 
 TestPortable1 createTestPortable1(int32_t arraysSize) {
     TestPortable1 p;
@@ -791,7 +839,7 @@ void testPortable1Marshalling(bool rawMarshalling, int32_t arraysSize) {
 
     TestPortable1::rawMarshalling = rawMarshalling;
 
-    boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshalUserObject(p);
+    boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(GridClientVariant(&p));
 
     TestPortable1* pRead = marsh.unmarshalUserObject<TestPortable1>(bytes);
 
@@ -815,7 +863,7 @@ class TestPortableCycle2;
 class TestPortableCycle1 : public GridPortable {
 public:
     int32_t typeId() const {
-        return 400;
+        return 40;
     }
 
     void writePortable(GridPortableWriter& writer) const {
@@ -833,12 +881,12 @@ public:
     int32_t val1;
 };
 
-REGISTER_TYPE(400, TestPortableCycle1);
+REGISTER_TYPE(TestPortableCycle1);
 
 class TestPortableCycle2 : public GridPortable {
 public:
     int32_t typeId() const {
-        return 401;
+        return 41;
     }
 
     void writePortable(GridPortableWriter& writer) const {
@@ -856,7 +904,7 @@ public:
     float val1;
 };
 
-REGISTER_TYPE(401, TestPortableCycle2);
+REGISTER_TYPE(TestPortableCycle2);
 
 BOOST_AUTO_TEST_CASE(testPortableSerialization_cycle) {
     GridPortableMarshaller marsh;
@@ -872,7 +920,7 @@ BOOST_AUTO_TEST_CASE(testPortableSerialization_cycle) {
     p1->p2 = p2;
     p2->p1 = p1;
 
-    boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshalUserObject(*p1);
+    boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(GridClientVariant(p1));
 
     delete p1;
     delete p2;
@@ -900,7 +948,7 @@ public:
     }
 
     int32_t typeId() const {
-        return 500;
+        return 50;
     }
 
     void writePortable(GridPortableWriter& writer) const {
@@ -968,7 +1016,7 @@ public:
 
 bool TestPortableCustom::rawMarshalling = false;
 
-REGISTER_TYPE(500, TestPortableCustom);
+REGISTER_TYPE(TestPortableCustom);
 
 void testCustomSerialization(bool rawMarshalling) {
     TestPortableCustom::rawMarshalling = rawMarshalling;
@@ -980,7 +1028,7 @@ void testCustomSerialization(bool rawMarshalling) {
 
         TestPortableCustom c(i);
 
-        bytes = marsh.marshalUserObject(c);
+        bytes = marsh.marshal(GridClientVariant(&c));
 
         TestPortableCustom* p = marsh.unmarshalUserObject<TestPortableCustom>(bytes);
 
@@ -1005,7 +1053,7 @@ public:
     }
 
     int32_t typeId() const {
-        return 600;
+        return 60;
     }
 
     void writePortable(GridPortableWriter& writer) const {
@@ -1034,7 +1082,7 @@ public:
     int32_t val2;
 };
 
-REGISTER_TYPE(600, TestPortableInvalid);
+REGISTER_TYPE(TestPortableInvalid);
 
 BOOST_AUTO_TEST_CASE(testPortableSerialization_invalid) {
     GridPortableMarshaller marsh;
@@ -1044,7 +1092,7 @@ BOOST_AUTO_TEST_CASE(testPortableSerialization_invalid) {
     try {
         cout << "Try marshal.\n";
 
-        marsh.marshalUserObject(invalid);
+        marsh.marshal(GridClientVariant(&invalid));
 
         BOOST_FAIL("Exception must be thrown");
     }
@@ -1054,7 +1102,7 @@ BOOST_AUTO_TEST_CASE(testPortableSerialization_invalid) {
 
     TestPortableInvalid valid(false, 100, 200);
 
-    boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshalUserObject(valid);
+    boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(GridClientVariant(&valid));
 
     unique_ptr<TestPortableInvalid> p(marsh.unmarshalUserObject<TestPortableInvalid>(bytes));
 
@@ -1072,7 +1120,7 @@ public:
     }
 
     int32_t typeId() const {
-        return 701;
+        return 71;
     }
 
     void writePortable(GridPortableWriter& writer) const {
@@ -1141,7 +1189,7 @@ public:
     }
 
     int32_t typeId() const {
-        return 700;
+        return 70;
     }
 
     void writePortable(GridPortableWriter& writer) const {
@@ -1184,16 +1232,16 @@ public:
     TestPortableFieldNames2* obj3;
 };
 
-REGISTER_TYPE(700, TestPortableFieldNames1);
+REGISTER_TYPE(TestPortableFieldNames1);
 
-REGISTER_TYPE(701, TestPortableFieldNames2);
+REGISTER_TYPE(TestPortableFieldNames2);
 
 BOOST_AUTO_TEST_CASE(testPortableSerialization_fieldNames) {
     GridPortableMarshaller marsh;
 
     TestPortableFieldNames1 obj(1000);
 
-    boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshalUserObject(obj);
+    boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(GridClientVariant(&obj));
 
     unique_ptr<TestPortableFieldNames1> p(marsh.unmarshalUserObject<TestPortableFieldNames1>(bytes));
 
@@ -1851,7 +1899,7 @@ BOOST_AUTO_TEST_CASE(testPortableSerialization) {
 
     PortablePerson p(-10, "ABC");
 
-    boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshalUserObject(p);
+    boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(GridClientVariant(&p));
 
     PortablePerson* pRead = marsh.unmarshalUserObject<PortablePerson>(bytes);
 
@@ -2375,7 +2423,7 @@ public:
     }
 
     int32_t typeId() const {
-        return 802;
+        return 82;
     }
 
     void writePortable(GridPortableWriter& writer) const {
@@ -2401,7 +2449,7 @@ public:
     }
 
     int32_t typeId() const {
-        return 801;
+        return 81;
     }
 
     void writePortable(GridPortableWriter& writer) const {
@@ -2444,7 +2492,7 @@ public:
     }
 
     int32_t typeId() const {
-        return 800;
+        return 80;
     }
 
     void writePortable(GridPortableWriter& writer) const {
@@ -2472,16 +2520,16 @@ public:
     float vFloat;
 };
 
-REGISTER_TYPE(800, TestNested1);
-REGISTER_TYPE(801, TestNested2);
-REGISTER_TYPE(802, TestNested3);
+REGISTER_TYPE(TestNested1);
+REGISTER_TYPE(TestNested2);
+REGISTER_TYPE(TestNested3);
 
 BOOST_AUTO_TEST_CASE(testMarshal_nested) {
     GridPortableMarshaller marsh;
 
     TestNested1 obj(new TestNested2());
 
-    boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshalUserObject(obj);
+    boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(GridClientVariant(&obj));
 
     GridClientVariant var1 = marsh.unmarshal(bytes);
 
@@ -2542,7 +2590,7 @@ public:
     static bool rawMarshalling;
 
     int32_t typeId() const {
-        return 900;
+        return 90;
     }
 
     void writePortable(GridPortableWriter& writer) const {
@@ -2606,7 +2654,7 @@ void testObjCollectionMarshal(bool raw)  {
 
     GridPortableMarshaller marsh;
 
-    boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshalUserObject(obj);
+    boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(GridClientVariant(&obj));
 
     GridClientVariant var = marsh.unmarshal(bytes);
 
@@ -2644,12 +2692,324 @@ void testObjCollectionMarshal(bool raw)  {
     delete objRead;
 }
 
+REGISTER_TYPE(TestObjCollection);
+
 BOOST_AUTO_TEST_CASE(testObjCollection) {
     testObjCollectionMarshal(false);
 
     testObjCollectionMarshal(true);
 }
 
-REGISTER_TYPE(900, TestObjCollection);
+BOOST_AUTO_TEST_CASE(testPortableObject) {
+    std::unique_ptr<PortableAddress> addr(new PortableAddress("addr1"));
+    
+    PortablePerson p1(1, "n1", addr.get());
+    PortablePerson p2(2, "n2");
+
+    GridPortableMarshaller marsh;
+
+    boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(GridClientVariant(&p1));
+
+    GridPortableObject o1 = marsh.unmarshal(bytes).getPortableObject();
+    
+    BOOST_REQUIRE_EQUAL(1, o1.field("id").getInt());
+    BOOST_REQUIRE_EQUAL("n1", o1.field("name").getString());
+    BOOST_REQUIRE(!o1.field("invalid").hasAnyValue());
+
+    GridPortableObject addr1 = o1.field("addr").getPortableObject();
+
+    BOOST_REQUIRE_EQUAL("addr1", addr1.field("addr").getString());
+    BOOST_REQUIRE(!addr1.field("invalid").hasAnyValue());
+
+    bytes = marsh.marshal(GridClientVariant(&p2));
+
+    GridPortableObject o2 = marsh.unmarshal(bytes).getPortableObject();
+
+    BOOST_REQUIRE_EQUAL(2, o2.field("id").getInt());
+    BOOST_REQUIRE_EQUAL("n2", o2.field("name").getString());
+
+    BOOST_REQUIRE_EQUAL(p1.hashCode(), o1.hashCode());
+    BOOST_REQUIRE_EQUAL(p1.typeId(), p1.typeId());
+
+    BOOST_REQUIRE_EQUAL(p2.hashCode(), o2.hashCode());
+    BOOST_REQUIRE_EQUAL(p2.typeId(), o2.typeId());
+
+    BOOST_REQUIRE(!(o1 == o2));
+
+    GridPortableObject o3 = marsh.unmarshal(bytes).getPortableObject();
+
+    BOOST_REQUIRE_EQUAL(2, o3.field("id").getInt());
+
+    BOOST_REQUIRE(o2 == o3);
+}
+
+BOOST_AUTO_TEST_CASE(testCacheRequestMarshal) {
+    std::unique_ptr<PortableAddress> addr1(new PortableAddress("addr1"));
+    std::unique_ptr<PortableAddress> addr2(new PortableAddress("addr2"));
+    
+    PortablePerson p1(1, "n1", addr1.get());
+    PortablePerson p2(2, "n2", addr1.get());
+    PortablePerson p3(3, "n3");
+    PortablePerson p4(4, "n4", addr2.get());
+
+    string cacheName("cacheName");
+
+    GridCacheRequestCommand cmd(GridCacheRequestCommand::PUT_ALL, cacheName);
+
+    GridClientVariant key(&p1);
+    GridClientVariant value(&p2);
+
+    cmd.setKey(key);
+    cmd.setValue(value);
+    cmd.setValue2(value);
+
+    TGridClientVariantMap vals;
+
+    vals[GridClientVariant(&p1)] = GridClientVariant(&p2);
+    vals[GridClientVariant(&p3)] = GridClientVariant(&p4);
+
+    cmd.setValues(vals);
+
+    GridClientCacheRequest msg(cmd);
+
+    GridPortableMarshaller marsh;
+
+    boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshalSystemObject(msg);
+
+    BOOST_REQUIRE_EQUAL(633, bytes->size());
+}
+
+class TestTemplateApiReadWrite : public GridPortable {
+public:
+    TestTemplateApiReadWrite() {
+    }
+
+    TestTemplateApiReadWrite(int colSize) {
+        for (int i = 0; i < colSize; i++) {
+            
+        }
+    }
+
+    int32_t typeId() const {
+        return 100;
+    }
+
+    void writePortable(GridPortableWriter& writer) const {
+        writer.writeByteArray("_bArr", bArr.begin(), bArr.end());
+        writer.writeInt16Array("_sArr", sArr.begin(), sArr.end());
+        writer.writeInt32Array("_iArr", iArr.begin(), iArr.end());
+        writer.writeInt64Array("_lArr", lArr.begin(), lArr.end());
+        writer.writeFloatArray("_fArr", fArr.begin(), fArr.end());
+        writer.writeDoubleArray("_dArr", dArr.begin(), dArr.end());
+        writer.writeCharArray("_cArr", cArr.begin(), cArr.end());
+        writer.writeBoolArray("_boolArr", boolArr.begin(), boolArr.end());
+        writer.writeStringArray("_strArr", strArr.begin(), strArr.end());
+        writer.writeUuidArray("_uuidArr", uuidArr.begin(), uuidArr.end());
+        writer.writeDateArray("_dateArr", dateArr.begin(), dateArr.end());
+        writer.writeVariantCollection("_col", GridCollectionType::LINKED_LIST, col.begin(), col.end());
+
+        writer.writeInt64Array("lDeq", lDeq.begin(), lDeq.end());
+
+        GridPortableRawWriter& raw = writer.rawWriter();
+
+        raw.writeByteArray(bArrRaw.begin(), bArrRaw.end());
+        raw.writeInt16Array(sArrRaw.begin(), sArrRaw.end());
+        raw.writeInt32Array(iArrRaw.begin(), iArrRaw.end());
+        raw.writeInt64Array(lArrRaw.begin(), lArrRaw.end());
+        raw.writeFloatArray(fArrRaw.begin(), fArrRaw.end());
+        raw.writeDoubleArray(dArrRaw.begin(), dArrRaw.end());
+        raw.writeCharArray(cArrRaw.begin(), cArrRaw.end());
+        raw.writeBoolArray(boolArrRaw.begin(), boolArrRaw.end());
+        raw.writeStringArray(strArrRaw.begin(), strArrRaw.end());
+        raw.writeUuidArray(uuidArrRaw.begin(), uuidArrRaw.end());
+        raw.writeDateArray(dateArrRaw.begin(), dateArrRaw.end());
+        raw.writeVariantArray(objArrRaw.begin(), objArrRaw.end());
+        raw.writeVariantCollection(GridCollectionType::ARRAY_LIST, colRaw.begin(), colRaw.end());
+        
+        raw.writeInt64Array(lDeqRaw.begin(), lDeqRaw.end());
+        raw.writeStringArray(strSetRaw.begin(), strSetRaw.end());
+    }            
+    
+    void readPortable(GridPortableReader& reader) {
+        reader.readByteArray("bArr", back_insert_iterator<vector<int8_t>>(bArr));
+        reader.readInt16Array("sArr", back_insert_iterator<vector<int16_t>>(sArr));
+        reader.readInt32Array("iArr", back_insert_iterator<vector<int32_t>>(iArr));
+        reader.readInt64Array("lArr", back_insert_iterator<vector<int64_t>>(lArr));
+        reader.readFloatArray("fArr", back_insert_iterator<vector<float>>(fArr));
+        reader.readDoubleArray("dArr", back_insert_iterator<vector<double>>(dArr));
+        reader.readCharArray("cArr", back_insert_iterator<vector<uint16_t>>(cArr));
+        reader.readBoolArray("boolArr", back_insert_iterator<vector<bool>>(boolArr));
+        reader.readStringArray("strArr", back_insert_iterator<vector<string>>(strArr));
+        reader.readWStringArray("wstrArr", back_insert_iterator<vector<wstring>>(wstrArr));
+        reader.readUuidArray("uuidArr", back_insert_iterator<vector<GridClientUuid>>(uuidArr));
+        reader.readDateArray("dateArr", back_insert_iterator<vector<GridClientDate>>(dateArr));
+
+        reader.readVariantCollection("col", back_insert_iterator<vector<GridClientVariant>>(col));
+        reader.readVariantCollection("varDeq", back_insert_iterator<deque<GridClientVariant>>(varDeq));
+        reader.readVariantCollection("varList", back_insert_iterator<list<GridClientVariant>>(varList));
+
+        reader.readInt64Array("lDeq", back_insert_iterator<deque<int64_t>>(lDeq));
+        reader.readStringArray("strSet", insert_iterator<set<string>>(strSet, strSet.begin()));
+        reader.readWStringArray("wstrSet", insert_iterator<set<wstring>>(wstrSet, wstrSet.begin()));
+        reader.readUuidArray("uuidList", back_insert_iterator<list<GridClientUuid>>(uuidList));
+        reader.readDateArray("dateList", back_insert_iterator<list<GridClientDate>>(dateList));
+
+        GridPortableRawReader& raw = reader.rawReader();
+
+        raw.readByteArray(back_insert_iterator<vector<int8_t>>(bArrRaw));
+        raw.readInt16Array(back_insert_iterator<vector<int16_t>>(sArrRaw));
+        raw.readInt32Array(back_insert_iterator<vector<int32_t>>(iArrRaw));
+        raw.readInt64Array(back_insert_iterator<vector<int64_t>>(lArrRaw));
+        raw.readFloatArray(back_insert_iterator<vector<float>>(fArrRaw));
+        raw.readDoubleArray(back_insert_iterator<vector<double>>(dArrRaw));
+        raw.readCharArray(back_insert_iterator<vector<uint16_t>>(cArrRaw));
+        raw.readBoolArray(back_insert_iterator<vector<bool>>(boolArrRaw));
+        raw.readStringArray(back_insert_iterator<vector<string>>(strArrRaw));
+        raw.readUuidArray(back_insert_iterator<vector<GridClientUuid>>(uuidArrRaw));
+        raw.readDateArray(back_insert_iterator<vector<GridClientDate>>(dateArrRaw));
+
+        raw.readVariantCollection(back_insert_iterator<vector<GridClientVariant>>(colRaw));
+        raw.readVariantCollection(back_insert_iterator<deque<GridClientVariant>>(varDeqRaw));
+        raw.readVariantCollection(back_insert_iterator<list<GridClientVariant>>(varListRaw));
+
+        raw.readInt64Array(back_insert_iterator<deque<int64_t>>(lDeqRaw));
+        raw.readStringArray(insert_iterator<set<string>>(strSetRaw, strSetRaw.begin()));
+        raw.readWStringArray(insert_iterator<set<wstring>>(wstrSetRaw, wstrSetRaw.begin()));
+        raw.readUuidArray(back_insert_iterator<list<GridClientUuid>>(uuidListRaw));
+        raw.readDateArray(back_insert_iterator<list<GridClientDate>>(dateListRaw));
+    }
+    
+    /** */
+    deque<int64_t> lDeq;
+
+    /** */
+    deque<int64_t> lDeqRaw;
+
+    /** */
+    set<string> strSet;
+
+    /** */
+    set<string> strSetRaw;
+
+    /** */
+    set<wstring> wstrSet;
+
+    /** */
+    set<wstring> wstrSetRaw;
+
+    /** */
+    list<GridClientUuid> uuidList;
+
+    /** */
+    list<GridClientUuid> uuidListRaw;
+
+    /** */
+    list<GridClientDate> dateList;
+
+    /** */
+    list<GridClientDate> dateListRaw;
+
+    /** */
+    deque<GridClientVariant> varDeq;
+
+    /** */
+    deque<GridClientVariant> varDeqRaw;
+
+    /** */
+    list<GridClientVariant> varList;
+
+    /** */
+    list<GridClientVariant> varListRaw;
+
+    /** */
+    vector<int8_t> bArr;
+
+    /** */
+    vector<int8_t> bArrRaw;
+
+    /** */
+    vector<int16_t> sArr;
+
+    /** */
+    vector<int16_t> sArrRaw;
+
+    /** */
+    vector<int32_t> iArr;
+
+    /** */
+    vector<int32_t> iArrRaw;
+
+    /** */
+    vector<int64_t> lArr;
+
+    /** */
+    vector<int64_t> lArrRaw;
+
+    /** */
+    vector<float> fArr;
+
+    /** */
+    vector<float> fArrRaw;
+
+    /** */
+    vector<double> dArr;
+
+    /** */
+    vector<double> dArrRaw;
+
+    /** */
+    vector<uint16_t> cArr;
+
+    /** */
+    vector<uint16_t> cArrRaw;
+
+    /** */
+    vector<bool> boolArr;
+
+    /** */
+    vector<bool> boolArrRaw;
+
+    /** */
+    vector<string> strArr;
+
+    /** */
+    vector<wstring> wstrArr;
+
+    /** */
+    vector<string> strArrRaw;
+
+    /** */
+    vector<string> wstrArrRaw;
+
+    /** */
+    vector<GridClientUuid> uuidArr;
+
+    /** */
+    vector<GridClientUuid> uuidArrRaw;
+
+    /** */
+    vector<GridClientDate> dateArr;
+
+    /** */
+    vector<GridClientDate> dateArrRaw;
+
+    /** */
+    TGridClientVariantSet objArr;
+
+    /** */
+    TGridClientVariantSet objArrRaw;
+
+    /** */
+    TGridClientVariantSet col;
+
+    /** */
+    TGridClientVariantSet colRaw;
+};
+
+REGISTER_TYPE(TestTemplateApiReadWrite);
+
+BOOST_AUTO_TEST_CASE(testTemplateApi) {
+    TestTemplateApiReadWrite obj(10);    
+}
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -95,7 +95,7 @@ namespace GridGain.Client.Impl.Portable
             WRITE_HANDLERS[typeof(int)] = WriteInt;
             WRITE_HANDLERS[typeof(uint)] = WriteUint;
             READ_HANDLERS[PU.TYPE_INT] = ReadInt;
-            FIELD_HANDLERS[PU.TYPE_SHORT] = ReadShortField;
+            FIELD_HANDLERS[PU.TYPE_INT] = ReadIntField;
 
             WRITE_HANDLERS[typeof(long)] = WriteLong;
             WRITE_HANDLERS[typeof(ulong)] = WriteUlong;
@@ -257,8 +257,7 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void WriteBool(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            WriteCommonHeader(ctx.Stream, PU.TYPE_BOOL, obj.GetHashCode(), 1);
-
+            PU.WriteByte(PU.TYPE_BOOL, ctx.Stream);
             PU.WriteBoolean((bool)obj, ctx.Stream);
         }
 
@@ -267,10 +266,9 @@ namespace GridGain.Client.Impl.Portable
          */
         private static unsafe void WriteSbyte(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            WriteCommonHeader(ctx.Stream, PU.TYPE_BYTE, obj.GetHashCode(), 1);
-
             sbyte val = (sbyte)obj;
 
+            PU.WriteByte(PU.TYPE_BYTE, ctx.Stream);
             PU.WriteByte(*(byte*)&val, ctx.Stream);
         }
 
@@ -279,8 +277,7 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void WriteByte(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            WriteCommonHeader(ctx.Stream, PU.TYPE_BYTE, obj.GetHashCode(), 1);
-
+            PU.WriteByte(PU.TYPE_BYTE, ctx.Stream);
             PU.WriteByte((byte)obj, ctx.Stream);
         }
 
@@ -289,8 +286,7 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void WriteShort(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            WriteCommonHeader(ctx.Stream, PU.TYPE_SHORT, obj.GetHashCode(), 2);
-
+            PU.WriteByte(PU.TYPE_SHORT, ctx.Stream);
             PU.WriteShort((short)obj, ctx.Stream);
         }
 
@@ -299,10 +295,9 @@ namespace GridGain.Client.Impl.Portable
          */
         private static unsafe void WriteUshort(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            WriteCommonHeader(ctx.Stream, PU.TYPE_SHORT, obj.GetHashCode(), 2);
-
             ushort val = (ushort)obj;
 
+            PU.WriteByte(PU.TYPE_SHORT, ctx.Stream);
             PU.WriteShort(*(short*)&val, ctx.Stream);
         }
 
@@ -311,10 +306,9 @@ namespace GridGain.Client.Impl.Portable
          */
         private static unsafe void WriteChar(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            WriteCommonHeader(ctx.Stream, PU.TYPE_CHAR, obj.GetHashCode(), 2);
-
             char val = (char)obj;
 
+            PU.WriteByte(PU.TYPE_CHAR, ctx.Stream);
             PU.WriteShort(*(short*)&val, ctx.Stream);
         }
 
@@ -323,8 +317,7 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void WriteInt(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            WriteCommonHeader(ctx.Stream, PU.TYPE_INT, obj.GetHashCode(), 4);
-
+            PU.WriteByte(PU.TYPE_INT, ctx.Stream);
             PU.WriteInt((int)obj, ctx.Stream);
         }
 
@@ -333,10 +326,9 @@ namespace GridGain.Client.Impl.Portable
          */
         private static unsafe void WriteUint(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            WriteCommonHeader(ctx.Stream, PU.TYPE_INT, obj.GetHashCode(), 4);
-
             uint val = (uint)obj;
 
+            PU.WriteByte(PU.TYPE_INT, ctx.Stream);
             PU.WriteInt(*(int*)&val, ctx.Stream);
         }
 
@@ -345,8 +337,7 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void WriteLong(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            WriteCommonHeader(ctx.Stream, PU.TYPE_LONG, obj.GetHashCode(), 8);
-
+            PU.WriteByte(PU.TYPE_LONG, ctx.Stream);
             PU.WriteLong((long)obj, ctx.Stream);
         }
 
@@ -355,10 +346,9 @@ namespace GridGain.Client.Impl.Portable
          */
         private static unsafe void WriteUlong(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            WriteCommonHeader(ctx.Stream, PU.TYPE_LONG, obj.GetHashCode(), 8);
-
             ulong val = (ulong)obj;
 
+            PU.WriteByte(PU.TYPE_LONG, ctx.Stream);
             PU.WriteLong(*(long*)&val, ctx.Stream);
         }
 
@@ -367,8 +357,7 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void WriteFloat(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            WriteCommonHeader(ctx.Stream, PU.TYPE_FLOAT, obj.GetHashCode(), 4);
-
+            PU.WriteByte(PU.TYPE_FLOAT, ctx.Stream);
             PU.WriteFloat((float)obj, ctx.Stream);
         }
 
@@ -377,8 +366,7 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void WriteDouble(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            WriteCommonHeader(ctx.Stream, PU.TYPE_DOUBLE, obj.GetHashCode(), 8);
-
+            PU.WriteByte(PU.TYPE_DOUBLE, ctx.Stream);
             PU.WriteDouble((double)obj, ctx.Stream);
         }
 
@@ -387,11 +375,8 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void WriteDate(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            DateTime obj0 = (DateTime)obj;
-
-            WriteCommonHeader(ctx.Stream, PU.TYPE_DATE, obj0.GetHashCode(), 1 + 8);
-
-            PU.WriteDate(obj0, ctx.Stream);
+            PU.WriteByte(PU.TYPE_DATE, ctx.Stream);
+            PU.WriteDate((DateTime)obj, ctx.Stream);
         }
 
         /**
@@ -399,13 +384,8 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void WriteString(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            string obj0 = (string)obj;
-
-            WriteCommonHeader(ctx.Stream, PU.TYPE_STRING, PU.StringHashCode(obj0));
-
-            PU.WriteString(obj0, ctx.Stream);
-
-            WriteLength(ctx.Stream, pos, ctx.Stream.Position, pos + HDR_LEN);
+            PU.WriteByte(PU.TYPE_STRING, ctx.Stream);
+            PU.WriteString((string)obj, ctx.Stream);
         }
 
         /**
@@ -413,11 +393,8 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void WriteGuid(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            Guid obj0 = (Guid)obj;
-
-            WriteCommonHeader(ctx.Stream, PU.TYPE_GUID, obj0.GetHashCode(), 1 + 16);
-
-            PU.WriteGuid(obj0, ctx.Stream);
+            PU.WriteByte(PU.TYPE_GUID, ctx.Stream);
+            PU.WriteGuid((Guid)obj, ctx.Stream);
         }
 
         /**
@@ -425,11 +402,8 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void WriteBoolArray(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            bool[] arr = (bool[])obj;
-
-            WriteCommonHeader(ctx.Stream, PU.TYPE_ARRAY_BOOL, obj.GetHashCode(), 4 + (arr != null ? arr.Length : 0));
-
-            PU.WriteBooleanArray(arr, ctx.Stream);
+            PU.WriteByte(PU.TYPE_ARRAY_BOOL, ctx.Stream);
+            PU.WriteBooleanArray((bool[])obj, ctx.Stream);
         }
 
         /**
@@ -437,11 +411,8 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void WriteByteArray(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            byte[] arr = (byte[])obj;
-
-            WriteCommonHeader(ctx.Stream, PU.TYPE_ARRAY_BYTE, obj.GetHashCode(), 4 + (arr != null ? 4 + arr.Length : 0));
-
-            PU.WriteByteArray(arr, ctx.Stream);
+            PU.WriteByte(PU.TYPE_ARRAY_BYTE, ctx.Stream);
+            PU.WriteByteArray((byte[])obj, ctx.Stream);
         }
 
         /**
@@ -449,11 +420,8 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void WriteSbyteArray(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            byte[] arr = (byte[])(Array)obj;
-
-            WriteCommonHeader(ctx.Stream, PU.TYPE_ARRAY_BYTE, obj.GetHashCode(), 4 + (arr != null ? arr.Length : 0));
-
-            PU.WriteByteArray(arr, ctx.Stream);
+            PU.WriteByte(PU.TYPE_ARRAY_BYTE, ctx.Stream);
+            PU.WriteByteArray((byte[])(Array)obj, ctx.Stream);
         }
 
         /**
@@ -461,11 +429,8 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void WriteShortArray(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            short[] arr = (short[])obj;
-
-            WriteCommonHeader(ctx.Stream, PU.TYPE_ARRAY_SHORT, obj.GetHashCode(), 4 + (arr != null ? 4 + arr.Length * 2 : 0));
-
-            PU.WriteShortArray(arr, ctx.Stream);
+            PU.WriteByte(PU.TYPE_ARRAY_SHORT, ctx.Stream);
+            PU.WriteShortArray((short[])obj, ctx.Stream);
         }
 
         /**
@@ -473,11 +438,8 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void WriteUshortArray(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            short[] arr = (short[])(Array)obj;
-
-            WriteCommonHeader(ctx.Stream, PU.TYPE_ARRAY_SHORT, obj.GetHashCode(), 4 + (arr != null ? 4 + arr.Length * 2 : 0));
-
-            PU.WriteShortArray(arr, ctx.Stream);
+            PU.WriteByte(PU.TYPE_ARRAY_SHORT, ctx.Stream);
+            PU.WriteShortArray((short[])(Array)obj, ctx.Stream);
         }
 
         /**
@@ -485,11 +447,8 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void WriteCharArray(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            char[] arr = (char[])obj;
-
-            WriteCommonHeader(ctx.Stream, PU.TYPE_ARRAY_CHAR, obj.GetHashCode(), 4 + (arr != null ? 4 + arr.Length * 2 : 0));
-
-            PU.WriteCharArray(arr, ctx.Stream);
+            PU.WriteByte(PU.TYPE_ARRAY_CHAR, ctx.Stream);
+            PU.WriteCharArray((char[])obj, ctx.Stream);
         }
 
         /**
@@ -497,11 +456,8 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void WriteIntArray(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            int[] arr = (int[])obj;
-
-            WriteCommonHeader(ctx.Stream, PU.TYPE_ARRAY_INT, obj.GetHashCode(), 4 + (arr != null ? 4 + arr.Length * 4 : 0));
-
-            PU.WriteIntArray(arr, ctx.Stream);
+            PU.WriteByte(PU.TYPE_ARRAY_INT, ctx.Stream);
+            PU.WriteIntArray((int[])obj, ctx.Stream);
         }
 
         /**
@@ -509,11 +465,8 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void WriteUintArray(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            int[] arr = (int[])(Array)obj;
-
-            WriteCommonHeader(ctx.Stream, PU.TYPE_ARRAY_INT, obj.GetHashCode(), 4 + (arr != null ? 4 + arr.Length * 4 : 0));
-
-            PU.WriteIntArray(arr, ctx.Stream);
+            PU.WriteByte(PU.TYPE_ARRAY_INT, ctx.Stream);
+            PU.WriteIntArray((int[])(Array)obj, ctx.Stream);
         }
 
         /**
@@ -521,23 +474,17 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void WriteLongArray(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            long[] arr = (long[])obj;
-
-            WriteCommonHeader(ctx.Stream, PU.TYPE_ARRAY_LONG, obj.GetHashCode(), 4 + (arr != null ? 4 + arr.Length * 8 : 0));
-
-            PU.WriteLongArray(arr, ctx.Stream);
+            PU.WriteByte(PU.TYPE_ARRAY_LONG, ctx.Stream);
+            PU.WriteLongArray((long[])obj, ctx.Stream);
         }
 
         /**
          * <summary>Write ulong array.</summary>
          */
         private static void WriteUlongArray(GridClientPortableWriteContext ctx, int pos, object obj)
-        {
-            long[] arr = (long[])(Array)obj;
-
-            WriteCommonHeader(ctx.Stream, PU.TYPE_ARRAY_LONG, obj.GetHashCode(), 4 + (arr != null ? 4 + arr.Length * 8 : 0));
-
-            PU.WriteLongArray(arr, ctx.Stream);
+        {            
+            PU.WriteByte(PU.TYPE_ARRAY_LONG, ctx.Stream);
+            PU.WriteLongArray((long[])(Array)obj, ctx.Stream);
         }
 
         /**
@@ -545,11 +492,8 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void WriteFloatArray(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            float[] arr = (float[])obj;
-
-            WriteCommonHeader(ctx.Stream, PU.TYPE_ARRAY_FLOAT, obj.GetHashCode(), 4 + (arr != null ? 4 + arr.Length * 4 : 0));
-
-            PU.WriteFloatArray(arr, ctx.Stream);
+            PU.WriteByte(PU.TYPE_ARRAY_FLOAT, ctx.Stream);
+            PU.WriteFloatArray((float[])obj, ctx.Stream);
         }
 
         /**
@@ -557,11 +501,8 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void WriteDoubleArray(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            double[] arr = (double[])obj;
-
-            WriteCommonHeader(ctx.Stream, PU.TYPE_ARRAY_DOUBLE, obj.GetHashCode(), 4 + (arr != null ? 4 + arr.Length * 8 : 0));
-
-            PU.WriteDoubleArray(arr, ctx.Stream);
+            PU.WriteByte(PU.TYPE_ARRAY_DOUBLE, ctx.Stream);
+            PU.WriteDoubleArray((double[])obj, ctx.Stream);
         }
 
         /**
@@ -569,13 +510,8 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void WriteDateArray(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            DateTime?[] arr = (DateTime?[])obj;
-
-            WriteCommonHeader(ctx.Stream, PU.TYPE_ARRAY_DATE, obj.GetHashCode());
-
-            PU.WriteDateArray(arr, ctx.Stream);
-
-            WriteLength(ctx.Stream, pos, ctx.Stream.Position, pos + HDR_LEN);
+            PU.WriteByte(PU.TYPE_ARRAY_DATE, ctx.Stream);
+            PU.WriteDateArray((DateTime?[])obj, ctx.Stream);
         }
 
         /**
@@ -583,13 +519,8 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void WriteStringArray(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            string[] arr = (string[])obj;
-
-            WriteCommonHeader(ctx.Stream, PU.TYPE_ARRAY_STRING, obj.GetHashCode());
-
-            PU.WriteStringArray(arr, ctx.Stream);
-
-            WriteLength(ctx.Stream, pos, ctx.Stream.Position, pos + HDR_LEN);
+            PU.WriteByte(PU.TYPE_ARRAY_STRING, ctx.Stream);
+            PU.WriteStringArray((string[])obj, ctx.Stream);
         }
 
         /**
@@ -597,13 +528,8 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void WriteGuidArray(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            Guid?[] arr = (Guid?[])obj;
-
-            WriteCommonHeader(ctx.Stream, PU.TYPE_ARRAY_GUID, obj.GetHashCode());
-
-            PU.WriteGuidArray(arr, ctx.Stream);
-
-            WriteLength(ctx.Stream, pos, ctx.Stream.Position, pos + HDR_LEN);
+            PU.WriteByte(PU.TYPE_ARRAY_GUID, ctx.Stream);
+            PU.WriteGuidArray((Guid?[])obj, ctx.Stream);
         }
 
         /**
@@ -611,11 +537,8 @@ namespace GridGain.Client.Impl.Portable
          */
         public static void WriteArray(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            WriteCommonHeader(ctx.Stream, PU.TYPE_ARRAY, obj.GetHashCode());
-
+            PU.WriteByte(PU.TYPE_ARRAY, ctx.Stream);
             PU.WriteArray((Array)obj, ctx);
-
-            WriteLength(ctx.Stream, pos, ctx.Stream.Position, pos + HDR_LEN);
         }
 
         /**
@@ -623,11 +546,8 @@ namespace GridGain.Client.Impl.Portable
          */
         public static void WriteCollection(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            WriteCommonHeader(ctx.Stream, PU.TYPE_COLLECTION, obj.GetHashCode());
-
+            PU.WriteByte(PU.TYPE_COLLECTION, ctx.Stream);
             PU.WriteCollection((ICollection)obj, ctx);
-
-            WriteLength(ctx.Stream, pos, ctx.Stream.Position, pos + HDR_LEN);
         }
 
         /**
@@ -639,11 +559,8 @@ namespace GridGain.Client.Impl.Portable
 
             Debug.Assert(info.IsGenericCollection, "Not generic collection: " + obj.GetType().FullName);
 
-            WriteCommonHeader(ctx.Stream, PU.TYPE_COLLECTION, obj.GetHashCode());
-
+            PU.WriteByte(PU.TYPE_COLLECTION, ctx.Stream);
             info.GenericWriteMethod.Invoke(null, new object[] { obj, ctx });
-
-            WriteLength(ctx.Stream, pos, ctx.Stream.Position, pos + HDR_LEN);
         }
 
         /**
@@ -651,11 +568,8 @@ namespace GridGain.Client.Impl.Portable
          */
         public static void WriteDictionary(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            WriteCommonHeader(ctx.Stream, PU.TYPE_DICTIONARY, obj.GetHashCode());
-
+            PU.WriteByte(PU.TYPE_DICTIONARY, ctx.Stream);
             PU.WriteDictionary((IDictionary)obj, ctx);
-
-            WriteLength(ctx.Stream, pos, ctx.Stream.Position, pos + HDR_LEN);
         }
 
         /**
@@ -667,11 +581,8 @@ namespace GridGain.Client.Impl.Portable
 
             Debug.Assert(info.IsGenericDictionary, "Not generic dictionary: " + obj.GetType().FullName);
 
-            WriteCommonHeader(ctx.Stream, PU.TYPE_DICTIONARY, obj.GetHashCode());
-
+            PU.WriteByte(PU.TYPE_DICTIONARY, ctx.Stream);
             info.GenericWriteMethod.Invoke(null, new object[] { obj, ctx });
-
-            WriteLength(ctx.Stream, pos, ctx.Stream.Position, pos + HDR_LEN);
         }
 
         /**
@@ -679,11 +590,8 @@ namespace GridGain.Client.Impl.Portable
          */
         public static void WriteArrayList(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            WriteCommonHeader(ctx.Stream, PU.TYPE_COLLECTION, obj.GetHashCode());
-
+            PU.WriteByte(PU.TYPE_COLLECTION, ctx.Stream);
             PU.WriteTypedCollection((ICollection)obj, ctx, PU.COLLECTION_ARRAY_LIST);
-
-            WriteLength(ctx.Stream, pos, ctx.Stream.Position, pos + HDR_LEN);
         }
 
         /**
@@ -691,11 +599,8 @@ namespace GridGain.Client.Impl.Portable
          */
         public static void WriteHashtable(GridClientPortableWriteContext ctx, int pos, object obj)
         {
-            WriteCommonHeader(ctx.Stream, PU.TYPE_DICTIONARY, obj.GetHashCode());
-
+            PU.WriteByte(PU.TYPE_DICTIONARY, ctx.Stream);
             PU.WriteTypedDictionary((IDictionary)obj, ctx, PU.MAP_HASH_MAP);
-
-            WriteLength(ctx.Stream, pos, ctx.Stream.Position, pos + HDR_LEN);
         }
 
         /**
@@ -1087,7 +992,7 @@ namespace GridGain.Client.Impl.Portable
          */
         private static object ReadArrayField(MemoryStream stream, GridClientPortableMarshaller marsh)
         {
-            return PU.ReadArrayPortable(stream, marsh);
+            return PU.ReadArrayPortable<object>(stream, marsh);
         }
 
         /**
@@ -1108,7 +1013,7 @@ namespace GridGain.Client.Impl.Portable
          */
         private static object ReadCollectionField(MemoryStream stream, GridClientPortableMarshaller marsh)
         {
-            return PU.ReadCollectionPortable(stream, marsh);
+            return PU.ReadCollectionPortable<object>(stream, marsh);
         }
 
         /**
@@ -1129,58 +1034,7 @@ namespace GridGain.Client.Impl.Portable
          */
         private static object ReadDictionaryField(MemoryStream stream, GridClientPortableMarshaller marsh)
         {
-            return PU.ReadDictionaryPortable(stream, marsh);
-        }
-
-        /**
-         * <summary>Write common header without length.</summary>
-         * <param name="stream">Stream.</param>
-         * <param name="typeId">Type ID.</param>
-         * <param name="hashCode">Hash code.</param>
-         */
-        private static void WriteCommonHeader(Stream stream, int typeId, int hashCode)
-        {
-            stream.WriteByte(PU.HDR_FULL);       // 0: Full form.
-            PU.WriteBoolean(false, stream);      // 1: System type.
-            PU.WriteInt(typeId, stream);         // 1: Type ID.
-            PU.WriteInt(hashCode, stream);       // 6: Hash code.
-            stream.Seek(8, SeekOrigin.Current);  // 10: Length is not know nad no raw data.
-        }
-
-        /**
-         * <summary>Write common header with length.</summary>
-         * <param name="stream">Stream.</param>
-         * <param name="typeId">Type ID.</param>
-         * <param name="hashCode">Hash code.</param>
-         * <param name="len">Length.</param>
-         */
-        private static void WriteCommonHeader(Stream stream, int typeId, int hashCode, int len)
-        {
-            stream.WriteByte(PU.HDR_FULL);       // 0: Full form.
-            PU.WriteBoolean(false, stream);      // 1: System type.
-            PU.WriteInt(typeId, stream);         // 2: Type ID.
-            PU.WriteInt(hashCode, stream);       // 6: Hash code.
-            PU.WriteInt(HDR_LEN + len, stream);  // 10: Length = HDR_LEN(18) + data length.
-            stream.Seek(4, SeekOrigin.Current);  // 14: No raw data.
-        }
-
-        /**
-         * <summary>Write lengths.</summary>
-         * <param name="stream">Stream</param>
-         * <param name="pos">Initial position.</param>
-         * <param name="retPos">Return position</param>
-         * <param name="rawPos">Raw data position.</param>
-         */
-        private static void WriteLength(Stream stream, long pos, long retPos, long rawPos)
-        {
-            stream.Seek(pos + 10, SeekOrigin.Begin);
-
-            PU.WriteInt((int)(retPos - pos), stream);
-
-            if (rawPos != 0)
-                PU.WriteInt((int)(rawPos - pos), stream);
-
-            stream.Seek(retPos, SeekOrigin.Begin);
+            return PU.ReadDictionaryPortable<object, object>(stream, marsh);
         }
 
         /**

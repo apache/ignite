@@ -12,6 +12,7 @@ namespace GridGain.Client.Impl.Portable
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Reflection;
     using GridGain.Client.Impl.Message;
@@ -19,6 +20,8 @@ namespace GridGain.Client.Impl.Portable
     using GridGain.Client.Portable;    
 
     using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
+    using PSH = GridGain.Client.Impl.Portable.GridClientPortableSystemHandlers;
+    using H = GridGain.Client.Hasher.GridClientJavaHelper;
 
     /** <summary>Portable marshaller implementation.</summary> */
     internal class GridClientPortableMarshaller
@@ -174,7 +177,7 @@ namespace GridGain.Client.Impl.Portable
             
             if (hdr == PU.HDR_HND)
             {
-                pos = input.Position - PU.ReadInt(input);
+                pos = pos - PU.ReadInt(input); // Relative jump.
 
                 retPos = input.Position; // Return position is set after handle.
 
@@ -183,9 +186,10 @@ namespace GridGain.Client.Impl.Portable
                 byte hndObjHdr = PU.ReadByte(input);
 
                 if (hndObjHdr != PU.HDR_FULL)
+                    // Predefined types doesn't go through handlers engine.
                     throw new GridClientPortableException("Invalid handler header: " + hndObjHdr);
             }
-            else if (hdr != PU.HDR_FULL)
+            else if (hdr != PU.HDR_FULL && !PU.IsPredefinedType(hdr))
                 throw new GridClientPortableException("Unexpected header: " + hdr);
 
             // Read header.
@@ -194,21 +198,23 @@ namespace GridGain.Client.Impl.Portable
             int hashCode;
             int len;
             int rawDataOffset;
+            object val;
 
             // Read fields.
             Dictionary<int, int> fields;
 
-            ReadMetadata(input, out userType, out typeId, out hashCode, out len, out rawDataOffset, out fields);
+            ReadMetadata(input, hdr, out userType, out typeId, out hashCode, out len, out rawDataOffset, out val, out fields);
 
-            if (hdr == PU.HDR_FULL)
-                retPos = pos + len; // Return position right after the full object.
+            if (hdr != PU.HDR_HND)
+                // Return position right after the full object.
+                retPos = pos + len; 
 
             input.Seek(retPos, SeekOrigin.Begin); // Correct stream positioning.
 
             byte[] data = top ? input.ToArray() : PU.MemoryBuffer(input);
 
-            return new GridClientPortableObjectImpl(this, data, (int)pos, len, userType, typeId,
-                hashCode, rawDataOffset, fields);
+            return new GridClientPortableObjectImpl(this, data, (int)pos, val, len, userType, typeId,
+                hashCode, rawDataOffset, fields, false);
         }
 
         /**
@@ -222,42 +228,68 @@ namespace GridGain.Client.Impl.Portable
             int hashCode;
             int len;
             int rawDataOffset;
+            object val;
             Dictionary<int, int> fields;
 
             MemoryStream stream = new MemoryStream(port.Data);
 
-            stream.Seek(port.Offset + 1, SeekOrigin.Begin);
+            stream.Seek(port.Offset, SeekOrigin.Begin);
 
-            ReadMetadata(stream, out userType, out typeId, out hashCode, out len, out rawDataOffset, out fields);
+            byte hdr = PU.ReadByte(stream);
+            
+            ReadMetadata(stream, hdr, out userType, out typeId, out hashCode, out len, out rawDataOffset, out val, out fields);
 
             port.UserType(userType);
             port.TypeId(typeId);
             port.HashCode(hashCode);
             port.Length = len;
             port.RawDataOffset = rawDataOffset;
+            port.Value = val;
             port.Fields = fields;
         }
 
         /**
          * <summary>Read metadata.</summary>
          * <param name="stream">Stream position right after object's header first byte.</param>
+         * <param name="hdr">Header.</param>
          * <param name="userType">User type flag.</param>
          * <param name="typeId">Type ID.</param>
          * <param name="hashCode">Hash code.</param>
          * <param name="len">Length.</param>
          * <param name="rawDataOffset">Raw data offset.</param>
+         * <param name="val">Value.</param>
          * <param name="fields">Fields in this object.</param>
          */
-        private void ReadMetadata(MemoryStream stream, out bool userType, out int typeId, out int hashCode, 
-            out int len, out int rawDataOffset, out Dictionary<int, int> fields)
+        private void ReadMetadata(MemoryStream stream, byte hdr, out bool userType, out int typeId, out int hashCode, 
+            out int len, out int rawDataOffset, out object val, out Dictionary<int, int> fields)
         {
             int pos = (int)stream.Position - 1; // Header byte is already read.
+
+            if (PU.IsPredefinedType(hdr))
+            {
+                GridClientPortableSystemFieldDelegate handler = PSH.FieldHandler(hdr);
+
+                Debug.Assert(handler != null, "Cannot find handler for predefiend type: " + hdr);
+
+                val = handler.Invoke(stream, this);
+
+                userType = false;
+                typeId = hdr;
+                hashCode = H.GetJavaHashCode(val, true); 
+                len = (int)stream.Position - pos; // Length is calculated relatively.
+                rawDataOffset = -1; // Raw data offset is not relevant.
+
+                fields = null;
+
+                return;
+            }
 
             userType = PU.ReadBoolean(stream);
             typeId = PU.ReadInt(stream);
             hashCode = PU.ReadInt(stream);
             len = PU.ReadInt(stream);
             rawDataOffset = PU.ReadInt(stream);
+            val = null;
 
             // Read fields.
             fields = null;
@@ -310,7 +342,7 @@ namespace GridGain.Client.Impl.Portable
         {
             refMapper.Register(type);
 
-            int typeId = refMapper.TypeId(type).Value;
+            int typeId = refMapper.TypeId(type);
 
             refSerializer.Register(type, typeId, refMapper);
 
@@ -355,9 +387,9 @@ namespace GridGain.Client.Impl.Portable
                 mapper = refMapper;
             }
 
-            int? typeIdRef = mapper.TypeId(type);
+            int typeIdRef = mapper.TypeId(type);
 
-            int typeId = typeIdRef.HasValue ? typeIdRef.Value : PU.StringHashCode(typeCfg.TypeName.ToLower());
+            int typeId = typeIdRef != 0 ? typeIdRef : PU.StringHashCode(typeCfg.TypeName.ToLower());
 
             if (serializer is GridClientPortableReflectiveSerializer)
             {
