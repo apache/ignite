@@ -139,7 +139,7 @@ public:
     string addr;
 };
 
-REGISTER_TYPE(10, PortableAddress);
+REGISTER_TYPE(PortableAddress);
 
 class PortablePerson : public GridHashablePortable {
 public:
@@ -200,7 +200,7 @@ private:
     PortableAddress* addr;
 };
 
-REGISTER_TYPE(11, PortablePerson);
+REGISTER_TYPE(PortablePerson);
 
 class Person {
 public :
@@ -593,7 +593,7 @@ public:
 
 bool TestPortable1::rawMarshalling = false;
 
-REGISTER_TYPE(30, TestPortable1);
+REGISTER_TYPE(TestPortable1);
 
 TestPortable1 createTestPortable1(int32_t arraysSize) {
     TestPortable1 p;
@@ -881,7 +881,7 @@ public:
     int32_t val1;
 };
 
-REGISTER_TYPE(40, TestPortableCycle1);
+REGISTER_TYPE(TestPortableCycle1);
 
 class TestPortableCycle2 : public GridPortable {
 public:
@@ -904,7 +904,7 @@ public:
     float val1;
 };
 
-REGISTER_TYPE(41, TestPortableCycle2);
+REGISTER_TYPE(TestPortableCycle2);
 
 BOOST_AUTO_TEST_CASE(testPortableSerialization_cycle) {
     GridPortableMarshaller marsh;
@@ -1016,7 +1016,7 @@ public:
 
 bool TestPortableCustom::rawMarshalling = false;
 
-REGISTER_TYPE(50, TestPortableCustom);
+REGISTER_TYPE(TestPortableCustom);
 
 void testCustomSerialization(bool rawMarshalling) {
     TestPortableCustom::rawMarshalling = rawMarshalling;
@@ -1082,7 +1082,7 @@ public:
     int32_t val2;
 };
 
-REGISTER_TYPE(60, TestPortableInvalid);
+REGISTER_TYPE(TestPortableInvalid);
 
 BOOST_AUTO_TEST_CASE(testPortableSerialization_invalid) {
     GridPortableMarshaller marsh;
@@ -1232,9 +1232,9 @@ public:
     TestPortableFieldNames2* obj3;
 };
 
-REGISTER_TYPE(70, TestPortableFieldNames1);
+REGISTER_TYPE(TestPortableFieldNames1);
 
-REGISTER_TYPE(71, TestPortableFieldNames2);
+REGISTER_TYPE(TestPortableFieldNames2);
 
 BOOST_AUTO_TEST_CASE(testPortableSerialization_fieldNames) {
     GridPortableMarshaller marsh;
@@ -2520,9 +2520,9 @@ public:
     float vFloat;
 };
 
-REGISTER_TYPE(80, TestNested1);
-REGISTER_TYPE(81, TestNested2);
-REGISTER_TYPE(82, TestNested3);
+REGISTER_TYPE(TestNested1);
+REGISTER_TYPE(TestNested2);
+REGISTER_TYPE(TestNested3);
 
 BOOST_AUTO_TEST_CASE(testMarshal_nested) {
     GridPortableMarshaller marsh;
@@ -2692,7 +2692,7 @@ void testObjCollectionMarshal(bool raw)  {
     delete objRead;
 }
 
-REGISTER_TYPE(90, TestObjCollection);
+REGISTER_TYPE(TestObjCollection);
 
 BOOST_AUTO_TEST_CASE(testObjCollection) {
     testObjCollectionMarshal(false);
@@ -3006,7 +3006,7 @@ public:
     TGridClientVariantSet colRaw;
 };
 
-REGISTER_TYPE(100, TestTemplateApiReadWrite);
+REGISTER_TYPE(TestTemplateApiReadWrite);
 
 BOOST_AUTO_TEST_CASE(testTemplateApi) {
     TestTemplateApiReadWrite obj(10);    
