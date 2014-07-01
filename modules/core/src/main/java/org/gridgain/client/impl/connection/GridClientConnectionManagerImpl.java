@@ -11,6 +11,8 @@ package org.gridgain.client.impl.connection;
 
 import org.gridgain.client.*;
 import org.gridgain.client.impl.*;
+import org.gridgain.client.marshaller.*;
+import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.client.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
@@ -20,8 +22,10 @@ import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.nio.ssl.*;
+import org.gridgain.grid.util.portable.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
@@ -152,6 +156,21 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
 
         pingExecutor = cfg.getProtocol() == GridClientProtocol.TCP ?
             Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors()) : null;
+
+        GridClientMarshaller marsh = cfg.getMarshaller();
+
+        if (marsh instanceof GridClientPortableMarshaller) {
+            GridPortableContext portableCtx = new GridPortableContext();
+
+            try {
+                portableCtx.configure(cfg.getPortableConfiguration());
+            }
+            catch (GridPortableException e) {
+                throw new GridClientException("Failed to configure portable marshaller.", e);
+            }
+
+            ((GridClientPortableMarshaller)marsh).portableContext(portableCtx);
+        }
 
         if (cfg.getProtocol() == GridClientProtocol.TCP) {
             try {
