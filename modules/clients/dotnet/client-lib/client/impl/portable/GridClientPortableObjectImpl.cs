@@ -229,7 +229,7 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
-         * <summary>Gets field value on the given.</summary>
+         * <summary>Gets field value on the given object.</summary>
          * <param name="pos">Position.</param>
          * <returns>Field value.</returns>
          */ 
@@ -248,23 +248,14 @@ namespace GridGain.Client.Impl.Portable
                 return default(T);
             else if (hdr == PU.HDR_HND)
                 return (T)marsh.Unmarshal0(stream, false, stream.Position - 1, PU.HDR_HND);
-            else if (hdr == PU.HDR_FULL || PU.IsPredefinedType(hdr))                
+            else if (hdr == PU.HDR_FULL || PU.IsPredefinedType(hdr))
             {
                 IGridClientPortableObject obj = marsh.Unmarshal0(stream, false, stream.Position - 1, hdr);
 
                 return PU.PortableOrPredefined<T>(obj);
             }
             else
-            {
-                Debug.Assert(userType == false);
-
-                GridClientPortableSystemFieldDelegate hnd = PSH.FieldHandler(hdr);
-
-                if (hnd == null)
-                    throw new GridClientPortableException("Invalid system type: " + hdr);
-
-                return (T)hnd.Invoke(stream, marsh);
-            }
+                throw new GridClientPortableException("Unexpected field header: " + hdr);
         }
              
         /** <inheritdoc /> */
