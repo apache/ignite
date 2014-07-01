@@ -700,4 +700,82 @@ BOOST_FIXTURE_TEST_CASE(testPortableTaskArg, GridClientFactoryFixture1<clientCon
     });
 }
 
+BOOST_FIXTURE_TEST_CASE(testPutGetDetached, GridClientFactoryFixture1<clientConfig>) {
+    GridClientTestPortable obj1(1, false);
+    GridClientTestPortable obj2(2, false);
+    GridClientTestPortable obj3(3, false);
+
+    obj2.portable1 = &obj1;
+    obj3.portable1 = &obj1;
+
+    TGridClientVariantMap map;
+    
+    map[0] = GridClientVariant(&obj1);
+    map[1] = GridClientVariant(&obj2);
+    map[2] = GridClientVariant(&obj3);
+
+    TGridClientDataPtr data = client->data(CACHE_NAME);
+
+    data->putAll(map); // During put obj2 and obj3 reference the same obj1.
+
+    GridPortableObject p1 = data->get(0).getPortableObject();
+    GridPortableObject p2 = data->get(1).getPortableObject();
+    GridPortableObject p3 = data->get(2).getPortableObject();
+
+    BOOST_REQUIRE_EQUAL(1, p1.field("_i").getInt());
+    BOOST_REQUIRE(!p1.field("_portable1").hasAnyValue());
+
+    GridPortableObject p21 = p2.field("_portable1").getPortableObject();
+    GridPortableObject p31 = p3.field("_portable1").getPortableObject();
+
+    BOOST_REQUIRE_EQUAL(1, p21.field("_i").getInt());
+    BOOST_REQUIRE_EQUAL(1, p31.field("_i").getInt());
+
+    BOOST_REQUIRE(p21 == p31);
+
+    std::unique_ptr<GridClientTestPortable> get1 = p1.deserializeUnique<GridClientTestPortable>();
+    BOOST_REQUIRE_EQUAL(1, get1->i);
+
+    std::unique_ptr<GridClientTestPortable> get2 = p2.deserializeUnique<GridClientTestPortable>();
+    BOOST_REQUIRE_EQUAL(2, get2->i);
+
+    std::unique_ptr<GridClientTestPortable> get3 = p3.deserializeUnique<GridClientTestPortable>();
+    BOOST_REQUIRE_EQUAL(3, get3->i);
+
+    BOOST_REQUIRE(get2->portable1);
+    BOOST_REQUIRE_EQUAL(1, get2->portable1->i);
+
+    BOOST_REQUIRE(get3->portable1);
+    BOOST_REQUIRE_EQUAL(1, get3->portable1->i);
+}
+
+BOOST_FIXTURE_TEST_CASE(testPutPortable, GridClientFactoryFixture1<clientConfig>) {
+    GridClientTestPortable obj1(1, false);
+    GridClientTestPortable obj2(2, true);
+
+    TGridClientDataPtr data = client->data(CACHE_NAME);
+    
+    data->put(1, &obj1);
+    data->put(2, &obj2);
+
+    GridPortableObject p1 = data->get(1).getPortableObject();
+
+    data->put(3, p1);
+
+    GridPortableObject p11 = data->get(3).getPortableObject();
+
+    BOOST_REQUIRE(p1 == p11);
+    BOOST_REQUIRE_EQUAL(1, p11.field("_i").getInt());
+
+    GridPortableObject p2 = data->get(2).getPortableObject();
+    
+    data->put(4, p2);
+
+    GridPortableObject p21 = data->get(4).getPortableObject();
+
+    BOOST_REQUIRE(p2 == p21);
+    BOOST_REQUIRE_EQUAL(2, p21.field("_i").getInt());
+    BOOST_REQUIRE_EQUAL(3, p21.field("_portable").getPortableObject().field("_i").getInt());
+}
+
 BOOST_AUTO_TEST_SUITE_END()
