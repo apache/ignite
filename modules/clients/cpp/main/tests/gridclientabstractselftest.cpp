@@ -202,7 +202,7 @@ static void doRefreshNode(TGridClientComputePtr compute, GridClientUuid id, bool
     }
 }
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(testPutGetAllStandardTypes, CfgT, TestCfgs, GridClientFactoryFixture2) {
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(testPutGetStandardTypes, CfgT, TestCfgs, GridClientFactoryFixture2) {
     TGridClientPtr client = this->client(CfgT());
 
     TGridClientDataPtr data = client->data(CACHE_NAME);
@@ -334,7 +334,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testPutGetAllStandardTypes, CfgT, TestCfgs, Gri
 
         GridClientVariant getVal = data->get(varKey);
 
-        BOOST_REQUIRE_EQUAL("str2", getVal.getString());
+        BOOST_REQUIRE(getVal.hasString());
     }
 
     {
@@ -351,7 +351,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testPutGetAllStandardTypes, CfgT, TestCfgs, Gri
     }
 
     {
-        GridClientDate val = GridClientDate(10, 10);
+        GridClientDate val = GridClientDate(10, 0);
 
         GridClientVariant varVal(val);
         GridClientVariant varKey(val);
@@ -504,7 +504,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testPutGetAllStandardTypes, CfgT, TestCfgs, Gri
     }
 
     {
-        vector<GridClientDate> val(10, GridClientDate(2, 3));
+        vector<GridClientDate> val(10, GridClientDate(2, 0));
 
         GridClientVariant varVal(val);
         GridClientVariant varKey(1);
@@ -515,6 +515,37 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testPutGetAllStandardTypes, CfgT, TestCfgs, Gri
 
         BOOST_REQUIRE(10 == getVal.getDateArray().size());
         BOOST_REQUIRE(val == getVal.getDateArray());
+    }
+
+    {
+        vector<GridClientVariant> val(10, GridClientVariant(10));
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(1);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE(10 == getVal.getVariantVector().size());
+        BOOST_REQUIRE(val == getVal.getVariantVector());
+    }
+
+    {
+        TGridClientVariantMap val;
+
+        for (int32_t i = 0; i < 10; i++)
+            val[i] = i;
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(1);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE(10 == getVal.getVariantMap().size());
+        BOOST_REQUIRE(val == getVal.getVariantMap());
     }
 }
 
