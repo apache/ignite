@@ -101,7 +101,6 @@ public class GridPortableContext implements Externalizable {
         addDescriptor(TreeMap.class, 0);
         addDescriptor(ConcurrentHashMap.class, 0);
 
-        // TODO - support
         addDescriptor(GridPortableObjectImpl.class, PORTABLE);
 
         addDescriptor(GridClientAuthenticationRequest.class, 51);
