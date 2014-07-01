@@ -16,6 +16,7 @@
 #include "gridgain/gridclientdata.hpp"
 #include "gridgain/impl/gridclientprojection.hpp"
 #include "gridgain/impl/utils/gridthreadpool.hpp"
+#include "gridgain/impl/queries/gridqueriesimpl.hpp"
 
 /**
  * GridClientData implementation.
@@ -292,6 +293,16 @@ public:
     virtual TGridClientDataPtr flagsOff(const std::set<GridClientCacheFlag>& flags);
 
     /**
+     * Gets queries facade for this data projection. User can issue different queries against data 
+     * projection with returned facade.
+     * 
+     * @return Queries facade.
+     */
+    virtual const TGridClientDataQueriesPtr& queries();
+
+    std::shared_ptr<GridClientFuture<GridClientDataQueryResult*>> executeQueryAsync(GridDataQueryBean& qry);
+
+    /**
      * Invalidates this data instance. This is done by the client to indicate
      * that is has been stopped. After this call, all interface methods
      * will throw GridClientClosedException.
@@ -299,6 +310,8 @@ public:
     void invalidate();
 
 private:
+    GridClientDataQueryResult* executeQuery(GridDataQueryBean& qry);
+
     /** Cache name. */
     std::string prjCacheName;
 
@@ -313,6 +326,9 @@ private:
 
     /** Cache flags for this projection. */
     std::set<GridClientCacheFlag> prjFlags;
+
+    /** Queries. */
+    TGridClientDataQueriesPtr qrys;
 };
 
 #endif

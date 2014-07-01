@@ -232,6 +232,7 @@
     <ClCompile Include="..\main\src\impl\hash\md5.cpp" />
     <ClCompile Include="..\main\src\impl\marshaller\portable\gridclientportablemessages.cpp" />
     <ClCompile Include="..\main\src\impl\marshaller\portable\gridportablemarshaller.cpp" />
+    <ClCompile Include="..\main\src\impl\queries\gridqueriesimpl.cpp" />
     <ClCompile Include="..\main\src\impl\utils\gridclientlog.cpp" />
     <ClCompile Include="..\main\src\impl\utils\gridthreadpool.cpp" />
     <ClCompile Include="..\main\src\impl\utils\gridutil.cpp" />
@@ -259,6 +260,7 @@
     <ClInclude Include="..\main\include\gridgain\gridclientpredicate.hpp" />
     <ClInclude Include="..\main\include\gridgain\gridclientprotocol.hpp" />
     <ClInclude Include="..\main\include\gridgain\gridclientprotocolconfiguration.hpp" />
+    <ClInclude Include="..\main\include\gridgain\gridclientqueries.hpp" />
     <ClInclude Include="..\main\include\gridgain\gridclienttopologylistener.hpp" />
     <ClInclude Include="..\main\include\gridgain\gridclienttypedef.hpp" />
     <ClInclude Include="..\main\include\gridgain\gridclientuuid.hpp" />
@@ -287,6 +289,7 @@
     <ClInclude Include="..\main\include\gridgain\impl\cmd\gridclientmessageechocommand.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\cmd\gridclientmessagelogrequestcommand.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\cmd\gridclientmessagelogresult.hpp" />
+    <ClInclude Include="..\main\include\gridgain\impl\cmd\gridclientmessagequeries.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\cmd\gridclientmessageresult.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\cmd\gridclientmessagetaskrequestcommand.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\cmd\gridclientmessagetaskresult.hpp" />
@@ -321,6 +324,7 @@
     <ClInclude Include="..\main\include\gridgain\impl\marshaller\portable\gridclientportablemessages.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\projectionclosure\gridclientmessageprojectionclosure.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\projectionclosure\gridclientprojectionclosure.hpp" />
+    <ClInclude Include="..\main\include\gridgain\impl\queries\gridqueriesimpl.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\utils\gridclientbyteutils.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\utils\gridclientdebug.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\utils\gridclientlog.hpp" />

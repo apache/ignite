@@ -13,7 +13,7 @@
 #include "gridgain/gridclienttypedef.hpp"
 #include "gridgain/gridconf.hpp"
 
-template class GRIDGAIN_API GridClientFuture<std::vector<std::string> >;
+template class GRIDGAIN_API GridClientFuture<std::vector<std::string>>;
 template class GRIDGAIN_API GridClientFuture<TGridClientVariantMap>;
 template class GRIDGAIN_API GridClientFuture<GridClientDataMetrics>;
 template class GRIDGAIN_API GridClientFuture<GridClientVariant>;

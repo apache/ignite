@@ -115,7 +115,7 @@ GridClientDataProjectionImpl::GridClientDataProjectionImpl(
     TGridThreadPoolPtr& threadPool,
     const std::set<GridClientCacheFlag>& flags)
     : GridClientProjectionImpl(sharedData, prjLsnr, filter), prjCacheName(cacheName), invalidated(false),
-    threadPool(threadPool), prjFlags(flags) {
+    threadPool(threadPool), prjFlags(flags), qrys(new GridClientDataQueriesImpl(this)) {
 }
 
 string GridClientDataProjectionImpl::cacheName() const {
@@ -430,6 +430,22 @@ TGridClientFutureVariantMap GridClientDataProjectionImpl::getAllAsync(const TGri
     return res;
 }
 
+std::shared_ptr<GridClientFuture<GridClientDataQueryResult*>> GridClientDataProjectionImpl::executeQueryAsync(GridDataQueryBean& qry) {
+    GridFutureImpl<GridClientDataQueryResult*>* fut = new GridFutureImpl<GridClientDataQueryResult*>(threadPool);
+
+    std::shared_ptr<GridClientFuture<GridClientDataQueryResult*>> res(fut);
+
+    boost::packaged_task<GridClientDataQueryResult*> pt(boost::bind(&GridClientDataProjectionImpl::executeQuery, this, qry));
+
+    fut->task(pt);
+
+    return res;
+}
+
+GridClientDataQueryResult* GridClientDataProjectionImpl::executeQuery(GridDataQueryBean& qry) {
+    return 0;
+}
+
 static int64_t doGetValue(const TCacheMetrics& metricsMap, std::string name) {
     GridClientVariant v(name);
 
@@ -534,6 +550,10 @@ TGridClientDataPtr GridClientDataProjectionImpl::flagsOff(const std::set<GridCli
     subProjections.push_back(clientDataPtr);
 
     return clientDataPtr;
+}
+
+const TGridClientDataQueriesPtr& GridClientDataProjectionImpl::queries() {
+    return qrys;
 }
 
 /**

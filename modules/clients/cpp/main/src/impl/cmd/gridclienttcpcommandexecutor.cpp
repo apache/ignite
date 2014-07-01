@@ -126,6 +126,12 @@ void GridClientTcpCommandExecutor::executeTaskCmd(const GridClientSocketAddress&
     executeCmd(host, msg, taskCmd, rslt);
 }
 
+void GridClientTcpCommandExecutor::executeQueryCmd(const GridClientSocketAddress& host, GridQueryRequestCommand& qryCmd, GridClientQueryResult& res) {
+    GridClientCacheQueryRequest msg;
+
+    executeCmd(host, msg, qryCmd, res);
+}
+
 /**
  * Sends a general command to a remote host.
  *

@@ -40,7 +40,7 @@ public:
             return false;
 
         int32_t len = reader.in.readInt32(reader.start + 10);
-        int32_t otherLen = other.reader.in.readInt32(reader.start + 10);
+        int32_t otherLen = other.reader.in.readInt32(other.reader.start + 10);
 
         if (len != otherLen)
             return false;
@@ -101,9 +101,6 @@ GridPortable* GridPortableObject::deserialize() const {
 }
 
 bool GridPortableObject::operator==(const GridPortableObject& other) const {
-    if (typeId() != other.typeId())
-        return false;
-
     return pImpl->compare(*other.pImpl);
 }
 
