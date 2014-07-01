@@ -271,6 +271,14 @@ public:
      * @throws GridClientException In case of error.
      */
     virtual TGridClientDataPtr flagsOff(const std::set<GridClientCacheFlag>& flags) = 0;
+
+    /**
+     * Gets queries facade for this data projection. User can issue different queries against data 
+     * projection with returned facade.
+     * 
+     * @return Queries facade.
+     */
+    virtual const TGridClientDataQueriesPtr& queries() = 0;
 };
 
 #endif // GRIDCLIENTDATA_HPP_INCLUDED

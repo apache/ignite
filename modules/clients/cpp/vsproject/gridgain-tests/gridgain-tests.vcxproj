@@ -189,6 +189,8 @@
     <ClCompile Include="..\..\main\tests\gridclientfactoryselfttest.cpp" />
     <ClCompile Include="..\..\main\tests\gridclienthashtest.cpp" />
     <ClCompile Include="..\..\main\tests\gridclientportabletest.cpp" />
+    <ClCompile Include="..\..\main\tests\gridclientqueriestest.cpp" />
+    <ClCompile Include="..\..\main\tests\gridportablemarshallertest.cpp" />
     <ClCompile Include="..\..\main\tests\gridtestcommon.cpp" />
     <ClCompile Include="..\..\main\tests\gridthreadpoolselftest.cpp" />
     <ClCompile Include="..\..\main\tests\teamcity_boost.cpp" />

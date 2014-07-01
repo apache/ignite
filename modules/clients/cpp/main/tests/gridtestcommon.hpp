@@ -33,9 +33,6 @@ const int CACHE_CNT = 5;
 /** TCP port. */
 const int TEST_TCP_PORT = 10080;
 
-/** HTTP port. */
-const int TEST_HTTP_PORT = 11080;
-
 /** Host name. */
 const string TEST_HOST = "127.0.0.1";
 
@@ -44,7 +41,6 @@ const int DLFT_THREADS_CNT = 20;
 
 /** Client credentials. */
 const string CREDS = "s3cret";
-
 
 /**
  * Topology listener, that forms a node map according
