@@ -360,14 +360,7 @@ GridClientVariant GridClientDataProjectionImpl::get(const GridClientVariant& key
 
     this->withReconnectHandling(c, prjCacheName, GridClientVariantHasheableObject(key));
 
-    const TCacheValuesMap& res = c.getResult().getCacheValue();
-
-    if (res.size() == 0)
-        return GridClientVariant();
-
-    TCacheValuesMap::const_iterator iter = res.begin();
-
-    return iter->second;
+    return std::move(c.getResult().res);
 }
 
 TGridClientFutureVariant GridClientDataProjectionImpl::getAsync(const GridClientVariant& key) {
@@ -406,14 +399,13 @@ TGridClientVariantMap GridClientDataProjectionImpl::getAll(const TGridClientVari
     else
         this->withReconnectHandling(c);
 
-    const TCacheValuesMap& res = c.getResult().getCacheValue();
+    const GridClientVariant& res = c.getResult().res;
 
-    GG_LOG_DEBUG("Get ALL result size: %d", res.size());
+    assert(res.hasVariantMap());
 
-    for (auto iter = res.begin(); iter != res.end(); ++iter)
-        ret[iter->first] = iter->second;
+    GG_LOG_DEBUG("Get ALL result size: %d", res.getVariantMap().size());
 
-    return ret;
+    return std::move(c.getResult().res.getVariantMap());
 }
 
 TGridClientFutureVariantMap GridClientDataProjectionImpl::getAllAsync(const TGridClientVariantSet& keys) {
