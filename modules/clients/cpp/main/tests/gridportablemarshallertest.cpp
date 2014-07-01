@@ -2779,9 +2779,237 @@ BOOST_AUTO_TEST_CASE(testCacheRequestMarshal) {
     BOOST_REQUIRE_EQUAL(633, bytes->size());
 }
 
+class TestTemplateApiReadWrite : public GridPortable {
+public:
+    TestTemplateApiReadWrite() {
+    }
+
+    TestTemplateApiReadWrite(int colSize) {
+        for (int i = 0; i < colSize; i++) {
+            
+        }
+    }
+
+    int32_t typeId() const {
+        return 100;
+    }
+
+    void writePortable(GridPortableWriter& writer) const {
+        writer.writeByteArray("_bArr", bArr.begin(), bArr.end());
+        writer.writeInt16Array("_sArr", sArr.begin(), sArr.end());
+        writer.writeInt32Array("_iArr", iArr.begin(), iArr.end());
+        writer.writeInt64Array("_lArr", lArr.begin(), lArr.end());
+        writer.writeFloatArray("_fArr", fArr.begin(), fArr.end());
+        writer.writeDoubleArray("_dArr", dArr.begin(), dArr.end());
+        writer.writeCharArray("_cArr", cArr.begin(), cArr.end());
+        writer.writeBoolArray("_boolArr", boolArr.begin(), boolArr.end());
+        writer.writeStringArray("_strArr", strArr.begin(), strArr.end());
+        writer.writeUuidArray("_uuidArr", uuidArr.begin(), uuidArr.end());
+        writer.writeDateArray("_dateArr", dateArr.begin(), dateArr.end());
+        writer.writeVariantCollection("_col", GridCollectionType::LINKED_LIST, col.begin(), col.end());
+
+        writer.writeInt64Array("lDeq", lDeq.begin(), lDeq.end());
+
+        GridPortableRawWriter& raw = writer.rawWriter();
+
+        raw.writeByteArray(bArrRaw.begin(), bArrRaw.end());
+        raw.writeInt16Array(sArrRaw.begin(), sArrRaw.end());
+        raw.writeInt32Array(iArrRaw.begin(), iArrRaw.end());
+        raw.writeInt64Array(lArrRaw.begin(), lArrRaw.end());
+        raw.writeFloatArray(fArrRaw.begin(), fArrRaw.end());
+        raw.writeDoubleArray(dArrRaw.begin(), dArrRaw.end());
+        raw.writeCharArray(cArrRaw.begin(), cArrRaw.end());
+        raw.writeBoolArray(boolArrRaw.begin(), boolArrRaw.end());
+        raw.writeStringArray(strArrRaw.begin(), strArrRaw.end());
+        raw.writeUuidArray(uuidArrRaw.begin(), uuidArrRaw.end());
+        raw.writeDateArray(dateArrRaw.begin(), dateArrRaw.end());
+        raw.writeVariantArray(objArrRaw.begin(), objArrRaw.end());
+        raw.writeVariantCollection(GridCollectionType::ARRAY_LIST, colRaw.begin(), colRaw.end());
+        
+        raw.writeInt64Array(lDeqRaw.begin(), lDeqRaw.end());
+        raw.writeStringArray(strSetRaw.begin(), strSetRaw.end());
+    }            
+    
+    void readPortable(GridPortableReader& reader) {
+        reader.readByteArray("bArr", back_insert_iterator<vector<int8_t>>(bArr));
+        reader.readInt16Array("sArr", back_insert_iterator<vector<int16_t>>(sArr));
+        reader.readInt32Array("iArr", back_insert_iterator<vector<int32_t>>(iArr));
+        reader.readInt64Array("lArr", back_insert_iterator<vector<int64_t>>(lArr));
+        reader.readFloatArray("fArr", back_insert_iterator<vector<float>>(fArr));
+        reader.readDoubleArray("dArr", back_insert_iterator<vector<double>>(dArr));
+        reader.readCharArray("cArr", back_insert_iterator<vector<uint16_t>>(cArr));
+        reader.readBoolArray("boolArr", back_insert_iterator<vector<bool>>(boolArr));
+        reader.readStringArray("strArr", back_insert_iterator<vector<string>>(strArr));
+        reader.readWStringArray("wstrArr", back_insert_iterator<vector<wstring>>(wstrArr));
+        reader.readUuidArray("uuidArr", back_insert_iterator<vector<GridClientUuid>>(uuidArr));
+        reader.readDateArray("dateArr", back_insert_iterator<vector<GridClientDate>>(dateArr));
+
+        reader.readVariantCollection("col", back_insert_iterator<vector<GridClientVariant>>(col));
+        reader.readVariantCollection("varDeq", back_insert_iterator<deque<GridClientVariant>>(varDeq));
+        reader.readVariantCollection("varList", back_insert_iterator<list<GridClientVariant>>(varList));
+
+        reader.readInt64Array("lDeq", back_insert_iterator<deque<int64_t>>(lDeq));
+        reader.readStringArray("strSet", insert_iterator<set<string>>(strSet, strSet.begin()));
+        reader.readWStringArray("wstrSet", insert_iterator<set<wstring>>(wstrSet, wstrSet.begin()));
+        reader.readUuidArray("uuidList", back_insert_iterator<list<GridClientUuid>>(uuidList));
+        reader.readDateArray("dateList", back_insert_iterator<list<GridClientDate>>(dateList));
+
+        GridPortableRawReader& raw = reader.rawReader();
+
+        raw.readByteArray(back_insert_iterator<vector<int8_t>>(bArrRaw));
+        raw.readInt16Array(back_insert_iterator<vector<int16_t>>(sArrRaw));
+        raw.readInt32Array(back_insert_iterator<vector<int32_t>>(iArrRaw));
+        raw.readInt64Array(back_insert_iterator<vector<int64_t>>(lArrRaw));
+        raw.readFloatArray(back_insert_iterator<vector<float>>(fArrRaw));
+        raw.readDoubleArray(back_insert_iterator<vector<double>>(dArrRaw));
+        raw.readCharArray(back_insert_iterator<vector<uint16_t>>(cArrRaw));
+        raw.readBoolArray(back_insert_iterator<vector<bool>>(boolArrRaw));
+        raw.readStringArray(back_insert_iterator<vector<string>>(strArrRaw));
+        raw.readUuidArray(back_insert_iterator<vector<GridClientUuid>>(uuidArrRaw));
+        raw.readDateArray(back_insert_iterator<vector<GridClientDate>>(dateArrRaw));
+
+        raw.readVariantCollection(back_insert_iterator<vector<GridClientVariant>>(colRaw));
+        raw.readVariantCollection(back_insert_iterator<deque<GridClientVariant>>(varDeqRaw));
+        raw.readVariantCollection(back_insert_iterator<list<GridClientVariant>>(varListRaw));
+
+        raw.readInt64Array(back_insert_iterator<deque<int64_t>>(lDeqRaw));
+        raw.readStringArray(insert_iterator<set<string>>(strSetRaw, strSetRaw.begin()));
+        raw.readWStringArray(insert_iterator<set<wstring>>(wstrSetRaw, wstrSetRaw.begin()));
+        raw.readUuidArray(back_insert_iterator<list<GridClientUuid>>(uuidListRaw));
+        raw.readDateArray(back_insert_iterator<list<GridClientDate>>(dateListRaw));
+    }
+    
+    /** */
+    deque<int64_t> lDeq;
+
+    /** */
+    deque<int64_t> lDeqRaw;
+
+    /** */
+    set<string> strSet;
+
+    /** */
+    set<string> strSetRaw;
+
+    /** */
+    set<wstring> wstrSet;
+
+    /** */
+    set<wstring> wstrSetRaw;
+
+    /** */
+    list<GridClientUuid> uuidList;
+
+    /** */
+    list<GridClientUuid> uuidListRaw;
+
+    /** */
+    list<GridClientDate> dateList;
+
+    /** */
+    list<GridClientDate> dateListRaw;
+
+    /** */
+    deque<GridClientVariant> varDeq;
+
+    /** */
+    deque<GridClientVariant> varDeqRaw;
+
+    /** */
+    list<GridClientVariant> varList;
+
+    /** */
+    list<GridClientVariant> varListRaw;
+
+    /** */
+    vector<int8_t> bArr;
+
+    /** */
+    vector<int8_t> bArrRaw;
+
+    /** */
+    vector<int16_t> sArr;
+
+    /** */
+    vector<int16_t> sArrRaw;
+
+    /** */
+    vector<int32_t> iArr;
+
+    /** */
+    vector<int32_t> iArrRaw;
+
+    /** */
+    vector<int64_t> lArr;
+
+    /** */
+    vector<int64_t> lArrRaw;
+
+    /** */
+    vector<float> fArr;
+
+    /** */
+    vector<float> fArrRaw;
+
+    /** */
+    vector<double> dArr;
+
+    /** */
+    vector<double> dArrRaw;
+
+    /** */
+    vector<uint16_t> cArr;
+
+    /** */
+    vector<uint16_t> cArrRaw;
+
+    /** */
+    vector<bool> boolArr;
+
+    /** */
+    vector<bool> boolArrRaw;
+
+    /** */
+    vector<string> strArr;
+
+    /** */
+    vector<wstring> wstrArr;
+
+    /** */
+    vector<string> strArrRaw;
+
+    /** */
+    vector<string> wstrArrRaw;
+
+    /** */
+    vector<GridClientUuid> uuidArr;
+
+    /** */
+    vector<GridClientUuid> uuidArrRaw;
+
+    /** */
+    vector<GridClientDate> dateArr;
+
+    /** */
+    vector<GridClientDate> dateArrRaw;
+
+    /** */
+    TGridClientVariantSet objArr;
+
+    /** */
+    TGridClientVariantSet objArrRaw;
+
+    /** */
+    TGridClientVariantSet col;
+
+    /** */
+    TGridClientVariantSet colRaw;
+};
+
+REGISTER_TYPE(100, TestTemplateApiReadWrite);
 
 BOOST_AUTO_TEST_CASE(testTemplateApi) {
-    // TODO
+    TestTemplateApiReadWrite obj(10);    
 }
 
 BOOST_AUTO_TEST_SUITE_END()

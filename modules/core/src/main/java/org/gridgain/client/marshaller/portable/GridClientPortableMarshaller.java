@@ -41,7 +41,7 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
      */
     public GridClientPortableMarshaller(@Nullable GridPortableConfiguration portableCfg) throws GridClientException {
         try {
-            GridPortableContextImpl ctx = new GridPortableContextImpl(null);
+            GridPortableContext ctx = new GridPortableContext(null);
 
             ctx.configure(portableCfg);
 

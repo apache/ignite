@@ -129,7 +129,7 @@ public:
 
     template<class OutputIterator>
     bool readWStringArray(char* fieldName, OutputIterator out) {
-        return readWStringArray<OutputIterator, std::wstring>(fieldName, out);
+        return readStringArray<OutputIterator, std::wstring>(fieldName, out);
     }
 
     virtual bool readWStringArray(char* fieldName, std::vector<std::wstring>& arr) = 0;
@@ -146,7 +146,7 @@ public:
     virtual boost::optional<GridClientDate> readDate(char* fieldName) = 0;
 
     template<class OutputIterator>
-    bool readDateCollection(char* fieldName, OutputIterator out) {
+    bool readDateArray(char* fieldName, OutputIterator out) {
         return readObjectArray<OutputIterator, GridClientDate>(fieldName, out);
     }
 
@@ -269,6 +269,8 @@ private:
 
     virtual int32_t doReadInt32(bool) = 0;
 
+    virtual int64_t doReadInt64(bool) = 0;
+
     virtual float doReadFloat(bool) = 0;
 
     virtual double doReadDouble(bool) = 0;
@@ -361,7 +363,7 @@ public:
     virtual bool readInt32Array(std::vector<int32_t>& arr) = 0;
 
     template<class OutputIterator>
-    bool readInt32Collection(OutputIterator out) {
+    bool readInt32Array(OutputIterator out) {
         return readArray<OutputIterator, int32_t>(out);
     }
 
@@ -422,7 +424,7 @@ public:
 
     template<class OutputIterator>
     bool readWStringArray(OutputIterator out) {
-        return readWStringArray<OutputIterator, std::wstring>(out);
+        return readStringArray<OutputIterator, std::wstring>(out);
     }
 
     virtual bool readWStringArray(std::vector<std::wstring>& arr) = 0;
@@ -545,6 +547,8 @@ private:
     virtual int16_t doReadInt16(bool) = 0;
 
     virtual int32_t doReadInt32(bool) = 0;
+
+    virtual int64_t doReadInt64(bool) = 0;
 
     virtual float doReadFloat(bool) = 0;
 

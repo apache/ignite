@@ -35,9 +35,6 @@ public class GridPortableObjectImpl<T> implements GridPortableObject<T>, Externa
     /** */
     private transient Object obj;
 
-    /** */
-    private transient Map<String, Object> fields;
-
     /**
      * For {@link Externalizable}.
      */
@@ -60,20 +57,43 @@ public class GridPortableObjectImpl<T> implements GridPortableObject<T>, Externa
     }
 
     /**
-     * @param ctx Context.
-     */
-    void context(GridPortableContext ctx) {
-        this.ctx = ctx;
-    }
-
-    /**
      * @return Length.
      */
-    int length() {
+    public int length() {
         if (reader == null)
             reader = new GridPortableReaderImpl(ctx, arr, start);
 
         return reader.length();
+    }
+
+    /**
+     * @return Detached portable object.
+     */
+    public GridPortableObject<T> detach() {
+        if (detached())
+            return this;
+
+        int len = length();
+
+        byte[] arr0 = new byte[len];
+
+        U.arrayCopy(arr, start, arr0, 0, len);
+
+        return new GridPortableObjectImpl<>(ctx, arr0, 0);
+    }
+
+    /**
+     * @return Detached or not.
+     */
+    public boolean detached() {
+        return start == 0 && length() == arr.length;
+    }
+
+    /**
+     * @param ctx Context.
+     */
+    void context(GridPortableContext ctx) {
+        this.ctx = ctx;
     }
 
     /** {@inheritDoc} */
@@ -94,21 +114,10 @@ public class GridPortableObjectImpl<T> implements GridPortableObject<T>, Externa
 
     /** {@inheritDoc} */
     @Nullable @Override public <F> F field(String fieldName) throws GridPortableException {
-        if (fields != null) {
-            if (fields.containsKey(fieldName))
-                return (F)fields.get(fieldName);
-        }
-        else
-            fields = new HashMap<>();
-
         if (reader == null)
             reader = new GridPortableReaderImpl(ctx, arr, start);
 
-        Object field = reader.unmarshal(fieldName);
-
-        fields.put(fieldName, field);
-
-        return (F)field;
+        return (F)reader.unmarshal(fieldName);
     }
 
     /** {@inheritDoc} */

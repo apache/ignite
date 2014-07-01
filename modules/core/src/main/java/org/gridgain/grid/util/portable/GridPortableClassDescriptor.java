@@ -16,6 +16,7 @@ import java.lang.reflect.*;
 import java.util.*;
 
 import static java.lang.reflect.Modifier.*;
+import static org.gridgain.grid.util.portable.GridPortableMarshaller.*;
 
 /**
  * Portable class descriptor.
@@ -48,10 +49,11 @@ public class GridPortableClassDescriptor {
      * @param typeId Type ID.
      * @param idMapper ID mapper.
      * @param serializer Serializer.
+     * @param ignoreAnn Whether to ignore {@link GridPortableId} annotations.
      * @throws GridPortableException In case of error.
      */
     GridPortableClassDescriptor(Class<?> cls, boolean userType, int typeId, @Nullable GridPortableIdMapper idMapper,
-        @Nullable GridPortableSerializer serializer) throws GridPortableException {
+        @Nullable GridPortableSerializer serializer, boolean ignoreAnn) throws GridPortableException {
         assert cls != null;
 
         this.cls = cls;
@@ -118,16 +120,16 @@ public class GridPortableClassDescriptor {
                             if (!names.add(name))
                                 throw new GridPortableException("Duplicate field name: " + name);
 
-                            Integer fieldId = null;
+                            GridPortableId idAnn = ignoreAnn ? null : f.getAnnotation(GridPortableId.class);
 
-                            GridPortableId idAnn = f.getAnnotation(GridPortableId.class);
+                            int fieldId = 0;
 
                             if (idAnn != null)
                                 fieldId = idAnn.id();
                             else if (idMapper != null)
                                 fieldId = idMapper.fieldId(typeId, f.getName());
 
-                            if (fieldId == null)
+                            if (fieldId == 0)
                                 fieldId = f.getName().hashCode();
 
                             if (!ids.add(fieldId))
@@ -169,165 +171,184 @@ public class GridPortableClassDescriptor {
         assert obj != null;
         assert writer != null;
 
-        writer.doWriteBoolean(userType);
-        writer.doWriteInt(typeId);
-        writer.doWriteInt(obj.hashCode());
-
-        // Length.
-        writer.reserve(4);
-
-        // Default raw offset (equal to header length).
-        writer.doWriteInt(18);
-
         switch (mode) {
             case BYTE:
+                writer.doWriteByte(BYTE);
                 writer.doWriteByte((byte)obj);
 
                 break;
 
             case SHORT:
+                writer.doWriteByte(SHORT);
                 writer.doWriteShort((short)obj);
 
                 break;
 
             case INT:
+                writer.doWriteByte(INT);
                 writer.doWriteInt((int)obj);
 
                 break;
 
             case LONG:
+                writer.doWriteByte(LONG);
                 writer.doWriteLong((long)obj);
 
                 break;
 
             case FLOAT:
+                writer.doWriteByte(FLOAT);
                 writer.doWriteFloat((float)obj);
 
                 break;
 
             case DOUBLE:
+                writer.doWriteByte(DOUBLE);
                 writer.doWriteDouble((double)obj);
 
                 break;
 
             case CHAR:
+                writer.doWriteByte(CHAR);
                 writer.doWriteChar((char)obj);
 
                 break;
 
             case BOOLEAN:
+                writer.doWriteByte(BOOLEAN);
                 writer.doWriteBoolean((boolean)obj);
 
                 break;
 
             case STRING:
+                writer.doWriteByte(STRING);
                 writer.doWriteString((String)obj);
 
                 break;
 
             case UUID:
+                writer.doWriteByte(UUID);
                 writer.doWriteUuid((UUID)obj);
 
                 break;
 
             case DATE:
+                writer.doWriteByte(DATE);
                 writer.doWriteDate((Date)obj);
 
                 break;
 
             case BYTE_ARR:
+                writer.doWriteByte(BYTE_ARR);
                 writer.doWriteByteArray((byte[])obj);
 
                 break;
 
             case SHORT_ARR:
+                writer.doWriteByte(SHORT_ARR);
                 writer.doWriteShortArray((short[])obj);
 
                 break;
 
             case INT_ARR:
+                writer.doWriteByte(INT_ARR);
                 writer.doWriteIntArray((int[])obj);
 
                 break;
 
             case LONG_ARR:
+                writer.doWriteByte(LONG_ARR);
                 writer.doWriteLongArray((long[])obj);
 
                 break;
 
             case FLOAT_ARR:
+                writer.doWriteByte(FLOAT_ARR);
                 writer.doWriteFloatArray((float[])obj);
 
                 break;
 
             case DOUBLE_ARR:
+                writer.doWriteByte(DOUBLE_ARR);
                 writer.doWriteDoubleArray((double[])obj);
 
                 break;
 
             case CHAR_ARR:
+                writer.doWriteByte(CHAR_ARR);
                 writer.doWriteCharArray((char[])obj);
 
                 break;
 
             case BOOLEAN_ARR:
+                writer.doWriteByte(BOOLEAN_ARR);
                 writer.doWriteBooleanArray((boolean[])obj);
 
                 break;
 
             case STRING_ARR:
+                writer.doWriteByte(STRING_ARR);
                 writer.doWriteStringArray((String[])obj);
 
                 break;
 
             case UUID_ARR:
+                writer.doWriteByte(UUID_ARR);
                 writer.doWriteUuidArray((UUID[])obj);
 
                 break;
 
             case DATE_ARR:
+                writer.doWriteByte(DATE_ARR);
                 writer.doWriteDateArray((Date[])obj);
 
                 break;
 
             case OBJ_ARR:
+                writer.doWriteByte(OBJ_ARR);
                 writer.doWriteObjectArray((Object[])obj);
 
                 break;
 
             case COL:
+                writer.doWriteByte(COL);
                 writer.doWriteCollection((Collection<?>)obj);
 
                 break;
 
             case MAP:
+                writer.doWriteByte(MAP);
                 writer.doWriteMap((Map<?, ?>)obj);
 
                 break;
 
             case PORTABLE:
-                if (serializer != null)
-                    serializer.writePortable(obj, writer);
-                else
-                    ((GridPortable)obj).writePortable(writer);
+                if (writeHeader(obj, writer)) {
+                    if (serializer != null)
+                        serializer.writePortable(obj, writer);
+                    else
+                        ((GridPortable)obj).writePortable(writer);
 
-                writer.writeRawOffsetIfNeeded();
+                    writer.writeRawOffsetIfNeeded();
+                    writer.writeLength();
+                }
 
                 break;
 
             case OBJECT:
-                for (FieldInfo info : fields)
-                    info.write(obj, writer);
+                if (writeHeader(obj, writer)) {
+                    for (FieldInfo info : fields)
+                        info.write(obj, writer);
 
-                writer.writeRawOffsetIfNeeded();
+                    writer.writeRawOffsetIfNeeded();
+                    writer.writeLength();
+                }
 
                 break;
 
             default:
                 assert false : "Invalid mode: " + mode;
         }
-
-        writer.writeLength();
     }
 
     /**
@@ -338,81 +359,6 @@ public class GridPortableClassDescriptor {
         assert reader != null;
 
         switch (mode) {
-            case BYTE:
-                return reader.readByte();
-
-            case SHORT:
-                return reader.readShort();
-
-            case INT:
-                return reader.readInt();
-
-            case LONG:
-                return reader.readLong();
-
-            case FLOAT:
-                return reader.readFloat();
-
-            case DOUBLE:
-                return reader.readDouble();
-
-            case CHAR:
-                return reader.readChar();
-
-            case BOOLEAN:
-                return reader.readBoolean();
-
-            case STRING:
-                return reader.readString();
-
-            case UUID:
-                return reader.readUuid();
-
-            case DATE:
-                return reader.readDate();
-
-            case BYTE_ARR:
-                return reader.readByteArray();
-
-            case SHORT_ARR:
-                return reader.readShortArray();
-
-            case INT_ARR:
-                return reader.readIntArray();
-
-            case LONG_ARR:
-                return reader.readLongArray();
-
-            case FLOAT_ARR:
-                return reader.readFloatArray();
-
-            case DOUBLE_ARR:
-                return reader.readDoubleArray();
-
-            case CHAR_ARR:
-                return reader.readCharArray();
-
-            case BOOLEAN_ARR:
-                return reader.readBooleanArray();
-
-            case STRING_ARR:
-                return reader.readStringArray();
-
-            case UUID_ARR:
-                return reader.readUuidArray();
-
-            case DATE_ARR:
-                return reader.readDateArray();
-
-            case OBJ_ARR:
-                return reader.readObjectArray();
-
-            case COL:
-                return reader.readCollection();
-
-            case MAP:
-                return reader.readMap();
-
             case PORTABLE:
                 Object portable = newInstance();
 
@@ -439,6 +385,36 @@ public class GridPortableClassDescriptor {
                 assert false : "Invalid mode: " + mode;
 
                 return null;
+        }
+    }
+
+    /**
+     * @param obj Object.
+     * @param writer Writer.
+     * @return Whether further write is needed.
+     */
+    private boolean writeHeader(Object obj, GridPortableWriterImpl writer) {
+        int handle = writer.handle(obj);
+
+        if (handle >= 0) {
+            writer.doWriteByte(HANDLE);
+            writer.doWriteInt(handle);
+
+            return false;
+        }
+        else {
+            writer.doWriteByte(OBJ);
+            writer.doWriteBoolean(userType);
+            writer.doWriteInt(typeId);
+            writer.doWriteInt(obj.hashCode());
+
+            // Length.
+            writer.reserve(4);
+
+            // Default raw offset (equal to header length).
+            writer.doWriteInt(18);
+
+            return true;
         }
     }
 
