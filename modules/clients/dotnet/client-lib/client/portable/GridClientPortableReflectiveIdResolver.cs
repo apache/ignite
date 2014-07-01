@@ -45,20 +45,20 @@ namespace GridGain.Client.Portable
         } 
 
         /** <inheritdoc /> */
-        override public int? TypeId(Type type)
+        override public int TypeId(Type type)
         {
             int typeId;
 
-            return typeIds.TryGetValue(type, out typeId) ? typeId : (int?)null;
+            return typeIds.TryGetValue(type, out typeId) ? typeId : 0;
         }
 
         /** <inheritdoc /> */
-        override public int? FieldId(int typeId, string fieldName)
+        override public int FieldId(int typeId, string fieldName)
         {
             int fieldId;
 
             return fieldIds.TryGetValue(new KeyValuePair<int, string>(typeId, fieldName), out fieldId) ? 
-                fieldId : (int?)null;
+                fieldId : 0;
         }
         
         /**

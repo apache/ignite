@@ -581,9 +581,9 @@ namespace GridGain.Client.Impl.Portable
             if (ctx.CurrentRaw)
                 throw new GridClientPortableException("Cannot read named fields after raw data is read.");
 
-            int? fieldIdRef = ctx.CurrentMapper.FieldId(ctx.CurrentTypeId, fieldName);
+            int fieldIdRef = ctx.CurrentMapper.FieldId(ctx.CurrentTypeId, fieldName);
 
-            int fieldId = fieldIdRef.HasValue ? fieldIdRef.Value : PU.StringHashCode(fieldName.ToLower());
+            int fieldId = fieldIdRef != 0 ? fieldIdRef : PU.StringHashCode(fieldName.ToLower());
 
             int? fieldPosRef = ctx.CurrentPortable.Position(fieldId);
 

@@ -212,9 +212,9 @@ namespace GridGain.Client.Impl.Portable
 
                 if (marsh.IdToDescriptor.TryGetValue(PU.TypeKey(true, typeId), out desc))
                 {
-                    int? fieldIdRef = desc.Mapper.FieldId(typeId, fieldName);
+                    int fieldIdRef = desc.Mapper.FieldId(typeId, fieldName);
 
-                    int fieldId = fieldIdRef.HasValue ? fieldIdRef.Value : (PU.StringHashCode(fieldName.ToLower()));
+                    int fieldId = fieldIdRef != 0 ? fieldIdRef : (PU.StringHashCode(fieldName.ToLower()));
 
                     int pos;
 
