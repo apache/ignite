@@ -115,10 +115,10 @@ private case class VisorCopier(
         }
         catch {
             case e: JSchException if X.hasCause(e, classOf[UnknownHostException]) =>
-                println("fail (unknown host) => " + host.name)
+                println("Visor Console failed to deploy. Reason: unknown host - " + host.name)
 
             case e: JSchException =>
-                println("fail (" + e.getMessage +") => " + host.name)
+                println("Visor Console failed to deploy. Reason: " + e.getMessage)
 
             case e: Exception =>
                 warn(e.getMessage)
@@ -256,9 +256,9 @@ private case class VisorCopier(
         }
         catch {
             case e: SftpException =>
-                println("failed deploy file (" + e.getMessage +") from: " + src + " to: " + dest)
+                println("Visor Console failed to deploy from: " + src + " to: " + dest + ". Reason: " + e.getMessage)
             case e: IOException =>
-                println("failed deploy file (" + e.getMessage +") from: " + src + " to: " + dest)
+                println("Visor Console failed to deploy from: " + src + " to: " + dest + ". Reason: " + e.getMessage)
         }
     }
 }
