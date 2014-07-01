@@ -47,7 +47,7 @@ namespace GridGain.Client.Impl.Portable
 
         /** Current raw flag. */
         private bool curRaw;
-
+        
         /**
          * <summary>Constructor.</summary>
          * <param name="marsh">Marshaller.</param>
@@ -105,6 +105,14 @@ namespace GridGain.Client.Impl.Portable
         {
             get;
             private set;
+        }
+
+        /**
+         * <summary>Marshaller.</summary>
+         */ 
+        public GridClientPortableMarshaller Marshaller
+        {
+            get { return marsh; }
         }
 
         /**

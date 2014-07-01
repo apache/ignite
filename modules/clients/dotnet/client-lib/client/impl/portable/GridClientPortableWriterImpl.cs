@@ -466,11 +466,11 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
-         * <summary>Forces next object to be written without references to external handles.</summary>
+         * <summary>Enable detach mode for the next object write.</summary>
          */ 
-        public void IgnoreHandles()
+        public void DetachNext()
         {
-            ctx.IgnoreHandles();
+            ctx.DetachNext();
         }
 
         /**

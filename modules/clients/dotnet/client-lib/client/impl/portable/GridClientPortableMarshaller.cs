@@ -211,7 +211,7 @@ namespace GridGain.Client.Impl.Portable
             byte[] data = top ? input.ToArray() : PU.MemoryBuffer(input);
 
             return new GridClientPortableObjectImpl(this, data, (int)pos, val, len, userType, typeId,
-                hashCode, rawDataOffset, fields);
+                hashCode, rawDataOffset, fields, false);
         }
 
         /**

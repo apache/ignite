@@ -726,17 +726,18 @@ namespace GridGain.Client.Impl {
                 if (o == null)
                     return null;
 
-                var map = o as IDictionary<IGridClientPortableObject, IGridClientPortableObject>;
+                var map = o as IDictionary<object, object>;
 
                 if (map == null)
                     throw new ArgumentException("Expects dictionary, but received: " + o);
 
                 var m = new Dictionary<String, Object>();
 
-                foreach (KeyValuePair<IGridClientPortableObject, IGridClientPortableObject> entry in map)
+                foreach (KeyValuePair<object, object> entry in map)
                 {
-                    String key = entry.Key.Deserialize<String>();
-                    Object val = entry.Value.Deserialize<Object>();
+                    String key = ((string)entry.Key);
+                    Object val = entry.Value is IGridClientPortableObject ? 
+                        ((IGridClientPortableObject)entry.Value).Deserialize<object>() : entry.Value;
 
                     m[key] = val;
                 }                    
@@ -850,16 +851,16 @@ namespace GridGain.Client.Impl {
             GridClientTcpRequestFuture<IList<IGridClientNode>> fut = new GridClientTcpRequestFuture<IList<IGridClientNode>>(msg);
 
             fut.DoneConverter = o => {
-                var it = o as IEnumerable<IGridClientPortableObject>;
+                var it = o as IEnumerable;
 
                 if (it == null)
                     return null;
 
                 IList<IGridClientNode> nodes = new List<IGridClientNode>();
 
-                foreach (IGridClientPortableObject beanObj in it) 
+                foreach (object beanObj in it) 
                 {
-                    GridClientNodeBean bean = beanObj.Deserialize<GridClientNodeBean>();
+                    GridClientNodeBean bean = ((IGridClientPortableObject)beanObj).Deserialize<GridClientNodeBean>();
 
                     nodes.Add(nodeBeanToNode(bean));
                 }
