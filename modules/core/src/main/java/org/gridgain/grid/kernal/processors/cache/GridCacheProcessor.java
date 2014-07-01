@@ -1738,6 +1738,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return caches.values();
     }
 
+    /**
+     * @param name Cache name.
+     * @return {@code True} if specified cache is system, {@code false} otherwise.
+     */
+    public boolean systemCache(@Nullable String name) {
+        return sysCaches.contains(name);
+    }
+
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>> ");
