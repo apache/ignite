@@ -23,6 +23,9 @@ import java.util.*;
  */
 @GridInternal
 public class VisorCachesClearTask extends VisorOneNodeTask<Set<String>, Map<String, GridBiTuple<Integer, Integer>>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorCachesClearJob job(Set<String> arg) {
         return new VisorCachesClearJob(arg);

@@ -11,7 +11,6 @@
 
 package org.gridgain.visor.commands
 
-import org.gridgain.visor.visor
 import org.gridgain.visor.visor._
 import org.scalatest._
 
@@ -46,5 +45,20 @@ class VisorArgListSpec extends FlatSpec with ShouldMatchers {
 
         assert(v(4)._1 == "d")
         assert(v(4)._2 == "")
+    }
+
+    it should "properly parse quoted arguments" in {
+        val v = parseArgs("-a='b 'c' d' -minus -d=")
+
+        assert(v.size == 3)
+
+        assert(v(0)._1 == "a")
+        assert(v(0)._2 == "b 'c' d")
+
+        assert(v(1)._1 == "minus")
+        assert(v(1)._2 == null)
+
+        assert(v(2)._1 == "d")
+        assert(v(2)._2 == "")
     }
 }
