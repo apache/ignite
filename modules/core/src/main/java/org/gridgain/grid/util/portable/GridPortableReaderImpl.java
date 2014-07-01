@@ -634,7 +634,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             if (flag != OBJ_ARR)
                 throw new GridPortableException("Invalid flag value: " + flag);
 
-            return doReadObjectArray(false);
+            return doReadObjectArray(false, true);
         }
         else
             return null;
@@ -656,7 +656,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             if (flag != COL)
                 throw new GridPortableException("Invalid flag value: " + flag);
 
-            return (Collection<T>)doReadCollection(false, cls);
+            return (Collection<T>)doReadCollection(false, true, cls);
         }
         else
             return null;
@@ -678,7 +678,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             if (flag != MAP)
                 throw new GridPortableException("Invalid flag value: " + flag);
 
-            return (Map<K, V>)doReadMap(false, cls);
+            return (Map<K, V>)doReadMap(false, true, cls);
         }
         else
             return null;
@@ -935,7 +935,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
 
     /** {@inheritDoc} */
     @Nullable @Override public Object[] readObjectArray() throws GridPortableException {
-        return doReadObjectArray(true);
+        return doReadObjectArray(true, true);
     }
 
     /** {@inheritDoc} */
@@ -945,7 +945,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> Collection<T> readCollection() throws GridPortableException {
-        return (Collection<T>)doReadCollection(true, null);
+        return (Collection<T>)doReadCollection(true, true, null);
     }
 
     /** {@inheritDoc} */
@@ -957,7 +957,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     /** {@inheritDoc} */
     @Nullable @Override public <T> Collection<T> readCollection(
         Class<? extends Collection<T>> colCls) throws GridPortableException {
-        return (Collection<T>)doReadCollection(true, colCls);
+        return (Collection<T>)doReadCollection(true, true, colCls);
     }
 
     /** {@inheritDoc} */
@@ -967,7 +967,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
 
     /** {@inheritDoc} */
     @Nullable @Override public <K, V> Map<K, V> readMap() throws GridPortableException {
-        return (Map<K, V>)doReadMap(true, null);
+        return (Map<K, V>)doReadMap(true, true, null);
     }
 
     /** {@inheritDoc} */
@@ -979,7 +979,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
     /** {@inheritDoc} */
     @Nullable @Override public <K, V> Map<K, V> readMap(
         Class<? extends Map<K, V>> mapCls) throws GridPortableException {
-        return (Map<K, V>)doReadMap(true, mapCls);
+        return (Map<K, V>)doReadMap(true, true, mapCls);
     }
 
     /** {@inheritDoc} */
@@ -1018,6 +1018,8 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
 
                 if (raw)
                     rawOff = start + po.length();
+                else
+                    off = start + po.length();
 
                 return po;
 
@@ -1088,13 +1090,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
                 return doReadDateArray(raw);
 
             case OBJ_ARR:
-                return doReadObjectArray(raw);
+                return doReadObjectArray(raw, false);
 
             case COL:
-                return doReadCollection(raw, null);
+                return doReadCollection(raw, false, null);
 
             case MAP:
-                return doReadMap(raw, null);
+                return doReadMap(raw, false, null);
 
             default:
                 throw new GridPortableException("Invalid flag value: " + flag);
@@ -1415,17 +1417,17 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
                 break;
 
             case OBJ_ARR:
-                obj = doReadObjectArray(true);
+                obj = doReadObjectArray(true, true);
 
                 break;
 
             case COL:
-                obj = doReadCollection(true, null);
+                obj = doReadCollection(true, true, null);
 
                 break;
 
             case MAP:
-                obj = doReadMap(true, null);
+                obj = doReadMap(true, true, null);
 
                 break;
 
@@ -1678,17 +1680,18 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
 
     /**
      * @param raw Raw flag.
+     * @param deep Deep flag.
      * @return Value.
      * @throws GridPortableException In case of error.
      */
-    private Object[] doReadObjectArray(boolean raw) throws GridPortableException {
+    private Object[] doReadObjectArray(boolean raw, boolean deep) throws GridPortableException {
         int len = doReadInt(raw);
 
         if (len >= 0) {
             Object[] arr = new Object[len];
 
             for (int i = 0; i < len; i++)
-                arr[i] = doReadObject(raw);
+                arr[i] = deep ? doReadObject(raw) : unmarshal(raw);
 
             return arr;
         }
@@ -1698,12 +1701,13 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
 
     /**
      * @param raw Raw flag.
+     * @param deep Deep flag.
      * @param cls Collection class.
      * @return Value.
      * @throws GridPortableException In case of error.
      */
     @SuppressWarnings("unchecked")
-    private Collection<?> doReadCollection(boolean raw, @Nullable Class<? extends Collection> cls)
+    private Collection<?> doReadCollection(boolean raw, boolean deep, @Nullable Class<? extends Collection> cls)
         throws GridPortableException {
         int size = doReadInt(raw);
 
@@ -1766,7 +1770,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             }
 
             for (int i = 0; i < size; i++)
-                col.add(doReadObject(raw));
+                col.add(deep ? doReadObject(raw) : unmarshal(raw));
 
             return col;
         }
@@ -1776,12 +1780,14 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
 
     /**
      * @param raw Raw flag.
+     * @param deep Deep flag.
      * @param cls Map class.
      * @return Value.
      * @throws GridPortableException In case of error.
      */
     @SuppressWarnings("unchecked")
-    private Map<?, ?> doReadMap(boolean raw, @Nullable Class<? extends Map> cls) throws GridPortableException {
+    private Map<?, ?> doReadMap(boolean raw, boolean deep, @Nullable Class<? extends Map> cls)
+        throws GridPortableException {
         int size = doReadInt(raw);
 
         if (size >= 0) {
@@ -1833,7 +1839,7 @@ class GridPortableReaderImpl implements GridPortableReader, GridPortableRawReade
             }
 
             for (int i = 0; i < size; i++)
-                map.put(doReadObject(raw), doReadObject(raw));
+                map.put(deep ? doReadObject(raw) : unmarshal(raw), deep ? doReadObject(raw) : unmarshal(raw));
 
             return map;
         }
