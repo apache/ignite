@@ -21,7 +21,7 @@ namespace GridGain.Client.Portable {
     using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
 
     [TestFixture]
-    public class GridClientPortableSelfTest : GridClientAbstractTest {
+    public class GridClientPortableSelfTest { 
 
         //override protected String ServerAddress()
         //{
@@ -31,13 +31,13 @@ namespace GridGain.Client.Portable {
         private GridClientPortableMarshaller marsh;
 
         [TestFixtureSetUp]
-        override public void InitClient()
+        public void InitClient()
         {
             marsh = new GridClientPortableMarshaller(null);
         }
 
         [TestFixtureTearDown]
-        override public void StopClient()
+        public void StopClient()
         {
             // No-op.
         }
@@ -422,22 +422,20 @@ namespace GridGain.Client.Portable {
          */
         public void TestGenericCollections()
         {
-            //GridClientConfiguration cfg = new GridClientConfiguration();
-            
-            //cfg.Servers.Add("127.0.0.1:11211");
-
-            //IGridClient cli = GridClientFactory.Start(cfg);
-
-            //if (true)
-            //    return;
-
             ICollection<string> list = new List<string>();
 
             list.Add("1");
 
             byte[] data = marsh.Marshal(list);
 
-            ICollection<string> newList = marsh.Unmarshal(data).Deserialize<List<string>>();
+            ICollection<object> newObjList = marsh.Unmarshal(data).Deserialize<List<object>>();
+
+            Assert.NotNull(newObjList);
+
+            ICollection<string> newList = new List<string>();
+
+            foreach (object obj in newObjList)
+                newList.Add((string)obj);
 
             CompareCollections<string>(list, newList);
         }
@@ -687,6 +685,148 @@ namespace GridGain.Client.Portable {
             GridClientPortableMarshaller marsh = new GridClientPortableMarshaller(cfg);
 
             CheckObject(marsh, new OuterObjectType(), new InnerObjectType());
+        }
+
+        /**
+         * <summary>Test handles.</summary>
+         */ 
+        public void TestHandles()
+        {
+            ICollection<GridClientPortableTypeConfiguration> typeCfgs =
+                new List<GridClientPortableTypeConfiguration>();
+
+            typeCfgs.Add(new GridClientPortableTypeConfiguration(typeof(HandleInner)));
+            typeCfgs.Add(new GridClientPortableTypeConfiguration(typeof(HandleOuter)));
+
+            GridClientPortableConfiguration cfg = new GridClientPortableConfiguration();
+
+            cfg.TypeConfigurations = typeCfgs;
+
+            GridClientPortableMarshaller marsh = new GridClientPortableMarshaller(cfg);
+
+            HandleOuter outer = new HandleOuter();
+
+            outer.before = "outBefore";
+            outer.after = "outAfter";
+            outer.rawBefore = "outRawBefore";
+            outer.rawAfter = "outRawAfter";
+
+            HandleInner inner = new HandleInner();
+
+            inner.before = "inBefore";
+            inner.after = "inAfter";
+            inner.rawBefore = "inRawBefore";
+            inner.rawAfter = "inRawAfter";
+
+            outer.inner = inner;
+            outer.rawInner = inner;
+
+            inner.outer = outer;
+            inner.rawOuter = outer;
+
+            byte[] bytes = marsh.Marshal(outer);
+
+            IGridClientPortableObject outerObj = marsh.Unmarshal(bytes);
+
+            HandleOuter newOuter = outerObj.Deserialize<HandleOuter>();
+            HandleInner newInner = newOuter.inner;
+
+            CheckHandlesConsistency(outer, inner, newOuter, newInner);
+
+            // Get inner object by field.
+            IGridClientPortableObject innerObj = outerObj.Field<IGridClientPortableObject>("inner");
+
+            newInner = innerObj.Deserialize<HandleInner>();
+            newOuter = newInner.outer;
+
+            CheckHandlesConsistency(outer, inner, newOuter, newInner);
+
+            // Get outer object from inner object by handle.
+            outerObj = innerObj.Field<IGridClientPortableObject>("outer");
+
+            newOuter = outerObj.Deserialize<HandleOuter>();
+            newInner = newOuter.inner;
+
+            CheckHandlesConsistency(outer, inner, newOuter, newInner);
+        }
+
+        /**
+         * <summary>Test handles with exclusive writes.</summary>
+         */
+        public void TestHandlesExclusive()
+        {
+            ICollection<GridClientPortableTypeConfiguration> typeCfgs =
+                new List<GridClientPortableTypeConfiguration>();
+
+            typeCfgs.Add(new GridClientPortableTypeConfiguration(typeof(HandleInner)));
+            typeCfgs.Add(new GridClientPortableTypeConfiguration(typeof(HandleOuterExclusive)));
+
+            GridClientPortableConfiguration cfg = new GridClientPortableConfiguration();
+
+            cfg.TypeConfigurations = typeCfgs;
+
+            GridClientPortableMarshaller marsh = new GridClientPortableMarshaller(cfg);
+
+            HandleOuterExclusive outer = new HandleOuterExclusive();
+
+            outer.before = "outBefore";
+            outer.after = "outAfter";
+            outer.rawBefore = "outRawBefore";
+            outer.rawAfter = "outRawAfter";
+
+            HandleInner inner = new HandleInner();
+
+            inner.before = "inBefore";
+            inner.after = "inAfter";
+            inner.rawBefore = "inRawBefore";
+            inner.rawAfter = "inRawAfter";
+
+            outer.inner = inner;
+            outer.rawInner = inner;
+
+            inner.outer = outer;
+            inner.rawOuter = outer;
+
+            byte[] bytes = marsh.Marshal(outer);
+
+            IGridClientPortableObject outerObj = marsh.Unmarshal(bytes);
+
+            HandleOuter newOuter = outerObj.Deserialize<HandleOuter>();
+
+            Assert.IsFalse(newOuter == newOuter.inner.outer);
+            Assert.IsFalse(newOuter == newOuter.inner.rawOuter);
+            Assert.IsFalse(newOuter == newOuter.rawInner.rawOuter);
+            Assert.IsFalse(newOuter == newOuter.rawInner.rawOuter);
+
+            Assert.IsFalse(newOuter.inner == newOuter.rawInner);
+
+            Assert.IsTrue(newOuter.inner.outer == newOuter.inner.rawOuter);
+            Assert.IsTrue(newOuter.rawInner.outer == newOuter.rawInner.rawOuter);
+
+            Assert.IsTrue(newOuter.inner == newOuter.inner.outer.inner);
+            Assert.IsTrue(newOuter.inner == newOuter.inner.outer.rawInner);
+            Assert.IsTrue(newOuter.rawInner == newOuter.rawInner.outer.inner);
+            Assert.IsTrue(newOuter.rawInner == newOuter.rawInner.outer.rawInner);
+        }
+
+        private void CheckHandlesConsistency(HandleOuter outer, HandleInner inner, HandleOuter newOuter, 
+            HandleInner newInner)
+        {
+            Assert.True(newOuter != null);
+            Assert.AreEqual(outer.before, newOuter.before);
+            Assert.True(newOuter.inner == newInner);
+            Assert.AreEqual(outer.after, newOuter.after);
+            Assert.AreEqual(outer.rawBefore, newOuter.rawBefore);
+            Assert.True(newOuter.rawInner == newInner);
+            Assert.AreEqual(outer.rawAfter, newOuter.rawAfter);
+
+            Assert.True(newInner != null);
+            Assert.AreEqual(inner.before, newInner.before);
+            Assert.True(newInner.outer == newOuter);
+            Assert.AreEqual(inner.after, newInner.after);
+            Assert.AreEqual(inner.rawBefore, newInner.rawBefore);
+            Assert.True(newInner.rawOuter == newOuter);
+            Assert.AreEqual(inner.rawAfter, newInner.rawAfter);            
         }
 
         private void CheckObject(GridClientPortableMarshaller marsh, OuterObjectType outObj, InnerObjectType inObj)
@@ -1443,6 +1583,136 @@ namespace GridGain.Client.Portable {
                 sb.Append(b + " ");
 
             return sb.ToString();
+        }
+
+        [GridClientPortableId(1)]
+        public class HandleOuter : IGridClientPortable
+        {
+            [GridClientPortableId(1)]
+            public string before;
+
+            [GridClientPortableId(2)]
+            public HandleInner inner;
+
+            [GridClientPortableId(3)]
+            public string after;
+
+            public string rawBefore;
+            public HandleInner rawInner;
+            public string rawAfter;
+
+            /** <inheritdoc /> */
+            virtual public void WritePortable(IGridClientPortableWriter writer)
+            {
+                writer.WriteString("before", before);
+                writer.WriteObject<HandleInner>("inner", inner);
+                writer.WriteString("after", after);
+
+                IGridClientPortableRawWriter rawWriter = writer.RawWriter();
+
+                rawWriter.WriteString(rawBefore);
+                rawWriter.WriteObject<HandleInner>(rawInner);
+                rawWriter.WriteString(rawAfter);
+            }
+
+            /** <inheritdoc /> */
+            virtual public void ReadPortable(IGridClientPortableReader reader)
+            {
+                before = reader.ReadString("before");
+                inner = reader.ReadObject<HandleInner>("inner");
+                after = reader.ReadString("after");
+
+                IGridClientPortableRawReader rawReader = reader.RawReader();
+
+                rawBefore = rawReader.ReadString();
+                rawInner = rawReader.ReadObject<HandleInner>();
+                rawAfter = rawReader.ReadString();
+            }
+        }
+
+        [GridClientPortableId(4)]
+        public class HandleInner : IGridClientPortable
+        {
+            [GridClientPortableId(5)]
+            public string before;
+
+            [GridClientPortableId(6)]
+            public HandleOuter outer;
+
+            [GridClientPortableId(7)]
+            public string after;
+
+            public string rawBefore;
+            public HandleOuter rawOuter;
+            public string rawAfter;
+
+            /** <inheritdoc /> */
+            virtual public void WritePortable(IGridClientPortableWriter writer)
+            {
+                writer.WriteString("before", before);
+                writer.WriteObject<HandleOuter>("outer", outer);
+                writer.WriteString("after", after);
+
+                IGridClientPortableRawWriter rawWriter = writer.RawWriter();
+
+                rawWriter.WriteString(rawBefore);
+                rawWriter.WriteObject<HandleOuter>(rawOuter);
+                rawWriter.WriteString(rawAfter);
+            }
+
+            /** <inheritdoc /> */
+            virtual public void ReadPortable(IGridClientPortableReader reader)
+            {
+                before = reader.ReadString("before");
+                outer = reader.ReadObject<HandleOuter>("outer");
+                after = reader.ReadString("after");
+
+                IGridClientPortableRawReader rawReader = reader.RawReader();
+
+                rawBefore = rawReader.ReadString();
+                rawOuter = rawReader.ReadObject<HandleOuter>();
+                rawAfter = rawReader.ReadString();
+            }
+        }
+
+
+        public class HandleOuterExclusive : HandleOuter
+        {
+            /** <inheritdoc /> */
+            override public void WritePortable(IGridClientPortableWriter writer)
+            {
+                GridClientPortableWriterImpl writer0 = (GridClientPortableWriterImpl)writer;
+
+                writer.WriteString("before", before);
+
+                writer0.DetachNext();
+                writer.WriteObject<HandleInner>("inner", inner);
+
+                writer.WriteString("after", after);
+
+                IGridClientPortableRawWriter rawWriter = writer.RawWriter();
+
+                rawWriter.WriteString(rawBefore);
+
+                writer0.DetachNext();
+                rawWriter.WriteObject<HandleInner>(rawInner);
+
+                rawWriter.WriteString(rawAfter);
+            }
+
+            /** <inheritdoc /> */
+            override public void ReadPortable(IGridClientPortableReader reader)
+            {
+                before = reader.ReadString("before");
+                inner = reader.ReadObject<HandleInner>("inner");
+                after = reader.ReadString("after");
+
+                IGridClientPortableRawReader rawReader = reader.RawReader();
+
+                rawBefore = rawReader.ReadString();
+                rawInner = rawReader.ReadObject<HandleInner>();
+                rawAfter = rawReader.ReadString();
+            }
         }
     }
 }
