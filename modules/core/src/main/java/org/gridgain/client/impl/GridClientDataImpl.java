@@ -17,6 +17,8 @@ import org.gridgain.portable.*;
 
 import java.util.*;
 
+import static org.gridgain.client.GridClientCacheFlag.*;
+
 /**
  * Data projection that serves one cache instance and handles communication errors.
  */
@@ -111,8 +113,8 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
         K key = GridClientUtils.first(entries.keySet());
 
         return withReconnectHandling(new ClientProjectionClosure<Boolean>() {
-            @Override public GridClientFuture<Boolean> apply(GridClientConnection conn, UUID destNodeId)
-                throws GridClientConnectionResetException, GridClientClosedException {
+            @Override public GridClientFuture<Boolean> apply(GridClientConnection conn,
+                UUID destNodeId) throws GridClientConnectionResetException, GridClientClosedException {
                 return conn.cachePutAll(cacheName, entries, flags, destNodeId);
             }
         }, cacheName, key);
@@ -135,7 +137,7 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
                         @Override public V onComplete(GridClientFuture<Object> fut) throws GridClientException {
                             Object obj = fut.get();
 
-                            if (obj instanceof GridPortableObject) {
+                            if (obj instanceof GridPortableObject && !flags.contains(NOT_DESERIALIZE_PORTABLES)) {
                                 try {
                                     obj = ((GridPortableObject)obj).deserialize();
                                 }
@@ -184,10 +186,12 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
                                     Object val = e.getValue();
 
                                     try {
-                                        if (key instanceof GridPortableObject)
+                                        if (key instanceof GridPortableObject &&
+                                            !flags.contains(NOT_DESERIALIZE_PORTABLES))
                                             key = ((GridPortableObject)key).deserialize();
 
-                                        if (val instanceof GridPortableObject)
+                                        if (val instanceof GridPortableObject &&
+                                            !flags.contains(NOT_DESERIALIZE_PORTABLES))
                                             val = ((GridPortableObject)val).deserialize();
                                     }
                                     catch (GridPortableException ex) {
