@@ -2679,7 +2679,7 @@ public:
 
         checkType(type, flag);
 
-        return off;
+        return true;
     }
 
     std::string doReadString(int32_t len, bool raw) {

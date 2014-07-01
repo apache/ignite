@@ -15,6 +15,41 @@ int8_t GridPortableReader::readArrayElement(bool raw) {
 }
 
 template<>
+bool GridPortableReader::readArrayElement(bool raw) {
+    return doReadBool(raw);
+}
+
+template<>
+int16_t GridPortableReader::readArrayElement(bool raw) {
+    return doReadInt16(raw);
+}
+
+template<>
+uint16_t GridPortableReader::readArrayElement(bool raw) {
+    return doReadChar(raw);
+}
+
+template<>
+int32_t GridPortableReader::readArrayElement(bool raw) {
+    return doReadInt32(raw);
+}
+
+template<>
+int64_t GridPortableReader::readArrayElement(bool raw) {
+    return doReadInt64(raw);
+}
+
+template<>
+float GridPortableReader::readArrayElement(bool raw) {
+    return doReadFloat(raw);
+}
+
+template<>
+double GridPortableReader::readArrayElement(bool raw) {
+    return doReadDouble(raw);
+}
+
+template<>
 bool GridPortableReader::startReadArray<bool>(char* fieldName) {
     return startReadBoolArray(fieldName);
 }
@@ -60,7 +95,7 @@ bool GridPortableReader::startReadArray<GridClientUuid>(char* fieldName) {
 }
 
 template<>
-bool GridPortableReader::startReadArray<GridClientData>(char* fieldName) {
+bool GridPortableReader::startReadArray<GridClientDate>(char* fieldName) {
     return startReadDateArray(fieldName);
 }
 
@@ -102,6 +137,41 @@ GridClientDate GridPortableReader::readObject(bool raw) {
 template<>
 int8_t GridPortableRawReader::readArrayElement(bool raw) {
     return doReadByte(raw);
+}
+
+template<>
+bool GridPortableRawReader::readArrayElement(bool raw) {
+    return doReadBool(raw);
+}
+
+template<>
+int16_t GridPortableRawReader::readArrayElement(bool raw) {
+    return doReadInt16(raw);
+}
+
+template<>
+uint16_t GridPortableRawReader::readArrayElement(bool raw) {
+    return doReadChar(raw);
+}
+
+template<>
+int32_t GridPortableRawReader::readArrayElement(bool raw) {
+    return doReadInt32(raw);
+}
+
+template<>
+int64_t GridPortableRawReader::readArrayElement(bool raw) {
+    return doReadInt64(raw);
+}
+
+template<>
+float GridPortableRawReader::readArrayElement(bool raw) {
+    return doReadFloat(raw);
+}
+
+template<>
+double GridPortableRawReader::readArrayElement(bool raw) {
+    return doReadDouble(raw);
 }
 
 template<>
