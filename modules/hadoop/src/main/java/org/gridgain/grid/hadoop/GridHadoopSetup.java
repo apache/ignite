@@ -153,16 +153,18 @@ public class GridHadoopSetup {
             }
         });
 
-        boolean jarsExist = true;
+        boolean jarsLinksCorrect = true;
 
         for (File file : jarFiles) {
-            File targetFile = new File(hadoopCommonLibDir, file.getName());
+            File link = new File(hadoopCommonLibDir, file.getName());
 
-            if (!linkTargetExists(targetFile) || !targetFile.exists())
-                jarsExist = false;
+            jarsLinksCorrect &= isJarLinkCorrect(link, file);
+
+            if (!jarsLinksCorrect)
+                break;
         }
 
-        if (!jarsExist) {
+        if (!jarsLinksCorrect) {
             if (ask("GridGain JAR files are not found in Hadoop 'lib' directory. " +
                 "Create appropriate symbolic links?")) {
                 File[] oldGridGainJarFiles = hadoopCommonLibDir.listFiles(new FilenameFilter() {
@@ -190,16 +192,13 @@ public class GridHadoopSetup {
                         Files.createSymbolicLink(targetFile.toPath(), file.toPath());
                     }
                     catch (IOException e) {
-                        warn("Creating symbolic link failed! (Windows NTFS requires Admin rights to create symlinks.)");
-
-                        println("Copying file to '" + targetFile.getAbsolutePath() + "'.");
-
-                        try {
-                            U.copy(file, targetFile, false);
+                        if (U.isWindows()) {
+                            warn("Ability to create symbolic links is required!");
+                            warn("On Windows platform you have to grant permission 'Create symbolic links'");
+                            warn("to your user or run the Accelerator as Administrator.");
                         }
-                        catch (IOException e1) {
-                            exit("Failed to copy file to '" + targetFile + "'. Check permissions.", e1);
-                        }
+
+                        exit("Creating symbolic link failed! Check permissions.", e);
                     }
                 }
             }
@@ -299,14 +298,15 @@ public class GridHadoopSetup {
     }
 
     /**
-     * Checks if link target exists.
+     * Checks if link is correct.
      *
      * @param link Symbolic link.
-     * @return {@code true} If link target exists.
+     * @param correctTarget Correct link target.
+     * @return {@code true} If link target is correct.
      */
-    private static boolean linkTargetExists(File link) {
+    private static boolean isJarLinkCorrect(File link, File correctTarget) {
         if (!Files.isSymbolicLink(link.toPath()))
-            return true; // It is a real file or it does not exist.
+            return false; // It is a real file or it does not exist.
 
         Path target = null;
 
@@ -317,13 +317,7 @@ public class GridHadoopSetup {
             exit("Failed to read symbolic link: " + link.getAbsolutePath(), e);
         }
 
-        if (Files.notExists(target)) {
-            warn("Found link pointing to non-existing location: '" + link.getAbsolutePath() + "'.");
-
-            return false;
-        }
-
-        return true;
+        return Files.exists(target) && target.toFile().equals(correctTarget);
     }
 
     /**
