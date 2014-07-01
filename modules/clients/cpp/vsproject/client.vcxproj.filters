@@ -139,6 +139,9 @@
     <ClCompile Include="..\main\src\impl\marshaller\portable\gridclientportablemessages.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\main\src\impl\queries\gridqueriesimpl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\main\include\gridgain\gridclient.hpp">
@@ -405,6 +408,15 @@
       <Filter>API Headers</Filter>
     </ClInclude>
     <ClInclude Include="..\main\include\gridgain\impl\marshaller\portable\gridclientportablemessages.hpp">
+      <Filter>Impl Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\main\include\gridgain\gridclientqueries.hpp">
+      <Filter>API Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\main\include\gridgain\impl\queries\gridqueriesimpl.hpp">
+      <Filter>Impl Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\main\include\gridgain\impl\cmd\gridclientmessagequeries.hpp">
       <Filter>Impl Headers</Filter>
     </ClInclude>
   </ItemGroup>

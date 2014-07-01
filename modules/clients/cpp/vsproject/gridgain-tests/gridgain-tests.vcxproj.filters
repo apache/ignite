@@ -47,6 +47,12 @@
     <ClCompile Include="..\..\main\tests\gridclientportabletest.cpp">
       <Filter>Test source files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\main\tests\gridclientqueriestest.cpp">
+      <Filter>Test source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\main\tests\gridportablemarshallertest.cpp">
+      <Filter>Test source files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\main\tests\gridclientfactoryfixture.hpp">

@@ -992,7 +992,7 @@ namespace GridGain.Client.Impl.Portable
          */
         private static object ReadArrayField(MemoryStream stream, GridClientPortableMarshaller marsh)
         {
-            return PU.ReadArrayPortable(stream, marsh);
+            return PU.ReadArrayPortable<object>(stream, marsh);
         }
 
         /**
@@ -1013,7 +1013,7 @@ namespace GridGain.Client.Impl.Portable
          */
         private static object ReadCollectionField(MemoryStream stream, GridClientPortableMarshaller marsh)
         {
-            return PU.ReadCollectionPortable(stream, marsh);
+            return PU.ReadCollectionPortable<object>(stream, marsh);
         }
 
         /**
@@ -1034,7 +1034,7 @@ namespace GridGain.Client.Impl.Portable
          */
         private static object ReadDictionaryField(MemoryStream stream, GridClientPortableMarshaller marsh)
         {
-            return PU.ReadDictionaryPortable(stream, marsh);
+            return PU.ReadDictionaryPortable<object, object>(stream, marsh);
         }
 
         /**

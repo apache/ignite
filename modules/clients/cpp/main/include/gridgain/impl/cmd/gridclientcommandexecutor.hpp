@@ -22,6 +22,7 @@
 #include "gridgain/impl/cmd/gridclientmessagecachegetresult.hpp"
 #include "gridgain/impl/cmd/gridclientmessagetaskrequestcommand.hpp"
 #include "gridgain/impl/cmd/gridclientmessagetaskresult.hpp"
+#include "gridgain/impl/cmd/gridclientmessagequeries.hpp"
 #include "gridgain/gridsocketaddress.hpp"
 
 /**
@@ -91,6 +92,16 @@ public:
      */
     virtual void executeTaskCmd(const GridClientSocketAddress& nodeHost,
         GridTaskRequestCommand& taskCmd, GridClientMessageTaskResult& result) = 0;
+
+    /**
+     * Execute query command.
+     *
+     * @param nodeHost Host/port to send command to.
+     * @param qryCmd query command.
+     * @param res query result.
+     */
+    virtual void executeQueryCmd(const GridClientSocketAddress& nodeHost,
+        GridQueryRequestCommand& qryCmd, GridClientQueryResult& res) = 0;
 };
 
 #endif

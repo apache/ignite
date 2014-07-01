@@ -28,33 +28,9 @@ using namespace std;
 
 BOOST_AUTO_TEST_SUITE(GridClientPortableIntegrationSuite)
 
-static string SERVER_ADDRESS = "127.0.0.1";
-static string CACHE_NAME = "partitioned";
-static int KEYS_CNT = 10;
-static int TEST_TCP_PORT = 10080;
-static string CREDS = "s3cret";
-
-GridClientConfiguration clientConfig() {
-    GridClientConfiguration clientConfig;
-
-    vector<GridClientSocketAddress> servers;
-
-    servers.push_back(GridClientSocketAddress(SERVER_ADDRESS, TEST_TCP_PORT));
-
-    clientConfig.servers(servers);
-
-    GridClientProtocolConfiguration protoCfg;
-
-    protoCfg.credentials(CREDS);
-
-    clientConfig.protocolConfiguration(protoCfg);
-
-    return clientConfig;
-}
-
 class GridClientTestPortable : public GridPortable {
 public:
-	GridClientTestPortable() : portable1(0), portable2(0), portableRaw1(0), portableRaw2(0), date(0), dateRaw(0) {
+    GridClientTestPortable() : portable1(0), portable2(0), portableRaw1(0), portableRaw2(0), date(0), dateRaw(0) {
     }
 
     GridClientTestPortable(int32_t val, bool createNested) : b(val), s(val), i(val), l(val), date(val),
@@ -97,8 +73,8 @@ public:
     }
 
     int32_t typeId() const {
-		return 10000;
-	}
+        return 10000;
+    }
 
     void writePortable(GridPortableWriter &writer) const {
         writer.writeByte("_b", b);
@@ -169,7 +145,7 @@ public:
             raw.writeVariant(portableRaw2);
         else
             raw.writeVariant(GridClientVariant());
-	}
+    }
 
     void readPortable(GridPortableReader &reader) {
         b = reader.readByte("_b");
@@ -241,7 +217,7 @@ public:
         var = raw.readVariant();
         if (var.hasPortableObject())
             portableRaw2 = var.deserializePortable<GridClientTestPortable>();
-	}
+    }
 
     /** */
     int8_t b;
@@ -663,7 +639,7 @@ BOOST_FIXTURE_TEST_CASE(testPutAllGetAllPortable, GridClientFactoryFixture1<clie
                             BOOST_FAIL("Read invalid s.");
                     }
                 }
-                
+
                 if (i % 5 == 0)
                     cout << "Run iteration " << i << "\n";
             }
@@ -688,7 +664,7 @@ BOOST_FIXTURE_TEST_CASE(testPortableTaskArg, GridClientFactoryFixture1<clientCon
                 BOOST_FAIL("Failed to get value.");
             else {
                 std::unique_ptr<GridClientTestPortable> val = res.deserializePortableUnique<GridClientTestPortable>();
-            
+
                 boost::lock_guard<boost::mutex> g(testCheckMux);
 
                 checkGridClientTestPortable(testVal + 1, 2, val.get(), true);
@@ -703,13 +679,14 @@ BOOST_FIXTURE_TEST_CASE(testPortableTaskArg, GridClientFactoryFixture1<clientCon
 BOOST_FIXTURE_TEST_CASE(testPutGetDetached, GridClientFactoryFixture1<clientConfig>) {
     GridClientTestPortable obj1(1, false);
     GridClientTestPortable obj2(2, false);
+
     GridClientTestPortable obj3(3, false);
 
     obj2.portable1 = &obj1;
     obj3.portable1 = &obj1;
 
     TGridClientVariantMap map;
-    
+
     map[0] = GridClientVariant(&obj1);
     map[1] = GridClientVariant(&obj2);
     map[2] = GridClientVariant(&obj3);
@@ -717,6 +694,9 @@ BOOST_FIXTURE_TEST_CASE(testPutGetDetached, GridClientFactoryFixture1<clientConf
     TGridClientDataPtr data = client->data(CACHE_NAME);
 
     data->putAll(map); // During put obj2 and obj3 reference the same obj1.
+
+    obj2.portable1 = 0;
+    obj3.portable1 = 0;
 
     GridPortableObject p1 = data->get(0).getPortableObject();
     GridPortableObject p2 = data->get(1).getPortableObject();
@@ -754,7 +734,7 @@ BOOST_FIXTURE_TEST_CASE(testPutPortable, GridClientFactoryFixture1<clientConfig>
     GridClientTestPortable obj2(2, true);
 
     TGridClientDataPtr data = client->data(CACHE_NAME);
-    
+
     data->put(1, &obj1);
     data->put(2, &obj2);
 
@@ -764,18 +744,21 @@ BOOST_FIXTURE_TEST_CASE(testPutPortable, GridClientFactoryFixture1<clientConfig>
 
     GridPortableObject p11 = data->get(3).getPortableObject();
 
-    BOOST_REQUIRE(p1 == p11);
     BOOST_REQUIRE_EQUAL(1, p11.field("_i").getInt());
+    BOOST_REQUIRE(p1 == p11);
 
     GridPortableObject p2 = data->get(2).getPortableObject();
-    
+
+    BOOST_REQUIRE(p2.field("_portable1").hasPortableObject());
+    BOOST_REQUIRE_EQUAL(3, p2.field("_portable1").getPortableObject().field("_i").getInt());
+
     data->put(4, p2);
 
     GridPortableObject p21 = data->get(4).getPortableObject();
 
     BOOST_REQUIRE(p2 == p21);
     BOOST_REQUIRE_EQUAL(2, p21.field("_i").getInt());
-    BOOST_REQUIRE_EQUAL(3, p21.field("_portable").getPortableObject().field("_i").getInt());
+    BOOST_REQUIRE_EQUAL(3, p21.field("_portable1").getPortableObject().field("_i").getInt());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

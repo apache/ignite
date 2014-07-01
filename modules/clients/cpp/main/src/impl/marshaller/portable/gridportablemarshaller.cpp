@@ -144,3 +144,5 @@ REGISTER_SYSTEM_TYPE(GridClientResponse::TYPE_ID, GridClientResponse);
 REGISTER_SYSTEM_TYPE(GridClientTaskRequest::TYPE_ID, GridClientTaskRequest);
 REGISTER_SYSTEM_TYPE(GridClientTaskResultBean::TYPE_ID, GridClientTaskResultBean);
 REGISTER_SYSTEM_TYPE(GridClientTopologyRequest::TYPE_ID, GridClientTopologyRequest);
+REGISTER_SYSTEM_TYPE(GridClientCacheQueryRequest::TYPE_ID, GridClientCacheQueryRequest);
+REGISTER_SYSTEM_TYPE(GridClientDataQueryResult::TYPE_ID, GridClientDataQueryResult);

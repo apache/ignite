@@ -29,6 +29,7 @@
 #include "gridgain/impl/cmd/gridclientmessagecachemetricsresult.hpp"
 #include "gridgain/impl/cmd/gridclientmessagecachegetresult.hpp"
 #include "gridgain/impl/cmd/gridclientmessagetaskresult.hpp"
+#include "gridgain/impl/cmd/gridclientmessagequeries.hpp"
 
 const int8_t TYPE_ID_BYTE = 1;
 const int8_t TYPE_ID_SHORT = 2;
@@ -4006,6 +4007,12 @@ public:
         }
     }
 
+    void parseResponse(GridClientResponse* msg, GridClientQueryResult& resp) {
+        GridClientVariant res = msg->getResult();
+
+        if (res.hasPortableObject())
+            resp.res = res.getPortableObject().deserialize<GridClientDataQueryResult>();
+    }
 };
 
 #endif

@@ -19,22 +19,22 @@ namespace GridGain.Client.Portable
         /**
          * <summary>Gets type ID for the given type.</summary>
          * <param name="type">Type.</param>
-         * <returns>ID of the class or null in case annotation or hash code is to be used.</returns>
+         * <returns>ID of the class or 0 in case hash code is to be used.</returns>
          */
-        public virtual int? TypeId(Type type)
+        public virtual int TypeId(Type type)
         {
-            return null;
+            return 0;
         }
 
         /**
          * <summary>Gets field ID for the given field of the given class.</summary>
          * <param name="typeId">Type ID.</param>
          * <param name="fieldName">Field name.</param>
-         * <returns>ID of the field or null in case annotation or hash code is to be used.</returns>
+         * <returns>ID of the field or null in case hash code is to be used.</returns>
          */
-        public virtual int? FieldId(int typeId, string fieldName)
+        public virtual int FieldId(int typeId, string fieldName)
         {
-            return null;
+            return 0;
         }
     }
 }

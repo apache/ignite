@@ -92,6 +92,16 @@ public:
         GridClientMessageTaskResult&);
 
     /**
+     * Execute query command.
+     *
+     * @param nodeHost Host/port to send command to.
+     * @param qryCmd query command.
+     * @param res query result.
+     */
+    virtual void executeQueryCmd(const GridClientSocketAddress& nodeHost, GridQueryRequestCommand& qryCmd, 
+        GridClientQueryResult& res);
+
+    /**
      * Stops the command executor freeing all resources
      * and closing all connections.
      */

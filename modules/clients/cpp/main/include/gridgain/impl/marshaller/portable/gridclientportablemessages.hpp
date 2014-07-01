@@ -18,8 +18,9 @@
 #include "gridgain/gridportable.hpp"
 #include "gridgain/gridportablereader.hpp"
 #include "gridgain/gridportablewriter.hpp"
-#include "gridgain/impl/marshaller/gridnodemarshallerhelper.hpp"
 #include "gridgain/impl/cmd/gridclientmessagecacherequestcommand.hpp"
+#include "gridgain/impl/marshaller/gridnodemarshallerhelper.hpp"
+#include "gridgain/impl/queries/gridqueriesimpl.hpp"
 #include "gridgain/impl/utils/gridclientbyteutils.hpp"
 #include "gridgain/impl/utils/gridclientlog.hpp"
 
@@ -798,6 +799,88 @@ public:
     }
 
     GridClientVariant cred;
+};
+
+class GridClientCacheQueryRequest : public GridClientPortableMessage {
+public:
+    static const int32_t TYPE_ID = 0;
+
+    GridClientCacheQueryRequest() {
+    }
+
+    int32_t typeId() const {
+        return TYPE_ID;
+    }
+
+    void writePortable(GridPortableWriter &writer) const {
+        GridClientPortableMessage::writePortable(writer);
+
+        GridPortableRawWriter& raw = writer.rawWriter();
+
+    }
+
+    void readPortable(GridPortableReader &reader) {
+        assert(false);
+    }
+
+    enum Operation {
+        EXECUTE = 0,
+        FETCH,
+        REBUILD_INDEXES
+    };
+
+    int64_t qryId;
+
+    Operation op;
+
+    GridQueryType type;
+
+    std::string* cacheName;
+
+    std::string* clause;
+
+    int32_t pageSize;
+
+    int64_t timeout;
+
+    bool incBackups;
+
+    bool dedup;
+
+    std::string* className;
+
+    std::string* reducerClassName;
+
+    std::string* transformerClassName;
+
+    std::vector<GridClientVariant>* classArgs;
+    
+    std::vector<GridClientVariant>* args;
+};
+
+class GridClientDataQueryResult : public GridPortable {
+public:
+    static const int32_t TYPE_ID = 0;
+
+    int32_t typeId() const {
+        return TYPE_ID;
+    }
+
+    void writePortable(GridPortableWriter &writer) const {
+        assert(false);
+    }
+
+    void readPortable(GridPortableReader &reader) {
+        GridPortableRawReader& raw = reader.rawReader();
+    }
+
+    int64_t qryId;
+
+    std::vector<GridClientVariant> items;
+
+    bool last;
+
+    GridClientUuid nodeId;
 };
 
 #endif // GRIDCLIENT_PORTABLE_MESSAGES_HPP_INCLUDED

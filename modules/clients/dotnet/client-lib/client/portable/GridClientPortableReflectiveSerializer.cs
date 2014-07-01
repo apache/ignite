@@ -107,9 +107,9 @@ namespace GridGain.Client.Portable
 
             foreach (FieldInfo field in fields)
             {
-                int? fieldIdRef = idMapper.FieldId(typeId, field.Name);
+                int fieldIdRef = idMapper.FieldId(typeId, field.Name);
 
-                int fieldId = fieldIdRef.HasValue ? fieldIdRef.Value : PU.StringHashCode(field.Name.ToLower());
+                int fieldId = fieldIdRef != 0 ? fieldIdRef : PU.StringHashCode(field.Name.ToLower());
 
                 if (idMap.ContainsKey(fieldId))
                 {

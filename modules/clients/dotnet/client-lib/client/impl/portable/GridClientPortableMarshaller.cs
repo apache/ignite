@@ -211,7 +211,7 @@ namespace GridGain.Client.Impl.Portable
             byte[] data = top ? input.ToArray() : PU.MemoryBuffer(input);
 
             return new GridClientPortableObjectImpl(this, data, (int)pos, val, len, userType, typeId,
-                hashCode, rawDataOffset, fields);
+                hashCode, rawDataOffset, fields, false);
         }
 
         /**
@@ -339,7 +339,7 @@ namespace GridGain.Client.Impl.Portable
         {
             refMapper.Register(type);
 
-            int typeId = refMapper.TypeId(type).Value;
+            int typeId = refMapper.TypeId(type);
 
             refSerializer.Register(type, typeId, refMapper);
 
@@ -384,9 +384,9 @@ namespace GridGain.Client.Impl.Portable
                 mapper = refMapper;
             }
 
-            int? typeIdRef = mapper.TypeId(type);
+            int typeIdRef = mapper.TypeId(type);
 
-            int typeId = typeIdRef.HasValue ? typeIdRef.Value : PU.StringHashCode(typeCfg.TypeName.ToLower());
+            int typeId = typeIdRef != 0 ? typeIdRef : PU.StringHashCode(typeCfg.TypeName.ToLower());
 
             if (serializer is GridClientPortableReflectiveSerializer)
             {

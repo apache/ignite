@@ -365,6 +365,8 @@ string GridClientVariant::typeName(TypeEnum type) {
 
         case HASHABLE_PORTABLE_TYPE: return "HashablePortable";
 
+        case PORTABLE_OBJ_TYPE: return "PortableObject";
+
         case STRING_TYPE: return "String";
 
         case WIDE_STRING_TYPE: return "WideString";
@@ -374,8 +376,6 @@ string GridClientVariant::typeName(TypeEnum type) {
         case DATE_TYPE: return "Date";
 
         case DATE_ARR_TYPE: return "DateArray";
-
-        case PORTABLE_OBJ_TYPE: return "PortableObject";
 
         case BYTE_ARR_TYPE: return "ByteArray";
 
@@ -409,7 +409,7 @@ string GridClientVariant::typeName(TypeEnum type) {
 
 void GridClientVariant::checkType(TypeEnum expType) const {
     if (type != expType) {
-        string msg = "Varinat contains unexpected type [exp=" + typeName(expType) + ", actual=" + typeName(type) + "]";
+        string msg = "Variant contains unexpected type [exp=" + typeName(expType) + ", actual=" + typeName(type) + "]";
         
         throw runtime_error(msg);
     }
@@ -882,6 +882,8 @@ string GridClientVariant::toString() const {
 
         case HASHABLE_PORTABLE_TYPE: os << "[HashablePortable [typeId=" << data.portableVal->typeId() << "]]"; break;
 
+        case PORTABLE_OBJ_TYPE: os << "[PortableObject [typeId=" << data.portableObjVal->typeId() << "]]"; break;
+
         case STRING_TYPE: os << *data.strVal; break;
 
         case WIDE_STRING_TYPE: os << "[wstring]"; break;
@@ -889,8 +891,6 @@ string GridClientVariant::toString() const {
         case UUID_TYPE: os << *data.uuidVal; break;
 
         case DATE_TYPE: os << *data.dateVal; break;
-
-        case PORTABLE_OBJ_TYPE: os << "[PortableObject [typeId=" << data.portableObjVal->typeId() << "]]"; break;
 
         case BYTE_ARR_TYPE: os << "[ByteArray]"; break;
 
@@ -1016,6 +1016,8 @@ void GridClientVariant::accept(const GridClientVariantVisitor& visitor) const {
 
         case HASHABLE_PORTABLE_TYPE: visitor.visit(*data.hashPortableVal); return;
 
+        case PORTABLE_OBJ_TYPE: visitor.visit(*data.portableObjVal); return;
+
         case STRING_TYPE: visitor.visit(*data.strVal); return;
 
         case WIDE_STRING_TYPE: visitor.visit(*data.wideStrVal); return;
@@ -1023,8 +1025,6 @@ void GridClientVariant::accept(const GridClientVariantVisitor& visitor) const {
         case UUID_TYPE: visitor.visit(*data.uuidVal); return;
 
         case DATE_TYPE: visitor.visit(*data.dateVal); return;
-
-        case PORTABLE_OBJ_TYPE: visitor.visit(*data.portableObjVal); return;
 
         case BYTE_ARR_TYPE: visitor.visit(*data.byteArrVal); return;
 
