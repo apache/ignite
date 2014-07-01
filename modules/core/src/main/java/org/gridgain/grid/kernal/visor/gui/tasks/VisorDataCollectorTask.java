@@ -28,6 +28,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
+import static org.gridgain.grid.kernal.GridProductImpl.ENT;
 import static org.gridgain.grid.kernal.visor.gui.VisorTaskUtilsEnt.*;
 import static org.gridgain.grid.kernal.visor.gui.dto.VisorComputeMonitoringHolder.*;
 
@@ -486,23 +487,23 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
 
         /** Collect license. */
         private void license(VisorDataCollectorJobResult res) {
-            try {
-                res.license = VisorLicense.from(g);
-
-                // If license could not be retrieved, try to let it load.
-                int i = 0;
-
-                while (res.license == null && i < 5) {
-                    U.sleep(1000);
-
+            if (ENT)
+                try {
                     res.license = VisorLicense.from(g);
 
-                    i++;
+                    // If license could not be retrieved, try to let it load for 5 time.
+                    for (int i = 0; i < 5; i++) {
+                        res.license = VisorLicense.from(g);
+
+                        if (res.license != null)
+                            break;
+
+                        U.sleep(1000);
+                    }
                 }
-            }
-            catch(Throwable licenseEx) {
-                res.licenseEx = licenseEx;
-            }
+                catch(Throwable licenseEx) {
+                    res.licenseEx = licenseEx;
+                }
         }
 
         /** Collect caches. */
