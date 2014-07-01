@@ -115,10 +115,10 @@ private case class VisorCopier(
         }
         catch {
             case e: JSchException if X.hasCause(e, classOf[UnknownHostException]) =>
-                println("fail(unknown host) => " + host.name)
+                println("fail (unknown host) => " + host.name)
 
             case e: JSchException =>
-                println("fail(" + e.getMessage +") => " + host.name)
+                println("fail (" + e.getMessage +") => " + host.name)
 
             case e: Exception =>
                 warn(e.getMessage)
@@ -240,26 +240,26 @@ private case class VisorCopier(
         if (!root.exists)
             throw new Exception("File or folder not found: " + src)
 
-        if (root.isDirectory) {
-            val exists =
-                try {
+        try {
+            if (root.isDirectory) {
+                try
                     ch.ls(dest)
-
-                    true
-                }
                 catch {
-                    case _: SftpException => false
+                    case _: SftpException => ch.mkdir(dest)
                 }
 
-            if (!exists)
-                ch.mkdir(dest)
-
-            root.list.foreach(
-                f => copy(ch, new File(src, f).getPath, GridFilenameUtils.separatorsToUnix(dest + "/" + f))
-            )
+                root.listFiles.foreach(
+                    f => copy(ch, f.getPath, GridFilenameUtils.separatorsToUnix(dest + "/" + f.getName)))
+            }
+            else
+                ch.put(src, dest)
         }
-        else
-            ch.put(src, dest)
+        catch {
+            case e: SftpException =>
+                println("failed deploy file (" + e.getMessage +") from: " + src + " to: " + dest)
+            case e: IOException =>
+                println("failed deploy file (" + e.getMessage +") from: " + src + " to: " + dest)
+        }
     }
 }
 
