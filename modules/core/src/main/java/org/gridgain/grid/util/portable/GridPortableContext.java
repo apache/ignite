@@ -11,6 +11,7 @@ package org.gridgain.grid.util.portable;
 
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
+import org.gridgain.grid.kernal.processors.rest.handlers.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.portable.*;
 import org.jdk8.backport.*;
@@ -60,7 +61,6 @@ public class GridPortableContext implements Externalizable {
 
     /**
      * @param portableCfg Portable configuration.
-     * @return Portable context.
      * @throws GridPortableException In case of error.
      */
     public void configure(@Nullable GridPortableConfiguration portableCfg)
@@ -112,6 +112,8 @@ public class GridPortableContext implements Externalizable {
         addDescriptor(GridClientNodeBean.class, 57);
         addDescriptor(GridClientNodeMetricsBean.class, 58);
         addDescriptor(GridClientTaskResultBean.class, 59);
+        addDescriptor(GridClientCacheQueryRequest.class, 60);
+        addDescriptor(GridCacheClientQueryResult.class, 61);
 
         colTypes.put(ArrayList.class, ARR_LIST);
         colTypes.put(LinkedList.class, LINKED_LIST);
