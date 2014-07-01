@@ -679,6 +679,7 @@ BOOST_FIXTURE_TEST_CASE(testPortableTaskArg, GridClientFactoryFixture1<clientCon
 BOOST_FIXTURE_TEST_CASE(testPutGetDetached, GridClientFactoryFixture1<clientConfig>) {
     GridClientTestPortable obj1(1, false);
     GridClientTestPortable obj2(2, false);
+
     GridClientTestPortable obj3(3, false);
 
     obj2.portable1 = &obj1;
@@ -693,6 +694,9 @@ BOOST_FIXTURE_TEST_CASE(testPutGetDetached, GridClientFactoryFixture1<clientConf
     TGridClientDataPtr data = client->data(CACHE_NAME);
 
     data->putAll(map); // During put obj2 and obj3 reference the same obj1.
+
+    obj2.portable1 = 0;
+    obj3.portable1 = 0;
 
     GridPortableObject p1 = data->get(0).getPortableObject();
     GridPortableObject p2 = data->get(1).getPortableObject();
@@ -740,10 +744,13 @@ BOOST_FIXTURE_TEST_CASE(testPutPortable, GridClientFactoryFixture1<clientConfig>
 
     GridPortableObject p11 = data->get(3).getPortableObject();
 
-    BOOST_REQUIRE(p1 == p11);
     BOOST_REQUIRE_EQUAL(1, p11.field("_i").getInt());
+    BOOST_REQUIRE(p1 == p11);
 
     GridPortableObject p2 = data->get(2).getPortableObject();
+
+    BOOST_REQUIRE(p2.field("_portable1").hasPortableObject());
+    BOOST_REQUIRE_EQUAL(3, p2.field("_portable1").getPortableObject().field("_i").getInt());
 
     data->put(4, p2);
 
@@ -751,7 +758,7 @@ BOOST_FIXTURE_TEST_CASE(testPutPortable, GridClientFactoryFixture1<clientConfig>
 
     BOOST_REQUIRE(p2 == p21);
     BOOST_REQUIRE_EQUAL(2, p21.field("_i").getInt());
-    BOOST_REQUIRE_EQUAL(3, p21.field("_portable").getPortableObject().field("_i").getInt());
+    BOOST_REQUIRE_EQUAL(3, p21.field("_portable1").getPortableObject().field("_i").getInt());
 }
 
 BOOST_AUTO_TEST_SUITE_END()
