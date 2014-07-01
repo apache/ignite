@@ -48,10 +48,10 @@ namespace GridGain.Client.Impl.Portable
         private long curRawPos;
 
         /** Ignore handles flag. */
-        private bool ignoreHandles;
+        private bool detach;
 
         /** Object started ognore mode. */
-        private bool ignoreHandlesMode;
+        private bool detachMode;
                                 
         /**
          * <summary>Constructor.</summary>
@@ -114,12 +114,12 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
-         * <summary>Forces next object to be written without references to external handles.</summary>
+         * <summary>Enable detach mode for the next object.</summary>
          */ 
-        public void IgnoreHandles()
+        public void DetachNext()
         {
-            if (!ignoreHandlesMode)
-                ignoreHandles = true;
+            if (!detachMode)
+                detach = true;
         }
 
         /**
@@ -128,16 +128,16 @@ namespace GridGain.Client.Impl.Portable
          */ 
         public void Write(object obj)
         {
-            // 1. Apply "ignore-handles" mode if needed.
+            // 1. Apply detach mode if needed.
             IDictionary<GridClientPortableObjectHandle, int> oldHnds = null;
 
-            bool resetIgnoreHandles = false;
+            bool resetDetach = false;
 
-            if (ignoreHandles)
+            if (detach)
             {
-                ignoreHandles = false;
-                ignoreHandlesMode = true;
-                resetIgnoreHandles = true;
+                detach = false;
+                detachMode = true;
+                resetDetach = true;
 
                 oldHnds = hnds;
 
@@ -234,7 +234,7 @@ namespace GridGain.Client.Impl.Portable
             finally
             {
                 // 13. Restore handles if needed.
-                if (resetIgnoreHandles)
+                if (resetDetach)
                 {
                     // Add newly recorded handles without overriding already existing ones.
                     if (hnds != null)
@@ -253,7 +253,7 @@ namespace GridGain.Client.Impl.Portable
 
                     hnds = oldHnds;
 
-                    ignoreHandlesMode = false;
+                    detachMode = false;
                 }
             }
         }

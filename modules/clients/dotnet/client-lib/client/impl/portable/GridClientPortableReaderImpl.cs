@@ -27,6 +27,12 @@ namespace GridGain.Client.Impl.Portable
         /** Read context. */
         private readonly GridClientPortableReadContext ctx;
 
+        /** Detach flag. */
+        private bool detach;
+
+        /** Detach mode flag. */
+        private bool detachMode;
+
         /**
          * <summary>Constructor.</summary>
          * <param name="ctx">Read context.</param>
@@ -496,6 +502,40 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
+         * <summary>Read portable object.</summary>
+         */ 
+        public IGridClientPortableObject ReadPortable()
+        {
+            bool doDetach = false;
+
+            if (detach)
+            {
+                detach = false; // Reset detach flag so that inner objects will not pick it.
+                detachMode = true; // Set detach mode so that nobody can set detach flag again.
+                doDetach = true; // Local variable to perform detach.
+            }
+
+            try
+            {
+                return PU.ReadPortable(ctx.Stream, ctx.Marshaller, doDetach);
+            }
+            finally
+            {
+                if (detachMode)
+                    detachMode = false;
+            }
+        }
+
+        /**
+         * <summary>Enable detach mode for the next object write.</summary>
+         */ 
+        public void DetachNext()
+        {
+            if (!detachMode)
+                detach = true;
+        }
+
+        /**
          * <summary>Mark current output as raw.</summary>
          */
         private void MarkRaw()
@@ -506,7 +546,7 @@ namespace GridGain.Client.Impl.Portable
 
                 int rawDataOffset = ctx.CurrentPortable.RawDataOffset;
 
-                if (rawDataOffset == 0)
+                if (rawDataOffset == -1)
                     throw new GridClientPortableException("Object doesn't contain raw data [typeId=" +
                         ctx.CurrentPortable.TypeId() + ']');
 
@@ -541,9 +581,9 @@ namespace GridGain.Client.Impl.Portable
             if (ctx.CurrentRaw)
                 throw new GridClientPortableException("Cannot read named fields after raw data is read.");
 
-            int? fieldIdRef = ctx.CurrentMapper.FieldId(ctx.CurrentTypeId, fieldName);
+            int fieldIdRef = ctx.CurrentMapper.FieldId(ctx.CurrentTypeId, fieldName);
 
-            int fieldId = fieldIdRef.HasValue ? fieldIdRef.Value : PU.StringHashCode(fieldName.ToLower());
+            int fieldId = fieldIdRef != 0 ? fieldIdRef : PU.StringHashCode(fieldName.ToLower());
 
             int? fieldPosRef = ctx.CurrentPortable.Position(fieldId);
 

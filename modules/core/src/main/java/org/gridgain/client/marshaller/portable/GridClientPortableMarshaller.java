@@ -9,11 +9,9 @@
 
 package org.gridgain.client.marshaller.portable;
 
-import org.gridgain.client.*;
 import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.util.portable.*;
 import org.gridgain.portable.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -22,36 +20,16 @@ import java.nio.*;
  * Client marshaller supporting {@link GridPortable}.
  */
 public class GridClientPortableMarshaller implements GridClientMarshaller {
-    /** Context. */
-    private final GridPortableContext ctx;
-
     /** Marshaller. */
-    private final GridPortableMarshaller marsh;
+    private GridPortableMarshaller marsh;
 
     /**
-     * @throws GridClientException If failed to initialize marshaller.
+     * @param ctx Portable context.
      */
-    public GridClientPortableMarshaller() throws GridClientException {
-        this(null);
-    }
+    public void portableContext(GridPortableContext ctx) {
+        assert ctx != null;
 
-    /**
-     * @param portableCfg Portable configuration.
-     * @throws GridClientException If failed to initialize marshaller.
-     */
-    public GridClientPortableMarshaller(@Nullable GridPortableConfiguration portableCfg) throws GridClientException {
-        try {
-            GridPortableContext ctx = new GridPortableContext(null);
-
-            ctx.configure(portableCfg);
-
-            this.ctx = ctx;
-
-            marsh = new GridPortableMarshaller(ctx);
-        }
-        catch (GridPortableException e) {
-            throw new GridClientException("Failed to initialize portable marshaller.", e);
-        }
+        marsh = new GridPortableMarshaller(ctx);
     }
 
     /** {@inheritDoc} */
