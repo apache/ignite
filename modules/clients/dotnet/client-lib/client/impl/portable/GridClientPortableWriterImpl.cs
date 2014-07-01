@@ -466,6 +466,14 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
+         * <summary>Forces next object to be written without references to external handles.</summary>
+         */ 
+        public void IgnoreHandles()
+        {
+            ctx.IgnoreHandles();
+        }
+
+        /**
          * <summary>Mark current output as raw.</summary>
          */ 
         private void MarkRaw()

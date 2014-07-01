@@ -54,18 +54,6 @@ public class GridClientPortableMarshaller implements GridClientMarshaller {
         }
     }
 
-    public <T> GridPortableObject<T> convertToPortable(@Nullable Object obj) throws IOException {
-        if (obj instanceof GridPortableObject)
-            return (GridPortableObject<T>)obj;
-        else {
-            ByteBuffer buf = marshal(obj, 0);
-
-            assert buf.hasArray();
-
-            return new GridPortableObjectImpl<>(ctx, buf.array(), buf.position());
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public ByteBuffer marshal(Object obj, int off) throws IOException {
         try {

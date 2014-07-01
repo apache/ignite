@@ -726,15 +726,20 @@ namespace GridGain.Client.Impl {
                 if (o == null)
                     return null;
 
-                var map = o as IDictionary;
+                var map = o as IDictionary<IGridClientPortableObject, IGridClientPortableObject>;
 
                 if (map == null)
                     throw new ArgumentException("Expects dictionary, but received: " + o);
 
                 var m = new Dictionary<String, Object>();
 
-                foreach (DictionaryEntry entry in map)
-                    m[(String)entry.Key] = entry.Value;
+                foreach (KeyValuePair<IGridClientPortableObject, IGridClientPortableObject> entry in map)
+                {
+                    String key = entry.Key.Deserialize<String>();
+                    Object val = entry.Value.Deserialize<Object>();
+
+                    m[key] = val;
+                }                    
 
                 return parseCacheMetrics(m);
             };
@@ -845,15 +850,19 @@ namespace GridGain.Client.Impl {
             GridClientTcpRequestFuture<IList<IGridClientNode>> fut = new GridClientTcpRequestFuture<IList<IGridClientNode>>(msg);
 
             fut.DoneConverter = o => {
-                var it = o as IEnumerable;
+                var it = o as IEnumerable<IGridClientPortableObject>;
 
                 if (it == null)
                     return null;
 
                 IList<IGridClientNode> nodes = new List<IGridClientNode>();
 
-                foreach (Object bean in it)
-                    nodes.Add(nodeBeanToNode((GridClientNodeBean)bean));
+                foreach (IGridClientPortableObject beanObj in it) 
+                {
+                    GridClientNodeBean bean = beanObj.Deserialize<GridClientNodeBean>();
+
+                    nodes.Add(nodeBeanToNode(bean));
+                }
 
                 Top.UpdateTopology(nodes);
 
