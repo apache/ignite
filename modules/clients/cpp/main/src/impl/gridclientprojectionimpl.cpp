@@ -88,8 +88,7 @@ void GridClientProjectionImpl::withReconnectHandling(ClientProjectionClosure& c)
  * @throws GridClientException In case of problems.
  */
 void GridClientProjectionImpl::withReconnectHandling(ClientProjectionClosure& c, const std::string& cacheName,
-        const GridClientHasheableObject& affKey) {
-
+    const GridClientHasheableObject& affKey) {
     // First, we try the affinity node.
     TGridClientNodePtr node = affinityNode(cacheName, affKey);
 
@@ -135,9 +134,8 @@ bool GridClientProjectionImpl::processClosure(TGridClientNodePtr node, ClientPro
 
     bool routing = !addrs.empty();
 
-    if (!routing) {
-        addrs = node->availableAddresses(protocol());
-    }
+    if (!routing)
+        addrs = node->getTcpAddresses();
 
     if (addrs.empty())
         throw GridClientException(string("No available endpoints to connect (is rest enabled for this node?): ") +
@@ -165,7 +163,7 @@ bool GridClientProjectionImpl::processClosure(TGridClientNodePtr node, ClientPro
         }
     }
     else { //no routing
-        int numAddrs = addrs.size();
+        size_t numAddrs = addrs.size();
 
         for (size_t addrIdx = 0; addrIdx < numAddrs; ++addrIdx) {
             try {

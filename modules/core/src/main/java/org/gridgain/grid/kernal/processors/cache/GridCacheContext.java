@@ -44,6 +44,7 @@ import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -761,7 +762,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache transaction manager.
      */
     public GridCacheTxManager<K, V> tm() {
-        return txMgr;
+         return txMgr;
     }
 
     /**
@@ -1714,6 +1715,30 @@ public class GridCacheContext<K, V> implements Externalizable {
 
             return false;
         }
+    }
+
+    /**
+     * @return Portable enabled flag.
+     */
+    public boolean portableEnabled() {
+        return cacheCfg.isPortableEnabled();
+    }
+
+    /**
+     * @param obj Object.
+     * @return Portable object.
+     * @throws In case of error.
+     */
+    public GridPortableObject<?> marshalToPortable(@Nullable Object obj) throws GridPortableException {
+        assert portableEnabled();
+
+        if (obj == null)
+            return null;
+
+        if (obj instanceof GridPortableObject)
+            return (GridPortableObject<?>)obj;
+
+        return kernalContext().portable().marshal(obj);
     }
 
     /**

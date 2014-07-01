@@ -23,9 +23,7 @@
 #include "gridgain/impl/connection/gridclienttcpconnection.hpp"
 #include "gridgain/impl/cmd/gridclientmessageauthrequestcommand.hpp"
 #include "gridgain/impl/cmd/gridclientmessageauthresult.hpp"
-#include "gridgain/impl/marshaller/protobuf/gridclientprotobufmarshaller.hpp"
-
-using namespace org::gridgain::grid::kernal::processors::rest::client::message;
+#include "gridgain/impl/marshaller/portable/gridportablemarshaller.hpp"
 
 /**
  * A test TCP connection with special logic for checking several
@@ -41,7 +39,7 @@ public:
      * @param cred Authentication credentials.
      */
     void authenticate(const string& clientId, const string& creds) {
-        ObjectWrapper protoMsg;
+        GridClientAuthenticationRequest msg(creds);
 
         GridAuthenticationRequestCommand authReq;
         GridClientMessageAuthenticationResult authResult;
@@ -51,22 +49,26 @@ public:
         authReq.setRequestId(1);
         authReq.setDestinationId(GridClientUuid::randomUuid()); // Random unexistent ID.
 
-        GridClientProtobufMarshaller::wrap(authReq, protoMsg);
-
         GridClientTcpPacket tcpPacket;
         GridClientTcpPacket tcpResponse;
-        ProtoRequest req;
 
-        tcpPacket.setData(protoMsg);
+        GridPortableMarshaller marsh;
+
+        boost::shared_ptr<vector<int8_t>> data = marsh.marshalSystemObject(msg);
+
+        tcpPacket.setData(data);
         tcpPacket.setAdditionalHeaders(authReq);
 
         send(tcpPacket, tcpResponse);
 
-        ObjectWrapper respMsg = tcpResponse.getData();
+        GridClientVariant res = marsh.unmarshal(tcpResponse.getData());
 
-        GridClientProtobufMarshaller::unwrap(respMsg, authResult);
+        std::unique_ptr<GridClientResponse> resMsg(res.getPortableObject().deserialize<GridClientResponse>());
 
-        sessToken = authResult.sessionToken();
+        if (!resMsg->errorMsg.empty())
+            throw GridClientCommandException(resMsg->errorMsg);
+
+        sessToken = resMsg->rcvTok;
     }
 };
 

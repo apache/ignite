@@ -28,27 +28,12 @@ namespace GridGain.Client {
         IList<String> TcpHostNames {
             get;
         }
-
-        /** <summary>List of node Jetty addresses.</summary> */
-        IList<String> JettyAddresses {
-            get;
-        }
-
-        /** <summary>List of node Jetty host names.</summary> */
-        IList<String> JettyHostNames {
-            get;
-        }
-
+        
         /** <summary>Remote tcp port.</summary> */
         int TcpPort {
             get;
         }
-
-        /** <summary>Remote http port.</summary> */
-        int HttpPort {
-            get;
-        }
-
+        
         /** <summary>Node replica count for consistent hash ring.</summary> */
         int ReplicaCount {
             get;
@@ -96,10 +81,9 @@ namespace GridGain.Client {
          * <summary>
          * Gets list of addresses on which REST protocol is bound.</summary>
          *
-         * <param name="proto">Protocol for which addresses are obtained.</param>
          * <returns>List of addresses.</returns>
          */
-        IList<IPEndPoint> AvailableAddresses(GridClientProtocol proto);
+        IList<IPEndPoint> AvailableAddresses();
 
         /**
          * <summary>

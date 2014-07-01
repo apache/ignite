@@ -94,7 +94,7 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(OPENSSL_HOME)\include;$(PROTOBUF_DEBUG_HOME)\include;$(BOOST_HOME)\include\boost-1_49;..\main\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OPENSSL_HOME)\include;$(BOOST_HOME)\include\boost-1_49;$(BOOST_HOME);..\main\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4345;4996;4290</DisableSpecificWarnings>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
@@ -105,8 +105,8 @@
       <TargetMachine>MachineX86</TargetMachine>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
-      <AdditionalLibraryDirectories>$(OPENSSL_HOME)\lib\VC\static;$(PROTOBUF_DEBUG_HOME)\lib;$(BOOST_HOME)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ssleay32MD.lib;libeay32MD.lib;libprotobuf.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OPENSSL_HOME)\lib\VC\static;$(BOOST_HOME)\lib;$(BOOST_HOME)\lib32-msvc-10.0;$(BOOST_HOME)\%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>ssleay32MD.lib;libeay32MD.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CustomBuildStep>
       <Command>
@@ -128,7 +128,7 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(OPENSSL_HOME)\include;$(PROTOBUF_DEBUG_HOME)\include;$(BOOST_HOME)\include\boost-1_49;$(BOOST_HOME)\include\boost-1_51;$(BOOST_HOME)\include\boost-1_52;..\main\include;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OPENSSL_HOME)\include;$(BOOST_HOME)\include\boost-1_49;$(BOOST_HOME)\include\boost-1_51;$(BOOST_HOME)\include\boost-1_52;$(BOOST_HOME);..\main\include;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4345;4996;4290;4267;4244</DisableSpecificWarnings>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
@@ -137,8 +137,8 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
-      <AdditionalLibraryDirectories>$(OPENSSL_HOME)\lib\VC\static;$(PROTOBUF_DEBUG_HOME)\lib;$(BOOST_HOME)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ssleay32MD.lib;libeay32MD.lib;libprotobuf.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OPENSSL_HOME)\lib\VC\static;$(BOOST_HOME)\lib;$(BOOST_HOME)\lib64-msvc-10.0;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>ssleay32MD.lib;libeay32MD.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>lib.exe /out:$(TargetDir)libgridgain-client.lib $(IntDir)*.obj</Command>
@@ -178,7 +178,7 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>$(OPENSSL_HOME)\include;$(PROTOBUF_HOME)\vsprojects\include;$(PROTOBUF_RELEASE_HOME)\include;$(BOOST_HOME)\include\boost-1_53;$(BOOST_HOME)\include\boost-1_52;$(BOOST_HOME)\include\boost-1_51;$(BOOST_HOME)\include\boost-1_50;$(BOOST_HOME)\include\boost-1_49;..\main\include;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OPENSSL_HOME)\include;$(BOOST_HOME)\include\boost-1_53;$(BOOST_HOME)\include\boost-1_52;$(BOOST_HOME)\include\boost-1_51;$(BOOST_HOME)\include\boost-1_50;$(BOOST_HOME)\include\boost-1_49;$(BOOST_HOME);..\main\include;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4345;4996;4290;4267;4244</DisableSpecificWarnings>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalOptions>/LD %(AdditionalOptions)</AdditionalOptions>
@@ -188,8 +188,8 @@
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(OPENSSL_HOME)\lib\VC\static;$(PROTOBUF_HOME)\vsprojects\Release\lib;$(PROTOBUF_HOME)\vsprojects\Release;$(PROTOBUF_RELEASE_HOME);$(BOOST_HOME)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ssleay32MD.lib;libeay32MD.lib;libprotobuf.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OPENSSL_HOME)\lib\VC\static;$(BOOST_HOME)\lib;$(BOOST_HOME)\lib64-msvc-10.0;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>ssleay32MD.lib;libeay32MD.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <Version>
       </Version>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
@@ -200,12 +200,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\main\src\impl\cmd\gridclientcommandexecutorfactory.cpp" />
-    <ClCompile Include="..\main\src\impl\cmd\gridclienthttpcommandexecutor.cpp" />
     <ClCompile Include="..\main\src\impl\cmd\gridclienttcpcommandexecutor.cpp" />
     <ClCompile Include="..\main\src\impl\cmd\gridechocommand.cpp" />
     <ClCompile Include="..\main\src\impl\connection\gridclientconnection.cpp" />
     <ClCompile Include="..\main\src\impl\connection\gridclientconnectionpool.cpp" />
-    <ClCompile Include="..\main\src\impl\connection\gridclienthttpconnection.cpp" />
     <ClCompile Include="..\main\src\impl\connection\gridclienttcpconnection.cpp" />
     <ClCompile Include="..\main\src\impl\gridclientcomputeprojection.cpp" />
     <ClCompile Include="..\main\src\impl\gridclientconfiguration.cpp" />
@@ -224,6 +222,7 @@
     <ClCompile Include="..\main\src\impl\gridclienttopology.cpp" />
     <ClCompile Include="..\main\src\impl\gridfuture.cpp" />
     <ClCompile Include="..\main\src\impl\hash\gridbytearrayshasheableobject.cpp" />
+    <ClCompile Include="..\main\src\impl\hash\gridclienthash.cpp" />
     <ClCompile Include="..\main\src\impl\hash\gridconsistenthashimpl.cpp" />
     <ClCompile Include="..\main\src\impl\hash\griddoublehasheableobject.cpp" />
     <ClCompile Include="..\main\src\impl\hash\gridfloathasheableobject.cpp" />
@@ -231,15 +230,16 @@
     <ClCompile Include="..\main\src\impl\hash\gridclientwidestringhasheableobject.cpp" />
     <ClCompile Include="..\main\src\impl\hash\gridvarianthasheableobject.cpp" />
     <ClCompile Include="..\main\src\impl\hash\md5.cpp" />
-    <ClCompile Include="..\main\src\impl\marshaller\json\gridclientjsonmarshaller.cpp" />
-    <ClCompile Include="..\main\src\impl\marshaller\protobuf\ClientMessages.pb.cpp" />
-    <ClCompile Include="..\main\src\impl\marshaller\protobuf\gridclientprotobufmarshaller.cpp" />
-    <ClCompile Include="..\main\src\impl\marshaller\protobuf\gridclientprotobufutils.cpp" />
+    <ClCompile Include="..\main\src\impl\marshaller\portable\gridclientportablemessages.cpp" />
+    <ClCompile Include="..\main\src\impl\marshaller\portable\gridportablemarshaller.cpp" />
     <ClCompile Include="..\main\src\impl\utils\gridclientlog.cpp" />
     <ClCompile Include="..\main\src\impl\utils\gridthreadpool.cpp" />
     <ClCompile Include="..\main\src\impl\utils\gridutil.cpp" />
     <ClCompile Include="..\main\src\model\gridclientuuid.cpp" />
     <ClCompile Include="..\main\src\model\gridclientvariant.cpp" />
+    <ClCompile Include="..\main\src\model\gridportable.cpp" />
+    <ClCompile Include="..\main\src\model\gridportablereader.cpp" />
+    <ClCompile Include="..\main\src\model\gridportablewriter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\main\include\gridgain\gridclient.hpp" />
@@ -248,8 +248,10 @@
     <ClInclude Include="..\main\include\gridgain\gridclientdata.hpp" />
     <ClInclude Include="..\main\include\gridgain\gridclientdataaffinity.hpp" />
     <ClInclude Include="..\main\include\gridgain\gridclientdatametrics.hpp" />
+    <ClInclude Include="..\main\include\gridgain\gridclientdate.hpp" />
     <ClInclude Include="..\main\include\gridgain\gridclientexception.hpp" />
     <ClInclude Include="..\main\include\gridgain\gridclientfactory.hpp" />
+    <ClInclude Include="..\main\include\gridgain\gridclienthash.hpp" />
     <ClInclude Include="..\main\include\gridgain\gridclientloadbalancer.hpp" />
     <ClInclude Include="..\main\include\gridgain\gridclientmodel.hpp" />
     <ClInclude Include="..\main\include\gridgain\gridclientnode.hpp" />
@@ -266,10 +268,13 @@
     <ClInclude Include="..\main\include\gridgain\gridfuture.hpp" />
     <ClInclude Include="..\main\include\gridgain\gridgain.hpp" />
     <ClInclude Include="..\main\include\gridgain\gridhasheableobject.hpp" />
+    <ClInclude Include="..\main\include\gridgain\gridportable.hpp" />
+    <ClInclude Include="..\main\include\gridgain\gridportablereader.hpp" />
+    <ClInclude Include="..\main\include\gridgain\gridportableserializer.hpp" />
+    <ClInclude Include="..\main\include\gridgain\gridportablewriter.hpp" />
     <ClInclude Include="..\main\include\gridgain\gridsocketaddress.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\cmd\gridclientcommandexecutor.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\cmd\gridclientcommandexecutorfactory.hpp" />
-    <ClInclude Include="..\main\include\gridgain\impl\cmd\gridclienthttpcommandexecutor.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\cmd\gridclientmessage.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\cmd\gridclientmessageauthrequestcommand.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\cmd\gridclientmessageauthresult.hpp" />
@@ -290,7 +295,6 @@
     <ClInclude Include="..\main\include\gridgain\impl\cmd\gridclienttcpcommandexecutor.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\connection\gridclientconnection.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\connection\gridclientconnectionpool.hpp" />
-    <ClInclude Include="..\main\include\gridgain\impl\connection\gridclienthttpconnection.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\connection\gridclienttcpconnection.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\filter\gridclientfilter.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\filter\gridclientnodefilter.hpp" />
@@ -309,20 +313,12 @@
     <ClInclude Include="..\main\include\gridgain\impl\hash\gridclientbytearrayshasheableobject.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\hash\gridclientdoublehasheableobject.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\hash\gridclientfloathasheableobject.hpp" />
-    <ClInclude Include="..\main\include\gridgain\impl\hash\gridclienthasherfactory.hpp" />
-    <ClInclude Include="..\main\include\gridgain\impl\hash\gridclientmd5hasher.hpp" />
-    <ClInclude Include="..\main\include\gridgain\impl\hash\gridclientmurmur2hasher.hpp" />
-    <ClInclude Include="..\main\include\gridgain\impl\hash\gridclientsha1hasher.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\hash\gridclientsimpletypehasheableobject.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\hash\gridclientstringhasheableobject.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\hash\gridclientvarianthasheableobject.hpp" />
-    <ClInclude Include="..\main\include\gridgain\impl\hash\gridhasher.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\hash\md5.h" />
     <ClInclude Include="..\main\include\gridgain\impl\marshaller\gridnodemarshallerhelper.hpp" />
-    <ClInclude Include="..\main\include\gridgain\impl\marshaller\json\gridclientjsonmarshaller.hpp" />
-    <ClInclude Include="..\main\include\gridgain\impl\marshaller\protobuf\ClientMessages.pb.h" />
-    <ClInclude Include="..\main\include\gridgain\impl\marshaller\protobuf\gridclientobjectwrapperconvertor.hpp" />
-    <ClInclude Include="..\main\include\gridgain\impl\marshaller\protobuf\gridclientprotobufmarshaller.hpp" />
+    <ClInclude Include="..\main\include\gridgain\impl\marshaller\portable\gridclientportablemessages.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\projectionclosure\gridclientmessageprojectionclosure.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\projectionclosure\gridclientprojectionclosure.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\utils\gridclientbyteutils.hpp" />

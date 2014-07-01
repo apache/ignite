@@ -13,7 +13,6 @@ import junit.framework.*;
 import org.gridgain.client.*;
 import org.gridgain.client.impl.*;
 import org.gridgain.client.integration.*;
-import org.gridgain.client.marshaller.protobuf.*;
 import org.gridgain.client.router.*;
 import org.gridgain.client.util.*;
 import org.gridgain.grid.kernal.processors.rest.*;
@@ -62,9 +61,9 @@ public class GridClientTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridClientTcpDirectSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpSslSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpSslDirectSelfTest.class));
-        suite.addTest(new TestSuite(GridClientTcpPortableSelfTest.class));
-        suite.addTest(new TestSuite(GridClientTcpSslPortableSelfTest.class));
-        suite.addTest(new TestSuite(GridClientTcpDirectPortableSelfTest.class));
+//        suite.addTest(new TestSuite(GridClientTcpPortableSelfTest.class));
+//        suite.addTest(new TestSuite(GridClientTcpSslPortableSelfTest.class));
+//        suite.addTest(new TestSuite(GridClientTcpDirectPortableSelfTest.class));
 
         // Test client with many nodes.
         suite.addTest(new TestSuite(GridClientTcpMultiNodeSelfTest.class));
@@ -73,7 +72,7 @@ public class GridClientTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridClientTcpSslDirectMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpUnreachableMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridClientPreferDirectSelfTest.class));
-        suite.addTest(new TestSuite(GridClientTcpMultiNodePortableSelfTest.class));
+//        suite.addTest(new TestSuite(GridClientTcpMultiNodePortableSelfTest.class));
 
         // Test client with many nodes and in multithreaded scenarios
         suite.addTest(new TestSuite(GridClientTcpMultiThreadedSelfTest.class));
@@ -83,7 +82,7 @@ public class GridClientTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridClientTcpSslAuthenticationSelfTest.class));
 
         suite.addTest(new TestSuite(GridClientTcpConnectivitySelfTest.class));
-        suite.addTest(new TestSuite(GridClientReconnectionSelfTest.class));
+//        suite.addTest(new TestSuite(GridClientReconnectionSelfTest.class)); // TODO
 
         // Rest task command handler test.
         suite.addTest(new TestSuite(GridTaskCommandHandlerSelfTest.class));
@@ -92,7 +91,6 @@ public class GridClientTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridClientDefaultCacheSelfTest.class));
 
         suite.addTestSuite(GridClientFutureAdapterSelfTest.class);
-        suite.addTestSuite(GridClientProtobufMarshallerSelfTest.class);
         suite.addTestSuite(GridClientPartitionAffinitySelfTest.class);
         suite.addTestSuite(GridClientPropertiesConfigurationSelfTest.class);
         suite.addTestSuite(GridClientConsistentHashSelfTest.class);
@@ -107,7 +105,7 @@ public class GridClientTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridTcpSslRouterSelfTest.class));
         suite.addTest(new TestSuite(GridTcpRouterMultiNodeSelfTest.class));
 
-        suite.addTest(new TestSuite(GridClientFailedInitSelfTest.class));
+//        suite.addTest(new TestSuite(GridClientFailedInitSelfTest.class)); // TODO
 
         suite.addTest(new TestSuite(GridClientTcpTaskExecutionAfterTopologyRestartSelfTest.class));
 

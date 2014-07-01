@@ -10,39 +10,26 @@
 package org.gridgain.client.router.impl;
 
 import org.gridgain.client.*;
-import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.jdk.*;
-import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.nio.*;
-import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
 import static org.gridgain.grid.kernal.GridProductImpl.*;
-import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
 
 /**
  * Nio listener for the router. Extracts necessary meta information from messages
  * and delegates their delivery to underlying client.
  */
 class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessage> {
-    /** Empty byte array. */
-    private static final byte[] EMPTY_ARR = new byte[0];
-
     /** Logger. */
     private final GridLogger log;
 
     /** Client for grid access. */
     private final GridRouterClientImpl client;
-
-    /** Supported marshallers. */
-    @GridToStringExclude
-    private final Map<Byte, GridClientMarshaller> suppMarshMap;
 
     /**
      * @param log Logger.
@@ -51,25 +38,6 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
     GridTcpRouterNioListener(GridLogger log, GridRouterClientImpl client) {
         this.log = log;
         this.client = client;
-
-        Map<Byte, GridClientMarshaller> tmpMap = new GridLeanMap<>(3);
-
-        tmpMap.put(U.OPTIMIZED_CLIENT_PROTO_ID, new GridClientOptimizedMarshaller());
-        tmpMap.put(U.JDK_CLIENT_PROTO_ID, new GridClientJdkMarshaller());
-
-        addProtobufMarshaller(tmpMap);
-
-        suppMarshMap = Collections.unmodifiableMap(tmpMap);
-    }
-
-    /**
-     * @param map Marshallers map.
-     */
-    private void addProtobufMarshaller(Map<Byte, GridClientMarshaller> map) {
-        GridClientMarshaller marsh = U.createProtobufMarshaller(log);
-
-        if (marsh != null)
-            map.put(marsh.getProtocolId(), marsh);
     }
 
     /** {@inheritDoc} */
@@ -97,16 +65,7 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
             final long reqId = routerMsg.requestId();
 
             try {
-                byte protoId = U.PROTOBUF_CLIENT_PROTO_ID;
-
-                GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
-
-                if (marsh != null)
-                    protoId = marsh.getProtocolId();
-                else
-                    U.warn(log, "No marshaller defined for session, using default Protobuf [ses=" + ses + ']');
-
-                client.forwardMessage(routerMsg, routerMsg.destinationId(), protoId)
+                client.forwardMessage(routerMsg, routerMsg.destinationId())
                     .listenAsync(new GridClientFutureListener() {
                         @Override public void onDone(GridClientFuture fut) {
                             try {
@@ -143,36 +102,6 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
                 U.warn(log, "Client version check failed [ses=" + ses +
                     ", expected=" + Arrays.toString(VER_BYTES)
                     + ", actual=" + Arrays.toString(verBytes) + ']');
-
-            final byte protoId = hs.protocolId();
-
-            GridClientMarshaller marsh = suppMarshMap.get(protoId);
-
-            if (marsh == null) {
-                U.warn(log, "No marshaller found for a given protocol ID (will use a stub): " + protoId);
-
-                // Use a marshaller stub to just save protocol ID.
-                ses.addMeta(MARSHALLER.ordinal(), new GridClientMarshaller() {
-                    @Override public byte[] marshal(Object obj) {
-                        U.warn(log, "Attempt to marshal a message with a stub " +
-                            "(will output empty result): " + obj);
-
-                        return EMPTY_ARR;
-                    }
-
-                    @Override public <T> T unmarshal(byte[] bytes) {
-                        assert false : "Attempt to unmarshal a message with a stub.";
-
-                        return null;
-                    }
-
-                    @Override public byte getProtocolId() {
-                        return protoId;
-                    }
-                });
-            }
-            else
-                ses.addMeta(MARSHALLER.ordinal(), marsh);
 
             ses.send(GridClientHandshakeResponse.OK);
         }

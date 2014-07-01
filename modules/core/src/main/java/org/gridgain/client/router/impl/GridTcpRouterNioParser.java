@@ -13,7 +13,6 @@ import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -33,14 +32,14 @@ class GridTcpRouterNioParser extends GridTcpRestParser {
     private volatile long sndCnt;
 
     /**
-     * @param log Logger.
+     * @param marsh Marshaller.
      */
-    GridTcpRouterNioParser(GridLogger log) {
-        super(log);
+    GridTcpRouterNioParser(GridClientMarshaller marsh) {
+        super(marsh);
     }
 
     /** {@inheritDoc} */
-    @Override protected GridClientMessage parseClientMessage(GridNioSession ses, ParserState state) {
+    @Override protected GridClientMessage parseClientMessage(ParserState state) {
         rcvCnt++;
 
         return new GridRouterRequest(
@@ -71,23 +70,19 @@ class GridTcpRouterNioParser extends GridTcpRestParser {
             return res;
         }
         else if (msg instanceof GridClientResponse) {
-            GridClientMarshaller marsh = marshaller(ses);
+            GridClientMarshaller marsh = marshaller();
 
-            byte[] msgBytes = marsh.marshal(msg);
+            GridClientMessage clientMsg = (GridClientMessage)msg;
 
-            ByteBuffer res = ByteBuffer.allocate(msgBytes.length + 45);
+            ByteBuffer res = marsh.marshal(msg, 45);
 
-            GridClientMessage clientMsg = (GridClientMessage) msg;
+            ByteBuffer slice = res.slice();
 
-            res.put(GRIDGAIN_REQ_FLAG);
-            res.put(U.intToBytes(msgBytes.length + 40));
-            res.putLong(clientMsg.requestId());
-            res.put(U.uuidToBytes(clientMsg.clientId()));
-            res.put(U.uuidToBytes(clientMsg.destinationId()));
-
-            res.put(msgBytes);
-
-            res.flip();
+            slice.put(GRIDGAIN_REQ_FLAG);
+            slice.putInt(res.remaining() - 5);
+            slice.putLong(clientMsg.requestId());
+            slice.put(U.uuidToBytes(clientMsg.clientId()));
+            slice.put(U.uuidToBytes(clientMsg.destinationId()));
 
             return res;
         }

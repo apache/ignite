@@ -11,8 +11,8 @@ namespace GridGain.Client {
     using System;
     using GridGain.Client.Balancer;
 
-    /** <summary>Data configuration bean.</summary> */
-    public class GridClientDataConfiguration : IGridClientDataConfiguration {
+    /** <summary>Client data projection configuration.</summary> */
+    public class GridClientDataConfiguration {
         /** <summary>Creates empty configuration.</summary> */
         public GridClientDataConfiguration() {
             PinnedBalancer = new GridClientRandomBalancer();
@@ -24,7 +24,7 @@ namespace GridGain.Client {
          *
          * <param name="cfg">Configuration to copy.</param>
          */
-        public GridClientDataConfiguration(IGridClientDataConfiguration cfg) {
+        public GridClientDataConfiguration(GridClientDataConfiguration cfg) {
             // Preserve alphabetic order for maintenance.
             Affinity = cfg.Affinity;
             Name = cfg.Name;

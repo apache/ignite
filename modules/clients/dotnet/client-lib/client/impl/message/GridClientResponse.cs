@@ -9,9 +9,13 @@
 
 namespace GridGain.Client.Impl.Message {
     using System;
+    using GridGain.Client.Portable;
+
+    using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
 
     /** <summary>Bean representing client operation result.</summary> */
-    internal class GridClientResponse {
+    [GridClientPortableId(PU.TYPE_RESP)]
+    internal class GridClientResponse : IGridClientPortable {
         /**
          * <summary>
          * Tries to find enum value by operation code.</summary>
@@ -67,6 +71,26 @@ namespace GridGain.Client.Impl.Message {
         public Object Result {
             get;
             set;
+        }
+
+        /** <inheritdoc /> */
+        public void WritePortable(IGridClientPortableWriter writer) {
+            IGridClientPortableRawWriter rawWriter = writer.RawWriter();
+
+            rawWriter.WriteByteArray(SessionToken);
+            rawWriter.WriteInt((int)Status);
+            rawWriter.WriteString(ErrorMessage);
+            rawWriter.WriteObject(Result);
+        }
+
+        /** <inheritdoc /> */
+        public void ReadPortable(IGridClientPortableReader reader) {
+            IGridClientPortableRawReader rawReader = reader.RawReader();
+
+            SessionToken = rawReader.ReadByteArray();
+            Status = (GridClientResponseStatus)rawReader.ReadInt();
+            ErrorMessage = rawReader.ReadString();
+            Result = rawReader.ReadObject<object>();
         }
     }
 }

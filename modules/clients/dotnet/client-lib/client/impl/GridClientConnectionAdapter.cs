@@ -7,6 +7,8 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
+using GridGain.Client.Impl.Message;
+
 namespace GridGain.Client.Impl {
     using System;
     using System.Net;
@@ -120,7 +122,7 @@ namespace GridGain.Client.Impl {
 
         /** <inheritdoc /> */
         public abstract IGridClientFuture<Boolean> CachePrepend<K, V>(String cacheName, ISet<GridClientCacheFlag> cacheFlags, K key, V val, Guid destNodeId);
-        
+
         /** <inheritdoc /> */
         public abstract IGridClientFuture<Boolean> CacheCompareAndSet<TKey, TVal>(String cacheName, ISet<GridClientCacheFlag> cacheFlags, TKey key, TVal val1, TVal val2, Guid destNodeId);
 
@@ -157,7 +159,7 @@ namespace GridGain.Client.Impl {
 
             return bits;
         }
-        
+
         /**
          * <summary>
          * Convert the map representation of the cache metrics to an equivalent objects.</summary>
@@ -167,7 +169,7 @@ namespace GridGain.Client.Impl {
          */
         protected IGridClientDataMetrics parseCacheMetrics(IDictionary<String, Object> data) {
             var m = new GridClientDataMetrics();
-            
+
             m.CreateTime = U.Timestamp(asLong(data["createTime"]));
             m.WriteTime = U.Timestamp(asLong(data["writeTime"]));
             m.ReadTime = U.Timestamp(asLong(data["readTime"]));
@@ -259,6 +261,84 @@ namespace GridGain.Client.Impl {
 
         /**
          * <summary>
+         * Convert the map representation of the node metrics to an equivalent objects.</summary>
+         *
+         * <param name="bean">Metrics bean.</param>
+         * <returns>Converted node metrics.</returns>
+         */
+        protected IGridClientNodeMetrics parseNodeMetrics(GridClientNodeMetricsBean bean) {
+            GridClientNodeMetrics m = new GridClientNodeMetrics();
+
+            m.StartTime = U.Timestamp(bean.startTime);
+
+            m.WaitingJobs.Average = bean.avgWaitingJobs;
+            m.WaitingJobs.Current = bean.curWaitingJobs;
+            m.WaitingJobs.Maximum = bean.maxWaitingJobs;
+            m.WaitingJobs.Total = m.WaitingJobs.Maximum;
+
+            m.ExecutedJobs.Average = bean.avgActiveJobs;
+            m.ExecutedJobs.Current = bean.curActiveJobs;
+            m.ExecutedJobs.Maximum = bean.maxActiveJobs;
+            m.ExecutedJobs.Total = bean.totalExecutedJobs;
+
+            m.RejectedJobs.Average = bean.avgRejectedJobs;
+            m.RejectedJobs.Current = bean.curRejectedJobs;
+            m.RejectedJobs.Maximum = bean.maxRejectedJobs;
+            m.RejectedJobs.Total = bean.totalRejectedJobs;
+
+            m.CancelledJobs.Average = bean.avgCancelledJobs;
+            m.CancelledJobs.Current = bean.curCancelledJobs;
+            m.CancelledJobs.Maximum = bean.maxCancelledJobs;
+            m.CancelledJobs.Total = bean.totalCancelledJobs;
+
+            m.JobWaitTime.Average = TimeSpan.FromMilliseconds(bean.avgJobWaitTime);
+            m.JobWaitTime.Current = TimeSpan.FromMilliseconds(bean.curJobWaitTime);
+            m.JobWaitTime.Maximum = TimeSpan.FromMilliseconds(bean.maxJobWaitTime);
+            m.JobWaitTime.Total = TimeSpan.FromMilliseconds(m.JobWaitTime.Average.TotalMilliseconds * m.ExecutedJobs.Total);
+
+            m.JobExecuteTime.Average = TimeSpan.FromMilliseconds(bean.avgJobExecTime);
+            m.JobExecuteTime.Current = TimeSpan.FromMilliseconds(bean.curJobExecTime);
+            m.JobExecuteTime.Maximum = TimeSpan.FromMilliseconds(bean.maxJobExecTime);
+            m.JobExecuteTime.Total = TimeSpan.FromMilliseconds(m.JobExecuteTime.Average.TotalMilliseconds * m.ExecutedJobs.Total);
+
+            m.StartTime = U.Timestamp(bean.startTime);
+            m.NodeStartTime = U.Timestamp(bean.nodeStartTime);
+            m.UpTime = TimeSpan.FromMilliseconds(bean.upTime);
+            m.LastUpdateTime = U.Timestamp(bean.lastUpdateTime);
+            m.IdleTimeTotal = TimeSpan.FromMilliseconds(bean.totalIdleTime);
+            //m.IdleTimeCurrent = (safeLong(data, "currentIdleTime"));
+
+            m.CpuCount = bean.availProcs;
+            m.CpuAverageLoad = bean.avgLoad;
+            m.CpuCurrentLoad = bean.load;
+
+            m.FileSystemFreeSpace = bean.fileSysFreeSpace;
+            m.FileSystemTotalSpace = bean.fileSysTotalSpace;
+            m.FileSystemUsableSpace = bean.fileSysUsableSpace;
+
+            m.HeapMemoryInitialized = bean.heapInit;
+            m.HeapMemoryUsed = bean.heapUsed;
+            m.HeapMemoryCommitted = bean.heapCommitted;
+            m.HeapMemoryMaximum = bean.heapMax;
+
+            m.NonHeapMemoryInitialized = bean.nonHeapMax;
+            m.NonHeapMemoryUsed = bean.nonHeapUsed;
+            m.NonHeapMemoryCommitted = bean.nonHeapCommitted;
+            m.NonHeapMemoryMaximum = bean.nonHeapMax;
+
+            m.ThreadCount.Current = bean.threadCnt;
+            m.ThreadCount.Maximum = bean.peakThreadCnt;
+            m.ThreadCount.Total = bean.startedThreadCnt;
+
+            m.DaemonThreadCount = bean.daemonThreadCnt;
+
+            m.LastDataVersion = bean.lastDataVer;
+
+            return m;
+        }
+
+        /**
+         * <summary>
          * Convert the string representation of the cache mode names to an equivalent enumerated objects.</summary>
          *
          * <param name="rawCaches">Map of raw cache modes.</param>
@@ -324,10 +404,10 @@ namespace GridGain.Client.Impl {
         /**
          * <summary>
          * Safely get long value from the dictionary by the key.</summary>
-         * 
+         *
          * <param name="map">Map to get value from.</param>
          * <param name="key">Key in the map to get value for.</param>
-         * <returns>Parsed value if map contains specified key and corresponding value 
+         * <returns>Parsed value if map contains specified key and corresponding value
          * can be parsed to expected type, <c>-1</c> - otherwise.</returns>
          */
         private static long safeLong(IDictionary<String, Object> map, String key) {
@@ -337,10 +417,10 @@ namespace GridGain.Client.Impl {
         /**
          * <summary>
          * Safely get double value from the dictionary by the key.</summary>
-         * 
+         *
          * <param name="map">Map to get value from.</param>
          * <param name="key">Key in the map to get value for.</param>
-         * <returns>Parsed value if map contains specified key and corresponding value 
+         * <returns>Parsed value if map contains specified key and corresponding value
          * can be parsed to expected type, <c>-1</c> - otherwise.</returns>
          */
         private static double safeDouble(IDictionary<String, Object> map, String key) {
@@ -350,7 +430,7 @@ namespace GridGain.Client.Impl {
         /**
          * <summary>
          * Safely get value from the dictionary or return failure value.</summary>
-         * 
+         *
          * <param name="map">Map to get value from.</param>
          * <param name="key">Key in the map to get value for.</param>
          * <param name="def">Default value to return if get operation fails.</param>
@@ -367,7 +447,7 @@ namespace GridGain.Client.Impl {
         /**
          * <summary>
          * Parser safely converts string value to expected type.</summary>
-         * 
+         *
          * <param name="s">String value to parse.</param>
          * <param name="res">Variable to save parsed result to on success</param>
          * <returns><c>True</c> if operation succeed, <c>false</c> - otherwize.</returns>

@@ -12,9 +12,8 @@ package org.gridgain.client.integration;
 import org.gridgain.client.*;
 import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.marshaller.optimized.*;
-import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -27,37 +26,22 @@ public class GridClientTcpPortableSelfTest extends GridClientTcpSelfTest {
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
-        assert cfg.getClientConnectionConfiguration() != null;
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
 
-        cfg.getClientConnectionConfiguration().setPortableTypesMap(typesMap());
+        clientCfg.setMarshaller(new GridClientPortableMarshaller());
 
-        cfg.setMarshaller(new GridOptimizedMarshaller(false));
+        cfg.setClientConnectionConfiguration(clientCfg);
 
         return cfg;
     }
 
     /** {@inheritDoc} */
-    @Override protected GridClientConfiguration clientConfiguration() {
+    @Override protected GridClientConfiguration clientConfiguration() throws GridClientException {
         GridClientConfiguration cfg = super.clientConfiguration();
 
-        cfg.setMarshaller(new GridClientPortableMarshaller(typesMap()));
+        cfg.setMarshaller(new GridClientPortableMarshaller());
 
         return cfg;
-    }
-
-    /**
-     * @return Portable types map.
-     */
-    private Map<Integer, Class<? extends GridPortable>> typesMap() {
-        Map<Integer, Class<? extends GridPortable>> map = new HashMap<>();
-
-        map.put(TestKey1.TYPE_ID, TestKey1.class);
-        map.put(TestKey2.TYPE_ID, TestKey2.class);
-        map.put(TestValue1.TYPE_ID, TestValue1.class);
-        map.put(TestValue2.TYPE_ID, TestValue2.class);
-        map.put(TestPortable.TYPE_ID, TestPortable.class);
-
-        return map;
     }
 
     /**

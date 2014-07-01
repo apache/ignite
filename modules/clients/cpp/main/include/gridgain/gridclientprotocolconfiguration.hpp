@@ -14,16 +14,12 @@
 
 #include <gridgain/gridconf.hpp>
 #include <gridgain/gridclientuuid.hpp>
-#include <gridgain/gridclientprotocol.hpp>
 
 /**
  * Protocol configuration.
  */
 class GRIDGAIN_API GridClientProtocolConfiguration {
 public:
-    /** Default client protocol. */
-    static const GridClientProtocol DFLT_CLIENT_PROTOCOL = TCP;
-
     /** Default maximum time for a connection timeout. */
     static const long DFLT_MAX_CONN_TIMEOUT = 20000L;
 
@@ -32,9 +28,6 @@ public:
 
     /** Default port for communication using binary TCP/IP protocol. */
     static const int DFLT_TCP_PORT = 11211;
-
-    /** Default port for communication using HTTP. */
-    static const int DFLT_HTTP_PORT = 8080;
 
     /** Default public constructor. */
     GridClientProtocolConfiguration();
@@ -56,20 +49,6 @@ public:
 
     /** Destructor. */
     virtual ~GridClientProtocolConfiguration();
-
-    /**
-     * Gets protocol for communication between client and remote grid.
-     *
-     * @return Protocol for communication between client and remote grid.
-     */
-    GridClientProtocol protocol() const;
-
-    /**
-     * Sets protocol for communication between client and remote grid.
-     *
-     * @param p Protocol for communication between client and remote grid.
-     */
-    void protocol(GridClientProtocol p);
 
     /**
      * Gets timeout for socket connect operation.

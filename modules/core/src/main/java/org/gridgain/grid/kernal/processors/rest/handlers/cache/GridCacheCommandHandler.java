@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest.handlers.cache;
 
+import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
@@ -25,6 +26,7 @@ import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -75,11 +77,18 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     /** */
     private static final GridCacheFlag[] EMPTY_FLAGS = new GridCacheFlag[0];
 
+    /** */
+    private final boolean portable;
+
     /**
      * @param ctx Context.
      */
     public GridCacheCommandHandler(GridKernalContext ctx) {
         super(ctx);
+
+        GridClientConnectionConfiguration cfg = ctx.config().getClientConnectionConfiguration();
+
+        portable = cfg != null && cfg.getMarshaller() instanceof GridClientPortableMarshaller;
     }
 
     /** {@inheritDoc} */
@@ -336,13 +345,17 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             destId == null || destId.equals(ctx.localNodeId()) || replicatedCacheAvailable(cacheName);
 
         if (locExec) {
-            final GridCacheProjection<Object, Object> prj = localCache(cacheName).forSubjectId(clientId).flagsOn(flags);
+            GridCacheProjection<?, ?> prj = localCache(cacheName).forSubjectId(clientId).flagsOn(flags);
 
-            return op.apply(prj, ctx).chain(resultWrapper(prj, key));
+            if (portable)
+                prj = prj.projection(GridPortableObject.class, GridPortableObject.class);
+
+            return op.apply((GridCacheProjection<Object, Object>)prj, ctx).
+                chain(resultWrapper((GridCacheProjection<Object, Object>)prj, key));
         }
         else {
             return ctx.grid().forPredicate(F.nodeForNodeId(destId)).compute().withNoFailover().
-                call(new FlaggedCacheOperationCallable(clientId, cacheName, flags, op, key));
+                call(new FlaggedCacheOperationCallable(clientId, cacheName, flags, op, key, portable));
         }
     }
 
@@ -657,6 +670,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         private final Object key;
 
         /** */
+        private final boolean portable;
+
+        /** */
         @GridInstanceResource
         private Grid g;
 
@@ -667,22 +683,27 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
          * @param key Key.
          */
         private FlaggedCacheOperationCallable(UUID clientId, String cacheName, GridCacheFlag[] flags,
-            CacheProjectionCommand op, Object key) {
+            CacheProjectionCommand op, Object key, boolean portable) {
             this.clientId = clientId;
             this.cacheName = cacheName;
             this.flags = flags;
             this.op = op;
             this.key = key;
+            this.portable = portable;
         }
 
         /** {@inheritDoc} */
         @Override public GridRestResponse call() throws Exception {
-            final GridCacheProjection<Object, Object> prj = cache(g, cacheName).forSubjectId(clientId).flagsOn(flags);
+            GridCacheProjection<?, ?> prj = cache(g, cacheName).forSubjectId(clientId).flagsOn(flags);
+
+            if (portable)
+                prj = prj.projection(GridPortableObject.class, GridPortableObject.class);
 
             // Need to apply both operation and response transformation remotely
             // as cache could be inaccessible on local node and
             // exception processing should be consistent with local execution.
-            return op.apply(prj, ((GridKernal)g).context()).chain(resultWrapper(prj, key)).get();
+            return op.apply((GridCacheProjection<Object, Object>)prj, ((GridKernal)g).context()).
+                chain(resultWrapper((GridCacheProjection<Object, Object>)prj, key)).get();
         }
     }
 

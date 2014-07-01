@@ -10,16 +10,20 @@
 namespace GridGain.Client.Impl.Message {
     using System;
     using System.Text;
+    using GridGain.Client.Portable;
+
+    using PU = GridGain.Client.Impl.Portable.GridClientPortableUilts;
 
     /** <summary><c>Topology</c> command request.</summary> */
+    [GridClientPortableId(PU.TYPE_TOP_REQ)]
     internal class GridClientTopologyRequest : GridClientRequest {
         /**
          * <summary>
          * Constructs topology request.</summary>
-         * 
+         *
          * <param name="destNodeId">Node ID to route request to.</param>
          */
-        public GridClientTopologyRequest(Guid destNodeId) : base(destNodeId) { 
+        public GridClientTopologyRequest(Guid destNodeId) : base(destNodeId) {
         }
 
         /** <summary>Include metrics flag.</summary> */
@@ -44,6 +48,34 @@ namespace GridGain.Client.Impl.Message {
         public String NodeIP {
             get;
             set;
+        }
+
+        /** <inheritdoc /> */
+        public override void WritePortable(IGridClientPortableWriter writer) {
+            base.WritePortable(writer);
+
+            IGridClientPortableRawWriter rawWriter = writer.RawWriter();
+
+            rawWriter.WriteGuid(NodeId != Guid.Empty ? NodeId : (Guid?)null);
+            rawWriter.WriteString(NodeIP);
+
+            rawWriter.WriteBoolean(IncludeMetrics);
+            rawWriter.WriteBoolean(IncludeAttributes);
+        }
+
+        /** <inheritdoc /> */
+        public override void ReadPortable(IGridClientPortableReader reader) {
+            base.ReadPortable(reader);
+
+            IGridClientPortableRawReader rawReader = reader.RawReader();
+
+            Guid? NodeId0 = rawReader.ReadGuid();
+
+            NodeId = NodeId0.HasValue ? NodeId0.Value : Guid.Empty;
+            NodeIP = rawReader.ReadString();
+
+            IncludeMetrics = rawReader.ReadBoolean();
+            IncludeAttributes = rawReader.ReadBoolean();
         }
     }
 }

@@ -40,6 +40,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -50,6 +51,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
@@ -61,9 +63,6 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Google.ProtocolBuffers">
-      <HintPath>..\..\..\..\dotnet\client-lib\libs\Google.ProtocolBuffers.dll</HintPath>
-    </Reference>
     <Reference Include="nunit.framework, Version=2.5.10.11092, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>NUnit\nunit.framework.dll</HintPath>
@@ -83,14 +82,12 @@
     <Compile Include="client\GridClientRouterTcpTest.cs" />
     <Compile Include="client\GridClientRouterTcpSslTest.cs" />
     <Compile Include="client\GridClientPartitionAffinityTest.cs" />
-    <Compile Include="client\GridClientHttpSslTest.cs" />
-    <Compile Include="client\GridClientHttpTest.cs" />
     <Compile Include="client\GridClientTcpSslTest.cs" />
     <Compile Include="client\GridClientAbstractTest.cs" />
     <Compile Include="client\GridClientTcpTest.cs" />
     <Compile Include="client\hasher\GridClientJavaHelperTest.cs" />
     <Compile Include="client\impl\GridClientTopologyTest.cs" />
-    <Compile Include="client\impl\marshaller\GridClientProtobufMarshallerTest.cs" />
+    <Compile Include="client\portable\GridClientPortableSelfTest.cs" />
     <Compile Include="client\util\NullDictionaryTest.cs" />
     <Compile Include="client\hasher\GridClientConsistentHashTest.cs" />
     <Compile Include="client\util\GridClientUtilsTest.cs" />

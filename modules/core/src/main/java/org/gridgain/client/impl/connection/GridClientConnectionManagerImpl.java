@@ -82,9 +82,6 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
     /** Endpoint striped lock. */
     private final GridClientStripedLock endpointStripedLock = new GridClientStripedLock(16);
 
-    /** Custom protocol ID. */
-    private final Byte protoId;
-
     /** Service for ping requests, {@code null} if HTTP protocol is used. */
     private final ScheduledExecutorService pingExecutor;
 
@@ -134,12 +131,11 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
      * @param cfg Client configuration.
      * @param routers Routers or empty collection to use endpoints from topology info.
      * @param top Topology.
-     * @param protoId Custom protocol ID (optional).
      * @throws GridClientException If failed to start.
      */
     @SuppressWarnings("unchecked")
     public GridClientConnectionManagerImpl(UUID clientId, SSLContext sslCtx, GridClientConfiguration cfg,
-        Collection<InetSocketAddress> routers, GridClientTopology top, Byte protoId) throws GridClientException {
+        Collection<InetSocketAddress> routers, GridClientTopology top) throws GridClientException {
         assert clientId != null : "clientId != null";
         assert cfg != null : "cfg != null";
         assert routers != null : "routers != null";
@@ -150,7 +146,6 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
         this.cfg = cfg;
         this.routers = new ArrayList<>(routers);
         this.top = top;
-        this.protoId = protoId;
 
         executor = cfg.getExecutorService() != null ? cfg.getExecutorService() :
             Executors.newCachedThreadPool(new GridClientThreadFactory("exec", true));
@@ -454,8 +449,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
             if (cfg.getProtocol() == GridClientProtocol.TCP) {
                 conn = new GridClientNioTcpConnection(srv, clientId, addr, sslCtx, pingExecutor,
                     cfg.getConnectTimeout(), cfg.getPingInterval(), cfg.getPingTimeout(),
-                    cfg.isTcpNoDelay(), protoId == null ? cfg.getMarshaller() : null,
-                    top, cred, protoId);
+                    cfg.isTcpNoDelay(), cfg.getMarshaller(), top, cred);
             }
             else
                 throw new GridServerUnreachableException("Failed to create client (protocol is not supported): " +
@@ -628,11 +622,8 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
             byte rc = msg.resultCode();
 
             if (rc != GridClientHandshakeResponse.OK.resultCode()) {
-                if (rc == GridClientHandshakeResponse.ERR_UNKNOWN_PROTO_ID.resultCode())
-                    handshakeFut.onDone(new GridClientHandshakeException(rc, "Unknown/unsupported protocol ID."));
-                else
-                    handshakeFut.onDone(new GridClientHandshakeException(rc,
-                        "Handshake failed due to internal error (see server log for more details)."));
+                handshakeFut.onDone(new GridClientHandshakeException(rc,
+                    "Handshake failed due to internal error (see server log for more details)."));
             }
             else
                 handshakeFut.onDone(true);

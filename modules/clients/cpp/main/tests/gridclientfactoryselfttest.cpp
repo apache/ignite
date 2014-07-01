@@ -41,8 +41,6 @@ GridClientConfiguration clientConfig() {
 
     GridClientProtocolConfiguration protoCfg;
 
-    protoCfg.protocol(TCP);
-
     protoCfg.credentials(CREDS);
 
     clientConfig.protocolConfiguration(protoCfg);

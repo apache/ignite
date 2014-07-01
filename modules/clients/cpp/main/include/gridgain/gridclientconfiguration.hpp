@@ -208,6 +208,20 @@ public:
       */
      void dataConfiguration(const std::vector<GridClientDataConfiguration>& cfgs);
 
+     /**
+      * Sets portable id resolver.
+      *
+      * @param portableIdResolver Portable id resolver.
+      */
+     void portableIdResolver(GridPortableIdResolver* portableIdRslvr);
+
+     /**
+      * Gets the portable id resolver.
+      *
+      * @return Portable id resolver.
+      */
+     GridPortableIdResolver* portableIdResolver() const;
+
 private:
     class Impl;
     Impl* pimpl;

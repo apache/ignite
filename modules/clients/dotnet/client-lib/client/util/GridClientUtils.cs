@@ -450,6 +450,21 @@ namespace GridGain.Client.Util {
         }
 
         /**
+         * <summary>Convert generic dictionary of one type to generic dictionary of another type.</summary>         
+         * <param name="src">Source dictionary.</param>
+         * <returns>New dictionary.</returns>
+         */
+        public static IDictionary<object, object> ToObjectMap<TKey, TVal>(this IDictionary<TKey, TVal> src)
+        {
+            IDictionary<object, object> map = new Dictionary<object, object>(src.Count);
+
+            foreach (KeyValuePair<TKey, TVal> pair in src)
+                map.Add((object)pair.Key, (object)pair.Value);
+
+            return map;
+        }
+
+        /**
          * <summary>
          * Extend generic maps with conversions into not-generic ones.</summary>
          *

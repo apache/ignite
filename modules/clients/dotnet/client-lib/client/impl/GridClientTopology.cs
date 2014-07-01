@@ -329,10 +329,7 @@ namespace GridGain.Client.Impl {
 
             updated.TcpAddresses.AddAll<String>(node.TcpAddresses);
             updated.TcpHostNames.AddAll<String>(node.TcpHostNames);
-            updated.JettyAddresses.AddAll<String>(node.JettyAddresses);
-            updated.JettyHostNames.AddAll<String>(node.JettyHostNames);
             updated.TcpPort = node.TcpPort;
-            updated.HttpPort = node.HttpPort;
             updated.ConsistentId= node.ConsistentId;
             updated.Metrics = null;
             updated.Caches.AddAll<KeyValuePair<String, GridClientCacheMode>>(node.Caches);

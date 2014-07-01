@@ -24,6 +24,9 @@ import java.util.*;
 @GridInternal
 public class VisorCachesSwapBackupsTask extends VisorOneNodeTask<Set<String>, Map<String,
     GridBiTuple<Integer, Integer>>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorCachesSwapBackupsJob job(Set<String> names) {
         return new VisorCachesSwapBackupsJob(names);

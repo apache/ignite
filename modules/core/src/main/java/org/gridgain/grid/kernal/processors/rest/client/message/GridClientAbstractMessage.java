@@ -8,8 +8,8 @@
  */
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
-import org.gridgain.grid.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.portable.*;
 
 import java.io.*;
 import java.util.*;
@@ -33,13 +33,13 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
     }
 
     /** Request ID (transient). */
-    private long reqId;
+    private transient long reqId;
 
     /** Client ID (transient). */
-    private UUID id;
+    private transient UUID id;
 
     /** Node ID (transient). */
-    private UUID destId;
+    private transient UUID destId;
 
     /** Session token. */
     private byte[] sesTok;
@@ -100,11 +100,15 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
 
     /** {@inheritDoc} */
     @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
-        writer.writeByteArray("sesTok", sesTok);
+        GridPortableRawWriter raw = writer.rawWriter();
+
+        raw.writeByteArray(sesTok);
     }
 
     /** {@inheritDoc} */
     @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
-        sesTok = reader.readByteArray("sesTok");
+        GridPortableRawReader raw = reader.rawReader();
+
+        sesTok = raw.readByteArray();
     }
 }

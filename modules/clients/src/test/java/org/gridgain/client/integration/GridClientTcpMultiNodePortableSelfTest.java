@@ -11,16 +11,30 @@ package org.gridgain.client.integration;
 
 import org.gridgain.client.*;
 import org.gridgain.client.marshaller.portable.*;
+import org.gridgain.grid.*;
 
 /**
  * Test for TCP binary rest protocol.
  */
 public class GridClientTcpMultiNodePortableSelfTest extends GridClientTcpMultiNodeSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridClientConfiguration clientConfiguration() {
+    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
+        GridConfiguration cfg = super.getConfiguration(gridName);
+
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+
+        clientCfg.setMarshaller(new GridClientPortableMarshaller());
+
+        cfg.setClientConnectionConfiguration(clientCfg);
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridClientConfiguration clientConfiguration() throws GridClientException {
         GridClientConfiguration ccfg = super.clientConfiguration();
 
-        ccfg.setMarshaller(new GridClientPortableMarshaller(null));
+        ccfg.setMarshaller(new GridClientPortableMarshaller());
 
         return ccfg;
     }

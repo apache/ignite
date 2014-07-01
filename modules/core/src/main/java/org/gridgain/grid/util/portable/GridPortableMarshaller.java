@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.portable;
 
-import org.gridgain.grid.portable.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
@@ -19,82 +19,124 @@ import java.nio.*;
  */
 public class GridPortableMarshaller {
     /** */
-    public static final byte BYTE = (byte)0x10;
+    public static final byte BYTE = 1;
 
     /** */
-    public static final byte SHORT = (byte)0x11;
+    public static final byte SHORT = 2;
 
     /** */
-    public static final byte INT = (byte)0x12;
+    public static final byte INT = 3;
 
     /** */
-    public static final byte LONG = (byte)0x13;
+    public static final byte LONG = 4;
 
     /** */
-    public static final byte FLOAT = (byte)0x14;
+    public static final byte FLOAT = 5;
 
     /** */
-    public static final byte DOUBLE = (byte)0x15;
+    public static final byte DOUBLE = 6;
 
     /** */
-    public static final byte CHAR = (byte)0x16;
+    public static final byte CHAR = 7;
 
     /** */
-    public static final byte BOOLEAN = (byte)0x17;
+    public static final byte BOOLEAN = 8;
 
     /** */
-    public static final byte STRING = (byte)0x18;
+    public static final byte STRING = 9;
 
     /** */
-    public static final byte UUID = (byte)0x19;
+    public static final byte UUID = 10;
 
     /** */
-    public static final byte BYTE_ARR = (byte)0x20;
+    public static final byte DATE = 11;
 
     /** */
-    public static final byte SHORT_ARR = (byte)0x21;
+    public static final byte BYTE_ARR = 12;
 
     /** */
-    public static final byte INT_ARR = (byte)0x22;
+    public static final byte SHORT_ARR = 13;
 
     /** */
-    public static final byte LONG_ARR = (byte)0x23;
+    public static final byte INT_ARR = 14;
 
     /** */
-    public static final byte FLOAT_ARR = (byte)0x24;
+    public static final byte LONG_ARR = 15;
 
     /** */
-    public static final byte DOUBLE_ARR = (byte)0x25;
+    public static final byte FLOAT_ARR = 16;
 
     /** */
-    public static final byte CHAR_ARR = (byte)0x26;
+    public static final byte DOUBLE_ARR = 17;
 
     /** */
-    public static final byte BOOLEAN_ARR = (byte)0x27;
+    public static final byte CHAR_ARR = 18;
 
     /** */
-    public static final byte STRING_ARR = (byte)0x28;
+    public static final byte BOOLEAN_ARR = 19;
 
     /** */
-    public static final byte UUID_ARR = (byte)0x29;
+    public static final byte STRING_ARR = 20;
 
     /** */
-    public static final byte OBJ_ARR = (byte)0x30;
+    public static final byte UUID_ARR = 21;
 
     /** */
-    public static final byte COL = (byte)0x31;
+    public static final byte DATE_ARR = 22;
 
     /** */
-    public static final byte MAP = (byte)0x32;
+    public static final byte OBJ_ARR = 23;
 
     /** */
-    static final byte NULL = (byte)0x80;
+    public static final byte COL = 24;
 
     /** */
-    static final byte HANDLE = (byte)0x81;
+    public static final byte MAP = 25;
+
+    /** Portable object itself. */
+    public static final byte PORTABLE = 26;
 
     /** */
-    static final byte OBJ = (byte)0x82;
+    static final byte NULL = (byte)101;
+
+    /** */
+    static final byte HANDLE = (byte)102;
+
+    /** */
+    static final byte OBJ = (byte)103;
+
+    /** */
+    static final byte USER_COL = 0;
+
+    /** */
+    static final byte ARR_LIST = 1;
+
+    /** */
+    static final byte LINKED_LIST = 2;
+
+    /** */
+    static final byte HASH_SET = 3;
+
+    /** */
+    static final byte LINKED_HASH_SET = 4;
+
+    /** */
+    static final byte TREE_SET = 5;
+
+    /** */
+    static final byte CONC_SKIP_LIST_SET = 6;
+
+    /** */
+    static final byte HASH_MAP = 1;
+
+    /** */
+    static final byte LINKED_HASH_MAP = 2;
+
+    /** */
+    static final byte TREE_MAP = 3;
+
+    /** */
+    static final byte CONC_HASH_MAP = 4;
 
     /** */
     private static final ByteBuffer NULL_BUF = ByteBuffer.wrap(new byte[] { NULL });
@@ -114,13 +156,13 @@ public class GridPortableMarshaller {
      * @return Byte buffer.
      * @throws GridPortableException In case of error.
      */
-    public ByteBuffer marshal(@Nullable Object obj) throws GridPortableException {
+    public ByteBuffer marshal(@Nullable Object obj, int off) throws GridPortableException {
         if (obj == null)
             return NULL_BUF;
 
-        GridPortableWriterImpl writer = new GridPortableWriterImpl(ctx);
+        GridPortableWriterImpl writer = new GridPortableWriterImpl(ctx, off);
 
-        writer.marshal(obj);
+        writer.marshal(obj, false);
 
         return writer.buffer();
     }
@@ -130,13 +172,15 @@ public class GridPortableMarshaller {
      * @return Portable object.
      * @throws GridPortableException
      */
-    @Nullable public GridPortableObject unmarshal(byte[] arr) throws GridPortableException {
+    @Nullable public <T> T unmarshal(byte[] arr) throws GridPortableException {
         assert arr != null;
         assert arr.length > 0;
 
-        if (arr.length == 1 && arr[0] == NULL)
+        if (arr[0] == NULL)
             return null;
 
-        return new GridPortableObjectImpl(ctx, arr, 0);
+        GridPortableReaderImpl reader = new GridPortableReaderImpl(ctx, arr, 0);
+
+        return (T)reader.deserialize();
     }
 }

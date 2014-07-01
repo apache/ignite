@@ -45,98 +45,98 @@ public:
     *
     * @return Create time.
     */
-    long createTime() const;
+    int64_t createTime() const;
 
     /**
     * Gets last write time of the owning entity (either cache or entry).
     *
     * @return Last write time.
     */
-    long writeTime() const;
+    int64_t writeTime() const;
 
     /**
     * Gets last read time of the owning entity (either cache or entry).
     *
     * @return Last read time.
     */
-    long readTime() const;
+    int64_t readTime() const;
 
     /**
     * Gets total number of reads of the owning entity (either cache or entry).
     *
     * @return Total number of reads.
     */
-    int reads() const;
+    int32_t reads() const;
 
     /**
     * Gets total number of writes of the owning entity (either cache or entry).
     *
     * @return Total number of writes.
     */
-    int writes() const;
+    int32_t writes() const;
 
     /**
     * Gets total number of hits for the owning entity (either cache or entry).
     *
     * @return Number of hits.
     */
-    int hits() const;
+    int32_t hits() const;
 
     /**
     * Gets total number of misses for the owning entity (either cache or entry).
     *
     * @return Number of misses.
     */
-    int misses() const;
+    int32_t misses() const;
 
      /**
      * Sets creation time.
      *
      * @param createTime Creation time.
      */
-    void createTime(long createTime);
+    void createTime(int64_t createTime);
 
     /**
      * Sets read time.
      *
      * @param readTime Read time.
      */
-    void readTime(long readTime);
+    void readTime(int64_t readTime);
 
     /**
      * Sets write time.
      *
      * @param writeTime Write time.
      */
-    void writeTime(long writeTime);
+    void writeTime(int64_t writeTime);
 
     /**
      * Sets number of reads.
      *
      * @param reads Number of reads.
      */
-    void reads(int reads);
+    void reads(int32_t reads);
 
     /**
      * Sets number of writes.
      *
      * @param writes Number of writes.
      */
-    void writes(int writes);
+    void writes(int32_t writes);
 
     /**
      * Sets number of hits.
      *
      * @param hits Number of hits.
      */
-    void hits(int hits);
+    void hits(int32_t hits);
 
     /**
      * Sets number of misses.
      *
      * @param misses Number of misses.
      */
-    void misses(const int& misses);
+    void misses(int32_t misses);
 
 private:
     class Impl;
