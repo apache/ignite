@@ -559,7 +559,7 @@ class VisorCacheCommand {
 
         val sumT = VisorTextTable()
 
-        sumT #= (">", ("Name(@),", "Last Read/Write"), "Nodes", "Size")
+        sumT #= ("#", ("Name(@),", "Last Read/Write"), "Nodes", "Size")
 
         (0 until sortedAggrData.size) foreach (i => {
             val ad = sortedAggrData(i)
@@ -585,7 +585,7 @@ class VisorCacheCommand {
 
         sumT.render()
 
-        val a = ask("\nChoose cache ('c' to cancel) [c]: ", "c")
+        val a = ask("\nChoose cache number ('c' to cancel) [c]: ", "c")
 
         if (a.toLowerCase == "c")
             None
