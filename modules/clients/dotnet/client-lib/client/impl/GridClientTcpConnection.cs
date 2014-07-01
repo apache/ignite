@@ -861,12 +861,8 @@ namespace GridGain.Client.Impl {
 
                 IList<IGridClientNode> nodes = new List<IGridClientNode>();
 
-                foreach (object beanObj in it) 
-                {
-                    GridClientNodeBean bean = ((IGridClientPortableObject)beanObj).Deserialize<GridClientNodeBean>();
-
-                    nodes.Add(nodeBeanToNode(bean));
-                }
+                foreach (object bean in it) 
+                    nodes.Add(nodeBeanToNode((GridClientNodeBean)bean));
 
                 Top.UpdateTopology(nodes);
 

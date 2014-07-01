@@ -371,6 +371,19 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public T ReadObject<T>()
         {
+            byte hdr = PU.ReadByte(ctx.Stream);
+
+            if (hdr == PU.TYPE_ARRAY || hdr == PU.TYPE_COLLECTION || hdr == PU.TYPE_DICTIONARY)
+            {
+                object obj;
+
+                PSH.ReadHandler(hdr).Invoke(ctx, typeof(T), out obj);
+
+                return (T)obj;
+            }
+
+            ctx.Stream.Seek(ctx.Stream.Position - 1, SeekOrigin.Begin);
+
             return ctx.Deserialize<T>(ctx.Stream);
         }
 
