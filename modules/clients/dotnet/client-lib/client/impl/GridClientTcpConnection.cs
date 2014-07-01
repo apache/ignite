@@ -588,9 +588,12 @@ namespace GridGain.Client.Impl {
 
                 foreach (DictionaryEntry entry in map)
                 {
-                    V val = ((IGridClientPortableObject)entry.Value).Deserialize<V>();
+                    K key = entry.Key is IGridClientPortableObject ? 
+                        ((IGridClientPortableObject)entry.Key).Deserialize<K>() : (K)entry.Key;
+                    V val = entry.Value is IGridClientPortableObject ? 
+                        ((IGridClientPortableObject)entry.Value).Deserialize<V>() : (V)entry.Value;
 
-                    res.Add((K)(entry.Key), val);
+                    res.Add(key, val);
                 }
 
                 return res;
