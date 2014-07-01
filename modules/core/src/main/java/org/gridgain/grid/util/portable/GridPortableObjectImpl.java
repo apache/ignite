@@ -158,7 +158,7 @@ public class GridPortableObjectImpl<T> implements GridPortableObject<T>, Externa
         if (len != otherLen)
             return false;
 
-        for (int i = start, j = otherPo.start; i < len; i++, j++) {
+        for (int i = start, j = otherPo.start; i < start + len; i++, j++) {
             if (arr[i] != otherPo.arr[j])
                 return false;
         }

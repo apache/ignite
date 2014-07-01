@@ -518,8 +518,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
             }
 
             if (cctx.portableEnabled()) {
-                key = (K)cctx.marshalToPortable(key);
-                val = cctx.marshalToPortable(val);
+                key = (K)cctx.marshalToPortableIfNeeded(key);
+                val = cctx.marshalToPortableIfNeeded(val);
             }
 
             Collection<GridNode> primaryNodes = mapKey(key, topVer, fastMap);
@@ -617,8 +617,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                     continue;
 
                 if (cctx.portableEnabled()) {
-                    key = (K)cctx.marshalToPortable(key);
-                    val = cctx.marshalToPortable(val);
+                    key = (K)cctx.marshalToPortableIfNeeded(key);
+                    val = cctx.marshalToPortableIfNeeded(val);
                 }
 
                 Collection<GridNode> affNodes = mapKey(key, topVer, fastMap);

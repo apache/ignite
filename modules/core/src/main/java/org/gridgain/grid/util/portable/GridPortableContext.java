@@ -275,7 +275,7 @@ public class GridPortableContext implements Externalizable {
         assert cls != null;
         assert Collection.class.isAssignableFrom(cls);
 
-        GridPortableClassDescriptor desc = new GridPortableClassDescriptor(cls, false, COL, null, null, false);
+        GridPortableClassDescriptor desc = new GridPortableClassDescriptor(cls, false, 0, null, null, false);
 
         descByCls.put(cls, desc);
 
@@ -291,7 +291,7 @@ public class GridPortableContext implements Externalizable {
         assert cls != null;
         assert Map.class.isAssignableFrom(cls);
 
-        GridPortableClassDescriptor desc = new GridPortableClassDescriptor(cls, false, MAP, null, null, false);
+        GridPortableClassDescriptor desc = new GridPortableClassDescriptor(cls, false, 0, null, null, false);
 
         descByCls.put(cls, desc);
 
