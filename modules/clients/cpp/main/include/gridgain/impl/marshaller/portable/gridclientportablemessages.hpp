@@ -628,12 +628,9 @@ public:
     }
 
     GridClientCacheRequest(GridCacheRequestCommand& cacheCmd) : key(cacheCmd.getKey()), val(cacheCmd.getValue()),
-        val2(cacheCmd.getValue2()), vals(cacheCmd.getValues()), cacheName(&cacheCmd.getCacheName())  {
+        val2(cacheCmd.getValue2()), vals(cacheCmd.getValues()), cacheName(&cacheCmd.getCacheName()),
+        cacheFlagsOn(cacheCmd.getFlags())  {
         op = static_cast<int32_t>(cacheCmd.getOperation());
-
-        const std::set<GridClientCacheFlag>& flags = cacheCmd.getFlags();
-
-        cacheFlagsOn = flags.empty() ? 0 : GridClientByteUtils::bitwiseOr(flags.begin(), flags.end(), 0);
     }
 
     void writePortable(GridPortableWriter& writer) const;
@@ -854,7 +851,7 @@ public:
     std::string* transformerClassName;
 
     std::vector<GridClientVariant>* classArgs;
-    
+
     std::vector<GridClientVariant>* args;
 };
 

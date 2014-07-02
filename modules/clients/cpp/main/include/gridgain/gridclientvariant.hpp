@@ -102,7 +102,7 @@ public:
      *
      * @param val Value for the variant.
      */
-    GridClientVariant(const char * val);
+    GridClientVariant(const char* val);
 
     /**
      * Constructor with string argument.
@@ -112,11 +112,39 @@ public:
     GridClientVariant(const std::string& val);
 
     /**
+     * Move constructor with string argument.
+     *
+     * @param val Value for the variant.
+     */
+    GridClientVariant(std::string&& val);
+
+    /**
      * Constructor with wide string argument.
      *
      * @param val Value for the variant.
      */
     GridClientVariant(const std::wstring& val);
+
+    /**
+     * Move constructor with wide string argument.
+     *
+     * @param val Value for the variant.
+     */
+    GridClientVariant(std::wstring&& val);
+
+    /**
+     * Constructor with map entry argument.
+     *
+     * @param val Value for the variant.
+     */
+    GridClientVariant(const TGridClientVariantPair& val);
+
+    /**
+     * Move constructor with map entry argument.
+     *
+     * @param val Value for the variant.
+     */
+    GridClientVariant(TGridClientVariantPair&& val);
 
     /**
      * Constructor with byte array argument.
@@ -126,11 +154,25 @@ public:
     GridClientVariant(const std::vector<int8_t>& val);
 
     /**
+     * Move constructor with byte array argument.
+     *
+     * @param val Value for the variant.
+     */
+    GridClientVariant(std::vector<int8_t>&& val);
+
+    /**
      * Constructor with short array argument.
      *
      * @param val Value for the variant.
      */
     GridClientVariant(const std::vector<int16_t>& val);
+
+    /**
+     * Move constructor with short array argument.
+     *
+     * @param val Value for the variant.
+     */
+    GridClientVariant(std::vector<int16_t>&& val);
 
     /**
      * Constructor with int array argument.
@@ -140,11 +182,25 @@ public:
     GridClientVariant(const std::vector<int32_t>& val);
 
     /**
+     * Move constructor with int array argument.
+     *
+     * @param val Value for the variant.
+     */
+    GridClientVariant(std::vector<int32_t>&& val);
+
+    /**
      * Constructor with long array argument.
      *
      * @param val Value for the variant.
      */
     GridClientVariant(const std::vector<int64_t>& val);
+
+    /**
+     * Move constructor with long array argument.
+     *
+     * @param val Value for the variant.
+     */
+    GridClientVariant(std::vector<int64_t>&& val);
 
     /**
      * Constructor with float array argument.
@@ -154,11 +210,25 @@ public:
     GridClientVariant(const std::vector<float>& val);
 
     /**
-     * Constructor with shor array argument.
+     * Move constructor with float array argument.
+     *
+     * @param val Value for the variant.
+     */
+    GridClientVariant(std::vector<float>&& val);
+
+    /**
+     * Constructor with double array argument.
      *
      * @param val Value for the variant.
      */
     GridClientVariant(const std::vector<double>& val);
+
+    /**
+     * Move constructor with double array argument.
+     *
+     * @param val Value for the variant.
+     */
+    GridClientVariant(std::vector<double>&& val);
 
     /**
      * Constructor with char array argument.
@@ -168,11 +238,25 @@ public:
     GridClientVariant(const std::vector<uint16_t>& val);
 
     /**
+     * Move constructor with char array argument.
+     *
+     * @param val Value for the variant.
+     */
+    GridClientVariant(std::vector<uint16_t>&& val);
+
+    /**
      * Constructor with bool array argument.
      *
      * @param val Value for the variant.
      */
     GridClientVariant(const std::vector<bool>& val);
+
+    /**
+     * Move constructor with bool array argument.
+     *
+     * @param val Value for the variant.
+     */
+    GridClientVariant(std::vector<bool>&& val);
 
     /**
      * Constructor with string array argument.
@@ -182,11 +266,25 @@ public:
     GridClientVariant(const std::vector<std::string>& val);
 
     /**
+     * Move constructor with string array argument.
+     *
+     * @param val Value for the variant.
+     */
+    GridClientVariant(std::vector<std::string>&& val);
+
+    /**
      * Constructor with uuid array argument.
      *
      * @param val Value for the variant.
      */
     GridClientVariant(const std::vector<GridClientUuid>& val);
+
+    /**
+     * Move constructor with uuid array argument.
+     *
+     * @param val Value for the variant.
+     */
+    GridClientVariant(std::vector<GridClientUuid>&& val);
 
     /**
      * Constructor with date argument.
@@ -203,14 +301,31 @@ public:
     GridClientVariant(const std::vector<GridClientDate>& val);
 
     /**
+     * Move constructor with date array argument.
+     *
+     * @param val Value for the variant.
+     */
+    GridClientVariant(std::vector<GridClientDate>&& val);
+
+    /**
      * Constructor with variant vector argument.
      */
     GridClientVariant(const TGridClientVariantSet& val);
 
     /**
+     * Move constructor with variant vector argument.
+     */
+    GridClientVariant(TGridClientVariantSet&& val);
+
+    /**
      * Constructor with variant map argument.
      */
     GridClientVariant(const TGridClientVariantMap& val);
+
+    /**
+     * Move constructor with variant map argument.
+     */
+    GridClientVariant(TGridClientVariantMap&& val);
 
     /**
      * Constructor with UUID argument.
@@ -469,6 +584,34 @@ public:
      * @return Value held in the variant.
      */
     std::string& getString() const;
+
+    /**
+     * Checks if this variant holds a map entry value.
+     *
+     * @return <tt>true</tt> if value is of map entry type, <tt>false</tt> otherwise.
+     */
+    bool hasMapEntry() const;
+
+    /**
+     * Returns a map entry value from this variant.
+     *
+     * @return Value held in the variant.
+     */
+    TGridClientVariantPair& getMapEntry() const;
+
+    /**
+     * Assigns this variant a map entry value.
+     *
+     * @param val New value for the variant.
+     */
+    void set(const TGridClientVariantPair& val);
+
+    /**
+     * Assigns this variant a map entry value.
+     *
+     * @param val New value for the variant.
+     */
+    void set(TGridClientVariantPair&& val);
 
     /**
      * Assigns this variant a portable value.
@@ -945,6 +1088,7 @@ private:
         WIDE_STRING_TYPE,
         UUID_TYPE,
         DATE_TYPE,
+        MAP_ENTRY_TYPE,
 
         PORTABLE_TYPE,
         HASHABLE_PORTABLE_TYPE,
@@ -990,6 +1134,8 @@ private:
         GridClientUuid* uuidVal;
 
         GridClientDate* dateVal;
+
+        TGridClientVariantPair* pairVal;
 
         GridPortable* portableVal;
 
@@ -1138,6 +1284,9 @@ public:
 
     /** */
     virtual void visit(const std::vector<GridClientDate>&) const = 0;
+
+    /** */
+    virtual void visit(const TGridClientVariantPair&) const = 0;
 
     /** */
     virtual void visit(const TGridClientVariantSet&) const = 0;

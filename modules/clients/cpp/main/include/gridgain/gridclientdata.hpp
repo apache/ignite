@@ -217,7 +217,7 @@ public:
      * @return Future.
      */
     virtual TGridBoolFuturePtr casAsync(const GridClientVariant& key, const GridClientVariant& val1,
-            const GridClientVariant& val2) = 0;
+        const GridClientVariant& val2) = 0;
 
     /**
      * Gets affinity node ID for the given key. This method will return <tt>null</tt> if no

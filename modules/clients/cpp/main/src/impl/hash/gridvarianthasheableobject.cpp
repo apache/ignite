@@ -135,6 +135,10 @@ public:
         hashCode_ = gridCollectionHash(val);
     }
 
+    virtual void visit(const TGridClientVariantPair& pair) const {
+        hashCode_ = pair.first.hashCode() ^ pair.second.hashCode();
+    }
+
     virtual void visit(const GridClientUuid& uuid) const {
         hashCode_ = uuid.hashCode();
     }

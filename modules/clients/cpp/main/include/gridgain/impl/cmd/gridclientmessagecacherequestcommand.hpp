@@ -177,14 +177,25 @@ public:
     /**
      * @param flags Cache flags for this command.
      */
-    void setFlags(const std::set<GridClientCacheFlag>& flags) {
-        this->flags = flags;
+    void setFlags(const std::set<GridClientCacheFlag>& flagSet) {
+        setKeepPortable(false);
+
+        flags = 0;
+
+        for (auto i = flagSet.begin(); i != flagSet.end(); i++) {
+            GridClientCacheFlag flag = *i;
+
+            if (flag == GridClientCacheFlag::KEEP_PORTABLE)
+                setKeepPortable(true);
+            else
+                flags |= flag;
+        }
     }
 
     /**
      * @return Cache flags for this command.
      */
-    const std::set<GridClientCacheFlag>& getFlags() const {
+    const int32_t getFlags() const {
         return flags;
     }
 
@@ -208,7 +219,7 @@ private:
     const TGridClientVariantMap* vals;
 
     /** Cache flags. */
-    std::set<GridClientCacheFlag> flags;
+    int32_t flags;
 };
 
 #endif

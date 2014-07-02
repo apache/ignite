@@ -9,7 +9,6 @@
 #include <boost/unordered_map.hpp>
 
 #include "gridgain/gridportable.hpp"
-#include "gridgain/gridportableserializer.hpp"
 #include "gridgain/gridportablereader.hpp"
 #include "gridgain/gridportablewriter.hpp"
 

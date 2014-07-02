@@ -12,7 +12,6 @@
 
 #include <string>
 #include <vector>
-#include <boost/unordered_map.hpp>
 #include <boost/optional.hpp>
 
 #include <gridgain/gridconf.hpp>
@@ -24,149 +23,380 @@
 class GridPortableRawReader;
 
 /**
- * C++ client API.
+ * Reader for portable objects.
  */
 class GRIDGAIN_API GridPortableReader {
 public:
+    /**
+     * @param fieldName Field name.
+     * @return Bool value.
+     */
     virtual bool readBool(char* fieldName) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @return Pair containing array pointer and array size.
+     */
     virtual std::pair<bool*, int32_t> readBoolArray(char* fieldName) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readBoolArray(char* fieldName, OutputIterator out) {
         return readArray<OutputIterator, bool>(fieldName, out);
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
     virtual bool readBoolArray(char* fieldName, std::vector<bool>& arr) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @return Byte value.
+     */
     virtual int8_t readByte(char* fieldName) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @return Pair containing array pointer and array size.
+     */
     virtual std::pair<int8_t*, int32_t> readByteArray(char* fieldName) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readByteArray(char* fieldName, OutputIterator out) {
         return readArray<OutputIterator, int8_t>(fieldName, out);
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
     virtual bool readByteArray(char* fieldName, std::vector<int8_t>& arr) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @return Short value.
+     */
     virtual int16_t readInt16(char* fieldName) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @return Pair containing array pointer and array size.
+     */
     virtual std::pair<int16_t*, int32_t> readInt16Array(char* fieldName) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readInt16Array(char* fieldName, OutputIterator out) {
         return readArray<OutputIterator, int16_t>(fieldName, out);
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
     virtual bool readInt16Array(char* fieldName, std::vector<int16_t>& arr) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @return Int value.
+     */
     virtual int32_t readInt32(char* fieldName) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @return Pair containing array pointer and array size.
+     */
     virtual std::pair<int32_t*, int32_t> readInt32Array(char* fieldName) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readInt32Array(char* fieldName, OutputIterator out) {
         return readArray<OutputIterator, int32_t>(fieldName, out);
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
     virtual bool readInt32Array(char* fieldName, std::vector<int32_t>& arr) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @return Long value.
+     */
     virtual int64_t readInt64(char* fieldName) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @return Pair containing array pointer and array size.
+     */
     virtual std::pair<int64_t*, int32_t> readInt64Array(char* fieldName) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
     virtual bool readInt64Array(char* fieldName, std::vector<int64_t>& arr) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readInt64Array(char* fieldName, OutputIterator out) {
         return readArray<OutputIterator, int64_t>(fieldName, out);
     }
 
+    /**
+     * @param fieldName Field name.
+     * @return Float value.
+     */
     virtual float readFloat(char* fieldName) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @return Pair containing array pointer and array size.
+     */
     virtual std::pair<float*, int32_t> readFloatArray(char* fieldName) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readFloatArray(char* fieldName, OutputIterator out) {
         return readArray<OutputIterator, float>(fieldName, out);
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
     virtual bool readFloatArray(char* fieldName, std::vector<float>& arr) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @return Double value.
+     */
     virtual double readDouble(char* fieldName) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @return Pair containing array pointer and array size.
+     */
     virtual std::pair<double*, int32_t> readDoubleArray(char* fieldName) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readDoubleArray(char* fieldName, OutputIterator out) {
         return readArray<OutputIterator, double>(fieldName, out);
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
     virtual bool readDoubleArray(char* fieldName, std::vector<double>& arr) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @return Char value.
+     */
     virtual uint16_t readChar(char* fieldName) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @return Pair containing array pointer and array size.
+     */
     virtual std::pair<uint16_t*, int32_t> readCharArray(char* fieldName) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readCharArray(char* fieldName, OutputIterator out) {
         return readArray<OutputIterator, uint16_t>(fieldName, out);
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
     virtual bool readCharArray(char* fieldName, std::vector<uint16_t>& arr) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @return String value.
+     */
     virtual boost::optional<std::string> readString(char* fieldName) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readStringArray(char* fieldName, OutputIterator out) {
-        return readStringArray<OutputIterator, std::string>(fieldName, out);
+        return readObjectArray<OutputIterator, std::string>(fieldName, out);
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
     virtual bool readStringArray(char* fieldName, std::vector<std::string>& arr) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @return Wide string value.
+     */
     virtual boost::optional<std::wstring> readWString(char* fieldName) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readWStringArray(char* fieldName, OutputIterator out) {
-        return readStringArray<OutputIterator, std::wstring>(fieldName, out);
+        return readObjectArray<OutputIterator, std::wstring>(fieldName, out);
     }
 
+    /**
+     * @param fieldName Field name.
+     * @return arr Output array.
+     */
     virtual bool readWStringArray(char* fieldName, std::vector<std::wstring>& arr) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @return Uuid value.
+     */
     virtual boost::optional<GridClientUuid> readUuid(char* fieldName) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readUuidArray(char* fieldName, OutputIterator out) {
         return readObjectArray<OutputIterator, GridClientUuid>(fieldName, out);
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
     virtual bool readUuidArray(char* fieldName, std::vector<GridClientUuid>& arr) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @return Date value.
+     */
     virtual boost::optional<GridClientDate> readDate(char* fieldName) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readDateArray(char* fieldName, OutputIterator out) {
         return readObjectArray<OutputIterator, GridClientDate>(fieldName, out);
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
     virtual bool readDateArray(char* fieldName, std::vector<GridClientDate>& arr) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @return Variant value.
+     */
     virtual GridClientVariant readVariant(char* fieldName) = 0;
 
-    virtual bool readVariantArray(char* fieldName, std::vector<GridClientVariant>& res) = 0;
+    /**
+     * @param fieldName Field name.
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
+    virtual bool readVariantArray(char* fieldName, std::vector<GridClientVariant>& arr) = 0;
 
-    virtual bool readVariantCollection(char* fieldName, std::vector<GridClientVariant>& res) = 0;
+    /**
+     * @param fieldName Field name.
+     * @param col Output array.
+     * @return Whether non null collection was read.
+     */
+    virtual bool readVariantCollection(char* fieldName, std::vector<GridClientVariant>& col) = 0;
 
+    /**
+     * @param fieldName Field name.
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readVariantCollection(char* fieldName, OutputIterator out) {
         return readCollection(fieldName, out);   
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param map Output array.
+     * @return Whether non null map was read.
+     */
     virtual bool readVariantMap(char* fieldName, TGridClientVariantMap& map) = 0;
 
+    /**
+     * Gets raw reader.
+     *
+     * @return Raw reader.
+     */
     virtual GridPortableRawReader& rawReader() = 0;
 
+    /**
+     * Destructor.
+     */
     virtual ~GridPortableReader() {
     }
 
@@ -191,28 +421,6 @@ private:
     }
 
     template<typename OutputIterator, typename T>
-    bool readStringArray(char* fieldName, OutputIterator out) {
-        if (!startReadArray<T>(fieldName))
-            return false;
-
-        int32_t size = readArraySize(false);
-
-        if (size < 0)
-            return false;
-
-        for (int32_t i = 0; i < size; i++) {
-            int32_t len = doReadInt32(false);
-
-            if (len >= 0)
-                *out = std::move(readString<T>(len, false));
-
-            out++;
-        }
-
-        return true;
-    }
-
-    template<typename OutputIterator, typename T>
     bool readObjectArray(char* fieldName, OutputIterator out) {
         if (!startReadArray<T>(fieldName))
             return false;
@@ -223,7 +431,7 @@ private:
             return false;
 
         for (int32_t i = 0; i < size; i++) {
-            if (doReadBool(false))
+            if (doReadByte(false) != 101)
                 *out = std::move(readObject<T>(false));
 
             out++;
@@ -280,18 +488,15 @@ private:
     virtual GridClientVariant doReadVariant(bool) = 0;
 
     template<typename T>
-    T readString(int32_t len, bool raw);
-
-    template<typename T>
     T readObject(bool raw);
 
-    virtual std::string doReadString(int32_t, bool) = 0;
+    virtual std::string doReadString(bool) = 0;
 
-    virtual std::wstring doReadWString(int32_t, bool) = 0;
+    virtual std::wstring doReadWString(bool) = 0;
 
-    virtual GridClientUuid doReadUuidObject(bool) = 0;
+    virtual GridClientUuid doReadUuid(bool) = 0;
 
-    virtual GridClientDate doReadDateObject(bool) = 0;
+    virtual GridClientDate doReadDate(bool) = 0;
 
     virtual bool startReadBoolArray(char* fieldName) = 0;
 
@@ -323,143 +528,321 @@ private:
  */
 class GRIDGAIN_API GridPortableRawReader {
 public:
+    /**
+     * @return Bool value.
+     */
     virtual bool readBool() = 0;
 
+    /**
+     * @return Pair containing array pointer and array size.
+     */
     virtual std::pair<bool*, int32_t> readBoolArray() = 0;
 
+    /**
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
     virtual bool readBoolArray(std::vector<bool>& arr) = 0;
 
+    /**
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readBoolArray(OutputIterator out) {
         return readArray<OutputIterator, bool>(out);
     }
 
+    /**
+     * @return Byte value.
+     */
     virtual int8_t readByte() = 0;
 
+    /**
+     * @return Pair containing array pointer and array size.
+     */
     virtual std::pair<int8_t*, int32_t> readByteArray() = 0;
 
-    virtual bool readByteArray(std::vector<int8_t>& res) = 0;
+    /**
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
+    virtual bool readByteArray(std::vector<int8_t>& arr) = 0;
 
+    /**
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readByteArray(OutputIterator out) {
         return readArray<OutputIterator, int8_t>(out);
     }
 
+    /**
+     * @return Short value.
+     */
     virtual int16_t readInt16() = 0;
 
+    /**
+     * @return Pair containing array pointer and array size.
+     */
     virtual std::pair<int16_t*, int32_t> readInt16Array() = 0;
 
-    virtual bool readInt16Array(std::vector<int16_t>& res) = 0;
+    /**
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
+    virtual bool readInt16Array(std::vector<int16_t>& arr) = 0;
 
+    /**
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readInt16Array(OutputIterator out) {
         return readArray<OutputIterator, int16_t>(out);
     }
 
+    /**
+     * @return Int value.
+     */
     virtual int32_t readInt32() = 0;
 
+    /**
+     * @return Pair containing array pointer and array size.
+     */
     virtual std::pair<int32_t*, int32_t> readInt32Array() = 0;
 
+    /**
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
     virtual bool readInt32Array(std::vector<int32_t>& arr) = 0;
 
+    /**
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readInt32Array(OutputIterator out) {
         return readArray<OutputIterator, int32_t>(out);
     }
 
+    /**
+     * @return Long value.
+     */
     virtual int64_t readInt64() = 0;
 
+    /**
+     * @return Pair containing array pointer and array size.
+     */
     virtual std::pair<int64_t*, int32_t> readInt64Array() = 0;
 
+    /**
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
     virtual bool readInt64Array(std::vector<int64_t>& arr) = 0;
 
+    /**
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readInt64Array(OutputIterator out) {
         return readArray<OutputIterator, int64_t>(out);
     }
 
+    /**
+     * @return Float value.
+     */
     virtual float readFloat() = 0;
 
+    /**
+     * @return Pair containing array pointer and array size.
+     */
     virtual std::pair<float*, int32_t> readFloatArray() = 0;
 
+    /**
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
     virtual bool readFloatArray(std::vector<float>& arr) = 0;
 
+    /**
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readFloatArray(OutputIterator out) {
         return readArray<OutputIterator, float>(out);
     }
 
+    /**
+     * @return Double value.
+     */
     virtual double readDouble() = 0;
 
+    /**
+     * @return Pair containing array pointer and array size.
+     */
     virtual std::pair<double*, int32_t> readDoubleArray() = 0;
 
+    /**
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
     virtual bool readDoubleArray(std::vector<double>& arr) = 0;
 
+    /**
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readDoubleArray(OutputIterator out) {
         return readArray<OutputIterator, double>(out);
     }
 
+    /**
+     * @return Char value.
+     */
     virtual uint16_t readChar() = 0;
 
+    /**
+     * @return Pair containing array pointer and array size.
+     */
     virtual std::pair<uint16_t*, int32_t> readCharArray() = 0;
 
+    /**
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
     virtual bool readCharArray(std::vector<uint16_t>& arr) = 0;
 
+    /**
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readCharArray(OutputIterator out) {
         return readArray<OutputIterator, uint16_t>(out);
     }
 
+    /**
+     * @return String value.
+     */
     virtual boost::optional<std::string> readString() = 0;
 
+    /**
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readStringArray(OutputIterator out) {
-        return readStringArray<OutputIterator, std::string>(out);
+        return readObjectArray<OutputIterator, std::string>(out);
     }
 
+    /**
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
     virtual bool readStringArray(std::vector<std::string>& arr) = 0;
 
+    /**
+     * @return String value.
+     */
     virtual boost::optional<std::wstring> readWString() = 0;
 
+    /**
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readWStringArray(OutputIterator out) {
-        return readStringArray<OutputIterator, std::wstring>(out);
+        return readObjectArray<OutputIterator, std::wstring>(out);
     }
 
+    /**
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
     virtual bool readWStringArray(std::vector<std::wstring>& arr) = 0;
 
+    /**
+     * @return Uuid value.
+     */
     virtual boost::optional<GridClientUuid> readUuid() = 0;
 
+    /**
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readUuidArray(OutputIterator out) {
         return readObjectArray<OutputIterator, GridClientUuid>(out);
     }
 
+    /**
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
     virtual bool readUuidArray(std::vector<GridClientUuid>& arr) = 0;
 
+    /**
+     * @return Date value.
+     */
     virtual boost::optional<GridClientDate> readDate() = 0;
 
+    /**
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readDateArray(OutputIterator out) {
         return readObjectArray<OutputIterator, GridClientDate>(out);
     }
 
+    /**
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
     virtual bool readDateArray(std::vector<GridClientDate>& arr) = 0;
 
+    /**
+     * @return Variant value.
+     */
     virtual GridClientVariant readVariant() = 0;
 
-    virtual bool readVariantArray(TGridClientVariantSet& res) = 0;
+    /**
+     * @param arr Output array.
+     * @return Whether non null array was read.
+     */
+    virtual bool readVariantArray(TGridClientVariantSet& arr) = 0;
 
-    virtual bool readVariantCollection(TGridClientVariantSet& res) = 0;
+    /**
+     * @param arr Output collection.
+     * @return Whether non null collection was read.
+     */
+    virtual bool readVariantCollection(TGridClientVariantSet& col) = 0;
 
+    /**
+     * @param out Output iterator to the initial position in destination array.
+     * @return Whether non null array was read.
+     */
     template<class OutputIterator>
     bool readVariantCollection(OutputIterator out) {
         return readCollection(out);
     }
 
-    virtual bool readVariantMap(TGridClientVariantMap& res) = 0;
+    /**
+     * @param arr Output map.
+     * @return Whether non null array was read.
+     */
+    virtual bool readVariantMap(TGridClientVariantMap& map) = 0;
 
+    /**
+     * Destructor.
+     */
     virtual ~GridPortableRawReader() {
     }
 
@@ -481,25 +864,6 @@ private:
     }
 
     template<typename OutputIterator, typename T>
-    bool readStringArray(OutputIterator out) {
-        int32_t size = readArraySize(true);
-
-        if (size < 0)
-            return false;
-
-        for (int32_t i = 0; i < size; i++) {
-            int32_t len = doReadInt32(true);
-
-            if (len >= 0)
-                *out = std::move(readString<T>(len, true));
-
-            out++;
-        }
-
-        return true;
-    }
-
-    template<typename OutputIterator, typename T>
     bool readObjectArray(OutputIterator out) {
         int32_t size = readArraySize(true);
 
@@ -507,7 +871,7 @@ private:
             return false;
 
         for (int32_t i = 0; i < size; i++) {
-            if (doReadBool(true))
+            if (doReadByte(true) != 101)
                 *out = std::move(readObject<T>(true));
 
             out++;
@@ -526,8 +890,7 @@ private:
         doReadByte(true);
 
         for (int32_t i = 0; i < size; i++) {
-            if (doReadBool(true))
-                *out = std::move(doReadVariant(true));
+            *out = std::move(doReadVariant(true));
 
             out++;
         }
@@ -557,18 +920,15 @@ private:
     virtual uint16_t doReadChar(bool) = 0;
 
     template<typename T>
-    T readString(int32_t len, bool raw);
-
-    template<typename T>
     T readObject(bool raw);
 
-    virtual std::string doReadString(int32_t, bool) = 0;
+    virtual std::string doReadString(bool) = 0;
 
-    virtual std::wstring doReadWString(int32_t, bool) = 0;
+    virtual std::wstring doReadWString(bool) = 0;
 
-    virtual GridClientUuid doReadUuidObject(bool) = 0;
+    virtual GridClientUuid doReadUuid(bool) = 0;
 
-    virtual GridClientDate doReadDateObject(bool) = 0;
+    virtual GridClientDate doReadDate(bool) = 0;
 
     virtual GridClientVariant doReadVariant(bool) = 0;
 };
@@ -600,22 +960,6 @@ void GRIDGAIN_API registerPortableFactory(int32_t typeId, GridPortableFactory* f
             \
             return p;\
         }\
-    };\
-    \
-    GridPortableFactory_##TYPE factory_##TYPE;
-
-#define REGISTER_TYPE_SERIALIZER(TYPE_ID, TYPE, SERIALIZER) \
-    class GridPortableFactory_##TYPE : public GridPortableFactory {\
-    public:\
-        GridPortableFactory_##TYPE() {\
-            registerPortableFactory(TYPE_ID, this);\
-        }\
-        \
-        void* newInstance(GridPortableReader& reader) {\
-            return new GridExternalPortable<TYPE>(ser.readPortable(reader), ser);\
-        }\
-        \
-        private: SERIALIZER ser;\
     };\
     \
     GridPortableFactory_##TYPE factory_##TYPE;
