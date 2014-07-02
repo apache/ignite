@@ -58,7 +58,11 @@ public class GridHadoopV2JobResourceManager {
         jobLocDir = new File(new File(U.resolveWorkDirectory("hadoop", false), "node-" + locNodeId), "job_" + jobId);
     }
 
-    /** Set {@link #jobLocDir} as working directory in local file system. */
+    /**
+     * Set {@link #jobLocDir} as working directory in local file system.
+     *
+     * @throws IOException If fails.
+     */
     private void setJobWorkingDirectory() throws IOException {
         FileSystem.getLocal(ctx.getJobConf()).setWorkingDirectory(new Path(jobLocDir.getAbsolutePath()));
     }
@@ -217,7 +221,7 @@ public class GridHadoopV2JobResourceManager {
      * @param info Task info.
      * @return Working directory for task.
      */
-    private File taskLocalDir(@Nullable GridHadoopTaskInfo info) {
+    private File taskLocalDir(GridHadoopTaskInfo info) {
         return new File(jobLocDir, info.type() + "_" + info.taskNumber() + "_" + info.attempt());
     }
 
@@ -233,12 +237,12 @@ public class GridHadoopV2JobResourceManager {
      * @throws GridException If fails.
      */
     public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
-        File locDir = taskLocalDir(info);
-
         try {
             switch(info.type()) {
                 case MAP:
                 case REDUCE:
+                    File locDir = taskLocalDir(info);
+
                     if (locDir.exists())
                         throw new IOException("Task local directory already exists");
 
@@ -250,7 +254,8 @@ public class GridHadoopV2JobResourceManager {
 
                         try {
                             Files.createSymbolicLink(symLink.toPath(), resource.toPath());
-                        } catch (IOException e) {
+                        }
+                        catch (IOException e) {
                             String msg = "Unable to create symlink \"" + symLink + "\" to \"" + resource + "\".";
 
                             if (U.isWindows() && e instanceof FileSystemException)
@@ -272,7 +277,7 @@ public class GridHadoopV2JobResourceManager {
         }
         catch (IOException e) {
             throw new GridException("Unable to prepare local working directory for the task " +
-                "[path=" + locDir + ", jobId=" + jobId + ", task=" + info + ']', e);
+                 "[jobId=" + jobId + ", task=" + info + ']', e);
         }
     }
 

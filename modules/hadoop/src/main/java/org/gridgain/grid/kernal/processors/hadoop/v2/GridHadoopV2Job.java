@@ -390,7 +390,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
     }
 
     /**
-     * Creates and initialize partitioner instance.
+     * Creates and initializes partitioner instance.
      *
      * @return Partitioner.
      * @throws GridException If fails.
