@@ -53,9 +53,7 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public bool ReadBoolean(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_BOOL, "bool");
-
-            return ReadBoolean();
+            return ReadUsualField<bool>(fieldName);
         }
 
         /** <inheritdoc /> */
@@ -67,51 +65,43 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public bool[] ReadBooleanArray(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_ARRAY_BOOL, "bool array");
-
-            return ReadBooleanArray();
+            return ReadUsualField<bool[]>(fieldName);
         }
 
         /** <inheritdoc /> */
         public bool[] ReadBooleanArray()
         {
-            return PU.ReadBooleanArray(ctx.Stream);
+            return ctx.Deserialize<bool[]>(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public byte ReadByte(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_BYTE, "byte");
-
-            return ReadByte();
+            return ReadUsualField<byte>(fieldName);
         }
 
         /** <inheritdoc /> */
         public byte ReadByte()
         {
-            return (byte)ctx.Stream.ReadByte();
+            return PU.ReadByte(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public byte[] ReadByteArray(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_ARRAY_BYTE, "byte array");
-
-            return ReadByteArray();
+            return ReadUsualField<byte[]>(fieldName);
         }
 
         /** <inheritdoc /> */
         public byte[] ReadByteArray()
         {
-            return (byte[])PU.ReadByteArray(ctx.Stream, false);
+            return ctx.Deserialize<byte[]>(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public short ReadShort(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_SHORT, "short");
-            
-            return ReadShort();
+            return ReadUsualField<short>(fieldName);
         }
 
         /** <inheritdoc /> */
@@ -123,23 +113,19 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public short[] ReadShortArray(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_ARRAY_SHORT, "short array");
-
-            return ReadShortArray();
+            return ReadUsualField<short[]>(fieldName);
         }
 
         /** <inheritdoc /> */
         public short[] ReadShortArray()
         {
-            return (short[])PU.ReadShortArray(ctx.Stream, true);
+            return ctx.Deserialize<short[]>(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public char ReadChar(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_CHAR, "char");
-
-            return ReadChar();
+            return ReadUsualField<char>(fieldName);
         }
 
         /** <inheritdoc /> */
@@ -151,23 +137,19 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public char[] ReadCharArray(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_ARRAY_CHAR, "char array");
-
-            return ReadCharArray();
+            return ReadUsualField<char[]>(fieldName);
         }
 
         /** <inheritdoc /> */
         public char[] ReadCharArray()
         {
-            return PU.ReadCharArray(ctx.Stream);
+            return ctx.Deserialize<char[]>(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public int ReadInt(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_INT, "int");
-
-            return ReadInt();
+            return ReadUsualField<int>(fieldName);
         }
 
         /** <inheritdoc /> */
@@ -179,23 +161,19 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public int[] ReadIntArray(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_ARRAY_INT, "int array");
-
-            return ReadIntArray();
+            return ReadUsualField<int[]>(fieldName);
         }
 
         /** <inheritdoc /> */
         public int[] ReadIntArray()
         {
-            return (int[])PU.ReadIntArray(ctx.Stream, true);
+            return ctx.Deserialize<int[]>(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public long ReadLong(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_LONG, "long");
-
-            return ReadLong();
+            return ReadUsualField<long>(fieldName);
         }
 
         /** <inheritdoc /> */
@@ -207,23 +185,19 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public long[] ReadLongArray(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_ARRAY_LONG, "long array");
-
-            return ReadLongArray();
+            return ReadUsualField<long[]>(fieldName);
         }
 
         /** <inheritdoc /> */
         public long[] ReadLongArray()
         {
-            return (long[])PU.ReadLongArray(ctx.Stream, true);
+            return ctx.Deserialize<long[]>(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public float ReadFloat(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_FLOAT, "float");
-
-            return ReadFloat();
+            return ReadUsualField<float>(fieldName);
         }
 
         /** <inheritdoc /> */
@@ -235,23 +209,19 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public float[] ReadFloatArray(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_ARRAY_FLOAT, "float array");
-
-            return ReadFloatArray();
+            return ReadUsualField<float[]>(fieldName);
         }
 
         /** <inheritdoc /> */
         public float[] ReadFloatArray()
         {
-            return PU.ReadFloatArray(ctx.Stream);
+            return ctx.Deserialize<float[]>(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public double ReadDouble(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_DOUBLE, "double");
-            
-            return ReadDouble();
+            return ReadUsualField<double>(fieldName);
         }
 
         /** <inheritdoc /> */
@@ -263,179 +233,146 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public double[] ReadDoubleArray(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_ARRAY_DOUBLE, "double array");
-
-            return ReadDoubleArray();
+            return ReadUsualField<double[]>(fieldName);
         }
 
         /** <inheritdoc /> */
         public double[] ReadDoubleArray()
         {
-            return PU.ReadDoubleArray(ctx.Stream);
+            return ctx.Deserialize<double[]>(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public DateTime? ReadDate(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_DATE, "date");
-
-            return ReadDate();
+            return ReadUsualField<DateTime?>(fieldName);
         }
 
         /** <inheritdoc /> */
         public DateTime? ReadDate()
         {
-            return PU.ReadDate(ctx.Stream);
+            return ctx.Deserialize<DateTime?>(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public DateTime?[] ReadDateArray(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_ARRAY_DATE, "date array");
-
-            return ReadDateArray();
+            return ReadUsualField<DateTime?[]>(fieldName);
         }
 
         /** <inheritdoc /> */
         public DateTime?[] ReadDateArray()
         {
-            return PU.ReadDateArray(ctx.Stream);
+            return ctx.Deserialize<DateTime?[]>(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public string ReadString(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_STRING, "string");
-
-            return ReadString();
+            return ReadUsualField<string>(fieldName);
         }
 
         /** <inheritdoc /> */
         public string ReadString()
         {
-            return PU.ReadString(ctx.Stream);
+            return ctx.Deserialize<string>(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public string[] ReadStringArray(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_ARRAY_STRING, "string array");
-
-            return ReadStringArray();
+            return ReadUsualField<string[]>(fieldName);
         }
 
         /** <inheritdoc /> */
         public string[] ReadStringArray()
         {
-            return PU.ReadStringArray(ctx.Stream);
+            return ctx.Deserialize<string[]>(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public Guid? ReadGuid(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_GUID, "Guid");
-
-            return ReadGuid();
+            return ReadUsualField<Guid?>(fieldName);
         }
 
         /** <inheritdoc /> */
         public Guid? ReadGuid()
         {
-            return PU.ReadGuid(ctx.Stream);
+            return ctx.Deserialize<Guid?>(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public Guid?[] ReadGuidArray(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_ARRAY_GUID, "Guid array");
-
-            return ReadGuidArray();
+            return ReadUsualField<Guid?[]>(fieldName);
         }
 
         /** <inheritdoc /> */
         public Guid?[] ReadGuidArray()
         {
-            return PU.ReadGuidArray(ctx.Stream);
+            return ctx.Deserialize<Guid?[]>(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public T ReadObject<T>(string fieldName)
         {
-            Position(fieldName);
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            return ReadObject<T>();
+            return ReadUsualField<T>(fieldName);
         }
 
         /** <inheritdoc /> */
         public T ReadObject<T>()
         {
-            byte hdr = PU.ReadByte(ctx.Stream);
-
-            if (hdr == PU.TYPE_ARRAY || hdr == PU.TYPE_COLLECTION || hdr == PU.TYPE_DICTIONARY)
-            {
-                object obj;
-
-                PSH.ReadHandler(hdr).Invoke(ctx, typeof(T), out obj);
-
-                return (T)obj;
-            }
-
-            ctx.Stream.Seek(ctx.Stream.Position - 1, SeekOrigin.Begin);
-
             return ctx.Deserialize<T>(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public T[] ReadObjectArray<T>(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_ARRAY, "array");
-
-            return ReadObjectArray<T>();
+            return ReadUsualField<T[]>(fieldName);
         }
 
         /** <inheritdoc /> */
         public T[] ReadObjectArray<T>()
         {
-            return (T[])PU.ReadArray(ctx);
+            return ctx.Deserialize<T[]>(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public ICollection ReadCollection(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_COLLECTION, "collection");
-
-            return ReadCollection();
+            return ReadCollection(fieldName, null, null);
         }
 
         /** <inheritdoc /> */
         public ICollection ReadCollection()
         {
-            return ReadCollection(PSH.CreateArrayList, PSH.AddToArrayList);
+            return ReadCollection(null, null);
         }
 
         /** <inheritdoc /> */
         public ICollection ReadCollection(string fieldName, GridClientPortableCollectionFactory factory, 
             GridClientPortableCollectionAdder adder)
         {
-            PositionAndCheck(fieldName, PU.TYPE_COLLECTION, "collection");
+            PSH.COLLECTION_FACTORY.Value = factory;
+            PSH.COLLECTION_ADDER.Value = adder;
 
-            return ReadCollection(factory, adder);
+            return ReadUsualField<ICollection>(fieldName);
         }
         
         /** <inheritdoc /> */
         public ICollection ReadCollection(GridClientPortableCollectionFactory factory, GridClientPortableCollectionAdder adder)
         {
-            return PU.ReadCollection(ctx, factory, adder);
+            PSH.COLLECTION_FACTORY.Value = factory;
+            PSH.COLLECTION_ADDER.Value = adder;
+
+            return ctx.Deserialize<ICollection>(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public ICollection<T> ReadGenericCollection<T>(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_COLLECTION, "collection");
-
-            return ReadGenericCollection<T>();
+            return ReadGenericCollection<T>(fieldName, null);
         }
 
         /** <inheritdoc /> */
@@ -447,51 +384,51 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public ICollection<T> ReadGenericCollection<T>(string fieldName, GridClientPortableGenericCollectionFactory<T> factory)
         {
-            PositionAndCheck(fieldName, PU.TYPE_COLLECTION, "collection");
+            PSH.GENERIC_COLLECTION_FACTORY.Value = factory;
 
-            return ReadGenericCollection(factory);
+            return ReadUsualField<ICollection<T>>(fieldName);
         }
 
         /** <inheritdoc /> */
         public ICollection<T> ReadGenericCollection<T>(GridClientPortableGenericCollectionFactory<T> factory)
         {
-            return PU.ReadGenericCollection<T>(ctx, factory);
+            PSH.GENERIC_COLLECTION_FACTORY.Value = factory;
+
+            return ctx.Deserialize<ICollection<T>>(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public IDictionary ReadDictionary(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_DICTIONARY, "dictionary");
-
-            return ReadDictionary();
+            return ReadDictionary(fieldName, null);
         }
 
         /** <inheritdoc /> */
         public IDictionary ReadDictionary()
         {
-            return ReadDictionary(PSH.CreateHashtable);
+            return ReadDictionary((GridClientPortableDictionaryFactory)null);
         }
 
         /** <inheritdoc /> */
         public IDictionary ReadDictionary(string fieldName, GridClientPortableDictionaryFactory factory)
         {
-            PositionAndCheck(fieldName, PU.TYPE_DICTIONARY, "dictionary");
+            PSH.DICTIONARY_FACTORY.Value = factory;
 
-            return ReadDictionary(factory);
+            return ReadUsualField<IDictionary>(fieldName);
         }
 
         /** <inheritdoc /> */
         public IDictionary ReadDictionary(GridClientPortableDictionaryFactory factory)
         {
-            return PU.ReadDictionary(ctx, factory);
+            PSH.DICTIONARY_FACTORY.Value = factory;
+
+            return ctx.Deserialize<IDictionary>(ctx.Stream);
         }
 
         /** <inheritdoc /> */
         public IDictionary<K, V> ReadGenericDictionary<K, V>(string fieldName)
         {
-            PositionAndCheck(fieldName, PU.TYPE_DICTIONARY, "dictionary");
-
-            return ReadGenericDictionary<K, V>();
+            return ReadGenericDictionary<K, V>(fieldName, null);
         }
 
         /** <inheritdoc /> */
@@ -503,15 +440,17 @@ namespace GridGain.Client.Impl.Portable
         /** <inheritdoc /> */
         public IDictionary<K, V> ReadGenericDictionary<K, V>(string fieldName, GridClientPortableGenericDictionaryFactory<K, V> factory)
         {
-            PositionAndCheck(fieldName, PU.TYPE_DICTIONARY, "dictionary");
+            PSH.GENERIC_DICTIONARY_FACTORY.Value = factory;
 
-            return ReadGenericDictionary<K, V>(factory);
+            return ReadUsualField<IDictionary<K, V>>(fieldName);
         }
 
         /** <inheritdoc /> */
         public IDictionary<K, V> ReadGenericDictionary<K, V>(GridClientPortableGenericDictionaryFactory<K, V> factory)
         {
-            return PU.ReadGenericDictionary<K, V>(ctx, factory);
+            PSH.GENERIC_DICTIONARY_FACTORY.Value = factory;
+
+            return ctx.Deserialize<IDictionary<K, V>>(ctx.Stream);
         }
 
         /**
@@ -566,25 +505,7 @@ namespace GridGain.Client.Impl.Portable
                 ctx.Stream.Seek(ctx.CurrentPortable.Offset + rawDataOffset, SeekOrigin.Begin);
             }            
         }
-
-        /**
-         * <summary>Position stream before field data and check it's type.</summary>
-         * <param name="fieldName">Field name.</param>
-         * <param name="typeId">Expected type ID.</param>
-         * <param name="typeName">Type name</param>
-         */
-        private void PositionAndCheck(string fieldName, byte typeId, string typeName)
-        {
-            Position(fieldName);
-
-            ctx.Stream.Seek(4, SeekOrigin.Current);
-
-            byte hdr = (byte)ctx.Stream.ReadByte();
-
-            if (hdr != typeId)
-                throw new GridClientPortableInvalidFieldException("Written field is not " + typeName + ": " + fieldName);
-        }
-
+        
         /**
          * <summary>Position stream right after field ID.</summary>
          * <param name="fieldName">Field name.</param>
@@ -605,6 +526,20 @@ namespace GridGain.Client.Impl.Portable
             else
                 throw new GridClientPortableInvalidFieldException("Cannot find field in portable object [typeId=" +
                     ctx.CurrentPortable.TypeId() + ", field=" + fieldName + ']');
+
+            ctx.Stream.Seek(4, SeekOrigin.Current);
+        }
+
+        /**
+         * <summary>Read usual field.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <returns>Value.</returns>
+         */
+        public T ReadUsualField<T>(string fieldName)
+        {
+            Position(fieldName);
+
+            return ctx.Deserialize<T>(ctx.Stream);
         }
     }
 }

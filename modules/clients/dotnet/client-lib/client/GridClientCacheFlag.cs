@@ -37,8 +37,8 @@ namespace GridGain.Client {
         Invalidate = 0x10,
 
         /**
-         * <summary>Read/write objects as portable.</summary>
+         * <summary>Whether to keep portable object and portable form skipping deserialization.</summary>
          */ 
-        Portable = 0x20
+        KeepPortable = 0x20
     }
 }

@@ -16,6 +16,7 @@ namespace GridGain.Client.Impl.Portable
     using System.Diagnostics;
     using System.IO;
     using System.Reflection;
+    using System.Threading;
 
     using GridGain.Client.Portable;
 
@@ -53,6 +54,19 @@ namespace GridGain.Client.Impl.Portable
      */ 
     internal static class GridClientPortableSystemHandlers
     {
+        public static ThreadLocal<GridClientPortableCollectionFactory> COLLECTION_FACTORY = 
+            new ThreadLocal<GridClientPortableCollectionFactory>();
+
+        public static ThreadLocal<GridClientPortableCollectionAdder> COLLECTION_ADDER = 
+            new ThreadLocal<GridClientPortableCollectionAdder>();
+
+        public static ThreadLocal<object> GENERIC_COLLECTION_FACTORY = new ThreadLocal<object>();
+
+        public static ThreadLocal<GridClientPortableDictionaryFactory> DICTIONARY_FACTORY =
+            new ThreadLocal<GridClientPortableDictionaryFactory>();
+
+        public static ThreadLocal<object> GENERIC_DICTIONARY_FACTORY = new ThreadLocal<object>();
+
         /** Header length. */
         private const int HDR_LEN = 18;
 
@@ -193,7 +207,17 @@ namespace GridGain.Client.Impl.Portable
 
             // 13. Arbitrary dictionary.
             READ_HANDLERS[PU.TYPE_DICTIONARY] = ReadDictionary;
-            FIELD_HANDLERS[PU.TYPE_DICTIONARY] = ReadDictionaryField;   
+            FIELD_HANDLERS[PU.TYPE_DICTIONARY] = ReadDictionaryField;  
+ 
+            // 14. Map entry.
+            WRITE_HANDLERS[typeof(DictionaryEntry)] = WriteMapEntry;
+            READ_HANDLERS[PU.TYPE_MAP_ENTRY] = ReadMapEntry;
+            FIELD_HANDLERS[PU.TYPE_MAP_ENTRY] = ReadMapEntryField; 
+
+            // 15. Portable.
+            WRITE_HANDLERS[typeof(GridClientPortableObjectImpl)] = WritePortable;
+            READ_HANDLERS[PU.TYPE_PORTABLE] = ReadPortable;
+            FIELD_HANDLERS[PU.TYPE_PORTABLE] = ReadPortableField; 
         }
 
         /**
@@ -511,7 +535,7 @@ namespace GridGain.Client.Impl.Portable
         private static void WriteDateArray(GridClientPortableWriteContext ctx, int pos, object obj)
         {
             PU.WriteByte(PU.TYPE_ARRAY_DATE, ctx.Stream);
-            PU.WriteDateArray((DateTime?[])obj, ctx.Stream);
+            PU.WriteArray((Array)obj, ctx);
         }
 
         /**
@@ -520,7 +544,7 @@ namespace GridGain.Client.Impl.Portable
         private static void WriteStringArray(GridClientPortableWriteContext ctx, int pos, object obj)
         {
             PU.WriteByte(PU.TYPE_ARRAY_STRING, ctx.Stream);
-            PU.WriteStringArray((string[])obj, ctx.Stream);
+            PU.WriteArray((Array)obj, ctx);
         }
 
         /**
@@ -529,7 +553,7 @@ namespace GridGain.Client.Impl.Portable
         private static void WriteGuidArray(GridClientPortableWriteContext ctx, int pos, object obj)
         {
             PU.WriteByte(PU.TYPE_ARRAY_GUID, ctx.Stream);
-            PU.WriteGuidArray((Guid?[])obj, ctx.Stream);
+            PU.WriteArray((Array)obj, ctx);
         }
 
         /**
@@ -601,6 +625,24 @@ namespace GridGain.Client.Impl.Portable
         {
             PU.WriteByte(PU.TYPE_DICTIONARY, ctx.Stream);
             PU.WriteTypedDictionary((IDictionary)obj, ctx, PU.MAP_HASH_MAP);
+        }
+
+        /**
+         * <summary>Write map entry.</summary>
+         */
+        public static void WriteMapEntry(GridClientPortableWriteContext ctx, int pos, object obj)
+        {
+            PU.WriteByte(PU.TYPE_MAP_ENTRY, ctx.Stream);
+            PU.WriteMapEntry(ctx, (DictionaryEntry)obj);
+        }
+
+        /**
+         * <summary>Write portable object.</summary>
+         */
+        public static void WritePortable(GridClientPortableWriteContext ctx, int pos, object obj)
+        {
+            PU.WriteByte(PU.TYPE_PORTABLE, ctx.Stream);
+            PU.WritePortable(ctx.Stream, (GridClientPortableObjectImpl)obj);
         }
 
         /**
@@ -936,7 +978,7 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void ReadDateArray(GridClientPortableReadContext ctx, Type type, out object obj)
         {
-            obj = PU.ReadDateArray(ctx.Stream);
+            obj = PU.ReadArray<DateTime?>(ctx);
         }
 
         /**
@@ -944,7 +986,7 @@ namespace GridGain.Client.Impl.Portable
          */
         private static object ReadDateArrayField(MemoryStream stream, GridClientPortableMarshaller marsh)
         {
-            return PU.ReadDateArray(stream);
+            return PU.ReadArrayPortable<DateTime?>(stream, marsh);
         }
 
         /**
@@ -952,7 +994,7 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void ReadStringArray(GridClientPortableReadContext ctx, Type type, out object obj)
         {
-            obj = PU.ReadStringArray(ctx.Stream);
+            obj = PU.ReadArray<string>(ctx);
         }
 
         /**
@@ -960,7 +1002,7 @@ namespace GridGain.Client.Impl.Portable
          */
         private static object ReadStringArrayField(MemoryStream stream, GridClientPortableMarshaller marsh)
         {
-            return PU.ReadStringArray(stream);
+            return PU.ReadArrayPortable<string>(stream, marsh);
         }
 
         /**
@@ -968,7 +1010,7 @@ namespace GridGain.Client.Impl.Portable
          */
         private static  void ReadGuidArray(GridClientPortableReadContext ctx, Type type, out object obj)
         {
-            obj = PU.ReadGuidArray(ctx.Stream);
+            obj = PU.ReadArray<Guid?>(ctx);
         }
 
         /**
@@ -976,7 +1018,7 @@ namespace GridGain.Client.Impl.Portable
          */
         private static object ReadGuidArrayField(MemoryStream stream, GridClientPortableMarshaller marsh)
         {
-            return PU.ReadGuidArray(stream);
+            return PU.ReadArrayPortable<Guid?>(stream, marsh);
         }
 
         /**
@@ -984,7 +1026,7 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void ReadArray(GridClientPortableReadContext ctx, Type type, out object obj)
         {
-            obj = PU.ReadArray(ctx);
+            obj = PU.ReadArray<object>(ctx);
         }
 
         /**
@@ -1003,9 +1045,23 @@ namespace GridGain.Client.Impl.Portable
             GridClientPortableCollectionInfo info = GridClientPortableCollectionInfo.Info(type);
 
             if (info.IsGenericCollection)
-                obj = info.GenericReadMethod.Invoke(null, new object[] { ctx, null });
+            {
+                object factory = GENERIC_COLLECTION_FACTORY.IsValueCreated ? GENERIC_COLLECTION_FACTORY.Value : null;
+
+                GENERIC_COLLECTION_FACTORY.Value = null;
+
+                obj = info.GenericReadMethod.Invoke(null, new object[] { ctx, factory });
+            }
             else
-                obj = PU.ReadCollection(ctx, CreateArrayList, AddToArrayList);
+            {
+                GridClientPortableCollectionFactory factory = COLLECTION_FACTORY.IsValueCreated ? COLLECTION_FACTORY.Value : null;
+                GridClientPortableCollectionAdder adder = COLLECTION_ADDER.IsValueCreated ? COLLECTION_ADDER.Value : null;
+
+                COLLECTION_FACTORY.Value = null;
+                COLLECTION_ADDER.Value = null;
+
+                obj = PU.ReadCollection(ctx, factory, adder);
+            }
         }
 
         /**
@@ -1024,9 +1080,21 @@ namespace GridGain.Client.Impl.Portable
             GridClientPortableCollectionInfo info = GridClientPortableCollectionInfo.Info(type);
 
             if (info.IsGenericDictionary)
-                obj = info.GenericReadMethod.Invoke(null, new object[] { ctx, null });
+            {
+                object factory = GENERIC_DICTIONARY_FACTORY.IsValueCreated ? GENERIC_DICTIONARY_FACTORY.Value : null;
+
+                GENERIC_DICTIONARY_FACTORY.Value = null;
+
+                obj = info.GenericReadMethod.Invoke(null, new object[] { ctx, factory });
+            }
             else
-                obj = PU.ReadDictionary(ctx, CreateHashtable);
+            {
+                GridClientPortableDictionaryFactory factory = DICTIONARY_FACTORY.IsValueCreated ? DICTIONARY_FACTORY.Value : null;
+
+                DICTIONARY_FACTORY.Value = null;
+
+                obj = PU.ReadDictionary(ctx, factory);
+            }
         }
 
         /**
@@ -1037,6 +1105,38 @@ namespace GridGain.Client.Impl.Portable
             return PU.ReadDictionaryPortable<object, object>(stream, marsh);
         }
 
+        /**
+         * <summary>Read map entry.</summary>
+         */
+        private static void ReadMapEntry(GridClientPortableReadContext ctx, Type type, out object obj)
+        {
+            obj = PU.ReadMapEntry(ctx);
+        }
+
+        /**
+         * <summary>Read map entry field.</summary>
+         */
+        private static object ReadMapEntryField(MemoryStream stream, GridClientPortableMarshaller marsh)
+        {
+            return PU.ReadMapEntryPortable(stream, marsh);
+        }
+
+        /**
+         * <summary>Read portable.</summary>
+         */
+        private static void ReadPortable(GridClientPortableReadContext ctx, Type type, out object obj)
+        {
+            obj = PU.ReadPortable(ctx.Stream, ctx.Marshaller, false);
+        }
+
+        /**
+         * <summary>Read portable field.</summary>
+         */
+        private static object ReadPortableField(MemoryStream stream, GridClientPortableMarshaller marsh)
+        {
+            return PU.ReadPortable(stream, marsh, false);
+        }
+        
         /**
          * <summary>Create new ArrayList.</summary>
          * <param name="len">Length.</param>

@@ -428,7 +428,7 @@ namespace GridGain.Client {
         }
 
         [Test]
-        public void TestMetricsSync() {
+        public void ATestMetricsSync() {
             TestMetrics((data, nodes) => nodes.Select(node => data.PinNodes(node).Metrics()));
         }
 
@@ -922,7 +922,7 @@ namespace GridGain.Client {
             }
         }
 
-        // [Test]
+        [Test]
         public virtual void TestAffinity() {
             String cacheName = "partitioned";
 

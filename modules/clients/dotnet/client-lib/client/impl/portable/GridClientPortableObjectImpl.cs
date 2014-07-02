@@ -257,11 +257,22 @@ namespace GridGain.Client.Impl.Portable
             else
                 throw new GridClientPortableException("Unexpected field header: " + hdr);
         }
-             
+
         /** <inheritdoc /> */
         public unsafe T Deserialize<T>()
         {
-            if (val != null) {
+            return Deserialize<T>(false);
+        }
+
+        /**
+         * <summary>Deserialize object.</summary>
+         * <param name="keepPortable">Keep portable flag.</param>
+         * <returns>Unmarshalled object.</returns>
+         */ 
+        public unsafe T Deserialize<T>(bool keepPortable)
+        {
+            if (val != null)
+            {
                 // 1. Handle special conversions first.
                 if (typeof(T) == typeof(sbyte) || typeof(T) == typeof(sbyte?))
                 {
@@ -287,7 +298,7 @@ namespace GridGain.Client.Impl.Portable
 
                     return (T)(object)(*(ulong*)&val0);
                 }
-                else if (typeof(T) == typeof(sbyte[])) 
+                else if (typeof(T) == typeof(sbyte[]))
                 {
                     byte[] val0 = (byte[])val;
 
@@ -358,7 +369,8 @@ namespace GridGain.Client.Impl.Portable
 
                 stream.Position = offset;
 
-                return new GridClientPortableReadContext(marsh, marsh.IdToDescriptor, stream).Deserialize<T>(this);
+                return new GridClientPortableReadContext(marsh, marsh.IdToDescriptor, stream, keepPortable)
+                    .Deserialize<T>(this);
             }
         }
 
