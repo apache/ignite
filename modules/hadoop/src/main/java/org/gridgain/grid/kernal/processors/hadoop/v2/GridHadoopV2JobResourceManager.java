@@ -14,11 +14,15 @@ import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.util.typedef.F;
+import org.gridgain.grid.kernal.processors.hadoop.fs.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.net.*;
+import java.nio.file.FileSystemException;
+import java.nio.file.Files;
 import java.util.*;
 
 /**
@@ -38,28 +42,47 @@ public class GridHadoopV2JobResourceManager {
     /** Class path list. */
     private List<URL> clsPath = new ArrayList<>();
 
+    /** List of local resources. */
+    private Collection<File> rsrcList = new ArrayList<>();
+
     /**
      * Creates new instance.
      * @param jobId Job ID.
      * @param ctx Hadoop job context.
-     * @param jobLocDir Directory to place resources.
+     * @param locNodeId Local node ID.
      */
-    public GridHadoopV2JobResourceManager(GridHadoopJobId jobId, JobContextImpl ctx, File jobLocDir) {
+    public GridHadoopV2JobResourceManager(GridHadoopJobId jobId, JobContextImpl ctx, UUID locNodeId) throws GridException {
         this.jobId = jobId;
         this.ctx = ctx;
-        this.jobLocDir = jobLocDir;
+
+        jobLocDir = new File(new File(U.resolveWorkDirectory("hadoop", false), "node-" + locNodeId), "job_" + jobId);
+    }
+
+    /**
+     * Set {@link #jobLocDir} as working directory in local file system.
+     *
+     * @throws IOException If fails.
+     */
+    private void setJobWorkingDirectory() throws IOException {
+        FileSystem.getLocal(ctx.getJobConf()).setWorkingDirectory(new Path(jobLocDir.getAbsolutePath()));
     }
 
     /**
      * Prepare job resources. Resolve the classpath list and download it if needed.
      *
-     * @param download {@code true} If need to download resource.
+     * @param download {@code true} If need to download resources.
      * @throws GridException If failed.
      */
-    public void processJobResources(boolean download) throws GridException {
+    public void prepareJobEnvironment(boolean download) throws GridException {
         try {
+            if (jobLocDir.exists())
+                throw new GridException("Local job directory already exists: " + jobLocDir.getAbsolutePath());
+
+            if (!jobLocDir.mkdirs())
+                throw new GridException("Failed to create local job directory: " + jobLocDir.getAbsolutePath());
+
             JobConf cfg = ctx.getJobConf();
-            
+
             String mrDir = cfg.get("mapreduce.job.dir");
 
             if (mrDir != null) {
@@ -72,21 +95,25 @@ public class GridHadoopV2JobResourceManager {
                         throw new GridException("Failed to find map-reduce submission directory (does not exist): " +
                                 path);
 
-                    if (jobLocDir.exists())
-                        throw new GridException("Local job directory already exists: " + jobLocDir.getAbsolutePath());
-
                     if (!FileUtil.copy(fs, path, jobLocDir, false, cfg))
                         throw new GridException("Failed to copy job submission directory contents to local file system " +
                                 "[path=" + path + ", locDir=" + jobLocDir.getAbsolutePath() + ", jobId=" + jobId + ']');
                 }
 
-                clsPath.add(new File(jobLocDir, "job.jar").toURI().toURL());
-                
+                File jarJobFile = new File(jobLocDir, "job.jar");
+
+                clsPath.add(jarJobFile.toURI().toURL());
+
+                rsrcList.add(jarJobFile);
+                rsrcList.add(new File(jobLocDir, "job.xml"));
+
                 processFiles(ctx.getCacheFiles(), download, false, false);
                 processFiles(ctx.getCacheArchives(), download, true, false);
                 processFiles(ctx.getFileClassPaths(), download, false, true);
                 processFiles(ctx.getArchiveClassPaths(), download, true, true);
             }
+
+            setJobWorkingDirectory();
         }
         catch (URISyntaxException | IOException e) {
             throw new GridException(e);
@@ -126,6 +153,8 @@ public class GridHadoopV2JobResourceManager {
 
             File dstPath = new File(jobLocDir.getAbsolutePath(), locName);
 
+            rsrcList.add(dstPath);
+
             if (addToClsPath)
                 clsPath.add(dstPath.toURI().toURL());
 
@@ -158,8 +187,8 @@ public class GridHadoopV2JobResourceManager {
                     FileUtil.unZip(archiveFile, dstPath);
                 }
                 else if (archiveNameLC.endsWith(".tar.gz") ||
-                        archiveNameLC.endsWith(".tgz") ||
-                        archiveNameLC.endsWith(".tar")) {
+                    archiveNameLC.endsWith(".tgz") ||
+                    archiveNameLC.endsWith(".tar")) {
                     FileUtil.unTar(archiveFile, dstPath);
                 }
                 else {
@@ -178,4 +207,102 @@ public class GridHadoopV2JobResourceManager {
         return clsPath;
     }
 
+    /**
+     * Release resources allocated fot job execution.
+     */
+    public void releaseJobEnvironment() {
+        if (jobLocDir.exists())
+            U.delete(jobLocDir);
+    }
+
+    /**
+     * Returns subdirectory of {@code jobLocDir} for task execution.
+     *
+     * @param info Task info.
+     * @return Working directory for task.
+     */
+    private File taskLocalDir(GridHadoopTaskInfo info) {
+        return new File(jobLocDir, info.type() + "_" + info.taskNumber() + "_" + info.attempt());
+    }
+
+    /**
+     * Prepares the environment for task execution.
+     *
+     * <ul>
+     *     <li>Creates working directory.</li>
+     *     <li>Creates symbolic links to all job resources in working directory.</li>
+     *     <li>Sets working directory for the local file system in current thread.</li>
+     * </ul>
+     * @param info Task info.
+     * @throws GridException If fails.
+     */
+    public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
+        try {
+            switch(info.type()) {
+                case MAP:
+                case REDUCE:
+                    File locDir = taskLocalDir(info);
+
+                    if (locDir.exists())
+                        throw new IOException("Task local directory already exists");
+
+                    if (!locDir.mkdir())
+                        throw new IOException("Failed to create directory");
+
+                    for (File resource : rsrcList) {
+                        File symLink = new File(locDir, resource.getName());
+
+                        try {
+                            Files.createSymbolicLink(symLink.toPath(), resource.toPath());
+                        }
+                        catch (IOException e) {
+                            String msg = "Unable to create symlink \"" + symLink + "\" to \"" + resource + "\".";
+
+                            if (U.isWindows() && e instanceof FileSystemException)
+                                msg += "\n\nAbility to create symbolic links is required!\n" +
+                                        "On Windows platform you have to grant permission 'Create symbolic links'\n" +
+                                        "to your user or run the Accelerator as Administrator.\n";
+
+                            throw new IOException(msg, e);
+                        }
+                    }
+
+                    FileSystem.getLocal(ctx.getJobConf()).setWorkingDirectory(new Path(locDir.getAbsolutePath()));
+
+                    break;
+
+                default:
+                    setJobWorkingDirectory();
+            }
+        }
+        catch (IOException e) {
+            throw new GridException("Unable to prepare local working directory for the task " +
+                 "[jobId=" + jobId + ", task=" + info + ']', e);
+        }
+    }
+
+    /**
+     * Releases resources allocated by {@link #prepareTaskEnvironment} and restores working directory to initial state.
+     *
+     * @param info Task info.
+     * @throws GridException If fails.
+     */
+    public void releaseTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
+        GridHadoopRawLocalFileSystem fs;
+
+        File locDir = taskLocalDir(info);
+
+        try {
+            if (locDir.exists())
+                U.delete(locDir);
+
+            fs = (GridHadoopRawLocalFileSystem)FileSystem.getLocal(ctx.getJobConf()).getRaw();
+        }
+        catch (IOException e) {
+            throw new GridException("Unable to release local working directory of the task " +
+                    "[path=" + locDir + ", jobId=" + jobId + ", task=" + info + ']', e);
+        }
+
+        fs.setWorkingDirectory(fs.getInitialWorkingDirectory());
+    }
 }

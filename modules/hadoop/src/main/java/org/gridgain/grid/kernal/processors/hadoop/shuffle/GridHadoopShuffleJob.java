@@ -94,8 +94,6 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
         this.mem = mem;
         this.log = log;
 
-        job.beforeTaskRun(null); // TODO
-
         partitioner = reducers > 1 ? job.partitioner() : null;
 
         maps = new AtomicReferenceArray<>(reducers);
@@ -143,8 +141,6 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
             sender = new GridWorker(gridName, "hadoop-shuffle-" + job.id(), log) {
                 @Override protected void body() throws InterruptedException {
                     try {
-                        job.beforeTaskRun(null); // TODO
-
                         while (!isCancelled()) {
                             Thread.sleep(5);
 
