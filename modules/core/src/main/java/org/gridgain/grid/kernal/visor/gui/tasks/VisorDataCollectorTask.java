@@ -489,8 +489,6 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
         private void license(VisorDataCollectorJobResult res) {
             if (ENT)
                 try {
-                    res.license = VisorLicense.from(g);
-
                     // If license could not be retrieved, try to let it load for 5 time.
                     for (int i = 0; i < 5; i++) {
                         res.license = VisorLicense.from(g);
