@@ -461,7 +461,7 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
             if (cfg.getProtocol() == GridClientProtocol.TCP) {
                 conn = new GridClientNioTcpConnection(srv, clientId, addr, sslCtx, pingExecutor,
                     cfg.getConnectTimeout(), cfg.getPingInterval(), cfg.getPingTimeout(),
-                    cfg.isTcpNoDelay(), cfg.getMarshaller(), top, cred);
+                    cfg.isTcpNoDelay(), cfg.getMarshaller(), top, cred, keepPortablesThreadLocal());
             }
             else
                 throw new GridServerUnreachableException("Failed to create client (protocol is not supported): " +
@@ -479,6 +479,13 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
         finally {
             endpointStripedLock.unlock(addr);
         }
+    }
+
+    /**
+     * @return Get thread local used to enable keep portables mode.
+     */
+    protected ThreadLocal<Boolean> keepPortablesThreadLocal() {
+        return null;
     }
 
     /** {@inheritDoc} */

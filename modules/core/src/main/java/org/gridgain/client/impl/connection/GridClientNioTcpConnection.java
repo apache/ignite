@@ -29,6 +29,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.logging.*;
 
+import static org.gridgain.client.GridClientCacheFlag.*;
 import static org.gridgain.client.impl.connection.GridClientConnectionCloseReason.*;
 import static org.gridgain.grid.kernal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.*;
 
@@ -94,6 +95,9 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     /** Marshaller. */
     private final GridClientMarshaller marsh;
 
+    /** */
+    private final ThreadLocal<Boolean> keepPortablesMode;
+
     /**
      * Creates a client facade, tries to connect to remote server, in case of success starts reader thread.
      *
@@ -124,16 +128,17 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         boolean tcpNoDelay,
         GridClientMarshaller marsh,
         GridClientTopology top,
-        Object cred)
+        Object cred,
+        ThreadLocal<Boolean> keepPortablesMode)
         throws IOException, GridClientException {
         super(clientId, srvAddr, sslCtx, top, cred);
 
         assert marsh != null;
 
         this.marsh = marsh;
-
         this.pingInterval = pingInterval;
         this.pingTimeout = pingTimeout;
+        this.keepPortablesMode = keepPortablesMode;
 
         try {
             SocketChannel ch = SocketChannel.open();
@@ -187,7 +192,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         pingTask = pingExecutor.scheduleAtFixedRate(new Runnable() {
             @Override public void run() {
                 try {
-                    makeRequest(GridClientPingPacket.PING_MESSAGE, null, false);
+                    makeRequest(GridClientPingPacket.PING_MESSAGE, (TcpClientFuture)null, false);
                 }
                 catch (Exception e) {
                     log.warning("Failed to send ping message: " + e);
@@ -284,9 +289,25 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      */
     private <R> GridClientFutureAdapter<R> makeRequest(GridClientMessage msg, UUID destId)
         throws GridClientConnectionResetException, GridClientClosedException {
+        return makeRequest(msg, destId, false);
+    }
+
+    /**
+     * Makes request to server via tcp protocol and returns a future that will be completed when
+     * response is received.
+     *
+     * @param msg Message to request,
+     * @param destId Destination node identifier.
+     * @param keepPortables Keep portables flag.
+     * @return Response object.
+     * @throws GridClientConnectionResetException If request failed.
+     * @throws GridClientClosedException If client was closed.
+     */
+    private <R> GridClientFutureAdapter<R> makeRequest(GridClientMessage msg, UUID destId, boolean keepPortables)
+        throws GridClientConnectionResetException, GridClientClosedException {
         assert msg != null;
 
-        TcpClientFuture<R> res = new TcpClientFuture<>();
+        TcpClientFuture<R> res = new TcpClientFuture<>(false, keepPortables);
 
         msg.destinationId(destId);
 
@@ -447,6 +468,9 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         else {
             GridClientMessage msg;
 
+            if (keepPortablesMode != null && fut.keepPortables())
+                keepPortablesMode.set(true);
+
             try {
                 msg = marsh.unmarshal(req.messageArray());
             }
@@ -454,6 +478,10 @@ public class GridClientNioTcpConnection extends GridClientConnection {
                 fut.onDone(new GridClientException("Failed to unmarshal message.", e));
 
                 return;
+            }
+            finally {
+                if (keepPortablesMode != null && fut.keepPortables())
+                    keepPortablesMode.set(false);
             }
 
             msg.requestId(req.requestId());
@@ -628,7 +656,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         req.keys((Iterable<Object>)keys);
         req.cacheFlagsOn(encodeCacheFlags(flags));
 
-        return makeRequest(req, destNodeId);
+        return makeRequest(req, destNodeId, flags.contains(KEEP_PORTABLES));
     }
 
     /** {@inheritDoc} */
@@ -653,7 +681,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         GridClientCacheRequest req = new GridClientCacheRequest(RMV_ALL);
 
         req.cacheName(cacheName);
-        req.keys((Collection<Object>)keys);
+        req.keys((Iterable<Object>)keys);
         req.cacheFlagsOn(encodeCacheFlags(flags));
 
         return makeRequest(req, destNodeId);
@@ -872,7 +900,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         throws GridClientException {
         assert msg instanceof GridRouterRequest;
 
-        TcpClientFuture<GridRouterRequest> res = new TcpClientFuture<>(true);
+        TcpClientFuture<GridRouterRequest> res = new TcpClientFuture<>(true, false);
 
         makeRequest((GridClientMessage)msg, res, true);
 
@@ -1007,6 +1035,9 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         /** Flag indicating if connected message is a forwarded. */
         private final boolean forward;
 
+        /** Keep portables flag. */
+        private final boolean keepPortables;
+
         /** Pending message for this future. */
         private GridClientMessage pendingMsg;
 
@@ -1019,6 +1050,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
          */
         private TcpClientFuture() {
             forward = false;
+            keepPortables = false;
         }
 
         /**
@@ -1026,8 +1058,9 @@ public class GridClientNioTcpConnection extends GridClientConnection {
          *
          * @param forward Flag value.
          */
-        private TcpClientFuture(boolean forward) {
+        private TcpClientFuture(boolean forward, boolean keepPortables) {
             this.forward = forward;
+            this.keepPortables = keepPortables;
         }
 
         /**
@@ -1063,6 +1096,13 @@ public class GridClientNioTcpConnection extends GridClientConnection {
          */
         public boolean forward() {
             return forward;
+        }
+
+        /**
+         * @return Keep portables flag.
+         */
+        public boolean keepPortables() {
+            return keepPortables;
         }
 
         /** {@inheritDoc} */
