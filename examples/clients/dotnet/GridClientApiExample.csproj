@@ -56,14 +56,11 @@
     <AssemblyOriginatorKeyFile>GridClientApiExample.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject>GridGain.Client.GridClientApiExample</StartupObject>
+    <StartupObject>GridGain.Client.Example.Portable.PortableExample</StartupObject>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="C5">
       <HintPath>..\..\..\modules\clients\dotnet\client-lib\libs\C5.dll</HintPath>
-    </Reference>
-    <Reference Include="GridGainClient">
-      <HintPath>..\..\..\modules\clients\dotnet\client-lib\libs\GridGainClient.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -75,6 +72,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GridClientApiExample.cs" />
+    <Compile Include="portable\Employee.cs" />
+    <Compile Include="portable\PortableExample.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -105,6 +104,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GridClientDataApiExample.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\modules\clients\dotnet\client-lib\client-lib.csproj">
+      <Project>{1a6f93a0-33a1-42d1-b97d-cbfcf787d637}</Project>
+      <Name>client-lib</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
