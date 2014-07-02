@@ -31,6 +31,9 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
     /** IP finder. */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
+    /** */
+    private boolean cacheEnabled = true;
+
     /**
      * Creates new test.
      */
@@ -148,6 +151,23 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
         }
     }
 
+    /**
+     * TODO: uncomment or remove when fixed - http://atlassian.gridgain.com/jira/browse/GG-8671
+     * @throws Exception If failed.
+     */
+    public void _testRestarts() throws Exception {
+        startGrid("first");
+        startGrid("second");
+
+        cacheEnabled = false;
+
+        for (int i = 0; i < 5000; i++) {
+            try (Grid g = startGrid(i)) {
+                assertEquals(3, g.nodes().size());
+            }
+        }
+    }
+
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = loadConfiguration("modules/core/src/test/config/spring-multicache.xml");
@@ -155,12 +175,16 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
         cfg.setGridName(gridName);
         cfg.setRestEnabled(false);
 
-        for (GridCacheConfiguration cCfg : cfg.getCacheConfiguration()) {
-            if (cCfg.getCacheMode() == GridCacheMode.PARTITIONED) {
-                cCfg.setAffinity(new GridCacheConsistentHashAffinityFunction(2048, null));
-                cCfg.setBackups(1);
+        if (cacheEnabled) {
+            for (GridCacheConfiguration cCfg : cfg.getCacheConfiguration()) {
+                if (cCfg.getCacheMode() == GridCacheMode.PARTITIONED) {
+                    cCfg.setAffinity(new GridCacheConsistentHashAffinityFunction(2048, null));
+                    cCfg.setBackups(1);
+                }
             }
         }
+        else
+            cfg.setCacheConfiguration();
 
         ((GridTcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 

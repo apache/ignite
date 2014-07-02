@@ -11,8 +11,6 @@ package org.gridgain.client.impl.connection;
 
 import org.gridgain.client.*;
 import org.gridgain.client.impl.*;
-import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.client.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
@@ -22,10 +20,8 @@ import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.nio.ssl.*;
-import org.gridgain.grid.util.portable.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
@@ -43,15 +39,15 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 /**
  * Cached connections manager.
  */
-public class GridClientConnectionManagerImpl implements GridClientConnectionManager {
-    /** Class logger. */
-    private static final Logger log = Logger.getLogger(GridClientConnectionManagerImpl.class.getName());
-
+abstract class GridClientConnectionManagerAdapter implements GridClientConnectionManager {
     /** Count of reconnect retries before init considered failed. */
     private static final int INIT_RETRY_CNT = 3;
 
     /** Initialization retry interval. */
     private static final int INIT_RETRY_INTERVAL = 1000;
+
+    /** Class logger. */
+    private final Logger log;
 
     /** NIO server. */
     private GridNioServer srv;
@@ -66,7 +62,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
     private final SSLContext sslCtx;
 
     /** Client configuration. */
-    private final GridClientConfiguration cfg;
+    protected final GridClientConfiguration cfg;
 
     /** Topology. */
     private final GridClientTopology top;
@@ -128,17 +124,15 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
     };
 
     /**
-     * Constructs connection manager.
-     *
      * @param clientId Client ID.
      * @param sslCtx SSL context to enable secured connection or {@code null} to use unsecured one.
      * @param cfg Client configuration.
      * @param routers Routers or empty collection to use endpoints from topology info.
      * @param top Topology.
-     * @throws GridClientException If failed to start.
+     * @throws GridClientException In case of error.
      */
     @SuppressWarnings("unchecked")
-    public GridClientConnectionManagerImpl(UUID clientId, SSLContext sslCtx, GridClientConfiguration cfg,
+    protected GridClientConnectionManagerAdapter(UUID clientId, SSLContext sslCtx, GridClientConfiguration cfg,
         Collection<InetSocketAddress> routers, GridClientTopology top) throws GridClientException {
         assert clientId != null : "clientId != null";
         assert cfg != null : "cfg != null";
@@ -151,26 +145,16 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
         this.routers = new ArrayList<>(routers);
         this.top = top;
 
+        log = Logger.getLogger(getClass().getName());
+
         executor = cfg.getExecutorService() != null ? cfg.getExecutorService() :
             Executors.newCachedThreadPool(new GridClientThreadFactory("exec", true));
 
         pingExecutor = cfg.getProtocol() == GridClientProtocol.TCP ?
             Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors()) : null;
 
-        GridClientMarshaller marsh = cfg.getMarshaller();
-
-        if (marsh instanceof GridClientPortableMarshaller) {
-            GridPortableContext portableCtx = new GridPortableContext();
-
-            try {
-                portableCtx.configure(cfg.getPortableConfiguration());
-            }
-            catch (GridPortableException e) {
-                throw new GridClientException("Failed to configure portable marshaller.", e);
-            }
-
-            ((GridClientPortableMarshaller)marsh).portableContext(portableCtx);
-        }
+        if (cfg.getMarshaller() == null)
+            throw new GridClientException("Failed to start client (marshaller is not configured).");
 
         if (cfg.getProtocol() == GridClientProtocol.TCP) {
             try {
@@ -205,7 +189,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
 
                 srv = GridNioServer.builder().address(U.getLocalHost())
                     .port(-1)
-                    .listener(new NioListener())
+                    .listener(new NioListener(log))
                     .filters(filters)
                     .logger(gridLog)
                     .selectorCount(Runtime.getRuntime().availableProcessors())
@@ -232,6 +216,8 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
     @Override public void init(Collection<InetSocketAddress> srvs) throws GridClientException, InterruptedException {
+        init0();
+
         GridClientException firstEx = null;
 
         for (int i = 0; i < INIT_RETRY_CNT; i++) {
@@ -282,6 +268,13 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
 
         throw firstEx;
     }
+
+    /**
+     * Additional initialization.
+     *
+     * @throws GridClientException In case of error.
+     */
+    protected abstract void init0() throws GridClientException;
 
     /**
      * Gets active communication facade.
@@ -568,9 +561,18 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
     }
 
     /**
-     *
      */
     private static class NioListener implements GridNioServerListener {
+        /** */
+        private final Logger log;
+
+        /**
+         * @param log Logger.
+         */
+        private NioListener(Logger log) {
+            this.log = log;
+        }
+
         /** {@inheritDoc} */
         @Override public void onConnected(GridNioSession ses) {
             if (log.isLoggable(Level.FINE))

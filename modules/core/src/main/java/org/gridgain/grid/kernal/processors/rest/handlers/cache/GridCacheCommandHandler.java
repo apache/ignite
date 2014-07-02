@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.rest.handlers.cache;
 
-import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
@@ -85,9 +84,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     public GridCacheCommandHandler(GridKernalContext ctx) {
         super(ctx);
 
-        GridClientConnectionConfiguration cfg = ctx.config().getClientConnectionConfiguration();
-
-        portable = cfg != null && cfg.getMarshaller() instanceof GridClientPortableMarshaller;
+        portable = ctx.portable().isPortableEnabled();
     }
 
     /** {@inheritDoc} */
