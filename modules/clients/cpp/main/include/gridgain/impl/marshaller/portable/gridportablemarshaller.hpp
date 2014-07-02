@@ -1488,7 +1488,7 @@ public:
 
             doWriteByteArray(val, size);
         }
-        else            
+        else
             ctx.out.writeByte(FLAG_NULL);
     }
 
@@ -1559,7 +1559,7 @@ public:
 
     void writeVariantMap(const TGridClientVariantMap& val) {
         switchToRaw();
-        
+
         doWriteByte(TYPE_ID_MAP);
 
         doWriteVariantMap(val);
@@ -3910,7 +3910,7 @@ public:
         if (doReadByte(true) == FLAG_NULL)
             return boost::optional<std::string>();
 
-        return doReadString(true);
+        return boost::optional<std::string>(doReadString(true));
     }
 
     bool readStringArray(std::vector<std::string>& res) {
@@ -3924,7 +3924,7 @@ public:
         if (doReadByte(true) == FLAG_NULL)
             return boost::optional<std::wstring>();
 
-        return doReadWString(true);
+        return boost::optional<std::wstring>(doReadWString(true));
     }
 
     bool readWStringArray(std::vector<std::wstring>& res) {
@@ -3974,7 +3974,7 @@ public:
         if (doReadByte(true) == FLAG_NULL)
             return boost::optional<GridClientUuid>();
 
-        return doReadUuid(true);
+        return boost::optional<GridClientUuid>(doReadUuid(true));
     }
 
     bool readUuidArray(std::vector<GridClientUuid>& res) {
@@ -3988,7 +3988,7 @@ public:
         if (doReadByte(true) == FLAG_NULL)
             return boost::optional<GridClientDate>();
 
-        return doReadDate(true);
+        return boost::optional<GridClientDate>(doReadDate(true));
     }
 
     bool readDateArray(std::vector<GridClientDate>& res) {
@@ -4116,13 +4116,13 @@ public:
                 nodes.push_back(nodeBean->createNode());
             }
         }
-        else if (res.hasPortableObject()) {
+        else if (res.hasPortableObject() || res.hasPortable()) {
             std::unique_ptr<GridClientNodeBean> nodeBean(res.deserializePortable<GridClientNodeBean>());
 
             nodes.push_back(nodeBean->createNode());
         }
 
-        resp.setNodes(nodes);
+        resp.setNodes(std::move(nodes));
     }
 
     void parseResponse(GridClientResponse* msg, GridClientMessageLogResult& resp) {

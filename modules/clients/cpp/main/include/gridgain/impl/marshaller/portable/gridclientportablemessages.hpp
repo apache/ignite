@@ -494,8 +494,8 @@ public:
 
         helper.setAttributes(attrs);
 
-        if (metrics.hasPortableObject()) {
-            std::unique_ptr<GridClientMetricsBean> pMetrics(metrics.getPortableObject().deserialize<GridClientMetricsBean>());
+        if (metrics.hasPortableObject() || metrics.hasPortable()) {
+            std::unique_ptr<GridClientMetricsBean> pMetrics(metrics.deserializePortable<GridClientMetricsBean>());
 
             GridClientNodeMetricsBean metricsBean;
 
