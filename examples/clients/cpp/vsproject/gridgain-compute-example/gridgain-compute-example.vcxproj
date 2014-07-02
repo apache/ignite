@@ -80,13 +80,13 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\..\modules\clients\cpp\main\include;$(BOOST_HOME)\include\boost-1_49;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>c:\Temp\gridclient\include;.\..\..\..\..\..\modules\clients\cpp\main\include;.\..\..\..\..\clients\cpp\main\include;$(BOOST_HOME)\include\boost-1_53;$(BOOST_HOME)\include\boost-1_52;$(BOOST_HOME)\include\boost-1_51;$(BOOST_HOME)\include\boost-1_49;$(BOOST_HOME);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalLibraryDirectories>$(BOOST_HOME)/lib32-msvc-10.0;..\..\..\modules\clients\cpp\vsproject\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\..\..\modules\clients\cpp\vsproject\$(Platform)\$(Configuration);..\..\..\..\clients\cpp\vsproject\$(Platform)\$(Configuration);$(BOOST_HOME)\lib;$(BOOST_HOME)\lib32-msvc-10.0;c:\Temp\gridclient\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>gridgain-client.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>

@@ -382,7 +382,7 @@ public:
     GridClientTestPortable* portableRaw2;
 };
 
-REGISTER_TYPE(10000, GridClientTestPortable);
+REGISTER_TYPE(GridClientTestPortable);
 
 class TestPortableKey : public GridHashablePortable {
 public:
@@ -415,7 +415,7 @@ public:
     int64_t id;
 };
 
-REGISTER_TYPE(10001, TestPortableKey);
+REGISTER_TYPE(TestPortableKey);
 
 class TestPortableValue : public GridPortable {
 public:
@@ -448,7 +448,7 @@ public:
     string s;
 };
 
-REGISTER_TYPE(10002, TestPortableValue);
+REGISTER_TYPE(TestPortableValue);
 
 boost::mutex testCheckMux;
 

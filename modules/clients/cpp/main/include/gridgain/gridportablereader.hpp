@@ -573,7 +573,7 @@ private:
     virtual GridClientVariant doReadVariant(bool) = 0;
 };
 
-class GridPortableFactory {
+class GRIDGAIN_API GridPortableFactory {
 public: 
     virtual void* newInstance(GridPortableReader& reader) = 0;
 
@@ -581,14 +581,15 @@ public:
     }
 };
 
-void registerPortableFactory(int32_t typeId, GridPortableFactory* factory);
+void GRIDGAIN_API registerPortableFactory(int32_t typeId, GridPortableFactory* factory);
 
-#define REGISTER_TYPE(TYPE_ID, TYPE) \
+#define REGISTER_TYPE(TYPE) \
     class GridPortableFactory_##TYPE : public GridPortableFactory {\
     public:\
         \
         GridPortableFactory_##TYPE() {\
-            registerPortableFactory(TYPE_ID, this);\
+            TYPE t;\
+            registerPortableFactory(t.typeId(), this);\
         }\
         \
         virtual ~GridPortableFactory_##TYPE() {\
