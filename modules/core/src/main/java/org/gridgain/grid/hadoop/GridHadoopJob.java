@@ -129,5 +129,5 @@ public interface GridHadoopJob {
      * @param info Task info.
      * @throws GridException If failed.
      */
-    public void releaseTaskEnvironment(GridHadoopTaskInfo info) throws GridException;
+    public void cleanUpTaskEnvironment(GridHadoopTaskInfo info) throws GridException;
 }

@@ -395,7 +395,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
      * @return Partitioner.
      * @throws GridException If fails.
      */
-    private GridHadoopPartitioner getPartitioner() throws GridException {
+    private GridHadoopPartitioner createPartitioner() throws GridException {
         Class<?> partClsOld = ctx.getConfiguration().getClass("mapred.partitioner.class", null);
 
         if (partClsOld != null)
@@ -420,7 +420,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
         if (jobLdr != null)
             ctx.getJobConf().setClassLoader(jobLdr);
 
-        part = getPartitioner();
+        part = createPartitioner();
 
         sortComp = ctx.getSortComparator();
 
@@ -444,7 +444,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
     }
 
     /** {@inheritDoc} */
-    @Override public void releaseTaskEnvironment(@Nullable GridHadoopTaskInfo info) throws GridException {
+    @Override public void cleanUpTaskEnvironment(@Nullable GridHadoopTaskInfo info) throws GridException {
         if (info != null && (info.type() == GridHadoopTaskType.MAP || info.type() == GridHadoopTaskType.REDUCE)) {
             rsrcMgr.releaseTaskEnvironment(info);
 
