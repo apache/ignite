@@ -275,6 +275,8 @@ GridPortableObject& GridClientVariant::getPortableObject() const {
 }
 
 GridPortable* GridClientVariant::deserializePortable0() const {
+    if (!hasAnyValue())
+        return (GridPortable*)0;
     if (hasPortable())
         return getPortable();
     else if (hasHashablePortable())

@@ -183,12 +183,10 @@ public:
         reader.readVariantMap("_map", map);
 
         GridClientVariant var = reader.readVariant("_portable1");
-        if (var.hasPortableObject())
-            portable1 = var.deserializePortable<GridClientTestPortable>();
+        portable1 = var.deserializePortable<GridClientTestPortable>();
 
         var = reader.readVariant("_portable2");
-        if (var.hasPortableObject())
-            portable2 = var.deserializePortable<GridClientTestPortable>();
+        portable2 = var.deserializePortable<GridClientTestPortable>();
 
         GridPortableRawReader& raw = reader.rawReader();
 
@@ -219,12 +217,10 @@ public:
         raw.readVariantMap(mapRaw);
 
         var = raw.readVariant();
-        if (var.hasPortableObject())
-            portableRaw1 = var.deserializePortable<GridClientTestPortable>();
+        portableRaw1 = var.deserializePortable<GridClientTestPortable>();
 
         var = raw.readVariant();
-        if (var.hasPortableObject())
-            portableRaw2 = var.deserializePortable<GridClientTestPortable>();
+        portableRaw2 = var.deserializePortable<GridClientTestPortable>();
     }
 
     /** */

@@ -3629,7 +3629,7 @@ public:
 
             checkType(TYPE_ID_UUID, flag);
 
-            return doReadUuid(false);
+            return boost::optional<GridClientUuid>(doReadUuid(false));
         }
         else
             return boost::optional<GridClientUuid>();
@@ -3653,7 +3653,7 @@ public:
 
             checkType(TYPE_ID_DATE, flag);
 
-            return doReadDate(false);
+            return boost::optional<GridClientDate>(doReadDate(false));
         }
         else
             return boost::optional<GridClientDate>();

@@ -6,6 +6,7 @@
  *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
+#include <boost/algorithm/string.hpp>
 #include <boost/unordered_map.hpp>
 
 #include "gridgain/gridportable.hpp"
@@ -36,7 +37,11 @@ int32_t getFieldId(const char* fieldName, int32_t typeId, GridPortableIdResolver
             return rslvrId.get();
     }
 
-    return cStringHash(fieldName);
+    std::string name(fieldName);
+
+    boost::to_lower(name);
+
+    return gridStringHash(name);
 }
 
 int32_t getFieldId(const std::string& fieldName, int32_t typeId, GridPortableIdResolver* idRslvr) {
@@ -47,7 +52,7 @@ int32_t getFieldId(const std::string& fieldName, int32_t typeId, GridPortableIdR
             return rslvrId.get();
     }
 
-    return gridStringHash(fieldName);
+    return gridStringHash(boost::to_lower_copy(fieldName));
 }
 
 boost::unordered_map<int32_t, GridPortableFactory*>& portableFactories() {
