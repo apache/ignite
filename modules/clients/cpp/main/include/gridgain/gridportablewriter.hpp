@@ -308,16 +308,6 @@ public:
 
     /**
      * @param fieldName Field name.
-     * @param first Input iterator to the initial position in a array to be written.
-     * @param last Input iterator to the final position in a array to be written.
-     */
-    template<class InputIterator>
-    void writeUuidArrayOptional(char* fieldName, InputIterator first, InputIterator last) {
-        writeArrayOptional<InputIterator, GridClientUuid>(fieldName, first, last);            
-    }
-
-    /**
-     * @param fieldName Field name.
      * @param val Value to write.
      */
     virtual void writeDate(char* fieldName, const boost::optional<GridClientDate>& val) = 0;
@@ -722,15 +712,6 @@ public:
     }
 
     /**
-     * @param first Input iterator to the initial position in a array to be written.
-     * @param last Input iterator to the final position in a array to be written.
-     */
-    template<class InputIterator>
-    void writeUuidArrayOptional(InputIterator first, InputIterator last) {
-        writeArrayOptional<InputIterator, GridClientUuid>(first, last);            
-    }
-
-    /**
      * @param val Value to write.
      */
     virtual void writeDate(const boost::optional<GridClientDate>& val) = 0;
@@ -793,7 +774,7 @@ public:
 private:
     template<class InputIterator, typename T>
     void writeArray(InputIterator first, InputIterator last) {
-        int32_t pos = startArrayRaw();
+        int32_t pos = startArrayRaw<T>();
 
         int32_t cnt = 0;
 
@@ -812,7 +793,7 @@ private:
 
     template<class InputIterator>
     void writeCollection(GridCollectionType type, InputIterator first, InputIterator last) {
-        int32_t pos = startArrayRaw();
+        int32_t pos = startVariantCollectionRaw();
 
         doWriteByte(static_cast<int8_t>(type));
 
@@ -831,7 +812,8 @@ private:
         endArrayRaw(pos, cnt);
     }
 
-    virtual int32_t startArrayRaw() = 0;
+    template<typename T>
+    int32_t startArrayRaw();
 
     virtual void endArrayRaw(int32_t, int32_t) = 0;
 
@@ -863,6 +845,32 @@ private:
     virtual void doWriteDate(const GridClientDate&) = 0;
 
     virtual void doWriteVariant(const GridClientVariant&) = 0;
+
+    virtual int32_t startBoolArrayRaw() = 0;
+
+    virtual int32_t startByteArrayRaw() = 0;
+
+    virtual int32_t startInt16ArrayRaw() = 0;
+
+    virtual int32_t startCharArrayRaw() = 0;
+
+    virtual int32_t startInt32ArrayRaw() = 0;
+
+    virtual int32_t startInt64ArrayRaw() = 0;
+
+    virtual int32_t startFloatArrayRaw() = 0;
+
+    virtual int32_t startDoubleArrayRaw() = 0;
+
+    virtual int32_t startStringArrayRaw() = 0;
+
+    virtual int32_t startUuidArrayRaw() = 0;
+
+    virtual int32_t startDateArrayRaw() = 0;
+
+    virtual int32_t startVariantArrayRaw() = 0;
+
+    virtual int32_t startVariantCollectionRaw() = 0;
 };
 
 #endif // GRIDPORTABLEWRITER_HPP_INCLUDED

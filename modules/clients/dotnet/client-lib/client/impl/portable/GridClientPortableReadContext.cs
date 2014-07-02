@@ -47,18 +47,23 @@ namespace GridGain.Client.Impl.Portable
 
         /** Current raw flag. */
         private bool curRaw;
-        
+
+        /** Keep portable flag. */
+        private readonly bool keepPortable;
+
         /**
          * <summary>Constructor.</summary>
          * <param name="marsh">Marshaller.</param>
          * <param name="descs">Descriptors.</param>
          * <param name="stream">Input stream.</param>
+         * <param name="keepPortable">Keep portable flag.</param>
          */
-        public GridClientPortableReadContext(GridClientPortableMarshaller marsh, 
-            IDictionary<long, GridClientPortableTypeDescriptor> descs, MemoryStream stream) 
+        public GridClientPortableReadContext(GridClientPortableMarshaller marsh,
+            IDictionary<long, GridClientPortableTypeDescriptor> descs, MemoryStream stream, bool keepPortable) 
         {
             this.marsh = marsh;
             this.descs = descs;
+            this.keepPortable = keepPortable;
 
             Stream = stream;
 
@@ -169,6 +174,16 @@ namespace GridGain.Client.Impl.Portable
                             {
                                 handler.Invoke(this, typeof(T), out sysObj);
 
+                                GridClientPortableObjectImpl portSysObj = sysObj as GridClientPortableObjectImpl;
+
+                                if (portSysObj != null)
+                                {
+                                    portSysObj.Populate(marsh);
+
+                                    if (!keepPortable)
+                                        sysObj = portSysObj.Deserialize<object>(keepPortable);
+                                }
+                                
                                 return (T)sysObj;
                             }
                         }
@@ -204,10 +219,6 @@ namespace GridGain.Client.Impl.Portable
                         // 11. Populate object fields.
                         desc.Serializer.ReadPortable(obj, reader);
                         
-                        // 12. Special case for portable object.
-                        if (obj is GridClientPortableObjectImpl)
-                            ((GridClientPortableObjectImpl)obj).Populate(marsh);
-
                         return (T)obj;
                     }
                     finally
@@ -239,11 +250,13 @@ namespace GridGain.Client.Impl.Portable
                 }
                 else if (PU.IsPredefinedType(hdr))
                 {
-                    GridClientPortableSystemFieldDelegate handler = PSH.FieldHandler(hdr);
+                    GridClientPortableSystemReadDelegate handler = PSH.ReadHandler(hdr);
 
                     Debug.Assert(handler != null, "Cannot find predefined read handler: " + hdr);
 
-                    object val = handler.Invoke(Stream, marsh);
+                    object val;
+
+                    handler.Invoke(this, typeof(T), out val);
 
                     return (T)val;
                 }
