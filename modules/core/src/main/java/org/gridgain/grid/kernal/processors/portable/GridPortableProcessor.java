@@ -39,6 +39,12 @@ public interface GridPortableProcessor extends GridProcessor {
     public boolean isPortable(@Nullable Object obj) throws GridPortableException;
 
     /**
+     * @param typeId Type ID.
+     * @return Type name.
+     */
+    public String typeName(int typeId);
+
+    /**
      * @param obj Object to marshal.
      * @return Portable object.
      * @throws GridPortableException In case of error.
