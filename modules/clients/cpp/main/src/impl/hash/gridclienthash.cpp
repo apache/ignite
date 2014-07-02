@@ -6,6 +6,9 @@
  *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
+
+#include <boost/optional.hpp>
+
 #include "gridgain/gridclienthash.hpp"
 
 const int32_t FLOAT_SIGN_BIT_MASK = 0x8000000;

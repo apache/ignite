@@ -99,22 +99,5 @@ namespace GridClientByteUtils {
            buf[i] = ((int8_t)((val >> shift) & 0xff));
         }
     }
-
-    /**
-     * Calculates a bitwise OR result for members of a given range.
-     *
-     * @param first First range element, inclusive.
-     * @param last Last range element, exclusive.
-     * @param initVal Initial value for the calculation.
-     * @return A bitwise OR result.
-     */
-    template <class IT, class T> T bitwiseOr(IT first, IT last, T initVal) {
-        T ret = initVal;
-
-        for (IT i = first; i != last; i++)
-            ret |= *i;
-
-        return ret;
-    }
 }
 #endif

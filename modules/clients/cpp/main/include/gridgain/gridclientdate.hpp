@@ -83,8 +83,10 @@ public:
     }
 
 private:
+    /** */
     int64_t time;
 
+    /** */
     int16_t nanoTicks;
 
     /**

@@ -395,9 +395,6 @@
     <ClInclude Include="..\main\include\gridgain\gridportablereader.hpp">
       <Filter>API Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\main\include\gridgain\gridportableserializer.hpp">
-      <Filter>API Headers</Filter>
-    </ClInclude>
     <ClInclude Include="..\main\include\gridgain\gridportablewriter.hpp">
       <Filter>API Headers</Filter>
     </ClInclude>
