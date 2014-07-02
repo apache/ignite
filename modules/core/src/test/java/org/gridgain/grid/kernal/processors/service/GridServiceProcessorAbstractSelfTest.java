@@ -360,9 +360,17 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @param svcName Service name.
      * @param descs Descriptors.
-     * @param cnt Expected count
+     * @param cnt Expected count.
      */
-    protected void checkCount(String svcName, Collection<GridServiceDescriptor> descs, int cnt) {
+    protected void checkCount(String svcName, Iterable<GridServiceDescriptor> descs, int cnt) {
+        assertEquals(cnt, actualCount(svcName, descs));
+    }
+
+    /**
+     * @param svcName Service name.
+     * @param descs Descriptors.
+     */
+    protected int actualCount(String svcName, Iterable<GridServiceDescriptor> descs) {
         int sum = 0;
 
         for (GridServiceDescriptor d : descs) {
@@ -372,7 +380,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
             }
         }
 
-        assertEquals(cnt, sum);
+        return sum;
     }
 
     /**

@@ -11,6 +11,8 @@ package org.gridgain.grid.kernal.processors.service;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.service.*;
+import org.gridgain.grid.util.lang.*;
+import org.gridgain.testframework.*;
 
 import java.util.concurrent.*;
 
@@ -77,13 +79,19 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        assertEquals(CLUSTER_SINGLE, 1, DummyService.started(CLUSTER_SINGLE));
-        assertEquals(CLUSTER_SINGLE, 0, DummyService.cancelled(CLUSTER_SINGLE));
-
-        assertEquals(NODE_SINGLE, nodeCount(), DummyService.started(NODE_SINGLE));
-        assertEquals(CLUSTER_SINGLE, 0, DummyService.cancelled(NODE_SINGLE));
-
-        checkCount(AFFINITY, randomGrid().services().deployedServices(), 1);
+        GridTestUtils.waitForCondition(
+            new GridAbsPredicateX() {
+                @Override public boolean applyx() {
+                    return
+                        DummyService.started(CLUSTER_SINGLE) == 1 &&
+                        DummyService.cancelled(CLUSTER_SINGLE) == 0 &&
+                        DummyService.started(NODE_SINGLE) == nodeCount() &&
+                        DummyService.cancelled(NODE_SINGLE) == 0 &&
+                        actualCount(AFFINITY, randomGrid().services().deployedServices()) == 1;
+                }
+            },
+            2000
+        );
     }
 
     /**
