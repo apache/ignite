@@ -886,6 +886,58 @@ public:
         return start;
     }
 
+    int32_t startBoolArrayRaw() {
+        return startArrayRaw(TYPE_ID_BOOLEAN_ARR);
+    }
+
+    int32_t startByteArrayRaw() {
+        return startArrayRaw(TYPE_ID_BYTE_ARR);
+    }
+
+    int32_t startInt16ArrayRaw() {
+        return startArrayRaw(TYPE_ID_SHORT_ARR);
+    }
+
+    int32_t startCharArrayRaw() {
+        return startArrayRaw(TYPE_ID_CHAR_ARR);
+    }
+
+    int32_t startInt32ArrayRaw() {
+        return startArrayRaw(TYPE_ID_INT_ARR);
+    }
+
+    int32_t startInt64ArrayRaw() {
+        return startArrayRaw(TYPE_ID_LONG_ARR);
+    }
+
+    int32_t startFloatArrayRaw() {
+        return startArrayRaw(TYPE_ID_FLOAT_ARR);
+    }
+
+    int32_t startDoubleArrayRaw() {
+        return startArrayRaw(TYPE_ID_DOUBLE_ARR);
+    }
+
+    int32_t startStringArrayRaw() {
+        return startArrayRaw(TYPE_ID_STRING_ARR);
+    }
+
+    int32_t startUuidArrayRaw() {
+        return startArrayRaw(TYPE_ID_UUID_ARR);
+    }
+
+    int32_t startDateArrayRaw() {
+        return startArrayRaw(TYPE_ID_DATE_ARR);
+    }
+
+    int32_t startVariantArrayRaw() {
+        return startArrayRaw(TYPE_ID_OBJ_ARR);
+    }
+
+    int32_t startVariantCollectionRaw() {
+        return startArrayRaw(TYPE_ID_COLLECTION);
+    }
+
     void endArray(int32_t start, int32_t cnt) {
         int32_t len = ctx.out.bytes.size() - start;
 
@@ -1294,11 +1346,13 @@ public:
         switchToRaw();
 
         if (val) {
+            ctx.out.writeByte(TYPE_ID_SHORT_ARR);
+
             ctx.out.writeInt32(size);
             ctx.out.writeInt16Array(val, size);
         }
         else
-            ctx.out.writeInt32(-1);
+            ctx.out.writeByte(FLAG_NULL);
     }
 
     void writeInt32(int32_t val) {
@@ -1311,11 +1365,13 @@ public:
         switchToRaw();
 
         if (val) {
+            ctx.out.writeByte(TYPE_ID_INT_ARR);
+
             ctx.out.writeInt32(size);
             ctx.out.writeInt32Array(val, size);
         }
         else
-            ctx.out.writeInt32(-1);
+            ctx.out.writeByte(FLAG_NULL);
     }
 
     void writeChar(uint16_t val) {
@@ -1328,11 +1384,13 @@ public:
         switchToRaw();
 
         if (val) {
+            ctx.out.writeByte(TYPE_ID_CHAR_ARR);
+
             ctx.out.writeInt32(size);
             ctx.out.writeCharArray(val, size);
         }
         else
-            ctx.out.writeInt32(-1);
+            ctx.out.writeByte(FLAG_NULL);
     }
 
     void writeInt64(int64_t val) {
@@ -1345,11 +1403,13 @@ public:
         switchToRaw();
 
         if (val) {
+            ctx.out.writeByte(TYPE_ID_DOUBLE_ARR);
+
             ctx.out.writeInt32(size);
             ctx.out.writeInt64Array(val, size);
         }
         else
-            ctx.out.writeInt32(-1);
+            ctx.out.writeByte(FLAG_NULL);
     }
 
     void writeFloat(float val) {
@@ -1362,11 +1422,13 @@ public:
         switchToRaw();
 
         if (val) {
+            ctx.out.writeByte(TYPE_ID_FLOAT_ARR);
+
             ctx.out.writeInt32(size);
             ctx.out.writeFloatArray(val, size);
         }
         else
-            ctx.out.writeInt32(-1);
+            ctx.out.writeByte(FLAG_NULL);
     }
 
     void writeDouble(double val) {
@@ -1379,11 +1441,13 @@ public:
         switchToRaw();
 
         if (val) {
+            ctx.out.writeByte(TYPE_ID_DOUBLE_ARR);
+
             ctx.out.writeInt32(size);
             ctx.out.writeDoubleArray(val, size);
         }
         else
-            ctx.out.writeInt32(-1);
+            ctx.out.writeByte(FLAG_NULL);
     }
 
 	void writeString(const std::string& val) {
@@ -1419,7 +1483,13 @@ public:
     void writeByteArray(const int8_t* val, int32_t size) {
         switchToRaw();
 
-        doWriteByteArray(val, size);
+        if (val) {
+            ctx.out.writeByte(TYPE_ID_BYTE_ARR);
+
+            doWriteByteArray(val, size);
+        }
+        else            
+            ctx.out.writeByte(FLAG_NULL);
     }
 
 	void writeBool(bool val) {
@@ -1432,13 +1502,15 @@ public:
         switchToRaw();
 
         if (val) {
+            ctx.out.writeByte(TYPE_ID_BOOLEAN_ARR);
+
             ctx.out.writeInt32(size);
 
             for (int i = 0; i < size; i++)
                 doWriteBool(val[i]);
         }
         else
-            ctx.out.writeInt32(-1);
+            ctx.out.writeByte(FLAG_NULL);
     }
 
 	void writeUuid(const GridClientUuid& val) {
@@ -1487,12 +1559,16 @@ public:
 
     void writeVariantMap(const TGridClientVariantMap& val) {
         switchToRaw();
+        
+        doWriteByte(TYPE_ID_MAP);
 
         doWriteVariantMap(val);
     }
 
-    int32_t startArrayRaw() {
+    int32_t startArrayRaw(int8_t type) {
         switchToRaw();
+
+        ctx.out.writeByte(type);
 
         int32_t start = ctx.out.bytes.size();
 
@@ -3727,10 +3803,16 @@ public:
     }
 
     bool readByteArray(std::vector<int8_t>& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadByteArray(true, res);
     }
 
     std::pair<int8_t*, int32_t> readByteArray() {
+        if (doReadByte(true) == FLAG_NULL)
+            return std::pair<int8_t*, int32_t>((int8_t*)0, 0);
+
         return doReadByteArray(true);
     }
 
@@ -3739,10 +3821,16 @@ public:
     }
 
     std::pair<int16_t*, int32_t> readInt16Array() {
+        if (doReadByte(true) == FLAG_NULL)
+            return std::pair<int16_t*, int32_t>((int16_t*)0, 0);
+
         return doReadInt16Array(true);
     }
 
     bool readInt16Array(std::vector<int16_t>& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadInt16Array(true, res);
     }
 
@@ -3751,10 +3839,16 @@ public:
     }
 
     std::pair<int32_t*, int32_t> readInt32Array() {
+        if (doReadByte(true) == FLAG_NULL)
+            return std::pair<int32_t*, int32_t>((int32_t*)0, 0);
+
         return doReadInt32Array(true);
     }
 
     bool readInt32Array(std::vector<int32_t>& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadInt32Array(true, res);
     }
 
@@ -3763,10 +3857,16 @@ public:
     }
 
     std::pair<int64_t*, int32_t> readInt64Array() {
+        if (doReadByte(true) == FLAG_NULL)
+            return std::pair<int64_t*, int32_t>((int64_t*)0, 0);
+
         return doReadInt64Array(true);
     }
 
     bool readInt64Array(std::vector<int64_t>& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadInt64Array(true, res);
     }
 
@@ -3775,10 +3875,16 @@ public:
     }
 
     std::pair<float*, int32_t> readFloatArray() {
+        if (doReadByte(true) == FLAG_NULL)
+            return std::pair<float*, int32_t>((float*)0, 0);
+
         return doReadFloatArray(true);
     }
 
     bool readFloatArray(std::vector<float>& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadFloatArray(true, res);
     }
 
@@ -3787,10 +3893,16 @@ public:
     }
 
     std::pair<double*, int32_t> readDoubleArray() {
+        if (doReadByte(true) == FLAG_NULL)
+            return std::pair<double*, int32_t>((double*)0, 0);
+
         return doReadDoubleArray(true);
     }
 
     bool readDoubleArray(std::vector<double>& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadDoubleArray(true, res);
     }
 
@@ -3802,6 +3914,9 @@ public:
     }
 
     bool readStringArray(std::vector<std::string>& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadStringArray(true, res);
     }
 
@@ -3813,6 +3928,9 @@ public:
     }
 
     bool readWStringArray(std::vector<std::wstring>& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadWStringArray(true, res);
     }
 
@@ -3821,10 +3939,16 @@ public:
     }
 
     bool readBoolArray(std::vector<bool>& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadBoolArray(true, res);
     }
 
     std::pair<bool*, int32_t> readBoolArray() {
+        if (doReadByte(true) == FLAG_NULL)
+            return std::pair<bool*, int32_t>((bool*)0, 0);
+
         return doReadBoolArray(true);
     }
 
@@ -3833,10 +3957,16 @@ public:
     }
 
     std::pair<uint16_t*, int32_t> readCharArray() {
+        if (doReadByte(true) == FLAG_NULL)
+            return std::pair<uint16_t*, int32_t>((uint16_t*)0, 0);
+
         return doReadCharArray(true);
     }
 
     bool readCharArray(std::vector<uint16_t>& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadCharArray(true, res);
     }
 
@@ -3848,6 +3978,9 @@ public:
     }
 
     bool readUuidArray(std::vector<GridClientUuid>& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadUuidArray(true, res);
     }
 
@@ -3859,6 +3992,9 @@ public:
     }
 
     bool readDateArray(std::vector<GridClientDate>& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadDateArray(true, res);
     }
 
@@ -3867,14 +4003,23 @@ public:
     }
 
     bool readVariantArray(TGridClientVariantSet& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadVariantCollection(true, false, res);
     }
 
     bool readVariantCollection(TGridClientVariantSet& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadVariantCollection(true, true, res);
     }
 
     bool readVariantMap(TGridClientVariantMap& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadVariantMap(true, res);
     }
 
