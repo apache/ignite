@@ -58,6 +58,11 @@ public class GridHadoopV2JobResourceManager {
         jobLocDir = new File(new File(U.resolveWorkDirectory("hadoop", false), "node-" + locNodeId), "job_" + jobId);
     }
 
+    /** Set {@link #jobLocDir} as working directory in local file system. */
+    private void setJobWorkingDirectory() throws IOException {
+        FileSystem.getLocal(ctx.getJobConf()).setWorkingDirectory(new Path(jobLocDir.getAbsolutePath()));
+    }
+
     /**
      * Prepare job resources. Resolve the classpath list and download it if needed.
      *
@@ -103,6 +108,8 @@ public class GridHadoopV2JobResourceManager {
                 processFiles(ctx.getFileClassPaths(), download, false, true);
                 processFiles(ctx.getArchiveClassPaths(), download, true, true);
             }
+
+            setJobWorkingDirectory();
         }
         catch (URISyntaxException | IOException e) {
             throw new GridException(e);
@@ -205,16 +212,13 @@ public class GridHadoopV2JobResourceManager {
     }
 
     /**
-     * Returns subdirectory of {@code jobLocDir} for task execution or {@code jobLocDir} if {@code info} is {@code null}.
+     * Returns subdirectory of {@code jobLocDir} for task execution.
      *
      * @param info Task info.
-     * @return Working directory for task or job.
+     * @return Working directory for task.
      */
-    private File localDir(@Nullable GridHadoopTaskInfo info) {
-        if (info == null)
-            return jobLocDir;
-        else
-            return new File(jobLocDir, info.type() + "_" + info.taskNumber() + "_" + info.attempt());
+    private File taskLocalDir(@Nullable GridHadoopTaskInfo info) {
+        return new File(jobLocDir, info.type() + "_" + info.taskNumber() + "_" + info.attempt());
     }
 
     /**
@@ -225,40 +229,46 @@ public class GridHadoopV2JobResourceManager {
      *     <li>Creates symbolic links to all job resources in working directory.</li>
      *     <li>Sets working directory for the local file system in current thread.</li>
      * </ul>
-     * @param info Task info. If it's {@code null} the method sets the working directory only.
+     * @param info Task info.
      * @throws GridException If fails.
      */
-    public void prepareTaskEnvironment(@Nullable GridHadoopTaskInfo info) throws GridException {
-        File locDir = localDir(info);
+    public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
+        File locDir = taskLocalDir(info);
 
         try {
-            if (info != null) {
-                if (locDir.exists())
-                    throw new IOException("Task local directory already exists");
+            switch(info.type()) {
+                case MAP:
+                case REDUCE:
+                    if (locDir.exists())
+                        throw new IOException("Task local directory already exists");
 
-                if (!locDir.mkdir())
-                    throw new IOException("Failed to create directory");
+                    if (!locDir.mkdir())
+                        throw new IOException("Failed to create directory");
 
-                for (File resource : rsrcList) {
-                    File symLink = new File(locDir, resource.getName());
+                    for (File resource : rsrcList) {
+                        File symLink = new File(locDir, resource.getName());
 
-                    try {
-                        Files.createSymbolicLink(symLink.toPath(), resource.toPath());
+                        try {
+                            Files.createSymbolicLink(symLink.toPath(), resource.toPath());
+                        } catch (IOException e) {
+                            String msg = "Unable to create symlink \"" + symLink + "\" to \"" + resource + "\".";
+
+                            if (U.isWindows() && e instanceof FileSystemException)
+                                msg += "\n\nAbility to create symbolic links is required!\n" +
+                                        "On Windows platform you have to grant permission 'Create symbolic links'\n" +
+                                        "to your user or run the Accelerator as Administrator.\n";
+
+                            throw new IOException(msg, e);
+                        }
                     }
-                    catch (IOException e) {
-                        String msg = "Unable to create symlink \"" + symLink + "\" to \"" + resource + "\".\n";
 
-                        if (U.isWindows() && e instanceof FileSystemException)
-                            msg += "Ability to create symbolic links is required!\n" +
-                                "On Windows platform you have to grant permission 'Create symbolic links'\n" +
-                                "to your user or run the Accelerator as Administrator.";
+                    FileSystem.getLocal(ctx.getJobConf()).setWorkingDirectory(new Path(locDir.getAbsolutePath()));
 
-                        throw new IOException(msg, e);
-                    }
-                }
+                    break;
+
+                default:
+                    setJobWorkingDirectory();
             }
-
-            FileSystem.getLocal(ctx.getJobConf()).setWorkingDirectory(new Path(locDir.getAbsolutePath()));
         }
         catch (IOException e) {
             throw new GridException("Unable to prepare local working directory for the task " +
@@ -272,13 +282,13 @@ public class GridHadoopV2JobResourceManager {
      * @param info Task info.
      * @throws GridException If fails.
      */
-    public void releaseTaskEnvironment(@Nullable GridHadoopTaskInfo info) throws GridException {
+    public void releaseTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
         GridHadoopRawLocalFileSystem fs;
 
-        File locDir = localDir(info);
+        File locDir = taskLocalDir(info);
 
         try {
-            if (info != null && locDir.exists())
+            if (locDir.exists())
                 U.delete(locDir);
 
             fs = (GridHadoopRawLocalFileSystem)FileSystem.getLocal(ctx.getJobConf()).getRaw();

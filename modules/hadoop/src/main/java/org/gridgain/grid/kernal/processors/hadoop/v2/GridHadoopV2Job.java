@@ -389,6 +389,26 @@ public class GridHadoopV2Job implements GridHadoopJob {
         throw new IllegalStateException("Unknown split: " + split);
     }
 
+    /**
+     * Creates and initialize partitioner instance.
+     *
+     * @return Partitioner.
+     * @throws GridException If fails.
+     */
+    private GridHadoopPartitioner getPartitioner() throws GridException {
+        Class<?> partClsOld = ctx.getConfiguration().getClass("mapred.partitioner.class", null);
+
+        if (partClsOld != null)
+            return new GridHadoopV1Partitioner(ctx.getJobConf().getPartitionerClass(), ctx.getConfiguration());
+
+        try {
+            return new GridHadoopV2Partitioner(ctx.getPartitionerClass(), ctx.getConfiguration());
+        }
+        catch (ClassNotFoundException e) {
+            throw new GridException(e);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void initialize(boolean external, UUID locNodeId) throws GridException {
         rsrcMgr = new GridHadoopV2JobResourceManager(jobId, ctx, locNodeId);
@@ -400,19 +420,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
         if (jobLdr != null)
             ctx.getJobConf().setClassLoader(jobLdr);
 
-        prepareTaskEnvironment(null);
-
-        Class<?> partClsOld = ctx.getConfiguration().getClass("mapred.partitioner.class", null);
-
-        if (partClsOld != null)
-            part = new GridHadoopV1Partitioner(ctx.getJobConf().getPartitionerClass(), ctx.getConfiguration());
-
-        try {
-            part = new GridHadoopV2Partitioner(ctx.getPartitionerClass(), ctx.getConfiguration());
-        }
-        catch (ClassNotFoundException e) {
-            throw new GridException(e);
-        }
+        part = getPartitioner();
 
         sortComp = ctx.getSortComparator();
 
@@ -431,14 +439,8 @@ public class GridHadoopV2Job implements GridHadoopJob {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareTaskEnvironment(@Nullable GridHadoopTaskInfo info) throws GridException {
-        if (info != null && (info.type() == GridHadoopTaskType.MAP || info.type() == GridHadoopTaskType.REDUCE)) {
-            rsrcMgr.prepareTaskEnvironment(info);
-
-            return;
-        }
-
-        rsrcMgr.prepareTaskEnvironment(null);
+    @Override public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
+        rsrcMgr.prepareTaskEnvironment(info);
     }
 
     /** {@inheritDoc} */
@@ -458,6 +460,8 @@ public class GridHadoopV2Job implements GridHadoopJob {
      * @param clsPath List of URLs to add to class path.
      */
     private void initializeClassLoader(List<URL> clsPath) {
+        assert jobLdr==null;
+
         if (clsPath.isEmpty())
             return;
 
