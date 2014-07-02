@@ -163,30 +163,30 @@ namespace GridGain.Client.Impl.Portable
 
                     try
                     {
-                        if (!userType)
-                        {
-                            // 6. Try reading predefined type.
-                            object sysObj;
+                        //if (!userType)
+                        //{
+                        //    // 6. Try reading predefined type.
+                        //    object sysObj;
 
-                            GridClientPortableSystemReadDelegate handler = PSH.ReadHandler(typeId);
+                        //    GridClientPortableSystemReadDelegate handler = PSH.ReadHandler(typeId);
 
-                            if (handler != null)
-                            {
-                                handler.Invoke(this, typeof(T), out sysObj);
+                        //    if (handler != null)
+                        //    {
+                        //        handler.Invoke(this, typeof(T), out sysObj);
 
-                                GridClientPortableObjectImpl portSysObj = sysObj as GridClientPortableObjectImpl;
+                        //        GridClientPortableObjectImpl portSysObj = sysObj as GridClientPortableObjectImpl;
 
-                                if (portSysObj != null)
-                                {
-                                    portSysObj.Populate(marsh);
+                        //        if (portSysObj != null)
+                        //        {
+                        //            portSysObj.Populate(marsh);
 
-                                    if (!keepPortable)
-                                        sysObj = portSysObj.Deserialize<object>(keepPortable);
-                                }
+                        //            if (!keepPortable)
+                        //                sysObj = portSysObj.Deserialize<object>(keepPortable);
+                        //        }
                                 
-                                return (T)sysObj;
-                            }
-                        }
+                        //        return (T)sysObj;
+                        //    }
+                        //}
 
                         // 7. Try getting descriptor.
                         GridClientPortableTypeDescriptor desc;
@@ -257,6 +257,16 @@ namespace GridGain.Client.Impl.Portable
                     object val;
 
                     handler.Invoke(this, typeof(T), out val);
+
+                    GridClientPortableObjectImpl portObj = val as GridClientPortableObjectImpl;
+
+                    if (portObj != null)
+                    {
+                        portObj.Populate(marsh);
+
+                        if (!keepPortable)
+                            val = portObj.Deserialize<object>(keepPortable);
+                    }
 
                     return (T)val;
                 }

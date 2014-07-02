@@ -469,7 +469,7 @@ namespace GridGain.Client.Impl.Portable
 
             try
             {
-                return PU.ReadPortable(ctx.Stream, ctx.Marshaller, doDetach);
+                return PU.ReadPortable0(ctx.Stream, ctx.Marshaller, doDetach);
             }
             finally
             {

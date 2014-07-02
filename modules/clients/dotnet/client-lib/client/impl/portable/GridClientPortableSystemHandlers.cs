@@ -1126,7 +1126,7 @@ namespace GridGain.Client.Impl.Portable
          */
         private static void ReadPortable(GridClientPortableReadContext ctx, Type type, out object obj)
         {
-            obj = PU.ReadPortable(ctx.Stream, ctx.Marshaller, false);
+            obj = PU.ReadPortable(ctx.Stream, ctx.Marshaller);
         }
 
         /**
@@ -1134,7 +1134,7 @@ namespace GridGain.Client.Impl.Portable
          */
         private static object ReadPortableField(MemoryStream stream, GridClientPortableMarshaller marsh)
         {
-            return PU.ReadPortable(stream, marsh, false);
+            return PU.ReadPortable(stream, marsh);
         }
         
         /**
