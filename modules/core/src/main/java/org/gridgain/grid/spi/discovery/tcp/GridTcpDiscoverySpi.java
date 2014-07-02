@@ -3563,10 +3563,11 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                         }
                         else {
                             String errMsg = "Local node's and remote node's build versions are not compatible " +
-                                "(node will not join, all nodes in topology should have compatible build versions) " +
                                 (rmtBuildVer.contains("-os") && locBuildVer.contains("-os") ?
-                                ". Compatibility between different GridGain versions " +
-                                "is supported in Enterprise Edition " : "") +
+                                    "(topologies built with different GridGain versions " +
+                                        "are supported in Enterprise version only) " :
+                                    "(node will not join, all nodes in topology should have " +
+                                        "compatible build versions) ") +
                                 "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
                                 ", locNodeAddrs=" + U.addressesAsString(locNode) +
                                 ", rmtNodeAddrs=" + U.addressesAsString(node) +
@@ -3580,11 +3581,11 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                             try {
                                 String sndMsg = "Local node's and remote node's build versions are not compatible " +
-                                    "(node will not join, all nodes in topology should have " +
-                                    "compatible build versions) " +
                                     (rmtBuildVer.contains("-os") && locBuildVer.contains("-os") ?
-                                    ". Compatibility between different GridGain versions " +
-                                    "is supported in Enterprise Edition " : "") +
+                                        "(topologies built with different GridGain versions " +
+                                            "are supported in Enterprise version only) " :
+                                        "(node will not join, all nodes in topology should have " +
+                                            "compatible build versions) ") +
                                     "[locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
                                     ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
                                     ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
