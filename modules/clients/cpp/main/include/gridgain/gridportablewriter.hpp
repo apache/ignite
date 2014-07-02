@@ -308,16 +308,6 @@ public:
 
     /**
      * @param fieldName Field name.
-     * @param first Input iterator to the initial position in a array to be written.
-     * @param last Input iterator to the final position in a array to be written.
-     */
-    template<class InputIterator>
-    void writeUuidArrayOptional(char* fieldName, InputIterator first, InputIterator last) {
-        writeArrayOptional<InputIterator, GridClientUuid>(fieldName, first, last);            
-    }
-
-    /**
-     * @param fieldName Field name.
      * @param val Value to write.
      */
     virtual void writeDate(char* fieldName, const boost::optional<GridClientDate>& val) = 0;
@@ -719,15 +709,6 @@ public:
     template<class InputIterator>
     void writeUuidArray(InputIterator first, InputIterator last) {
         writeArray<InputIterator, GridClientUuid>(first, last);            
-    }
-
-    /**
-     * @param first Input iterator to the initial position in a array to be written.
-     * @param last Input iterator to the final position in a array to be written.
-     */
-    template<class InputIterator>
-    void writeUuidArrayOptional(InputIterator first, InputIterator last) {
-        writeArrayOptional<InputIterator, GridClientUuid>(first, last);            
     }
 
     /**
