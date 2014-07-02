@@ -29,7 +29,7 @@ namespace GridGain.Client.Example.Portable
             try
             {
                 // Get remote cache.
-                IGridClientData rmtCache = client.Data();
+                IGridClientData rmtCache = client.Data("partitioned");
 
                 // Put data to cache from .Net client.
                 Employee emp1 = new Employee(Guid.NewGuid(), "Bill Gates", 10000);
@@ -121,8 +121,12 @@ namespace GridGain.Client.Example.Portable
             // client will make decisions which grid node to use based on collocation
             // with key affinity or load balancing.
             cfg.Servers.Add(ServerAddress + ':' + GridClientConfiguration.DefaultTcpPort);
-            
-            cfg.DataConfigurations.Add(new GridClientDataConfiguration());
+
+            GridClientDataConfiguration dataCfg = new GridClientDataConfiguration();
+
+            dataCfg.Name = "partitioned";
+
+            cfg.DataConfigurations.Add(dataCfg);
 
             GridClientPortableConfiguration portableCfg = new GridClientPortableConfiguration();
 
