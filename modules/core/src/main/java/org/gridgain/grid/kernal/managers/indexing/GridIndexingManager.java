@@ -20,7 +20,6 @@ import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.portable.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -294,17 +293,12 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             if (GridPortableObject.class.isAssignableFrom(valCls)) {
                 GridPortableObject portable = (GridPortableObject)val;
 
-                GridPortableClassDescriptor desc = ctx.portable().portableContext().
-                    descriptorForTypeId(false, portable.typeId());
+                String typeName = ctx.portable().typeName(portable.typeId());
 
-                if (desc == null)
-                    desc = ctx.portable().portableContext().
-                        descriptorForTypeId(true, portable.typeId());
-
-                if (desc == null)
+                if (typeName == null)
                     return;
 
-                id = new TypeId(space, desc.simpleName());
+                id = new TypeId(space, typeName);
             }
             else
                 id = new TypeId(space, valCls);
@@ -331,14 +325,10 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                         if (GridPortableObject.class.isAssignableFrom(keyCls)) {
                             GridPortableObject portableKey = (GridPortableObject)key;
 
-                            GridPortableClassDescriptor desc = ctx.portable().portableContext().
-                                descriptorForTypeId(false, portableKey.typeId());
+                            String typeName = ctx.portable().typeName(portableKey.typeId());
 
-                            if (desc == null)
-                                desc = ctx.portable().portableContext().descriptorForTypeId(true, portableKey.typeId());
-
-                            if (desc != null) {
-                                GridCacheQueryTypeMetadata keyMeta = declaredTypes.get(new TypeId(space, desc.simpleName()));
+                            if (typeName != null) {
+                                GridCacheQueryTypeMetadata keyMeta = declaredTypes.get(new TypeId(space, typeName));
 
                                 if (keyMeta != null)
                                     processPortableMeta(true, keyMeta, d);
@@ -358,16 +348,12 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                         if (GridPortableObject.class.isAssignableFrom(valCls)) {
                             GridPortableObject portableVal = (GridPortableObject)val;
 
-                            GridPortableClassDescriptor desc = ctx.portable().portableContext().
-                                descriptorForTypeId(false, portableVal.typeId());
+                            String typeName = ctx.portable().typeName(portableVal.typeId());
 
-                            if (desc == null)
-                                desc = ctx.portable().portableContext().descriptorForTypeId(true, portableVal.typeId());
+                            if (typeName != null) {
+                                GridCacheQueryTypeMetadata valMeta = declaredTypes.get(new TypeId(space, typeName));
 
-                            if (desc != null) {
-                                GridCacheQueryTypeMetadata valMeta = declaredTypes.get(new TypeId(space, desc.simpleName()));
-
-                                d.name(desc.simpleName());
+                                d.name(typeName);
 
                                 if (valMeta != null)
                                     processPortableMeta(false, valMeta, d);
