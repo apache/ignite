@@ -559,7 +559,7 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
 
         /** Collect DR. */
         private void dr(VisorDataCollectorJobResult res) {
-            if (res.license != null) // Do not collect DR for OS.
+            if (ENT) // Collect DR only for Enterprise edition.
                 try {
                     if (g.dr() != null)
                         res.dr = VisorDr.from(g);
