@@ -10,6 +10,7 @@
 package org.gridgain.grid.hadoop;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.logger.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -47,8 +48,10 @@ public interface GridHadoopJobInfo extends Serializable {
      * This method will be called once for the same ID on one node, though it can be called on the same host
      * multiple times from different processes (in case of multiple nodes on the same host or external execution).
      *
+     * @param jobId Job ID.
+     * @param log Logger.
      * @return Job.
      * @throws GridException If failed.
      */
-    GridHadoopJob createJob(GridHadoopJobId jobId) throws GridException;
+    GridHadoopJob createJob(GridHadoopJobId jobId, GridLogger log) throws GridException;
 }

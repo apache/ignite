@@ -57,7 +57,8 @@ public class GridHadoopV2JobSelfTest extends GridHadoopAbstractSelfTest {
         cfg.setMapOutputValueClass(Text.class);
         cfg.set(CommonConfigurationKeys.IO_SERIALIZATIONS_KEY, CustomSerialization.class.getName());
 
-        GridHadoopJob job = new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 1), new GridHadoopDefaultJobInfo(cfg));
+        GridHadoopJob job = new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 1),
+            new GridHadoopDefaultJobInfo(cfg), log);
 
         GridHadoopSerialization ser = job.keySerialization();
 

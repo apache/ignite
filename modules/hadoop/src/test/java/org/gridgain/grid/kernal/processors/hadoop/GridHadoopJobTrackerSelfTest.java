@@ -15,6 +15,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
+import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.net.*;
@@ -294,8 +295,8 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridHadoopJob createJob(GridHadoopJobId jobId) {
-            return new HadoopTestJob(jobId, this);
+        @Override public GridHadoopJob createJob(GridHadoopJobId jobId, GridLogger log) {
+            return new HadoopTestJob(jobId, this, log);
         }
     }
 
@@ -307,8 +308,8 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
          * @param jobId Job ID.
          * @param jobInfoImpl Job info.
          */
-        private HadoopTestJob(GridHadoopJobId jobId, GridHadoopDefaultJobInfo jobInfoImpl) {
-            super(jobId, jobInfoImpl);
+        private HadoopTestJob(GridHadoopJobId jobId, GridHadoopDefaultJobInfo jobInfoImpl, GridLogger log) {
+            super(jobId, jobInfoImpl, log);
         }
 
         /** {@inheritDoc} */

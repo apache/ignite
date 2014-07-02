@@ -230,6 +230,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
         GridHadoopFileBlock fileBlock2 = new GridHadoopFileBlock(HOSTS, inFileUri, l, fileLen - l);
 
         GridHadoopJob gridJob = getHadoopJob(inFileUri.toString(), ggfsScheme() + PATH_OUTPUT);
+        gridJob.initialize(false, UUID.randomUUID());
 
         GridHadoopTestTaskContext combine1Ctx = runMapCombineTask(fileBlock1, gridJob);
 

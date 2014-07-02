@@ -14,6 +14,7 @@ import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
+import org.gridgain.grid.logger.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -116,8 +117,8 @@ public class GridHadoopDefaultJobInfo implements GridHadoopJobInfo, Externalizab
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopJob createJob(GridHadoopJobId jobId) {
-        return new GridHadoopV2Job( jobId, this);
+    @Override public GridHadoopJob createJob(GridHadoopJobId jobId, GridLogger log) {
+        return new GridHadoopV2Job(jobId, this, log);
     }
 
     /** {@inheritDoc} */

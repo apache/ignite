@@ -108,7 +108,7 @@ public class GridHadoopChildProcessRunner {
 
                 assert job == null;
 
-                job = req.jobInfo().createJob(req.jobId());
+                job = req.jobInfo().createJob(req.jobId(), log);
 
                 job.initialize(true, nodeDesc.processId());
 

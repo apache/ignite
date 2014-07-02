@@ -130,4 +130,11 @@ public interface GridHadoopJob {
      * @throws GridException If failed.
      */
     public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException;
+
+    /**
+     * Cleans up the job staging directory.
+     *
+     * @throws GridException If fails.
+     */
+    void cleanupStagingDirectory() throws GridException;
 }

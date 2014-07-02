@@ -15,6 +15,7 @@ import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.fs.*;
+import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -33,6 +34,9 @@ public class GridHadoopV2JobResourceManager {
     /** Hadoop job context. */
     private JobContextImpl ctx;
 
+    /** Logger. */
+    private GridLogger log;
+
     /** Job ID. */
     private GridHadoopJobId jobId;
 
@@ -45,15 +49,21 @@ public class GridHadoopV2JobResourceManager {
     /** List of local resources. */
     private Collection<File> rsrcList = new ArrayList<>();
 
+    /** Staging directory to delivery job jar and config to the work nodes. */
+    private Path stagingDir;
+
     /**
      * Creates new instance.
      * @param jobId Job ID.
      * @param ctx Hadoop job context.
      * @param locNodeId Local node ID.
+     * @param log Logger.
      */
-    public GridHadoopV2JobResourceManager(GridHadoopJobId jobId, JobContextImpl ctx, UUID locNodeId) throws GridException {
+    public GridHadoopV2JobResourceManager(GridHadoopJobId jobId, JobContextImpl ctx, UUID locNodeId, GridLogger log)
+        throws GridException {
         this.jobId = jobId;
         this.ctx = ctx;
+        this.log = log;
 
         jobLocDir = new File(new File(U.resolveWorkDirectory("hadoop", false), "node-" + locNodeId), "job_" + jobId);
     }
@@ -78,26 +88,23 @@ public class GridHadoopV2JobResourceManager {
             if (jobLocDir.exists())
                 throw new GridException("Local job directory already exists: " + jobLocDir.getAbsolutePath());
 
-            if (!jobLocDir.mkdirs())
-                throw new GridException("Failed to create local job directory: " + jobLocDir.getAbsolutePath());
-
             JobConf cfg = ctx.getJobConf();
 
-            String mrDir = cfg.get("mapreduce.job.dir");
+            String mrDir = ctx.getJobConf().get("mapreduce.job.dir");
 
             if (mrDir != null) {
+                stagingDir = new Path(new URI(mrDir));
+
                 if (download) {
-                    Path path = new Path(new URI(mrDir));
+                    FileSystem fs = FileSystem.get(stagingDir.toUri(), cfg);
 
-                    FileSystem fs = FileSystem.get(path.toUri(), cfg);
-
-                    if (!fs.exists(path))
+                    if (!fs.exists(stagingDir))
                         throw new GridException("Failed to find map-reduce submission directory (does not exist): " +
-                                path);
+                                stagingDir);
 
-                    if (!FileUtil.copy(fs, path, jobLocDir, false, cfg))
+                    if (!FileUtil.copy(fs, stagingDir, jobLocDir, false, cfg))
                         throw new GridException("Failed to copy job submission directory contents to local file system " +
-                                "[path=" + path + ", locDir=" + jobLocDir.getAbsolutePath() + ", jobId=" + jobId + ']');
+                             "[path=" + stagingDir + ", locDir=" + jobLocDir.getAbsolutePath() + ", jobId=" + jobId + ']');
                 }
 
                 File jarJobFile = new File(jobLocDir, "job.jar");
@@ -111,6 +118,10 @@ public class GridHadoopV2JobResourceManager {
                 processFiles(ctx.getCacheArchives(), download, true, false);
                 processFiles(ctx.getFileClassPaths(), download, false, true);
                 processFiles(ctx.getArchiveClassPaths(), download, true, true);
+            }
+            else {
+                if (!jobLocDir.mkdirs())
+                    throw new GridException("Failed to create local job directory: " + jobLocDir.getAbsolutePath());
             }
 
             setJobWorkingDirectory();
@@ -304,5 +315,15 @@ public class GridHadoopV2JobResourceManager {
         }
 
         fs.setWorkingDirectory(fs.getInitialWorkingDirectory());
+    }
+
+    public void cleanupStagingDirectory() {
+        try {
+            if (stagingDir != null)
+                stagingDir.getFileSystem(ctx.getJobConf()).delete(stagingDir, true);
+        }
+        catch (Exception e) {
+            log.error("Failed to remove job staging directory", e);
+        }
     }
 }

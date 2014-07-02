@@ -88,7 +88,7 @@ public class GridHadoopHashMapSelfTest extends GridCommonAbstractTest {
         job.setMapOutputValueClass(IntWritable.class);
 
         GridHadoopHashMultimap m = new GridHadoopHashMultimap(new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 10),
-            new GridHadoopDefaultJobInfo(job.getConfiguration())), mem, mapSize);
+            new GridHadoopDefaultJobInfo(job.getConfiguration()), log), mem, mapSize);
 
         GridHadoopMultimap.Adder a = m.startAdding();
 

@@ -846,7 +846,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 jobInfo = meta.jobInfo();
             }
 
-            job = jobInfo.createJob(jobId);
+            job = jobInfo.createJob(jobId, log);
 
             job.initialize(false, ctx.localNodeId());
 

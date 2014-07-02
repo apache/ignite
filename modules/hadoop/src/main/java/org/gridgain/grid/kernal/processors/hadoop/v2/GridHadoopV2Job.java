@@ -25,6 +25,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.fs.*;
 import org.gridgain.grid.kernal.processors.hadoop.v1.*;
+import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -73,6 +74,9 @@ public class GridHadoopV2Job implements GridHadoopJob {
     /** Flag is set if new context-object code is used for running the combiner. */
     private final boolean useNewCombiner;
 
+    /** Logger. */
+    private GridLogger log;
+
     /** Hadoop job ID. */
     private GridHadoopJobId jobId;
 
@@ -106,13 +110,15 @@ public class GridHadoopV2Job implements GridHadoopJob {
     /**
      * @param jobId Job ID.
      * @param jobInfo Job info.
+     * @param log Logger.
      */
-    public GridHadoopV2Job(GridHadoopJobId jobId, GridHadoopDefaultJobInfo jobInfo) {
+    public GridHadoopV2Job(GridHadoopJobId jobId, GridHadoopDefaultJobInfo jobInfo, GridLogger log) {
         assert jobId != null;
         assert jobInfo != null;
 
         this.jobId = jobId;
         this.jobInfo = jobInfo;
+        this.log = log;
 
         hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
 
@@ -411,7 +417,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public void initialize(boolean external, UUID locNodeId) throws GridException {
-        rsrcMgr = new GridHadoopV2JobResourceManager(jobId, ctx, locNodeId);
+        rsrcMgr = new GridHadoopV2JobResourceManager(jobId, ctx, locNodeId, log);
 
         rsrcMgr.prepareJobEnvironment(!external);
 
@@ -446,6 +452,11 @@ public class GridHadoopV2Job implements GridHadoopJob {
     /** {@inheritDoc} */
     @Override public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
         rsrcMgr.releaseTaskEnvironment(info);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cleanupStagingDirectory() {
+        rsrcMgr.cleanupStagingDirectory();
     }
 
     /**
