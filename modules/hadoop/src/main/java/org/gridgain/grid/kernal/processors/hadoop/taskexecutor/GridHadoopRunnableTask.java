@@ -120,7 +120,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
             if (runCombiner)
                 local.close();
 
-            job.cleanUpTaskEnvironment(info);
+            job.cleanupTaskEnvironment(info);
         }
 
         return null;

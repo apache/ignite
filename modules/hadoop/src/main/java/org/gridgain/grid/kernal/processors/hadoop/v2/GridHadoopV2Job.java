@@ -444,14 +444,8 @@ public class GridHadoopV2Job implements GridHadoopJob {
     }
 
     /** {@inheritDoc} */
-    @Override public void cleanUpTaskEnvironment(@Nullable GridHadoopTaskInfo info) throws GridException {
-        if (info != null && (info.type() == GridHadoopTaskType.MAP || info.type() == GridHadoopTaskType.REDUCE)) {
-            rsrcMgr.releaseTaskEnvironment(info);
-
-            return;
-        }
-
-        rsrcMgr.releaseTaskEnvironment(null);
+    @Override public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
+        rsrcMgr.releaseTaskEnvironment(info);
     }
 
     /**
