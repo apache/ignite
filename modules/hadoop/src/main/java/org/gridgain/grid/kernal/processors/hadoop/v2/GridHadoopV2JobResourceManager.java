@@ -66,8 +66,14 @@ public class GridHadoopV2JobResourceManager {
      */
     public void prepareJobEnvironment(boolean download) throws GridException {
         try {
+            if (jobLocDir.exists())
+                throw new GridException("Local job directory already exists: " + jobLocDir.getAbsolutePath());
+
+            if (!jobLocDir.mkdirs())
+                throw new GridException("Failed to create local job directory: " + jobLocDir.getAbsolutePath());
+
             JobConf cfg = ctx.getJobConf();
-            
+
             String mrDir = cfg.get("mapreduce.job.dir");
 
             if (mrDir != null) {
@@ -79,9 +85,6 @@ public class GridHadoopV2JobResourceManager {
                     if (!fs.exists(path))
                         throw new GridException("Failed to find map-reduce submission directory (does not exist): " +
                                 path);
-
-                    if (jobLocDir.exists())
-                        throw new GridException("Local job directory already exists: " + jobLocDir.getAbsolutePath());
 
                     if (!FileUtil.copy(fs, path, jobLocDir, false, cfg))
                         throw new GridException("Failed to copy job submission directory contents to local file system " +

@@ -42,6 +42,9 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
     /** Cancelled tasks. */
     private static final AtomicInteger cancelledTasks = new AtomicInteger();
 
+    /** Working directory of each task. */
+    private static final Map<String, String> taskWorkDirs = new ConcurrentHashMap<>();
+
     /** Mapper id to fail. */
     private static volatile int failMapperId;
 
@@ -100,6 +103,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         prepareFile(fileName, lineCnt);
 
         totalLineCnt.set(0);
+        taskWorkDirs.clear();
 
         Configuration cfg = new Configuration();
 
@@ -126,6 +130,8 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         fut.get();
 
         assertEquals(lineCnt, totalLineCnt.get());
+
+        assertEquals(32, taskWorkDirs.size());
     }
 
     /**
@@ -138,6 +144,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         prepareFile(fileName, lineCnt);
 
         totalLineCnt.set(0);
+        taskWorkDirs.clear();
 
         Configuration cfg = new Configuration();
 
@@ -169,6 +176,8 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         fut.get();
 
         assertEquals(lineCnt, totalLineCnt.get());
+
+        assertEquals(34, taskWorkDirs.size());
 
         for (int g = 0; g < gridCount(); g++)
             grid(g).hadoop().finishFuture(jobId).get();
@@ -235,7 +244,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
      * @throws Exception If fails.
      */
     private Configuration prepareJobForCancelling() throws Exception {
-        prepareFile("/testFile", 10000);
+        prepareFile("/testFile", 5000);
 
         executedTasks.set(0);
         cancelledTasks.set(0);
@@ -275,7 +284,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return executedTasks.get() == 32;
+                return executedTasks.get() == 16;
             }
         }, 20000)) {
             U.dumpThreads(log);
@@ -318,7 +327,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
             @Override public boolean apply() {
                 X.println("___ executed tasks: " + executedTasks.get());
 
-                return executedTasks.get() == 32;
+                return executedTasks.get() == 16;
             }
         }, 20000)) {
             U.dumpThreads(log);
@@ -400,6 +409,11 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         /** {@inheritDoc} */
         @Override protected void setup(Context context) throws IOException, InterruptedException {
             X.println("___ Mapper: " + context.getTaskAttemptID());
+
+            String taskId = context.getTaskAttemptID().toString();
+            String workDir = FileSystem.getLocal(context.getConfiguration()).getWorkingDirectory().toString();
+
+            assertNull(taskWorkDirs.put(workDir, taskId));
         }
 
         /** {@inheritDoc} */
@@ -449,6 +463,11 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         /** {@inheritDoc} */
         @Override protected void setup(Context context) throws IOException, InterruptedException {
             X.println("___ Reducer: " + context.getTaskAttemptID());
+
+            String taskId = context.getTaskAttemptID().toString();
+            String workDir = FileSystem.getLocal(context.getConfiguration()).getWorkingDirectory().toString();
+
+            assertNull(taskWorkDirs.put(workDir, taskId));
         }
 
         /** {@inheritDoc} */
