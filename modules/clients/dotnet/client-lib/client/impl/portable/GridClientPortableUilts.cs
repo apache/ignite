@@ -22,7 +22,7 @@ namespace GridGain.Client.Impl.Portable
 
     /**
      * <summary>Utilities for portable serialization.</summary>
-     */ 
+     */
     static class GridClientPortableUilts
     {
         /** Header of NULL object. */
@@ -39,7 +39,7 @@ namespace GridGain.Client.Impl.Portable
 
         /** Type: unsigned byte. */
         public const byte TYPE_BYTE = 1;
-        
+
         /** Type: short. */
         public const byte TYPE_SHORT = 2;
 
@@ -107,7 +107,7 @@ namespace GridGain.Client.Impl.Portable
         public const byte TYPE_ARRAY = 23;
 
         /** Type: collection. */
-        public const byte TYPE_COLLECTION = 24; 
+        public const byte TYPE_COLLECTION = 24;
 
         /** Type: map. */
         public const byte TYPE_DICTIONARY = 25;
@@ -129,7 +129,7 @@ namespace GridGain.Client.Impl.Portable
 
         /** Type: cache request. */
         public const byte TYPE_CACHE_REQ = 54;
-        
+
         /** Type: log request. */
         public const byte TYPE_LOG_REQ = 55;
 
@@ -186,7 +186,7 @@ namespace GridGain.Client.Impl.Portable
 
         /** Byte "1". */
         public const byte BYTE_ONE = (byte)1;
-        
+
         /** Collection type. */
         public static readonly Type TYP_COLLECTION = typeof(ICollection);
 
@@ -204,7 +204,7 @@ namespace GridGain.Client.Impl.Portable
 
         /** java date multiplier. */
         private const long JAVA_DATE_MULTIPLIER = 10000;
-        
+
         /** Bindig flags for instance search. */
         private static BindingFlags BIND_FLAGS_INSTANCE = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
@@ -227,11 +227,11 @@ namespace GridGain.Client.Impl.Portable
             typeof(GridClientPortableUilts).GetMethod("ReadGenericCollection", BIND_FLAGS_STATIC);
 
         /** Method: WriteGenericDictionary. */
-        public static MethodInfo MTDH_WRITE_GENERIC_DICTIONARY = 
+        public static MethodInfo MTDH_WRITE_GENERIC_DICTIONARY =
             typeof(GridClientPortableUilts).GetMethod("WriteGenericDictionary", BIND_FLAGS_STATIC);
 
         /** Method: WriteTypedGenericDictionary. */
-        public static MethodInfo MTDH_WRITE_TYPED_GENERIC_DICTIONARY = 
+        public static MethodInfo MTDH_WRITE_TYPED_GENERIC_DICTIONARY =
             typeof(GridClientPortableUilts).GetMethod("WriteTypedGenericDictionary", BIND_FLAGS_STATIC);
 
         /** Method: ReadGenericDictionary. */
@@ -264,7 +264,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="stream">Output stream.</param>
          */
         public static void WriteBooleanArray(bool[] vals, Stream stream)
-        {            
+        {
             WriteInt(vals.Length, stream);
 
             for (int i = 0; i < vals.Length; i++)
@@ -279,7 +279,7 @@ namespace GridGain.Client.Impl.Portable
         public static bool[] ReadBooleanArray(Stream stream)
         {
             int len = ReadInt(stream);
-            
+
             bool[] vals = new bool[len];
 
             for (int i = 0; i < vals.Length; i++)
@@ -315,7 +315,7 @@ namespace GridGain.Client.Impl.Portable
          * <returns>Length of written data.</returns>
          */
         public static void WriteByteArray(byte[] vals, Stream stream)
-        {            
+        {
             WriteInt(vals.Length, stream);
 
             stream.Write(vals, 0, vals.Length);
@@ -330,7 +330,7 @@ namespace GridGain.Client.Impl.Portable
         public static unsafe object ReadByteArray(Stream stream, bool signed)
         {
             int len = ReadInt(stream);
-                        
+
             if (signed)
             {
                 sbyte[] vals = new sbyte[len];
@@ -384,7 +384,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="stream">Output stream.</param>
          */
         public static void WriteShortArray(short[] vals, Stream stream)
-        {            
+        {
             WriteInt(vals.Length, stream);
 
             for (int i = 0; i < vals.Length; i++)
@@ -400,7 +400,7 @@ namespace GridGain.Client.Impl.Portable
         public static unsafe object ReadShortArray(Stream stream, bool signed)
         {
             int len = ReadInt(stream);
-                        
+
             if (signed)
             {
                 short[] vals = new short[len];
@@ -431,7 +431,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="stream">Output stream.</param>
          */
         public static void WriteInt(int val, Stream stream)
-        {            
+        {
             stream.WriteByte((byte)(val & 0xFF));
             stream.WriteByte((byte)(val >> 8 & 0xFF));
             stream.WriteByte((byte)(val >> 16 & 0xFF));
@@ -475,7 +475,7 @@ namespace GridGain.Client.Impl.Portable
         public static unsafe object ReadIntArray(Stream stream, bool signed)
         {
             int len = ReadInt(stream);
-                        
+
             if (signed)
             {
                 int[] vals = new int[len];
@@ -497,7 +497,7 @@ namespace GridGain.Client.Impl.Portable
                 }
 
                 return vals;
-            } 
+            }
         }
 
         /**
@@ -506,7 +506,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="stream">Output stream.</param>
          */
         public static void WriteLong(long val, Stream stream)
-        {            
+        {
             stream.WriteByte((byte)(val & 0xFF));
             stream.WriteByte((byte)(val >> 8 & 0xFF));
             stream.WriteByte((byte)(val >> 16 & 0xFF));
@@ -514,7 +514,7 @@ namespace GridGain.Client.Impl.Portable
             stream.WriteByte((byte)(val >> 32 & 0xFF));
             stream.WriteByte((byte)(val >> 40 & 0xFF));
             stream.WriteByte((byte)(val >> 48 & 0xFF));
-            stream.WriteByte((byte)(val >> 56 & 0xFF));            
+            stream.WriteByte((byte)(val >> 56 & 0xFF));
         }
 
         /**
@@ -531,7 +531,7 @@ namespace GridGain.Client.Impl.Portable
             val |= (long)(stream.ReadByte()) << 32;
             val |= (long)(stream.ReadByte()) << 40;
             val |= (long)(stream.ReadByte()) << 48;
-            val |= (long)(stream.ReadByte()) << 56; 
+            val |= (long)(stream.ReadByte()) << 56;
 
             return val;
         }
@@ -542,7 +542,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="stream">Output stream.</param>
          */
         public static void WriteLongArray(long[] vals, Stream stream)
-        {            
+        {
             WriteInt(vals.Length, stream);
 
             for (int i = 0; i < vals.Length; i++)
@@ -558,7 +558,7 @@ namespace GridGain.Client.Impl.Portable
         public static unsafe object ReadLongArray(Stream stream, bool signed)
         {
             int len = ReadInt(stream);
-                        
+
             if (signed)
             {
                 long[] vals = new long[len];
@@ -589,7 +589,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="stream">Output stream.</param>
          */
         public static void WriteCharArray(char[] vals, Stream stream)
-        {            
+        {
             WriteInt(vals.Length, stream);
 
             for (int i = 0; i < vals.Length; i++)
@@ -604,7 +604,7 @@ namespace GridGain.Client.Impl.Portable
         public static char[] ReadCharArray(Stream stream)
         {
             int len = ReadInt(stream);
-                        
+
             char[] vals = new char[len];
 
             for (int i = 0; i < len; i++)
@@ -641,7 +641,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="stream">Output stream.</param>
          */
         public static void WriteFloatArray(float[] vals, Stream stream)
-        {            
+        {
             WriteInt(vals.Length, stream);
 
             for (int i = 0; i < vals.Length; i++)
@@ -656,7 +656,7 @@ namespace GridGain.Client.Impl.Portable
         public static float[] ReadFloatArray(Stream stream)
         {
             int len = ReadInt(stream);
-                        
+
             float[] vals = new float[len];
 
             for (int i = 0; i < len; i++)
@@ -693,7 +693,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="stream">Output stream.</param>
          */
         public static void WriteDoubleArray(double[] vals, Stream stream)
-        {            
+        {
             WriteInt(vals.Length, stream);
 
             for (int i = 0; i < vals.Length; i++)
@@ -704,11 +704,11 @@ namespace GridGain.Client.Impl.Portable
          * <summary>Read double array.</summary>
          * <param name="stream">Stream.</param>
          * <returns>Value.</returns>
-         */ 
+         */
         public static double[] ReadDoubleArray(Stream stream)
         {
             int len = ReadInt(stream);
-                        
+
             double[] vals = new double[len];
 
             for (int i = 0; i < len; i++)
@@ -730,7 +730,7 @@ namespace GridGain.Client.Impl.Portable
             ToJavaDate(val.Value, out high, out low);
 
             WriteLong(high, stream);
-            WriteShort(low, stream);               
+            WriteShort(low, stream);
         }
 
         /**
@@ -752,7 +752,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="stream">Stream.</param>
          */
         public static void WriteDateArray(DateTime?[] vals, Stream stream)
-        {            
+        {
             WriteInt(vals.Length, stream);
 
             for (int i = 0; i < vals.Length; i++)
@@ -767,7 +767,7 @@ namespace GridGain.Client.Impl.Portable
         public static DateTime?[] ReadDateArray(Stream stream)
         {
             int len = ReadInt(stream);
-                        
+
             DateTime?[] vals = new DateTime?[len];
 
             for (int i = 0; i < len; i++)
@@ -804,7 +804,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="stream">Stream.</param>
          */
         public static void WriteStringArray(string[] vals, Stream stream)
-        {            
+        {
             WriteInt(vals.Length, stream);
 
             for (int i = 0; i < vals.Length; i++)
@@ -819,7 +819,7 @@ namespace GridGain.Client.Impl.Portable
         public static string[] ReadStringArray(Stream stream)
         {
             int len = ReadInt(stream);
-                        
+
             string[] vals = new string[len];
 
             for (int i = 0; i < len; i++)
@@ -834,7 +834,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="stream">Stream.</param>
          */
         public static void WriteGuid(Guid? val, Stream stream)
-        {            
+        {
             byte[] bytes = val.Value.ToByteArray();
 
             // .Net returns bytes in the following order: _a(4), _b(2), _c(2), _d, _e, _g, _h, _i, _j, _k.
@@ -861,7 +861,7 @@ namespace GridGain.Client.Impl.Portable
          * <returns>GUID</returns>
          */
         public static Guid? ReadGuid(Stream stream)
-        {            
+        {
             byte[] bytes = new byte[16];
 
             // Perform conversion opposite to what write does.
@@ -895,7 +895,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="stream">Stream.</param>
          */
         public static void WriteGuidArray(Guid?[] vals, Stream stream)
-        {            
+        {
             WriteInt(vals.Length, stream);
 
             for (int i = 0; i < vals.Length; i++)
@@ -910,7 +910,7 @@ namespace GridGain.Client.Impl.Portable
         public static Guid?[] ReadGuidArray(Stream stream)
         {
             int len = ReadInt(stream);
-                        
+
             Guid?[] vals = new Guid?[len];
 
             for (int i = 0; i < len; i++)
@@ -959,16 +959,16 @@ namespace GridGain.Client.Impl.Portable
          * <param name="marsh">Marshaller.</param>
          * <returns>Array.</returns>
          */
-        public static T[] ReadArrayPortable<T>(MemoryStream stream, 
+        public static T[] ReadArrayPortable<T>(MemoryStream stream,
             GridClientPortableMarshaller marsh)
         {
             int len = ReadInt(stream);
-                        
+
             T[] vals = new T[len];
 
             for (int i = 0; i < len; i++)
             {
-                IGridClientPortableObject portObj = ReadPortable(stream, marsh, false);
+                IGridClientPortableObject portObj = ReadPortable0(stream, marsh, false);
 
                 vals.SetValue(PortableOrPredefined<T>(portObj), i);
             }
@@ -981,8 +981,8 @@ namespace GridGain.Client.Impl.Portable
          * <param name="val">Value.</param>
          * <param name="ctx">Write context.</param>
          */
-        public static void WriteCollection(ICollection val, GridClientPortableWriteContext ctx) 
-        {            
+        public static void WriteCollection(ICollection val, GridClientPortableWriteContext ctx)
+        {
             byte colType = val.GetType() == typeof(ArrayList) ? COLLECTION_ARRAY_LIST : COLLECTION_CUSTOM;
 
             WriteTypedCollection(val, ctx, colType);
@@ -1011,7 +1011,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="adder">Adder delegate.</param>
          * <returns>Collection.</returns>
          */
-        public static ICollection ReadCollection(GridClientPortableReadContext ctx, 
+        public static ICollection ReadCollection(GridClientPortableReadContext ctx,
             GridClientPortableCollectionFactory factory, GridClientPortableCollectionAdder adder)
         {
             if (factory == null)
@@ -1023,7 +1023,7 @@ namespace GridGain.Client.Impl.Portable
             MemoryStream stream = ctx.Stream;
 
             int len = ReadInt(stream);
-                        
+
             ctx.Stream.Seek(1, SeekOrigin.Current);
 
             ICollection res = factory.Invoke(len);
@@ -1040,18 +1040,18 @@ namespace GridGain.Client.Impl.Portable
          * <param name="marsh">Marshaller.</param>
          * <returns>Collection.</returns>
          */
-        public static ICollection<T> ReadCollectionPortable<T>(MemoryStream stream, 
+        public static ICollection<T> ReadCollectionPortable<T>(MemoryStream stream,
             GridClientPortableMarshaller marsh)
         {
             int len = ReadInt(stream);
-                        
+
             stream.Seek(1, SeekOrigin.Current); // Skip collection type.
 
             ICollection<T> res = new List<T>(len);
 
             for (int i = 0; i < len; i++)
             {
-                IGridClientPortableObject portObj = ReadPortable(stream, marsh, false);
+                IGridClientPortableObject portObj = ReadPortable0(stream, marsh, false);
 
                 res.Add(PortableOrPredefined<T>(portObj));
             }
@@ -1065,7 +1065,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="ctx">Write context.</param>
          */
         public static void WriteGenericCollection<T>(ICollection<T> val, GridClientPortableWriteContext ctx)
-        {            
+        {
             Type type = val.GetType().GetGenericTypeDefinition();
 
             byte colType;
@@ -1081,7 +1081,7 @@ namespace GridGain.Client.Impl.Portable
             else
                 colType = COLLECTION_CUSTOM;
 
-            WriteTypedGenericCollection(val, ctx, colType);            
+            WriteTypedGenericCollection(val, ctx, colType);
         }
 
         /**
@@ -1090,7 +1090,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="ctx">Write context.</param>
          * <param name="colType">Collection type.</param>
          */
-        public static void WriteTypedGenericCollection<T>(ICollection<T> val, GridClientPortableWriteContext ctx, 
+        public static void WriteTypedGenericCollection<T>(ICollection<T> val, GridClientPortableWriteContext ctx,
             byte colType)
         {
             WriteInt(val.Count, ctx.Stream);
@@ -1107,7 +1107,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="factory">Factory delegate.</param>
          * <returns>Collection.</returns>
          */
-        public static ICollection<T> ReadGenericCollection<T>(GridClientPortableReadContext ctx, 
+        public static ICollection<T> ReadGenericCollection<T>(GridClientPortableReadContext ctx,
             GridClientPortableGenericCollectionFactory<T> factory)
         {
             int len = ReadInt(ctx.Stream);
@@ -1146,7 +1146,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="ctx">Write context.</param>
          */
         public static void WriteDictionary(IDictionary val, GridClientPortableWriteContext ctx)
-        {            
+        {
             byte dictType = val.GetType() == typeof(Hashtable) ? MAP_HASH_MAP : MAP_CUSTOM;
 
             WriteTypedDictionary(val, ctx, dictType);
@@ -1186,7 +1186,7 @@ namespace GridGain.Client.Impl.Portable
             MemoryStream stream = ctx.Stream;
 
             int len = ReadInt(stream);
-                        
+
             ctx.Stream.Seek(1, SeekOrigin.Current);
 
             IDictionary res = factory.Invoke(len);
@@ -1198,7 +1198,7 @@ namespace GridGain.Client.Impl.Portable
 
                 res[key] = val;
             }
-                    
+
             return res;
         }
 
@@ -1212,19 +1212,19 @@ namespace GridGain.Client.Impl.Portable
             MemoryStream stream, GridClientPortableMarshaller marsh)
         {
             int len = ReadInt(stream);
-                        
+
             stream.Seek(1, SeekOrigin.Current); // Skip dictionary type.
 
             IDictionary<K, V> res = new Dictionary<K, V>(len);
 
             for (int i = 0; i < len; i++)
             {
-                IGridClientPortableObject keyPortObj = ReadPortable(stream, marsh, false);
-                IGridClientPortableObject valPortObj = ReadPortable(stream, marsh, false);
+                IGridClientPortableObject keyPortObj = ReadPortable0(stream, marsh, false);
+                IGridClientPortableObject valPortObj = ReadPortable0(stream, marsh, false);
 
                 res.Add(PortableOrPredefined<K>(keyPortObj), PortableOrPredefined<V>(valPortObj));
             }
-                    
+
 
             return res;
         }
@@ -1235,7 +1235,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="ctx">Write context.</param>
          */
         public static void WriteGenericDictionary<K, V>(IDictionary<K, V> val, GridClientPortableWriteContext ctx)
-        {            
+        {
             Type type = val.GetType().GetGenericTypeDefinition();
 
             byte dictType;
@@ -1258,7 +1258,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="ctx">Write context.</param>
          * <param name="dictType">Dictionary type.</param>
          */
-        public static void WriteTypedGenericDictionary<K, V>(IDictionary<K, V> val, 
+        public static void WriteTypedGenericDictionary<K, V>(IDictionary<K, V> val,
             GridClientPortableWriteContext ctx, byte dictType)
         {
             WriteInt(val.Count, ctx.Stream);
@@ -1277,7 +1277,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="factory">Factory delegate.</param>
          * <returns>Collection.</returns>
          */
-        public static IDictionary<K, V> ReadGenericDictionary<K, V>(GridClientPortableReadContext ctx, 
+        public static IDictionary<K, V> ReadGenericDictionary<K, V>(GridClientPortableReadContext ctx,
             GridClientPortableGenericDictionaryFactory<K, V> factory)
         {
             int len = ReadInt(ctx.Stream);
@@ -1344,8 +1344,8 @@ namespace GridGain.Client.Impl.Portable
          */
         public static DictionaryEntry ReadMapEntryPortable(MemoryStream stream, GridClientPortableMarshaller marsh)
         {
-            IGridClientPortableObject key = ReadPortable(stream, marsh, false);
-            IGridClientPortableObject val = ReadPortable(stream, marsh, false);
+            IGridClientPortableObject key = ReadPortable0(stream, marsh, false);
+            IGridClientPortableObject val = ReadPortable0(stream, marsh, false);
 
             return new DictionaryEntry(PortableOrPredefined<object>(key), PortableOrPredefined<object>(val));
         }
@@ -1361,6 +1361,21 @@ namespace GridGain.Client.Impl.Portable
             WriteInt(val.Offset, stream);
         }
 
+        public static IGridClientPortableObject ReadPortable(MemoryStream stream,
+            GridClientPortableMarshaller marsh)
+        {
+            byte[] data = (byte[])ReadByteArray(stream, false);
+            int offset = ReadInt(stream);
+
+            MemoryStream portStream = new MemoryStream(data);
+
+            portStream.Seek(offset, SeekOrigin.Begin);
+
+            byte hdr = ReadByte(portStream);
+
+            return (IGridClientPortableObject)marsh.Unmarshal0(portStream, false, offset, hdr);
+        }
+
         /**
          * <summary>Read portable object.</summary>
          * <param name="stream">Stream.</param>
@@ -1368,7 +1383,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="detach">Detach flag.</param>
          * <returns>Portable object.</returns>
          */
-        public static IGridClientPortableObject ReadPortable(MemoryStream stream,
+        public static IGridClientPortableObject ReadPortable0(MemoryStream stream,
             GridClientPortableMarshaller marsh, bool detach)
         {
             IGridClientPortableObject obj;
@@ -1395,7 +1410,7 @@ namespace GridGain.Client.Impl.Portable
          * <param name="userType">User type flag.</param>
          * <param name="typeId">Type ID.</param>
          * <returns>Type key.</returns>
-         */ 
+         */
         public static long TypeKey(bool userType, int typeId)
         {
             long res = typeId;
@@ -1410,14 +1425,14 @@ namespace GridGain.Client.Impl.Portable
          * <summary>Extract underlying array from memory stream.</summary>
          * <param name="stream">Memory stream.</param>
          * <returns>Extracted array.</returns>
-         */ 
+         */
         public static byte[] MemoryBuffer(MemoryStream stream)
         {
             return (byte[])FIELD_MEM_BUF.GetValue(stream);
         }
 
         /**
-         * <summary>Get string hash code.</summary> 
+         * <summary>Get string hash code.</summary>
          * <param name="val">Value.</param>
          * <returns>Hash code.</returns>
          */
@@ -1437,9 +1452,9 @@ namespace GridGain.Client.Impl.Portable
                 return hash;
             }
         }
-        
+
         /**
-         * <summary>Get Guid hash code.</summary> 
+         * <summary>Get Guid hash code.</summary>
          * <param name="val">Value.</param>
          * <returns>Hash code.</returns>
          */
@@ -1495,6 +1510,8 @@ namespace GridGain.Client.Impl.Portable
                 case TYPE_ARRAY:
                 case TYPE_COLLECTION:
                 case TYPE_DICTIONARY:
+                case TYPE_MAP_ENTRY:
+                case TYPE_PORTABLE:
                     return true;
                 default:
                     return false;
@@ -1505,7 +1522,7 @@ namespace GridGain.Client.Impl.Portable
          * <summary>Return either portable object as is or it's deserialized object or predefined type.</summary>
          * <param name="portObj">Portable object.</param>
          * <returns>Portable object or one of predefined types.</returns>
-         */ 
+         */
         public static T PortableOrPredefined<T>(IGridClientPortableObject portObj)
         {
             if (portObj != null && !portObj.IsUserType() && IsPredefinedType((byte)portObj.TypeId()))
@@ -1526,7 +1543,7 @@ namespace GridGain.Client.Impl.Portable
 
             high = diff / JAVA_DATE_MULTIPLIER;
 
-            low = (short)(diff % JAVA_DATE_MULTIPLIER); 
+            low = (short)(diff % JAVA_DATE_MULTIPLIER);
         }
 
         /**
