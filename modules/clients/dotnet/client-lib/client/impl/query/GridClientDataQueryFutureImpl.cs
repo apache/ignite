@@ -13,6 +13,7 @@ namespace GridGain.Client.Impl.Query
     using System.Collections.ObjectModel;
     using System.Collections.Generic;
     using System.Collections.Concurrent;
+    using GridGain.Client.Portable;
     using GridGain.Client.Impl.Message;
     using GridGain.Client.Util;
 
@@ -112,10 +113,15 @@ namespace GridGain.Client.Impl.Query
                 long qryId = res.QueryId;
 
                 foreach (Object el in res.Items) {
-                    iterResults.Enqueue((T)el);
+                    Object add = el;
+
+                    if (add is IGridClientPortableObject)
+                        add = ((IGridClientPortableObject)el).Deserialize<Object>();
+
+                    iterResults.Enqueue((T)add);
 
                     if (qryBean.KeepAll || res.Last)
-                        collectedRes.Add((T)el);
+                        collectedRes.Add((T)add);
                 }
 
                 if (!res.Last)

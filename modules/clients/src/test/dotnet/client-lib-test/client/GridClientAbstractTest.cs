@@ -890,7 +890,7 @@ namespace GridGain.Client {
 
             IGridClientDataQueries qrys = data.Queries();
 
-            IGridClientDataQuery<DictionaryEntry?> qry = qrys.createSqlQuery("org.gridgain.client.model.GridPortablePerson", "where age >= ?");
+            IGridClientDataQuery<DictionaryEntry?> qry = qrys.createSqlQuery("GridPortablePerson", "age >= ?");
 
             qry.IncludeBackups = false;
             qry.EnableDedup = true;
@@ -931,7 +931,7 @@ namespace GridGain.Client {
 
             IGridClientDataQueries qrys = data.Queries();
 
-            IGridClientDataQuery<DictionaryEntry?> qry = qrys.createSqlQuery("org.gridgain.client.model.GridPortablePerson", "where age >= ?");
+            IGridClientDataQuery<DictionaryEntry?> qry = qrys.createSqlQuery("GridPortablePerson", "age >= ?");
 
             qry.IncludeBackups = false;
             qry.EnableDedup = true;

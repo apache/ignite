@@ -76,6 +76,9 @@
                         <bean class="org.gridgain.portable.GridPortableTypeConfiguration">
                             <property name="className" value="org.gridgain.client.GridClientTestPortable"/>
                         </bean>
+                        <bean class="org.gridgain.portable.GridPortableTypeConfiguration">
+                            <property name="className" value="org.gridgain.client.model.GridPortablePerson"/>
+                        </bean>
                     </list>
                 </property>
             </bean>
@@ -140,6 +143,28 @@
 
                     <!-- Enable queries for partitioned cache -->
                     <property name="queryIndexEnabled" value="true"/>
+
+                    <property name="queryConfiguration">
+                        <bean class="org.gridgain.grid.cache.query.GridCacheQueryConfiguration">
+                            <property name="typeMetadata">
+                                <list>
+                                    <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">
+                                        <property name="type" value="GridPortablePerson"/>
+                                        <property name="ascendingFields">
+                                            <map>
+                                                <entry key="age" value="java.lang.Integer"/>
+                                            </map>
+                                        </property>
+                                        <property name="queryFields">
+                                            <map>
+                                                <entry key="name" value="java.lang.String"/>
+                                            </map>
+                                        </property>
+                                    </bean>
+                                </list>
+                            </property>
+                        </bean>
+                    </property>
                 </bean>
 
                 <!--

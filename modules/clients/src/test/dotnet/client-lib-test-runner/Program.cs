@@ -33,8 +33,8 @@ namespace GridGain {
 
             //Test(new GridClientPortableSelfTest(), (test) => test.TestClient());
 
-            //Test(new GridClientTcpTest(), (test) => test.TestSqlQuery());
-            //Test(new GridClientTcpTest(), (test) => test.TestSqlQueryIterate());
+            TestOne(new GridClientTcpTest(), test => test.TestSqlQuery());
+            TestOne(new GridClientTcpTest(), test => test.TestSqlQueryIterate());
 
             Test(new GridClientPortableSelfTest(), (test) => test.TestGenericCollections());
             Test(new GridClientPortableSelfTest(), (test) => test.TestCollectionsReflective());

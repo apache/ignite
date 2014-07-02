@@ -320,7 +320,7 @@ public class GridPortableContext implements Externalizable {
             id = idMapper.typeId(cls.getName());
 
         if (id == 0)
-            id = cls.getSimpleName().hashCode();
+            id = cls.getSimpleName().toLowerCase().hashCode();
 
         GridPortableClassDescriptor desc = new GridPortableClassDescriptor(
             cls, true, id, idMapper, serializer, ignoreAnn);

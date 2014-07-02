@@ -14,6 +14,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.query.GridCacheQueriesEx;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
@@ -264,13 +265,14 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
         @Override public GridRestResponse call() throws Exception {
             long qryId = qryIdGen.getAndIncrement();
 
-            GridCacheQueries<Object, Object> queries = g.cache(req.cacheName()).queries();
+            GridCacheQueriesEx<Object, Object> queries = (GridCacheQueriesEx<Object, Object>)
+                    g.cache(req.cacheName()).queries();
 
             GridCacheQuery<?> qry;
 
             switch (req.type()) {
                 case SQL:
-                    qry = queries.createSqlQuery(Class.forName(req.className()), req.clause());
+                    qry = queries.createSqlQuery(req.className(), req.clause());
 
                     break;
 
@@ -280,7 +282,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
                     break;
 
                 case FULL_TEXT:
-                    qry = queries.createFullTextQuery(Class.forName(req.className()), req.clause());
+                    qry = queries.createFullTextQuery(req.className(), req.clause());
 
                     break;
 
