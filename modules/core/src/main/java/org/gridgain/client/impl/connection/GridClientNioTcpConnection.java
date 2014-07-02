@@ -468,8 +468,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         else {
             GridClientMessage msg;
 
-            if (keepPortablesMode != null && fut.keepPortables())
-                keepPortablesMode.set(true);
+            if (keepPortablesMode != null)
+                keepPortablesMode.set(fut.keepPortables());
 
             try {
                 msg = marsh.unmarshal(req.messageArray());
@@ -479,11 +479,11 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
                 return;
             }
-            finally {
-                if (keepPortablesMode != null && fut.keepPortables())
-                    keepPortablesMode.set(false);
-            }
 
+            finally {
+                if (keepPortablesMode != null)
+                    keepPortablesMode.set(true);
+            }
             msg.requestId(req.requestId());
             msg.clientId(req.clientId());
             msg.destinationId(req.destinationId());
