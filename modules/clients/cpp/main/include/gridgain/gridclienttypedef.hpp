@@ -60,11 +60,12 @@ typedef std::shared_ptr<GridClientFuture<TGridClientNodePtr>> TGridClientNodeFut
 typedef std::shared_ptr<GridClientFuture<TGridClientNodeList>> TGridClientNodeFutureList;
 typedef std::shared_ptr<GridClientFuture<std::vector<std::string>>> TGridFutureStringList;
 
+typedef std::pair<GridClientVariant, GridClientVariant> TGridClientVariantPair;
 typedef std::shared_ptr<GridClientDataQueries> TGridClientDataQueriesPtr;
-typedef std::shared_ptr<GridClientDataQuery<std::pair<GridClientVariant, GridClientVariant>>> TGridClientPairQueryPtr;
+typedef std::shared_ptr<GridClientDataQuery<TGridClientVariantPair>> TGridClientPairQueryPtr;
 typedef std::shared_ptr<GridClientDataQuery<TGridClientVariantSet>> TGridClientVectorQueryPtr;
 
-typedef std::shared_ptr<GridClientDataQueryFuture<std::pair<GridClientVariant, GridClientVariant>>> TGridClientPairQueryFutPtr;
+typedef std::shared_ptr<GridClientDataQueryFuture<TGridClientVariantPair>> TGridClientPairQueryFutPtr;
 typedef std::shared_ptr<GridClientDataQueryFuture<TGridClientVariantSet>> TGridClientVectorQueryFutPtr;
 
 typedef std::vector<TGridClientTopologyListenerPtr> TGridClientTopologyListenerList;

@@ -63,7 +63,6 @@ public:
             GridClientVariant key = GridClientVariant((int64_t)1000);
             GridClientVariant val = GridClientVariant((int64_t)1000);
 
-            cmd.sessionToken(token);
             cmd.setClientId(GridClientUuid("550e8400-e29b-41d4-a716-446655440000"));
             cmd.setDestinationId(GridClientUuid("550e8400-e29b-41d4-a716-446655440000"));
             cmd.setKey(key);
@@ -76,6 +75,8 @@ public:
 
             while (++iters != maxiterations) {
                 GridClientCacheRequest msg(cmd);
+
+                msg.sndTok = &token;
 
                 boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshalSystemObject(msg);
             }

@@ -22,7 +22,6 @@
 #include <gridgain/gridgain.hpp>
 
 #include "gridgain/gridclientvariant.hpp"
-#include "gridgain/gridportableserializer.hpp"
 #include "gridgain/impl/marshaller/portable/gridportablemarshaller.hpp"
 
 using namespace std;
@@ -164,7 +163,7 @@ public:
 		return 11;
 	}
 
-    void writePortable(GridPortableWriter &writer) const {
+    void writePortable(GridPortableWriter& writer) const {
         writer.writeString("name", name);
 		writer.writeInt32("id", id);
         
@@ -172,7 +171,7 @@ public:
             writer.writeVariant("addr", addr);
 	}
 
-    void readPortable(GridPortableReader &reader) {
+    void readPortable(GridPortableReader& reader) {
 		name = reader.readString("name").get_value_or(std::string());
         id = reader.readInt32("id");
         
@@ -220,35 +219,6 @@ private:
 
     int32_t id;
 };
-
-class PersonSerializer : public GridPortableSerializer<Person> {
-public:
-    void writePortable(Person* obj, GridPortableWriter& writer) {
-        writer.writeInt32("id", obj->getId());
-        writer.writeString("name", obj->getName());
-    }
-
-    Person* readPortable(GridPortableReader& reader) {
-        int32_t id = reader.readInt32("id");
-        string name = reader.readString("name").get_value_or(std::string());
-
-        return new Person(id, name);
-    }
-
-    int32_t typeId(Person* obj) {
-        return 12;
-    }
-
-    int32_t hashCode(Person* obj) {
-        return obj->getId();
-    }
-
-    bool compare(Person* obj1, Person* obj2) {
-        return obj1->getId() == obj2->getId();
-    }
-};
-
-REGISTER_TYPE_SERIALIZER(12, Person, PersonSerializer);
 
 class TestPortable1 : public GridPortable {
 public:
@@ -841,7 +811,7 @@ void testPortable1Marshalling(bool rawMarshalling, int32_t arraysSize) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(GridClientVariant(&p));
 
-    TestPortable1* pRead = marsh.unmarshalUserObject<TestPortable1>(bytes);
+    TestPortable1* pRead = marsh.unmarshal(bytes, false).getPortable<TestPortable1>();
 
     validateTestPortable1(*pRead, arraysSize);
 
@@ -873,7 +843,7 @@ public:
 
     void readPortable(GridPortableReader& reader) {
         val1 = reader.readInt32("1");
-        p2 = reader.readVariant("2").getPortableObject().deserialize<TestPortableCycle2>();
+        p2 = reader.readVariant("2").getPortable<TestPortableCycle2>();
     }
 
     TestPortableCycle2* p2;
@@ -896,7 +866,7 @@ public:
 
     void readPortable(GridPortableReader& reader) {
         val1 = reader.readFloat("1");
-        p1 = reader.readVariant("2").getPortableObject().deserialize<TestPortableCycle1>();
+        p1 = reader.readVariant("2").getPortable<TestPortableCycle1>();
     }
 
     TestPortableCycle1* p1;
@@ -925,7 +895,7 @@ BOOST_AUTO_TEST_CASE(testPortableSerialization_cycle) {
     delete p1;
     delete p2;
 
-    p1 = marsh.unmarshalUserObject<TestPortableCycle1>(bytes);
+    p1 = marsh.unmarshal(bytes, false).getPortable<TestPortableCycle1>();
 
     BOOST_REQUIRE(p1);
     BOOST_REQUIRE(p1->p2);
@@ -1030,7 +1000,7 @@ void testCustomSerialization(bool rawMarshalling) {
 
         bytes = marsh.marshal(GridClientVariant(&c));
 
-        TestPortableCustom* p = marsh.unmarshalUserObject<TestPortableCustom>(bytes);
+        TestPortableCustom* p = marsh.unmarshal(bytes, false).getPortable<TestPortableCustom>();
 
         BOOST_REQUIRE_EQUAL(i, p->flag);
 
@@ -1104,7 +1074,7 @@ BOOST_AUTO_TEST_CASE(testPortableSerialization_invalid) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(GridClientVariant(&valid));
 
-    unique_ptr<TestPortableInvalid> p(marsh.unmarshalUserObject<TestPortableInvalid>(bytes));
+    unique_ptr<TestPortableInvalid> p(marsh.unmarshal(bytes, false).getPortable<TestPortableInvalid>());
 
     BOOST_REQUIRE_EQUAL(100, (*p).val1);
     BOOST_REQUIRE_EQUAL(200, (*p).val2);
@@ -1201,7 +1171,7 @@ public:
     }
 
     void readPortable(GridPortableReader& reader) {
-        obj2 = reader.readVariant("obj2").getPortableObject().deserialize<TestPortableFieldNames2>();
+        obj2 = reader.readVariant("obj2").getPortable<TestPortableFieldNames2>();
 
         BOOST_REQUIRE_EQUAL(200, obj2->f1);
         BOOST_REQUIRE_EQUAL(200, obj2->f2);
@@ -1213,8 +1183,8 @@ public:
 
         f1 = reader.readInt32("f1");
 
-        obj1 = reader.readVariant("obj1").getPortableObject().deserialize<TestPortableFieldNames2>();
-        obj3 = reader.readVariant("obj3").getPortableObject().deserialize<TestPortableFieldNames2>();
+        obj1 = reader.readVariant("obj1").getPortable<TestPortableFieldNames2>();
+        obj3 = reader.readVariant("obj3").getPortable<TestPortableFieldNames2>();
 
         BOOST_REQUIRE_EQUAL(100, obj1->f1);
         BOOST_REQUIRE_EQUAL(100, obj1->f2);
@@ -1243,7 +1213,7 @@ BOOST_AUTO_TEST_CASE(testPortableSerialization_fieldNames) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(GridClientVariant(&obj));
 
-    unique_ptr<TestPortableFieldNames1> p(marsh.unmarshalUserObject<TestPortableFieldNames1>(bytes));
+    unique_ptr<TestPortableFieldNames1> p(marsh.unmarshal(bytes, false).getPortable<TestPortableFieldNames1>());
 
     BOOST_REQUIRE_EQUAL(1000, (*p).f1);
     BOOST_REQUIRE((*p).obj1);
@@ -1350,6 +1320,22 @@ void checkVariants(GridClientVariant& var1, GridClientVariant& var2, GridClientV
 }
 
 BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
+    {
+        TGridClientVariantPair val1 = TGridClientVariantPair(1, 1);
+        TGridClientVariantPair val2 = TGridClientVariantPair(2, 1);
+
+        GridClientVariant var1(val1);
+        GridClientVariant var2(val2);
+        GridClientVariant var3(val1);
+
+        BOOST_REQUIRE(var1.hasMapEntry());
+        BOOST_REQUIRE(!var1.hasInt());
+
+        BOOST_REQUIRE_EQUAL(val1, var1.getMapEntry());
+
+        checkVariants(var1, var2, var3);
+    }
+
     {
         bool val1 = true;
         bool val2 = false;
@@ -1556,6 +1542,10 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
         BOOST_REQUIRE(val1 == var1.getByteArray());
 
         checkVariants(var1, var2, var3);
+
+        GridClientVariant var4(std::move(val1));
+
+        checkVariants(var4, var2, var3);
     }
 
     {
@@ -1572,6 +1562,10 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
         BOOST_REQUIRE(val1 == var1.getShortArray());
 
         checkVariants(var1, var2, var3);
+
+        GridClientVariant var4(std::move(val1));
+
+        checkVariants(var4, var2, var3);
     }
 
     {
@@ -1588,6 +1582,10 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
         BOOST_REQUIRE(val1 == var1.getIntArray());
 
         checkVariants(var1, var2, var3);
+
+        GridClientVariant var4(std::move(val1));
+
+        checkVariants(var4, var2, var3);
     }
 
     {
@@ -1604,6 +1602,10 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
         BOOST_REQUIRE(val1 == var1.getLongArray());
 
         checkVariants(var1, var2, var3);
+
+        GridClientVariant var4(std::move(val1));
+
+        checkVariants(var4, var2, var3);
     }
 
     {
@@ -1620,6 +1622,10 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
         BOOST_REQUIRE(val1 == var1.getFloatArray());
 
         checkVariants(var1, var2, var3);
+
+        GridClientVariant var4(std::move(val1));
+
+        checkVariants(var4, var2, var3);
     }
 
     {
@@ -1636,6 +1642,10 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
         BOOST_REQUIRE(val1 == var1.getDoubleArray());
 
         checkVariants(var1, var2, var3);
+
+        GridClientVariant var4(std::move(val1));
+
+        checkVariants(var4, var2, var3);
     }
 
     {
@@ -1652,6 +1662,10 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
         BOOST_REQUIRE(val1 == var1.getCharArray());
 
         checkVariants(var1, var2, var3);
+
+        GridClientVariant var4(std::move(val1));
+
+        checkVariants(var4, var2, var3);
     }
 
     {
@@ -1668,6 +1682,10 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
         BOOST_REQUIRE(val1 == var1.getBoolArray());
 
         checkVariants(var1, var2, var3);
+
+        GridClientVariant var4(std::move(val1));
+
+        checkVariants(var4, var2, var3);
     }
 
     {
@@ -1684,6 +1702,10 @@ BOOST_AUTO_TEST_CASE(testVariants_allTypes) {
         BOOST_REQUIRE(val1 == var1.getStringArray());
 
         checkVariants(var1, var2, var3);
+
+        GridClientVariant var4(std::move(val1));
+
+        checkVariants(var4, var2, var3);
     }
 
     {
@@ -1901,7 +1923,7 @@ BOOST_AUTO_TEST_CASE(testPortableSerialization) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(GridClientVariant(&p));
 
-    PortablePerson* pRead = marsh.unmarshalUserObject<PortablePerson>(bytes);
+    PortablePerson* pRead = marsh.unmarshal(bytes, false).getPortable<PortablePerson>();
 
     cout << "Unmarshalled " << pRead->getId() << " " << pRead->getName() << "\n";
 
@@ -1910,7 +1932,7 @@ BOOST_AUTO_TEST_CASE(testPortableSerialization) {
 
     delete pRead;
 
-    GridClientVariant var = marsh.unmarshal(bytes);
+    GridClientVariant var = marsh.unmarshal(bytes, true);
 
     BOOST_REQUIRE(var.hasPortableObject());
 
@@ -1924,30 +1946,6 @@ BOOST_AUTO_TEST_CASE(testPortableSerialization) {
     BOOST_REQUIRE(!nullField.hasAnyValue());
 }
 
-/*
-BOOST_AUTO_TEST_CASE(testExternalSerialization) {
-    GridPortableMarshaller marsh;
-
-    Person person(20, "abc");
-
-    PersonSerializer ser;
-
-    GridExternalPortable<Person> ext(&person, ser);
-
-    boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshalUserObject(ext);
-
-    GridExternalPortable<Person>* pRead = marsh.unmarshalUserObject<GridExternalPortable<Person>>(bytes);
-
-    cout << "Unmarshalled " << (*pRead)->getId() << " " << (*pRead)->getName() << "\n";
-
-    BOOST_CHECK_EQUAL(20, (*pRead)->getId());
-    BOOST_CHECK_EQUAL("abc", (*pRead)->getName());
-
-    delete pRead->getObject();
-    delete pRead;
-}
-*/
-
 BOOST_AUTO_TEST_CASE(testMarshal_byte) {
     int8_t val = 10;
 
@@ -1957,7 +1955,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_byte) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
-    GridClientVariant varRead = marsh.unmarshal(bytes);
+    GridClientVariant varRead = marsh.unmarshal(bytes, true);
 
     BOOST_REQUIRE_EQUAL(10, varRead.getByte());
 }
@@ -1971,7 +1969,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_bool) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
-    GridClientVariant varRead = marsh.unmarshal(bytes);
+    GridClientVariant varRead = marsh.unmarshal(bytes, true);
 
     BOOST_REQUIRE_EQUAL(true, varRead.getBool());
 }
@@ -1985,7 +1983,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_char) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
-    GridClientVariant varRead = marsh.unmarshal(bytes);
+    GridClientVariant varRead = marsh.unmarshal(bytes, true);
 
     BOOST_REQUIRE_EQUAL(10, varRead.getChar());
 }
@@ -1999,7 +1997,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_chort) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
-    GridClientVariant varRead = marsh.unmarshal(bytes);
+    GridClientVariant varRead = marsh.unmarshal(bytes, true);
 
     BOOST_REQUIRE_EQUAL(10, varRead.getShort());
 }
@@ -2013,7 +2011,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_int) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
-    GridClientVariant varRead = marsh.unmarshal(bytes);
+    GridClientVariant varRead = marsh.unmarshal(bytes, true);
 
     BOOST_REQUIRE_EQUAL(10, varRead.getInt());
 }
@@ -2027,7 +2025,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_long) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
-    GridClientVariant varRead = marsh.unmarshal(bytes);
+    GridClientVariant varRead = marsh.unmarshal(bytes, true);
 
     BOOST_REQUIRE_EQUAL(10, varRead.getLong());
 }
@@ -2041,7 +2039,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_float) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
-    GridClientVariant varRead = marsh.unmarshal(bytes);
+    GridClientVariant varRead = marsh.unmarshal(bytes, true);
 
     BOOST_REQUIRE_EQUAL(10, varRead.getFloat());
 }
@@ -2055,7 +2053,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_double) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
-    GridClientVariant varRead = marsh.unmarshal(bytes);
+    GridClientVariant varRead = marsh.unmarshal(bytes, true);
 
     BOOST_REQUIRE_EQUAL(10, varRead.getDouble());
 }
@@ -2069,7 +2067,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_str) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
-    GridClientVariant varRead = marsh.unmarshal(bytes);
+    GridClientVariant varRead = marsh.unmarshal(bytes, true);
 
     BOOST_REQUIRE_EQUAL("str", varRead.getString());
 }
@@ -2083,7 +2081,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_uuid) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
-    GridClientVariant varRead = marsh.unmarshal(bytes);
+    GridClientVariant varRead = marsh.unmarshal(bytes, true);
 
     BOOST_REQUIRE(GridClientUuid(10, 20) == varRead.getUuid());
 }
@@ -2097,7 +2095,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_date) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
-    GridClientVariant varRead = marsh.unmarshal(bytes);
+    GridClientVariant varRead = marsh.unmarshal(bytes, true);
 
     BOOST_REQUIRE(GridClientDate(10) == varRead.getDate());
 }
@@ -2116,7 +2114,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_byteArr) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
-    GridClientVariant varRead = marsh.unmarshal(bytes);
+    GridClientVariant varRead = marsh.unmarshal(bytes, true);
 
     vector<int8_t>& valRead = varRead.getByteArray();
 
@@ -2140,7 +2138,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_boolArr) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
-    GridClientVariant varRead = marsh.unmarshal(bytes);
+    GridClientVariant varRead = marsh.unmarshal(bytes, true);
 
     vector<bool>& valRead = varRead.getBoolArray();
 
@@ -2164,7 +2162,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_int16Arr) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
-    GridClientVariant varRead = marsh.unmarshal(bytes);
+    GridClientVariant varRead = marsh.unmarshal(bytes, true);
 
     vector<int16_t>& valRead = varRead.getShortArray();
 
@@ -2188,7 +2186,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_charArr) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
-    GridClientVariant varRead = marsh.unmarshal(bytes);
+    GridClientVariant varRead = marsh.unmarshal(bytes, true);
 
     vector<uint16_t>& valRead = varRead.getCharArray();
 
@@ -2212,7 +2210,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_int32Arr) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
-    GridClientVariant varRead = marsh.unmarshal(bytes);
+    GridClientVariant varRead = marsh.unmarshal(bytes, true);
 
     vector<int32_t>& valRead = varRead.getIntArray();
 
@@ -2236,7 +2234,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_int64Arr) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
-    GridClientVariant varRead = marsh.unmarshal(bytes);
+    GridClientVariant varRead = marsh.unmarshal(bytes, true);
 
     vector<int64_t>& valRead = varRead.getLongArray();
 
@@ -2260,7 +2258,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_floatArr) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
-    GridClientVariant varRead = marsh.unmarshal(bytes);
+    GridClientVariant varRead = marsh.unmarshal(bytes, true);
 
     vector<float>& valRead = varRead.getFloatArray();
 
@@ -2284,7 +2282,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_doubleArr) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
-    GridClientVariant varRead = marsh.unmarshal(bytes);
+    GridClientVariant varRead = marsh.unmarshal(bytes, true);
 
     vector<double>& valRead = varRead.getDoubleArray();
 
@@ -2308,7 +2306,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_stringArr) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
-    GridClientVariant varRead = marsh.unmarshal(bytes);
+    GridClientVariant varRead = marsh.unmarshal(bytes, true);
 
     vector<string>& valRead = varRead.getStringArray();
 
@@ -2332,7 +2330,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_uuidArr) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
-    GridClientVariant varRead = marsh.unmarshal(bytes);
+    GridClientVariant varRead = marsh.unmarshal(bytes, true);
 
     vector<GridClientUuid>& valRead = varRead.getUuidArray();
 
@@ -2356,7 +2354,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_dateArr) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
-    GridClientVariant varRead = marsh.unmarshal(bytes);
+    GridClientVariant varRead = marsh.unmarshal(bytes, true);
 
     vector<GridClientDate> valRead = varRead.getDateArray();
 
@@ -2380,7 +2378,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_variantArr) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
-    GridClientVariant varRead = marsh.unmarshal(bytes);
+    GridClientVariant varRead = marsh.unmarshal(bytes, true);
 
     vector<GridClientVariant>& valRead = varRead.getVariantVector();
 
@@ -2404,7 +2402,7 @@ BOOST_AUTO_TEST_CASE(testMarshal_variantMap) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(var);
 
-    GridClientVariant varRead = marsh.unmarshal(bytes);
+    GridClientVariant varRead = marsh.unmarshal(bytes, true);
 
     TGridClientVariantMap& valRead = varRead.getVariantMap();
 
@@ -2506,7 +2504,7 @@ public:
     void readPortable(GridPortableReader& reader) {
         GridClientVariant var = reader.readVariant("1");
 
-        obj = var.getPortableObject().deserialize<TestNested2>();
+        obj = var.getPortable<TestNested2>();
 
         BOOST_REQUIRE_EQUAL(1, obj->val);
 
@@ -2531,16 +2529,16 @@ BOOST_AUTO_TEST_CASE(testMarshal_nested) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(GridClientVariant(&obj));
 
-    GridClientVariant var1 = marsh.unmarshal(bytes);
+    GridClientVariant var1 = marsh.unmarshal(bytes, false);
 
-    GridPortableObject& port1 = var1.getPortableObject();
-
-    TestNested1* obj1 = port1.deserialize<TestNested1>();
+    TestNested1* obj1 = var1.getPortable<TestNested1>();
 
     BOOST_REQUIRE_EQUAL(1, obj1->obj->val);
     BOOST_REQUIRE_EQUAL(1.5, obj1->vFloat);
 
     delete obj1;
+
+    GridPortableObject port1 = marsh.unmarshal(bytes, true).getPortableObject();
 
     GridClientVariant f1 = port1.field("1");
 
@@ -2656,7 +2654,7 @@ void testObjCollectionMarshal(bool raw)  {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(GridClientVariant(&obj));
 
-    GridClientVariant var = marsh.unmarshal(bytes);
+    GridClientVariant var = marsh.unmarshal(bytes, true);
 
     GridPortableObject& port = var.getPortableObject();
 
@@ -2710,7 +2708,7 @@ BOOST_AUTO_TEST_CASE(testPortableObject) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshal(GridClientVariant(&p1));
 
-    GridPortableObject o1 = marsh.unmarshal(bytes).getPortableObject();
+    GridPortableObject o1 = marsh.unmarshal(bytes, true).getPortableObject();
     
     BOOST_REQUIRE_EQUAL(1, o1.field("id").getInt());
     BOOST_REQUIRE_EQUAL("n1", o1.field("name").getString());
@@ -2723,7 +2721,7 @@ BOOST_AUTO_TEST_CASE(testPortableObject) {
 
     bytes = marsh.marshal(GridClientVariant(&p2));
 
-    GridPortableObject o2 = marsh.unmarshal(bytes).getPortableObject();
+    GridPortableObject o2 = marsh.unmarshal(bytes, true).getPortableObject();
 
     BOOST_REQUIRE_EQUAL(2, o2.field("id").getInt());
     BOOST_REQUIRE_EQUAL("n2", o2.field("name").getString());
@@ -2736,7 +2734,7 @@ BOOST_AUTO_TEST_CASE(testPortableObject) {
 
     BOOST_REQUIRE(!(o1 == o2));
 
-    GridPortableObject o3 = marsh.unmarshal(bytes).getPortableObject();
+    GridPortableObject o3 = marsh.unmarshal(bytes, true).getPortableObject();
 
     BOOST_REQUIRE_EQUAL(2, o3.field("id").getInt());
 
@@ -2776,7 +2774,7 @@ BOOST_AUTO_TEST_CASE(testCacheRequestMarshal) {
 
     boost::shared_ptr<std::vector<int8_t>> bytes = marsh.marshalSystemObject(msg);
 
-    BOOST_REQUIRE_EQUAL(633, bytes->size());
+    BOOST_REQUIRE_EQUAL(631, bytes->size());
 }
 
 class TestTemplateApiReadWrite : public GridPortable {
@@ -2806,9 +2804,12 @@ public:
         writer.writeStringArray("_strArr", strArr.begin(), strArr.end());
         writer.writeUuidArray("_uuidArr", uuidArr.begin(), uuidArr.end());
         writer.writeDateArray("_dateArr", dateArr.begin(), dateArr.end());
+        
         writer.writeVariantCollection("_col", GridCollectionType::LINKED_LIST, col.begin(), col.end());
+        writer.writeVariantCollection("_varDeq", GridCollectionType::LINKED_LIST, varDeq.begin(), varDeq.end());
+        writer.writeVariantCollection("_varList", GridCollectionType::LINKED_LIST, varList.begin(), varList.end());
 
-        writer.writeInt64Array("lDeq", lDeq.begin(), lDeq.end());
+        writer.writeInt64Array("_lDeq", lDeq.begin(), lDeq.end());
 
         GridPortableRawWriter& raw = writer.rawWriter();
 
@@ -2824,29 +2825,32 @@ public:
         raw.writeUuidArray(uuidArrRaw.begin(), uuidArrRaw.end());
         raw.writeDateArray(dateArrRaw.begin(), dateArrRaw.end());
         raw.writeVariantArray(objArrRaw.begin(), objArrRaw.end());
+        
         raw.writeVariantCollection(GridCollectionType::ARRAY_LIST, colRaw.begin(), colRaw.end());
+        raw.writeVariantCollection(GridCollectionType::LINKED_LIST, varDeq.begin(), varDeq.end());
+        raw.writeVariantCollection(GridCollectionType::LINKED_LIST, varList.begin(), varList.end());
         
         raw.writeInt64Array(lDeqRaw.begin(), lDeqRaw.end());
         raw.writeStringArray(strSetRaw.begin(), strSetRaw.end());
     }            
     
     void readPortable(GridPortableReader& reader) {
-        reader.readByteArray("bArr", back_insert_iterator<vector<int8_t>>(bArr));
-        reader.readInt16Array("sArr", back_insert_iterator<vector<int16_t>>(sArr));
-        reader.readInt32Array("iArr", back_insert_iterator<vector<int32_t>>(iArr));
-        reader.readInt64Array("lArr", back_insert_iterator<vector<int64_t>>(lArr));
-        reader.readFloatArray("fArr", back_insert_iterator<vector<float>>(fArr));
-        reader.readDoubleArray("dArr", back_insert_iterator<vector<double>>(dArr));
-        reader.readCharArray("cArr", back_insert_iterator<vector<uint16_t>>(cArr));
-        reader.readBoolArray("boolArr", back_insert_iterator<vector<bool>>(boolArr));
-        reader.readStringArray("strArr", back_insert_iterator<vector<string>>(strArr));
-        reader.readWStringArray("wstrArr", back_insert_iterator<vector<wstring>>(wstrArr));
-        reader.readUuidArray("uuidArr", back_insert_iterator<vector<GridClientUuid>>(uuidArr));
-        reader.readDateArray("dateArr", back_insert_iterator<vector<GridClientDate>>(dateArr));
+        reader.readByteArray("_bArr", back_insert_iterator<vector<int8_t>>(bArr));
+        reader.readInt16Array("_sArr", back_insert_iterator<vector<int16_t>>(sArr));
+        reader.readInt32Array("_iArr", back_insert_iterator<vector<int32_t>>(iArr));
+        reader.readInt64Array("_lArr", back_insert_iterator<vector<int64_t>>(lArr));
+        reader.readFloatArray("_fArr", back_insert_iterator<vector<float>>(fArr));
+        reader.readDoubleArray("_dArr", back_insert_iterator<vector<double>>(dArr));
+        reader.readCharArray("_cArr", back_insert_iterator<vector<uint16_t>>(cArr));
+        reader.readBoolArray("_boolArr", back_insert_iterator<vector<bool>>(boolArr));
+        reader.readStringArray("_strArr", back_insert_iterator<vector<string>>(strArr));
+        reader.readWStringArray("_wstrArr", back_insert_iterator<vector<wstring>>(wstrArr));
+        reader.readUuidArray("_uuidArr", back_insert_iterator<vector<GridClientUuid>>(uuidArr));
+        reader.readDateArray("_dateArr", back_insert_iterator<vector<GridClientDate>>(dateArr));
 
         reader.readVariantCollection("col", back_insert_iterator<vector<GridClientVariant>>(col));
-        reader.readVariantCollection("varDeq", back_insert_iterator<deque<GridClientVariant>>(varDeq));
-        reader.readVariantCollection("varList", back_insert_iterator<list<GridClientVariant>>(varList));
+        reader.readVariantCollection("_varDeq", back_insert_iterator<deque<GridClientVariant>>(varDeq));
+        reader.readVariantCollection("_varList", back_insert_iterator<list<GridClientVariant>>(varList));
 
         reader.readInt64Array("lDeq", back_insert_iterator<deque<int64_t>>(lDeq));
         reader.readStringArray("strSet", insert_iterator<set<string>>(strSet, strSet.begin()));

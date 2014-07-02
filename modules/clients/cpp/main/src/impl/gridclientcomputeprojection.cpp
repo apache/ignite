@@ -204,9 +204,9 @@ GridClientVariant GridClientComputeProjectionImpl::execute(const string& taskNam
 
     this->withReconnectHandling(c);
 
-    GridClientMessageTaskResult res = c.getResult();
+    const GridClientMessageTaskResult& res = c.getResult();
 
-    return GridClientVariant(res.getTaskResult());
+    return std::move(res.taskRes);
 }
 
 /**
@@ -264,7 +264,7 @@ GridClientVariant GridClientComputeProjectionImpl::affinityExecute(const string&
 
     GridClientMessageTaskResult res = c.getResult();
 
-    return GridClientVariant(res.getTaskResult());
+    return std::move(res.taskRes);
 }
 
 /**

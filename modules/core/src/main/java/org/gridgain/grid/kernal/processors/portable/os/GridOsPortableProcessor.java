@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.portable.os;
 
+import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.portable.*;
-import org.gridgain.grid.util.portable.*;
 import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
@@ -28,13 +28,23 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public GridPortableContext portableContext() {
-        return null;
+    @Override public boolean isPortableEnabled() {
+        return false;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isPortable(Object obj) {
+    @Override public void configureClientMarshaller(GridClientMarshaller marsh) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isPortable(@Nullable Object obj) {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String typeName(int typeId) {
+        return null;
     }
 
     /** {@inheritDoc} */

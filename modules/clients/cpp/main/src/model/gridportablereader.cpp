@@ -115,23 +115,23 @@ bool GridPortableReader::startReadArray<GridClientVariant>(char* fieldName) {
 }
 
 template<>
-std::string GridPortableReader::readString(int32_t len, bool raw) {
-    return doReadString(len, raw);
-}
-
-template<>
-std::wstring GridPortableReader::readString(int32_t len, bool raw) {
-    return doReadWString(len, raw);
-}
-
-template<>
 GridClientUuid GridPortableReader::readObject(bool raw) {
-    return doReadUuidObject(raw);
+    return doReadUuid(raw);
 }
 
 template<>
 GridClientDate GridPortableReader::readObject(bool raw) {
-    return doReadDateObject(raw);
+    return doReadDate(raw);
+}
+
+template<>
+std::string GridPortableReader::readObject(bool raw) {
+    return doReadString(raw);
+}
+
+template<>
+std::wstring GridPortableReader::readObject(bool raw) {
+    return doReadWString(raw);
 }
 
 template<>
@@ -175,21 +175,21 @@ double GridPortableRawReader::readArrayElement(bool raw) {
 }
 
 template<>
-std::string GridPortableRawReader::readString(int32_t len, bool raw) {
-    return doReadString(len, raw);
-}
-
-template<>
-std::wstring GridPortableRawReader::readString(int32_t len, bool raw) {
-    return doReadWString(len, raw);
-}
-
-template<>
 GridClientUuid GridPortableRawReader::readObject(bool raw) {
-    return doReadUuidObject(raw);
+    return doReadUuid(raw);
 }
 
 template<>
 GridClientDate GridPortableRawReader::readObject(bool raw) {
-    return doReadDateObject(raw);
+    return doReadDate(raw);
+}
+
+template<>
+std::string GridPortableRawReader::readObject(bool raw) {
+    return doReadString(raw);
+}
+
+template<>
+std::wstring GridPortableRawReader::readObject(bool raw) {
+    return doReadWString(raw);
 }

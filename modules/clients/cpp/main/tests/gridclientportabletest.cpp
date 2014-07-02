@@ -28,6 +28,14 @@ using namespace std;
 
 BOOST_AUTO_TEST_SUITE(GridClientPortableIntegrationSuite)
 
+std::set<GridClientCacheFlag> keepPortable() {
+    std::set<GridClientCacheFlag> flags;
+
+    flags.insert(GridClientCacheFlag::KEEP_PORTABLE);
+
+    return flags;
+}
+
 class GridClientTestPortable : public GridPortable {
 public:
     GridClientTestPortable() : portable1(0), portable2(0), portableRaw1(0), portableRaw2(0), date(0), dateRaw(0) {
@@ -175,12 +183,10 @@ public:
         reader.readVariantMap("_map", map);
 
         GridClientVariant var = reader.readVariant("_portable1");
-        if (var.hasPortableObject())
-            portable1 = var.deserializePortable<GridClientTestPortable>();
+        portable1 = var.deserializePortable<GridClientTestPortable>();
 
         var = reader.readVariant("_portable2");
-        if (var.hasPortableObject())
-            portable2 = var.deserializePortable<GridClientTestPortable>();
+        portable2 = var.deserializePortable<GridClientTestPortable>();
 
         GridPortableRawReader& raw = reader.rawReader();
 
@@ -211,12 +217,10 @@ public:
         raw.readVariantMap(mapRaw);
 
         var = raw.readVariant();
-        if (var.hasPortableObject())
-            portableRaw1 = var.deserializePortable<GridClientTestPortable>();
+        portableRaw1 = var.deserializePortable<GridClientTestPortable>();
 
         var = raw.readVariant();
-        if (var.hasPortableObject())
-            portableRaw2 = var.deserializePortable<GridClientTestPortable>();
+        portableRaw2 = var.deserializePortable<GridClientTestPortable>();
     }
 
     /** */
@@ -532,7 +536,7 @@ BOOST_FIXTURE_TEST_CASE(testCreateOnJava, GridClientFactoryFixture1<clientConfig
 
     GridClientVariant res = compute->execute("org.gridgain.client.GridClientPutPortableTask", CACHE_NAME);
 
-    TGridClientDataPtr data = client->data(CACHE_NAME);
+    TGridClientDataPtr data = client->data(CACHE_NAME)->flagsOn(keepPortable());
 
     GridClientVariant portable = data->get(1);
 
@@ -542,7 +546,7 @@ BOOST_FIXTURE_TEST_CASE(testCreateOnJava, GridClientFactoryFixture1<clientConfig
 }
 
 BOOST_FIXTURE_TEST_CASE(testPutGetPortable, GridClientFactoryFixture1<clientConfig>) {
-    TGridClientDataPtr data = client->data(CACHE_NAME);
+    TGridClientDataPtr data = client->data(CACHE_NAME)->flagsOn(keepPortable());
 
     multithreaded([&] {
         for (int i = 0; i < 1000; i++) {
@@ -575,7 +579,7 @@ BOOST_FIXTURE_TEST_CASE(testPutGetPortable, GridClientFactoryFixture1<clientConf
 }
 
 BOOST_FIXTURE_TEST_CASE(testPutAllGetAllPortable, GridClientFactoryFixture1<clientConfig>) {
-    TGridClientDataPtr data = client->data(CACHE_NAME);
+    TGridClientDataPtr data = client->data(CACHE_NAME)->flagsOn(keepPortable());
 
     multithreaded([&] {
         TestPortableKey invalidKey(-1);
@@ -691,7 +695,7 @@ BOOST_FIXTURE_TEST_CASE(testPutGetDetached, GridClientFactoryFixture1<clientConf
     map[1] = GridClientVariant(&obj2);
     map[2] = GridClientVariant(&obj3);
 
-    TGridClientDataPtr data = client->data(CACHE_NAME);
+    TGridClientDataPtr data = client->data(CACHE_NAME)->flagsOn(keepPortable());
 
     data->putAll(map); // During put obj2 and obj3 reference the same obj1.
 
@@ -733,7 +737,7 @@ BOOST_FIXTURE_TEST_CASE(testPutPortable, GridClientFactoryFixture1<clientConfig>
     GridClientTestPortable obj1(1, false);
     GridClientTestPortable obj2(2, true);
 
-    TGridClientDataPtr data = client->data(CACHE_NAME);
+    TGridClientDataPtr data = client->data(CACHE_NAME)->flagsOn(keepPortable());
 
     data->put(1, &obj1);
     data->put(2, &obj2);
@@ -759,6 +763,41 @@ BOOST_FIXTURE_TEST_CASE(testPutPortable, GridClientFactoryFixture1<clientConfig>
     BOOST_REQUIRE(p2 == p21);
     BOOST_REQUIRE_EQUAL(2, p21.field("_i").getInt());
     BOOST_REQUIRE_EQUAL(3, p21.field("_portable1").getPortableObject().field("_i").getInt());
+}
+
+BOOST_FIXTURE_TEST_CASE(testKeepPortable, GridClientFactoryFixture1<clientConfig>) {
+    GridClientTestPortable obj1(1, false);
+
+    TGridClientDataPtr data = client->data(CACHE_NAME);
+
+    data->put(1, &obj1);
+
+    GridClientVariant res = data->get(1);
+
+    BOOST_REQUIRE(res.hasPortable());
+    BOOST_REQUIRE(!res.hasPortableObject());
+
+    BOOST_REQUIRE_EQUAL(1, (res.getPortable<GridClientTestPortable>())->i);
+
+    delete res.getPortable();
+
+    data = data->flagsOn(keepPortable());
+
+    res = data->get(1);
+
+    BOOST_REQUIRE(!res.hasPortable());
+    BOOST_REQUIRE(res.hasPortableObject());
+
+    BOOST_REQUIRE_EQUAL(1, res.getPortableObject().field("_i").getInt());
+
+    data = data->flagsOff(keepPortable());
+
+    res = data->get(1);
+
+    BOOST_REQUIRE(res.hasPortable());
+    BOOST_REQUIRE(!res.hasPortableObject());
+
+    delete res.getPortable();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

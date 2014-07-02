@@ -65,9 +65,6 @@
         <!-- Client configuration. -->
         <property name="clientConnectionConfiguration">
             <bean class="org.gridgain.grid.GridClientConnectionConfiguration">
-                <!-- Configure TCP rest protocol. -->
-                <property name="restTcpPort" value="10080"/>
-
                 <!-- Configure marshaller. -->
                 <property name="marshaller">
                     <bean class="org.gridgain.client.marshaller.portable.GridClientPortableMarshaller" />

@@ -47,8 +47,8 @@ public:
     /**
      * Public default constructor required by GridPortable.
      */
-	Employee() {
-	}
+    Employee() {
+    }
 
     /**
      * Creates employee.
@@ -57,17 +57,17 @@ public:
      * @param name Name.
      * @param salary Salary.
      */
-	Employee(const GridClientUuid& id, const string& name, int64_t salary) : id(id), name(name), salary(salary) {
-	}
+    Employee(const GridClientUuid& id, const string& name, int64_t salary) : id(id), name(name), salary(salary) {
+    }
 
     /**
      * Returns portable type id (must match with id defined in Java and .Net).
      *
      * @return Type id.
      */
-	int32_t typeId() const {
-		return 100;
-	}
+    int32_t typeId() const {
+        return 100;
+    }
 
     /**
      * Writes portable object.
@@ -75,10 +75,10 @@ public:
      * @param writer Writer.
      */
     void writePortable(GridPortableWriter& writer) const {
-		writer.writeUuid("id", id);
-		writer.writeString("name", name);
-		writer.writeInt64("salary", salary);
-	}
+        writer.writeUuid("id", id);
+        writer.writeString("name", name);
+        writer.writeInt64("salary", salary);
+    }
 
     /**
      * Reads portable object.
@@ -86,33 +86,33 @@ public:
      * @param reader Reader.
      */
     void readPortable(GridPortableReader& reader) {
-		id = reader.readUuid("id").get();
-		name = reader.readString("name").get();
-		salary = reader.readInt64("salary");
-	}
+        id = reader.readUuid("id").get();
+        name = reader.readString("name").get();
+        salary = reader.readInt64("salary");
+    }
 
     /**
      * Returns string containing employee infromation.
      *
      * @return String containing employee infromation.
      */
-	string toString() {
+    string toString() {
         ostringstream oss;
 
         oss << "Employee [id=" << id << ", name=" << name << ", salary=" << salary << "]";
-		
-		return oss.str();
-	}
+
+        return oss.str();
+    }
 
 private:
     /** ID. */
-	GridClientUuid id;
+    GridClientUuid id;
 
     /** Name. */
-	string name;
+    string name;
 
     /** Salary. */
-	int64_t salary;
+    int64_t salary;
 };
 
 REGISTER_TYPE(Employee);
@@ -125,63 +125,69 @@ REGISTER_TYPE(Employee);
 void clientPortableExample(TGridClientPtr& client) {
     cout << endl;
     cout << ">>> Portable objects example started." << endl;
-	
-	TGridClientVariantMap putMap;
 
-	Employee e1(GridClientUuid::randomUuid(), "Serena Williams", 100000);
-	Employee e2(GridClientUuid::randomUuid(), "Maria Sharapova", 200000);
-	Employee e3(GridClientUuid::randomUuid(), "Caroline Wozniacki", 300000);
+    TGridClientVariantMap putMap;
 
-	putMap[7] = &e1;
-	putMap[8] = &e2;
-	putMap[9] = &e3;
+    Employee e1(GridClientUuid::randomUuid(), "Serena Williams", 100000);
+    Employee e2(GridClientUuid::randomUuid(), "Maria Sharapova", 200000);
+    Employee e3(GridClientUuid::randomUuid(), "Caroline Wozniacki", 300000);
+
+    putMap[7] = &e1;
+    putMap[8] = &e2;
+    putMap[9] = &e3;
 
     TGridClientDataPtr rmtCache = client->data(CACHE_NAME);
 
-	rmtCache->putAll(putMap);
+    rmtCache->putAll(putMap);
 
-	TGridClientVariantSet javaKeys;
+    TGridClientVariantSet javaKeys;
 
-	javaKeys.push_back(1);
-	javaKeys.push_back(2);
-	javaKeys.push_back(3);
+    javaKeys.push_back(1);
+    javaKeys.push_back(2);
+    javaKeys.push_back(3);
 
-	TGridClientVariantMap javaMap = rmtCache->getAll(javaKeys);
+    TGridClientVariantMap javaMap = rmtCache->getAll(javaKeys);
 
-	if (javaMap.empty()) {
+    if (javaMap.empty()) {
         cout << ">>> Java client hasn't put entries to cache. Run Java example before this example to see the output." << endl;
-	}
-	else {
+    }
+    else {
         cout << ">>> Entries from Java client:" << endl;
 
-		for (auto iter = javaMap.begin(); iter != javaMap.end(); ++iter) {
-			unique_ptr<Employee> employee = (*iter).second.deserializePortableUnique<Employee>();
+        for (auto iter = javaMap.begin(); iter != javaMap.end(); ++iter) {
+            unique_ptr<Employee> employee = (*iter).second.deserializePortableUnique<Employee>();
 
-			cout << employee->toString() << endl;
-		}
-	}
+            cout << employee->toString() << endl;
+        }
+    }
 
-	TGridClientVariantSet dotNetKeys;
+    TGridClientVariantSet dotNetKeys;
 
-	dotNetKeys.push_back(4);
-	dotNetKeys.push_back(5);
-	dotNetKeys.push_back(6);
+    dotNetKeys.push_back(4);
+    dotNetKeys.push_back(5);
+    dotNetKeys.push_back(6);
 
-	TGridClientVariantMap dotNetMap = rmtCache->getAll(dotNetKeys);
+    set<GridClientCacheFlag> flags;
 
-	if (dotNetMap.empty()) {
+    flags.insert(GridClientCacheFlag::KEEP_PORTABLE);
+
+    rmtCache = rmtCache->flagsOn(flags);
+
+    TGridClientVariantMap dotNetMap = rmtCache->getAll(dotNetKeys);
+
+    if (dotNetMap.empty()) {
         cout << ">>> .NET client hasn't put entries to cache. Run .NET example before this example to see the output." << endl;
-	}
-	else {
+    }
+    else {
         cout << ">>> Entries from .Net client:" << endl;
 
-		for (auto iter = dotNetMap.begin(); iter != dotNetMap.end(); ++iter) {
-			GridPortableObject& employee = (*iter).second.getPortableObject();
+        for (auto iter = dotNetMap.begin(); iter != dotNetMap.end(); ++iter) {
+            GridPortableObject& employee = (*iter).second.getPortableObject();
 
-			cout << "Employee [name=" << employee.field("name").getString() << \
-				", salary=" << employee.field("salary").getLong() << "]" << endl;
-		}
-	}
+            cout << "Employee [name=" << employee.field("name").getString() << \
+                ", salary=" << employee.field("salary").getLong() << "]" << endl;
+        }
+    }
 }
 
 /**
@@ -467,7 +473,7 @@ int main () {
 
         clientDataExample(client);
 
-		clientPortableExample(client);
+        clientPortableExample(client);
     }
     catch(exception& e) {
         cerr << "Caught unhandled exception: " << e.what() << endl;

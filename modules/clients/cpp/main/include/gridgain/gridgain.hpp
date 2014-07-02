@@ -44,6 +44,5 @@
 #include <gridgain/gridportable.hpp>
 #include <gridgain/gridportablewriter.hpp>
 #include <gridgain/gridportablereader.hpp>
-#include <gridgain/gridportableserializer.hpp>
 
 #endif // GRIDGAIN_HPP__INCLUDED

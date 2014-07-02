@@ -38,7 +38,8 @@ class GridPortableReader;
 class GridPortableWriter;
 
 /**
- * C++ client API.
+ * Interface that allows to implement serialization/deserialization logic.
+ * Class extending GridPortable must provide default constructor.
  */
 class GRIDGAIN_API GridPortable {
 public:
@@ -49,15 +50,29 @@ public:
     virtual ~GridPortable() {};
 
     /**
-     * @return Type id.
+     * @return Type ID.
      */
     virtual int32_t typeId() const = 0;
 
+    /**
+     * Writes portable object.
+     *
+     * @param writer Writer.
+     */
     virtual void writePortable(GridPortableWriter& writer) const = 0;
 
+    /**
+     * Reads portable object.
+     *
+     * @param reader Reader.
+     */
     virtual void readPortable(GridPortableReader& reader) = 0;
 };
 
+/**
+ * Extension of GridPortable needed when object is used as cache key,
+ * in this case it should provide hasCode function and equality comparison operator.
+ */
 class GRIDGAIN_API GridHashablePortable : public GridPortable {
 public:
     virtual int32_t hashCode() const = 0;
@@ -67,27 +82,64 @@ public:
 
 class PortableReadContext;
 
+/**
+ * Wrapper for serialized portable object.
+ */
 class GRIDGAIN_API GridPortableObject {
 public:
+    /**
+     * Copy constructor.
+     *
+     * @param other Portable object.
+     */
     GridPortableObject(const GridPortableObject& other);
 
+    /**
+     * Destructor.
+     */
     ~GridPortableObject();
 
-    bool userType() const;
-
+    /**
+     * @return Portable object type ID.
+     */
     int32_t typeId() const;
 
+    /**
+     * @return Hash code.
+     */
     int32_t hashCode() const;
 
+    /**
+     * Gets field value.
+     *
+     * @param fieldName Field name.
+     * @return Field value.
+     */
     GridClientVariant field(const std::string& fieldName) const;
 
+    /**
+     * Gets fully deserialized instance of portable object.
+     *
+     * @return Deserialized instance of portable object.
+     */
     GridPortable* deserialize() const;
 
+    /**
+     * Gets fully deserialized instance of portable object.
+     *
+     * @return Deserialized instance of portable object.
+     */
     template<typename T>
     std::unique_ptr<T> deserializeUnique() const {
         return std::unique_ptr<T>(deserialize<T>());
     }
 
+
+    /**
+     * Gets fully deserialized instance of portable object.
+     *
+     * @return Deserialized instance of portable object.
+     */
     template<typename T>
     T* deserialize() const {
         return static_cast<T*>(deserialize());
@@ -98,8 +150,10 @@ public:
 private:
     GridPortableObject(boost::shared_ptr<PortableReadContext>& ctxPtr, int32_t start);
 
+    /** */
     class Impl;
 
+    /** */
     Impl* pImpl;
     
     std::vector<int8_t>* data();

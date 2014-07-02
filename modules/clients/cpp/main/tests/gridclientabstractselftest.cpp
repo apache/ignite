@@ -547,6 +547,21 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testPutGetStandardTypes, CfgT, TestCfgs, GridCl
         BOOST_REQUIRE(10 == getVal.getVariantMap().size());
         BOOST_REQUIRE(val == getVal.getVariantMap());
     }
+
+    {
+        TGridClientVariantPair val = TGridClientVariantPair(1, string("str"));
+
+        GridClientVariant varVal(val);
+        GridClientVariant varKey(1);
+
+        data->put(varKey, varVal);
+
+        GridClientVariant getVal = data->get(varKey);
+
+        BOOST_REQUIRE(val == getVal.getMapEntry());
+        BOOST_REQUIRE_EQUAL(1, getVal.getMapEntry().first.getInt());
+        BOOST_REQUIRE_EQUAL("str", getVal.getMapEntry().second.getString());
+    }
 }
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(testPut, CfgT, TestCfgs, GridClientFactoryFixture2) {

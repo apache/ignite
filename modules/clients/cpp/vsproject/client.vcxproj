@@ -272,7 +272,6 @@
     <ClInclude Include="..\main\include\gridgain\gridhasheableobject.hpp" />
     <ClInclude Include="..\main\include\gridgain\gridportable.hpp" />
     <ClInclude Include="..\main\include\gridgain\gridportablereader.hpp" />
-    <ClInclude Include="..\main\include\gridgain\gridportableserializer.hpp" />
     <ClInclude Include="..\main\include\gridgain\gridportablewriter.hpp" />
     <ClInclude Include="..\main\include\gridgain\gridsocketaddress.hpp" />
     <ClInclude Include="..\main\include\gridgain\impl\cmd\gridclientcommandexecutor.hpp" />

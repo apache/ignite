@@ -23,7 +23,7 @@
  */
 class GridClientMessage {
 public:
-    GridClientMessage(): reqId(1) {
+    GridClientMessage(): reqId(1), keepPortable(false) {
     }
 
     /** Virtual destructor. */
@@ -60,24 +60,6 @@ public:
     }
 
     /**
-     * Sets client session token.
-     *
-     * @return Session token.
-     */
-    const std::vector<int8_t>& sessionToken() const {
-        return sessTok;
-    }
-
-    /**
-     * Gets client session token.
-     *
-     * @param pSessTok Session token.
-     */
-    void sessionToken(const std::vector<int8_t>& pSessTok) {
-        sessTok = pSessTok;
-    }
-
-    /**
      * Gets the client destination id.
      *
      * @return destination id.
@@ -96,6 +78,20 @@ public:
     }
 
     /**
+     * @param keepPortable Keep portable flag.
+     */
+    void setKeepPortable(bool keepPortable) {
+        this->keepPortable = keepPortable;
+    }
+
+    /**
+     * @return Keep portable flag.
+     */
+    bool isKeepPortable() {
+        return keepPortable;
+    }
+
+    /**
      * Generate the new id for the request.
      *
      * @return newId - int - The new generated value for the request.
@@ -104,11 +100,11 @@ public:
          return rand();
     }
 private:
+    /** */
+    bool keepPortable;
+
     /** Message client id. */
     GridClientUuid clientId;
-
-    /** Message sessio token. */
-    std::vector<int8_t> sessTok;
 
     /** Message request id. */
     int64_t reqId;

@@ -41,10 +41,10 @@ namespace GridGain.Client.Impl.Portable
         private static GridClientPortableCollectionInfo NONE = new GridClientPortableCollectionInfo(FLAG_NONE, null, null, null);
 
         /** Cache "dictionary" value. */
-        private static GridClientPortableCollectionInfo DICTIONARY = new GridClientPortableCollectionInfo(FLAG_GENERIC_DICTIONARY, PSH.WriteDictionary, null, null);
+        private static GridClientPortableCollectionInfo DICTIONARY = new GridClientPortableCollectionInfo(FLAG_DICTIONARY, PSH.WriteDictionary, null, null);
 
         /** Cache "collection" value. */
-        private static GridClientPortableCollectionInfo COLLECTION = new GridClientPortableCollectionInfo(FLAG_GENERIC_COLLECTION, PSH.WriteCollection, null, null);
+        private static GridClientPortableCollectionInfo COLLECTION = new GridClientPortableCollectionInfo(FLAG_COLLECTION, PSH.WriteCollection, null, null);
 
         /** Cached infos. */
         private static IDictionary<Type, GridClientPortableCollectionInfo> INFOS = new ConcurrentDictionary<Type, GridClientPortableCollectionInfo>();
