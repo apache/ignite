@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
+import org.apache.hadoop.conf.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 
@@ -21,5 +22,24 @@ public class GridHadoopStartup {
      */
     public static void main(String[] args) throws GridException {
         G.start("config/hadoop/default-config.xml");
+    }
+
+    /**
+     * @return Configuration for job run.
+     */
+    @SuppressWarnings("UnnecessaryFullyQualifiedName")
+    public static Configuration configuration() {
+        Configuration cfg = new Configuration();
+
+        cfg.set("fs.default.name", "ggfs://ggfs@localhost");
+        cfg.set("fs.ggfs.impl", org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem.class.getName());
+        cfg.set("fs.AbstractFileSystem.ggfs.impl", org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem.class.getName());
+
+        cfg.set("dfs.client.block.write.replace-datanode-on-failure.policy", "NEVER");
+
+        cfg.set("mapreduce.framework.name", "gridgain");
+        cfg.set("mapreduce.jobtracker.address", "localhost:11211");
+
+        return cfg;
     }
 }
