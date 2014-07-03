@@ -1729,16 +1729,16 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Portable object.
      * @throws GridPortableException In case of error.
      */
-    public Object marshalToPortableIfNeeded(@Nullable Object obj) throws GridPortableException {
+    public Object marshalToPortable(@Nullable Object obj) throws GridPortableException {
         assert portableEnabled();
 
         if (obj == null)
             return null;
 
-        if (!(obj instanceof GridPortableObject) && kernalContext().portable().isPortable(obj))
-            obj = kernalContext().portable().marshal(obj);
+        if (obj instanceof GridPortableObject)
+            return obj;
 
-        return obj;
+        return kernalContext().portable().marshalToPortable(obj);
     }
 
     /**

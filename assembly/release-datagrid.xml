@@ -39,14 +39,6 @@
         <componentDescriptor>release-base.xml</componentDescriptor>
     </componentDescriptors>
 
-    <files>
-        <file>
-            <source>examples/clients/dotnet/GridClientApiExample.csprojrel</source>
-            <outputDirectory>/examples/clients/dotnet</outputDirectory>
-            <destName>GridClientApiExample.csproj</destName>
-        </file>
-    </files>
-
     <fileSets>
         <fileSet>
             <directory>examples</directory>
@@ -73,11 +65,6 @@
             <includes>
                 <include>clients/**</include>
             </includes>
-            <excludes>
-                <exclude>**/*.md</exclude>
-                <exclude>clients/dotnet/GridClientApiExample-public-key.txt</exclude>
-                <exclude>clients/dotnet/GridClientApiExample.csproj*</exclude>
-            </excludes>
         </fileSet>
     </fileSets>
 </assembly>
