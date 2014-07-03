@@ -456,7 +456,8 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public void cleanupStagingDirectory() {
-        rsrcMgr.cleanupStagingDirectory();
+        if (rsrcMgr != null)
+            rsrcMgr.cleanupStagingDirectory();
     }
 
     /**
