@@ -33,6 +33,7 @@ import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.email.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
+import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.job.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.kernal.processors.license.*;
@@ -229,6 +230,10 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringExclude
+    private GridHadoopProcessorAdapter hadoopProc;
+
+    /** */
+    @GridToStringExclude
     private GridVersionProcessor verProc;
 
     /** */
@@ -400,6 +405,9 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             drProc = (GridDrProcessor)comp;
         else if (comp instanceof GridVersionProcessor)
             verProc = (GridVersionProcessor)comp;
+        else if (comp instanceof GridHadoopProcessorAdapter)
+            hadoopProc = (GridHadoopProcessorAdapter)comp;
+
         else
             assert false : "Unknown manager class: " + comp.getClass();
 
@@ -634,6 +642,11 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** {@inheritDoc} */
     @Override public GridDrProcessor dr() {
         return drProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridHadoopProcessorAdapter hadoop() {
+        return hadoopProc;
     }
 
     /** {@inheritDoc} */

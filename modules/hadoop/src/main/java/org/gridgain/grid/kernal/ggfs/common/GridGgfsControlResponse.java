@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.ggfs.common;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -312,6 +313,18 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
      * @return Error code.
      */
     private int errorCode(GridException e) {
+        return errorCode(e, true);
+    }
+
+    /**
+     * Gets error code based on exception class.
+     *
+     * @param e Exception to analyze.
+     * @param checkIo Whether to check for IO exception.
+     * @return Error code.
+     */
+    @SuppressWarnings("unchecked")
+    private int errorCode(GridException e, boolean checkIo) {
         if (X.hasCause(e, GridGgfsFileNotFoundException.class))
             return ERR_FILE_NOT_FOUND;
         else if (GridGgfsPathAlreadyExistsException.class.isInstance(e))
@@ -325,8 +338,15 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
         else if (X.hasCause(e, GridGgfsCorruptedFileException.class))
             return ERR_CORRUPTED_FILE;
             // This check should be the last.
-        else if (GridGgfsException.class.isInstance(e))
+        else if (GridGgfsException.class.isInstance(e)) {
+            if (checkIo && e.hasCause(IOException.class)) {
+                IOException e0 = e.getCause(IOException.class);
+
+                return errorCode(GridGgfsHadoopUtils.cast(e0), false);
+            }
+
             return ERR_GGFS_GENERIC;
+        }
 
         return ERR_GENERIC;
     }
@@ -337,6 +357,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
      * @param out Data output.
      * @throws IOException If error occurred.
      */
+    @SuppressWarnings("unchecked")
     public void writeExternal(ObjectOutput out) throws IOException {
         byte[] hdr = new byte[RES_HEADER_SIZE];
 

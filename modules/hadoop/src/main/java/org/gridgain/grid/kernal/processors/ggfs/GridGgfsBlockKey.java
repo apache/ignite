@@ -133,7 +133,7 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return fileId.hashCode() ^ (int)(blockId ^ (blockId >>> 32));
+        return fileId.hashCode() + (int)(blockId ^ (blockId >>> 32));
     }
 
     /** {@inheritDoc} */

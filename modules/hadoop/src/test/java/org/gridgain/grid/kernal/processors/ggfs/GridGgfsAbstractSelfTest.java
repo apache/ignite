@@ -20,7 +20,6 @@ import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -38,7 +37,7 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 /**
  * Test fo regular GGFs operations.
  */
-public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
+public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTest {
     /** GGFS block size. */
     protected static final int GGFS_BLOCK_SIZE = 512 * 1024;
 
@@ -58,7 +57,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
     protected static final int SEQ_READS_BEFORE_PREFETCH = 2;
 
     /** Primary file system URI. */
-    protected static final String PRIMARY_URI = "ggfs://primary/";
+    protected static final String PRIMARY_URI = "ggfs://ggfs:grid@/";
 
     /** Primary file system configuration path. */
     protected static final String PRIMARY_CFG = "modules/core/src/test/config/hadoop/core-site-loopback.xml";
@@ -67,7 +66,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
     protected static final String PRIMARY_REST_CFG = "{type:'tcp', port:10500}";
 
     /** Secondary file system URI. */
-    protected static final String SECONDARY_URI = "ggfs://secondary/";
+    protected static final String SECONDARY_URI = "ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/";
 
     /** Secondary file system configuration path. */
     protected static final String SECONDARY_CFG = "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml";
@@ -187,7 +186,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
         ggfsCfg.setName(ggfsName);
         ggfsCfg.setBlockSize(GGFS_BLOCK_SIZE);
         ggfsCfg.setDefaultMode(mode);
-        ggfsCfg.setIpcEndpointConfiguration(restCfg);
+        ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(restCfg));
         ggfsCfg.setSecondaryHadoopFileSystemUri(secondaryFsUri);
         ggfsCfg.setSecondaryHadoopFileSystemConfigPath(secondaryFsCfgPath);
         ggfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);

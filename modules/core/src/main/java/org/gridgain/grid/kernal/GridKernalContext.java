@@ -31,6 +31,7 @@ import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.email.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
+import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.job.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.kernal.processors.license.*;
@@ -301,6 +302,13 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      * @return Replication processor.
      */
     public GridDrProcessor dr();
+
+    /**
+     * Gets Hadoop processor.
+     *
+     * @return Hadoop processor.
+     */
+    public GridHadoopProcessorAdapter hadoop();
 
     /**
      * Gets DR pool.

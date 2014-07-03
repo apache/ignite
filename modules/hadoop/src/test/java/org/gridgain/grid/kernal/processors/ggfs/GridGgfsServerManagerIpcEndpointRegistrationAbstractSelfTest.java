@@ -21,7 +21,7 @@ import org.gridgain.grid.util.ipc.loopback.*;
 import org.gridgain.grid.util.ipc.shmem.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.junits.common.*;
+import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -33,7 +33,7 @@ import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
 /**
  * Base test class for {@link GridGgfsServer} checking IPC endpoint registrations.
  */
-public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTest extends GridCommonAbstractTest {
+public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTest extends GridGgfsCommonAbstractTest {
     /** IP finder. */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
@@ -145,7 +145,7 @@ public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTe
      * @param endpointCfg Optional REST endpoint configuration.
      * @return test-purposed GridGgfsConfiguration.
      */
-    protected GridGgfsConfiguration gridGgfsConfiguration(@Nullable String endpointCfg) {
+    protected GridGgfsConfiguration gridGgfsConfiguration(@Nullable String endpointCfg) throws GridException {
         GridGgfsConfiguration ggfsConfiguration = new GridGgfsConfiguration();
 
         ggfsConfiguration.setDataCacheName("partitioned");
@@ -154,7 +154,7 @@ public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTe
         ggfsConfiguration.setManagementPort(mgmtPort.getAndIncrement());
 
         if (endpointCfg != null)
-            ggfsConfiguration.setIpcEndpointConfiguration(endpointCfg);
+            ggfsConfiguration.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(endpointCfg));
 
         return ggfsConfiguration;
     }

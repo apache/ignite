@@ -617,6 +617,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
+        if (GridComponentType.HADOOP.isInClassPath())
+            sysCaches.add(CU.SYS_CACHE_HADOOP_MR);
+
         for (GridCacheConfiguration ccfg : ctx.grid().configuration().getCacheConfiguration()) {
             if (ccfg.getDrSenderConfiguration() != null)
                 sysCaches.add(CU.cacheNameForDrSystemCache(ccfg.getName()));
@@ -1686,6 +1689,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param <V> type of values.
      * @return Cache instance for given name.
      */
+    @SuppressWarnings("unchecked")
     public <K, V> GridCache<K, V> publicCache(@Nullable String name) {
         if (log.isDebugEnabled())
             log.debug("Getting public cache for name: " + name);
@@ -1778,6 +1782,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param near Near flag.
      * @throws GridException If registration failed.
      */
+    @SuppressWarnings("unchecked")
     private void registerMbean(Object o, @Nullable String cacheName, boolean near)
         throws GridException {
         assert o != null;
@@ -1904,6 +1909,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Created component.
      * @throws GridException If failed to create component.
      */
+    @SuppressWarnings("unchecked")
     private static <T> T createComponent(Class<T> cls) throws GridException {
         assert cls.isInterface() : cls;
         assert cls.getSimpleName().startsWith("Grid") : cls;

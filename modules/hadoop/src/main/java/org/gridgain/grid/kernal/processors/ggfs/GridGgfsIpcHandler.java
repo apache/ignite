@@ -11,8 +11,8 @@ package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.kernal.ggfs.common.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.ggfs.common.*;
 import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.logger.*;
@@ -193,8 +193,17 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
      *
      * @param req Handshake request.
      * @return Response message.
+     * @throws GridException In case of handshake failure.
      */
-    private GridGgfsMessage processHandshakeRequest(GridGgfsHandshakeRequest req) {
+    private GridGgfsMessage processHandshakeRequest(GridGgfsHandshakeRequest req) throws GridException {
+        if (!F.eq(ctx.gridName(), req.gridName()))
+            throw new GridException("Failed to perform handshake because actual Grid name differs from expected " +
+                "[expected=" + req.gridName() + ", actual=" + ctx.gridName() + ']');
+
+        if (!F.eq(ggfs.name(), req.ggfsName()))
+            throw new GridException("Failed to perform handshake because actual GGFS name differs from expected " +
+                "[expected=" + req.ggfsName() + ", actual=" + ggfs.name() + ']');
+
         GridGgfsControlResponse res = new GridGgfsControlResponse();
 
         ggfs.clientLogDirectory(req.logDirectory());
@@ -508,7 +517,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
             return null;
         }
 
-        GridUuid key = ggfs.context().data().nextAffinityKey(null);
+        GridUuid key = ggfs.nextAffinityKey();
 
         if (log.isDebugEnabled())
             log.debug("Generated affinity key for path control request [ggfsName=" + ggfs.name() +

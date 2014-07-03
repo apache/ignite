@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -124,4 +125,12 @@ public interface GridEx extends Grid, GridProjectionEx {
      * @return DR pool.
      */
     @Nullable public ExecutorService drPool();
+
+    /**
+     * Get GGFS instance returning null if it doesn't exist.
+     *
+     * @param name GGFS name.
+     * @return GGFS.
+     */
+    @Nullable public GridGgfs ggfsx(@Nullable String name);
 }
