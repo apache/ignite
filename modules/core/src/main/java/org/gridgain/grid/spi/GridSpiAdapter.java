@@ -379,9 +379,9 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
         assert spiCtx != null;
         assert node != null;
 
-        if (U.isVisorNode(node)) {
+        if (node.isDaemon()) {
             if (log.isDebugEnabled())
-                log.debug("Skipping configuration consistency check for Visor node: " + node);
+                log.debug("Skipping configuration consistency check for daemon node: " + node);
 
             return;
         }

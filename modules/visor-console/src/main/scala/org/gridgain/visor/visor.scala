@@ -240,10 +240,6 @@ object visor extends VisorTag {
         }
     }
 
-    // Asserts to make sure Visor console doesn't get peer deployed.
-    // Property '-DVISOR' is only set in ggvisor.{sh|bat} scripts.
-    assert(System.getProperty("VISOR") != null, "Visor is instantiating on non-visor node.")
-
     Runtime.getRuntime.addShutdownHook(new Thread() {
         override def run() {
             try
