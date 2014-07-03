@@ -13,6 +13,9 @@ package org.gridgain.client;
  * This exception is thrown when a client handshake has failed.
  */
 public class GridClientHandshakeException extends GridClientException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Status code for handshake error. */
     private final byte statusCode;
 

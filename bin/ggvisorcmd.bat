@@ -92,11 +92,6 @@ if %ERRORLEVEL% neq 0 (
 )
 
 ::
-:: Append hadoop libs to classpath after arguments are parsed.
-::
-set CP=%CP%;%GRIDGAIN_HOME%\libs\%HADOOP_LIB_DIR%\*
-
-::
 :: Set program name.
 ::
 set PROG_NAME=gridgain.bat

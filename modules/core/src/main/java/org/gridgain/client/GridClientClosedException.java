@@ -12,6 +12,9 @@ package org.gridgain.client;
  * This exception is thrown whenever an attempt is made to use a closed client.
  */
 public class GridClientClosedException extends GridClientException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Creates exception with given message.
      *

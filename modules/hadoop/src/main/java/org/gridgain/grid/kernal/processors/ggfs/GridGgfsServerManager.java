@@ -42,17 +42,27 @@ public class GridGgfsServerManager extends GridGgfsManager {
     /** {@inheritDoc} */
     @Override protected void start0() throws GridException {
         GridGgfsConfiguration ggfsCfg = ggfsCtx.configuration();
-        String cfg = ggfsCfg.getIpcEndpointConfiguration();
+        Map<String,String> cfg = ggfsCfg.getIpcEndpointConfiguration();
 
-        if (F.isEmpty(cfg))
+        if (F.isEmpty(cfg)) {
             // Set default configuration.
-            cfg = "{type:'" + (U.isWindows() ? "tcp" : "shmem") + "', port:" + DFLT_IPC_PORT  + '}';
+            cfg = new HashMap<>();
+
+            cfg.put("type", U.isWindows() ? "tcp" : "shmem");
+            cfg.put("port", String.valueOf(DFLT_IPC_PORT));
+        }
 
         if (ggfsCfg.isIpcEndpointEnabled())
             bind(cfg, /*management*/false);
 
-        if (ggfsCfg.getManagementPort() >= 0)
-            bind("{type:'tcp', port:" + ggfsCfg.getManagementPort() + '}', /*management*/true);
+        if (ggfsCfg.getManagementPort() >= 0) {
+            cfg = new HashMap<>();
+
+            cfg.put("type", "tcp");
+            cfg.put("port", String.valueOf(ggfsCfg.getManagementPort()));
+
+            bind(cfg, /*management*/true);
+        }
 
         if (bindWorker != null)
             new GridThread(bindWorker).start();
@@ -66,7 +76,7 @@ public class GridGgfsServerManager extends GridGgfsManager {
      * @param mgmt {@code True} if endpoint is management.
      * @throws GridException If failed.
      */
-    private void bind(final String endpointCfg, final boolean mgmt) throws GridException {
+    private void bind(final Map<String,String> endpointCfg, final boolean mgmt) throws GridException {
         if (srvrs == null)
             srvrs = new ConcurrentLinkedQueue<>();
 
@@ -137,7 +147,7 @@ public class GridGgfsServerManager extends GridGgfsManager {
     @SuppressWarnings("BusyWait")
     private class BindWorker extends GridWorker {
         /** Configurations to bind. */
-        private Collection<GridBiTuple<String, Boolean>> bindCfgs = new LinkedList<>();
+        private Collection<GridBiTuple<Map<String, String>, Boolean>> bindCfgs = new LinkedList<>();
 
         /**
          * Constructor.
@@ -152,7 +162,7 @@ public class GridGgfsServerManager extends GridGgfsManager {
          * @param cfg Configuration.
          * @param mgmt Management flag.
          */
-        public void addConfiguration(String cfg, boolean mgmt) {
+        public void addConfiguration(Map<String, String> cfg, boolean mgmt) {
             bindCfgs.add(F.t(cfg, mgmt));
         }
 
@@ -163,10 +173,10 @@ public class GridGgfsServerManager extends GridGgfsManager {
             while (!isCancelled()) {
                 Thread.sleep(REBIND_INTERVAL);
 
-                Iterator<GridBiTuple<String, Boolean>> it = bindCfgs.iterator();
+                Iterator<GridBiTuple<Map<String, String>, Boolean>> it = bindCfgs.iterator();
 
                 while (it.hasNext()) {
-                    GridBiTuple<String, Boolean> cfg = it.next();
+                    GridBiTuple<Map<String, String>, Boolean> cfg = it.next();
 
                     GridGgfsServer ipcSrv = new GridGgfsServer(ggfsCtx, cfg.get1(), cfg.get2());
 
