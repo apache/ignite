@@ -746,7 +746,11 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             notifyLifecycleBeans(AFTER_GRID_START);
         }
         catch (Throwable e) {
-            if (X.hasCause(e, InterruptedException.class, GridInterruptedException.class))
+            GridSpiVersionCheckException verCheckErr = X.cause(e, GridSpiVersionCheckException.class);
+
+            if (verCheckErr != null)
+                U.error(log, verCheckErr.getMessage());
+            else if (X.hasCause(e, InterruptedException.class, GridInterruptedException.class))
                 U.warn(log, "Grid startup routine has been interrupted (will rollback).");
             else
                 U.error(log, "Got exception while starting (will rollback startup routine).", e);
