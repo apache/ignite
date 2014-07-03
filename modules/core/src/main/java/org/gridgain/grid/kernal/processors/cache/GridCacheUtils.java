@@ -636,7 +636,7 @@ public class GridCacheUtils {
     public static boolean cacheNode(GridCacheContext ctx, GridNodeShadow s) {
         assert ctx != null;
 
-        return cacheNode(ctx.namex(), (GridCacheAttributes[]) s.attribute(ATTR_CACHE));
+        return cacheNode(ctx.namex(), (GridCacheAttributes[])s.attribute(ATTR_CACHE));
     }
 
     /**

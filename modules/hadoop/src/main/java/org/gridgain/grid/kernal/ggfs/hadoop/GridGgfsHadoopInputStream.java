@@ -382,7 +382,7 @@ public final class GridGgfsHadoopInputStream extends InputStream implements Seek
     }
 
     /**
-     * @throws java.io.IOException If check failed.
+     * @throws IOException If check failed.
      */
     private void checkClosed() throws IOException {
         if (closed) {

@@ -42,7 +42,7 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
      * @param job Job.
      * @param mem Memory.
      */
-    public GridHadoopMultimapBase(GridHadoopJob job, GridUnsafeMemory mem) {
+    protected GridHadoopMultimapBase(GridHadoopJob job, GridUnsafeMemory mem) {
         assert job != null;
         assert mem != null;
 

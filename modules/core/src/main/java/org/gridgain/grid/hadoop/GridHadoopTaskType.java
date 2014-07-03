@@ -15,7 +15,12 @@ import org.jetbrains.annotations.*;
 * Task type.
 */
 public enum GridHadoopTaskType {
-    SETUP, MAP, REDUCE, COMBINE, COMMIT, ABORT;
+    SETUP,
+    MAP,
+    REDUCE,
+    COMBINE,
+    COMMIT,
+    ABORT;
 
     /** Enumerated values. */
     private static final GridHadoopTaskType[] VALS = values();

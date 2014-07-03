@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.hadoop;
 
+import org.gridgain.grid.util.typedef.internal.*;
+
 import java.util.concurrent.*;
 
 /**
@@ -129,5 +131,10 @@ public class GridHadoopConfiguration {
      */
     public void setMapReducePlanner(GridHadoopMapReducePlanner planner) {
         this.planner = planner;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridHadoopConfiguration.class, this, super.toString());
     }
 }
