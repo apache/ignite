@@ -56,6 +56,8 @@ public class GridHadoopTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(GridHadoopGroupingTest.class));
 
+        suite.addTest(new TestSuite(GridHadoopFileSystemsTest.class));
+
         return suite;
     }
 }

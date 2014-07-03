@@ -74,6 +74,8 @@ public class GridHadoopV2JobResourceManager {
      * @throws IOException If fails.
      */
     private void setJobWorkingDirectory() throws IOException {
+        ctx.getJobConf().set(GridHadoopFileSystemsUtils.LOCAL_FS_WORKDIR_PROPERTY, jobLocDir.getAbsolutePath());
+
         FileSystem.getLocal(ctx.getJobConf()).setWorkingDirectory(new Path(jobLocDir.getAbsolutePath()));
     }
 
@@ -247,6 +249,8 @@ public class GridHadoopV2JobResourceManager {
      */
     public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
         try {
+            JobConf cfg = ctx.getJobConf();
+
             switch(info.type()) {
                 case MAP:
                 case REDUCE:
@@ -276,13 +280,19 @@ public class GridHadoopV2JobResourceManager {
                         }
                     }
 
-                    FileSystem.getLocal(ctx.getJobConf()).setWorkingDirectory(new Path(locDir.getAbsolutePath()));
+                    cfg.set(GridHadoopFileSystemsUtils.LOCAL_FS_WORKDIR_PROPERTY, locDir.getAbsolutePath());
+
+                    FileSystem.getLocal(cfg).setWorkingDirectory(new Path(locDir.getAbsolutePath()));
 
                     break;
 
                 default:
                     setJobWorkingDirectory();
             }
+
+            FileSystem fs = FileSystem.get(cfg);
+
+            GridHadoopFileSystemsUtils.setUser(fs, cfg.getUser());
         }
         catch (IOException e) {
             throw new GridException("Unable to prepare local working directory for the task " +

@@ -15,6 +15,7 @@ import org.apache.hadoop.fs.FileAlreadyExistsException;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.*;
+import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -22,11 +23,21 @@ import java.io.*;
 import java.net.*;
 import java.nio.file.*;
 
+import static org.gridgain.grid.ggfs.GridGgfsConfiguration.DFLT_USER_NAME;
+
 /**
  * Local file system implementation for Hadoop.
  */
 public class GridHadoopRawLocalFileSystem extends FileSystem {
-    /** */
+    /** User name for each thread. */
+    private final ThreadLocal<String> userName = new ThreadLocal<String>() {
+        /** {@inheritDoc} */
+        @Override protected String initialValue() {
+            return DFLT_USER_NAME;
+        }
+    };
+
+    /** Working directory for each thread. */
     private final ThreadLocal<Path> workDir = new ThreadLocal<Path>() {
         @Override protected Path initialValue() {
             return getInitialWorkingDirectory();
@@ -49,6 +60,11 @@ public class GridHadoopRawLocalFileSystem extends FileSystem {
     }
 
     /** {@inheritDoc} */
+    @Override public Path getHomeDirectory() {
+        return makeQualified(new Path(System.getProperty("user.home")));
+    }
+
+    /** {@inheritDoc} */
     @Override public Path getInitialWorkingDirectory() {
         File f = new File(System.getProperty("user.dir"));
 
@@ -60,6 +76,11 @@ public class GridHadoopRawLocalFileSystem extends FileSystem {
         super.initialize(uri, conf);
 
         setConf(conf);
+
+        String initWorkDir = conf.get(GridHadoopFileSystemsUtils.LOCAL_FS_WORKDIR_PROPERTY);
+
+        if (initWorkDir != null)
+            setWorkingDirectory(new Path(initWorkDir));
     }
 
     /** {@inheritDoc} */
@@ -116,7 +137,8 @@ public class GridHadoopRawLocalFileSystem extends FileSystem {
 
     /** {@inheritDoc} */
     @Override public void setWorkingDirectory(Path dir) {
-        workDir.set(dir);
+        workDir.set(fixRelativePart(dir));
+
         checkPath(dir);
     }
 
