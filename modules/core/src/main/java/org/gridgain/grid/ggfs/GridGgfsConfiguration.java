@@ -110,7 +110,7 @@ public class GridGgfsConfiguration {
     private int perNodeParallelBatchCnt = DFLT_PER_NODE_PARALLEL_BATCH_CNT;
 
     /** IPC endpoint properties to publish GGFS over. */
-    private Map<String,String> ipcEndpointCfg;
+    private Map<String, String> ipcEndpointCfg;
 
     /** IPC endpoint enabled flag. */
     private boolean ipcEndpointEnabled = DFLT_IPC_ENDPOINT_ENABLED;

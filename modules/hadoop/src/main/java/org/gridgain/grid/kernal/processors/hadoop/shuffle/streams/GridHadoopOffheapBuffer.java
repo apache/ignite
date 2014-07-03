@@ -35,9 +35,10 @@ public class GridHadoopOffheapBuffer {
      * @param bufSize Size of the buffer.
      */
     public void set(long bufPtr, long bufSize) {
-        this.posPtr = bufPtr;
         this.bufPtr = bufPtr;
-        this.bufEnd = bufPtr + bufSize;
+
+        posPtr = bufPtr;
+        bufEnd = bufPtr + bufSize;
     }
 
     /**

@@ -63,7 +63,7 @@ public class GridHadoopJobStatus implements Externalizable {
     private long ver;
 
     /**
-     * {@link Externalizable}  support.
+     * {@link Externalizable} support.
      */
     public GridHadoopJobStatus() {
         // No-op.
@@ -78,7 +78,7 @@ public class GridHadoopJobStatus implements Externalizable {
      * @param usr User.
      * @param pendingMapperCnt Pending mappers count.
      * @param pendingReducerCnt Pending reducers count.
-     * @param totalMapCnt Total mappers count.
+     * @param totalMapperCnt Total mappers count.
      * @param totalReducerCnt Total reducers count.
      * @param setupStartTs Map start time.
      * @param mapStartTs Map start time.
@@ -87,16 +87,29 @@ public class GridHadoopJobStatus implements Externalizable {
      * @param concurrencyLvl Speculative concurrency level.
      * @param ver Version.
      */
-    public GridHadoopJobStatus(GridHadoopJobId jobId, GridHadoopJobState jobState, String jobName, String usr,
-        int pendingMapperCnt, int pendingReducerCnt, int totalMapCnt, int totalReducerCnt, long setupStartTs,
-        long mapStartTs, long reduceStartTs, GridHadoopJobPhase jobPhase, int concurrencyLvl, long ver) {
+    public GridHadoopJobStatus(
+        GridHadoopJobId jobId,
+        GridHadoopJobState jobState,
+        String jobName,
+        String usr,
+        int pendingMapperCnt,
+        int pendingReducerCnt,
+        int totalMapperCnt,
+        int totalReducerCnt,
+        long setupStartTs,
+        long mapStartTs,
+        long reduceStartTs,
+        GridHadoopJobPhase jobPhase,
+        int concurrencyLvl,
+        long ver
+    ) {
         this.jobId = jobId;
         this.jobState = jobState;
         this.jobName = jobName;
         this.usr = usr;
         this.pendingMapperCnt = pendingMapperCnt;
         this.pendingReducerCnt = pendingReducerCnt;
-        this.totalMapperCnt = totalMapCnt;
+        this.totalMapperCnt = totalMapperCnt;
         this.totalReducerCnt = totalReducerCnt;
         this.setupStartTs = setupStartTs;
         this.mapStartTs = mapStartTs;

@@ -404,10 +404,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     @Override public Collection<String> getUserAttributesFormatted() {
         assert cfg != null;
 
-        // That's why Java sucks...
         return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String, ?>, String>() {
-            @Override
-            public String apply(Map.Entry<String, ?> e) {
+            @Override public String apply(Map.Entry<String, ?> e) {
                 return e.getKey() + ", " + e.getValue().toString();
             }
         });
@@ -2886,7 +2884,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     @Override public Collection<GridGgfs> ggfss() {
         guard();
 
-        try{
+        try {
             return ctx.ggfs().ggfss();
         }
         finally {
@@ -2898,7 +2896,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     @Override public GridHadoop hadoop() {
         guard();
 
-        try{
+        try {
             return ctx.hadoop().hadoop();
         }
         finally {

@@ -23,7 +23,7 @@ public abstract class GridHadoopHashMultimapBase extends GridHadoopMultimapBase 
      * @param job Job.
      * @param mem Memory.
      */
-    public GridHadoopHashMultimapBase(GridHadoopJob job, GridUnsafeMemory mem) {
+    protected GridHadoopHashMultimapBase(GridHadoopJob job, GridUnsafeMemory mem) {
         super(job, mem);
     }
 
@@ -155,7 +155,7 @@ public abstract class GridHadoopHashMultimapBase extends GridHadoopMultimapBase 
          * @throws GridException If failed.
          */
         public Input() throws GridException {
-            this.cap = capacity();
+            cap = capacity();
 
             keyReader = new Reader(job.keySerialization());
             valReader = new Reader(job.valueSerialization());
