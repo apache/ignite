@@ -130,7 +130,7 @@ if %ENABLE_ASSERTIONS% == 1 set JVM_OPTS_VISOR=%JVM_OPTS_VISOR% -ea
 :: Make sure to add -DVISOR if you start visor from your own
 :: or modified script.
 ::
-"%JAVA_HOME%\bin\java.exe" %JVM_OPTS_VISOR% -DVISOR -DVISOR_REPL -DGRIDGAIN_SCRIPT -DGRIDGAIN_PROG_NAME="%PROG_NAME%" ^
+"%JAVA_HOME%\bin\java.exe" %JVM_OPTS_VISOR% -DVISOR_REPL -DGRIDGAIN_SCRIPT -DGRIDGAIN_PROG_NAME="%PROG_NAME%" ^
 -DGRIDGAIN_DEPLOYMENT_MODE_OVERRIDE=ISOLATED %QUIET% %JVM_XOPTS% -cp "%CP%" ^
  org.gridgain.visor.commands.VisorConsole
 

@@ -2009,16 +2009,12 @@ object visor extends VisorTag {
      */
     private def readLineOpt(prompt: String, mask: Option[Char]): Option[String] =
         try {
-            val s = if (System.getProperty("VISOR_REPL") == null)
-                readLine(prompt)
+            val reader = new scala.tools.jline.console.ConsoleReader()
+
+            val s = if (mask.isDefined)
+                reader.readLine(prompt, mask.get)
             else
-                // Current jline (Scala 2.8) has a known bug that makes
-                // default `readLine()` non-operational.
-                // More details: http://lampsvn.epfl.ch/trac/scala/ticket/3442
-                if (mask.isDefined)
-                    new scala.tools.jline.console.ConsoleReader().readLine(prompt, mask.get)
-                else
-                    new scala.tools.jline.console.ConsoleReader().readLine(prompt)
+                reader.readLine(prompt)
 
             Option(s)
         }
