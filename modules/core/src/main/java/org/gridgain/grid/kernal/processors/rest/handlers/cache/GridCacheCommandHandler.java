@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.rest.handlers.cache;
 
-import org.gridgain.client.marshaller.portable.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
@@ -26,7 +25,6 @@ import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -86,9 +84,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     public GridCacheCommandHandler(GridKernalContext ctx) {
         super(ctx);
 
-        GridClientConnectionConfiguration cfg = ctx.config().getClientConnectionConfiguration();
-
-        portable = cfg != null && cfg.getMarshaller() instanceof GridClientPortableMarshaller;
+        portable = ctx.portable().isPortableEnabled();
     }
 
     /** {@inheritDoc} */
@@ -345,10 +341,11 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             destId == null || destId.equals(ctx.localNodeId()) || replicatedCacheAvailable(cacheName);
 
         if (locExec) {
-            GridCacheProjection<?, ?> prj = localCache(cacheName).forSubjectId(clientId).flagsOn(flags);
+            GridCacheProjectionEx<?, ?> prj =
+                (GridCacheProjectionEx<?, ?>)localCache(cacheName).forSubjectId(clientId).flagsOn(flags);
 
             if (portable)
-                prj = prj.projection(GridPortableObject.class, GridPortableObject.class);
+                prj = prj.forPortables();
 
             return op.apply((GridCacheProjection<Object, Object>)prj, ctx).
                 chain(resultWrapper((GridCacheProjection<Object, Object>)prj, key));
@@ -694,10 +691,11 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public GridRestResponse call() throws Exception {
-            GridCacheProjection<?, ?> prj = cache(g, cacheName).forSubjectId(clientId).flagsOn(flags);
+            GridCacheProjectionEx<?, ?> prj =
+                (GridCacheProjectionEx<?, ?>)cache(g, cacheName).forSubjectId(clientId).flagsOn(flags);
 
             if (portable)
-                prj = prj.projection(GridPortableObject.class, GridPortableObject.class);
+                prj = prj.forPortables();
 
             // Need to apply both operation and response transformation remotely
             // as cache could be inaccessible on local node and

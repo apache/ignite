@@ -7528,7 +7528,8 @@ public abstract class GridUtils {
     /**
      * Adds no-op logger to remove no-appender warning.
      *
-     * @return Tuple with root log and null appender instances.
+     * @return Tuple with root log and no-op appender instances. No-op appender can be {@code null}
+     *      if it did not found in classpath. Notice that in this case logging is not suppressed.
      * @throws GridException In case of failure to add no-op logger for Log4j.
      */
     public static GridBiTuple<Object, Object> addLog4jNoOpLogger() throws GridException {
@@ -7541,7 +7542,14 @@ public abstract class GridUtils {
 
             rootLog = logCls.getMethod("getRootLogger").invoke(logCls);
 
-            nullApp = Class.forName("org.apache.log4j.varia.NullAppender").newInstance();
+            try {
+                nullApp = Class.forName("org.apache.log4j.varia.NullAppender").newInstance();
+            }
+            catch (ClassNotFoundException ignore) {
+                // Can't found log4j no-op appender in classpath (for example, log4j was added through
+                // log4j-over-slf4j library. No-appender warning will not be suppressed.
+                return new GridBiTuple<>(rootLog, null);
+            }
 
             Class appCls = Class.forName("org.apache.log4j.Appender");
 
@@ -7563,6 +7571,9 @@ public abstract class GridUtils {
     public static void removeLog4jNoOpLogger(GridBiTuple<Object, Object> t) throws GridException {
         Object rootLog = t.get1();
         Object nullApp = t.get2();
+
+        if (nullApp == null)
+            return;
 
         try {
             Class appenderCls = Class.forName("org.apache.log4j.Appender");

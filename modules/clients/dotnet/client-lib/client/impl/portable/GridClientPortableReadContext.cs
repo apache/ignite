@@ -48,17 +48,22 @@ namespace GridGain.Client.Impl.Portable
         /** Current raw flag. */
         private bool curRaw;
 
+        /** Keep portable flag. */
+        private readonly bool keepPortable;
+
         /**
          * <summary>Constructor.</summary>
          * <param name="marsh">Marshaller.</param>
          * <param name="descs">Descriptors.</param>
          * <param name="stream">Input stream.</param>
+         * <param name="keepPortable">Keep portable flag.</param>
          */
-        public GridClientPortableReadContext(GridClientPortableMarshaller marsh, 
-            IDictionary<long, GridClientPortableTypeDescriptor> descs, MemoryStream stream) 
+        public GridClientPortableReadContext(GridClientPortableMarshaller marsh,
+            IDictionary<long, GridClientPortableTypeDescriptor> descs, MemoryStream stream, bool keepPortable) 
         {
             this.marsh = marsh;
             this.descs = descs;
+            this.keepPortable = keepPortable;
 
             Stream = stream;
 
@@ -108,6 +113,14 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
+         * <summary>Marshaller.</summary>
+         */ 
+        public GridClientPortableMarshaller Marshaller
+        {
+            get { return marsh; }
+        }
+
+        /**
          * <summary>Deserialize portable object.</summary>
          * <param name="port">Portable object.</param>
          * <returns>Desertialized object.</returns>
@@ -150,20 +163,30 @@ namespace GridGain.Client.Impl.Portable
 
                     try
                     {
-                        if (!userType)
-                        {
-                            // 6. Try reading predefined type.
-                            object sysObj;
+                        //if (!userType)
+                        //{
+                        //    // 6. Try reading predefined type.
+                        //    object sysObj;
 
-                            GridClientPortableSystemReadDelegate handler = PSH.ReadHandler(typeId);
+                        //    GridClientPortableSystemReadDelegate handler = PSH.ReadHandler(typeId);
 
-                            if (handler != null)
-                            {
-                                handler.Invoke(this, typeof(T), out sysObj);
+                        //    if (handler != null)
+                        //    {
+                        //        handler.Invoke(this, typeof(T), out sysObj);
 
-                                return (T)sysObj;
-                            }
-                        }
+                        //        GridClientPortableObjectImpl portSysObj = sysObj as GridClientPortableObjectImpl;
+
+                        //        if (portSysObj != null)
+                        //        {
+                        //            portSysObj.Populate(marsh);
+
+                        //            if (!keepPortable)
+                        //                sysObj = portSysObj.Deserialize<object>(keepPortable);
+                        //        }
+                                
+                        //        return (T)sysObj;
+                        //    }
+                        //}
 
                         // 7. Try getting descriptor.
                         GridClientPortableTypeDescriptor desc;
@@ -196,10 +219,6 @@ namespace GridGain.Client.Impl.Portable
                         // 11. Populate object fields.
                         desc.Serializer.ReadPortable(obj, reader);
                         
-                        // 12. Special case for portable object.
-                        if (obj is GridClientPortableObjectImpl)
-                            ((GridClientPortableObjectImpl)obj).Populate(marsh);
-
                         return (T)obj;
                     }
                     finally
@@ -231,11 +250,23 @@ namespace GridGain.Client.Impl.Portable
                 }
                 else if (PU.IsPredefinedType(hdr))
                 {
-                    GridClientPortableSystemFieldDelegate handler = PSH.FieldHandler(hdr);
+                    GridClientPortableSystemReadDelegate handler = PSH.ReadHandler(hdr);
 
                     Debug.Assert(handler != null, "Cannot find predefined read handler: " + hdr);
 
-                    object val = handler.Invoke(Stream, marsh);
+                    object val;
+
+                    handler.Invoke(this, typeof(T), out val);
+
+                    GridClientPortableObjectImpl portObj = val as GridClientPortableObjectImpl;
+
+                    if (portObj != null)
+                    {
+                        portObj.Populate(marsh);
+
+                        if (!keepPortable)
+                            val = portObj.Deserialize<object>(keepPortable);
+                    }
 
                     return (T)val;
                 }

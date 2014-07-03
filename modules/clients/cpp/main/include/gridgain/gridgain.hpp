@@ -27,6 +27,7 @@
 #include <gridgain/gridclientprotocolconfiguration.hpp>
 #include <gridgain/gridclientcompute.hpp>
 #include <gridgain/gridclientdata.hpp>
+#include <gridgain/gridclientqueries.hpp>
 #include <gridgain/gridclientnode.hpp>
 #include <gridgain/gridclient.hpp>
 #include <gridgain/loadbalancer/gridclientrandombalancer.hpp>
@@ -43,6 +44,5 @@
 #include <gridgain/gridportable.hpp>
 #include <gridgain/gridportablewriter.hpp>
 #include <gridgain/gridportablereader.hpp>
-#include <gridgain/gridportableserializer.hpp>
 
 #endif // GRIDGAIN_HPP__INCLUDED

@@ -679,13 +679,13 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startProcessor(ctx, new GridJobProcessor(ctx), attrs);
             startProcessor(ctx, new GridTaskProcessor(ctx), attrs);
             startProcessor(ctx, (GridProcessor)SCHEDULE.createOptional(ctx), attrs);
+            startProcessor(ctx, createComponent(GridPortableProcessor.class, ctx), attrs);
             startProcessor(ctx, new GridRestProcessor(ctx), attrs);
             startProcessor(ctx, new GridDataLoaderProcessor(ctx), attrs);
             startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
             startProcessor(ctx, (GridProcessor)GGFS.create(ctx, F.isEmpty(cfg.getGgfsConfiguration())), attrs);
             startProcessor(ctx, new GridContinuousProcessor(ctx), attrs);
             startProcessor(ctx, createComponent(GridDrProcessor.class, ctx), attrs);
-            startProcessor(ctx, createComponent(GridPortableProcessor.class, ctx), attrs);
 
             // Put version converters to attributes after
             // all components are started.
@@ -743,7 +743,11 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             notifyLifecycleBeans(AFTER_GRID_START);
         }
         catch (Throwable e) {
-            if (X.hasCause(e, InterruptedException.class, GridInterruptedException.class))
+            GridSpiVersionCheckException verCheckErr = X.cause(e, GridSpiVersionCheckException.class);
+
+            if (verCheckErr != null)
+                U.error(log, verCheckErr.getMessage());
+            else if (X.hasCause(e, InterruptedException.class, GridInterruptedException.class))
                 U.warn(log, "Grid startup routine has been interrupted (will rollback).");
             else
                 U.error(log, "Got exception while starting (will rollback startup routine).", e);

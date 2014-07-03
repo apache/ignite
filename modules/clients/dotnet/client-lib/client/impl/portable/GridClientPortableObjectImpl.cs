@@ -61,6 +61,9 @@ namespace GridGain.Client.Impl.Portable
         /** Fields. */
         private IDictionary<int, int> fields;
 
+        /** Whether object can be detached form context. */
+        private bool detachable;
+
         /**
          * <summary>Constructor.</summary>
          * <param name="marsh">Marshaller.</param>
@@ -73,9 +76,11 @@ namespace GridGain.Client.Impl.Portable
          * <param name="hashCode">Hash code.</param>
          * <param name="rawDataOffset">Raw data offset.</param>
          * <param name="fields">Fields.</param>
+         * <param name="detachable">Detachable.</param>
          */
         public GridClientPortableObjectImpl(GridClientPortableMarshaller marsh, byte[] data, int offset, object val,
-            int len, bool userType, int typeId, int hashCode, int rawDataOffset, IDictionary<int, int> fields)
+            int len, bool userType, int typeId, int hashCode, int rawDataOffset, IDictionary<int, int> fields, 
+            bool detachable)
         {
             this.marsh = marsh;
 
@@ -90,6 +95,8 @@ namespace GridGain.Client.Impl.Portable
             this.rawDataOffset = rawDataOffset;
 
             this.fields = fields == null ? EMPTY_FIELDS : new GridClientReadOnlyDictionary<int, int>(fields);
+
+            this.detachable = detachable;
         }
         
         /**
@@ -189,6 +196,14 @@ namespace GridGain.Client.Impl.Portable
                 value : new GridClientReadOnlyDictionary<int, int>(value); }
         }
 
+        /**
+         * <summary>Detachable flag.</summary>
+         */
+        public bool Detachable
+        {
+            set { detachable = value; }
+        }
+
         /** <inheritdoc /> */
         public T Field<T>(string fieldName)
         {
@@ -197,9 +212,9 @@ namespace GridGain.Client.Impl.Portable
 
                 if (marsh.IdToDescriptor.TryGetValue(PU.TypeKey(true, typeId), out desc))
                 {
-                    int? fieldIdRef = desc.Mapper.FieldId(typeId, fieldName);
+                    int fieldIdRef = desc.Mapper.FieldId(typeId, fieldName);
 
-                    int fieldId = fieldIdRef.HasValue ? fieldIdRef.Value : (PU.StringHashCode(fieldName.ToLower()));
+                    int fieldId = fieldIdRef != 0 ? fieldIdRef : (PU.StringHashCode(fieldName.ToLower()));
 
                     int pos;
 
@@ -214,7 +229,7 @@ namespace GridGain.Client.Impl.Portable
         }
 
         /**
-         * <summary>Gets field value on the given.</summary>
+         * <summary>Gets field value on the given object.</summary>
          * <param name="pos">Position.</param>
          * <returns>Field value.</returns>
          */ 
@@ -234,24 +249,30 @@ namespace GridGain.Client.Impl.Portable
             else if (hdr == PU.HDR_HND)
                 return (T)marsh.Unmarshal0(stream, false, stream.Position - 1, PU.HDR_HND);
             else if (hdr == PU.HDR_FULL || PU.IsPredefinedType(hdr))
-                return (T)marsh.Unmarshal0(stream, false, stream.Position - 1, hdr);
-            else
             {
-                Debug.Assert(userType == false);
+                IGridClientPortableObject obj = marsh.Unmarshal0(stream, false, stream.Position - 1, hdr);
 
-                GridClientPortableSystemFieldDelegate hnd = PSH.FieldHandler(hdr);
-
-                if (hnd == null)
-                    throw new GridClientPortableException("Invalid system type: " + hdr);
-
-                return (T)hnd.Invoke(stream, marsh);
+                return PU.PortableOrPredefined<T>(obj);
             }
+            else
+                throw new GridClientPortableException("Unexpected field header: " + hdr);
         }
-             
+
         /** <inheritdoc /> */
         public unsafe T Deserialize<T>()
         {
-            if (val != null) {
+            return Deserialize<T>(false);
+        }
+
+        /**
+         * <summary>Deserialize object.</summary>
+         * <param name="keepPortable">Keep portable flag.</param>
+         * <returns>Unmarshalled object.</returns>
+         */ 
+        public unsafe T Deserialize<T>(bool keepPortable)
+        {
+            if (val != null)
+            {
                 // 1. Handle special conversions first.
                 if (typeof(T) == typeof(sbyte) || typeof(T) == typeof(sbyte?))
                 {
@@ -277,7 +298,7 @@ namespace GridGain.Client.Impl.Portable
 
                     return (T)(object)(*(ulong*)&val0);
                 }
-                else if (typeof(T) == typeof(sbyte[])) 
+                else if (typeof(T) == typeof(sbyte[]))
                 {
                     byte[] val0 = (byte[])val;
 
@@ -348,7 +369,8 @@ namespace GridGain.Client.Impl.Portable
 
                 stream.Position = offset;
 
-                return new GridClientPortableReadContext(marsh, marsh.IdToDescriptor, stream).Deserialize<T>(this);
+                return new GridClientPortableReadContext(marsh, marsh.IdToDescriptor, stream, keepPortable)
+                    .Deserialize<T>(this);
             }
         }
 
@@ -379,6 +401,24 @@ namespace GridGain.Client.Impl.Portable
             this.marsh = marsh;
 
             marsh.PreparePortable(this);
+        }
+
+        /**
+         * <summary>Detach object from context.</summary>
+         */ 
+        public GridClientPortableObjectImpl Detach()
+        {
+            if (detachable)
+            {
+                byte[] data0 = new byte[len];
+
+                Array.Copy(data, offset, data0, 0, len);
+
+                return new GridClientPortableObjectImpl(marsh, data0, 0, val, len, userType, typeId, 
+                    hashCode, rawDataOffset, fields, false);
+            }
+            else
+                return this;
         }
 
         /** <inheritdoc /> */

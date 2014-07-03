@@ -83,8 +83,10 @@ public:
     }
 
 private:
+    /** */
     int64_t time;
 
+    /** */
     int16_t nanoTicks;
 
     /**
@@ -97,7 +99,7 @@ private:
 };
 
 inline std::ostream& operator<<(std::ostream &out, const GridClientDate& val) {
-    return out << "Date [time=" << val.time << "]";
+    return out << "Date [time=" << val.time << ", nanoTicks=" << val.nanoTicks << "]";
 }
 
 #endif

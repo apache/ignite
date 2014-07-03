@@ -115,7 +115,7 @@ GridClientDataProjectionImpl::GridClientDataProjectionImpl(
     TGridThreadPoolPtr& threadPool,
     const std::set<GridClientCacheFlag>& flags)
     : GridClientProjectionImpl(sharedData, prjLsnr, filter), prjCacheName(cacheName), invalidated(false),
-    threadPool(threadPool), prjFlags(flags) {
+    threadPool(threadPool), prjFlags(flags), qrys(new GridClientDataQueriesImpl(this)) {
 }
 
 string GridClientDataProjectionImpl::cacheName() const {
@@ -360,14 +360,7 @@ GridClientVariant GridClientDataProjectionImpl::get(const GridClientVariant& key
 
     this->withReconnectHandling(c, prjCacheName, GridClientVariantHasheableObject(key));
 
-    const TCacheValuesMap& res = c.getResult().getCacheValue();
-
-    if (res.size() == 0)
-        return GridClientVariant();
-
-    TCacheValuesMap::const_iterator iter = res.begin();
-
-    return iter->second;
+    return std::move(c.getResult().res);
 }
 
 TGridClientFutureVariant GridClientDataProjectionImpl::getAsync(const GridClientVariant& key) {
@@ -406,14 +399,13 @@ TGridClientVariantMap GridClientDataProjectionImpl::getAll(const TGridClientVari
     else
         this->withReconnectHandling(c);
 
-    const TCacheValuesMap& res = c.getResult().getCacheValue();
+    const GridClientVariant& res = c.getResult().res;
 
-    GG_LOG_DEBUG("Get ALL result size: %d", res.size());
+    assert(res.hasVariantMap());
 
-    for (auto iter = res.begin(); iter != res.end(); ++iter)
-        ret[iter->first] = iter->second;
+    GG_LOG_DEBUG("Get ALL result size: %d", res.getVariantMap().size());
 
-    return ret;
+    return std::move(c.getResult().res.getVariantMap());
 }
 
 TGridClientFutureVariantMap GridClientDataProjectionImpl::getAllAsync(const TGridClientVariantSet& keys) {
@@ -428,6 +420,22 @@ TGridClientFutureVariantMap GridClientDataProjectionImpl::getAllAsync(const TGri
     fut->task(pt);
 
     return res;
+}
+
+std::shared_ptr<GridClientFuture<GridClientDataQueryResult*>> GridClientDataProjectionImpl::executeQueryAsync(GridDataQueryBean& qry) {
+    GridFutureImpl<GridClientDataQueryResult*>* fut = new GridFutureImpl<GridClientDataQueryResult*>(threadPool);
+
+    std::shared_ptr<GridClientFuture<GridClientDataQueryResult*>> res(fut);
+
+    boost::packaged_task<GridClientDataQueryResult*> pt(boost::bind(&GridClientDataProjectionImpl::executeQuery, this, qry));
+
+    fut->task(pt);
+
+    return res;
+}
+
+GridClientDataQueryResult* GridClientDataProjectionImpl::executeQuery(GridDataQueryBean& qry) {
+    return 0;
 }
 
 static int64_t doGetValue(const TCacheMetrics& metricsMap, std::string name) {
@@ -534,6 +542,10 @@ TGridClientDataPtr GridClientDataProjectionImpl::flagsOff(const std::set<GridCli
     subProjections.push_back(clientDataPtr);
 
     return clientDataPtr;
+}
+
+const TGridClientDataQueriesPtr& GridClientDataProjectionImpl::queries() {
+    return qrys;
 }
 
 /**

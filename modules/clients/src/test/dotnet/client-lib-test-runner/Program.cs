@@ -27,60 +27,55 @@ namespace GridGain {
             Debug.Listeners.Add(new TextWriterTraceListener(System.Console.Out));
             Debug.AutoFlush = true;
 
-            //TestAll();
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsReflective());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsPortable());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsRawPortable());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsSerializer());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsRawSerializer());
 
-            //return;
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveBool());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveSbyte());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveByte());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveShort());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveUshort());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveChar());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveInt());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveUint());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveLong());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveUlong());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveFloat());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveDouble());
 
-            //Test(new GridClientPortableSelfTest(), (test) => test.TestClient());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveBoolArray());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveSbyteArray());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveByteArray());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveShortArray());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveUshortArray());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveCharArray());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveIntArray());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveUintArray());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveLongArray());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveUlongArray());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveFloatArray());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveDoubleArray());
 
-            Test(new GridClientPortableSelfTest(), (test) => test.TestGenericCollections());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestCollectionsReflective());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWriteString());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWriteStringArray());
 
-            // 4. Handling simple fields inside object.
-            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsReflective());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsPortable());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsRawPortable());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsSerializer());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsRawSerializer());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWriteGuid());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestWriteGuidArray());
 
-            // 1. Handling primitives.
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveBool());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveSbyte());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveByte());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveShort());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveUshort());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveChar());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveInt());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveUint());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveLong());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveUlong());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveFloat());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveDouble());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestObjectReflective());
 
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveBoolArray());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveSbyteArray());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveByteArray());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveShortArray());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveUshortArray());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveCharArray());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveIntArray());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveUintArray());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveLongArray());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveUlongArray());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveFloatArray());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWritePrimitiveDoubleArray());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestHandles());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestHandlesExclusive());
 
-            // 2. Handling strings.
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWriteString());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWriteStringArray());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestCollectionsReflective());
+            //Test(new GridClientPortableSelfTest(), (test) => test.TestGenericCollections());
 
-            // 3. Handling Guids.
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWriteGuid());
-            Test(new GridClientPortableSelfTest(), (test) => test.TestWriteGuidArray());
+            TestAll();
 
-            Test(new GridClientPortableSelfTest(), (test) => test.TestObjectReflective());
-
-            //TestAll();
+            return;
 
             //TestOne(new GridClientRouterTcpSslTest(), test => test.TestAffinity());
             //TestOne(new GridClientRouterTcpSslTest(), test => test.TestAppendPrepend());
@@ -105,7 +100,7 @@ namespace GridGain {
             //TestOne(new GridClientTcpTest(), test => test.TestPutSync());
         }
 
-        private static void Test<T>(T test, Action<T> job) where T : GridClientAbstractTest
+        private static void Test<T>(T test, Action<T> job) where T : GridClientPortableSelfTest
         {
             test.InitClient();
 

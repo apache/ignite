@@ -13,10 +13,11 @@
 class GridPortableObject::Impl {
 public:
     Impl(const boost::shared_ptr<PortableReadContext>& ctxPtr, int32_t start) :
-        ctxPtr(ctxPtr), reader(ctxPtr, start) {
+        ctxPtr(ctxPtr), reader(ctxPtr, true, start) {
     }
 
-    Impl(const Impl& other) : ctxPtr(other.ctxPtr), reader(other.ctxPtr, other.reader.start) {
+    Impl(const Impl& other) : ctxPtr(other.ctxPtr),
+        reader(other.ctxPtr, other.reader.keepPortable, other.reader.start) {
     }
 
     GridClientVariant field(const std::string& fieldName) {
@@ -40,7 +41,7 @@ public:
             return false;
 
         int32_t len = reader.in.readInt32(reader.start + 10);
-        int32_t otherLen = other.reader.in.readInt32(reader.start + 10);
+        int32_t otherLen = other.reader.in.readInt32(other.reader.start + 10);
 
         if (len != otherLen)
             return false;
@@ -80,10 +81,6 @@ GridPortableObject::~GridPortableObject() {
     delete pImpl;
 }
 
-bool GridPortableObject::userType() const {
-    return pImpl->userType();
-}
-
 int32_t GridPortableObject::typeId() const {
     return pImpl->typeId();
 }
@@ -101,9 +98,6 @@ GridPortable* GridPortableObject::deserialize() const {
 }
 
 bool GridPortableObject::operator==(const GridPortableObject& other) const {
-    if (typeId() != other.typeId())
-        return false;
-
     return pImpl->compare(*other.pImpl);
 }
 

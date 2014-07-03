@@ -16,27 +16,9 @@
  * Message task result.
  */
 class GridClientMessageTaskResult : public GridClientMessageResult {
-private:
-    /** Task result. */
-    GridClientVariant taskRslt_;
 public:
-    /**
-     * Task result getter.
-     *
-     * @return Task result.
-     */
-    GridClientVariant getTaskResult() const {
-        return taskRslt_;
-    }
-
-    /**
-     * Task result setter.
-     *
-     * @param taskRslt Task result.
-     */
-    void setTaskResult(const GridClientVariant& taskRslt) {
-        taskRslt_ = taskRslt;
-    }
+    /** Task result. */
+    GridClientVariant taskRes;
 };
 
 #endif

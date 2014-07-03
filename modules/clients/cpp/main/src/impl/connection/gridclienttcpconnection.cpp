@@ -278,9 +278,9 @@ void GridClientSyncTcpConnection::authenticate(const string& clientId, const str
 
     send(tcpPacket, tcpResponse);
 
-    GridClientVariant res = marsh.unmarshal(tcpResponse.getData());
+    GridClientVariant res = marsh.unmarshal(tcpResponse.getData(), false);
 
-    std::unique_ptr<GridClientResponse> resMsg(res.getPortableObject().deserialize<GridClientResponse>());
+    std::unique_ptr<GridClientResponse> resMsg(res.getPortable<GridClientResponse>());
 
     if (!resMsg->errorMsg.empty())
         throw GridClientCommandException(resMsg->errorMsg);
@@ -755,9 +755,9 @@ void GridClientRawSyncTcpConnection::authenticate(const string& clientId, const 
 
     send(tcpPacket, tcpResponse);
 
-    GridClientVariant res = marsh.unmarshal(tcpResponse.getData());
+    GridClientVariant res = marsh.unmarshal(tcpResponse.getData(), false);
 
-    std::unique_ptr<GridClientResponse> resMsg(res.getPortableObject().deserialize<GridClientResponse>());
+    std::unique_ptr<GridClientResponse> resMsg(res.getPortable<GridClientResponse>());
 
     if (!resMsg->errorMsg.empty())
         throw GridClientCommandException(resMsg->errorMsg);

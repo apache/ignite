@@ -34,6 +34,11 @@ namespace GridGain.Client {
          * Instead of updating remote entries with new values, small invalidation
          * messages will be sent to set the values to {@code null}.</summary>
          */
-        Invalidate = 0x10
+        Invalidate = 0x10,
+
+        /**
+         * <summary>Whether to keep portable object and portable form skipping deserialization.</summary>
+         */ 
+        KeepPortable = 0x20
     }
 }

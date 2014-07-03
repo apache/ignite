@@ -8,6 +8,7 @@
  */
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.grid.util.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
@@ -223,21 +224,21 @@ public class GridClientCacheRequest extends GridClientAbstractMessage {
     @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
         super.writePortable(writer);
 
-        GridPortableRawWriter raw = writer.rawWriter();
+        GridPortableRawWriterEx raw = (GridPortableRawWriterEx)writer.rawWriter();
 
         raw.writeInt(op.ordinal());
         raw.writeString(cacheName);
         raw.writeInt(cacheFlagsOn);
-        raw.writeObject(key);
-        raw.writeObject(val);
-        raw.writeObject(val2);
+        raw.writeObjectDetached(key);
+        raw.writeObjectDetached(val);
+        raw.writeObjectDetached(val2);
 
         raw.writeInt(vals != null ? vals.size() : -1);
 
         if (vals != null) {
             for (Map.Entry<Object, Object> e : vals.entrySet()) {
-                raw.writeObject(e.getKey());
-                raw.writeObject(e.getValue());
+                raw.writeObjectDetached(e.getKey());
+                raw.writeObjectDetached(e.getValue());
             }
         }
     }
@@ -246,14 +247,14 @@ public class GridClientCacheRequest extends GridClientAbstractMessage {
     @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
         super.readPortable(reader);
 
-        GridPortableRawReader raw = reader.rawReader();
+        GridPortableRawReaderEx raw = (GridPortableRawReaderEx)reader.rawReader();
 
         op = GridCacheOperation.fromOrdinal(raw.readInt());
         cacheName = raw.readString();
         cacheFlagsOn = raw.readInt();
-        key = raw.readObject();
-        val = raw.readObject();
-        val2 = raw.readObject();
+        key = raw.readObjectDetached();
+        val = raw.readObjectDetached();
+        val2 = raw.readObjectDetached();
 
         int valsSize = raw.readInt();
 
@@ -261,7 +262,7 @@ public class GridClientCacheRequest extends GridClientAbstractMessage {
             vals = new HashMap<>(valsSize);
 
             for (int i = 0; i < valsSize; i++)
-                vals.put(raw.readObject(), raw.readObject());
+                vals.put(raw.readObjectDetached(), raw.readObjectDetached());
         }
     }
 

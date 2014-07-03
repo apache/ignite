@@ -126,6 +126,12 @@ void GridClientTcpCommandExecutor::executeTaskCmd(const GridClientSocketAddress&
     executeCmd(host, msg, taskCmd, rslt);
 }
 
+void GridClientTcpCommandExecutor::executeQueryCmd(const GridClientSocketAddress& host, GridQueryRequestCommand& qryCmd, GridClientQueryResult& res) {
+    GridClientCacheQueryRequest msg;
+
+    executeCmd(host, msg, qryCmd, res);
+}
+
 /**
  * Sends a general command to a remote host.
  *
@@ -159,11 +165,11 @@ template<class C, class R> void GridClientTcpCommandExecutor::executeCmd(const G
 
     GG_LOG_DEBUG("Successfully executed requestId [%lld] typeId [%d] on [%s:%d].", cmd.getRequestId(), msg.typeId(), host.host().c_str(), host.port());
 
-    GridClientVariant var = marsh.unmarshal(tcpResponse.getData());
+    GridClientVariant var = marsh.unmarshal(tcpResponse.getData(), cmd.isKeepPortable());
 
-    assert(var.hasPortableObject());
+    assert(var.hasPortableObject() || var.hasPortable());
 
-    std::unique_ptr<GridClientResponse> resMsg(var.getPortableObject().deserialize<GridClientResponse>());
+    std::unique_ptr<GridClientResponse> resMsg(var.deserializePortable<GridClientResponse>());
 
     response.setStatus(static_cast<GridClientMessageResult::StatusCode>(resMsg->status));
 

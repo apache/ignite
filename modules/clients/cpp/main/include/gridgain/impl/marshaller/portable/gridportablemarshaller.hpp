@@ -29,6 +29,7 @@
 #include "gridgain/impl/cmd/gridclientmessagecachemetricsresult.hpp"
 #include "gridgain/impl/cmd/gridclientmessagecachegetresult.hpp"
 #include "gridgain/impl/cmd/gridclientmessagetaskresult.hpp"
+#include "gridgain/impl/cmd/gridclientmessagequeries.hpp"
 
 const int8_t TYPE_ID_BYTE = 1;
 const int8_t TYPE_ID_SHORT = 2;
@@ -55,7 +56,8 @@ const int8_t TYPE_ID_DATE_ARR = 22;
 const int8_t TYPE_ID_OBJ_ARR = 23;
 const int8_t TYPE_ID_COLLECTION = 24;
 const int8_t TYPE_ID_MAP = 25;
-const int8_t TYPE_ID_PORTABLE = 26;
+const int8_t TYPE_ID_MAP_ENTRY = 26;
+const int8_t TYPE_ID_PORTABLE = 27;
 
 const int8_t FLAG_NULL = 101;
 const int8_t FLAG_HANDLE = 102;
@@ -513,10 +515,8 @@ public:
             ctx.out.writeCharArray(val, size);
         }
         else {
-            ctx.out.writeInt32(5 + size * 2);
-            ctx.out.writeByte(TYPE_ID_CHAR_ARR);
-
-            ctx.out.writeInt32(-1);
+            ctx.out.writeInt32(1);
+            ctx.out.writeByte(FLAG_NULL);
         }
     }
 
@@ -531,10 +531,8 @@ public:
             ctx.out.writeInt16Array(val, size);
         }
         else {
-            ctx.out.writeInt32(5);
-            ctx.out.writeByte(TYPE_ID_SHORT_ARR);
-
-            ctx.out.writeInt32(-1);
+            ctx.out.writeInt32(1);
+            ctx.out.writeByte(FLAG_NULL);
         }
     }
 
@@ -562,10 +560,8 @@ public:
             ctx.out.writeInt32Array(val, size);
         }
         else {
-            ctx.out.writeInt32(5);
-            ctx.out.writeByte(TYPE_ID_INT_ARR);
-
-            ctx.out.writeInt32(-1);
+            ctx.out.writeInt32(1);
+            ctx.out.writeByte(FLAG_NULL);
         }
     }
 
@@ -593,10 +589,8 @@ public:
             ctx.out.writeInt64Array(val, size);
         }
         else {
-            ctx.out.writeInt32(5);
-            ctx.out.writeByte(TYPE_ID_LONG_ARR);
-
-            ctx.out.writeInt32(-1);
+            ctx.out.writeInt32(1);
+            ctx.out.writeByte(FLAG_NULL);
         }
     }
 
@@ -624,10 +618,8 @@ public:
             ctx.out.writeFloatArray(val, size);
         }
         else {
-            ctx.out.writeInt32(5);
-            ctx.out.writeByte(TYPE_ID_FLOAT_ARR);
-
-            ctx.out.writeInt32(-1);
+            ctx.out.writeInt32(1);
+            ctx.out.writeByte(FLAG_NULL);
         }
     }
 
@@ -655,10 +647,8 @@ public:
             ctx.out.writeDoubleArray(val, size);
         }
         else {
-            ctx.out.writeInt32(5);
-            ctx.out.writeByte(TYPE_ID_DOUBLE_ARR);
-
-            ctx.out.writeInt32(-1);
+            ctx.out.writeInt32(1);
+            ctx.out.writeByte(FLAG_NULL);
         }
     }
 
@@ -669,7 +659,6 @@ public:
         ctx.out.writeInt32(5 + len);
 
         ctx.out.writeByte(TYPE_ID_STRING);
-
         ctx.out.writeInt32(len);
 		ctx.out.writeBytes(val.data(), len);
 	}
@@ -680,14 +669,15 @@ public:
         else {
             writeFieldName(fieldName);
 
-            ctx.out.writeInt32(5);
+            ctx.out.writeInt32(1);
 
-            ctx.out.writeByte(TYPE_ID_STRING);
-            ctx.out.writeInt32(-1);
+            ctx.out.writeByte(FLAG_NULL);
         }
 	}
 
     void doWriteString(const std::string &val) {
+        ctx.out.writeByte(TYPE_ID_STRING);
+
         int32_t len = val.length() * sizeof(char);
 
         ctx.out.writeInt32(len);
@@ -712,14 +702,15 @@ public:
         else {
     		writeFieldName(fieldName);
 
-            ctx.out.writeInt32(5);
+            ctx.out.writeInt32(1);
 
-            ctx.out.writeByte(TYPE_ID_STRING);
-            ctx.out.writeInt32(-1);
+            ctx.out.writeByte(FLAG_NULL);
         }
     }
 
     void doWriteWString(const std::wstring& str) {
+        ctx.out.writeByte(TYPE_ID_STRING);
+
         int32_t len = str.length() * sizeof(wchar_t);
 
         ctx.out.writeInt32(len);
@@ -729,20 +720,22 @@ public:
     void writeByteArray(char* fieldName, const int8_t* val, int32_t size) {
 		writeFieldName(fieldName);
 
-        ctx.out.writeInt32(val ? 5 + size : 5);
+        if (val) {
+            ctx.out.writeInt32(5 + size);
 
-        ctx.out.writeByte(TYPE_ID_BYTE_ARR);
+            ctx.out.writeByte(TYPE_ID_BYTE_ARR);
 
-        doWriteByteArray(val, size);
+            doWriteByteArray(val, size);
+        }
+        else {
+            ctx.out.writeInt32(1);
+            ctx.out.writeByte(FLAG_NULL);
+        }
     }
 
     void doWriteByteArray(const int8_t* val, int32_t size) {
-        if (val) {
-            ctx.out.writeInt32(size);
-            ctx.out.writeBytes(val, size);
-        }
-        else
-            ctx.out.writeInt32(-1);
+        ctx.out.writeInt32(size);
+        ctx.out.writeBytes(val, size);
     }
 
 	void writeBool(char* fieldName, bool val) {
@@ -771,19 +764,15 @@ public:
                 doWriteBool(val[i]);
         }
         else {
-            ctx.out.writeInt32(5);
-            ctx.out.writeByte(TYPE_ID_BOOLEAN_ARR);
-
-            ctx.out.writeInt32(-1);
+            ctx.out.writeInt32(1);
+            ctx.out.writeByte(FLAG_NULL);
         }
     }
 
 	void writeUuid(char* fieldName, const GridClientUuid& val) {
 		writeFieldName(fieldName);
 
-        ctx.out.writeInt32(18);
-
-        ctx.out.writeByte(TYPE_ID_UUID);
+        ctx.out.writeInt32(17);
 
         doWriteUuid(val);
     }
@@ -791,23 +780,18 @@ public:
 	void writeUuid(char* fieldName, const boost::optional<GridClientUuid>& val) {
 		writeFieldName(fieldName);
 
-        ctx.out.writeInt32(val ? 18 : 2);
-
-        ctx.out.writeByte(TYPE_ID_UUID);
-
-        doWriteUuid(val);
-	}
-
-    void doWriteUuid(const boost::optional<GridClientUuid>& val) {
-        if (val)
+        if (val) {
+            ctx.out.writeInt32(17);
             doWriteUuid(val.get());
-        else
-            ctx.out.writeBool(false);
+        }
+        else {
+            ctx.out.writeInt32(1);
+            ctx.out.writeByte(FLAG_NULL);
+        }
 	}
 
     void doWriteUuid(const GridClientUuid& val) {
-        ctx.out.writeBool(true);
-
+        ctx.out.writeByte(TYPE_ID_UUID);
         ctx.out.writeInt64(val.mostSignificantBits());
         ctx.out.writeInt64(val.leastSignificantBits());
 	}
@@ -815,29 +799,26 @@ public:
     void writeDate(char* fieldName, const boost::optional<GridClientDate>& val) {
 		writeFieldName(fieldName);
 
-        doWriteInt32(val ? 12 : 2);
-        doWriteByte(TYPE_ID_DATE);
-
-        if (val)
+        if (val) {
+            doWriteInt32(11);
             doWriteDate(val.get());
-        else
-            doWriteBool(false);
+        }
+        else {
+            doWriteInt32(1);
+            doWriteByte(FLAG_NULL);
+        }
     }
 
     void writeDate(char* fieldName, const GridClientDate& val) {
 		writeFieldName(fieldName);
 
-        doWriteInt32(12);
-        doWriteByte(TYPE_ID_DATE);
-
+        doWriteInt32(11);
         doWriteDate(val);
     }
 
     void doWriteDate(const GridClientDate& val) {
-        doWriteBool(true);
-
+        doWriteByte(TYPE_ID_DATE);
         doWriteInt64(val.getTime());
-
         doWriteInt16(val.getNanoTicks());
     }
 
@@ -903,6 +884,58 @@ public:
         ctx.out.writeInt32(0); // Reserve for array elements count.
 
         return start;
+    }
+
+    int32_t startBoolArrayRaw() {
+        return startArrayRaw(TYPE_ID_BOOLEAN_ARR);
+    }
+
+    int32_t startByteArrayRaw() {
+        return startArrayRaw(TYPE_ID_BYTE_ARR);
+    }
+
+    int32_t startInt16ArrayRaw() {
+        return startArrayRaw(TYPE_ID_SHORT_ARR);
+    }
+
+    int32_t startCharArrayRaw() {
+        return startArrayRaw(TYPE_ID_CHAR_ARR);
+    }
+
+    int32_t startInt32ArrayRaw() {
+        return startArrayRaw(TYPE_ID_INT_ARR);
+    }
+
+    int32_t startInt64ArrayRaw() {
+        return startArrayRaw(TYPE_ID_LONG_ARR);
+    }
+
+    int32_t startFloatArrayRaw() {
+        return startArrayRaw(TYPE_ID_FLOAT_ARR);
+    }
+
+    int32_t startDoubleArrayRaw() {
+        return startArrayRaw(TYPE_ID_DOUBLE_ARR);
+    }
+
+    int32_t startStringArrayRaw() {
+        return startArrayRaw(TYPE_ID_STRING_ARR);
+    }
+
+    int32_t startUuidArrayRaw() {
+        return startArrayRaw(TYPE_ID_UUID_ARR);
+    }
+
+    int32_t startDateArrayRaw() {
+        return startArrayRaw(TYPE_ID_DATE_ARR);
+    }
+
+    int32_t startVariantArrayRaw() {
+        return startArrayRaw(TYPE_ID_OBJ_ARR);
+    }
+
+    int32_t startVariantCollectionRaw() {
+        return startArrayRaw(TYPE_ID_COLLECTION);
     }
 
     void endArray(int32_t start, int32_t cnt) {
@@ -1078,13 +1111,6 @@ public:
 
             return;
         }
-        else if (val.hasString()) {
-            ctx.out.writeByte(TYPE_ID_STRING);
-
-            doWriteString(val.getString());
-
-            return;
-        }
         else if (val.hasBool()) {
             ctx.out.writeByte(TYPE_ID_BOOLEAN);
 
@@ -1092,16 +1118,22 @@ public:
 
             return;
         }
-        else if (val.hasUuid()) {
-            ctx.out.writeByte(TYPE_ID_UUID);
+        else if (val.hasString()) {
+            doWriteString(val.getString());
 
+            return;
+        }
+        else if (val.hasWideString()) {
+            doWriteWString(val.getWideString());
+
+            return;
+        }
+        else if (val.hasUuid()) {
             doWriteUuid(val.getUuid());
 
             return;
         }
         else if (val.hasDate()) {
-            ctx.out.writeByte(TYPE_ID_DATE);
-
             doWriteDate(val.getDate());
 
             return;
@@ -1228,6 +1260,13 @@ public:
 
             return;
         }
+        else if (val.hasMapEntry()) {
+            ctx.out.writeByte(TYPE_ID_MAP_ENTRY);
+
+            doWriteMapEntry(val.getMapEntry());
+
+            return;
+        }
         else if (!val.hasAnyValue()) {
             ctx.out.writeByte(FLAG_NULL);
 
@@ -1242,6 +1281,11 @@ public:
         int32_t len = ctx.out.bytes.size() - start;
 
         ctx.out.writeInt32To(lenPos, len);
+    }
+
+    void doWriteMapEntry(const TGridClientVariantPair& val) {
+        doWriteVariant(val.first);
+        doWriteVariant(val.second);
     }
 
     void doWriteVariantCollection(const TGridClientVariantSet& col) {
@@ -1302,11 +1346,13 @@ public:
         switchToRaw();
 
         if (val) {
+            ctx.out.writeByte(TYPE_ID_SHORT_ARR);
+
             ctx.out.writeInt32(size);
             ctx.out.writeInt16Array(val, size);
         }
         else
-            ctx.out.writeInt32(-1);
+            ctx.out.writeByte(FLAG_NULL);
     }
 
     void writeInt32(int32_t val) {
@@ -1319,11 +1365,13 @@ public:
         switchToRaw();
 
         if (val) {
+            ctx.out.writeByte(TYPE_ID_INT_ARR);
+
             ctx.out.writeInt32(size);
             ctx.out.writeInt32Array(val, size);
         }
         else
-            ctx.out.writeInt32(-1);
+            ctx.out.writeByte(FLAG_NULL);
     }
 
     void writeChar(uint16_t val) {
@@ -1336,11 +1384,13 @@ public:
         switchToRaw();
 
         if (val) {
+            ctx.out.writeByte(TYPE_ID_CHAR_ARR);
+
             ctx.out.writeInt32(size);
             ctx.out.writeCharArray(val, size);
         }
         else
-            ctx.out.writeInt32(-1);
+            ctx.out.writeByte(FLAG_NULL);
     }
 
     void writeInt64(int64_t val) {
@@ -1353,11 +1403,13 @@ public:
         switchToRaw();
 
         if (val) {
+            ctx.out.writeByte(TYPE_ID_DOUBLE_ARR);
+
             ctx.out.writeInt32(size);
             ctx.out.writeInt64Array(val, size);
         }
         else
-            ctx.out.writeInt32(-1);
+            ctx.out.writeByte(FLAG_NULL);
     }
 
     void writeFloat(float val) {
@@ -1370,11 +1422,13 @@ public:
         switchToRaw();
 
         if (val) {
+            ctx.out.writeByte(TYPE_ID_FLOAT_ARR);
+
             ctx.out.writeInt32(size);
             ctx.out.writeFloatArray(val, size);
         }
         else
-            ctx.out.writeInt32(-1);
+            ctx.out.writeByte(FLAG_NULL);
     }
 
     void writeDouble(double val) {
@@ -1387,11 +1441,13 @@ public:
         switchToRaw();
 
         if (val) {
+            ctx.out.writeByte(TYPE_ID_DOUBLE_ARR);
+
             ctx.out.writeInt32(size);
             ctx.out.writeDoubleArray(val, size);
         }
         else
-            ctx.out.writeInt32(-1);
+            ctx.out.writeByte(FLAG_NULL);
     }
 
 	void writeString(const std::string& val) {
@@ -1403,10 +1459,10 @@ public:
     void writeString(const boost::optional<std::string>& val) {
         switchToRaw();
 
-        if (!val)
-            doWriteInt32(-1);
-        else
+        if (val)
             doWriteString(val.get());
+        else
+            doWriteByte(FLAG_NULL);
     }
 
     void writeWString(const std::wstring& val) {
@@ -1418,16 +1474,22 @@ public:
     void writeWString(const boost::optional<std::wstring>& val) {
         switchToRaw();
 
-        if (!val)
-            doWriteInt32(-1);
-        else
+        if (val)
             doWriteWString(val.get());
+        else
+            doWriteByte(FLAG_NULL);
     }
 
     void writeByteArray(const int8_t* val, int32_t size) {
         switchToRaw();
 
-        doWriteByteArray(val, size);
+        if (val) {
+            ctx.out.writeByte(TYPE_ID_BYTE_ARR);
+
+            doWriteByteArray(val, size);
+        }
+        else
+            ctx.out.writeByte(FLAG_NULL);
     }
 
 	void writeBool(bool val) {
@@ -1440,13 +1502,15 @@ public:
         switchToRaw();
 
         if (val) {
+            ctx.out.writeByte(TYPE_ID_BOOLEAN_ARR);
+
             ctx.out.writeInt32(size);
 
             for (int i = 0; i < size; i++)
                 doWriteBool(val[i]);
         }
         else
-            ctx.out.writeInt32(-1);
+            ctx.out.writeByte(FLAG_NULL);
     }
 
 	void writeUuid(const GridClientUuid& val) {
@@ -1459,9 +1523,9 @@ public:
         switchToRaw();
 
         if (val)
-            doWriteUuid(val);
+            doWriteUuid(val.get());
         else
-            doWriteBool(false);
+            doWriteByte(FLAG_NULL);
 	}
 
     void writeDate(const GridClientDate& val) {
@@ -1476,7 +1540,7 @@ public:
         if (val)
             doWriteDate(val.get());
         else
-            doWriteBool(false);
+            doWriteByte(FLAG_NULL);
     }
 
     void writeVariant(const GridClientVariant& val) {
@@ -1496,11 +1560,15 @@ public:
     void writeVariantMap(const TGridClientVariantMap& val) {
         switchToRaw();
 
+        doWriteByte(TYPE_ID_MAP);
+
         doWriteVariantMap(val);
     }
 
-    int32_t startArrayRaw() {
+    int32_t startArrayRaw(int8_t type) {
         switchToRaw();
+
+        ctx.out.writeByte(type);
 
         int32_t start = ctx.out.bytes.size();
 
@@ -2049,8 +2117,11 @@ public:
 
     PortableInput in;
 
-    GridPortableReaderImpl(boost::shared_ptr<PortableReadContext> ctxPtr, int32_t start) : ctxPtr(ctxPtr),
-        in(*ctxPtr.get()->dataPtr.get()), start(start), off(start), rawOff(0), curTypeId(0), offInit(false) {
+    bool keepPortable;
+
+    GridPortableReaderImpl(boost::shared_ptr<PortableReadContext> ctxPtr, bool keepPortable, int32_t start) :
+        ctxPtr(ctxPtr), in(*ctxPtr.get()->dataPtr.get()), start(start), off(start), rawOff(0), curTypeId(0),
+        offInit(false), keepPortable(keepPortable) {
     }
 
     GridPortable* deserializePortable() {
@@ -2120,14 +2191,12 @@ public:
                 int32_t rawOff = doReadInt32(raw);
 
                 if (userType) {
-                    GridPortableObject obj(ctxPtr, objStart);
-
                     if (raw)
                         this->rawOff = objStart + len;
                     else
                         this->off = objStart + len;
 
-                    return GridClientVariant(obj);
+                    return createObjectVariant(objStart);
                 }
                 else
                     return readStandard(typeId, true, raw);
@@ -2158,12 +2227,9 @@ public:
                         off = curOff;
 
                     return res;
-                } 
-                else {
-                    GridPortableObject obj(ctxPtr, objStart);
-
-                    return GridClientVariant(obj);
                 }
+                else
+                    return createObjectVariant(objStart);
             }
 
             case FLAG_NULL: {
@@ -2175,11 +2241,22 @@ public:
         }
     }
 
+    GridClientVariant createObjectVariant(int32_t objStart) {
+        if (keepPortable) {
+            GridPortableObject obj(ctxPtr, objStart);
+
+            return GridClientVariant(obj);
+        }
+        else {
+            GridPortableReaderImpl reader(ctxPtr, keepPortable, objStart);
+
+            return GridClientVariant(reader.deserializePortable());
+        }
+    }
+
     GridClientVariant readStandard(int32_t typeId, bool checkSystem, bool raw) {
         if (checkSystem && systemPortable(typeId)) {
             int32_t start = raw ? rawOff - 18 : off - 18;
-
-            GridPortableObject obj(ctxPtr, start);
 
             int32_t len = in.readInt32(start + 10);
 
@@ -2188,7 +2265,7 @@ public:
             else
                 this->off = start + len;
 
-            return GridClientVariant(obj);
+            return createObjectVariant(start);
         }
 
         switch (typeId) {
@@ -2225,11 +2302,8 @@ public:
 
                     return res;
                 }
-                else {
-                    GridPortableObject obj(ctxPtr, portableStart);
-
-                    return GridClientVariant(obj);
-                }
+                else
+                    return createObjectVariant(portableStart);
             }
 
             case TYPE_ID_BYTE: {
@@ -2281,24 +2355,15 @@ public:
             }
 
             case TYPE_ID_STRING: {
-                boost::optional<std::string> val = doReadString(raw);
-
-                if (val)
-                    return GridClientVariant(val.get());
+                return GridClientVariant(std::move(doReadString(raw)));
             }
 
             case TYPE_ID_UUID: {
-                boost::optional<GridClientUuid> val = doReadUuid(raw);
-
-                if (val)
-                    return GridClientVariant(val.get());
+                return GridClientVariant(doReadUuid(raw));
             }
 
             case TYPE_ID_DATE: {
-                boost::optional<GridClientDate> val = doReadDate(raw);
-
-                if (val)
-                    return GridClientVariant(val.get());
+                return GridClientVariant(doReadDate(raw));
             }
 
             case TYPE_ID_BYTE_ARR: {
@@ -2397,6 +2462,15 @@ public:
 
                 if (doReadVariantMap(raw, val))
                     return GridClientVariant(std::move(val));
+            }
+
+            case TYPE_ID_MAP_ENTRY: {
+                TGridClientVariantPair pair;
+
+                pair.first = std::move(unmarshal(raw));
+                pair.second = std::move(unmarshal(raw));
+
+                return GridClientVariant(pair);
             }
 
             default: {
@@ -2677,12 +2751,17 @@ public:
 
         int8_t flag = doReadByte(false);
 
+        if (type == FLAG_NULL)
+            return false;
+
         checkType(type, flag);
 
         return true;
     }
 
-    std::string doReadString(int32_t len, bool raw) {
+    std::string doReadString(bool raw) {
+        int32_t len = doReadInt32(raw);
+
         char* start = reinterpret_cast<char*>(in.bytes.data() + (raw ? rawOff : off));
 
         if (raw)
@@ -2693,7 +2772,9 @@ public:
         return std::string(start, len);
     }
 
-    std::wstring doReadWString(int32_t len, bool raw) {
+    std::wstring doReadWString(bool raw) {
+        int32_t len = doReadInt32(raw);
+
         wchar_t* start = reinterpret_cast<wchar_t*>(in.bytes.data() + (raw ? rawOff : off));
 
         if (raw)
@@ -2704,25 +2785,14 @@ public:
         return std::wstring(start, len / sizeof(wchar_t));
     }
 
-    GridClientUuid doReadUuidObject(bool raw) {
-        int64_t most = doReadInt64(raw);
-        int64_t least = doReadInt64(raw);
-
-        return GridClientUuid(most, least);
-    }
-
-    GridClientDate doReadDateObject(bool raw) {
-        int64_t t1 = doReadInt64(raw);
-        int16_t t2 = doReadInt16(raw);
-
-        return GridClientDate(t1, t2);
-    }
-
     bool readByteArray(char* fieldName, std::vector<int8_t>& arr) {
         off = fieldOffset(fieldName);
 
         if (off >= 0) {
             int8_t flag = doReadByte(false);
+
+            if (flag == FLAG_NULL)
+                return false;
 
             checkType(TYPE_ID_BYTE_ARR, flag);
 
@@ -2758,6 +2828,9 @@ public:
 
         if (off >= 0) {
             int8_t flag = doReadByte(false);
+
+            if (flag == FLAG_NULL)
+                return std::pair<int8_t*, int32_t>((int8_t*)0, 0);
 
             checkType(TYPE_ID_BYTE_ARR, flag);
 
@@ -2810,6 +2883,9 @@ public:
         if (off >= 0) {
             int8_t flag = doReadByte(false);
 
+            if (flag == FLAG_NULL)
+                return std::pair<int16_t*, int32_t>((int16_t*)0, 0);
+
             checkType(TYPE_ID_SHORT_ARR, flag);
 
             return doReadInt16Array(false);
@@ -2846,6 +2922,9 @@ public:
 
         if (off >= 0) {
             int8_t flag = doReadByte(false);
+
+            if (flag == FLAG_NULL)
+                return false;
 
             checkType(TYPE_ID_SHORT_ARR, flag);
 
@@ -2896,6 +2975,9 @@ public:
         if (off >= 0) {
             int8_t flag = doReadByte(false);
 
+            if (flag == FLAG_NULL)
+                return std::pair<uint16_t*, int32_t>((uint16_t*)0, 0);
+
             checkType(TYPE_ID_CHAR_ARR, flag);
 
             return doReadCharArray(false);
@@ -2932,6 +3014,9 @@ public:
 
         if (off >= 0) {
             int8_t flag = doReadByte(false);
+
+            if (flag == FLAG_NULL)
+                return false;
 
             checkType(TYPE_ID_CHAR_ARR, flag);
 
@@ -2983,6 +3068,9 @@ public:
         if (off >= 0) {
             int8_t flag = doReadByte(false);
 
+            if (flag == FLAG_NULL)
+                return std::pair<int32_t*, int32_t>((int32_t*)0, 0);
+
             checkType(TYPE_ID_INT_ARR, flag);
 
             return doReadInt32Array(false);
@@ -3019,6 +3107,9 @@ public:
 
         if (off >= 0) {
             int8_t flag = doReadByte(false);
+
+            if (flag == FLAG_NULL)
+                return false;
 
             checkType(TYPE_ID_INT_ARR, flag);
 
@@ -3069,6 +3160,9 @@ public:
         if (off >= 0) {
             int8_t flag = doReadByte(false);
 
+            if (flag == FLAG_NULL)
+                return std::pair<int64_t*, int32_t>((int64_t*)0, 0);
+
             checkType(TYPE_ID_LONG_ARR, flag);
 
             return doReadInt64Array(false);
@@ -3105,6 +3199,9 @@ public:
 
         if (off >= 0) {
             int8_t flag = doReadByte(false);
+
+            if (flag == FLAG_NULL)
+                return false;
 
             checkType(TYPE_ID_LONG_ARR, flag);
 
@@ -3155,6 +3252,9 @@ public:
         if (off >= 0) {
             int8_t flag = doReadByte(false);
 
+            if (flag == FLAG_NULL)
+                return std::pair<float*, int32_t>((float*)0, 0);
+
             checkType(TYPE_ID_FLOAT_ARR, flag);
 
             return doReadFloatArray(false);
@@ -3191,6 +3291,9 @@ public:
 
         if (off >= 0) {
             int8_t flag = doReadByte(false);
+
+            if (flag == FLAG_NULL)
+                return false;
 
             checkType(TYPE_ID_FLOAT_ARR, flag);
 
@@ -3241,6 +3344,9 @@ public:
         if (off >= 0) {
             int8_t flag = doReadByte(false);
 
+            if (flag == FLAG_NULL)
+                return std::pair<double*, int32_t>((double*)0, 0);
+
             checkType(TYPE_ID_DOUBLE_ARR, flag);
 
             return doReadDoubleArray(false);
@@ -3278,6 +3384,9 @@ public:
         if (off >= 0) {
             int8_t flag = doReadByte(false);
 
+            if (flag == FLAG_NULL)
+                return false;
+
             checkType(TYPE_ID_DOUBLE_ARR, flag);
 
             return doReadDoubleArray(false, res);
@@ -3313,29 +3422,15 @@ public:
         if (off >= 0) {
             int8_t flag = doReadByte(false);
 
+            if (flag == FLAG_NULL)
+                return boost::optional<std::string>();
+
             checkType(TYPE_ID_STRING, flag);
 
-            return doReadString(false);
+            return boost::optional<std::string>(doReadString(false));
         }
         else
             return 0;
-    }
-
-    boost::optional<std::string> doReadString(bool raw) {
-        int32_t len = doReadInt32(raw);
-
-        if (len >= 0) {
-            char* start = reinterpret_cast<char*>(in.bytes.data() + (raw ? rawOff : off));
-
-            if (raw)
-                rawOff += len;
-            else
-                off += len;
-
-            return boost::optional<std::string>(boost::in_place(start, len));
-        }
-        else
-            return boost::optional<std::string>();
     }
 
     bool readStringArray(char* fieldName, std::vector<std::string>& res) {
@@ -3343,6 +3438,9 @@ public:
 
         if (off >= 0) {
             int8_t flag = doReadByte(false);
+
+            if (flag == FLAG_NULL)
+                return false;
 
             checkType(TYPE_ID_STRING_ARR, flag);
 
@@ -3359,6 +3457,9 @@ public:
             res.reserve(res.size() + len);
 
             for (int i = 0; i < len; i++) {
+                if (doReadByte(raw) == FLAG_NULL)
+                    continue;
+
                 int32_t strLen = doReadInt32(raw);
 
                 if (strLen >= 0) {
@@ -3385,26 +3486,12 @@ public:
         if (off >= 0) {
             int8_t flag = doReadByte(false);
 
+            if (flag == FLAG_NULL)
+                return boost::optional<std::wstring>();
+
             checkType(TYPE_ID_STRING, flag);
 
-            return doReadWString(false);
-        }
-        else
-            return 0;
-    }
-
-    boost::optional<std::wstring> doReadWString(bool raw) {
-        int32_t len = doReadInt32(raw);
-
-        if (len >= 0) {
-            wchar_t* start = reinterpret_cast<wchar_t*>(in.bytes.data() + (raw ? rawOff : off));
-
-            if (raw)
-                rawOff += len;
-            else
-                off += len;
-
-            return boost::optional<std::wstring>(boost::in_place(start, len / sizeof(wchar_t)));
+            return boost::optional<std::wstring>(doReadWString(false));
         }
         else
             return boost::optional<std::wstring>();
@@ -3431,6 +3518,9 @@ public:
             res.reserve(res.size() + len);
 
             for (int i = 0; i < len; i++) {
+                if (doReadByte(raw) == FLAG_NULL)
+                    continue;
+
                 int32_t strLen = doReadInt32(raw);
 
                 if (strLen >= 0) {
@@ -3441,7 +3531,7 @@ public:
                     else
                         off += strLen;
 
-                    res.emplace_back(std::wstring(start, strLen / sizeof(wchar_t)));
+                    res.push_back(std::wstring(start, strLen / sizeof(wchar_t)));
                 }
             }
 
@@ -3471,6 +3561,9 @@ public:
         if (off >= 0) {
             int8_t flag = doReadByte(false);
 
+            if (flag == FLAG_NULL)
+                return false;
+
             checkType(TYPE_ID_BOOLEAN_ARR, flag);
 
             return doReadBoolArray(false, res);
@@ -3498,6 +3591,9 @@ public:
 
         if (off >= 0) {
             int8_t flag = doReadByte(false);
+
+            if (flag == FLAG_NULL)
+                return std::pair<bool*, int32_t>((bool*)0, 0);
 
             checkType(TYPE_ID_BOOLEAN_ARR, flag);
 
@@ -3528,25 +3624,22 @@ public:
         if (off >= 0) {
             int8_t flag = doReadByte(false);
 
+            if (flag == FLAG_NULL)
+                return boost::optional<GridClientUuid>();
+
             checkType(TYPE_ID_UUID, flag);
 
-            return doReadUuid(false);
+            return boost::optional<GridClientUuid>(doReadUuid(false));
         }
         else
-            return 0;
+            return boost::optional<GridClientUuid>();
     }
 
-    boost::optional<GridClientUuid> doReadUuid(bool raw) {
-        boost::optional<GridClientUuid> res;
+    GridClientUuid doReadUuid(bool raw) {
+        int64_t most = doReadInt64(raw);
+        int64_t least = doReadInt64(raw);
 
-        if (doReadBool(raw)) {
-            int64_t most = doReadInt64(raw);
-            int64_t least = doReadInt64(raw);
-
-            res.reset(GridClientUuid(most, least));
-        }
-
-        return res;
+        return GridClientUuid(most, least);
     }
 
     boost::optional<GridClientDate> readDate(char* fieldName) {
@@ -3555,23 +3648,22 @@ public:
         if (off >= 0) {
             int8_t flag = doReadByte(false);
 
+            if (flag == FLAG_NULL)
+                return boost::optional<GridClientDate>();
+
             checkType(TYPE_ID_DATE, flag);
 
-            return doReadDate(false);
+            return boost::optional<GridClientDate>(doReadDate(false));
         }
         else
             return boost::optional<GridClientDate>();
     }
 
-    boost::optional<GridClientDate> doReadDate(bool raw) {
-        if (doReadBool(raw)) {
-            int64_t t1 = doReadInt64(raw);
-            int16_t t2 = doReadInt16(raw);
+    GridClientDate doReadDate(bool raw) {
+        int64_t t1 = doReadInt64(raw);
+        int16_t t2 = doReadInt16(raw);
 
-            return boost::optional<GridClientDate>(GridClientDate(t1, t2));
-        }
-
-        return boost::optional<GridClientDate>();
+        return GridClientDate(t1, t2);
     }
 
     bool readUuidArray(char* fieldName, std::vector<GridClientUuid>& res) {
@@ -3579,6 +3671,9 @@ public:
 
         if (off >= 0) {
             int8_t flag = doReadByte(false);
+
+            if (flag == FLAG_NULL)
+                return false;
 
             checkType(TYPE_ID_UUID_ARR, flag);
 
@@ -3595,8 +3690,10 @@ public:
             res.reserve(res.size() + len);
 
             for (int i = 0; i < len; i++) {
-                if (doReadBool(raw))
-                    res.push_back(doReadUuidObject(raw));
+                int8_t flag = doReadByte(raw);
+
+                if (flag != FLAG_NULL)
+                    res.push_back(doReadUuid(raw));
             }
 
             return true;
@@ -3610,6 +3707,9 @@ public:
 
         if (off >= 0) {
             int8_t flag = doReadByte(false);
+
+            if (flag == FLAG_NULL)
+                return false;
 
             checkType(TYPE_ID_DATE_ARR, flag);
 
@@ -3626,8 +3726,10 @@ public:
             res.reserve(res.size() + len);
 
             for (int i = 0; i < len; i++) {
-                if (doReadBool(raw))
-                    res.push_back(doReadDateObject(raw));
+                int8_t flag = doReadByte(raw);
+
+                if (flag != FLAG_NULL)
+                    res.push_back(doReadDate(raw));
             }
 
             return true;
@@ -3651,6 +3753,9 @@ public:
         if (off >= 0) {
             int8_t flag = doReadByte(false);
 
+            if (flag == FLAG_NULL)
+                return false;
+
             checkType(TYPE_ID_OBJ_ARR, flag);
 
             return doReadVariantCollection(false, false, res);
@@ -3664,6 +3769,9 @@ public:
 
         if (off >= 0) {
             int8_t flag = doReadByte(false);
+
+            if (flag == FLAG_NULL)
+                return false;
 
             checkType(TYPE_ID_COLLECTION, flag);
 
@@ -3679,6 +3787,9 @@ public:
         if (off >= 0) {
             int8_t flag = doReadByte(false);
 
+            if (flag == FLAG_NULL)
+                return false;
+
             checkType(TYPE_ID_MAP, flag);
 
             return doReadVariantMap(false, res);
@@ -3692,10 +3803,16 @@ public:
     }
 
     bool readByteArray(std::vector<int8_t>& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadByteArray(true, res);
     }
 
     std::pair<int8_t*, int32_t> readByteArray() {
+        if (doReadByte(true) == FLAG_NULL)
+            return std::pair<int8_t*, int32_t>((int8_t*)0, 0);
+
         return doReadByteArray(true);
     }
 
@@ -3704,10 +3821,16 @@ public:
     }
 
     std::pair<int16_t*, int32_t> readInt16Array() {
+        if (doReadByte(true) == FLAG_NULL)
+            return std::pair<int16_t*, int32_t>((int16_t*)0, 0);
+
         return doReadInt16Array(true);
     }
 
     bool readInt16Array(std::vector<int16_t>& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadInt16Array(true, res);
     }
 
@@ -3716,10 +3839,16 @@ public:
     }
 
     std::pair<int32_t*, int32_t> readInt32Array() {
+        if (doReadByte(true) == FLAG_NULL)
+            return std::pair<int32_t*, int32_t>((int32_t*)0, 0);
+
         return doReadInt32Array(true);
     }
 
     bool readInt32Array(std::vector<int32_t>& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadInt32Array(true, res);
     }
 
@@ -3728,10 +3857,16 @@ public:
     }
 
     std::pair<int64_t*, int32_t> readInt64Array() {
+        if (doReadByte(true) == FLAG_NULL)
+            return std::pair<int64_t*, int32_t>((int64_t*)0, 0);
+
         return doReadInt64Array(true);
     }
 
     bool readInt64Array(std::vector<int64_t>& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadInt64Array(true, res);
     }
 
@@ -3740,10 +3875,16 @@ public:
     }
 
     std::pair<float*, int32_t> readFloatArray() {
+        if (doReadByte(true) == FLAG_NULL)
+            return std::pair<float*, int32_t>((float*)0, 0);
+
         return doReadFloatArray(true);
     }
 
     bool readFloatArray(std::vector<float>& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadFloatArray(true, res);
     }
 
@@ -3752,26 +3893,44 @@ public:
     }
 
     std::pair<double*, int32_t> readDoubleArray() {
+        if (doReadByte(true) == FLAG_NULL)
+            return std::pair<double*, int32_t>((double*)0, 0);
+
         return doReadDoubleArray(true);
     }
 
     bool readDoubleArray(std::vector<double>& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadDoubleArray(true, res);
     }
 
     boost::optional<std::string> readString() {
-        return doReadString(true);
+        if (doReadByte(true) == FLAG_NULL)
+            return boost::optional<std::string>();
+
+        return boost::optional<std::string>(doReadString(true));
     }
 
     bool readStringArray(std::vector<std::string>& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadStringArray(true, res);
     }
 
     boost::optional<std::wstring> readWString() {
-        return doReadWString(true);
+        if (doReadByte(true) == FLAG_NULL)
+            return boost::optional<std::wstring>();
+
+        return boost::optional<std::wstring>(doReadWString(true));
     }
 
     bool readWStringArray(std::vector<std::wstring>& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadWStringArray(true, res);
     }
 
@@ -3780,10 +3939,16 @@ public:
     }
 
     bool readBoolArray(std::vector<bool>& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadBoolArray(true, res);
     }
 
     std::pair<bool*, int32_t> readBoolArray() {
+        if (doReadByte(true) == FLAG_NULL)
+            return std::pair<bool*, int32_t>((bool*)0, 0);
+
         return doReadBoolArray(true);
     }
 
@@ -3792,26 +3957,44 @@ public:
     }
 
     std::pair<uint16_t*, int32_t> readCharArray() {
+        if (doReadByte(true) == FLAG_NULL)
+            return std::pair<uint16_t*, int32_t>((uint16_t*)0, 0);
+
         return doReadCharArray(true);
     }
 
     bool readCharArray(std::vector<uint16_t>& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadCharArray(true, res);
     }
 
     boost::optional<GridClientUuid> readUuid() {
-        return doReadUuid(true);
+        if (doReadByte(true) == FLAG_NULL)
+            return boost::optional<GridClientUuid>();
+
+        return boost::optional<GridClientUuid>(doReadUuid(true));
     }
 
     bool readUuidArray(std::vector<GridClientUuid>& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadUuidArray(true, res);
     }
 
     boost::optional<GridClientDate> readDate() {
-        return doReadDate(true);
+        if (doReadByte(true) == FLAG_NULL)
+            return boost::optional<GridClientDate>();
+
+        return boost::optional<GridClientDate>(doReadDate(true));
     }
 
     bool readDateArray(std::vector<GridClientDate>& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadDateArray(true, res);
     }
 
@@ -3820,14 +4003,23 @@ public:
     }
 
     bool readVariantArray(TGridClientVariantSet& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadVariantCollection(true, false, res);
     }
 
     bool readVariantCollection(TGridClientVariantSet& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadVariantCollection(true, true, res);
     }
 
     bool readVariantMap(TGridClientVariantMap& res) {
+        if (doReadByte(true) == FLAG_NULL)
+            return false;
+
         return doReadVariantMap(true, res);
     }
 
@@ -3900,21 +4092,12 @@ public:
 		return boost::shared_ptr<std::vector<int8_t>>(bytes);
     }
 
-    GridClientVariant unmarshal(const boost::shared_ptr<std::vector<int8_t>>& data) {
+    GridClientVariant unmarshal(const boost::shared_ptr<std::vector<int8_t>>& data, bool keepPortable) {
 		boost::shared_ptr<PortableReadContext> ctxPtr(new PortableReadContext(data, idRslvr));
 
-        GridPortableReaderImpl reader(ctxPtr, 0);
+        GridPortableReaderImpl reader(ctxPtr, keepPortable, 0);
 
         return reader.unmarshal(false);
-    }
-
-    template<typename T>
-    T* unmarshalUserObject(const boost::shared_ptr<std::vector<int8_t>>& data) {
-        GridClientVariant var = unmarshal(data);
-
-        GridPortableObject& portable = var.getPortableObject();
-
-        return portable.deserialize<T>();
     }
 
     void parseResponse(GridClientResponse* msg, GridClientMessageTopologyResult& resp) {
@@ -3926,20 +4109,20 @@ public:
             std::vector<GridClientVariant>& vec = res.getVariantVector();
 
             for (auto iter = vec.begin(); iter != vec.end(); ++iter) {
-                GridClientVariant var = *iter;
+                GridClientVariant& var = *iter;
 
-                std::unique_ptr<GridClientNodeBean> nodeBean(var.getPortableObject().deserialize<GridClientNodeBean>());
+                std::unique_ptr<GridClientNodeBean> nodeBean(var.deserializePortable<GridClientNodeBean>());
 
                 nodes.push_back(nodeBean->createNode());
             }
         }
-        else if (res.hasPortableObject()) {
-            std::unique_ptr<GridClientNodeBean> nodeBean(res.getPortableObject().deserialize<GridClientNodeBean>());
+        else if (res.hasPortableObject() || res.hasPortable()) {
+            std::unique_ptr<GridClientNodeBean> nodeBean(res.deserializePortable<GridClientNodeBean>());
 
             nodes.push_back(nodeBean->createNode());
         }
 
-        resp.setNodes(nodes);
+        resp.setNodes(std::move(nodes));
     }
 
     void parseResponse(GridClientResponse* msg, GridClientMessageLogResult& resp) {
@@ -3963,20 +4146,9 @@ public:
     }
 
     void parseResponse(GridClientResponse* msg, GridClientMessageCacheGetResult& resp) {
-        GridClientVariant res = msg->getResult();
+        GridClientVariant& res = msg->getResult();
 
-        if (res.hasVariantMap()) {
-            TCacheValuesMap keyValues = res.getVariantMap();
-
-            resp.setCacheValues(keyValues);
-        }
-        else {
-            TCacheValuesMap keyValues;
-
-            keyValues.insert(std::make_pair(GridClientVariant(), res));
-
-            resp.setCacheValues(keyValues);
-        }
+        resp.res = std::move(res);
     }
 
     void parseResponse(GridClientResponse* msg, GridClientMessageCacheModifyResult& resp) {
@@ -3999,13 +4171,19 @@ public:
     void parseResponse(GridClientResponse* msg, GridClientMessageTaskResult& resp) {
         GridClientVariant res = msg->getResult();
 
-        if (res.hasPortableObject()) {
-            std::unique_ptr<GridClientTaskResultBean> resBean(res.getPortableObject().deserialize<GridClientTaskResultBean>());
+        if (res.hasPortable() || res.hasPortableObject()) {
+            std::unique_ptr<GridClientTaskResultBean> resBean(res.deserializePortable<GridClientTaskResultBean>());
 
-            resp.setTaskResult(resBean->res);
+            resp.taskRes = std::move(resBean->res);
         }
     }
 
+    void parseResponse(GridClientResponse* msg, GridClientQueryResult& resp) {
+        GridClientVariant res = msg->getResult();
+
+        if (res.hasPortableObject())
+            resp.res = res.getPortableObject().deserialize<GridClientDataQueryResult>();
+    }
 };
 
 #endif

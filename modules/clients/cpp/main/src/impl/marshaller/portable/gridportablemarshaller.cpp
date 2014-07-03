@@ -6,10 +6,10 @@
  *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
+#include <boost/algorithm/string.hpp>
 #include <boost/unordered_map.hpp>
 
 #include "gridgain/gridportable.hpp"
-#include "gridgain/gridportableserializer.hpp"
 #include "gridgain/gridportablereader.hpp"
 #include "gridgain/gridportablewriter.hpp"
 
@@ -37,7 +37,11 @@ int32_t getFieldId(const char* fieldName, int32_t typeId, GridPortableIdResolver
             return rslvrId.get();
     }
 
-    return cStringHash(fieldName);
+    std::string name(fieldName);
+
+    boost::to_lower(name);
+
+    return gridStringHash(name);
 }
 
 int32_t getFieldId(const std::string& fieldName, int32_t typeId, GridPortableIdResolver* idRslvr) {
@@ -48,7 +52,7 @@ int32_t getFieldId(const std::string& fieldName, int32_t typeId, GridPortableIdR
             return rslvrId.get();
     }
 
-    return gridStringHash(fieldName);
+    return gridStringHash(boost::to_lower_copy(fieldName));
 }
 
 boost::unordered_map<int32_t, GridPortableFactory*>& portableFactories() {
@@ -115,12 +119,13 @@ GridPortable* createSystemPortable(int32_t typeId, GridPortableReader &reader) {
     return static_cast<GridPortable*>(factory->newInstance(reader));
 }
 
-#define REGISTER_SYSTEM_TYPE(TYPE_ID, TYPE) \
+#define REGISTER_SYSTEM_TYPE(TYPE) \
     class GridPortableFactory_##TYPE : public GridPortableFactory {\
     public:\
         \
         GridPortableFactory_##TYPE() {\
-            registerSystemPortableFactory(TYPE_ID, this);\
+            TYPE t;\
+            registerSystemPortableFactory(t.typeId(), this);\
         }\
         \
         virtual ~GridPortableFactory_##TYPE() {\
@@ -135,12 +140,14 @@ GridPortable* createSystemPortable(int32_t typeId, GridPortableReader &reader) {
     \
     GridPortableFactory_##TYPE factory_##TYPE;
 
-REGISTER_SYSTEM_TYPE(GridClientAuthenticationRequest::TYPE_ID, GridClientAuthenticationRequest);
-REGISTER_SYSTEM_TYPE(GridClientCacheRequest::TYPE_ID, GridClientCacheRequest);
-REGISTER_SYSTEM_TYPE(GridClientLogRequest::TYPE_ID, GridClientLogRequest);
-REGISTER_SYSTEM_TYPE(GridClientNodeBean::TYPE_ID, GridClientNodeBean);
-REGISTER_SYSTEM_TYPE(GridClientMetricsBean::TYPE_ID, GridClientMetricsBean);
-REGISTER_SYSTEM_TYPE(GridClientResponse::TYPE_ID, GridClientResponse);
-REGISTER_SYSTEM_TYPE(GridClientTaskRequest::TYPE_ID, GridClientTaskRequest);
-REGISTER_SYSTEM_TYPE(GridClientTaskResultBean::TYPE_ID, GridClientTaskResultBean);
-REGISTER_SYSTEM_TYPE(GridClientTopologyRequest::TYPE_ID, GridClientTopologyRequest);
+REGISTER_SYSTEM_TYPE(GridClientAuthenticationRequest);
+REGISTER_SYSTEM_TYPE(GridClientCacheRequest);
+REGISTER_SYSTEM_TYPE(GridClientLogRequest);
+REGISTER_SYSTEM_TYPE(GridClientNodeBean);
+REGISTER_SYSTEM_TYPE(GridClientMetricsBean);
+REGISTER_SYSTEM_TYPE(GridClientResponse);
+REGISTER_SYSTEM_TYPE(GridClientTaskRequest);
+REGISTER_SYSTEM_TYPE(GridClientTaskResultBean);
+REGISTER_SYSTEM_TYPE(GridClientTopologyRequest);
+REGISTER_SYSTEM_TYPE(GridClientCacheQueryRequest);
+REGISTER_SYSTEM_TYPE(GridClientDataQueryResult);

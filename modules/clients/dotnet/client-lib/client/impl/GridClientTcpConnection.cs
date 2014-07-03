@@ -324,7 +324,7 @@ namespace GridGain.Client.Impl {
          * Makes request to server via tcp protocol and returns a future that will be completed when
          * response is received.</summary>
          *
-         * <param name="msg">Message to request,</param>
+         * <param name="msg">Message to request.</param>
          * <returns>Response object.</returns>
          * <exception cref="GridClientConnectionResetException">If request failed.</exception>
          * <exception cref="GridClientClosedException">If client was closed.</exception>
@@ -383,17 +383,12 @@ namespace GridGain.Client.Impl {
         }
 
         /**
-         * <summary>
-         * Handles incoming response message.</summary>
-         *
+         * <summary>Handles incoming response message.</summary>
          * <param name="msg">Incoming response message.</param>
+         * <param name="fut">Future.</param>
          */
-        private void handleResponse(GridClientResponse msg) {
-            GridClientTcpRequestFuture fut;
-
-            if (!pendingReqs.TryGetValue(msg.RequestId, out fut))
-                return;
-
+        private void handleResponse(GridClientResponse msg, GridClientTcpRequestFuture fut)
+        {
             // Update authentication session token.
             if (msg.SessionToken != null)
                 sesTok = msg.SessionToken;
@@ -587,11 +582,7 @@ namespace GridGain.Client.Impl {
                 IDictionary<K, V> res = new Dictionary<K, V>(map.Count);
 
                 foreach (DictionaryEntry entry in map)
-                {
-                    V val = ((IGridClientPortableObject)entry.Value).Deserialize<V>();
-
-                    res.Add((K)(entry.Key), val);
-                }
+                    res.Add((K)entry.Key, (V)entry.Value);
 
                 return res;
             };
@@ -734,7 +725,12 @@ namespace GridGain.Client.Impl {
                 var m = new Dictionary<String, Object>();
 
                 foreach (DictionaryEntry entry in map)
-                    m[(String)entry.Key] = entry.Value;
+                {
+                    String key = ((string)entry.Key);
+                    Object val = entry.Value;
+
+                    m[key] = val;
+                }                    
 
                 return parseCacheMetrics(m);
             };
@@ -852,7 +848,7 @@ namespace GridGain.Client.Impl {
 
                 IList<IGridClientNode> nodes = new List<IGridClientNode>();
 
-                foreach (Object bean in it)
+                foreach (object bean in it) 
                     nodes.Add(nodeBeanToNode((GridClientNodeBean)bean));
 
                 Top.UpdateTopology(nodes);
@@ -1070,7 +1066,13 @@ namespace GridGain.Client.Impl {
 
                     U.ReadFully(inStream, msgBytes, 0, msgBytes.Length);
 
-                    GridClientResponse msg = marshaller.Unmarshal(msgBytes).Deserialize<GridClientResponse>();
+                    GridClientTcpRequestFuture fut;
+
+                    if (!pendingReqs.TryGetValue(reqId, out fut))
+                        return;
+
+                    GridClientResponse msg = ((GridClientPortableObjectImpl)marshaller.Unmarshal(msgBytes))
+                        .Deserialize<GridClientResponse>(fut.KeepPortable);
 
                     msg.RequestId = reqId;
                     msg.ClientId = clientId;
@@ -1078,7 +1080,7 @@ namespace GridGain.Client.Impl {
 
                     lastPacketRcvTime = U.Now;
 
-                    handleResponse(msg);
+                    handleResponse(msg, fut);
                 }
             }
             catch (IOException e) {
@@ -1189,6 +1191,10 @@ namespace GridGain.Client.Impl {
          */
         public GridClientTcpRequestFuture(GridClientRequest msg) {
             this.msg = msg;
+            
+            GridClientCacheRequest msg0 = msg as GridClientCacheRequest;
+            KeepPortable = msg0 != null && ((msg0.CacheFlags & (int)GridClientCacheFlag.KeepPortable) > 0);
+
             State = INITIAL;
         }
 
@@ -1208,6 +1214,13 @@ namespace GridGain.Client.Impl {
             get;
             set;
         }
+
+        /** <summary>Whether to keep portables.</summary> */
+        public bool KeepPortable
+        {
+            get;
+            private set;
+        }
     }
 
     /**
@@ -1222,8 +1235,9 @@ namespace GridGain.Client.Impl {
         /**
          * <param name="msg">Message to send.</param>
          */
-        public GridClientTcpRequestFuture(GridClientRequest msg)
-            : base(msg) {
+        public GridClientTcpRequestFuture(GridClientRequest msg) : base(msg) 
+        {
+            // No-op.
         }
 
         /** <summary>Successfull done converter from object to expected type.</summary> */

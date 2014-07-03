@@ -203,3 +203,67 @@ template<>
 void GridPortableRawWriter::writeArrayElementRaw(const GridClientVariant& val) {
     doWriteVariant(val);
 }
+template<>
+int32_t GridPortableRawWriter::startArrayRaw<bool>() {
+    return startBoolArrayRaw();
+}
+
+template<>
+int32_t GridPortableRawWriter::startArrayRaw<int8_t>() {
+    return startByteArrayRaw();
+}
+
+template<>
+int32_t GridPortableRawWriter::startArrayRaw<int16_t>() {
+    return startInt16ArrayRaw();
+}
+
+template<>
+int32_t GridPortableRawWriter::startArrayRaw<uint16_t>() {
+    return startCharArrayRaw();
+}
+
+template<>
+int32_t GridPortableRawWriter::startArrayRaw<int32_t>() {
+    return startInt32ArrayRaw();
+}
+
+template<>
+int32_t GridPortableRawWriter::startArrayRaw<int64_t>() {
+    return startInt64ArrayRaw();
+}
+
+template<>
+int32_t GridPortableRawWriter::startArrayRaw<float>() {
+    return startFloatArrayRaw();
+}
+
+template<>
+int32_t GridPortableRawWriter::startArrayRaw<double>() {
+    return startDoubleArrayRaw();
+}
+
+template<>
+int32_t GridPortableRawWriter::startArrayRaw<GridClientUuid>() {
+    return startUuidArrayRaw();
+}
+
+template<>
+int32_t GridPortableRawWriter::startArrayRaw<GridClientDate>() {
+    return startDateArrayRaw();
+}
+
+template<>
+int32_t GridPortableRawWriter::startArrayRaw<std::string>() {
+    return startStringArrayRaw();
+}
+
+template<>
+int32_t GridPortableRawWriter::startArrayRaw<std::wstring>() {
+    return startStringArrayRaw();
+}
+
+template<>
+int32_t GridPortableRawWriter::startArrayRaw<GridClientVariant>() {
+    return startVariantArrayRaw();
+}

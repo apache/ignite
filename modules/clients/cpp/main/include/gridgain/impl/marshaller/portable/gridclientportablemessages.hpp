@@ -18,8 +18,9 @@
 #include "gridgain/gridportable.hpp"
 #include "gridgain/gridportablereader.hpp"
 #include "gridgain/gridportablewriter.hpp"
-#include "gridgain/impl/marshaller/gridnodemarshallerhelper.hpp"
 #include "gridgain/impl/cmd/gridclientmessagecacherequestcommand.hpp"
+#include "gridgain/impl/marshaller/gridnodemarshallerhelper.hpp"
+#include "gridgain/impl/queries/gridqueriesimpl.hpp"
 #include "gridgain/impl/utils/gridclientbyteutils.hpp"
 #include "gridgain/impl/utils/gridclientlog.hpp"
 
@@ -87,7 +88,7 @@ public:
         return errorMsg;
     }
 
-    GridClientVariant getResult() {
+    GridClientVariant& getResult() {
         return res;
     }
 
@@ -493,8 +494,8 @@ public:
 
         helper.setAttributes(attrs);
 
-        if (metrics.hasPortableObject()) {
-            std::unique_ptr<GridClientMetricsBean> pMetrics(metrics.getPortableObject().deserialize<GridClientMetricsBean>());
+        if (metrics.hasPortableObject() || metrics.hasPortable()) {
+            std::unique_ptr<GridClientMetricsBean> pMetrics(metrics.deserializePortable<GridClientMetricsBean>());
 
             GridClientNodeMetricsBean metricsBean;
 
@@ -627,12 +628,9 @@ public:
     }
 
     GridClientCacheRequest(GridCacheRequestCommand& cacheCmd) : key(cacheCmd.getKey()), val(cacheCmd.getValue()),
-        val2(cacheCmd.getValue2()), vals(cacheCmd.getValues()), cacheName(&cacheCmd.getCacheName())  {
+        val2(cacheCmd.getValue2()), vals(cacheCmd.getValues()), cacheName(&cacheCmd.getCacheName()),
+        cacheFlagsOn(cacheCmd.getFlags())  {
         op = static_cast<int32_t>(cacheCmd.getOperation());
-
-        const std::set<GridClientCacheFlag>& flags = cacheCmd.getFlags();
-
-        cacheFlagsOn = flags.empty() ? 0 : GridClientByteUtils::bitwiseOr(flags.begin(), flags.end(), 0);
     }
 
     void writePortable(GridPortableWriter& writer) const;
@@ -798,6 +796,88 @@ public:
     }
 
     GridClientVariant cred;
+};
+
+class GridClientCacheQueryRequest : public GridClientPortableMessage {
+public:
+    static const int32_t TYPE_ID = 0;
+
+    GridClientCacheQueryRequest() {
+    }
+
+    int32_t typeId() const {
+        return TYPE_ID;
+    }
+
+    void writePortable(GridPortableWriter &writer) const {
+        GridClientPortableMessage::writePortable(writer);
+
+        GridPortableRawWriter& raw = writer.rawWriter();
+
+    }
+
+    void readPortable(GridPortableReader &reader) {
+        assert(false);
+    }
+
+    enum Operation {
+        EXECUTE = 0,
+        FETCH,
+        REBUILD_INDEXES
+    };
+
+    int64_t qryId;
+
+    Operation op;
+
+    GridQueryType type;
+
+    std::string* cacheName;
+
+    std::string* clause;
+
+    int32_t pageSize;
+
+    int64_t timeout;
+
+    bool incBackups;
+
+    bool dedup;
+
+    std::string* className;
+
+    std::string* reducerClassName;
+
+    std::string* transformerClassName;
+
+    std::vector<GridClientVariant>* classArgs;
+
+    std::vector<GridClientVariant>* args;
+};
+
+class GridClientDataQueryResult : public GridPortable {
+public:
+    static const int32_t TYPE_ID = 0;
+
+    int32_t typeId() const {
+        return TYPE_ID;
+    }
+
+    void writePortable(GridPortableWriter &writer) const {
+        assert(false);
+    }
+
+    void readPortable(GridPortableReader &reader) {
+        GridPortableRawReader& raw = reader.rawReader();
+    }
+
+    int64_t qryId;
+
+    std::vector<GridClientVariant> items;
+
+    bool last;
+
+    GridClientUuid nodeId;
 };
 
 #endif // GRIDCLIENT_PORTABLE_MESSAGES_HPP_INCLUDED

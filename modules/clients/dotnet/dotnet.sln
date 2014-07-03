@@ -1,6 +1,8 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual C# Express 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Express 2013 for Windows Desktop
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "client-lib", "client-lib\client-lib.csproj", "{1A6F93A0-33A1-42D1-B97D-CBFCF787D637}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "client-lib-test", "..\src\test\dotnet\client-lib-test\client-lib-test.csproj", "{52F1327C-E0DB-4096-AEC6-FDF2B5F46176}"
@@ -12,6 +14,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "client-examples-test", "..\src\test\dotnet\client-examples-test\client-examples-test.csproj", "{68F3BF3F-86C1-4AFF-B914-1DD690A273CA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GridClientApiExample", "..\..\..\examples\clients\dotnet\GridClientApiExample.csproj", "{93C19D37-D5A4-41D0-8E10-F214B1F61213}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "client-barclays", "client-barclays\client-barclays.csproj", "{B6D8031D-1B10-492C-AA2F-764F396FA3DB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -149,6 +153,26 @@ Global
 		{93C19D37-D5A4-41D0-8E10-F214B1F61213}.ReleaseSnk|Mixed Platforms.Build.0 = Release|x86
 		{93C19D37-D5A4-41D0-8E10-F214B1F61213}.ReleaseSnk|x86.ActiveCfg = Release|x86
 		{93C19D37-D5A4-41D0-8E10-F214B1F61213}.ReleaseSnk|x86.Build.0 = Release|x86
+		{B6D8031D-1B10-492C-AA2F-764F396FA3DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B6D8031D-1B10-492C-AA2F-764F396FA3DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B6D8031D-1B10-492C-AA2F-764F396FA3DB}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{B6D8031D-1B10-492C-AA2F-764F396FA3DB}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{B6D8031D-1B10-492C-AA2F-764F396FA3DB}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B6D8031D-1B10-492C-AA2F-764F396FA3DB}.DebugSnk|Any CPU.ActiveCfg = Debug|Any CPU
+		{B6D8031D-1B10-492C-AA2F-764F396FA3DB}.DebugSnk|Any CPU.Build.0 = Debug|Any CPU
+		{B6D8031D-1B10-492C-AA2F-764F396FA3DB}.DebugSnk|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{B6D8031D-1B10-492C-AA2F-764F396FA3DB}.DebugSnk|Mixed Platforms.Build.0 = Debug|Any CPU
+		{B6D8031D-1B10-492C-AA2F-764F396FA3DB}.DebugSnk|x86.ActiveCfg = Debug|Any CPU
+		{B6D8031D-1B10-492C-AA2F-764F396FA3DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B6D8031D-1B10-492C-AA2F-764F396FA3DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B6D8031D-1B10-492C-AA2F-764F396FA3DB}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{B6D8031D-1B10-492C-AA2F-764F396FA3DB}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{B6D8031D-1B10-492C-AA2F-764F396FA3DB}.Release|x86.ActiveCfg = Release|Any CPU
+		{B6D8031D-1B10-492C-AA2F-764F396FA3DB}.ReleaseSnk|Any CPU.ActiveCfg = Release|Any CPU
+		{B6D8031D-1B10-492C-AA2F-764F396FA3DB}.ReleaseSnk|Any CPU.Build.0 = Release|Any CPU
+		{B6D8031D-1B10-492C-AA2F-764F396FA3DB}.ReleaseSnk|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{B6D8031D-1B10-492C-AA2F-764F396FA3DB}.ReleaseSnk|Mixed Platforms.Build.0 = Release|Any CPU
+		{B6D8031D-1B10-492C-AA2F-764F396FA3DB}.ReleaseSnk|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
