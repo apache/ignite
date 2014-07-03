@@ -28,9 +28,12 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
+import static org.gridgain.grid.cache.GridCachePreloadMode.*;
+import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
@@ -40,7 +43,10 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
  */
 public class GridCacheUtils {
     /** DR system cache name prefix. */
-    public static final String DR_SYS_CACHE_PREFIX = "gg-dr-sys-cache-";
+    public static final String SYS_CACHE_DR_PREFIX = "gg-dr-sys-cache-";
+
+    /**  Hadoop syste cache name. */
+    public static final String SYS_CACHE_HADOOP_MR = "gg-hadoop-mr-sys-cache";
 
     /** Security system cache name. */
     public static final String SECURITY_SYS_CACHE_NAME = "gg-security-sys-cache";
@@ -1414,10 +1420,10 @@ public class GridCacheUtils {
 
     /**
      * @param cacheName Cache name.
-     * @return Name of internal replicated cache used by data center replication component.
+     * @return {@code True} if this is Hadoop system cache.
      */
-    public static String cacheNameForDrSystemCache(String cacheName) {
-        return DR_SYS_CACHE_PREFIX + cacheName;
+    public static boolean isHadoopSystemCache(String cacheName) {
+        return F.eq(cacheName, SYS_CACHE_HADOOP_MR);
     }
 
     /**
@@ -1425,7 +1431,55 @@ public class GridCacheUtils {
      * @return {@code True} if this is DR system cache.
      */
     public static boolean isDrSystemCache(String cacheName) {
-        return cacheName != null && cacheName.startsWith(DR_SYS_CACHE_PREFIX);
+        return cacheName != null && cacheName.startsWith(SYS_CACHE_DR_PREFIX);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return Name of internal replicated cache used by data center replication component.
+     */
+    public static String cacheNameForDrSystemCache(String cacheName) {
+        return SYS_CACHE_DR_PREFIX + cacheName;
+    }
+
+    /**
+     * Create system cache used by Hadoop component.
+     *
+     * @return Hadoop cache configuration.
+     */
+    public static GridCacheConfiguration hadoopSystemCache() {
+        GridCacheConfiguration cache = new GridCacheConfiguration();
+
+        cache.setName(CU.SYS_CACHE_HADOOP_MR);
+        cache.setCacheMode(REPLICATED);
+        cache.setAtomicityMode(TRANSACTIONAL);
+        cache.setWriteSynchronizationMode(FULL_SYNC);
+
+        cache.setEvictionPolicy(null);
+        cache.setSwapEnabled(false);
+        cache.setQueryIndexEnabled(false);
+        cache.setStore(null);
+        cache.setEagerTtl(true);
+        cache.setPreloadMode(SYNC);
+
+        return cache;
+    }
+
+    /**
+     * Creates system cache configuration used by data center replication component.
+     *
+     * @param cacheName Cache name.
+     * @return DR cache configuration.
+     */
+    public static GridCacheConfiguration drSystemCache(String cacheName) {
+        GridCacheConfiguration cache = new GridCacheConfiguration();
+
+        cache.setName(cacheName);
+        cache.setCacheMode(REPLICATED);
+        cache.setAtomicityMode(TRANSACTIONAL);
+        cache.setWriteSynchronizationMode(FULL_SYNC);
+
+        return cache;
     }
 
     /**

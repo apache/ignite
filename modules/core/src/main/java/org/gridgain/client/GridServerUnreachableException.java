@@ -12,6 +12,9 @@ package org.gridgain.client;
  * Thrown when none of the servers from configuration can be connected within a timeout.
  */
 public class GridServerUnreachableException extends GridClientException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Creates exception with specified error message.
      *

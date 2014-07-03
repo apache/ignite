@@ -14,6 +14,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.ipc.shmem.*;
+import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
 import static org.gridgain.grid.ggfs.GridGgfsMode.*;
@@ -60,11 +61,11 @@ public class GridGgfsEventsTestSuite extends TestSuite {
      */
     public static class ShmemPrivate extends GridGgfsEventsAbstractSelfTest {
         /** {@inheritDoc} */
-        @Override protected GridGgfsConfiguration getGgfsConfiguration() {
+        @Override protected GridGgfsConfiguration getGgfsConfiguration() throws GridException {
             GridGgfsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
-            ggfsCfg.setIpcEndpointConfiguration("{type:'shmem', port:" +
-                (GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + 1) + "}");
+            ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap("{type:'shmem', port:" +
+                (GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + 1) + "}"));
 
             return ggfsCfg;
         }
@@ -75,11 +76,11 @@ public class GridGgfsEventsTestSuite extends TestSuite {
      */
     public static class LoopbackPrivate extends GridGgfsEventsAbstractSelfTest {
         /** {@inheritDoc} */
-        @Override protected GridGgfsConfiguration getGgfsConfiguration() {
+        @Override protected GridGgfsConfiguration getGgfsConfiguration() throws GridException {
             GridGgfsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
-            ggfsCfg.setIpcEndpointConfiguration("{type:'tcp', port:" +
-                (GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + 1) + "}");
+            ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap("{type:'tcp', port:" +
+                (GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + 1) + "}"));
 
             return ggfsCfg;
         }
@@ -93,10 +94,10 @@ public class GridGgfsEventsTestSuite extends TestSuite {
         private static GridGgfs ggfsSec;
 
         /** {@inheritDoc} */
-        @Override protected GridGgfsConfiguration getGgfsConfiguration() {
+        @Override protected GridGgfsConfiguration getGgfsConfiguration() throws GridException {
             GridGgfsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
-            ggfsCfg.setSecondaryHadoopFileSystemUri("ggfs://secondary/");
+            ggfsCfg.setSecondaryHadoopFileSystemUri("ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/");
             ggfsCfg.setSecondaryHadoopFileSystemConfigPath(
                 "modules/core/src/test/config/hadoop/core-site-secondary.xml");
 
@@ -106,12 +107,12 @@ public class GridGgfsEventsTestSuite extends TestSuite {
         /**
          * @return GGFS configuration for secondary file system.
          */
-        protected GridGgfsConfiguration getSecondaryGgfsConfiguration() {
+        protected GridGgfsConfiguration getSecondaryGgfsConfiguration() throws GridException {
             GridGgfsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
             ggfsCfg.setName("ggfs-secondary");
             ggfsCfg.setDefaultMode(PRIMARY);
-            ggfsCfg.setIpcEndpointConfiguration("{type:'shmem', port:11500}");
+            ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap("{type:'tcp', port:11500}"));
 
             return ggfsCfg;
         }
@@ -147,6 +148,9 @@ public class GridGgfsEventsTestSuite extends TestSuite {
         @Nullable private GridGgfs startSecondary() throws Exception {
             GridConfiguration cfg = getConfiguration("grid-secondary");
 
+            cfg.setLocalHost("127.0.0.1");
+            cfg.setPeerClassLoadingEnabled(false);
+
             cfg.setCacheConfiguration(getCacheConfiguration("grid-secondary"));
 
             cfg.setGgfsConfiguration(getSecondaryGgfsConfiguration());
@@ -162,7 +166,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
      */
     public static class ShmemDualSync extends PrimarySecondaryTest {
         /** {@inheritDoc} */
-        @Override protected GridGgfsConfiguration getGgfsConfiguration() {
+        @Override protected GridGgfsConfiguration getGgfsConfiguration() throws GridException {
             GridGgfsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
             ggfsCfg.setDefaultMode(DUAL_SYNC);
@@ -176,7 +180,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
      */
     public static class ShmemDualAsync extends PrimarySecondaryTest {
         /** {@inheritDoc} */
-        @Override protected GridGgfsConfiguration getGgfsConfiguration() {
+        @Override protected GridGgfsConfiguration getGgfsConfiguration() throws GridException {
             GridGgfsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
             ggfsCfg.setDefaultMode(DUAL_ASYNC);
@@ -190,9 +194,10 @@ public class GridGgfsEventsTestSuite extends TestSuite {
      */
     public abstract static class LoopbackPrimarySecondaryTest extends PrimarySecondaryTest {
         /** {@inheritDoc} */
-        @Override protected GridGgfsConfiguration getGgfsConfiguration() {
+        @Override protected GridGgfsConfiguration getGgfsConfiguration() throws GridException {
             GridGgfsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
+            ggfsCfg.setSecondaryHadoopFileSystemUri("ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/");
             ggfsCfg.setSecondaryHadoopFileSystemConfigPath(
                 "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml");
 
@@ -200,12 +205,12 @@ public class GridGgfsEventsTestSuite extends TestSuite {
         }
 
         /** {@inheritDoc} */
-        @Override protected GridGgfsConfiguration getSecondaryGgfsConfiguration() {
+        @Override protected GridGgfsConfiguration getSecondaryGgfsConfiguration() throws GridException {
             GridGgfsConfiguration ggfsCfg = super.getSecondaryGgfsConfiguration();
 
             ggfsCfg.setName("ggfs-secondary");
             ggfsCfg.setDefaultMode(PRIMARY);
-            ggfsCfg.setIpcEndpointConfiguration("{type:'tcp', port:11500}");
+            ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap("{type:'tcp', port:11500}"));
 
             return ggfsCfg;
         }
@@ -216,7 +221,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
      */
     public static class LoopbackDualSync extends LoopbackPrimarySecondaryTest {
         /** {@inheritDoc} */
-        @Override protected GridGgfsConfiguration getGgfsConfiguration() {
+        @Override protected GridGgfsConfiguration getGgfsConfiguration() throws GridException {
             GridGgfsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
             ggfsCfg.setDefaultMode(DUAL_SYNC);
@@ -230,7 +235,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
      */
     public static class LoopbackDualAsync extends LoopbackPrimarySecondaryTest {
         /** {@inheritDoc} */
-        @Override protected GridGgfsConfiguration getGgfsConfiguration() {
+        @Override protected GridGgfsConfiguration getGgfsConfiguration() throws GridException {
             GridGgfsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
             ggfsCfg.setDefaultMode(DUAL_ASYNC);

@@ -1668,6 +1668,9 @@ public class GridGainEx {
             myCfg.setDrSenderHubConfiguration(cfg.getDrSenderHubConfiguration());
             myCfg.setDrReceiverHubConfiguration(cfg.getDrReceiverHubConfiguration());
 
+            // Hadoop configuration.
+            myCfg.setHadoopConfiguration(cfg.getHadoopConfiguration());
+
             // Validate segmentation configuration.
             GridSegmentationPolicy segPlc = cfg.getSegmentationPolicy();
 
@@ -1761,6 +1764,8 @@ public class GridGainEx {
 
             GridCacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
 
+            boolean hasHadoop = GridComponentType.HADOOP.isInClassPath();
+
             if (cacheCfgs != null && cacheCfgs.length > 0) {
                 if (!U.discoOrdered(discoSpi) && !U.relaxDiscoveryOrdered())
                     throw new GridException("Discovery SPI implementation does not support node ordering and " +
@@ -1769,8 +1774,12 @@ public class GridGainEx {
 
                 for (GridCacheConfiguration ccfg : cacheCfgs) {
                     if (CU.isDrSystemCache(ccfg.getName()))
-                        throw new GridException("Cache name cannot start with \"" + CU.DR_SYS_CACHE_PREFIX +
+                        throw new GridException("Cache name cannot start with \"" + CU.SYS_CACHE_DR_PREFIX +
                             "\" because this prefix is reserved for internal purposes.");
+
+                    if (CU.isHadoopSystemCache(ccfg.getName()))
+                        throw new GridException("Cache name cannot be \"" + CU.SYS_CACHE_HADOOP_MR +
+                            "\" because it is reserved for internal purposes.");
 
                     if (ccfg.getDrSenderConfiguration() != null)
                         drSysCaches.add(CU.cacheNameForDrSystemCache(ccfg.getName()));
@@ -1780,14 +1789,16 @@ public class GridGainEx {
                             "\" because this prefix is reserved for internal purposes.");
                 }
 
-                GridCacheConfiguration[] clone = new GridCacheConfiguration[cacheCfgs.length +
-                    drSysCaches.size() +
-                    (U.securityEnabled(cfg) ? 1 : 0)];
+                GridCacheConfiguration[] clone = new GridCacheConfiguration[cacheCfgs.length + drSysCaches.size() +
+                    (hasHadoop ? 1 : 0) + (U.securityEnabled(cfg) ? 1 : 0)];
 
                 int cloneIdx = 0;
 
+                if (hasHadoop)
+                    clone[cloneIdx++] = CU.hadoopSystemCache();
+
                 for (String drSysCache : drSysCaches)
-                    clone[cloneIdx++] = drSystemCache(drSysCache);
+                    clone[cloneIdx++] = CU.drSystemCache(drSysCache);
 
                 if (U.securityEnabled(cfg))
                     clone[cloneIdx++] = securitySystemCache();
@@ -1797,14 +1808,18 @@ public class GridGainEx {
 
                 myCfg.setCacheConfiguration(clone);
             }
-            else if (!drSysCaches.isEmpty() || U.securityEnabled(cfg)) {
-                GridCacheConfiguration[] ccfgs = new GridCacheConfiguration[drSysCaches.size() +
+            else if (!drSysCaches.isEmpty() || hasHadoop || U.securityEnabled(cfg)) {
+                // Populate system caches/
+                GridCacheConfiguration[] ccfgs = new GridCacheConfiguration[drSysCaches.size() + (hasHadoop ? 1 : 0) +
                     (U.securityEnabled(cfg) ? 1 : 0)];
 
                 int idx = 0;
 
+                if (hasHadoop)
+                    ccfgs[idx++] = CU.hadoopSystemCache();
+
                 for (String drSysCache : drSysCaches)
-                    ccfgs[idx++] = drSystemCache(drSysCache);
+                    ccfgs[idx++] = CU.drSystemCache(drSysCache);
 
                 if (U.securityEnabled(cfg))
                     ccfgs[idx] = securitySystemCache();
@@ -1974,24 +1989,6 @@ public class GridGainEx {
             catch (Exception e) {
                 throw new GridException("Failed to create logger.", e);
             }
-        }
-
-        /**
-         * Creates system cache configuration used by data center replication component.
-         *
-         * @param cacheName Cache name.
-         * @return Replication cache configuration.
-         */
-        private GridCacheConfiguration drSystemCache(String cacheName) {
-            GridCacheConfiguration cache = new GridCacheConfiguration();
-
-            cache.setName(cacheName);
-            cache.setCacheMode(REPLICATED);
-            cache.setAtomicityMode(TRANSACTIONAL);
-            cache.setSwapEnabled(false);
-            cache.setWriteSynchronizationMode(FULL_SYNC);
-
-            return cache;
         }
 
         /**
