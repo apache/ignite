@@ -698,6 +698,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         finishFut.onDone(jobId, meta.failCause());
                     }
 
+                    if (ctx.jobUpdateLeader())
+                        job.cleanupStagingDirectory();
+
                     GridFutureAdapterEx<GridHadoopJob> jobFut = jobs.get(jobId);
 
                     if (jobFut.get() == job && jobs.remove(jobId, jobFut))

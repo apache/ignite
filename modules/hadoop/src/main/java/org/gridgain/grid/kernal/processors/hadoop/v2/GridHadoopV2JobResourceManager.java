@@ -63,7 +63,7 @@ public class GridHadoopV2JobResourceManager {
         throws GridException {
         this.jobId = jobId;
         this.ctx = ctx;
-        this.log = log;
+        this.log = log.getLogger(GridHadoopV2JobResourceManager.class);
 
         jobLocDir = new File(new File(U.resolveWorkDirectory("hadoop", false), "node-" + locNodeId), "job_" + jobId);
     }
@@ -119,10 +119,9 @@ public class GridHadoopV2JobResourceManager {
                 processFiles(ctx.getFileClassPaths(), download, false, true);
                 processFiles(ctx.getArchiveClassPaths(), download, true, true);
             }
-            else {
+            else
                 if (!jobLocDir.mkdirs())
                     throw new GridException("Failed to create local job directory: " + jobLocDir.getAbsolutePath());
-            }
 
             setJobWorkingDirectory();
         }
@@ -255,10 +254,10 @@ public class GridHadoopV2JobResourceManager {
                     File locDir = taskLocalDir(info);
 
                     if (locDir.exists())
-                        throw new IOException("Task local directory already exists");
+                        throw new IOException("Task local directory already exists: " + locDir);
 
                     if (!locDir.mkdir())
-                        throw new IOException("Failed to create directory");
+                        throw new IOException("Failed to create directory: " + locDir);
 
                     for (File resource : rsrcList) {
                         File symLink = new File(locDir, resource.getName());
@@ -311,19 +310,22 @@ public class GridHadoopV2JobResourceManager {
         }
         catch (IOException e) {
             throw new GridException("Unable to release local working directory of the task " +
-                    "[path=" + locDir + ", jobId=" + jobId + ", task=" + info + ']', e);
+                 "[path=" + locDir + ", jobId=" + jobId + ", task=" + info + ']', e);
         }
 
         fs.setWorkingDirectory(fs.getInitialWorkingDirectory());
     }
 
+    /**
+     * Cleans up job staging directory.
+     */
     public void cleanupStagingDirectory() {
         try {
             if (stagingDir != null)
                 stagingDir.getFileSystem(ctx.getJobConf()).delete(stagingDir, true);
         }
         catch (Exception e) {
-            log.error("Failed to remove job staging directory", e);
+            log.error("Failed to remove job staging directory [path=" + stagingDir + ", jobId=" + jobId + ']' , e);
         }
     }
 }

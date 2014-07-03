@@ -50,8 +50,5 @@ public class GridHadoopV1CleanupTask extends GridHadoopV1Task {
         catch (IOException e) {
             throw new GridException(e);
         }
-        finally {
-            jobImpl.cleanupStagingDirectory();
-        }
     }
 }

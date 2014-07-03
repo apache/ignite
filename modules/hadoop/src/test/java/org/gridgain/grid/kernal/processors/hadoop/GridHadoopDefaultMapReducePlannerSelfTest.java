@@ -666,7 +666,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public void cleanupStagingDirectory() throws GridException {
+        @Override public void cleanupStagingDirectory() {
             // No-op.
         }
     }

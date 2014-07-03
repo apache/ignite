@@ -118,7 +118,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         this.jobId = jobId;
         this.jobInfo = jobInfo;
-        this.log = log;
+        this.log = log.getLogger(GridHadoopV2Job.class);
 
         hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
 

@@ -133,8 +133,6 @@ public interface GridHadoopJob {
 
     /**
      * Cleans up the job staging directory.
-     *
-     * @throws GridException If fails.
      */
-    void cleanupStagingDirectory() throws GridException;
+    void cleanupStagingDirectory();
 }
