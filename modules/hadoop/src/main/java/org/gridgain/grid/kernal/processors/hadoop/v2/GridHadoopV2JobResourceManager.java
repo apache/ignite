@@ -119,9 +119,8 @@ public class GridHadoopV2JobResourceManager {
                 processFiles(ctx.getFileClassPaths(), download, false, true);
                 processFiles(ctx.getArchiveClassPaths(), download, true, true);
             }
-            else
-                if (!jobLocDir.mkdirs())
-                    throw new GridException("Failed to create local job directory: " + jobLocDir.getAbsolutePath());
+            else if (!jobLocDir.mkdirs())
+                throw new GridException("Failed to create local job directory: " + jobLocDir.getAbsolutePath());
 
             setJobWorkingDirectory();
         }
