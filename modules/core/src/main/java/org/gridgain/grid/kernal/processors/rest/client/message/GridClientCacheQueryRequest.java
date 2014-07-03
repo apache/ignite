@@ -111,9 +111,6 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
     /** Remote transformer class name. */
     private String rmtTransformerClsName;
 
-    /** Class arguments. */
-    private Object[] clsArgs;
-
     /** Query arguments. */
     private Object[] qryArgs;
 
@@ -286,20 +283,6 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
     }
 
     /**
-     * @return Class arguments.
-     */
-    public Object[] classArguments() {
-        return clsArgs;
-    }
-
-    /**
-     * @param clsArgs Class arguments.
-     */
-    public void classArguments(Object[] clsArgs) {
-        this.clsArgs = clsArgs;
-    }
-
-    /**
      * @return Query arguments.
      */
     public Object[] queryArguments() {
@@ -331,7 +314,6 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
         clsName = rawReader.readString();
         rmtReducerClsName = rawReader.readString();
         rmtTransformerClsName = rawReader.readString();
-        clsArgs = rawReader.readObjectArray();
         qryArgs = rawReader.readObjectArray();
     }
 
@@ -353,7 +335,6 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
         rawWriter.writeString(clsName);
         rawWriter.writeString(rmtReducerClsName);
         rawWriter.writeString(rmtTransformerClsName);
-        rawWriter.writeObjectArray(clsArgs);
         rawWriter.writeObjectArray(qryArgs);
     }
 }

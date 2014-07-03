@@ -110,13 +110,6 @@ public class GridRestCacheQueryRequest extends GridRestRequest {
     }
 
     /**
-     * @return Class arguments.
-     */
-    public Object[] classArguments() {
-        return msg.classArguments();
-    }
-
-    /**
      * @return Query arguments.
      */
     public Object[] queryArguments() {

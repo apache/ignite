@@ -196,11 +196,10 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      *
      * @param cls Target class.
      * @param clsName Implementing class name.
-     * @param ctorArgs Optional constructor arguments.
      * @return Class instance.
      * @throws GridException If failed.
      */
-    private static <T> T instance(Class<? extends T> cls, String clsName, Object[] ctorArgs) throws GridException {
+    private static <T> T instance(Class<? extends T> cls, String clsName) throws GridException {
         try {
             Class<?> implCls = Class.forName(clsName);
 
@@ -208,37 +207,28 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
                 throw new GridException("Failed to create instance (target class does not extend or implement " +
                     "required class or interface) [cls=" + cls.getName() + ", clsName=" + clsName + ']');
 
-            Class[] ctorTypes = null;
+            Constructor<?> ctor = implCls.getConstructor();
 
-            if (!F.isEmpty(ctorArgs)) {
-                ctorTypes = new Class[ctorArgs.length];
-
-                for (int i = 0; i < ctorTypes.length; i++)
-                    ctorTypes[i] = ctorArgs[i] == null ? Object.class : ctorArgs[i].getClass();
-            }
-
-            Constructor<?> ctor = implCls.getConstructor(ctorTypes);
-
-            return (T)ctor.newInstance(ctorArgs);
+            return (T)ctor.newInstance();
         }
         catch (ClassNotFoundException e) {
             throw new GridException("Failed to find target class: " + clsName, e);
         }
         catch (NoSuchMethodException e) {
             throw new GridException("Failed to find constructor for provided arguments " +
-                "[clsName=" + clsName + ", ctorArgs=" + Arrays.asList(ctorArgs) + ']', e);
+                "[clsName=" + clsName + ']', e);
         }
         catch (InstantiationException e) {
             throw new GridException("Failed to instantiate target class " +
-                "[clsName=" + clsName + ", ctorArgs=" + Arrays.asList(ctorArgs) + ']', e);
+                "[clsName=" + clsName + ']', e);
         }
         catch (IllegalAccessException e) {
             throw new GridException("Failed to instantiate class (constructor is not available) " +
-                "[clsName=" + clsName + ", ctorArgs=" + Arrays.asList(ctorArgs) + ']', e);
+                "[clsName=" + clsName + ']', e);
         }
         catch (InvocationTargetException e) {
             throw new GridException("Failed to instantiate class (constructor threw an exception) " +
-                "[clsName=" + clsName + ", ctorArgs=" + Arrays.asList(ctorArgs) + ']', e.getCause());
+                "[clsName=" + clsName + ']', e.getCause());
         }
     }
 
@@ -287,8 +277,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
                     break;
 
                 case SCAN:
-                    qry = queries.createScanQuery(instance(GridBiPredicate.class, req.className(),
-                        req.classArguments()));
+                    qry = queries.createScanQuery(instance(GridBiPredicate.class, req.className()));
 
                     break;
 
@@ -308,12 +297,12 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
             if (req.remoteReducerClassName() != null) {
                 fut = qry.execute(
-                    instance(GridReducer.class, req.remoteReducerClassName(), req.classArguments()),
+                    instance(GridReducer.class, req.remoteReducerClassName()),
                     req.queryArguments());
             }
             else if (req.remoteTransformerClassName() != null) {
                 fut = qry.execute(
-                    instance(GridClosure.class, req.remoteTransformerClassName(), req.classArguments()),
+                    instance(GridClosure.class, req.remoteTransformerClassName()),
                     req.queryArguments());
             }
             else {
