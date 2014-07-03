@@ -20,16 +20,38 @@
 #include <gridgain/gridportablereader.hpp>
 #include <gridgain/gridportablewriter.hpp>
 
+/**
+ * Field ID mapper.
+ */
 class GRIDGAIN_API GridPortableIdResolver {
 public:
-    virtual boost::optional<int32_t> fieldId(int32_t typeId, const char* fieldName) {
-        return boost::optional<int32_t>();
+    /**
+     * Gets field ID for provided field name.
+     * If 0 is returned, hash code of lower-case field name will be used.
+     *
+     * @param typeId Type ID.
+     * @param fieldName Field name.
+     * @return Field ID.
+     */
+    virtual int32_t fieldId(int32_t typeId, const char* fieldName) {
+        return 0;
     }
 
-    virtual boost::optional<int32_t> fieldId(int32_t typeId, const std::string& fieldName) {
-        return boost::optional<int32_t>();
+    /**
+     * Gets field ID for provided field name.
+     * If 0 is returned, hash code of lower-case field name will be used.
+     *
+     * @param typeId Type ID.
+     * @param fieldName Field name.
+     * @return Field ID.
+     */
+    virtual int32_t fieldId(int32_t typeId, const std::string& fieldName) {
+        return 0;
     }
 
+    /**
+     * Destructor.
+     */
     virtual ~GridPortableIdResolver() {
     }
 };
@@ -75,8 +97,17 @@ public:
  */
 class GRIDGAIN_API GridHashablePortable : public GridPortable {
 public:
+    /**
+     * @return Hash code.
+     */
     virtual int32_t hashCode() const = 0;
 
+    /**
+     * Comparison operator.
+     *
+     * @param other Object to compare this object to.
+     * @return <tt>true</tt> if this object equals to the other.
+     */
     virtual bool operator==(const GridHashablePortable& other) const = 0;
 };
 
@@ -145,9 +176,19 @@ public:
         return static_cast<T*>(deserialize());
     }
 
+    /**
+     * Comparison operator.
+     *
+     * @param other Object to compare this object to.
+     * @return <tt>true</tt> if this object equals to the other.
+     */
     bool operator==(const GridPortableObject& other) const;
 
 private:
+    /**
+     * @param ctxPtr Read context.
+     * @param start Object start.
+     */
     GridPortableObject(boost::shared_ptr<PortableReadContext>& ctxPtr, int32_t start);
 
     /** */
@@ -156,8 +197,14 @@ private:
     /** */
     Impl* pImpl;
     
+    /**
+     * @return Object data.
+     */
     std::vector<int8_t>* data();
 
+    /**
+     * @return Object data start.
+     */
     int32_t start();
 
     friend class GridPortableReaderImpl;

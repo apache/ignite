@@ -767,10 +767,13 @@ BOOST_FIXTURE_TEST_CASE(testPutPortable, GridClientFactoryFixture1<clientConfig>
 
 BOOST_FIXTURE_TEST_CASE(testKeepPortable, GridClientFactoryFixture1<clientConfig>) {
     GridClientTestPortable obj1(1, false);
+    GridClientTestPortable obj2(2, false);
 
     TGridClientDataPtr data = client->data(CACHE_NAME);
 
     data->put(1, &obj1);
+    data->put(2, &obj2);
+    data->put(3, 1);
 
     GridClientVariant res = data->get(1);
 
@@ -781,6 +784,29 @@ BOOST_FIXTURE_TEST_CASE(testKeepPortable, GridClientFactoryFixture1<clientConfig
 
     delete res.getPortable();
 
+    res = data->get(3);
+
+    BOOST_REQUIRE(res.hasInt());
+
+    vector<GridClientVariant> keys;
+
+    keys.push_back(1);
+    keys.push_back(2);
+    keys.push_back(3);
+
+    TGridClientVariantMap map = data->getAll(keys);
+
+    BOOST_REQUIRE_EQUAL(3, map.size());
+
+    res = map[1];
+
+    BOOST_REQUIRE(res.hasPortable());
+    delete res.getPortable();
+
+    res = map[3];
+
+    BOOST_REQUIRE(res.hasInt());
+
     data = data->flagsOn(keepPortable());
 
     res = data->get(1);
@@ -790,8 +816,21 @@ BOOST_FIXTURE_TEST_CASE(testKeepPortable, GridClientFactoryFixture1<clientConfig
 
     BOOST_REQUIRE_EQUAL(1, res.getPortableObject().field("_i").getInt());
 
-    data = data->flagsOff(keepPortable());
+    map = data->getAll(keys);
 
+    BOOST_REQUIRE_EQUAL(3, map.size());
+
+    res = map[1];
+
+    BOOST_REQUIRE(res.hasPortableObject());
+    BOOST_REQUIRE_EQUAL(1, res.getPortableObject().field("_i").getInt());
+
+    res = map[3];
+
+    BOOST_REQUIRE(res.hasInt());
+
+    data = data->flagsOff(keepPortable());
+    
     res = data->get(1);
 
     BOOST_REQUIRE(res.hasPortable());

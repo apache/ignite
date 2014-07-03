@@ -63,34 +63,80 @@ const int8_t FLAG_NULL = 101;
 const int8_t FLAG_HANDLE = 102;
 const int8_t FLAG_OBJECT = 103;
 
-GridPortable* createPortable(int32_t typeId, GridPortableReader& reader);
+/**
+ * Creates portable instance using globally registered factories (throws an exception if type is not registered).
+ * 
+ * @param typeId Type ID.
+ * @return Portable instancem.
+ */
+GridPortable* createPortable(int32_t typeId);
 
 bool systemPortable(int32_t typeId);
 
-GridPortable* createSystemPortable(int32_t typeId, GridPortableReader& reader);
+/**
+ * Creates portable instance using globally registered system types factories (throws an exception if type is not registered).
+ * 
+ * @param typeId Type ID.
+ * @return Portable instancem.
+ */
+GridPortable* createSystemPortable(int32_t typeId);
 
+/**
+ * Calculates field ID.
+ * 
+ * @param fieldName Field name.
+ * @param typeId Type ID.
+ * @return Field ID.
+ */
 int32_t getFieldId(const char* fieldName, int32_t typeId, GridPortableIdResolver* idRslvr);
 
+/**
+ * Calculates field ID.
+ * 
+ * @param fieldName Field name.
+ * @param typeId Type ID.
+ * @return Field ID.
+ */
 int32_t getFieldId(const std::string& fieldName, int32_t typeId, GridPortableIdResolver* idRslvr);
 
+/**
+ * Portable object read context, created when received message is parsed, 
+ * contains shared pointer to message data array.
+ */
 class PortableReadContext {
 private:
+    /**
+     * Avoid copy, all portable object should use shared pointer to single read context instance.
+     */
     PortableReadContext(const PortableReadContext& other) {
     }
 
 public:
+    /**
+     * @param dataPtr Data array pointer.
+     * @param idRslvr Optional ID reslover.
+     */
     PortableReadContext(const boost::shared_ptr<std::vector<int8_t>>& dataPtr, GridPortableIdResolver* idRslvr) :
         dataPtr(dataPtr), idRslvr(idRslvr) {
     }
 
+    /** */
     boost::unordered_map<int32_t, void*> handles;
 
+    /** */
     boost::shared_ptr<std::vector<int8_t>> dataPtr;
 
+    /** */
     GridPortableIdResolver* idRslvr;
 };
 
+/**
+ *  Endiannes dependent primitives output (all data is sent in little-endian order).
+ */
 #ifdef BOOST_BIG_ENDIAN
+/**
+ *  Big endian primitives output.
+ */
 class PortableOutput {
 public:
     PortableOutput(size_t cap) {
@@ -257,98 +303,176 @@ public:
     std::vector<int8_t> bytes;
 };
 #else
+/**
+ *  Little endian primitives output.
+ */
 class PortableOutput {
 public:
+    /**
+     * @param bytes Output vector.
+     */
     PortableOutput(std::vector<int8_t>& bytes) : bytes(bytes) {
     }
 
+    /**
+     * Destructor.
+     */
     virtual ~PortableOutput() {
     }
 
+    /**
+     * @param val Value to write.
+     */
     void writeBool(bool val) {
         writeByte(val ? 1 : 0);
     }
 
+    /**
+     * @param val Value to write.
+     */
     void writeByte(int8_t val) {
         bytes.push_back(val);
     }
 
-	void writeBytes(const void* src, size_t size) {
-        const int8_t* ptr = reinterpret_cast<const int8_t*>(src);
+    /**
+     * @param val Array to write.
+     * @param size Array size.
+     */
+	void writeBytes(const void* val, size_t size) {
+        const int8_t* ptr = reinterpret_cast<const int8_t*>(val);
 
         bytes.insert(bytes.end(), ptr, ptr + size);
 	}
 
+    /**
+     * @param val Array to write.
+     */
     void writeInt16Array(const std::vector<int16_t>& val) {
         writeBytes(val.data(), val.size() * 2);
     }
 
+    /**
+     * @param val Array to write.
+     * @param size Array size.
+     */
     void writeInt16Array(const int16_t* val, int32_t size) {
         writeBytes(val, size * 2);
     }
 
+    /**
+     * @param val Array to write.
+     */
     void writeInt32Array(const std::vector<int32_t>& val) {
         writeBytes(val.data(), val.size() * 4);
     }
 
+    /**
+     * @param val Array to write.
+     * @param size Array size.
+     */
     void writeInt32Array(const int32_t* val, int32_t size) {
         writeBytes(val, size * 4);
     }
 
+    /**
+     * @param val Array to write.
+     */
     void writeCharArray(const std::vector<uint16_t>& val) {
         writeBytes(val.data(), val.size() * 2);
     }
 
+    /**
+     * @param val Array to write.
+     * @param size Array size.
+     */
     void writeCharArray(const uint16_t* val, int32_t size) {
         writeBytes(val, size * 2);
     }
 
+    /**
+     * @param val Array to write.
+     */
     void writeInt64Array(const std::vector<int64_t>& val) {
         writeBytes(val.data(), val.size() * 8);
     }
 
+    /**
+     * @param val Array to write.
+     * @param size Array size.
+     */
     void writeInt64Array(const int64_t* val, int32_t size) {
         writeBytes(val, size * 8);
     }
 
+    /**
+     * @param val Array to write.
+     */
     void writeFloatArray(const std::vector<float>& val) {
         writeBytes(val.data(), val.size() * 4);
     }
 
+    /**
+     * @param val Array to write.
+     * @param size Array size.
+     */
     void writeFloatArray(const float* val, int32_t size) {
         writeBytes(val, size * 4);
     }
 
+    /**
+     * @param val Array to write.
+     */
     void writeDoubleArray(const std::vector<double>& val) {
         writeBytes(val.data(), val.size() * 2);
     }
 
+    /**
+     * @param val Array to write.
+     * @param size Array size.
+     */
     void writeDoubleArray(const double* val, int32_t size) {
         writeBytes(val, size * 8);
     }
 
+    /**
+     * @param val Array to write.
+     */
     void writeBoolArray(const std::vector<bool>& val) {
         for (size_t i = 0; i < val.size(); i++)
             writeByte(val[i] ? 1 : 0);
     }
 
+    /**
+     * @param val Array to write.
+     * @param size Array size.
+     */
     void writeBoolArray(const bool* val, int32_t size) {
         for (int32_t i = 0; i < size; i++)
             writeByte(val[i] ? 1 : 0);
     }
 
+    /**
+     * @param val Value to write.
+     */
 	void writeInt16(int16_t val) {
         int8_t* ptr = reinterpret_cast<int8_t*>(&val);
 
         bytes.insert(bytes.end(), ptr, ptr + 2);
 	}
 
+    /**
+     * @param val Value to write.
+     */
     void writeChar(uint16_t val) {
         int8_t* ptr = reinterpret_cast<int8_t*>(&val);
 
         bytes.insert(bytes.end(), ptr, ptr + 2);
     }
 
+    /**
+     * @param val Value position.
+     * @param val Value to write.
+     */
     void writeInt32To(int32_t pos, int32_t val) {
         int8_t* ptr = reinterpret_cast<int8_t*>(&val);
 
@@ -357,45 +481,75 @@ public:
         std::copy(ptr, ptr + 4, dst + pos);
     }
 
+    /**
+     * @param val Value to write.
+     */
 	void writeInt32(int32_t val) {
         int8_t* ptr = reinterpret_cast<int8_t*>(&val);
 
         bytes.insert(bytes.end(), ptr, ptr + 4);
 	}
 
+    /**
+     * @param val Value to write.
+     */
     void writeInt64(int64_t val) {
         int8_t* ptr = reinterpret_cast<int8_t*>(&val);
 
         bytes.insert(bytes.end(), ptr, ptr + 8);
 	}
 
+    /**
+     * @param val Value to write.
+     */
     void writeFloat(float val) {
         int8_t* ptr = reinterpret_cast<int8_t*>(&val);
 
         bytes.insert(bytes.end(), ptr, ptr + 4);
 	}
 
+    /**
+     * @param val Value to write.
+     */
     void writeDouble(double val) {
         int8_t* ptr = reinterpret_cast<int8_t*>(&val);
 
         bytes.insert(bytes.end(), ptr, ptr + 8);
 	}
 
+    /** */
     std::vector<int8_t>& bytes;
 };
 #endif
 
+/**
+ * Write context.
+ */
 class WriteContext {
 public:
+    /**
+     * @param bytes Output buffer.
+     * @idRslvr ID resolver.
+     */
     WriteContext(std::vector<int8_t>& bytes, GridPortableIdResolver* idRslvr) : out(bytes), idRslvr(idRslvr) {
     }
 
+    /** */
     PortableOutput out;
 
+    /** */
     GridPortableIdResolver* idRslvr;
 
+    /** */
     boost::unordered_map<void*, int32_t> handles;
 
+    /**
+     * Lookups object handle.
+     * 
+     * @param ptr Object pointer.
+     * @param ptr Object offset.
+     * @return Handle or <tt>-1</tt> if handle not found.
+     */
     int32_t lookup(void* ptr, int32_t off) {
         boost::unordered_map<void*, int32_t>::const_iterator handle = handles.find(ptr);
 
@@ -408,34 +562,62 @@ public:
             return (*handle).second;
     }
 
+    /**
+     * Clears handles.
+     */
     void resetHandles() {
         handles.clear();
     }
 };
 
+/** */
 const int32_t TOTAL_LENGTH_POS = 10;
+
+/** */
 const int32_t RAW_DATA_OFF_POS = 14;
 
+/**
+ * Writer and raw writer implementation.
+ */
 class GridPortableWriterImpl : public GridPortableWriter, public GridPortableRawWriter {
 public:
-	int32_t curTypeId;
+	/** */
+    int32_t curTypeId;
 
+    /** */
     std::map<int32_t, char*> fieldIds;
 
+    /**
+     * @param ctx Context reference.
+     * @param curTypeId Type ID.
+     * @param objStart Object start.
+     */
     GridPortableWriterImpl(WriteContext& ctx, int32_t curTypeId, int32_t objStart) : ctx(ctx), start(objStart), allowFields(true), curTypeId(curTypeId) {
     }
 
+    /**
+     * Destructor.
+     */
     virtual ~GridPortableWriterImpl() {
     }
 
+    /**
+     * @param portable Object to write.
+     */
     void writePortable(GridPortable& portable) {
         doWriteVariant(GridClientVariant(&portable));
     }
 
+    /**
+     * @return Raw writer.
+     */
     GridPortableRawWriter& rawWriter() {
         return *this;
     }
 
+    /**
+     * @param fieldName Field name.
+     */
     void writeFieldName(char* fieldName) {
         if (!allowFields)
             throw GridClientPortableException("Named fields are not allowed after raw data.");
@@ -457,6 +639,9 @@ public:
         ctx.out.writeInt32(fieldId);
     }
 
+    /**
+     * Starts write raw data.
+     */
     void switchToRaw() {
         if (allowFields) {
             ctx.out.writeInt32To(start + RAW_DATA_OFF_POS, ctx.out.bytes.size() - start);
@@ -465,6 +650,10 @@ public:
         }
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param val Value.
+     */
     void writeByte(char* fieldName, int8_t val) {
 		writeFieldName(fieldName);
 
@@ -474,10 +663,17 @@ public:
         doWriteByte(val);
 	}
 
+    /**
+     * @param val Value.
+     */
     void doWriteByte(int8_t val) {
         ctx.out.writeByte(val);
 	}
 
+    /**
+     * @param fieldName Field name.
+     * @param val Value.
+     */
     void writeInt16(char* fieldName, int16_t val) {
 		writeFieldName(fieldName);
 
@@ -487,10 +683,17 @@ public:
         doWriteInt16(val);
 	}
 
+    /**
+     * @param val Value.
+     */
     void doWriteInt16(int16_t val) {
         ctx.out.writeInt16(val);
 	}
 
+    /**
+     * @param fieldName Field name.
+     * @param val Value.
+     */
     void writeChar(char* fieldName, uint16_t val) {
 		writeFieldName(fieldName);
 
@@ -500,10 +703,18 @@ public:
         doWriteInt16(val);
     }
 
+    /**
+     * @param val Value.
+     */
     void doWriteChar(uint16_t val) {
         ctx.out.writeChar(val);
 	}
 
+    /**
+     * @param fieldName Field name.
+     * @param val Array pointer.
+     * @param size Size.
+     */
     void writeCharArray(char* fieldName, const uint16_t* val, int32_t size) {
 		writeFieldName(fieldName);
 
@@ -520,6 +731,11 @@ public:
         }
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param val Array pointer.
+     * @param size Size.
+     */
     void writeInt16Array(char* fieldName, const int16_t* val, int32_t size) {
 		writeFieldName(fieldName);
 
@@ -536,6 +752,10 @@ public:
         }
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param val Value.
+     */
     void writeInt32(char* fieldName, int32_t val) {
 		writeFieldName(fieldName);
 
@@ -545,10 +765,18 @@ public:
         doWriteInt32(val);
 	}
 
+    /**
+     * @param val Value.
+     */
     void doWriteInt32(int32_t val) {
         ctx.out.writeInt32(val);
 	}
 
+    /**
+     * @param fieldName Field name.
+     * @param val Array pointer.
+     * @param size Size.
+     */
     void writeInt32Array(char* fieldName, const int32_t* val, int32_t size) {
 		writeFieldName(fieldName);
 
@@ -565,6 +793,10 @@ public:
         }
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param val Value.
+     */
     void writeInt64(char* fieldName, int64_t val) {
 		writeFieldName(fieldName);
 
@@ -574,10 +806,18 @@ public:
         doWriteInt64(val);
 	}
 
+    /**
+     * @param val Value.
+     */
     void doWriteInt64(int64_t val) {
         ctx.out.writeInt64(val);
 	}
 
+    /**
+     * @param fieldName Field name.
+     * @param val Array pointer.
+     * @param size Size.
+     */
     void writeInt64Array(char* fieldName, const int64_t* val, int32_t size) {
 		writeFieldName(fieldName);
 
@@ -594,6 +834,10 @@ public:
         }
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param val Value.
+     */
     void writeFloat(char* fieldName, float val) {
 		writeFieldName(fieldName);
 
@@ -603,10 +847,18 @@ public:
         doWriteFloat(val);
 	}
 
+    /**
+     * @param val Value.
+     */
     void doWriteFloat(float val) {
         ctx.out.writeFloat(val);
 	}
 
+    /**
+     * @param fieldName Field name.
+     * @param val Array pointer.
+     * @param size Size.
+     */
     void writeFloatArray(char* fieldName, const float* val, int32_t size) {
 		writeFieldName(fieldName);
 
@@ -623,6 +875,10 @@ public:
         }
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param val Value.
+     */
     void writeDouble(char* fieldName, double val) {
 		writeFieldName(fieldName);
 
@@ -632,10 +888,18 @@ public:
         doWriteDouble(val);
 	}
 
+    /**
+     * @param val Value.
+     */
     void doWriteDouble(double val) {
         ctx.out.writeDouble(val);
 	}
 
+    /**
+     * @param fieldName Field name.
+     * @param val Array pointer.
+     * @param size Size.
+     */
     void writeDoubleArray(char* fieldName, const double* val, int32_t size) {
 		writeFieldName(fieldName);
 
@@ -652,6 +916,10 @@ public:
         }
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param val Value.
+     */
 	void writeString(char* fieldName, const std::string& val) {
 		writeFieldName(fieldName);
 
@@ -663,6 +931,10 @@ public:
 		ctx.out.writeBytes(val.data(), len);
 	}
 
+    /**
+     * @param fieldName Field name.
+     * @param val Value.
+     */
 	void writeString(char* fieldName, const boost::optional<std::string>& val) {
 		if (val)
             writeString(fieldName, val.get());
@@ -675,6 +947,9 @@ public:
         }
 	}
 
+    /**
+     * @param val Value.
+     */
     void doWriteString(const std::string &val) {
         ctx.out.writeByte(TYPE_ID_STRING);
 
@@ -684,6 +959,10 @@ public:
 		ctx.out.writeBytes(val.data(), len);
 	}
 
+    /**
+     * @param fieldName Field name.
+     * @param val Value.
+     */
     void writeWString(char* fieldName, const std::wstring& val) {
 		writeFieldName(fieldName);
 
@@ -696,6 +975,10 @@ public:
 		ctx.out.writeBytes(val.data(), len);
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param val Value.
+     */
     void writeWString(char* fieldName, const boost::optional<std::wstring>& val) {
         if (val)
             writeWString(fieldName, val.get());
@@ -708,15 +991,23 @@ public:
         }
     }
 
-    void doWriteWString(const std::wstring& str) {
+    /**
+     * @param val Value.
+     */
+    void doWriteWString(const std::wstring& val) {
         ctx.out.writeByte(TYPE_ID_STRING);
 
-        int32_t len = str.length() * sizeof(wchar_t);
+        int32_t len = val.length() * sizeof(wchar_t);
 
         ctx.out.writeInt32(len);
-		ctx.out.writeBytes(str.data(), len);
+		ctx.out.writeBytes(val.data(), len);
 	}
 
+    /**
+     * @param fieldName Field name.
+     * @param val Array pointer.
+     * @param size Size.
+     */
     void writeByteArray(char* fieldName, const int8_t* val, int32_t size) {
 		writeFieldName(fieldName);
 
@@ -733,11 +1024,19 @@ public:
         }
     }
 
+    /**
+     * @param val Array pointer.
+     * @param size Size.
+     */
     void doWriteByteArray(const int8_t* val, int32_t size) {
         ctx.out.writeInt32(size);
         ctx.out.writeBytes(val, size);
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param val Value.
+     */
 	void writeBool(char* fieldName, bool val) {
 		writeFieldName(fieldName);
 
@@ -747,10 +1046,18 @@ public:
         doWriteBool(val);
 	}
 
+    /**
+     * @param val Value.
+     */
 	void doWriteBool(bool val) {
         ctx.out.writeBool(val);
 	}
 
+    /**
+     * @param fieldName Field name.
+     * @param val Array pointer.
+     * @param size Size.
+     */
     void writeBoolArray(char* fieldName, const bool* val, int32_t size) {
 		writeFieldName(fieldName);
 
@@ -769,6 +1076,10 @@ public:
         }
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param val Value.
+     */
 	void writeUuid(char* fieldName, const GridClientUuid& val) {
 		writeFieldName(fieldName);
 
@@ -777,6 +1088,10 @@ public:
         doWriteUuid(val);
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param val Value.
+     */
 	void writeUuid(char* fieldName, const boost::optional<GridClientUuid>& val) {
 		writeFieldName(fieldName);
 
@@ -790,12 +1105,19 @@ public:
         }
 	}
 
+    /**
+     * @param val Value.
+     */
     void doWriteUuid(const GridClientUuid& val) {
         ctx.out.writeByte(TYPE_ID_UUID);
         ctx.out.writeInt64(val.mostSignificantBits());
         ctx.out.writeInt64(val.leastSignificantBits());
 	}
 
+    /**
+     * @param fieldName Field name.
+     * @param val Value.
+     */
     void writeDate(char* fieldName, const boost::optional<GridClientDate>& val) {
 		writeFieldName(fieldName);
 
@@ -809,6 +1131,10 @@ public:
         }
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param val Value.
+     */
     void writeDate(char* fieldName, const GridClientDate& val) {
 		writeFieldName(fieldName);
 
@@ -816,64 +1142,111 @@ public:
         doWriteDate(val);
     }
 
+    /**
+     * @param val Value.
+     */
     void doWriteDate(const GridClientDate& val) {
         doWriteByte(TYPE_ID_DATE);
         doWriteInt64(val.getTime());
         doWriteInt16(val.getNanoTicks());
     }
 
+    /**
+     * Starts write array.
+     */
     int32_t startBoolArray() {
         return startArray(TYPE_ID_BOOLEAN_ARR);
     }
 
+    /**
+     * Starts write array.
+     */
     int32_t startByteArray() {
         return startArray(TYPE_ID_BYTE_ARR);
     }
 
+    /**
+     * Starts write array.
+     */
     int32_t startInt16Array() {
         return startArray(TYPE_ID_SHORT_ARR);
     }
 
+    /**
+     * Starts write array.
+     */
     int32_t startCharArray() {
         return startArray(TYPE_ID_CHAR_ARR);
     }
 
+    /**
+     * Starts write array.
+     */
     int32_t startInt32Array() {
         return startArray(TYPE_ID_INT_ARR);
     }
 
+    /**
+     * Starts write array.
+     */
     int32_t startInt64Array() {
         return startArray(TYPE_ID_LONG_ARR);
     }
 
+    /**
+     * Starts write array.
+     */
     int32_t startFloatArray() {
         return startArray(TYPE_ID_FLOAT_ARR);
     }
 
+    /**
+     * Starts write array.
+     */
     int32_t startDoubleArray() {
         return startArray(TYPE_ID_DOUBLE_ARR);
     }
 
+    /**
+     * Starts write array.
+     */
     int32_t startStringArray() {
         return startArray(TYPE_ID_STRING_ARR);
     }
 
+    /**
+     * Starts write array.
+     */
     int32_t startUuidArray() {
         return startArray(TYPE_ID_UUID_ARR);
     }
 
+    /**
+     * Starts write array.
+     */
     int32_t startDateArray() {
         return startArray(TYPE_ID_DATE_ARR);
     }
 
+    /**
+     * Starts write array.
+     */
     int32_t startVariantArray() {
         return startArray(TYPE_ID_OBJ_ARR);
     }
 
+    /**
+     * Starts write array.
+     */
     int32_t startVariantCollection() {
         return startArray(TYPE_ID_COLLECTION);
     }
 
+    /**
+     * Starts write array.
+     *
+     * @param type Type ID.
+     */
     int32_t startArray(int8_t type) {
         ctx.out.writeInt32(0); // Reserve for field length.
 
@@ -886,58 +1259,113 @@ public:
         return start;
     }
 
+    /**
+     * Starts write raw array.
+     */
     int32_t startBoolArrayRaw() {
         return startArrayRaw(TYPE_ID_BOOLEAN_ARR);
     }
 
+    /**
+     * Starts write raw array.
+     */
     int32_t startByteArrayRaw() {
         return startArrayRaw(TYPE_ID_BYTE_ARR);
     }
 
+    /**
+     * Starts write raw array.
+     */
     int32_t startInt16ArrayRaw() {
         return startArrayRaw(TYPE_ID_SHORT_ARR);
     }
 
+    /**
+     * Starts write raw array.
+     */
     int32_t startCharArrayRaw() {
         return startArrayRaw(TYPE_ID_CHAR_ARR);
     }
 
+    /**
+     * Starts write raw array.
+     */
     int32_t startInt32ArrayRaw() {
         return startArrayRaw(TYPE_ID_INT_ARR);
     }
 
+    /**
+     * Starts write raw array.
+     */
     int32_t startInt64ArrayRaw() {
         return startArrayRaw(TYPE_ID_LONG_ARR);
     }
 
+    /**
+     * Starts write raw array.
+     */
     int32_t startFloatArrayRaw() {
         return startArrayRaw(TYPE_ID_FLOAT_ARR);
     }
 
+    /**
+     * Starts write raw array.
+     */
     int32_t startDoubleArrayRaw() {
         return startArrayRaw(TYPE_ID_DOUBLE_ARR);
     }
 
+    /**
+     * Starts write raw array.
+     */
     int32_t startStringArrayRaw() {
         return startArrayRaw(TYPE_ID_STRING_ARR);
     }
 
+    /**
+     * Starts write raw array.
+     */
     int32_t startUuidArrayRaw() {
         return startArrayRaw(TYPE_ID_UUID_ARR);
     }
 
+    /**
+     * Starts write raw array.
+     */
     int32_t startDateArrayRaw() {
         return startArrayRaw(TYPE_ID_DATE_ARR);
     }
 
+    /**
+     * Starts write raw array.
+     */
     int32_t startVariantArrayRaw() {
         return startArrayRaw(TYPE_ID_OBJ_ARR);
     }
 
+    /**
+     * Starts write raw array.
+     */
     int32_t startVariantCollectionRaw() {
         return startArrayRaw(TYPE_ID_COLLECTION);
     }
 
+    /**
+     * Ends write array.
+     *
+     * @param start Start position.
+     * @param cnt Elements number.
+     */
+    void endArrayRaw(int32_t start, int32_t cnt) {
+        ctx.out.writeInt32To(start, cnt);
+    }
+
+    /**
+     * Ends write array.
+     *
+     * @param start Start position.
+     * @param cnt Elements number.
+     */
     void endArray(int32_t start, int32_t cnt) {
         int32_t len = ctx.out.bytes.size() - start;
 
@@ -946,10 +1374,24 @@ public:
         ctx.out.writeInt32To(start + 1, cnt);
     }
 
+    /**
+     * Writes object header.
+     *
+     * @param userType User type flag.
+     * @param typeId Type ID.
+     * @param val Object.
+     */
     void writeHeader(bool userType, int32_t typeId, const GridClientVariant& val) {
         writeHeader(userType, typeId, val.hasPortable() ? 0 : val.hashCode());
     }
 
+    /**
+     * Writes object header.
+     *
+     * @param userType User type flag.
+     * @param typeId Type ID.
+     * @param hashCode Hash code.
+     */
     void writeHeader(bool userType, int32_t typeId, int32_t hashCode) {
         ctx.out.writeBool(userType);
         ctx.out.writeInt32(typeId);
@@ -960,6 +1402,10 @@ public:
         ctx.out.writeInt32(18); // Raw offset (header length).
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param val Object.
+     */
     void writeVariant(char* fieldName, const GridClientVariant& val) {
 		writeFieldName(fieldName);
 
@@ -974,6 +1420,11 @@ public:
         ctx.out.writeInt32To(fieldStart - 4, len);
     }
 
+    /**
+     * Writes object with false 'userFlag'.
+     *
+     * @param portable Object.
+     */
     void writeSystem(GridPortable& portable) {
         int32_t start = ctx.out.bytes.size();
         int32_t lenPos = start + 10;
@@ -993,11 +1444,19 @@ public:
         writer.writeRawOffsetIfNeeded(start, len);
     }
 
+    /**
+     * @param start Start position.
+     * @param len Object length.
+     */
     void writeRawOffsetIfNeeded(int32_t start, int32_t len) {
-        if (allowFields)
-            ctx.out.writeInt32To(start + 14, len);
+        if (allowFields) // If there is no raw data write object length.
+            ctx.out.writeInt32To(start + RAW_DATA_OFF_POS, len);
     }
 
+    /**
+     * @param first Array start.
+     * @param last Array end.
+     */
     template<class InputIterator, typename T>
     void doWriteArray(InputIterator first, InputIterator last) {
         int32_t start = ctx.out.bytes.size();
@@ -1019,6 +1478,9 @@ public:
         ctx.out.writeInt32To(start, cnt);
     }
 
+    /**
+     * @param val Object.
+     */
     void doWriteVariant(const GridClientVariant& val) {
         int32_t start = ctx.out.bytes.size();
         int32_t lenPos = start + 10;
@@ -1283,11 +1745,17 @@ public:
         ctx.out.writeInt32To(lenPos, len);
     }
 
+    /**
+     * @param val Value.
+     */
     void doWriteMapEntry(const TGridClientVariantPair& val) {
         doWriteVariant(val.first);
         doWriteVariant(val.second);
     }
 
+    /**
+     * @param col Value.
+     */
     void doWriteVariantCollection(const TGridClientVariantSet& col) {
         ctx.out.writeInt32(col.size());
 
@@ -1300,6 +1768,10 @@ public:
         }
     }
 
+    /**
+     * @param fieldName Field name.
+     * @param val Value.
+     */
     void writeVariantMap(char* fieldName, const TGridClientVariantMap &val) {
         writeFieldName(fieldName);
 
@@ -1316,6 +1788,9 @@ public:
         ctx.out.writeInt32To(fieldStart - 4, len);
     }
 
+    /**
+     * @param map Value.
+     */
     void doWriteVariantMap(const TGridClientVariantMap& map) {
         ctx.out.writeInt32(map.size());
 
@@ -1330,18 +1805,28 @@ public:
         }
     }
 
+    /**
+     * @param val Value.
+     */
     void writeByte(int8_t val) {
         switchToRaw();
 
         doWriteByte(val);
 	}
 
+    /**
+     * @param val Value.
+     */
     void writeInt16(int16_t val) {
         switchToRaw();
 
         doWriteInt16(val);
 	}
 
+    /**
+     * @param val Array pointer.
+     * @param size Array size.
+     */
     void writeInt16Array(const int16_t* val, int32_t size) {
         switchToRaw();
 
@@ -1355,12 +1840,19 @@ public:
             ctx.out.writeByte(FLAG_NULL);
     }
 
+    /**
+     * @param val Value.
+     */
     void writeInt32(int32_t val) {
         switchToRaw();
 
         doWriteInt32(val);
 	}
 
+    /**
+     * @param val Array pointer.
+     * @param size Array size.
+     */
     void writeInt32Array(const int32_t* val, int32_t size) {
         switchToRaw();
 
@@ -1374,12 +1866,19 @@ public:
             ctx.out.writeByte(FLAG_NULL);
     }
 
+    /**
+     * @param val Value.
+     */
     void writeChar(uint16_t val) {
         switchToRaw();
 
         doWriteChar(val);
     }
 
+    /**
+     * @param val Array pointer.
+     * @param size Array size.
+     */
     void writeCharArray(const uint16_t* val, int32_t size) {
         switchToRaw();
 
@@ -1393,12 +1892,19 @@ public:
             ctx.out.writeByte(FLAG_NULL);
     }
 
+    /**
+     * @param val Value.
+     */
     void writeInt64(int64_t val) {
         switchToRaw();
 
         doWriteInt64(val);
 	}
 
+    /**
+     * @param val Array pointer.
+     * @param size Array size.
+     */
     void writeInt64Array(const int64_t* val, int32_t size) {
         switchToRaw();
 
@@ -1412,12 +1918,19 @@ public:
             ctx.out.writeByte(FLAG_NULL);
     }
 
+    /**
+     * @param val Value.
+     */
     void writeFloat(float val) {
         switchToRaw();
 
         doWriteFloat(val);
 	}
 
+    /**
+     * @param val Array pointer.
+     * @param size Array size.
+     */
     void writeFloatArray(const float* val, int32_t size) {
         switchToRaw();
 
@@ -1431,12 +1944,19 @@ public:
             ctx.out.writeByte(FLAG_NULL);
     }
 
+    /**
+     * @param val Value.
+     */
     void writeDouble(double val) {
         switchToRaw();
 
         doWriteDouble(val);
 	}
 
+    /**
+     * @param val Array pointer.
+     * @param size Array size.
+     */
     void writeDoubleArray(const double* val, int32_t size) {
         switchToRaw();
 
@@ -1450,12 +1970,18 @@ public:
             ctx.out.writeByte(FLAG_NULL);
     }
 
+    /**
+     * @param val Value.
+     */
 	void writeString(const std::string& val) {
         switchToRaw();
 
         doWriteString(val);
 	}
 
+    /**
+     * @param val Value.
+     */
     void writeString(const boost::optional<std::string>& val) {
         switchToRaw();
 
@@ -1465,12 +1991,18 @@ public:
             doWriteByte(FLAG_NULL);
     }
 
+    /**
+     * @param val Value.
+     */
     void writeWString(const std::wstring& val) {
         switchToRaw();
 
         doWriteWString(val);
     }
 
+    /**
+     * @param val Value.
+     */
     void writeWString(const boost::optional<std::wstring>& val) {
         switchToRaw();
 
@@ -1480,6 +2012,10 @@ public:
             doWriteByte(FLAG_NULL);
     }
 
+    /**
+     * @param val Array pointer.
+     * @param size Array size.
+     */
     void writeByteArray(const int8_t* val, int32_t size) {
         switchToRaw();
 
@@ -1492,12 +2028,19 @@ public:
             ctx.out.writeByte(FLAG_NULL);
     }
 
+    /**
+     * @param val Value.
+     */
 	void writeBool(bool val) {
         switchToRaw();
 
         doWriteBool(val);
 	}
 
+    /**
+     * @param val Array pointer.
+     * @param size Array size.
+     */
     void writeBoolArray(const bool* val, int32_t size) {
         switchToRaw();
 
@@ -1513,12 +2056,18 @@ public:
             ctx.out.writeByte(FLAG_NULL);
     }
 
+    /**
+     * @param val Value.
+     */
 	void writeUuid(const GridClientUuid& val) {
         switchToRaw();
 
         doWriteUuid(val);
 	}
 
+    /**
+     * @param val Value.
+     */
     void writeUuid(const boost::optional<GridClientUuid>& val) {
         switchToRaw();
 
@@ -1528,12 +2077,18 @@ public:
             doWriteByte(FLAG_NULL);
 	}
 
+    /**
+     * @param val Value.
+     */
     void writeDate(const GridClientDate& val) {
         switchToRaw();
 
         doWriteDate(val);
     }
 
+    /**
+     * @param val Value.
+     */
     void writeDate(const boost::optional<GridClientDate>& val) {
         switchToRaw();
 
@@ -1543,12 +2098,18 @@ public:
             doWriteByte(FLAG_NULL);
     }
 
+    /**
+     * @param val Value.
+     */
     void writeVariant(const GridClientVariant& val) {
         switchToRaw();
 
         doWriteVariant(val);
     }
 
+    /**
+     * @param val Value.
+     */
     void writeVariantEx(const GridClientVariant& val) {
         switchToRaw();
 
@@ -1557,6 +2118,9 @@ public:
         doWriteVariant(val);
     }
 
+    /**
+     * @param val Value.
+     */
     void writeVariantMap(const TGridClientVariantMap& val) {
         switchToRaw();
 
@@ -1565,6 +2129,9 @@ public:
         doWriteVariantMap(val);
     }
 
+    /**
+     * @param type Type ID.
+     */
     int32_t startArrayRaw(int8_t type) {
         switchToRaw();
 
@@ -1577,20 +2144,24 @@ public:
         return start;
     }
 
-    void endArrayRaw(int32_t start, int32_t cnt) {
-        ctx.out.writeInt32To(start, cnt);
-    }
-
 private:
+    /** */
     int32_t start;
 
+    /** */
     bool allowFields;
 
+    /** */
     WriteContext& ctx;
 };
 
+/**
+ *  Endiannes dependent primitives input (all data is sent in little-endian order).
+ */
 #ifdef BOOST_BIG_ENDIAN
-// TODO 8491
+/**
+ *  Big endian primitives input.
+ */
 class PortableInput {
 public:
     PortableInput(std::vector<int8_t>& data) : bytes(data), pos(0) {
@@ -1757,20 +2328,37 @@ protected:
     std::vector<int8_t>& bytes;
 };
 #else
+/**
+ *  Little endian primitives input.
+ */
 class PortableInput {
 public:
+    /**
+     * @param data Input buffer.
+     */
     PortableInput(std::vector<int8_t>& data) : bytes(data) {
     }
 
+    /**
+     * Destructor.
+     */
     virtual ~PortableInput() {
     }
 
+    /**
+     * @param off Offset.
+     * @return Value read.
+     */
     int8_t readByte(int32_t off) {
         checkAvailable(off, 1);
 
         return bytes[off];
     }
 
+    /**
+     * @param off Offset.
+     * @return Value read.
+     */
     bool readBool(int32_t off) {
         checkAvailable(off, 1);
 
@@ -1779,6 +2367,11 @@ public:
         return val != 0;
     }
 
+    /**
+     * @param off Offset.
+     * @param size Array size.
+     * @param res Output array.
+     */
     void readByteArray(int32_t off, int32_t size, std::vector<int8_t>& res) {
         if (size == 0)
             return;
@@ -1792,6 +2385,11 @@ public:
         std::copy(bytes.data() + off, bytes.data() + off + size, res.data() + sizeBefore);
     }
 
+    /**
+     * @param off Offset.
+     * @param size Array size.
+     * @return Array pointer.
+     */
     int8_t* readByteArray(int32_t off, int32_t size) {
         checkAvailable(off, size);
 
@@ -1802,6 +2400,10 @@ public:
         return res;
     }
 
+    /**
+     * @param off Offset.
+     * @return Value read.
+     */
     int32_t readInt32(int32_t off) {
         checkAvailable(off, 4);
 
@@ -1817,6 +2419,11 @@ public:
         return res;
     }
 
+    /**
+     * @param off Offset.
+     * @param size Array size.
+     * @param res Output array.
+     */
     void readInt32Array(int32_t off, int32_t size, std::vector<int32_t>& res) {
         if (size == 0)
             return;
@@ -1835,6 +2442,11 @@ public:
         std::copy(start, end, dst);
     }
 
+    /**
+     * @param off Offset.
+     * @param size Array size.
+     * @return Array pointer.
+     */
     int32_t* readInt32Array(int32_t off, int32_t size) {
         checkAvailable(off, size * 4);
 
@@ -1850,6 +2462,10 @@ public:
         return res;
     }
 
+    /**
+     * @param off Offset.
+     * @return Value read.
+     */
     int16_t readInt16(int32_t off) {
         checkAvailable(off, 2);
 
@@ -1865,6 +2481,11 @@ public:
         return res;
     }
 
+    /**
+     * @param off Offset.
+     * @param size Array size.
+     * @param res Output array.
+     */
     void readInt16Array(int32_t off, int32_t size, std::vector<int16_t>& res) {
         if (size == 0)
             return;
@@ -1883,6 +2504,11 @@ public:
         std::copy(start, end, dst);
     }
 
+    /**
+     * @param off Offset.
+     * @param size Array size.
+     * @return Array pointer.
+     */
     int16_t* readInt16Array(int32_t off, int32_t size) {
         checkAvailable(off, size * 2);
 
@@ -1898,6 +2524,10 @@ public:
         return res;
     }
 
+    /**
+     * @param off Offset.
+     * @return Value read.
+     */
     uint16_t readChar(int32_t off) {
         checkAvailable(off, 2);
 
@@ -1913,6 +2543,11 @@ public:
         return res;
     }
 
+    /**
+     * @param off Offset.
+     * @param size Array size.
+     * @param res Output array.
+     */
     void readCharArray(int32_t off, int32_t size, std::vector<uint16_t>& res) {
         if (size == 0)
             return;
@@ -1931,6 +2566,11 @@ public:
         std::copy(start, end, dst);
     }
 
+    /**
+     * @param off Offset.
+     * @param size Array size.
+     * @return Array pointer.
+     */
     uint16_t* readCharArray(int32_t off, int32_t size) {
         checkAvailable(off, size * 2);
 
@@ -1946,6 +2586,10 @@ public:
         return res;
     }
 
+    /**
+     * @param off Offset.
+     * @return Value read.
+     */
     int64_t readInt64(int32_t off) {
         checkAvailable(off, 8);
 
@@ -1961,6 +2605,11 @@ public:
         return res;
     }
 
+    /**
+     * @param off Offset.
+     * @param size Array size.
+     * @param res Output array.
+     */
     void readInt64Array(int32_t off, int32_t size, std::vector<int64_t>& res) {
         if (size == 0)
             return;
@@ -1979,6 +2628,11 @@ public:
         std::copy(start, end, dst);
     }
 
+    /**
+     * @param off Offset.
+     * @param size Array size.
+     * @return Array pointer.
+     */
     int64_t* readInt64Array(int32_t off, int32_t size) {
         checkAvailable(off, size * 8);
 
@@ -1994,6 +2648,10 @@ public:
         return res;
     }
 
+    /**
+     * @param off Offset.
+     * @return Value read.
+     */
     float readFloat(int32_t off) {
         checkAvailable(off, 4);
 
@@ -2009,6 +2667,11 @@ public:
         return res;
     }
 
+    /**
+     * @param off Offset.
+     * @param size Array size.
+     * @param res Output array.
+     */
     void readFloatArray(int32_t off, int32_t size, std::vector<float>& res) {
         if (size == 0)
             return;
@@ -2027,6 +2690,11 @@ public:
         std::copy(start, end, dst);
     }
 
+    /**
+     * @param off Offset.
+     * @param size Array size.
+     * @return Array pointer.
+     */
     float* readFloatArray(int32_t off, int32_t size) {
         checkAvailable(off, size * 4);
 
@@ -2042,6 +2710,10 @@ public:
         return res;
     }
 
+    /**
+     * @param off Offset.
+     * @return Value read.
+     */
     double readDouble(int32_t off) {
         checkAvailable(off, 8);
 
@@ -2057,6 +2729,11 @@ public:
         return res;
     }
 
+    /**
+     * @param off Offset.
+     * @param size Array size.
+     * @param res Output array.
+     */
     void readDoubleArray(int32_t off, int32_t size, std::vector<double>& res) {
         if (size == 0)
             return;
@@ -2090,33 +2767,50 @@ public:
         return res;
     }
 
+    /** */
     std::vector<int8_t>& bytes;
 
 protected:
+    /**
+     * @param off Offset.
+     * @param size Requested size.
+     */
     void checkAvailable(int32_t off, size_t cnt) {
         assert(off + cnt <= bytes.size());
     }
 };
 #endif
 
+/**
+ * Reader and raw reader implementation.
+ */
 class GridPortableReaderImpl : public GridPortableReader, public GridPortableRawReader {
 public:
+    /** */
     const int32_t start;
 
+    /** */
     int32_t rawOff;
 
+    /** */
     int32_t off;
 
+    /** */
     bool offInit;
 
+    /** */
     int32_t curTypeId;
 
+    /** */
     boost::unordered_map<int32_t, int32_t> fieldOffs;
 
+    /** */
     boost::shared_ptr<PortableReadContext> ctxPtr;
 
+    /** */
     PortableInput in;
 
+    /** */
     bool keepPortable;
 
     GridPortableReaderImpl(boost::shared_ptr<PortableReadContext> ctxPtr, bool keepPortable, int32_t start) :
@@ -2136,7 +2830,7 @@ public:
         rawOff = start + in.readInt32(start + 14);
 
         if (handle == handles.end()) {
-            GridPortable* portable = userType ? createPortable(curTypeId, *this) : createSystemPortable(curTypeId, *this);
+            GridPortable* portable = userType ? createPortable(curTypeId) : createSystemPortable(curTypeId);
 
             handles[start] = portable;
 
@@ -4058,16 +4752,30 @@ public:
     }
 };
 
+/**
+ * Marshaller.
+ */
 class GridPortableMarshaller {
 public:
+    /** */
     GridPortableIdResolver* idRslvr;
 
+    /**
+     * Default constructor.
+     */
     GridPortableMarshaller() : idRslvr(0) {
     }
 
+    /**
+     * @param idRslvr Optional ID resolver.
+     */
     GridPortableMarshaller(GridPortableIdResolver* idRslvr) : idRslvr(idRslvr) {
     }
 
+    /**
+     * @param var Object to marshal.
+     * @return Result array.
+     */
     boost::shared_ptr<std::vector<int8_t>> marshal(const GridClientVariant& var) {
         std::vector<int8_t>* bytes = new std::vector<int8_t>();
 
@@ -4080,6 +4788,12 @@ public:
 		return boost::shared_ptr<std::vector<int8_t>>(bytes);
     }
 
+    /**
+     * Marshalls object with 'userFlag' false.
+     *
+     * @param var Object to marshal.
+     * @return Result array.
+     */
     boost::shared_ptr<std::vector<int8_t>> marshalSystemObject(GridPortable& portable) {
         std::vector<int8_t>* bytes = new std::vector<int8_t>();
 
@@ -4092,6 +4806,11 @@ public:
 		return boost::shared_ptr<std::vector<int8_t>>(bytes);
     }
 
+    /**
+     * @param data Input array.
+     * @param keepPortable Keep portable flag.
+     * @return Unmarshalled object.
+     */
     GridClientVariant unmarshal(const boost::shared_ptr<std::vector<int8_t>>& data, bool keepPortable) {
 		boost::shared_ptr<PortableReadContext> ctxPtr(new PortableReadContext(data, idRslvr));
 
@@ -4100,8 +4819,12 @@ public:
         return reader.unmarshal(false);
     }
 
+    /**
+     * @param msg Response.
+     * @param resp Result object.
+     */
     void parseResponse(GridClientResponse* msg, GridClientMessageTopologyResult& resp) {
-        GridClientVariant res = msg->getResult();
+        GridClientVariant& res = msg->res;
 
         std::vector<GridClientNode> nodes;
 
@@ -4125,8 +4848,12 @@ public:
         resp.setNodes(std::move(nodes));
     }
 
+    /**
+     * @param msg Response.
+     * @param resp Result object.
+     */
     void parseResponse(GridClientResponse* msg, GridClientMessageLogResult& resp) {
-        GridClientVariant res = msg->getResult();
+        GridClientVariant& res = msg->res;
 
         assert(res.hasVariantVector());
 
@@ -4145,14 +4872,22 @@ public:
         resp.lines(lines);
     }
 
+    /**
+     * @param msg Response.
+     * @param resp Result object.
+     */
     void parseResponse(GridClientResponse* msg, GridClientMessageCacheGetResult& resp) {
-        GridClientVariant& res = msg->getResult();
+        GridClientVariant& res = msg->res;
 
         resp.res = std::move(res);
     }
 
+    /**
+     * @param msg Response.
+     * @param resp Result object.
+     */
     void parseResponse(GridClientResponse* msg, GridClientMessageCacheModifyResult& resp) {
-        GridClientVariant res = msg->getResult();
+        GridClientVariant& res = msg->res;
 
         if (res.hasBool())
             resp.setOperationResult(res.getBool());
@@ -4160,16 +4895,24 @@ public:
             resp.setOperationResult(false);
     }
 
+    /**
+     * @param msg Response.
+     * @param resp Result object.
+     */
     void parseResponse(GridClientResponse* msg, GridClientMessageCacheMetricResult& resp) {
-        GridClientVariant res = msg->getResult();
+        GridClientVariant res = msg->res;
 
         assert(res.hasVariantMap());
 
         resp.setCacheMetrics(res.getVariantMap());
     }
 
+    /**
+     * @param msg Response.
+     * @param resp Result object.
+     */
     void parseResponse(GridClientResponse* msg, GridClientMessageTaskResult& resp) {
-        GridClientVariant res = msg->getResult();
+        GridClientVariant& res = msg->res;
 
         if (res.hasPortable() || res.hasPortableObject()) {
             std::unique_ptr<GridClientTaskResultBean> resBean(res.deserializePortable<GridClientTaskResultBean>());
@@ -4178,8 +4921,12 @@ public:
         }
     }
 
+    /**
+     * @param msg Response.
+     * @param resp Result object.
+     */
     void parseResponse(GridClientResponse* msg, GridClientQueryResult& resp) {
-        GridClientVariant res = msg->getResult();
+        GridClientVariant& res = msg->res;
 
         if (res.hasPortableObject())
             resp.res = res.getPortableObject().deserialize<GridClientDataQueryResult>();

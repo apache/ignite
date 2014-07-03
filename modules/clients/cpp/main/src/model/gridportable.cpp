@@ -10,14 +10,15 @@
 #include "gridgain/gridportable.hpp"
 #include "gridgain/impl/marshaller/portable/gridportablemarshaller.hpp"
 
+/**
+ * Portable object implementation.
+ */
 class GridPortableObject::Impl {
 public:
-    Impl(const boost::shared_ptr<PortableReadContext>& ctxPtr, int32_t start) :
-        ctxPtr(ctxPtr), reader(ctxPtr, true, start) {
+    Impl(const boost::shared_ptr<PortableReadContext>& ctxPtr, int32_t start) : reader(ctxPtr, true, start) {
     }
 
-    Impl(const Impl& other) : ctxPtr(other.ctxPtr),
-        reader(other.ctxPtr, other.reader.keepPortable, other.reader.start) {
+    Impl(const Impl& other) :  reader(other.reader.ctxPtr, other.reader.keepPortable, other.reader.start) {
     }
 
     GridClientVariant field(const std::string& fieldName) {
@@ -58,15 +59,14 @@ public:
     }
 
     std::vector<int8_t>* data() {
-        boost::shared_ptr<std::vector<int8_t>>& ptr = (ctxPtr.get())->dataPtr;
+        boost::shared_ptr<std::vector<int8_t>>& ptr = (reader.ctxPtr.get())->dataPtr;
 
         return ptr.get();
     }
 
 private:
+    /** */
     GridPortableReaderImpl reader;
-
-    const boost::shared_ptr<PortableReadContext> ctxPtr;
 };
 
 GridPortableObject::GridPortableObject(boost::shared_ptr<PortableReadContext>& ctxPtr, int32_t start) {

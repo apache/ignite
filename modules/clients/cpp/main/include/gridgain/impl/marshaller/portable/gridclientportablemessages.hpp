@@ -24,13 +24,23 @@
 #include "gridgain/impl/utils/gridclientbyteutils.hpp"
 #include "gridgain/impl/utils/gridclientlog.hpp"
 
+/** */
 const GridClientVariant nullVariant;
 
+/**
+ * Base request class.
+ */
 class GridClientPortableMessage : public GridPortable {
 public:
+    /**
+     * Default constructor.
+     */
     GridClientPortableMessage() : sndTok(0) {
     }
 
+    /**
+     * @param writer Writer.
+     */
     void writePortable(GridPortableWriter& writer) const {
         if (sndTok)
             writer.rawWriter().writeByteArray(sndTok->data(), sndTok->size());
@@ -38,23 +48,38 @@ public:
             writer.rawWriter().writeByteArray((int8_t*)0, 0);
     }
 
+    /**
+     * @param reader Reader.
+     */
     void readPortable(GridPortableReader& reader) {
         reader.rawReader().readByteArray(rcvTok);
     }
 
+    /** Token to send (pointer to avoid copies). */
     std::vector<int8_t>* sndTok;
 
+    /** Received token. */
     std::vector<int8_t> rcvTok;
 };
 
+/**
+ * Response.
+ */
 class GridClientResponse : public GridClientPortableMessage {
 public:
+    /** */
     static const int32_t TYPE_ID = 56;
 
+    /**
+     * @return Type ID.
+     */
     int32_t typeId() const {
         return TYPE_ID;
     }
 
+    /**
+     * @param writer Writer.
+     */
     void writePortable(GridPortableWriter& writer) const {
         GridClientPortableMessage::writePortable(writer);
 
@@ -65,6 +90,9 @@ public:
         raw.writeVariant(res);
     }
 
+    /**
+     * @param reader Reader.
+     */
     void readPortable(GridPortableReader& reader) {
         GridClientPortableMessage::readPortable(reader);
 
@@ -80,33 +108,34 @@ public:
         res = raw.readVariant();
     }
 
-    int32_t getStatus() {
-        return status;
-    }
-
-    std::string getErrorMessage() {
-        return errorMsg;
-    }
-
-    GridClientVariant& getResult() {
-        return res;
-    }
-
+    /** */
     int32_t status;
 
+    /** */
     std::string errorMsg;
 
+    /** */
     GridClientVariant res;
 };
 
+/**
+ * Metrics.
+ */
 class GridClientMetricsBean : public GridPortable {
 public:
+    /** */
     static const int32_t TYPE_ID = 58;
 
+    /**
+     * @return Type ID.
+     */
     int32_t typeId() const {
         return TYPE_ID;
     }
 
+    /**
+     * @param writer Writer.
+     */
     void writePortable(GridPortableWriter& writer) const {
         GridPortableRawWriter& raw = writer.rawWriter();
 
@@ -164,6 +193,9 @@ public:
         raw.writeInt64(rcvdBytesCnt);
     }
 
+    /**
+     * @param reader Reader.
+     */
     void readPortable(GridPortableReader& reader) {
         GridPortableRawReader& raw = reader.rawReader();
 
@@ -378,14 +410,24 @@ public:
     int64_t rcvdBytesCnt;
 };
 
+/**
+ * Node.
+ */
 class GridClientNodeBean : public GridPortable {
 public:
+    /** */
     static const int32_t TYPE_ID = 57;
 
+    /**
+     * @return Type ID.
+     */
     int32_t typeId() const {
         return TYPE_ID;
     }
 
+    /**
+     * @param writer Writer.
+     */
     void writePortable(GridPortableWriter& writer) const {
         GridPortableRawWriter& raw = writer.rawWriter();
 
@@ -406,6 +448,9 @@ public:
         raw.writeVariant(metrics);
     }
 
+    /**
+     * @param reader Reader.
+     */
     void readPortable(GridPortableReader& reader) {
         GridPortableRawReader& raw = reader.rawReader();
 
@@ -430,6 +475,9 @@ public:
         metrics = raw.readVariant();
     }
 
+    /**
+     * @return Node object.
+     */
     GridClientNode createNode() {
         GridClientNode res;
 
@@ -552,35 +600,55 @@ public:
         return res;
     }
 
+    /** */
     int32_t tcpPort;
 
+    /** */
     int32_t replicaCnt;
 
+    /** */
     std::string dfltCacheMode;
 
+    /** */
     TGridClientVariantMap attrs;
 
+    /** */
     TGridClientVariantMap caches;
 
+    /** */
     TGridClientVariantSet tcpAddrs;
 
+    /** */
     TGridClientVariantSet tcpHostNames;
 
+    /** */
     boost::optional<GridClientUuid> nodeId;
 
+    /** */
     GridClientVariant consistentId;
 
+    /** */
     GridClientVariant metrics;
 };
 
+/**
+ * Topology request.
+ */
 class GridClientTopologyRequest : public GridClientPortableMessage {
 public:
+    /** */
     static const int32_t TYPE_ID = 52;
 
+    /**
+     * @return Type ID.
+     */
     int32_t typeId() const {
         return TYPE_ID;
     }
 
+    /**
+     * @param writer Writer.
+     */
     void writePortable(GridPortableWriter& writer) const {
         GridClientPortableMessage::writePortable(writer);
 
@@ -592,6 +660,9 @@ public:
         raw.writeBool(includeAttrs);
     }
 
+    /**
+     * @param reader Reader.
+     */
     void readPortable(GridPortableReader& reader) {
         GridClientPortableMessage::readPortable(reader);
 
@@ -616,52 +687,88 @@ public:
      bool includeAttrs;
 };
 
+/**
+ * Cache operation request.
+ */
 class GridClientCacheRequest : public GridClientPortableMessage {
 public:
+    /** */
     static const int32_t TYPE_ID = 54;
 
+    /**
+     * @return Type ID.
+     */
     int32_t typeId() const {
         return TYPE_ID;
     }
 
+    /**
+     * Required default constructor.
+     */
     GridClientCacheRequest() : key(0), val(0), val2(0), vals(0), cacheName(0) {
     }
 
+    /**
+     * @param cacheCmd Command.
+     */
     GridClientCacheRequest(GridCacheRequestCommand& cacheCmd) : key(cacheCmd.getKey()), val(cacheCmd.getValue()),
         val2(cacheCmd.getValue2()), vals(cacheCmd.getValues()), cacheName(&cacheCmd.getCacheName()),
         cacheFlagsOn(cacheCmd.getFlags())  {
         op = static_cast<int32_t>(cacheCmd.getOperation());
     }
 
+    /**
+     * @param writer Writer.
+     */
     void writePortable(GridPortableWriter& writer) const;
 
+    /**
+     * @param reader Reader.
+     */
     void readPortable(GridPortableReader& reader) {
         assert(false);
     }
 
+    /** */
     int32_t op;
 
+    /** */
     const std::string* cacheName;
 
+    /** */
     const GridClientVariant* key;
 
+    /** */
     const GridClientVariant* val;
 
+    /** */
     const GridClientVariant* val2;
 
+    /** */
     int32_t cacheFlagsOn;
 
+    /** */
     const TGridClientVariantMap* vals;
 };
 
+/**
+ * Log request.
+ */
 class GridClientLogRequest : public GridClientPortableMessage {
 public:
+    /** */
     static const int32_t TYPE_ID = 55;
 
+    /**
+     * @return Type ID.
+     */
     int32_t typeId() const {
         return TYPE_ID;
     }
 
+    /**
+     * @param writer Writer.
+     */
     void writePortable(GridPortableWriter& writer) const {
         GridClientPortableMessage::writePortable(writer);
 
@@ -673,6 +780,9 @@ public:
         raw.writeInt32(to);
     }
 
+    /**
+     * @param reader Reader.
+     */
     void readPortable(GridPortableReader& reader) {
         GridClientPortableMessage::readPortable(reader);
 
@@ -684,21 +794,34 @@ public:
         to = raw.readInt32();
     }
 
+    /** */
     std::string path;
 
+    /** */
     int32_t from;
 
+    /** */
     int32_t to;
 };
 
+/**
+ * Task request.
+ */
 class GridClientTaskRequest : public GridClientPortableMessage {
 public:
+    /** */
     static const int32_t TYPE_ID = 53;
 
+    /**
+     * @return Type ID.
+     */
     int32_t typeId() const {
         return TYPE_ID;
     }
 
+    /**
+     * @param writer Writer.
+     */
     void writePortable(GridPortableWriter &writer) const {
         GridClientPortableMessage::writePortable(writer);
 
@@ -708,28 +831,38 @@ public:
         raw.writeVariant(arg);
     }
 
+    /**
+     * @param reader Reader.
+     */
     void readPortable(GridPortableReader &reader) {
-        GridClientPortableMessage::readPortable(reader);
-
-        GridPortableRawReader& raw = reader.rawReader();
-
-        taskName = raw.readString().get_value_or(std::string());
-        arg = raw.readVariant();
+        assert(false);
     }
 
+    /** */
     std::string taskName;
 
+    /** */
     GridClientVariant arg;
 };
 
+/**
+ * Task result.
+ */
 class GridClientTaskResultBean : public GridPortable {
 public:
+    /** */
     static const int32_t TYPE_ID = 59;
 
+    /**
+     * @return Type ID.
+     */
     int32_t typeId() const {
         return TYPE_ID;
     }
 
+    /**
+     * @param writer Writer.
+     */
     void writePortable(GridPortableWriter &writer) const {
         GridPortableRawWriter& raw = writer.rawWriter();
 
@@ -739,6 +872,9 @@ public:
         raw.writeString(error);
     }
 
+    /**
+     * @param reader Reader.
+     */
     void readPortable(GridPortableReader &reader) {
         GridPortableRawReader& raw = reader.rawReader();
 
@@ -756,29 +892,49 @@ public:
             error = errOpt.get();
     }
 
+    /** */
     std::string id;
 
+    /** */
     bool finished;
 
+    /** */
     GridClientVariant res;
 
+    /** */
     std::string error;
 };
 
+/**
+ * Authentication result.
+ */
 class GridClientAuthenticationRequest : public GridClientPortableMessage {
 public:
+    /** */
     static const int32_t TYPE_ID = 51;
 
+    /**
+     * Required default constructor.
+     */
     GridClientAuthenticationRequest() {
     }
 
+    /**
+     * @param credStr Credentials.
+     */
     GridClientAuthenticationRequest(std::string credStr) : cred(credStr) {
     }
 
+    /**
+     * @return Type ID.
+     */
     int32_t typeId() const {
         return TYPE_ID;
     }
 
+    /**
+     * @param writer Writer.
+     */
     void writePortable(GridPortableWriter &writer) const {
         GridClientPortableMessage::writePortable(writer);
 
@@ -787,6 +943,9 @@ public:
         raw.writeVariant(cred);
     }
 
+    /**
+     * @param reader Reader.
+     */
     void readPortable(GridPortableReader &reader) {
         GridClientPortableMessage::readPortable(reader);
 
@@ -795,20 +954,31 @@ public:
         cred = raw.readVariant();
     }
 
+    /** */
     GridClientVariant cred;
 };
 
+/**
+ * Query request.
+ */
 class GridClientCacheQueryRequest : public GridClientPortableMessage {
 public:
+    /** */
     static const int32_t TYPE_ID = 0;
 
     GridClientCacheQueryRequest() {
     }
 
+    /**
+     * @return Type ID.
+     */
     int32_t typeId() const {
         return TYPE_ID;
     }
 
+    /**
+     * @param writer Writer.
+     */
     void writePortable(GridPortableWriter &writer) const {
         GridClientPortableMessage::writePortable(writer);
 
@@ -816,67 +986,104 @@ public:
 
     }
 
+    /**
+     * @param reader Reader.
+     */
     void readPortable(GridPortableReader &reader) {
         assert(false);
     }
 
+    /**
+     * Operation type.
+     */
     enum Operation {
         EXECUTE = 0,
         FETCH,
         REBUILD_INDEXES
     };
 
+    /** */
     int64_t qryId;
 
+    /** */
     Operation op;
 
+    /** */
     GridQueryType type;
 
+    /** */
     std::string* cacheName;
 
+    /** */
     std::string* clause;
 
+    /** */
     int32_t pageSize;
 
+    /** */
     int64_t timeout;
 
+    /** */
     bool incBackups;
 
+    /** */
     bool dedup;
 
+    /** */
     std::string* className;
 
+    /** */
     std::string* reducerClassName;
 
+    /** */
     std::string* transformerClassName;
 
+    /** */
     std::vector<GridClientVariant>* classArgs;
 
+    /** */
     std::vector<GridClientVariant>* args;
 };
 
+/**
+ * Query result.
+ */
 class GridClientDataQueryResult : public GridPortable {
 public:
+    /** */
     static const int32_t TYPE_ID = 0;
 
+    /**
+     * @return Type ID.
+     */
     int32_t typeId() const {
         return TYPE_ID;
     }
 
+    /**
+     * @param writer Writer.
+     */
     void writePortable(GridPortableWriter &writer) const {
         assert(false);
     }
 
+    /**
+     * @param reader Reader.
+     */
     void readPortable(GridPortableReader &reader) {
         GridPortableRawReader& raw = reader.rawReader();
     }
 
+    /** */
     int64_t qryId;
 
+    /** */
     std::vector<GridClientVariant> items;
 
+    /** */
     bool last;
 
+    /** */
     GridClientUuid nodeId;
 };
 

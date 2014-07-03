@@ -935,7 +935,7 @@ private:
 
 class GRIDGAIN_API GridPortableFactory {
 public: 
-    virtual void* newInstance(GridPortableReader& reader) = 0;
+    virtual void* newInstance() = 0;
 
     virtual ~GridPortableFactory() {
     }
@@ -955,7 +955,7 @@ void GRIDGAIN_API registerPortableFactory(int32_t typeId, GridPortableFactory* f
         virtual ~GridPortableFactory_##TYPE() {\
         }\
         \
-        void* newInstance(GridPortableReader& reader) {\
+        void* newInstance() {\
             GridPortable* p = new TYPE;\
             \
             return p;\

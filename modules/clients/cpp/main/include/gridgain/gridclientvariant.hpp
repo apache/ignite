@@ -1111,67 +1111,98 @@ private:
     };
 
     union U {
+        /** */
         int8_t byteVal;
 
+        /** */
         int16_t shortVal;
 
+        /** */
         int32_t intVal;
 
+        /** */
         int64_t longVal;
 
+        /** */
         float floatVal;
 
+        /** */
         double doubleVal;
 
+        /** */
         uint16_t charVal;
 
+        /** */
         bool boolVal;
 
+        /** */
         std::string* strVal;
 
+        /** */
         std::wstring* wideStrVal;
 
+        /** */
         GridClientUuid* uuidVal;
 
+        /** */
         GridClientDate* dateVal;
 
+        /** */
         TGridClientVariantPair* pairVal;
 
+        /** */
         GridPortable* portableVal;
 
+        /** */
         GridHashablePortable* hashPortableVal;
 
+        /** */
         GridPortableObject* portableObjVal;
 
+        /** */
         std::vector<int8_t>* byteArrVal;
 
+        /** */
         std::vector<int16_t>* shortArrVal;
 
+        /** */
         std::vector<int32_t>* intArrVal;
 
+        /** */
         std::vector<int64_t>* longArrVal;
 
+        /** */
         std::vector<float>* floatArrVal;
 
+        /** */
         std::vector<double>* doubleArrVal;
 
+        /** */
         std::vector<uint16_t>* charArrVal;
 
+        /** */
         std::vector<bool>* boolArrVal;
 
+        /** */
         std::vector<std::string>* strArrVal;
 
+        /** */
         std::vector<GridClientUuid>* uuidArrVal;
 
+        /** */
         std::vector<GridClientDate>* dateArrVal;
 
+        /** */
         TGridClientVariantSet* variantArrVal;
 
+        /** */
         TGridClientVariantMap* variantMapVal;
     };
 
+    /** */
     TypeEnum type;
 
+    /** */
     U data;
 
     void copy(const GridClientVariant& other);

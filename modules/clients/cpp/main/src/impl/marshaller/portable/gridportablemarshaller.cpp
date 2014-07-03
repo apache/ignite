@@ -31,10 +31,10 @@ int32_t cStringHash(const char* str) {
 
 int32_t getFieldId(const char* fieldName, int32_t typeId, GridPortableIdResolver* idRslvr) {
     if (idRslvr) {
-        boost::optional<int32_t> rslvrId = idRslvr->fieldId(typeId, fieldName);
+        int32_t rslvrId = idRslvr->fieldId(typeId, fieldName);
 
-        if (rslvrId.is_initialized())
-            return rslvrId.get();
+        if (rslvrId != 0)
+            return rslvrId;
     }
 
     std::string name(fieldName);
@@ -46,10 +46,10 @@ int32_t getFieldId(const char* fieldName, int32_t typeId, GridPortableIdResolver
 
 int32_t getFieldId(const std::string& fieldName, int32_t typeId, GridPortableIdResolver* idRslvr) {
     if (idRslvr) {
-        boost::optional<int32_t> rslvrId = idRslvr->fieldId(typeId, fieldName);
+        int32_t rslvrId = idRslvr->fieldId(typeId, fieldName);
 
-        if (rslvrId.is_initialized())
-            return rslvrId.get();
+        if (rslvrId != 0)
+            return rslvrId;
     }
 
     return gridStringHash(boost::to_lower_copy(fieldName));
@@ -79,7 +79,7 @@ void registerSystemPortableFactory(int32_t typeId, GridPortableFactory* factory)
     factories[typeId] = factory;
 }
 
-GridPortable* createPortable(int32_t typeId, GridPortableReader &reader) {
+GridPortable* createPortable(int32_t typeId) {
     boost::unordered_map<int32_t, GridPortableFactory*>& factories = portableFactories();
 
     GridPortableFactory* factory = factories[typeId];
@@ -92,7 +92,7 @@ GridPortable* createPortable(int32_t typeId, GridPortableReader &reader) {
         throw GridClientPortableException(msg.str());
     }
 
-    return static_cast<GridPortable*>(factory->newInstance(reader));
+    return static_cast<GridPortable*>(factory->newInstance());
 }
 
 bool systemPortable(int32_t typeId) {
@@ -103,7 +103,7 @@ bool systemPortable(int32_t typeId) {
     return factory != factories.end();
 }
 
-GridPortable* createSystemPortable(int32_t typeId, GridPortableReader &reader) {
+GridPortable* createSystemPortable(int32_t typeId) {
     boost::unordered_map<int32_t, GridPortableFactory*>& factories = systemPortableFactories();
 
     GridPortableFactory* factory = factories[typeId];
@@ -116,7 +116,7 @@ GridPortable* createSystemPortable(int32_t typeId, GridPortableReader &reader) {
         throw GridClientPortableException(msg.str());
     }
 
-    return static_cast<GridPortable*>(factory->newInstance(reader));
+    return static_cast<GridPortable*>(factory->newInstance());
 }
 
 #define REGISTER_SYSTEM_TYPE(TYPE) \
@@ -131,7 +131,7 @@ GridPortable* createSystemPortable(int32_t typeId, GridPortableReader &reader) {
         virtual ~GridPortableFactory_##TYPE() {\
         }\
         \
-        void* newInstance(GridPortableReader& reader) {\
+        void* newInstance() {\
             GridPortable* p = new TYPE;\
             \
             return p;\
