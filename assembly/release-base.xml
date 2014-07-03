@@ -39,11 +39,6 @@
         </file>
 
         <file>
-            <source>modules/clients/dotnet/readme.pdf</source>
-            <outputDirectory>/clients/dotnet</outputDirectory>
-        </file>
-
-        <file>
             <source>examples/pom-standalone-${gridgain.edition}.xml</source>
             <outputDirectory>/examples</outputDirectory>
             <destName>pom.xml</destName>
@@ -85,24 +80,6 @@
         </fileSet>
 
         <fileSet>
-            <directory>modules/clients/cpp</directory>
-            <outputDirectory>/clients/cpp</outputDirectory>
-            <excludes>
-                <exclude>main/tests/**</exclude>
-                <exclude>vsproject/gridgain-tests/**</exclude>
-                <exclude>vsproject/gridgain-router-tests/**</exclude>
-                <exclude>vsproject/gridgain-client-dev.sln</exclude>
-                <exclude>**/*.md</exclude>
-                <exclude>**/*.dxg</exclude>
-            </excludes>
-        </fileSet>
-
-        <fileSet>
-            <directory>modules/clients/dotnet/client-lib/libs</directory>
-            <outputDirectory>/clients/dotnet</outputDirectory>
-        </fileSet>
-
-        <fileSet>
             <directory>docs</directory>
             <outputDirectory>/docs</outputDirectory>
             <includes>
@@ -124,16 +101,6 @@
         <fileSet>
             <directory>target/javadoc/client</directory>
             <outputDirectory>/clients/java/javadoc</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>modules/clients/target/dotnetdoc</directory>
-            <outputDirectory>/clients/dotnet/doc</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>modules/clients/target/cppdoc</directory>
-            <outputDirectory>/clients/cpp/doc</outputDirectory>
         </fileSet>
 
         <fileSet>
