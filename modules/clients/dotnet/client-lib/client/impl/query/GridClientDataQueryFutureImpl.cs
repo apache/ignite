@@ -115,9 +115,6 @@ namespace GridGain.Client.Impl.Query
                 foreach (Object el in res.Items) {
                     Object add = el;
 
-                    if (add is IGridClientPortableObject)
-                        add = ((IGridClientPortableObject)el).Deserialize<Object>();
-
                     iterResults.Enqueue((T)add);
 
                     if (qryBean.KeepAll || res.Last)

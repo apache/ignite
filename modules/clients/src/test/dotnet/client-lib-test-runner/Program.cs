@@ -27,8 +27,12 @@ namespace GridGain {
             Debug.Listeners.Add(new TextWriterTraceListener(System.Console.Out));
             Debug.AutoFlush = true;
 
-            TestOne(new GridClientTcpTest(), test => test.TestSqlQuery());
-            TestOne(new GridClientTcpTest(), test => test.TestSqlQueryIterate());
+            TestOne(new GridClientTcpTest(), test => test.TestSqlQueryPortable());
+            TestOne(new GridClientTcpTest(), test => test.TestSqlQueryImplicitPortable());
+            TestOne(new GridClientTcpTest(), test => test.TestSqlQueryNoDefPortable());
+            TestOne(new GridClientTcpTest(), test => test.TestSqlFieldsQueryPortable());
+            TestOne(new GridClientTcpTest(), test => test.TestSqlFieldsQueryImplicitPortable());
+            TestOne(new GridClientTcpTest(), test => test.TestSqlFieldsQueryNoDefPortable());
             
             //Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsReflective());
             //Test(new GridClientPortableSelfTest(), (test) => test.TestPrimitiveFieldsPortable());

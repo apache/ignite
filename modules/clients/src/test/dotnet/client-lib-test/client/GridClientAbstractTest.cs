@@ -175,6 +175,8 @@ namespace GridGain.Client {
             ICollection<GridClientPortableTypeConfiguration> types = new List<GridClientPortableTypeConfiguration>();
 
             types.Add(new GridClientPortableTypeConfiguration(typeof(GridPortablePerson)));
+            types.Add(new GridClientPortableTypeConfiguration(typeof(GridImplicitPortablePerson)));
+            types.Add(new GridClientPortableTypeConfiguration(typeof(GridNoDefPortablePerson)));
 
             portableCfg.TypeConfigurations = types;
 
@@ -873,24 +875,60 @@ namespace GridGain.Client {
          * <summary>Tests SQL query.</summary>
          */
         [Test]
-        public void TestSqlQuery()
-        {
+        public void TestSqlQueryPortable() {
+            CheckSqlQuery<GridPortablePerson>(
+                "GridPortablePerson",
+                (String name, int age) => new GridPortablePerson(name, age),
+                (GridPortablePerson person) => person.age
+            );
+        }
+
+        /**
+         * <summary>Tests SQL query.</summary>
+         */
+        [Test]
+        public void TestSqlQueryImplicitPortable() {
+            CheckSqlQuery<GridImplicitPortablePerson>(
+                "GridPortablePerson",
+                (String name, int age) => new GridImplicitPortablePerson(name, age),
+                (GridImplicitPortablePerson person) => person.age
+            );
+        }
+
+        /**
+         * <summary>Tests SQL query.</summary>
+         */
+        [Test]
+        public void TestSqlQueryNoDefPortable() {
+            CheckSqlQuery<GridNoDefPortablePerson>(
+                "GridPortablePerson",
+                (String name, int age) => new GridNoDefPortablePerson(name, age),
+                (GridNoDefPortablePerson person) => person.age
+            );
+        }
+
+        /**
+         * <summary>Checks SQL query for some data  type.</summary>
+         * <param name="type">Type name.</param>
+         * <param name="factory">Type factory.</param>
+         * <param name="age">Age getter.</param>
+         */
+        private void CheckSqlQuery<T>(String type, Func<String, int, T> factory, Func<T, int> age) {
             IGridClientData data = client.Data("partitioned");
 
             Assert.IsNotNull(data);
 
-            for (int i = 0; i < 100; i++)
-            {
+            for (int i = 0; i < 100; i++) {
                 int key = i;
 
-                GridPortablePerson person = new GridPortablePerson("Person" + i, i * 10);
+                T person = factory("Person" + i, i * 10);
 
                 data.Put(key, person);
             }
 
             IGridClientDataQueries qrys = data.Queries();
 
-            IGridClientDataQuery<DictionaryEntry?> qry = qrys.createSqlQuery("GridPortablePerson", "age >= ?");
+            IGridClientDataQuery<DictionaryEntry?> qry = qrys.createSqlQuery(type, "age >= ?");
 
             qry.IncludeBackups = false;
             qry.EnableDedup = true;
@@ -902,36 +940,13 @@ namespace GridGain.Client {
 
             Assert.AreEqual(50, res.Count);
 
-            foreach (DictionaryEntry entry in res)
-            {
-                GridPortablePerson person = (GridPortablePerson)entry.Value;
+            foreach (DictionaryEntry entry in res) {
+                T person = (T)entry.Value;
 
-                Assert.GreaterOrEqual(person.Age, 500);
-            }
-        }
-
-        /**
-         * <summary>Tests SQL query.</summary>
-         */
-        [Test]
-        public void TestSqlQueryIterate()
-        {
-            IGridClientData data = client.Data("partitioned");
-
-            Assert.IsNotNull(data);
-
-            for (int i = 0; i < 100; i++)
-            {
-                int key = i;
-
-                GridPortablePerson person = new GridPortablePerson("Person" + i, i * 10);
-
-                data.Put(key, person);
+                Assert.GreaterOrEqual(age(person), 500);
             }
 
-            IGridClientDataQueries qrys = data.Queries();
-
-            IGridClientDataQuery<DictionaryEntry?> qry = qrys.createSqlQuery("GridPortablePerson", "age >= ?");
+            qry = qrys.createSqlQuery(type, "age >= ?");
 
             qry.IncludeBackups = false;
             qry.EnableDedup = true;
@@ -939,7 +954,7 @@ namespace GridGain.Client {
             // Force multiple requests.
             qry.PageSize = 10;
 
-            IGridClientDataQueryFuture<DictionaryEntry?> qryFut = qry.Execute(500);
+            qryFut = qry.Execute(500);
 
             int cnt = 0;
 
@@ -949,9 +964,109 @@ namespace GridGain.Client {
                 if (!entry.HasValue)
                     break;
 
-                GridPortablePerson person = (GridPortablePerson)entry.Value.Value;
+                T person = (T)entry.Value.Value;
 
-                Assert.GreaterOrEqual(person.Age, 500);
+                Assert.GreaterOrEqual(age(person), 500);
+
+                cnt++;
+            }
+            while (true);
+
+            Assert.AreEqual(50, cnt);
+        }
+
+        /**
+         * <summary>Tests SQL query.</summary>
+         */
+        [Test]
+        public void TestSqlFieldsQueryPortable() {
+            CheckSqlFieldsQuery<GridPortablePerson>(
+                "GridPortablePerson",
+                (String name, int age) => new GridPortablePerson(name, age)
+            );
+        }
+
+        /**
+         * <summary>Tests SQL query.</summary>
+         */
+        [Test]
+        public void TestSqlFieldsQueryImplicitPortable() {
+            CheckSqlFieldsQuery<GridImplicitPortablePerson>(
+                "GridPortablePerson",
+                (String name, int age) => new GridImplicitPortablePerson(name, age)
+            );
+        }
+
+        /**
+         * <summary>Tests SQL query.</summary>
+         */
+        [Test]
+        public void TestSqlFieldsQueryNoDefPortable() {
+            CheckSqlFieldsQuery<GridNoDefPortablePerson>(
+                "GridPortablePerson",
+                (String name, int age) => new GridNoDefPortablePerson(name, age)
+            );
+        }
+        
+        /**
+         * <summary>Checks SQL fields query for some data  type.</summary>
+         * <param name="type">Type name.</param>
+         * <param name="factory">Type factory.</param>
+         */
+        private void CheckSqlFieldsQuery<T>(String type, Func<String, int, T> factory) {
+            IGridClientData data = client.Data("partitioned");
+
+            Assert.IsNotNull(data);
+
+            for (int i = 0; i < 100; i++) {
+                int key = i;
+
+                T person = factory("Person" + i, i * 10);
+
+                data.Put(key, person);
+            }
+
+            IGridClientDataQueries qrys = data.Queries();
+
+            IGridClientDataQuery<IList> qry = qrys.createSqlFieldsQuery("select age, name from " + type + " where age >= ?");
+
+            qry.IncludeBackups = false;
+            qry.EnableDedup = true;
+            qry.KeepAll = true;
+
+            IGridClientDataQueryFuture<IList> qryFut = qry.Execute(500);
+
+            ICollection<IList> res = qryFut.Result;
+
+            Assert.AreEqual(50, res.Count);
+
+            foreach (IList row in res) {
+                Assert.AreEqual(2, row.Count);
+                Assert.GreaterOrEqual((int)row[0], 500);
+                Assert.NotNull(row[1]);
+            }
+
+            qry = qrys.createSqlFieldsQuery("select age, name from GridPortablePerson where age >= ?");
+
+            qry.IncludeBackups = false;
+            qry.EnableDedup = true;
+            qry.KeepAll = true;
+            // Force multiple requests.
+            qry.PageSize = 10;
+
+            qryFut = qry.Execute(500);
+
+            int cnt = 0;
+
+            do {
+                IList row = qryFut.next();
+
+                if (row == null)
+                    break;
+
+                Assert.AreEqual(2, row.Count);
+                Assert.GreaterOrEqual((int)row[0], 500);
+                Assert.NotNull(row[1]);
 
                 cnt++;
             }

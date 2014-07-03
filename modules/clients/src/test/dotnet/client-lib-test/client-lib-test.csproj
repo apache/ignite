@@ -88,6 +88,8 @@
     <Compile Include="client\hasher\GridClientJavaHelperTest.cs" />
     <Compile Include="client\impl\GridClientTopologyTest.cs" />
     <Compile Include="client\portable\GridClientPortableSelfTest.cs" />
+    <Compile Include="client\query\GridImplicitPortablePerson.cs" />
+    <Compile Include="client\query\GridNoDefPortablePerson.cs" />
     <Compile Include="client\query\GridPortablePerson.cs" />
     <Compile Include="client\util\NullDictionaryTest.cs" />
     <Compile Include="client\hasher\GridClientConsistentHashTest.cs" />

@@ -79,6 +79,12 @@
                         <bean class="org.gridgain.portable.GridPortableTypeConfiguration">
                             <property name="className" value="org.gridgain.client.model.GridPortablePerson"/>
                         </bean>
+                        <bean class="org.gridgain.portable.GridPortableTypeConfiguration">
+                            <property name="className" value="org.gridgain.client.model.GridImplicitPortablePerson"/>
+                        </bean>
+                        <bean class="org.gridgain.portable.GridPortableTypeConfiguration">
+                            <property name="className" value="GridNoDefPortablePerson"/>
+                        </bean>
                     </list>
                 </property>
             </bean>
@@ -150,6 +156,32 @@
                                 <list>
                                     <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">
                                         <property name="type" value="GridPortablePerson"/>
+                                        <property name="ascendingFields">
+                                            <map>
+                                                <entry key="age" value="java.lang.Integer"/>
+                                            </map>
+                                        </property>
+                                        <property name="queryFields">
+                                            <map>
+                                                <entry key="name" value="java.lang.String"/>
+                                            </map>
+                                        </property>
+                                    </bean>
+                                    <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">
+                                        <property name="type" value="GridImplicitPortablePerson"/>
+                                        <property name="ascendingFields">
+                                            <map>
+                                                <entry key="age" value="java.lang.Integer"/>
+                                            </map>
+                                        </property>
+                                        <property name="queryFields">
+                                            <map>
+                                                <entry key="name" value="java.lang.String"/>
+                                            </map>
+                                        </property>
+                                    </bean>
+                                    <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">
+                                        <property name="type" value="GridNoDefPortablePerson"/>
                                         <property name="ascendingFields">
                                             <map>
                                                 <entry key="age" value="java.lang.Integer"/>

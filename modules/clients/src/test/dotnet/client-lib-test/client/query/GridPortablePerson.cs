@@ -22,15 +22,15 @@ namespace GridGain.Client.Query
         /**
          * 
          */
-        public GridPortablePerson(String name, int age) {
-            this.Name = name;
-            this.Age = age;
+        public GridPortablePerson(String _name, int _age) {
+            this.name = _name;
+            this.age = _age;
         }
 
         /**
          * 
          */
-        public String Name { 
+        public String name { 
             get; 
             set; 
         }
@@ -38,31 +38,31 @@ namespace GridGain.Client.Query
         /**
          * 
          */
-        public int Age {
+        public int age {
             get;
             set;
         }
 
         /**
          * <summary>Writes this object to the given writer.</summary>
-         * 
+         *
          * <param name="writer">Writer.</param>
          * <exception cref="System.IO.IOException">If write failed.</exception>
          */
         public void WritePortable(IGridClientPortableWriter writer) {
-            writer.WriteString("name", Name);
-            writer.WriteInt("age", Age);
+            writer.WriteString("name", name);
+            writer.WriteInt("age", age);
         }
 
         /**
          * <summary>Reads this object from the given reader.</summary>
-         * 
+         *
          * <param name="reader">Reader.</param>
          * <exception cref="System.IO.IOException">If read failed.</exception>
          */
         public void ReadPortable(IGridClientPortableReader reader) {
-            Name = reader.ReadString("name");
-            Age = reader.ReadInt("age");
+            name = reader.ReadString("name");
+            age = reader.ReadInt("age");
         }
     }
 }
