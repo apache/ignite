@@ -486,13 +486,6 @@ public class GridNioServer<T> {
 
             return selector;
         }
-        catch (BindException e) {
-            U.close(srvrCh, log);
-            U.close(selector, log);
-
-            throw new GridNioBindException("Failed to initialize server socket (is address already in use?): " + addr,
-                e);
-        }
         catch (Throwable e) {
             U.close(srvrCh, log);
             U.close(selector, log);
