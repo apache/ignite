@@ -11,9 +11,11 @@ namespace GridGain.Client {
     using System;
     using System.Linq;
     using System.Threading;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Collections.Concurrent;
     using NUnit.Framework;
+    using GridGain.Client.Portable;
     using GridGain.Client.Ssl;
     using GridGain.Client.Util;
 
@@ -188,6 +190,17 @@ namespace GridGain.Client {
             cfg.ConnectionIdleTimeout = new TimeSpan(1, 0, 0);
             cfg.TopologyRefreshFrequency = new TimeSpan(1, 0, 0);
 
+            GridClientPortableConfiguration portCfg = new GridClientPortableConfiguration();
+
+            ICollection<GridClientPortableTypeConfiguration> portTypeCfgs =
+                new List<GridClientPortableTypeConfiguration>();
+
+            portTypeCfgs.Add(new GridClientPortableTypeConfiguration(typeof(TestClass)));
+
+            portCfg.TypeConfigurations = portTypeCfgs;
+
+            cfg.PortableConfiguration = portCfg;
+
             return cfg;
         }
 
@@ -276,6 +289,49 @@ namespace GridGain.Client {
                 // Remove (ignored).
                 Assert.IsFalse(data1.Remove(key));
                 Assert.IsFalse(data2.Remove(key));
+            });
+        }
+
+        [Test]
+        public void ATestPortable()
+        {
+            WithClientData((data1, data2) =>
+            {
+                ICollection<GridClientCacheFlag> flags = new List<GridClientCacheFlag>();
+
+                flags.Add(GridClientCacheFlag.KeepPortable);
+
+                Guid key = Guid.NewGuid();
+
+                data1.Remove<Guid>(key);
+
+                Assert.IsNull(data1.GetAsync<Guid, TestClass>(key).Result);
+
+                // Put simple portable object.
+                TestClass val = new TestClass();
+                val.val1 = "test";
+
+                Assert.IsTrue(data1.Put<Guid, TestClass>(key, val));
+
+                TestClass newVal = data1.GetAsync<Guid, TestClass>(key).Result;
+
+                Assert.AreEqual(val.val1, newVal.val1);
+
+                // Read it as portable.
+                IGridClientPortableObject newValPort = data1.CacheFlagsOn(flags).GetAsync<Guid, IGridClientPortableObject>(key).Result;
+
+                Assert.AreEqual(val.val1, newValPort.Field<string>("val1"));
+
+                // Put collection.
+                ICollection<TestClass> vals = new List<TestClass>();
+
+                vals.Add(val);
+
+                Assert.IsTrue(data1.Put<Guid, ICollection<TestClass>>(key, vals));
+
+                ICollection newVals = data1.GetAsync<Guid, ICollection>(key).Result;
+
+                return;
             });
         }
 
@@ -1091,5 +1147,10 @@ namespace GridGain.Client {
 
             return map;
         }
+    }
+
+    public class TestClass
+    {
+        public string val1;
     }
 }
