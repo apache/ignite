@@ -13,5 +13,18 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 * State of the task.
 */
 public enum GridHadoopTaskState {
-    RUNNING, COMPLETED, FAILED, CANCELED, CRASHED
+    /** Running task. */
+    RUNNING,
+
+    /** Complted task. */
+    COMPLETED,
+
+    /** Failed task. */
+    FAILED,
+
+    /** Canceled task. */
+    CANCELED,
+
+    /** Process crashed. */
+    CRASHED
 }
