@@ -17,6 +17,7 @@ import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.nio.ssl.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
@@ -774,18 +775,30 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridClientFutureAdapter<R> execute(String taskName, Object arg, UUID destNodeId)
-        throws GridClientConnectionResetException, GridClientClosedException {
+    @Override public <R> GridClientFutureAdapter<R> execute(String taskName, Object arg, UUID destNodeId,
+        final boolean keepPortables) throws GridClientConnectionResetException, GridClientClosedException {
         GridClientTaskRequest msg = new GridClientTaskRequest();
 
         msg.taskName(taskName);
         msg.argument(arg);
+        msg.deserializePortables(!keepPortables);
 
         return this.<GridClientTaskResultBean>makeRequest(msg, destNodeId).chain(
             new GridClientFutureCallback<GridClientTaskResultBean, R>() {
                 @Override public R onComplete(GridClientFuture<GridClientTaskResultBean> fut)
                     throws GridClientException {
-                    return fut.get().getResult();
+                    Object res = fut.get().getResult();
+
+                    if (!keepPortables && res instanceof GridPortableObject) {
+                        try {
+                            res = ((GridPortableObject)res).deserialize();
+                        }
+                        catch (GridPortableException e) {
+                            throw new GridClientException("Failed to deserialize task result.", e);
+                        }
+                    }
+
+                    return (R)res;
                 }
             });
     }
@@ -1023,6 +1036,9 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      * Future extension that holds client tcp message and auth retry flag.
      */
     private static class TcpClientFuture<R> extends GridClientFutureAdapter<R> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Initial request. */
         private static final int STATE_INITIAL = 0;
 

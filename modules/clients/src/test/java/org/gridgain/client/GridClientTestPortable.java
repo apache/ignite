@@ -19,7 +19,7 @@ import java.util.*;
  * Test portable object.
  */
 @SuppressWarnings("PublicField")
-public class GridClientTestPortable implements GridPortable, Serializable {
+public class GridClientTestPortable implements GridPortableMarshalAware, Serializable {
     /** */
     public byte b;
 

@@ -241,7 +241,7 @@
                                 </group>
                                 <group>
                                     <title>Hadoop Accelerator APIs</title>
-                                    <packages>org.gridgain.grid.ggfs:org.gridgain.grid.ggfs.hadoop:org.gridgain.grid.ggfs.hadoop.v1:org.gridgain.grid.ggfs.hadoop.v2:org.gridgain.grid.ggfs.mapreduce:org.gridgain.grid.ggfs.mapreduce.records</packages>
+                                    <packages>org.gridgain.grid.ggfs:org.gridgain.grid.ggfs.hadoop:org.gridgain.grid.ggfs.hadoop.v1:org.gridgain.grid.ggfs.hadoop.v2:org.gridgain.grid.ggfs.mapreduce:org.gridgain.grid.ggfs.mapreduce.records:org.gridgain.grid.hadoop</packages>
                                 </group>
                                 <group>
                                     <title>Streaming APIs</title>
@@ -409,7 +409,7 @@
                             <groups>
                                 <group>
                                     <title>Client APIs</title>
-                                    <packages>org.gridgain.client:org.gridgain.client.balancer:org.gridgain.client.ssl</packages>
+                                    <packages>org.gridgain.client:org.gridgain.client.balancer:org.gridgain.client.ssl:org.gridgain.client.hadoop</packages>
                                 </group>
                                 <group>
                                     <title>Router APIs</title>

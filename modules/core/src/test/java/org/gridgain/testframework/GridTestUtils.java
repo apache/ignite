@@ -1093,7 +1093,7 @@ public final class GridTestUtils {
     @Nullable public static <T> T invoke(Object obj, String mtd, Object... params) throws Exception {
         // We cannot resolve method by parameter classes due to some of parameters can be null.
         // Search correct method among all methods collection.
-        for (Method m : obj.getClass().getMethods()) {
+        for (Method m : obj.getClass().getDeclaredMethods()) {
             // Filter methods by name.
             if (!m.getName().equals(mtd))
                 continue;

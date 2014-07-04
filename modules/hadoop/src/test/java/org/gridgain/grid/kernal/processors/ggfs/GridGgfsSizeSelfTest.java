@@ -22,7 +22,6 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
 
 import java.io.*;
@@ -42,7 +41,7 @@ import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsFileInfo.*;
 /**
  * {@link org.gridgain.grid.kernal.processors.ggfs.GridGgfsAttributes} test case.
  */
-public class GridGgfsSizeSelfTest extends GridCommonAbstractTest {
+public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
     /** How many grids to start. */
     private static final int GRID_CNT = 3;
 

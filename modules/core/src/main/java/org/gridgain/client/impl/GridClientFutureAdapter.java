@@ -22,6 +22,9 @@ import java.util.logging.*;
  * Future adapter.
  */
 public class GridClientFutureAdapter<R> extends AbstractQueuedSynchronizer implements GridClientFuture<R> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Initial state. */
     private static final int INIT = 0;
 

@@ -24,4 +24,13 @@ public class GridGgfsDirectoryNotEmptyException extends GridGgfsException {
     public GridGgfsDirectoryNotEmptyException(String msg) {
         super(msg);
     }
+
+    /**
+     * Creates an instance of GGFS exception caused by nested exception.
+     *
+     * @param cause Exception cause.
+     */
+    public GridGgfsDirectoryNotEmptyException(Throwable cause) {
+        super(cause);
+    }
 }

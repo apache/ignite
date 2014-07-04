@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.grid.util.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.portable.*;
 
@@ -26,6 +27,9 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
 
     /** Task parameter. */
     private Object arg;
+
+    /** Deserialize portables flag. */
+    private boolean deserializePortables;
 
     /**
      * @return Task name.
@@ -55,6 +59,20 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
         this.arg = arg;
     }
 
+    /**
+     * @return Deserialize portables flag.
+     */
+    public boolean deserializePortables() {
+        return deserializePortables;
+    }
+
+    /**
+     * @param deserializePortables Deserialize portables flag.
+     */
+    public void deserializePortables(boolean deserializePortables) {
+        this.deserializePortables = deserializePortables;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -79,20 +97,22 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
     @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
         super.writePortable(writer);
 
-        GridPortableRawWriter raw = writer.rawWriter();
+        GridPortableRawWriterEx raw = (GridPortableRawWriterEx)writer.rawWriter();
 
         raw.writeString(taskName);
-        raw.writeObject(arg);
+        raw.writeObjectDetached(arg);
+        raw.writeBoolean(deserializePortables);
     }
 
     /** {@inheritDoc} */
     @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
         super.readPortable(reader);
 
-        GridPortableRawReader raw = reader.rawReader();
+        GridPortableRawReaderEx raw = (GridPortableRawReaderEx)reader.rawReader();
 
         taskName = raw.readString();
-        arg = raw.readObject();
+        arg = raw.readObjectDetached();
+        deserializePortables = raw.readBoolean();
     }
 
     /** {@inheritDoc} */
