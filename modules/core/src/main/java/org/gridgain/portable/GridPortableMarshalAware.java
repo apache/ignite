@@ -13,7 +13,7 @@ package org.gridgain.portable;
  * Interface that allows to implement custom serialization/deserialization
  * logic for portable objects.
  */
-public interface GridPortable {
+public interface GridPortableMarshalAware {
     /**
      * Writes fields to provided writer.
      *
