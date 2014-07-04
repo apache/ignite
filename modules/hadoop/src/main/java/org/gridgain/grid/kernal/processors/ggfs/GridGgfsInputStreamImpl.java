@@ -96,19 +96,17 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
      * @param ggfsCtx GGFS context.
      * @param path Path to stored file.
      * @param fileInfo File info to write binary data to.
-     * @param bufSize The size of the buffer to be used.
      * @param prefetchBlocks Number of blocks to prefetch.
      * @param seqReadsBeforePrefetch Amount of sequential reads before prefetch is triggered.
      * @param inWrapper Optional secondary file system input stream wrapper.
      * @param metrics Local GGFS metrics.
      */
-    GridGgfsInputStreamImpl(GridGgfsContext ggfsCtx, GridGgfsPath path, GridGgfsFileInfo fileInfo, int bufSize,
-        int prefetchBlocks, int seqReadsBeforePrefetch, @Nullable GridGgfsSecondaryInputStreamWrapper inWrapper,
+    GridGgfsInputStreamImpl(GridGgfsContext ggfsCtx, GridGgfsPath path, GridGgfsFileInfo fileInfo, int prefetchBlocks,
+        int seqReadsBeforePrefetch, @Nullable GridGgfsSecondaryInputStreamWrapper inWrapper,
         GridGgfsLocalMetrics metrics) {
         assert ggfsCtx != null;
         assert path != null;
         assert fileInfo != null;
-        assert bufSize > 0;
         assert metrics != null;
 
         this.path = path;
@@ -157,7 +155,7 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized int read(byte[] b, int off, int len) throws IOException {
+    @Override public synchronized int read(@NotNull byte[] b, int off, int len) throws IOException {
         int read = readFromStore(pos, b, off, len);
 
         if (read != -1)

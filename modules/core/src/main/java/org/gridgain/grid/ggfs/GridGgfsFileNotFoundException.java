@@ -24,4 +24,13 @@ public class GridGgfsFileNotFoundException extends GridGgfsInvalidPathException 
     public GridGgfsFileNotFoundException(String msg) {
         super(msg);
     }
+
+    /**
+     * Creates exception with given exception cause.
+     *
+     * @param cause Exception cause.
+     */
+    public GridGgfsFileNotFoundException(Throwable cause) {
+        super(cause);
+    }
 }

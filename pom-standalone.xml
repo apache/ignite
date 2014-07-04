@@ -19,7 +19,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <gridgain.version>6.2.0</gridgain.version>
+        <gridgain.version>6.2.0-rc1</gridgain.version>
         <gridgain.edition>platform</gridgain.edition>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.7</maven.compiler.source>
@@ -242,7 +242,7 @@
                                 </group>
                                 <group>
                                     <title>Hadoop Accelerator APIs</title>
-                                    <packages>org.gridgain.grid.ggfs:org.gridgain.grid.ggfs.hadoop:org.gridgain.grid.ggfs.hadoop.v1:org.gridgain.grid.ggfs.hadoop.v2:org.gridgain.grid.ggfs.mapreduce:org.gridgain.grid.ggfs.mapreduce.records</packages>
+                                    <packages>org.gridgain.grid.ggfs:org.gridgain.grid.ggfs.hadoop:org.gridgain.grid.ggfs.hadoop.v1:org.gridgain.grid.ggfs.hadoop.v2:org.gridgain.grid.ggfs.mapreduce:org.gridgain.grid.ggfs.mapreduce.records:org.gridgain.grid.hadoop</packages>
                                 </group>
                                 <group>
                                     <title>Streaming APIs</title>
@@ -410,7 +410,7 @@
                             <groups>
                                 <group>
                                     <title>Client APIs</title>
-                                    <packages>org.gridgain.client:org.gridgain.client.balancer:org.gridgain.client.ssl</packages>
+                                    <packages>org.gridgain.client:org.gridgain.client.balancer:org.gridgain.client.ssl:org.gridgain.client.hadoop</packages>
                                 </group>
                                 <group>
                                     <title>Router APIs</title>

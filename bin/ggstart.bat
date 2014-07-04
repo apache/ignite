@@ -104,11 +104,6 @@ if %ERRORLEVEL% neq 0 (
 )
 
 ::
-:: Append hadoop libs to classpath after arguments are parsed.
-::
-set CP=%CP%;%GRIDGAIN_HOME%\libs\%HADOOP_LIB_DIR%\*
-
-::
 :: Process 'restart'.
 ::
 set RANDOM_NUMBER_COMMAND="%JAVA_HOME%\bin\java.exe" -cp %CP% org.gridgain.grid.startup.cmdline.GridCommandLineRandomNumberGenerator
@@ -145,7 +140,12 @@ if "%JMX_PORT%" == "" (
 ::
 :: ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
 ::
-if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms1g -Xmx1g -server -XX:+AggressiveOpts
+if "%JVM_OPTS%" == "" (
+    set JVM_OPTS=-Xms1g -Xmx1g -server -XX:+AggressiveOpts
+
+    :: Hadoop needs class unloading enabled
+    if defined GRIDGAIN_HADOOP_CLASSPATH set JVM_OPTS=%JVM_OPTS% -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled
+)
 
 ::
 :: Uncomment the following GC settings if you see spikes in your throughput due to Garbage Collection.

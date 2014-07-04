@@ -1306,7 +1306,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
 
         int seqReads = SEQ_READS_BEFORE_PREFETCH + 1;
 
-        cfg.setInt(String.format(PARAM_GGFS_SEQ_READS_BEFORE_PREFETCH, "primary"), seqReads);
+        cfg.setInt(String.format(PARAM_GGFS_SEQ_READS_BEFORE_PREFETCH, "ggfs:grid@"), seqReads);
 
         FileSystem fs = FileSystem.get(new URI(PRIMARY_URI), cfg);
 
