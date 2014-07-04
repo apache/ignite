@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.rest.handlers.task;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -23,10 +23,9 @@ import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.future.*;
-import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -39,8 +38,8 @@ import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
-import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
+import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**
  * Command handler for API requests.
@@ -170,20 +169,9 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                 if (F.isEmpty(name))
                     throw new GridException(missingParameter("name"));
 
-                final List<Object> params;
+                final List<Object> params = req0.params();
 
-                if (req0.deserializePortables() && !F.isEmpty(req0.params())) {
-                    params = new ArrayList<>(req0.params().size());
-
-                    for (Object param : req0.params()) {
-                        if (param instanceof GridPortableObject)
-                            param = ((GridPortableObject<?>)param).deserialize();
-
-                        params.add(param);
-                    }
-                }
-                else
-                    params = req0.params();
+                final boolean deserializePortables = req0.deserializePortables();
 
                 long timeout = req0.timeout();
 
@@ -248,6 +236,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                                 if (desc.error() == null) {
                                     taskRestRes.setFinished(true);
                                     taskRestRes.setResult(desc.result());
+                                    taskRestRes.setDeserializePortables(deserializePortables);
 
                                     res.setResponse(taskRestRes);
                                     fut.onDone(res);

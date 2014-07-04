@@ -100,8 +100,12 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
         GridPortableRawWriterEx raw = (GridPortableRawWriterEx)writer.rawWriter();
 
         raw.writeString(taskName);
-        raw.writeObjectDetached(arg);
         raw.writeBoolean(deserializePortables);
+
+        if (deserializePortables)
+            raw.writeObject(arg);
+        else
+            raw.writeObjectDetached(arg);
     }
 
     /** {@inheritDoc} */
@@ -111,8 +115,8 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
         GridPortableRawReaderEx raw = (GridPortableRawReaderEx)reader.rawReader();
 
         taskName = raw.readString();
-        arg = raw.readObjectDetached();
         deserializePortables = raw.readBoolean();
+        arg = deserializePortables ? raw.readObject() : raw.readObjectDetached();
     }
 
     /** {@inheritDoc} */

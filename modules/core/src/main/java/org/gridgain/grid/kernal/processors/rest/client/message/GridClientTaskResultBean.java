@@ -34,6 +34,9 @@ public class GridClientTaskResultBean implements Externalizable, GridPortableMar
     /** Error if any occurs while execution. */
     private String error;
 
+    /** Deserialize portables flag. */
+    private boolean deserializePortables;
+
     /**
      * @return Task ID.
      */
@@ -91,13 +94,33 @@ public class GridClientTaskResultBean implements Externalizable, GridPortableMar
         this.error = error;
     }
 
+    /**
+     * @return Deserialize portables flag.
+     */
+    public boolean isDeserializePortables() {
+        return deserializePortables;
+    }
+
+    /**
+     * @param deserializePortables Deserialize portables flag.
+     */
+    public void setDeserializePortables(boolean deserializePortables) {
+        this.deserializePortables = deserializePortables;
+    }
+
     /** {@inheritDoc} */
     @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
         GridPortableRawWriterEx raw = (GridPortableRawWriterEx)writer.rawWriter();
 
         raw.writeString(id);
         raw.writeBoolean(finished);
-        raw.writeObjectDetached(res);
+        raw.writeBoolean(deserializePortables);
+
+        if (deserializePortables)
+            raw.writeObject(res);
+        else
+            raw.writeObjectDetached(res);
+
         raw.writeString(error);
     }
 
@@ -107,7 +130,8 @@ public class GridClientTaskResultBean implements Externalizable, GridPortableMar
 
         id = raw.readString();
         finished = raw.readBoolean();
-        res = raw.readObjectDetached();
+        deserializePortables = raw.readBoolean();
+        res = deserializePortables ? raw.readObject() : raw.readObjectDetached();
         error = raw.readString();
     }
 

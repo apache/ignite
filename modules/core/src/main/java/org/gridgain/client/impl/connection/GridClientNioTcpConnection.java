@@ -17,7 +17,6 @@ import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.nio.ssl.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
@@ -787,18 +786,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             new GridClientFutureCallback<GridClientTaskResultBean, R>() {
                 @Override public R onComplete(GridClientFuture<GridClientTaskResultBean> fut)
                     throws GridClientException {
-                    Object res = fut.get().getResult();
-
-                    if (!keepPortables && res instanceof GridPortableObject) {
-                        try {
-                            res = ((GridPortableObject)res).deserialize();
-                        }
-                        catch (GridPortableException e) {
-                            throw new GridClientException("Failed to deserialize task result.", e);
-                        }
-                    }
-
-                    return (R)res;
+                    return fut.get().getResult();
                 }
             });
     }
