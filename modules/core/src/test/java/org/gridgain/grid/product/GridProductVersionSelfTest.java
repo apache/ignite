@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.product;
 
-import org.gridgain.grid.*;
 import org.gridgain.testframework.junits.common.*;
 
 import static org.junit.Assert.*;
@@ -75,12 +74,8 @@ public class GridProductVersionSelfTest extends GridCommonAbstractTest {
         assertArrayEquals(new byte[] {24,-27,-89,-20,-98,50,2,18,106,105,-68,35,26,107,-106,91,-63,-41,61,-18},
             ver.revisionHash());
 
-        ver = GridProductVersion.fromString(VER + '-' + "ent" + '-' + BUILD_TSTAMP + '-' + REV_HASH);
+        GridProductVersion.fromString(VER + '-' + "ent" + '-' + BUILD_TSTAMP + '-' + REV_HASH);
 
-        assertNotEquals(ver, GridProductVersion.VERSION_UNKNOWN);
-
-        ver = GridProductVersion.fromString(VER + '-' + "os" + '-' + BUILD_TSTAMP + '-' + REV_HASH);
-
-        assertNotEquals(ver, GridProductVersion.VERSION_UNKNOWN);
+        GridProductVersion.fromString(VER + '-' + "os" + '-' + BUILD_TSTAMP + '-' + REV_HASH);
     }
 }
