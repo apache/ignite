@@ -1792,7 +1792,7 @@ public class GridGainEx {
                             "\" because this prefix is reserved for internal purposes.");
                 }
 
-                copies = new GridCacheConfiguration[cacheCfgs.length + drSysCaches.size() + (hasHadoop ? 1 : 0)];
+                copies = new GridCacheConfiguration[cacheCfgs.length + drSysCaches.size() + (hasHadoop ? 1 : 0) + 1];
 
                 int cloneIdx = 0;
 
@@ -1807,7 +1807,7 @@ public class GridGainEx {
             }
             else if (!drSysCaches.isEmpty() || hasHadoop || U.securityEnabled(cfg)) {
                 // Populate system caches/
-                copies = new GridCacheConfiguration[drSysCaches.size() + (hasHadoop ? 1 : 0)];
+                copies = new GridCacheConfiguration[drSysCaches.size() + (hasHadoop ? 1 : 0) + 1];
 
                 int idx = 0;
 
@@ -1819,6 +1819,9 @@ public class GridGainEx {
             }
             else
                 copies = new GridCacheConfiguration[1];
+
+            // Always add utility cache.
+            copies[copies.length - 1] = utilitySystemCache();
 
             myCfg.setCacheConfiguration(copies);
 
