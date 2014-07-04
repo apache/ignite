@@ -62,6 +62,9 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
     /** Configuration-declared types. */
     private Map<TypeId, GridCacheQueryTypeMetadata> declaredTypes = new HashMap<>();
 
+    /** Portable IDs. */
+    private Map<Integer, String> portableIds;
+
     /** */
     private ExecutorService execSvc;
 
@@ -294,7 +297,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             if (GridPortableObject.class.isAssignableFrom(valCls)) {
                 GridPortableObject portable = (GridPortableObject)val;
 
-                String typeName = ctx.portable().typeName(portable.typeId());
+                String typeName = portableName(portable.typeId());
 
                 if (typeName == null)
                     return;
@@ -326,7 +329,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                         if (GridPortableObject.class.isAssignableFrom(keyCls)) {
                             GridPortableObject portableKey = (GridPortableObject)key;
 
-                            String typeName = ctx.portable().typeName(portableKey.typeId());
+                            String typeName = portableName(portableKey.typeId());
 
                             if (typeName != null) {
                                 GridCacheQueryTypeMetadata keyMeta = declaredTypes.get(new TypeId(space, typeName));
@@ -349,7 +352,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                         if (GridPortableObject.class.isAssignableFrom(valCls)) {
                             GridPortableObject portableVal = (GridPortableObject)val;
 
-                            String typeName = ctx.portable().typeName(portableVal.typeId());
+                            String typeName = portableName(portableVal.typeId());
 
                             if (typeName != null) {
                                 GridCacheQueryTypeMetadata valMeta = declaredTypes.get(new TypeId(space, typeName));
@@ -415,6 +418,36 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         }
 
         return typeName;
+    }
+
+    /**
+     * Gets portable type name by portable ID.
+     *
+     * @param typeId Type ID.
+     * @return Name.
+     */
+    private String portableName(int typeId) {
+        Map<Integer, String> portableIds = this.portableIds;
+
+        if (portableIds == null) {
+            portableIds = new HashMap<>();
+
+            for (GridCacheConfiguration ccfg : ctx.config().getCacheConfiguration()){
+                GridCacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
+
+                if (qryCfg != null) {
+                    for (GridCacheQueryTypeMetadata meta : qryCfg.getTypeMetadata()) {
+                        declaredTypes.put(new TypeId(ccfg.getName(), meta.getType()), meta);
+
+                        portableIds.put(ctx.portable().typeId(meta.getType()), meta.getType());
+                    }
+                }
+            }
+
+            this.portableIds = portableIds;
+        }
+
+        return portableIds.get(typeId);
     }
 
     /**

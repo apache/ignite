@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Client query result.
  */
-public class GridCacheClientQueryResult implements GridPortable, Serializable {
+public class GridCacheClientQueryResult implements GridPortableMarshalAware, Serializable {
     /** Query ID. */
     private long qryId;
 
