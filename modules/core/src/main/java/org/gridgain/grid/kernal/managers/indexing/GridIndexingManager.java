@@ -838,8 +838,13 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             d.addFieldToIndex(idxName, prop.name(), 0, true);
         }
 
-        for (String txtIdx : meta.getTextFields())
-            d.addFieldToTextIndex(txtIdx);
+        for (String txtIdx : meta.getTextFields()) {
+            ClassProperty prop = buildClassProperty(cls, txtIdx, String.class);
+
+            d.addProperty(key, prop);
+
+            d.addFieldToTextIndex(prop.name());
+        }
 
         Map<String, LinkedHashMap<String, GridBiTuple<Class<?>, Boolean>>> grps = meta.getGroups();
 
@@ -905,8 +910,13 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             d.addFieldToIndex(idxName, prop.name(), 0, true);
         }
 
-        for (String txtIdx : meta.getTextFields())
-            d.addFieldToTextIndex(txtIdx);
+        for (String txtIdx : meta.getTextFields()) {
+            PortableProperty prop = buildPortableProperty(txtIdx, String.class);
+
+            d.addProperty(key, prop);
+
+            d.addFieldToTextIndex(prop.name());
+        }
 
         Map<String, LinkedHashMap<String, GridBiTuple<Class<?>, Boolean>>> grps = meta.getGroups();
 
