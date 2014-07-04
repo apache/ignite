@@ -19,7 +19,6 @@ import java.util.*;
  * Test portable object.
  */
 @SuppressWarnings("PublicField")
-@GridPortableId(id = 10_000)
 public class GridClientTestPortable implements GridPortable, Serializable {
     /** */
     public byte b;
