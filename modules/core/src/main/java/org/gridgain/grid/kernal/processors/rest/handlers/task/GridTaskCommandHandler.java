@@ -26,6 +26,7 @@ import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -169,7 +170,20 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                 if (F.isEmpty(name))
                     throw new GridException(missingParameter("name"));
 
-                final List<Object> params = req0.params();
+                final List<Object> params;
+
+                if (req0.deserializePortables() && !F.isEmpty(req0.params())) {
+                    params = new ArrayList<>(req0.params().size());
+
+                    for (Object param : req0.params()) {
+                        if (param instanceof GridPortableObject)
+                            param = ((GridPortableObject<?>)param).deserialize();
+
+                        params.add(param);
+                    }
+                }
+                else
+                    params = req0.params();
 
                 long timeout = req0.timeout();
 

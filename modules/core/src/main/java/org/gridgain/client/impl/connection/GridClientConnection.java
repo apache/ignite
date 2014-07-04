@@ -304,12 +304,13 @@ public abstract class GridClientConnection {
      * @param taskName Task name.
      * @param arg Task argument.
      * @param destNodeId Destination node ID.
+     * @param keepPortables Keep portables flag.
      * @return Task execution result.
      * @throws GridClientConnectionResetException In case of error.
      * @throws GridClientClosedException If client was manually closed before request was sent over network.
      */
-    public abstract <R> GridClientFutureAdapter<R> execute(String taskName, Object arg, UUID destNodeId)
-        throws GridClientConnectionResetException, GridClientClosedException;
+    public abstract <R> GridClientFutureAdapter<R> execute(String taskName, Object arg, UUID destNodeId,
+        boolean keepPortables) throws GridClientConnectionResetException, GridClientClosedException;
 
     /**
      * Gets node by node ID.
