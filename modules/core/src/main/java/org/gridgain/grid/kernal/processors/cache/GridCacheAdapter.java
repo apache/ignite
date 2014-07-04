@@ -1791,7 +1791,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                         }
                         else {
                             if (key0 == null)
-                                key0 = ctx.portableEnabled() ? (K)ctx.marshalToPortableIfNeeded(key) : key;
+                                key0 = ctx.portableEnabled() ? (K)ctx.marshalToPortable(key) : key;
 
                             entry = entryEx(key0);
                         }

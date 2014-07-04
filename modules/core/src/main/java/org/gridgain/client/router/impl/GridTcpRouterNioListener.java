@@ -18,13 +18,20 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.kernal.GridProductImpl.*;
-
 /**
  * Nio listener for the router. Extracts necessary meta information from messages
  * and delegates their delivery to underlying client.
  */
 class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessage> {
+    /** Supported protocol versions. */
+    private static final Collection<Short> SUPP_VERS = new HashSet<>();
+
+    /**
+     */
+    static {
+        SUPP_VERS.add((short)1);
+    }
+
     /** Logger. */
     private final GridLogger log;
 
@@ -96,14 +103,17 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
         else if (msg instanceof GridClientHandshakeRequest) {
             GridClientHandshakeRequest hs = (GridClientHandshakeRequest)msg;
 
-            byte[] verBytes = hs.versionBytes();
+            short ver = U.bytesToShort(hs.versionBytes(), 0);
 
-            if (!Arrays.equals(VER_BYTES, verBytes))
-                U.warn(log, "Client version check failed [ses=" + ses +
-                    ", expected=" + Arrays.toString(VER_BYTES)
-                    + ", actual=" + Arrays.toString(verBytes) + ']');
+            if (!SUPP_VERS.contains(ver)) {
+                U.error(log, "Client protocol version is not supported [ses=" + ses +
+                    ", ver=" + ver +
+                    ", supported=" + SUPP_VERS + ']');
 
-            ses.send(GridClientHandshakeResponse.OK);
+                ses.close();
+            }
+            else
+                ses.send(GridClientHandshakeResponse.OK);
         }
         else if (msg instanceof GridClientPingPacket)
             ses.send(GridClientPingPacket.PING_MESSAGE);

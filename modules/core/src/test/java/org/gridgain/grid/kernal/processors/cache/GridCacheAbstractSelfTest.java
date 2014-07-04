@@ -213,6 +213,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         cfg.setAtomicityMode(atomicityMode());
         cfg.setWriteSynchronizationMode(writeSynchronization());
         cfg.setDistributionMode(distributionMode());
+        cfg.setPortableEnabled(portableEnabled());
 
         if (cacheMode() == PARTITIONED)
             cfg.setBackups(1);
@@ -299,6 +300,13 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     protected boolean lockingEnabled() {
         return true;
+    }
+
+    /**
+     * @return Whether portable mode is enabled.
+     */
+    protected boolean portableEnabled() {
+        return false;
     }
 
     /**

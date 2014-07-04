@@ -25,7 +25,6 @@ import java.io.*;
 import java.nio.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.GridProductImpl.*;
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 import static org.gridgain.grid.kernal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.*;
 import static org.gridgain.grid.kernal.processors.rest.client.message.GridClientHandshakeResponse.*;
@@ -50,6 +49,9 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
     private static final Map<GridClientCacheRequest.GridCacheOperation, GridRestCommand> cacheCmdMap =
         new EnumMap<>(GridClientCacheRequest.GridCacheOperation.class);
 
+    /** Supported protocol versions. */
+    private static final Collection<Short> SUPP_VERS = new HashSet<>();
+
     /**
      * Fills {@code cacheCmdMap}.
      */
@@ -65,6 +67,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         cacheCmdMap.put(METRICS, CACHE_METRICS);
         cacheCmdMap.put(APPEND, CACHE_APPEND);
         cacheCmdMap.put(PREPEND, CACHE_PREPEND);
+
+        SUPP_VERS.add((short)1);
     }
 
     /**
@@ -111,14 +115,17 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             else if (msg instanceof GridClientHandshakeRequest) {
                 GridClientHandshakeRequest hs = (GridClientHandshakeRequest)msg;
 
-                byte[] verBytes = hs.versionBytes();
+                short ver = U.bytesToShort(hs.versionBytes(), 0);
 
-                if (!Arrays.equals(VER_BYTES, verBytes))
-                    U.warn(log, "Client version check failed [ses=" + ses +
-                        ", expected=" + Arrays.toString(VER_BYTES)
-                        + ", actual=" + Arrays.toString(verBytes) + ']');
+                if (!SUPP_VERS.contains(ver)) {
+                    U.error(log, "Client protocol version is not supported [ses=" + ses +
+                        ", ver=" + ver +
+                        ", supported=" + SUPP_VERS + ']');
 
-                ses.send(new GridClientHandshakeResponseWrapper(CODE_OK));
+                    ses.close();
+                }
+                else
+                    ses.send(new GridClientHandshakeResponseWrapper(CODE_OK));
             }
             else {
                 final GridRestRequest req = createRestRequest(ses, msg);

@@ -14,8 +14,6 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.kernal.GridProductImpl.*;
-
 /**
  * A client handshake request, containing version info and
  * a marshaller protocol ID.
@@ -33,6 +31,9 @@ public class GridClientHandshakeRequest extends GridClientAbstractMessage {
 
     /** Packet size. */
     private static final int PACKET_SIZE = 5;
+
+    /** Protocol version. */
+    private static final short PROTO_VER = 1;
 
     /** Signal char. */
     public static final byte SIGNAL_CHAR = (byte)0x91;
@@ -52,21 +53,6 @@ public class GridClientHandshakeRequest extends GridClientAbstractMessage {
     }
 
     /**
-     * Sets the version byte to a given value.
-     *
-     * @param idx Byte index.
-     * @param b Byte value.
-     */
-    public void putVersionByte(int idx, byte b) {
-        assert idx < VER_BYTES.length;
-
-        if (verArr == null)
-            verArr = new byte[VER_BYTES.length];
-
-        verArr[idx] = b;
-    }
-
-    /**
      * Sets the version bytes from specified buffer to a given value.
      *
      * @param buf Buffer.
@@ -75,7 +61,7 @@ public class GridClientHandshakeRequest extends GridClientAbstractMessage {
      */
     public void putVersionBytes(byte[] buf, int off, int len) {
         if (verArr == null)
-            verArr = new byte[VER_BYTES.length];
+            verArr = new byte[PACKET_SIZE - 1];
 
         U.arrayCopy(buf, 0, verArr, off, len);
     }
@@ -87,10 +73,8 @@ public class GridClientHandshakeRequest extends GridClientAbstractMessage {
         byte[] ret = new byte[PACKET_SIZE];
 
         ret[0] = SIGNAL_CHAR;
-        ret[1] = VER_BYTES[0];
-        ret[2] = VER_BYTES[1];
-        ret[3] = VER_BYTES[2];
-        ret[4] = VER_BYTES[3];
+
+        U.shortToBytes(PROTO_VER, ret, 1);
 
         return ret;
     }
@@ -101,10 +85,7 @@ public class GridClientHandshakeRequest extends GridClientAbstractMessage {
     public byte[] rawBytesNoHeader() {
         byte[] ret = new byte[PACKET_SIZE - 1];
 
-        ret[0] = VER_BYTES[0];
-        ret[1] = VER_BYTES[1];
-        ret[2] = VER_BYTES[2];
-        ret[3] = VER_BYTES[3];
+        U.shortToBytes(PROTO_VER, ret, 0);
 
         return ret;
     }

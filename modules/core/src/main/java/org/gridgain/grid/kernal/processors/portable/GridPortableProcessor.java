@@ -33,12 +33,6 @@ public interface GridPortableProcessor extends GridProcessor {
     public void configureClientMarshaller(GridClientMarshaller marsh);
 
     /**
-     * @param obj Object.
-     * @return Whether object is portable.
-     */
-    public boolean isPortable(@Nullable Object obj) throws GridPortableException;
-
-    /**
      * @param typeId Type ID.
      * @return Type name.
      */
@@ -49,12 +43,5 @@ public interface GridPortableProcessor extends GridProcessor {
      * @return Portable object.
      * @throws GridPortableException In case of error.
      */
-    public <T> GridPortableObject<T> marshal(@Nullable T obj) throws GridPortableException;
-
-    /**
-     * @param arr Byte array.
-     * @return Portable object.
-     * @throws GridPortableException
-     */
-    @Nullable public <T> T unmarshal(byte[] arr) throws GridPortableException;
+    public Object marshalToPortable(@Nullable Object obj) throws GridPortableException;
 }
