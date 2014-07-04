@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.product;
 
+import org.gridgain.grid.*;
 import org.gridgain.testframework.junits.common.*;
 
 import static org.junit.Assert.*;
@@ -22,13 +23,17 @@ public class GridProductVersionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFromString() throws Exception {
-        assertEquals(GridProductVersion.VERSION_DEV, GridProductVersion.fromString("1.2.3-ent-0-DEV"));
-        assertEquals(GridProductVersion.VERSION_DEV, GridProductVersion.fromString("1.2.3-os-0-DEV"));
-        assertEquals(GridProductVersion.VERSION_DEV, GridProductVersion.fromString("1.2.3-RC1-0-DEV"));
-        assertEquals(GridProductVersion.VERSION_DEV, GridProductVersion.fromString("1.2.3-ga1-0-DEV"));
-        assertEquals(GridProductVersion.VERSION_DEV, GridProductVersion.fromString("1.2.3-M1-0-DEV"));
-
         GridProductVersion ver = GridProductVersion.fromString("1.2.3");
+
+        assertEquals(ver, GridProductVersion.fromString("1.2.3-ent-0-DEV"));
+        assertEquals(ver, GridProductVersion.fromString("1.2.3-os-0-DEV"));
+        assertEquals(ver, GridProductVersion.fromString("1.2.3-RC1-0-DEV"));
+        assertEquals(ver, GridProductVersion.fromString("1.2.3-ga1-0-DEV"));
+        assertEquals(ver, GridProductVersion.fromString("1.2.3-M1-0-DEV"));
+        assertEquals(ver, GridProductVersion.fromString("1.2.3-0-DEV"));
+        assertEquals(ver, GridProductVersion.fromString("1.2.3-DEV"));
+
+        ver = GridProductVersion.fromString("1.2.3");
 
         assertEquals(1, ver.major());
         assertEquals(2, ver.minor());

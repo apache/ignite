@@ -28,14 +28,6 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Development version. This version is larger than any other version. */
-    public static final GridProductVersion VERSION_DEV =
-        new GridProductVersion(Byte.MAX_VALUE, (byte)0, (byte)0, 0, null);
-
-    /** Unknown version. This version is less than any other version. */
-    public static final GridProductVersion VERSION_UNKNOWN =
-        new GridProductVersion((byte)-1, (byte)0, (byte)0, 0, null);
-
     /** Regexp parse pattern. */
     private static final Pattern VER_PATTERN =
         Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)((?!-\\bos\\bent)-([^-]+))?(-(os|ent))?(-(\\d+))?(-([\\da-f]+))?");
@@ -217,25 +209,13 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
         revHash = U.readByteArray(in);
     }
 
-    /**
-     * @return Resolved object.
-     * @throws ObjectStreamException In case of error.
-     */
-    protected Object readResolve() throws ObjectStreamException {
-        if (major == -1)
-            return VERSION_UNKNOWN;
-
-        return this;
-    }
-
     /** {@inheritDoc} */
     public String toString() {
         return S.toString(GridProductVersion.class, this);
     }
 
     /**
-     * Tries to parse product version from it's string representation. Will return {@link #VERSION_UNKNOWN}
-     * if string does not conform to version format.
+     * Tries to parse product version from it's string representation.
      *
      * @param verStr String representation of version.
      * @return Product version.
@@ -244,8 +224,8 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
     public static GridProductVersion fromString(String verStr) {
         assert verStr != null;
 
-        if (verStr.endsWith("-DEV"))
-            return VERSION_DEV;
+        if (verStr.endsWith("-DEV")) // Development version, just cut it out.
+            verStr = verStr.substring(0, verStr.length() - 4);
 
         Matcher match = VER_PATTERN.matcher(verStr);
 
@@ -272,15 +252,11 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
 
                 return new GridProductVersion(major, minor, maintenance, stage, revTs, revHash);
             }
-            catch (IllegalStateException | IndexOutOfBoundsException ignored) {
-                return VERSION_UNKNOWN;
-            }
-            catch (NumberFormatException | GridException ignored) {
-                // Safety, should never happen.
-                return VERSION_UNKNOWN;
+            catch (IllegalStateException | IndexOutOfBoundsException | NumberFormatException | GridException e) {
+                throw new IllegalStateException("Failed to parse version: " + verStr, e);
             }
         }
         else
-            return VERSION_UNKNOWN;
+            throw new IllegalStateException("Failed to parse version: " + verStr);
     }
 }
