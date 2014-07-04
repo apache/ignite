@@ -38,7 +38,7 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
 
     /** Regexp parse pattern. */
     private static final Pattern VER_PATTERN =
-        Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)(-(os|ent))?(-(\\d+))?(-([0-9a-f]+))?");
+        Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)((?!-\\bos\\bent)-([^-]+))?(-(os|ent))?(-(\\d+))?(-([\\da-f]+))?");
 
     /** Major version number. */
     private byte major;
@@ -48,6 +48,9 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
 
     /** Maintenance version number. */
     private byte maintenance;
+
+    /** Stage of development. */
+    private String stage;
 
     /** Revision timestamp. */
     private long revTs;
@@ -70,12 +73,25 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
      * @param revHash Revision hash.
      */
     public GridProductVersion(byte major, byte minor, byte maintenance, long revTs, byte[] revHash) {
+        this(major, minor, maintenance, "", revTs, revHash);
+    }
+
+    /**
+     * @param major Major version number.
+     * @param minor Minor version number.
+     * @param maintenance Maintenance version number.
+     * @param stage Stage of development.
+     * @param revTs Revision timestamp.
+     * @param revHash Revision hash.
+     */
+    public GridProductVersion(byte major, byte minor, byte maintenance, String stage, long revTs, byte[] revHash) {
         if (revHash != null && revHash.length != 20)
             throw new IllegalArgumentException("Invalid length for SHA1 hash (must be 20): " + revHash.length);
 
         this.major = major;
         this.minor = minor;
         this.maintenance = maintenance;
+        this.stage = stage;
         this.revTs = revTs;
         this.revHash = revHash != null ? revHash : new byte[20];
     }
@@ -105,6 +121,13 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
      */
     public byte maintenance() {
         return maintenance;
+    }
+
+    /**
+     * @return Stage of development.
+     */
+    public String stage() {
+        return stage;
     }
 
     /**
@@ -163,7 +186,6 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
         GridProductVersion that = (GridProductVersion)o;
 
         return revTs == that.revTs && maintenance == that.maintenance && minor == that.minor && major == that.major;
-
     }
 
     /** {@inheritDoc} */
@@ -233,17 +255,22 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
                 byte minor = Byte.parseByte(match.group(2));
                 byte maintenance = Byte.parseByte(match.group(3));
 
+                String stage = "";
+
+                if (match.group(4) != null)
+                    stage = match.group(5);
+
                 long revTs = 0;
 
-                if (match.group(6) != null)
-                    revTs = Long.parseLong(match.group(7));
+                if (match.group(8) != null)
+                    revTs = Long.parseLong(match.group(9));
 
                 byte[] revHash = null;
 
-                if (match.group(8) != null)
-                    revHash = U.decodeHex(match.group(9).toCharArray());
+                if (match.group(10) != null)
+                    revHash = U.decodeHex(match.group(11).toCharArray());
 
-                return new GridProductVersion(major, minor, maintenance, revTs, revHash);
+                return new GridProductVersion(major, minor, maintenance, stage, revTs, revHash);
             }
             catch (IllegalStateException | IndexOutOfBoundsException ignored) {
                 return VERSION_UNKNOWN;
