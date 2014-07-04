@@ -180,6 +180,8 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
             }
 
             col.add(obj);
+
+            cnt++;
         }
 
         qryRes.items(col);
