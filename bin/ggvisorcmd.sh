@@ -95,7 +95,6 @@ trap restoreSttySettings INT
 
 #
 # Start Visor console.
-# Make sure to add -DVISOR if you start visor from your own or modified script.
 #
 case $osname in
     Darwin*)
