@@ -105,6 +105,9 @@ public class GridClientConfiguration {
     /** Marshaller. */
     private GridClientMarshaller marshaller = new GridClientOptimizedMarshaller();
 
+    /** Daemon flag. */
+    private boolean daemon;
+
     /** Portable configuration. */
     private GridPortableConfiguration portableCfg;
 
@@ -130,6 +133,7 @@ public class GridClientConfiguration {
         enableAttrsCache = cfg.isEnableAttributesCache();
         enableMetricsCache = cfg.isEnableMetricsCache();
         executor = cfg.getExecutorService();
+        marshaller = cfg.getMarshaller();
         maxConnIdleTime = cfg.getMaxConnectionIdleTime();
         pingInterval = cfg.getPingInterval();
         pingTimeout = cfg.getPingTimeout();
@@ -139,6 +143,7 @@ public class GridClientConfiguration {
         sslCtxFactory = cfg.getSslContextFactory();
         tcpNoDelay = cfg.isTcpNoDelay();
         topRefreshFreq = cfg.getTopologyRefreshFrequency();
+        daemon = cfg.isDaemon();
         marshaller = cfg.getMarshaller();
         portableCfg = cfg.getPortableConfiguration();
 
@@ -832,5 +837,23 @@ public class GridClientConfiguration {
         }
 
         return exp.cast(obj);
+    }
+
+    /**
+     * Set the daemon flag value. Communication threads will be created as daemons if this flag is set.
+     *
+     * @param daemon Daemon flag.
+     */
+    public void setDaemon(boolean daemon) {
+        this.daemon = daemon;
+    }
+
+    /**
+     * Get the daemon flag.
+     *
+     * @return Daemon flag.
+     */
+    public boolean isDaemon() {
+        return daemon;
     }
 }

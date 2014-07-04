@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.grid.util.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.portable.*;
 
@@ -17,7 +18,7 @@ import java.io.*;
 /**
  * Task result.
  */
-public class GridClientTaskResultBean implements Externalizable, GridPortable {
+public class GridClientTaskResultBean implements Externalizable, GridPortableMarshalAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -32,6 +33,9 @@ public class GridClientTaskResultBean implements Externalizable, GridPortable {
 
     /** Error if any occurs while execution. */
     private String error;
+
+    /** Deserialize portables flag. */
+    private boolean deserializePortables;
 
     /**
      * @return Task ID.
@@ -90,23 +94,44 @@ public class GridClientTaskResultBean implements Externalizable, GridPortable {
         this.error = error;
     }
 
+    /**
+     * @return Deserialize portables flag.
+     */
+    public boolean isDeserializePortables() {
+        return deserializePortables;
+    }
+
+    /**
+     * @param deserializePortables Deserialize portables flag.
+     */
+    public void setDeserializePortables(boolean deserializePortables) {
+        this.deserializePortables = deserializePortables;
+    }
+
     /** {@inheritDoc} */
     @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
-        GridPortableRawWriter raw = writer.rawWriter();
+        GridPortableRawWriterEx raw = (GridPortableRawWriterEx)writer.rawWriter();
 
         raw.writeString(id);
         raw.writeBoolean(finished);
-        raw.writeObject(res);
+        raw.writeBoolean(deserializePortables);
+
+        if (deserializePortables)
+            raw.writeObject(res);
+        else
+            raw.writeObjectDetached(res);
+
         raw.writeString(error);
     }
 
     /** {@inheritDoc} */
     @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
-        GridPortableRawReader raw = reader.rawReader();
+        GridPortableRawReaderEx raw = (GridPortableRawReaderEx)reader.rawReader();
 
         id = raw.readString();
         finished = raw.readBoolean();
-        res = raw.readObject();
+        deserializePortables = raw.readBoolean();
+        res = deserializePortables ? raw.readObject() : raw.readObjectDetached();
         error = raw.readString();
     }
 

@@ -14,6 +14,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.dr.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.grid.kernal.managers.collision.*;
@@ -404,7 +405,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     @Override public Collection<String> getUserAttributesFormatted() {
         assert cfg != null;
 
-        // That's why Java sucks...
         return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String, ?>, String>() {
             @Override public String apply(Map.Entry<String, ?> e) {
                 return e.getKey() + ", " + e.getValue().toString();
@@ -685,6 +685,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
             startProcessor(ctx, (GridProcessor)GGFS.create(ctx, F.isEmpty(cfg.getGgfsConfiguration())), attrs);
             startProcessor(ctx, new GridContinuousProcessor(ctx), attrs);
+            startProcessor(ctx, (GridProcessor)(cfg.isPeerClassLoadingEnabled() ?
+                GridComponentType.HADOOP.create(ctx, true): // No-op when peer class loading is enabled.
+                GridComponentType.HADOOP.createIfInClassPath(ctx, cfg.getHadoopConfiguration() != null)), attrs);
             startProcessor(ctx, createComponent(GridDrProcessor.class, ctx), attrs);
 
             // Put version converters to attributes after
@@ -2861,8 +2864,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** {@inheritDoc} */
     @Override public GridGgfs ggfs(String name) {
-        A.ensure(!F.isEmpty(name), "!F.isEmpty(name)");
-
         guard();
 
         try{
@@ -2879,11 +2880,35 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public GridGgfs ggfsx(@Nullable String name) {
+        guard();
+
+        try {
+            return ctx.ggfs().ggfs(name);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<GridGgfs> ggfss() {
         guard();
 
-        try{
+        try {
             return ctx.ggfs().ggfss();
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridHadoop hadoop() {
+        guard();
+
+        try {
+            return ctx.hadoop().hadoop();
         }
         finally {
             unguard();

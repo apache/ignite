@@ -38,12 +38,11 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public String typeName(int typeId) {
-        return null;
+    @Override public int typeId(String typeName) {
+        return 0;
     }
 
-    /** {@inheritDoc}
-     * @param obj*/
+    /** {@inheritDoc} */
     @Nullable @Override public Object marshalToPortable(@Nullable Object obj) throws GridPortableException {
         return null;
     }
