@@ -150,8 +150,8 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
         executor = cfg.getExecutorService() != null ? cfg.getExecutorService() :
             Executors.newCachedThreadPool(new GridClientThreadFactory("exec", true));
 
-        pingExecutor = cfg.getProtocol() == GridClientProtocol.TCP ?
-            Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors()) : null;
+        pingExecutor = cfg.getProtocol() == GridClientProtocol.TCP ? Executors.newScheduledThreadPool(
+            Runtime.getRuntime().availableProcessors(), new GridClientThreadFactory("exec", true)) : null;
 
         if (cfg.getMarshaller() == null)
             throw new GridClientException("Failed to start client (marshaller is not configured).");
@@ -203,6 +203,7 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
                     .idleTimeout(Long.MAX_VALUE)
                     .gridName("gridClient")
                     .messageWriter(msgWriter)
+                    .daemon(cfg.isDaemon())
                     .build();
 
                 srv.start();

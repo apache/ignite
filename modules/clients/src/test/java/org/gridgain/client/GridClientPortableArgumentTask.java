@@ -10,14 +10,36 @@
 package org.gridgain.client;
 
 import org.gridgain.grid.*;
+import org.gridgain.portable.*;
+
+import java.util.*;
 
 /**
- * Task where argument and result are {@link org.gridgain.client.GridClientTestPortable}.
+ * Task where argument and result are {@link GridClientTestPortable}.
  */
 public class GridClientPortableArgumentTask extends GridTaskSingleJobSplitAdapter {
     /** {@inheritDoc} */
     @Override protected Object executeJob(int gridSize, Object arg) throws GridException {
-        GridClientTestPortable p = (GridClientTestPortable)arg;
+        Collection args = (Collection)arg;
+
+        Iterator<Object> it = args.iterator();
+
+        assert args.size() == 2 : args.size();
+
+        boolean expPortable = (Boolean)it.next();
+
+        GridClientTestPortable p;
+
+        if (expPortable) {
+            GridPortableObject<GridClientTestPortable> obj =
+                (GridPortableObject<GridClientTestPortable>)it.next();
+
+            p = obj.deserialize();
+        }
+        else
+            p = (GridClientTestPortable)it.next();
+
+        assert p != null;
 
         return new GridClientTestPortable(p.i + 1, true);
     }

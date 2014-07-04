@@ -15,7 +15,6 @@ import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
 
 import java.util.concurrent.*;
 
@@ -25,7 +24,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 /**
  * Tests ensuring that GGFS data and meta caches are not "visible" through public API.
  */
-public class GridGgfsCacheSelfTest extends GridCommonAbstractTest {
+public class GridGgfsCacheSelfTest extends GridGgfsCommonAbstractTest {
     /** Meta-information cache name. */
     private static final String META_CACHE_NAME = "meta";
 

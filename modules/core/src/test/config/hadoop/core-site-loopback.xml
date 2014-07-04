@@ -7,7 +7,7 @@
 <configuration>
     <property>
         <name>fs.default.name</name>
-        <value>ggfs://primary/</value>
+        <value>ggfs:///</value>
     </property>
 
     <property>
@@ -21,12 +21,7 @@
     </property>
 
     <property>
-        <name>fs.ggfs.primary.endpoint.type</name>
-        <value>tcp</value>
-    </property>
-
-    <property>
-        <name>fs.ggfs.primary.endpoint.port</name>
-        <value>10500</value>
+        <name>fs.ggfs..endpoint.no_local_shmem</name>
+        <value>true</value>
     </property>
 </configuration>

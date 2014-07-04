@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Node bean.
  */
-public class GridClientNodeBean implements Externalizable, GridPortable {
+public class GridClientNodeBean implements Externalizable, GridPortableMarshalAware {
     /** */
     private static final long serialVersionUID = 0L;
 

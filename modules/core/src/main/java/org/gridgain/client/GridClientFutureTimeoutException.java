@@ -12,6 +12,9 @@ package org.gridgain.client;
  * Client future timeout exception is thrown whenever any client waiting is timed out.
  */
 public class GridClientFutureTimeoutException extends GridClientException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Creates exception with specified error message.
      *

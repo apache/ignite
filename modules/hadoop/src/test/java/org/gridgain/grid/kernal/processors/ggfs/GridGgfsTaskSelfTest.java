@@ -22,7 +22,6 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.*;
@@ -36,7 +35,7 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 /**
  * Tests for {@link GridGgfsTask}.
  */
-public class GridGgfsTaskSelfTest extends GridCommonAbstractTest {
+public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
     /** Predefined words dictionary. */
     private static final String[] DICTIONARY = new String[] {"word0", "word1", "word2", "word3", "word4", "word5",
         "word6", "word7"};

@@ -88,7 +88,12 @@
                     <property name="prefetchBlocks" value="32"/>
 
                     <!-- Loopback endpoint. -->
-                    <property name="ipcEndpointConfiguration" value="{type:'tcp'}"/>
+                    <property name="ipcEndpointConfiguration">
+                        <map>
+                            <entry key="type" value="tcp"/>
+                        </map>
+                    </property>
+
                 </bean>
             </list>
         </property>

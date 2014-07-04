@@ -33,10 +33,10 @@ public interface GridPortableProcessor extends GridProcessor {
     public void configureClientMarshaller(GridClientMarshaller marsh);
 
     /**
-     * @param typeId Type ID.
-     * @return Type name.
+     * @param typeName Type name.
+     * @return Type ID.
      */
-    public String typeName(int typeId);
+    public int typeId(String typeName);
 
     /**
      * @param obj Object to marshal.

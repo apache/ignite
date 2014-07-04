@@ -13,7 +13,7 @@ package org.gridgain.portable;
  * Interface that allows to implement custom serialization/deserialization
  * logic for portable objects.
  * <p>
- * Can be used instead of {@link GridPortable} in case serialized
+ * Can be used instead of {@link GridPortableMarshalAware} in case serialized
  * class can not be changed.
  */
 public interface GridPortableSerializer {
