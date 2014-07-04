@@ -9,9 +9,11 @@
 
 package org.gridgain.grid.product;
 
+import org.gridgain.grid.*;
 import org.gridgain.testframework.junits.common.*;
 
 import static org.junit.Assert.*;
+import static org.gridgain.grid.kernal.GridProductImpl.*;
 
 /**
  * Versions test.
@@ -21,10 +23,17 @@ public class GridProductVersionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFromString() throws Exception {
-        assertEquals(GridProductVersion.VERSION_DEV, GridProductVersion.fromString("1.2.3-ent-0-DEV"));
-        assertEquals(GridProductVersion.VERSION_DEV, GridProductVersion.fromString("1.2.3-os-0-DEV"));
-
         GridProductVersion ver = GridProductVersion.fromString("1.2.3");
+
+        assertEquals(ver, GridProductVersion.fromString("1.2.3-ent-0-DEV"));
+        assertEquals(ver, GridProductVersion.fromString("1.2.3-os-0-DEV"));
+        assertEquals(ver, GridProductVersion.fromString("1.2.3-RC1-0-DEV"));
+        assertEquals(ver, GridProductVersion.fromString("1.2.3-ga1-0-DEV"));
+        assertEquals(ver, GridProductVersion.fromString("1.2.3-M1-0-DEV"));
+        assertEquals(ver, GridProductVersion.fromString("1.2.3-0-DEV"));
+        assertEquals(ver, GridProductVersion.fromString("1.2.3-DEV"));
+
+        ver = GridProductVersion.fromString("1.2.3");
 
         assertEquals(1, ver.major());
         assertEquals(2, ver.minor());
@@ -56,5 +65,18 @@ public class GridProductVersionSelfTest extends GridCommonAbstractTest {
         assertEquals(4, ver.revisionTimestamp());
         assertArrayEquals(new byte[] {24,-27,-89,-20,-98,50,2,18,106,105,-68,35,26,107,-106,91,-63,-41,61,-18},
             ver.revisionHash());
+
+        ver = GridProductVersion.fromString("1.2.3-rc1-ent-4-18e5a7ec9e3202126a69bc231a6b965bc1d73dee");
+
+        assertEquals(1, ver.major());
+        assertEquals(2, ver.minor());
+        assertEquals(3, ver.maintenance());
+        assertEquals(4, ver.revisionTimestamp());
+        assertArrayEquals(new byte[] {24,-27,-89,-20,-98,50,2,18,106,105,-68,35,26,107,-106,91,-63,-41,61,-18},
+            ver.revisionHash());
+
+        GridProductVersion.fromString(VER + '-' + "ent" + '-' + BUILD_TSTAMP + '-' + REV_HASH);
+
+        GridProductVersion.fromString(VER + '-' + "os" + '-' + BUILD_TSTAMP + '-' + REV_HASH);
     }
 }
