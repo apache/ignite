@@ -1805,8 +1805,8 @@ public class GridGainEx {
                 for (GridCacheConfiguration ccfg : cacheCfgs)
                     copies[cloneIdx++] = new GridCacheConfiguration(ccfg);
             }
-            else if (!drSysCaches.isEmpty() || hasHadoop || U.securityEnabled(cfg)) {
-                // Populate system caches/
+            else if (!drSysCaches.isEmpty() || hasHadoop) {
+                // Populate system caches
                 copies = new GridCacheConfiguration[drSysCaches.size() + (hasHadoop ? 1 : 0) + 1];
 
                 int idx = 0;
