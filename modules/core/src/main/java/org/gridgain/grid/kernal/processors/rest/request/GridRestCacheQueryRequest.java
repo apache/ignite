@@ -117,4 +117,9 @@ public class GridRestCacheQueryRequest extends GridRestRequest implements Serial
     public Object[] queryArguments() {
         return msg.queryArguments();
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return msg.toString();
+    }
 }

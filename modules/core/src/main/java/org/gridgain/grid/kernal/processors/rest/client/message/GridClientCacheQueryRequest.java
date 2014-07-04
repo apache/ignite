@@ -9,8 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.grid.util.typedef.internal.S;
+import org.gridgain.grid.util.typedef.internal.U;
 import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
+
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 /**
  * Cache query request.
@@ -336,5 +342,48 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
         rawWriter.writeString(rmtReducerClsName);
         rawWriter.writeString(rmtTransformerClsName);
         rawWriter.writeObjectArray(qryArgs);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternal(in);
+
+        qryId = in.readLong();
+        op = GridQueryOperation.fromOrdinal(in.readInt());
+        type = GridQueryType.fromOrdinal(in.readInt());
+        cacheName = U.readString(in);
+        clause = U.readString(in);
+        pageSize = in.readInt();
+        timeout = in.readLong();
+        includeBackups = in.readBoolean();
+        enableDedup = in.readBoolean();
+        clsName = U.readString(in);
+        rmtReducerClsName = U.readString(in);
+        rmtTransformerClsName = U.readString(in);
+        qryArgs = U.readArray(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        super.writeExternal(out);
+
+        out.writeLong(qryId);
+        out.writeInt(op.ordinal());
+        out.writeInt(type.ordinal());
+        U.writeString(out, cacheName);
+        U.writeString(out, clause);
+        out.writeInt(pageSize);
+        out.writeLong(timeout);
+        out.writeBoolean(includeBackups);
+        out.writeBoolean(enableDedup);
+        U.writeString(out, clsName);
+        U.writeString(out, rmtReducerClsName);
+        U.writeString(out, rmtTransformerClsName);
+        U.writeArray(out, qryArgs);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridClientCacheQueryRequest.class, this);
     }
 }
