@@ -1962,6 +1962,22 @@ public class GridGainEx {
                     if (log4jCls != null) {
                         URL url = U.resolveGridGainUrl("config/gridgain-log4j.xml");
 
+                        if (url == null) {
+                            File cfgFile = new File("config/gridgain-log4j.xml");
+
+                            if (!cfgFile.exists())
+                                cfgFile = new File("../config/gridgain-log4j.xml");
+
+                            if (cfgFile.exists()) {
+                                try {
+                                    url = cfgFile.toURI().toURL();
+                                }
+                                catch (MalformedURLException ignore) {
+                                    // No-op.
+                                }
+                            }
+                        }
+
                         if (url != null) {
                             boolean configured = (Boolean)log4jCls.getMethod("isConfigured").invoke(null);
 
