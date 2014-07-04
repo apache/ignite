@@ -153,6 +153,9 @@
 
                     <property name="queryIndexEnabled" value="false"/>
 
+                    <property name="store">
+                        <bean class="org.gridgain.client.GridHashMapStore"/>
+                    </property>
                 </bean>
 
                 <!--
@@ -184,6 +187,10 @@
                     <!-- REPLICATED cache mode. -->
                     <property name="cacheMode" value="REPLICATED"/>
 
+                    <!-- Store.-->
+                    <property name="store">
+                        <bean class="org.gridgain.client.GridHashMapStore"/>
+                    </property>
                 </bean>
             </list>
         </property>
