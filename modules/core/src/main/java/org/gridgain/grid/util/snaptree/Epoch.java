@@ -121,6 +121,9 @@ abstract public class Epoch {
     //////////////// internal implementation
 
     private class Root extends EpochNode {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         protected void onClosed(final int dataSum) {
             Epoch.this.onClosed(dataSum);
         }

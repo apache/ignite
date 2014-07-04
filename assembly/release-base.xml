@@ -39,9 +39,8 @@
         </file>
 
         <file>
-            <source>examples/pom-standalone-${gridgain.edition}.xml</source>
-            <outputDirectory>/examples</outputDirectory>
-            <destName>pom.xml</destName>
+            <source>docs/release_notes.pdf</source>
+            <outputDirectory>/docs</outputDirectory>
         </file>
     </files>
 
@@ -54,6 +53,9 @@
                 <include>**/*.exe</include>
                 <include>**/*.jar</include>
             </includes>
+            <excludes>
+                <exclude>*hadoop*.bat</exclude>
+            </excludes>
         </fileSet>
 
         <fileSet>
@@ -63,49 +65,14 @@
             <includes>
                 <include>**/*.sh</include>
             </includes>
+            <excludes>
+                <exclude>*hadoop*.sh</exclude>
+            </excludes>
         </fileSet>
 
         <fileSet>
             <directory>config/${gridgain.edition}</directory>
             <outputDirectory>/config</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>modules/clients</directory>
-            <outputDirectory>/clients/java</outputDirectory>
-            <includes>
-                <include>config/**</include>
-                <include>readme.pdf</include>
-            </includes>
-        </fileSet>
-
-        <fileSet>
-            <directory>docs</directory>
-            <outputDirectory>/docs</outputDirectory>
-            <includes>
-                <include>gridgain_readme.pdf</include>
-                <include>release_notes.pdf</include>
-            </includes>
-        </fileSet>
-
-        <fileSet>
-            <directory>target/javadoc/core</directory>
-            <outputDirectory>/docs/javadoc</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>modules/scalar/target/site/scaladocs</directory>
-            <outputDirectory>/docs/scaladoc/scalar</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>target/javadoc/client</directory>
-            <outputDirectory>/clients/java/javadoc</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>libs</directory>
-            <outputDirectory>/libs</outputDirectory>
         </fileSet>
 
         <fileSet>

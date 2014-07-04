@@ -20,48 +20,14 @@ public abstract class GridGgfsHadoopFileSystemLoopbackAbstractSelfTest extends
      * Constructor.
      *
      * @param mode GGFS mode.
+     * @param skipEmbed Skip embedded mode flag.
      */
-    protected GridGgfsHadoopFileSystemLoopbackAbstractSelfTest(GridGgfsMode mode) {
-        super(mode);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String primaryFileSystemUriPath() {
-        return "ggfs://primary/";
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String primaryFileSystemConfigPath() {
-        return "modules/core/src/test/config/hadoop/core-site-loopback.xml";
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String primaryFileSystemEndpoint() throws Exception {
-        return "127.0.0.1:10500";
+    protected GridGgfsHadoopFileSystemLoopbackAbstractSelfTest(GridGgfsMode mode, boolean skipEmbed) {
+        super(mode, skipEmbed, true);
     }
 
     /** {@inheritDoc} */
     @Override protected String primaryIpcEndpointConfiguration(String gridName) {
         return "{type:'tcp', port:" + (DFLT_IPC_PORT + getTestGridIndex(gridName)) + "}";
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String secondaryFileSystemUriPath() {
-        return "ggfs://secondary/";
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String secondaryFileSystemConfigPath() {
-        return "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml";
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String secondaryFileSystemEndpoint() throws Exception {
-        return "127.0.0.1:11500";
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String secondaryIpcEndpointConfiguration() {
-        return "{type:'tcp', port:11500}";
     }
 }

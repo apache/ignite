@@ -134,7 +134,10 @@ public class VisorGgfsConfig implements Serializable {
         cfg.fragmentizerEnabled(ggfs.isFragmentizerEnabled());
         cfg.fragmentizerThrottlingBlockLength(ggfs.getFragmentizerThrottlingBlockLength());
         cfg.fragmentizerThrottlingDelay(ggfs.getFragmentizerThrottlingDelay());
-        cfg.ipcEndpointConfiguration(ggfs.getIpcEndpointConfiguration());
+
+        Map<String, String> endpointCfg = ggfs.getIpcEndpointConfiguration();
+        cfg.ipcEndpointConfiguration(endpointCfg != null ? endpointCfg.toString() : null);
+
         cfg.ipcEndpointEnabled(ggfs.isIpcEndpointEnabled());
         cfg.maxSpace(ggfs.getMaxSpaceSize());
         cfg.managementPort(ggfs.getManagementPort());

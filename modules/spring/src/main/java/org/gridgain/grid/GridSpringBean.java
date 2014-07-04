@@ -15,6 +15,7 @@ import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.dr.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.messaging.*;
@@ -463,6 +464,13 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
         assert g != null;
 
         return g.ggfss();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridHadoop hadoop() {
+        assert g != null;
+
+        return g.hadoop();
     }
 
     /** {@inheritDoc} */
