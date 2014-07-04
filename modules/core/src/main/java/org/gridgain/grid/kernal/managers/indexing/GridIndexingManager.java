@@ -14,6 +14,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
+import org.gridgain.grid.lang.GridBiTuple;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.*;
@@ -807,13 +808,35 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         for (String txtIdx : meta.getTextFields())
             d.addFieldToTextIndex(txtIdx);
 
+        Map<String, LinkedHashMap<String, GridBiTuple<Class<?>, Boolean>>> grps = meta.getGroups();
+
+        if (grps != null) {
+            for (Map.Entry<String, LinkedHashMap<String, GridBiTuple<Class<?>, Boolean>>> entry : grps.entrySet()) {
+                String idxName = entry.getKey();
+
+                LinkedHashMap<String, GridBiTuple<Class<?>, Boolean>> idxFields = entry.getValue();
+
+                int order = 0;
+
+                for (Map.Entry<String, GridBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
+                    ClassProperty prop = buildClassProperty(cls, idxField.getKey(), idxField.getValue().get1());
+
+                    d.addProperty(key, prop);
+
+                    Boolean descending = idxField.getValue().get2();
+
+                    d.addFieldToIndex(idxName, prop.name(), order, descending != null && descending);
+
+                    order++;
+                }
+            }
+        }
+
         for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
             ClassProperty prop = buildClassProperty(cls, entry.getKey(), entry.getValue());
 
             d.addProperty(key, prop);
         }
-
-        // TODO group indexes.
     }
 
     /**
@@ -852,13 +875,35 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         for (String txtIdx : meta.getTextFields())
             d.addFieldToTextIndex(txtIdx);
 
+        Map<String, LinkedHashMap<String, GridBiTuple<Class<?>, Boolean>>> grps = meta.getGroups();
+
+        if (grps != null) {
+            for (Map.Entry<String, LinkedHashMap<String, GridBiTuple<Class<?>, Boolean>>> entry : grps.entrySet()) {
+                String idxName = entry.getKey();
+
+                LinkedHashMap<String, GridBiTuple<Class<?>, Boolean>> idxFields = entry.getValue();
+
+                int order = 0;
+
+                for (Map.Entry<String, GridBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
+                    PortableProperty prop = buildPortableProperty(idxField.getKey(), idxField.getValue().get1());
+
+                    d.addProperty(key, prop);
+
+                    Boolean descending = idxField.getValue().get2();
+
+                    d.addFieldToIndex(idxName, prop.name(), order, descending != null && descending);
+
+                    order++;
+                }
+            }
+        }
+
         for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
             PortableProperty prop = buildPortableProperty(entry.getKey(), entry.getValue());
 
             d.addProperty(key, prop);
         }
-
-        // TODO group indexes.
     }
 
     /**

@@ -11,10 +11,12 @@ package org.gridgain.grid.kernal.processors.rest.request;
 
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 
+import java.io.Serializable;
+
 /**
  * Cache query request.
  */
-public class GridRestCacheQueryRequest extends GridRestRequest {
+public class GridRestCacheQueryRequest extends GridRestRequest implements Serializable {
     /** Request message. */
     private GridClientCacheQueryRequest msg;
 

@@ -11,12 +11,13 @@ package org.gridgain.grid.kernal.processors.rest.handlers.cache;
 
 import org.gridgain.portable.*;
 
+import java.io.Serializable;
 import java.util.*;
 
 /**
  * Client query result.
  */
-public class GridCacheClientQueryResult implements GridPortable {
+public class GridCacheClientQueryResult implements GridPortable, Serializable {
     /** Query ID. */
     private long qryId;
 
