@@ -70,8 +70,12 @@ public class GridProductVersionSelfTest extends GridCommonAbstractTest {
         assertArrayEquals(new byte[] {24,-27,-89,-20,-98,50,2,18,106,105,-68,35,26,107,-106,91,-63,-41,61,-18},
             ver.revisionHash());
 
-        GridProductVersion.fromString(VER + '-' + "ent" + '-' + BUILD_TSTAMP + '-' + REV_HASH);
+        ver = GridProductVersion.fromString(VER + '-' + "ent" + '-' + BUILD_TSTAMP + '-' + REV_HASH);
 
-        GridProductVersion.fromString(VER + '-' + "os" + '-' + BUILD_TSTAMP + '-' + REV_HASH);
+        assertNotEquals(ver, GridProductVersion.VERSION_UNKNOWN);
+
+        ver = GridProductVersion.fromString(VER + '-' + "os" + '-' + BUILD_TSTAMP + '-' + REV_HASH);
+
+        assertNotEquals(ver, GridProductVersion.VERSION_UNKNOWN);
     }
 }
