@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.product;
 
-import org.gridgain.grid.*;
 import org.gridgain.testframework.junits.common.*;
 
 import static org.junit.Assert.*;
