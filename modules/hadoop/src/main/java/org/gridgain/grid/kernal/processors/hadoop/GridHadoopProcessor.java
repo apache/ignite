@@ -90,18 +90,23 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
         else
             U.quietAndInfo(log, "Apache Hadoop is found at " + hadoopHome);
 
-        URL location;
+        URL location = null;
 
         try {
             location = Class.forName("org.apache.hadoop.conf.Configuration").getProtectionDomain().getCodeSource()
                 .getLocation();
         }
         catch (ClassNotFoundException | NoClassDefFoundError e) {
-            throw new GridException("Apache Hadoop is not in classpath. Check if HADOOP_HOME environment variable " +
-                "points to Apache Hadoop installation directory.", e);
+            String msg = "Apache Hadoop is not in classpath. Check if HADOOP_HOME environment variable " +
+                "points to Apache Hadoop installation directory.";
+
+            if (F.isEmpty(X.getSystemOrEnv(GridSystemProperties.GG_HADOOP_NOT_FOUND_WARN)))
+                throw new GridException(msg, e);
+            else
+                U.warn(log, msg);
         }
 
-        if (log.isDebugEnabled())
+        if (location != null && log.isDebugEnabled())
             log.debug("Hadoop classes are loaded from " + location);
     }
 

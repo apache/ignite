@@ -423,6 +423,11 @@ public final class GridSystemProperties {
     public static final String GG_IPC_SHMEM_SPACE_DEBUG = "GRIDGAIN_IPC_SHMEM_SPACE_DEBUG";
 
     /**
+     * Only warn if Hadoop classes were not found in classpath but not fail.
+     */
+    public static final String GG_HADOOP_NOT_FOUND_WARN = "GRIDGAIN_HADOOP_NOT_FOUND_WARN";
+
+    /**
      * Enforces singleton.
      */
     private GridSystemProperties() {
