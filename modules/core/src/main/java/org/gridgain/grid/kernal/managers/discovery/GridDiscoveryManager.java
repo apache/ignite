@@ -334,7 +334,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
             @Override public List<Object> collect(UUID nodeId) {
                 assert nodeId != null;
 
-                List<Object> data = new LinkedList<>();
+                List<Object> data = new ArrayList<>();
 
                 Object newCompData = null;
 
