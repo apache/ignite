@@ -949,6 +949,15 @@ public class GridOptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception if failed
+     */
+    public void testSerialPersistentFieldsInheritance() throws Exception {
+        final InetAddress address = Inet6Address.getByAddress(new byte[16]);
+
+        assertEquals(address, marshalUnmarshal(address));
+    }
+
+    /**
      * Marshals and unmarshals object.
      *
      * @param obj Original object.
