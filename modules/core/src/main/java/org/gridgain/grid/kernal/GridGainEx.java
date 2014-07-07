@@ -1675,35 +1675,18 @@ public class GridGainEx {
             // Validate segmentation configuration.
             GridSegmentationPolicy segPlc = cfg.getSegmentationPolicy();
 
-            // 1. Warn on potential configuration problem: grid is not configured to wait
-            // for correct segment after segmentation happens.
-            if (!F.isEmpty(cfg.getSegmentationResolvers()) && (segPlc == RESTART_JVM || segPlc == RECONNECT) &&
-                !cfg.isWaitForSegmentOnStart()) {
-                U.warn(log, "Found potential configuration problem (forgot to enable waiting for segment" +
-                    "on start?) [segPlc=" + segPlc + ", wait=false]");
+            if (segPlc == RECONNECT) {
+                U.warn(log, "RECONNECT segmentation policy is not supported anymore and " +
+                    "will be removed in the next major release (will automatically switch to NOOP)");
+
+                segPlc = NOOP;
             }
 
-            // RECONNECT policy specific checks...
-            if (segPlc == RECONNECT) {
-                // 2. Does discovery SPI support reconnect?
-                GridDiscoverySpiReconnectSupport ann =
-                    U.getAnnotation(discoSpi.getClass(), GridDiscoverySpiReconnectSupport.class);
-
-                if (ann == null || !ann.value()) {
-                    throw new GridException("Discovery SPI does not support reconnect (either change segmentation " +
-                        "policy or discovery SPI implementation to one that supports reconnect), " +
-                        "like GridTcpDiscoverySpi.");
-                }
-
-                // 3. Cannot use RECONNECT policy with in-memory data grid.
-                GridCacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
-
-                if (cacheCfgs != null) {
-                    for (GridCacheConfiguration cc : cacheCfgs)
-                        if (cc.getCacheMode() == REPLICATED || cc.getCacheMode() == PARTITIONED)
-                            throw new GridException("RECONNECT segmentation policy is not supported " +
-                                "when running in-memory data grid.");
-                }
+            // 1. Warn on potential configuration problem: grid is not configured to wait
+            // for correct segment after segmentation happens.
+            if (!F.isEmpty(cfg.getSegmentationResolvers()) && segPlc == RESTART_JVM && !cfg.isWaitForSegmentOnStart()) {
+                U.warn(log, "Found potential configuration problem (forgot to enable waiting for segment" +
+                    "on start?) [segPlc=" + segPlc + ", wait=false]");
             }
 
             myCfg.setSegmentationResolvers(cfg.getSegmentationResolvers());
