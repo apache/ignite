@@ -365,7 +365,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
                 rsrcMgr.inject(spi);
 
                 spi.setNodeAttributes(Collections.<String, Object>singletonMap(TEST_ATTRIBUTE_NAME, "true"),
-                    VERSION_UNKNOWN);
+                    fromString("99.99.99"));
 
                 spi.setListener(new GridDiscoverySpiListener() {
                     @SuppressWarnings({"NakedNotify"})

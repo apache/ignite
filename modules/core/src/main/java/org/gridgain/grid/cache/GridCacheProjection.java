@@ -143,7 +143,7 @@ import java.util.concurrent.*;
  * all entries will be removed. This behavior is useful during development, but should not be
  * used in production.
  */
-public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>>, GridMetadataAware {
+public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>> {
     /**
      * Gets name of this cache ({@code null} for default cache).
      *
