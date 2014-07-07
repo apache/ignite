@@ -196,7 +196,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
             ((GridCacheQueriesEx<?, ?>)grid(0).cache(null).queries()).sqlMetadata();
 
         assert metas != null;
-        assert metas.size() == 3;
+        assertEquals("Invalid meta: " + metas, 3, metas.size());
 
         boolean wasNull = false;
         boolean wasNamed = false;

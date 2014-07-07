@@ -307,7 +307,10 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                         if (log.isDebugEnabled())
                             log.debug("All participants has gone: " + meta);
 
-                        return null;
+                        // Should try locally cached deployments in CONTINUOUS mode because local node
+                        // can have this classes deployed.
+                        if (meta.deploymentMode() != CONTINUOUS)
+                            return null;
                     }
                 }
                 else if (ctx.discovery().node(meta.senderNodeId()) == null) {

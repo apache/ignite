@@ -1208,8 +1208,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
     /**
      * Checks if a given query class is a Java primitive or wrapper
-     * and throws {@link IllegalStateException} if there is configured {@link GridH2IndexingSpi}
-     * with disabled {@link GridH2IndexingSpi#isDefaultIndexPrimitiveKey()}.
+     * and throws {@link IllegalStateException} if there is configured {@code GridH2IndexingSpi}
+     * with disabled {@code GridH2IndexingSpi#isDefaultIndexPrimitiveKey()}.
      *
      * @param cls Query class. May be {@code null}.
      * @throws IllegalStateException If checking failed.
@@ -1418,7 +1418,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 },
                 new P1<GridCache<?, ?>>() {
                     @Override public boolean apply(GridCache<?, ?> c) {
-                        return F.eq(spiName, c.configuration().getIndexingSpiName());
+                        return !CU.UTILITY_CACHE_NAME.equals(c.name()) &&
+                            F.eq(spiName, c.configuration().getIndexingSpiName());
                     }
                 }
             );

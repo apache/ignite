@@ -24,6 +24,7 @@ import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.segmentation.*;
+import org.gridgain.grid.service.*;
 import org.gridgain.grid.spi.authentication.*;
 import org.gridgain.grid.spi.authentication.noop.*;
 import org.gridgain.grid.spi.checkpoint.*;
@@ -512,6 +513,9 @@ public class GridConfiguration {
 
     /** Security credentials. */
     private GridSecurityCredentialsProvider securityCred;
+
+    /** Service configuration. */
+    private GridServiceConfiguration[] svcCfgs;
 
     /** Hadoop configuration. */
     private GridHadoopConfiguration hadoopCfg;
@@ -3112,6 +3116,24 @@ public class GridConfiguration {
      */
     public void setPortableConfiguration(GridPortableConfiguration portableCfg) {
         this.portableCfg = portableCfg;
+    }
+
+    /**
+     * Gets configurations for services to be deployed on the grid.
+     *
+     * @return Configurations for services to be deployed on the grid.
+     */
+    public GridServiceConfiguration[] getServiceConfiguration() {
+        return svcCfgs;
+    }
+
+    /**
+     * Sets configurations for services to be deployed on the grid.
+     *
+     * @param svcCfgs Configurations for services to be deployed on the grid.
+     */
+    public void setServiceConfiguration(GridServiceConfiguration... svcCfgs) {
+        this.svcCfgs = svcCfgs;
     }
 
     /** {@inheritDoc} */

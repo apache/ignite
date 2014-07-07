@@ -79,26 +79,28 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
 
     /**
      * Checks Hadoop installation.
-     *
-     * @throws GridException If failed.
      */
-    private void checkHadoopInstallation() throws GridException {
+    private void checkHadoopInstallation() {
         String hadoopHome = System.getenv("HADOOP_HOME");
 
-        if (F.isEmpty(hadoopHome))
-            U.quietAndWarn(log, "HADOOP_HOME environment variable is not set.");
-        else
+        if (!F.isEmpty(hadoopHome))
             U.quietAndInfo(log, "Apache Hadoop is found at " + hadoopHome);
 
-        URL location;
+        URL location = null;
 
         try {
             location = Class.forName("org.apache.hadoop.conf.Configuration").getProtectionDomain().getCodeSource()
                 .getLocation();
         }
-        catch (ClassNotFoundException | NoClassDefFoundError e) {
-            throw new GridException("Apache Hadoop is not in classpath. Check if HADOOP_HOME environment variable " +
-                "points to Apache Hadoop installation directory.", e);
+        catch (ClassNotFoundException | NoClassDefFoundError ignored) {
+            U.quietAndWarn(log, "   ");
+            U.quietAndWarn(log, "   ");
+            U.quietAndWarn(log, "   ++=========================   WARNING!!!   ==========================++ ");
+            U.quietAndWarn(log, "   !!  Apache Hadoop is not found in classpath! Check that HADOOP_HOME  !! ");
+            U.quietAndWarn(log, "   !!        points to valid Apache Hadoop installation directory!      !! ");
+            U.quietAndWarn(log, "   ++===================================================================++ ");
+            U.quietAndWarn(log, "   ");
+            U.quietAndWarn(log, "   ");
         }
 
         if (log.isDebugEnabled())

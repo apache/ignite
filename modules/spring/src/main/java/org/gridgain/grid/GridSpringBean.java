@@ -23,6 +23,7 @@ import org.gridgain.grid.portable.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.security.*;
+import org.gridgain.grid.service.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -215,6 +216,13 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
     }
 
     /** {@inheritDoc} */
+    @Override public GridServices services() {
+        assert g != null;
+
+        return g.services();
+    }
+
+    /** {@inheritDoc} */
     @Override public GridMessaging message() {
         assert g != null;
 
@@ -346,6 +354,20 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
         assert g != null;
 
         return g.forRandom();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridProjection forOldest() {
+        assert g != null;
+
+        return g.forOldest();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridProjection forYoungest() {
+        assert g != null;
+
+        return g.forYoungest();
     }
 
     /** {@inheritDoc} */
