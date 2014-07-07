@@ -68,6 +68,16 @@
                     <property name="backups" value="1"/>
                 </bean>
 
+                <!-- Partitioned cache example configuration (portable objects enabled). -->
+                <bean parent="cache-template">
+                    <property name="name" value="partitioned_portable"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="ATOMIC"/>
+                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
+                    <property name="backups" value="1"/>
+                    <property name="portableEnabled" value="true"/>
+                </bean>
+
                 <!-- Replicated cache example configuration (Atomic mode). -->
                 <bean parent="cache-template">
                     <property name="name" value="replicated"/>
