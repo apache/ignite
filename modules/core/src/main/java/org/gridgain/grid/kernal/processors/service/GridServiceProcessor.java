@@ -667,10 +667,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     ", execId=" + ctx.executionId() + ']', e);
             }
 
-            it.remove();
-
             // Close out executor thread for the service.
+            // This will cause the thread to be interrupted.
             ctx.executor().shutdownNow();
+
+            it.remove();
 
             if (log.isInfoEnabled())
                 log.info("Cancelled service instance [name=" + ctx.name() + ", execId=" +
@@ -686,6 +687,10 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      */
     private class DeploymentListener
         implements GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<GridServiceDeploymentKey, GridServiceDeployment>>> {
+        /** Serial version ID. */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
         @Override public boolean apply(
             UUID nodeId,
             final Collection<GridCacheContinuousQueryEntry<GridServiceDeploymentKey, GridServiceDeployment>> deps) {
@@ -905,6 +910,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      */
     private class AssignmentListener
         implements GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<GridServiceAssignmentsKey, GridServiceAssignments>>> {
+        /** Serial version ID. */
+        private static final long serialVersionUID = 0L;
+
         /** {@inheritDoc} */
         @Override public boolean apply(
             UUID nodeId,

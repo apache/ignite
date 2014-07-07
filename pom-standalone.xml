@@ -253,7 +253,7 @@
                                     <packages>org.gridgain.grid.security</packages>
                                 </group>
                                 <group>
-                                    <title>Managed Services APIs</title>
+                                    <title>Distributed Services APIs</title>
                                     <packages>org.gridgain.grid.service</packages>
                                 </group>
                                 <group>

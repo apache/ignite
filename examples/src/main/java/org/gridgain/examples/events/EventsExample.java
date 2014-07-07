@@ -30,7 +30,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start
  * GridGain node with {@code examples/config/example-compute.xml} configuration.
  */
-public class EventsApiExample {
+public class EventsExample {
     /**
      * Executes example.
      *
