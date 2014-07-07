@@ -31,14 +31,12 @@ CONFIG=${DEFAULT_CONFIG}
 INTERACTIVE="0"
 QUIET="-DGRIDGAIN_QUIET=true"
 JVM_XOPTS=""
-HADOOP_LIB_DIR="hadoop2"
 
 while [ $# -gt 0 ]
 do
     case "$1" in
         -i) INTERACTIVE="1";;
         -v) QUIET="-DGRIDGAIN_QUIET=false";;
-        -h1) HADOOP_LIB_DIR="hadoop1";;
         -J*) JVM_XOPTS="$JVM_XOPTS ${1:2}";;
         *) CONFIG="$1";;
     esac

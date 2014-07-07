@@ -11,7 +11,6 @@ package org.gridgain.grid.util.ipc;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.spi.communication.tcp.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.nio.*;
 
@@ -150,7 +149,7 @@ public class GridIpcToNioAdapter<T> {
             return new GridNioFinishedFuture<Object>(e);
         }
 
-        return new GridNioFinishedFuture<>(new Object());
+        return new GridNioFinishedFuture<>((Object)null);
     }
 
     /**

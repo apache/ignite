@@ -20,7 +20,6 @@ import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -33,7 +32,7 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
  * Tests for GGFS per-block LR eviction policy.
  */
 @SuppressWarnings({"ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
-public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridCommonAbstractTest {
+public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsCommonAbstractTest {
     /** Primary GGFS name. */
     private static final String GGFS_PRIMARY = "ggfs-primary";
 
@@ -41,7 +40,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridCommonAb
     private static final String GGFS_SECONDARY = "ggfs-secondary";
 
     /** Secondary file system URI. */
-    private static final String SECONDARY_URI = "ggfs://secondary/";
+    private static final String SECONDARY_URI = "ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/";
 
     /** Secondary file system configuration path. */
     private static final String SECONDARY_CFG = "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml";
@@ -148,7 +147,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridCommonAb
         ggfsCfg.setName(GGFS_SECONDARY);
         ggfsCfg.setBlockSize(512);
         ggfsCfg.setDefaultMode(PRIMARY);
-        ggfsCfg.setIpcEndpointConfiguration(SECONDARY_REST_CFG);
+        ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(SECONDARY_REST_CFG));
 
         GridCacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 

@@ -29,6 +29,9 @@ import java.util.*;
 @GridInternal
 public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollectTask.VisorEventsCollectArgs,
     Iterable<? extends VisorGridEvent>, Collection<? extends VisorGridEvent>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorEventsCollectJob job(VisorEventsCollectArgs arg) {
         return new VisorEventsCollectJob(arg);
