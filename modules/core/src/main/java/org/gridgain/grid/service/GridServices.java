@@ -16,16 +16,17 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Defines functionality necessary to deploy managed services on the grid. Instance of {@code GridServices}
- * is obtained from grid projection as follows:
+ * Defines functionality necessary to deploy distributed services services on the grid. Instance of
+ * {@code GridServices} is obtained from grid projection as follows:
  * <pre name="code" class="java">
- * GridCompute c = GridGain.grid().services();
+ * GridServices svcs = GridGain.grid().services();
  * </pre>
- * With managed services you can do the following:
+ * With distributed services you can do the following:
  * <ul>
+ * <li>Automatically deploy any number of service instances on the grid.</li>
  * <li>
- *      Automatically deploy any number of service instances in the grid, including <b>cluster-singleton</b>,
- *      <b>node-singleton</b>, or <b>key-affinity-singleton</b>.
+ *     Automatically deploy singletons, including <b>cluster-singleton</b>,
+ *     <b>node-singleton</b>, or <b>key-affinity-singleton</b>.
  * </li>
  * <li>Automatically deploy services on node start-up by specifying them in grid configuration.</li>
  * <li>Undeploy any of the deployed services.</li>
@@ -40,6 +41,7 @@ import java.util.*;
  *
  * GridServiceConfiguration svcCfg1 = new GridServiceConfiguration();
  *
+ * // Cluster-wide singleton configuration.
  * svcCfg1.setName("myClusterSingletonService");
  * svcCfg1.setMaxPerNodeCount(1);
  * svcCfg1.setTotalCount(1);
@@ -47,6 +49,7 @@ import java.util.*;
  *
  * GridServiceConfiguration svcCfg2 = new GridServiceConfiguration();
  *
+ * // Per-node singleton configuration.
  * svcCfg2.setName("myNodeSingletonService");
  * svcCfg2.setMaxPerNodeCount(1);
  * svcCfg2.setService(new MyNodeSingletonService());
@@ -56,7 +59,7 @@ import java.util.*;
  * GridGain.start(gridCfg);
  * </pre>
  * <h1 class="header">Load Balancing</h1>
- * In all cases other than singleton service deployment, GridGain will automatically make sure that
+ * In all cases, other than singleton service deployment, GridGain will automatically make sure that
  * an about equal number of services are deployed on each node within the grid. Whenever cluster topology
  * changes, GridGain will re-evaluate service deployments and may re-deploy an already deployed service
  * on another node for better load balancing.
@@ -64,7 +67,7 @@ import java.util.*;
  * GridGain guarantees that services are deployed according to specified configuration regardless
  * of any topology changes, including node crashes.
  * <h1 class="header">Resource Injection</h1>
- * All compute jobs, including closures, runnables, callables, and tasks can be injected with
+ * All distributed services can be injected with
  * grid resources. Both, field and method based injections are supported. The following grid
  * resources can be injected:
  * <ul>
@@ -79,9 +82,10 @@ import java.util.*;
  * <li>{@link GridSpringResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
- * <h1 class="header">Example</h1>
- * Here is an example how an example service may be implemented and deployed:
+ * <h1 class="header">Service Example</h1>
+ * Here is an example of how an distributed service may be implemented and deployed:
  * <pre name="code" class="java">
+ * // Simple service implementation.
  * public class MyGridService implements GridService {
  *      ...
  *      // Example of grid resource injection. All resources are optional.
@@ -126,7 +130,7 @@ public interface GridServices {
      * service will always be deployed on that node only, regardless of topology changes.
      * <p>
      * Note that in case of topology changes, due to network delays, there may be a temporary situation
-     * when a service instance will be active on more than one node (e.g. crash detection delay).
+     * when a singleton service instance will be active on more than one node (e.g. crash detection delay).
      * <p>
      * This method is analogous to calling
      * {@link #deployMultiple(String, GridService, int, int) deployMultiple(name, svc, 1, 1)} method.
