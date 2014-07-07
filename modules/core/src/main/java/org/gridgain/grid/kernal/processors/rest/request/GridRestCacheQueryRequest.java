@@ -91,6 +91,13 @@ public class GridRestCacheQueryRequest extends GridRestRequest implements Serial
     }
 
     /**
+     * @return Keep portable flag.
+     */
+    public boolean keepPortable() {
+        return msg.keepPortable();
+    }
+
+    /**
      * @return Class name.
      */
     public String className() {

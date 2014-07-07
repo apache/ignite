@@ -108,6 +108,9 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
     /** Enable dedup flag. */
     private boolean enableDedup;
 
+    /** Keep portable flag. */
+    private boolean keepPortable;
+
     /** Class name. */
     private String clsName;
 
@@ -240,6 +243,13 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
     }
 
     /**
+     * @return Keep portable flag.
+     */
+    public boolean keepPortable() {
+        return keepPortable;
+    }
+
+    /**
      * @param enableDedup Enable de-duplication flag.
      */
     public void enableDedup(boolean enableDedup) {
@@ -317,6 +327,7 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
         timeout = rawReader.readLong();
         includeBackups = rawReader.readBoolean();
         enableDedup = rawReader.readBoolean();
+        keepPortable = rawReader.readBoolean();
         clsName = rawReader.readString();
         rmtReducerClsName = rawReader.readString();
         rmtTransformerClsName = rawReader.readString();
@@ -338,6 +349,7 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
         rawWriter.writeLong(timeout);
         rawWriter.writeBoolean(includeBackups);
         rawWriter.writeBoolean(enableDedup);
+        rawWriter.writeBoolean(keepPortable);
         rawWriter.writeString(clsName);
         rawWriter.writeString(rmtReducerClsName);
         rawWriter.writeString(rmtTransformerClsName);
@@ -357,6 +369,7 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
         timeout = in.readLong();
         includeBackups = in.readBoolean();
         enableDedup = in.readBoolean();
+        keepPortable = in.readBoolean();
         clsName = U.readString(in);
         rmtReducerClsName = U.readString(in);
         rmtTransformerClsName = U.readString(in);
@@ -376,6 +389,7 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
         out.writeLong(timeout);
         out.writeBoolean(includeBackups);
         out.writeBoolean(enableDedup);
+        out.writeBoolean(keepPortable);
         U.writeString(out, clsName);
         U.writeString(out, rmtReducerClsName);
         U.writeString(out, rmtTransformerClsName);

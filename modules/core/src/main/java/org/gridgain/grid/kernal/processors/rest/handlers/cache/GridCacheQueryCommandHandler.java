@@ -286,7 +286,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
                     throw new GridException("Unsupported query type: " + req.type());
             }
 
-            ((GridCacheQueryAdapter)qry).keepPortable(true);
+            ((GridCacheQueryAdapter)qry).keepPortable(req.keepPortable());
 
             if (req.pageSize() > 0)
                 qry = qry.pageSize(req.pageSize());
