@@ -307,14 +307,12 @@ public class GridTcpCommunicationMessageState {
     public final void setBuffer(ByteBuffer buf) {
         assert buf != null;
 
-        if (this.buf == null) {
+        if (this.buf != buf) {
             this.buf = buf;
 
             heapArr = buf.isDirect() ? null : buf.array();
             baseOff = buf.isDirect() ? ((DirectBuffer)buf).address() : BYTE_ARR_OFF;
         }
-        else
-            assert this.buf == buf;
     }
 
     /**

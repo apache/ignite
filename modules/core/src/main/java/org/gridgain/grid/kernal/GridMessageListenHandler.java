@@ -67,6 +67,21 @@ public class GridMessageListenHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isForEvents() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isForMessaging() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isForQuery() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean register(UUID nodeId, UUID routineId, final GridKernalContext ctx) throws GridException {
         ctx.io().addUserMessageListener(topic, pred);
 

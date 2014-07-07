@@ -1428,7 +1428,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 },
                 new P1<GridCache<?, ?>>() {
                     @Override public boolean apply(GridCache<?, ?> c) {
-                        return F.eq(spiName, c.configuration().getIndexingSpiName());
+                        return !CU.UTILITY_CACHE_NAME.equals(c.name()) &&
+                            F.eq(spiName, c.configuration().getIndexingSpiName());
                     }
                 }
             );

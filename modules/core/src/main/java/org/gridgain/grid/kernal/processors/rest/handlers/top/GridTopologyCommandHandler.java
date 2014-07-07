@@ -175,11 +175,12 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
         GridCacheAttributes[] caches = node.attribute(ATTR_CACHE);
 
         if (!F.isEmpty(caches)) {
-            assert caches != null;
-
-            Map<String, String> cacheMap = new HashMap<>(caches.length);
+            Map<String, String> cacheMap = new HashMap<>();
 
             for (GridCacheAttributes cacheAttr : caches) {
+                if (ctx.cache().systemCache(cacheAttr.cacheName()))
+                    continue;
+
                 if (cacheAttr.cacheName() != null)
                     cacheMap.put(cacheAttr.cacheName(), cacheAttr.cacheMode().toString());
                 else

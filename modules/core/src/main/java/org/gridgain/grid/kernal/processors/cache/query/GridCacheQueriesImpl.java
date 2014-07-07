@@ -87,6 +87,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public GridCacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable GridBiPredicate<K, V> filter) {
         return new GridCacheQueryAdapter<>(ctx, SCAN, filter(), null, null, (GridBiPredicate<Object, Object>)filter,
             false, prj != null && prj.portableKeys(), prj != null && prj.portableValues());
@@ -135,6 +136,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
     /**
      * @return Optional projection filter.
      */
+    @SuppressWarnings("unchecked")
     @Nullable private GridPredicate<GridCacheEntry<Object, Object>> filter() {
         return prj == null ? null : ((GridCacheProjectionImpl<Object, Object>)prj).predicate();
     }

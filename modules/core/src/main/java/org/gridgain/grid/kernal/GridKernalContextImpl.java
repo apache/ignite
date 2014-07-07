@@ -27,6 +27,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.portable.*;
+import org.gridgain.grid.kernal.processors.service.*;
 import org.gridgain.grid.kernal.processors.spring.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
@@ -159,6 +160,10 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** */
     @GridToStringInclude
     private GridClosureProcessor closProc;
+
+    /** */
+    @GridToStringInclude
+    private GridServiceProcessor svcProc;
 
     /** */
     @GridToStringInclude
@@ -352,10 +357,10 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
         else if (comp instanceof GridIndexingManager)
             indexingMgr = (GridIndexingManager)comp;
 
-            /*
-            * Processors.
-            * ==========
-            */
+        /*
+         * Processors.
+         * ==========
+         */
 
         else if (comp instanceof GridTaskProcessor)
             taskProc = (GridTaskProcessor)comp;
@@ -379,6 +384,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             emailProc = (GridEmailProcessorAdapter)comp;
         else if (comp instanceof GridClosureProcessor)
             closProc = (GridClosureProcessor)comp;
+        else if (comp instanceof GridServiceProcessor)
+            svcProc = (GridServiceProcessor)comp;
         else if (comp instanceof GridScheduleProcessorAdapter)
             scheduleProc = (GridScheduleProcessorAdapter)comp;
         else if (comp instanceof GridSegmentationProcessor)
@@ -505,6 +512,11 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** {@inheritDoc} */
     @Override public GridClosureProcessor closure() {
         return closProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridServiceProcessor service() {
+        return svcProc;
     }
 
     /** {@inheritDoc} */

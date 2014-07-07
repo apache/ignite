@@ -46,6 +46,7 @@ import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.segmentation.*;
+import org.gridgain.grid.kernal.processors.service.*;
 import org.gridgain.grid.kernal.processors.session.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.kernal.processors.task.*;
@@ -55,6 +56,7 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.optimized.*;
+import org.gridgain.grid.portable.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.security.*;
@@ -182,6 +184,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** Grid security instance. */
     private GridSecurity security;
+
+    /** Portables instance. */
+    private GridPortables portables;
 
     /** DR pool. */
     private ExecutorService drPool;
@@ -688,14 +693,17 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startProcessor(ctx, (GridProcessor)(cfg.isPeerClassLoadingEnabled() ?
                 GridComponentType.HADOOP.create(ctx, true): // No-op when peer class loading is enabled.
                 GridComponentType.HADOOP.createIfInClassPath(ctx, cfg.getHadoopConfiguration() != null)), attrs);
+            startProcessor(ctx, new GridServiceProcessor(ctx), attrs);
             startProcessor(ctx, createComponent(GridDrProcessor.class, ctx), attrs);
 
             // Put version converters to attributes after
             // all components are started.
             verProc.addConvertersToAttributes(attrs);
 
-            if (ctx.isEnterprise())
+            if (ctx.isEnterprise()) {
                 security = new GridSecurityImpl(ctx.security());
+                portables = new GridPortablesImpl(ctx.portable());
+            }
 
             gw.writeLock();
 
@@ -2809,6 +2817,19 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /** {@inheritDoc} */
+    @Override public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache(Class<K> keyCls,
+        Class<V> valCls) {
+        guard();
+
+        try {
+            return ctx.cache().utilityCache(keyCls, valCls);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> GridCache<K, V> cachex(@Nullable String name) {
         guard();
 
@@ -3011,6 +3032,14 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             throw new UnsupportedOperationException("Security interface available in Enterprise edition only.");
 
         return security;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridPortables portables() {
+        if (!ctx.isEnterprise())
+            throw new UnsupportedOperationException("Portables interface available in Enterprise edition only.");
+
+        return portables;
     }
 
     /** {@inheritDoc} */

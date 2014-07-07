@@ -535,7 +535,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @throws GridSecurityException If security check failed.
      */
     public void checkSecurity(GridSecurityPermission op) throws GridSecurityException {
-        if (CU.isSecuritySystemCache(name()))
+        if (CU.isSystemCache(name()))
             return;
 
         ctx.security().authorize(name(), op, null);
@@ -794,16 +794,16 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return Query manager.
+     * @return Query manager, {@code null} if disabled.
      */
-    @Nullable public GridCacheQueryManager<K, V> queries() {
+    public GridCacheQueryManager<K, V> queries() {
         return qryMgr;
     }
 
     /**
-     * @return Continuous query manager.
+     * @return Continuous query manager, {@code null} if disabled.
      */
-    @Nullable public GridCacheContinuousQueryManager<K, V> continuousQueries() {
+    public GridCacheContinuousQueryManager<K, V> continuousQueries() {
         return contQryMgr;
     }
 
