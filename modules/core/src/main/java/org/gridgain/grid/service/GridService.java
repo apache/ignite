@@ -98,6 +98,8 @@ public interface GridService extends Serializable {
      * {@link #cancel(GridServiceContext)} method was called.
      *
      * @param ctx Service execution context.
+     * @throws Exception If service execution failed. Not that service will still remain deployed, until
+     *      {@link GridServices#cancel(String)} method will be called.
      */
-    public void execute(GridServiceContext ctx);
+    public void execute(GridServiceContext ctx) throws Exception;
 }

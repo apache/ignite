@@ -60,6 +60,7 @@ class GridOptimizedMarshallerUtils {
 
     /**
      * Gets class for given name and class loader.
+     *
      * @param name Class name.
      * @param ldr Class loader.
      * @return Class.
