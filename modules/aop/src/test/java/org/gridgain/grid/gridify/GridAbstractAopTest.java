@@ -12,13 +12,9 @@ package org.gridgain.grid.gridify;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.marshaller.*;
-import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.spi.deployment.local.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
