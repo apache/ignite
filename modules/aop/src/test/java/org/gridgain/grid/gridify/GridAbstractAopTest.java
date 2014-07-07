@@ -329,12 +329,10 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
 
             Object targetObj = target();
 
-            if (targetObj instanceof GridTestAopTarget) {
+            if (targetObj instanceof GridTestAopTarget)
                 res = ((GridTestAopTarget)targetObj).gridifyDefault("1");
-            }
-            else {
+            else
                 res = ((GridTestAopTargetInterface) targetObj).gridifyDefault("1");
-            }
 
             assert res == 1 : "Invalid gridifyDefault result: " + res;
         }
@@ -365,9 +363,8 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
 
             res = (Integer) gridifyMtd.invoke(targetObj, "1");
 
-            if (res != 1) {
+            if (res != 1)
                 fail("Method gridifyDefault returned wrong value [result=" + res + ", expect=1]");
-            }
         }
         finally {
             stopGrid();
@@ -461,9 +458,8 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
 
             res = (Integer) gridifyMtd.invoke(targetObj, "2");
 
-            if (res != 2) {
+            if (res != 2)
                 fail("Method gridifyDefaultResource returned wrong value [result=" + res + ", expect=2]");
-            }
 
             // Set old classloader back.
             Thread.currentThread().setContextClassLoader(cl);
@@ -493,16 +489,13 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
 
             Object targetObj = target();
 
-            if (targetObj instanceof GridTestAopTarget) {
+            if (targetObj instanceof GridTestAopTarget)
                 res = ((GridTestAopTarget) targetObj).gridifyNonDefaultClass("1");
-            }
-            else {
+            else
                 res = ((GridTestAopTargetInterface) targetObj).gridifyNonDefaultClass("1");
-            }
 
-            if (res != 10) {
+            if (res != 10)
                 fail("Method gridifyNonDefault returned wrong value [result=" + res + ", expect=1]");
-            }
         }
         finally {
             stopGrid();
@@ -529,16 +522,13 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
 
             Object targetObj = target();
 
-            if (targetObj instanceof GridTestAopTarget) {
+            if (targetObj instanceof GridTestAopTarget)
                 res = ((GridTestAopTarget) targetObj).gridifyNonDefaultName("2");
-            }
-            else {
+            else
                 res = ((GridTestAopTargetInterface) targetObj).gridifyNonDefaultName("2");
-            }
 
-            if (res != 20) {
+            if (res != 20)
                 fail("Method gridifyNonDefault returned wrong value [result=" + res + ", expect=2]");
-            }
         }
         finally {
             stopGrid();
@@ -565,12 +555,10 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
             boolean isE = false;
 
             try {
-                if (targetObj instanceof GridTestAopTarget) {
+                if (targetObj instanceof GridTestAopTarget)
                     ((GridTestAopTarget) targetObj).gridifyDefaultException("1");
-                }
-                else {
+                else
                     ((GridTestAopTargetInterface) targetObj).gridifyDefaultException("1");
-                }
             }
             catch (GridTestGridifyException e) {
                 info("@Gridify method gridifyDefaultException(0) returns exception: " + e);
@@ -584,9 +572,8 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
                     + ", expect=" + GridTestGridifyException.class.getName() + ']');
             }
 
-            if (!isE) {
+            if (!isE)
                 fail("@Gridify method gridifyDefaultException(0) does not return any exception.");
-            }
         }
         finally {
             stopGrid();
@@ -644,16 +631,13 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
 
             Object targetObj = target();
 
-            if (targetObj instanceof GridTestAopTarget) {
+            if (targetObj instanceof GridTestAopTarget)
                 res = ((GridTestAopTarget) targetObj).gridifyNonDefaultClassResource("3");
-            }
-            else {
+            else
                 res = ((GridTestAopTargetInterface) targetObj).gridifyNonDefaultClassResource("3");
-            }
-            if (res != 30) {
-                fail("Method gridifyNonDefaultClassResource returned wrong value [result=" + res
-                    + ", expect=3]");
-            }
+
+            if (res != 30)
+                fail("Method gridifyNonDefaultClassResource returned wrong value [result=" + res + ", expect=3]");
         }
         finally {
             stopGrid();
@@ -680,16 +664,13 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
 
             Object targetObj = target();
 
-            if (targetObj instanceof GridTestAopTarget) {
+            if (targetObj instanceof GridTestAopTarget)
                 res = ((GridTestAopTarget)targetObj).gridifyNonDefaultNameResource("4");
-            }
-            else {
+            else
                 res = ((GridTestAopTargetInterface)targetObj).gridifyNonDefaultNameResource("4");
-            }
 
-            if (res != 40) {
+            if (res != 40)
                 fail("Method gridifyNonDefaultNameResource returned wrong value [result=" + res + ", expect=4]");
-            }
         }
         finally {
             stopGrid();
@@ -734,6 +715,9 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
      * Event listener.
      */
     private static final class TestEventListener implements GridPredicate<GridEvent> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Counter. */
         private final AtomicInteger cnt;
 
@@ -744,7 +728,8 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean apply(GridEvent evt) {
-            if (evt.type() == EVT_TASK_DEPLOYED || evt.type() == EVT_CLASS_DEPLOYED)
+            if ((evt.type() == EVT_TASK_DEPLOYED || evt.type() == EVT_CLASS_DEPLOYED) &&
+                evt.message() != null && !evt.message().contains("org.gridgain.grid.kernal.GridTopic"))
                 cnt.addAndGet(1);
 
             return true;

@@ -149,6 +149,24 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
         return new Date(revTs);
     }
 
+    /**
+     * @param major Major version number.
+     * @param minor Minor version number.
+     * @param maintenance Maintenance version number.
+     * @return {@code True} if this version is greater or equal than the one passed in.
+     */
+    public boolean greaterThanEqual(int major, int minor, int maintenance) {
+        // NOTE: Unknown version is less than any other version.
+        if (major == this.major) {
+            if (minor == this.minor) {
+                return this.maintenance >= maintenance;
+            }
+            else
+                return this.minor > minor;
+        }
+        else
+            return this.major > major;
+    }
 
     /** {@inheritDoc} */
     @Override public int compareTo(GridProductVersion o) {
