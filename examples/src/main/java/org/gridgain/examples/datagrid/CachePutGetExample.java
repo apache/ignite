@@ -94,6 +94,7 @@ public class CachePutGetExample {
 
         System.out.println(">>> Bulk-stored values in cache.");
 
+        // Bulk-get values from cache.
         Map<Integer, String> vals = cache.getAll(batch.keySet());
 
         for (Map.Entry<Integer, String> e : vals.entrySet())
