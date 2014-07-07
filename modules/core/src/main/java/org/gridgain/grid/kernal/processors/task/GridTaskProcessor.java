@@ -457,7 +457,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     ldr = U.detectClassLoader(cls);
                 }
 
-                // Implicit deploy.
+                // Explicit deploy.
                 dep = ctx.deploy().deploy(cls, ldr);
 
                 if (dep == null)
