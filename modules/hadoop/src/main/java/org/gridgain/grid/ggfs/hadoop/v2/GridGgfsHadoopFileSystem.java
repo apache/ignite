@@ -19,6 +19,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -26,6 +27,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.ggfs.GridGgfs.*;
 import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
@@ -72,6 +74,12 @@ import static org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopUtils.*;
 public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Closeable {
     /** Logger. */
     private static final Log LOG = LogFactory.getLog(GridGgfsHadoopFileSystem.class);
+
+    /** Busy lock. */
+    private final GridBusyLock busyLock = new GridBusyLock();
+
+    /** Ensures that close routine is invoked at most once. */
+    private final AtomicBoolean closeGuard = new AtomicBoolean();
 
     /** Grid remote client. */
     private GridGgfsHadoopWrapper rmtClient;
@@ -166,14 +174,15 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
      * @throws IOException If file system is stopped.
      */
     private void enterBusy() throws IOException {
-        // No-op.
+        if (!busyLock.enterBusy())
+            throw new IOException("File system is stopped.");
     }
 
     /**
      * Leave busy state.
      */
     private void leaveBusy() {
-        // No-op.
+        busyLock.leaveBusy();
     }
 
     /**
@@ -298,31 +307,20 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
-        // No-op. Because FS instance can be cached and reused from other threads thinking that they are separate
-        // processes and that it is safe to close it.
-    }
+        if (closeGuard.compareAndSet(false, true)) {
+            busyLock.block();
 
-    /** {@inheritDoc} */
-    @Override protected void finalize() throws Throwable {
-        super.finalize();
+            if (rmtClient == null)
+                return;
 
-        close0();
-    }
+            rmtClient.close(false);
 
-    /**
-     * Closes file system.
-     */
-    private void close0() {
-        if (rmtClient == null)
-            return;
+            if (clientLog.isLogEnabled())
+                clientLog.close();
 
-        rmtClient.close(false);
-
-        if (clientLog.isLogEnabled())
-            clientLog.close();
-
-        // Reset initialized resources.
-        rmtClient = null;
+            // Reset initialized resources.
+            rmtClient = null;
+        }
     }
 
     /** {@inheritDoc} */
