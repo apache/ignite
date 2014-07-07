@@ -873,7 +873,8 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
             ClassProperty prop = buildClassProperty(cls, entry.getKey(), entry.getValue());
 
-            d.addProperty(key, prop);
+            if (!d.props.containsKey(prop.name))
+                d.addProperty(key, prop);
         }
     }
 
@@ -945,7 +946,8 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
             PortableProperty prop = buildPortableProperty(entry.getKey(), entry.getValue());
 
-            d.addProperty(key, prop);
+            if (!d.props.containsKey(prop.name()))
+                d.addProperty(key, prop);
         }
     }
 

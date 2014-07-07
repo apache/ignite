@@ -569,7 +569,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             true,
             new P1<Map.Entry<K, V>>() {
                 @Override public boolean apply(Map.Entry<K, V> e) {
-                    return keyValFilter == null || keyValFilter.apply(e.getKey(), e.getValue());
+                    try {
+                        e = (Map.Entry<K, V>)cctx.unwrapPortableIfNeeded(e, qry.portableKeys(), qry.portableValues());
+
+                        return keyValFilter == null || keyValFilter.apply(e.getKey(), e.getValue());
+                    }
+                    catch (GridException ex) {
+                        throw new GridRuntimeException(ex);
+                    }
                 }
             });
 
@@ -886,9 +893,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         continue;
                     }
 
+                    Map.Entry<K, V> entry = (Map.Entry<K, V>)cctx.unwrapPortableIfNeeded(F.t(key, val),
+                        qry.portableKeys(), qry.portableValues());
+
                     // Reduce.
                     if (rdc != null) {
-                        if (!rdc.collect(F.t(key, val)) || !iter.hasNext()) {
+                        if (!rdc.collect(entry) || !iter.hasNext()) {
                             onPageReady(loc, qryInfo, Collections.singletonList(rdc.reduce()), true, null);
 
                             pageSent = true;
@@ -899,7 +909,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             continue;
                     }
 
-                    data.add(trans != null ? trans.apply(F.t(key, val)) :
+                    data.add(trans != null ? trans.apply(entry) :
                         !loc ? new GridCacheQueryResponseEntry<>(key, val) : F.t(key, val));
 
                     if (!loc) {

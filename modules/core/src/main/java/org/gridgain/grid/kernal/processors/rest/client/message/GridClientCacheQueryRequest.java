@@ -331,7 +331,7 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
 
         rawWriter.writeLong(qryId);
         rawWriter.writeInt(op.ordinal());
-        rawWriter.writeInt(type.ordinal());
+        rawWriter.writeInt(type == null ? -1 : type.ordinal());
         rawWriter.writeString(cacheName);
         rawWriter.writeString(clause);
         rawWriter.writeInt(pageSize);
@@ -369,7 +369,7 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
 
         out.writeLong(qryId);
         out.writeInt(op.ordinal());
-        out.writeInt(type.ordinal());
+        out.writeInt(type == null ? -1 : type.ordinal());
         U.writeString(out, cacheName);
         U.writeString(out, clause);
         out.writeInt(pageSize);

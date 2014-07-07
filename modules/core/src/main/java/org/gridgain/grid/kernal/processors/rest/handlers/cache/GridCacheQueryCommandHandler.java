@@ -14,7 +14,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.cache.query.GridCacheQueriesEx;
+import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
@@ -257,8 +257,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
         @Override public GridRestResponse call() throws Exception {
             long qryId = qryIdGen.getAndIncrement();
 
-            GridCacheQueriesEx<Object, Object> queries = (GridCacheQueriesEx<Object, Object>)
-                    g.cache(req.cacheName()).queries();
+            GridCacheQueries<Object,Object> queries = g.cache(req.cacheName()).queries();
 
             GridCacheQuery<?> qry;
 
@@ -286,6 +285,8 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
                 default:
                     throw new GridException("Unsupported query type: " + req.type());
             }
+
+            ((GridCacheQueryAdapter)qry).keepPortable(true);
 
             if (req.pageSize() > 0)
                 qry = qry.pageSize(req.pageSize());

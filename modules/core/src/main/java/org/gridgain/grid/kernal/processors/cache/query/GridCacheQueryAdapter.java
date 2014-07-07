@@ -73,6 +73,12 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     /** */
     private volatile GridProjection prj;
 
+    /** Portable key. */
+    private boolean portableKeys;
+
+    /** Portable val. */
+    private boolean portableVals;
+
     /**
      * @param cctx Context.
      * @param type Query type.
@@ -83,7 +89,8 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
      */
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx, GridCacheQueryType type,
         @Nullable GridPredicate<GridCacheEntry<Object, Object>> prjPred, @Nullable String clsName,
-        @Nullable String clause, @Nullable GridBiPredicate<Object, Object> filter, boolean incMeta) {
+        @Nullable String clause, @Nullable GridBiPredicate<Object, Object> filter, boolean incMeta,
+        boolean portableKeys, boolean portableVals) {
         assert cctx != null;
         assert type != null;
 
@@ -94,6 +101,8 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         this.prjPred = prjPred;
         this.filter = filter;
         this.incMeta = incMeta;
+        this.portableKeys = portableKeys;
+        this.portableVals = portableVals;
 
         log = cctx.logger(getClass());
 
@@ -125,7 +134,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx, GridPredicate<GridCacheEntry<Object, Object>> prjPred,
         GridCacheQueryType type, GridLogger log, int pageSize, long timeout, boolean keepAll, boolean incBackups,
         boolean dedup, GridProjection prj, GridBiPredicate<Object, Object> filter, @Nullable String clsName,
-        String clause, boolean incMeta) {
+        String clause, boolean incMeta, boolean portableKeys, boolean portableVals) {
         this.cctx = cctx;
         this.prjPred = prjPred;
         this.type = type;
@@ -140,6 +149,8 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         this.clsName = clsName;
         this.clause = clause;
         this.incMeta = incMeta;
+        this.portableKeys = portableKeys;
+        this.portableVals = portableVals;
     }
 
     /**
@@ -175,6 +186,32 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
      */
     public boolean includeMetadata() {
         return incMeta;
+    }
+
+    /**
+     * @return {@code True} if key should be left portable.
+     */
+    public boolean portableKeys() {
+        return portableKeys;
+    }
+
+    /**
+     * @return {@code True} if value should be left portable.
+     */
+    public boolean portableValues() {
+        return portableVals;
+    }
+
+    /**
+     * Forces query to keep portable object representation even if query was created on plain projection.
+     *
+     * @param keep Keep portable flag.
+     */
+    public void keepPortable(boolean keep) {
+        if (keep) {
+            portableKeys = true;
+            portableVals = true;
+        }
     }
 
     /** {@inheritDoc} */

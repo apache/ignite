@@ -1742,6 +1742,70 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * Unwraps collection.
+     *
+     * @param col Collection to unwrap.
+     * @param portableKeys Keep portable keys flag.
+     * @param portableVals Keep portable values flag.
+     * @return Unwrapped collection.
+     * @throws GridException
+     */
+    public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean portableKeys,
+        boolean portableVals) throws GridException {
+        if (!config().isPortableEnabled())
+            return col;
+
+        Collection<Object> unwrapped = new ArrayList<>(col.size());
+
+        for (Object o : col) {
+            unwrapped.add(unwrapPortableIfNeeded(o, portableKeys, portableVals));
+        }
+
+        return unwrapped;
+    }
+
+    /**
+     * Unwraps object for portables.
+     *
+     * @param o Object to unwrap.
+     * @param portableKeys Keep portable keys flag.
+     * @param portableVals Keep portable values flag.
+     * @return Unwrapped object.
+     * @throws GridException If failed.
+     */
+    @SuppressWarnings("IfMayBeConditional")
+    public Object unwrapPortableIfNeeded(Object o, boolean portableKeys, boolean portableVals) throws GridException {
+        if (!config().isPortableEnabled())
+            return o;
+
+        if (o instanceof Map.Entry) {
+            Map.Entry entry = (Map.Entry)o;
+
+            Object key = entry.getKey();
+
+            if (key instanceof GridPortableObject && !portableKeys)
+                key = ((GridPortableObject<Object>)key).deserialize();
+
+            Object val = entry.getValue();
+
+            if (val instanceof GridPortableObject && !portableVals)
+                val = ((GridPortableObject<Object>)val).deserialize();
+
+            return F.t(key, val);
+        }
+        else if (!portableKeys || !portableVals) {
+            if (o instanceof Collection)
+                return unwrapPortablesIfNeeded((Collection<Object>)o, portableKeys, portableVals);
+            else if (o instanceof GridPortableObject)
+                return ((GridPortableObject<Object>)o).deserialize();
+            else
+                return o;
+        }
+        else
+            return o;
+    }
+
+    /**
      * Nulling references to potentially leak-prone objects.
      */
     public void cleanup() {

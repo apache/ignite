@@ -47,7 +47,8 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
         A.notNull(cls, "cls");
         A.notNull(clause, "clause");
 
-        return new GridCacheQueryAdapter<>(ctx, SQL, filter(), U.box(cls).getName(), clause, null, false);
+        return new GridCacheQueryAdapter<>(ctx, SQL, filter(), U.box(cls).getName(), clause, null, false,
+            prj != null && prj.portableKeys(), prj != null && prj.portableValues());
     }
 
     /** {@inheritDoc} */
@@ -55,14 +56,16 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
         A.notNull("clsName", clsName);
         A.notNull("clause", clause);
 
-        return new GridCacheQueryAdapter<>(ctx, SQL, filter(), clsName, clause, null, false);
+        return new GridCacheQueryAdapter<>(ctx, SQL, filter(), clsName, clause, null, false,
+            prj != null && prj.portableKeys(), prj != null && prj.portableValues());
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry) {
         A.notNull(qry, "qry");
 
-        return new GridCacheQueryAdapter<>(ctx, SQL_FIELDS, filter(), null, qry, null, false);
+        return new GridCacheQueryAdapter<>(ctx, SQL_FIELDS, filter(), null, qry, null, false,
+            prj != null && prj.portableKeys(), prj != null && prj.portableValues());
     }
 
     /** {@inheritDoc} */
@@ -70,7 +73,8 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
         A.notNull(cls, "cls");
         A.notNull(search, "search");
 
-        return new GridCacheQueryAdapter<>(ctx, TEXT, filter(), U.box(cls).getName(), search, null, false);
+        return new GridCacheQueryAdapter<>(ctx, TEXT, filter(), U.box(cls).getName(), search, null, false,
+            prj != null && prj.portableKeys(), prj != null && prj.portableValues());
     }
 
     /** {@inheritDoc} */
@@ -78,13 +82,14 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
         A.notNull("clsName", clsName);
         A.notNull("search", search);
 
-        return new GridCacheQueryAdapter<>(ctx, TEXT, filter(), clsName, search, null, false);
+        return new GridCacheQueryAdapter<>(ctx, TEXT, filter(), clsName, search, null, false,
+            prj != null && prj.portableKeys(), prj != null && prj.portableValues());
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable GridBiPredicate<K, V> filter) {
-        return new GridCacheQueryAdapter<>(ctx, SCAN, filter(), null, null,
-            (GridBiPredicate<Object, Object>)filter, false);
+        return new GridCacheQueryAdapter<>(ctx, SCAN, filter(), null, null, (GridBiPredicate<Object, Object>)filter,
+            false, prj != null && prj.portableKeys(), prj != null && prj.portableValues());
     }
 
     /** {@inheritDoc} */
@@ -123,7 +128,8 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
     @Override public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta) {
         assert qry != null;
 
-        return new GridCacheQueryAdapter<>(ctx, SQL_FIELDS, filter(), null, qry, null, incMeta);
+        return new GridCacheQueryAdapter<>(ctx, SQL_FIELDS, filter(), null, qry, null, incMeta,
+            prj != null && prj.portableKeys(), prj != null && prj.portableValues());
     }
 
     /**

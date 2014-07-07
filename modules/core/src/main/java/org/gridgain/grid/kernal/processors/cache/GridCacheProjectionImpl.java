@@ -151,6 +151,20 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     }
 
     /**
+     * @return {@code True} if keys should be left as portables.
+     */
+    public boolean portableKeys() {
+        return portableKeys;
+    }
+
+    /**
+     * @return {@code True} if values should be left as portables.
+     */
+    public boolean portableValues() {
+        return portableVals;
+    }
+
+    /**
      * {@code Ands} passed in filter with projection filter.
      *
      * @param filter filter to {@code and}.
