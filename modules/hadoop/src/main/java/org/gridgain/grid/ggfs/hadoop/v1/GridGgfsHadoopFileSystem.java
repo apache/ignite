@@ -84,10 +84,20 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
     private GridGgfsHadoopWrapper rmtClient;
 
     /** User name for each thread. */
-    private final ThreadLocal<String> userName = new ThreadLocal<>();
+    private final ThreadLocal<String> userName = new ThreadLocal<String>(){
+        /** {@inheritDoc} */
+        @Override protected String initialValue() {
+            return DFLT_USER_NAME;
+        }
+    };
 
     /** Working directory for each thread. */
-    private final ThreadLocal<Path> workingDir = new ThreadLocal<>();
+    private final ThreadLocal<Path> workingDir = new ThreadLocal<Path>(){
+        /** {@inheritDoc} */
+        @Override protected Path initialValue() {
+            return getHomeDirectory();
+        }
+    };
 
     /** Default replication factor. */
     private short dfltReplication;
@@ -817,7 +827,9 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
     /** {@inheritDoc} */
     @Override public Path getHomeDirectory() {
-        return makeQualified(new Path("/user/" + userName.get()));
+        Path path = new Path("/user/" + userName.get());
+
+        return path.makeQualified(getUri(), null);
     }
 
     /**

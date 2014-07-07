@@ -24,10 +24,20 @@ import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
  */
 public class GridHadoopDistributedFileSystem extends DistributedFileSystem {
     /** User name for each thread. */
-    private final ThreadLocal<String> userName = new ThreadLocal<>();
+    private final ThreadLocal<String> userName = new ThreadLocal<String>() {
+        /** {@inheritDoc} */
+        @Override protected String initialValue() {
+            return DFLT_USER_NAME;
+        }
+    };
 
     /** Working directory for each thread. */
-    private final ThreadLocal<Path> workingDir = new ThreadLocal<>();
+    private final ThreadLocal<Path> workingDir = new ThreadLocal<Path>() {
+        /** {@inheritDoc} */
+        @Override protected Path initialValue() {
+            return getHomeDirectory();
+        }
+    };
 
     /** {@inheritDoc} */
     @Override public void initialize(URI uri, Configuration conf) throws IOException {
@@ -49,7 +59,9 @@ public class GridHadoopDistributedFileSystem extends DistributedFileSystem {
 
     /** {@inheritDoc} */
     @Override public Path getHomeDirectory() {
-        return makeQualified(new Path("/user/" + userName.get()));
+        Path path = new Path("/user/" + userName.get());
+
+        return path.makeQualified(getUri(), null);
     }
 
     /** {@inheritDoc} */
