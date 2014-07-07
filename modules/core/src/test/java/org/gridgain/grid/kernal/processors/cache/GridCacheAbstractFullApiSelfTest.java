@@ -99,12 +99,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals(0, cache().primarySize());
         assertEquals(0, cache().primaryKeySet().size());
         assertEquals(0, cache().size());
+        assertEquals(0, cache().globalSize());
+        assertEquals(0, cache().globalPrimarySize());
 
         super.beforeTest();
 
         assertEquals(0, cache().primarySize());
         assertEquals(0, cache().primaryKeySet().size());
         assertEquals(0, cache().size());
+        assertEquals(0, cache().globalSize());
+        assertEquals(0, cache().globalPrimarySize());
 
         dfltGrid = grid(0);
     }
@@ -115,6 +119,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertEquals(0, cache().primarySize());
         assertEquals(0, cache().size());
+        assertEquals(0, cache().globalSize());
+        assertEquals(0, cache().globalPrimarySize());
 
         dfltGrid = null;
     }
@@ -155,6 +161,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         Collection<String> keysCol = mapped.get(grid(0).localNode());
 
         assertEquals(keysCol != null ? keysCol.size() : 0, cache().primarySize());
+
+        int globalPrimarySize = map.size() - 1;
+
+        assertEquals(globalPrimarySize, cache().globalPrimarySize());
+
+        int globalSize = cacheMode() == REPLICATED ? globalPrimarySize * gridCount() : cacheMode() == PARTITIONED ?
+            globalPrimarySize * (cache().configuration().getBackups() + 1) : globalPrimarySize;
+
+        assertEquals(globalSize, cache().globalSize());
 
         assert !cache().isEmpty() || keysCol == null || keysCol.isEmpty();
     }
