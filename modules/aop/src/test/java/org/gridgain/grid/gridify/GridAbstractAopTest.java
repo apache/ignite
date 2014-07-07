@@ -12,9 +12,13 @@ package org.gridgain.grid.gridify;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.spi.deployment.local.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -729,7 +733,7 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean apply(GridEvent evt) {
             if ((evt.type() == EVT_TASK_DEPLOYED || evt.type() == EVT_CLASS_DEPLOYED) &&
-                evt.message() != null && !evt.message().contains("org.gridgain.grid.kernal.GridTopic"))
+                evt.message() != null && evt.message().contains("GridTestAopTargetInterface"))
                 cnt.addAndGet(1);
 
             return true;
