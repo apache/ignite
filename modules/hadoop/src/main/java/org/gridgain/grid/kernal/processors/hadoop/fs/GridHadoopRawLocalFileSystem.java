@@ -15,7 +15,6 @@ import org.apache.hadoop.fs.FileAlreadyExistsException;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.*;
-import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -23,7 +22,7 @@ import java.io.*;
 import java.net.*;
 import java.nio.file.*;
 
-import static org.gridgain.grid.ggfs.GridGgfsConfiguration.DFLT_USER_NAME;
+import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
 
 /**
  * Local file system implementation for Hadoop.

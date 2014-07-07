@@ -136,16 +136,30 @@ public class GridHadoopFileSystemsTest extends GridHadoopAbstractSelfTest {
         System.out.println(System.getProperty("user.dir"));
     }
 
+    /**
+     * Test GGFS multi-thread working directory.
+     *
+     * @throws Exception If fails.
+     */
     public void testGgfs() throws Exception {
         testFileSystem(URI.create(ggfsScheme()));
     }
 
+    /**
+     * Test HDFS multi-thread working directory.
+     *
+     * @throws Exception If fails.
+     */
     public void testHdfs() throws Exception {
         testFileSystem(URI.create("hdfs://localhost/"));
     }
 
+    /**
+     * Test LocalFS multi-thread working directory.
+     *
+     * @throws Exception If fails.
+     */
     public void testLocal() throws Exception {
         testFileSystem(URI.create("file:///"));
     }
-
 }
