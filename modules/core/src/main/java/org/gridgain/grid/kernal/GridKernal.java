@@ -55,6 +55,7 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.optimized.*;
+import org.gridgain.grid.portable.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.security.*;
@@ -182,6 +183,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** Grid security instance. */
     private GridSecurity security;
+
+    /** Portables instance. */
+    private GridPortables portables;
 
     /** DR pool. */
     private ExecutorService drPool;
@@ -694,8 +698,10 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             // all components are started.
             verProc.addConvertersToAttributes(attrs);
 
-            if (ctx.isEnterprise())
+            if (ctx.isEnterprise()) {
                 security = new GridSecurityImpl(ctx.security());
+                portables = new GridPortablesImpl(ctx.portable());
+            }
 
             gw.writeLock();
 
@@ -3011,6 +3017,14 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             throw new UnsupportedOperationException("Security interface available in Enterprise edition only.");
 
         return security;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridPortables portables() {
+        if (!ctx.isEnterprise())
+            throw new UnsupportedOperationException("Portables interface available in Enterprise edition only.");
+
+        return portables;
     }
 
     /** {@inheritDoc} */
