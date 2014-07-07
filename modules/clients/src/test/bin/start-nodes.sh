@@ -21,8 +21,6 @@ export CONFIG_DIR=$SCRIPT_DIR/../resources
 export CLIENTS_MODULE_PATH=$SCRIPT_DIR/../../..
 export BIN_PATH=$SCRIPT_DIR/../../../../../bin
 
-export GRIDGAIN_HADOOP_NOT_FOUND_WARN=1
-
 GG_HOME=$(cd $SCRIPT_DIR/../../../../../..; pwd)
 
 if [ ! -d "${JAVA_HOME}" ]; then

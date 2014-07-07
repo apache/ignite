@@ -7,8 +7,6 @@ SET CONFIG_DIR=%SCRIPT_DIR%\..\resources
 SET CLIENTS_MODULE_PATH=%SCRIPT_DIR%\..\..\..
 SET BIN_PATH=%SCRIPT_DIR%\..\..\..\..\..\bin
 
-SET GRIDGAIN_HADOOP_NOT_FOUND_WARN=1
-
 cd %SCRIPT_DIR%\..\..\..\..\..\..
 set GG_HOME=%CD%
 
