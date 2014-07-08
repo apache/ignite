@@ -262,7 +262,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
             restTaskReq.taskName(req.taskName());
             restTaskReq.params(Arrays.asList(req.argument()));
-            restTaskReq.deserializePortables(req.deserializePortables());
+            restTaskReq.keepPortables(req.keepPortables());
 
             restReq = restTaskReq;
         }

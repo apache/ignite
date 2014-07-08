@@ -780,7 +780,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
         msg.taskName(taskName);
         msg.argument(arg);
-        msg.deserializePortables(!keepPortables);
+        msg.keepPortables(keepPortables);
 
         return this.<GridClientTaskResultBean>makeRequest(msg, destNodeId).chain(
             new GridClientFutureCallback<GridClientTaskResultBean, R>() {
