@@ -475,6 +475,16 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public int globalSize() throws GridException {
+        return cache.globalSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int globalPrimarySize() throws GridException {
+        return cache.globalPrimarySize();
+    }
+
+    /** {@inheritDoc} */
     @Override public int nearSize() {
         return cctx.config().getCacheMode() == PARTITIONED && isNearEnabled(cctx) ?
              cctx.near().nearKeySet(entryFilter(true)).size() : 0;
