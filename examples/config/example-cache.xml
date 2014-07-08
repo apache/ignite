@@ -94,7 +94,7 @@
                                         <property name="queryFields">
                                             <map>
                                                 <entry key="name" value="java.lang.String"/>
-                                                <entry key="salary" value="java.lang.String"/>
+                                                <entry key="salary" value="java.lang.Long"/>
                                             </map>
                                         </property>
                                         <property name="textFields">
