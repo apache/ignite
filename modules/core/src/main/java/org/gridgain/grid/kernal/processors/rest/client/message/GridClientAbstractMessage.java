@@ -111,4 +111,9 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
 
         sesTok = raw.readByteArray();
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridClientAbstractMessage.class, this, super.toString());
+    }
 }
