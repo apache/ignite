@@ -63,11 +63,16 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
     /** Topic ID generator. */
     private final AtomicLong topicIdGen = new AtomicLong();
 
+    /** Portable enabled flag. */
+    private final boolean portable;
+
     /**
      * @param ctx Context.
      */
     public GridTaskCommandHandler(final GridKernalContext ctx) {
         super(ctx);
+
+        portable = ctx.portable().isPortableEnabled();
 
         ctx.io().addMessageListener(TOPIC_REST, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
@@ -235,7 +240,8 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                                 if (desc.error() == null) {
                                     try {
                                         taskRestRes.setFinished(true);
-                                        taskRestRes.setResult(ctx.portable().marshalToPortable(desc.result()));
+                                        taskRestRes.setResult(
+                                            portable ? ctx.portable().marshalToPortable(desc.result()) : desc.result());
 
                                         res.setResponse(taskRestRes);
                                         fut.onDone(res);
