@@ -242,7 +242,8 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
-    public void testSyncCommitFlagPartitioned() throws Exception {
+    // TODO: GG-8705
+    public void _testSyncCommitFlagPartitioned() throws Exception {
         doTestSyncCommitFlag(client.data(PARTITIONED_ASYNC_BACKUP_CACHE_NAME));
     }
 
